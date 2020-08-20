@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.1)
-project (IPPL VERSION 2.0)
+project (IPPL CXX)
 set (IPPL_VERSION_MAJOR 1)
 set (IPPL_VERSION_MINOR 1.4)
 
@@ -26,6 +26,8 @@ add_compile_options (-Werror)
 message (STATUS "Build type is: " ${CMAKE_BUILD_TYPE})
 
 # Select flags.
+set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "-O3")
 set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
@@ -38,6 +40,13 @@ message (STATUS "The C++ compiler identification is: ${CMAKE_CXX_COMPILER_ID}")
 message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
 message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
+
+
+find_package(Kokkos REQUIRED)
+message (STATUS "Found Kokkos include dir: ${Kokkos_INCLUDE_DIRS}")
+message (STATUS "Found Kokkos library dir: ${Kokkos_LIBRARY_DIR}")
+message (STATUS "Found Kokkos libraries: ${Kokkos_LIBRARIES}")
+
 add_subdirectory (src)
 
 option (ENABLE_IPPLTESTS "IPPL Tests" OFF)
