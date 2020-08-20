@@ -1,0 +1,3 @@
+$MYMPIRUN -machinefile nodefile -np $1 ./TestFFT -grid $2 $2 $2 -test1 -Loop $3 --commlib mpi
+
+# mpirun -np 8 ./TestRC -grid 256 256 256  -CIC  -Decomp 1 -Loop 10

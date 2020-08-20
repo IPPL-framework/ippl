@@ -1,0 +1,16 @@
+#!/bin/bash
+#$ -cwd
+#$ -j y
+#$ -pe orte 16
+#$ -N IPPLTEST
+#$ -v LD_LIBRARY_PATH,OPENMPI
+#
+MACHINE_FILE=$TMPDIR/machinefile
+awk '/^felsim/ {print $1" slots="$2}' $PE_HOSTFILE > $MACHINE_FILE
+cp $MACHINE_FILE .machinefile.last
+#
+TESTIPPL="$HOME/svnwork/ippl/test/particle/test-update-1 512 512 512 1000000 100 NGP OOO GUARDCELLS 3 5.0 --commlib mpi --info 0 | tee test-update-1.out "
+CMD="$OPENMPI/bin/mpirun -x LD_LIBRARY_PATH -machinefile $MACHINE_FILE -np $NSLOTS  $TESTIPPL "
+echo "Running $CMD"
+echo
+$CMD

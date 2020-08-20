@@ -1,0 +1,26 @@
+set logscale y
+plot 'all' u 1:($3*$1/($9*$11*13) title ' ' w p
+
+set xlabel 'Processors'
+set ylabel 'Accuracy absolut '
+set title 'Seaborg Ippl r1 FFT Test'
+set grid
+set term post color
+set out 'TestA-DAccuracy.ps'
+repl
+#
+set term X11
+set out
+set logscale y
+plot 'TestAData' u 5:3 title 'FFT 128^3' w p
+repl 'TestBData' u 5:3 title 'FFT 256^3' w p
+repl 'TestCData' u 5:3 title 'FFT 512^3' w p
+repl 'TestDData' u 5:3 title 'FFT 1024^3' w p
+set xlabel 'Processors'
+set ylabel 'Wall / sec '
+set title 'Seaborg Ippl r1 FFT Test'
+set grid
+set term post color
+set out 'TestA-DSpeed.ps'
+repl
+

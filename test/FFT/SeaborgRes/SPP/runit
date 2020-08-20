@@ -1,0 +1,28 @@
+#!/bin/bash
+mkdir -p data
+tail -14 $0 > script.tmp
+change -f "NODES"  "$1" ./script.tmp
+change -f "PPERNODE"  "$2" ./script.tmp
+change -f "NAME"  "$3" ./script.tmp
+change -f "NX"  "$4" ./script.tmp
+change -f "NY"  "$5" ./script.tmp
+change -f "NZ"  "$6" ./script.tmp
+np=$(($1 * $2))
+change -f "NP"  "$np" ./script.tmp
+llsubmit ./script.tmp
+rm ./script.tmp
+exit
+#!/usr/bin/csh
+#@ job_name        = SPP-NAME
+#@ output          = data/NAME.out
+#@ error           = data/NAME.err
+#@ job_type        = parallel
+#@ class           = regular 
+#@ tasks_per_node  = PPERNODE 
+#@ node            = NODES
+#@ wall_clock_limit= 04:30:00
+#@ notification    = complete
+#@ network.MPI     = csss,not_shared,us
+#@ requirements    = (Memory >= 32768)
+#@ queue
+poe+ /usr/common/homes/a/adelmann/r1/test/FFT/SPP/TestFFT-SPP -grid NX NY NZ  -test1 -CIC -Loop 100 --commlib mpi --processes NP

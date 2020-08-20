@@ -1,0 +1,20 @@
+./runit 1 16 TestA16 128 128 128
+./runit 2 16 TestA32 128 128 128
+./runit 4 16 TestA64 128 128 128
+./runit 8 16 TestA128 128 128 128
+./runit 16 16 TestA256 128 128 128
+./runit 1 16 TestB16 256 256 256
+./runit 2 16 TestB32 256 256 256
+./runit 4 16 TestB64 256 256 256
+./runit 8 16 TestB128 256 256 256
+./runit 16 16 TestB256 256 256 256
+./runit 1 16 TestC16 512 512 512 
+./runit 2 16 TestC32 512 512 512 
+./runit 4 16 TestC64 512 512 512 
+./runit 8 16 TestC128 512 512 512 
+./runit 16 16 TestC256 512 512 512 
+./runit 8 16 TestD128 1024 1024 1024
+./runit 16 16 TestD256 1024 1024 1024
+./runit 32 16 TestD512 1024 1024 1024
+./runit 64 16 TestD1024 1024 1024 1024
+

@@ -1,0 +1,1 @@
+mpirun -np $1 ./ipplToyFDTD2 --commlib mpi --debug 5 --info 5 --warn 5 |tee ipplToyFDTD2-P$1.out

@@ -1,0 +1,654 @@
+Ippl> CommMPI: Started job 48 on host `s03905'.
+Ippl> CommMPI: Started job 1 on host `s04013'.
+Ippl> CommMPI: Started job 224 on host `s04501'.
+Ippl> CommMPI: Started job 64 on host `s03813'.
+Ippl> CommMPI: Started job 128 on host `s03901'.
+Ippl> CommMPI: Started job 49 on host `s03905'.
+Ippl> CommMPI: Started job 2 on host `s04013'.
+Ippl> CommMPI: Started job 16 on host `s04213'.
+Ippl> CommMPI: Started job 112 on host `s04305'.
+Ippl> CommMPI: Started job 208 on host `s04401'.
+Ippl> CommMPI: Started job 225 on host `s04501'.
+Ippl> CommMPI: Started job 80 on host `s04709'.
+Ippl> CommMPI: Started job 240 on host `s05201'.
+Ippl> CommMPI: Started job 65 on host `s03813'.
+Ippl> CommMPI: Started job 129 on host `s03901'.
+Ippl> CommMPI: Started job 50 on host `s03905'.
+Ippl> CommMPI: Started job 144 on host `s03909'.
+Ippl> CommMPI: Started job 3 on host `s04013'.
+Ippl> CommMPI: Started job 17 on host `s04213'.
+Ippl> CommMPI: Started job 113 on host `s04305'.
+Ippl> CommMPI: Started job 209 on host `s04401'.
+Ippl> CommMPI: Started job 226 on host `s04501'.
+Ippl> CommMPI: Started job 81 on host `s04709'.
+Ippl> CommMPI: Started job 241 on host `s05201'.
+Ippl> CommMPI: Started job 66 on host `s03813'.
+Ippl> CommMPI: Started job 130 on host `s03901'.
+Ippl> CommMPI: Started job 51 on host `s03905'.
+Ippl> CommMPI: Started job 145 on host `s03909'.
+Ippl> CommMPI: Started job 4 on host `s04013'.
+Ippl> CommMPI: Started job 18 on host `s04213'.
+Ippl> CommMPI: Started job 114 on host `s04305'.
+Ippl> CommMPI: Started job 210 on host `s04401'.
+Ippl> CommMPI: Started job 227 on host `s04501'.
+Ippl> CommMPI: Started job 82 on host `s04709'.
+Ippl> CommMPI: Started job 242 on host `s05201'.
+Ippl> CommMPI: Started job 67 on host `s03813'.
+Ippl> CommMPI: Started job 131 on host `s03901'.
+Ippl> CommMPI: Started job 52 on host `s03905'.
+Ippl> CommMPI: Started job 146 on host `s03909'.
+Ippl> CommMPI: Started job 5 on host `s04013'.
+Ippl> CommMPI: Started job 19 on host `s04213'.
+Ippl> CommMPI: Started job 115 on host `s04305'.
+Ippl> CommMPI: Started job 211 on host `s04401'.
+Ippl> CommMPI: Started job 228 on host `s04501'.
+Ippl> CommMPI: Started job 83 on host `s04709'.
+Ippl> CommMPI: Started job 243 on host `s05201'.
+Ippl> CommMPI: Started job 68 on host `s03813'.
+Ippl> CommMPI: Started job 132 on host `s03901'.
+Ippl> CommMPI: Started job 53 on host `s03905'.
+Ippl> CommMPI: Started job 147 on host `s03909'.
+Ippl> CommMPI: Started job 6 on host `s04013'.
+Ippl> CommMPI: Started job 20 on host `s04213'.
+Ippl> CommMPI: Started job 32 on host `s04301'.
+Ippl> CommMPI: Started job 116 on host `s04305'.
+Ippl> CommMPI: Started job 212 on host `s04401'.
+Ippl> CommMPI: Started job 229 on host `s04501'.
+Ippl> CommMPI: Started job 84 on host `s04709'.
+Ippl> CommMPI: Started job 96 on host `s05101'.
+Ippl> CommMPI: Started job 244 on host `s05201'.
+Ippl> CommMPI: Started job 69 on host `s03813'.
+Ippl> CommMPI: Started job 133 on host `s03901'.
+Ippl> CommMPI: Started job 54 on host `s03905'.
+Ippl> CommMPI: Started job 148 on host `s03909'.
+Ippl> CommMPI: Started job 7 on host `s04013'.
+Ippl> CommMPI: Started job 21 on host `s04213'.
+Ippl> CommMPI: Started job 33 on host `s04301'.
+Ippl> CommMPI: Started job 117 on host `s04305'.
+Ippl> CommMPI: Started job 213 on host `s04401'.
+Ippl> CommMPI: Started job 160 on host `s04409'.
+Ippl> CommMPI: Started job 230 on host `s04501'.
+Ippl> CommMPI: Started job 85 on host `s04709'.
+Ippl> CommMPI: Started job 97 on host `s05101'.
+Ippl> CommMPI: Started job 245 on host `s05201'.
+Ippl> CommMPI: Started job 70 on host `s03813'.
+Ippl> CommMPI: Started job 134 on host `s03901'.
+Ippl> CommMPI: Started job 55 on host `s03905'.
+Ippl> CommMPI: Started job 149 on host `s03909'.
+Ippl> CommMPI: Started job 8 on host `s04013'.
+Ippl> CommMPI: Started job 22 on host `s04213'.
+Ippl> CommMPI: Started job 34 on host `s04301'.
+Ippl> CommMPI: Started job 118 on host `s04305'.
+Ippl> CommMPI: Started job 214 on host `s04401'.
+Ippl> CommMPI: Started job 161 on host `s04409'.
+Ippl> CommMPI: Started job 231 on host `s04501'.
+Ippl> CommMPI: Started job 86 on host `s04709'.
+Ippl> CommMPI: Started job 176 on host `s04809'.
+Ippl> CommMPI: Started job 98 on host `s05101'.
+Ippl> CommMPI: Started job 246 on host `s05201'.
+Ippl> CommMPI: Started job 71 on host `s03813'.
+Ippl> CommMPI: Started job 135 on host `s03901'.
+Ippl> CommMPI: Started job 56 on host `s03905'.
+Ippl> CommMPI: Started job 150 on host `s03909'.
+Ippl> CommMPI: Started job 9 on host `s04013'.
+Ippl> CommMPI: Started job 23 on host `s04213'.
+Ippl> CommMPI: Started job 35 on host `s04301'.
+Ippl> CommMPI: Started job 119 on host `s04305'.
+Ippl> CommMPI: Started job 215 on host `s04401'.
+Ippl> CommMPI: Started job 162 on host `s04409'.
+Ippl> CommMPI: Started job 232 on host `s04501'.
+Ippl> CommMPI: Started job 192 on host `s04513'.
+Ippl> CommMPI: Started job 87 on host `s04709'.
+Ippl> CommMPI: Started job 177 on host `s04809'.
+Ippl> CommMPI: Started job 99 on host `s05101'.
+Ippl> CommMPI: Started job 247 on host `s05201'.
+Ippl> CommMPI: Started job 72 on host `s03813'.
+Ippl> CommMPI: Started job 136 on host `s03901'.
+Ippl> CommMPI: Started job 57 on host `s03905'.
+Ippl> CommMPI: Started job 151 on host `s03909'.
+Ippl> CommMPI: Started job 10 on host `s04013'.
+Ippl> CommMPI: Started job 24 on host `s04213'.
+Ippl> CommMPI: Started job 36 on host `s04301'.
+Ippl> CommMPI: Started job 120 on host `s04305'.
+Ippl> CommMPI: Started job 216 on host `s04401'.
+Ippl> CommMPI: Started job 163 on host `s04409'.
+Ippl> CommMPI: Started job 233 on host `s04501'.
+Ippl> CommMPI: Started job 193 on host `s04513'.
+Ippl> CommMPI: Started job 88 on host `s04709'.
+Ippl> CommMPI: Started job 178 on host `s04809'.
+Ippl> CommMPI: Started job 100 on host `s05101'.
+Ippl> CommMPI: Started job 248 on host `s05201'.
+Ippl> CommMPI: Started job 73 on host `s03813'.
+Ippl> CommMPI: Started job 137 on host `s03901'.
+Ippl> CommMPI: Started job 58 on host `s03905'.
+Ippl> CommMPI: Started job 152 on host `s03909'.
+Ippl> CommMPI: Started job 11 on host `s04013'.
+Ippl> CommMPI: Started job 25 on host `s04213'.
+Ippl> CommMPI: Started job 37 on host `s04301'.
+Ippl> CommMPI: Started job 121 on host `s04305'.
+Ippl> CommMPI: Started job 217 on host `s04401'.
+Ippl> CommMPI: Started job 164 on host `s04409'.
+Ippl> CommMPI: Started job 234 on host `s04501'.
+Ippl> CommMPI: Started job 194 on host `s04513'.
+Ippl> CommMPI: Started job 89 on host `s04709'.
+Ippl> CommMPI: Started job 179 on host `s04809'.
+Ippl> CommMPI: Started job 101 on host `s05101'.
+Ippl> CommMPI: Started job 249 on host `s05201'.
+Ippl> CommMPI: Started job 74 on host `s03813'.
+Ippl> CommMPI: Started job 138 on host `s03901'.
+Ippl> CommMPI: Started job 59 on host `s03905'.
+Ippl> CommMPI: Started job 153 on host `s03909'.
+Ippl> CommMPI: Started job 12 on host `s04013'.
+Ippl> CommMPI: Started job 26 on host `s04213'.
+Ippl> CommMPI: Started job 38 on host `s04301'.
+Ippl> CommMPI: Started job 122 on host `s04305'.
+Ippl> CommMPI: Started job 218 on host `s04401'.
+Ippl> CommMPI: Started job 165 on host `s04409'.
+Ippl> CommMPI: Started job 235 on host `s04501'.
+Ippl> CommMPI: Started job 195 on host `s04513'.
+Ippl> CommMPI: Started job 90 on host `s04709'.
+Ippl> CommMPI: Started job 180 on host `s04809'.
+Ippl> CommMPI: Started job 102 on host `s05101'.
+Ippl> CommMPI: Started job 250 on host `s05201'.
+Ippl> CommMPI: Started job 75 on host `s03813'.
+Ippl> CommMPI: Started job 139 on host `s03901'.
+Ippl> CommMPI: Started job 60 on host `s03905'.
+Ippl> CommMPI: Started job 154 on host `s03909'.
+Ippl> CommMPI: Started job 13 on host `s04013'.
+Ippl> CommMPI: Started job 27 on host `s04213'.
+Ippl> CommMPI: Started job 39 on host `s04301'.
+Ippl> CommMPI: Started job 123 on host `s04305'.
+Ippl> CommMPI: Started job 219 on host `s04401'.
+Ippl> CommMPI: Started job 166 on host `s04409'.
+Ippl> CommMPI: Started job 236 on host `s04501'.
+Ippl> CommMPI: Started job 196 on host `s04513'.
+Ippl> CommMPI: Started job 91 on host `s04709'.
+Ippl> CommMPI: Started job 181 on host `s04809'.
+Ippl> CommMPI: Started job 103 on host `s05101'.
+Ippl> CommMPI: Started job 251 on host `s05201'.
+Ippl> CommMPI: Started job 76 on host `s03813'.
+Ippl> CommMPI: Started job 140 on host `s03901'.
+Ippl> CommMPI: Started job 61 on host `s03905'.
+Ippl> CommMPI: Started job 155 on host `s03909'.
+Ippl> CommMPI: Started job 14 on host `s04013'.
+Ippl> CommMPI: Started job 28 on host `s04213'.
+Ippl> CommMPI: Started job 40 on host `s04301'.
+Ippl> CommMPI: Started job 124 on host `s04305'.
+Ippl> CommMPI: Started job 220 on host `s04401'.
+Ippl> CommMPI: Started job 167 on host `s04409'.
+Ippl> CommMPI: Started job 237 on host `s04501'.
+Ippl> CommMPI: Started job 197 on host `s04513'.
+Ippl> CommMPI: Started job 92 on host `s04709'.
+Ippl> CommMPI: Started job 182 on host `s04809'.
+Ippl> CommMPI: Started job 104 on host `s05101'.
+Ippl> CommMPI: Started job 252 on host `s05201'.
+Ippl> CommMPI: Started job 77 on host `s03813'.
+Ippl> CommMPI: Started job 141 on host `s03901'.
+Ippl> CommMPI: Started job 62 on host `s03905'.
+Ippl> CommMPI: Started job 156 on host `s03909'.
+Ippl> CommMPI: Started job 15 on host `s04013'.
+Ippl> CommMPI: Started job 29 on host `s04213'.
+Ippl> CommMPI: Started job 41 on host `s04301'.
+Ippl> CommMPI: Started job 125 on host `s04305'.
+Ippl> CommMPI: Started job 221 on host `s04401'.
+Ippl> CommMPI: Started job 168 on host `s04409'.
+Ippl> CommMPI: Started job 238 on host `s04501'.
+Ippl> CommMPI: Started job 198 on host `s04513'.
+Ippl> CommMPI: Started job 93 on host `s04709'.
+Ippl> CommMPI: Started job 183 on host `s04809'.
+Ippl> CommMPI: Started job 105 on host `s05101'.
+Ippl> CommMPI: Started job 253 on host `s05201'.
+Ippl> CommMPI: Started job 78 on host `s03813'.
+Ippl> CommMPI: Started job 142 on host `s03901'.
+Ippl> CommMPI: Started job 63 on host `s03905'.
+Ippl> CommMPI: Started job 157 on host `s03909'.
+Ippl> CommMPI: Started job 30 on host `s04213'.
+Ippl> CommMPI: Started job 42 on host `s04301'.
+Ippl> CommMPI: Started job 126 on host `s04305'.
+Ippl> CommMPI: Started job 222 on host `s04401'.
+Ippl> CommMPI: Started job 169 on host `s04409'.
+Ippl> CommMPI: Started job 239 on host `s04501'.
+Ippl> CommMPI: Started job 199 on host `s04513'.
+Ippl> CommMPI: Started job 94 on host `s04709'.
+Ippl> CommMPI: Started job 184 on host `s04809'.
+Ippl> CommMPI: Started job 106 on host `s05101'.
+Ippl> CommMPI: Started job 254 on host `s05201'.
+Ippl> CommMPI: Started job 79 on host `s03813'.
+Ippl> CommMPI: Started job 143 on host `s03901'.
+Ippl> CommMPI: Started job 158 on host `s03909'.
+Ippl> CommMPI: Started job 31 on host `s04213'.
+Ippl> CommMPI: Started job 43 on host `s04301'.
+Ippl> CommMPI: Started job 127 on host `s04305'.
+Ippl> CommMPI: Started job 223 on host `s04401'.
+Ippl> CommMPI: Started job 170 on host `s04409'.
+Ippl> CommMPI: Started job 200 on host `s04513'.
+Ippl> CommMPI: Started job 95 on host `s04709'.
+Ippl> CommMPI: Started job 185 on host `s04809'.
+Ippl> CommMPI: Started job 107 on host `s05101'.
+Ippl> CommMPI: Started job 255 on host `s05201'.
+Ippl> CommMPI: Started job 159 on host `s03909'.
+Ippl> CommMPI: Started job 44 on host `s04301'.
+Ippl> CommMPI: Started job 171 on host `s04409'.
+Ippl> CommMPI: Started job 201 on host `s04513'.
+Ippl> CommMPI: Started job 186 on host `s04809'.
+Ippl> CommMPI: Started job 108 on host `s05101'.
+Ippl> CommMPI: Started job 45 on host `s04301'.
+Ippl> CommMPI: Started job 172 on host `s04409'.
+Ippl> CommMPI: Started job 203 on host `s04513'.
+Ippl> CommMPI: Started job 187 on host `s04809'.
+Ippl> CommMPI: Started job 109 on host `s05101'.
+Ippl> CommMPI: Started job 46 on host `s04301'.
+Ippl> CommMPI: Started job 173 on host `s04409'.
+Ippl> CommMPI: Started job 204 on host `s04513'.
+Ippl> CommMPI: Started job 188 on host `s04809'.
+Ippl> CommMPI: Started job 110 on host `s05101'.
+Ippl> CommMPI: Started job 47 on host `s04301'.
+Ippl> CommMPI: Started job 174 on host `s04409'.
+Ippl> CommMPI: Started job 205 on host `s04513'.
+Ippl> CommMPI: Started job 189 on host `s04809'.
+Ippl> CommMPI: Started job 111 on host `s05101'.
+Ippl> CommMPI: Started job 175 on host `s04409'.
+Ippl> CommMPI: Started job 206 on host `s04513'.
+Ippl> CommMPI: Started job 190 on host `s04809'.
+Ippl> CommMPI: Started job 202 on host `s04513'.
+Ippl> CommMPI: Started job 191 on host `s04809'.
+Ippl> CommMPI: Started job 207 on host `s04513'.
+Ippl> CommMPI: Parent process waiting for children ...
+Ippl> CommMPI: Child 6 ready.
+Ippl> CommMPI: Child 12 ready.
+Ippl> CommMPI: Child 15 ready.
+Ippl> CommMPI: Child 4 ready.
+Ippl> CommMPI: Child 5 ready.
+Ippl> CommMPI: Child 2 ready.
+Ippl> CommMPI: Child 13 ready.
+Ippl> CommMPI: Child 7 ready.
+Ippl> CommMPI: Child 8 ready.
+Ippl> CommMPI: Child 10 ready.
+Ippl> CommMPI: Child 1 ready.
+Ippl> CommMPI: Child 9 ready.
+Ippl> CommMPI: Child 11 ready.
+Ippl> CommMPI: Child 3 ready.
+Ippl> CommMPI: Child 16 ready.
+Ippl> CommMPI: Child 17 ready.
+Ippl> CommMPI: Child 19 ready.
+Ippl> CommMPI: Child 18 ready.
+Ippl> CommMPI: Child 20 ready.
+Ippl> CommMPI: Child 21 ready.
+Ippl> CommMPI: Child 22 ready.
+Ippl> CommMPI: Child 23 ready.
+Ippl> CommMPI: Child 24 ready.
+Ippl> CommMPI: Child 25 ready.
+Ippl> CommMPI: Child 26 ready.
+Ippl> CommMPI: Child 27 ready.
+Ippl> CommMPI: Child 28 ready.
+Ippl> CommMPI: Child 29 ready.
+Ippl> CommMPI: Child 30 ready.
+Ippl> CommMPI: Child 31 ready.
+Ippl> CommMPI: Child 32 ready.
+Ippl> CommMPI: Child 14 ready.
+Ippl> CommMPI: Child 34 ready.
+Ippl> CommMPI: Child 35 ready.
+Ippl> CommMPI: Child 33 ready.
+Ippl> CommMPI: Child 36 ready.
+Ippl> CommMPI: Child 37 ready.
+Ippl> CommMPI: Child 38 ready.
+Ippl> CommMPI: Child 39 ready.
+Ippl> CommMPI: Child 40 ready.
+Ippl> CommMPI: Child 41 ready.
+Ippl> CommMPI: Child 42 ready.
+Ippl> CommMPI: Child 43 ready.
+Ippl> CommMPI: Child 44 ready.
+Ippl> CommMPI: Child 45 ready.
+Ippl> CommMPI: Child 46 ready.
+Ippl> CommMPI: Child 47 ready.
+Ippl> CommMPI: Child 48 ready.
+Ippl> CommMPI: Child 49 ready.
+Ippl> CommMPI: Child 50 ready.
+Ippl> CommMPI: Child 51 ready.
+Ippl> CommMPI: Child 52 ready.
+Ippl> CommMPI: Child 54 ready.
+Ippl> CommMPI: Child 55 ready.
+Ippl> CommMPI: Child 56 ready.
+Ippl> CommMPI: Child 57 ready.
+Ippl> CommMPI: Child 58 ready.
+Ippl> CommMPI: Child 53 ready.
+Ippl> CommMPI: Child 59 ready.
+Ippl> CommMPI: Child 60 ready.
+Ippl> CommMPI: Child 61 ready.
+Ippl> CommMPI: Child 62 ready.
+Ippl> CommMPI: Child 63 ready.
+Ippl> CommMPI: Child 64 ready.
+Ippl> CommMPI: Child 65 ready.
+Ippl> CommMPI: Child 66 ready.
+Ippl> CommMPI: Child 67 ready.
+Ippl> CommMPI: Child 68 ready.
+Ippl> CommMPI: Child 69 ready.
+Ippl> CommMPI: Child 70 ready.
+Ippl> CommMPI: Child 71 ready.
+Ippl> CommMPI: Child 72 ready.
+Ippl> CommMPI: Child 73 ready.
+Ippl> CommMPI: Child 74 ready.
+Ippl> CommMPI: Child 75 ready.
+Ippl> CommMPI: Child 76 ready.
+Ippl> CommMPI: Child 77 ready.
+Ippl> CommMPI: Child 78 ready.
+Ippl> CommMPI: Child 80 ready.
+Ippl> CommMPI: Child 81 ready.
+Ippl> CommMPI: Child 82 ready.
+Ippl> CommMPI: Child 83 ready.
+Ippl> CommMPI: Child 84 ready.
+Ippl> CommMPI: Child 85 ready.
+Ippl> CommMPI: Child 86 ready.
+Ippl> CommMPI: Child 79 ready.
+Ippl> CommMPI: Child 87 ready.
+Ippl> CommMPI: Child 88 ready.
+Ippl> CommMPI: Child 89 ready.
+Ippl> CommMPI: Child 90 ready.
+Ippl> CommMPI: Child 92 ready.
+Ippl> CommMPI: Child 93 ready.
+Ippl> CommMPI: Child 94 ready.
+Ippl> CommMPI: Child 95 ready.
+Ippl> CommMPI: Child 96 ready.
+Ippl> CommMPI: Child 91 ready.
+Ippl> CommMPI: Child 97 ready.
+Ippl> CommMPI: Child 98 ready.
+Ippl> CommMPI: Child 99 ready.
+Ippl> CommMPI: Child 100 ready.
+Ippl> CommMPI: Child 101 ready.
+Ippl> CommMPI: Child 102 ready.
+Ippl> CommMPI: Child 103 ready.
+Ippl> CommMPI: Child 105 ready.
+Ippl> CommMPI: Child 107 ready.
+Ippl> CommMPI: Child 108 ready.
+Ippl> CommMPI: Child 106 ready.
+Ippl> CommMPI: Child 104 ready.
+Ippl> CommMPI: Child 109 ready.
+Ippl> CommMPI: Child 110 ready.
+Ippl> CommMPI: Child 112 ready.
+Ippl> CommMPI: Child 113 ready.
+Ippl> CommMPI: Child 115 ready.
+Ippl> CommMPI: Child 111 ready.
+Ippl> CommMPI: Child 114 ready.
+Ippl> CommMPI: Child 116 ready.
+Ippl> CommMPI: Child 117 ready.
+Ippl> CommMPI: Child 118 ready.
+Ippl> CommMPI: Child 119 ready.
+Ippl> CommMPI: Child 120 ready.
+Ippl> CommMPI: Child 121 ready.
+Ippl> CommMPI: Child 122 ready.
+Ippl> CommMPI: Child 123 ready.
+Ippl> CommMPI: Child 125 ready.
+Ippl> CommMPI: Child 126 ready.
+Ippl> CommMPI: Child 128 ready.
+Ippl> CommMPI: Child 124 ready.
+Ippl> CommMPI: Child 129 ready.
+Ippl> CommMPI: Child 130 ready.
+Ippl> CommMPI: Child 127 ready.
+Ippl> CommMPI: Child 131 ready.
+Ippl> CommMPI: Child 132 ready.
+Ippl> CommMPI: Child 133 ready.
+Ippl> CommMPI: Child 134 ready.
+Ippl> CommMPI: Child 136 ready.
+Ippl> CommMPI: Child 137 ready.
+Ippl> CommMPI: Child 138 ready.
+Ippl> CommMPI: Child 140 ready.
+Ippl> CommMPI: Child 135 ready.
+Ippl> CommMPI: Child 139 ready.
+Ippl> CommMPI: Child 141 ready.
+Ippl> CommMPI: Child 142 ready.
+Ippl> CommMPI: Child 143 ready.
+Ippl> CommMPI: Child 144 ready.
+Ippl> CommMPI: Child 145 ready.
+Ippl> CommMPI: Child 146 ready.
+Ippl> CommMPI: Child 147 ready.
+Ippl> CommMPI: Child 148 ready.
+Ippl> CommMPI: Child 149 ready.
+Ippl> CommMPI: Child 150 ready.
+Ippl> CommMPI: Child 151 ready.
+Ippl> CommMPI: Child 152 ready.
+Ippl> CommMPI: Child 153 ready.
+Ippl> CommMPI: Child 155 ready.
+Ippl> CommMPI: Child 154 ready.
+Ippl> CommMPI: Child 156 ready.
+Ippl> CommMPI: Child 157 ready.
+Ippl> CommMPI: Child 158 ready.
+Ippl> CommMPI: Child 159 ready.
+Ippl> CommMPI: Child 160 ready.
+Ippl> CommMPI: Child 162 ready.
+Ippl> CommMPI: Child 163 ready.
+Ippl> CommMPI: Child 164 ready.
+Ippl> CommMPI: Child 165 ready.
+Ippl> CommMPI: Child 166 ready.
+Ippl> CommMPI: Child 161 ready.
+Ippl> CommMPI: Child 167 ready.
+Ippl> CommMPI: Child 169 ready.
+Ippl> CommMPI: Child 168 ready.
+Ippl> CommMPI: Child 170 ready.
+Ippl> CommMPI: Child 171 ready.
+Ippl> CommMPI: Child 172 ready.
+Ippl> CommMPI: Child 173 ready.
+Ippl> CommMPI: Child 174 ready.
+Ippl> CommMPI: Child 175 ready.
+Ippl> CommMPI: Child 176 ready.
+Ippl> CommMPI: Child 177 ready.
+Ippl> CommMPI: Child 178 ready.
+Ippl> CommMPI: Child 179 ready.
+Ippl> CommMPI: Child 181 ready.
+Ippl> CommMPI: Child 183 ready.
+Ippl> CommMPI: Child 184 ready.
+Ippl> CommMPI: Child 182 ready.
+Ippl> CommMPI: Child 185 ready.
+Ippl> CommMPI: Child 180 ready.
+Ippl> CommMPI: Child 187 ready.
+Ippl> CommMPI: Child 188 ready.
+Ippl> CommMPI: Child 186 ready.
+Ippl> CommMPI: Child 190 ready.
+Ippl> CommMPI: Child 192 ready.
+Ippl> CommMPI: Child 189 ready.
+Ippl> CommMPI: Child 193 ready.
+Ippl> CommMPI: Child 194 ready.
+Ippl> CommMPI: Child 191 ready.
+Ippl> CommMPI: Child 196 ready.
+Ippl> CommMPI: Child 197 ready.
+Ippl> CommMPI: Child 198 ready.
+Ippl> CommMPI: Child 195 ready.
+Ippl> CommMPI: Child 199 ready.
+Ippl> CommMPI: Child 200 ready.
+Ippl> CommMPI: Child 201 ready.
+Ippl> CommMPI: Child 203 ready.
+Ippl> CommMPI: Child 204 ready.
+Ippl> CommMPI: Child 205 ready.
+Ippl> CommMPI: Child 206 ready.
+Ippl> CommMPI: Child 207 ready.
+Ippl> CommMPI: Child 208 ready.
+Ippl> CommMPI: Child 209 ready.
+Ippl> CommMPI: Child 210 ready.
+Ippl> CommMPI: Child 211 ready.
+Ippl> CommMPI: Child 212 ready.
+Ippl> CommMPI: Child 213 ready.
+Ippl> CommMPI: Child 214 ready.
+Ippl> CommMPI: Child 215 ready.
+Ippl> CommMPI: Child 202 ready.
+Ippl> CommMPI: Child 216 ready.
+Ippl> CommMPI: Child 217 ready.
+Ippl> CommMPI: Child 219 ready.
+Ippl> CommMPI: Child 220 ready.
+Ippl> CommMPI: Child 221 ready.
+Ippl> CommMPI: Child 222 ready.
+Ippl> CommMPI: Child 218 ready.
+Ippl> CommMPI: Child 223 ready.
+Ippl> CommMPI: Child 224 ready.
+Ippl> CommMPI: Child 225 ready.
+Ippl> CommMPI: Child 226 ready.
+Ippl> CommMPI: Child 227 ready.
+Ippl> CommMPI: Child 228 ready.
+Ippl> CommMPI: Child 229 ready.
+Ippl> CommMPI: Child 230 ready.
+Ippl> CommMPI: Child 231 ready.
+Ippl> CommMPI: Child 233 ready.
+Ippl> CommMPI: Child 234 ready.
+Ippl> CommMPI: Child 235 ready.
+Ippl> CommMPI: Child 236 ready.
+Ippl> CommMPI: Child 232 ready.
+Ippl> CommMPI: Child 237 ready.
+Ippl> CommMPI: Child 240 ready.
+Ippl> CommMPI: Child 241 ready.
+Ippl> CommMPI: Child 238 ready.
+Ippl> CommMPI: Child 239 ready.
+Ippl> CommMPI: Child 242 ready.
+Ippl> CommMPI: Child 243 ready.
+Ippl> CommMPI: Child 245 ready.
+Ippl> CommMPI: Child 246 ready.
+Ippl> CommMPI: Child 247 ready.
+Ippl> CommMPI: Child 248 ready.
+Ippl> CommMPI: Child 244 ready.
+Ippl> CommMPI: Child 249 ready.
+Ippl> CommMPI: Child 250 ready.
+Ippl> CommMPI: Child 251 ready.
+Ippl> CommMPI: Child 252 ready.
+Ippl> CommMPI: Child 253 ready.
+Ippl> CommMPI: Child 254 ready.
+Ippl> CommMPI: Child 255 ready.
+Ippl> CommMPI: Initialization complete.
+Configure {0}> Interploation CIC
+Configure {0}> All parallel
+Dimensionality: D= 3 P= 256 nx= 512 ny= 512 nz= 512
+In-place CC transform using all-parallel layout ...
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+Results 100 times CC <-> CC: CPU time = 2204.02 secs. Dimensionality: D= 3 P= 256 nx= 512 ny= 512 nz= 512 ||d||= 3.49866e-07
+ adding counter 5 event 12 Cycles
+ adding counter 0 event 1 Instructions completed
+ adding counter 7 event 0 TLB misses
+ adding counter 2 event 9 Stores completed
+ adding counter 3 event 5 Loads completed
+ adding counter 4 event 5 FPU 0 instructions
+ adding counter 1 event 35 FPU 1 instructions
+ adding counter 6 event 9 FMAs executed
+
+
+################################################################################
+ hpmcount (V 2.4.2) summary (aggregate of 254 POE tasks)
+ Average execution time (wall clock time)   : 237.698 seconds
+ Average amount of time in user mode        : 236.107126 seconds
+ Average amount of time in system mode      : 0.392244 seconds
+ Total maximum resident set size            : 1942 Mbytes
+ Total shared memory use in text segment    : 6848884316 Kbytes*sec
+ Total unshared memory use in data segment  : 57982058469 Kbytes*sec
+ PM_CYC (Cycles)                            : 22381401677055
+ PM_INST_CMPL (Instructions completed)      : 21642062996519
+ PM_TLB_MISS (TLB misses)                   : 12234522275        
+ PM_ST_CMPL (Stores completed)              : 4396958000627
+ PM_LD_CMPL (Loads completed)               : 7907702597690
+ PM_FPU0_CMPL (FPU 0 instructions)          : 313161411851
+ PM_FPU1_CMPL (FPU 1 instructions)          : 21408373876
+ PM_EXEC_FMA (FMAs executed)                : 71475628661
+ Utilization rate                           : 10.5064724409449 %
+ Avg number of loads per TLB miss           : 73.2326141732284
+ Load and store operations                  : 12304660.598 M
+ MIPS                                       : 9678.407
+ Instructions per cycle                     : 0.102787401574803
+ HW Float points instructions per Cycle     : 0.00159448818897638
+ Total Floating point instructions + FMAs   : 406045.416 M
+ Total Float point instructions + FMA rate  : 181.585 Mflip/s
+ Average FMA percentage                     : 3.74234645669291 %
+ Average computation intensity              : 0.00350787401574803 
+################################################################################

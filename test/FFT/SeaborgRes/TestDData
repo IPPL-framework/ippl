@@ -1,0 +1,2 @@
+# Loops FFTTypw TotalTime Dim Processors NX=NY NZ ERROR
+100 CC<->CC: 1573.82 3 1024 1024 1024 2.91577e-15

@@ -1,0 +1,16 @@
+file (RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+message (STATUS "Adding more FFT tests found in ${_relPath}")
+
+add_executable (Seaborgfftspeed    fftspeed.cpp)
+add_executable (SeaborgTestFFT     TestFFT.cpp)
+add_executable (SeaborgTestFFT-PPP TestFFT-PPP.cpp)
+add_executable (SeaborgTestFFT-SPP TestFFT-SPP.cpp)
+add_executable (SeaborgTestFFT-SSP TestFFT-SSP.cpp)
+add_executable (SeaborgTestRC      TestRC.cpp)
+
+target_link_libraries (Seaborgfftspeed    ${IPPL_LIBS} ${MPI_CXX_LIBRARIES} boost_timer)
+target_link_libraries (SeaborgTestFFT     ${IPPL_LIBS} ${MPI_CXX_LIBRARIES} boost_timer)
+target_link_libraries (SeaborgTestFFT-PPP ${IPPL_LIBS} ${MPI_CXX_LIBRARIES} boost_timer)
+target_link_libraries (SeaborgTestFFT-SPP ${IPPL_LIBS} ${MPI_CXX_LIBRARIES} boost_timer)
+target_link_libraries (SeaborgTestFFT-SSP ${IPPL_LIBS} ${MPI_CXX_LIBRARIES} boost_timer)
+target_link_libraries (SeaborgTestRC      ${IPPL_LIBS} ${MPI_CXX_LIBRARIES} boost_timer)

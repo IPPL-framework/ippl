@@ -1,0 +1,60 @@
+set logscale y
+plot 'TestAData' u 5:8 title 'FFT 128^3' w p
+repl 'TestBData' u 5:8 title 'FFT 256^3' w p
+repl 'TestCData' u 5:8 title 'FFT 512^3' w p
+repl 'TestDData' u 5:8 title 'FFT 1024^3' w p
+set xlabel 'Processors'
+set ylabel 'Accuracy absolut '
+set title 'Seaborg Ippl r1 FFT Test'
+set grid
+set term post color
+set out 'TestA-DAccuracy.ps'
+repl
+#
+set term X11
+set out
+set logscale y
+plot 'TestAData' u 5:3 title 'FFT 128^3' w p
+repl 'TestBData' u 5:3 title 'FFT 256^3' w p
+repl 'TestCData' u 5:3 title 'FFT 512^3' w p
+repl 'TestDData' u 5:3 title 'FFT 1024^3' w p
+set xlabel 'Processors'
+set ylabel 'Wall / sec '
+set title 'Seaborg Ippl r1 FFT Test'
+set grid
+set term post color
+set out 'TestA-DSpeed1.ps'
+repl
+
+set term X11
+set out
+set logscale y 2
+set logscale x 2
+plot 'TestAData' u ($5/16):(101.74/$3) title 'FFT 128^3' w p
+repl 'TestBData' u ($5/16):(1128.82/$3) title 'FFT 256^3' w p
+repl 'TestCData' u ($5/16):(13006.4/$3) title 'FFT 512^3' w p
+set xlabel 'Processors*16'
+set ylabel 'Speedup wrt. T(16) '
+set title ' '
+set grid
+set term post color
+set out 'TestA-DSpeed2b.ps'
+set pointsize 2
+set key left
+repl
+
+set term X11
+set out
+set logscale y 2
+set logscale x 2
+plot 'TestAData' u ($5):($3*$5/($6*$6*$7)) title 'FFT 128^3' w p
+repl 'TestBData' u ($5):($3*$5/($6*$6*$7)) title 'FFT 256^3' w p
+repl 'TestCData' u ($5):($3*$5/($6*$6*$7)) title 'FFT 512^3' w p
+set xlabel 'Processors'
+set ylabel 'Wall*T(16) '
+set title ' '
+set grid
+set term post color
+set out 'TestA-DSpeed3.ps'
+repl
+

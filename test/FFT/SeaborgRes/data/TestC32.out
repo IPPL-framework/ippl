@@ -1,0 +1,206 @@
+Ippl> CommMPI: Parent process waiting for children ...
+Ippl> CommMPI: Started job 1 on host `s04309'.
+Ippl> CommMPI: Started job 2 on host `s04309'.
+Ippl> CommMPI: Started job 3 on host `s04309'.
+Ippl> CommMPI: Started job 5 on host `s04309'.
+Ippl> CommMPI: Started job 6 on host `s04309'.
+Ippl> CommMPI: Started job 9 on host `s04309'.
+Ippl> CommMPI: Started job 10 on host `s04309'.
+Ippl> CommMPI: Started job 12 on host `s04309'.
+Ippl> CommMPI: Started job 14 on host `s04309'.
+Ippl> CommMPI: Child 10 ready.
+Ippl> CommMPI: Child 12 ready.
+Ippl> CommMPI: Child 3 ready.
+Ippl> CommMPI: Child 9 ready.
+Ippl> CommMPI: Child 14 ready.
+Ippl> CommMPI: Child 5 ready.
+Ippl> CommMPI: Child 6 ready.
+Ippl> CommMPI: Child 1 ready.
+Ippl> CommMPI: Child 4 ready.
+Ippl> CommMPI: Started job 4 on host `s04309'.
+Ippl> CommMPI: Started job 7 on host `s04309'.
+Ippl> CommMPI: Started job 8 on host `s04309'.
+Ippl> CommMPI: Started job 11 on host `s04309'.
+Ippl> CommMPI: Started job 13 on host `s04309'.
+Ippl> CommMPI: Started job 15 on host `s04309'.
+Ippl> CommMPI: Child 2 ready.
+Ippl> CommMPI: Child 13 ready.
+Ippl> CommMPI: Child 11 ready.
+Ippl> CommMPI: Child 15 ready.
+Ippl> CommMPI: Child 7 ready.
+Ippl> CommMPI: Child 8 ready.
+Ippl> CommMPI: Started job 16 on host `s04605'.
+Ippl> CommMPI: Started job 17 on host `s04605'.
+Ippl> CommMPI: Started job 18 on host `s04605'.
+Ippl> CommMPI: Child 27 ready.
+Ippl> CommMPI: Child 18 ready.
+Ippl> CommMPI: Child 29 ready.
+Ippl> CommMPI: Started job 19 on host `s04605'.
+Ippl> CommMPI: Child 22 ready.
+Ippl> CommMPI: Child 25 ready.
+Ippl> CommMPI: Started job 20 on host `s04605'.
+Ippl> CommMPI: Child 26 ready.
+Ippl> CommMPI: Child 17 ready.
+Ippl> CommMPI: Child 19 ready.
+Ippl> CommMPI: Child 21 ready.
+Ippl> CommMPI: Started job 22 on host `s04605'.
+Ippl> CommMPI: Child 30 ready.
+Ippl> CommMPI: Child 28 ready.
+Ippl> CommMPI: Child 31 ready.
+Ippl> CommMPI: Child 23 ready.
+Ippl> CommMPI: Started job 23 on host `s04605'.
+Ippl> CommMPI: Child 16 ready.
+Ippl> CommMPI: Child 24 ready.
+Ippl> CommMPI: Child 20 ready.
+Ippl> CommMPI: Started job 24 on host `s04605'.
+Ippl> CommMPI: Initialization complete.
+Ippl> CommMPI: Started job 25 on host `s04605'.
+Ippl> CommMPI: Started job 28 on host `s04605'.
+Ippl> CommMPI: Started job 30 on host `s04605'.
+Ippl> CommMPI: Started job 31 on host `s04605'.
+Ippl> CommMPI: Started job 21 on host `s04605'.
+Ippl> CommMPI: Started job 26 on host `s04605'.
+Ippl> CommMPI: Started job 27 on host `s04605'.
+Ippl> CommMPI: Started job 29 on host `s04605'.
+Configure {0}> Interploation CIC
+Configure {0}> All parallel
+Dimensionality: D= 3 P= 32 nx= 512 ny= 512 nz= 512
+In-place CC transform using all-parallel layout ...
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+CC <-> CC: fabs(realDiff) = 3.49866e-07
+Results 100 times CC <-> CC: CPU time = 5489.19 secs. Dimensionality: D= 3 P= 32 nx= 512 ny= 512 nz= 512 ||d||= 3.49866e-07
+ adding counter 5 event 12 Cycles
+ adding counter 0 event 1 Instructions completed
+ adding counter 7 event 0 TLB misses
+ adding counter 2 event 9 Stores completed
+ adding counter 3 event 5 Loads completed
+ adding counter 4 event 5 FPU 0 instructions
+ adding counter 1 event 35 FPU 1 instructions
+ adding counter 6 event 9 FMAs executed
+
+
+################################################################################
+ hpmcount (V 2.4.2) summary (aggregate of 32 POE tasks)
+ Average execution time (wall clock time)   : 5543.86 seconds
+ Average amount of time in user mode        : 5490.222500 seconds
+ Average amount of time in system mode      : 14.335000 seconds
+ Total maximum resident set size            : 16 Gbytes
+ Total shared memory use in text segment    : 6397398152 Kbytes*sec
+ Total unshared memory use in data segment  : 68719476704 Kbytes*sec
+ PM_CYC (Cycles)                            : 65512634625078
+ PM_INST_CMPL (Instructions completed)      : 57336300628995
+ PM_TLB_MISS (TLB misses)                   : 102659408011        
+ PM_ST_CMPL (Stores completed)              : 6233236808615
+ PM_LD_CMPL (Loads completed)               : 21401091303913
+ PM_FPU0_CMPL (FPU 0 instructions)          : 2709381951773
+ PM_FPU1_CMPL (FPU 1 instructions)          : 50455516660
+ PM_EXEC_FMA (FMAs executed)                : 677663018147
+ Utilization rate                           : 98.46040625 %
+ Avg number of loads per TLB miss           : 214.208875
+ Load and store operations                  : 27634328.111 M
+ MIPS                                       : 10342.317
+ Instructions per cycle                     : 0.87525
+ HW Float points instructions per Cycle     : 0.042
+ Total Floating point instructions + FMAs   : 3437500.485 M
+ Total Float point instructions + FMA rate  : 620.057 Mflip/s
+ Average FMA percentage                     : 39.4275625 %
+ Average computation intensity              : 0.1244375 
+################################################################################

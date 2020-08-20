@@ -1,0 +1,1 @@
+mpirun -machinefile ./nodefile -np $1 PIC3d 32 32 32 10000 10 CIC OOO GUARDCELLS --processes $1 --commlib mpi
