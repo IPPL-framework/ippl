@@ -4,4 +4,4 @@ IPPL represents the backend of OPAL implementing particles, meshes and operation
 as a temporary development environment decoupled from OPAL in order to enhance the backend with the performance portable capabilities
 of [Kokkos](https://github.com/kokkos).
 
-For installation, please see the [wiki](https://gitlab.psi.ch/frey_m/ippl/-/wikis/developer-info/Compile-IPPL).
+For installation, please see the [wiki](https://gitlab.psi.ch/OPAL/Libraries/ippl/-/wikis/home).
