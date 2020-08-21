@@ -7,7 +7,6 @@ set (IPPLTOYFDTD_SRCS
 
 include_directories (
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/ippl/src
 )
 
 link_directories (

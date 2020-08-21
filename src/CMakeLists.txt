@@ -86,7 +86,7 @@ include_directories (
 
 add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
 
-target_link_libraries(ippl PUBLIC kokkos)
+target_link_libraries(ippl PUBLIC Kokkos::kokkos)
 
 install (TARGETS ippl DESTINATION lib)
 install (FILES ${IPPL_BASEDIR_HDRS} DESTINATION include)
