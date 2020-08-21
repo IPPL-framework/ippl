@@ -23,6 +23,8 @@ add_compile_options (-Wunused)
 add_compile_options (-Wextra)
 add_compile_options (-Werror)
 
+option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
+
 message (STATUS "Build type is: " ${CMAKE_BUILD_TYPE})
 
 # Select flags.
@@ -43,9 +45,19 @@ message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
 
 find_package(Kokkos REQUIRED)
-message (STATUS "Found Kokkos include dir: ${Kokkos_INCLUDE_DIRS}")
-message (STATUS "Found Kokkos library dir: ${Kokkos_LIBRARY_DIR}")
-message (STATUS "Found Kokkos libraries: ${Kokkos_LIBRARIES}")
+
+set (BOOSTROOT $ENV{BOOST_DIR})
+if (USE_STATIC_LIBRARIES)
+    set (Boost_USE_STATIC_LIBS ON)
+endif ()
+set (Boost_USE_MULTITHREADED OFF)
+set (Boost_USE_STATIC_RUNTIME OFF)
+find_package (Boost 1.66.0
+    REQUIRED COMPONENTS chrono filesystem iostreams regex serialization system timer)
+message (STATUS "Found Boost include dir: ${Boost_INCLUDE_DIR}")
+message (STATUS "Found Boost library dir: ${Boost_LIBRARY_DIR}")
+message (STATUS "Found Boost libraries: ${Boost_LIBRARIES}")
+include_directories (SYSTEM ${Boost_INCLUDE_DIRS})
 
 add_subdirectory (src)
 
