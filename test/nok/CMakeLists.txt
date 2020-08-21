@@ -2,7 +2,7 @@ file (RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}"
 message (STATUS "Adding test t3 found in ${_relPath}")
 
 include_directories (
-    ${CMAKE_SOURCE_DIR}/ippl/src
+    ${CMAKE_SOURCE_DIR}/src
 )
 
 link_directories (

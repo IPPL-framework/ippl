@@ -12,7 +12,6 @@
  ***************************************************************************/
 
 #include "Ippl.h"
-#include "Utilities/Timer.h"
 
 #include <fstream>
 
