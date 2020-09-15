@@ -28,36 +28,36 @@
 #include "Utility/IpplTimings.h"
 #include "Utility/IpplMemoryUsage.h"
 
-// IPPL Field Indexing
-#include "Index/Index.h"
-#include "Index/NDIndex.h"
-#include "Index/SIndex.h"
-#include "Index/IndexedSIndex.h"
-#include "Index/SIndexAssign.h"
+// // IPPL Field Indexing
+// #include "Index/Index.h"
+// #include "Index/NDIndex.h"
+// #include "Index/SIndex.h"
+// #include "Index/IndexedSIndex.h"
+// #include "Index/SIndexAssign.h"
 
-// IPPL Field Layout
-#include "FieldLayout/FieldLayout.h"
-#include "FieldLayout/CenteredFieldLayout.h"
+// // IPPL Field Layout
+// #include "FieldLayout/FieldLayout.h"
+// #include "FieldLayout/CenteredFieldLayout.h"
 
-// IPPL Meshes
-#include "Meshes/UniformCartesian.h"
-#include "Meshes/Cartesian.h"
+// // IPPL Meshes
+// #include "Meshes/UniformCartesian.h"
+// #include "Meshes/Cartesian.h"
 
 // IPPL Expression Templates
 #include "PETE/IpplExpressions.h"
 
-// IPPL Field classes
-#include "Field/FieldSpec.h"
-#include "Field/Field.h"
-#include "Field/Assign.h"
-#include "Field/AssignDefs.h"
-#include "Field/IndexedBareField.h"
-#include "Field/IndexedField.h"
-#include "Field/GuardCellSizes.h"
-#include "Utility/FieldPrint.h"
-#include "Utility/FieldDebugPrint.h"
-#include "Utility/FieldDebug.h"
-#include "Utility/DiscField.h"
+// // IPPL Field classes
+// #include "Field/FieldSpec.h"
+// #include "Field/Field.h"
+// #include "Field/Assign.h"
+// #include "Field/AssignDefs.h"
+// #include "Field/IndexedBareField.h"
+// #include "Field/IndexedField.h"
+// #include "Field/GuardCellSizes.h"
+// #include "Utility/FieldPrint.h"
+// #include "Utility/FieldDebugPrint.h"
+// #include "Utility/FieldDebug.h"
+// #include "Utility/DiscField.h"
 
 // IPPL Particles classes
 #include "Particle/IpplParticleBase.h"
@@ -81,15 +81,15 @@
 #include "Utility/DiscParticle.h"
 #include "Utility/ParticleDebug.h"
 
-// IPPL Field <--> Particle interpolators
-#include "Particle/IntNGP.h"
-#include "Particle/IntCIC.h"
-#include "Particle/IntTSC.h"
-#include "Particle/IntSUDS.h"
+// // IPPL Field <--> Particle interpolators
+// #include "Particle/IntNGP.h"
+// #include "Particle/IntCIC.h"
+// #include "Particle/IntTSC.h"
+// #include "Particle/IntSUDS.h"
 
-// IPPL sparse index expression operations
-#include "SubField/SubFieldAssign.h"
-#include "SubParticle/SubParticleAssign.h"
+// // IPPL sparse index expression operations
+// #include "SubField/SubFieldAssign.h"
+// #include "SubParticle/SubParticleAssign.h"
 
 // IPPL Math Types
 #include "AppTypes/Vektor.h"
@@ -101,10 +101,10 @@
 #include "DataSource/DataConnectCreator.h"
 #include "DataSource/FileDataConnect.h"
 
-// IPPL FFTs
-#include "FFT/FFT.h"
+// // IPPL FFTs
+// #include "FFT/FFT.h"
 
-// IPPL Load balancing
-#include "FieldLayout/BinaryBalancer.h"
+// // IPPL Load balancing
+// #include "FieldLayout/BinaryBalancer.h"
 
 #endif

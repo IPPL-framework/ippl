@@ -9,10 +9,12 @@ macro(list_subdirectories retval curdir)
   set(${retval} ${list_of_dirs})
 endmacro()
 
-list_subdirectories("TESTS" ${CMAKE_CURRENT_SOURCE_DIR})
-foreach (test ${TESTS})
-  add_subdirectory (${test})
-endforeach()
+# list_subdirectories("TESTS" ${CMAKE_CURRENT_SOURCE_DIR})
+# foreach (test ${TESTS})
+#   add_subdirectory (${test})
+# endforeach()
+
+add_subdirectory (lfield)
 
 # vi: set et ts=4 sw=4 sts=4:
   
