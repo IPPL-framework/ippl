@@ -30,6 +30,8 @@ set (_HDRS
     IndexedField.h
     LField.hpp
     LField.h
+    Kokkos_LField.hpp
+    Kokkos_LField.h
     ReductionLoc.hpp
     ReductionLoc.h
     )

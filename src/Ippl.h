@@ -14,6 +14,9 @@
 
 #include <complex>
 
+// Kokkos
+#include "Field/Kokkos_LField.h"
+
 // IPPL Communicate classes
 #include "Message/Communicate.h"
 #include "Message/GlobalComm.h"

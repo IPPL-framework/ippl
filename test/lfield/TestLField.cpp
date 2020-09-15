@@ -27,6 +27,17 @@ int main(int argc, char *argv[]) {
       view_type* data = lfield_1d.getP();
 
       std::cout << typeid(*data).name() << std::endl;
+
+
+      /*
+       * Kokkos based LField
+       */
+      typedef Kokkos_LField<double, dim> KLField_t;
+      KLField_t klfield_1d(owned, allocated);
+
+      KLField_t::view_type kdata = klfield_1d.getP();
+
+      std::cout << typeid(kdata).name() << std::endl;
   }
   Kokkos::finalize();
 
