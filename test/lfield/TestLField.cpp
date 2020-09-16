@@ -38,6 +38,29 @@ int main(int argc, char *argv[]) {
       KLField_t::view_type kdata = klfield_1d.getP();
 
       std::cout << typeid(kdata).name() << std::endl;
+
+
+      Index J(32);
+      NDIndex<2> owned2d(I, J);
+      NDIndex<2> allocated2d(I, J);
+
+      typedef Kokkos_LField<double, 2> kl2_t;
+      kl2_t klfield_2d(owned2d, allocated2d);
+
+      kl2_t::view_type kdata2d = klfield_2d.getP();
+
+      std::cout << typeid(kdata2d).name() << std::endl;
+
+      Index K(32);
+      NDIndex<3> owned3d(I, J, K);
+      NDIndex<3> allocated3d(I, J, K);
+
+      typedef Kokkos_LField<double, 3> kl3_t;
+      kl3_t klfield_3d(owned3d, allocated3d);
+
+      kl3_t::view_type kdata3d = klfield_3d.getP();
+
+      std::cout << typeid(kdata3d).name() << std::endl;
   }
   Kokkos::finalize();
 

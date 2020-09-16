@@ -54,6 +54,30 @@ struct ToTheDim<1>
 }
 
 
+template <typename T, unsigned Dim>
+struct dimen {
+
+};
+
+template <typename T>
+struct dimen<T, 1>
+{
+    typedef Kokkos::View<T*> view_type;
+};
+
+template <typename T>
+struct dimen<T, 2>
+{
+    typedef Kokkos::View<T**> view_type;
+};
+
+template <typename T>
+struct dimen<T, 3>
+{
+    typedef Kokkos::View<T***> view_type;
+};
+
+
 //////////////////////////////////////////////////////////////////////
 
 // This stores the local data for a Field.
@@ -68,7 +92,8 @@ public:
   // The type of domain stored here
   typedef NDIndex<Dim> Domain_t;
 
-  typedef Kokkos::View<T*> view_type;
+  typedef typename dimen<T, Dim>::view_type view_type;
+
 
   //
   // Constructors and destructor
