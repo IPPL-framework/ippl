@@ -34,6 +34,7 @@ set (_HDRS
     Kokkos_LField.h
     ReductionLoc.hpp
     ReductionLoc.h
+    ViewTypes.h
     )
 
 include_DIRECTORIES (

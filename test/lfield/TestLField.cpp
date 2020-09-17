@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
       typedef Kokkos_LField<double, dim> KLField_t;
       KLField_t klfield_1d(owned, allocated);
 
-      KLField_t::view_type kdata = klfield_1d.getP();
+      KLField_t::view_type kdata = klfield_1d.getDeviceView();
 
       std::cout << typeid(kdata).name() << std::endl;
 
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
       typedef Kokkos_LField<double, 2> kl2_t;
       kl2_t klfield_2d(owned2d, allocated2d);
 
-      kl2_t::view_type kdata2d = klfield_2d.getP();
+      kl2_t::view_type kdata2d = klfield_2d.getDeviceView();
 
       std::cout << typeid(kdata2d).name() << std::endl;
 
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
       typedef Kokkos_LField<double, 3> kl3_t;
       kl3_t klfield_3d(owned3d, allocated3d);
 
-      kl3_t::view_type kdata3d = klfield_3d.getP();
+      kl3_t::view_type kdata3d = klfield_3d.getDeviceView();
 
       std::cout << typeid(kdata3d).name() << std::endl;
   }
