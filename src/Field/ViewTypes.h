@@ -41,4 +41,58 @@ struct ViewType<T, 3, Properties...> {
     typedef Kokkos::View<T***, Properties...> view_type;
 };
 
+
+/*
+ * write functions
+ */
+template <typename T, unsigned Dim, class... Properties>
+void write_(const typename ViewType<T, Dim, Properties...>::view_type& view,
+           std::ostream& out = std::cout);
+
+
+template <typename T, class... Properties>
+void write_(const typename ViewType<T, 1, Properties...>::view_type& view,
+           std::ostream& out = std::cout)
+{
+    typename ViewType<T, 1, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
+    for (std::size_t i = 0; i < view.extent(0); ++i) {
+        out << view(i) << " ";
+    }
+    out << std::endl;
+}
+
+
+template <typename T, class... Properties>
+void write_(const typename ViewType<T, 2, Properties...>::view_type& view,
+           std::ostream& out = std::cout)
+{
+    typename ViewType<T, 2, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
+    for (std::size_t j = 0; j < view.extent(1); ++j) {
+        for (std::size_t i = 0; i < view.extent(0); ++i) {
+            out << view(i, j) << " ";
+        }
+        out << std::endl;
+    }
+    out << std::endl;
+
+}
+
+template <typename T, class... Properties>
+void write_(const typename ViewType<T, 3, Properties...>::view_type& view,
+           std::ostream& out = std::cout)
+{
+    typename ViewType<T, 3, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
+    for (std::size_t k = 0; k < view.extent(2); ++k) {
+        for (std::size_t j = 0; j < view.extent(1); ++j) {
+            for (std::size_t i = 0; i < view.extent(0); ++i) {
+                out << view(i, j, k) << " ";
+            }
+            out << std::endl;
+        }
+        out << std::endl;
+    }
+    out << std::endl;
+}
+
+
 #endif

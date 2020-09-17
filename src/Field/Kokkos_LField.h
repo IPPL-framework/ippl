@@ -50,14 +50,11 @@ public:
   typedef typename ViewType<T, Dim>::view_type view_type;
 
 
-  //
-  // Constructors and destructor
-  //
-
-  // Ctors for an Kokkos_LField.  Arguments:
-  //     owned = domain of "owned" region of Kokkos_LField (without guards)
-  //     allocated = domain of "allocated" region, which includes guards
-  //     vnode = global vnode ID number (see below)
+  /*! Ctor for an Kokkos_LField.  Arguments:
+   * @param owned domain of "owned" regton of Kokkos_LField (without guards)
+   * @param allocated domain of "allocated" region, which includes guards
+   * @param vnode global vnode ID number
+   */
   Kokkos_LField(const NDIndex<Dim>& owned,
          const NDIndex<Dim>& allocated,
          int vnode = -1);
@@ -65,18 +62,18 @@ public:
   // Copy constructor.
   Kokkos_LField(const Kokkos_LField<T,Dim>&);
 
-  // Destructor: just free the memory, if it's there.
-
   ~Kokkos_LField() {};
+
+  void resize(std::size_t args...);
 
   //
   // General information accessors
   //
 
   // Return information about the Kokkos_LField.
-  int size(unsigned d) const { return Owned[d].length(); }
-  const NDIndex<Dim>& getAllocated()   const { return Allocated; }
-  const NDIndex<Dim>& getOwned()       const { return Owned; }
+  int size(unsigned d) const { return owned_m[d].length(); }
+  const NDIndex<Dim>& getAllocated()   const { return allocated_m; }
+  const NDIndex<Dim>& getOwned()       const { return owned_m; }
 
   view_type&    getDeviceView() { return dview_m; }
 
@@ -88,7 +85,7 @@ public:
   //
 
   // print an Kokkos_LField out
-  void write(std::ostream&) const;
+  void write(std::ostream& out = std::cout) const;
 
 private:
   // Global vnode ID number for the associated Vnode (useful with more recent
@@ -105,11 +102,11 @@ private:
 
   // What domain in the data is owned by this Kokkos_LField.
 
-  NDIndex<Dim>   Owned;
+  NDIndex<Dim>   owned_m;
 
   // How total domain is actually allocated for thie Kokkos_LField (including guards)
 
-  NDIndex<Dim>   Allocated;
+  NDIndex<Dim>   allocated_m;
 
   Kokkos_LField();
   const Kokkos_LField<T,Dim> &operator=(const Kokkos_LField<T,Dim> &);
@@ -130,4 +127,4 @@ std::ostream& operator<<(std::ostream& out, const Kokkos_LField<T,Dim>& a)
 
 #include "Field/Kokkos_LField.hpp"
 
-#endif // Kokkos_LField_H
+#endif

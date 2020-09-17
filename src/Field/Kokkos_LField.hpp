@@ -25,16 +25,16 @@ Kokkos_LField<T,Dim>::Kokkos_LField(const NDIndex<Dim>& owned,
                       const NDIndex<Dim>& allocated,
                       int vnode)
 : vnode_m(vnode),
-  Owned(owned),
-  Allocated(allocated)
-{}
+  owned_m(owned),
+  allocated_m(allocated)
+{ }
 
 
 template<class T, unsigned Dim>
 Kokkos_LField<T,Dim>::Kokkos_LField(const Kokkos_LField<T,Dim>& lf)
   : vnode_m(lf.vnode_m),
-    Owned(lf.Owned),
-    Allocated(lf.Allocated)
+    owned_m(lf.owned_m),
+    allocated_m(lf.allocated_m)
 {
     Kokkos::deep_copy(dview_m, lf.getDeviceView());
 }
@@ -43,8 +43,14 @@ Kokkos_LField<T,Dim>::Kokkos_LField(const Kokkos_LField<T,Dim>& lf)
 template<class T, unsigned Dim>
 void Kokkos_LField<T,Dim>::write(std::ostream& out) const
 {
-    typename view_type::HostView hview = Kokkos::create_mirror_view(dview_m);
 
-//     for (iterator p = begin(); p!=end(); ++p)
-//     out << *p << " ";
+    write_<T>(dview_m, out);
+}
+
+
+template<class T, unsigned Dim>
+void Kokkos_LField<T,Dim>::resize(std::size_t args...) {
+    va_list sizes;
+    va_start(sizes, args);
+    Kokkos::resize(dview_m, sizes);
 }

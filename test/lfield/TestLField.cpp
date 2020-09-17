@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
       typedef Kokkos::View<double*> view_type;
 
 
-      Index I(32);
+      Index I(4);
       NDIndex<dim> owned(I);
       NDIndex<dim> allocated(I);
 
@@ -35,32 +35,33 @@ int main(int argc, char *argv[]) {
       typedef Kokkos_LField<double, dim> KLField_t;
       KLField_t klfield_1d(owned, allocated);
 
-      KLField_t::view_type kdata = klfield_1d.getDeviceView();
 
-      std::cout << typeid(kdata).name() << std::endl;
+      klfield_1d.resize(4);
+
+      klfield_1d.write();
 
 
-      Index J(32);
+      Index J(4);
       NDIndex<2> owned2d(I, J);
       NDIndex<2> allocated2d(I, J);
 
       typedef Kokkos_LField<double, 2> kl2_t;
       kl2_t klfield_2d(owned2d, allocated2d);
 
-      kl2_t::view_type kdata2d = klfield_2d.getDeviceView();
+      klfield_2d.resize(4, 4);
+//
+//       klfield_2d.write();
 
-      std::cout << typeid(kdata2d).name() << std::endl;
+//       Index K(4);
+//       NDIndex<3> owned3d(I, J, K);
+//       NDIndex<3> allocated3d(I, J, K);
 
-      Index K(32);
-      NDIndex<3> owned3d(I, J, K);
-      NDIndex<3> allocated3d(I, J, K);
+//       typedef Kokkos_LField<double, 3> kl3_t;
+//       kl3_t klfield_3d(owned3d, allocated3d);
 
-      typedef Kokkos_LField<double, 3> kl3_t;
-      kl3_t klfield_3d(owned3d, allocated3d);
+//       klfield_3d.resize(4, 4, 4);
 
-      kl3_t::view_type kdata3d = klfield_3d.getDeviceView();
-
-      std::cout << typeid(kdata3d).name() << std::endl;
+//       klfield_3d.write();
   }
   Kokkos::finalize();
 
