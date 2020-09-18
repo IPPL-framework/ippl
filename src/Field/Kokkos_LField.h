@@ -64,7 +64,8 @@ public:
 
   ~Kokkos_LField() {};
 
-  void resize(std::size_t args...);
+  template<typename ...Args>
+  void resize(Args... args);
 
   //
   // General information accessors

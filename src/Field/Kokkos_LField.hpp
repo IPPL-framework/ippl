@@ -49,8 +49,8 @@ void Kokkos_LField<T,Dim>::write(std::ostream& out) const
 
 
 template<class T, unsigned Dim>
-void Kokkos_LField<T,Dim>::resize(std::size_t args...) {
-    va_list sizes;
-    va_start(sizes, args);
-    Kokkos::resize(dview_m, sizes);
+template<typename ...Args>
+void Kokkos_LField<T,Dim>::resize(Args... args)
+{
+    Kokkos::resize(dview_m, args...);
 }

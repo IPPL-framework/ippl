@@ -73,8 +73,6 @@ void write_(const typename ViewType<T, 2, Properties...>::view_type& view,
         }
         out << std::endl;
     }
-    out << std::endl;
-
 }
 
 template <typename T, class... Properties>
@@ -89,9 +87,9 @@ void write_(const typename ViewType<T, 3, Properties...>::view_type& view,
             }
             out << std::endl;
         }
-        out << std::endl;
+        if (k < view.extent(2) - 1)
+            out << std::endl;
     }
-    out << std::endl;
 }
 
 
