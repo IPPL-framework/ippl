@@ -41,9 +41,6 @@ class Kokkos_LField
 {
 
 public:
-  // An iterator for the contents of this Kokkos_LField.
-  typedef CompressedBrickIterator<T,Dim> iterator;
-
   // The type of domain stored here
   typedef NDIndex<Dim> Domain_t;
 

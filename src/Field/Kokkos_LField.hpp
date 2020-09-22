@@ -27,7 +27,10 @@ Kokkos_LField<T,Dim>::Kokkos_LField(const NDIndex<Dim>& owned,
 : vnode_m(vnode),
   owned_m(owned),
   allocated_m(allocated)
-{ }
+{
+    //FIXME
+    this->resize(owned.size());
+}
 
 
 template<class T, unsigned Dim>

@@ -10,6 +10,8 @@ set (_HDRS
     AssignTags.h
     BareField.hpp
     BareField.h
+    Kokkos_BareField.hpp
+    Kokkos_BareField.h
     BareFieldIterator.h
     BCond.hpp
     BCond.h
@@ -21,6 +23,8 @@ set (_HDRS
     CompressedBrickIterator.h
     Field.hpp
     Field.h
+    Kokkos_Field.hpp
+    Kokkos_Field.h
     FieldLoc.h
     FieldSpec.h
     GuardCellSizes.hpp
