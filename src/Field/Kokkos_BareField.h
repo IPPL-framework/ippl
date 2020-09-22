@@ -107,10 +107,16 @@ public:
   }
 
   // Assign another array.
-  const Kokkos_BareField<T,Dim>&
-  operator=(const Kokkos_BareField<T,Dim>& x)
+  Kokkos_BareField<T,Dim>&
+  operator=(const Kokkos_BareField<T,Dim>& rhs)
   {
-    assign(*this,x);
+      const_iterator_if rit = rhs.begin_if();
+      for (iterator_if it = begin_if();
+         it != end_if(); ++it) {
+        *it->second = *rit->second;
+      ++rit;
+    }
+//     assign(*this,x);
     return *this;
   }
 

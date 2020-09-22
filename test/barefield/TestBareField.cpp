@@ -31,5 +31,14 @@ int main(int argc, char *argv[]) {
 
     barefield.write();
 
+    //
+    bfield_t barefield_2(layout);
+
+    barefield_2 = 2.0;
+
+    barefield = barefield_2;
+
+    barefield.write();
+
     return 0;
 }

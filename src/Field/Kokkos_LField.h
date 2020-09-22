@@ -96,6 +96,18 @@ public:
         return *this;
   }
 
+
+  Kokkos_LField<T,Dim>& operator=(const Kokkos_LField<T,Dim>& rhs)
+  {
+      auto& rhs_view = rhs.getDeviceView();
+      Kokkos::parallel_for("Kokkos_LField::operator=()",
+                           dview_m.extent(0), KOKKOS_LAMBDA(const int i) {
+                               dview_m(i) = rhs_view(i);
+                        });
+      Kokkos::fence();
+        return *this;
+  }
+
 private:
   // Global vnode ID number for the associated Vnode (useful with more recent
   // FieldLayouts which store a logical "array" of vnodes; user specifies
@@ -118,7 +130,7 @@ private:
   NDIndex<Dim>   allocated_m;
 
   Kokkos_LField();
-  const Kokkos_LField<T,Dim> &operator=(const Kokkos_LField<T,Dim> &);
+//   const Kokkos_LField<T,Dim> &operator=(const Kokkos_LField<T,Dim> &);
 };
 
 
