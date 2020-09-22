@@ -99,85 +99,12 @@ Kokkos_BareField<T,Dim>::setup()
 
 template< class T, unsigned Dim>
 void 
-Kokkos_BareField<T,Dim>::write(std::ostream& /*out*/)
+Kokkos_BareField<T,Dim>::write(std::ostream& out)
 {
- /*
-  
-
-  // Inform dbgmsg(">>>>>>>> Kokkos_BareField::write", INFORM_ALL_NODES);
-  // dbgmsg << "Printing values for field at address = " << &(*this) << endl;
-
-  // on remote nodes, we must send the subnodes Kokkos_LField's to node 0
-  int tag = Ippl::Comm->next_tag(F_WRITE_TAG, F_TAG_CYCLE);
-  if (Ippl::myNode() != 0) {
-    for ( iterator_if local = begin_if(); local != end_if() ; ++local) {
-      // Cache some information about this local field.
-      Kokkos_LField<T,Dim>&  l = *((*local).second);
-      NDIndex<Dim>&  lo = (NDIndex<Dim>&) l.getOwned();
-      typename Kokkos_LField<T,Dim>::iterator rhs(l.begin());
-
-      // Build and send a message containing the owned LocaKokkos_LField data
-      if (Ippl::myNode() != 0) {
-	Message *mess = new Message();
-	lo.putMessage(*mess);	      // send the local domain of the Kokkos_LField
-	rhs.putMessage(*mess);          // send the data itself
-	// dbgmsg << "Sending domain " << lo << " to node 0" << endl;
-	Ippl::Comm->send(mess, 0, tag);
-      }
+    for (iterator_if it = begin_if();
+         it != end_if(); ++it) {
+        it->second->write(out);
     }
-  } else {    // now, on node 0, receive the remaining Kokkos_LField's ...
-    // put all the Kokkos_LField's in a big, uncompressed Kokkos_LField
-    Kokkos_LField<T,Dim> data(getDomain(), getDomain());
-    data.Uncompress();
-
-    // first put in our local ones
-    for ( iterator_if local = begin_if(); local != end_if() ; ++local) {
-      // Cache some information about this local field.
-      Kokkos_LField<T,Dim>&  l = *((*local).second);
-      NDIndex<Dim>&  lo = (NDIndex<Dim>&) l.getOwned();
-      typename Kokkos_LField<T,Dim>::iterator rhs(l.begin());
-      
-      // put the local Kokkos_LField in our big Kokkos_LField
-      // dbgmsg << "  Copying local domain " << lo << " from Kokkos_LField at ";
-      // dbgmsg << &l << ":" << endl;
-      typename Kokkos_LField<T,Dim>::iterator putloc = data.begin(lo);
-      typename Kokkos_LField<T,Dim>::iterator getloc = l.begin(lo);
-      for ( ; getloc != l.end() ; ++putloc, ++getloc ) {
-	// dbgmsg << "    from " << &(*getloc) << " to " << &(*putloc);
-	// dbgmsg << ": " << *putloc << " = " << *getloc << endl;
-	*putloc = *getloc;
-      }
-    }
-
-    // we expect to receive one message from each remote vnode
-    int remaining = getLayout().size_rdv();
-
-    // keep receiving messages until they're all here
-    for ( ; remaining > 0; --remaining) {
-      // Receive the generic message.
-      int any_node = COMM_ANY_NODE;
-      Message *mess = Ippl::Comm->receive_block(any_node, tag);
-
-      // Extract the domain size and Kokkos_LField iterator from the message
-      NDIndex<Dim> lo;
-      T compressed_data;
-      typename Kokkos_LField<T,Dim>::iterator rhs(compressed_data);
-      lo.getMessage(*mess);
-      rhs.getMessage(*mess);
-      // dbgmsg << "Received domain " << lo << " from " << any_node << endl;
-
-      // put the received Kokkos_LField in our big Kokkos_LField
-      typename Kokkos_LField<T,Dim>::iterator putloc = data.begin(lo);
-      for (unsigned elems=lo.size(); elems > 0; ++putloc, ++rhs, --elems)
-	*putloc = *rhs;
-
-      // Free the memory in the message.
-      delete mess;
-    }
-
-    // finally, we can print the big Kokkos_LField out
-    out << data;
-  }*/
 }
 
 

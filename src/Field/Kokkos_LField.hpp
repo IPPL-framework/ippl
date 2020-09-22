@@ -39,6 +39,7 @@ Kokkos_LField<T,Dim>::Kokkos_LField(const Kokkos_LField<T,Dim>& lf)
     owned_m(lf.owned_m),
     allocated_m(lf.allocated_m)
 {
+    Kokkos::resize(dview_m, lf.getDeviceView().size());
     Kokkos::deep_copy(dview_m, lf.getDeviceView());
 }
 

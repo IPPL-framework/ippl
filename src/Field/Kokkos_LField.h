@@ -73,7 +73,7 @@ public:
   const NDIndex<Dim>& getAllocated()   const { return allocated_m; }
   const NDIndex<Dim>& getOwned()       const { return owned_m; }
 
-  view_type&    getDeviceView() { return dview_m; }
+  const view_type&    getDeviceView() const { return dview_m; }
 
   // Return global vnode ID number (between 0 and nvnodes - 1)
   int getVnode() const { return vnode_m; }
@@ -84,6 +84,17 @@ public:
 
   // print an Kokkos_LField out
   void write(std::ostream& out = std::cout) const;
+
+
+  Kokkos_LField<T,Dim>& operator=(T x)
+  {
+      Kokkos::parallel_for("Kokkos_LField::operator=()",
+                           dview_m.extent(0), KOKKOS_LAMBDA(const int i) {
+                               dview_m(i) = x;
+                        });
+      Kokkos::fence();
+        return *this;
+  }
 
 private:
   // Global vnode ID number for the associated Vnode (useful with more recent

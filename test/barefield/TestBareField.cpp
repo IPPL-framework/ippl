@@ -25,12 +25,11 @@ int main(int argc, char *argv[]) {
     typedef Kokkos_BareField<double, dim> bfield_t;
     bfield_t barefield(layout);
 
-//     barefield = 1.0;
+    barefield.write();
 
-    for (bfield_t::iterator_if it = barefield.begin_if();
-         it != barefield.end_if(); ++it) {
-        it->second->write();
-    }
+    barefield = 1.0;
+
+    barefield.write();
 
     return 0;
 }

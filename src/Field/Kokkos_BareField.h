@@ -96,9 +96,13 @@ public:
   const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
 
   // Assignment from a constant.
-  const Kokkos_BareField<T,Dim>& operator=(T x)
+  Kokkos_BareField<T,Dim>& operator=(T x)
   {
-    assign(*this,x);
+      for (iterator_if it = begin_if();
+           it != end_if(); ++it) {
+          *it->second = x;
+        }
+//     assign(*this,x);
     return *this;
   }
 
@@ -127,7 +131,7 @@ public:
     return *this;
   }
 
-  void write(std::ostream&);
+  void write(std::ostream& = std::cout);
 
   //
   // PETE interface.
