@@ -31,7 +31,7 @@
 
 // This stores the local data for a Field.
 template<class T, unsigned Dim>
-class Kokkos_LField : public FieldExpr<Kokkos_LField<T, Dim> >
+class Kokkos_LField : public FieldExpr<T, Kokkos_LField<T, Dim> >
 {
 
 public:
@@ -105,7 +105,7 @@ public:
                 std::enable_if_t<
     //               // essentially equivalent to:
     //               //   requires std::derived_from<E, VecExpr<E>>
-                std::is_base_of_v<FieldExpr<E>, E>,
+                std::is_base_of_v<FieldExpr<T, E>, E>,
     //               // -------------------------------------------
                 int> = 0>
     inline Kokkos_LField<T,Dim>& operator=(E const& expr) {

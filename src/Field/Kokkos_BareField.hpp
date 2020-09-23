@@ -67,9 +67,6 @@ template< class T, unsigned Dim >
 void
 Kokkos_BareField<T,Dim>::setup()
 {
-  // Reserve space for the pointers to the Kokkos_LFields.
-  Locals_ac.reserve( getLayout().size_iv() );
-
   // Loop over all the Vnodes, creating an Kokkos_LField in each.
   for (typename Layout_t::iterator_iv v_i=getLayout().begin_iv();
        v_i != getLayout().end_iv();
@@ -82,12 +79,8 @@ Kokkos_BareField<T,Dim>::setup()
       // Get the global vnode number (ID number, value from 0 to nvnodes-1):
       int vnode = (*v_i).second->getVnode();
 
-      Kokkos_LField<T, Dim> *lf;
-      lf = new Kokkos_LField<T,Dim>( owned, guarded, vnode );
-
       // Put it in the list.
-      Locals_ac.insert( end_if(), 
-                        typename ac_id_larray::value_type((*v_i).first,lf));
+      lfields_m.push_back(LField_t(owned, guarded, vnode));
     }
 }
 
@@ -101,12 +94,37 @@ template< class T, unsigned Dim>
 void 
 Kokkos_BareField<T,Dim>::write(std::ostream& out)
 {
-    for (iterator_if it = begin_if();
-         it != end_if(); ++it) {
-        it->second->write(out);
+    for (const auto& lf : lfields_m) {
+        lf.write(out);
     }
 }
 
+
+
+
+
+
+template <typename E1, typename E2>
+class BareFieldSum: public BareFieldExpr<BareFieldSum<E1, E2> >{
+
+public:
+  BareFieldSum(E1 const& u, E2 const& v) : _u(u), _v(v) { }
+
+  typedef Kokkos_LField<double,1> LField_t;
+
+  LField_t operator()(size_t i) const { return _u(i) + _v(i); }
+
+private:
+  E1 const _u;
+  E2 const _v;
+};
+
+template <typename E1, typename E2>
+BareFieldSum<E1, E2>
+operator+(BareFieldExpr<E1> const& u, BareFieldExpr<E2> const& v) {
+  return BareFieldSum<E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
+
+}
 
 // //////////////////////////////////////////////////////////////////////
 // // Get a ref to a single element of the Field; if it is not local to our

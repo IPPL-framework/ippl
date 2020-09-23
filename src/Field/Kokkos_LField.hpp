@@ -60,13 +60,13 @@ void Kokkos_LField<T,Dim>::resize(Args... args)
 
 
 
-template <typename E1, typename E2>
-class LFieldAdd : public FieldExpr<LFieldAdd<E1, E2> >{
+template <typename T, typename E1, typename E2>
+class LFieldAdd : public FieldExpr<T, LFieldAdd<T, E1, E2> >{
 public:
   LFieldAdd(E1 const& u, E2 const& v) : _u(u), _v(v) { }
 
   KOKKOS_INLINE_FUNCTION
-  double operator()(size_t i) const { return _u(i) + _v(i); }
+  T operator()(size_t i) const { return _u(i) + _v(i); }
 
 private:
   E1 const _u;
@@ -76,22 +76,22 @@ private:
 
 
 
-template <typename E1, typename E2>
-LFieldAdd<E1, E2>
-operator+(FieldExpr<E1> const& u, FieldExpr<E2> const& v) {
-  return LFieldAdd<E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
+template <typename T, typename E1, typename E2>
+LFieldAdd<T, E1, E2>
+operator+(FieldExpr<T, E1> const& u, FieldExpr<T, E2> const& v) {
+  return LFieldAdd<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
 
 }
 
 
 
-template <typename E1, typename E2>
-class LFieldSubtract : public FieldExpr<LFieldSubtract<E1, E2> >{
+template <typename T, typename E1, typename E2>
+class LFieldSubtract : public FieldExpr<T, LFieldSubtract<T, E1, E2> >{
 public:
   LFieldSubtract(E1 const& u, E2 const& v) : _u(u), _v(v) { }
 
   KOKKOS_INLINE_FUNCTION
-  double operator()(size_t i) const { return _u(i) - _v(i); }
+  T operator()(size_t i) const { return _u(i) - _v(i); }
 
 private:
   E1 const _u;
@@ -99,22 +99,22 @@ private:
 };
 
 
-template <typename E1, typename E2>
-LFieldSubtract<E1, E2>
-operator-(FieldExpr<E1> const& u, FieldExpr<E2> const& v) {
-  return LFieldSubtract<E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
+template <typename T, typename E1, typename E2>
+LFieldSubtract<T, E1, E2>
+operator-(FieldExpr<T, E1> const& u, FieldExpr<T, E2> const& v) {
+  return LFieldSubtract<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
 
 }
 
 
 
-template <typename E1, typename E2>
-class LFieldMultiply : public FieldExpr<LFieldMultiply<E1, E2> >{
+template <typename T, typename E1, typename E2>
+class LFieldMultiply : public FieldExpr<T, LFieldMultiply<T, E1, E2> >{
 public:
   LFieldMultiply(E1 const& u, E2 const& v) : _u(u), _v(v) { }
 
   KOKKOS_INLINE_FUNCTION
-  double operator()(size_t i) const { return _u(i) * _v(i); }
+  T operator()(size_t i) const { return _u(i) * _v(i); }
 
 private:
   E1 const _u;
@@ -123,23 +123,22 @@ private:
 
 
 
-
-template <typename E1, typename E2>
-LFieldMultiply<E1, E2>
-operator*(FieldExpr<E1> const& u, FieldExpr<E2> const& v) {
-  return LFieldMultiply<E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
+template <typename T, typename E1, typename E2>
+LFieldMultiply<T, E1, E2>
+operator*(FieldExpr<T, E1> const& u, FieldExpr<T, E2> const& v) {
+  return LFieldMultiply<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
 
 }
 
 
 
-template <typename E1, typename E2>
-class LFieldDivide : public FieldExpr<LFieldDivide<E1, E2> >{
+template <typename T, typename E1, typename E2>
+class LFieldDivide : public FieldExpr<T, LFieldDivide<T, E1, E2> >{
 public:
   LFieldDivide(E1 const& u, E2 const& v) : _u(u), _v(v) { }
 
   KOKKOS_INLINE_FUNCTION
-  double operator()(size_t i) const { return _u(i) / _v(i); }
+  T operator()(size_t i) const { return _u(i) / _v(i); }
 
 private:
   E1 const _u;
@@ -147,10 +146,10 @@ private:
 };
 
 
-template <typename E1, typename E2>
-LFieldDivide<E1, E2>
-operator/(FieldExpr<E1> const& u, FieldExpr<E2> const& v) {
-  return LFieldDivide<E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
+template <typename T, typename E1, typename E2>
+LFieldDivide<T, E1, E2>
+operator/(FieldExpr<T, E1> const& u, FieldExpr<T, E2> const& v) {
+  return LFieldDivide<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
 
 }
 

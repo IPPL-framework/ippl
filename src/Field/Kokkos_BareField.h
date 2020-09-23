@@ -21,28 +21,48 @@
 
 // include files
 #include "Field/Kokkos_LField.h"
-#include "PETE/IpplExpressions.h"
+// #include "PETE/IpplExpressions.h"
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
 #include "Utility/Unique.h"
 #include "Utility/my_auto_ptr.h"
-#include "Utility/vmap.h"
 
 #include <iostream>
 #include <cstdlib>
+
+#include "Field/FieldExpr.h"
 
 // forward declarations
 class Index;
 template<unsigned Dim> class NDIndex;
 template<unsigned Dim> class FieldLayout;
-template<class T, unsigned Dim> class Kokkos_LField;
-template<class T, unsigned Dim> class Kokkos_BareField;
-template<class T, unsigned Dim>
-std::ostream& operator<<(std::ostream&, const Kokkos_BareField<T,Dim>&);
+// template<class T, unsigned Dim> class Kokkos_LField;
+// template<class T, unsigned Dim> class Kokkos_BareField;
+// template<class T, unsigned Dim>
+// std::ostream& operator<<(std::ostream&, const Kokkos_BareField<T,Dim>&);
+
+
+template <typename E>
+class BareFieldExpr {
+
+public:
+    typedef Kokkos_LField<double,1> LField_t;
+
+//     const LField_t& operator()(size_t i) const {
+//         return static_cast<const E&>(*this)(i);
+//     }
+
+    LField_t operator()(size_t i) const {
+        return static_cast<const E&>(*this)(i);
+    }
+
+};
+
+
 
 // class definition
 template<class T,  unsigned Dim>
-class Kokkos_BareField : public PETE_Expr< Kokkos_BareField<T,Dim> >
+class Kokkos_BareField : public BareFieldExpr< Kokkos_BareField<T, Dim> > //: public PETE_Expr< Kokkos_BareField<T,Dim> >
 {
 
 public: 
@@ -70,19 +90,24 @@ public:
   // a FieldLayout.
   void initialize(Layout_t &);
 
-  // Some typedefs to make access to the maps a bit simpler.
-  typedef vmap< typename Unique::type, my_auto_ptr< LField_t > >
-    ac_id_larray;
-  typedef typename ac_id_larray::iterator iterator_if;
-  typedef typename ac_id_larray::const_iterator const_iterator_if;
-//   typedef typename LField_t::iterator LFI;
+  typedef std::deque<LField_t> container_t;
+//   typedef typename container_t::iterator iterator;
+//   typedef typename container_t::const_iterator const_iterator;
 
-  // Let the user iterate over the larrays.
-  iterator_if begin_if() { return Locals_ac.begin(); }
-  iterator_if end_if()   { return Locals_ac.end(); }
-  const_iterator_if begin_if() const { return Locals_ac.begin(); }
-  const_iterator_if end_if()   const { return Locals_ac.end(); }
-  typename ac_id_larray::size_type size_if() const { return Locals_ac.size(); }
+//   iterator begin() { return lfields_m.begin(); }
+//   iterator end() { return lfields_m.end(); }
+
+//   const_iterator begin() const { return lfields_m.begin(); }
+//   const_iterator end() const { return lfields_m.end(); }
+
+  LField_t& operator()(size_t i) {
+      return lfields_m[i];
+  }
+
+  const LField_t& operator()(size_t i) const {
+      return lfields_m[i];
+  }
+
 
   // Access to the layout.
   Layout_t &getLayout() const
@@ -98,10 +123,9 @@ public:
   // Assignment from a constant.
   Kokkos_BareField<T,Dim>& operator=(T x)
   {
-      for (iterator_if it = begin_if();
-           it != end_if(); ++it) {
-          *it->second = x;
-        }
+      for (auto& lf : lfields_m) {
+          lf = x;
+      }
 //     assign(*this,x);
     return *this;
   }
@@ -110,32 +134,44 @@ public:
   Kokkos_BareField<T,Dim>&
   operator=(const Kokkos_BareField<T,Dim>& rhs)
   {
-      const_iterator_if rit = rhs.begin_if();
-      for (iterator_if it = begin_if();
-         it != end_if(); ++it) {
-        *it->second = *rit->second;
-      ++rit;
-    }
+      for (size_t i = 0; i < lfields_m.size(); ++i) {
+          lfields_m[i] = rhs(i);
+      }
 //     assign(*this,x);
     return *this;
   }
 
-  template<class X>
-  const Kokkos_BareField<T,Dim>&
-  operator=(const Kokkos_BareField<X,Dim>& x)
-  {
-    assign(*this,x);
-    return *this;
+
+  template <typename E>//,
+    inline Kokkos_BareField<T,Dim>& operator=(BareFieldExpr<E> const& expr) {
+        for (size_t i = 0; i < lfields_m.size(); ++i) {
+          lfields_m[i] = expr(i);
+        }
+//         const_iterator eit = expr.begin();
+//         for (iterator it = begin();
+//             it != end(); ++it) {
+//             *it = *eit;
+//             ++eit;
+//         }
+        return *this;
   }
 
-  // If we have member templates available, assign a generic expression.
-  template<class B>
-  const Kokkos_BareField<T,Dim>&
-  operator=(const PETE_Expr<B>& x)
-  {
-    assign(*this,x);
-    return *this;
-  }
+//   template<class X>
+//   const Kokkos_BareField<T,Dim>&
+//   operator=(const Kokkos_BareField<X,Dim>& x)
+//   {
+//     assign(*this,x);
+//     return *this;
+//   }
+
+//   // If we have member templates available, assign a generic expression.
+//   template<class B>
+//   const Kokkos_BareField<T,Dim>&
+//   operator=(const PETE_Expr<B>& x)
+//   {
+//     assign(*this,x);
+//     return *this;
+//   }
 
   void write(std::ostream& = std::cout);
 
@@ -148,8 +184,7 @@ public:
 //   iterator MakeExpression() const { return begin(); }
 
 protected:
-  // The container of local arrays.
-  ac_id_larray Locals_ac;
+    container_t lfields_m;
 
 private:
   // Setup allocates all the LFields.  The various ctors call this.

@@ -1,7 +1,6 @@
 #include "Ippl.h"
 
 #include <iostream>
-#include <typeinfo>
 
 int main(int argc, char *argv[]) {
     Ippl ippl(argc,argv);
@@ -70,6 +69,28 @@ int main(int argc, char *argv[]) {
 
     klfield_1.write();
 
+
+    /*
+     *
+     *
+     */
+    typedef Vektor<double, 3> vec_t;
+    typedef Kokkos_LField<vec_t, dim> VectorField_t;
+    VectorField_t vfield(domain);
+    vfield.resize(4);
+
+    vfield = 1.0;
+
+    vfield.write();
+
+    VectorField_t vfield_2(domain);
+    vfield_2.resize(4);
+    vfield_2 = 2.0;
+
+
+    vfield = (vfield_2 + vfield_2 * vfield_2 * vfield_2) / vfield_2 - vfield;
+
+    vfield.write();
 
   return 0;
 }

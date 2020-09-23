@@ -40,5 +40,9 @@ int main(int argc, char *argv[]) {
 
     barefield.write();
 
+    barefield = barefield_2 + barefield_2;
+
+    barefield.write();
+
     return 0;
 }
