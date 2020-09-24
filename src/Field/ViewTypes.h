@@ -56,8 +56,8 @@ void write_(const typename ViewType<T, 1, Properties...>::view_type& view,
 {
     typename ViewType<T, 1, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
     Kokkos::deep_copy(hview, view);
-    for (std::size_t i = 0; i < view.extent(0); ++i) {
-        out << view(i) << " ";
+    for (std::size_t i = 0; i < hview.extent(0); ++i) {
+        out << hview(i) << " ";
     }
     out << std::endl;
 }
@@ -69,9 +69,9 @@ void write_(const typename ViewType<T, 2, Properties...>::view_type& view,
 {
     typename ViewType<T, 2, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
     Kokkos::deep_copy(hview, view);
-    for (std::size_t j = 0; j < view.extent(1); ++j) {
-        for (std::size_t i = 0; i < view.extent(0); ++i) {
-            out << view(i, j) << " ";
+    for (std::size_t j = 0; j < hview.extent(1); ++j) {
+        for (std::size_t i = 0; i < hview.extent(0); ++i) {
+            out << hview(i, j) << " ";
         }
         out << std::endl;
     }
@@ -83,10 +83,10 @@ void write_(const typename ViewType<T, 3, Properties...>::view_type& view,
 {
     typename ViewType<T, 3, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
     Kokkos::deep_copy(hview, view);
-    for (std::size_t k = 0; k < view.extent(2); ++k) {
-        for (std::size_t j = 0; j < view.extent(1); ++j) {
-            for (std::size_t i = 0; i < view.extent(0); ++i) {
-                out << view(i, j, k) << " ";
+    for (std::size_t k = 0; k < hview.extent(2); ++k) {
+        for (std::size_t j = 0; j < hview.extent(1); ++j) {
+            for (std::size_t i = 0; i < hview.extent(0); ++i) {
+                out << hview(i, j, k) << " ";
             }
             out << std::endl;
         }
