@@ -118,37 +118,37 @@ Kokkos_LField<T,Dim>& Kokkos_LField<T,Dim>::operator=(const Kokkos_LField<T,Dim>
     return *this;
 }
 
-// template <class T, unsigned Dim>
-// template<typename E,
-//           std::enable_if_t<
-//     //               // essentially equivalent to:
-//     //               //   requires std::derived_from<E, VecExpr<E>>
-//                 std::is_base_of_v<FieldExpr<T, E>, E>,
-//     //               // -------------------------------------------
-//                 int> = 0>
-// Kokkos_LField<T,Dim>& Kokkos_LField<T,Dim>::operator=(E const& expr) {
-//     if constexpr(Dim == 1) {
-//         Kokkos::parallel_for("Kokkos_LField<T,Dim>::operator=",
-//                              dview_m.extent(0), KOKKOS_LAMBDA(const int i) {
-//                                  dview_m(i) = expr(i);
-//                             });
-//     } else if constexpr(Dim == 2) {
-//         Kokkos::parallel_for("Kokkos_LField::operator=()",
-//                              Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
-//                                                                     {dview_m.extent(0), dview_m.extent(1)}),
-//                              KOKKOS_LAMBDA(const int i, const int j) {
-//                                  dview_m(i, j) = expr(i, j);
-//                             });
-//     } else if constexpr(Dim == 3) {
-//         Kokkos::parallel_for("Kokkos_LField::operator=()",
-//                              Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
-//                                                                     {dview_m.extent(0), dview_m.extent(1), dview_m.extent(2)}),
-//                              KOKKOS_LAMBDA(const int i, const int j, const int k) {
-//                                  dview_m(i, j, k) = expr(i, j, k);
-//                             });
-//     }
-//     return *this;
-// }
+template <class T, unsigned Dim>
+template <typename E,
+          std::enable_if_t<
+    //               // essentially equivalent to:
+    //               //   requires std::derived_from<E, VecExpr<E>>
+                std::is_base_of_v<FieldExpr<T, E>, E>,
+    //               // -------------------------------------------
+                int> >
+Kokkos_LField<T,Dim>& Kokkos_LField<T,Dim>::operator=(E const& expr) {
+    if constexpr(Dim == 1) {
+        Kokkos::parallel_for("Kokkos_LField<T,Dim>::operator=",
+                             dview_m.extent(0), KOKKOS_LAMBDA(const int i) {
+                                 dview_m(i) = expr(i);
+                            });
+    } else if constexpr(Dim == 2) {
+        Kokkos::parallel_for("Kokkos_LField::operator=()",
+                             Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
+                                                                    {dview_m.extent(0), dview_m.extent(1)}),
+                             KOKKOS_LAMBDA(const int i, const int j) {
+                                 dview_m(i, j) = expr(i, j);
+                            });
+    } else if constexpr(Dim == 3) {
+        Kokkos::parallel_for("Kokkos_LField::operator=()",
+                             Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+                                                                    {dview_m.extent(0), dview_m.extent(1), dview_m.extent(2)}),
+                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                                 dview_m(i, j, k) = expr(i, j, k);
+                            });
+    }
+    return *this;
+}
 
 
 template <typename T, typename E1, typename E2>
