@@ -41,10 +41,8 @@ Kokkos_LField<T,Dim>::Kokkos_LField(const Domain_t& owned, int vnode)
 
 template<class T, unsigned Dim>
 Kokkos_LField<T,Dim>::Kokkos_LField(const Kokkos_LField<T,Dim>& lf)
-    : vnode_m(lf.vnode_m)
-    , owned_m(lf.owned_m)
+    : Kokkos_LField(lf.owned_m, lf.vnode_m)
 {
-    Kokkos::resize(dview_m, lf.dview_m.size());
     Kokkos::deep_copy(dview_m, lf.dview_m);
 }
 
@@ -107,31 +105,66 @@ Kokkos_LField<T,Dim>& Kokkos_LField<T,Dim>::operator=(const Kokkos_LField<T,Dim>
                              Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
                                                                     {dview_m.extent(0), dview_m.extent(1)}),
                              KOKKOS_LAMBDA(const int i, const int j) {
-                                 dview_m(i) = rhs.dview_m(i);
+                                 dview_m(i, j) = rhs.dview_m(i, j);
                             });
     } else if constexpr(Dim == 3) {
         Kokkos::parallel_for("Kokkos_LField::operator=()",
                              Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
                                                                     {dview_m.extent(0), dview_m.extent(1), dview_m.extent(2)}),
                              KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                 dview_m(i) = rhs.dview_m(i);
+                                 dview_m(i, j, k) = rhs.dview_m(i, j, k);
                             });
     }
     return *this;
 }
 
+// template <class T, unsigned Dim>
+// template<typename E,
+//           std::enable_if_t<
+//     //               // essentially equivalent to:
+//     //               //   requires std::derived_from<E, VecExpr<E>>
+//                 std::is_base_of_v<FieldExpr<T, E>, E>,
+//     //               // -------------------------------------------
+//                 int> = 0>
+// Kokkos_LField<T,Dim>& Kokkos_LField<T,Dim>::operator=(E const& expr) {
+//     if constexpr(Dim == 1) {
+//         Kokkos::parallel_for("Kokkos_LField<T,Dim>::operator=",
+//                              dview_m.extent(0), KOKKOS_LAMBDA(const int i) {
+//                                  dview_m(i) = expr(i);
+//                             });
+//     } else if constexpr(Dim == 2) {
+//         Kokkos::parallel_for("Kokkos_LField::operator=()",
+//                              Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
+//                                                                     {dview_m.extent(0), dview_m.extent(1)}),
+//                              KOKKOS_LAMBDA(const int i, const int j) {
+//                                  dview_m(i, j) = expr(i, j);
+//                             });
+//     } else if constexpr(Dim == 3) {
+//         Kokkos::parallel_for("Kokkos_LField::operator=()",
+//                              Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+//                                                                     {dview_m.extent(0), dview_m.extent(1), dview_m.extent(2)}),
+//                              KOKKOS_LAMBDA(const int i, const int j, const int k) {
+//                                  dview_m(i, j, k) = expr(i, j, k);
+//                             });
+//     }
+//     return *this;
+// }
+
 
 template <typename T, typename E1, typename E2>
 class LFieldAdd : public FieldExpr<T, LFieldAdd<T, E1, E2> >{
 public:
-  LFieldAdd(E1 const& u, E2 const& v) : _u(u), _v(v) { }
+    LFieldAdd(E1 const& u, E2 const& v) : _u(u), _v(v) { }
 
-  KOKKOS_INLINE_FUNCTION
-  T operator()(size_t i) const { return _u(i) + _v(i); }
+    template<typename ...Args>
+    KOKKOS_INLINE_FUNCTION
+    T operator()(Args... args) const {
+        return _u(args...) + _v(args...);
+    }
 
 private:
-  E1 const _u;
-  E2 const _v;
+    E1 const _u;
+    E2 const _v;
 };
 
 
@@ -151,14 +184,17 @@ operator+(FieldExpr<T, E1> const& u, FieldExpr<T, E2> const& v) {
 template <typename T, typename E1, typename E2>
 class LFieldSubtract : public FieldExpr<T, LFieldSubtract<T, E1, E2> >{
 public:
-  LFieldSubtract(E1 const& u, E2 const& v) : _u(u), _v(v) { }
+    LFieldSubtract(E1 const& u, E2 const& v) : _u(u), _v(v) { }
 
-  KOKKOS_INLINE_FUNCTION
-  T operator()(size_t i) const { return _u(i) - _v(i); }
+    template<typename ...Args>
+    KOKKOS_INLINE_FUNCTION
+    T operator()(Args... args) const {
+        return _u(args...) - _v(args...);
+    }
 
 private:
-  E1 const _u;
-  E2 const _v;
+    E1 const _u;
+    E2 const _v;
 };
 
 
@@ -173,14 +209,17 @@ operator-(FieldExpr<T, E1> const& u, FieldExpr<T, E2> const& v) {
 template <typename T, typename E1, typename E2>
 class LFieldMultiply : public FieldExpr<T, LFieldMultiply<T, E1, E2> >{
 public:
-  LFieldMultiply(E1 const& u, E2 const& v) : _u(u), _v(v) { }
+    LFieldMultiply(E1 const& u, E2 const& v) : _u(u), _v(v) { }
 
-  KOKKOS_INLINE_FUNCTION
-  T operator()(size_t i) const { return _u(i) * _v(i); }
+    template<typename ...Args>
+    KOKKOS_INLINE_FUNCTION
+    T operator()(Args... args) const {
+        return _u(args...) * _v(args...);
+    }
 
 private:
-  E1 const _u;
-  E2 const _v;
+    E1 const _u;
+    E2 const _v;
 };
 
 
@@ -195,14 +234,17 @@ operator*(FieldExpr<T, E1> const& u, FieldExpr<T, E2> const& v) {
 template <typename T, typename E1, typename E2>
 class LFieldDivide : public FieldExpr<T, LFieldDivide<T, E1, E2> >{
 public:
-  LFieldDivide(E1 const& u, E2 const& v) : _u(u), _v(v) { }
+    LFieldDivide(E1 const& u, E2 const& v) : _u(u), _v(v) { }
 
-  KOKKOS_INLINE_FUNCTION
-  T operator()(size_t i) const { return _u(i) / _v(i); }
+    template<typename ...Args>
+    KOKKOS_INLINE_FUNCTION
+    T operator()(Args... args) const {
+        return _u(args...) / _v(args...);
+    }
 
 private:
-  E1 const _u;
-  E2 const _v;
+    E1 const _u;
+    E2 const _v;
 };
 
 

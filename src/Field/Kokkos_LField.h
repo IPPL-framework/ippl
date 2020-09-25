@@ -76,14 +76,16 @@ public:
 
     Kokkos_LField<T,Dim>& operator=(const Kokkos_LField<T,Dim>& rhs);
 
+    template<typename ...Args>
     KOKKOS_INLINE_FUNCTION
-    T& operator() (size_t i) {
-        return dview_m(i);
+    T& operator() (Args... args) {
+        return dview_m(args...);
     }
 
+    template<typename ...Args>
     KOKKOS_INLINE_FUNCTION
-    const T& operator() (size_t i) const {
-        return dview_m(i);
+    const T& operator() (Args... args) const {
+        return dview_m(args...);
     }
 
     template <typename E,
@@ -93,13 +95,29 @@ public:
                 std::is_base_of_v<FieldExpr<T, E>, E>,
     //               // -------------------------------------------
                 int> = 0>
-    inline Kokkos_LField<T,Dim>& operator=(E const& expr) {
+    Kokkos_LField<T,Dim>& operator=(E const& expr) {
+    if constexpr(Dim == 1) {
         Kokkos::parallel_for("Kokkos_LField<T,Dim>::operator=",
-                                dview_m.extent(0), KOKKOS_LAMBDA(const int i) {
-                                    dview_m(i) = expr(i);
+                             dview_m.extent(0), KOKKOS_LAMBDA(const int i) {
+                                 dview_m(i) = expr(i);
                             });
-        return *this;
+    } else if constexpr(Dim == 2) {
+        Kokkos::parallel_for("Kokkos_LField::operator=()",
+                             Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
+                                                                    {dview_m.extent(0), dview_m.extent(1)}),
+                             KOKKOS_LAMBDA(const int i, const int j) {
+                                 dview_m(i, j) = expr(i, j);
+                            });
+    } else if constexpr(Dim == 3) {
+        Kokkos::parallel_for("Kokkos_LField::operator=()",
+                             Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+                                                                    {dview_m.extent(0), dview_m.extent(1), dview_m.extent(2)}),
+                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                                 dview_m(i, j, k) = expr(i, j, k);
+                            });
     }
+    return *this;
+}
 
 private:
     // Global vnode ID number for the associated Vnode (useful with more recent
