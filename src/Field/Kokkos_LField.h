@@ -25,7 +25,7 @@
 #include "Field/FieldExpr.h"
 
 #include <iostream>
-
+#include <cinttypes>
 
 #include "Index/NDIndex.h"
 
@@ -35,8 +35,11 @@ class Kokkos_LField : public FieldExpr<T, Kokkos_LField<T, Dim> >
 {
 
 public:
+    typedef std::int64_t int64_t;
     // The type of domain stored here
     typedef NDIndex<Dim> Domain_t;
+
+//     static constexpr int64_t dim = Dim;
 
     typedef typename ViewType<T, Dim>::view_type view_type;
 
@@ -69,27 +72,9 @@ public:
     // print an Kokkos_LField out
     void write(std::ostream& out = std::cout) const;
 
+    Kokkos_LField<T,Dim>& operator=(T x);
 
-    Kokkos_LField<T,Dim>& operator=(T x)
-    {
-        Kokkos::parallel_for("Kokkos_LField::operator=()",
-                            dview_m.extent(0), KOKKOS_LAMBDA(const int i) {
-                                dview_m(i) = x;
-                        });
-        Kokkos::fence();
-        return *this;
-    }
-
-
-    Kokkos_LField<T,Dim>& operator=(const Kokkos_LField<T,Dim>& rhs)
-    {
-        Kokkos::parallel_for("Kokkos_LField::operator=()",
-                            dview_m.extent(0), KOKKOS_LAMBDA(const int i) {
-                                dview_m(i) = rhs.dview_m(i);
-                        });
-        Kokkos::fence();
-        return *this;
-    }
+    Kokkos_LField<T,Dim>& operator=(const Kokkos_LField<T,Dim>& rhs);
 
     KOKKOS_INLINE_FUNCTION
     T& operator() (size_t i) {
@@ -116,10 +101,6 @@ public:
         return *this;
     }
 
-public:
-    // actual field data
-    view_type dview_m;
-
 private:
     // Global vnode ID number for the associated Vnode (useful with more recent
     // FieldLayouts which store a logical "array" of vnodes; user specifies
@@ -130,8 +111,10 @@ private:
 
     int vnode_m;
 
-    // What domain in the data is owned by this Kokkos_LField.
+    // actual field data
+    view_type dview_m;
 
+    // What domain in the data is owned by this Kokkos_LField.
     Domain_t   owned_m;
 
     Kokkos_LField() = delete;
