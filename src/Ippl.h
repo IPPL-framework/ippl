@@ -12,7 +12,7 @@
 #ifndef IPPL_H
 #define IPPL_H
 
-#include <complex>
+// #include <complex>
 
 // Kokkos
 #include "Field/Kokkos_LField.h"
@@ -24,14 +24,14 @@
 #include "Message/GlobalComm.h"
 
 // IPPL Utilities
-#include "Utility/Timer.h"
-#include "Utility/RandomNumberGen.h"
-#include "Utility/PAssert.h"
+// #include "Utility/Timer.h"
+// #include "Utility/RandomNumberGen.h"
+// #include "Utility/PAssert.h"
 #include "Utility/IpplInfo.h"
-#include "Utility/IpplCounter.h"
-#include "Utility/IpplStats.h"
-#include "Utility/IpplTimings.h"
-#include "Utility/IpplMemoryUsage.h"
+// #include "Utility/IpplCounter.h"
+// #include "Utility/IpplStats.h"
+// #include "Utility/IpplTimings.h"
+// #include "Utility/IpplMemoryUsage.h"
 
 // // IPPL Field Indexing
 // #include "Index/Index.h"
@@ -65,26 +65,26 @@
 // #include "Utility/DiscField.h"
 
 // IPPL Particles classes
-#include "Particle/IpplParticleBase.h"
-#include "Particle/PAssign.h"
-#include "Particle/PAssignDefs.h"
-#include "Particle/ParticleSpatialLayout.h"
-#include "Particle/ParticleUniformLayout.h"
-#include "Particle/ParticleInteractLayout.h"
-#include "Particle/ParticleCashedLayout.h"
-#include "Particle/ParticleBalancer.h"
-#include "Particle/GenArrayParticle.h"
-#include "Particle/GenParticle.h"
-#include "Particle/NoParticleCachingPolicy.h"
-#include "Particle/BoxParticleCachingPolicy.h"
-#include "Particle/CellParticleCachingPolicy.h"
-#include "Particle/PairBuilder/HashPairBuilder.h"
-#include "Particle/PairBuilder/HashPairBuilderPeriodic.h"
-#include "Particle/PairBuilder/PairConditions.h"
+// #include "Particle/IpplParticleBase.h"
+// #include "Particle/PAssign.h"
+// #include "Particle/PAssignDefs.h"
+// #include "Particle/ParticleSpatialLayout.h"
+// #include "Particle/ParticleUniformLayout.h"
+// #include "Particle/ParticleInteractLayout.h"
+// #include "Particle/ParticleCashedLayout.h"
+// #include "Particle/ParticleBalancer.h"
+// #include "Particle/GenArrayParticle.h"
+// #include "Particle/GenParticle.h"
+// #include "Particle/NoParticleCachingPolicy.h"
+// #include "Particle/BoxParticleCachingPolicy.h"
+// #include "Particle/CellParticleCachingPolicy.h"
+// #include "Particle/PairBuilder/HashPairBuilder.h"
+// #include "Particle/PairBuilder/HashPairBuilderPeriodic.h"
+// #include "Particle/PairBuilder/PairConditions.h"
 
 
-#include "Utility/DiscParticle.h"
-#include "Utility/ParticleDebug.h"
+// #include "Utility/DiscParticle.h"
+// #include "Utility/ParticleDebug.h"
 
 // // IPPL Field <--> Particle interpolators
 // #include "Particle/IntNGP.h"
@@ -103,8 +103,8 @@
 #include "AppTypes/AntiSymTenzor.h"
 
 // IPPL Data Connection classes
-#include "DataSource/DataConnectCreator.h"
-#include "DataSource/FileDataConnect.h"
+// #include "DataSource/DataConnectCreator.h"
+// #include "DataSource/FileDataConnect.h"
 
 // // IPPL FFTs
 // #include "FFT/FFT.h"
