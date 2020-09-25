@@ -26,8 +26,16 @@ Kokkos_LField<T,Dim>::Kokkos_LField(const Domain_t& owned, int vnode)
     : vnode_m(vnode)
     , owned_m(owned)
 {
-    //FIXME
-    this->resize(owned.size());
+    if constexpr(Dim == 1) {
+        this->resize(owned[0].length());
+    } else if constexpr(Dim == 2) {
+        this->resize(owned[0].length(),
+                     owned[1].length());
+    } else if constexpr(Dim == 3) {
+        this->resize(owned[0].length(),
+                     owned[1].length(),
+                     owned[2].length());
+    }
 }
 
 
