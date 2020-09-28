@@ -29,9 +29,10 @@
 
 #include "Index/NDIndex.h"
 
+
 // This stores the local data for a Field.
 template<class T, unsigned Dim>
-class Kokkos_LField : public FieldExpr<T, Kokkos_LField<T, Dim> >
+class Kokkos_LField : public FieldExpr<T, Kokkos_LField<T, Dim>, sizeof(typename ViewType<T, Dim>::view_type)>
 {
 
 public:
@@ -51,7 +52,7 @@ public:
     Kokkos_LField(const Domain_t& owned, int vnode = -1);
 
     // Copy constructor.
-    Kokkos_LField(const Kokkos_LField<T,Dim>&);
+    Kokkos_LField(const Kokkos_LField<T,Dim>&) = default;
 
     ~Kokkos_LField() {};
 
@@ -74,7 +75,7 @@ public:
 
     Kokkos_LField<T,Dim>& operator=(T x);
 
-    Kokkos_LField<T,Dim>& operator=(const Kokkos_LField<T,Dim>& rhs);
+    Kokkos_LField<T,Dim>& operator=(const Kokkos_LField<T,Dim>&) = default;
 
     template<typename ...Args>
     KOKKOS_INLINE_FUNCTION
@@ -88,14 +89,14 @@ public:
         return dview_m(args...);
     }
 
-    template <typename E,
+    template <typename E, size_t N>/*,
                 std::enable_if_t<
     //               // essentially equivalent to:
     //               //   requires std::derived_from<E, VecExpr<E>>
-                std::is_base_of_v<FieldExpr<T, E>, E>,
+                std::is_base_of_v<FieldExpr<T, E, N>, E>,
     //               // -------------------------------------------
-                int> = 0>
-    Kokkos_LField<T,Dim>& operator=(E const& expr);
+                int> = 0>*/
+    Kokkos_LField<T,Dim>& operator=(FieldExpr<T, E, N> const& expr);
 
 private:
     // Global vnode ID number for the associated Vnode (useful with more recent
