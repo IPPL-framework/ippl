@@ -34,13 +34,10 @@
 template<class T, unsigned Dim>
 class Kokkos_LField : public FieldExpr<T, Kokkos_LField<T, Dim>, sizeof(typename ViewType<T, Dim>::view_type)>
 {
-
 public:
     typedef std::int64_t int64_t;
     // The type of domain stored here
     typedef NDIndex<Dim> Domain_t;
-
-//     static constexpr int64_t dim = Dim;
 
     typedef typename ViewType<T, Dim>::view_type view_type;
 
@@ -79,13 +76,7 @@ public:
 
     template<typename ...Args>
     KOKKOS_INLINE_FUNCTION
-    T& operator() (Args... args) {
-        return dview_m(args...);
-    }
-
-    template<typename ...Args>
-    KOKKOS_INLINE_FUNCTION
-    const T& operator() (Args... args) const {
+    T operator() (Args... args) const {
         return dview_m(args...);
     }
 
