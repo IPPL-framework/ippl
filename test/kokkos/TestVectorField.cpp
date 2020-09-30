@@ -6,6 +6,7 @@
 template <typename E>
 class VectorExpr {
 public:
+    KOKKOS_INLINE_FUNCTION
     double operator[](size_t i) const {
         return static_cast<E const&>(*this)[i];
     }
@@ -28,7 +29,12 @@ public:
 
     KOKKOS_FUNCTION
     Vector(const std::initializer_list<T>& l) {
-        std::copy(l.begin(), l.end(), &data_m[0]);
+      int i = 0;
+      for(auto a : l) {
+	data_m[i] = a;
+	++i;
+      }
+      //  std::copy(l.begin(), l.end(), &data_m[0]);
     }
 
     KOKKOS_FUNCTION
@@ -61,17 +67,21 @@ private:
 
 template <typename E1, typename E2>
 class VecSum : public VectorExpr<VecSum<E1, E2> > {
-    E1 const& _u;
-    E2 const& _v;
+    E1 const _u;
+    E2 const _v;
 
 public:
+    KOKKOS_FUNCTION
     VecSum(E1 const& u, E2 const& v) : _u(u), _v(v) { }
+
+    KOKKOS_INLINE_FUNCTION
     double operator[](size_t i) const { return _u[i] + _v[i]; }
 };
 
 
 
 template <typename E1, typename E2>
+KOKKOS_FUNCTION
 VecSum<E1, E2>
 operator+(VectorExpr<E1> const& u, VectorExpr<E2> const& v) {
    return VecSum<E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
@@ -83,7 +93,8 @@ template<class T1, class T2> struct meta_cross {};
 template<class T1, class T2>
 struct meta_cross< Vector<T1, 3> , Vector<T2, 3> >
 {
-  inline static Vector<double, 3>
+  KOKKOS_INLINE_FUNCTION
+  static Vector<double, 3>
   apply(const Vector<T1, 3>& a, const Vector<T2, 3>& b) {
     Vector<double, 3> c;
     c[0] = a[1]*b[2] - a[2]*b[1];
@@ -95,7 +106,7 @@ struct meta_cross< Vector<T1, 3> , Vector<T2, 3> >
 
 
 template < class T1, class T2, unsigned D >
-inline Vector<T1,D>
+KOKKOS_INLINE_FUNCTION Vector<T1,D>
 cross(const Vector<T1,D> &lhs, const Vector<T2,D> &rhs)
 {
   return meta_cross< Vector<T1,D> , Vector<T2,D> > :: apply(lhs,rhs);
