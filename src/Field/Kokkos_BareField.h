@@ -46,13 +46,7 @@ template <typename E>
 class BareFieldExpr {
 
 public:
-    typedef Kokkos_LField<double,1> LField_t;
-
-//     const LField_t& operator()(size_t i) const {
-//         return static_cast<const E&>(*this)(i);
-//     }
-
-    LField_t operator()(size_t i) const {
+  auto operator()(size_t i) const {
         return static_cast<const E&>(*this)(i);
     }
 
@@ -126,7 +120,6 @@ public:
       for (auto& lf : lfields_m) {
           lf = x;
       }
-//     assign(*this,x);
     return *this;
   }
 
@@ -137,7 +130,6 @@ public:
       for (size_t i = 0; i < lfields_m.size(); ++i) {
           lfields_m[i] = rhs(i);
       }
-//     assign(*this,x);
     return *this;
   }
 
@@ -147,12 +139,6 @@ public:
         for (size_t i = 0; i < lfields_m.size(); ++i) {
           lfields_m[i] = expr(i);
         }
-//         const_iterator eit = expr.begin();
-//         for (iterator it = begin();
-//             it != end(); ++it) {
-//             *it = *eit;
-//             ++eit;
-//         }
         return *this;
   }
 

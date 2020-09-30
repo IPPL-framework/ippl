@@ -72,15 +72,14 @@ Kokkos_BareField<T,Dim>::setup()
        v_i != getLayout().end_iv();
        ++v_i)
     {
-      // Get the owned and guarded sizes.
+      // Get the owned.
       const NDIndex<Dim> &owned = (*v_i).second->getDomain();
-      NDIndex<Dim> guarded; // = AddGuardCells( owned , Gc );
 
       // Get the global vnode number (ID number, value from 0 to nvnodes-1):
       int vnode = (*v_i).second->getVnode();
 
       // Put it in the list.
-      lfields_m.push_back(LField_t(owned, guarded, vnode));
+      lfields_m.push_back(LField_t(owned, vnode));
     }
 }
 
@@ -102,27 +101,87 @@ Kokkos_BareField<T,Dim>::write(std::ostream& out)
 
 
 
-
-
 template <typename E1, typename E2>
 class BareFieldSum: public BareFieldExpr<BareFieldSum<E1, E2> >{
 
 public:
   BareFieldSum(E1 const& u, E2 const& v) : _u(u), _v(v) { }
 
-  typedef Kokkos_LField<double,1> LField_t;
-
-  LField_t operator()(size_t i) const { return _u(i) + _v(i); }
+  auto operator()(size_t i) const { return _u(i) + _v(i); }
 
 private:
-  E1 const _u;
-  E2 const _v;
+  E1 const& _u;
+  E2 const& _v;
 };
 
 template <typename E1, typename E2>
 BareFieldSum<E1, E2>
 operator+(BareFieldExpr<E1> const& u, BareFieldExpr<E2> const& v) {
   return BareFieldSum<E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
+
+}
+
+
+
+template <typename E1, typename E2>
+class BareFieldSubtract: public BareFieldExpr<BareFieldSubtract<E1, E2> >{
+
+public:
+  BareFieldSubtract(E1 const& u, E2 const& v) : _u(u), _v(v) { }
+
+  auto operator()(size_t i) const { return _u(i) - _v(i); }
+
+private:
+  E1 const& _u;
+  E2 const& _v;
+};
+
+template <typename E1, typename E2>
+BareFieldSubtract<E1, E2>
+operator-(BareFieldExpr<E1> const& u, BareFieldExpr<E2> const& v) {
+  return BareFieldSubtract<E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
+
+}
+
+
+template <typename E1, typename E2>
+class BareFieldMultiply: public BareFieldExpr<BareFieldMultiply<E1, E2> >{
+
+public:
+  BareFieldMultiply(E1 const& u, E2 const& v) : _u(u), _v(v) { }
+
+  auto operator()(size_t i) const { return _u(i) * _v(i); }
+
+private:
+  E1 const& _u;
+  E2 const& _v;
+};
+
+template <typename E1, typename E2>
+BareFieldMultiply<E1, E2>
+operator*(BareFieldExpr<E1> const& u, BareFieldExpr<E2> const& v) {
+  return BareFieldMultiply<E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
+
+}
+
+
+template <typename E1, typename E2>
+class BareFieldDivide: public BareFieldExpr<BareFieldDivide<E1, E2> >{
+
+public:
+  BareFieldDivide(E1 const& u, E2 const& v) : _u(u), _v(v) { }
+
+  auto operator()(size_t i) const { return _u(i) / _v(i); }
+
+private:
+  E1 const& _u;
+  E2 const& _v;
+};
+
+template <typename E1, typename E2>
+BareFieldDivide<E1, E2>
+operator/(BareFieldExpr<E1> const& u, BareFieldExpr<E2> const& v) {
+  return BareFieldDivide<E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
 
 }
 

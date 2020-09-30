@@ -7,12 +7,10 @@ int main(int argc, char *argv[]) {
 
     Ippl ippl(argc,argv);
 
-    constexpr unsigned int dim = 1;
+    constexpr unsigned int dim = 3;
 
-    Index I(16);
-    NDIndex<dim> owned(I);
-    NDIndex<dim> allocated(I);
-
+    Index I(10);
+    NDIndex<dim> owned(I, I, I);
 
 
     e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
@@ -25,22 +23,11 @@ int main(int argc, char *argv[]) {
     typedef Kokkos_BareField<double, dim> bfield_t;
     bfield_t barefield(layout);
 
-    barefield.write();
-
     barefield = 1.0;
 
     barefield.write();
 
-    //
-    bfield_t barefield_2(layout);
-
-    barefield_2 = 2.0;
-
-    barefield = barefield_2;
-
-    barefield.write();
-
-    barefield = barefield_2 + barefield_2;
+    barefield = ((barefield + barefield) * (barefield + barefield)) / (barefield + barefield + barefield) - barefield;
 
     barefield.write();
 
