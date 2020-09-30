@@ -143,8 +143,7 @@ private:
 template <typename T, typename E1, typename E2, size_t N1, size_t N2>
 LFieldAdd<T, E1, E2>
 operator+(FieldExpr<T, E1, N1> const& u, FieldExpr<T, E2, N2> const& v) {
-  return LFieldAdd<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
-
+    return LFieldAdd<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
 }
 
 
@@ -168,8 +167,7 @@ private:
 template <typename T, typename E1, typename E2, size_t N1, size_t N2>
 LFieldSubtract<T, E1, E2>
 operator-(FieldExpr<T, E1, N1> const& u, FieldExpr<T, E2, N2> const& v) {
-  return LFieldSubtract<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
-
+    return LFieldSubtract<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
 }
 
 
@@ -193,8 +191,7 @@ private:
 template <typename T, typename E1, typename E2, size_t N1, size_t N2>
 LFieldMultiply<T, E1, E2>
 operator*(FieldExpr<T, E1, N1> const& u, FieldExpr<T, E2, N2> const& v) {
-  return LFieldMultiply<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
-
+    return LFieldMultiply<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
 }
 
 
@@ -218,8 +215,7 @@ private:
 template <typename T, typename E1, typename E2, size_t N1, size_t N2>
 LFieldDivide<T, E1, E2>
 operator/(FieldExpr<T, E1, N1> const& u, FieldExpr<T, E2, N2> const& v) {
-  return LFieldDivide<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
-
+    return LFieldDivide<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
 }
 
 
@@ -248,8 +244,7 @@ private:
 template <typename T, typename E1, size_t N1>
 LFieldAddScalarRight<T, E1>
 operator+(FieldExpr<T, E1, N1> const& u, T const& v) {
-  return LFieldAddScalarRight<T, E1>(*static_cast<const E1*>(&u), *static_cast<const T*>(&v));
-
+    return LFieldAddScalarRight<T, E1>(*static_cast<const E1*>(&u), *static_cast<const T*>(&v));
 }
 
 template <typename T, typename E1>
@@ -272,6 +267,5 @@ private:
 template <typename T, typename E1, size_t N1>
 LFieldAddScalarLeft<T, E1>
 operator+(T const& u, FieldExpr<T, E1, N1> const& v) {
-  return LFieldAddScalarLeft<T, E1>(*static_cast<const T*>(&u), *static_cast<const E1*>(&v));
-
+    return LFieldAddScalarLeft<T, E1>(*static_cast<const T*>(&u), *static_cast<const E1*>(&v));
 }
