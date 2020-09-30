@@ -29,12 +29,11 @@ public:
 
     KOKKOS_FUNCTION
     Vector(const std::initializer_list<T>& l) {
-      int i = 0;
-      for(auto a : l) {
-	data_m[i] = a;
-	++i;
-      }
-      //  std::copy(l.begin(), l.end(), &data_m[0]);
+        int i = 0;
+        for(auto a : l) {
+            data_m[i] = a;
+            ++i;
+        }
     }
 
     KOKKOS_FUNCTION
@@ -93,23 +92,23 @@ template<class T1, class T2> struct meta_cross {};
 template<class T1, class T2>
 struct meta_cross< Vector<T1, 3> , Vector<T2, 3> >
 {
-  KOKKOS_INLINE_FUNCTION
-  static Vector<double, 3>
-  apply(const Vector<T1, 3>& a, const Vector<T2, 3>& b) {
-    Vector<double, 3> c;
-    c[0] = a[1]*b[2] - a[2]*b[1];
-    c[1] = a[2]*b[0] - a[0]*b[2];
-    c[2] = a[0]*b[1] - a[1]*b[0];
-    return c;
-  }
-};
+    KOKKOS_INLINE_FUNCTION
+    static Vector<double, 3>
+    apply(const Vector<T1, 3>& a, const Vector<T2, 3>& b) {
+        Vector<double, 3> c;
+        c[0] = a[1]*b[2] - a[2]*b[1];
+        c[1] = a[2]*b[0] - a[0]*b[2];
+        c[2] = a[0]*b[1] - a[1]*b[0];
+        return c;
+    }
+    };
 
 
 template < class T1, class T2, unsigned D >
 KOKKOS_INLINE_FUNCTION Vector<T1,D>
 cross(const Vector<T1,D> &lhs, const Vector<T2,D> &rhs)
 {
-  return meta_cross< Vector<T1,D> , Vector<T2,D> > :: apply(lhs,rhs);
+    return meta_cross< Vector<T1,D> , Vector<T2,D> > :: apply(lhs,rhs);
 }
 
 
