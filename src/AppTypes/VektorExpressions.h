@@ -131,7 +131,7 @@ namespace ippl {
      */
 
     template<typename T, typename E1, typename E2>
-    struct VektorDivide : public VektorExpr<T, VektorSubtract<T, E1, E2>> {
+    struct VektorDivide : public VektorExpr<T, VektorDivide<T, E1, E2>> {
         typedef T value_t;
 
         KOKKOS_FUNCTION
