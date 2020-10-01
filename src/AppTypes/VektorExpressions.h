@@ -4,10 +4,8 @@
 namespace ippl {
     template<typename T, typename E>
     struct VektorExpr {
-	typedef T value_t;
-
         KOKKOS_INLINE_FUNCTION
-        value_t operator[](size_t i) const {
+        T operator[](size_t i) const {
             return static_cast<const E&>(*this)[i];
         }
     };
@@ -19,31 +17,31 @@ namespace ippl {
 
     template<typename T, typename E1, typename E2>
     struct VektorAdd : public VektorExpr<T, VektorAdd<T, E1, E2>> {
-	KOKKOS_FUNCTION
-	VektorAdd(const E1& u, const E2& v) : u_m(u), v_m(v) { }
+        KOKKOS_FUNCTION
+        VektorAdd(const E1& u, const E2& v) : u_m(u), v_m(v) { }
 
-	KOKKOS_INLINE_FUNCTION
-	T operator[](size_t i) const { return u_m[i] + v_m[i]; }
+        KOKKOS_INLINE_FUNCTION
+        T operator[](size_t i) const { return u_m[i] + v_m[i]; }
 
     private:
-	const E1 u_m;
-	const E2 v_m;
+        const E1 u_m;
+        const E2 v_m;
     };
 
     template<typename T, typename E1, typename E2>
     KOKKOS_FUNCTION
     VektorAdd<T, E1, E2> operator+(const VektorExpr<T, E1>& u, const VektorExpr<T, E2>& v) {
-	return VektorAdd<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
+        return VektorAdd<T, E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
     }
 
     
     template<typename T, typename E>
     struct VektorAddScalarLeft : public VektorExpr<T, VektorAddScalarLeft<T, E>> {
         KOKKOS_FUNCTION
-	VektorAddScalarLeft(const T& u, const E& v) : u_m(u), v_m(v) { }
+        VektorAddScalarLeft(const T& u, const E& v) : u_m(u), v_m(v) { }
 
         KOKKOS_INLINE_FUNCTION
-	T operator[](size_t i) const { return u_m + v_m[i]; }
+        T operator[](size_t i) const { return u_m + v_m[i]; }
 
     private:
         const T u_m;
@@ -58,12 +56,12 @@ namespace ippl {
 
 
     template<typename T, typename E>
-	struct VektorAddScalarRight : public VektorExpr<T, VektorAddScalarRight<T, E>> {
+    struct VektorAddScalarRight : public VektorExpr<T, VektorAddScalarRight<T, E>> {
         KOKKOS_FUNCTION
-	VektorAddScalarRight(const E& u, const T& v) : u_m(u), v_m(v) { }
+        VektorAddScalarRight(const E& u, const T& v) : u_m(u), v_m(v) { }
 
         KOKKOS_INLINE_FUNCTION
-	T operator[](size_t i) const { return u_m[i] + v_m; }
+        T operator[](size_t i) const { return u_m[i] + v_m; }
 
     private:
         const E u_m;
@@ -82,13 +80,11 @@ namespace ippl {
         
     template<typename T, typename E1, typename E2>
     struct VektorSubtract : public VektorExpr<T, VektorSubtract<T, E1, E2>> {
-        typedef T value_t;
-
         KOKKOS_FUNCTION
-	VektorSubtract(const E1& u, const E2& v) : u_m(u), v_m(v) { }
+        VektorSubtract(const E1& u, const E2& v) : u_m(u), v_m(v) { }
 
         KOKKOS_INLINE_FUNCTION
-	value_t operator[](size_t i) const { return u_m[i] - v_m[i]; }
+        T operator[](size_t i) const { return u_m[i] - v_m[i]; }
 
     private:
         const E1 u_m;
@@ -107,13 +103,11 @@ namespace ippl {
 
     template<typename T, typename E1, typename E2>
     struct VektorMultiply : public VektorExpr<T, VektorMultiply<T, E1, E2>> {
-        typedef T value_t;
-
         KOKKOS_FUNCTION
         VektorMultiply(const E1& u, const E2& v) : u_m(u), v_m(v) { }
 
         KOKKOS_INLINE_FUNCTION
-        value_t operator[](size_t i) const { return u_m[i] * v_m[i]; }
+        T operator[](size_t i) const { return u_m[i] * v_m[i]; }
 
     private:
         const E1 u_m;
@@ -132,13 +126,11 @@ namespace ippl {
 
     template<typename T, typename E1, typename E2>
     struct VektorDivide : public VektorExpr<T, VektorDivide<T, E1, E2>> {
-        typedef T value_t;
-
         KOKKOS_FUNCTION
         VektorDivide(const E1& u, const E2& v) : u_m(u), v_m(v) { }
 
         KOKKOS_INLINE_FUNCTION
-        value_t operator[](size_t i) const { return u_m[i] / v_m[i]; }
+        T operator[](size_t i) const { return u_m[i] / v_m[i]; }
 
     private:
         const E1 u_m;
