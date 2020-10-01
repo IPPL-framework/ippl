@@ -32,7 +32,6 @@ namespace ippl {
                               *static_cast<const E2*>(&v));             \
     }
 
-
     DefineVektorVektorOperation(VektorAdd,      operator+, u_m[i] + v_m[i])
     DefineVektorVektorOperation(VektorSubtract, operator-, u_m[i] - v_m[i])
     DefineVektorVektorOperation(VektorMultiply, operator*, u_m[i] * v_m[i])
@@ -61,9 +60,10 @@ namespace ippl {
                          *static_cast<const E*>(&v));                   \
     }
 
-
-    
-    DefineScalarVektorOperation(VektorAddScalarLeft, operator+, u_m + v_m[i])
+    DefineScalarVektorOperation(VektorAddScalarLeft,      operator+, u_m + v_m[i])
+    DefineScalarVektorOperation(VektorSubtractScalarLeft, operator-, u_m - v_m[i])
+    DefineScalarVektorOperation(VektorDivideScalarLeft,   operator*, u_m * v_m[i])
+    DefineScalarVektorOperation(VektorMultiplyScalarLeft, operator/, u_m / v_m[i])
 
 
     #define DefineVektorScalarOperation(fun, op, expr)                  \
@@ -88,7 +88,10 @@ namespace ippl {
                          v);                                            \
     }
 
-    DefineVektorScalarOperation(VektorAddScalarRight, operator+, u_m[i] + v_m)
+    DefineVektorScalarOperation(VektorAddScalarRight,      operator+, u_m[i] + v_m)
+    DefineVektorScalarOperation(VektorSubtractScalarRight, operator-, u_m[i] - v_m)
+    DefineVektorScalarOperation(VektorMultiplyScalarRight, operator*, u_m[i] * v_m)
+    DefineVektorScalarOperation(VektorDivideScalarRight,   operator/, u_m[i] / v_m)
 }
 
 #endif
