@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
          vector_field_type vvfield("vvfield", length);
          Kokkos::parallel_for("assign", length, KOKKOS_LAMBDA(const int i) {
-                 vvfield(i) = -1.0 + /*cross(vfield(i), wfield(i)) +*/wfield(i) + vfield(i) + 2.0;
+                 vvfield(i) = -1.0 + /*cross(vfield(i), wfield(i)) +*/wfield(i) / vfield(i) + 2.0;
          });
 
         Kokkos::fence();
