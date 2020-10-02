@@ -17,7 +17,8 @@ int main(int argc, char *argv[]) {
 
     lfield.write();
 
-    lfield = /*5.0 * */((lfield + lfield) * (lfield + lfield)) / (lfield + lfield + lfield) - lfield/* - 1.0*/;
+    lfield = vector_type(5.0) * ((lfield + lfield) * (lfield + lfield))
+           / (lfield + lfield + lfield) - lfield - vector_type(1.0);
 
     lfield.write();
 

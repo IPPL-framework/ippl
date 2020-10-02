@@ -21,6 +21,9 @@
 #include "AppTypes/VektorExpressions.h"
 
 namespace ippl {
+    /* Although the template argument T is not used, it is required
+     * in order to avoid operator ambiguity error.
+     */
     template <typename T, typename E, size_t N = sizeof(E)>
     struct FieldExpr {
         KOKKOS_INLINE_FUNCTION
@@ -30,6 +33,9 @@ namespace ippl {
     };
 
 
+    /* Although the template argument T is not used, it is required
+     * in order to avoid operator ambiguity error.
+     */
     template <typename T, typename E, size_t N = sizeof(E)>
     struct LFieldCaptureExpr {
         template<typename ...Args>
