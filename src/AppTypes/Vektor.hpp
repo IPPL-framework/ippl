@@ -1,5 +1,8 @@
 #include "Utility/PAssert.h"
 
+#include <iomanip>
+#include <iostream>
+
 namespace ippl {
 
     template<typename T, unsigned Dim>
@@ -117,6 +120,22 @@ namespace ippl {
             data_m[i] /= expr[i];
         }
         return *this;
+    }
+
+
+    template<typename T, unsigned Dim>
+    inline std::ostream& operator<<(std::ostream& out, const Vektor<T, Dim>& v) {
+    std::streamsize sw = out.width();
+        out << std::setw(1);
+        if (Dim >= 1) {
+            out << "( ";
+            for (unsigned int i = 0; i < Dim - 1; i++)
+            out << std::setw(sw) << v[i] << " , ";
+            out << std::setw(sw) << v[Dim - 1] << " )";
+        } else {
+            out << "( " << std::setw(sw) << v[0] << " )";
+        }
+        return out;
     }
 }
 
