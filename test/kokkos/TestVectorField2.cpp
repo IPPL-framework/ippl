@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
          vector_field_type vvfield("vvfield", length);
          Kokkos::parallel_for("assign", length, KOKKOS_LAMBDA(const int i) {
-                 vvfield(i) = -1.0 + /*cross(vfield(i), wfield(i)) +*/wfield(i) / vfield(i) + 2.0;
+                 vvfield(i) = 0.25 * wfield(i) * cross(vfield(i) * wfield(i), wfield(i)) + wfield(i) / vfield(i) + 2.0;
          });
 
         Kokkos::fence();
@@ -44,26 +44,26 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < length; ++i) {
             std::cout << host_view(i)[0] << " " << host_view(i)[1] << " " << host_view(i)[2] << std::endl;
         }
-//
-//
-//
-//         typedef Kokkos::View<double*> scalar_field_type;
-//         scalar_field_type sfield("sfield", length);
-//
-//
-//         Kokkos::parallel_for("assign", length, KOKKOS_LAMBDA(const int i) {
-//             sfield(i) = dot(wfield(i), wfield(i));
-//         });
-//
-//         Kokkos::fence();
-//
-//         scalar_field_type::HostMirror host_sview = Kokkos::create_mirror_view(sfield);
-//         Kokkos::deep_copy(host_sview, sfield);
-//
-//
-//         for (int i = 0; i < length; ++i) {
-//             std::cout << host_sview(i) << std::endl;
-//         }
+
+
+
+        typedef Kokkos::View<double*> scalar_field_type;
+        scalar_field_type sfield("sfield", length);
+
+
+        Kokkos::parallel_for("assign", length, KOKKOS_LAMBDA(const int i) {
+            sfield(i) = dot(wfield(i), wfield(i));
+        });
+
+        Kokkos::fence();
+
+        scalar_field_type::HostMirror host_sview = Kokkos::create_mirror_view(sfield);
+        Kokkos::deep_copy(host_sview, sfield);
+
+
+        for (int i = 0; i < length; ++i) {
+            std::cout << host_sview(i) << std::endl;
+        }
 
     }
     Kokkos::finalize();

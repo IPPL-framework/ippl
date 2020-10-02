@@ -20,7 +20,7 @@ class Vector : public VectorExpr<Vector<T, D>> {
 
 public:
     KOKKOS_FUNCTION
-    Vector() { std::cout << "A" << std::endl; }
+    Vector() { }
 
     KOKKOS_FUNCTION
     Vector(T val) {
@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
 
         vector_field_type vvfield("vvfield", length);
         Kokkos::parallel_for("assign", length, KOKKOS_LAMBDA(const int i) {
-            vvfield(i) = cross(vfield(i), wfield(i)) + vfield(i);
+            vvfield(i) = cross(vfield(i), wfield(i)) + wfield(i);
         });
 
         Kokkos::fence();

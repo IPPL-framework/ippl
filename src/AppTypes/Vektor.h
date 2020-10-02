@@ -22,21 +22,10 @@ namespace ippl {
         Vektor(const Vektor<T, Dim>&) = default;
 
         KOKKOS_FUNCTION
-        Vektor(const T& val) {
-            for (unsigned i = 0; i < Dim; ++i) {
-                data_m[i] = val;
-            }
-        }
+        Vektor(const T& val);
 
         KOKKOS_FUNCTION
-        Vektor(const std::initializer_list<T>& list) {
-            PAssert(list.size() == Dim);
-            unsigned int i = 0;
-            for (auto& l : list) {
-                data_m[i] = l;
-                ++i;
-            }
-        }
+        Vektor(const std::initializer_list<T>& list);
 
         KOKKOS_FUNCTION
         ~Vektor() { }
