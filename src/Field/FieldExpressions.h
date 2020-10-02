@@ -18,11 +18,13 @@
 #ifndef IPPL_FIELD_EXPRESSIONS_H
 #define IPPL_FIELD_EXPRESSIONS_H
 
+#include "AppTypes/VektorExpressions.h"
+
 namespace ippl {
     template <typename T, typename E, size_t N = sizeof(E)>
     struct FieldExpr {
         KOKKOS_INLINE_FUNCTION
-        T operator()(size_t i) const {
+        auto operator()(size_t i) const {
             return static_cast<const E&>(*this)(i);
         }
     };
@@ -32,9 +34,10 @@ namespace ippl {
     struct LFieldCaptureExpr {
         template<typename ...Args>
         KOKKOS_INLINE_FUNCTION
-        T operator()(Args... args) const {
-        return reinterpret_cast<const E&>(*this)(args...);
+        auto operator()(Args... args) const {
+            return reinterpret_cast<const E&>(*this)(args...);
         }
+
         char buffer[N];
     };
 
@@ -46,7 +49,7 @@ namespace ippl {
                                                                                 \
         template<typename ...Args>                                              \
         KOKKOS_INLINE_FUNCTION                                                  \
-        T operator()(Args... args) const {                                      \
+        auto operator()(Args... args) const {                                   \
             return expr;                                                        \
         }                                                                       \
                                                                                 \
@@ -75,7 +78,7 @@ namespace ippl {
                                                                                 \
         template<typename ...Args>                                              \
         KOKKOS_INLINE_FUNCTION                                                  \
-        T operator()(Args... args) const {                                      \
+        auto operator()(Args... args) const {                                   \
             return expr;                                                        \
         }                                                                       \
                                                                                 \
@@ -104,7 +107,7 @@ namespace ippl {
                                                                                 \
         template<typename ...Args>                                              \
         KOKKOS_INLINE_FUNCTION                                                  \
-        T operator()(Args... args) const {                                      \
+        auto operator()(Args... args) const {                                   \
             return expr;                                                        \
         }                                                                       \
                                                                                 \
