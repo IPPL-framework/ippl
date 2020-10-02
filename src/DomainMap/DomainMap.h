@@ -380,7 +380,7 @@ public:
     public: 
 
         typedef std::forward_iterator_tag    iterator_category;
-        typedef typename DomainMap_t::value_type value_type;
+        typedef typename DomainMap_t::value_type value_t;
         typedef typename DomainMap_t::value_type *pointer;
         typedef typename DomainMap_t::value_type &reference;
         typedef ptrdiff_t               difference_type;
@@ -399,13 +399,13 @@ public:
             }
 
         // Get the current one.
-        value_type& operator*()
+        value_t& operator*()
             {
                 PAssert(p != 0);
                 return *v;
             }
 
-        value_type* operator->()
+        value_t* operator->()
             {
                 PAssert(p != 0);
                 return &(*v);
