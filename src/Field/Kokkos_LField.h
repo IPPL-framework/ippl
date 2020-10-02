@@ -22,91 +22,93 @@
 
 #include "Field/ViewTypes.h"
 
-#include "Field/FieldExpr.h"
+#include "Field/FieldExpressions.h"
 
 #include <iostream>
 #include <cinttypes>
 
 #include "Index/NDIndex.h"
 
+namespace ippl {
 
-// This stores the local data for a Field.
-template<class T, unsigned Dim>
-class Kokkos_LField : public FieldExpr<T, Kokkos_LField<T, Dim>, sizeof(typename ViewType<T, Dim>::view_type)>
-{
-public:
-    typedef std::int64_t int64_t;
-    // The type of domain stored here
-    typedef NDIndex<Dim> Domain_t;
+    // This stores the local data for a Field.
+    template<class T, unsigned Dim>
+    class Kokkos_LField : public FieldExpr<T, Kokkos_LField<T, Dim>, sizeof(typename ViewType<T, Dim>::view_type)>
+    {
+    public:
+        typedef std::int64_t int64_t;
+        // The type of domain stored here
+        typedef NDIndex<Dim> Domain_t;
 
-    typedef typename ViewType<T, Dim>::view_type view_type;
+        typedef typename ViewType<T, Dim>::view_type view_type;
 
 
-    /*! Ctor for an Kokkos_LField.  Arguments:
-    * @param owned domain of "owned" region of Kokkos_LField (without guards)
-    * @param vnode global vnode ID number
-    */
-    Kokkos_LField(const Domain_t& owned, int vnode = -1);
+        /*! Ctor for an Kokkos_LField.  Arguments:
+        * @param owned domain of "owned" region of Kokkos_LField (without guards)
+        * @param vnode global vnode ID number
+        */
+        Kokkos_LField(const Domain_t& owned, int vnode = -1);
 
-    // Copy constructor.
-    Kokkos_LField(const Kokkos_LField<T,Dim>&) = default;
+        // Copy constructor.
+        Kokkos_LField(const Kokkos_LField<T,Dim>&) = default;
 
-    ~Kokkos_LField() {};
+        ~Kokkos_LField() {};
 
-    template<typename ...Args>
-    void resize(Args... args);
+        template<typename ...Args>
+        void resize(Args... args);
 
-    //
-    // General information accessors
-    //
+        //
+        // General information accessors
+        //
 
-    // Return information about the Kokkos_LField.
-    int size(unsigned d) const { return owned_m[d].length(); }
-    const Domain_t& getOwned()       const { return owned_m; }
+        // Return information about the Kokkos_LField.
+        int size(unsigned d) const { return owned_m[d].length(); }
+        const Domain_t& getOwned()       const { return owned_m; }
 
-    // Return global vnode ID number (between 0 and nvnodes - 1)
-    int getVnode() const { return vnode_m; }
+        // Return global vnode ID number (between 0 and nvnodes - 1)
+        int getVnode() const { return vnode_m; }
 
-    // print an Kokkos_LField out
-    void write(std::ostream& out = std::cout) const;
+        // print an Kokkos_LField out
+        void write(std::ostream& out = std::cout) const;
 
-    Kokkos_LField<T,Dim>& operator=(T x);
+        Kokkos_LField<T,Dim>& operator=(T x);
 
-    Kokkos_LField<T,Dim>& operator=(const Kokkos_LField<T,Dim>&) = default;
+        Kokkos_LField<T,Dim>& operator=(const Kokkos_LField<T,Dim>&) = default;
 
-    template<typename ...Args>
-    KOKKOS_INLINE_FUNCTION
-    T operator() (Args... args) const {
-        return dview_m(args...);
-    }
+        template<typename ...Args>
+        KOKKOS_INLINE_FUNCTION
+        T operator() (Args... args) const {
+            return dview_m(args...);
+        }
 
-    template <typename E, size_t N>/*,
-                std::enable_if_t<
-    //               // essentially equivalent to:
-    //               //   requires std::derived_from<E, VecExpr<E>>
-                std::is_base_of_v<FieldExpr<T, E, N>, E>,
-    //               // -------------------------------------------
-                int> = 0>*/
-    Kokkos_LField<T,Dim>& operator=(FieldExpr<T, E, N> const& expr);
+        template <typename E, size_t N>/*,
+                    std::enable_if_t<
+        //               // essentially equivalent to:
+        //               //   requires std::derived_from<E, VecExpr<E>>
+                    std::is_base_of_v<FieldExpr<T, E, N>, E>,
+        //               // -------------------------------------------
+                    int> = 0>*/
+        Kokkos_LField<T,Dim>& operator=(FieldExpr<T, E, N> const& expr);
 
-private:
-    // Global vnode ID number for the associated Vnode (useful with more recent
-    // FieldLayouts which store a logical "array" of vnodes; user specifies
-    // numbers of vnodes along each direction). Classes or user codes that use
-    // Kokkos_LField are responsible for setting and managing the values of this index;
-    // if unset, it has the value -1. Generally, this parameter value is set on
-    // construction of the vnode:
+    private:
+        // Global vnode ID number for the associated Vnode (useful with more recent
+        // FieldLayouts which store a logical "array" of vnodes; user specifies
+        // numbers of vnodes along each direction). Classes or user codes that use
+        // Kokkos_LField are responsible for setting and managing the values of this index;
+        // if unset, it has the value -1. Generally, this parameter value is set on
+        // construction of the vnode:
 
-    int vnode_m;
+        int vnode_m;
 
-    // actual field data
-    view_type dview_m;
+        // actual field data
+        view_type dview_m;
 
-    // What domain in the data is owned by this Kokkos_LField.
-    Domain_t   owned_m;
+        // What domain in the data is owned by this Kokkos_LField.
+        Domain_t   owned_m;
 
-    Kokkos_LField() = delete;
-};
+        Kokkos_LField() = delete;
+    };
+}
 
 //////////////////////////////////////////////////////////////////////
 

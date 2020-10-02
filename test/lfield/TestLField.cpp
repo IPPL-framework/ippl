@@ -11,13 +11,13 @@ int main(int argc, char *argv[]) {
     Index K(10);
     NDIndex<3> domain(I, J, K);
 
-    Kokkos_LField<double, 3> lfield(domain);
+    ippl::Kokkos_LField<double, 3> lfield(domain);
 
     lfield = 1.0;
 
     lfield.write();
 
-    lfield = ((lfield + lfield) * (lfield + lfield)) / (lfield + lfield + lfield) - lfield;
+    lfield = 5.0 * ((lfield + lfield) * (lfield + lfield)) / (lfield + lfield + lfield) - lfield - 1.0;
 
     lfield.write();
 

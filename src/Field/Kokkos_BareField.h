@@ -30,7 +30,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "Field/FieldExpr.h"
+#include "Field/FieldExpressions.h"
 
 // forward declarations
 class Index;
@@ -52,181 +52,181 @@ public:
 
 };
 
+namespace ippl {
+
+    // class definition
+    template<class T,  unsigned Dim>
+    class Kokkos_BareField : public BareFieldExpr< Kokkos_BareField<T, Dim> > //: public PETE_Expr< Kokkos_BareField<T,Dim> >
+    {
+
+    public:
+    // Some externally visible typedefs and enums
+    typedef T T_t;
+    typedef FieldLayout<Dim> Layout_t;
+    typedef Kokkos_LField<T,Dim> LField_t;
+    enum { Dim_u = Dim };
+
+    public:
+    // A default constructor, which should be used only if the user calls the
+    // 'initialize' function before doing anything else.  There are no special
+    // checks in the rest of the Kokkos_BareField methods to check that the field has
+    // been properly initialized.
+    Kokkos_BareField();
+
+    // Create a new Kokkos_BareField with a given layout and optional guard cells.
+    Kokkos_BareField(Layout_t &);
+
+    // Destroy the Kokkos_BareField.
+    ~Kokkos_BareField();
+
+    // Initialize the field, if it was constructed from the default constructor.
+    // This should NOT be called if the field was constructed by providing
+    // a FieldLayout.
+    void initialize(Layout_t &);
+
+    typedef std::deque<LField_t> container_t;
+    //   typedef typename container_t::iterator iterator;
+    //   typedef typename container_t::const_iterator const_iterator;
+
+    //   iterator begin() { return lfields_m.begin(); }
+    //   iterator end() { return lfields_m.end(); }
+
+    //   const_iterator begin() const { return lfields_m.begin(); }
+    //   const_iterator end() const { return lfields_m.end(); }
+
+    LField_t& operator()(size_t i) {
+        return lfields_m[i];
+    }
+
+    const LField_t& operator()(size_t i) const {
+        return lfields_m[i];
+    }
 
 
-// class definition
-template<class T,  unsigned Dim>
-class Kokkos_BareField : public BareFieldExpr< Kokkos_BareField<T, Dim> > //: public PETE_Expr< Kokkos_BareField<T,Dim> >
-{
-
-public: 
-  // Some externally visible typedefs and enums
-  typedef T T_t;
-  typedef FieldLayout<Dim> Layout_t;
-  typedef Kokkos_LField<T,Dim> LField_t;
-  enum { Dim_u = Dim };
-
-public:
-  // A default constructor, which should be used only if the user calls the
-  // 'initialize' function before doing anything else.  There are no special
-  // checks in the rest of the Kokkos_BareField methods to check that the field has
-  // been properly initialized.
-  Kokkos_BareField();
-
-  // Create a new Kokkos_BareField with a given layout and optional guard cells.
-  Kokkos_BareField(Layout_t &);
-
-  // Destroy the Kokkos_BareField.
-  ~Kokkos_BareField();
-
-  // Initialize the field, if it was constructed from the default constructor.
-  // This should NOT be called if the field was constructed by providing
-  // a FieldLayout.
-  void initialize(Layout_t &);
-
-  typedef std::deque<LField_t> container_t;
-//   typedef typename container_t::iterator iterator;
-//   typedef typename container_t::const_iterator const_iterator;
-
-//   iterator begin() { return lfields_m.begin(); }
-//   iterator end() { return lfields_m.end(); }
-
-//   const_iterator begin() const { return lfields_m.begin(); }
-//   const_iterator end() const { return lfields_m.end(); }
-
-  LField_t& operator()(size_t i) {
-      return lfields_m[i];
-  }
-
-  const LField_t& operator()(size_t i) const {
-      return lfields_m[i];
-  }
+    // Access to the layout.
+    Layout_t &getLayout() const
+    {
+        PAssert(Layout != 0);
+        return *Layout;
+    }
 
 
-  // Access to the layout.
-  Layout_t &getLayout() const
-  {
-    PAssert(Layout != 0);
-    return *Layout;
-  }
+    const Index& getIndex(unsigned d) const {return getLayout().getDomain()[d];}
+    const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
 
-
-  const Index& getIndex(unsigned d) const {return getLayout().getDomain()[d];}
-  const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
-
-  // Assignment from a constant.
-  Kokkos_BareField<T,Dim>& operator=(T x)
-  {
-      for (auto& lf : lfields_m) {
-          lf = x;
-      }
-    return *this;
-  }
-
-  // Assign another array.
-  Kokkos_BareField<T,Dim>&
-  operator=(const Kokkos_BareField<T,Dim>& rhs)
-  {
-      for (size_t i = 0; i < lfields_m.size(); ++i) {
-          lfields_m[i] = rhs(i);
-      }
-    return *this;
-  }
-
-
-  template <typename E>//,
-    inline Kokkos_BareField<T,Dim>& operator=(BareFieldExpr<E> const& expr) {
-        for (size_t i = 0; i < lfields_m.size(); ++i) {
-          lfields_m[i] = expr(i);
+    // Assignment from a constant.
+    Kokkos_BareField<T,Dim>& operator=(T x)
+    {
+        for (auto& lf : lfields_m) {
+            lf = x;
         }
         return *this;
-  }
+    }
 
-//   template<class X>
-//   const Kokkos_BareField<T,Dim>&
-//   operator=(const Kokkos_BareField<X,Dim>& x)
-//   {
-//     assign(*this,x);
-//     return *this;
-//   }
+    // Assign another array.
+    Kokkos_BareField<T,Dim>&
+    operator=(const Kokkos_BareField<T,Dim>& rhs)
+    {
+        for (size_t i = 0; i < lfields_m.size(); ++i) {
+            lfields_m[i] = rhs(i);
+        }
+        return *this;
+    }
 
-//   // If we have member templates available, assign a generic expression.
-//   template<class B>
-//   const Kokkos_BareField<T,Dim>&
-//   operator=(const PETE_Expr<B>& x)
-//   {
-//     assign(*this,x);
-//     return *this;
-//   }
 
-  void write(std::ostream& = std::cout);
+    template <typename E>//,
+        inline Kokkos_BareField<T,Dim>& operator=(BareFieldExpr<E> const& expr) {
+            for (size_t i = 0; i < lfields_m.size(); ++i) {
+            lfields_m[i] = expr(i);
+            }
+            return *this;
+    }
 
-  //
-  // PETE interface.
-  //
+    //   template<class X>
+    //   const Kokkos_BareField<T,Dim>&
+    //   operator=(const Kokkos_BareField<X,Dim>& x)
+    //   {
+    //     assign(*this,x);
+    //     return *this;
+    //   }
 
-//   enum { IsExpr = 0 };
-//   typedef iterator PETE_Expr_t;
-//   iterator MakeExpression() const { return begin(); }
+    //   // If we have member templates available, assign a generic expression.
+    //   template<class B>
+    //   const Kokkos_BareField<T,Dim>&
+    //   operator=(const PETE_Expr<B>& x)
+    //   {
+    //     assign(*this,x);
+    //     return *this;
+    //   }
 
-protected:
-    container_t lfields_m;
+    void write(std::ostream& = std::cout);
 
-private:
-  // Setup allocates all the LFields.  The various ctors call this.
-  void setup();
+    //
+    // PETE interface.
+    //
 
-  // How the local arrays are laid out.
-  Layout_t *Layout;
+    //   enum { IsExpr = 0 };
+    //   typedef iterator PETE_Expr_t;
+    //   iterator MakeExpression() const { return begin(); }
 
-  // robust method.  The externally visible get_single
-  // calls this when it determines it needs it.
-  void getsingle_bc(const NDIndex<Dim>&, T&) const;
-};
+    protected:
+        container_t lfields_m;
 
-//////////////////////////////////////////////////////////////////////
+    private:
+    // Setup allocates all the LFields.  The various ctors call this.
+    void setup();
 
-//
-// Construct a Kokkos_BareField from nothing ... default case.
-//
+    // How the local arrays are laid out.
+    Layout_t *Layout;
 
-template< class T, unsigned Dim >
-inline
-Kokkos_BareField<T,Dim>::
-Kokkos_BareField()
-: Layout(0)			 // No layout yet.
-{
+    // robust method.  The externally visible get_single
+    // calls this when it determines it needs it.
+    void getsingle_bc(const NDIndex<Dim>&, T&) const;
+    };
+
+    //////////////////////////////////////////////////////////////////////
+
+    //
+    // Construct a Kokkos_BareField from nothing ... default case.
+    //
+
+    template< class T, unsigned Dim >
+    inline
+    Kokkos_BareField<T,Dim>::
+    Kokkos_BareField()
+    : Layout(0)			 // No layout yet.
+    {
+    }
+
+
+    //
+    // Construct a Kokkos_BareField from a FieldLayout.
+    //
+
+    template< class T, unsigned Dim >
+    inline
+    Kokkos_BareField<T,Dim>::
+    Kokkos_BareField(Layout_t & l)
+    : Layout(&l)			 // Just record the layout.
+    {
+    setup();			// Do the common setup chores.
+    }
+
+
+    //////////////////////////////////////////////////////////////////////
+
+    template< class T, unsigned Dim >
+    inline
+    std::ostream& operator<<(std::ostream& out, const Kokkos_BareField<T,Dim>& a)
+    {
+
+
+
+    Kokkos_BareField<T,Dim>& nca = const_cast<Kokkos_BareField<T,Dim>&>(a);
+    nca.write(out);
+    return out;
+    }
 }
-
-
-//
-// Construct a Kokkos_BareField from a FieldLayout.
-//
-
-template< class T, unsigned Dim >
-inline
-Kokkos_BareField<T,Dim>::
-Kokkos_BareField(Layout_t & l)
-: Layout(&l)			 // Just record the layout.
-{
-  setup();			// Do the common setup chores.
-}
-
-
-//////////////////////////////////////////////////////////////////////
-
-template< class T, unsigned Dim >
-inline
-std::ostream& operator<<(std::ostream& out, const Kokkos_BareField<T,Dim>& a)
-{
-  
-  
-
-  Kokkos_BareField<T,Dim>& nca = const_cast<Kokkos_BareField<T,Dim>&>(a);
-  nca.write(out);
-  return out;
-}
-
 
 //////////////////////////////////////////////////////////////////////
 
