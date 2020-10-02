@@ -30,7 +30,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "Field/FieldExpressions.h"
+#include "Field/BareFieldExpressions.h"
 
 // forward declarations
 class Index;
@@ -40,17 +40,6 @@ template<unsigned Dim> class FieldLayout;
 // template<class T, unsigned Dim> class Kokkos_BareField;
 // template<class T, unsigned Dim>
 // std::ostream& operator<<(std::ostream&, const Kokkos_BareField<T,Dim>&);
-
-
-template <typename E>
-class BareFieldExpr {
-
-public:
-  auto operator()(size_t i) const {
-        return static_cast<const E&>(*this)(i);
-    }
-
-};
 
 namespace ippl {
 
@@ -142,32 +131,8 @@ namespace ippl {
             return *this;
     }
 
-    //   template<class X>
-    //   const Kokkos_BareField<T,Dim>&
-    //   operator=(const Kokkos_BareField<X,Dim>& x)
-    //   {
-    //     assign(*this,x);
-    //     return *this;
-    //   }
-
-    //   // If we have member templates available, assign a generic expression.
-    //   template<class B>
-    //   const Kokkos_BareField<T,Dim>&
-    //   operator=(const PETE_Expr<B>& x)
-    //   {
-    //     assign(*this,x);
-    //     return *this;
-    //   }
-
     void write(std::ostream& = std::cout);
 
-    //
-    // PETE interface.
-    //
-
-    //   enum { IsExpr = 0 };
-    //   typedef iterator PETE_Expr_t;
-    //   iterator MakeExpression() const { return begin(); }
 
     protected:
         container_t lfields_m;
@@ -233,9 +198,3 @@ namespace ippl {
 #include "Field/Kokkos_BareField.hpp"
 
 #endif // BARE_FIELD_H
-
-/***************************************************************************
- * $RCSfile: Kokkos_BareField.h,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:26 $
- * IPPL_VERSION_ID: $Id: Kokkos_BareField.h,v 1.1.1.1 2003/01/23 07:40:26 adelmann Exp $
- ***************************************************************************/
