@@ -13,8 +13,8 @@ set (_SRCS
 #     IpplTimings.cpp
     PAssert.cpp
 #     ParticleDebugFunctions.cpp
-#    RNGXDiv.cpp
-#    RandomNumberGen.cpp
+    RNGXDiv.cpp
+    RandomNumberGen.cpp
     StaticIpplInfo.cpp
     Timer.cpp
     Unique.cpp
@@ -51,8 +51,8 @@ set (_HDRS
 #     ParticleDebug.hpp
 #     ParticleDebugFunctions.h
 #     RNGAssignDefs.h
-#    RNGXDiv.h
-#    RandomNumberGen.h
+    RNGXDiv.h
+    RandomNumberGen.h
 #     RefCounted.h
 #     SequenceGen.h
     StaticIpplInfo.h
