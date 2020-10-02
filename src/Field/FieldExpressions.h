@@ -133,6 +133,71 @@ namespace ippl {
     DefineFieldScalarOperation(LFieldSubtractScalarRight, operator-, u_m(args...) - v_m)
     DefineFieldScalarOperation(LFieldMultiplyScalarRight, operator*, u_m(args...) * v_m)
     DefineFieldScalarOperation(LFieldDivideScalarRight,   operator/, u_m(args...) / v_m)
+
+
+    /*
+     * Scalar-Field operations when T is a Vektor.
+     *
+     */
+    #define DefineVectorFieldScalarRightOperation(fun, op, expr)                \
+    template<typename T, typename E>                                            \
+    struct fun : public FieldExpr<T, fun<T, E>, sizeof(E) + sizeof(T)> {        \
+        fun(const typename T::value_t& u, const E& v) : u_m(u), v_m(v) { }      \
+                                                                                \
+        template<typename ...Args>                                              \
+        KOKKOS_INLINE_FUNCTION                                                  \
+        auto operator()(Args... args) const {                                   \
+            return expr;                                                        \
+        }                                                                       \
+                                                                                \
+    private:                                                                    \
+        const typename T::value_t u_m;                                          \
+        const E v_m;                                                            \
+    };                                                                          \
+                                                                                \
+    template<typename T, typename E, size_t N>                                  \
+    fun<T, E> op(const typename T::value_t& u,                                  \
+                 const FieldExpr<T, E, N>& v) {                                 \
+        return fun<T, E>(u,                                                     \
+                         *static_cast<const E*>(&v));                           \
+    }
+
+
+    DefineVectorFieldScalarRightOperation(LVectorFieldAddScalarRight,      operator+, u_m + v_m(args...))
+    DefineVectorFieldScalarRightOperation(LVectorFieldSubractScalarRight,  operator-, u_m - v_m(args...))
+    DefineVectorFieldScalarRightOperation(LVectorFieldMultiplyScalarRight, operator*, u_m * v_m(args...))
+    DefineVectorFieldScalarRightOperation(LVectorFieldDivideScalarRight,   operator/, u_m / v_m(args...))
+
+
+
+    #define DefineVectorFieldScalarLeftOperation(fun, op, expr)                 \
+    template<typename E, typename T>                                            \
+    struct fun : public FieldExpr<T, fun<E, T>, sizeof(E) + sizeof(T)> {        \
+        fun(const E& u, const typename T::value_t& v) : u_m(u), v_m(v) { }      \
+                                                                                \
+        template<typename ...Args>                                              \
+        KOKKOS_INLINE_FUNCTION                                                  \
+        auto operator()(Args... args) const {                                   \
+            return expr;                                                        \
+        }                                                                       \
+                                                                                \
+    private:                                                                    \
+        const E u_m;                                                            \
+        const typename T::value_t v_m;                                          \
+    };                                                                          \
+                                                                                \
+    template<typename E, typename T, size_t N>                                  \
+    fun<E, T> op(const FieldExpr<T, E, N>& u,                                   \
+                 const typename T::value_t& v) {                                \
+        return fun<E, T>(*static_cast<const E*>(&u),                            \
+                         v);                                                    \
+    }
+
+
+    DefineVectorFieldScalarLeftOperation(LVectorFieldAddScalarLeft,      operator+, u_m(args...) + v_m)
+    DefineVectorFieldScalarLeftOperation(LVectorFieldSubractScalarLeft,  operator-, u_m(args...) - v_m)
+    DefineVectorFieldScalarLeftOperation(LVectorFieldMultiplyScalarLeft, operator*, u_m(args...) * v_m)
+    DefineVectorFieldScalarLeftOperation(LVectorFieldDivideScalarLeft,   operator/, u_m(args...) / v_m)
 }
 
 #endif
