@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
     {
         constexpr int length = 10;
 
-        typedef ippl::Vektor<double, 3> vector_type;
+        typedef ippl::Vector<double, 3> vector_type;
 
         typedef Kokkos::View<vector_type**> vector_field_type;
 

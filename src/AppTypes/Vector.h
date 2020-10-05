@@ -1,31 +1,36 @@
-#ifndef IPPL_VEKTOR_H
-#define IPPL_VEKTOR_H
+#ifndef IPPL_Vector_H
+#define IPPL_Vector_H
 
-#include "VektorExpressions.h"
+#include "Expression/IpplExpressions.h"
 
 #include <initializer_list>
 
 namespace ippl {
     template<typename T, unsigned Dim>
-    class Vektor : public VektorExpr<T, Vektor<T, Dim>> {
+    class Vector : public Expression<Vector<T, Dim>, sizeof(T) * Dim> {
     public:
         typedef T value_t;
         static constexpr unsigned dim = Dim;
     
         KOKKOS_FUNCTION
-        Vektor() : Vektor(value_t(0)) { }
+        Vector() : Vector(value_t(0)) { std::cout << "Vector()" << std::endl; }
+
+
+        template<typename E>
+        KOKKOS_FUNCTION
+        Vector(const Expression<E>& expr);
 
         KOKKOS_FUNCTION
-        Vektor(const Vektor<T, Dim>&) = default;
+        Vector(const Vector<T, Dim>&) = default;
 
         KOKKOS_FUNCTION
-        Vektor(const T& val);
+        Vector(const T& val);
 
         KOKKOS_FUNCTION
-        Vektor(const std::initializer_list<T>& list);
+        Vector(const std::initializer_list<T>& list);
 
         KOKKOS_FUNCTION
-        ~Vektor() { }
+        ~Vector() { }
         
 
         // Get and Set Operations
@@ -44,32 +49,32 @@ namespace ippl {
         // Assignment Operators
         template<typename E>
         KOKKOS_INLINE_FUNCTION
-        Vektor<T, Dim>& operator=(const VektorExpr<T, E>& rhs);
+        Vector<T, Dim>& operator=(const Expression<E>& rhs);
 
         template<typename E>
         KOKKOS_INLINE_FUNCTION
-        Vektor<T, Dim>& operator+=(const VektorExpr<T, E>& rhs);
+        Vector<T, Dim>& operator+=(const Expression<E>& rhs);
 
         template<typename E>
         KOKKOS_INLINE_FUNCTION
-        Vektor<T, Dim>& operator-=(const VektorExpr<T, E>& rhs);
+        Vector<T, Dim>& operator-=(const Expression<E>& rhs);
 
         template<typename E>
         KOKKOS_INLINE_FUNCTION
-        Vektor<T, Dim>& operator*=(const VektorExpr<T, E>& rhs);
+        Vector<T, Dim>& operator*=(const Expression<E>& rhs);
 
         template<typename E>
         KOKKOS_INLINE_FUNCTION
-        Vektor<T, Dim>& operator/=(const VektorExpr<T, E>& rhs);
+        Vector<T, Dim>& operator/=(const Expression<E>& rhs);
 
     private:
         T data_m[Dim];
     };
 }
 
-#include "Vektor.hpp"
+#include "Vector.hpp"
 
-#endif // IPPL_VEKTOR_H
+#endif // IPPL_Vector_H
 
 // vi: set et ts=4 sw=4 sts=4:
 // Local Variables:

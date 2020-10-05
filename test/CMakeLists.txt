@@ -17,7 +17,7 @@ endmacro()
 add_subdirectory (lfield)
 add_subdirectory (kokkos)
 add_subdirectory (barefield)
-# add_subdirectory (field)
+add_subdirectory (vector)
 
 # vi: set et ts=4 sw=4 sts=4:
   
