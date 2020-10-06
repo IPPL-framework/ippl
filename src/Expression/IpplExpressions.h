@@ -41,6 +41,7 @@ namespace ippl {
     struct Scalar : public Expression<Scalar<T>, sizeof(T)> {
         typedef T value_t;
 
+        KOKKOS_FUNCTION
         Scalar(value_t val) : val_m(val) { }
 
         KOKKOS_INLINE_FUNCTION
