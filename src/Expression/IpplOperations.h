@@ -11,6 +11,12 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION                                              \
         auto operator[](size_t i) const { return op(u_m[i], v_m[i]); }      \
                                                                             \
+        template<typename ...Args>                                          \
+        KOKKOS_INLINE_FUNCTION                                              \
+        auto operator()(Args... args) const {                               \
+            return op(u_m(args...), v_m(args...));                          \
+        }                                                                   \
+                                                                            \
     private:                                                                \
         const typename ExprType<E1>::value_type u_m;                        \
         const typename ExprType<E2>::value_type v_m;                        \

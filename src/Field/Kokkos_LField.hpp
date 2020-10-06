@@ -88,11 +88,11 @@ namespace ippl {
     //           std::enable_if_t<
     //     //               // essentially equivalent to:
     //     //               //   requires std::derived_from<E, VecExpr<E>>
-    //                 std::is_base_of_v<FieldExpr<T, E>, E>,
+    //                 std::is_base_of_v<Expression<E>, E>,
     //     //               // -------------------------------------------
     //                 int> >
-    Kokkos_LField<T,Dim>& Kokkos_LField<T,Dim>::operator=(FieldExpr<T, E, N> const& expr) {
-        LFieldCaptureExpr<T, E,N> expr_ = reinterpret_cast<const LFieldCaptureExpr<T, E, N>&>(expr);
+    Kokkos_LField<T,Dim>& Kokkos_LField<T,Dim>::operator=(Expression<E, N> const& expr) {
+        CapturedExpression<E, N> expr_ = reinterpret_cast<const CapturedExpression<E, N>&>(expr);
     //     if constexpr(Dim == 1) {
     //         Kokkos::parallel_for("Kokkos_LField<T,Dim>::operator=",
     //                              dview_m.extent(0), KOKKOS_CLASS_LAMBDA(const int i) {

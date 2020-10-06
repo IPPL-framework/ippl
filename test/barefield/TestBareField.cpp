@@ -3,6 +3,8 @@
 #include <iostream>
 #include <typeinfo>
 
+// #include <boost/core/demangle.hpp>
+
 int main(int argc, char *argv[]) {
 
     Ippl ippl(argc,argv);
@@ -27,9 +29,15 @@ int main(int argc, char *argv[]) {
 
     barefield.write();
 
-    barefield = ((barefield + barefield) * (barefield + barefield)) / (barefield + barefield + barefield) - barefield;
+    barefield = 2 * ((barefield + barefield) * (barefield + barefield))
+              / (barefield + 5.0 * barefield + barefield) - barefield;
 
     barefield.write();
 
+
+//     const char* name = typeid(2 * barefield + barefield).name();
+//     std::cout << boost::core::demangle(name) << std::endl;
+
     return 0;
 }
+

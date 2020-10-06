@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
     Index I(10);
     NDIndex<3> domain(I, I, I);
 
-    typedef ippl::Vektor<double, 3> vector_type;
+    typedef ippl::Vector<double, 3> vector_type;
     typedef ippl::Kokkos_LField<vector_type, 3> vector_field_type;
 
     vector_field_type lfield(domain);

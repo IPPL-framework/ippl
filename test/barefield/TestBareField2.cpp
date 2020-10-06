@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     // all parallel layout, standard domain, normal axis order
     FieldLayout<dim> layout(owned,allParallel, 1);
 
-    typedef ippl::Vektor<double, 3> vector_t;
+    typedef ippl::Vector<double, 3> vector_t;
     typedef ippl::Kokkos_BareField<vector_t, dim> bfield_t;
     bfield_t barefield(layout);
 
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 
     barefield.write();
 
-    barefield = ((barefield + barefield) * (barefield + barefield)) / (barefield + barefield + barefield) - barefield;
+    barefield = 2 * ((barefield + barefield) * (barefield + barefield)) / (barefield + barefield + barefield) - barefield;
 
     barefield.write();
 

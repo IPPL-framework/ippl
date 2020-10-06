@@ -22,7 +22,7 @@
 
 #include "Field/ViewTypes.h"
 
-#include "Field/FieldExpressions.h"
+#include "Expression/IpplExpressions.h"
 
 #include <iostream>
 #include <cinttypes>
@@ -33,7 +33,7 @@ namespace ippl {
 
     // This stores the local data for a Field.
     template<class T, unsigned Dim>
-    class Kokkos_LField : public FieldExpr<T, Kokkos_LField<T, Dim>, sizeof(typename ViewType<T, Dim>::view_type)>
+    class Kokkos_LField : public Expression<Kokkos_LField<T, Dim>, sizeof(typename ViewType<T, Dim>::view_type)>
     {
     public:
         typedef std::int64_t int64_t;
@@ -85,10 +85,10 @@ namespace ippl {
                     std::enable_if_t<
         //               // essentially equivalent to:
         //               //   requires std::derived_from<E, VecExpr<E>>
-                    std::is_base_of_v<FieldExpr<T, E, N>, E>,
+                    std::is_base_of_v<Expression<E, N>, E>,
         //               // -------------------------------------------
                     int> = 0>*/
-        Kokkos_LField<T,Dim>& operator=(FieldExpr<T, E, N> const& expr);
+        Kokkos_LField<T,Dim>& operator=(Expression<E, N> const& expr);
 
     private:
         // Global vnode ID number for the associated Vnode (useful with more recent

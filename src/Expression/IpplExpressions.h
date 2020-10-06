@@ -48,6 +48,12 @@ namespace ippl {
             return val_m;
         }
 
+        template<typename ...Args>                                          \
+        KOKKOS_INLINE_FUNCTION
+        auto operator()(Args... /*args*/) const {
+            return val_m;
+        }
+
     private:
         value_t val_m;
     };
