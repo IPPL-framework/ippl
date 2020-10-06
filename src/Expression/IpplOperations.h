@@ -2,19 +2,19 @@
 #define IPPL_OPERATIONS_H
 
 namespace ippl {
-    #define DefineBinaryOperation(fun, name, op)                            \
+    #define DefineBinaryOperation(fun, name, op1, op2)                      \
     template<typename E1, typename E2>                                      \
     struct fun : public Expression<fun<E1, E2>, sizeof(E1) + sizeof(E2)> {  \
         KOKKOS_FUNCTION                                                     \
         fun(const E1& u, const E2& v) : u_m(u), v_m(v) { }                  \
                                                                             \
         KOKKOS_INLINE_FUNCTION                                              \
-        auto operator[](size_t i) const { return op(u_m[i], v_m[i]); }      \
+        auto operator[](size_t i) const { return op1; }                     \
                                                                             \
         template<typename ...Args>                                          \
         KOKKOS_INLINE_FUNCTION                                              \
         auto operator()(Args... args) const {                               \
-            return op(u_m(args...), v_m(args...));                          \
+            return op2;                                                     \
         }                                                                   \
                                                                             \
     private:                                                                \
@@ -29,11 +29,14 @@ namespace ippl {
     }
 
 
-    DefineBinaryOperation(Add,      operator+, std::plus<>())
-    DefineBinaryOperation(Subtract, operator-, std::minus<>())
-    DefineBinaryOperation(Multiply, operator*, std::multiplies<>())
-    DefineBinaryOperation(Divide,   operator/, std::divides<>())
-
+//     DefineBinaryOperation(Add,      operator+, std::plus<>()) //op(u_m[i], v_m[i]); and op(u_m(args...), v_m(args...))
+//     DefineBinaryOperation(Subtract, operator-, std::minus<>())
+//     DefineBinaryOperation(Multiply, operator*, std::multiplies<>())
+//     DefineBinaryOperation(Divide,   operator/, std::divides<>())
+    DefineBinaryOperation(Add,      operator+, u_m[i] + v_m[i], u_m(args...) + v_m(args...))
+    DefineBinaryOperation(Subtract, operator-, u_m[i] - v_m[i], u_m(args...) - v_m(args...))
+    DefineBinaryOperation(Multiply, operator*, u_m[i] * v_m[i], u_m(args...) * v_m(args...))
+    DefineBinaryOperation(Divide,   operator/, u_m[i] / v_m[i], u_m(args...) / v_m(args...))
 
     /*
      * Cross product. This function is only supported for 3-dimensional vectors.
