@@ -13,7 +13,7 @@ namespace ippl {
         static constexpr unsigned dim = Dim;
     
         KOKKOS_FUNCTION
-        Vector() : Vector(value_t(0)) { std::cout << "Vector()" << std::endl; }
+        Vector() : Vector(value_t(0)) { }
 
 
         template<typename E>

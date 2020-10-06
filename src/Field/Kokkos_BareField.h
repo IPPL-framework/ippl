@@ -133,9 +133,8 @@ namespace ippl {
 
         template <typename E>
         inline Kokkos_BareField<T,Dim>& operator=(const Expression<E>& expr) {
-            std::cout << "Kokkos_BareField::operator=" << std::endl;
             for (size_t i = 0; i < lfields_m.size(); ++i) {
-                lfields_m[i] = /*static_cast<const E&>(*/expr[i]/*)*/;
+                lfields_m[i] = expr[i];
             }
             return *this;
         }

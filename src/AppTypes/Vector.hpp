@@ -9,7 +9,6 @@ namespace ippl {
     template<typename E>
     KOKKOS_FUNCTION
     Vector<T, Dim>::Vector(const Expression<E>& expr) {
-        std::cout << "Vector(const Expression<E>& expr)" << std::endl;
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] = expr[i];
         }
@@ -18,7 +17,6 @@ namespace ippl {
     template<typename T, unsigned Dim>
     KOKKOS_FUNCTION
     Vector<T, Dim>::Vector(const T& val) {
-        std::cout << "Vector(const T& val)" << std::endl;
         for (unsigned i = 0; i < Dim; ++i) {
             data_m[i] = val;
         }
@@ -28,7 +26,6 @@ namespace ippl {
     template<typename T, unsigned Dim>
     KOKKOS_FUNCTION
     Vector<T, Dim>::Vector(const std::initializer_list<T>& list) {
-        std::cout << "Vector(const std::initializer_list<T>& list)" << std::endl;
         PAssert(list.size() == Dim);
         unsigned int i = 0;
         for (auto& l : list) {
