@@ -84,6 +84,9 @@ namespace ippl {
 //             static_assert(E2::dim == 3, "meta_cross: Dimension of second argument needs to be 3");
         }
 
+        /*
+         * Vector::cross
+         */
         KOKKOS_INLINE_FUNCTION
         auto operator[](size_t i) const {
             const size_t j = (i + 1) % 3;
@@ -91,6 +94,9 @@ namespace ippl {
             return  u_m[j] * v_m[k] - u_m[k] * v_m[j];
         }
 
+        /*
+         * This is required for LField::cross
+         */
         template<typename ...Args>
         KOKKOS_INLINE_FUNCTION
         auto operator()(Args... args) const {
@@ -120,6 +126,9 @@ namespace ippl {
 //             static_assert(E1::dim == E2::dim, "meta_dot: Dimensions do not agree!");
         }
 
+        /*
+         * Vector::dot
+         */
         KOKKOS_INLINE_FUNCTION
         typename E1::value_t operator()() const {
             typename E1::value_t res = 0.0;
@@ -129,6 +138,9 @@ namespace ippl {
             return res; //u_m[0] * v_m[0] + u_m[1] * v_m[1] + u_m[2] * v_m[2];
         }
 
+        /*
+         * This is required for LField::dot
+         */
         template<typename ...Args>
         KOKKOS_INLINE_FUNCTION
         auto operator()(Args... args) const {
