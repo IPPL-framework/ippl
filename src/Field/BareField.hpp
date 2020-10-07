@@ -31,109 +31,67 @@
 #include <cstdlib>
 
 namespace ippl {
-
-    template< class T, unsigned Dim >
-    BareField<T,Dim>::~BareField() { }
-
-
-    template< class T, unsigned Dim >
-    void
-    BareField<T,Dim>::initialize(Layout_t & l) {
+    template< typename T, unsigned Dim>
+    BareField<T, Dim>::BareField() : Layout(0) { }
 
 
-
-    // if our Layout has been previously set, we just ignore this request
-    if (Layout == 0) {
-        Layout = &l;
+    template< typename T, unsigned Dim>
+    BareField<T, Dim>::BareField(Layout_t & l) : Layout(&l) {
         setup();
     }
-    }
 
-    //////////////////////////////////////////////////////////////////////
-    //
-    // Using the data that has been initialized by the ctors,
-    // complete the construction by allocating the LFields.
-    //
-
-    template< class T, unsigned Dim >
-    void
-    BareField<T,Dim>::setup()
-    {
-    // Loop over all the Vnodes, creating an LField in each.
-    for (typename Layout_t::iterator_iv v_i=getLayout().begin_iv();
-        v_i != getLayout().end_iv();
-        ++v_i)
-        {
-        // Get the owned.
-        const NDIndex<Dim> &owned = (*v_i).second->getDomain();
-
-        // Get the global vnode number (ID number, value from 0 to nvnodes-1):
-        int vnode = (*v_i).second->getVnode();
-
-        // Put it in the list.
-        lfields_m.push_back(LField_t(owned, vnode));
+    template<typename T, unsigned Dim>
+    void BareField<T, Dim>::initialize(Layout_t & l) {
+        if (Layout == 0) {
+            Layout = &l;
+            setup();
         }
     }
 
-    //////////////////////////////////////////////////////////////////////
 
-    //
-    // Print a BareField out.
-    //
+    /* Using the data that has been initialized by the ctors,
+     * complete the construction by allocating the LFields.
+     */
+    template<typename T, unsigned Dim>
+    void BareField<T, Dim>::setup() {
+        // Loop over all the Vnodes, creating an LField in each.
+        for (typename Layout_t::iterator_iv v_i=getLayout().begin_iv();
+             v_i != getLayout().end_iv(); ++v_i)
+        {
+            // Get the owned.
+            const NDIndex<Dim> &owned = (*v_i).second->getDomain();
 
-    template< class T, unsigned Dim>
-    void
-    BareField<T,Dim>::write(std::ostream& out)
-    {
+            // Get the global vnode number (ID number, value from 0 to nvnodes-1):
+            int vnode = (*v_i).second->getVnode();
+
+            // Put it in the list.
+            lfields_m.push_back(LField_t(owned, vnode));
+        }
+    }
+
+
+    template<typename T, unsigned Dim>
+    BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
+        for (auto& lf : lfields_m) {
+            lf = x;
+        }
+        return *this;
+    }
+
+
+    template<typename T, unsigned Dim>
+    template <typename E>
+    BareField<T, Dim>& BareField<T, Dim>::operator=(const FieldExpression<E>& expr) {
+        for (size_t i = 0; i < lfields_m.size(); ++i) {
+            lfields_m[i] = expr[i];
+        }
+        return *this;
+    }
+
+    template<typename T, unsigned Dim>
+    void BareField<T, Dim>::write(std::ostream& out) {
         for (const auto& lf : lfields_m) {
             lf.write(out);
         }
     }
-
-    // //////////////////////////////////////////////////////////////////////
-    // // Get a ref to a single element of the Field; if it is not local to our
-    // // processor, print an error and exit.  This allows the user to provide
-    // // different index values on each node, instead of using the same element
-    // // and broadcasting to all nodes.
-    // template<class T, unsigned Dim>
-    // T/*&*/ BareField<T,Dim>::localElement(const NDIndex<Dim>& Indexes) /*const*/
-    // {
-    // /*
-    //
-    //
-    //
-    //   // Instead of checking to see if the user has asked for one element,
-    //   // we will just use the first element specified for each dimension.
-    //
-    //   // Is this element here?
-    //   // Try and find it in the local BareFields.
-    //   const_iterator_if lf_i   = begin_if();
-    //   const_iterator_if lf_end = end_if();
-    //   for ( ; lf_i != lf_end ; ++lf_i ) {
-    //     LField<T,Dim>& lf(*(*lf_i).second);
-    //     // End-point "contains" OK since "owned" is unit stride.
-    //     // was before CK fix: if ( lf.getOwned().contains( Indexes ) ) {
-    //     if ( lf.getAllocated().contains( Indexes ) ) {
-    //       // Found it ... first uncompress, then get a pointer to the
-    //       // requested element.
-    //       lf.Uncompress();
-    //       //      return *(lf.begin(Indexes));
-    //       // instead of building an iterator, just find the value
-    //       NDIndex<Dim> alloc = lf.getAllocated();
-    //       T* pdata = PtrOffset(lf.getP(), Indexes, alloc,
-    //                            LFieldDimTag<Dim,(Dim<=3)>());
-    //       return *pdata;
-    //     }
-    //   }
-    //
-    //   // if we're here, we did not find it ... it must not be local
-    //   ERRORMSG("BareField::localElement: attempt to access non-local index ");
-    //   ERRORMSG(Indexes << " on node " << Ippl::myNode() << endl);
-    //   ERRORMSG("Occurred in a BareField with layout = " << getLayout() << endl);
-    //   ERRORMSG("Calling abort ..." << endl);
-    //   Ippl::abort();
-    //   return *((*((*(begin_if())).second)).begin());*/
-    //
-    //     return double(2.0);
-    // }
 }
