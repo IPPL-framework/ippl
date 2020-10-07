@@ -23,7 +23,7 @@ namespace ippl {
     };                                                                      \
                                                                             \
     template<typename E1, size_t N1, typename E2, size_t N2>                \
-    KOKKOS_FUNCTION                                                         \
+    KOKKOS_INLINE_FUNCTION                                                  \
     fun<E1, E2> name(const Expression<E1, N1>& u,                           \
                      const Expression<E2, N2>& v) {                         \
         return fun<E1, E2>(*static_cast<const E1*>(&u),                     \
@@ -32,7 +32,7 @@ namespace ippl {
                                                                             \
     template<typename E, size_t N, typename T,                              \
              typename = std::enable_if_t<std::is_scalar<T>::value>>         \
-    KOKKOS_FUNCTION                                                         \
+    KOKKOS_INLINE_FUNCTION                                                  \
     fun<E, Scalar<T>> name(const Expression<E, N>& u,                       \
                            const T& v) {                                    \
         return fun<E, Scalar<T>>(*static_cast<const E*>(&u), v);            \
@@ -40,7 +40,7 @@ namespace ippl {
                                                                             \
     template<typename E, size_t N, typename T,                              \
              typename = std::enable_if_t<std::is_scalar<T>::value>>         \
-    KOKKOS_FUNCTION                                                         \
+    KOKKOS_INLINE_FUNCTION                                                  \
     fun<E, Scalar<T>> name(const T& u,                                      \
                            const Expression<E, N>& v) {                     \
         return fun<E, Scalar<T>>(*static_cast<const E*>(&v), u);            \
@@ -142,7 +142,6 @@ namespace ippl {
                                                                                 \
     template<typename E, typename T,                                            \
              typename = std::enable_if_t<std::is_scalar<T>::value>>             \
-    KOKKOS_FUNCTION                                                             \
     fun<E, Scalar<T>> name(const FieldExpression<E>& u,                         \
                            const T& v) {                                        \
         return fun<E, Scalar<T>>(*static_cast<const E*>(&u), v);                \
@@ -150,7 +149,6 @@ namespace ippl {
                                                                                 \
     template<typename E, typename T,                                            \
              typename = std::enable_if_t<std::is_scalar<T>::value>>             \
-    KOKKOS_FUNCTION                                                             \
     fun<E, Scalar<T>> name(const T& u,                                          \
                            const FieldExpression<E>& v) {                       \
         return fun<E, Scalar<T>>(*static_cast<const E*>(&v), u);                \
