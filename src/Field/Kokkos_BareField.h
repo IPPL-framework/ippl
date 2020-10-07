@@ -45,7 +45,7 @@ namespace ippl {
 
     // class definition
     template<class T,  unsigned Dim>
-    class Kokkos_BareField : public Expression< Kokkos_BareField<T, Dim>, sizeof(T) > //: public PETE_Expr< Kokkos_BareField<T,Dim> >
+    class Kokkos_BareField : public FieldExpression< Kokkos_BareField<T, Dim> >
     {
 
     public:
@@ -132,7 +132,7 @@ namespace ippl {
 
 
         template <typename E>
-        inline Kokkos_BareField<T,Dim>& operator=(const Expression<E>& expr) {
+        inline Kokkos_BareField<T,Dim>& operator=(const FieldExpression<E>& expr) {
             for (size_t i = 0; i < lfields_m.size(); ++i) {
                 lfields_m[i] = expr[i];
             }

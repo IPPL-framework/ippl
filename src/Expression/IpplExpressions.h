@@ -33,12 +33,23 @@ namespace ippl {
     };
 
 
+    template<typename E>
+    struct FieldExpression {
+        KOKKOS_INLINE_FUNCTION
+        auto operator[](size_t i) const {
+            return static_cast<const E&>(*this)[i];
+        }
+    };
+
+
     /*
      * Scalar Expressions
      *
      */
     template<typename T>
-    struct Scalar : public Expression<Scalar<T>, sizeof(T)> {
+    struct Scalar : public Expression<Scalar<T>, sizeof(T)>
+                  , public FieldExpression<Scalar<T>>
+    {
         typedef T value_t;
 
         KOKKOS_FUNCTION

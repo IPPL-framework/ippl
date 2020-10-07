@@ -18,21 +18,35 @@ namespace ippl {
         }                                                                   \
                                                                             \
     private:                                                                \
-        const typename ExprType<E1>::value_type u_m;                        \
-        const typename ExprType<E2>::value_type v_m;                        \
+        const E1 u_m;                                                       \
+        const E2 v_m;                                                       \
     };                                                                      \
                                                                             \
-    template<typename E1, typename E2>                                      \
+    template<typename E1, size_t N1, typename E2, size_t N2>                \
     KOKKOS_FUNCTION                                                         \
-    fun<E1, E2> name(const E1& u, const E2& v) {                            \
-        return fun<E1, E2>(u, v);                                           \
+    fun<E1, E2> name(const Expression<E1, N1>& u,                           \
+                     const Expression<E2, N2>& v) {                         \
+        return fun<E1, E2>(*static_cast<const E1*>(&u),                     \
+                           *static_cast<const E2*>(&v));                    \
+    }                                                                       \
+                                                                            \
+    template<typename E, size_t N, typename T,                              \
+             typename = std::enable_if_t<std::is_scalar<T>::value>>         \
+    KOKKOS_FUNCTION                                                         \
+    fun<E, Scalar<T>> name(const Expression<E, N>& u,                       \
+                           const T& v) {                                    \
+        return fun<E, Scalar<T>>(*static_cast<const E*>(&u), v);            \
+    }                                                                       \
+                                                                            \
+    template<typename E, size_t N, typename T,                              \
+             typename = std::enable_if_t<std::is_scalar<T>::value>>         \
+    KOKKOS_FUNCTION                                                         \
+    fun<E, Scalar<T>> name(const T& u,                                      \
+                           const Expression<E, N>& v) {                     \
+        return fun<E, Scalar<T>>(*static_cast<const E*>(&v), u);            \
     }
 
 
-//     DefineBinaryOperation(Add,      operator+, std::plus<>()) //op(u_m[i], v_m[i]); and op(u_m(args...), v_m(args...))
-//     DefineBinaryOperation(Subtract, operator-, std::minus<>())
-//     DefineBinaryOperation(Multiply, operator*, std::multiplies<>())
-//     DefineBinaryOperation(Divide,   operator/, std::divides<>())
     DefineBinaryOperation(Add,      operator+, u_m[i] + v_m[i], u_m(args...) + v_m(args...))
     DefineBinaryOperation(Subtract, operator-, u_m[i] - v_m[i], u_m(args...) - v_m(args...))
     DefineBinaryOperation(Multiply, operator*, u_m[i] * v_m[i], u_m(args...) * v_m(args...))
@@ -58,14 +72,15 @@ namespace ippl {
         }
 
     private:
-        const typename ExprType<E1>::value_type u_m;
-        const typename ExprType<E2>::value_type v_m;
+        const E1 u_m;
+        const E2 v_m;
     };
 
     template<typename E1, typename E2>
     KOKKOS_INLINE_FUNCTION
-    meta_cross<E1, E2> cross(const E1& u, const E2& v) {
-        return meta_cross<E1, E2>(u, v);
+    meta_cross<E1, E2> cross(const Expression<E1>& u, const Expression<E2>& v) {
+        return meta_cross<E1, E2>(*static_cast<const E1*>(&u),
+                                  *static_cast<const E2*>(&v));
     }
 
 
@@ -89,15 +104,63 @@ namespace ippl {
         }
 
     private:
-        const typename ExprType<E1>::value_type u_m;
-        const typename ExprType<E2>::value_type v_m;
+        const E1 u_m;
+        const E2 v_m;
     };
 
     template<typename E1, typename E2>
     KOKKOS_INLINE_FUNCTION
-    typename E1::value_t dot(const E1& u, const E2& v) {
-        return meta_dot<E1, E2>(u, v)();
+    typename E1::value_t dot(const Expression<E1>& u, const Expression<E2>& v) {
+        return meta_dot<E1, E2>(*static_cast<const E1*>(&u),
+                                *static_cast<const E2*>(&v))();
     }
+
+
+    #define DefineBinaryFieldOperation(fun, name, op1, op2)                     \
+    template<typename E1, typename E2>                                          \
+    struct fun : public FieldExpression<fun<E1, E2>> {                          \
+        fun(const E1& u, const E2& v) : u_m(u), v_m(v) { }                      \
+                                                                                \
+        auto operator[](size_t i) const { return op1; }                         \
+                                                                                \
+        template<typename ...Args>                                              \
+        auto operator()(Args... args) const {                                   \
+            return op2;                                                         \
+        }                                                                       \
+                                                                                \
+    private:                                                                    \
+        const E1 u_m;                                                           \
+        const E2 v_m;                                                           \
+    };                                                                          \
+                                                                                \
+    template<typename E1, typename E2>                                          \
+    fun<E1, E2> name(const FieldExpression<E1>& u,                              \
+                     const FieldExpression<E2>& v) {                            \
+        return fun<E1, E2>(*static_cast<const E1*>(&u),                         \
+                           *static_cast<const E2*>(&v));                        \
+    }                                                                           \
+                                                                                \
+    template<typename E, typename T,                                            \
+             typename = std::enable_if_t<std::is_scalar<T>::value>>             \
+    KOKKOS_FUNCTION                                                             \
+    fun<E, Scalar<T>> name(const FieldExpression<E>& u,                         \
+                           const T& v) {                                        \
+        return fun<E, Scalar<T>>(*static_cast<const E*>(&u), v);                \
+    }                                                                           \
+                                                                                \
+    template<typename E, typename T,                                            \
+             typename = std::enable_if_t<std::is_scalar<T>::value>>             \
+    KOKKOS_FUNCTION                                                             \
+    fun<E, Scalar<T>> name(const T& u,                                          \
+                           const FieldExpression<E>& v) {                       \
+        return fun<E, Scalar<T>>(*static_cast<const E*>(&v), u);                \
+    }
+
+
+    DefineBinaryFieldOperation(FieldAdd,      operator+, u_m[i] + v_m[i], u_m(args...) + v_m(args...))
+    DefineBinaryFieldOperation(FieldSubtract, operator-, u_m[i] - v_m[i], u_m(args...) - v_m(args...))
+    DefineBinaryFieldOperation(FieldMultiply, operator*, u_m[i] * v_m[i], u_m(args...) * v_m(args...))
+    DefineBinaryFieldOperation(FieldDivide,   operator/, u_m[i] / v_m[i], u_m(args...) / v_m(args...))
 }
 
 #endif
