@@ -69,20 +69,6 @@ namespace ippl {
     private:
         value_t val_m;
     };
-
-
-
-    #define DefineScalarType(type)          \
-    template<>                              \
-    struct ExprType<type> {                 \
-        typedef Scalar<type> value_type;    \
-    };
-
-
-    DefineScalarType(double)
-    DefineScalarType(float)
-    DefineScalarType(short)
-    DefineScalarType(int)
 }
 
 
