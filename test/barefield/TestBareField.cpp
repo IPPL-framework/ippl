@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     // all parallel layout, standard domain, normal axis order
     FieldLayout<dim> layout(owned,allParallel, 1);
 
-    typedef ippl::Kokkos_BareField<double, dim> bfield_t;
+    typedef ippl::BareField<double, dim> bfield_t;
     bfield_t barefield(layout);
 
     barefield = 1.0;

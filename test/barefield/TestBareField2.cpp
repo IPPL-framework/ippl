@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     FieldLayout<dim> layout(owned,allParallel, 1);
 
     typedef ippl::Vector<double, 3> vector_t;
-    typedef ippl::Kokkos_BareField<vector_t, dim> bfield_t;
+    typedef ippl::BareField<vector_t, dim> bfield_t;
     bfield_t barefield(layout);
 
     barefield = 1.0;

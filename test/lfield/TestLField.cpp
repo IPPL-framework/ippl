@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
     Index K(10);
     NDIndex<3> domain(I, J, K);
 
-    ippl::Kokkos_LField<double, 3> lfield(domain);
+    ippl::LField<double, 3> lfield(domain);
 
     lfield = 1.0;
 

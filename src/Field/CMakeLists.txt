@@ -8,10 +8,8 @@ set (_HDRS
 #     AssignGeneralIBF.hpp
 #     Assign.h
 #     AssignTags.h
-#     BareField.hpp
-#     BareField.h
-#     Kokkos_BareField.hpp
-#     Kokkos_BareField.h
+    BareField.hpp
+    BareField.h
 #     BareFieldIterator.h
 #     BCond.hpp
 #     BCond.h
@@ -32,10 +30,8 @@ set (_HDRS
 #     IndexedBareField.hpp
 #     IndexedBareField.h
 #     IndexedField.h
-#     LField.hpp
-#     LField.h
-    Kokkos_LField.hpp
-    Kokkos_LField.h
+    LField.hpp
+    LField.h
 #     ReductionLoc.hpp
 #     ReductionLoc.h
     ViewTypes.h
