@@ -8,8 +8,8 @@
  *
  ***************************************************************************/
 
-#ifndef KOKKOS_BARE_FIELD_H
-#define KOKKOS_BARE_FIELD_H
+#ifndef IPPL_BARE_FIELD_H
+#define IPPL_BARE_FIELD_H
 
 /***************************************************************************
  *

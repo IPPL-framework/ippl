@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with OPAL. If not, see <https://www.gnu.org/licenses/>.
 //
-#ifndef LField_H
-#define LField_H
+#ifndef IPPL_LField_H
+#define IPPL_LField_H
 
 #include <Kokkos_Core.hpp>
 
