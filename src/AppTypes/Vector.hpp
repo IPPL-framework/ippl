@@ -6,9 +6,9 @@
 namespace ippl {
 
     template<typename T, unsigned Dim>
-    template<typename E>
+    template<typename E, size_t N>
     KOKKOS_FUNCTION
-    Vector<T, Dim>::Vector(const Expression<E>& expr) {
+    Vector<T, Dim>::Vector(const Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] = expr[i];
         }
@@ -78,9 +78,9 @@ namespace ippl {
      *
      */
     template<typename T, unsigned Dim>
-    template<typename E>
+    template<typename E, size_t N>
     KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& Vector<T, Dim>::operator=(const Expression<E>& expr) {
+        Vector<T, Dim>& Vector<T, Dim>::operator=(const Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] = expr[i];
         }
@@ -89,9 +89,9 @@ namespace ippl {
 
 
     template<typename T, unsigned Dim>
-    template<typename E>
+    template<typename E, size_t N>
     KOKKOS_INLINE_FUNCTION
-    Vector<T, Dim>& Vector<T, Dim>::operator+=(const Expression<E>& expr) {
+    Vector<T, Dim>& Vector<T, Dim>::operator+=(const Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] += expr[i];
         }
@@ -100,9 +100,9 @@ namespace ippl {
     
 
     template<typename T, unsigned Dim>
-    template<typename E>
+    template<typename E, size_t N>
     KOKKOS_INLINE_FUNCTION
-    Vector<T, Dim>& Vector<T, Dim>::operator-=(const Expression<E>& expr) {
+    Vector<T, Dim>& Vector<T, Dim>::operator-=(const Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] -= expr[i];
         }
@@ -111,9 +111,9 @@ namespace ippl {
 
 
     template<typename T, unsigned Dim>
-    template<typename E>
+    template<typename E, size_t N>
     KOKKOS_INLINE_FUNCTION
-    Vector<T, Dim>& Vector<T, Dim>::operator*=(const Expression<E>& expr) {
+    Vector<T, Dim>& Vector<T, Dim>::operator*=(const Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] *= expr[i];
         }
@@ -122,9 +122,9 @@ namespace ippl {
 
 
     template<typename T, unsigned Dim>
-    template<typename E>
+    template<typename E, size_t N>
     KOKKOS_INLINE_FUNCTION
-    Vector<T, Dim>& Vector<T, Dim>::operator/=(const Expression<E>& expr) {
+    Vector<T, Dim>& Vector<T, Dim>::operator/=(const Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] /= expr[i];
         }

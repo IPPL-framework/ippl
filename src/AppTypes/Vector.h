@@ -16,9 +16,9 @@ namespace ippl {
         Vector() : Vector(value_t(0)) { }
 
 
-        template<typename E>
+        template<typename E, size_t N>
         KOKKOS_FUNCTION
-        Vector(const Expression<E>& expr);
+        Vector(const Expression<E, N>& expr);
 
         KOKKOS_FUNCTION
         Vector(const Vector<T, Dim>&) = default;
@@ -47,25 +47,25 @@ namespace ippl {
         value_t operator()(unsigned int i) const;
 
         // Assignment Operators
-        template<typename E>
+        template<typename E, size_t N>
         KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator=(const Expression<E>& rhs);
+        Vector<T, Dim>& operator=(const Expression<E, N>& expr);
 
-        template<typename E>
+        template<typename E, size_t N>
         KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator+=(const Expression<E>& rhs);
+        Vector<T, Dim>& operator+=(const Expression<E, N>& expr);
 
-        template<typename E>
+        template<typename E, size_t N>
         KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator-=(const Expression<E>& rhs);
+        Vector<T, Dim>& operator-=(const Expression<E, N>& expr);
 
-        template<typename E>
+        template<typename E, size_t N>
         KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator*=(const Expression<E>& rhs);
+        Vector<T, Dim>& operator*=(const Expression<E, N>& expr);
 
-        template<typename E>
+        template<typename E, size_t N>
         KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator/=(const Expression<E>& rhs);
+        Vector<T, Dim>& operator/=(const Expression<E, N>& expr);
 
     private:
         T data_m[Dim];
