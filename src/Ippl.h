@@ -17,7 +17,7 @@
 // Kokkos
 #include "Field/LField.h"
 #include "Field/BareField.h"
-// #include "Field/Kokkos_Field.h"
+#include "Field/Kokkos_Field.h"
 
 // IPPL Communicate classes
 #include "Message/Communicate.h"
@@ -98,9 +98,9 @@
 
 // IPPL Math Types
 #include "AppTypes/Vector.h"
-#include "AppTypes/Tenzor.h"
-#include "AppTypes/SymTenzor.h"
-#include "AppTypes/AntiSymTenzor.h"
+// #include "AppTypes/Tenzor.h"
+// #include "AppTypes/SymTenzor.h"
+// #include "AppTypes/AntiSymTenzor.h"
 
 // IPPL Data Connection classes
 // #include "DataSource/DataConnectCreator.h"
