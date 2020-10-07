@@ -35,7 +35,6 @@ namespace ippl {
 
     template<typename E>
     struct FieldExpression {
-        KOKKOS_INLINE_FUNCTION
         auto operator[](size_t i) const {
             return static_cast<const E&>(*this)[i];
         }
