@@ -1,7 +1,27 @@
+//
+// File IpplOperations.h
+//   Expression Templates operations.
+//
+// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #ifndef IPPL_OPERATIONS_H
 #define IPPL_OPERATIONS_H
 
 namespace ippl {
+    /*
+     * Binary operations for Scalar, Vector and LField classes.
+     */
     #define DefineBinaryOperation(fun, name, op1, op2)                      \
     template<typename E1, typename E2>                                      \
     struct fun : public Expression<fun<E1, E2>, sizeof(E1) + sizeof(E2)> {  \
