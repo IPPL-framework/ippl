@@ -72,5 +72,6 @@ namespace ippl {
 
 
 #include "Expression/IpplOperations.h"
+#include "Expression/IpplFieldOperations.h"
 
 #endif

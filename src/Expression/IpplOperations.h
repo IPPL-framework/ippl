@@ -71,14 +71,20 @@ namespace ippl {
             return  u_m[j] * v_m[k] - u_m[k] * v_m[j];
         }
 
+        template<typename ...Args>
+        KOKKOS_INLINE_FUNCTION
+        auto operator()(Args... args) const {
+            return cross(u_m(args...), v_m(args...));
+        }
+
     private:
         const E1 u_m;
         const E2 v_m;
     };
 
-    template<typename E1, typename E2>
+    template<typename E1, size_t N1, typename E2, size_t N2>
     KOKKOS_INLINE_FUNCTION
-    meta_cross<E1, E2> cross(const Expression<E1>& u, const Expression<E2>& v) {
+    meta_cross<E1, E2> cross(const Expression<E1, N1>& u, const Expression<E2, N2>& v) {
         return meta_cross<E1, E2>(*static_cast<const E1*>(&u),
                                   *static_cast<const E2*>(&v));
     }
@@ -103,62 +109,23 @@ namespace ippl {
             return res; //u_m[0] * v_m[0] + u_m[1] * v_m[1] + u_m[2] * v_m[2];
         }
 
+        template<typename ...Args>
+        KOKKOS_INLINE_FUNCTION
+        auto operator()(Args... args) const {
+            return dot(u_m(args...) * v_m(args...));
+        }
+
     private:
         const E1 u_m;
         const E2 v_m;
     };
 
-    template<typename E1, typename E2>
+    template<typename E1, size_t N1, typename E2, size_t N2>
     KOKKOS_INLINE_FUNCTION
-    typename E1::value_t dot(const Expression<E1>& u, const Expression<E2>& v) {
+    typename E1::value_t dot(const Expression<E1, N1>& u, const Expression<E2, N2>& v) {
         return meta_dot<E1, E2>(*static_cast<const E1*>(&u),
                                 *static_cast<const E2*>(&v))();
     }
-
-
-    #define DefineBinaryFieldOperation(fun, name, op1, op2)                     \
-    template<typename E1, typename E2>                                          \
-    struct fun : public FieldExpression<fun<E1, E2>> {                          \
-        fun(const E1& u, const E2& v) : u_m(u), v_m(v) { }                      \
-                                                                                \
-        auto operator[](size_t i) const { return op1; }                         \
-                                                                                \
-        template<typename ...Args>                                              \
-        auto operator()(Args... args) const {                                   \
-            return op2;                                                         \
-        }                                                                       \
-                                                                                \
-    private:                                                                    \
-        const E1 u_m;                                                           \
-        const E2 v_m;                                                           \
-    };                                                                          \
-                                                                                \
-    template<typename E1, typename E2>                                          \
-    fun<E1, E2> name(const FieldExpression<E1>& u,                              \
-                     const FieldExpression<E2>& v) {                            \
-        return fun<E1, E2>(*static_cast<const E1*>(&u),                         \
-                           *static_cast<const E2*>(&v));                        \
-    }                                                                           \
-                                                                                \
-    template<typename E, typename T,                                            \
-             typename = std::enable_if_t<std::is_scalar<T>::value>>             \
-    fun<E, Scalar<T>> name(const FieldExpression<E>& u,                         \
-                           const T& v) {                                        \
-        return fun<E, Scalar<T>>(*static_cast<const E*>(&u), v);                \
-    }                                                                           \
-                                                                                \
-    template<typename E, typename T,                                            \
-             typename = std::enable_if_t<std::is_scalar<T>::value>>             \
-    fun<E, Scalar<T>> name(const T& u,                                          \
-                           const FieldExpression<E>& v) {                       \
-        return fun<E, Scalar<T>>(*static_cast<const E*>(&v), u);                \
-    }
-
-
-    DefineBinaryFieldOperation(FieldAdd,      operator+, u_m[i] + v_m[i], u_m(args...) + v_m(args...))
-    DefineBinaryFieldOperation(FieldSubtract, operator-, u_m[i] - v_m[i], u_m(args...) - v_m(args...))
-    DefineBinaryFieldOperation(FieldMultiply, operator*, u_m[i] * v_m[i], u_m(args...) * v_m(args...))
-    DefineBinaryFieldOperation(FieldDivide,   operator/, u_m[i] / v_m[i], u_m(args...) / v_m(args...))
 }
 
 #endif

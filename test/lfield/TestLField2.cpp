@@ -17,8 +17,11 @@ int main(int argc, char *argv[]) {
 
     lfield.write();
 
-    lfield = 5.0 + ((lfield + 4.0 * lfield) * (lfield + lfield))
-           / (lfield + lfield / 2.0 + lfield) - lfield - 1.0;
+//     lfield = 5.0 + ((lfield + 4.0 * lfield) * (lfield + lfield))
+//            / (lfield + lfield / 2.0 + lfield) - lfield - 1.0;
+
+
+    lfield = lfield * (1.0 + cross(4.0 * lfield, lfield));
 
     lfield.write();
 

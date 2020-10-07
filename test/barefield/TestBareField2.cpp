@@ -30,6 +30,8 @@ int main(int argc, char *argv[]) {
 
     barefield = 2 * ((barefield + barefield) * (barefield + barefield)) / (barefield + barefield + barefield) - barefield;
 
+    barefield = 5.0 * cross(barefield, barefield);
+
     barefield.write();
 
     return 0;
