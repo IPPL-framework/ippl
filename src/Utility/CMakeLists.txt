@@ -1,7 +1,7 @@
 set (_SRCS
 #     DiscBuffer.cpp
-#     DiscConfig.cpp
-#     DiscMeta.cpp
+    DiscConfig.cpp
+    DiscMeta.cpp
 #     DiscParticleFunctions.cpp
 #     FieldDebugFunctions.cpp
     Inform.cpp
@@ -18,16 +18,16 @@ set (_SRCS
     StaticIpplInfo.cpp
     Timer.cpp
     Unique.cpp
-#     User.cpp
+    User.cpp
      UserList.cpp
     )
 
 set (_HDRS
 #     DiscBuffer.h
-#     DiscConfig.h
+    DiscConfig.h
 #     DiscField.h
 #     DiscField.hpp
-#     DiscMeta.h
+    DiscMeta.h
 #     DiscParticle.h
 #     DiscType.h
 #     FieldDebug.h
@@ -53,12 +53,12 @@ set (_HDRS
 #     RNGAssignDefs.h
     RNGXDiv.h
     RandomNumberGen.h
-#     RefCounted.h
+    RefCounted.h
 #     SequenceGen.h
     StaticIpplInfo.h
     Timer.h
     Unique.h
-#     User.h
+    User.h
     UserList.h
 #     Vec.h
     my_auto_ptr.h

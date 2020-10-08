@@ -542,8 +542,9 @@ storeSpacingFields(e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, int vnodes)
 // The general storeSpacingfields() function; others invoke this internally:
 template<unsigned Dim, class MFLOAT>
 void UniformCartesian<Dim,MFLOAT>::
-storeSpacingFields(e_dim_tag* et, int vnodes)
+storeSpacingFields(e_dim_tag* /*et*/, int /*vnodes*/)
 {
+    /*
   // VERTEX-VERTEX SPACINGS (same as CELL-CELL SPACINGS for uniform):
   NDIndex<Dim> cells, verts;
   unsigned int d;
@@ -677,6 +678,7 @@ storeSpacingFields(e_dim_tag* et, int vnodes)
   cellSpacings = vertexSpacing;
 
   hasSpacingFields = true; // Flag this as having been done to this object.
+  */
 }
 
 // These specify both the total number of vnodes and the numbers of vnodes
@@ -736,10 +738,11 @@ storeSpacingFields(e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
 // The general storeSpacingfields() function; others invoke this internally:
 template<unsigned Dim, class MFLOAT>
 void UniformCartesian<Dim,MFLOAT>::
-storeSpacingFields(e_dim_tag *p,
-		   unsigned* vnodesPerDirection,
-		   bool recurse, int vnodes)
+storeSpacingFields(e_dim_tag */*p*/,
+		   unsigned* /*vnodesPerDirection*/,
+		   bool /*recurse*/, int /*vnodes*/)
 {
+    /*
   // VERTEX-VERTEX SPACINGS (same as CELL-CELL SPACINGS for uniform):
   NDIndex<Dim> cells, verts;
   unsigned int d;
@@ -874,6 +877,7 @@ storeSpacingFields(e_dim_tag *p,
   cellSpacings = vertexSpacing;
 
   hasSpacingFields = true; // Flag this as having been done to this object.
+  */
 }
 
 //-----------------------------------------------------------------------------

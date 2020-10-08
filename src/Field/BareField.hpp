@@ -16,7 +16,7 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "Field/BareField.h"
-#include "Field/BrickExpression.h"
+// #include "Field/BrickExpression.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Message/Communicate.h"
 #include "Message/GlobalComm.h"

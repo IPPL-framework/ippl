@@ -3,16 +3,18 @@ set (_SRCS
     )
 
 set (_HDRS
-#     CartesianCentering.hpp
-#     CartesianCentering.h
-#     Cartesian.hpp
-#     Cartesian.h
-#     CartesianStencilSetup.h
-#     Centering.h
-#     Mesh.hpp
-#     Mesh.h
+    CartesianCentering.hpp
+    CartesianCentering.h
+    Cartesian.hpp
+    Cartesian.h
+    CartesianStencilSetup.h
+    Centering.h
+    Mesh.hpp
+    Mesh.h
     UniformCartesian.hpp
     UniformCartesian.h
+    Kokkos_UniformCartesian.hpp
+    Kokkos_UniformCartesian.h
     )
 
 include_directories (

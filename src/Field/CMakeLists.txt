@@ -25,8 +25,8 @@ set (_HDRS
     Kokkos_Field.h
 #     FieldLoc.h
 #     FieldSpec.h
-#     GuardCellSizes.hpp
-#     GuardCellSizes.h
+    GuardCellSizes.hpp
+    GuardCellSizes.h
 #     IndexedBareField.hpp
 #     IndexedBareField.h
 #     IndexedField.h
