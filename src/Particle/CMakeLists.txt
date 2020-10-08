@@ -2,6 +2,7 @@ set (_SRCS
     )
 
 set (_HDRS
+    AbstractParticle.h
     BoxParticleCachingPolicy.h
     CellParticleCachingPolicy.h
     GenArrayParticle.h
