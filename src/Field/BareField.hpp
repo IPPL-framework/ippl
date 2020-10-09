@@ -65,7 +65,7 @@ namespace ippl {
             int vnode = (*v_i).second->getVnode();
 
             // Put it in the list.
-            lfields_m.push_back(LField_t(owned, vnode));
+            lfields_m.push_back(std::shared_ptr<LField_t>(new LField_t(owned, vnode)));
         }
     }
 
@@ -73,7 +73,7 @@ namespace ippl {
     template<typename T, unsigned Dim>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
         for (auto& lf : lfields_m) {
-            lf = x;
+            *lf = x;
         }
         return *this;
     }
@@ -83,7 +83,7 @@ namespace ippl {
     template <typename E>
     BareField<T, Dim>& BareField<T, Dim>::operator=(const FieldExpression<E>& expr) {
         for (size_t i = 0; i < lfields_m.size(); ++i) {
-            lfields_m[i] = expr[i];
+            *lfields_m[i] = expr[i];
         }
         return *this;
     }
@@ -91,7 +91,7 @@ namespace ippl {
     template<typename T, unsigned Dim>
     void BareField<T, Dim>::write(std::ostream& out) {
         for (const auto& lf : lfields_m) {
-            lf.write(out);
+            lf->write(out);
         }
     }
 }

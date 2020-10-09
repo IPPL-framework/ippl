@@ -66,19 +66,19 @@ namespace ippl {
         // a FieldLayout.
         void initialize(Layout_t &);
 
-        typedef std::deque<LField_t> container_t;
+        typedef std::deque<std::shared_ptr<LField_t>> container_t;
 
         LField_t& operator()(size_t i) {
-            return lfields_m[i];
+            return *lfields_m[i];
         }
 
         const LField_t& operator()(size_t i) const {
-            return lfields_m[i];
+            return *lfields_m[i];
         }
 
 
         const LField_t& operator[](size_t i) const {
-            return lfields_m[i];
+            return *lfields_m[i];
         }
 
 
