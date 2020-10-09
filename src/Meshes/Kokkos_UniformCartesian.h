@@ -1,110 +1,102 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- *
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
-
+//
+// Class UniformCartesian
+//   UniformCartesian class - represents uniform-spacing cartesian meshes.
+//
+// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #ifndef IPPL_UNIFORM_CARTESIAN_H
 #define IPPL_UNIFORM_CARTESIAN_H
 
-// UniformCartesian.h
-// UniformCartesian class - represents uniform-spacing cartesian meshes.
-
-// include files
-#include "Meshes/Mesh.h"
-#include "Meshes/Centering.h"
+#include "Meshes/Kokkos_Mesh.h"
 #include "Meshes/CartesianCentering.h"
 #include "AppTypes/Vector.h"
 
-// // forward declarations
-// template<class T, unsigned D> class BareField;
-// template<class T, unsigned D, class M, class C> class Field;
-// template <unsigned Dim, class MFLOAT> class UniformCartesian;
-// template <unsigned Dim, class MFLOAT>
-// std::ostream& operator<<(std::ostream&, const UniformCartesian<Dim,MFLOAT>&);
-// template <unsigned Dim, class MFLOAT>
-// Inform& operator<<(Inform&, const UniformCartesian<Dim,MFLOAT>&);
-
 namespace ippl {
 
-template <unsigned Dim, class MFLOAT=double>
-class UniformCartesian : public Mesh<Dim>
-{
+template<typename T, unsigned Dim>
+class UniformCartesian : public Mesh<T, Dim> {
+
 public:
-  //# public typedefs
-  typedef Cell DefaultCentering;
-  typedef MFLOAT MeshValue_t;
-  typedef Vector<MFLOAT,Dim> MeshVector_t;
+    typedef typename Mesh<T, Dim>::MeshVector_t MeshVector_t;
 
-  // Default constructor (use initialize() to make valid)
-  UniformCartesian()
-  {
-    hasSpacingFields = false;
-  };
-  // Destructor
-  ~UniformCartesian()
-  {
-    if (hasSpacingFields) {
-      delete VertSpacings;
-      delete CellSpacings;
-      delete FlVert;
-      delete FlCell;
-    }
-  };
+    typedef Cell DefaultCentering;
 
-  // Non-default constructors
-  UniformCartesian(const NDIndex<Dim>& ndi);
-  UniformCartesian(const Index& I);
-  UniformCartesian(const Index& I, const Index& J);
-  UniformCartesian(const Index& I, const Index& J, const Index& K);
-  // These also take a MFLOAT* specifying the mesh spacings:
-  UniformCartesian(const NDIndex<Dim>& ndi, MFLOAT* const delX);
-  UniformCartesian(const Index& I, MFLOAT* const delX);
-  UniformCartesian(const Index& I, const Index& J, MFLOAT* const delX);
-  UniformCartesian(const Index& I, const Index& J, const Index& K,
-                   MFLOAT* const delX);
-  // These further take a Vector<MFLOAT,Dim>& specifying the origin:
-  UniformCartesian(const NDIndex<Dim>& ndi, MFLOAT* const delX,
-                   const Vector<MFLOAT,Dim>& orig);
-  UniformCartesian(const Index& I, MFLOAT* const delX,
-                   const Vector<MFLOAT,Dim>& orig);
-  UniformCartesian(const Index& I, const Index& J, MFLOAT* const delX,
-                   const Vector<MFLOAT,Dim>& orig);
-  UniformCartesian(const Index& I, const Index& J, const Index& K,
-                   MFLOAT* const delX, const Vector<MFLOAT,Dim>& orig);
 
-  // initialize functions
-  void initialize(const NDIndex<Dim>& ndi);
-  void initialize(const Index& I);
-  void initialize(const Index& I, const Index& J);
-  void initialize(const Index& I, const Index& J, const Index& K);
-  // These also take a MFLOAT* specifying the mesh spacings:
-  void initialize(const NDIndex<Dim>& ndi, MFLOAT* const delX);
-  void initialize(const Index& I, MFLOAT* const delX);
-  void initialize(const Index& I, const Index& J, MFLOAT* const delX);
-  void initialize(const Index& I, const Index& J, const Index& K,
-                  MFLOAT* const delX);
-  // These further take a Vector<MFLOAT,Dim>& specifying the origin:
-  void initialize(const NDIndex<Dim>& ndi, MFLOAT* const delX,
-                  const Vector<MFLOAT,Dim>& orig);
-  void initialize(const Index& I, MFLOAT* const delX,
-                  const Vector<MFLOAT,Dim>& orig);
-  void initialize(const Index& I, const Index& J, MFLOAT* const delX,
-                  const Vector<MFLOAT,Dim>& orig);
-  void initialize(const Index& I, const Index& J, const Index& K,
-                  MFLOAT* const delX, const Vector<MFLOAT,Dim>& orig);
+    UniformCartesian();
 
+    ~UniformCartesian();
+
+    // Non-default constructors
+    UniformCartesian(const NDIndex<Dim>& ndi);
+    UniformCartesian(const Index& I);
+    UniformCartesian(const Index& I, const Index& J);
+    UniformCartesian(const Index& I, const Index& J, const Index& K);
+    // These also take a T* specifying the mesh spacings:
+    UniformCartesian(const NDIndex<Dim>& ndi, T* const delX);
+    UniformCartesian(const Index& I, T* const delX);
+    UniformCartesian(const Index& I, const Index& J, T* const delX);
+    UniformCartesian(const Index& I, const Index& J, const Index& K,
+                    T* const delX);
+    // These further take a Vector<T,Dim>& specifying the origin:
+    UniformCartesian(const NDIndex<Dim>& ndi, T* const delX,
+                    const Vector<T,Dim>& orig);
+    UniformCartesian(const Index& I, T* const delX,
+                    const Vector<T,Dim>& orig);
+    UniformCartesian(const Index& I, const Index& J, T* const delX,
+                    const Vector<T,Dim>& orig);
+    UniformCartesian(const Index& I, const Index& J, const Index& K,
+                    T* const delX, const Vector<T,Dim>& orig);
+
+    // initialize functions
+    void initialize(const NDIndex<Dim>& ndi);
+    void initialize(const Index& I);
+    void initialize(const Index& I, const Index& J);
+    void initialize(const Index& I, const Index& J, const Index& K);
+    // These also take a T* specifying the mesh spacings:
+    void initialize(const NDIndex<Dim>& ndi, T* const delX);
+    void initialize(const Index& I, T* const delX);
+    void initialize(const Index& I, const Index& J, T* const delX);
+    void initialize(const Index& I, const Index& J, const Index& K,
+                    T* const delX);
+    // These further take a Vector<T,Dim>& specifying the origin:
+    void initialize(const NDIndex<Dim>& ndi, T* const delX,
+                    const Vector<T,Dim>& orig);
+    void initialize(const Index& I, T* const delX,
+                    const Vector<T,Dim>& orig);
+    void initialize(const Index& I, const Index& J, T* const delX,
+                    const Vector<T,Dim>& orig);
+    void initialize(const Index& I, const Index& J, const Index& K,
+                    T* const delX, const Vector<T,Dim>& orig);
+
+
+
+    // Get the spacings of mesh vertex positions along specified direction
+    T getMeshSpacing(unsigned dim) const;
+
+    // Set the spacings of mesh vertex positions (recompute Dvc, cell volume):
+    void setMeshSpacing(const MeshVector_t& meshSpacing);
+
+
+    T getCellVolume() const;
 
 private:
+    MeshVector_t meshSpacing_m;     // delta-x, delta-y (>1D), delta-z (>2D)
+    T volume_m;                     // Cell length(1D), area(2D), or volume (>2D)
 
-  // Private member data:
-  MFLOAT meshSpacing[Dim];   // delta-x, delta-y (>1D), delta-z (>2D)
-  MFLOAT volume;             // Cell length(1D), area(2D), or volume (>2D)
-  Vector<MFLOAT,Dim> origin; // Origin of mesh coordinates (vertices)
+
+
+
   FieldLayout<Dim>* FlCell;  // Layouts for BareField* CellSpacings
   FieldLayout<Dim>* FlVert;  // Layouts for BareField* VertSpacings
 
@@ -117,11 +109,10 @@ private:
 public:
 
   // Public member data:
-  unsigned gridSizes[Dim];        // Sizes (number of vertices)
-  Vector<MFLOAT,Dim> Dvc[1<<Dim]; // Constants for derivatives.
-  bool hasSpacingFields;              // Flags allocation of the following:
-  BareField<Vector<MFLOAT,Dim>,Dim>* VertSpacings;
-  BareField<Vector<MFLOAT,Dim>,Dim>* CellSpacings;
+  Vector<T,Dim> Dvc[1<<Dim]; // Constants for derivatives.
+  bool hasSpacingFields_m;              // Flags allocation of the following:
+  BareField<Vector<T,Dim>,Dim>* VertSpacings;
+  BareField<Vector<T,Dim>,Dim>* CellSpacings;
 
   // Public member functions:
 
@@ -161,19 +152,6 @@ public:
 			  unsigned* vnodesPerDirection,
 			  bool recurse=false, int vnodes=-1);
 
-  // Accessor functions for member data:
-  // Get the origin of mesh vertex positions:
-  Vector<MFLOAT,Dim> get_origin() const;
-  // Get the spacings of mesh vertex positions along specified direction:
-  MFLOAT get_meshSpacing(unsigned d) const;
-  // Get the cell volume:
-  MFLOAT get_volume() const;
-
-  // Set functions for member data:
-  // Set the origin of mesh vertex positions:
-  void set_origin(const Vector<MFLOAT,Dim>& o);
-  // Set the spacings of mesh vertex positions (recompute Dvc, cell volume):
-  void set_meshSpacing(MFLOAT* const del);
 
   // Formatted output of UniformCartesian object:
   void print(std::ostream&);
@@ -185,22 +163,22 @@ public:
 // // I/O
 //
 // // Stream formatted output of UniformCartesian object:
-// template< unsigned Dim, class MFLOAT >
+// template< unsigned Dim, class T >
 // inline
-// std::ostream& operator<<(std::ostream& out, const UniformCartesian<Dim,MFLOAT>& mesh)
+// std::ostream& operator<<(std::ostream& out, const UniformCartesian<Dim,T>& mesh)
 // {
-//   UniformCartesian<Dim,MFLOAT>& ncmesh =
-//     const_cast<UniformCartesian<Dim,MFLOAT>&>(mesh);
+//   UniformCartesian<Dim,T>& ncmesh =
+//     const_cast<UniformCartesian<Dim,T>&>(mesh);
 //   ncmesh.print(out);
 //   return out;
 // }
 //
-// template< unsigned Dim, class MFLOAT >
+// template< unsigned Dim, class T >
 // inline
-// Inform& operator<<(Inform& out, const UniformCartesian<Dim,MFLOAT>& mesh)
+// Inform& operator<<(Inform& out, const UniformCartesian<Dim,T>& mesh)
 // {
-//   UniformCartesian<Dim,MFLOAT>& ncmesh =
-//     const_cast<UniformCartesian<Dim,MFLOAT>&>(mesh);
+//   UniformCartesian<Dim,T>& ncmesh =
+//     const_cast<UniformCartesian<Dim,T>&>(mesh);
 //   ncmesh.print(out);
 //   return out;
 // }

@@ -21,10 +21,13 @@ int main(int argc, char *argv[]) {
     FieldLayout<dim> layout(owned,allParallel, 1);
 
 
-    typedef ippl::Kokkos_Field<double, dim> field_type;
+    typedef ippl::Field<double, dim> field_type;
 
     field_type field(layout);
 
+    field = 1.0;
+
+    field.write();
 
 
     return 0;

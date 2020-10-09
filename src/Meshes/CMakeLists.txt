@@ -11,10 +11,12 @@ set (_HDRS
     Centering.h
     Mesh.hpp
     Mesh.h
+    Kokkos_Mesh.h
+    Kokkos_Mesh.hpp
     UniformCartesian.hpp
     UniformCartesian.h
-    Kokkos_UniformCartesian.hpp
     Kokkos_UniformCartesian.h
+    Kokkos_UniformCartesian.hpp
     )
 
 include_directories (

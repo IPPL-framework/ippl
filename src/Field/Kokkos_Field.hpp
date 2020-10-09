@@ -1,7 +1,3 @@
-#include "Field/Kokkos_Field.h"
-// #include "Index/SIndex.h"
-
-
 //=============================================================================
 // Global functions
 //=============================================================================
@@ -14,7 +10,7 @@
 // compile error instead of this runtime error if he specifies an unsupported
 // mesh type for the Field Mesh parameter --tjw):
 // template<class T, unsigned Dim, class M, class C>
-// M* makeMesh(Kokkos_Field<T,Dim,M,C>& f)
+// M* makeMesh(Field<T,Dim,M,C>& f)
 // {
 //   ERRORMSG("makeMesh() invoked from Field(): unimplemented mesh type" << endl);
 // }
@@ -24,7 +20,7 @@ namespace ippl {
 
     // Generic makeMesh function
     template<class T, unsigned Dim, class M, class C>
-    inline M* makeMesh(Kokkos_Field<T,Dim,M,C>& f)
+    inline M* makeMesh(Field<T,Dim,M,C>& f)
     {
         NDIndex<Dim> ndi;
         ndi = f.getLayout().getDomain();
@@ -35,7 +31,7 @@ namespace ippl {
     // Specialization for UniformCartesian
     template<class T, unsigned Dim, class MFLOAT, class C>
     UniformCartesian<Dim,MFLOAT>*
-    makeMesh(Kokkos_Field<T,Dim,UniformCartesian<Dim,MFLOAT>,C>& f)
+    makeMesh(Field<T,Dim,UniformCartesian<Dim,MFLOAT>,C>& f)
     {
 
 
@@ -48,7 +44,7 @@ namespace ippl {
     // Specialization for Cartesian
     template<class T, unsigned Dim, class MFLOAT, class C>
     Cartesian<Dim,MFLOAT>*
-    makeMesh(Kokkos_Field<T,Dim,Cartesian<Dim,MFLOAT>,C>& f)
+    makeMesh(Field<T,Dim,Cartesian<Dim,MFLOAT>,C>& f)
     {
 
 
@@ -70,7 +66,7 @@ namespace ippl {
     // checks in the rest of the Field methods to check that the Field has
     // been properly initialized
     template<class T, unsigned Dim, class M, class C>
-    Kokkos_Field<T,Dim,M,C>::Kokkos_Field() {
+    Field<T,Dim,M,C>::Field() {
         store_mesh(0, true);
     }
 
@@ -78,7 +74,7 @@ namespace ippl {
     //////////////////////////////////////////////////////////////////////////
     // Field destructor
     template<class T, unsigned Dim, class M, class C>
-    Kokkos_Field<T,Dim,M,C>::~Kokkos_Field() {
+    Field<T,Dim,M,C>::~Field() {
         delete_mesh();
     }
 
@@ -89,14 +85,14 @@ namespace ippl {
     // The makeMesh() global function is a way to allow for different types of
     // constructor arguments for different mesh types.
     template<class T, unsigned Dim, class M, class C>
-    Kokkos_Field<T,Dim,M,C>::Kokkos_Field(Layout_t & l) : BareField<T,Dim>(l) {
+    Field<T,Dim,M,C>::Field(Layout_t & l) : BareField<T,Dim>(l) {
         store_mesh(makeMesh(*this), true);
     }
 
     //////////////////////////////////////////////////////////////////////////
     // Constructors which include a Mesh object as argument
     template<class T, unsigned Dim, class M, class C>
-    Kokkos_Field<T,Dim,M,C>::Kokkos_Field(Mesh_t& m, Layout_t & l)
+    Field<T,Dim,M,C>::Field(Mesh_t& m, Layout_t & l)
         : BareField<T,Dim>(l)
     {
         store_mesh(&m, false);
@@ -107,7 +103,7 @@ namespace ippl {
     // This should NOT be called if the Field was constructed by providing
     // a FieldLayout or FieldSpec
     template<class T, unsigned Dim, class M, class C>
-    void Kokkos_Field<T,Dim,M,C>::initialize(Layout_t & l) {
+    void Field<T,Dim,M,C>::initialize(Layout_t & l) {
         BareField<T,Dim>::initialize(l);
         store_mesh(makeMesh(*this), true);
     }
@@ -118,7 +114,7 @@ namespace ippl {
     //////////////////////////////////////////////////////////////////////////
     // Initialize the Field, also specifying a mesh
     template<class T, unsigned Dim, class M, class C>
-    void Kokkos_Field<T,Dim,M,C>::initialize(Mesh_t& m, Layout_t & l) {
+    void Field<T,Dim,M,C>::initialize(Mesh_t& m, Layout_t & l) {
         BareField<T,Dim>::initialize(l);
         store_mesh(&m, false);
     }
@@ -127,7 +123,7 @@ namespace ippl {
     //////////////////////////////////////////////////////////////////////////
     // store the given mesh object pointer, and the flag whether we use it or not
     template<class T, unsigned Dim, class M, class C>
-    void Kokkos_Field<T,Dim,M,C>::store_mesh(Mesh_t* m, bool WeOwn) {
+    void Field<T,Dim,M,C>::store_mesh(Mesh_t* m, bool WeOwn) {
         mesh = m;
         WeOwnMesh = WeOwn;
         //FIXME
@@ -139,7 +135,7 @@ namespace ippl {
     //////////////////////////////////////////////////////////////////////////
     // delete the mesh object, if necessary; otherwise, just zero the pointer
     template<class T, unsigned Dim, class M, class C>
-    void Kokkos_Field<T,Dim,M,C>::delete_mesh() {
+    void Field<T,Dim,M,C>::delete_mesh() {
         if (mesh != 0) {
             //FIXME
 //             mesh->checkout(*this);
