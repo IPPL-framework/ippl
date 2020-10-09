@@ -29,6 +29,8 @@ int main(int argc, char *argv[]) {
 
     field.write();
 
+    ippl::UniformCartesian<double, 2> unif(I, I);
+
 
     return 0;
 }

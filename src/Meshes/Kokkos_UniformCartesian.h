@@ -38,25 +38,65 @@ public:
     ~UniformCartesian();
 
     // Non-default constructors
-    UniformCartesian(const NDIndex<Dim>& ndi);
-    UniformCartesian(const Index& I);
-    UniformCartesian(const Index& I, const Index& J);
-    UniformCartesian(const Index& I, const Index& J, const Index& K);
-    // These also take a T* specifying the mesh spacings:
-    UniformCartesian(const NDIndex<Dim>& ndi, T* const delX);
-    UniformCartesian(const Index& I, T* const delX);
-    UniformCartesian(const Index& I, const Index& J, T* const delX);
-    UniformCartesian(const Index& I, const Index& J, const Index& K,
-                    T* const delX);
-    // These further take a Vector<T,Dim>& specifying the origin:
-    UniformCartesian(const NDIndex<Dim>& ndi, T* const delX,
-                    const Vector<T,Dim>& orig);
-    UniformCartesian(const Index& I, T* const delX,
-                    const Vector<T,Dim>& orig);
-    UniformCartesian(const Index& I, const Index& J, T* const delX,
-                    const Vector<T,Dim>& orig);
-    UniformCartesian(const Index& I, const Index& J, const Index& K,
-                    T* const delX, const Vector<T,Dim>& orig);
+    UniformCartesian(const NDIndex<Dim>& ndi,
+                     bool evalCellVolume = true);
+
+    UniformCartesian(const NDIndex<Dim>& ndi,
+                     const MeshVector_t& hx);
+
+    UniformCartesian(const NDIndex<Dim>& ndi,
+                     const MeshVector_t& hx,
+                     const MeshVector_t& origin);
+
+    /*
+     * Dim == 1
+     */
+    UniformCartesian(const Index& I,
+                     bool evalCellVolume = true);
+
+    UniformCartesian(const Index& I,
+                     const MeshVector_t& hx);
+
+    UniformCartesian(const Index& I,
+                     const MeshVector_t& hx,
+                     const MeshVector_t& origin);
+
+    /*
+     * Dim == 2
+     */
+    UniformCartesian(const Index& I,
+                     const Index& J,
+                     bool evalCellVolume = true);
+
+    UniformCartesian(const Index& I,
+                     const Index& J,
+                     const MeshVector_t& hx);
+
+    UniformCartesian(const Index& I,
+                     const Index& J,
+                     const MeshVector_t& hx,
+                     const MeshVector_t& orig);
+
+    /*
+     * Dim == 3
+     */
+    UniformCartesian(const Index& I,
+                     const Index& J,
+                     const Index& K,
+                     bool evalCellVolume = true);
+
+    UniformCartesian(const Index& I,
+                     const Index& J,
+                     const Index& K,
+                     const MeshVector_t& hx);
+
+
+    UniformCartesian(const Index& I,
+                     const Index& J,
+                     const Index& K,
+                     const MeshVector_t& hx,
+                     const MeshVector_t& orig);
+
 
     // initialize functions
     void initialize(const NDIndex<Dim>& ndi);
@@ -69,15 +109,15 @@ public:
     void initialize(const Index& I, const Index& J, T* const delX);
     void initialize(const Index& I, const Index& J, const Index& K,
                     T* const delX);
-    // These further take a Vector<T,Dim>& specifying the origin:
+    // These further take a MeshVector_t& specifying the origin:
     void initialize(const NDIndex<Dim>& ndi, T* const delX,
-                    const Vector<T,Dim>& orig);
+                    const MeshVector_t& orig);
     void initialize(const Index& I, T* const delX,
-                    const Vector<T,Dim>& orig);
+                    const MeshVector_t& orig);
     void initialize(const Index& I, const Index& J, T* const delX,
-                    const Vector<T,Dim>& orig);
+                    const MeshVector_t& orig);
     void initialize(const Index& I, const Index& J, const Index& K,
-                    T* const delX, const Vector<T,Dim>& orig);
+                    T* const delX, const MeshVector_t& orig);
 
 
 
@@ -100,19 +140,20 @@ private:
   FieldLayout<Dim>* FlCell;  // Layouts for BareField* CellSpacings
   FieldLayout<Dim>* FlVert;  // Layouts for BareField* VertSpacings
 
-  // Private member functions:
-  void setup(); // Private function doing tasks common to all constructors.
+
   // Set only the derivative constants, using pre-set spacings:
   void set_Dvc();
+
+  void updateCellVolume_m();
 
 
 public:
 
   // Public member data:
-  Vector<T,Dim> Dvc[1<<Dim]; // Constants for derivatives.
+  MeshVector_t Dvc[1<<Dim]; // Constants for derivatives.
   bool hasSpacingFields_m;              // Flags allocation of the following:
-  BareField<Vector<T,Dim>,Dim>* VertSpacings;
-  BareField<Vector<T,Dim>,Dim>* CellSpacings;
+  BareField<MeshVector_t,Dim>* VertSpacings;
+  BareField<MeshVector_t,Dim>* CellSpacings;
 
   // Public member functions:
 

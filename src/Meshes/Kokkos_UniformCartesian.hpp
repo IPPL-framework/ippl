@@ -26,8 +26,14 @@ namespace ippl {
     template<typename T, unsigned Dim>
     UniformCartesian<T, Dim>::UniformCartesian()
         : Mesh<T, Dim>()
+        , volume_m(0.0)
+        , FlCell(0)
+        , FlVert(0)
         , hasSpacingFields_m(false)
+        , VertSpacings(0)
+        , CellSpacings(0)
     { }
+
 
     template<typename T, unsigned Dim>
     UniformCartesian<T, Dim>::~UniformCartesian() {
@@ -51,12 +57,7 @@ namespace ippl {
     template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::setMeshSpacing(const MeshVector_t& meshSpacing) {
         meshSpacing_m = meshSpacing;
-
-        // update cell volume
-        volume_m = 1.0;
-        for (unsigned i = 0; i < Dim; ++i) {
-            volume_m *= meshSpacing_m[i];
-        }
+        this->updateCellVolume_m();
     }
 
 
@@ -66,202 +67,175 @@ namespace ippl {
     }
 
 
+    template<typename T, unsigned Dim>
+    void UniformCartesian<T, Dim>::updateCellVolume_m() {
+        // update cell volume
+        volume_m = 1.0;
+        for (unsigned i = 0; i < Dim; ++i) {
+            volume_m *= meshSpacing_m[i];
+        }
+    }
 
 
-//-----------------------------------------------------------------------------
-// Setup chores common to all constructors:
-//-----------------------------------------------------------------------------
-template<typename T, unsigned Dim>
-void
-UniformCartesian<T, Dim>::
-setup()
-{
-  hasSpacingFields_m = false;
-  FlCell = 0;
-  FlVert = 0;
-  VertSpacings = 0;
-  CellSpacings = 0;
-  volume_m = 0.0;
-}
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const NDIndex<Dim>& ndi,
+                                               bool evalCellVolume)
+        : UniformCartesian()
+    {
+        for (unsigned d=0; d<Dim; d++) {
+            this->gridSizes_m[d] = ndi[d].length();
+            meshSpacing_m[d]     = ndi[d].stride();
+            this->origin_m(d)    = ndi[d].first();
+        }
 
-//-----------------------------------------------------------------------------
-// Constructors from NDIndex object:
-//-----------------------------------------------------------------------------
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const NDIndex<Dim>& ndi)
-{
-  setup();
-  for (unsigned int d=0; d<Dim; d++) {
-    this->gridSizes_m[d] = ndi[d].length(); // Number of vertices along this dimension.
-    meshSpacing_m[d] = ndi[d].stride();  // Default mesh spacing from stride()
-    this->origin_m(d) = ndi[d].first();     // Default this->origin_m at ndi[d].first
-  }
-  volume_m = 1.0;               // Default mesh has unit cell volume_m.
-  set_Dvc();                  // Set derivative coefficients from spacings.
-}
-// Also specify mesh spacings:
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const NDIndex<Dim>& ndi, T* const delX)
-{
-  setup();
-  for (unsigned int d=0; d<Dim; d++) {
-    this->gridSizes_m[d] = ndi[d].length(); // Number of vertices along this dimension.
-    this->origin_m(d) = ndi[d].first();     // Default this->origin_m at ndi[d].first
-  }
-  this->setMeshSpacing(delX);      // Set mesh spacings and compute cell volume_m
-}
-// Also specify mesh spacings and this->origin_m:
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const NDIndex<Dim>& ndi, T* const delX,
-                 const Vector<T,Dim>& orig)
-{
-  setup();
-  for (unsigned int d=0; d<Dim; d++) {
-    this->gridSizes_m[d] = ndi[d].length(); // Number of vertices along this dimension.
-  }
-  this->setOrigin(orig);           // Set this->origin_m.
-  this->setMeshSpacing(delX);      // Set mesh spacings and compute cell volume_m
-}
-//-----------------------------------------------------------------------------
-// Constructors from Index objects:
-//-----------------------------------------------------------------------------
+        if (evalCellVolume)
+            updateCellVolume_m();
 
-//===========1D============
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const Index& I)
-{
-  PInsist(Dim==1,"Number of Index arguments does not match mesh dimension!!");
-  setup();
-  this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
-  meshSpacing_m[0] = I.stride();       // Default mesh spacing from stride()
-  this->origin_m(0) = I.first();      // Default this->origin_m at I.first()
+        set_Dvc();                  // Set derivative coefficients from spacings.
+    }
 
-  volume_m = 1.0;               // Default mesh has unit cell volume_m.
-  set_Dvc();                  // Set derivative coefficients from spacings.
-}
-// Also specify mesh spacings:
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const Index& I, T* const delX)
-{
-  PInsist(Dim==1,"Number of Index arguments does not match mesh dimension!!");
-  setup();
-  this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
-  this->origin_m(0) = I.first();      // Default this->origin_m at I.first()
 
-  this->setMeshSpacing(delX);      // Set mesh spacings and compute cell volume_m
-}
-// Also specify mesh spacings and this->origin_m:
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const Index& I, T* const delX,
-                 const Vector<T,Dim>& orig)
-{
-  PInsist(Dim==1,"Number of Index arguments does not match mesh dimension!!");
-  setup();
-  this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
-  this->setOrigin(orig);           // Set this->origin_m.
-  this->setMeshSpacing(delX);      // Set mesh spacings and compute cell volume_m
-}
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const NDIndex<Dim>& ndi,
+                                               const MeshVector_t& hx)
+        : UniformCartesian(ndi, false)
+    {
+        setMeshSpacing(hx);
+    }
 
-//===========2D============
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const Index& I, const Index& J)
-{
-  PInsist(Dim==2,"Number of Index arguments does not match mesh dimension!!");
-  setup();
-  this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
-  this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
-  meshSpacing_m[0] = I.stride();       // Default mesh spacing from stride()
-  meshSpacing_m[1] = J.stride();
-  this->origin_m(0) = I.first();      // Default this->origin_m at (I.first(),J.first())
-  this->origin_m(1) = J.first();
 
-  volume_m = 1.0;               // Default mesh has unit cell volume_m.
-  set_Dvc();                  // Set derivative coefficients from spacings.
-}
-// Also specify mesh spacings:
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const Index& I, const Index& J, T* const delX)
-{
-  PInsist(Dim==2,"Number of Index arguments does not match mesh dimension!!");
-  setup();
-  this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
-  this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
-  this->origin_m(0) = I.first();      // Default this->origin_m at (I.first(),J.first())
-  this->origin_m(1) = J.first();
-  this->setMeshSpacing(delX);      // Set mesh spacings and compute cell volume_m
-}
-// Also specify mesh spacings and this->origin_m:
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const Index& I, const Index& J, T* const delX,
-                 const Vector<T,Dim>& orig)
-{
-  PInsist(Dim==2,"Number of Index arguments does not match mesh dimension!!");
-  setup();
-  this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
-  this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
-  this->setOrigin(orig);           // Set this->origin_m.
-  this->setMeshSpacing(delX);      // Set mesh spacings and compute cell volume_m
-}
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const NDIndex<Dim>& ndi,
+                                               const MeshVector_t& hx,
+                                               const MeshVector_t& origin)
+        : UniformCartesian(ndi, hx)
+    {
+        this->setOrigin(origin);
+    }
 
-//===========3D============
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const Index& I, const Index& J, const Index& K)
-{
-  PInsist(Dim==3,"Number of Index arguments does not match mesh dimension!!");
-  setup();
-  this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
-  this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
-  this->gridSizes_m[2] = K.length();  // Number of vertices along this dimension.
-  meshSpacing_m[0] = I.stride();       // Default mesh spacing from stride()
-  meshSpacing_m[1] = J.stride();
-  meshSpacing_m[2] = K.stride();
-  this->origin_m(0) = I.first();   // Default this->origin_m at (I.first(),J.first(),K.first())
-  this->origin_m(1) = J.first();
-  this->origin_m(2) = K.first();
 
-  volume_m = 1.0;               // Default mesh has unit cell volume_m.
-  set_Dvc();                  // Set derivative coefficients from spacings.
-}
-// Also specify mesh spacings:
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const Index& I, const Index& J, const Index& K,
-                 T* const delX)
-{
-  PInsist(Dim==3,"Number of Index arguments does not match mesh dimension!!");
-  setup();
-  this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
-  this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
-  this->gridSizes_m[2] = K.length();  // Number of vertices along this dimension.
-  this->origin_m(0) = I.first();   // Default this->origin_m at (I.first(),J.first(),K.first())
-  this->origin_m(1) = J.first();
-  this->origin_m(2) = K.first();
-  this->setMeshSpacing(delX);      // Set mesh spacings and compute cell volume_m
-}
-// Also specify mesh spacings and this->origin_m:
-template<typename T, unsigned Dim>
-UniformCartesian<T, Dim>::
-UniformCartesian(const Index& I, const Index& J, const Index& K,
-                 T* const delX, const Vector<T,Dim>& orig)
-{
-  PInsist(Dim==3,"Number of Index arguments does not match mesh dimension!!");
-  setup();
-  this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
-  this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
-  this->gridSizes_m[2] = K.length();  // Number of vertices along this dimension.
-  this->setOrigin(orig);           // Set this->origin_m.
-  this->setMeshSpacing(delX);      // Set mesh spacings and compute cell volume_m
-}
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
+                                               bool evalCellVolume)
+        : UniformCartesian()
+    {
+        PInsist(Dim==1, "Number of Index arguments does not match mesh dimension!!");
+        this->gridSizes_m[0] = I.length();
+        meshSpacing_m[0]     = I.stride();
+        this->origin_m[0]    = I.first();
+
+        if (evalCellVolume)
+            updateCellVolume_m();
+    }
+
+
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
+                                               const MeshVector_t& hx)
+        : UniformCartesian(I, false)
+    {
+        setMeshSpacing(hx);
+    }
+
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
+                                               const MeshVector_t& hx,
+                                               const MeshVector_t& origin)
+        : UniformCartesian(I, hx)
+    {
+        this->setOrigin(origin);
+    }
+
+
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const Index& I, const Index& J,
+                                               bool evalCellVolume)
+        : UniformCartesian()
+    {
+        PInsist(Dim==2, "Number of Index arguments does not match mesh dimension!!");
+
+        this->gridSizes_m[0] = I.length();
+        this->gridSizes_m[1] = J.length();
+        meshSpacing_m[0] = I.stride();
+        meshSpacing_m[1] = J.stride();
+        this->origin_m(0) = I.first();
+        this->origin_m(1) = J.first();
+
+        if (evalCellVolume)
+            updateCellVolume_m();
+
+        set_Dvc();
+    }
+
+
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
+                                               const Index& J,
+                                               const MeshVector_t& hx)
+        : UniformCartesian(I, J, false)
+    {
+        setMeshSpacing(hx);
+    }
+
+
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
+                                               const Index& J,
+                                               const MeshVector_t& hx,
+                                               const MeshVector_t& origin)
+        : UniformCartesian(I, J, hx)
+    {
+        this->setOrigin(origin);
+    }
+
+
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
+                                               const Index& J,
+                                               const Index& K,
+                                               bool evalCellVolume)
+        : UniformCartesian()
+    {
+        PInsist(Dim==3,"Number of Index arguments does not match mesh dimension!!");
+        this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
+        this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
+        this->gridSizes_m[2] = K.length();  // Number of vertices along this dimension.
+        meshSpacing_m[0] = I.stride();       // Default mesh spacing from stride()
+        meshSpacing_m[1] = J.stride();
+        meshSpacing_m[2] = K.stride();
+        this->origin_m(0) = I.first();   // Default this->origin_m at (I.first(),J.first(),K.first())
+        this->origin_m(1) = J.first();
+        this->origin_m(2) = K.first();
+
+        if (evalCellVolume)
+            updateCellVolume_m();
+
+        set_Dvc();                  // Set derivative coefficients from spacings.
+    }
+
+
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
+                                               const Index& J,
+                                               const Index& K,
+                                               const MeshVector_t& hx)
+        : UniformCartesian(I, J, K, false)
+    {
+        this->setMeshSpacing(hx);
+    }
+
+
+    template<typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
+                                               const Index& J,
+                                               const Index& K,
+                                               const MeshVector_t& hx,
+                                               const MeshVector_t& orig)
+        : UniformCartesian(I, J, K, hx)
+    {
+        this->setOrigin(orig);
+    }
+
 
 //-----------------------------------------------------------------------------
 // initialize with NDIndex object:
@@ -271,7 +245,7 @@ void
 UniformCartesian<T, Dim>::
 initialize(const NDIndex<Dim>& ndi)
 {
-  setup();
+  // setup();
   for (unsigned int d=0; d<Dim; d++) {
     this->gridSizes_m[d] = ndi[d].length(); // Number of vertices along this dimension.
     meshSpacing_m[d] = ndi[d].stride();  // Default mesh spacing from stride()
@@ -286,7 +260,7 @@ void
 UniformCartesian<T, Dim>::
 initialize(const NDIndex<Dim>& ndi, T* const delX)
 {
-  setup();
+  // setup();
   for (unsigned int d=0; d<Dim; d++) {
     this->gridSizes_m[d] = ndi[d].length(); // Number of vertices along this dimension.
     this->origin_m(d) = ndi[d].first();     // Default this->origin_m at ndi[d].first
@@ -298,9 +272,9 @@ template<typename T, unsigned Dim>
 void
 UniformCartesian<T, Dim>::
 initialize(const NDIndex<Dim>& ndi, T* const delX,
-           const Vector<T,Dim>& orig)
+           const MeshVector_t& orig)
 {
-  setup();
+  // setup();
   for (unsigned int d=0; d<Dim; d++) {
     this->gridSizes_m[d] = ndi[d].length(); // Number of vertices along this dimension.
   }
@@ -318,7 +292,7 @@ UniformCartesian<T, Dim>::
 initialize(const Index& I)
 {
   PInsist(Dim==1,"Number of Index arguments does not match mesh dimension!!");
-  setup();
+  // setup();
   this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
   meshSpacing_m[0] = I.stride();       // Default mesh spacing from stride()
   this->origin_m(0) = I.first();      // Default this->origin_m at I.first()
@@ -333,7 +307,7 @@ UniformCartesian<T, Dim>::
 initialize(const Index& I, T* const delX)
 {
   PInsist(Dim==1,"Number of Index arguments does not match mesh dimension!!");
-  setup();
+  // setup();
   this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
   this->origin_m(0) = I.first();      // Default this->origin_m at I.first()
 
@@ -344,10 +318,10 @@ template<typename T, unsigned Dim>
 void
 UniformCartesian<T, Dim>::
 initialize(const Index& I, T* const delX,
-           const Vector<T,Dim>& orig)
+           const MeshVector_t& orig)
 {
   PInsist(Dim==1,"Number of Index arguments does not match mesh dimension!!");
-  setup();
+  // setup();
   this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
   this->setOrigin(orig);           // Set this->origin_m.
   this->setMeshSpacing(delX);      // Set mesh spacings and compute cell volume_m
@@ -360,7 +334,7 @@ UniformCartesian<T, Dim>::
 initialize(const Index& I, const Index& J)
 {
   PInsist(Dim==2,"Number of Index arguments does not match mesh dimension!!");
-  setup();
+  // setup();
   this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
   this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
   meshSpacing_m[0] = I.stride();       // Default mesh spacing from stride()
@@ -378,7 +352,7 @@ UniformCartesian<T, Dim>::
 initialize(const Index& I, const Index& J, T* const delX)
 {
   PInsist(Dim==2,"Number of Index arguments does not match mesh dimension!!");
-  setup();
+  // setup();
   this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
   this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
   this->origin_m(0) = I.first();      // Default this->origin_m at (I.first(),J.first())
@@ -390,10 +364,10 @@ template<typename T, unsigned Dim>
 void
 UniformCartesian<T, Dim>::
 initialize(const Index& I, const Index& J, T* const delX,
-           const Vector<T,Dim>& orig)
+           const MeshVector_t& orig)
 {
   PInsist(Dim==2,"Number of Index arguments does not match mesh dimension!!");
-  setup();
+  // setup();
   this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
   this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
   this->setOrigin(orig);           // Set this->origin_m.
@@ -407,7 +381,7 @@ UniformCartesian<T, Dim>::
 initialize(const Index& I, const Index& J, const Index& K)
 {
   PInsist(Dim==3,"Number of Index arguments does not match mesh dimension!!");
-  setup();
+  // setup();
   this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
   this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
   this->gridSizes_m[2] = K.length();  // Number of vertices along this dimension.
@@ -429,7 +403,7 @@ initialize(const Index& I, const Index& J, const Index& K,
            T* const delX)
 {
   PInsist(Dim==3,"Number of Index arguments does not match mesh dimension!!");
-  setup();
+  // setup();
   this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
   this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
   this->gridSizes_m[2] = K.length();  // Number of vertices along this dimension.
@@ -443,10 +417,10 @@ template<typename T, unsigned Dim>
 void
 UniformCartesian<T, Dim>::
 initialize(const Index& I, const Index& J, const Index& K,
-           T* const delX, const Vector<T,Dim>& orig)
+           T* const delX, const MeshVector_t& orig)
 {
   PInsist(Dim==3,"Number of Index arguments does not match mesh dimension!!");
-  setup();
+  // setup();
   this->gridSizes_m[0] = I.length();  // Number of vertices along this dimension.
   this->gridSizes_m[1] = J.length();  // Number of vertices along this dimension.
   this->gridSizes_m[2] = K.length();  // Number of vertices along this dimension.
@@ -556,16 +530,16 @@ storeSpacingFields(e_dim_tag* /*et*/, int /*vnodes*/)
     // (not really used by Div() etc for UniformCartesian); someday should make
     // this user-settable.
     VertSpacings =
-      new BareField<Vector<T,Dim>,Dim>(*FlCell,GuardCellSizes<Dim>(1));
+      new BareField<MeshVector_t,Dim>(*FlCell,GuardCellSizes<Dim>(1));
     // Added 12/8/98 --TJW:
     FlVert =
       new FieldLayout<Dim>(verts, et, vnodes);
     // Note: enough guard cells only for existing Div(), etc. implementations:
     CellSpacings =
-      new BareField<Vector<T,Dim>,Dim>(*FlVert,GuardCellSizes<Dim>(1));
+      new BareField<MeshVector_t,Dim>(*FlVert,GuardCellSizes<Dim>(1));
   }
-  BareField<Vector<T,Dim>,Dim>& vertSpacings = *VertSpacings;
-  Vector<T,Dim> vertexSpacing;
+  BareField<MeshVector_t,Dim>& vertSpacings = *VertSpacings;
+  MeshVector_t vertexSpacing;
   for (d=0; d<Dim; d++)
     vertexSpacing[d] = meshSpacing_m[d];
   vertSpacings = vertexSpacing;
@@ -579,9 +553,9 @@ storeSpacingFields(e_dim_tag* /*et*/, int /*vnodes*/)
   // using the mesh BC to figure out how:
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   // Temporaries used in loop over faces
-  Vector<T,Dim> v0,v1; v0 = 0.0; v1 = 1.0; // Used for Reflective mesh BC
+  MeshVector_t v0,v1; v0 = 0.0; v1 = 1.0; // Used for Reflective mesh BC
   unsigned int face;
-  typedef Vector<T,Dim> T;          // Used multipple places in loop below
+  typedef MeshVector_t T;          // Used multipple places in loop below
   typename BareField<T,Dim>::iterator_if vfill_i; // Iterator used below
   int voffset;             // Pointer offsets used with LField::iterator below
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -671,7 +645,7 @@ storeSpacingFields(e_dim_tag* /*et*/, int /*vnodes*/)
   // vert-vert spacings:
   //12/8/98  CellSpacings = VertSpacings;
   // Added 12/8/98 --TJW:
-  BareField<Vector<T,Dim>,Dim>& cellSpacings = *CellSpacings;
+  BareField<MeshVector_t,Dim>& cellSpacings = *CellSpacings;
   cellSpacings = vertexSpacing;
 
   hasSpacingFields_m = true; // Flag this as having been done to this object.
@@ -755,16 +729,16 @@ storeSpacingFields(e_dim_tag */*p*/,
     // (not really used by Div() etc for UniformCartesian); someday should make
     // this user-settable.
     VertSpacings =
-      new BareField<Vector<T,Dim>,Dim>(*FlCell,GuardCellSizes<Dim>(1));
+      new BareField<MeshVector_t,Dim>(*FlCell,GuardCellSizes<Dim>(1));
     // Added 12/8/98 --TJW:
     FlVert =
       new FieldLayout<Dim>(verts, p, vnodesPerDirection, recurse, vnodes);
     // Note: enough guard cells only for existing Div(), etc. implementations:
     CellSpacings =
-      new BareField<Vector<T,Dim>,Dim>(*FlVert,GuardCellSizes<Dim>(1));
+      new BareField<MeshVector_t,Dim>(*FlVert,GuardCellSizes<Dim>(1));
   }
-  BareField<Vector<T,Dim>,Dim>& vertSpacings = *VertSpacings;
-  Vector<T,Dim> vertexSpacing;
+  BareField<MeshVector_t,Dim>& vertSpacings = *VertSpacings;
+  MeshVector_t vertexSpacing;
   for (d=0; d<Dim; d++)
     vertexSpacing[d] = meshSpacing_m[d];
   vertSpacings = vertexSpacing;
@@ -778,9 +752,9 @@ storeSpacingFields(e_dim_tag */*p*/,
   // using the mesh BC to figure out how:
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   // Temporaries used in loop over faces
-  Vector<T,Dim> v0,v1; v0 = 0.0; v1 = 1.0; // Used for Reflective mesh BC
+  MeshVector_t v0,v1; v0 = 0.0; v1 = 1.0; // Used for Reflective mesh BC
   unsigned int face;
-  typedef Vector<T,Dim> T;          // Used multipple places in loop below
+  typedef MeshVector_t T;          // Used multipple places in loop below
   typename BareField<T,Dim>::iterator_if vfill_i; // Iterator used below
   int voffset;             // Pointer offsets used with LField::iterator below
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -870,7 +844,7 @@ storeSpacingFields(e_dim_tag */*p*/,
   // vert-vert spacings:
   //12/8/98  CellSpacings = VertSpacings;
   // Added 12/8/98 --TJW:
-  BareField<Vector<T,Dim>,Dim>& cellSpacings = *CellSpacings;
+  BareField<MeshVector_t,Dim>& cellSpacings = *CellSpacings;
   cellSpacings = vertexSpacing;
 
   hasSpacingFields_m = true; // Flag this as having been done to this object.
