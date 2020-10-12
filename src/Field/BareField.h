@@ -44,7 +44,9 @@ namespace ippl {
     public:
         // Some externally visible typedefs and enums
         typedef FieldLayout<Dim> Layout_t;
-        typedef LField<T,Dim> LField_t;
+        typedef LField<T, Dim> LField_t;
+        typedef std::deque<std::shared_ptr<LField_t>> container_t;
+        typedef typename container_t::iterator iterator_t;
 
         // A default constructor, which should be used only if the user calls the
         // 'initialize' function before doing anything else.  There are no special
@@ -66,7 +68,15 @@ namespace ippl {
         // a FieldLayout.
         void initialize(Layout_t &);
 
-        typedef std::deque<std::shared_ptr<LField_t>> container_t;
+
+        iterator_t begin() noexcept {
+            return lfields_m.begin();
+        }
+
+        iterator_t end() noexcept {
+            return lfields_m.end();
+        }
+
 
         LField_t& operator()(size_t i) {
             return *lfields_m[i];

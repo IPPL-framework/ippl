@@ -1,46 +1,24 @@
-//=============================================================================
-// Global functions
-//=============================================================================
-
-//-----------------------------------------------------------------------------
-// Wrappers for internal mesh object constructor calls:
-//-----------------------------------------------------------------------------
-// Generic case, report unimplemented mesh type:
-// (Compiler limitations doesn't allow this yet; user will get an obscure
-// compile error instead of this runtime error if he specifies an unsupported
-// mesh type for the Field Mesh parameter --tjw):
-// template<class T, unsigned Dim, class M, class C>
-// M* makeMesh(Field<T,Dim,M,C>& f)
-// {
-//   ERRORMSG("makeMesh() invoked from Field(): unimplemented mesh type" << endl);
-// }
-
-
 namespace ippl {
 
     // Generic makeMesh function
-    template<class T, unsigned Dim, class M, class C>
-    inline M* makeMesh(Field<T,Dim,M,C>& f)
+    template<typename T, unsigned Dim, class M, class C>
+    inline std::shared_ptr<M> makeMesh(Field<T, Dim, M, C>& f)
     {
         NDIndex<Dim> ndi;
         ndi = f.getLayout().getDomain();
-        return (new M(ndi));
+        return std::make_shared<M>(ndi);
+    }
+
+    // Specialization for UniformCartesian
+    template<class T, unsigned Dim, class C>
+    std::shared_ptr<UniformCartesian<T, Dim>> makeMesh(Field<T,Dim,UniformCartesian<T, Dim>,C>& f)
+    {
+        NDIndex<Dim> ndi;
+        ndi = f.getLayout().getDomain();
+        return std::make_shared<UniformCartesian<T, Dim>>(ndi);
     }
 
     /*
-    // Specialization for UniformCartesian
-    template<class T, unsigned Dim, class MFLOAT, class C>
-    UniformCartesian<Dim,MFLOAT>*
-    makeMesh(Field<T,Dim,UniformCartesian<Dim,MFLOAT>,C>& f)
-    {
-
-
-
-    NDIndex<Dim> ndi;
-    ndi = f.getLayout().getDomain();
-    return (new UniformCartesian<Dim,MFLOAT>(ndi));
-    }
-
     // Specialization for Cartesian
     template<class T, unsigned Dim, class MFLOAT, class C>
     Cartesian<Dim,MFLOAT>*
@@ -66,16 +44,8 @@ namespace ippl {
     // checks in the rest of the Field methods to check that the Field has
     // been properly initialized
     template<class T, unsigned Dim, class M, class C>
-    Field<T,Dim,M,C>::Field() {
-        store_mesh(0, true);
-    }
-
-
-    //////////////////////////////////////////////////////////////////////////
-    // Field destructor
-    template<class T, unsigned Dim, class M, class C>
-    Field<T,Dim,M,C>::~Field() {
-        delete_mesh();
+    Field<T,Dim,M,C>::Field() : BareField<T, Dim>() {
+        storeMesh_m(nullptr, true);
     }
 
 
@@ -85,8 +55,8 @@ namespace ippl {
     // The makeMesh() global function is a way to allow for different types of
     // constructor arguments for different mesh types.
     template<class T, unsigned Dim, class M, class C>
-    Field<T,Dim,M,C>::Field(Layout_t & l) : BareField<T,Dim>(l) {
-        store_mesh(makeMesh(*this), true);
+    Field<T,Dim,M,C>::Field(Layout_t& l) : BareField<T,Dim>(l) {
+        storeMesh_m(makeMesh(*this), true);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -95,7 +65,7 @@ namespace ippl {
     Field<T,Dim,M,C>::Field(Mesh_t& m, Layout_t & l)
         : BareField<T,Dim>(l)
     {
-        store_mesh(&m, false);
+        storeMesh_m(std::make_shared<Mesh_t>(m), false);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -105,7 +75,7 @@ namespace ippl {
     template<class T, unsigned Dim, class M, class C>
     void Field<T,Dim,M,C>::initialize(Layout_t & l) {
         BareField<T,Dim>::initialize(l);
-        store_mesh(makeMesh(*this), true);
+        storeMesh_m(makeMesh(*this), true);
     }
 
 
@@ -116,32 +86,15 @@ namespace ippl {
     template<class T, unsigned Dim, class M, class C>
     void Field<T,Dim,M,C>::initialize(Mesh_t& m, Layout_t & l) {
         BareField<T,Dim>::initialize(l);
-        store_mesh(&m, false);
+        storeMesh_m(std::make_shared<Mesh_t>(m), false);
     }
 
 
     //////////////////////////////////////////////////////////////////////////
     // store the given mesh object pointer, and the flag whether we use it or not
     template<class T, unsigned Dim, class M, class C>
-    void Field<T,Dim,M,C>::store_mesh(Mesh_t* m, bool WeOwn) {
+    void Field<T,Dim,M,C>::storeMesh_m(const std::shared_ptr<Mesh_t>& m, bool WeOwn) {
         mesh = m;
-        WeOwnMesh = WeOwn;
-        //FIXME
-//         if (mesh != 0)
-//             mesh->checkin(*this);
-    }
-
-
-    //////////////////////////////////////////////////////////////////////////
-    // delete the mesh object, if necessary; otherwise, just zero the pointer
-    template<class T, unsigned Dim, class M, class C>
-    void Field<T,Dim,M,C>::delete_mesh() {
-        if (mesh != 0) {
-            //FIXME
-//             mesh->checkout(*this);
-            if (WeOwnMesh)
-            delete mesh;
-            mesh = 0;
-        }
+        WeOwnMesh_m = WeOwn;
     }
 }

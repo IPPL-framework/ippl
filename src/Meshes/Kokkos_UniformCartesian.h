@@ -29,13 +29,13 @@ class UniformCartesian : public Mesh<T, Dim> {
 
 public:
     typedef typename Mesh<T, Dim>::MeshVector_t MeshVector_t;
+    typedef BareField<MeshVector_t, Dim> BareField_t;
+    typedef typename BareField_t::LField_t LField_t;
 
     typedef Cell DefaultCentering;
 
 
     UniformCartesian();
-
-    ~UniformCartesian();
 
     // Non-default constructors
     UniformCartesian(const NDIndex<Dim>& ndi,
@@ -75,7 +75,7 @@ public:
     UniformCartesian(const Index& I,
                      const Index& J,
                      const MeshVector_t& hx,
-                     const MeshVector_t& orig);
+                     const MeshVector_t& origin);
 
     /*
      * Dim == 3
@@ -95,29 +95,34 @@ public:
                      const Index& J,
                      const Index& K,
                      const MeshVector_t& hx,
-                     const MeshVector_t& orig);
+                     const MeshVector_t& origin);
+
+
+    ~UniformCartesian() = default;
 
 
     // initialize functions
     void initialize(const NDIndex<Dim>& ndi);
+    void initialize(const NDIndex<Dim>& ndi, const MeshVector_t& hx);
+    void initialize(const NDIndex<Dim>& ndi, const MeshVector_t& hx,
+                    const MeshVector_t& origin);
+
     void initialize(const Index& I);
+    void initialize(const Index& I, const MeshVector_t& hx);
+    void initialize(const Index& I, const MeshVector_t& hx,
+                    const MeshVector_t& origin);
+
     void initialize(const Index& I, const Index& J);
+    void initialize(const Index& I, const Index& J, const MeshVector_t& hx);
+    void initialize(const Index& I, const Index& J, const MeshVector_t& hx,
+                    const MeshVector_t& origin);
+
+
     void initialize(const Index& I, const Index& J, const Index& K);
-    // These also take a T* specifying the mesh spacings:
-    void initialize(const NDIndex<Dim>& ndi, T* const delX);
-    void initialize(const Index& I, T* const delX);
-    void initialize(const Index& I, const Index& J, T* const delX);
     void initialize(const Index& I, const Index& J, const Index& K,
-                    T* const delX);
-    // These further take a MeshVector_t& specifying the origin:
-    void initialize(const NDIndex<Dim>& ndi, T* const delX,
-                    const MeshVector_t& orig);
-    void initialize(const Index& I, T* const delX,
-                    const MeshVector_t& orig);
-    void initialize(const Index& I, const Index& J, T* const delX,
-                    const MeshVector_t& orig);
+                    const MeshVector_t& hx);
     void initialize(const Index& I, const Index& J, const Index& K,
-                    T* const delX, const MeshVector_t& orig);
+                    const MeshVector_t& hx, const MeshVector_t& origin);
 
 
 
@@ -137,8 +142,9 @@ private:
 
 
 
-  FieldLayout<Dim>* FlCell;  // Layouts for BareField* CellSpacings
-  FieldLayout<Dim>* FlVert;  // Layouts for BareField* VertSpacings
+  std::unique_ptr<FieldLayout<Dim>> FlCell;  // Layouts for BareField* CellSpacings
+  std::unique_ptr<FieldLayout<Dim>> FlVert;  // Layouts for BareField* VertSpacings
+
 
 
   // Set only the derivative constants, using pre-set spacings:
@@ -146,14 +152,15 @@ private:
 
   void updateCellVolume_m();
 
+  void setup_m();
 
 public:
 
   // Public member data:
   MeshVector_t Dvc[1<<Dim]; // Constants for derivatives.
   bool hasSpacingFields_m;              // Flags allocation of the following:
-  BareField<MeshVector_t,Dim>* VertSpacings;
-  BareField<MeshVector_t,Dim>* CellSpacings;
+  std::unique_ptr<BareField_t> VertSpacings;
+  std::unique_ptr<BareField_t> CellSpacings;
 
   // Public member functions:
 
@@ -164,6 +171,7 @@ public:
   void storeSpacingFields(); // Default; will have default layout
   // Special cases for 1-3 dimensions, ala FieldLayout ctors:
   void storeSpacingFields(e_dim_tag p1, int vnodes=-1);
+
   void storeSpacingFields(e_dim_tag p1, e_dim_tag p2, int vnodes=-1);
   void storeSpacingFields(e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
 			  int vnodes=-1);
