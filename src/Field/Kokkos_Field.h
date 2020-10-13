@@ -7,9 +7,10 @@
 namespace ippl {
 
     template<typename T, unsigned Dim,
-            class M=UniformCartesian<T, Dim>,
+            class M=UniformCartesian<double, Dim>,
             class C=typename M::DefaultCentering >
-    class Field : public BareField<T, Dim> {
+    class Field //: public FieldExpression<Field<T, Dim, M, C>>
+                : public BareField<T, Dim> {
 
     public:
         typedef M Mesh_t;
@@ -47,6 +48,8 @@ namespace ippl {
         // Assignment from constants and other arrays.
         using BareField<T, Dim>::operator=;
 
+//         using BareField<T, Dim>::operator[];
+
     private:
         //   // The boundary conditions.
         //   bcond_container Bc;
@@ -62,6 +65,32 @@ namespace ippl {
 }
 
 #include "Field/Kokkos_Field.hpp"
+
+
+namespace ippl {
+    /*
+     * Gradient
+     */
+    template<typename T, unsigned Dim, class M, class C>
+    struct field_meta_grad : public FieldExpression<field_meta_grad<T, Dim, M, C>> {
+        field_meta_grad(const Field<T, Dim, M, C>& u) : u_m(u), mesh_m(u.get_mesh()) {
+
+        }
+
+        auto operator[](size_t i) const {
+            return grad(u_m[i], mesh_m);
+        }
+
+    private:
+        const Field<T, Dim, M, C>& u_m;
+        const M& mesh_m;
+    };
+
+    template<typename T, unsigned Dim, class M, class C>
+    field_meta_grad<T, Dim, M, C> grad(const Field<T, Dim, M, C>& u) {
+        return field_meta_grad<T, Dim, M, C>(u);
+    }
+}
 
 #endif
 

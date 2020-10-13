@@ -18,6 +18,8 @@
 #ifndef IPPL_OPERATIONS_H
 #define IPPL_OPERATIONS_H
 
+#include "AppTypes/Vector.h"
+
 namespace ippl {
     /*
      * Binary operations for Scalar, Vector and LField classes.
@@ -157,6 +159,60 @@ namespace ippl {
     typename E1::value_t dot(const Expression<E1, N1>& u, const Expression<E2, N2>& v) {
         return meta_dot<E1, E2>(*static_cast<const E1*>(&u),
                                 *static_cast<const E2*>(&v))();
+    }
+
+
+    /*
+     * Gradient
+     */
+    template<typename E, typename M>
+    struct meta_grad : public Expression<meta_grad<E, M>, sizeof(E)> {
+        KOKKOS_FUNCTION
+        meta_grad(const E& u, const M& m) : u_m(u) {
+            idx[0] = 0.5 / m.getMeshSpacing(0);
+            idx[1] = 0.0;
+            idx[2] = 0.0;
+            idy[0] = 0.0;
+            idy[1] = 0.5 / m.getMeshSpacing(1);
+            idy[2] = 0.0;
+            idz[0] = 0.0;
+            idz[1] = 0.0;
+            idz[2] = 0.5 / m.getMeshSpacing(2);
+        }
+
+        /*
+         * This is required for LField::grad
+         */
+        KOKKOS_INLINE_FUNCTION
+        auto operator()(size_t i) const {
+            std::cout << "1d meta_grad for LField" << std::endl;
+            return u_m(i);
+        }
+
+         KOKKOS_INLINE_FUNCTION
+        auto operator()(size_t i, size_t j) const {
+            std::cout << "2d meta_grad for LField" << std::endl;
+            return u_m(i, j);
+        }
+
+        KOKKOS_INLINE_FUNCTION
+        auto operator()(size_t i, size_t j, size_t k) const {
+            return idx * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
+                   idy * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
+                   idz * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
+        }
+
+    private:
+        const E u_m;
+        Vector<double, 3> idx;
+        Vector<double, 3> idy;
+        Vector<double, 3> idz;
+    };
+
+    template<typename E, size_t N, typename M>
+    KOKKOS_INLINE_FUNCTION
+    meta_grad<E, M> grad(const Expression<E, N>& u, const M& m) {
+        return meta_grad<E, M>(*static_cast<const E*>(&u), m);
     }
 }
 

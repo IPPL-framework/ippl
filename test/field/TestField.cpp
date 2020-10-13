@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
     constexpr unsigned int dim = 3;
 
 
-    Index I(10);
+    Index I(4);
     NDIndex<dim> owned(I, I, I);
 
     e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
@@ -22,12 +22,17 @@ int main(int argc, char *argv[]) {
 
 
     typedef ippl::Field<double, dim> field_type;
+    typedef ippl::Field<ippl::Vector<double, dim>, dim> vector_field_type;
 
     field_type field(layout);
+    vector_field_type vfield(layout);
 
     field = 1.0;
 
-    field.write();
+//     field.write();
+    vfield = grad(field);
+
+    vfield.write();
 
     ippl::UniformCartesian<double, 2> unif(I, I);
 
