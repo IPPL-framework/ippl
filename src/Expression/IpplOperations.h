@@ -165,33 +165,40 @@ namespace ippl {
     /*
      * Gradient
      */
-    template<typename E, typename M>
-    struct meta_grad : public Expression<meta_grad<E, M>, sizeof(E)> {
+    template<typename E, typename T>
+    struct meta_grad : public Expression<meta_grad<E, T>, sizeof(E)> {
         KOKKOS_FUNCTION
-        meta_grad(const E& u, const M& m) : u_m(u) {
-            idx[0] = 0.5 / m.getMeshSpacing(0);
+        meta_grad(const E& u,
+                  const T& xvector)
+        : u_m(u)
+        , xvector_m(xvector)
+        { }
 
-            if constexpr(M::Dimension == 2) {
-                idx[1] = 0.0;
-                idy[0] = 0.0;
-                idy[1] = 0.5 / m.getMeshSpacing(1);
-            }
 
-            if constexpr(M::Dimension == 3) {
-                idx[2] = 0.0;
-                idy[2] = 0.0;
-                idz[0] = 0.0;
-                idz[1] = 0.0;
-                idz[2] = 0.5 / m.getMeshSpacing(2);
-            }
-        }
+        meta_grad(const E& u,
+                  const T& xvector,
+                  const T& yvector)
+        : u_m(u)
+        , xvector_m(xvector)
+        , yvector_m(yvector)
+        { }
+
+        meta_grad(const E& u,
+                  const T& xvector,
+                  const T& yvector,
+                  const T& zvector)
+        : u_m(u)
+        , xvector_m(xvector)
+        , yvector_m(yvector)
+        , zvector_m(zvector)
+        { }
 
         /*
          * 1-dimensional grad
          */
         KOKKOS_INLINE_FUNCTION
         auto operator()(size_t i) const {
-            return idx[0] * (u_m(i+1) - u_m(i-1));
+            return xvector_m * (u_m(i+1) - u_m(i-1));
         }
 
         /*
@@ -199,8 +206,8 @@ namespace ippl {
          */
         KOKKOS_INLINE_FUNCTION
         auto operator()(size_t i, size_t j) const {
-            return idx * (u_m(i+1, j)   - u_m(i-1, j  )) +
-                   idy * (u_m(i  , j+1) - u_m(i  , j-1));
+            return xvector_m * (u_m(i+1, j)   - u_m(i-1, j  )) +
+                   yvector_m * (u_m(i  , j+1) - u_m(i  , j-1));
         }
 
         /*
@@ -208,22 +215,34 @@ namespace ippl {
          */
         KOKKOS_INLINE_FUNCTION
         auto operator()(size_t i, size_t j, size_t k) const {
-            return idx * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
-                   idy * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
-                   idz * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
+            return xvector_m * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
+                   yvector_m * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
+                   zvector_m * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
         }
 
     private:
         const E u_m;
-        typename M::vector_type idx;
-        typename M::vector_type idy;
-        typename M::vector_type idz;
+        const T xvector_m;
+        const T yvector_m;
+        const T zvector_m;
     };
 
-    template<typename E, size_t N, typename M>
+    template<typename E, size_t N, typename T>
     KOKKOS_INLINE_FUNCTION
-    meta_grad<E, M> grad(const Expression<E, N>& u, const M& m) {
-        return meta_grad<E, M>(*static_cast<const E*>(&u), m);
+    meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector) {
+        return meta_grad<E, T>(*static_cast<const E*>(&u), xvector);
+    }
+
+    template<typename E, size_t N, typename T>
+    KOKKOS_INLINE_FUNCTION
+    meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector, const T& yvector) {
+        return meta_grad<E, T>(*static_cast<const E*>(&u), xvector, yvector);
+    }
+
+    template<typename E, size_t N, typename T>
+    KOKKOS_INLINE_FUNCTION
+    meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector, const T& yvector, const T& zvector) {
+        return meta_grad<E, T>(*static_cast<const E*>(&u), xvector, yvector, zvector);
     }
 }
 

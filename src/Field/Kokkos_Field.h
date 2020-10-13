@@ -73,17 +73,41 @@ namespace ippl {
      */
     template<typename T, unsigned Dim, class M, class C>
     struct field_meta_grad : public FieldExpression<field_meta_grad<T, Dim, M, C>> {
-        field_meta_grad(const Field<T, Dim, M, C>& u) : u_m(u), mesh_m(u.get_mesh()) {
+        field_meta_grad(const Field<T, Dim, M, C>& u) : u_m(u) {
+            M& mesh = u.get_mesh();
 
+            xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
+
+            if constexpr(M::Dimension == 2) {
+                xvector_m[1] = 0.0;
+                yvector_m[0] = 0.0;
+                yvector_m[1] = 0.5 / mesh.getMeshSpacing(1);
+            }
+
+            if constexpr(M::Dimension == 3) {
+                xvector_m[2] = 0.0;
+                yvector_m[2] = 0.0;
+                zvector_m[0] = 0.0;
+                zvector_m[1] = 0.0;
+                zvector_m[2] = 0.5 / mesh.getMeshSpacing(2);
+            }
         }
 
         auto operator[](size_t i) const {
-            return grad(u_m[i], mesh_m);
+            if constexpr (M::Dimension == 1) {
+                return grad(u_m[i], xvector_m);
+            } else if constexpr (M::Dimension == 2) {
+                return grad(u_m[i], xvector_m, yvector_m);
+            } else if constexpr (M::Dimension == 3) {
+                return grad(u_m[i], xvector_m, yvector_m, zvector_m);
+            }
         }
 
     private:
         const Field<T, Dim, M, C>& u_m;
-        const M& mesh_m;
+        typename M::vector_type xvector_m;
+        typename M::vector_type yvector_m;
+        typename M::vector_type zvector_m;
     };
 
     template<typename T, unsigned Dim, class M, class C>
