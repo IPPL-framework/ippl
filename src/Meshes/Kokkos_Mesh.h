@@ -31,21 +31,21 @@ namespace ippl {
     public:
         enum { Dimension = Dim };
 
-        typedef Vector<T, Dim> MeshVector_t;
+        typedef Vector<T, Dim> vector_type;
 
         Mesh() {};
 
         virtual ~Mesh() {};
 
         // Get the origin of mesh vertex positions
-        MeshVector_t getOrigin() const;
+        vector_type getOrigin() const;
 
         // Set the origin of mesh vertex positions
-        void setOrigin(const MeshVector_t& origin);
+        void setOrigin(const vector_type& origin);
 
     protected:
-        MeshVector_t origin_m;          // Origin of mesh coordinates (vertices)
-        MeshVector_t gridSizes_m;       // Sizes (number of vertices)
+        vector_type origin_m;          // Origin of mesh coordinates (vertices)
+        vector_type gridSizes_m;       // Sizes (number of vertices)
     };
 }
 

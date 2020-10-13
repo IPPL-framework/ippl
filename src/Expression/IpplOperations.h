@@ -215,9 +215,9 @@ namespace ippl {
 
     private:
         const E u_m;
-        typename M::MeshVector_t idx;
-        typename M::MeshVector_t idy;
-        typename M::MeshVector_t idz;
+        typename M::vector_type idx;
+        typename M::vector_type idy;
+        typename M::vector_type idz;
     };
 
     template<typename E, size_t N, typename M>

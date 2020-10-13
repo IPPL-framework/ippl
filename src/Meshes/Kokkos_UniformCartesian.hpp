@@ -51,7 +51,7 @@ namespace ippl {
 
     template<typename T, unsigned Dim>
     UniformCartesian<T, Dim>::UniformCartesian(const NDIndex<Dim>& ndi,
-                                               const MeshVector_t& hx)
+                                               const vector_type& hx)
         : UniformCartesian(ndi, false)
     {
         setMeshSpacing(hx);
@@ -60,8 +60,8 @@ namespace ippl {
 
     template<typename T, unsigned Dim>
     UniformCartesian<T, Dim>::UniformCartesian(const NDIndex<Dim>& ndi,
-                                               const MeshVector_t& hx,
-                                               const MeshVector_t& origin)
+                                               const vector_type& hx,
+                                               const vector_type& origin)
         : UniformCartesian(ndi, hx)
     {
         this->setOrigin(origin);
@@ -85,7 +85,7 @@ namespace ippl {
 
     template<typename T, unsigned Dim>
     UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
-                                               const MeshVector_t& hx)
+                                               const vector_type& hx)
         : UniformCartesian(I, false)
     {
         setMeshSpacing(hx);
@@ -93,8 +93,8 @@ namespace ippl {
 
     template<typename T, unsigned Dim>
     UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
-                                               const MeshVector_t& hx,
-                                               const MeshVector_t& origin)
+                                               const vector_type& hx,
+                                               const vector_type& origin)
         : UniformCartesian(I, hx)
     {
         this->setOrigin(origin);
@@ -125,7 +125,7 @@ namespace ippl {
     template<typename T, unsigned Dim>
     UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
                                                const Index& J,
-                                               const MeshVector_t& hx)
+                                               const vector_type& hx)
         : UniformCartesian(I, J, false)
     {
         setMeshSpacing(hx);
@@ -135,8 +135,8 @@ namespace ippl {
     template<typename T, unsigned Dim>
     UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
                                                const Index& J,
-                                               const MeshVector_t& hx,
-                                               const MeshVector_t& origin)
+                                               const vector_type& hx,
+                                               const vector_type& origin)
         : UniformCartesian(I, J, hx)
     {
         this->setOrigin(origin);
@@ -172,7 +172,7 @@ namespace ippl {
     UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
                                                const Index& J,
                                                const Index& K,
-                                               const MeshVector_t& hx)
+                                               const vector_type& hx)
         : UniformCartesian(I, J, K, false)
     {
         this->setMeshSpacing(hx);
@@ -183,8 +183,8 @@ namespace ippl {
     UniformCartesian<T, Dim>::UniformCartesian(const Index& I,
                                                const Index& J,
                                                const Index& K,
-                                               const MeshVector_t& hx,
-                                               const MeshVector_t& orig)
+                                               const vector_type& hx,
+                                               const vector_type& orig)
         : UniformCartesian(I, J, K, hx)
     {
         this->setOrigin(orig);
@@ -199,7 +199,7 @@ namespace ippl {
 
 
     template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::setMeshSpacing(const MeshVector_t& meshSpacing) {
+    void UniformCartesian<T, Dim>::setMeshSpacing(const vector_type& meshSpacing) {
         meshSpacing_m = meshSpacing;
         this->updateCellVolume_m();
 
@@ -251,7 +251,7 @@ namespace ippl {
 
     template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::initialize(const NDIndex<Dim>& ndi,
-                                              const MeshVector_t& hx)
+                                              const vector_type& hx)
     {
         setup_m();
         for (unsigned d = 0; d < Dim; d++) {
@@ -264,8 +264,8 @@ namespace ippl {
 
     template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::initialize(const NDIndex<Dim>& ndi,
-                                              const MeshVector_t& hx,
-                                              const MeshVector_t& origin)
+                                              const vector_type& hx,
+                                              const vector_type& origin)
     {
         initialize(ndi, hx);
         this->setOrigin(origin);
@@ -287,7 +287,7 @@ namespace ippl {
 
     template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::initialize(const Index& I,
-                                              const MeshVector_t& hx)
+                                              const vector_type& hx)
     {
         PInsist(Dim==1, "Number of Index arguments does not match mesh dimension!!");
         setup_m();
@@ -300,8 +300,8 @@ namespace ippl {
 
     template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::initialize(const Index& I,
-                                              const MeshVector_t& hx,
-                                              const MeshVector_t& origin)
+                                              const vector_type& hx,
+                                              const vector_type& origin)
     {
         this->initialize(I, hx);
         this->sorigin_m = origin;
@@ -328,7 +328,7 @@ namespace ippl {
     template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::initialize(const Index& I,
                                               const Index& J,
-                                              const MeshVector_t& hx)
+                                              const vector_type& hx)
     {
         PInsist(Dim==2, "Number of Index arguments does not match mesh dimension!!");
         setup_m();
@@ -344,8 +344,8 @@ namespace ippl {
     template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::initialize(const Index& I,
                                               const Index& J,
-                                              const MeshVector_t& hx,
-                                              const MeshVector_t& origin)
+                                              const vector_type& hx,
+                                              const vector_type& origin)
     {
         this->initialize(I, J, hx);
         this->origin_m = origin;
@@ -378,7 +378,7 @@ namespace ippl {
     void UniformCartesian<T, Dim>::initialize(const Index& I,
                                               const Index& J,
                                               const Index& K,
-                                              const MeshVector_t& hx)
+                                              const vector_type& hx)
     {
         PInsist(Dim==3, "Number of Index arguments does not match mesh dimension!!");
         setup_m();
@@ -396,8 +396,8 @@ namespace ippl {
     void UniformCartesian<T, Dim>::initialize(const Index& I,
                                               const Index& J,
                                               const Index& K,
-                                              const MeshVector_t& hx,
-                                              const MeshVector_t& origin)
+                                              const vector_type& hx,
+                                              const vector_type& origin)
     {
         PInsist(Dim==3, "Number of Index arguments does not match mesh dimension!!");
         this->initialize(I, J, K, hx);
@@ -504,7 +504,7 @@ namespace ippl {
         }
 
         BareField_t& vertSpacings = *VertSpacings;
-        MeshVector_t vertexSpacing;
+        vector_type vertexSpacing;
         for (d=0; d<Dim; d++)
             vertexSpacing[d] = meshSpacing_m[d];
         vertSpacings = vertexSpacing;
@@ -617,7 +617,7 @@ storeSpacingFields(e_dim_tag */*p*/,
       new BareField_t(*FlVert,GuardCellSizes<Dim>(1));
   }
   BareField_t& vertSpacings = *VertSpacings;
-  MeshVector_t vertexSpacing;
+  vector_type vertexSpacing;
   for (d=0; d<Dim; d++)
     vertexSpacing[d] = meshSpacing_m[d];
   vertSpacings = vertexSpacing;
@@ -631,9 +631,9 @@ storeSpacingFields(e_dim_tag */*p*/,
   // using the mesh BC to figure out how:
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   // Temporaries used in loop over faces
-  MeshVector_t v0,v1; v0 = 0.0; v1 = 1.0; // Used for Reflective mesh BC
+  vector_type v0,v1; v0 = 0.0; v1 = 1.0; // Used for Reflective mesh BC
   unsigned int face;
-  typedef MeshVector_t T;          // Used multipple places in loop below
+  typedef vector_type T;          // Used multipple places in loop below
   typename BareField<T,Dim>::iterator_if vfill_i; // Iterator used below
   int voffset;             // Pointer offsets used with LField::iterator below
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

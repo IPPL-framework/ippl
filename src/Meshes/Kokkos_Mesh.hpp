@@ -20,13 +20,13 @@
 //
 namespace ippl {
     template<typename T, unsigned Dim>
-    typename Mesh<T, Dim>::MeshVector_t Mesh<T, Dim>::getOrigin() const {
+    typename Mesh<T, Dim>::vector_type Mesh<T, Dim>::getOrigin() const {
         return origin_m;
     }
 
 
     template<typename T, unsigned Dim>
-    void Mesh<T, Dim>::setOrigin(const MeshVector_t& origin) {
+    void Mesh<T, Dim>::setOrigin(const vector_type& origin) {
         origin_m = origin;
     }
 }

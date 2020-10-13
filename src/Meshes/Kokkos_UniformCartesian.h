@@ -28,8 +28,8 @@ template<typename T, unsigned Dim>
 class UniformCartesian : public Mesh<T, Dim> {
 
 public:
-    typedef typename Mesh<T, Dim>::MeshVector_t MeshVector_t;
-    typedef BareField<MeshVector_t, Dim> BareField_t;
+    typedef typename Mesh<T, Dim>::vector_type vector_type;
+    typedef BareField<vector_type, Dim> BareField_t;
     typedef typename BareField_t::LField_t LField_t;
 
     typedef Cell DefaultCentering;
@@ -42,11 +42,11 @@ public:
                      bool evalCellVolume = true);
 
     UniformCartesian(const NDIndex<Dim>& ndi,
-                     const MeshVector_t& hx);
+                     const vector_type& hx);
 
     UniformCartesian(const NDIndex<Dim>& ndi,
-                     const MeshVector_t& hx,
-                     const MeshVector_t& origin);
+                     const vector_type& hx,
+                     const vector_type& origin);
 
     /*
      * Dim == 1
@@ -55,11 +55,11 @@ public:
                      bool evalCellVolume = true);
 
     UniformCartesian(const Index& I,
-                     const MeshVector_t& hx);
+                     const vector_type& hx);
 
     UniformCartesian(const Index& I,
-                     const MeshVector_t& hx,
-                     const MeshVector_t& origin);
+                     const vector_type& hx,
+                     const vector_type& origin);
 
     /*
      * Dim == 2
@@ -70,12 +70,12 @@ public:
 
     UniformCartesian(const Index& I,
                      const Index& J,
-                     const MeshVector_t& hx);
+                     const vector_type& hx);
 
     UniformCartesian(const Index& I,
                      const Index& J,
-                     const MeshVector_t& hx,
-                     const MeshVector_t& origin);
+                     const vector_type& hx,
+                     const vector_type& origin);
 
     /*
      * Dim == 3
@@ -88,14 +88,14 @@ public:
     UniformCartesian(const Index& I,
                      const Index& J,
                      const Index& K,
-                     const MeshVector_t& hx);
+                     const vector_type& hx);
 
 
     UniformCartesian(const Index& I,
                      const Index& J,
                      const Index& K,
-                     const MeshVector_t& hx,
-                     const MeshVector_t& origin);
+                     const vector_type& hx,
+                     const vector_type& origin);
 
 
     ~UniformCartesian() = default;
@@ -103,26 +103,26 @@ public:
 
     // initialize functions
     void initialize(const NDIndex<Dim>& ndi);
-    void initialize(const NDIndex<Dim>& ndi, const MeshVector_t& hx);
-    void initialize(const NDIndex<Dim>& ndi, const MeshVector_t& hx,
-                    const MeshVector_t& origin);
+    void initialize(const NDIndex<Dim>& ndi, const vector_type& hx);
+    void initialize(const NDIndex<Dim>& ndi, const vector_type& hx,
+                    const vector_type& origin);
 
     void initialize(const Index& I);
-    void initialize(const Index& I, const MeshVector_t& hx);
-    void initialize(const Index& I, const MeshVector_t& hx,
-                    const MeshVector_t& origin);
+    void initialize(const Index& I, const vector_type& hx);
+    void initialize(const Index& I, const vector_type& hx,
+                    const vector_type& origin);
 
     void initialize(const Index& I, const Index& J);
-    void initialize(const Index& I, const Index& J, const MeshVector_t& hx);
-    void initialize(const Index& I, const Index& J, const MeshVector_t& hx,
-                    const MeshVector_t& origin);
+    void initialize(const Index& I, const Index& J, const vector_type& hx);
+    void initialize(const Index& I, const Index& J, const vector_type& hx,
+                    const vector_type& origin);
 
 
     void initialize(const Index& I, const Index& J, const Index& K);
     void initialize(const Index& I, const Index& J, const Index& K,
-                    const MeshVector_t& hx);
+                    const vector_type& hx);
     void initialize(const Index& I, const Index& J, const Index& K,
-                    const MeshVector_t& hx, const MeshVector_t& origin);
+                    const vector_type& hx, const vector_type& origin);
 
 
 
@@ -130,13 +130,13 @@ public:
     T getMeshSpacing(unsigned dim) const;
 
     // Set the spacings of mesh vertex positions (recompute Dvc, cell volume):
-    void setMeshSpacing(const MeshVector_t& meshSpacing);
+    void setMeshSpacing(const vector_type& meshSpacing);
 
 
     T getCellVolume() const;
 
 private:
-    MeshVector_t meshSpacing_m;     // delta-x, delta-y (>1D), delta-z (>2D)
+    vector_type meshSpacing_m;     // delta-x, delta-y (>1D), delta-z (>2D)
     T volume_m;                     // Cell length(1D), area(2D), or volume (>2D)
 
 
@@ -157,7 +157,7 @@ private:
 public:
 
   // Public member data:
-  MeshVector_t Dvc[1<<Dim]; // Constants for derivatives.
+  vector_type Dvc[1<<Dim]; // Constants for derivatives.
   bool hasSpacingFields_m;              // Flags allocation of the following:
   std::unique_ptr<BareField_t> VertSpacings;
   std::unique_ptr<BareField_t> CellSpacings;
