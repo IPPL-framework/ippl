@@ -41,7 +41,7 @@ namespace ippl {
     template<class T, unsigned Dim>
     void LField<T,Dim>::write(std::ostream& out) const {
         Kokkos::fence();
-        write_<T>(dview_m, out);
+        detail::write<T>(dview_m, out);
     }
 
 
@@ -90,7 +90,7 @@ namespace ippl {
     //     //               // -------------------------------------------
     //                 int> >
     LField<T,Dim>& LField<T,Dim>::operator=(Expression<E, N> const& expr) {
-        CapturedExpression<E, N> expr_ = reinterpret_cast<const CapturedExpression<E, N>&>(expr);
+        detail::CapturedExpression<E, N> expr_ = reinterpret_cast<const detail::CapturedExpression<E, N>&>(expr);
     //     if constexpr(Dim == 1) {
     //         Kokkos::parallel_for("LField<T,Dim>::operator=",
     //                              dview_m.extent(0), KOKKOS_CLASS_LAMBDA(const int i) {

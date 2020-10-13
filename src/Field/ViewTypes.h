@@ -20,78 +20,82 @@
 
 #include <Kokkos_Core.hpp>
 
-template <typename T, unsigned Dim, class... Properties>
-struct ViewType { };
+namespace ippl {
+    namespace detail {
+        template <typename T, unsigned Dim, class... Properties>
+        struct ViewType { };
 
 
-template <typename T, class... Properties>
-struct ViewType<T, 1, Properties...> {
-    typedef Kokkos::View<T*, Properties...> view_type;
-};
+        template <typename T, class... Properties>
+        struct ViewType<T, 1, Properties...> {
+            typedef Kokkos::View<T*, Properties...> view_type;
+        };
 
 
-template <typename T, class... Properties>
-struct ViewType<T, 2, Properties...> {
-    typedef Kokkos::View<T**, Properties...> view_type;
-};
+        template <typename T, class... Properties>
+        struct ViewType<T, 2, Properties...> {
+            typedef Kokkos::View<T**, Properties...> view_type;
+        };
 
 
-template <typename T, class... Properties>
-struct ViewType<T, 3, Properties...> {
-    typedef Kokkos::View<T***, Properties...> view_type;
-};
+        template <typename T, class... Properties>
+        struct ViewType<T, 3, Properties...> {
+            typedef Kokkos::View<T***, Properties...> view_type;
+        };
 
 
-/*
- * write functions
- */
-template <typename T, unsigned Dim, class... Properties>
-void write_(const typename ViewType<T, Dim, Properties...>::view_type& view,
-           std::ostream& out = std::cout);
+        /*
+        * write functions
+        */
+        template <typename T, unsigned Dim, class... Properties>
+        void write(const typename ViewType<T, Dim, Properties...>::view_type& view,
+                std::ostream& out = std::cout);
 
 
-template <typename T, class... Properties>
-void write_(const typename ViewType<T, 1, Properties...>::view_type& view,
-           std::ostream& out = std::cout)
-{
-    typename ViewType<T, 1, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(hview, view);
-    for (std::size_t i = 0; i < hview.extent(0); ++i) {
-        out << hview(i) << " ";
-    }
-    out << std::endl;
-}
-
-
-template <typename T, class... Properties>
-void write_(const typename ViewType<T, 2, Properties...>::view_type& view,
-           std::ostream& out = std::cout)
-{
-    typename ViewType<T, 2, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(hview, view);
-    for (std::size_t j = 0; j < hview.extent(1); ++j) {
-        for (std::size_t i = 0; i < hview.extent(0); ++i) {
-            out << hview(i, j) << " ";
-        }
-        out << std::endl;
-    }
-}
-
-template <typename T, class... Properties>
-void write_(const typename ViewType<T, 3, Properties...>::view_type& view,
-           std::ostream& out = std::cout)
-{
-    typename ViewType<T, 3, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(hview, view);
-    for (std::size_t k = 0; k < hview.extent(2); ++k) {
-        for (std::size_t j = 0; j < hview.extent(1); ++j) {
+        template <typename T, class... Properties>
+        void write(const typename ViewType<T, 1, Properties...>::view_type& view,
+                std::ostream& out = std::cout)
+        {
+            typename ViewType<T, 1, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
+            Kokkos::deep_copy(hview, view);
             for (std::size_t i = 0; i < hview.extent(0); ++i) {
-                out << hview(i, j, k) << " ";
+                out << hview(i) << " ";
             }
             out << std::endl;
         }
-        if (k < view.extent(2) - 1)
-            out << std::endl;
+
+
+        template <typename T, class... Properties>
+        void write(const typename ViewType<T, 2, Properties...>::view_type& view,
+                std::ostream& out = std::cout)
+        {
+            typename ViewType<T, 2, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
+            Kokkos::deep_copy(hview, view);
+            for (std::size_t j = 0; j < hview.extent(1); ++j) {
+                for (std::size_t i = 0; i < hview.extent(0); ++i) {
+                    out << hview(i, j) << " ";
+                }
+                out << std::endl;
+            }
+        }
+
+        template <typename T, class... Properties>
+        void write(const typename ViewType<T, 3, Properties...>::view_type& view,
+                std::ostream& out = std::cout)
+        {
+            typename ViewType<T, 3, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
+            Kokkos::deep_copy(hview, view);
+            for (std::size_t k = 0; k < hview.extent(2); ++k) {
+                for (std::size_t j = 0; j < hview.extent(1); ++j) {
+                    for (std::size_t i = 0; i < hview.extent(0); ++i) {
+                        out << hview(i, j, k) << " ";
+                    }
+                    out << std::endl;
+                }
+                if (k < view.extent(2) - 1)
+                    out << std::endl;
+            }
+        }
     }
 }
 

@@ -55,195 +55,194 @@ namespace ippl {
     template<typename E, size_t N, typename T,                              \
              typename = std::enable_if_t<std::is_scalar<T>::value>>         \
     KOKKOS_INLINE_FUNCTION                                                  \
-    fun<E, Scalar<T>> name(const Expression<E, N>& u,                       \
-                           const T& v) {                                    \
-        return fun<E, Scalar<T>>(*static_cast<const E*>(&u), v);            \
+    fun<E, detail::Scalar<T>> name(const Expression<E, N>& u,               \
+                                   const T& v) {                            \
+        return fun<E, detail::Scalar<T>>(*static_cast<const E*>(&u), v);    \
     }                                                                       \
                                                                             \
     template<typename E, size_t N, typename T,                              \
              typename = std::enable_if_t<std::is_scalar<T>::value>>         \
     KOKKOS_INLINE_FUNCTION                                                  \
-    fun<E, Scalar<T>> name(const T& u,                                      \
-                           const Expression<E, N>& v) {                     \
-        return fun<E, Scalar<T>>(*static_cast<const E*>(&v), u);            \
+    fun<E, detail::Scalar<T>> name(const T& u,                              \
+                                   const Expression<E, N>& v) {             \
+        return fun<E, detail::Scalar<T>>(*static_cast<const E*>(&v), u);    \
     }
-
 
     DefineBinaryOperation(Add,      operator+, u_m[i] + v_m[i], u_m(args...) + v_m(args...))
     DefineBinaryOperation(Subtract, operator-, u_m[i] - v_m[i], u_m(args...) - v_m(args...))
     DefineBinaryOperation(Multiply, operator*, u_m[i] * v_m[i], u_m(args...) * v_m(args...))
     DefineBinaryOperation(Divide,   operator/, u_m[i] / v_m[i], u_m(args...) / v_m(args...))
 
-    /*
-     * Cross product. This function is only supported for 3-dimensional vectors.
-     */
-
-    template<typename E1, typename E2>
-    struct meta_cross : public Expression<meta_cross<E1, E2>, sizeof(E1) + sizeof(E2)> {
-        KOKKOS_FUNCTION
-        meta_cross(const E1& u, const E2& v) : u_m(u), v_m(v) {
-//             static_assert(E1::dim == 3, "meta_cross: Dimension of first argument needs to be 3");
-//             static_assert(E2::dim == 3, "meta_cross: Dimension of second argument needs to be 3");
-        }
-
+    namespace detail {
         /*
-         * Vector::cross
+         * Cross product. This function is only supported for 3-dimensional vectors.
          */
-        KOKKOS_INLINE_FUNCTION
-        auto operator[](size_t i) const {
-            const size_t j = (i + 1) % 3;
-            const size_t k = (i + 2) % 3;
-            return  u_m[j] * v_m[k] - u_m[k] * v_m[j];
-        }
+        template<typename E1, typename E2>
+        struct meta_cross : public Expression<meta_cross<E1, E2>, sizeof(E1) + sizeof(E2)> {
+            KOKKOS_FUNCTION
+            meta_cross(const E1& u, const E2& v) : u_m(u), v_m(v) { }
 
-        /*
-         * This is required for LField::cross
-         */
-        template<typename ...Args>
-        KOKKOS_INLINE_FUNCTION
-        auto operator()(Args... args) const {
-            return cross(u_m(args...), v_m(args...));
-        }
-
-    private:
-        const E1 u_m;
-        const E2 v_m;
-    };
-
-    template<typename E1, size_t N1, typename E2, size_t N2>
-    KOKKOS_INLINE_FUNCTION
-    meta_cross<E1, E2> cross(const Expression<E1, N1>& u, const Expression<E2, N2>& v) {
-        return meta_cross<E1, E2>(*static_cast<const E1*>(&u),
-                                  *static_cast<const E2*>(&v));
-    }
-
-
-    /*
-     * Dot product.
-     */
-    template<typename E1, typename E2>
-    struct meta_dot : public Expression<meta_dot<E1, E2>, sizeof(E1) + sizeof(E2)> {
-        KOKKOS_FUNCTION
-        meta_dot(const E1& u, const E2& v) : u_m(u), v_m(v) {
-//             static_assert(E1::dim == E2::dim, "meta_dot: Dimensions do not agree!");
-        }
-
-        /*
-         * Vector::dot
-         */
-        KOKKOS_INLINE_FUNCTION
-        typename E1::value_t operator()() const {
-            typename E1::value_t res = 0.0;
-            for (size_t i = 0; i < E1::dim; ++i) {
-                res += u_m[i] * v_m[i];
+            /*
+             * Vector::cross
+             */
+            KOKKOS_INLINE_FUNCTION
+            auto operator[](size_t i) const {
+                const size_t j = (i + 1) % 3;
+                const size_t k = (i + 2) % 3;
+                return  u_m[j] * v_m[k] - u_m[k] * v_m[j];
             }
-            return res; //u_m[0] * v_m[0] + u_m[1] * v_m[1] + u_m[2] * v_m[2];
-        }
 
-        /*
-         * This is required for LField::dot
-         */
-        template<typename ...Args>
-        KOKKOS_INLINE_FUNCTION
-        auto operator()(Args... args) const {
-            return dot(u_m(args...) * v_m(args...));
-        }
+            /*
+             * This is required for LField::cross
+             */
+            template<typename ...Args>
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(Args... args) const {
+                return cross(u_m(args...), v_m(args...));
+            }
 
-    private:
-        const E1 u_m;
-        const E2 v_m;
-    };
+        private:
+            const E1 u_m;
+            const E2 v_m;
+        };
+    }
 
     template<typename E1, size_t N1, typename E2, size_t N2>
     KOKKOS_INLINE_FUNCTION
-    typename E1::value_t dot(const Expression<E1, N1>& u, const Expression<E2, N2>& v) {
-        return meta_dot<E1, E2>(*static_cast<const E1*>(&u),
-                                *static_cast<const E2*>(&v))();
+    detail::meta_cross<E1, E2> cross(const Expression<E1, N1>& u,
+                                     const Expression<E2, N2>& v) {
+        return detail::meta_cross<E1, E2>(*static_cast<const E1*>(&u),
+                                          *static_cast<const E2*>(&v));
     }
 
-
-    /*
-     * Gradient
-     */
-    template<typename E, typename T>
-    struct meta_grad : public Expression<meta_grad<E, T>, sizeof(E)> {
-        KOKKOS_FUNCTION
-        meta_grad(const E& u,
-                  const T& xvector)
-        : u_m(u)
-        , xvector_m(xvector)
-        { }
-
-        KOKKOS_FUNCTION
-        meta_grad(const E& u,
-                  const T& xvector,
-                  const T& yvector)
-        : u_m(u)
-        , xvector_m(xvector)
-        , yvector_m(yvector)
-        { }
-
-        KOKKOS_FUNCTION
-        meta_grad(const E& u,
-                  const T& xvector,
-                  const T& yvector,
-                  const T& zvector)
-        : u_m(u)
-        , xvector_m(xvector)
-        , yvector_m(yvector)
-        , zvector_m(zvector)
-        { }
-
+    namespace detail {
         /*
-         * 1-dimensional grad
+         * Dot product.
          */
-        KOKKOS_INLINE_FUNCTION
-        auto operator()(size_t i) const {
-            return xvector_m * (u_m(i+1) - u_m(i-1));
-        }
+        template<typename E1, typename E2>
+        struct meta_dot : public Expression<meta_dot<E1, E2>, sizeof(E1) + sizeof(E2)> {
+            KOKKOS_FUNCTION
+            meta_dot(const E1& u, const E2& v) : u_m(u), v_m(v) { }
 
+            /*
+            * Vector::dot
+            */
+            KOKKOS_INLINE_FUNCTION
+            typename E1::value_t operator()() const {
+                typename E1::value_t res = 0.0;
+                for (size_t i = 0; i < E1::dim; ++i) {
+                    res += u_m[i] * v_m[i];
+                }
+                return res; //u_m[0] * v_m[0] + u_m[1] * v_m[1] + u_m[2] * v_m[2];
+            }
+
+            /*
+            * This is required for LField::dot
+            */
+            template<typename ...Args>
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(Args... args) const {
+                return dot(u_m(args...) * v_m(args...));
+            }
+
+        private:
+            const E1 u_m;
+            const E2 v_m;
+        };
+    }
+
+    template<typename E1, size_t N1, typename E2, size_t N2>
+    KOKKOS_INLINE_FUNCTION
+    typename E1::value_t dot(const Expression<E1, N1>& u,
+                             const Expression<E2, N2>& v) {
+        return detail::meta_dot<E1, E2>(*static_cast<const E1*>(&u),
+                                        *static_cast<const E2*>(&v))();
+    }
+
+    namespace detail {
         /*
-         * 2-dimensional grad
+         * Gradient
          */
-        KOKKOS_INLINE_FUNCTION
-        auto operator()(size_t i, size_t j) const {
-            return xvector_m * (u_m(i+1, j)   - u_m(i-1, j  )) +
-                   yvector_m * (u_m(i  , j+1) - u_m(i  , j-1));
-        }
+        template<typename E, typename T>
+        struct meta_grad : public Expression<meta_grad<E, T>, sizeof(E)> {
+            KOKKOS_FUNCTION
+            meta_grad(const E& u,
+                    const T& xvector)
+            : u_m(u)
+            , xvector_m(xvector)
+            { }
 
-        /*
-         * 3-dimensional grad
-         */
-        KOKKOS_INLINE_FUNCTION
-        auto operator()(size_t i, size_t j, size_t k) const {
-            return xvector_m * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
-                   yvector_m * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
-                   zvector_m * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
-        }
+            KOKKOS_FUNCTION
+            meta_grad(const E& u,
+                    const T& xvector,
+                    const T& yvector)
+            : u_m(u)
+            , xvector_m(xvector)
+            , yvector_m(yvector)
+            { }
 
-    private:
-        const E u_m;
-        const T xvector_m;
-        const T yvector_m;
-        const T zvector_m;
-    };
+            KOKKOS_FUNCTION
+            meta_grad(const E& u,
+                    const T& xvector,
+                    const T& yvector,
+                    const T& zvector)
+            : u_m(u)
+            , xvector_m(xvector)
+            , yvector_m(yvector)
+            , zvector_m(zvector)
+            { }
+
+            /*
+             * 1-dimensional grad
+             */
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(size_t i) const {
+                return xvector_m * (u_m(i+1) - u_m(i-1));
+            }
+
+            /*
+             * 2-dimensional grad
+             */
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(size_t i, size_t j) const {
+                return xvector_m * (u_m(i+1, j)   - u_m(i-1, j  )) +
+                    yvector_m * (u_m(i  , j+1) - u_m(i  , j-1));
+            }
+
+            /*
+             * 3-dimensional grad
+             */
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(size_t i, size_t j, size_t k) const {
+                return xvector_m * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
+                    yvector_m * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
+                    zvector_m * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
+            }
+
+        private:
+            const E u_m;
+            const T xvector_m;
+            const T yvector_m;
+            const T zvector_m;
+        };
+    }
 
     template<typename E, size_t N, typename T>
     KOKKOS_INLINE_FUNCTION
-    meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector) {
-        return meta_grad<E, T>(*static_cast<const E*>(&u), xvector);
+    detail::meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector) {
+        return detail::meta_grad<E, T>(*static_cast<const E*>(&u), xvector);
     }
 
     template<typename E, size_t N, typename T>
     KOKKOS_INLINE_FUNCTION
-    meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector, const T& yvector) {
-        return meta_grad<E, T>(*static_cast<const E*>(&u), xvector, yvector);
+    detail::meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector, const T& yvector) {
+        return detail::meta_grad<E, T>(*static_cast<const E*>(&u), xvector, yvector);
     }
 
     template<typename E, size_t N, typename T>
     KOKKOS_INLINE_FUNCTION
-    meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector, const T& yvector, const T& zvector) {
-        return meta_grad<E, T>(*static_cast<const E*>(&u), xvector, yvector, zvector);
+    detail::meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector, const T& yvector, const T& zvector) {
+        return detail::meta_grad<E, T>(*static_cast<const E*>(&u), xvector, yvector, zvector);
     }
 }
 

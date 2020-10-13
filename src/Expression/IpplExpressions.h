@@ -28,18 +28,6 @@ namespace ippl {
     };
 
 
-    template <typename E, size_t N = sizeof(E)>
-    struct CapturedExpression {
-        template<typename ...Args>
-        KOKKOS_INLINE_FUNCTION
-        auto operator()(Args... args) const {
-            return reinterpret_cast<const E&>(*this)(args...);
-        }
-
-        char buffer[N];
-    };
-
-
     template<typename E>
     struct FieldExpression {
         auto operator[](size_t i) const {
@@ -47,35 +35,48 @@ namespace ippl {
         }
     };
 
+    namespace detail {
+        template <typename E, size_t N = sizeof(E)>
+        struct CapturedExpression {
+            template<typename ...Args>
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(Args... args) const {
+                return reinterpret_cast<const E&>(*this)(args...);
+            }
 
-    /*
-     * Scalar Expressions
-     *
-     */
-    template<typename T>
-    struct Scalar : public Expression<Scalar<T>, sizeof(T)>
-                  , public FieldExpression<Scalar<T>>
-    {
-        typedef T value_type;
+            char buffer[N];
+        };
 
 
-        KOKKOS_FUNCTION
-        Scalar(value_type val) : val_m(val) { }
+        /*
+         * Scalar Expressions
+         *
+         */
+        template<typename T>
+        struct Scalar : public Expression<Scalar<T>, sizeof(T)>
+                      , public FieldExpression<Scalar<T>>
+        {
+            typedef T value_type;
 
-        KOKKOS_INLINE_FUNCTION
-        value_type operator[](size_t /*i*/) const {
-            return val_m;
-        }
 
-        template<typename ...Args>                                          \
-        KOKKOS_INLINE_FUNCTION
-        auto operator()(Args... /*args*/) const {
-            return val_m;
-        }
+            KOKKOS_FUNCTION
+            Scalar(value_type val) : val_m(val) { }
 
-    private:
-        value_type val_m;
-    };
+            KOKKOS_INLINE_FUNCTION
+            value_type operator[](size_t /*i*/) const {
+                return val_m;
+            }
+
+            template<typename ...Args>                                          \
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(Args... /*args*/) const {
+                return val_m;
+            }
+
+        private:
+            value_type val_m;
+        };
+    }
 }
 
 

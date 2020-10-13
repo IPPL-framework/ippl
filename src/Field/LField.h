@@ -33,14 +33,14 @@ namespace ippl {
 
     // This stores the local data for a Field.
     template<class T, unsigned Dim>
-    class LField : public Expression<LField<T, Dim>, sizeof(typename ViewType<T, Dim>::view_type)>
+    class LField : public Expression<LField<T, Dim>, sizeof(typename detail::ViewType<T, Dim>::view_type)>
     {
     public:
         typedef std::int64_t int64_t;
         // The type of domain stored here
         typedef NDIndex<Dim> Domain_t;
 
-        typedef typename ViewType<T, Dim>::view_type view_type;
+        typedef typename detail::ViewType<T, Dim>::view_type view_type;
 
 
         /*! Ctor for an LField.  Arguments:
