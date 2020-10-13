@@ -56,7 +56,8 @@ namespace ippl {
         void write(const typename ViewType<T, 1, Properties...>::view_type& view,
                 std::ostream& out = std::cout)
         {
-            typename ViewType<T, 1, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
+            using view_type = typename ViewType<T, 1, Properties...>::view_type;
+            typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
             Kokkos::deep_copy(hview, view);
             for (std::size_t i = 0; i < hview.extent(0); ++i) {
                 out << hview(i) << " ";
@@ -69,7 +70,8 @@ namespace ippl {
         void write(const typename ViewType<T, 2, Properties...>::view_type& view,
                 std::ostream& out = std::cout)
         {
-            typename ViewType<T, 2, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
+            using view_type = typename ViewType<T, 2, Properties...>::view_type;
+            typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
             Kokkos::deep_copy(hview, view);
             for (std::size_t j = 0; j < hview.extent(1); ++j) {
                 for (std::size_t i = 0; i < hview.extent(0); ++i) {
@@ -83,7 +85,8 @@ namespace ippl {
         void write(const typename ViewType<T, 3, Properties...>::view_type& view,
                 std::ostream& out = std::cout)
         {
-            typename ViewType<T, 3, Properties...>::view_type::HostMirror hview = Kokkos::create_mirror_view(view);
+            using view_type = typename ViewType<T, 3, Properties...>::view_type;
+            typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
             Kokkos::deep_copy(hview, view);
             for (std::size_t k = 0; k < hview.extent(2); ++k) {
                 for (std::size_t j = 0; j < hview.extent(1); ++j) {
