@@ -56,13 +56,14 @@ namespace ippl {
     struct Scalar : public Expression<Scalar<T>, sizeof(T)>
                   , public FieldExpression<Scalar<T>>
     {
-        typedef T value_t;
+        typedef T value_type;
+
 
         KOKKOS_FUNCTION
-        Scalar(value_t val) : val_m(val) { }
+        Scalar(value_type val) : val_m(val) { }
 
         KOKKOS_INLINE_FUNCTION
-        value_t operator[](size_t /*i*/) const {
+        value_type operator[](size_t /*i*/) const {
             return val_m;
         }
 
@@ -73,7 +74,7 @@ namespace ippl {
         }
 
     private:
-        value_t val_m;
+        value_type val_m;
     };
 }
 

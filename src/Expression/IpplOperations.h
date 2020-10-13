@@ -170,31 +170,42 @@ namespace ippl {
         KOKKOS_FUNCTION
         meta_grad(const E& u, const M& m) : u_m(u) {
             idx[0] = 0.5 / m.getMeshSpacing(0);
-            idx[1] = 0.0;
-            idx[2] = 0.0;
-            idy[0] = 0.0;
-            idy[1] = 0.5 / m.getMeshSpacing(1);
-            idy[2] = 0.0;
-            idz[0] = 0.0;
-            idz[1] = 0.0;
-            idz[2] = 0.5 / m.getMeshSpacing(2);
+
+            if constexpr(M::Dimension == 2) {
+                idx[1] = 0.0;
+                idy[0] = 0.0;
+                idy[1] = 0.5 / m.getMeshSpacing(1);
+            }
+
+            if constexpr(M::Dimension == 3) {
+                idx[2] = 0.0;
+                idy[2] = 0.0;
+                idz[0] = 0.0;
+                idz[1] = 0.0;
+                idz[2] = 0.5 / m.getMeshSpacing(2);
+            }
         }
 
         /*
-         * This is required for LField::grad
+         * 1-dimensional grad
          */
         KOKKOS_INLINE_FUNCTION
         auto operator()(size_t i) const {
-            std::cout << "1d meta_grad for LField" << std::endl;
-            return u_m(i);
+            return idx[0] * (u_m(i+1) - u_m(i-1));
         }
 
-         KOKKOS_INLINE_FUNCTION
+        /*
+         * 2-dimensional grad
+         */
+        KOKKOS_INLINE_FUNCTION
         auto operator()(size_t i, size_t j) const {
-            std::cout << "2d meta_grad for LField" << std::endl;
-            return u_m(i, j);
+            return idx * (u_m(i+1, j)   - u_m(i-1, j  )) +
+                   idy * (u_m(i  , j+1) - u_m(i  , j-1));
         }
 
+        /*
+         * 3-dimensional grad
+         */
         KOKKOS_INLINE_FUNCTION
         auto operator()(size_t i, size_t j, size_t k) const {
             return idx * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
@@ -204,9 +215,9 @@ namespace ippl {
 
     private:
         const E u_m;
-        Vector<double, 3> idx;
-        Vector<double, 3> idy;
-        Vector<double, 3> idz;
+        typename M::MeshVector_t idx;
+        typename M::MeshVector_t idy;
+        typename M::MeshVector_t idz;
     };
 
     template<typename E, size_t N, typename M>
