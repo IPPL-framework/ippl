@@ -18,21 +18,22 @@
 namespace ippl {
 
     template<class T, unsigned Dim>
-    LField<T,Dim>::LField(const Domain_t& owned, int vnode)
+    LField<T,Dim>::LField(const Domain_t& owned, int vnode, int nghost)
         : vnode_m(vnode)
+        , nghost_m(nghost)
         , owned_m(owned)
     {
         static_assert(Dim == 3, "Only 3-dimensional fields supported at the momment!");
 
         if constexpr(Dim == 1) {
-            this->resize(owned[0].length());
+            this->resize(owned[0].length() + 2 * nghost);
         } else if constexpr(Dim == 2) {
-            this->resize(owned[0].length(),
-                        owned[1].length());
+            this->resize(owned[0].length() + 2 * nghost,
+                         owned[1].length() + 2 * nghost);
         } else if constexpr(Dim == 3) {
-            this->resize(owned[0].length(),
-                        owned[1].length(),
-                        owned[2].length());
+            this->resize(owned[0].length() + 2 * nghost,
+                         owned[1].length() + 2 * nghost,
+                         owned[2].length() + 2 * nghost);
         }
     }
 
@@ -104,8 +105,10 @@ namespace ippl {
     //                             });
     //     } else if constexpr(Dim == 3) {
             Kokkos::parallel_for("LField::operator=()",
-                                Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
-                                                                        {dview_m.extent(0), dview_m.extent(1), dview_m.extent(2)}),
+                                Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost_m, nghost_m, nghost_m},
+                                                                       {dview_m.extent(0) - nghost_m,
+                                                                        dview_m.extent(1) - nghost_m,
+                                                                        dview_m.extent(2) - nghost_m}),
                                 KOKKOS_CLASS_LAMBDA(const int i, const int j, const int k) {
                                     dview_m(i, j, k) = expr_(i, j, k);
                                 });

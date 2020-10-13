@@ -46,8 +46,9 @@ namespace ippl {
         /*! Ctor for an LField.  Arguments:
         * @param owned domain of "owned" region of LField (without guards)
         * @param vnode global vnode ID number
+        * @param nghost number of ghost layers
         */
-        LField(const Domain_t& owned, int vnode = -1);
+        LField(const Domain_t& owned, int vnode = -1, int nghost = 1);
 
         // Copy constructor.
         LField(const LField<T,Dim>&) = default;
@@ -99,6 +100,8 @@ namespace ippl {
         // construction of the vnode:
 
         int vnode_m;
+
+        int nghost_m;
 
         // actual field data
         view_type dview_m;
