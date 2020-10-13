@@ -174,7 +174,7 @@ namespace ippl {
         , xvector_m(xvector)
         { }
 
-
+        KOKKOS_FUNCTION
         meta_grad(const E& u,
                   const T& xvector,
                   const T& yvector)
@@ -183,6 +183,7 @@ namespace ippl {
         , yvector_m(yvector)
         { }
 
+        KOKKOS_FUNCTION
         meta_grad(const E& u,
                   const T& xvector,
                   const T& yvector,

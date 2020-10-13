@@ -96,9 +96,13 @@ namespace ippl {
         auto operator[](size_t i) const {
             if constexpr (M::Dimension == 1) {
                 return grad(u_m[i], xvector_m);
-            } else if constexpr (M::Dimension == 2) {
+            }
+
+            if constexpr (M::Dimension == 2) {
                 return grad(u_m[i], xvector_m, yvector_m);
-            } else if constexpr (M::Dimension == 3) {
+            }
+
+            if constexpr (M::Dimension == 3) {
                 return grad(u_m[i], xvector_m, yvector_m, zvector_m);
             }
         }
