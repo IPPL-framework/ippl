@@ -26,7 +26,6 @@
 // include files
 #include "Field/Field.h"
 #include "Field/IndexedField.h"
-#include "DataSource/MakeDataSource.h"
 #include "Index/SIndex.h"
 #include "SubField/SubField.h"
 #include "Utility/IpplStats.h"
@@ -478,19 +477,6 @@ void Field<T,Dim,M,C>::notifyUserOfDelete(UserList *userlist) {
     // since this is not for our mesh, defer to the base class function
     BareField<T,Dim>::notifyUserOfDelete(userlist);
   }
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-// a virtual function which is called by this base class to get a
-// specific instance of DataSourceObject based on the type of data
-// and the connection method (the argument to the call).
-template<class T, unsigned Dim, class M, class C>
-DataSourceObject *Field<T,Dim,M,C>::createDataSourceObject(const char *nm,
-							   DataConnect *dc,
-							   int tm) {
-   
-  return make_DataSourceObject(nm, dc, tm, *this);
 }
 
 

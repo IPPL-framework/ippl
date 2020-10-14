@@ -102,10 +102,6 @@
 // #include "AppTypes/SymTenzor.h"
 // #include "AppTypes/AntiSymTenzor.h"
 
-// IPPL Data Connection classes
-// #include "DataSource/DataConnectCreator.h"
-// #include "DataSource/FileDataConnect.h"
-
 // // IPPL FFTs
 // #include "FFT/FFT.h"
 
