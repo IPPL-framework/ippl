@@ -19,6 +19,7 @@ add_subdirectory (kokkos)
 add_subdirectory (barefield)
 add_subdirectory (vector)
 add_subdirectory (field)
+add_subdirectory (particle)
 
 # vi: set et ts=4 sw=4 sts=4:
   
