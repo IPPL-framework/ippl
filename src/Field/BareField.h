@@ -21,13 +21,9 @@
 #include "Field/LField.h"
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
-#include "Utility/Unique.h"
-#include "Utility/my_auto_ptr.h"
 
 #include <iostream>
 #include <cstdlib>
-
-// #include "Ippl/IpplExpressions.h"
 
 // forward declarations
 class Index;
@@ -35,17 +31,26 @@ template<unsigned Dim> class NDIndex;
 template<unsigned Dim> class FieldLayout;
 
 namespace ippl {
+    /*!
+     * @file BareField.h
+     * A BareField represents a real field. It may consist of multiple
+     * local fields.
+     */
 
-    // class definition
+    /*!
+     * @class BareField
+     * @tparam T data type
+     * @tparam Dim field dimension
+     */
     template<typename T,  unsigned Dim>
     class BareField : public FieldExpression< BareField<T, Dim> >
     {
 
     public:
-        // Some externally visible typedefs and enums
         typedef FieldLayout<Dim> Layout_t;
         typedef LField<T, Dim> LField_t;
         typedef std::deque<std::shared_ptr<LField_t>> container_t;
+
         typedef typename container_t::iterator iterator_t;
 
         // A default constructor, which should be used only if the user calls the
@@ -113,13 +118,16 @@ namespace ippl {
 
 
     protected:
+        //! Container to store the local fields
         container_t lfields_m;
 
     private:
-        // Setup allocates all the LFields.  The various ctors call this.
+        /*!
+         * Allocate all the local fields.
+         */
         void setup();
 
-        // How the local arrays are laid out.
+        //! How the local arrays are laid out.
         Layout_t *Layout;
     };
 }

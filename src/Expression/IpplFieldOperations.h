@@ -19,6 +19,17 @@
 #define IPPL_FIELD_OPERATIONS_H
 
 namespace ippl {
+    /*!
+     * @file IpplFieldOperations.h
+     */
+
+    /*!
+     * Macro to overload C++ operators for the Field and BareField class.
+     * @param fun name of the expression template function
+     * @param name overloaded operator
+     * @param op1 operation for single index access
+     * @param op2 operation for multipole indices access
+     */
     #define DefineBinaryFieldOperation(fun, name, op1, op2)                     \
     template<typename E1, typename E2>                                          \
     struct fun : public FieldExpression<fun<E1, E2>> {                          \
@@ -58,15 +69,16 @@ namespace ippl {
     }
 
 
+    /// @cond
     DefineBinaryFieldOperation(FieldAdd,      operator+, u_m[i] + v_m[i], u_m(args...) + v_m(args...))
     DefineBinaryFieldOperation(FieldSubtract, operator-, u_m[i] - v_m[i], u_m(args...) - v_m(args...))
     DefineBinaryFieldOperation(FieldMultiply, operator*, u_m[i] * v_m[i], u_m(args...) * v_m(args...))
     DefineBinaryFieldOperation(FieldDivide,   operator/, u_m[i] / v_m[i], u_m(args...) / v_m(args...))
-
+    /// @endcond
 
     namespace detail {
-        /*
-         * Cross product. This function is only supported for 3-dimensional vectors.
+        /*!
+         * Meta function of cross product. This function is only supported for 3-dimensional vectors.
          */
         template<typename E1, typename E2>
         struct field_meta_cross : public FieldExpression<field_meta_cross<E1, E2>> {
@@ -83,6 +95,13 @@ namespace ippl {
         };
     }
 
+    /*!
+     * User interface of cross product.
+     * @tparam E1 expression type of left-hand side
+     * @tparam E2 expression type of right-hand side
+     * @param u arbitrary left-hand side vector field expression
+     * @param v arbitrary right-hand side vector field expression
+     */
     template<typename E1, typename E2>
     detail::field_meta_cross<E1, E2> cross(const FieldExpression<E1>& u,
                                            const FieldExpression<E2>& v) {

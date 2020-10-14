@@ -21,8 +21,16 @@
 #include "AppTypes/Vector.h"
 
 namespace ippl {
-    /*
-     * Binary operations for Scalar, Vector and LField classes.
+    /*!
+     * @file IpplOperations.h
+     */
+
+     /*!
+     * Macro to overload C++ operators for the Scalar, LField and Vector class.
+     * @param fun name of the expression template function
+     * @param name overloaded operator
+     * @param op1 operation for single index access
+     * @param op2 operation for multipole indices access
      */
     #define DefineBinaryOperation(fun, name, op1, op2)                      \
     template<typename E1, typename E2>                                      \
@@ -68,14 +76,16 @@ namespace ippl {
         return fun<E, detail::Scalar<T>>(*static_cast<const E*>(&v), u);    \
     }
 
+    /// @cond
     DefineBinaryOperation(Add,      operator+, u_m[i] + v_m[i], u_m(args...) + v_m(args...))
     DefineBinaryOperation(Subtract, operator-, u_m[i] - v_m[i], u_m(args...) - v_m(args...))
     DefineBinaryOperation(Multiply, operator*, u_m[i] * v_m[i], u_m(args...) * v_m(args...))
     DefineBinaryOperation(Divide,   operator/, u_m[i] / v_m[i], u_m(args...) / v_m(args...))
+    /// @endcond
 
     namespace detail {
-        /*
-         * Cross product. This function is only supported for 3-dimensional vectors.
+        /*!
+         * Meta function of cross product. This function is only supported for 3-dimensional vectors.
          */
         template<typename E1, typename E2>
         struct meta_cross : public Expression<meta_cross<E1, E2>, sizeof(E1) + sizeof(E2)> {
@@ -116,8 +126,8 @@ namespace ippl {
     }
 
     namespace detail {
-        /*
-         * Dot product.
+        /*!
+         * Meta function of dot product.
          */
         template<typename E1, typename E2>
         struct meta_dot : public Expression<meta_dot<E1, E2>, sizeof(E1) + sizeof(E2)> {
@@ -161,7 +171,7 @@ namespace ippl {
 
     namespace detail {
         /*
-         * Gradient
+         * Meta function of gradient
          */
         template<typename E, typename T>
         struct meta_grad : public Expression<meta_grad<E, T>, sizeof(E)> {
@@ -206,7 +216,7 @@ namespace ippl {
             KOKKOS_INLINE_FUNCTION
             auto operator()(size_t i, size_t j) const {
                 return xvector_m * (u_m(i+1, j)   - u_m(i-1, j  )) +
-                    yvector_m * (u_m(i  , j+1) - u_m(i  , j-1));
+                       yvector_m * (u_m(i  , j+1) - u_m(i  , j-1));
             }
 
             /*
@@ -215,8 +225,8 @@ namespace ippl {
             KOKKOS_INLINE_FUNCTION
             auto operator()(size_t i, size_t j, size_t k) const {
                 return xvector_m * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
-                    yvector_m * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
-                    zvector_m * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
+                       yvector_m * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
+                       zvector_m * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
             }
 
         private:
@@ -227,18 +237,45 @@ namespace ippl {
         };
     }
 
+    /*!
+     * User interface of gradient in one dimension.
+     * @tparam E expression type of left-hand side
+     * @tparam N size of expression
+     * @tparam T type of vector
+     * @param u expression
+     * @param xvector
+     */
     template<typename E, size_t N, typename T>
     KOKKOS_INLINE_FUNCTION
     detail::meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector) {
         return detail::meta_grad<E, T>(*static_cast<const E*>(&u), xvector);
     }
 
+    /*!
+     * User interface of gradient in two dimensions.
+     * @tparam E expression type of left-hand side
+     * @tparam N size of expression
+     * @tparam T type of vector
+     * @param u expression
+     * @param xvector
+     * @param yvector
+     */
     template<typename E, size_t N, typename T>
     KOKKOS_INLINE_FUNCTION
     detail::meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector, const T& yvector) {
         return detail::meta_grad<E, T>(*static_cast<const E*>(&u), xvector, yvector);
     }
 
+    /*!
+     * User interface of gradient in two dimensions.
+     * @tparam E expression type of left-hand side
+     * @tparam N size of expression
+     * @tparam T type of vector
+     * @param u expression
+     * @param xvector
+     * @param yvector
+     * @param zvector
+     */
     template<typename E, size_t N, typename T>
     KOKKOS_INLINE_FUNCTION
     detail::meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector, const T& yvector, const T& zvector) {
