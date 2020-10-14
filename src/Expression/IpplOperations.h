@@ -170,7 +170,7 @@ namespace ippl {
     }
 
     namespace detail {
-        /*
+        /*!
          * Meta function of gradient
          */
         template<typename E, typename T>

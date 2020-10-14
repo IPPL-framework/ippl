@@ -19,8 +19,24 @@
 #define IPPL_EXPRESSIONS_H
 
 namespace ippl {
+    /*!
+     * @file IpplExpressions.h
+     *
+     * Expression class which should be Kokkos-aware
+     * need to inherit from Expression.
+     */
+
+    /*!
+     * Basic expression class for LField, Vector and Scalar.
+     * Expression classes need to inherit from this with the
+     * CRTP (curiously recursive template pattern) design
+     * pattern.
+     */
     template<typename E, size_t N = sizeof(E)>
     struct Expression {
+        /*!
+         * Access single element of the expression
+         */
         KOKKOS_INLINE_FUNCTION
         auto operator[](size_t i) const {
             return static_cast<const E&>(*this)[i];
@@ -28,14 +44,29 @@ namespace ippl {
     };
 
 
+    /*!
+     * Basic field expression class for Field and BareField.
+     * FieldExpression classes need to inherit from this with the
+     * CRTP (curiously recursive template pattern) design
+     * pattern.
+     */
     template<typename E>
     struct FieldExpression {
+        /*!
+         * Access single element of the field expression
+         */
         auto operator[](size_t i) const {
             return static_cast<const E&>(*this)[i];
         }
     };
 
     namespace detail {
+        /*!
+         * This expression is only used to allocate
+         * enough memory for the kernel on the device.
+         * It is instantiated in the assignment operator
+         * of the LField class.
+         */
         template <typename E, size_t N = sizeof(E)>
         struct CapturedExpression {
             template<typename ...Args>
@@ -48,9 +79,9 @@ namespace ippl {
         };
 
 
-        /*
-         * Scalar Expressions
-         *
+        /*!
+         * Expression for intrinsic data types. They are both regular expressions
+         * and field expressions.
          */
         template<typename T>
         struct Scalar : public Expression<Scalar<T>, sizeof(T)>
@@ -62,12 +93,23 @@ namespace ippl {
             KOKKOS_FUNCTION
             Scalar(value_type val) : val_m(val) { }
 
+            /*!
+             * Access the scalar value with single index.
+             * This is used for binary operations between
+             * Scalar and Vector.
+             */
             KOKKOS_INLINE_FUNCTION
             value_type operator[](size_t /*i*/) const {
                 return val_m;
             }
 
-            template<typename ...Args>                                          \
+            /*!
+             * Access the scalar value with multiple indices.
+             * This is used for binary operations between
+             * Scalar and LField, Scalar and BareField,
+             * and Scalar and Field.
+             */
+            template<typename ...Args>
             KOKKOS_INLINE_FUNCTION
             auto operator()(Args... /*args*/) const {
                 return val_m;
