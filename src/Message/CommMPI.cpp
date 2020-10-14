@@ -29,6 +29,8 @@
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
 
+#include <Kokkos_Core.hpp>
+
 
 #include "Utility/IpplMessageCounter.h"
 
@@ -109,6 +111,7 @@ CommMPI::CommMPI(int& argc , char**& argv, int procs, bool mpiinit, MPI_Comm mpi
 #else
         MPI_Init(&argc, &argv);
 #endif
+        Kokkos::initialize(argc, argv);
     }
     //else
     //    INFOMSG("NOT initializing MPI = " << endl);
@@ -276,8 +279,10 @@ CommMPI::~CommMPI(void)
     because the IPPL destructor is called AFTER that, which causes:
     "0032-151 MPI is already finalized in string, task number"
     */
-    if (weInitialized)
+    if (weInitialized) {
+        Kokkos::finalize();
         MPI_Finalize();
+    }
 }
 
 

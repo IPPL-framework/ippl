@@ -554,7 +554,7 @@ FieldLayout<Dim>::setup(const NDIndex<Dim>& domain,
         }
     }
     // Make sure at least one of the parallel/serial flags is parallel
-    PInsist(parallel_count>0,"At least one dimension of a FieldLayout must be PARALLEL!");
+//     PInsist(parallel_count>0,"At least one dimension of a FieldLayout must be PARALLEL!");
 
     // Check to see if we have too few elements to partition.  If so, reduced
     // the number of vnodes (if necessary) to just the number of elements along

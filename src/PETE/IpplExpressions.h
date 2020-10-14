@@ -23,8 +23,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifndef IPPL_EXPRESSIONS_H
-#define IPPL_EXPRESSIONS_H
+#ifndef IPPL_EXPRESSIONS_OLD_H
+#define IPPL_EXPRESSIONS_OLD_H
 
 
 // We need to construct a custom version of Reduction. We must define
