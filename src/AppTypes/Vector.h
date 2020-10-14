@@ -1,3 +1,20 @@
+//
+// Class Vector
+//   Vector class used for vector fields and particle attributes like the coordinate.
+//
+// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #ifndef IPPL_Vector_H
 #define IPPL_Vector_H
 
@@ -6,6 +23,15 @@
 #include <initializer_list>
 
 namespace ippl {
+    /*!
+     * @file Vector.h
+     */
+
+    /*!
+     * @class Vector
+     * @tparam T intrinsic vector data type
+     * @tparam Dim vector dimension
+     */
     template<typename T, unsigned Dim>
     class Vector : public Expression<Vector<T, Dim>, sizeof(T) * Dim> {
     public:
@@ -26,6 +52,9 @@ namespace ippl {
         KOKKOS_FUNCTION
         Vector(const T& val);
 
+        /*!
+         * @param list of values
+         */
         KOKKOS_FUNCTION
         Vector(const std::initializer_list<T>& list);
 
@@ -74,12 +103,4 @@ namespace ippl {
 
 #include "Vector.hpp"
 
-#endif // IPPL_Vector_H
-
-// vi: set et ts=4 sw=4 sts=4:
-// Local Variables:
-// mode:c
-// c-basic-offset: 4
-// indent-tabs-mode: nil
-// require-final-newline: nil
-// End:
+#endif
