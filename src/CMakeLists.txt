@@ -72,8 +72,6 @@ add_subdirectory (Message)
 # add_subdirectory (Particle)
 add_subdirectory (PETE)
 # add_subdirectory (Region)
-# add_subdirectory (SubField)
-# add_subdirectory (SubParticle)
 add_subdirectory (Utility)
 add_subdirectory (Expression)
 

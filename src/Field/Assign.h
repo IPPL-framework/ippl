@@ -185,8 +185,6 @@ ASSIGNMENT_OPERATORS(maxeq,OpMaxAssign)
 
 // Determine whether to compress or uncompress the
 // left hand side given information about the expression.
-// This prototype is defined here because the SubField assignment
-// files need this functionality as well.
 template<class T, unsigned Dim, class A, class Op>
 bool TryCompressLHS(LField<T,Dim>&, A&, Op, const NDIndex<Dim>&);
 
