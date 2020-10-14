@@ -1,66 +1,66 @@
 set (_SRCS
-    DiscBuffer.cpp
+#     DiscBuffer.cpp
     DiscConfig.cpp
     DiscMeta.cpp
-    DiscParticleFunctions.cpp
-    FieldDebugFunctions.cpp
+#     DiscParticleFunctions.cpp
+#     FieldDebugFunctions.cpp
     Inform.cpp
-    IpplCounter.cpp
+#     IpplCounter.cpp
     IpplInfo.cpp
-    IpplMemoryUsage.cpp
+#     IpplMemoryUsage.cpp
     IpplMessageCounter.cpp
     IpplStats.cpp
-    IpplTimings.cpp
+#     IpplTimings.cpp
     PAssert.cpp
-    ParticleDebugFunctions.cpp
+#     ParticleDebugFunctions.cpp
     RNGXDiv.cpp
     RandomNumberGen.cpp
     StaticIpplInfo.cpp
     Timer.cpp
     Unique.cpp
     User.cpp
-    UserList.cpp
+     UserList.cpp
     )
 
 set (_HDRS
-    DiscBuffer.h
+#     DiscBuffer.h
     DiscConfig.h
-    DiscField.h
-    DiscField.hpp
+#     DiscField.h
+#     DiscField.hpp
     DiscMeta.h
-    DiscParticle.h
-    DiscType.h
-    FieldDebug.h
-    FieldDebug.hpp
-    FieldDebugFunctions.h
-    FieldDebugPrint.h
-    FieldDebugPrint.hpp
-    FieldPrint.h
-    FieldPrint.hpp
+#     DiscParticle.h
+#     DiscType.h
+#     FieldDebug.h
+#     FieldDebug.hpp
+#     FieldDebugFunctions.h
+#     FieldDebugPrint.h
+#     FieldDebugPrint.hpp
+#     FieldPrint.h
+#     FieldPrint.hpp
     Inform.h
-    IpplCounter.h
-    IpplException.h
+#     IpplCounter.h
+#     IpplException.h
     IpplInfo.h
-    IpplMemoryUsage.h
+#     IpplMemoryUsage.h
     IpplMessageCounter.h
     IpplStats.h
-    IpplTimings.h
-    NamedObj.h
+#     IpplTimings.h
+#     NamedObj.h
     PAssert.h
-    ParticleDebug.h
-    ParticleDebug.hpp
-    ParticleDebugFunctions.h
-    RNGAssignDefs.h
+#     ParticleDebug.h
+#     ParticleDebug.hpp
+#     ParticleDebugFunctions.h
+#     RNGAssignDefs.h
     RNGXDiv.h
     RandomNumberGen.h
     RefCounted.h
-    SequenceGen.h
+#     SequenceGen.h
     StaticIpplInfo.h
     Timer.h
     Unique.h
     User.h
     UserList.h
-    Vec.h
+#     Vec.h
     my_auto_ptr.h
     vmap.h
     vmap.hpp

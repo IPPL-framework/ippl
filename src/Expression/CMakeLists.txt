@@ -2,20 +2,9 @@ set (_SRCS
   )
 
 set (_HDRS
-  AntiSymTenzor.h
-  AppTypeTraits.h
-  SymTenzor.h
-  Tenzor.h
-  TSVMetaAssign.h
-  TSVMetaBinary.h
-  TSVMetaCompare.h
-  TSVMetaCross.h
-  TSVMetaDotDot.h
-  TSVMetaDot.h
-  TSVMeta.h
-  TSVMetaUnary.h
-  Vector.h
-  Vector.hpp
+  IpplExpressions.h
+  IpplOperations.h
+  IpplFieldOperations.h
   )
 
 include_directories (
@@ -25,7 +14,7 @@ include_directories (
 add_ippl_sources (${_SRCS})
 add_ippl_headers (${_HDRS})
 
-install (FILES ${_HDRS} DESTINATION include/AppTypes)
+install (FILES ${_HDRS} DESTINATION include/Expression)
 
 # vi: set et ts=4 sw=4 sts=4:
 
