@@ -3,17 +3,10 @@ set (_SRCS
     )
 
 set (_HDRS
-    IndexedSIndex.h
     Index.h
     IndexInlines.h
-    LSIndex.h
     NDIndex.h
     NDIndexInlines.h
-    SIndexAssign.hpp
-    SIndexAssign.h
-    SIndex.hpp
-    SIndex.h
-    SOffset.h
     )
 
 include_directories (

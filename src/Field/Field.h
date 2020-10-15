@@ -13,7 +13,6 @@
 #include "Field/LField.h"
 #include "Field/BCond.h"
 #include "Field/ReductionLoc.h"
-#include "SubField/SubField.h"
 #include "DataSource/DataSource.h"
 #include "Meshes/UniformCartesian.h"
 
@@ -117,7 +116,6 @@ public:
   IndexedField<T,Dim,1,M,C>   operator[](const Index&);
   IndexedField<T,Dim,1,M,C>   operator[](int);
   IndexedField<T,Dim,Dim,M,C> operator[](const NDIndex<Dim>&);
-  SubField<T,Dim,M,C,SIndex<Dim> >  operator[](const SIndex<Dim>&);
 
   // Assignment from constants and other arrays.
   const Field<T,Dim,M,C>& operator=(T x) {
