@@ -96,23 +96,25 @@
 // include files
 // #include "Particle/AbstractParticle.h"
 #include "AppTypes/Vector.h"
-// #include "DataSource/DataSource.h"
-// #include "DataSource/MakeDataSource.h"
-// #include "Message/Formatter.h"
+
+#include "Particle/Kokkos_ParticleAttrib.h"
+
+// // #include "DataSource/DataSource.h"
+// // #include "DataSource/MakeDataSource.h"
+// // #include "Message/Formatter.h"
 #include <vector>
-#include <algorithm>  // Include algorithms
-#include <utility>
-#include <iostream>
+// #include <algorithm>  // Include algorithms
+// #include <utility>
+// #include <iostream>
 
 
 // forward declarations
-class Inform;
-class Message;
-template <class PLayout> class IpplParticleBase;
-template <class PLayout>
-std::ostream& operator<<(std::ostream&, const IpplParticleBase<PLayout>&);
-template <class T, unsigned D> class ParticleBConds;
-
+// class Inform;
+// class Message;
+// template <class PLayout> class IpplParticleBase;
+// template <class PLayout>
+// std::ostream& operator<<(std::ostream&, const IpplParticleBase<PLayout>&);
+// template <class T, unsigned D> class ParticleBConds;
 
 namespace ippl {
 
@@ -120,10 +122,15 @@ namespace ippl {
     // ParticleLayout-derived class which determines how the particles are
     // distributed among processors.
 //     template<class PLayout>
-    class IpplParticleBase { //: //public DataSource,
+
+    template <typename T, unsigned Dim>
+    class IpplParticleBase {
 //                             public AbstractParticle<typename PLayout::Position_t, PLayout::Dimension> {
 
-//     public:
+    public:
+        typedef Vector<T, Dim> vector_type;
+        typedef ParticleAttrib<vector_type>  position_type;
+        typedef ParticleAttrib<std::int64_t> index_type;
         // useful enums
 //         enum { Dim = PLayout::Dimension };
 
@@ -138,7 +145,8 @@ namespace ippl {
 //         typedef typename PLayout::pair_iterator   pair_iterator;
 //         typedef typename PLayout::pair_t          pair_t;
 //         typedef typename PLayout::UpdateFlags     UpdateFlags;
-//         typedef std::vector<ParticleAttribBase *>      attrib_container_t;
+        typedef std::vector<ParticleAttribBase*> attribute_container_t;
+
 //         typedef attrib_container_t::iterator      attrib_iterator;
 //         typedef ParticleAttribBase::SortList_t    SortList_t;
 
@@ -147,13 +155,15 @@ namespace ippl {
 
         // our position, and our global ID's
 //         ParticlePos_t   R;
+        position_type R;
+        index_type ID;
 //         ParticleIndex_t ID;
 
 //     public:
 //         // constructor 1: no arguments, so create an uninitialized IpplParticleBase.
 //         // If this constructor is used, the user must call 'initialize' with
 //         // a layout object in order to use this.
-//         IpplParticleBase() :
+        IpplParticleBase();
 //             MIN_NUM_PART_PER_CORE(0),
 //             Layout(NULL),
 //             TotalNum(0),
@@ -196,8 +206,8 @@ namespace ippl {
 //         //
 //
 //         // return/change the total or local number of particles
-//         size_t getTotalNum() const { return TotalNum; }
-//         size_t getLocalNum() const { return LocalNum; }
+        size_t getTotalNum() const { return totalNum_m; }
+        size_t getLocalNum() const { return localNum_m; }
 //         size_t getDestroyNum() const { return DestroyNum; }
 //         size_t getGhostNum() const { return GhostNum; }
 //         void setTotalNum(size_t n) { TotalNum = n; }
@@ -236,7 +246,7 @@ namespace ippl {
 //         //
 //
 //         // add a new attribute ... called by constructor of this and derived classes
-//         void addAttribute(ParticleAttribBase& pa) { AttribList.push_back(&pa); }
+        void addAttribute(ParticleAttribBase& pa);
 //
 //         // get a pointer to the base class for the Nth attribute
 //         ParticleAttribBase&
@@ -265,8 +275,8 @@ namespace ippl {
 //         // create 1 new particle with a given ID
 //         void createWithID(unsigned id);
 //
-//         // create M new particles on this processor
-//         void create(size_t);
+        // create M new particles on this processor
+        void create(size_t);
 //
 //         // create np new particles globally, equally distributed among all processors
 //         void globalCreate(size_t np);
@@ -362,21 +372,22 @@ namespace ippl {
 //         // index I to start at and the number of particles M to destroy.
 //         std::vector< std::pair<size_t,size_t> > DestroyList;
 //
-//     private:
+    private:
 //         // our layout object, which we delete in our destructor
 //         PLayout *Layout;
 //
-//         // our list of attributes
-//         attrib_container_t AttribList;
 //
 //         // our current number of total and local atoms, and
 //         // the number of particles we've deleted since the last update
 //         // also, the number of ghost particles
-//         size_t TotalNum;
-//         size_t LocalNum;
+        size_t totalNum_m;
+        size_t localNum_m;
 //         size_t DestroyNum;
 //         size_t GhostNum;
 //
+//         // our list of attributes
+        attribute_container_t attributes_m;
+
 //         // unique particle ID number generation value
 //         unsigned NextID;
 //

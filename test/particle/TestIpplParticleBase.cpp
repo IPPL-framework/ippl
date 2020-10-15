@@ -3,9 +3,16 @@
 int main(int argc, char *argv[]) {
     Ippl ippl(argc, argv);
 
-//     typedef ippl::IpplParticleBase particle_type;
+    typedef ippl::IpplParticleBase<double, 3> bunch_type;
 
-//     particle_type p;
+    bunch_type p;
+
+    std::cout << p.getLocalNum() << std::endl;
+
+    p.create(10);
+
+    std::cout << p.getLocalNum() << std::endl;
+
 
     return 0;
 }

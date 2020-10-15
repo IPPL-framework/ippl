@@ -26,6 +26,22 @@
 
 namespace ippl {
 
+    template <typename T, unsigned Dim>
+    IpplParticleBase<T, Dim>::IpplParticleBase()
+    : totalNum_m(0)
+    , localNum_m(0)
+    {
+        addAttribute(R);
+        addAttribute(ID);
+    }
+
+
+    template <typename T, unsigned Dim>
+    void IpplParticleBase<T, Dim>::addAttribute(ParticleAttribBase& pa)
+    {
+        attributes_m.push_back(&pa);
+    }
+
 //     /////////////////////////////////////////////////////////////////////
 //     // For a IpplParticleBase that was created with the default constructor,
 //     // initialize performs the same actions as are done in the non-default
@@ -407,30 +423,29 @@ namespace ippl {
 //
 //
 //     /////////////////////////////////////////////////////////////////////
-//     // create M new particles on this processor
-//     template<class PLayout>
-//     void IpplParticleBase<PLayout>::create(size_t M) {
-//
-//
+    // create M new particles on this processor
+    template<typename T, unsigned Dim>
+    void IpplParticleBase<T, Dim>::create(size_t n)
+    {
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
-//
+
 //     // go through all the attributes, and allocate space for M new particles
-//     attrib_container_t::iterator abeg = AttribList.begin();
-//     attrib_container_t::iterator aend = AttribList.end();
-//     for ( ; abeg != aend; abeg++ )
-//         (*abeg)->create(M);
-//
+        using iterator = attribute_container_t::iterator;
+        for (iterator it = attributes_m.begin(); it != attributes_m.end(); ++it) {
+            (*it)->create(n);
+        }
+
 //     // set the unique ID value for these new particles
 //     size_t i1 = LocalNum;
 //     size_t i2 = i1 + M;
 //     while (i1 < i2)
 //         ID[i1++] = getNextID();
-//
-//     // remember that we're creating these new particles
-//     LocalNum += M;
+
+        // remember that we're creating these new particles
+        localNum_m += n;
 //     ADDIPPLSTAT(incParticlesCreated,M);
-//     }
+    }
 //
 //
 //     /////////////////////////////////////////////////////////////////////

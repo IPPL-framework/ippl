@@ -18,9 +18,9 @@ set (_HDRS
 #     PairBuilder/PairConditions.h
 #     PairBuilder/SortingPairBuilder.h
 #     ParticleAttribBase.h
-#     ParticleAttrib.hpp
 #     ParticleAttribElem.h
-#     ParticleAttrib.h
+    Kokkos_ParticleAttrib.h
+    Kokkos_ParticleAttrib.hpp
 #     ParticleBalancer.hpp
 #     ParticleBalancer.h
 #     IpplParticleBase.hpp
