@@ -13,6 +13,10 @@ int main(int argc, char *argv[]) {
 
     std::cout << p.getLocalNum() << std::endl;
 
+    for (int i = 0; i < 10; ++i) {
+        std::cout << p.ID(i) << std::endl;
+    }
+
 
     return 0;
 }

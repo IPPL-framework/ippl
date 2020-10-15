@@ -208,6 +208,8 @@ namespace ippl {
 //         // return/change the total or local number of particles
         size_t getTotalNum() const { return totalNum_m; }
         size_t getLocalNum() const { return localNum_m; }
+
+
 //         size_t getDestroyNum() const { return DestroyNum; }
 //         size_t getGhostNum() const { return GhostNum; }
 //         void setTotalNum(size_t n) { TotalNum = n; }
@@ -388,8 +390,8 @@ namespace ippl {
 //         // our list of attributes
         attribute_container_t attributes_m;
 
-//         // unique particle ID number generation value
-//         unsigned NextID;
+        // unique particle ID number generation value
+        unsigned nextID_m;
 //
 //         //
 //         // private methods
@@ -398,9 +400,9 @@ namespace ippl {
 //         // set up this new object:  add attributes and check in to the layout
 //         void setup();
 //
-//         // Return a new unique ID value for use by new particles.
-//         // The ID number = (i * numprocs) + myproc, i = 0, 1, 2, ...
-//         unsigned getNextID();
+        // Return a new unique ID value for use by new particles.
+        // The ID number = (i * numprocs) + myproc, i = 0, 1, 2, ...
+        unsigned getNextID();
     };
 }
 

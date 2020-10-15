@@ -30,6 +30,7 @@ namespace ippl {
     IpplParticleBase<T, Dim>::IpplParticleBase()
     : totalNum_m(0)
     , localNum_m(0)
+    , nextID_m(Ippl::Comm->myNode())
     {
         addAttribute(R);
         addAttribute(ID);
@@ -97,16 +98,10 @@ namespace ippl {
 //         return (Ippl::Comm->myNode() == 0);
 //     }
 //
-//     /////////////////////////////////////////////////////////////////////
-//     // Return a new unique ID value for use by new particles.
-//     // The ID number = (i * numprocs) + myproc, i = 0, 1, 2, ...
-//     template<class PLayout>
-//     unsigned IpplParticleBase<PLayout>::getNextID() {
-//
-//
-//
-//     return (NextID += Ippl::Comm->getNodes());
-//     }
+    template<typename T, unsigned Dim>
+    unsigned IpplParticleBase<T, Dim>::getNextID() {
+        return (nextID_m += Ippl::Comm->getNodes());
+    }
 //
 //     /////////////////////////////////////////////////////////////////////
 //     // Reset the particle ID's to be globally consecutive, 0 thru TotalNum.
@@ -436,7 +431,12 @@ namespace ippl {
             (*it)->create(n);
         }
 
-//     // set the unique ID value for these new particles
+        // set the unique ID value for these new particles
+        for (size_t i = localNum_m; i < n; ++i) {
+            ID(i) = getNextID();
+        }
+
+
 //     size_t i1 = LocalNum;
 //     size_t i2 = i1 + M;
 //     while (i1 < i2)
