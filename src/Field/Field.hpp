@@ -26,8 +26,6 @@
 // include files
 #include "Field/Field.h"
 #include "Field/IndexedField.h"
-#include "Index/SIndex.h"
-#include "SubField/SubField.h"
 #include "Utility/IpplStats.h"
 
 
@@ -410,16 +408,6 @@ IndexedField<T,D,D,M,C> Field<T,D,M,C>::operator[](const NDIndex<D>& n) {
   
    
   return IndexedField<T,D,D,M,C>(*this,n);
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-// Also allow using a sparse index
-template<class T, unsigned D, class M, class C>
-SubField<T,D,M,C,SIndex<D> > Field<T,D,M,C>::operator[](const SIndex<D>& s) {
-  
-   
-  return SubField<T,D,M,C,SIndex<D> >(*this, s);
 }
 
 
