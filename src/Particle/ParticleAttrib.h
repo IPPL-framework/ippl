@@ -52,8 +52,6 @@
 // include files
 #include "Particle/ParticleAttribBase.h"
 #include "Particle/ParticleAttribElem.h"
-#include "DataSource/DataSource.h"
-#include "DataSource/MakeDataSource.h"
 #include "PETE/IpplExpressions.h"
 #include "Index/NDIndex.h"
 #include "Utility/DiscType.h"
@@ -72,7 +70,7 @@ template <class T> class ParticleAttribConstIterator;
 
 // ParticleAttrib class definition
 template <class T>
-class ParticleAttrib : public ParticleAttribBase, public DataSource,
+class ParticleAttrib : public ParticleAttribBase,
 		       public PETE_Expr< ParticleAttrib<T> >
 {
 
@@ -462,14 +460,6 @@ public:
     virtual void printDebug(Inform&);
 
 protected:
-    // a virtual function which is called by this base class to get a
-    // specific instance of DataSourceObject based on the type of data
-    // and the connection method (the argument to the call).
-    virtual DataSourceObject *createDataSourceObject(const char *nm,
-                                                     DataConnect *dc, int tm) {
-        return make_DataSourceObject(nm, dc, tm, *this);
-    }
-
     // storage for particle data
     ParticleList_t ParticleList;
     size_t LocalSize;
