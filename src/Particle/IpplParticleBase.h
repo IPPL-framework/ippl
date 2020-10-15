@@ -96,8 +96,6 @@
 // include files
 #include "Particle/AbstractParticle.h"
 #include "AppTypes/Vektor.h"
-#include "DataSource/DataSource.h"
-#include "DataSource/MakeDataSource.h"
 #include "Message/Formatter.h"
 #include <vector>
 #include <algorithm>  // Include algorithms
@@ -118,8 +116,7 @@ template <class T, unsigned D> class ParticleBConds;
 // ParticleLayout-derived class which determines how the particles are
 // distributed among processors.
 template<class PLayout>
-class IpplParticleBase : public DataSource,
-                         public AbstractParticle<typename PLayout::Position_t, PLayout::Dimension> {
+class IpplParticleBase : public AbstractParticle<typename PLayout::Position_t, PLayout::Dimension> {
 
 public:
     // useful enums
@@ -346,14 +343,6 @@ public:
     void printDebug(Inform&);
 
 protected:
-    // a virtual function which is called by this base class to get a
-    // specific instance of DataSourceObject based on the type of data
-    // and the connection method (the argument to the call).
-    virtual DataSourceObject *createDataSourceObject(const char *nm,
-                                                     DataConnect *dc, int tm) {
-        return make_DataSourceObject(nm, dc, tm, *this);
-    }
-
     // list of destroy events for the next update.  The data
     // is not actually destroyed until the update phase.
     // Each destroy is stored as a pair of unsigned ints, the particle

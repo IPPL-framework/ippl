@@ -13,8 +13,6 @@
 #include "Field/LField.h"
 #include "Field/BCond.h"
 #include "Field/ReductionLoc.h"
-#include "SubField/SubField.h"
-#include "DataSource/DataSource.h"
 #include "Meshes/UniformCartesian.h"
 
 // forward declarations
@@ -30,7 +28,7 @@ class IndexedField;
 template<class T, unsigned Dim,
          class M=UniformCartesian<Dim,double>,
          class C=typename M::DefaultCentering >
-class Field : public BareField<T,Dim>, public DataSource {
+class Field : public BareField<T,Dim> {
 
   friend class BareFieldIterator<T,Dim>;
 
@@ -117,7 +115,6 @@ public:
   IndexedField<T,Dim,1,M,C>   operator[](const Index&);
   IndexedField<T,Dim,1,M,C>   operator[](int);
   IndexedField<T,Dim,Dim,M,C> operator[](const NDIndex<Dim>&);
-  SubField<T,Dim,M,C,SIndex<Dim> >  operator[](const SIndex<Dim>&);
 
   // Assignment from constants and other arrays.
   const Field<T,Dim,M,C>& operator=(T x) {
@@ -158,13 +155,6 @@ public:
 
   // Tell this object that an object is being deleted
   virtual void notifyUserOfDelete(UserList *);
-
-protected:
-  // a virtual function which is called by this base class to get a
-  // specific instance of DataSourceObject based on the type of data
-  // and the connection method (the argument to the call).
-  virtual DataSourceObject *createDataSourceObject(const char *, DataConnect *,
-						   int);
 
 private:
   // The boundary conditions.

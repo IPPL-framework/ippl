@@ -29,7 +29,6 @@
 #include "Utility/PAssert.h"
 #include "Utility/RandomNumberGen.h"
 #include "Utility/vmap.h"
-#include "DataSource/DataConnectCreator.h"
 #include "Message/CommCreator.h"
 #include "Message/Communicate.h"
 
@@ -156,7 +155,6 @@ std::ostream& operator<<(std::ostream& o, const IpplInfo&) {
 IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
 
     int i;			// loop variables
-    int connectoption = (-1);     // for connection method option
     int retargc;			// number of args to return to caller
     char **retargv;		// arguments to return
     bool printsummary = false;	// print summary at end of constructor
@@ -380,23 +378,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                     param_error(argv[i],
                             "Please specify an output level from 0 to 5", 0);
 
-            } else if ( ( strcmp(argv[i], "--connect") == 0 ) ) {
-                // Set the default external connection method
-                if ( (i + 1) < argc && argv[i+1][0] != '-' )
-                    connectoption = ++i;
-                else
-                    param_error(argv[i], "Please use one of: ",
-                            DataConnectCreator::getAllMethodNames(), 0);
-
-            } else if ( ( strcmp(argv[i], "--connectnodes") == 0 ) ) {
-                // Set the number of nodes that are used in connections, by default
-                if ( (i + 1) < argc && argv[i+1][0] != '-' && atoi(argv[i+1]) > 0 )
-                    DataConnectCreator::setDefaultNodes(atoi(argv[++i]));
-                else
-                    param_error(argv[i],
-                            "Please specify a number of nodes for connections > 0",
-                            0);
-
             } else if ( ( strcmp(argv[i], "--commlib") == 0 ) ||
                     ( strcmp(argv[i], "-comm") == 0 ) ) {
                 // handled above
@@ -479,21 +460,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
         }
 
         // We can get on with creating and initializing all globally-used objects.
-
-        // Select the default connection method
-        if ( connectoption >= 0 ) {
-            if ( ! DataConnectCreator::setDefaultMethod(argv[connectoption]) ) {
-                if (DataConnectCreator::supported(argv[connectoption]))
-                    param_error(argv[connectoption - 1], "Could not initialize this ",
-                            "connection.", argv[connectoption]);
-                else if (DataConnectCreator::known(argv[connectoption]))
-                    param_error(argv[connectoption - 1],"This connection method is not ",
-                            "available.", argv[connectoption]);
-                else
-                    param_error(argv[connectoption - 1], "Please use one of: ",
-                            DataConnectCreator::getAllMethodNames(), 0);
-            }
-        }
 
         // indicate back to the caller which arguments are left
         MyArgc = retargc;
@@ -747,9 +713,6 @@ void IpplInfo::printHelp(char** argv) {
     INFOMSG(CommCreator::getAllLibraryNames() << "\n");
     INFOMSG("   --nocomminit        : IPPL does not do communication\n");
     INFOMSG("                         initialization, assume already done.\n");
-    INFOMSG("   --connect <x>       : Select external connection method.\n");
-    INFOMSG("                         <x> = ");
-    INFOMSG(DataConnectCreator::getAllMethodNames() << "\n");
     INFOMSG("   --time              : Show total time used in execution.\n");
     INFOMSG("   --notime            : Do not show timing info (default).\n");
     INFOMSG("   --info <n>          : Set info message level.  0 = off.\n");
