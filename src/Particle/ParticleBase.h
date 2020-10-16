@@ -93,47 +93,26 @@
  * method which takes as an argument the layout instance to use.
  */
 
-// include files
-// #include "Particle/AbstractParticle.h"
-
 #include "Particle/Kokkos_ParticleAttrib.h"
 #include "Particle/Kokkos_ParticleLayout.h"
 
-// // #include "DataSource/DataSource.h"
-// // #include "DataSource/MakeDataSource.h"
-// // #include "Message/Formatter.h"
+
 #include <vector>
-// #include <algorithm>  // Include algorithms
-// #include <utility>
-// #include <iostream>
-
-
-// forward declarations
-// class Inform;
-// class Message;
-// template <class PLayout> class ParticleBase;
-// template <class PLayout>
-// std::ostream& operator<<(std::ostream&, const ParticleBase<PLayout>&);
-// template <class T, unsigned D> class ParticleBConds;
 
 namespace ippl {
-
-    // ParticleBase class definition.  Template parameter is the specific
-    // ParticleLayout-derived class which determines how the particles are
-    // distributed among processors.
-//     template<class PLayout>
-
+    /*!
+     * @class ParticleBase
+     * @tparam PLayout the particle layout implementing an algorithm to
+     * distribute the particles among MPI ranks
+     */
     template<class PLayout>
     class ParticleBase {
-//                             public AbstractParticle<typename PLayout::Position_t, PLayout::Dimension> {
 
     public:
         typedef typename PLayout::vector_type vector_type;
         typedef typename PLayout::index_type  index_type;
         typedef ParticleAttrib<vector_type>   particle_position_type;
         typedef ParticleAttrib<index_type>    particle_index_type;
-        // useful enums
-//         enum { Dim = PLayout::Dimension };
 
         typedef PLayout                           Layout_t;
         typedef std::vector<ParticleAttribBase*> attribute_container_t;

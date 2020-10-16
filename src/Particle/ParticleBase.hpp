@@ -12,17 +12,6 @@
  *
  ***************************************************************************/
 
-// #include "Particle/Kokkos_ParticleBase.h"
-// #include "Particle/ParticleLayout.h"
-// #include "Particle/ParticleAttrib.h"
-// #include "Message/Message.h"
-// #include "Message/Communicate.h"
-// #include "Utility/Inform.h"
-// #include "Utility/PAssert.h"
-// #include "Utility/IpplInfo.h"
-// #include "Utility/IpplStats.h"
-// #include "Utility/IpplException.h"
-// #include <algorithm>
 
 namespace ippl {
 
@@ -62,7 +51,7 @@ namespace ippl {
     template<class PLayout>
     void ParticleBase<PLayout>::initialize(std::shared_ptr<PLayout>& layout)
     {
-        PAssert(layout_m == nullptr);
+        PAssert(layout != nullptr);
 
         // save the layout, and perform setup tasks
         layout_m = std::move(layout);
@@ -72,8 +61,7 @@ namespace ippl {
     template<class PLayout>
     void ParticleBase<PLayout>::create(size_t nLocal)
     {
-//     // make sure we've been initialized
-//     PAssert(Layout != 0);
+        PAssert(layout_m != nullptr);
 
         for (attribute_iterator it = attributes_m.begin();
              it != attributes_m.end(); ++it) {
@@ -93,9 +81,9 @@ namespace ippl {
     }
 
     template<class PLayout>
-    void ParticleBase<PLayout>::createWithID(index_type id) {
-//         // make sure we've been initialized
-//         PAssert(Layout != 0);
+    void ParticleBase<PLayout>::createWithID(index_type id)
+    {
+        PAssert(layout_m != nullptr);
 
         // temporary change
         index_type tmpNextID = nextID_m;
@@ -109,9 +97,9 @@ namespace ippl {
     }
 
     template<class PLayout>
-    void ParticleBase<PLayout>::globalCreate(size_t nTotal) {
-//         // make sure we've been initialized
-//         PAssert(Layout != 0);
+    void ParticleBase<PLayout>::globalCreate(size_t nTotal)
+    {
+        PAssert(layout_m != nullptr);
 
         // Compute the number of particles local to each processor
         size_t nLocal = nTotal / numNodes_m;
@@ -125,11 +113,6 @@ namespace ippl {
         create(nLocal);
     }
 
-
-//
-//
-
-//
 //
 //     /////////////////////////////////////////////////////////////////////
 //     // delete M particles, starting with the Ith particle.  If the last argument
@@ -244,180 +227,4 @@ namespace ippl {
 //     }
 //
 //
-//     /////////////////////////////////////////////////////////////////////
-//     // delete M ghost particles, starting with the Ith particle.
-//     // This is done immediately.
-//     template<class PLayout>
-//     void ParticleBase<PLayout>::ghostDestroy(size_t M, size_t I) {
-//
-//
-//
-//     // make sure we've been initialized
-//     PAssert(Layout != 0);
-//
-//     if (M > 0) {
-//         // delete the data from the attribute containers
-//         size_t dnum = 0;
-//         attrib_container_t::iterator abeg = AttribList.begin();
-//         attrib_container_t::iterator aend = AttribList.end();
-//         for ( ; abeg != aend; ++abeg )
-//         dnum = (*abeg)->ghostDestroy(M, I);
-//         GhostNum -= dnum;
-//     }
-//     }
-//
-//
-//     /////////////////////////////////////////////////////////////////////
-//     // Put the data for M particles starting from local index I in a Message.
-//     // Return the number of particles put in the Message.  This is for building
-//     // ghost particle interaction lists.
-//     template<class PLayout>
-//     size_t
-//     ParticleBase<PLayout>::ghostPutMessage(Message &msg, size_t M, size_t I) {
-//
-//     // make sure we've been initialized
-//     PAssert(Layout != 0);
-//
-//     // put into message the number of items in the message
-//     if (I >= R.size()) {
-//         // we're putting in ghost particles ...
-//         if ((I + M) > (R.size() + GhostNum))
-//         M = (R.size() + GhostNum) - I;
-//     } else {
-//         // we're putting in local particles ...
-//         if ((I + M) > R.size())
-//         M = R.size() - I;
-//     }
-//     msg.put(M);
-//
-//     // go through all the attributes and put their data in the message
-//     if (M > 0) {
-//         attrib_container_t::iterator abeg = AttribList.begin();
-//         attrib_container_t::iterator aend = AttribList.end();
-//         for ( ; abeg != aend; abeg++ )
-//         (*abeg)->ghostPutMessage(msg, M, I);
-//     }
-//
-//     return M;
-//     }
-//
-//
-//     /////////////////////////////////////////////////////////////////////
-//     // put the data for particles on a list into a Message, given list of indices
-//     // Return the number of particles put in the Message.  This is for building
-//     // ghost particle interaction lists.
-//     template<class PLayout>
-//     size_t
-//     ParticleBase<PLayout>::ghostPutMessage(Message &msg,
-//                                         const std::vector<size_t>& pl) {
-//
-//     // make sure we've been initialized
-//     PAssert(Layout != 0);
-//
-//     std::vector<size_t>::size_type M = pl.size();
-//     msg.put(M);
-//
-//     // go through all the attributes and put their data in the message
-//     if (M > 0) {
-//         attrib_container_t::iterator abeg = AttribList.begin();
-//         attrib_container_t::iterator aend = AttribList.end();
-//         for ( ; abeg != aend; ++abeg )
-//         (*abeg)->ghostPutMessage(msg, pl);
-//     }
-//
-//     return M;
-//     }
-//
-//
-//     /////////////////////////////////////////////////////////////////////
-//     // retrieve particles from the given message and sending node and store them
-//     template<class PLayout>
-//     size_t
-//     ParticleBase<PLayout>::ghostGetMessage(Message& msg, int /*node*/) {
-//
-//
-//
-//     // make sure we've been initialized
-//     PAssert(Layout != 0);
-//
-//     // get the number of items in the message
-//     size_t numitems;
-//     msg.get(numitems);
-//     GhostNum += numitems;
-//
-//     // go through all the attributes and get their data from the message
-//     if (numitems > 0) {
-//         attrib_container_t::iterator abeg = AttribList.begin();
-//         attrib_container_t::iterator aend = AttribList.end();
-//         for ( ; abeg != aend; abeg++ )
-//         (*abeg)->ghostGetMessage(msg, numitems);
-//     }
-//
-//     return numitems;
-//     }
-//
-//     template<class PLayout>
-//     size_t
-//     ParticleBase<PLayout>::ghostGetSingleMessage(Message& msg, int /*node*/) {
-//
-//     // make sure we've been initialized
-//     PAssert(Layout != 0);
-//
-//     // get the number of items in the message
-//     size_t numitems=1;
-//     GhostNum += numitems;
-//
-//     // go through all the attributes and get their data from the message
-//     if (numitems > 0) {
-//         attrib_container_t::iterator abeg = AttribList.begin();
-//         attrib_container_t::iterator aend = AttribList.end();
-//         for ( ; abeg != aend; abeg++ )
-//         (*abeg)->ghostGetMessage(msg, numitems);
-//     }
-//
-//     return numitems;
-//     }
-//
-//     /////////////////////////////////////////////////////////////////////
-//     // Apply the given sort-list to all the attributes.  The sort-list
-//     // may be temporarily modified, thus it must be passed by non-const ref.
-//     template<class PLayout>
-//     void ParticleBase<PLayout>::sort(SortList_t &sortlist) {
-//     attrib_container_t::iterator abeg = AttribList.begin();
-//     attrib_container_t::iterator aend = AttribList.end();
-//     for ( ; abeg != aend; ++abeg )
-//         (*abeg)->sort(sortlist);
-//     }
-//
-//
-//     /////////////////////////////////////////////////////////////////////
-//     // print it out
-//     template<class PLayout>
-//     std::ostream& operator<<(std::ostream& out, const ParticleBase<PLayout>& P) {
-//
-//
-//     out << "Particle object contents:";
-//     out << "\n  Total particles: " << P.getTotalNum();
-//     out << "\n  Local particles: " << P.getLocalNum();
-//     out << "\n  Attributes (including R and ID): " << P.numAttributes();
-//     out << "\n  Layout = " << P.getLayout();
-//     return out;
-//     }
-//
-//
-//     /////////////////////////////////////////////////////////////////////
-//     // print out debugging information
-//     template<class PLayout>
-//     void ParticleBase<PLayout>::printDebug(Inform& o) {
-//
-//     o << "PBase: total = " << getTotalNum() << ", local = " << getLocalNum();
-//     o << ", attributes = " << AttribList.size() << endl;
-//     for (attrib_container_t::size_type i=0; i < AttribList.size(); ++i) {
-//         o << "    ";
-//         AttribList[i]->printDebug(o);
-//         o << endl;
-//     }
-//     o << "    ";
-//     Layout->printDebug(o);
-//     }
 }
