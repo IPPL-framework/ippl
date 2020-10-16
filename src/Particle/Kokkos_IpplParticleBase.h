@@ -274,14 +274,18 @@ namespace ippl {
 //         virtual void update();
 //         virtual void update(const ParticleAttrib<char>& canSwap);
 //
-//         // create 1 new particle with a given ID
-//         void createWithID(unsigned id);
-//
+
         /*!
          * Create nLocal processor local particles
          * @param nLocal number of local particles to be created
          */
         void create(size_t nLocal);
+
+        /*
+         * Create a new particle with a given ID
+         * @param id particle identity number
+         */
+        void createWithID(index_type id);
 
         /*!
          * Create nTotal particles globally, equally distributed among all processors

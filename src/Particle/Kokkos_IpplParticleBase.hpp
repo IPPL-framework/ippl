@@ -415,6 +415,22 @@ namespace ippl {
     }
 
     template<typename T, unsigned Dim>
+    void IpplParticleBase<T, Dim>::createWithID(index_type id) {
+//         // make sure we've been initialized
+//         PAssert(Layout != 0);
+
+        // temporary change
+        index_type tmpNextID = nextID_m;
+        nextID_m = id;
+        numNodes_m = 0;
+
+        create(1);
+
+        nextID_m = tmpNextID;
+        numNodes_m = Ippl::Comm->getNodes();
+    }
+
+    template<typename T, unsigned Dim>
     void IpplParticleBase<T, Dim>::globalCreate(size_t nTotal) {
 //         // make sure we've been initialized
 //         PAssert(Layout != 0);
@@ -422,7 +438,7 @@ namespace ippl {
         // Compute the number of particles local to each processor
         size_t nLocal = nTotal / numNodes_m;
 
-        const rank = Ippl::Comm->myNode();
+        const size_t rank = Ippl::Comm->myNode();
 
         size_t rest = nTotal - nLocal * rank;
         if (rank < rest)
@@ -431,34 +447,7 @@ namespace ippl {
         create(nLocal);
     }
 
-//
-//
-//     /////////////////////////////////////////////////////////////////////
-//     // create 1 new particle with a given ID
-//     template<class PLayout>
-//     void IpplParticleBase<PLayout>::createWithID(unsigned id) {
-//
-//
-//     // make sure we've been initialized
-//     PAssert(Layout != 0);
-//
-//     // go through all the attributes, and allocate space for M new particles
-//     attrib_container_t::iterator abeg = AttribList.begin();
-//     attrib_container_t::iterator aend = AttribList.end();
-//     for ( ; abeg != aend; abeg++ )
-//         (*abeg)->create(1);
-//
-//     const size_t M = 1;
-//     // set the unique ID value for these new particles
-//     size_t i1 = LocalNum;
-//     size_t i2 = i1 + M;
-//     while (i1 < i2)
-//         ID[i1++] = id;
-//
-//     // remember that we're creating these new particles
-//     LocalNum += M;
-//     ADDIPPLSTAT(incParticlesCreated,1);
-//     }
+
 //
 //
 
