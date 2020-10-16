@@ -66,10 +66,10 @@ namespace ippl {
 //         // for a type 'pair_iterator', which iterates over lists of 'pair_t' objs,
 //         // and typedefs for the ParticlePos_t and ParticleIndex_t types.
 //
-//     public:
-//         // constructor and destructor: no arguments
-//         ParticleLayout();
-//         ~ParticleLayout() { }
+    public:
+        ParticleLayout() = default;
+
+        ~ParticleLayout() = default;
 //
 //         // set the flags used to indicate what to do during the update
 //         void setUpdateFlag(UpdateFlags f, bool val) {
