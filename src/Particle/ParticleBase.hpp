@@ -58,14 +58,12 @@ namespace ippl {
     }
 
     template<class PLayout>
-    void ParticleBase<PLayout>::initialize(std::shared_ptr<PLayout>& layout) {
+    void ParticleBase<PLayout>::initialize(std::shared_ptr<PLayout>& layout)
+    {
         PAssert(layout_m == nullptr);
 
-        std::cout << "initialize ";
         // save the layout, and perform setup tasks
         layout_m = std::move(layout);
-
-        std::cout << (layout_m != nullptr) << std::endl;
     }
 //
 //
