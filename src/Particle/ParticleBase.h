@@ -169,11 +169,12 @@ namespace ippl {
          * ::ippl::ParticleLayout<double, (unsigned int)3u> > ::~ParticleBase") is not allowed
          */
         ~ParticleBase() { };
-//
-//         // For a ParticleBase that was created with the default constructor,
-//         // initialize performs the same actions as are done in the non-default
-//         // constructor.  If this object has already been initialized, it is
-//         // an error.  For initialize, you must supply a layout instance.
+
+        /*!
+         * Initialize the particle layout. Needs to be called
+         * when the ParticleBase instance is constructed with the
+         * default ctor.
+         */
         void initialize(std::shared_ptr<PLayout>& layout);
 
         /*!
@@ -244,7 +245,7 @@ namespace ippl {
          */
         void create(size_t nLocal);
 
-        /*
+        /*!
          * Create a new particle with a given ID
          * @param id particle identity number
          */

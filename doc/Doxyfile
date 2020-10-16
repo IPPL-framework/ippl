@@ -785,7 +785,13 @@ INPUT                  = ../src/ \
                          ../src/Meshes/Kokkos_UniformCartesian.h \
                          ../src/Meshes/Kokkos_UniformCartesian.hpp \
                          ../src/AppTypes/Vector.h \
-                         ../src/AppTypes/Vector.hpp
+                         ../src/AppTypes/Vector.hpp \
+                         ../src/Particle/Kokkos_ParticleLayout.h \
+                         ../src/Particle/Kokkos_ParticleLayout.hpp \
+                         ../src/Particle/ParticleBase.h \
+                         ../src/Particle/ParticleBase.hpp \
+                         ../src/Particle/Kokkos_ParticleAttrib.h \
+                         ../src/Particle/Kokkos_ParticleAttrib.hpp
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
