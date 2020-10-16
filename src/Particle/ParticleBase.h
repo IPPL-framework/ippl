@@ -157,7 +157,13 @@ namespace ippl {
          */
         ParticleBase(PLayout *layout);
 
-        ~ParticleBase() = default;
+        /* cannot use '= default' since we get a
+         * compiler warning otherwise:
+         * warning: calling a __host__ function("std::vector< ::ippl::ParticleAttribBase *, ::std::allocator<
+         * ::ippl::ParticleAttribBase *> > ::~vector") from a __host__ __device__ function("ippl::ParticleBase<
+         * ::ippl::ParticleLayout<double, (unsigned int)3u> > ::~ParticleBase") is not allowed
+         */
+        ~ParticleBase() { };
 //
 //         //
 //         // Initialization methods
