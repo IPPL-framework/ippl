@@ -26,8 +26,8 @@
 
 namespace ippl {
 
-    template <typename T, unsigned Dim>
-    IpplParticleBase<T, Dim>::IpplParticleBase()
+    template<class PLayout>
+    IpplParticleBase<PLayout>::IpplParticleBase()
     : totalNum_m(0)
     , localNum_m(0)
     , nextID_m(Ippl::Comm->myNode())
@@ -38,8 +38,8 @@ namespace ippl {
     }
 
 
-    template <typename T, unsigned Dim>
-    void IpplParticleBase<T, Dim>::addAttribute(ParticleAttribBase& pa)
+    template<class PLayout>
+    void IpplParticleBase<PLayout>::addAttribute(ParticleAttribBase& pa)
     {
         attributes_m.push_back(&pa);
     }
@@ -391,8 +391,8 @@ namespace ippl {
 //
 
 
-    template<typename T, unsigned Dim>
-    void IpplParticleBase<T, Dim>::create(size_t nLocal)
+    template<class PLayout>
+    void IpplParticleBase<PLayout>::create(size_t nLocal)
     {
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
@@ -403,7 +403,7 @@ namespace ippl {
         }
 
         // set the unique ID value for these new particles
-        Kokkos::parallel_for("IpplParticleBase<T, Dim>::create(size_t)",
+        Kokkos::parallel_for("IpplParticleBase<PLayout>::create(size_t)",
                              Kokkos::RangePolicy(localNum_m, nLocal),
                              KOKKOS_CLASS_LAMBDA(const size_t i) {
                                  ID(i) = this->nextID_m + this->numNodes_m * i;
@@ -414,8 +414,8 @@ namespace ippl {
         localNum_m += nLocal;
     }
 
-    template<typename T, unsigned Dim>
-    void IpplParticleBase<T, Dim>::createWithID(index_type id) {
+    template<class PLayout>
+    void IpplParticleBase<PLayout>::createWithID(index_type id) {
 //         // make sure we've been initialized
 //         PAssert(Layout != 0);
 
@@ -430,8 +430,8 @@ namespace ippl {
         numNodes_m = Ippl::Comm->getNodes();
     }
 
-    template<typename T, unsigned Dim>
-    void IpplParticleBase<T, Dim>::globalCreate(size_t nTotal) {
+    template<class PLayout>
+    void IpplParticleBase<PLayout>::globalCreate(size_t nTotal) {
 //         // make sure we've been initialized
 //         PAssert(Layout != 0);
 

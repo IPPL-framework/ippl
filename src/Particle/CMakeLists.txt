@@ -23,8 +23,6 @@ set (_HDRS
     Kokkos_ParticleAttrib.hpp
 #     ParticleBalancer.hpp
 #     ParticleBalancer.h
-#     IpplParticleBase.hpp
-#     IpplParticleBase.h
     Kokkos_IpplParticleBase.h
     Kokkos_IpplParticleBase.hpp
 #     ParticleBConds.h
@@ -34,8 +32,8 @@ set (_HDRS
 #     ParticleInteractAttrib.h
 #     ParticleInteractLayout.hpp
 #     ParticleInteractLayout.h
-#     ParticleLayout.hpp
-#     ParticleLayout.h
+    Kokkos_ParticleLayout.h
+    Kokkos_ParticleLayout.hpp
 #     ParticleSpatialLayout.hpp
 #     ParticleSpatialLayout.h
 #     ParticleUniformLayout.hpp

@@ -95,9 +95,9 @@
 
 // include files
 // #include "Particle/AbstractParticle.h"
-#include "AppTypes/Vector.h"
 
 #include "Particle/Kokkos_ParticleAttrib.h"
+#include "Particle/Kokkos_ParticleLayout.h"
 
 // // #include "DataSource/DataSource.h"
 // // #include "DataSource/MakeDataSource.h"
@@ -123,15 +123,15 @@ namespace ippl {
     // distributed among processors.
 //     template<class PLayout>
 
-    template <typename T, unsigned Dim>
+    template<class PLayout>
     class IpplParticleBase {
 //                             public AbstractParticle<typename PLayout::Position_t, PLayout::Dimension> {
 
     public:
-        typedef Vector<T, Dim> vector_type;
-        typedef std::int64_t index_type;
-        typedef ParticleAttrib<vector_type> particle_position_type;
-        typedef ParticleAttrib<index_type>  particle_index_type;
+        typedef typename PLayout::vector_type vector_type;
+        typedef typename PLayout::index_type  index_type;
+        typedef ParticleAttrib<vector_type>   particle_position_type;
+        typedef ParticleAttrib<index_type>    particle_index_type;
         // useful enums
 //         enum { Dim = PLayout::Dimension };
 
@@ -150,27 +150,15 @@ namespace ippl {
         typedef attribute_container_t::iterator  attribute_iterator;
 //         typedef ParticleAttribBase::SortList_t    SortList_t;
 
-        // useful constants
-//         unsigned int MIN_NUM_PART_PER_CORE;
-
         // our position, and our global ID's
-//         ParticlePos_t   R;
         particle_position_type R;
         particle_index_type ID;
-//         ParticleIndex_t ID;
 
 //     public:
 //         // constructor 1: no arguments, so create an uninitialized IpplParticleBase.
 //         // If this constructor is used, the user must call 'initialize' with
 //         // a layout object in order to use this.
         IpplParticleBase();
-//             MIN_NUM_PART_PER_CORE(0),
-//             Layout(NULL),
-//             TotalNum(0),
-//             LocalNum(0),
-//             DestroyNum(0),
-//             GhostNum(0)
-//         { }
 //
 //         // constructor 2: arguments = layout to use.
 //         IpplParticleBase(PLayout *layout) :
@@ -255,12 +243,12 @@ namespace ippl {
 //         getAttribute(attrib_container_t::size_type N) { return *(AttribList[N]); }
 //
 //         // return the number of attributes in our list
-//         attrib_container_t::size_type
-//         numAttributes() const { return AttribList.size(); }
-//
-//         // obtain the beginning and end iterators for our attribute list
-//         attrib_iterator begin() { return AttribList.begin(); }
-//         attrib_iterator end()   { return AttribList.end(); }
+        attribute_container_t::size_type
+        numAttributes() const { return attributes_m.size(); }
+
+        // obtain the beginning and end iterators for our attribute list
+        attribute_iterator begin() { return attributes_m.begin(); }
+        attribute_iterator end()   { return attributes_m.end(); }
 //
 //         // reset the particle ID's to be globally consecutive, 0 thru TotalNum-1.
 //         void resetID();
