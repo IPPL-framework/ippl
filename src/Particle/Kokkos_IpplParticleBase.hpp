@@ -31,6 +31,7 @@ namespace ippl {
     : totalNum_m(0)
     , localNum_m(0)
     , nextID_m(Ippl::Comm->myNode())
+    , numNodes_m(Ippl::Comm->getNodes())
     {
         addAttribute(R);
         addAttribute(ID);
@@ -98,10 +99,6 @@ namespace ippl {
 //         return (Ippl::Comm->myNode() == 0);
 //     }
 //
-    template<typename T, unsigned Dim>
-    unsigned IpplParticleBase<T, Dim>::getNextID() {
-        return (nextID_m += Ippl::Comm->getNodes());
-    }
 //
 //     /////////////////////////////////////////////////////////////////////
 //     // Reset the particle ID's to be globally consecutive, 0 thru TotalNum.
@@ -425,26 +422,22 @@ namespace ippl {
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
 
-//     // go through all the attributes, and allocate space for M new particles
+	// go through all the attributes, and allocate space for n new particles
         using iterator = attribute_container_t::iterator;
         for (iterator it = attributes_m.begin(); it != attributes_m.end(); ++it) {
-            (*it)->create(n);
+	    (*it)->create(n);
         }
-
+	
         // set the unique ID value for these new particles
-        for (size_t i = localNum_m; i < n; ++i) {
-            ID(i) = getNextID();
-        }
-
-
-//     size_t i1 = LocalNum;
-//     size_t i2 = i1 + M;
-//     while (i1 < i2)
-//         ID[i1++] = getNextID();
+	Kokkos::parallel_for("IpplParticleBase<T, Dim>::create(size_t)",
+                             Kokkos::RangePolicy(localNum_m, n),
+                             KOKKOS_CLASS_LAMBDA(const size_t i) {
+                                 ID(i) = this->nextID_m + this->numNodes_m * i;
+                             });
+        nextID_m += numNodes_m * (n - localNum_m);
 
         // remember that we're creating these new particles
         localNum_m += n;
-//     ADDIPPLSTAT(incParticlesCreated,M);
     }
 //
 //

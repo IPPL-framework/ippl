@@ -185,10 +185,10 @@ namespace ippl {
 //         }
 //
 //         // destructor - delete the layout if necessary
-//         ~IpplParticleBase() {
-//             if (Layout != 0)
-//                 delete Layout;
-//         }
+	~IpplParticleBase() {
+	    //	    if (Layout != 0)
+            //     delete Layout;
+	}
 //
 //         //
 //         // Initialization methods
@@ -391,7 +391,8 @@ namespace ippl {
         attribute_container_t attributes_m;
 
         // unique particle ID number generation value
-        unsigned nextID_m;
+	std::int64_t nextID_m;
+	std::int64_t numNodes_m;
 //
 //         //
 //         // private methods
@@ -400,9 +401,6 @@ namespace ippl {
 //         // set up this new object:  add attributes and check in to the layout
 //         void setup();
 //
-        // Return a new unique ID value for use by new particles.
-        // The ID number = (i * numprocs) + myproc, i = 0, 1, 2, ...
-        unsigned getNextID();
     };
 }
 

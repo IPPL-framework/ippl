@@ -99,6 +99,7 @@ namespace ippl {
 
     public:
 
+	//	KOKKOS_FUNCTION
         virtual void create(size_t) = 0;
 
         virtual ~ParticleAttribBase() = default;
@@ -108,7 +109,7 @@ namespace ippl {
     // ParticleAttrib class definition
     template <typename T, class... Properties>
     class ParticleAttrib : public ParticleAttribBase
-                         , public detail::ViewType<T, 1, Properties...>::view_type
+			 , public detail::ViewType<T, 1, Properties...>::view_type
                         //  public PETE_Expr< ParticleAttrib<T> >
     {
 
@@ -116,14 +117,17 @@ namespace ippl {
 //     friend class ParticleAttribConstIterator<T>;
 
     public:
+	using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
 
         // Create storage for M particle attributes.  The storage is uninitialized.
         // New items are appended to the end of the array.
+	//KOKKOS_FUNCTION
         virtual void create(size_t);
-
+	
+	using view_type::operator(); 
+	
         virtual ~ParticleAttrib() = default;
-
-
+       
         size_t size() const {
             return this->extent(0);
         }
@@ -131,6 +135,15 @@ namespace ippl {
         void resize(size_t n) {
             Kokkos::resize(*this, n);
         }
+
+	void print() {
+	    typename view_type::HostMirror hview = Kokkos::create_mirror_view(*this);
+	    Kokkos::deep_copy(hview, *this);
+	    for (size_t i = 0; i < this->size(); ++i) {
+		std::cout << hview(i) << std::endl;
+	    }
+	}
+
     };
 }
 

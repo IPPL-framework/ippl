@@ -74,10 +74,9 @@
 namespace ippl {
 
     template<typename T, class... Properties>
-    KOKKOS_FUNCTION
     void ParticleAttrib<T, Properties...>::create(size_t n) {
-        size_t current = size();
-        resize(current + n);
+	size_t current = this->size();
+        this->resize(current + n);
     }
 }
 
