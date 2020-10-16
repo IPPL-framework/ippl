@@ -153,9 +153,11 @@ namespace ippl {
         ParticleBase();
 
         /*!
-         * Ctor called when layout is provided with std::shared_ptr
-         * @param layout which is moved to the private member;
-         * layout == nullptr after calling.
+         * Ctor called when layout is provided with std::shared_ptr. It
+         * calls the default ctor which then calls the private ctor. The
+         * layout instance is moved to this class, hence, the argument
+         * is null afterwards, i.e., layout == nullptr.
+         * @param layout to be moved.
          */
         ParticleBase(std::shared_ptr<PLayout>& layout);
 
@@ -361,6 +363,7 @@ namespace ippl {
     private:
         /*!
          * Ctor called when layout == nullptr (i.e., by the default constructor)
+         * which happens always since all ctors call default ctor.
          * @param layout is the particle layout
          */
         ParticleBase(std::shared_ptr<PLayout>&& layout);
