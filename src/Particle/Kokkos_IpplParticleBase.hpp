@@ -422,14 +422,14 @@ namespace ippl {
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
 
-	// go through all the attributes, and allocate space for n new particles
+        // go through all the attributes, and allocate space for n new particles
         using iterator = attribute_container_t::iterator;
         for (iterator it = attributes_m.begin(); it != attributes_m.end(); ++it) {
-	    (*it)->create(n);
+            (*it)->create(n);
         }
-	
+
         // set the unique ID value for these new particles
-	Kokkos::parallel_for("IpplParticleBase<T, Dim>::create(size_t)",
+        Kokkos::parallel_for("IpplParticleBase<T, Dim>::create(size_t)",
                              Kokkos::RangePolicy(localNum_m, n),
                              KOKKOS_CLASS_LAMBDA(const size_t i) {
                                  ID(i) = this->nextID_m + this->numNodes_m * i;
