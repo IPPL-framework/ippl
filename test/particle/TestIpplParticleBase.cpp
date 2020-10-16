@@ -4,7 +4,7 @@ int main(int argc, char *argv[]) {
     Ippl ippl(argc, argv);
 
     typedef ippl::ParticleLayout<double, 3> playout;
-    typedef ippl::IpplParticleBase<playout> bunch_type;
+    typedef ippl::ParticleBase<playout> bunch_type;
 
     bunch_type p;
 

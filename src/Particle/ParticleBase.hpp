@@ -12,7 +12,7 @@
  *
  ***************************************************************************/
 
-// #include "Particle/Kokkos_IpplParticleBase.h"
+// #include "Particle/Kokkos_ParticleBase.h"
 // #include "Particle/ParticleLayout.h"
 // #include "Particle/ParticleAttrib.h"
 // #include "Message/Message.h"
@@ -27,7 +27,7 @@
 namespace ippl {
 
     template<class PLayout>
-    IpplParticleBase<PLayout>::IpplParticleBase()
+    ParticleBase<PLayout>::ParticleBase()
     : totalNum_m(0)
     , localNum_m(0)
     , nextID_m(Ippl::Comm->myNode())
@@ -39,18 +39,21 @@ namespace ippl {
 
 
     template<class PLayout>
-    void IpplParticleBase<PLayout>::addAttribute(ParticleAttribBase& pa)
+    ParticleBase<PLayout>::ParticleBase(PLayout* layout)
+    : ParticleBase()
+    {
+//         layout_m
+    }
+
+
+    template<class PLayout>
+    void ParticleBase<PLayout>::addAttribute(ParticleAttribBase& pa)
     {
         attributes_m.push_back(&pa);
     }
 
-//     /////////////////////////////////////////////////////////////////////
-//     // For a IpplParticleBase that was created with the default constructor,
-//     // initialize performs the same actions as are done in the non-default
-//     // constructor.  If this object has already been initialized, it is
-//     // an error.  For initialize, you must supply a layout instance.
 //     template<class PLayout>
-//     void IpplParticleBase<PLayout>::initialize(PLayout *layout) {
+//     void ParticleBase<PLayout>::initialize(PLayout *layout) {
 //
 //     // make sure we have not already been initialized, and that we have
 //     // been given a good layout
@@ -70,7 +73,7 @@ namespace ippl {
 //     // be used for single-node particle creation and initialization
 //
 //     template<class PLayout>
-//     bool IpplParticleBase<PLayout>::singleInitNode() const {
+//     bool ParticleBase<PLayout>::singleInitNode() const {
 //         return (Ippl::Comm->myNode() == 0);
 //     }
 //
@@ -78,7 +81,7 @@ namespace ippl {
 //     /////////////////////////////////////////////////////////////////////
 //     // Reset the particle ID's to be globally consecutive, 0 thru TotalNum.
 //     template <class PLayout>
-//     void IpplParticleBase<PLayout>::resetID(void) {
+//     void ParticleBase<PLayout>::resetID(void) {
 //
 //
 //
@@ -124,7 +127,7 @@ namespace ippl {
 //         bool success = Ippl::Comm->send(msg2,ip,tag2);
 //         if (success == false) {
 //                 throw IpplException (
-//                         "IpplParticleBase<PLayout>::resetID()",
+//                         "ParticleBase<PLayout>::resetID()",
 //                         "sending initial ID values failed.");
 //         }
 //         }
@@ -139,7 +142,7 @@ namespace ippl {
 //         bool success = Ippl::Comm->send(msg1,master,tag1);
 //         if (success == false) {
 //                 throw IpplException (
-//                         "IpplParticleBase<PLayout>::resetID()",
+//                         "ParticleBase<PLayout>::resetID()",
 //                         "sending initial ID values failed.");
 //         }
 //         // now receive back our initial ID number
@@ -162,7 +165,7 @@ namespace ippl {
 //     // put the data for M particles starting from local index I in a Message
 //     template<class PLayout>
 //     size_t
-//     IpplParticleBase<PLayout>::putMessage(Message& msg, size_t M, size_t I) {
+//     ParticleBase<PLayout>::putMessage(Message& msg, size_t M, size_t I) {
 //
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
@@ -191,7 +194,7 @@ namespace ippl {
 //     // put the data for a list of particles in a Message
 //     template<class PLayout>
 //     size_t
-//     IpplParticleBase<PLayout>::putMessage(Message& msg,
+//     ParticleBase<PLayout>::putMessage(Message& msg,
 //                                     const std::vector<size_t>& putList)
 //     {
 //
@@ -214,7 +217,7 @@ namespace ippl {
 //
 //     template<class PLayout>
 //     size_t
-//     IpplParticleBase<PLayout>::putMessage(Message& msg, size_t I) {
+//     ParticleBase<PLayout>::putMessage(Message& msg, size_t I) {
 //
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
@@ -232,7 +235,7 @@ namespace ippl {
 //     }
 //
 //     template<class PLayout>
-//     Format* IpplParticleBase<PLayout>::getFormat()
+//     Format* ParticleBase<PLayout>::getFormat()
 //     {
 //             //create dummy particle so we can obtain the format
 //         bool wasempty = false;
@@ -257,7 +260,7 @@ namespace ippl {
 //
 //     template<class PLayout>
 //     size_t
-//     IpplParticleBase<PLayout>::writeMsgBuffer(MsgBuffer *&msgbuf, const std::vector<size_t> &list)
+//     ParticleBase<PLayout>::writeMsgBuffer(MsgBuffer *&msgbuf, const std::vector<size_t> &list)
 //     {
 //         msgbuf = new MsgBuffer(this->getFormat(), list.size());
 //
@@ -273,7 +276,7 @@ namespace ippl {
 //     template<class PLayout>
 //     template<class O>
 //     size_t
-//     IpplParticleBase<PLayout>::writeMsgBufferWithOffsets(MsgBuffer *&msgbuf, const std::vector<size_t> &list, const std::vector<O> &offset)
+//     ParticleBase<PLayout>::writeMsgBufferWithOffsets(MsgBuffer *&msgbuf, const std::vector<size_t> &list, const std::vector<O> &offset)
 //     {
 //         msgbuf = new MsgBuffer(this->getFormat(), list.size());
 //         typename PLayout::SingleParticlePos_t oldpos;
@@ -296,7 +299,7 @@ namespace ippl {
 //
 //     template<class PLayout>
 //     size_t
-//     IpplParticleBase<PLayout>::readMsgBuffer(MsgBuffer *msgbuf)
+//     ParticleBase<PLayout>::readMsgBuffer(MsgBuffer *msgbuf)
 //     {
 //             size_t added = 0;
 //             Message *msg = msgbuf->get();
@@ -312,7 +315,7 @@ namespace ippl {
 //
 //     template<class PLayout>
 //     size_t
-//     IpplParticleBase<PLayout>::readGhostMsgBuffer(MsgBuffer *msgbuf, int node)
+//     ParticleBase<PLayout>::readGhostMsgBuffer(MsgBuffer *msgbuf, int node)
 //     {
 //             size_t added = 0;
 //             Message *msg = msgbuf->get();
@@ -328,7 +331,7 @@ namespace ippl {
 //     /////////////////////////////////////////////////////////////////////
 //     // retrieve particles from the given message and store them
 //     template<class PLayout>
-//     size_t IpplParticleBase<PLayout>::getMessage(Message& msg) {
+//     size_t ParticleBase<PLayout>::getMessage(Message& msg) {
 //
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
@@ -351,7 +354,7 @@ namespace ippl {
 //     /////////////////////////////////////////////////////////////////////
 //     // retrieve particles from the given message and store them
 //     template<class PLayout>
-//     size_t IpplParticleBase<PLayout>::getSingleMessage(Message& msg) {
+//     size_t ParticleBase<PLayout>::getSingleMessage(Message& msg) {
 //
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
@@ -376,7 +379,7 @@ namespace ippl {
 //     // signaling we are creating the given number of particles.  Return the
 //     // number of particles created.
 //     template<class PLayout>
-//     size_t IpplParticleBase<PLayout>::getMessageAndCreate(Message& msg) {
+//     size_t ParticleBase<PLayout>::getMessageAndCreate(Message& msg) {
 //
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
@@ -392,7 +395,7 @@ namespace ippl {
 
 
     template<class PLayout>
-    void IpplParticleBase<PLayout>::create(size_t nLocal)
+    void ParticleBase<PLayout>::create(size_t nLocal)
     {
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
@@ -403,7 +406,7 @@ namespace ippl {
         }
 
         // set the unique ID value for these new particles
-        Kokkos::parallel_for("IpplParticleBase<PLayout>::create(size_t)",
+        Kokkos::parallel_for("ParticleBase<PLayout>::create(size_t)",
                              Kokkos::RangePolicy(localNum_m, nLocal),
                              KOKKOS_CLASS_LAMBDA(const size_t i) {
                                  ID(i) = this->nextID_m + this->numNodes_m * i;
@@ -415,7 +418,7 @@ namespace ippl {
     }
 
     template<class PLayout>
-    void IpplParticleBase<PLayout>::createWithID(index_type id) {
+    void ParticleBase<PLayout>::createWithID(index_type id) {
 //         // make sure we've been initialized
 //         PAssert(Layout != 0);
 
@@ -431,7 +434,7 @@ namespace ippl {
     }
 
     template<class PLayout>
-    void IpplParticleBase<PLayout>::globalCreate(size_t nTotal) {
+    void ParticleBase<PLayout>::globalCreate(size_t nTotal) {
 //         // make sure we've been initialized
 //         PAssert(Layout != 0);
 
@@ -458,7 +461,7 @@ namespace ippl {
 //     // is true, the destroy will be done immediately, otherwise the request
 //     // will be cached.
 //     template<class PLayout>
-//     void IpplParticleBase<PLayout>::destroy(size_t M, size_t I, bool doNow) {
+//     void ParticleBase<PLayout>::destroy(size_t M, size_t I, bool doNow) {
 //
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
@@ -490,7 +493,7 @@ namespace ippl {
 //     // Update the particle object after a timestep.  This routine will change
 //     // our local, total, create particle counts properly.
 //     template<class PLayout>
-//     void IpplParticleBase<PLayout>::update() {
+//     void ParticleBase<PLayout>::update() {
 //
 //
 //
@@ -507,7 +510,7 @@ namespace ippl {
 //     // Update the particle object after a timestep.  This routine will change
 //     // our local, total, create particle counts properly.
 //     template<class PLayout>
-//     void IpplParticleBase<PLayout>::update(const ParticleAttrib<char>& canSwap) {
+//     void ParticleBase<PLayout>::update(const ParticleAttrib<char>& canSwap) {
 //
 //
 //
@@ -524,7 +527,7 @@ namespace ippl {
 //     // calls to destroy() only stored a list of what to do.  This actually
 //     // does it.  This should in most cases only be called by the layout manager.
 //     template<class PLayout>
-//     void IpplParticleBase<PLayout>::performDestroy(bool updateLocalNum) {
+//     void ParticleBase<PLayout>::performDestroy(bool updateLocalNum) {
 //
 //
 //
@@ -570,7 +573,7 @@ namespace ippl {
 //     // delete M ghost particles, starting with the Ith particle.
 //     // This is done immediately.
 //     template<class PLayout>
-//     void IpplParticleBase<PLayout>::ghostDestroy(size_t M, size_t I) {
+//     void ParticleBase<PLayout>::ghostDestroy(size_t M, size_t I) {
 //
 //
 //
@@ -595,7 +598,7 @@ namespace ippl {
 //     // ghost particle interaction lists.
 //     template<class PLayout>
 //     size_t
-//     IpplParticleBase<PLayout>::ghostPutMessage(Message &msg, size_t M, size_t I) {
+//     ParticleBase<PLayout>::ghostPutMessage(Message &msg, size_t M, size_t I) {
 //
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
@@ -630,7 +633,7 @@ namespace ippl {
 //     // ghost particle interaction lists.
 //     template<class PLayout>
 //     size_t
-//     IpplParticleBase<PLayout>::ghostPutMessage(Message &msg,
+//     ParticleBase<PLayout>::ghostPutMessage(Message &msg,
 //                                         const std::vector<size_t>& pl) {
 //
 //     // make sure we've been initialized
@@ -655,7 +658,7 @@ namespace ippl {
 //     // retrieve particles from the given message and sending node and store them
 //     template<class PLayout>
 //     size_t
-//     IpplParticleBase<PLayout>::ghostGetMessage(Message& msg, int /*node*/) {
+//     ParticleBase<PLayout>::ghostGetMessage(Message& msg, int /*node*/) {
 //
 //
 //
@@ -680,7 +683,7 @@ namespace ippl {
 //
 //     template<class PLayout>
 //     size_t
-//     IpplParticleBase<PLayout>::ghostGetSingleMessage(Message& msg, int /*node*/) {
+//     ParticleBase<PLayout>::ghostGetSingleMessage(Message& msg, int /*node*/) {
 //
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
@@ -704,7 +707,7 @@ namespace ippl {
 //     // Apply the given sort-list to all the attributes.  The sort-list
 //     // may be temporarily modified, thus it must be passed by non-const ref.
 //     template<class PLayout>
-//     void IpplParticleBase<PLayout>::sort(SortList_t &sortlist) {
+//     void ParticleBase<PLayout>::sort(SortList_t &sortlist) {
 //     attrib_container_t::iterator abeg = AttribList.begin();
 //     attrib_container_t::iterator aend = AttribList.end();
 //     for ( ; abeg != aend; ++abeg )
@@ -715,7 +718,7 @@ namespace ippl {
 //     /////////////////////////////////////////////////////////////////////
 //     // print it out
 //     template<class PLayout>
-//     std::ostream& operator<<(std::ostream& out, const IpplParticleBase<PLayout>& P) {
+//     std::ostream& operator<<(std::ostream& out, const ParticleBase<PLayout>& P) {
 //
 //
 //     out << "Particle object contents:";
@@ -730,7 +733,7 @@ namespace ippl {
 //     /////////////////////////////////////////////////////////////////////
 //     // print out debugging information
 //     template<class PLayout>
-//     void IpplParticleBase<PLayout>::printDebug(Inform& o) {
+//     void ParticleBase<PLayout>::printDebug(Inform& o) {
 //
 //     o << "PBase: total = " << getTotalNum() << ", local = " << getLocalNum();
 //     o << ", attributes = " << AttribList.size() << endl;

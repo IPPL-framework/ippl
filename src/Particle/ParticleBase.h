@@ -12,47 +12,47 @@
 #define IPPL_PARTICLE_BASE_H
 
 /*
- * IpplParticleBase - Base class for all user-defined particle classes.
+ * ParticleBase - Base class for all user-defined particle classes.
  *
- * IpplParticleBase is a container and manager for a set of particles.
- * The user must define a class derived from IpplParticleBase which describes
+ * ParticleBase is a container and manager for a set of particles.
+ * The user must define a class derived from ParticleBase which describes
  * what specific data attributes the particle has (e.g., mass or charge).
- * Each attribute is an instance of a ParticleAttribute<T> class; IpplParticleBase
+ * Each attribute is an instance of a ParticleAttribute<T> class; ParticleBase
  * keeps a list of pointers to these attributes, and performs global
  * operations on them such as update, particle creation and destruction,
  * and inter-processor particle migration.
  *
- * IpplParticleBase is templated on the ParticleLayout mechanism for the particles.
+ * ParticleBase is templated on the ParticleLayout mechanism for the particles.
  * This template parameter should be a class derived from ParticleLayout.
  * ParticleLayout-derived classes maintain the info on which particles are
  * located on which processor, and performs the specific communication
  * required between processors for the particles.  The ParticleLayout is
  * templated on the type and dimension of the atom position attribute, and
- * IpplParticleBase uses the same types for these items as the given
+ * ParticleBase uses the same types for these items as the given
  * ParticleLayout.
  *
- * IpplParticleBase and all derived classes have the following common
+ * ParticleBase and all derived classes have the following common
  * characteristics:
  *     - The spatial positions of the N particles are stored in the
  *       ParticlePos_t variable R
  *     - The global index of the N particles are stored in the
  *       ParticleIndex_t variable ID
  *     - A pointer to an allocated layout class.  When you construct a
- *       IpplParticleBase, you must provide a layout instance, and IpplParticleBase
- *       will delete this instance when it (the IpplParticleBase) is deleted.
+ *       ParticleBase, you must provide a layout instance, and ParticleBase
+ *       will delete this instance when it (the ParticleBase) is deleted.
  *
  * To use this class, the user defines a derived class with the same
  * structure as in this example:
  *
  *   class UserParticles :
- *            public IpplParticleBase< ParticleSpatialLayout<double,2> > {
+ *            public ParticleBase< ParticleSpatialLayout<double,2> > {
  *   public:
  *     // attributes for this class
  *     ParticleAttribute<double> rad;  // radius
  *     ParticlePos_t             vel;  // velocity, same storage type as R
  *
  *     // constructor: add attributes to base class
- *     UserParticles(ParticleSpatialLayout<double,2>* L) : IpplParticleBase(L) {
+ *     UserParticles(ParticleSpatialLayout<double,2>* L) : ParticleBase(L) {
  *       addAttribute(rad);
  *       addAttribute(vel);
  *     }
@@ -69,7 +69,7 @@
  * frequency of load balancing (N), or may supply a function to
  * determine if load balancing should be done or not.
  *
- * Each IpplParticleBase can contain zero or more 'ghost' particles, which are
+ * Each ParticleBase can contain zero or more 'ghost' particles, which are
  * copies of particle data collected from other nodes.  These ghost particles
  * have many of the same function calls as for the 'regular' particles, with
  * the word 'ghost' prepended.  They are not necessary; but may be used to
@@ -77,19 +77,19 @@
  * neighbor lists).  The actual determination of what ghost particles should
  * be stored in this object (if any) is done by the specific layout object.
  *
- * IpplParticleBase also contains information on the types of boundary conditions
- * to use.  IpplParticleBase contains a ParticleBConds object, which is an array
+ * ParticleBase also contains information on the types of boundary conditions
+ * to use.  ParticleBase contains a ParticleBConds object, which is an array
  * of particle boundary condition functions.  By default, these BC's are null,
  * so that nothing special happens at the boundary, but the user may set these
  * BC's by using the 'getBConds' method to access the BC container.  The BC's
  * will then be used at the next update.  In fact, the BC container is stored
  * within the ParticleLayout object, but the interface the user uses to access
- * it is via IpplParticleBase.
+ * it is via ParticleBase.
  *
- * You can create an uninitialized IpplParticleBase, by using the default
+ * You can create an uninitialized ParticleBase, by using the default
  * constructor.  In this case, it will not do any initialization of data
  * structures, etc., and will not contain a layout instance.  In order to use
- * the IpplParticleBase in any useful way in this case, use the 'initialize()'
+ * the ParticleBase in any useful way in this case, use the 'initialize()'
  * method which takes as an argument the layout instance to use.
  */
 
@@ -111,20 +111,20 @@
 // forward declarations
 // class Inform;
 // class Message;
-// template <class PLayout> class IpplParticleBase;
+// template <class PLayout> class ParticleBase;
 // template <class PLayout>
-// std::ostream& operator<<(std::ostream&, const IpplParticleBase<PLayout>&);
+// std::ostream& operator<<(std::ostream&, const ParticleBase<PLayout>&);
 // template <class T, unsigned D> class ParticleBConds;
 
 namespace ippl {
 
-    // IpplParticleBase class definition.  Template parameter is the specific
+    // ParticleBase class definition.  Template parameter is the specific
     // ParticleLayout-derived class which determines how the particles are
     // distributed among processors.
 //     template<class PLayout>
 
     template<class PLayout>
-    class IpplParticleBase {
+    class ParticleBase {
 //                             public AbstractParticle<typename PLayout::Position_t, PLayout::Dimension> {
 
     public:
@@ -135,54 +135,35 @@ namespace ippl {
         // useful enums
 //         enum { Dim = PLayout::Dimension };
 
-        // useful typedefs and enums
-//         typedef PLayout                           Layout_t;
-//         typedef typename PLayout::Position_t      Position_t;
-//         typedef typename PLayout::Index_t         Index_t;
-
-//         typedef typename PLayout::ParticlePos_t   ParticlePos_t;
-//         typedef typename PLayout::ParticleIndex_t ParticleIndex_t;
-
-//         typedef typename PLayout::pair_iterator   pair_iterator;
-//         typedef typename PLayout::pair_t          pair_t;
-//         typedef typename PLayout::UpdateFlags     UpdateFlags;
+        typedef PLayout                           Layout_t;
         typedef std::vector<ParticleAttribBase*> attribute_container_t;
         typedef attribute_container_t::iterator  attribute_iterator;
-//         typedef ParticleAttribBase::SortList_t    SortList_t;
 
-        // our position, and our global ID's
+    public:
+        //! view of particle positions
         particle_position_type R;
+
+        //! view of particle IDs
         particle_index_type ID;
 
-//     public:
-//         // constructor 1: no arguments, so create an uninitialized IpplParticleBase.
-//         // If this constructor is used, the user must call 'initialize' with
-//         // a layout object in order to use this.
-        IpplParticleBase();
-//
-//         // constructor 2: arguments = layout to use.
-//         IpplParticleBase(PLayout *layout) :
-//             MIN_NUM_PART_PER_CORE(0),
-//             Layout(layout),
-//             TotalNum(0),
-//             LocalNum(0),
-//             DestroyNum(0),
-//             GhostNum(0)
-//         {
-//             setup();
-//         }
-//
-//         // destructor - delete the layout if necessary
-	~IpplParticleBase() {
-	    //	    if (Layout != 0)
-            //     delete Layout;
-	}
+        /*!
+         * If this constructor is used, the user must call 'initialize' with
+         * a layout object in order to use this.
+         */
+        ParticleBase();
+
+        /*!
+         * @param layout is the particle layout
+         */
+        ParticleBase(PLayout *layout);
+
+        ~ParticleBase() = default;
 //
 //         //
 //         // Initialization methods
 //         //
 //
-//         // For a IpplParticleBase that was created with the default constructor,
+//         // For a ParticleBase that was created with the default constructor,
 //         // initialize performs the same actions as are done in the non-default
 //         // constructor.  If this object has already been initialized, it is
 //         // an error.  For initialize, you must supply a layout instance.
@@ -373,8 +354,8 @@ namespace ippl {
 //         std::vector< std::pair<size_t,size_t> > DestroyList;
 //
     private:
-//         // our layout object, which we delete in our destructor
-//         PLayout *Layout;
+        // cannot use std::unique_ptr due to Kokkos
+        std::shared_ptr<PLayout> layout_m;
 //
 //
 //         // our current number of total and local atoms, and
@@ -396,6 +377,6 @@ namespace ippl {
     };
 }
 
-#include "Particle/Kokkos_IpplParticleBase.hpp"
+#include "Particle/ParticleBase.hpp"
 
 #endif
