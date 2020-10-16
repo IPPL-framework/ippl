@@ -63,31 +63,6 @@ namespace ippl {
 //     }
 //
 //
-//     /////////////////////////////////////////////////////////////////////
-//     // set up this new object:  add attributes and check in to the layout
-//     template<class PLayout>
-//     void IpplParticleBase<PLayout>::setup() {
-//
-//     TotalNum = 0;
-//     LocalNum = 0;
-//     DestroyNum = 0;
-//     GhostNum = 0;
-//
-//     // shift ID back so that first ID retrieved is myNode
-//     NextID = Ippl::Comm->myNode() - Ippl::Comm->getNodes();
-//
-//     // Create position R and index ID attributes for the particles,
-//     // and add them to our list of attributes.
-//     addAttribute(R);
-//     addAttribute(ID);
-//
-//     // set pointer for base class AbstractParticle
-//     this->R_p  = &R;
-//     this->ID_p = &ID;
-//
-//     // indicate we have created a new IpplParticleBase object
-//     INCIPPLSTAT(incIpplParticleBases);
-//     }
 //
 //
 //     /////////////////////////////////////////////////////////////////////
@@ -414,31 +389,48 @@ namespace ippl {
 //     }
 //
 //
-//     /////////////////////////////////////////////////////////////////////
-    // create M new particles on this processor
+
+
     template<typename T, unsigned Dim>
-    void IpplParticleBase<T, Dim>::create(size_t n)
+    void IpplParticleBase<T, Dim>::create(size_t nLocal)
     {
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
 
-        // go through all the attributes, and allocate space for n new particles
-        using iterator = attribute_container_t::iterator;
-        for (iterator it = attributes_m.begin(); it != attributes_m.end(); ++it) {
-            (*it)->create(n);
+        for (attribute_iterator it = attributes_m.begin();
+             it != attributes_m.end(); ++it) {
+            (*it)->create(nLocal);
         }
 
         // set the unique ID value for these new particles
         Kokkos::parallel_for("IpplParticleBase<T, Dim>::create(size_t)",
-                             Kokkos::RangePolicy(localNum_m, n),
+                             Kokkos::RangePolicy(localNum_m, nLocal),
                              KOKKOS_CLASS_LAMBDA(const size_t i) {
                                  ID(i) = this->nextID_m + this->numNodes_m * i;
                              });
-        nextID_m += numNodes_m * (n - localNum_m);
+        nextID_m += numNodes_m * (nLocal - localNum_m);
 
         // remember that we're creating these new particles
-        localNum_m += n;
+        localNum_m += nLocal;
     }
+
+    template<typename T, unsigned Dim>
+    void IpplParticleBase<T, Dim>::globalCreate(size_t nTotal) {
+//         // make sure we've been initialized
+//         PAssert(Layout != 0);
+
+        // Compute the number of particles local to each processor
+        size_t nLocal = nTotal / numNodes_m;
+
+        const rank = Ippl::Comm->myNode();
+
+        size_t rest = nTotal - nLocal * rank;
+        if (rank < rest)
+            ++nLocal;
+
+        create(nLocal);
+    }
+
 //
 //
 //     /////////////////////////////////////////////////////////////////////
@@ -469,28 +461,7 @@ namespace ippl {
 //     }
 //
 //
-//     /////////////////////////////////////////////////////////////////////
-//     // create np new particles globally, equally distributed among all processors
-//     template<class PLayout>
-//     void IpplParticleBase<PLayout>::globalCreate(size_t np) {
-//
-//
-//     // make sure we've been initialized
-//     PAssert(Layout != 0);
-//
-//     // Compute the number of particles local to each processor:
-//     unsigned nPE = IpplInfo::getNodes();
-//     unsigned npLocal = np/nPE;
-//
-//     // Handle the case where np/nPE is not an integer:
-//     unsigned myPE = IpplInfo::myNode();
-//     unsigned rem = np - npLocal * nPE;
-//     if (myPE < rem) ++npLocal;
-//
-//     // Now each PE calls the local IpplParticleBase::create() function to create it's
-//     // local number of particles:
-//     create(npLocal);
-//     }
+
 //
 //
 //     /////////////////////////////////////////////////////////////////////

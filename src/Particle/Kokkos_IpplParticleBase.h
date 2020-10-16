@@ -129,8 +129,9 @@ namespace ippl {
 
     public:
         typedef Vector<T, Dim> vector_type;
-        typedef ParticleAttrib<vector_type>  position_type;
-        typedef ParticleAttrib<std::int64_t> index_type;
+        typedef std::int64_t index_type;
+        typedef ParticleAttrib<vector_type> particle_position_type;
+        typedef ParticleAttrib<index_type>  particle_index_type;
         // useful enums
 //         enum { Dim = PLayout::Dimension };
 
@@ -146,8 +147,7 @@ namespace ippl {
 //         typedef typename PLayout::pair_t          pair_t;
 //         typedef typename PLayout::UpdateFlags     UpdateFlags;
         typedef std::vector<ParticleAttribBase*> attribute_container_t;
-
-//         typedef attrib_container_t::iterator      attrib_iterator;
+        typedef attribute_container_t::iterator  attribute_iterator;
 //         typedef ParticleAttribBase::SortList_t    SortList_t;
 
         // useful constants
@@ -155,8 +155,8 @@ namespace ippl {
 
         // our position, and our global ID's
 //         ParticlePos_t   R;
-        position_type R;
-        index_type ID;
+        particle_position_type R;
+        particle_index_type ID;
 //         ParticleIndex_t ID;
 
 //     public:
@@ -277,11 +277,17 @@ namespace ippl {
 //         // create 1 new particle with a given ID
 //         void createWithID(unsigned id);
 //
-        // create M new particles on this processor
-        void create(size_t);
-//
-//         // create np new particles globally, equally distributed among all processors
-//         void globalCreate(size_t np);
+        /*!
+         * Create nLocal processor local particles
+         * @param nLocal number of local particles to be created
+         */
+        void create(size_t nLocal);
+
+        /*!
+         * Create nTotal particles globally, equally distributed among all processors
+         * @param nTotal number of total particles to be created
+         */
+        void globalCreate(size_t nTotal);
 //
 //         // delete M particles, starting with the Ith particle.  If the last argument
 //         // is true, the destroy will be done immediately, otherwise the request
@@ -391,15 +397,9 @@ namespace ippl {
         attribute_container_t attributes_m;
 
         // unique particle ID number generation value
-	std::int64_t nextID_m;
-	std::int64_t numNodes_m;
-//
-//         //
-//         // private methods
-//         //
-//
-//         // set up this new object:  add attributes and check in to the layout
-//         void setup();
+        index_type nextID_m;
+        index_type numNodes_m;
+
 //
     };
 }
