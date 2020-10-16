@@ -28,7 +28,20 @@ namespace ippl {
 
     template<class PLayout>
     ParticleBase<PLayout>::ParticleBase()
-    : totalNum_m(0)
+    : ParticleBase(nullptr)
+    { }
+
+    template<class PLayout>
+    ParticleBase<PLayout>::ParticleBase(std::shared_ptr<PLayout>& layout)
+    : ParticleBase()
+    {
+        initialize(layout);
+    }
+
+    template<class PLayout>
+    ParticleBase<PLayout>::ParticleBase(std::shared_ptr<PLayout>&& layout)
+    : layout_m(layout)
+    , totalNum_m(0)
     , localNum_m(0)
     , nextID_m(Ippl::Comm->myNode())
     , numNodes_m(Ippl::Comm->getNodes())
@@ -39,31 +52,18 @@ namespace ippl {
 
 
     template<class PLayout>
-    ParticleBase<PLayout>::ParticleBase(PLayout* layout)
-    : ParticleBase()
-    {
-//         layout_m
-    }
-
-
-    template<class PLayout>
     void ParticleBase<PLayout>::addAttribute(ParticleAttribBase& pa)
     {
         attributes_m.push_back(&pa);
     }
 
-//     template<class PLayout>
-//     void ParticleBase<PLayout>::initialize(PLayout *layout) {
-//
-//     // make sure we have not already been initialized, and that we have
-//     // been given a good layout
-//     PAssert(Layout == 0);
-//     PAssert(layout != 0);
-//
-//     // save the layout, and perform setup tasks
-//     Layout = layout;
-//     setup();
-//     }
+    template<class PLayout>
+    void ParticleBase<PLayout>::initialize(std::shared_ptr<PLayout>& layout) {
+        PAssert(layout_m == nullptr);
+
+        // save the layout, and perform setup tasks
+        layout_m = std::move(layout);
+    }
 //
 //
 //

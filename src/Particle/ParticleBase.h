@@ -153,9 +153,10 @@ namespace ippl {
         ParticleBase();
 
         /*!
-         * @param layout is the particle layout
+         * Ctor called when layout is provided with std::shared_ptr
          */
-        ParticleBase(PLayout *layout);
+        ParticleBase(std::shared_ptr<PLayout>& layout);
+
 
         /* cannot use '= default' since we get a
          * compiler warning otherwise:
@@ -165,15 +166,11 @@ namespace ippl {
          */
         ~ParticleBase() { };
 //
-//         //
-//         // Initialization methods
-//         //
-//
 //         // For a ParticleBase that was created with the default constructor,
 //         // initialize performs the same actions as are done in the non-default
 //         // constructor.  If this object has already been initialized, it is
 //         // an error.  For initialize, you must supply a layout instance.
-//         void initialize(PLayout *);
+        void initialize(std::shared_ptr<PLayout>& layout);
 //
 //
 //         //
@@ -358,7 +355,14 @@ namespace ippl {
 //         // Each destroy is stored as a pair of unsigned ints, the particle
 //         // index I to start at and the number of particles M to destroy.
 //         std::vector< std::pair<size_t,size_t> > DestroyList;
-//
+
+    private:
+        /*!
+         * Ctor called when layout == nullptr (i.e., by the default constructor)
+         * @param layout is the particle layout
+         */
+        ParticleBase(std::shared_ptr<PLayout>&& layout);
+
     private:
         // cannot use std::unique_ptr due to Kokkos
         std::shared_ptr<PLayout> layout_m;

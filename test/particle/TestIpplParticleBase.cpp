@@ -6,7 +6,9 @@ int main(int argc, char *argv[]) {
     typedef ippl::ParticleLayout<double, 3> playout;
     typedef ippl::ParticleBase<playout> bunch_type;
 
-    bunch_type p;
+    std::shared_ptr<playout> pl = std::make_shared<playout>();
+
+    bunch_type p(pl);
 
     std::cout << p.getLocalNum() << std::endl;
 
