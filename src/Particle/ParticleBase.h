@@ -154,6 +154,8 @@ namespace ippl {
 
         /*!
          * Ctor called when layout is provided with std::shared_ptr
+         * @param layout which is moved to the private member;
+         * layout == nullptr after calling.
          */
         ParticleBase(std::shared_ptr<PLayout>& layout);
 
