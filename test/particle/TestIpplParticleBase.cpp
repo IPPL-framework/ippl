@@ -14,6 +14,8 @@ int main(int argc, char *argv[]) {
 
     p.create(10);
 
+    p.destroy();
+
     std::cout << p.getLocalNum() << std::endl;
 
     return 0;

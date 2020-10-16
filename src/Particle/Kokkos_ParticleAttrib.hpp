@@ -75,8 +75,22 @@ namespace ippl {
 
     template<typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::create(size_t n) {
-	size_t current = this->size();
+        size_t current = this->size();
         this->resize(current + n);
+    }
+
+
+    template<typename T, class... Properties>
+    void ParticleAttrib<T, Properties...>::destroy(bitset_type b, size_t n) {
+        view_type bb("", n);
+        Kokkos::parallel_for("",
+                             size(),
+                             KOKKOS_CLASS_LAMBDA(const size_t i) {
+                                 if ( b(i) )
+                                    bb(i) = (*this).operator()(i);
+                             });
+        this->resize(n);
+        this->assign_data(bb.data());
     }
 }
 

@@ -113,6 +113,7 @@ namespace ippl {
         typedef typename PLayout::index_type  index_type;
         typedef ParticleAttrib<vector_type>   particle_position_type;
         typedef ParticleAttrib<index_type>    particle_index_type;
+        typedef typename ParticleAttribBase::bitset_type bitset_type;
 
         typedef PLayout                           Layout_t;
         typedef std::vector<ParticleAttribBase*> attribute_container_t;
@@ -157,27 +158,15 @@ namespace ippl {
         void initialize(std::shared_ptr<PLayout>& layout);
 
         /*!
-         * @returns total number of particles
-         */
-        size_t getTotalNum() const { return totalNum_m; }
-
-        /*!
          * @returns processor local number of particles
          */
         size_t getLocalNum() const { return localNum_m; }
-
 
         /*!
          * @returns processor local number of particles that will
          * be deleted at the next destroy call.
          */
         size_t getDestroyNum() const { return destroyNum_m; }
-
-        /*!
-         * Set the total number of particles
-         * @param nTotal number of particles
-         */
-        void setTotalNum(size_t nTotal) { totalNum_m = nTotal; }
 
         /*!
          * Set the processor local number of particles
@@ -203,20 +192,13 @@ namespace ippl {
          */
         void addAttribute(ParticleAttribBase& pa);
 
+        /*!
+         * Redistribute particles among MPI ranks.
+         * This function calls the underlying particle layout
+         * routine.
+         */
+        void update();
 
-//         attribute_container_t::size_type
-//         numAttributes() const { return attributes_m.size(); }
-
-        // obtain the beginning and end iterators for our attribute list
-//         attribute_iterator begin() { return attributes_m.begin(); }
-//         attribute_iterator end()   { return attributes_m.end(); }
-
-//
-//         // Update the particle object after a timestep.  This routine will change
-//         // our local, total, create particle counts properly.
-//         virtual void update();
-//         virtual void update(const ParticleAttrib<char>& canSwap);
-//
 
         /*!
          * Create nLocal processor local particles
@@ -235,17 +217,19 @@ namespace ippl {
          * @param nTotal number of total particles to be created
          */
         void globalCreate(size_t nTotal);
-//
-//         // delete M particles, starting with the Ith particle.  If the last argument
-//         // is true, the destroy will be done immediately, otherwise the request
-//         // will be cached.
-//         void destroy(size_t, size_t, bool = false);
-//
-//         // Actually perform the delete atoms action for all the attributes; the
-//         // calls to destroy() only stored a list of what to do.  This actually
-//         // does it.  This should in most cases only be called by the layout manager.
-//         void performDestroy(bool updateLocalNum = false);
-//
+
+        /*!
+         * Count number of particles with ID == -1 and update
+         * member variable destroyNum_m.
+         */
+        bitset_type findInvalidParticles();
+
+        /*!
+         * Delete particles.
+         * @param
+         */
+        void destroy();
+
     private:
         /*!
          * Ctor called when layout == nullptr (i.e., by the default constructor)
@@ -258,9 +242,6 @@ namespace ippl {
         //! particle layout
         // cannot use std::unique_ptr due to Kokkos
         std::shared_ptr<PLayout> layout_m;
-
-        //! total number of particles
-        size_t totalNum_m;
 
         //! processor local number of particles
         size_t localNum_m;

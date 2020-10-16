@@ -70,6 +70,12 @@ namespace ippl {
         ParticleLayout() = default;
 
         ~ParticleLayout() = default;
+
+        template<class PBase>
+        void update(PBase&) {
+            //FIXME
+            std::cout << "TODO" << std::endl;
+        }
 //
 //         // set the flags used to indicate what to do during the update
 //         void setUpdateFlag(UpdateFlags f, bool val) {

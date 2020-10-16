@@ -30,15 +30,14 @@ namespace ippl {
     template<class PLayout>
     ParticleBase<PLayout>::ParticleBase(std::shared_ptr<PLayout>&& layout)
     : layout_m(std::move(layout))
-    , totalNum_m(0)
     , localNum_m(0)
     , destroyNum_m(0)
     , attributes_m(0)
     , nextID_m(Ippl::Comm->myNode())
     , numNodes_m(Ippl::Comm->getNodes())
     {
+        addAttribute(ID); // needs to be added first due to destroy function
         addAttribute(R);
-        addAttribute(ID);
     }
 
 
@@ -113,6 +112,41 @@ namespace ippl {
         create(nLocal);
     }
 
+
+    template<class PLayout>
+    typename ParticleBase<PLayout>::bitset_type
+    ParticleBase<PLayout>::findInvalidParticles()
+    {
+        bitset_type invalidParticles("", localNum_m);
+        Kokkos::parallel_reduce("ParticleBase<PLayout>::findInvalidParticles()",
+                             localNum_m, KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                             size_t& nInvalid) {
+                                 nInvalid += size_t(ID(i) < 0);
+                                 invalidParticles(i) = (ID(i) < 0);
+                             }, destroyNum_m);
+
+        PAssert(destroyNum_m <= localNum_m);
+        return invalidParticles;
+    }
+
+
+    template<class PLayout>
+    void ParticleBase<PLayout>::destroy() {
+
+        // set destroyNum_m
+        bitset_type b = findInvalidParticles();
+
+        if (destroyNum_m == 0) {
+            return;
+        }
+
+        for (attribute_iterator it = attributes_m.begin();
+             it != attributes_m.end(); ++it) {
+            (*it)->destroy(b, destroyNum_m);
+        }
+
+        localNum_m -= destroyNum_m;
+    }
 //
 //     /////////////////////////////////////////////////////////////////////
 //     // delete M particles, starting with the Ith particle.  If the last argument
@@ -147,84 +181,10 @@ namespace ippl {
 //     }
 //
 //
-//     /////////////////////////////////////////////////////////////////////
-//     // Update the particle object after a timestep.  This routine will change
-//     // our local, total, create particle counts properly.
-//     template<class PLayout>
-//     void ParticleBase<PLayout>::update() {
-//
-//
-//
-//     // make sure we've been initialized
-//     PAssert(Layout != 0);
-//
-//     // ask the layout manager to update our atoms, etc.
-//     Layout->update(*this);
-//     INCIPPLSTAT(incParticleUpdates);
-//     }
-//
-//
-//     /////////////////////////////////////////////////////////////////////
-//     // Update the particle object after a timestep.  This routine will change
-//     // our local, total, create particle counts properly.
-//     template<class PLayout>
-//     void ParticleBase<PLayout>::update(const ParticleAttrib<char>& canSwap) {
-//
-//
-//
-//     // make sure we've been initialized
-//     PAssert(Layout != 0);
-//
-//     // ask the layout manager to update our atoms, etc.
-//     Layout->update(*this, &canSwap);
-//     INCIPPLSTAT(incParticleUpdates);
-//     }
-//
-//
-//     // Actually perform the delete atoms action for all the attributes; the
-//     // calls to destroy() only stored a list of what to do.  This actually
-//     // does it.  This should in most cases only be called by the layout manager.
-//     template<class PLayout>
-//     void ParticleBase<PLayout>::performDestroy(bool updateLocalNum) {
-//
-//
-//
-//     // make sure we've been initialized
-//     PAssert(Layout != 0);
-//
-//     // nothing to do if destroy list is empty
-//     if (DestroyList.empty()) return;
-//
-//     // before processing the list, we should make sure it is sorted
-//     bool isSorted = true;
-//     typedef std::vector< std::pair<size_t,size_t> > dlist_t;
-//     dlist_t::const_iterator curr = DestroyList.begin();
-//     const dlist_t::const_iterator last = DestroyList.end();
-//     dlist_t::const_iterator next = curr + 1;
-//     while (next != last && isSorted) {
-//         if (*next++ < *curr++) isSorted = false;
-//     }
-//     if (!isSorted)
-//         std::sort(DestroyList.begin(),DestroyList.end());
-//
-//     // find out if we are using optimized destroy method
-//     bool optDestroy = getUpdateFlag(PLayout::OPTDESTROY);
-//
-//     // loop over attributes and process destroy list
-//     attrib_container_t::iterator abeg, aend = AttribList.end();
-//     for (abeg = AttribList.begin(); abeg != aend; ++abeg)
-//         (*abeg)->destroy(DestroyList,optDestroy);
-//
-//     if (updateLocalNum) {
-//         for (curr = DestroyList.begin(); curr != last; ++ curr) {
-//             LocalNum -= curr->second;
-//         }
-//     }
-//
-//     // clear destroy list and update destroy num counter
-//     DestroyList.erase(DestroyList.begin(),DestroyList.end());
-//     DestroyNum = 0;
-//     }
-//
-//
+    template<class PLayout>
+    void ParticleBase<PLayout>::update()
+    {
+        PAssert(layout_m != nullptr);
+        layout_m->update(*this);
+    }
 }
