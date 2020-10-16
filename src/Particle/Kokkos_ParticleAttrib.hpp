@@ -86,8 +86,8 @@ namespace ippl {
         Kokkos::parallel_for("",
                              size(),
                              KOKKOS_CLASS_LAMBDA(const size_t i) {
-                                 if ( b(i) )
-                                    bb(i) = (*this).operator()(i);
+                                 if ( b(i) == true )
+                                    bb(i) = this->operator()(i);
                              });
         this->resize(n);
         this->assign_data(bb.data());
