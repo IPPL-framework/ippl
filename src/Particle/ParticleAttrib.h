@@ -47,35 +47,11 @@
  * used (for Vektor, Tenzor, etc., this has already been done).  This same
  * thing has been done for operator () involving either one or two indices,
  * which is needed to get the i,j element of a Tenzor, for example.
- *
- * To perform gather/scatter type operations involving sparse indices, in
- * which the sparse indices represent a list of points in a dense field
- * onto which we want to gather/scatter values, you can use the [] operator
- * to get a SubParticleAttrib object that knows about the particle
- * elements and associated sparse index points.  This allows us to have
- * the syntax
- *    P[S] = expr(A[S])
- * where P is a ParticleAttrib, A is some other object such as a Field that
- * can be indexed by an SIndex, and S is an SIndex object.  In this case,
- * the length of the ParticleAttrib would be changed to match the number
- * of local points in the SIndex, and the expression would be evaluated at
- * all the points in the SIndex and stored into P.  It also allows the
- * syntax
- *    A[S] = expr(B[S], P[S])
- * where A, B are things like Field, S in an SIndex, and P is a ParticleAttrib.
- * Here, the LHS is assigned, at all the points in the SIndex, to the values
- * of the expression, which can include a ParticleAttrib only if it is
- * indexed by an SIndex.  This is because SubParticleAttrib contains the
- * ability to provide an iterator with the right interface for the expression
- * evaluation.
  */
 
 // include files
 #include "Particle/ParticleAttribBase.h"
 #include "Particle/ParticleAttribElem.h"
-#include "SubParticle/SubParticleAttrib.h"
-#include "DataSource/DataSource.h"
-#include "DataSource/MakeDataSource.h"
 #include "PETE/IpplExpressions.h"
 #include "Index/NDIndex.h"
 #include "Utility/DiscType.h"
@@ -94,7 +70,7 @@ template <class T> class ParticleAttribConstIterator;
 
 // ParticleAttrib class definition
 template <class T>
-class ParticleAttrib : public ParticleAttribBase, public DataSource,
+class ParticleAttrib : public ParticleAttribBase,
 		       public PETE_Expr< ParticleAttrib<T> >
 {
 
@@ -149,17 +125,6 @@ public:
     typename ParticleList_t::const_reference
     operator[](size_t n) const {
         return ParticleList[n];
-    }
-
-    //
-    // bracket operator to refer to an attrib and an SIndex object
-    //
-
-    template<unsigned Dim>
-    SubParticleAttrib<ParticleAttrib<T>, T, Dim>
-    operator[](const SIndex<Dim> &s) const {
-        ParticleAttrib<T> &a = const_cast<ParticleAttrib<T> &>(*this);
-        return SubParticleAttrib<ParticleAttrib<T>, T, Dim>(a, s);
     }
 
     //
@@ -495,14 +460,6 @@ public:
     virtual void printDebug(Inform&);
 
 protected:
-    // a virtual function which is called by this base class to get a
-    // specific instance of DataSourceObject based on the type of data
-    // and the connection method (the argument to the call).
-    virtual DataSourceObject *createDataSourceObject(const char *nm,
-                                                     DataConnect *dc, int tm) {
-        return make_DataSourceObject(nm, dc, tm, *this);
-    }
-
     // storage for particle data
     ParticleList_t ParticleList;
     size_t LocalSize;

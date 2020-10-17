@@ -36,9 +36,6 @@
 // // IPPL Field Indexing
 // #include "Index/Index.h"
 // #include "Index/NDIndex.h"
-// #include "Index/SIndex.h"
-// #include "Index/IndexedSIndex.h"
-// #include "Index/SIndexAssign.h"
 
 // // IPPL Field Layout
 // #include "FieldLayout/FieldLayout.h"
@@ -92,19 +89,11 @@
 // #include "Particle/IntTSC.h"
 // #include "Particle/IntSUDS.h"
 
-// // IPPL sparse index expression operations
-// #include "SubField/SubFieldAssign.h"
-// #include "SubParticle/SubParticleAssign.h"
-
 // IPPL Math Types
 #include "AppTypes/Vector.h"
 // #include "AppTypes/Tenzor.h"
 // #include "AppTypes/SymTenzor.h"
 // #include "AppTypes/AntiSymTenzor.h"
-
-// IPPL Data Connection classes
-// #include "DataSource/DataConnectCreator.h"
-// #include "DataSource/FileDataConnect.h"
 
 // // IPPL FFTs
 // #include "FFT/FFT.h"

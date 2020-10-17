@@ -61,7 +61,6 @@ set (IPPL_BASEDIR_HDRS
 add_ippl_headers (${IPPL_BASEDIR_HDRS})
 
 add_subdirectory (AppTypes)
-add_subdirectory (DataSource)
 add_subdirectory (DomainMap)
 # add_subdirectory (FFT)
 add_subdirectory (Field)
@@ -72,8 +71,6 @@ add_subdirectory (Message)
 # add_subdirectory (Particle)
 add_subdirectory (PETE)
 # add_subdirectory (Region)
-# add_subdirectory (SubField)
-# add_subdirectory (SubParticle)
 add_subdirectory (Utility)
 add_subdirectory (Expression)
 

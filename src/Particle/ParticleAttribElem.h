@@ -30,7 +30,6 @@
  */
 
 // include files
-#include "SubParticle/SubParticleAttrib.h"
 #include "PETE/IpplExpressions.h"
 #include "Utility/Vec.h"
 #include "AppTypes/AppTypeTraits.h"
@@ -122,17 +121,6 @@ public:
   // Boolean flag indicates whether to use optimized destroy method
   void destroy(const std::vector< std::pair<size_t,size_t> >& dlist,
 	       bool optDestroy=true);
-
-  //
-  // bracket operator to refer to an attrib and an SIndex object
-  //
-
-  template<unsigned SDim>
-  SubParticleAttrib<ParticleAttribElem<T,Dim>, Element_t, SDim>
-  operator[](const SIndex<SDim> &s) const {
-    return SubParticleAttrib<ParticleAttribElem<T,Dim>, Element_t, SDim>(
-	(ParticleAttribElem<T,Dim> &)(*this), s);
-  }
 
   //
   // Assignment operators
