@@ -25,12 +25,64 @@ namespace ippl {
      * @file IpplOperations.h
      */
 
-     /*!
+    #define DefineUnaryOperation(fun, name, op1, op2)                       \
+    template<typename E>                                                    \
+    struct fun : public Expression<fun<E>, sizeof(E)> {                     \
+        KOKKOS_FUNCTION                                                     \
+        fun(const E& u) : u_m(u) { }                                        \
+                                                                            \
+        KOKKOS_INLINE_FUNCTION                                              \
+        auto operator[](size_t i) const { return op1; }                     \
+                                                                            \
+        template<typename ...Args>                                          \
+        KOKKOS_INLINE_FUNCTION                                              \
+        auto operator()(Args... args) const {                               \
+            return op2;                                                     \
+        }                                                                   \
+                                                                            \
+    private:                                                                \
+        const E u_m;                                                        \
+    };                                                                      \
+                                                                            \
+    template<typename E, size_t N>                                          \
+    KOKKOS_INLINE_FUNCTION                                                  \
+    fun<E> name(const Expression<E, N>& u) {                                \
+        return fun<E>(*static_cast<const E*>(&u));                          \
+    }                                                                       \
+
+    /// @cond
+
+    DefineUnaryOperation(UnaryMinus, operator-, -u_m[i],  -u_m(args...)) 
+    DefineUnaryOperation(UnaryPlus,  operator+, +u_m[i],  +u_m(args...)) 
+    DefineUnaryOperation(BitwiseNot, operator~, ~u_m[i],  ~u_m(args...)) 
+    DefineUnaryOperation(Not,        operator!, !u_m[i],  !u_m(args...)) 
+    
+    DefineUnaryOperation(ArcCos, acos,  acos(u_m[i]),  acos(u_m(args...))) 
+    DefineUnaryOperation(ArcSin, asin,  asin(u_m[i]),  asin(u_m(args...))) 
+    DefineUnaryOperation(ArcTan, atan,  atan(u_m[i]),  atan(u_m(args...))) 
+    DefineUnaryOperation(Ceil,   ceil,  ceil(u_m[i]),  ceil(u_m(args...))) 
+    DefineUnaryOperation(Cos,    cos,   cos(u_m[i]),   cos(u_m(args...))) 
+    DefineUnaryOperation(HypCos, cosh,  cosh(u_m[i]),  cosh(u_m(args...))) 
+    DefineUnaryOperation(Exp,    exp,   exp(u_m[i]),   exp(u_m(args...))) 
+    DefineUnaryOperation(Fabs,   fabs,  fabs(u_m[i]),  fabs(u_m(args...))) 
+    DefineUnaryOperation(Floor,  floor, floor(u_m[i]), floor(u_m(args...))) 
+    DefineUnaryOperation(Log,    log,   log(u_m[i]),   log(u_m(args...))) 
+    DefineUnaryOperation(Log10,  log10, log10(u_m[i]), log10(u_m(args...))) 
+    DefineUnaryOperation(Sin,    sin,   sin(u_m[i]),   sin(u_m(args...))) 
+    DefineUnaryOperation(HypSin, sinh,  sinh(u_m[i]),  sinh(u_m(args...))) 
+    DefineUnaryOperation(Sqrt,   sqrt,  sqrt(u_m[i]),  sqrt(u_m(args...))) 
+    DefineUnaryOperation(Tan,    tan,   tan(u_m[i]),   tan(u_m(args...))) 
+    DefineUnaryOperation(HypTan, tanh,  tanh(u_m[i]),  tanh(u_m(args...))) 
+    DefineUnaryOperation(Erf,    erf,   erf(u_m[i]),   erf(u_m(args...))) 
+    /// @endcond
+
+
+    /*!
      * Macro to overload C++ operators for the Scalar, LField and Vector class.
      * @param fun name of the expression template function
      * @param name overloaded operator
      * @param op1 operation for single index access
-     * @param op2 operation for multipole indices access
+     * @param op2 operation for multiple indices access
      */
     #define DefineBinaryOperation(fun, name, op1, op2)                      \
     template<typename E1, typename E2>                                      \
@@ -82,6 +134,7 @@ namespace ippl {
     DefineBinaryOperation(Multiply, operator*, u_m[i] * v_m[i], u_m(args...) * v_m(args...))
     DefineBinaryOperation(Divide,   operator/, u_m[i] / v_m[i], u_m(args...) / v_m(args...))
     /// @endcond
+
 
     namespace detail {
         /*!

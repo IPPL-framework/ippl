@@ -23,6 +23,53 @@ namespace ippl {
      * @file IpplFieldOperations.h
      */
 
+    #define DefineUnaryFieldOperation(fun, name, op1, op2)                  \
+    template<typename E>                                                    \
+    struct fun : public FieldExpression<fun<E>> {                           \
+        fun(const E& u) : u_m(u) { }                                        \
+                                                                            \
+        auto operator[](size_t i) const { return op1; }                     \
+                                                                            \
+        template<typename ...Args>                                          \
+        auto operator()(Args... args) const {                               \
+            return op2;                                                     \
+        }                                                                   \
+                                                                            \
+    private:                                                                \
+        const E u_m;                                                        \
+    };                                                                      \
+                                                                            \
+    template<typename E>                                                    \
+    fun<E> name(const FieldExpression<E>& u) {                              \
+        return fun<E>(*static_cast<const E*>(&u));                          \
+    }                                                                       \
+
+    /// @cond
+
+    DefineUnaryFieldOperation(FieldUnaryMinus, operator-, -u_m[i],  -u_m(args...)) 
+    DefineUnaryFieldOperation(FieldUnaryPlus,  operator+, +u_m[i],  +u_m(args...)) 
+    DefineUnaryFieldOperation(FieldBitwiseNot, operator~, ~u_m[i],  ~u_m(args...)) 
+    DefineUnaryFieldOperation(FieldNot,        operator!, !u_m[i],  !u_m(args...)) 
+    
+    DefineUnaryFieldOperation(FieldArcCos, acos,  acos(u_m[i]),  acos(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldArcSin, asin,  asin(u_m[i]),  asin(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldArcTan, atan,  atan(u_m[i]),  atan(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldCeil,   ceil,  ceil(u_m[i]),  ceil(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldCos,    cos,   cos(u_m[i]),   cos(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldHypCos, cosh,  cosh(u_m[i]),  cosh(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldExp,    exp,   exp(u_m[i]),   exp(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldFabs,   fabs,  fabs(u_m[i]),  fabs(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldFloor,  floor, floor(u_m[i]), floor(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldLog,    log,   log(u_m[i]),   log(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldLog10,  log10, log10(u_m[i]), log10(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldSin,    sin,   sin(u_m[i]),   sin(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldHypSin, sinh,  sinh(u_m[i]),  sinh(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldSqrt,   sqrt,  sqrt(u_m[i]),  sqrt(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldTan,    tan,   tan(u_m[i]),   tan(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldHypTan, tanh,  tanh(u_m[i]),  tanh(u_m(args...))) 
+    DefineUnaryFieldOperation(FieldErf,    erf,   erf(u_m[i]),   erf(u_m(args...))) 
+    /// @endcond
+    
     /*!
      * Macro to overload C++ operators for the Field and BareField class.
      * @param fun name of the expression template function

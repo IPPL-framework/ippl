@@ -30,6 +30,13 @@ target_link_libraries (
     boost_timer
 )
 
+add_executable (TestLField3 TestLField3.cpp)
+target_link_libraries (
+    TestLField3
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    boost_timer
+)
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
