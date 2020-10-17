@@ -117,10 +117,34 @@ namespace ippl {
 
 
     /// @cond
-    DefineBinaryFieldOperation(FieldAdd,      operator+, u_m[i] + v_m[i], u_m(args...) + v_m(args...))
-    DefineBinaryFieldOperation(FieldSubtract, operator-, u_m[i] - v_m[i], u_m(args...) - v_m(args...))
-    DefineBinaryFieldOperation(FieldMultiply, operator*, u_m[i] * v_m[i], u_m(args...) * v_m(args...))
-    DefineBinaryFieldOperation(FieldDivide,   operator/, u_m[i] / v_m[i], u_m(args...) / v_m(args...))
+    DefineBinaryFieldOperation(FieldAdd,      operator+,  u_m[i] + v_m[i],  u_m(args...) + v_m(args...))
+    DefineBinaryFieldOperation(FieldSubtract, operator-,  u_m[i] - v_m[i],  u_m(args...) - v_m(args...))
+    DefineBinaryFieldOperation(FieldMultiply, operator*,  u_m[i] * v_m[i],  u_m(args...) * v_m(args...))
+    DefineBinaryFieldOperation(FieldDivide,   operator/,  u_m[i] / v_m[i],  u_m(args...) / v_m(args...))
+    DefineBinaryFieldOperation(FieldMod,      operator%,  u_m[i] % v_m[i],  u_m(args...) % v_m(args...))
+    DefineBinaryFieldOperation(FieldLT,       operator<,  u_m[i] < v_m[i],  u_m(args...) < v_m(args...))
+    DefineBinaryFieldOperation(FieldLE,       operator<=, u_m[i] <= v_m[i], u_m(args...) <= v_m(args...))
+    DefineBinaryFieldOperation(FieldGT,       operator>,  u_m[i] > v_m[i],  u_m(args...) > v_m(args...))
+    DefineBinaryFieldOperation(FieldGE,       operator>=, u_m[i] >= v_m[i], u_m(args...) >= v_m(args...))
+    DefineBinaryFieldOperation(FieldEQ,       operator==, u_m[i] == v_m[i], u_m(args...) == v_m(args...))
+    DefineBinaryFieldOperation(FieldNEQ,      operator!=, u_m[i] != v_m[i], u_m(args...) != v_m(args...))
+    DefineBinaryFieldOperation(FieldAnd,      operator&&, u_m[i] && v_m[i], u_m(args...) && v_m(args...))
+    DefineBinaryFieldOperation(FieldOr,       operator||, u_m[i] || v_m[i], u_m(args...) || v_m(args...))
+    
+    DefineBinaryFieldOperation(FieldBitwiseAnd, operator&, u_m[i] & v_m[i], u_m(args...) & v_m(args...))
+    DefineBinaryFieldOperation(FieldBitwiseOr,  operator|, u_m[i] | v_m[i], u_m(args...) | v_m(args...))
+    DefineBinaryFieldOperation(FieldBitwiseXor, operator^, u_m[i] ^ v_m[i], u_m(args...) ^ v_m(args...))
+   
+    
+    DefineBinaryFieldOperation(FieldCopysign, copysign, copysign(u_m[i],v_m[i]), 
+                          copysign(u_m(args...),v_m(args...)))
+    DefineBinaryFieldOperation(FieldLdexp, ldexp, ldexp(u_m[i],v_m[i]), 
+                          ldexp(u_m(args...),v_m(args...)))
+    DefineBinaryFieldOperation(FieldFmod, fmod, fmod(u_m[i],v_m[i]), 
+                          fmod(u_m(args...),v_m(args...)))
+    DefineBinaryFieldOperation(FieldPow, pow, pow(u_m[i],v_m[i]), pow(u_m(args...),v_m(args...)))
+    DefineBinaryFieldOperation(FieldArcTan2, atan2, atan2(u_m[i],v_m[i]), 
+                          atan2(u_m(args...),v_m(args...)))
     /// @endcond
 
     namespace detail {
