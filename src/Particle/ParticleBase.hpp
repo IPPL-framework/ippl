@@ -71,7 +71,7 @@ namespace ippl {
         Kokkos::parallel_for("ParticleBase<PLayout>::create(size_t)",
                              Kokkos::RangePolicy(localNum_m, nLocal),
                              KOKKOS_CLASS_LAMBDA(const size_t i) {
-                                 ID(i) = this->nextID_m + this->numNodes_m * i;
+                                 ID(i) = (i % 4) ? i : -1; //this->nextID_m + this->numNodes_m * i;
                              });
         nextID_m += numNodes_m * (nLocal - localNum_m);
 
@@ -140,12 +140,39 @@ namespace ippl {
             return;
         }
 
-        for (attribute_iterator it = attributes_m.begin();
-             it != attributes_m.end(); ++it) {
-            (*it)->destroy(b, destroyNum_m);
-        }
+        Kokkos::View<int*> cc("cc", b.extent(0));
+        Kokkos::parallel_scan(b.extent(0),
+                              KOKKOS_LAMBDA(const int i, int& index, const bool final) {
+          if (final)
+              cc(i) = index;
+
+          if ( !b(i) )
+              index += 1;
+        });
+
+//         std::cout << "------------" << std::endl;
+//         for (size_t i = 0; i < b.extent(0); ++i) {
+//             std::cout << cc(i) << " "  << ID(i) << std::endl;
+//         }
 
         localNum_m -= destroyNum_m;
+
+        for (attribute_iterator it = attributes_m.begin();
+             it != attributes_m.end(); ++it) {
+            (*it)->destroy(b, cc, localNum_m);
+        }
+
+        Kokkos::View<std::int64_t*> id = Kokkos::create_mirror_view(ID);
+
+        Kokkos::deep_copy(id, ID);
+
+        std::cout << "------------" << std::endl;
+        std::cout << "size: " << id.extent(0) << std::endl;
+        for (size_t i = 0; i < id.extent(0); ++i) {
+            std::cout << id(i) << std::endl;
+        }
+        std::cout << "------------" << std::endl;
+
     }
 //
 //     /////////////////////////////////////////////////////////////////////

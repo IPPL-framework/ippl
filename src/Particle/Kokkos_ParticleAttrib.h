@@ -102,7 +102,7 @@ namespace ippl {
 
         virtual void create(size_t) = 0;
 
-        virtual void destroy(bitset_type, size_t) = 0;
+        virtual void destroy(bitset_type, Kokkos::View<int*>, size_t) = 0;
 
         virtual ~ParticleAttribBase() = default;
 
@@ -126,7 +126,7 @@ namespace ippl {
         // New items are appended to the end of the array.
         virtual void create(size_t);
 
-        virtual void destroy(bitset_type, size_t);
+        virtual void destroy(bitset_type, Kokkos::View<int*> cc, size_t);
 
 //         using view_type::operator();
 

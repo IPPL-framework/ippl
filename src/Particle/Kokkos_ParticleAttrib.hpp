@@ -81,16 +81,18 @@ namespace ippl {
 
 
     template<typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::destroy(bitset_type b, size_t n) {
-        view_type bb("", n);
+    void ParticleAttrib<T, Properties...>::destroy(bitset_type b,
+                                                   Kokkos::View<int*> cc, size_t n) {
+        Kokkos::View<T*> dd("dd", n);
         Kokkos::parallel_for("",
                              size(),
                              KOKKOS_CLASS_LAMBDA(const size_t i) {
-                                 if ( b(i) == true )
-                                    bb(i) = this->operator()(i);
+                                 if ( b(i) == false ) {
+                                    dd(cc(i)) = this->operator()(i);
+                                 }
                              });
         this->resize(n);
-        this->assign_data(bb.data());
+        this->assign_data(dd.data());
     }
 }
 
