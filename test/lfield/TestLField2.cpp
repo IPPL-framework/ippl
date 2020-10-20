@@ -2,6 +2,10 @@
 
 #include <iostream>
 
+#include <typeinfo>
+
+#include <boost/core/demangle.hpp>
+
 int main(int argc, char *argv[]) {
     Ippl ippl(argc,argv);
 
@@ -29,6 +33,11 @@ int main(int argc, char *argv[]) {
     lfield_s = dot(lfield, lfield);
 
     lfield_s.write();
+
+    const char* name = typeid(dot(lfield, lfield)).name();
+
+    std::cout << name << std::endl;
+    std::cout << boost::core::demangle(name) << std::endl;
 
     return 0;
 }

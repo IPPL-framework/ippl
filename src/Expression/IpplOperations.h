@@ -211,10 +211,10 @@ namespace ippl {
             meta_dot(const E1& u, const E2& v) : u_m(u), v_m(v) { }
 
             /*
-            * Vector::dot
-            */
+             * Vector::dot
+             */
             KOKKOS_INLINE_FUNCTION
-            typename E1::value_t operator()() const {
+            auto apply() const {
                 typename E1::value_t res = 0.0;
                 for (size_t i = 0; i < E1::dim; ++i) {
                     res += u_m[i] * v_m[i];
@@ -223,12 +223,12 @@ namespace ippl {
             }
 
             /*
-            * This is required for LField::dot
-            */
+             * This is required for LField::dot
+             */
             template<typename ...Args>
             KOKKOS_INLINE_FUNCTION
             auto operator()(Args... args) const {
-                return dot(u_m(args...), v_m(args...));
+                return dot(u_m(args...), v_m(args...)).apply();
             }
 
         private:
@@ -239,10 +239,10 @@ namespace ippl {
 
     template<typename E1, size_t N1, typename E2, size_t N2>
     KOKKOS_INLINE_FUNCTION
-    typename E1::value_t dot(const Expression<E1, N1>& u,
-                             const Expression<E2, N2>& v) {
+    detail::meta_dot<E1, E2> dot(const Expression<E1, N1>& u,
+                                 const Expression<E2, N2>& v) {
         return detail::meta_dot<E1, E2>(*static_cast<const E1*>(&u),
-                                        *static_cast<const E2*>(&v))();
+                                        *static_cast<const E2*>(&v));
     }
 
     namespace detail {
