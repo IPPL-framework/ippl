@@ -15,20 +15,20 @@
 
 namespace ippl {
 
-    template<class PLayout>
-    ParticleBase<PLayout>::ParticleBase()
+    template<class PLayout, class... Properties>
+    ParticleBase<PLayout, Properties...>::ParticleBase()
     : ParticleBase(nullptr)
     { }
 
-    template<class PLayout>
-    ParticleBase<PLayout>::ParticleBase(std::shared_ptr<PLayout>& layout)
+    template<class PLayout, class... Properties>
+    ParticleBase<PLayout, Properties...>::ParticleBase(std::shared_ptr<PLayout>& layout)
     : ParticleBase()
     {
         initialize(layout);
     }
 
-    template<class PLayout>
-    ParticleBase<PLayout>::ParticleBase(std::shared_ptr<PLayout>&& layout)
+    template<class PLayout, class... Properties>
+    ParticleBase<PLayout, Properties...>::ParticleBase(std::shared_ptr<PLayout>&& layout)
     : layout_m(std::move(layout))
     , localNum_m(0)
     , destroyNum_m(0)
@@ -41,14 +41,14 @@ namespace ippl {
     }
 
 
-    template<class PLayout>
-    void ParticleBase<PLayout>::addAttribute(ParticleAttribBase& pa)
+    template<class PLayout, class... Properties>
+    void ParticleBase<PLayout, Properties...>::addAttribute(ParticleAttribBase<Properties...>& pa)
     {
         attributes_m.push_back(&pa);
     }
 
-    template<class PLayout>
-    void ParticleBase<PLayout>::initialize(std::shared_ptr<PLayout>& layout)
+    template<class PLayout, class... Properties>
+    void ParticleBase<PLayout, Properties...>::initialize(std::shared_ptr<PLayout>& layout)
     {
         PAssert(layout != nullptr);
 
@@ -57,8 +57,8 @@ namespace ippl {
     }
 
 
-    template<class PLayout>
-    void ParticleBase<PLayout>::create(size_t nLocal)
+    template<class PLayout, class... Properties>
+    void ParticleBase<PLayout, Properties...>::create(size_t nLocal)
     {
         PAssert(layout_m != nullptr);
 
@@ -68,7 +68,7 @@ namespace ippl {
         }
 
         // set the unique ID value for these new particles
-        Kokkos::parallel_for("ParticleBase<PLayout>::create(size_t)",
+        Kokkos::parallel_for("ParticleBase<PLayout, Properties...>::create(size_t)",
                              Kokkos::RangePolicy(localNum_m, nLocal),
                              KOKKOS_CLASS_LAMBDA(const std::int64_t i) {
                                  ID(i) = (i % 4) ? i : -1; //this->nextID_m + this->numNodes_m * i;
@@ -79,8 +79,8 @@ namespace ippl {
         localNum_m += nLocal;
     }
 
-    template<class PLayout>
-    void ParticleBase<PLayout>::createWithID(index_type id)
+    template<class PLayout, class... Properties>
+    void ParticleBase<PLayout, Properties...>::createWithID(index_type id)
     {
         PAssert(layout_m != nullptr);
 
@@ -95,8 +95,8 @@ namespace ippl {
         numNodes_m = Ippl::Comm->getNodes();
     }
 
-    template<class PLayout>
-    void ParticleBase<PLayout>::globalCreate(size_t nTotal)
+    template<class PLayout, class... Properties>
+    void ParticleBase<PLayout, Properties...>::globalCreate(size_t nTotal)
     {
         PAssert(layout_m != nullptr);
 
@@ -113,68 +113,62 @@ namespace ippl {
     }
 
 
-    template<class PLayout>
-    typename ParticleBase<PLayout>::bitset_type
-    ParticleBase<PLayout>::findInvalidParticles()
-    {
-        bitset_type invalidParticles("", localNum_m);
-        Kokkos::parallel_reduce("ParticleBase<PLayout>::findInvalidParticles()",
-                             localNum_m, KOKKOS_CLASS_LAMBDA(const size_t i,
-                                                             size_t& nInvalid) {
-                                 nInvalid += size_t(ID(i) < 0);
-                                 invalidParticles(i) = (ID(i) < 0);
-                             }, destroyNum_m);
+    template<class PLayout, class... Properties>
+    void ParticleBase<PLayout, Properties...>::destroy() {
+
+        /* count the number of particles with ID == -1 and fill
+         * a boolean view
+         */
+        Kokkos::View<bool*> invalidIndex("", localNum_m);
+        Kokkos::parallel_reduce("Reduce in ParticleBase::destroy()",
+                                localNum_m,
+                                KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                    size_t& nInvalid)
+                                {
+                                    nInvalid += size_t(ID(i) < 0);
+                                    invalidIndex(i) = (ID(i) < 0);
+                                }, destroyNum_m);
 
         PAssert(destroyNum_m <= localNum_m);
-        return invalidParticles;
-    }
-
-
-    template<class PLayout>
-    void ParticleBase<PLayout>::destroy() {
-
-        // set destroyNum_m
-	Kokkos::View<int*> cc("cc", localNum_m);
-
-	bitset_type invalidParticles("", localNum_m);
-	Kokkos::parallel_reduce("ParticleBase<PLayout>::findInvalidParticles()",
-				localNum_m, KOKKOS_CLASS_LAMBDA(const size_t i,
-								size_t& nInvalid) {
-				    nInvalid += size_t(ID(i) < 0);
-				    invalidParticles(i) = (ID(i) < 0);
-				}, destroyNum_m);
-
-	PAssert(destroyNum_m <= localNum_m);
 
         if (destroyNum_m == 0) {
             return;
         }
 
-	Kokkos::parallel_scan("scan", localNum_m,
-			      KOKKOS_LAMBDA(const int i, int& blub, const bool final) {
-				  if (final)
-				      cc(i) = blub;
-				  if ( !invalidParticles(i) )
-				      blub += 1;
-			      });
+        /* Compute the prefix sum and store the new
+         * particle indices in newIndex.
+         */
+        Kokkos::View<int*> newIndex("newIndex", localNum_m);
+        Kokkos::parallel_scan("Scan in ParticleBase::destroy()",
+                              localNum_m,
+                              KOKKOS_LAMBDA(const int i, int& idx, const bool final)
+                              {
+                                  if (final) {
+                                      newIndex(i) = idx;
+                                  }
 
+                                  if (!invalidIndex(i)) {
+                                      idx += 1;
+                                  }
+                              });
 
         localNum_m -= destroyNum_m;
 
+        // delete the invalide attribut indices
         for (attribute_iterator it = attributes_m.begin();
-             it != attributes_m.end(); ++it) {
-            (*it)->destroy(invalidParticles, cc, localNum_m);
+             it != attributes_m.end(); ++it)
+        {
+            (*it)->destroy(invalidIndex, newIndex, localNum_m);
         }
-
-	ID.print();
     }
+
 //
 //     /////////////////////////////////////////////////////////////////////
 //     // delete M particles, starting with the Ith particle.  If the last argument
 //     // is true, the destroy will be done immediately, otherwise the request
 //     // will be cached.
-//     template<class PLayout>
-//     void ParticleBase<PLayout>::destroy(size_t M, size_t I, bool doNow) {
+//     template<class PLayout, class... Properties>
+//     void ParticleBase<PLayout, Properties...>::destroy(size_t M, size_t I, bool doNow) {
 //
 //     // make sure we've been initialized
 //     PAssert(Layout != 0);
@@ -202,8 +196,8 @@ namespace ippl {
 //     }
 //
 //
-    template<class PLayout>
-    void ParticleBase<PLayout>::update()
+    template<class PLayout, class... Properties>
+    void ParticleBase<PLayout, Properties...>::update()
     {
         PAssert(layout_m != nullptr);
         layout_m->update(*this);

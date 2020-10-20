@@ -95,14 +95,15 @@
 
 namespace ippl {
 
+    template<class... Properties>
     class ParticleAttribBase {
 
     public:
-        typedef Kokkos::View<bool*> bitset_type;
+        typedef typename detail::ViewType<bool, 1, Properties...>::view_type boolean_view_type;
 
         virtual void create(size_t) = 0;
 
-        virtual void destroy(bitset_type, Kokkos::View<int*>, size_t) = 0;
+        virtual void destroy(boolean_view_type, Kokkos::View<int*>, size_t) = 0;
 
         virtual ~ParticleAttribBase() = default;
 
@@ -110,7 +111,7 @@ namespace ippl {
 
     // ParticleAttrib class definition
     template <typename T, class... Properties>
-    class ParticleAttrib : public ParticleAttribBase
+    class ParticleAttrib : public ParticleAttribBase<Properties...>
                          , public detail::ViewType<T, 1, Properties...>::view_type
                         //  public PETE_Expr< ParticleAttrib<T> >
     {
@@ -119,14 +120,14 @@ namespace ippl {
 //     friend class ParticleAttribConstIterator<T>;
 
     public:
-        using bitset_type = typename ParticleAttribBase::bitset_type;
+        using boolean_view_type = typename ParticleAttribBase<Properties...>::boolean_view_type;
         using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
 
         // Create storage for M particle attributes.  The storage is uninitialized.
         // New items are appended to the end of the array.
         virtual void create(size_t);
 
-        virtual void destroy(bitset_type, Kokkos::View<int*> cc, size_t);
+        virtual void destroy(boolean_view_type, Kokkos::View<int*> cc, size_t);
 
 //         using view_type::operator();
 

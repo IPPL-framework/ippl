@@ -81,19 +81,19 @@ namespace ippl {
 
 
     template<typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::destroy(bitset_type b,
-                                                   Kokkos::View<int*> cc, size_t n) {
-        Kokkos::View<T*> dd("dd", n);
-        Kokkos::parallel_for("",
+    void ParticleAttrib<T, Properties...>::destroy(boolean_view_type invalidIndex,
+                                                   Kokkos::View<int*> newIndex, size_t n) {
+        Kokkos::View<T*> temp("temp", n);
+        Kokkos::parallel_for("ParticleAttrib::destroy()",
                              size(),
-                             KOKKOS_CLASS_LAMBDA(const size_t i) {
-                                 if ( b(i) == false ) {
-                                    dd(cc(i)) = this->operator()(i);
+                             KOKKOS_CLASS_LAMBDA(const size_t i)
+                             {
+                                 if ( !invalidIndex(i) ) {
+                                    temp(newIndex(i)) = this->operator()(i);
                                  }
                              });
         this->resize(n);
-	Kokkos::deep_copy(*this, dd);
-	//	this->assign_data(dd.data());
+        Kokkos::deep_copy(*this, temp);
     }
 }
 

@@ -105,7 +105,7 @@ namespace ippl {
      * @tparam PLayout the particle layout implementing an algorithm to
      * distribute the particles among MPI ranks
      */
-    template<class PLayout>
+    template<class PLayout, class... Properties>
     class ParticleBase {
 
     public:
@@ -113,11 +113,11 @@ namespace ippl {
         typedef typename PLayout::index_type  index_type;
         typedef ParticleAttrib<vector_type>   particle_position_type;
         typedef ParticleAttrib<index_type>    particle_index_type;
-        typedef typename ParticleAttribBase::bitset_type bitset_type;
+        typedef typename ParticleAttribBase<Properties...>::boolean_view_type boolean_view_type;
 
         typedef PLayout                           Layout_t;
-        typedef std::vector<ParticleAttribBase*> attribute_container_t;
-        typedef attribute_container_t::iterator  attribute_iterator;
+        typedef std::vector<ParticleAttribBase<Properties...>*> attribute_container_t;
+        typedef typename attribute_container_t::iterator  attribute_iterator;
 
     public:
         //! view of particle positions
@@ -190,7 +190,7 @@ namespace ippl {
          * Add particle attribute
          * @param pa attribute to be added to ParticleBase
          */
-        void addAttribute(ParticleAttribBase& pa);
+        void addAttribute(ParticleAttribBase<Properties...>& pa);
 
         /*!
          * Redistribute particles among MPI ranks.
@@ -217,12 +217,6 @@ namespace ippl {
          * @param nTotal number of total particles to be created
          */
         void globalCreate(size_t nTotal);
-
-        /*!
-         * Count number of particles with ID == -1 and update
-         * member variable destroyNum_m.
-         */
-        bitset_type findInvalidParticles();
 
         /*!
          * Delete particles.
