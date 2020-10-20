@@ -228,7 +228,7 @@ namespace ippl {
             template<typename ...Args>
             KOKKOS_INLINE_FUNCTION
             auto operator()(Args... args) const {
-                return dot(u_m(args...) * v_m(args...));
+                return dot(u_m(args...), v_m(args...));
             }
 
         private:
@@ -343,7 +343,7 @@ namespace ippl {
     }
 
     /*!
-     * User interface of gradient in two dimensions.
+     * User interface of gradient in three dimensions.
      * @tparam E expression type of left-hand side
      * @tparam N size of expression
      * @tparam T type of vector
@@ -356,6 +356,122 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION
     detail::meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector, const T& yvector, const T& zvector) {
         return detail::meta_grad<E, T>(*static_cast<const E*>(&u), xvector, yvector, zvector);
+    }
+    
+    namespace detail {
+
+        /*!
+         * Meta function of divergence
+         */
+        template<typename E, typename T>
+        struct meta_div : public Expression<meta_div<E, T>, sizeof(E)> {
+            KOKKOS_FUNCTION
+            meta_div(const E& u,
+                    const T& xvector)
+            : u_m(u)
+            , xvector_m(xvector)
+            { }
+
+            KOKKOS_FUNCTION
+            meta_div(const E& u,
+                    const T& xvector,
+                    const T& yvector)
+            : u_m(u)
+            , xvector_m(xvector)
+            , yvector_m(yvector)
+            { }
+
+            KOKKOS_FUNCTION
+            meta_div(const E& u,
+                    const T& xvector,
+                    const T& yvector,
+                    const T& zvector)
+            : u_m(u)
+            , xvector_m(xvector)
+            , yvector_m(yvector)
+            , zvector_m(zvector)
+            { }
+
+            /*
+             * 1-dimensional div
+             */
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(size_t i) const {
+                return dot(xvector_m, (u_m(i+1) - u_m(i-1)));
+            }
+
+            /*
+             * 2-dimensional div
+             */
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(size_t i, size_t j) const {
+                return dot(xvector_m, (u_m(i+1, j)   - u_m(i-1, j  ))) +
+                       dot(yvector_m, (u_m(i  , j+1) - u_m(i  , j-1)));
+
+            }
+
+            /*
+             * 3-dimensional div
+             */
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(size_t i, size_t j, size_t k) const {
+                return dot(xvector_m, (u_m(i+1, j,   k)   - u_m(i-1, j,   k  ))) +
+                       dot(yvector_m, (u_m(i  , j+1, k)   - u_m(i  , j-1, k  ))) +
+                       dot(zvector_m, (u_m(i  , j  , k+1) - u_m(i  , j  , k-1)));
+            }
+
+        private:
+            const E u_m;
+            const T xvector_m;
+            const T yvector_m;
+            const T zvector_m;
+        };
+    }
+    
+    
+    /*!
+     * User interface of divergence in one dimension.
+     * @tparam E expression type of left-hand side
+     * @tparam N size of expression
+     * @tparam T type of vector
+     * @param u expression
+     * @param xvector
+     */
+    template<typename E, size_t N, typename T>
+    KOKKOS_INLINE_FUNCTION
+    typename E::value_t div(const Expression<E, N>& u, const T& xvector) {
+        return detail::meta_div<E, T>(*static_cast<const E*>(&u), xvector);
+    }
+
+    /*!
+     * User interface of divergence in two dimensions.
+     * @tparam E expression type of left-hand side
+     * @tparam N size of expression
+     * @tparam T type of vector
+     * @param u expression
+     * @param xvector
+     * @param yvector
+     */
+    template<typename E, size_t N, typename T>
+    KOKKOS_INLINE_FUNCTION
+    typename E::value_t div(const Expression<E, N>& u, const T& xvector, const T& yvector) {
+        return detail::meta_div<E, T>(*static_cast<const E*>(&u), xvector, yvector);
+    }
+
+    /*!
+     * User interface of divergence in three dimensions.
+     * @tparam E expression type of left-hand side
+     * @tparam N size of expression
+     * @tparam T type of vector
+     * @param u expression
+     * @param xvector
+     * @param yvector
+     * @param zvector
+     */
+    template<typename E, size_t N, typename T>
+    KOKKOS_INLINE_FUNCTION
+    typename E::value_t div(const Expression<E, N>& u, const T& xvector, const T& yvector, const T& zvector) {
+        return detail::meta_div<E, T>(*static_cast<const E*>(&u), xvector, yvector, zvector);
     }
 }
 

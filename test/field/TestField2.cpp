@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     field = fabs(7.0 * (sin(field) * cos(field))/(tan(field) * acos(field)) 
                 - exp(field) + erf(field) + (asin(field) * cosh(field)) / (atan(field) 
                 * sinh(field)) + tanh(field) * log(field)
-               - log10(field) * sqrt(field) + floor(field) * ceil(field));
+               - log10(field) * sqrt(field) + floor(field) * ceil(field) + exp(2));
 
     field.write();
 
