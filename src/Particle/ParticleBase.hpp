@@ -71,7 +71,7 @@ namespace ippl {
         Kokkos::parallel_for("ParticleBase<PLayout, Properties...>::create(size_t)",
                              Kokkos::RangePolicy(localNum_m, nLocal),
                              KOKKOS_CLASS_LAMBDA(const std::int64_t i) {
-                                 ID(i) = (i % 4) ? i : -1; //this->nextID_m + this->numNodes_m * i;
+                                 ID(i) = this->nextID_m + this->numNodes_m * i;
                              });
         nextID_m += numNodes_m * (nLocal - localNum_m);
 
