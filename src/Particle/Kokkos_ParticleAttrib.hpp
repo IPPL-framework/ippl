@@ -92,7 +92,8 @@ namespace ippl {
                                  }
                              });
         this->resize(n);
-        this->assign_data(dd.data());
+	Kokkos::deep_copy(*this, dd);
+	//	this->assign_data(dd.data());
     }
 }
 

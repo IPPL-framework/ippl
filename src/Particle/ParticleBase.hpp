@@ -70,7 +70,7 @@ namespace ippl {
         // set the unique ID value for these new particles
         Kokkos::parallel_for("ParticleBase<PLayout>::create(size_t)",
                              Kokkos::RangePolicy(localNum_m, nLocal),
-                             KOKKOS_CLASS_LAMBDA(const size_t i) {
+                             KOKKOS_CLASS_LAMBDA(const std::int64_t i) {
                                  ID(i) = (i % 4) ? i : -1; //this->nextID_m + this->numNodes_m * i;
                              });
         nextID_m += numNodes_m * (nLocal - localNum_m);
@@ -134,45 +134,39 @@ namespace ippl {
     void ParticleBase<PLayout>::destroy() {
 
         // set destroyNum_m
-        bitset_type b = findInvalidParticles();
+	Kokkos::View<int*> cc("cc", localNum_m);
+
+	bitset_type invalidParticles("", localNum_m);
+	Kokkos::parallel_reduce("ParticleBase<PLayout>::findInvalidParticles()",
+				localNum_m, KOKKOS_CLASS_LAMBDA(const size_t i,
+								size_t& nInvalid) {
+				    nInvalid += size_t(ID(i) < 0);
+				    invalidParticles(i) = (ID(i) < 0);
+				}, destroyNum_m);
+
+	PAssert(destroyNum_m <= localNum_m);
 
         if (destroyNum_m == 0) {
             return;
         }
 
-        Kokkos::View<int*> cc("cc", b.extent(0));
-        Kokkos::parallel_scan(b.extent(0),
-                              KOKKOS_LAMBDA(const int i, int& index, const bool final) {
-          if (final)
-              cc(i) = index;
+	Kokkos::parallel_scan("scan", localNum_m,
+			      KOKKOS_LAMBDA(const int i, int& blub, const bool final) {
+				  if (final)
+				      cc(i) = blub;
+				  if ( !invalidParticles(i) )
+				      blub += 1;
+			      });
 
-          if ( !b(i) )
-              index += 1;
-        });
-
-//         std::cout << "------------" << std::endl;
-//         for (size_t i = 0; i < b.extent(0); ++i) {
-//             std::cout << cc(i) << " "  << ID(i) << std::endl;
-//         }
 
         localNum_m -= destroyNum_m;
 
         for (attribute_iterator it = attributes_m.begin();
              it != attributes_m.end(); ++it) {
-            (*it)->destroy(b, cc, localNum_m);
+            (*it)->destroy(invalidParticles, cc, localNum_m);
         }
 
-        Kokkos::View<std::int64_t*> id = Kokkos::create_mirror_view(ID);
-
-        Kokkos::deep_copy(id, ID);
-
-        std::cout << "------------" << std::endl;
-        std::cout << "size: " << id.extent(0) << std::endl;
-        for (size_t i = 0; i < id.extent(0); ++i) {
-            std::cout << id(i) << std::endl;
-        }
-        std::cout << "------------" << std::endl;
-
+	ID.print();
     }
 //
 //     /////////////////////////////////////////////////////////////////////
