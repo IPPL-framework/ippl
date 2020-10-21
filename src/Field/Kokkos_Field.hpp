@@ -84,7 +84,7 @@ namespace ippl {
     //////////////////////////////////////////////////////////////////////////
     // Initialize the Field, also specifying a mesh
     template<class T, unsigned Dim, class M, class C>
-    void Field<T,Dim,M,C>::initialize(Mesh_t& m, Layout_t & l) {
+    void Field<T,Dim,M,C>::initialize(Mesh_t& m, Layout_t& l) {
         BareField<T,Dim>::initialize(l);
         storeMesh_m(std::make_shared<Mesh_t>(m), false);
     }
