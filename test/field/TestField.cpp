@@ -18,7 +18,13 @@ int main(int argc, char *argv[]) {
         allParallel[d] = SERIAL;
 
     // all parallel layout, standard domain, normal axis order
-    FieldLayout<dim> layout(owned,allParallel, 1);
+    
+    typedef FieldLayout<dim> FieldLayout_t;
+
+    FieldLayout_t layout(owned,allParallel, 1);
+
+    //layout = std::unique_ptr<FieldLayout_t>(new 
+    //        FieldLayout_t(owned, allParallel, 1));
 
 
     typedef ippl::Field<double, dim> field_type;
@@ -27,6 +33,9 @@ int main(int argc, char *argv[]) {
     field_type field(layout);
     vector_field_type vfield(layout);
 
+    //field.initialize(*layout);
+    //vfield.initialize(*layout);
+
     field = 1.0;
 
 //     field.write();
@@ -34,7 +43,7 @@ int main(int argc, char *argv[]) {
 
     vfield.write();
 
-    ippl::UniformCartesian<double, 2> unif(I, I);
+    //ippl::UniformCartesian<double, 2> unif(I, I);
 
 
     return 0;
