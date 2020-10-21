@@ -199,6 +199,14 @@ namespace ippl {
 
 
     template<typename T, unsigned Dim>
+    const typename UniformCartesian<T, Dim>::vector_type&
+    UniformCartesian<T, Dim>::getMeshSpacing() const
+    {
+        return meshSpacing_m;
+    }
+
+
+    template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::setMeshSpacing(const vector_type& meshSpacing) {
         meshSpacing_m = meshSpacing;
         this->updateCellVolume_m();
@@ -492,15 +500,15 @@ namespace ippl {
 
         if (!hasSpacingFields_m) {
             // allocate layout and spacing field
-            FlCell = std::make_unique(new FieldLayout<Dim>(cells, et, vnodes));
+            FlCell = std::make_shared<FieldLayout<Dim>>(cells, et, vnodes);
             // Note: enough guard cells only for existing Div(), etc. implementations:
             // (not really used by Div() etc for UniformCartesian); someday should make
             // this user-settable.
-            VertSpacings = std::make_unique(new BareField_t(*FlCell));
+            VertSpacings = std::make_shared<BareField_t>(FlCell);
 
-            FlVert = std::make_unique(new FieldLayout<Dim>(verts, et, vnodes));
+            FlVert = std::make_shared<FieldLayout<Dim>>(verts, et, vnodes);
 
-            CellSpacings = std::make_unique(new BareField_t(*FlVert));
+            CellSpacings = std::make_shared<BareField_t>(FlVert);
         }
 
         BareField_t& vertSpacings = *VertSpacings;
@@ -510,13 +518,13 @@ namespace ippl {
         vertSpacings = vertexSpacing;
 
         // +++++++++++++++vertSpacings++++++++++++++
-        typename BareField_t::iterator lfield;
+        typename BareField_t::iterator_t lfield;
         for (lfield = vertSpacings.begin();
              lfield != vertSpacings.end(); ++lfield)
         {
-            LField_t& lfield_r = *(*lfield).second;
+//             LField_t& lfield_r = *(*lfield);
 
-            const NDIndex<Dim> &owned = lfield_r.getOwned();
+//             const NDIndex<Dim> &owned = lfield_r.getOwned();
             std::cout << "HI" << std::endl;
 
         }
