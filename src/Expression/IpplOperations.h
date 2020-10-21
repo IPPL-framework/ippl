@@ -123,9 +123,9 @@ namespace ippl {
     template<typename E, size_t N, typename T,                              \
              typename = std::enable_if_t<std::is_scalar<T>::value>>         \
     KOKKOS_INLINE_FUNCTION                                                  \
-    fun<E, detail::Scalar<T>> name(const T& u,                              \
+    fun<detail::Scalar<T>, E> name(const T& u,                              \
                                    const Expression<E, N>& v) {             \
-        return fun<E, detail::Scalar<T>>(*static_cast<const E*>(&v), u);    \
+        return fun<detail::Scalar<T>, E>(u, *static_cast<const E*>(&v));    \
     }
 
     /// @cond
