@@ -129,14 +129,11 @@ public:
     // Get the spacings of mesh vertex positions along specified direction
     T getMeshSpacing(unsigned dim) const;
 
-    const vector_type& getMeshSpacing() const;
-
     // Set the spacings of mesh vertex positions (recompute Dvc, cell volume):
     void setMeshSpacing(const vector_type& meshSpacing);
 
 
     T getCellVolume() const;
-
 
 private:
     vector_type meshSpacing_m;     // delta-x, delta-y (>1D), delta-z (>2D)
@@ -145,8 +142,8 @@ private:
 
 
 
-  std::shared_ptr<FieldLayout<Dim>> FlCell;  // Layouts for BareField* CellSpacings
-  std::shared_ptr<FieldLayout<Dim>> FlVert;  // Layouts for BareField* VertSpacings
+  std::unique_ptr<FieldLayout<Dim>> FlCell;  // Layouts for BareField* CellSpacings
+  std::unique_ptr<FieldLayout<Dim>> FlVert;  // Layouts for BareField* VertSpacings
 
 
 
@@ -162,8 +159,8 @@ public:
   // Public member data:
   vector_type Dvc[1<<Dim]; // Constants for derivatives.
   bool hasSpacingFields_m;              // Flags allocation of the following:
-  std::shared_ptr<BareField_t> VertSpacings;
-  std::shared_ptr<BareField_t> CellSpacings;
+  std::unique_ptr<BareField_t> VertSpacings;
+  std::unique_ptr<BareField_t> CellSpacings;
 
   // Public member functions:
 

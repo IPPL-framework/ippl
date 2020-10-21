@@ -127,11 +127,6 @@ namespace ippl {
             return dview_m(args...);
         }
 
-
-        view_type getView() {
-            return dview_m;
-        }
-
         /*!
          * Assign an arbitrary LField expression
          * @tparam E expression type

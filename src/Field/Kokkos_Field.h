@@ -17,8 +17,6 @@ namespace ippl {
         typedef C Centering_t;
         typedef FieldLayout<Dim> Layout_t;
 
-        typedef typename BareField<T, Dim>::LField_t LField_t;
-
         // A default constructor, which should be used only if the user calls the
         // 'initialize' function before doing anything else.  There are no special
         // checks in the rest of the Field methods to check that the Field has

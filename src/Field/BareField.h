@@ -62,8 +62,6 @@ namespace ippl {
         // Create a new BareField with a given layout and optional guard cells.
         BareField(Layout_t &);
 
-        BareField(std::shared_ptr<Layout_t>);
-
 
         BareField(const BareField&) = default;
 
@@ -102,8 +100,8 @@ namespace ippl {
         // Access to the layout.
         Layout_t &getLayout() const
         {
-            PAssert(layout_m != 0);
-            return *layout_m;
+            PAssert(Layout != 0);
+            return *Layout;
         }
 
 
@@ -130,7 +128,7 @@ namespace ippl {
         void setup();
 
         //! How the local arrays are laid out.
-        std::shared_ptr<Layout_t> layout_m;
+        Layout_t *Layout;
     };
 }
 
