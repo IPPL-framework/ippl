@@ -148,6 +148,15 @@ namespace ippl {
                 std::cout << hview(i) << std::endl;
             }
         }
+
+
+
+        //     // scatter the data from this attribute onto the given Field, using
+//     // the given Position attribute
+        template <unsigned Dim, class M, class C, class PT>
+        void
+        scatter(Field<T,Dim,M,C>& f,
+                const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp) const;
     };
 }
 
@@ -246,33 +255,6 @@ namespace ippl {
 //     // Particle <-> Field interaction methods
 //     //
 //
-//     // scatter the data from this attribute onto the given Field, using
-//     // the given Position attribute
-//     template <unsigned Dim, class M, class C, class PT, class IntOp>
-//     void
-//     scatter(Field<T,Dim,M,C>& f,
-//             const ParticleAttrib< Vektor<PT,Dim> >& pp,
-//             const IntOp& /*intop*/) const {
-//
-//
-//         // make sure field is uncompressed and guard cells are zeroed
-//         f.Uncompress();
-//         T zero = 0;
-//         f.setGuardCells(zero);
-//
-//         const M& mesh = f.get_mesh();
-//         // iterate through ParticleAttrib data and call scatter operation
-//         typename ParticleList_t::const_iterator curr, last = ParticleList.begin()+LocalSize;
-//         typename ParticleAttrib< Vektor<PT,Dim> >::const_iterator ppiter=pp.cbegin();
-//         for (curr = ParticleList.begin(); curr != last; ++curr, ++ppiter)
-//             IntOp::scatter(*curr,f,*ppiter,mesh);
-//
-//         // accumulate values in guard cells (and compress result)
-//         f.accumGuardCells();
-//
-//         INCIPPLSTAT(incParticleScatters);
-//         return;
-//     }
 //
 //     // scatter the data from this attribute onto the given Field, using
 //     // the given Position attribute, and store the mesh information

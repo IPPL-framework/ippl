@@ -22,6 +22,14 @@ target_link_libraries (
     boost_timer
 )
 
+add_executable (TestScatter TestScatter.cpp)
+target_link_libraries (
+    TestScatter
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    boost_timer
+)
+
 
 
 # vi: set et ts=4 sw=4 sts=4:
