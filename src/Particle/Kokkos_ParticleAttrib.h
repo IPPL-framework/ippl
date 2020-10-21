@@ -120,6 +120,7 @@ namespace ippl {
 //     friend class ParticleAttribConstIterator<T>;
 
     public:
+        typedef T value_type;
         using boolean_view_type = typename ParticleAttribBase<Properties...>::boolean_view_type;
         using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
 
@@ -153,10 +154,16 @@ namespace ippl {
 
         //     // scatter the data from this attribute onto the given Field, using
 //     // the given Position attribute
-        template <unsigned Dim, class M, class C, class PT>
+        template <unsigned Dim, class M, class C, typename P2>
         void
-        scatter(Field<T,Dim,M,C>& f,
-                const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp) const;
+        scatter(Field<T, Dim, M, C>& f,
+                const ParticleAttrib<Vector<P2, Dim>, Properties... >& pp) const;
+
+
+        template <unsigned Dim, class M, class C, typename P2>
+        void
+        gather(const Field<T, Dim, M, C>& f,
+               const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
     };
 }
 
