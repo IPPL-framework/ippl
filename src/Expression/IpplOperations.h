@@ -397,7 +397,7 @@ namespace ippl {
              */
             KOKKOS_INLINE_FUNCTION
             auto operator()(size_t i) const {
-                return dot(xvector_m, (u_m(i+1) - u_m(i-1)));
+                return dot(xvector_m, (u_m(i+1) - u_m(i-1))).apply();
             }
 
             /*
@@ -405,8 +405,8 @@ namespace ippl {
              */
             KOKKOS_INLINE_FUNCTION
             auto operator()(size_t i, size_t j) const {
-                return dot(xvector_m, (u_m(i+1, j)   - u_m(i-1, j  ))) +
-                       dot(yvector_m, (u_m(i  , j+1) - u_m(i  , j-1)));
+                return dot(xvector_m, (u_m(i+1, j)   - u_m(i-1, j  ))).apply() +
+                       dot(yvector_m, (u_m(i  , j+1) - u_m(i  , j-1))).apply();
 
             }
 
@@ -415,9 +415,9 @@ namespace ippl {
              */
             KOKKOS_INLINE_FUNCTION
             auto operator()(size_t i, size_t j, size_t k) const {
-                return dot(xvector_m, (u_m(i+1, j,   k)   - u_m(i-1, j,   k  ))) +
-                       dot(yvector_m, (u_m(i  , j+1, k)   - u_m(i  , j-1, k  ))) +
-                       dot(zvector_m, (u_m(i  , j  , k+1) - u_m(i  , j  , k-1)));
+                return dot(xvector_m, (u_m(i+1, j,   k)   - u_m(i-1, j,   k  ))).apply() +
+                       dot(yvector_m, (u_m(i  , j+1, k)   - u_m(i  , j-1, k  ))).apply() +
+                       dot(zvector_m, (u_m(i  , j  , k+1) - u_m(i  , j  , k-1))).apply();
             }
 
         private:
@@ -439,7 +439,7 @@ namespace ippl {
      */
     template<typename E, size_t N, typename T>
     KOKKOS_INLINE_FUNCTION
-    typename E::value_t div(const Expression<E, N>& u, const T& xvector) {
+    detail::meta_div<E, T> div(const Expression<E, N>& u, const T& xvector) {
         return detail::meta_div<E, T>(*static_cast<const E*>(&u), xvector);
     }
 
@@ -454,7 +454,7 @@ namespace ippl {
      */
     template<typename E, size_t N, typename T>
     KOKKOS_INLINE_FUNCTION
-    typename E::value_t div(const Expression<E, N>& u, const T& xvector, const T& yvector) {
+    detail::meta_div<E, T> div(const Expression<E, N>& u, const T& xvector, const T& yvector) {
         return detail::meta_div<E, T>(*static_cast<const E*>(&u), xvector, yvector);
     }
 
@@ -470,7 +470,7 @@ namespace ippl {
      */
     template<typename E, size_t N, typename T>
     KOKKOS_INLINE_FUNCTION
-    typename E::value_t div(const Expression<E, N>& u, const T& xvector, const T& yvector, const T& zvector) {
+    detail::meta_div<E, T> div(const Expression<E, N>& u, const T& xvector, const T& yvector, const T& zvector) {
         return detail::meta_div<E, T>(*static_cast<const E*>(&u), xvector, yvector, zvector);
     }
 }

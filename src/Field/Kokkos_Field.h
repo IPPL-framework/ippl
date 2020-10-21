@@ -171,7 +171,7 @@ namespace ippl {
     }
 
     template<typename T, unsigned Dim, class M, class C>
-    T div(const Field<T, Dim, M, C>& u) {
+    detail::field_meta_div<T, Dim, M, C> div(const Field<T, Dim, M, C>& u) {
         return detail::field_meta_div<T, Dim, M, C>(u);
     }
 }

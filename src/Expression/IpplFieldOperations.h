@@ -159,6 +159,7 @@ namespace ippl {
             auto operator[](size_t i) const {
                 return  cross(u_m[i], v_m[i]);
             }
+            
 
         private:
             const E1 u_m;
@@ -179,6 +180,33 @@ namespace ippl {
         return detail::field_meta_cross<E1, E2>(*static_cast<const E1*>(&u),
                                                 *static_cast<const E2*>(&v));
     }
+    
+    namespace detail {
+        /*!
+         * Meta function of dot product.
+         */
+        template<typename E1, typename E2>
+        struct field_meta_dot : public FieldExpression<field_meta_dot<E1, E2>> {
+            field_meta_dot(const E1& u, const E2& v) : u_m(u), v_m(v) { }
+
+            auto operator[](size_t i) const {
+                return  dot(u_m[i], v_m[i]);
+            }
+
+        private:
+            const E1 u_m;
+            const E2 v_m;
+        };
+    }
+
+    template<typename E1, typename E2>
+    detail::field_meta_dot<E1, E2> dot(const FieldExpression<E1>& u,
+                                 const FieldExpression<E2>& v) {
+        return detail::field_meta_dot<E1, E2>(*static_cast<const E1*>(&u),
+                                        *static_cast<const E2*>(&v));
+    }
+
+
 }
 
 #endif
