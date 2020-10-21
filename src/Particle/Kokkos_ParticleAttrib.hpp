@@ -108,11 +108,13 @@ namespace ippl {
 
         const M& mesh = f.get_mesh();
 
-        using vector_type = const typename M::vector_type;
+        using vector_type = typename M::vector_type;
+        using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
 
         const vector_type& dx = mesh.getMeshSpacing();
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx = 1.0 / dx;
+
 
         Kokkos::parallel_for("ParticleAttrib::scatter",
                              size(),
@@ -129,14 +131,15 @@ namespace ippl {
                                  const int k = index[2] + 1;
 
                                  // scatter
-                                 view(i-1, j-1, k-1) = view(i-1, j-1, k-1) + wlo[0]*wlo[1]*wlo[2]*this->operator()(idx);
-                                 view(i-1, j-1, k  ) = view(i-1, j-1, k  ) + wlo[0]*wlo[1]*whi[2]*this->operator()(idx);
-                                 view(i-1, j,   k-1) = view(i-1, j,   k-1) + wlo[0]*whi[1]*wlo[2]*this->operator()(idx);
-                                 view(i-1, j,   k  ) = view(i-1, j,   k  ) + wlo[0]*whi[1]*whi[2]*this->operator()(idx);
-                                 view(i,   j-1, k-1) = view(i,   j-1, k-1) + whi[0]*wlo[1]*wlo[2]*this->operator()(idx);
-                                 view(i,   j-1, k  ) = view(i,   j-1, k  ) + whi[0]*wlo[1]*whi[2]*this->operator()(idx);
-                                 view(i,   j,   k-1) = view(i,   j,   k-1) + whi[0]*whi[1]*wlo[2]*this->operator()(idx);
-                                 view(i,   j,   k  ) = view(i,   j,   k  ) + whi[0]*whi[1]*whi[2]*this->operator()(idx);
+                                 const value_type& val = this->operator()(idx);
+                                 Kokkos::atomic_add(&view(i-1, j-1, k-1), wlo[0] * wlo[1] * wlo[2] * val);
+                                 Kokkos::atomic_add(&view(i-1, j-1, k  ), wlo[0] * wlo[1] * whi[2] * val);
+                                 Kokkos::atomic_add(&view(i-1, j,   k-1), wlo[0] * whi[1] * wlo[2] * val);
+                                 Kokkos::atomic_add(&view(i-1, j,   k  ), wlo[0] * whi[1] * whi[2] * val);
+                                 Kokkos::atomic_add(&view(i,   j-1, k-1), whi[0] * wlo[1] * wlo[2] * val);
+                                 Kokkos::atomic_add(&view(i,   j-1, k  ), whi[0] * wlo[1] * whi[2] * val);
+                                 Kokkos::atomic_add(&view(i,   j,   k-1), whi[0] * whi[1] * wlo[2] * val);
+                                 Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
                              });
     }
 
