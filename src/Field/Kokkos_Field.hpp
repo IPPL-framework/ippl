@@ -55,7 +55,7 @@ namespace ippl {
     // The makeMesh() global function is a way to allow for different types of
     // constructor arguments for different mesh types.
     template<class T, unsigned Dim, class M, class C>
-    Field<T,Dim,M,C>::Field(Layout_t& l) : BareField<T,Dim>(l) {
+    Field<T,Dim,M,C>::Field(std::shared_ptr<Layout_t> l) : BareField<T,Dim>(l) {
         storeMesh_m(makeMesh(*this), true);
     }
 

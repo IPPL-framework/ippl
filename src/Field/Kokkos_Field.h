@@ -31,7 +31,7 @@ namespace ippl {
         // The default type of BCond lets you add new ones dynamically.
         // The makeMesh() global function is a way to allow for different types of
         // constructor arguments for different mesh types.
-        Field(Layout_t&);
+        Field(std::shared_ptr<Layout_t>);
 
         // Constructors including a Mesh object as argument:
         Field(Mesh_t&, Layout_t&);

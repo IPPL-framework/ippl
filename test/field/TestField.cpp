@@ -25,17 +25,14 @@ int main(int argc, char *argv[]) {
     typedef ippl::Field<ippl::Vector<double, dim>, dim> vector_field_type;
 
     field_type field(layout);
+
     vector_field_type vfield(layout);
 
     field = 1.0;
 
-//     field.write();
     vfield = grad(field);
 
     vfield.write();
-
-    ippl::UniformCartesian<double, 2> unif(I, I);
-
 
     return 0;
 }
