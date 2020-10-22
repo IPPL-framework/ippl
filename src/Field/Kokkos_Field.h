@@ -95,6 +95,7 @@ namespace ippl {
                     zvector_m[1] = 0.0;
                     zvector_m[2] = 0.5 / mesh.getMeshSpacing(2);
                 }
+
             }
 
             auto operator[](size_t i) const {
