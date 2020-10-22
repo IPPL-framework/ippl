@@ -18,7 +18,8 @@ int main(int argc, char *argv[]) {
         allParallel[d] = SERIAL;
 
     // all parallel layout, standard domain, normal axis order
-    FieldLayout<dim> layout(owned,allParallel, 1);
+    typedef FieldLayout<dim> FieldLayout_t;
+    std::shared_ptr<FieldLayout_t> layout = std::make_shared<FieldLayout_t>(owned,allParallel, 1);
 
 
     typedef ippl::Field<double, dim> field_type;
