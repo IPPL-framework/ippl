@@ -177,6 +177,41 @@ namespace ippl {
     detail::field_meta_div<T, Dim, M, C> div(const Field<T, Dim, M, C>& u) {
         return detail::field_meta_div<T, Dim, M, C>(u);
     }
+
+    namespace detail {
+        /*
+         * Laplacian
+         */
+        template<typename T, unsigned Dim, class M, class C>
+        struct field_meta_laplace : public FieldExpression<field_meta_laplace<T, Dim, M, C>> {
+            field_meta_laplace(const Field<T, Dim, M, C>& u) : u_m(u) {
+                M& mesh = u.get_mesh();
+
+                hvector_m[0] = 1.0 / std::pow(mesh.getMeshSpacing(0),2);
+
+                if constexpr(M::Dimension > 1) {
+                    hvector_m[1] = 1.0 / std::pow(mesh.getMeshSpacing(1),2);
+                }
+
+                if constexpr(M::Dimension == 3) {
+                    hvector_m[2] = 1.0 / std::pow(mesh.getMeshSpacing(2),2);
+                }
+            }
+
+            auto operator[](size_t i) const {
+                    return laplace(u_m[i], hvector_m);
+            }
+
+        private:
+            const Field<T, Dim, M, C>& u_m;
+            typename M::vector_type hvector_m;
+        };
+    }
+
+    template<typename T, unsigned Dim, class M, class C>
+    detail::field_meta_laplace<T, Dim, M, C> laplace(const Field<T, Dim, M, C>& u) {
+        return detail::field_meta_laplace<T, Dim, M, C>(u);
+    }
 }
 
 #endif

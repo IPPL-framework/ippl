@@ -249,83 +249,6 @@ namespace ippl {
         /*!
          * Meta function of gradient
          */
-        //template<typename E, typename T>
-        //struct meta_grad : public Expression<meta_grad<E, T>, sizeof(E)> {
-        //    KOKKOS_FUNCTION
-        //    meta_grad(const E& u,
-        //            const T& xvector)
-        //    : u_m(u)
-        //    , xvector_m(xvector)
-        //    { }
-
-        //    KOKKOS_FUNCTION
-        //    meta_grad(const E& u,
-        //            const T& xvector,
-        //            const T& yvector)
-        //    : u_m(u)
-        //    , xvector_m(xvector)
-        //    , yvector_m(yvector)
-        //    { }
-
-        //    KOKKOS_FUNCTION
-        //    meta_grad(const E& u,
-        //            const T& xvector,
-        //            const T& yvector,
-        //            const T& zvector)
-        //    : u_m(u)
-        //    , xvector_m(xvector)
-        //    , yvector_m(yvector)
-        //    , zvector_m(zvector)
-        //    { }
-
-        //    /*
-        //     * 1-dimensional grad
-        //     */
-        //    KOKKOS_INLINE_FUNCTION
-        //    auto operator()(size_t i) const {
-        //        return xvector_m * (u_m(i+1) - u_m(i-1));
-        //    }
-
-        //    /*
-        //     * 2-dimensional grad
-        //     */
-        //    KOKKOS_INLINE_FUNCTION
-        //    auto operator()(size_t i, size_t j) const {
-        //        return xvector_m * (u_m(i+1, j)   - u_m(i-1, j  )) +
-        //               yvector_m * (u_m(i  , j+1) - u_m(i  , j-1));
-        //    }
-
-        //    /*
-        //     * 3-dimensional grad
-        //     */
-        //    KOKKOS_INLINE_FUNCTION
-        //    auto operator()(size_t i, size_t j, size_t k) const {
-        //        T result;
-        //        result = xvector_m * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
-        //                 yvector_m * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
-        //                 zvector_m * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
-
-
-        //        std::cout << xvector_m << std::endl;
-        //        std::cout << yvector_m << std::endl;
-        //        std::cout << zvector_m << std::endl;
-        //        //std::cout << result << std::endl;
-        //        return xvector_m * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
-        //               yvector_m * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
-        //               zvector_m * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
-
-        //        //return (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
-        //        //       (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
-        //        //       (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
-        //    }
-
-        //private:
-        //    const E u_m;
-        //    const T xvector_m;
-        //    const T yvector_m;
-        //    const T zvector_m;
-        //};
-
 
         template<typename E, typename Evec>
         struct meta_grad : public Expression<meta_grad<E, Evec>, sizeof(E) + 3 * sizeof(Evec)> {
@@ -348,18 +271,9 @@ namespace ippl {
             KOKKOS_INLINE_FUNCTION
             auto operator()(size_t i, size_t j, size_t k) const {
 
-
-                //std::cout << xvector_m << std::endl;
-                //std::cout << yvector_m << std::endl;
-                //std::cout << zvector_m << std::endl;
-                //std::cout << result << std::endl;
                 return xvector_m * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
                        yvector_m * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
                        zvector_m * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
-
-                //return (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
-                //       (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
-                //       (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
             }
 
         private:
@@ -370,109 +284,46 @@ namespace ippl {
         };
     }
 
-    // * User interface of gradient in one dimension.
-    // * @tparam E expression type of left-hand side
-    // * @tparam N size of expression
-    // * @tparam T type of vector
-    // * @param u expression
-    // * @param xvector
-    // */
-    //template<typename E, size_t N, typename T>
-    //KOKKOS_INLINE_FUNCTION
-    //detail::meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector) {
-    //    return detail::meta_grad<E, T>(*static_cast<const E*>(&u), xvector);
-    //}
-
-    ///*!
-    // * User interface of gradient in two dimensions.
-    // * @tparam E expression type of left-hand side
-    // * @tparam N size of expression
-    // * @tparam T type of vector
-    // * @param u expression
-    // * @param xvector
-    // * @param yvector
-    // */
-    //template<typename E, size_t N, typename T>
-    //KOKKOS_INLINE_FUNCTION
-    //detail::meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector, const T& yvector) {
-    //    return detail::meta_grad<E, T>(*static_cast<const E*>(&u), xvector, yvector);
-    //}
-
     /*!
      * User interface of gradient in three dimensions.
      * @tparam E expression type of left-hand side
      * @tparam N size of expression
-     * @tparam T type of vector
+     * @tparam Evec vector as an expression
+     * @tparam Nvec size of vector expression
      * @param u expression
      * @param xvector
      * @param yvector
      * @param zvector
      */
-    //template<typename E, size_t N, typename T>
-    //KOKKOS_INLINE_FUNCTION
-    //detail::meta_grad<E, T> grad(const Expression<E, N>& u, const T& xvector, const T& yvector, const T& zvector) {
-    //    return detail::meta_grad<E, T>(*static_cast<const E*>(&u), xvector, yvector, zvector);
-    //}
 
     template<typename E, size_t N, typename Evec, size_t Nvec>
     KOKKOS_INLINE_FUNCTION
-    detail::meta_grad<E, Evec> grad(const Expression<E, N>& u, const Expression<Evec, Nvec>& xvector, 
-                                    const Expression<Evec, Nvec>& yvector, const Expression<Evec, Nvec>& zvector) {
+    detail::meta_grad<E, Evec> grad(const Expression<E, N>& u, 
+                                    const Expression<Evec, Nvec>& xvector, 
+                                    const Expression<Evec, Nvec>& yvector, 
+                                    const Expression<Evec, Nvec>& zvector) {
         return detail::meta_grad<E, Evec>(*static_cast<const E*>(&u), xvector, yvector, zvector);
     }
-
 
     namespace detail {
 
         /*!
          * Meta function of divergence
          */
-        template<typename E, typename T>
-        struct meta_div : public Expression<meta_div<E, T>, sizeof(E)> {
-            KOKKOS_FUNCTION
-            meta_div(const E& u,
-                    const T& xvector)
-            : u_m(u)
-            , xvector_m(xvector)
-            { }
+        template<typename E, typename Evec>
+        struct meta_div : public Expression<meta_div<E, Evec>, sizeof(E) + 3 * sizeof(Evec)> {
 
             KOKKOS_FUNCTION
             meta_div(const E& u,
-                    const T& xvector,
-                    const T& yvector)
-            : u_m(u)
-            , xvector_m(xvector)
-            , yvector_m(yvector)
-            { }
-
-            KOKKOS_FUNCTION
-            meta_div(const E& u,
-                    const T& xvector,
-                    const T& yvector,
-                    const T& zvector)
+                    const Evec& xvector,
+                    const Evec& yvector,
+                    const Evec& zvector)
             : u_m(u)
             , xvector_m(xvector)
             , yvector_m(yvector)
             , zvector_m(zvector)
             { }
 
-            /*
-             * 1-dimensional div
-             */
-            KOKKOS_INLINE_FUNCTION
-            auto operator()(size_t i) const {
-                return dot(xvector_m, (u_m(i+1) - u_m(i-1))).apply();
-            }
-
-            /*
-             * 2-dimensional div
-             */
-            KOKKOS_INLINE_FUNCTION
-            auto operator()(size_t i, size_t j) const {
-                return dot(xvector_m, (u_m(i+1, j)   - u_m(i-1, j  ))).apply() +
-                       dot(yvector_m, (u_m(i  , j+1) - u_m(i  , j-1))).apply();
-
-            }
 
             /*
              * 3-dimensional div
@@ -486,56 +337,81 @@ namespace ippl {
 
         private:
             const E u_m;
-            const T xvector_m;
-            const T yvector_m;
-            const T zvector_m;
+            const Evec xvector_m;
+            const Evec yvector_m;
+            const Evec zvector_m;
         };
     }
-    
-    
-    /*!
-     * User interface of divergence in one dimension.
-     * @tparam E expression type of left-hand side
-     * @tparam N size of expression
-     * @tparam T type of vector
-     * @param u expression
-     * @param xvector
-     */
-    template<typename E, size_t N, typename T>
-    KOKKOS_INLINE_FUNCTION
-    detail::meta_div<E, T> div(const Expression<E, N>& u, const T& xvector) {
-        return detail::meta_div<E, T>(*static_cast<const E*>(&u), xvector);
-    }
 
-    /*!
-     * User interface of divergence in two dimensions.
-     * @tparam E expression type of left-hand side
-     * @tparam N size of expression
-     * @tparam T type of vector
-     * @param u expression
-     * @param xvector
-     * @param yvector
-     */
-    template<typename E, size_t N, typename T>
-    KOKKOS_INLINE_FUNCTION
-    detail::meta_div<E, T> div(const Expression<E, N>& u, const T& xvector, const T& yvector) {
-        return detail::meta_div<E, T>(*static_cast<const E*>(&u), xvector, yvector);
-    }
 
     /*!
      * User interface of divergence in three dimensions.
      * @tparam E expression type of left-hand side
      * @tparam N size of expression
-     * @tparam T type of vector
+     * @tparam Evec vector as an expression
+     * @tparam Nvec size of vector expression
      * @param u expression
      * @param xvector
      * @param yvector
      * @param zvector
      */
-    template<typename E, size_t N, typename T>
+    template<typename E, size_t N, typename Evec, size_t Nvec>
     KOKKOS_INLINE_FUNCTION
-    detail::meta_div<E, T> div(const Expression<E, N>& u, const T& xvector, const T& yvector, const T& zvector) {
-        return detail::meta_div<E, T>(*static_cast<const E*>(&u), xvector, yvector, zvector);
+    detail::meta_div<E, Evec> div(const Expression<E, N>& u, 
+                                  const Expression<Evec, Nvec>& xvector, 
+                                  const Expression<Evec, Nvec>& yvector, 
+                                  const Expression<Evec, Nvec>& zvector) {
+        return detail::meta_div<E, Evec>(*static_cast<const E*>(&u), xvector, yvector, zvector);
+    }
+
+
+    namespace detail {
+
+        /*!
+         * Meta function of Laplacian 
+         */
+        template<typename E, typename Evec>
+        struct meta_laplace : public Expression<meta_laplace<E, Evec>, sizeof(E) + sizeof(Evec)> {
+
+            KOKKOS_FUNCTION
+            meta_laplace(const E& u,
+                         const Evec& hvector)
+            : u_m(u)
+            , hvector_m(hvector)
+            { }
+
+
+            /*
+             * 3-dimensional Laplacian
+             */
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(size_t i, size_t j, size_t k) const {
+                
+                return hvector_m[0] * (u_m(i+1, j,   k)   - 2 * u_m(i, j, k) + u_m(i-1, j,   k  )) +
+                       hvector_m[1] * (u_m(i  , j+1, k)   - 2 * u_m(i, j, k) + u_m(i  , j-1, k  )) +
+                       hvector_m[2] * (u_m(i  , j  , k+1) - 2 * u_m(i, j, k) + u_m(i  , j  , k-1));
+            }
+
+        private:
+            const E u_m;
+            const Evec hvector_m;
+        };
+    }
+
+
+    /*!
+     * User interface of Laplacian in three dimensions.
+     * @tparam E expression type of left-hand side
+     * @tparam N size of expression
+     * @tparam Evec vector as an expression
+     * @tparam Nvec size of vector expression
+     * @param u expression
+     * @param hvector
+     */
+    template<typename E, size_t N, typename Evec, size_t Nvec>
+    KOKKOS_INLINE_FUNCTION
+    detail::meta_laplace<E, Evec> laplace(const Expression<E, N>& u, const Expression<Evec, Nvec>& hvector) {
+        return detail::meta_laplace<E, Evec>(*static_cast<const E*>(&u), hvector);
     }
 }
 
