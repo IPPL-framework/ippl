@@ -413,6 +413,8 @@ namespace ippl {
     detail::meta_laplace<E, Evec> laplace(const Expression<E, N>& u, const Expression<Evec, Nvec>& hvector) {
         return detail::meta_laplace<E, Evec>(*static_cast<const E*>(&u), hvector);
     }
+
+
 }
 
 #endif

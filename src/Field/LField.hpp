@@ -115,4 +115,27 @@ namespace ippl {
     //     }
         return *this;
     }
+
+    #define DefineReduction(fun, name, op)                                                                   \
+    template<class T, unsigned Dim>                                                                          \
+    T LField<T, Dim>::name() {                                                                               \
+        typedef T return_type;                                                                               \
+        return_type temp = 0.0;                                                                              \
+        Kokkos::parallel_reduce("fun",                                                                       \
+                               Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost_m, nghost_m, nghost_m},        \
+                                                                      {dview_m.extent(0) - nghost_m,         \
+                                                                       dview_m.extent(1) - nghost_m,         \
+                                                                       dview_m.extent(2) - nghost_m}),       \
+                               KOKKOS_CLASS_LAMBDA(const int i, const int j,                                 \
+                                                   const int k, return_type& valL) {                         \
+                                    double myVal = dview_m(i, j, k);                                         \
+                                    op;                                                                      \
+                               }, Kokkos::fun<return_type>(temp));                                           \
+        return temp;                                                                                         \
+    }                                                                                                        \
+
+    DefineReduction(Sum, sum, valL += myVal)
+    DefineReduction(Max, max, if(myVal > valL) valL = myVal)
+    DefineReduction(Min, min, if(myVal < valL) valL = myVal)
+    DefineReduction(Prod, prod, valL *= myVal)
 }
