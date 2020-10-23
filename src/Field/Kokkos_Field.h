@@ -27,25 +27,14 @@ namespace ippl {
 
         virtual ~Field() = default;
 
-        // Create a new Field with a given layout and optional guard cells.
-        // The default type of BCond lets you add new ones dynamically.
-        // The makeMesh() global function is a way to allow for different types of
-        // constructor arguments for different mesh types.
-        Field(std::shared_ptr<Layout_t>);
-
         // Constructors including a Mesh object as argument:
         Field(Mesh_t&, Layout_t&);
 
-        // Initialize the Field, if it was constructed from the default constructor.
-        // This should NOT be called if the Field was constructed by providing
-        // a FieldLayout or FieldSpec
-        void initialize(Layout_t&);
-
         // Initialize the Field, also specifying a mesh
-        void initialize(Mesh_t&, Layout_t &);
+        void initialize(Mesh_t&, Layout_t&);
 
         // Access to the mesh
-        Mesh_t& get_mesh() const { return *mesh; }
+        Mesh_t& get_mesh() const { return *mesh_m; }
 
         // Assignment from constants and other arrays.
         using BareField<T, Dim>::operator=;
@@ -57,12 +46,7 @@ namespace ippl {
         //   bcond_container Bc;
 
         // The Mesh object, and a flag indicating if we constructed it
-        std::shared_ptr<Mesh_t> mesh;
-        bool WeOwnMesh_m;
-
-        // store the given mesh object pointer, and the flag whether we own it or not.
-        // if we own it, we must make sure to delete it when this Field is deleted.
-        void storeMesh_m(const std::shared_ptr<Mesh_t>&, bool);
+        Mesh_t* mesh_m;
     };
 }
 

@@ -32,23 +32,18 @@
 
 namespace ippl {
     template< typename T, unsigned Dim>
-    BareField<T, Dim>::BareField() : layout_m(0) { }
+    BareField<T, Dim>::BareField() : layout_m(nullptr) { }
 
 
     template< typename T, unsigned Dim>
-    BareField<T, Dim>::BareField(Layout_t& l) : layout_m(std::make_shared<Layout_t>(l)) {
-        setup();
-    }
-
-    template< typename T, unsigned Dim>
-    BareField<T, Dim>::BareField(std::shared_ptr<Layout_t> l) : layout_m(l) {
+    BareField<T, Dim>::BareField(Layout_t& l) : layout_m(&l) {
         setup();
     }
 
     template<typename T, unsigned Dim>
     void BareField<T, Dim>::initialize(Layout_t& l) {
         if (layout_m == 0) {
-            layout_m = std::make_shared<Layout_t>(l);
+            layout_m = &l;
             setup();
         }
     }
