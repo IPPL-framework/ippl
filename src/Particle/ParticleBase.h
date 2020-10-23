@@ -74,8 +74,8 @@
 #define IPPL_PARTICLE_BASE_H
 
 
-#include "Particle/Kokkos_ParticleAttrib.h"
-#include "Particle/Kokkos_ParticleLayout.h"
+#include "Particle/ParticleAttrib.h"
+#include "Particle/ParticleLayout.h"
 
 
 #include <vector>
