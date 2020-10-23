@@ -59,11 +59,7 @@ namespace ippl {
         // been properly initialized.
         BareField();
 
-        // Create a new BareField with a given layout and optional guard cells.
-        BareField(Layout_t &);
-
-        BareField(std::shared_ptr<Layout_t>);
-
+        BareField(Layout_t&);
 
         BareField(const BareField&) = default;
 
@@ -73,7 +69,7 @@ namespace ippl {
         // Initialize the field, if it was constructed from the default constructor.
         // This should NOT be called if the field was constructed by providing
         // a FieldLayout.
-        void initialize(Layout_t &);
+        void initialize(Layout_t&);
 
 
         iterator_t begin() noexcept {
@@ -130,7 +126,7 @@ namespace ippl {
         void setup();
 
         //! How the local arrays are laid out.
-        std::shared_ptr<Layout_t> layout_m;
+        Layout_t* layout_m;
     };
 }
 

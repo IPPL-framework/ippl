@@ -504,11 +504,11 @@ namespace ippl {
             // Note: enough guard cells only for existing Div(), etc. implementations:
             // (not really used by Div() etc for UniformCartesian); someday should make
             // this user-settable.
-            VertSpacings = std::make_shared<BareField_t>(FlCell);
+            VertSpacings = std::make_shared<BareField_t>(*FlCell);
 
             FlVert = std::make_shared<FieldLayout<Dim>>(verts, et, vnodes);
 
-            CellSpacings = std::make_shared<BareField_t>(FlVert);
+            CellSpacings = std::make_shared<BareField_t>(*FlVert);
         }
 
         BareField_t& vertSpacings = *VertSpacings;
