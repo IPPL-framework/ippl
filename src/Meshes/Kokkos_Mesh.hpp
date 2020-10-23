@@ -29,4 +29,16 @@ namespace ippl {
     void Mesh<T, Dim>::setOrigin(const vector_type& origin) {
         origin_m = origin;
     }
+
+
+    template<typename T, unsigned Dim>
+    const typename Mesh<T, Dim>::vector_type& Mesh<T, Dim>::getGridsize() const {
+        return gridSizes_m;
+    }
+
+
+    template<typename T, unsigned Dim>
+    T Mesh<T, Dim>::getGridsize(size_t dim) const {
+        return gridSizes_m[dim];
+    }
 }

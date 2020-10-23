@@ -43,6 +43,10 @@ namespace ippl {
         // Set the origin of mesh vertex positions
         void setOrigin(const vector_type& origin);
 
+        const vector_type& getGridsize() const;
+
+        T getGridsize(size_t dim) const;
+
     protected:
         vector_type origin_m;          // Origin of mesh coordinates (vertices)
         vector_type gridSizes_m;       // Sizes (number of vertices)

@@ -47,6 +47,14 @@ target_link_libraries (
     boost_timer
 )
 
+add_executable (PIC3d PIC3d.cpp)
+target_link_libraries (
+    PIC3d
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    boost_timer
+)
+
 
 
 # vi: set et ts=4 sw=4 sts=4:
