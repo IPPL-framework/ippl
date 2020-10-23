@@ -17,14 +17,14 @@ set (_HDRS
 #     PairBuilder/HashPairBuilderPeriodic.h
 #     PairBuilder/PairConditions.h
 #     PairBuilder/SortingPairBuilder.h
-#     ParticleAttribBase.h
+    ParticleAttribBase.h
 #     ParticleAttribElem.h
     Kokkos_ParticleAttrib.h
     Kokkos_ParticleAttrib.hpp
 #     ParticleBalancer.hpp
 #     ParticleBalancer.h
-    Kokkos_IpplParticleBase.h
-    Kokkos_IpplParticleBase.hpp
+    ParticleBase.h
+    ParticleBase.hpp
 #     ParticleBConds.h
 #     ParticleCashedLayout.hpp
 #     ParticleCashedLayout.h

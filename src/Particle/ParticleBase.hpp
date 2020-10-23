@@ -100,7 +100,7 @@ namespace ippl {
 
 
     template<class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::addAttribute(ParticleAttribBase<Properties...>& pa)
+    void ParticleBase<PLayout, Properties...>::addAttribute(detail::ParticleAttribBase<Properties...>& pa)
     {
         attributes_m.push_back(&pa);
     }

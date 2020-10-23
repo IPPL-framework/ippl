@@ -29,35 +29,21 @@
 #ifndef IPPL_PARTICLE_ATTRIB_H
 #define IPPL_PARTICLE_ATTRIB_H
 
-#include "Types/ViewTypes.h"
 #include "Expression/IpplExpressions.h"
+#include "Particle/ParticleAttribBase.h"
 
 namespace ippl {
 
-    template<class... Properties>
-    class ParticleAttribBase {
-
-    public:
-        typedef typename detail::ViewType<bool, 1, Properties...>::view_type boolean_view_type;
-
-        virtual void create(size_t) = 0;
-
-        virtual void destroy(boolean_view_type, Kokkos::View<int*>, size_t) = 0;
-
-        virtual ~ParticleAttribBase() = default;
-
-    };
-
     // ParticleAttrib class definition
     template <typename T, class... Properties>
-    class ParticleAttrib : public ParticleAttribBase<Properties...>
+    class ParticleAttrib : public detail::ParticleAttribBase<Properties...>
                          , public detail::ViewType<T, 1, Properties...>::view_type
                          , public Expression<ParticleAttrib<T, Properties...>,
                                              sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)>
     {
     public:
         typedef T value_type;
-        using boolean_view_type = typename ParticleAttribBase<Properties...>::boolean_view_type;
+        using boolean_view_type = typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
         using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
 
         // Create storage for M particle attributes.  The storage is uninitialized.

@@ -94,10 +94,10 @@ namespace ippl {
         typedef typename PLayout::index_type  index_type;
         typedef ParticleAttrib<vector_type>   particle_position_type;
         typedef ParticleAttrib<index_type>    particle_index_type;
-        typedef typename ParticleAttribBase<Properties...>::boolean_view_type boolean_view_type;
+        typedef typename detail::ParticleAttribBase<Properties...>::boolean_view_type boolean_view_type;
 
         typedef PLayout                           Layout_t;
-        typedef std::vector<ParticleAttribBase<Properties...>*> attribute_container_t;
+        typedef std::vector<detail::ParticleAttribBase<Properties...>*> attribute_container_t;
         typedef typename attribute_container_t::iterator  attribute_iterator;
 
     public:
@@ -125,8 +125,8 @@ namespace ippl {
 
         /* cannot use '= default' since we get a
          * compiler warning otherwise:
-         * warning: calling a __host__ function("std::vector< ::ippl::ParticleAttribBase *, ::std::allocator<
-         * ::ippl::ParticleAttribBase *> > ::~vector") from a __host__ __device__ function("ippl::ParticleBase<
+         * warning: calling a __host__ function("std::vector< ::ippl::detail::ParticleAttribBase *, ::std::allocator<
+         * ::ippl::detail::ParticleAttribBase *> > ::~vector") from a __host__ __device__ function("ippl::ParticleBase<
          * ::ippl::ParticleLayout<double, (unsigned int)3u> > ::~ParticleBase") is not allowed
          */
         ~ParticleBase() { };
@@ -171,7 +171,7 @@ namespace ippl {
          * Add particle attribute
          * @param pa attribute to be added to ParticleBase
          */
-        void addAttribute(ParticleAttribBase<Properties...>& pa);
+        void addAttribute(detail::ParticleAttribBase<Properties...>& pa);
 
         /*!
          * Redistribute particles among MPI ranks.
