@@ -39,6 +39,15 @@ target_link_libraries (
 )
 
 
+add_executable (TestExpression TestExpression.cpp)
+target_link_libraries (
+    TestExpression
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    boost_timer
+)
+
+
 
 # vi: set et ts=4 sw=4 sts=4:
 

@@ -26,6 +26,35 @@ namespace ippl {
 
 
     template<typename T, class... Properties>
+    ParticleAttrib<T, Properties...>&
+    ParticleAttrib<T, Properties...>::operator=(T x)
+    {
+        Kokkos::parallel_for("ParticleAttrib::operator=()",
+                             this->extent(0),
+                             KOKKOS_CLASS_LAMBDA(const int i) {
+                                 this->operator()(i) = x;
+                            });
+        return *this;
+    }
+
+
+    template<typename T, class... Properties>
+    template <typename E, size_t N>
+    ParticleAttrib<T, Properties...>&
+    ParticleAttrib<T, Properties...>::operator=(Expression<E, N> const& expr)
+    {
+        detail::CapturedExpression<E, N> expr_ = reinterpret_cast<const detail::CapturedExpression<E, N>&>(expr);
+
+        Kokkos::parallel_for("ParticleAttrib::operator=()",
+                             this->extent(0),
+                             KOKKOS_CLASS_LAMBDA(const int i) {
+                                 this->operator()(i) = expr_(i);
+                            });
+        return *this;
+    }
+
+
+    template<typename T, class... Properties>
     template <unsigned Dim, class M, class C, class PT>
     void ParticleAttrib<T, Properties...>::scatter(Field<T,Dim,M,C>& f,
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)

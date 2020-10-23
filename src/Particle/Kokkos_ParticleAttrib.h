@@ -72,6 +72,7 @@
 
 
 #include "Types/ViewTypes.h"
+#include "Expression/IpplExpressions.h"
 
 namespace ippl {
 
@@ -93,7 +94,8 @@ namespace ippl {
     template <typename T, class... Properties>
     class ParticleAttrib : public ParticleAttribBase<Properties...>
                          , public detail::ViewType<T, 1, Properties...>::view_type
-                        //  public PETE_Expr< ParticleAttrib<T> >
+                         , public Expression<ParticleAttrib<T, Properties...>,
+                                             sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)>
     {
     public:
         typedef T value_type;
@@ -125,6 +127,21 @@ namespace ippl {
             }
         }
 
+
+        /*!
+         * Assign the same value to the whole attribute.
+         */
+        ParticleAttrib<T, Properties...>& operator=(T x);
+
+        /*!
+         * Assign an arbitrary particle attribute expression
+         * @tparam E expression type
+         * @tparam N size of the expression, this is necessary for running on the
+         * device since otherwise it does not allocate enough memory
+         * @param expr is the expression
+         */
+        template <typename E, size_t N>
+        ParticleAttrib<T, Properties...>& operator=(Expression<E, N> const& expr);
 
 
         //     // scatter the data from this attribute onto the given Field, using
