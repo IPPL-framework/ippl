@@ -1,7 +1,7 @@
 //
 // Class ParticleBase
 //   Base class for all user-defined particle classes.
-
+//
 //   ParticleBase is a container and manager for a set of particles.
 //   The user must define a class derived from ParticleBase which describes
 //   what specific data attributes the particle has (e.g., mass or charge).
