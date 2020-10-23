@@ -39,13 +39,9 @@ int main(int argc, char *argv[]) {
 
     field.initialize(mesh, layout);
     
-    FieldLayout<dim> layout2(owned,allParallel, 1);
-
-    vfield.initialize(mesh, layout2);
+    vfield.initialize(mesh, layout);
     
-    FieldLayout<dim> layout3(owned,allParallel, 1);
-
-    Lap.initialize(mesh,layout3);
+    Lap.initialize(mesh,layout);
 
     typedef ippl::Field<double, dim> Field_t;
 

@@ -10,7 +10,8 @@ int main(int argc, char *argv[]) {
     constexpr unsigned int dim = 3;
 
 
-    Index I(4);
+    int pt = 4;
+    Index I(pt);
     NDIndex<dim> owned(I, I, I);
 
     e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
@@ -20,10 +21,15 @@ int main(int argc, char *argv[]) {
     // all parallel layout, standard domain, normal axis order
     FieldLayout<dim> layout(owned,allParallel, 1);
 
+    double dx = 1.0 / double(pt);
+    ippl::Vector<double, 3> hx = {dx, dx, dx};
+    ippl::Vector<double, 3> origin = {0, 0, 0};
+    ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+
 
     typedef ippl::Field<double, dim> field_type;
 
-    field_type field(layout);
+    field_type field(mesh, layout);
 
     double pi = acos(-1.0);
 
@@ -41,9 +47,6 @@ int main(int argc, char *argv[]) {
     field = -field;
 
     field.write();
-
-    ippl::UniformCartesian<double, 2> unif(I, I);
-
 
     return 0;
 }
