@@ -127,6 +127,11 @@ namespace ippl {
             return dview_m(args...);
         }
 
+
+        view_type getView() {
+            return dview_m;
+        }
+
         /*!
          * Assign an arbitrary LField expression
          * @tparam E expression type
@@ -142,6 +147,11 @@ namespace ippl {
         //               // -------------------------------------------
                     int> = 0>*/
         LField<T,Dim>& operator=(Expression<E, N> const& expr);
+
+        T sum();
+        T max();
+        T min();
+        T prod();
 
     private:
         // Global vnode ID number for the associated Vnode (useful with more recent
