@@ -42,6 +42,7 @@
 //
 
 namespace ippl {
+    namespace detail {
 
 // /////////////////////////////////////////////////////////////////////
 // // constructor
@@ -51,5 +52,5 @@ namespace ippl {
 //
 // //   setUpdateFlag(ALL, true);
 // }
-
+    }
 }
