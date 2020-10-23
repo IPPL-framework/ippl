@@ -114,6 +114,11 @@ namespace ippl {
 
         void write(std::ostream& = std::cout);
 
+        T sum();
+        T max();
+        T min();
+        T prod();
+
 
     protected:
         //! Container to store the local fields
