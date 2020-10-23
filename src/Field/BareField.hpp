@@ -32,18 +32,18 @@
 
 namespace ippl {
     template< typename T, unsigned Dim>
-    BareField<T, Dim>::BareField() : Layout(0) { }
+    BareField<T, Dim>::BareField() : layout_m(nullptr) { }
 
 
     template< typename T, unsigned Dim>
-    BareField<T, Dim>::BareField(Layout_t & l) : Layout(&l) {
+    BareField<T, Dim>::BareField(Layout_t& l) : layout_m(&l) {
         setup();
     }
 
     template<typename T, unsigned Dim>
-    void BareField<T, Dim>::initialize(Layout_t & l) {
-        if (Layout == 0) {
-            Layout = &l;
+    void BareField<T, Dim>::initialize(Layout_t& l) {
+        if (layout_m == 0) {
+            layout_m = &l;
             setup();
         }
     }
@@ -94,4 +94,21 @@ namespace ippl {
             lf->write(out);
         }
     }
+    
+    #define DefineFieldReduction(name, op)                     \
+    template<typename T, unsigned Dim>                         \
+    T BareField<T, Dim>::name() {                              \
+        T temp = lfields_m[0]->name();                         \
+        for (size_t i = 1; i < lfields_m.size(); ++i) {        \
+            T myVal = lfields_m[i]->name();                    \
+            op;                                                \
+        }                                                      \
+        return temp;                                           \
+    }
+
+    DefineFieldReduction(sum,  temp += myVal)
+    DefineFieldReduction(max,  if(myVal > temp) temp = myVal)
+    DefineFieldReduction(min,  if(myVal < temp) temp = myVal)
+    DefineFieldReduction(prod, temp *= myVal)
+
 }
