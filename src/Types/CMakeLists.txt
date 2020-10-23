@@ -2,6 +2,8 @@ set (_SRCS
     )
 
 set (_HDRS
+    Vector.h
+    Vector.hpp
     ViewTypes.h
     )
 

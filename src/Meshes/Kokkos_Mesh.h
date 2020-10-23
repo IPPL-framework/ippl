@@ -22,7 +22,7 @@
 #define IPPL_MESH_H
 
 // #include "FieldLayout/FieldLayout.h"
-#include "AppTypes/Vector.h"
+#include "Types/Vector.h"
 
 namespace ippl {
     template<typename T, unsigned Dim>

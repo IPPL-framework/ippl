@@ -90,7 +90,7 @@
 // #include "Particle/IntSUDS.h"
 
 // IPPL Math Types
-#include "AppTypes/Vector.h"
+#include "Types/Vector.h"
 // #include "AppTypes/Tenzor.h"
 // #include "AppTypes/SymTenzor.h"
 // #include "AppTypes/AntiSymTenzor.h"
