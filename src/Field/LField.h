@@ -152,6 +152,11 @@ namespace ippl {
                     int> = 0>*/
         LField<T,Dim>& operator=(Expression<E, N> const& expr);
 
+        T sum();
+        T max();
+        T min();
+        T prod();
+
     private:
         // Global vnode ID number for the associated Vnode (useful with more recent
         // FieldLayouts which store a logical "array" of vnodes; user specifies

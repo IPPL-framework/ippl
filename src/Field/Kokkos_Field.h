@@ -54,55 +54,147 @@ namespace ippl {
 
 
 namespace ippl {
-    /*
-     * Gradient
-     */
+    
+    namespace detail{
+        /*
+         * Gradient
+         */
+        template<typename T, unsigned Dim, class M, class C>
+        struct field_meta_grad : public FieldExpression<field_meta_grad<T, Dim, M, C>> {
+            field_meta_grad(const Field<T, Dim, M, C>& u) : u_m(u) {
+                M& mesh = u.get_mesh();
+
+                xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
+
+                if constexpr(M::Dimension > 1) {
+                    xvector_m[1] = 0.0;
+                    yvector_m[0] = 0.0;
+                    yvector_m[1] = 0.5 / mesh.getMeshSpacing(1);
+                }
+
+                if constexpr(M::Dimension == 3) {
+                    xvector_m[2] = 0.0;
+                    yvector_m[2] = 0.0;
+                    zvector_m[0] = 0.0;
+                    zvector_m[1] = 0.0;
+                    zvector_m[2] = 0.5 / mesh.getMeshSpacing(2);
+                }
+
+            }
+
+            auto operator[](size_t i) const {
+                if constexpr (M::Dimension == 1) {
+                    return grad(u_m[i], xvector_m);
+                }
+
+                if constexpr (M::Dimension == 2) {
+                    return grad(u_m[i], xvector_m, yvector_m);
+                }
+
+                if constexpr (M::Dimension == 3) {
+                    return grad(u_m[i], xvector_m, yvector_m, zvector_m);
+                }
+            }
+
+        private:
+            const Field<T, Dim, M, C>& u_m;
+            typename M::vector_type xvector_m;
+            typename M::vector_type yvector_m;
+            typename M::vector_type zvector_m;
+        };
+    }
+
     template<typename T, unsigned Dim, class M, class C>
-    struct field_meta_grad : public FieldExpression<field_meta_grad<T, Dim, M, C>> {
-        field_meta_grad(const Field<T, Dim, M, C>& u) : u_m(u) {
-            M& mesh = u.get_mesh();
+    detail::field_meta_grad<T, Dim, M, C> grad(const Field<T, Dim, M, C>& u) {
+        return detail::field_meta_grad<T, Dim, M, C>(u);
+    }
 
-            xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
+    namespace detail {
+        /*
+         * Divergence
+         */
+        template<typename T, unsigned Dim, class M, class C>
+        struct field_meta_div : public FieldExpression<field_meta_div<T, Dim, M, C>> {
+            field_meta_div(const Field<T, Dim, M, C>& u) : u_m(u) {
+                M& mesh = u.get_mesh();
 
-            if constexpr(M::Dimension == 2) {
-                xvector_m[1] = 0.0;
-                yvector_m[0] = 0.0;
-                yvector_m[1] = 0.5 / mesh.getMeshSpacing(1);
+                xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
+
+                if constexpr(M::Dimension > 1) {
+                    xvector_m[1] = 0.0;
+                    yvector_m[0] = 0.0;
+                    yvector_m[1] = 0.5 / mesh.getMeshSpacing(1);
+                }
+
+                if constexpr(M::Dimension == 3) {
+                    xvector_m[2] = 0.0;
+                    yvector_m[2] = 0.0;
+                    zvector_m[0] = 0.0;
+                    zvector_m[1] = 0.0;
+                    zvector_m[2] = 0.5 / mesh.getMeshSpacing(2);
+                }
             }
 
-            if constexpr(M::Dimension == 3) {
-                xvector_m[2] = 0.0;
-                yvector_m[2] = 0.0;
-                zvector_m[0] = 0.0;
-                zvector_m[1] = 0.0;
-                zvector_m[2] = 0.5 / mesh.getMeshSpacing(2);
-            }
-        }
+            auto operator[](size_t i) const {
+                if constexpr (M::Dimension == 1) {
+                    return div(u_m[i], xvector_m);
+                }
 
-        auto operator[](size_t i) const {
-            if constexpr (M::Dimension == 1) {
-                return grad(u_m[i], xvector_m);
-            }
+                if constexpr (M::Dimension == 2) {
+                    return div(u_m[i], xvector_m, yvector_m);
+                }
 
-            if constexpr (M::Dimension == 2) {
-                return grad(u_m[i], xvector_m, yvector_m);
+                if constexpr (M::Dimension == 3) {
+                    return div(u_m[i], xvector_m, yvector_m, zvector_m);
+                }
             }
 
-            if constexpr (M::Dimension == 3) {
-                return grad(u_m[i], xvector_m, yvector_m, zvector_m);
-            }
-        }
-
-    private:
-        const Field<T, Dim, M, C>& u_m;
-        typename M::vector_type xvector_m;
-        typename M::vector_type yvector_m;
-        typename M::vector_type zvector_m;
-    };
+        private:
+            const Field<T, Dim, M, C>& u_m;
+            typename M::vector_type xvector_m;
+            typename M::vector_type yvector_m;
+            typename M::vector_type zvector_m;
+        };
+    }
 
     template<typename T, unsigned Dim, class M, class C>
-    field_meta_grad<T, Dim, M, C> grad(const Field<T, Dim, M, C>& u) {
-        return field_meta_grad<T, Dim, M, C>(u);
+    detail::field_meta_div<T, Dim, M, C> div(const Field<T, Dim, M, C>& u) {
+        return detail::field_meta_div<T, Dim, M, C>(u);
+    }
+
+    namespace detail {
+        /*
+         * Laplacian
+         */
+        template<typename T, unsigned Dim, class M, class C>
+        struct field_meta_laplace : public FieldExpression<field_meta_laplace<T, Dim, M, C>> {
+            field_meta_laplace(const Field<T, Dim, M, C>& u) : u_m(u) {
+                M& mesh = u.get_mesh();
+
+                hvector_m[0] = 1.0 / std::pow(mesh.getMeshSpacing(0),2);
+
+                if constexpr(M::Dimension > 1) {
+                    hvector_m[1] = 1.0 / std::pow(mesh.getMeshSpacing(1),2);
+                }
+
+                if constexpr(M::Dimension == 3) {
+                    hvector_m[2] = 1.0 / std::pow(mesh.getMeshSpacing(2),2);
+                }
+            }
+
+            auto operator[](size_t i) const {
+                    return laplace(u_m[i], hvector_m);
+            }
+
+        private:
+            const Field<T, Dim, M, C>& u_m;
+            typename M::vector_type hvector_m;
+        };
+    }
+
+    template<typename T, unsigned Dim, class M, class C>
+    detail::field_meta_laplace<T, Dim, M, C> laplace(const Field<T, Dim, M, C>& u) {
+        return detail::field_meta_laplace<T, Dim, M, C>(u);
     }
 }
 

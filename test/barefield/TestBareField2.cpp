@@ -22,17 +22,21 @@ int main(int argc, char *argv[]) {
 
     typedef ippl::Vector<double, 3> vector_t;
     typedef ippl::BareField<vector_t, dim> bfield_t;
+    typedef ippl::BareField<double, dim> bfield_s_t;
     bfield_t barefield(layout);
+    bfield_s_t barefield_s(layout);
 
     barefield = 1.0;
 
     barefield.write();
 
-    barefield = 2 * ((barefield + barefield) * (barefield + barefield)) / (barefield + barefield + barefield) - barefield;
+    //barefield = 2 * ((barefield + barefield) * (barefield + barefield)) / (barefield + barefield + barefield) - barefield;
 
-    barefield = 5.0 * cross(barefield, barefield);
+    //barefield = 5.0 * cross(barefield, barefield);
 
-    barefield.write();
+    barefield_s = 5.0 * dot(barefield, barefield);
+
+    barefield_s.write();
 
     return 0;
 }

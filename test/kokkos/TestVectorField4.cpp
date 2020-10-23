@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         Kokkos::parallel_for("assign",
                              mdrange_t({0, 0, 0}, {length, length, length}),
                              KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                 sfield(i, j, k) = dot(wfield(i, j, k), wfield(i, j, k));
+                                 sfield(i, j, k) = dot(wfield(i, j, k), wfield(i, j, k)).apply();
         });
 
         Kokkos::fence();
