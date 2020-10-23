@@ -1,97 +1,78 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- *
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
+//
+// Class ParticleBase
+//   Base class for all user-defined particle classes.
 
+//   ParticleBase is a container and manager for a set of particles.
+//   The user must define a class derived from ParticleBase which describes
+//   what specific data attributes the particle has (e.g., mass or charge).
+//   Each attribute is an instance of a ParticleAttribute<T> class; ParticleBase
+//   keeps a list of pointers to these attributes, and performs global
+//   operations on them such as update, particle creation and destruction,
+//   and inter-processor particle migration.
+//
+//   ParticleBase is templated on the ParticleLayout mechanism for the particles.
+//   This template parameter should be a class derived from ParticleLayout.
+//   ParticleLayout-derived classes maintain the info on which particles are
+//   located on which processor, and performs the specific communication
+//   required between processors for the particles.  The ParticleLayout is
+//   templated on the type and dimension of the atom position attribute, and
+//   ParticleBase uses the same types for these items as the given
+//   ParticleLayout.
+//
+//   ParticleBase and all derived classes have the following common
+//   characteristics:
+//       - The spatial positions of the N particles are stored in the
+//         particle_position_type variable R
+//       - The global index of the N particles are stored in the
+//         particle_index_type variable ID
+//       - A pointer to an allocated layout class.  When you construct a
+//         ParticleBase, you must provide a layout instance, and ParticleBase
+//         will delete this instance when it (the ParticleBase) is deleted.
+//
+//   To use this class, the user defines a derived class with the same
+//   structure as in this example:
+//
+//     class UserParticles :
+//              public ParticleBase< ParticleSpatialLayout<double,3> > {
+//     public:
+//       // attributes for this class
+//       ParticleAttribute<double> rad;  // radius
+//       particle_position_type    vel;  // velocity, same storage type as R
+//
+//       // constructor: add attributes to base class
+//       UserParticles(ParticleSpatialLayout<double,2>* L) : ParticleBase(L) {
+//         addAttribute(rad);
+//         addAttribute(vel);
+//       }
+//     };
+//
+//   This example defines a user class with 3D position and two extra
+//   attributes: a radius rad (double), and a velocity vel (a 3D Vector).
+//
+//   After each 'time step' in a calculation, which is defined as a period
+//   in which the particle positions may change enough to affect the global
+//   layout, the user must call the 'update' routine, which will move
+//   particles between processors, etc.  After the Nth call to update, a
+//   load balancing routine will be called instead.  The user may set the
+//   frequency of load balancing (N), or may supply a function to
+//   determine if load balancing should be done or not.
+//
+// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #ifndef IPPL_PARTICLE_BASE_H
 #define IPPL_PARTICLE_BASE_H
 
-/*
- * ParticleBase - Base class for all user-defined particle classes.
- *
- * ParticleBase is a container and manager for a set of particles.
- * The user must define a class derived from ParticleBase which describes
- * what specific data attributes the particle has (e.g., mass or charge).
- * Each attribute is an instance of a ParticleAttribute<T> class; ParticleBase
- * keeps a list of pointers to these attributes, and performs global
- * operations on them such as update, particle creation and destruction,
- * and inter-processor particle migration.
- *
- * ParticleBase is templated on the ParticleLayout mechanism for the particles.
- * This template parameter should be a class derived from ParticleLayout.
- * ParticleLayout-derived classes maintain the info on which particles are
- * located on which processor, and performs the specific communication
- * required between processors for the particles.  The ParticleLayout is
- * templated on the type and dimension of the atom position attribute, and
- * ParticleBase uses the same types for these items as the given
- * ParticleLayout.
- *
- * ParticleBase and all derived classes have the following common
- * characteristics:
- *     - The spatial positions of the N particles are stored in the
- *       ParticlePos_t variable R
- *     - The global index of the N particles are stored in the
- *       ParticleIndex_t variable ID
- *     - A pointer to an allocated layout class.  When you construct a
- *       ParticleBase, you must provide a layout instance, and ParticleBase
- *       will delete this instance when it (the ParticleBase) is deleted.
- *
- * To use this class, the user defines a derived class with the same
- * structure as in this example:
- *
- *   class UserParticles :
- *            public ParticleBase< ParticleSpatialLayout<double,2> > {
- *   public:
- *     // attributes for this class
- *     ParticleAttribute<double> rad;  // radius
- *     ParticlePos_t             vel;  // velocity, same storage type as R
- *
- *     // constructor: add attributes to base class
- *     UserParticles(ParticleSpatialLayout<double,2>* L) : ParticleBase(L) {
- *       addAttribute(rad);
- *       addAttribute(vel);
- *     }
- *   };
- *
- * This example defines a user class with 2D position and two extra
- * attributes: a radius rad (double), and a velocity vel (a 2D Vektor).
- *
- * After each 'time step' in a calculation, which is defined as a period
- * in which the particle positions may change enough to affect the global
- * layout, the user must call the 'update' routine, which will move
- * particles between processors, etc.  After the Nth call to update, a
- * load balancing routine will be called instead.  The user may set the
- * frequency of load balancing (N), or may supply a function to
- * determine if load balancing should be done or not.
- *
- * Each ParticleBase can contain zero or more 'ghost' particles, which are
- * copies of particle data collected from other nodes.  These ghost particles
- * have many of the same function calls as for the 'regular' particles, with
- * the word 'ghost' prepended.  They are not necessary; but may be used to
- * improve performance of some parallel algorithms (such as calculating
- * neighbor lists).  The actual determination of what ghost particles should
- * be stored in this object (if any) is done by the specific layout object.
- *
- * ParticleBase also contains information on the types of boundary conditions
- * to use.  ParticleBase contains a ParticleBConds object, which is an array
- * of particle boundary condition functions.  By default, these BC's are null,
- * so that nothing special happens at the boundary, but the user may set these
- * BC's by using the 'getBConds' method to access the BC container.  The BC's
- * will then be used at the next update.  In fact, the BC container is stored
- * within the ParticleLayout object, but the interface the user uses to access
- * it is via ParticleBase.
- *
- * You can create an uninitialized ParticleBase, by using the default
- * constructor.  In this case, it will not do any initialization of data
- * structures, etc., and will not contain a layout instance.  In order to use
- * the ParticleBase in any useful way in this case, use the 'initialize()'
- * method which takes as an argument the layout instance to use.
- */
 
 #include "Particle/Kokkos_ParticleAttrib.h"
 #include "Particle/Kokkos_ParticleLayout.h"

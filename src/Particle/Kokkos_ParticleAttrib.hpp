@@ -1,3 +1,31 @@
+//
+// Class ParticleAttrib
+//   Templated class for all particle attribute classes.
+//
+//   This templated class is used to represent a single particle attribute.
+//   An attribute is one data element within a particle object, and is
+//   stored as a Kokkos::View. This class stores the type information for the
+//   attribute, and provides methods to create and destroy new items, and
+//   to perform operations involving this attribute with others.
+//
+//   ParticleAttrib is the primary element involved in expressions for
+//   particles (just as Field is the primary element there).  This file
+//   defines the necessary templated classes and functions to make
+//   ParticleAttrib a capable expression-template participant.
+//
+// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 namespace ippl {
 
