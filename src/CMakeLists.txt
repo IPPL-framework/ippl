@@ -73,6 +73,7 @@ add_subdirectory (PETE)
 # add_subdirectory (Region)
 add_subdirectory (Utility)
 add_subdirectory (Expression)
+add_subdirectory (Types)
 
 if (ENABLE_AMR)
     add_subdirectory(AmrParticle)

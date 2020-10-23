@@ -20,7 +20,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#include "Field/ViewTypes.h"
+#include "Types/ViewTypes.h"
 
 #include "Expression/IpplExpressions.h"
 

@@ -34,7 +34,6 @@ set (_HDRS
     LField.h
 #     ReductionLoc.hpp
 #     ReductionLoc.h
-    ViewTypes.h
     )
 
 include_DIRECTORIES (

@@ -71,7 +71,7 @@
  */
 
 
-#include "Field/ViewTypes.h"
+#include "Types/ViewTypes.h"
 
 namespace ippl {
 
