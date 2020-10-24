@@ -9,7 +9,7 @@
 //   to perform operations involving this attribute with others.
 //
 //   ParticleAttrib is the primary element involved in expressions for
-//   particles (just as Field is the primary element there).  This file
+//   particles (just as LField is the primary element there).  This file
 //   defines the necessary templated classes and functions to make
 //   ParticleAttrib a capable expression-template participant.
 //
