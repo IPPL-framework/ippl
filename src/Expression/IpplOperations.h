@@ -18,7 +18,7 @@
 #ifndef IPPL_OPERATIONS_H
 #define IPPL_OPERATIONS_H
 
-#include "AppTypes/Vector.h"
+#include "Types/Vector.h"
 
 namespace ippl {
     /*!

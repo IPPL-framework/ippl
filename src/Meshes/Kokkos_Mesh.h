@@ -22,7 +22,7 @@
 #define IPPL_MESH_H
 
 // #include "FieldLayout/FieldLayout.h"
-#include "AppTypes/Vector.h"
+#include "Types/Vector.h"
 
 namespace ippl {
     template<typename T, unsigned Dim>
@@ -42,6 +42,10 @@ namespace ippl {
 
         // Set the origin of mesh vertex positions
         void setOrigin(const vector_type& origin);
+
+        const vector_type& getGridsize() const;
+
+        T getGridsize(size_t dim) const;
 
     protected:
         vector_type origin_m;          // Origin of mesh coordinates (vertices)
