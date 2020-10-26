@@ -44,13 +44,17 @@
 namespace ippl {
     namespace detail {
 
-// /////////////////////////////////////////////////////////////////////
-// // constructor
-// template<class T, unsigned Dim>
-// ParticleLayout<T, Dim>::ParticleLayout() {
-//
-//
-// //   setUpdateFlag(ALL, true);
-// }
+        template<typename T, unsigned Dim>
+        template<class PT, class NDI>
+        void ParticleLayout<T, Dim>::applyBC(PT& R, const NDI& nr) {
+            using mdrange = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+            Kokkos::parallel_for("ParticleLayout::applyBC()",
+                                 mdrange({0, 0}, {R.size(), Dim}),
+                                 KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                     const size_t j)
+                                 {
+                                     R(i)[j] = bc_m.apply(R(i)[j], j, nr);
+                                 });
+        }
     }
 }

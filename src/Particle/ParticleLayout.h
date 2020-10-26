@@ -44,6 +44,8 @@
 #ifndef IPPL_PARTICLE_LAYOUT_H
 #define IPPL_PARTICLE_LAYOUT_H
 
+#include "Particle/ParticleBConds.h"
+
 namespace ippl {
     namespace detail {
         // ParticleLayout class definition.  Template parameters are the type
@@ -52,9 +54,10 @@ namespace ippl {
         class ParticleLayout {
 
         public:
-            typedef T               value_type;
-            typedef std::int64_t    index_type;
-            typedef Vector<T, Dim>  vector_type;
+            typedef T                       value_type;
+            typedef std::int64_t            index_type;
+            typedef Vector<T, Dim>          vector_type;
+            typedef ParticleBConds<T, Dim>  bc_type;
 
         public:
             ParticleLayout() = default;
@@ -66,6 +69,33 @@ namespace ippl {
                 //FIXME
                 std::cout << "TODO" << std::endl;
             }
+
+
+            /*!
+             * @returns the boundary conditions container
+             */
+            const bc_type& getBConds() const { return bc_m; }
+
+            /*!
+             * Copy over the given boundary conditions.
+             * @param bc are the boundary conditions
+             */
+            void setBConds(const bc_type& bc) { bc_m = bc; }
+
+
+        protected:
+            /*!
+             * Apply the given boundary conditions to the current particle positions.
+             * @tparam PT is the type of particle position attribute container
+             * @tparam NDI is the type of index object (NDIndex or NDRegion)
+             * @param
+             */
+            template<class PT, class NDI>
+            void applyBC(PT& R, const NDI& nr);
+
+        private:
+            //! the list of boundary conditions for this set of particles
+            bc_type bc_m;
         };
     }
 }
