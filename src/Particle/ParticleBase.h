@@ -146,12 +146,6 @@ namespace ippl {
         size_t getLocalNum() const { return localNum_m; }
 
         /*!
-         * @returns processor local number of particles that will
-         * be deleted at the next destroy call.
-         */
-        size_t getDestroyNum() const { return destroyNum_m; }
-
-        /*!
          * Set the processor local number of particles
          * @param nLocal number of particles
          */
@@ -200,6 +194,15 @@ namespace ippl {
          */
         void addAttribute(detail::ParticleAttribBase<Properties...>& pa);
 
+
+        /*!
+         * @returns the number of attributes
+         */
+        typename attribute_container_t::size_type getAttributeNum() const {
+            return attributes_m.size();
+        }
+
+
         /*!
          * Redistribute particles among MPI ranks.
          * This function calls the underlying particle layout
@@ -247,9 +250,6 @@ namespace ippl {
 
         //! processor local number of particles
         size_t localNum_m;
-
-        //! processor local particles to be deleted
-        size_t destroyNum_m;
 
         //! all attributes
         attribute_container_t attributes_m;
