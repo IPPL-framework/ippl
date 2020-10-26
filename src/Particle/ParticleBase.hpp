@@ -89,7 +89,6 @@ namespace ippl {
     ParticleBase<PLayout, Properties...>::ParticleBase(std::shared_ptr<PLayout>&& layout)
     : layout_m(std::move(layout))
     , localNum_m(0)
-    , destroyNum_m(0)
     , attributes_m(0)
     , nextID_m(Ippl::Comm->myNode())
     , numNodes_m(Ippl::Comm->getNodes())
@@ -177,6 +176,7 @@ namespace ippl {
         /* count the number of particles with ID == -1 and fill
          * a boolean view
          */
+        size_t destroyNum = 0;
         Kokkos::View<bool*> invalidIndex("", localNum_m);
         Kokkos::parallel_reduce("Reduce in ParticleBase::destroy()",
                                 localNum_m,
@@ -185,11 +185,11 @@ namespace ippl {
                                 {
                                     nInvalid += size_t(ID(i) < 0);
                                     invalidIndex(i) = (ID(i) < 0);
-                                }, destroyNum_m);
+                                }, destroyNum);
 
-        PAssert(destroyNum_m <= localNum_m);
+        PAssert(destroyNum <= localNum_m);
 
-        if (destroyNum_m == 0) {
+        if (destroyNum == 0) {
             return;
         }
 
@@ -210,7 +210,7 @@ namespace ippl {
                                   }
                               });
 
-        localNum_m -= destroyNum_m;
+        localNum_m -= destroyNum;
 
         // delete the invalide attribut indices
         for (attribute_iterator it = attributes_m.begin();
