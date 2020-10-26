@@ -1,0 +1,305 @@
+\chapter{FieldLayout Class}
+\label{sec:flcl}
+The \texttt{FieldLayout} class represents the abstraction of a decomposition of a Field object into pieces (subsets of elements). The number of pieces need not be, but typically is, greater than or equal to the number of physical processors or cores used to run the \ippl program in parallel. This is a decomposition in the sense that the parallel computing literature talks about domain decomposition. The Field object represents a mathematical 
+field discretized on a spatial domain, each piece of it is a subdomain. Equivalent to the actual spatial subdomain is the subset of the index space of the discretization. Currently in \ippl, these subsets are contiguous, stride-1 subranges of the global (N -dimensional) index space. Other \ippl mechanisms assign each sub domain to a processor or core. The \texttt{FieldLayout} class provides mechanisms for specifying decomposition, and has two relationships with the \texttt{Field} class: \texttt{Field} uses a \texttt{FieldLayout} reference and invokes its mechanisms to manage the distribution of its data, and \texttt{FieldLayout} maintains a container of pointers to all the 
+\texttt{Field}'s it is used by. When the user requests that a \texttt{FieldLayout} be redistributed, the \texttt{FieldLayout} goes through its list of Field pointers and tells the 
+\texttt{Field}' s to effect the redistribution of their data. 
+\section{FieldLayout Definition (Public Interface)} 
+
+\begin{smallcode}
+// enumeration used to select serial or parallel axes 
+enum e_dim_tag { SERIAL=O, PARALLEL=l } 
+
+// A base class for FieldLayout that is independent of dimension. 
+
+class FieldLayoutBase 
+{ 
+private: 
+// Some dummy storage so that it doesn't confuse purify. 
+char Dummy; 
+
+public: 
+
+FieldLayoutBase() : Dummy(0) {} 	
+};
+
+template<unsigned Dim>
+class FieldLayout public FieldLayoutBase { 
+public: 
+
+// Typedefs'for containers. 
+
+typedef vmap<Unique::type,my_auto_ptr<Vnode<Dim> > >ac_id_vodes;
+typedef DomainMap<NDIndex<Dim>,RefCountedP< Vnode<Dim> >,
+                                       Touches<Dim>,Contains<Dim>,
+                                       Split<Dim> > ac_domain_vnodes;
+typedef vmap<GuardCellSizes<Dim>,my_auto_ptr<ac_domain_vnodes> > 
+	     ac_gc_domain_vnodes; 
+
+typedef vmap <Unique::type,FieldBase*> ac_id_fields;
+
+// Typedefs for iterators. 
+
+typedef ac_id_vodes::iterator iterator_iv;
+typedef ac_id_vodes: :const_iterator const_iterator_iv; 
+typedef ac_domain_vnodes::iterator iterator_dv; 
+typedef ac_domain_vnodes::touch_iterator touch_iterator_dv; 
+typedef pair<touch_iterator_dv,touch_iterator_dv> touch_range_dv; 
+typedef ac_id_fields::iterator iterator_if;
+typedef ac_id_fields::const_iterator const_iterator_if; 
+typedef ac_gc_domain_vnodes: :iterator iterator_gdv; 
+public: 
+
+// Accessors for the locals by Id. 
+ac_id_vnodes: : size_type size_iv(); 
+iterator_iv begin_iv(); 
+iterator_ivend_iv(); 
+const_iterator_iv begin_iv() const; 
+const_iterator_iv end_iv() const; 
+
+// Accessors for the remote vnode containers. 
+ac_gc_domain_vnodes::size_type size_rgdv(); 
+iterator_gdv begin_rgdv(); 
+iterator_gdvend_rgdv(); 
+
+// Accessors for the remote vnodes themselves. 
+ac_domain_vnodes::size_type size_rdv( const GuardCellSizes<Dim>& gc = gc0()) ;
+ 
+iterator_dv begin_rdv(const GuardCellSizes<Dim>& gc = gcO()); 
+iterator_dv end_rdv(const GuardCellSizes<Dim>& gc= gcO()); 
+touch_range_dv touch_range_rdv(const NDIndex<Dim>& domain, 
+		const GuardCellSizes<Dim>& gc = gcO()); 
+
+// Accessors for the fields declared on this 
+// FieldLayout. ac_id_fields:.: size_type size_if () ; 
+iterator_if begin_if () ; 
+iterator_ifend_if(); 
+const_iterator_if begin_if() const; 
+const_iterator_if end_if() const; 
+
+// Tell the FieldLayout that a FieldBase has been declared on it
+void checkin(FieldBase&f, const GuardCellSizes<Dim>& gc= gcO()); 
+// Tell the FieldLayout that a FieldBase is no longer using it. 
+
+void checkout(FieldBase& f); 
+
+// Compare FieldLayouts to see if they represent the same domain. 
+
+bool operator==(const FieldLayout<Dim>& x) 
+{ 
+return Domain == x.Domain; 
+}
+// Constructors. 
+// Default constructor, which should only be used if you are going to 
+// call 'initialize' soon after (before using in any context) 
+
+FieldLayout() { } 
+
+//Constructorsfor 1 ... 6 dimensions 
+
+FieldLayout(const Index& il, e_dim_tag pl=PARALLEL, int vnodes=-1); 
+
+FieldLayout(const Index&il, const Index& i2, e_dim_tag pl=PARALLEL, 
+			e_dim_tag p2=PARALLEL, int vnodes=-1); 
+
+FieldLayout(const Index& il, const Index& i2, const Index& i3,
+e_dim_tag pl=PARALLEL, e_dim_tag p2=PARALLEL, e_dim_tag p3=PARALLEL, int vnodes=-1); 
+
+FieldLayout(const Index& il, const Index& i2, const Index& i3, 
+const Index& i4, e_dim_tag pi = PARALLEL , e_dim_tag p2 = PARALLEL , e_dim_tag p3=PARALLEL, 
+e_dim_tag p4=PARALLEL, int vnodes=-1) ; 
+
+FieldLayout(const Index& il, const Index& i2, const Index& i3,
+const Index& i4, const Index& i5, e_dim_tag pl=PARALLEL, e_dim_tag p2=PARALLEL, 
+e_dim_tag p3=PARALLEL, e_dim_tag p4=PARALLEL, e_dim_tag p5=PARALLEL, int vnodes=-1) ; 
+
+FieldLayout(const Index& il, const Index& i2, const Index& i3, 
+const Index&i4, const Index& is, const Index& i6, e_dim_tag pl=PARALLEL, e_dim_tag. p2=PARALLEL, 
+e_dim_tag p3=PARALLEL, e_dim_tag p4=PARALLEL, e_dim_tag pS = PARALLEL , 
+e_dim_tag p6=PARALLEL, int vnodes=-1);
+
+// Next we have one for arbitrary dimension. 
+FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p==O, int vnodes"=-1)
+{ initialize (domain,p,vnodes) ; 
+
+//Build a FieldLayout given the whole domain and 
+//begin and end iterators for the set of domains for the local Vnodes. 
+//It does a collective computation to find the remote Vnodes. 
+
+FieldLayout(const NDIndex<Dim>& Domain, NDIndex<Dim>* begin, NDIndex<Dim>* end); 
+
+// initialization functions, for use when the FieldLayout was created using the default constructor. 
+void initialize(const Index& il, e_dim_tag pl=PARALLEL,int vnodes=-1); 
+
+void initialize(const Index& il, const Index& i2, e_dim_tag pl=PARALLEL, 
+		e_dim_tag p2=PARALLEL, int vnodes=-l);
+
+void initialize{const Index& il, const Index& i2. const Index& i3, e_dim_tag pl=PARALLEL, 
+		e_dim_tag p2=PARALLEL, e_dim_tag p3=PARALLEL, int vnodes=-1);
+
+void initialize(const Index& il, const Index&i2, const Index& i3, const.Index& i4, 
+	e_dim_tag pl=PARALLEL, e_dim_tag p2=PARALLEL, 
+	e_dim~tag p3=PARALLEL, e_dim_tag p4=PARALLEL, int vnodes=-1);
+
+void initialize(const Index& il,.const Index&, i2, Cbnst Index& i3, const Index& i4, 
+const Index& is, e_dim_tag pl=PARALLEL, 
+e_dim_tag p2=PARALLEL, e_dim_tag p3=PARALLELi e_dim_tag p4=PARALLEL, 
+e_dim_tag pS = PARALLEL , int vnodes=-1); 
+		
+void initialize(const Index& il, constIndex& i2, const Index& i3, const Inde.x& i4, const Index& is, 
+const Index& i6, e_dim_tag pl=PARALLEL,e_dim_tag p2=PARALLEL, e_dim tagp3=PARALLEL, 
+e_dim_tag p4=PARALLEL, e_dim_tag p5=PARALLEL, e_dim_tagp6=PARALLEL, int vnodes=-1);
+ 
+void initialize(const NDIndex<Dim>& domain, e_dim_tag *p=O" int vnodes=-1);
+
+// Let the user set the local vnodes. 
+// this does everything necessary to realign all the fields associated with this FieldLayout! 
+// It inputs begin and end iterators for the local vnodes. 
+
+void Repartition(NDIndex<Dim>*,NDIndex<Dim>*);
+
+void Repartition(NDIndex<Dim>& domain)
+{ 
+Repartition(&domain, (&domain) +1);
+}
+
+// Destructor: Everything deletes itself automatically, 
+// except we must tell all the registered FieldBase's we're going away.
+~FieldLayout();
+ 
+// Return the domain. 
+constNDIndex<Dim>& getDomain() const { return Domain; } 
+
+// Print it out. 
+void write (ostream&) const;
+friend ostream& operator<<(ostream&, const FieldLayout<Dim>&);
+};
+
+\end{smallcode}
+
+\section{FieldLayout Constructors}
+ 
+\texttt{FieldLayout} is parameterized on (\texttt{unsigned}) dimensionality, having the same meaning as the dimensionality template parameter for the \texttt{Field} class. 
+ When constructing a \texttt{FieldLayout} object, you must specify the index range for each dimension (or axis). To do this, you can 
+	use a single \texttt{NDIndex} object:
+  
+\begin{smallcode}
+index I(S), J(9), K(4); 
+NDIndex<3> Domain(l, J, K);
+FieldLayout<3> Layout(Domain);
+\end{smallcode}
+For \texttt{FieldLayout}'s of $N$ dimensions up to six, you may instead specify $N$ Index objects to the constructor of \texttt{FieldLayout} directly, without creating an \texttt{NDIndex} object: 
+\begin{smallcode}
+Index l(5), J(9), K(4);
+FieldLayout<3> Layout (I, J, K); 
+\end{smallcode}
+
+\subsection{Specifying Serial or Parallel Layout}
+'By default, \texttt{FieldLayout} will attempt to distribute the data among the processors (vnodes, actually) by subdividing each dimension in turn until it has the proper number of subregions. 
+Those axes which are considered for subdivision are the parallel axes, which means that a given node will only contain \texttt{Field} data for a subset of the indices along that dimension. 
+You can, however, tell \texttt{FieldLayout} which axes to subdivide, and which to maintain as serial. Serial axes are not ever partitioned by \texttt{FieldLayout}. 
+You must have at least one parallel dimension in a given \texttt{FieldLayout}; by default, all axes are parallel. 
+To specify things, use the predefined enumeration \texttt{e\_dim\_tag}, which has values \texttt{SERIAL} and \texttt{PARALLEL}. When you pass a \texttt{NDIndex<Dim>} as the\\ \texttt{FieldLayout} 
+constructor argument, you pass an array of \texttt{e\_dim\_tag} values, having length Dim. When you construct a \texttt{FieldLayout} with $N$ \texttt{Index}  arguments, you may also include 
+up to $N$ more arguments of type \texttt{$e\_dim\_tag$} to set the corresponding dimensions  layout methods; any omitted dimensions at the end of the list default to \texttt{PARALLEL}. 
+Refer to the first few chapters of this report for appropriate examples. 
+
+\section{FieldLayout Member Functions and Member Data}
+\subsection{Access Functions to Containers in \texttt{FieldLayout}}
+The \texttt{Index} class has several private members whose types are parameterized container classes patterned after STL containers. These have STL-like semantics, including iterators. 
+The container objects themselves are private, but the user has public access to their sizes and iterators over them via \texttt{Index} public member functions. 
+\texttt{Index} provides some typedef's to make this access easier: 
+
+\begin{smallcode}
+typedef vmap<unique: type,my_auto_ptr<Vnode<Dim> > > ac_id_vnodes;
+\end{smallcode}
+Type for \texttt{FieldLayout}'s container of pointers to \texttt{Vnode} objects; the \ippl internal \texttt{Vnode} class represents the vnode, or index-space subdomain in this context. 
+The number of subdomains is equal to the number of vnodes, and\\ \texttt{FieldLayout}' s serial/parallel specification determines the extents of the subdomains in \texttt{Index} space.
+
+
+ 
+\begin{smallcode}
+typedef DomainMap<NDIndex<Dim>,RefCountedP< Vnode<Dim> >, 
+Touches<Dim>,Contains<Dim>,Split<Dim> > ac_domain_vnodes; 
+typedef vrnap<GuardCellSi~es<Dim>, my_auto_ptr<ac_domain_vnodes> > ac_gc_domain_vnodes; 
+\end{smallcode}
+The first of these typedef's is only used inside the second. 
+\begin{smallcode}
+typedef vmap<Unique::type,FieldBase*> ac_id_fields;
+\end{smallcode}
+Type for \texttt{FieldLayout}'s container of pointers to \texttt{Field}'s using this \texttt{FieldLayout} object, mentioned in the general discussion anhe beginning of this chapter. 
+
+\begin{smallcode}
+typedef ac_id_vnodes: :iterator iterator_iv;
+typedef ac_id_vnodes: :const_iteratorconst_iterator_iv;
+typedef ac_domain_vnodes::iterator iterator_dv;
+typedef ac_domain_vnodes::touch_iterator touch_iterator_dv;
+typedef pair<touch_iterator_dv,touch_iterator_dv> touch_range_dv;
+typedef ac_id_fields::iterator iterator_if;
+typedef ac_iQ._fields::const_iterator const_iterator_if; 
+typedef ac_gc_domain_vnodes::iterator iterator_gdv;
+\end{smallcode}
+
+More to come ..... 
+
+
+
+\chapter{\texttt{CenteredFieldLayout} Class}
+\label{sec:flcent}
+The \texttt{CenteredFieldLayout} class inherits from \texttt{FieldLayout}. It represents the same abstraction as \texttt{FieldLayout}, except specialized to a particular type of 
+centering on a particular type of  \texttt{Mesh}; it is parameterized on mesh type and centering type. 
+These template parameters have the same meaning as the corresponding parameters for the \texttt{Field} class. \\
+The primary use of  \texttt{CenteredFieldLayout} is for guaranteeing correct specification of numbers of elements in 
+\texttt{Field}'s along the various dimensions according to the centering along those dimensions. The \texttt{Mesh} object reference constructor arguments provide for this. 
+\section{\texttt{CenteredFieldLayout} Definition (Public Interface)}
+\begin{smallcode}
+template<unsigned Dim, class Mesh, class Centering> 
+class CenteredFieldLayout : public FieldLayout<Dim> { 
+public: 
+//-------------~--------~----------------------~----~----------------------- 
+// Constructors from a mesh object only and parallel/serial specifiers. 
+//--------------------~---------------------~------------------------------- 
+// Constructor for arbitrary dimension with parallel/serial specifier array: 
+//This one also works if nothing except mesh is specified: 
+
+CenteredFieldLayout(Mesh& mesh, e_dim_tag *p=0, int vnoqes=-1);
+ 
+// Constructors for 1 ... 6 dimenslons with parallel/serial specifiers: 
+ 
+CenteredFieldLayout(Mesh& mesh, e_dim_tag pI, int vnodes=-1); 
+CenteredFieldLayout(Mesh& mesh, e_dim_tagpI, e_dim_tag p2, int vnodes=-1);
+CenteredFieldLayout(Mesh& mesh, e_dim_tag pI, e_dim_tag p2, e_dim_tag p3, int vnodes=-1); 
+CenteredFieldLayout(Mesh&mesh, e_dim_tag pI, e_dim_tag p2, e_dim_tag p3, 
+e_dim_tag p4, int vnodes=-1);
+CenteredFieldLayout(Mesh&mesh, e_dim_tag pI, e_dim_tag p2, e_dim_tag p3, 
+e_dim_tag p4, e_dim_tag p5, int vnodes=-1);
+CenteredFieldLayout(Mesh& mesh,e_dim_tag pI, e_dim_tag p2, e_dim_tag p3, 
+e_dim_tag p4, e_dim_tag p5, e_dim_tag p6, int vnodes=-1); 
+};
+\end{smallcode}
+\section{\texttt{CenteredFieldLayout} Constructors}
+
+Here is where \texttt{CenteredFieldLayout} differs from \texttt{FieldLayout}. Instead of taking \texttt{NDIndex\&} or \texttt{Index\&} arguments to specify the numbers of elements along the 
+various dimensions, the constructors take an argument having the type ofthe \texttt{Mesh} template parameter. This might be, for example, a \texttt{UniformCartesian} object reference. 
+\texttt{CenteredFieldLayout} queries the mesh object for numbers of grid nodes arid sets up the right number of elements for subsequent \texttt{Field} objects instantiated to use this \texttt{CenteredFieldLayout}.
+There are implementations for \texttt{Cell}, \texttt{Vert}, and \texttt{Cartesian} centerings on \texttt{UniformCartesian} and \texttt{Cartesian} meshes. 
+If you are not providing a \texttt{Mesh} object to construct a \texttt{CenteredFieldLayout}, you probably should be just using simple \texttt{FieldLayout} objects instead, though no harm would be done by constructing a \texttt{CenteredFieldLayout} with \texttt{Index/NDIndex} arguments via the inherited constructors from \texttt{FieldLayout}. Refer to Appendix \ref{sec:flcl} for more details about \texttt{FieldLayout}. Other than these different constructors, \texttt{CenteredFieldLayout} is the same as \texttt{FieldLayout}. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

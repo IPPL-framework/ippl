@@ -1,0 +1,292 @@
+\documentclass[12pt,a4paper]{report}
+%% does not work in Latex2Html mode
+%\usepackage{hyperref}
+\usepackage{url}
+\usepackage{html}
+\usepackage{epic}
+\usepackage{eepic}
+\usepackage{makeidx}
+\usepackage{array}
+\usepackage{times}
+\usepackage{amsmath}
+\usepackage[dvips]{epsfig,rotating}
+\usepackage{dingbat}
+\usepackage{listings}
+\usepackage{graphicx}
+
+\lstnewenvironment{code}[1][]
+{\textbf{Code Listing} \hspace{1cm} \hrulefill \lstset{language=C++, basicstyle=\ttfamily\scriptsize}}
+{\hrule\smallskip}
+%{\textbf{Code Listing} \hspace{1cm} \hrulefill \lstset{language=C++, basicstyle=\ttfamily\scriptsize, #1}}
+
+\lstnewenvironment{codeln}[1][]
+{\textbf{Code Listing} \hspace{1cm} \hrulefill \lstset{language=C++, basicstyle=\ttfamily\scriptsize, numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt}}
+{\hrule\smallskip}
+
+\lstnewenvironment{smallcode}[1][]
+{\lstset{language=C++, basicstyle=\ttfamily\scriptsize}}
+{\smallskip}
+
+\usepackage{pdfdraftcopy}             % Draft
+\draftstring{V 2.0 - with Kokos}
+%% Define a new 'leo' style for the package that will use a smaller font.
+%\makeatletter
+%\def\url@leostyle{%
+ % \@ifundefined{selectfont}{\def\UrlFont{\sf}}{\def\UrlFont{\small\ttfamily}}}
+%\makeatother
+%% Now actually use the newly defined style.
+%\urlstyle{leo}
+
+\setlength\topmargin{0.0cm}
+%\setlength\oddsidemargin{3.501cm}
+%\setlength\evensidemargin{3.501cm}
+\renewcommand{\arraystretch}{1.5}
+
+
+% Definition neuer Zeichen
+\newcommand{\R}{{\mathbb R}}
+\newcommand{\N}{{\mathbb N}}
+\newcommand{\Z}{{\mathbb Z}}
+% Standard Notationen
+\newcommand{\vc}[1]{\mbox{\boldmath $#1$}}
+\newcommand{\sv}[1]{\mbox{\boldmath $\vec{#1}$}}
+\newcommand{\mx}[1]{\mbox{\boldmath $\underline{#1}$}}
+\newcommand{\op}[1]{\mathcal{#1}}
+% Sonstige Abkuerzungen
+\newcommand{\backpar}{\rule{1mm}{0mm}\\[-5ex]\rule{1mm}{0mm}}
+\newcommand{\ds}{\displaystyle}
+\newcommand{\AND}{\quad\mbox{and}\quad}
+\newcommand{\diag}{\mbox{diag }}
+\newcommand{\arrstr}[1]{\rule[0mm]{0mm}{#1}}
+\newcommand{\hstrut}[1]{\rule{0mm}{#1}}
+\newlength{\mylablen}
+\newlength{\mycaplen}
+\newlength{\myislen}
+% caption fuer Bilder
+\newcommand{\fcap}[2]{\refstepcounter{figure} \settowidth{\mycaplen}{#2}
+\settowidth{\mylablen}{\bf Figure \thefigure:~}
+\settowidth{\myislen}{\textwidth-\mylablen}
+\begin{center}
+{\bf Figure \thefigure:~}\ifthenelse{\mycaplen > \myislen}{\parbox[t]{\textwidth-\mylablen}{#2}\label{#1}}{#2\label{#1}}\end{center}}
+% caption fuer Tabellen
+\newcommand{\tcap}[2]{\refstepcounter{table} \settowidth{\mycaplen}{#2}
+\settowidth{\mylablen}{\bf Table \thetable:~}
+\settowidth{\myislen}{\textwidth-\mylablen}
+\begin{center}
+{\bf Table \thetable:~}\ifthenelse{\mycaplen > \myislen}{\parbox[t]{\textwidth-\mylablen}{#2}\label{#1}}{#2\label{#1}}\end{center}}
+%
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{remark}{Remark}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newenvironment{proof}{{\bf Proof:}}{{}\hfill{$\square$}\par\smallskip}
+
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.9}
+\renewcommand{\textfraction}{0.1}
+
+\newcommand{\ipplversion}{\text{2.0 }}
+\newcommand{\mad}{\textsc{mad }}
+\newcommand{\madnine}{\textsc{mad9 }}
+\newcommand{\madninep}{\textsc{mad9p }}
+\newcommand{\madeight}{\textsc{mad8 }}
+\newcommand{\pooma}{\textsc{pooma }}
+\newcommand{\classic}{\textsc{classic }}
+
+\newcommand{\ippl}{\textsc{I$\text{P}^2$L }}
+
+
+\newcommand{\opal}{\textsc{OPAL }}
+\newcommand{\opalt}{\textsc{OPAL-t }}
+\newcommand{\opalcycl}{\textsc{OPAL-cycl }}
+\newcommand{\opalmap}{\textsc{OPAL-map }}
+
+\newcommand{\partroot}{\textsc{H5PartROOT }}
+
+\newcommand{\lieop}[1]
+{{:}{#1}{:}}
+\renewcommand{\arraystretch}{2.0}
+
+\newcommand{\rms}[1]
+{\overset{\sim}{#1}}
+
+% Pfister stuff
+\def\C{{{{\rm {\mbox{\small l}}} \kern -.50em {\rm C}}}}
+\def\R{{{{\rm l} \kern -.15em {\rm R}}}}
+\def\N{{{{\rm l} \kern -.15em {\rm N}}}}
+\def\E{{{{\rm l} \kern -.15em {\rm E}}}}
+\def\P{{{{\rm l} \kern -.15em {\rm P}}}}
+\def\D{{{{\rm l} \kern -.15em {\rm D}}}}
+\def\L{{{{\rm l} \kern -.15em {\rm L}}}}
+\def\Z{{{{\rm Z} \kern -.35em {\rm Z}}}}
+\def\Q{{{{\rm {\mbox{\small l}}} \kern -.45em {\rm Q}}}}
+\def\qQ{{{{\rm {\mbox{\scriptsize l}}} \kern -.33em {\rm Q}}}}
+\def\v{\vspace{1ex}}
+\def\-v{\vspace{-1ex}}
+\def\vv{\vspace{2ex}}
+\def\vvv{\vspace{3ex}}
+\def\vn{\vspace{3ex}\noindent}
+\def\hs{\hspace{-1ex}}
+\def\n{\noindent}
+\def\dsl{\dis\sum\limits}
+\def\dis{\displaystyle}
+\def\O{\Omega}
+\def\o{\omega}
+\def\fr{\mbox{\footnotesize $\dis\frac{1}{2}$}}
+\def\frvier{\mbox{\footnotesize $\dis\frac{1}{4}$}}
+\def\ov{\overline}
+\def\b{\big[}
+\def\B{\big]}
+\def\i{\big\{}
+\def\g{\big\}}
+\def\e{\epsilon}
+\def\f{\footnotesize}
+\def\l{\ell^\prime}
+\def\ll{\ell,\ell^\prime}
+\def\r{\rightarrow}
+\def\point{{\mbox{\large $.$}}}
+\def\wl{\widetilde{\ell}}
+\def\wll{\widetilde{\ell},\widetilde{\ell}^\prime}
+\def\w{\widetilde}
+\def\wh{\widehat}
+\def\wt{\widetilde}
+\def\cA{{\cal A}}
+\def\cT{{\cal T}}
+\def\cE{{\cal E}}
+\def\oS{\overline{S}}
+\def\oT{\overline{T}}
+\def\cI{{\cal I}}
+\def\cK{{\cal K}}
+\def\cH{{\cal H}}
+\def\cP{{\cal P}}
+\def\cF{{\cal F}}
+\def\cS{{\cal S}}
+\def\cG{{\cal G}}
+\def\cO{{\cal O}}
+\def\cU{{\cal U}}
+
+%% REAL ADA STUFF
+\def\bx{{\bf x}}
+\def\br{{\bf r}}
+\def\bv{{\bf v}}
+\newcommand{\matr}[1]{\mathcal{#1}}
+ \newcommand{\myvec}[1]{\bf{#1}}
+%\newcommand{\figref}[2]{#1 (see~Figure~\ref{fig:#2})}
+%\newcommand{\tabref}[2]{#1 (see~Table~\ref{tab:#2})}
+%\newcommand{\secref}[2]{#1 (see~Section~\ref{sec:#2})}
+\newcommand{\mytabline}[2]{\texttt{#1} & #2 \\}
+\renewcommand{\vec}{\myvec}
+
+\makeindex
+
+\renewcommand{\topfraction}{1.0}
+\renewcommand{\bottomfraction}{1.0}
+\renewcommand{\textfraction}{0.0}
+
+\newenvironment{tex2html_nowrap}{}{}
+
+\newcommand{\bibref}[2]{\hypercite{#1}{}{}{bib:#2}}
+
+\newcommand{\tabline}[3]{\hyperref{\texttt{#1}}%
+  {\texttt{#1} (}{)}{sec:#3} & #2 \\}
+\newcommand{\figref}[2]{\hyperref{#1}{#1 (see~Figure~}{)}{fig:#2}}
+\newcommand{\secref}[2]{\hyperref{#1}{#1 (see~Section~}{)}{sec:#2}}
+\newcommand{\tabref}[2]{\hyperref{#1}{#1 (see~Table~}{)}{tab:#2}}
+\begin{htmlonly}
+\bodytext{bgcolor = "#ffffff"}
+\end{htmlonly}
+
+%\newcommand{\documentlabel}{ }
+
+\begin{document}
+
+\begin{titlepage}
+
+\begin{htmlonly}
+\begin{rawhtml}
+<center>
+PAUL SCHERRER INSTITUT
+<br>
+<h1>The IPPL Framework , Version 2.0</h1>
+<h2>(Independent Parallel Particle Layer)</h2>
+<h2>User's Reference Manual</h2>
+<br>
+Andreas Adelmann  
+</center>
+\end{rawhtml}
+\end{htmlonly}
+
+\begin{latexonly}
+\begin{center}\normalsize
+\includegraphics[width=1.\linewidth,angle=0]{figures/psi_logo_wide}
+\end{center}
+\vskip 0.7cm
+PSI-PR-09-05
+\begin{flushright}
+%\documentlabel \\                    % document label
+\end{flushright}
+%\vskip 2.3cm
+\begin{center}\LARGE                 % document title
+{\bf The \ippl Framework} \\
+(Independent Parallel Particle Layer) \\
+Version \ipplversion \footnote{Release Date: \today} \\
+{\bf User's Reference Manual}
+\end{center}
+\vskip 1.5em
+\begin{center}                       % author
+Andreas Adelmann, ..... \vskip 2em
+{\large Abstract}
+\end{center}
+\end{latexonly}
+\begin{quotation}
+ \ippl (Independent Parallel Particle Layer) is an object-oriented framework for particle based applications in computational science 
+requiring high-performance parallel computers. One of \ippl 's most attractive features is its high performance on both single-processor and  distributed-memory multicomputers machines. As future releases of the library will also support shared-memory multicomputers, \ippl 's authors have had to think very carefully about how to obtain the best possible performance across a wide range of applications on different architectures.
+\ippl  is a library of C++ classes designed to represent common abstractions in applications where {\em particles, fields} and operators like {\em FFT's} are needed.
+
+Application programmers use and derive from these classes, which present a data-parallel programming interface at the highest abstraction layer.
+
+Lower, to the user (programmer) hidden implementation layers encapsulate distribution and communication of data among processors. The supported platforms are: Linux based Beowulf clusters, Cray XT5/6, SGI Ultrix and the IBM Blue Gene series.
+
+The main goals of the \ippl  framework includes:
+\begin{itemize}
+    \item Portability across serial, distributed, and parallel architectures with no change to source code
+    \item Development of reusable, cross-problem-domain components to enable rapid application development
+    \item High efficiency for kernels and components relevant to scientific simulation
+    \item Framework design and development driven by applications from a diverse set of scientific problem domains
+    \item Shorter time from problem inception to working parallel simulations 
+\end{itemize}
+ \ippl is currently in development the version here is the first "developer release". \ippl is inspired and partially based on POOMA r1 designed and implemented by scientists working at the Los Alamos National Laboratory's Advanced Computing Laboratory. 
+ %Although \ippl  has received numerous additions the most importand are: 
+%Fully ANSI C++ compatible, full 64Bit, HDF5 support and a Trilinos interface.
+
+The report is organized as follow: in chapter 1 an introduction based on examples including installation instructions is presented. Chapter 2 and 3 are describing support classes followed by an discussion
+on 3D parallel FFT's in \ippl. The next two chapters explaining the use of particles and fields. Appendix A - F describing design and implementation details of the most important classes in the
+framework.
+\end{quotation}
+\vfill
+
+
+\end{titlepage}
+
+\tableofcontents
+\listoftables
+\listoffigures
+\include{introduction}
+\include{ippl_setup}
+\include{ippl_fft}
+\include{ippl_particles}
+\include{ippl_fields}
+
+\appendix
+\include{ippl_field_ref}
+\include{ippl_index_ref}
+\include{ippl_fieldlayout_ref}
+\include{ippl_mesh_ref}
+\include{ippl_centering_ref}
+\include{bibliography}
+
+\printindex
+
+\end{document}
