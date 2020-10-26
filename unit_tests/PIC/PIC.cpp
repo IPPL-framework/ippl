@@ -99,7 +99,7 @@ TEST_F(PICTest, Scatter) {
 
     scatter(bunch->Q, *field, bunch->R);
 
-    double totalcharge = field->sum();
+    double totalcharge = field->sum(1);
 
     ASSERT_DOUBLE_EQ(nParticles * charge, totalcharge);
 }
