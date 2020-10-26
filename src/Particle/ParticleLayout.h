@@ -57,7 +57,10 @@ namespace ippl {
             typedef T                       value_type;
             typedef std::int64_t            index_type;
             typedef Vector<T, Dim>          vector_type;
-            typedef ParticleBConds<T, Dim>  bc_type;
+            typedef ParticleBConds<T, Dim>  bcs_type;
+            typedef typename bcs_type::ParticleBCond bc_type;
+
+            static constexpr unsigned dim = Dim;
 
         public:
             ParticleLayout() = default;
@@ -74,13 +77,21 @@ namespace ippl {
             /*!
              * @returns the boundary conditions container
              */
-            const bc_type& getBConds() const { return bc_m; }
+            const bcs_type& getBConds() const { return bcs_m; }
+
+            /*!
+             * Copy over the given boundary conditions.
+             * @param bcs are the boundary conditions
+             */
+            void setBConds(const bcs_type& bcs) { bcs_m = bcs; }
 
             /*!
              * Copy over the given boundary conditions.
              * @param bc are the boundary conditions
              */
-            void setBConds(const bc_type& bc) { bc_m = bc; }
+            void setBConds(const std::initializer_list<bc_type>& bcs) {
+                bcs_m = bcs;
+            }
 
 
         protected:
@@ -95,7 +106,7 @@ namespace ippl {
 
         private:
             //! the list of boundary conditions for this set of particles
-            bc_type bc_m;
+            bcs_type bcs_m;
         };
     }
 }

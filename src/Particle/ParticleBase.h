@@ -99,6 +99,8 @@ namespace ippl {
         typedef PLayout                           Layout_t;
         typedef std::vector<detail::ParticleAttribBase<Properties...>*> attribute_container_t;
         typedef typename attribute_container_t::iterator  attribute_iterator;
+        typedef ParticleBConds<typename PLayout::value_type, PLayout::dim> bcs_type;
+        typedef typename bcs_type::ParticleBCond bc_type;
 
     public:
         //! view of particle positions
@@ -165,6 +167,31 @@ namespace ippl {
          * @returns particle layout
          */
         const PLayout& getLayout() const { return *layout_m; }
+
+
+        /*!
+         * @returns the boundary condition of the particle layout
+         */
+        const bcs_type& getBConds() const {
+            return layout_m->getBConds();
+        }
+
+
+        /*!
+         * @param bc the boundary conditions
+         */
+        void setBConds(const bcs_type& bcs) {
+            layout_m->setBConds(bcs);
+        }
+
+
+        /*!
+         * @param
+         */
+        void setBConds(const std::initializer_list<bc_type>& bcs) {
+            layout_m->setBConds(bcs);
+        }
+
 
 
         /*!

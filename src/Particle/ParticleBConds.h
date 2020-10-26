@@ -71,7 +71,7 @@ namespace ippl {
 
     //////////////////////////////////////////////////////////////////////
     // general container for a set of particle boundary conditions
-    template<class T, unsigned Dim>
+    template<typename T, unsigned Dim>
     class ParticleBConds {
 
     public:
@@ -88,10 +88,21 @@ namespace ippl {
                 BCList[d] = ParticleNoBCond;
         }
 
+
+        /*!
+         * Initialize all BC's to null ones, which do not change
+         * the value of the data any
+         */
+        ParticleBConds(const std::initializer_list<ParticleBCond>& /*bcs*/) {
+//             for (int d = (2 * Dim - 1); d >= 0; --d)
+//                 BCList[d] = bcs[i];
+        }
+
+
         /*!
          * Assignment operator
          */
-        ParticleBConds<T,Dim>& operator=(const ParticleBConds<T,Dim>& pbc) {
+        ParticleBConds<T, Dim>& operator=(const ParticleBConds<T, Dim>& pbc) {
             for (int d = (2 * Dim - 1); d >= 0; --d)
                 BCList[d] = pbc.BCList[d];
             return *this;

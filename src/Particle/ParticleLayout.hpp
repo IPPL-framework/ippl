@@ -50,7 +50,7 @@ namespace ippl {
             using mdrange = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for("ParticleLayout::applyBC()",
                                  mdrange({0, 0}, {R.size(), Dim}),
-                                 ApplyBC(R, nr, bc_m));
+                                 ApplyBC(R, nr, bcs_m));
         }
     }
 
@@ -62,17 +62,17 @@ namespace ippl {
     struct ApplyBC {
         PT pos_m;
         NDI nr_m;
-        ParticleBConds<T, Dim> bc_m;
+        ParticleBConds<T, Dim> bcs_m;
 
-        ApplyBC(PT pos, const NDI& nr, const ParticleBConds<T, Dim>& bc) {
+        ApplyBC(PT pos, const NDI& nr, const ParticleBConds<T, Dim>& bcs) {
             pos_m = pos;
             nr_m = nr;
-            bc_m = bc;
+            bcs_m = bcs;
         }
 
         KOKKOS_INLINE_FUNCTION
         void operator() (const size_t i, const size_t j) const {
-            pos_m(i)[j] = bc_m.apply(pos_m(i)[j], j, nr_m);
+            pos_m(i)[j] = bcs_m.apply(pos_m(i)[j], j, nr_m);
         }
     };
 }
