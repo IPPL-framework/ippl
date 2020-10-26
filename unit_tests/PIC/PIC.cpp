@@ -10,6 +10,9 @@ class PICTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
     typedef ippl::Field<double, dim> field_type;
+    typedef FieldLayout<dim> flayout_type;
+    typedef ippl::UniformCartesian<double, dim> mesh_type;
+    typedef ippl::detail::ParticleLayout<double, dim> playout_type;
 
     template<class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout>
@@ -24,13 +27,12 @@ public:
     };
 
 
-    typedef ippl::detail::ParticleLayout<double, dim> playout;
-    typedef Bunch<playout> bunch_type;
+    typedef Bunch<playout_type> bunch_type;
 
 
     PICTest()
     : nParticles(1000)
-    , nPoints(100)
+    , nPoints(5)
     {
         setup();
     }
@@ -43,26 +45,34 @@ public:
         for (unsigned int d = 0; d < dim; d++)
             allParallel[d] = SERIAL;
 
-        FieldLayout<dim> layout(owned,allParallel, 1);
+        layout_m = flayout_type (owned,allParallel, 1);
 
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};
         ippl::Vector<double, dim> origin = {0, 0, 0};
-        ippl::UniformCartesian<double, dim> mesh(owned, hx, origin);
 
-        field = std::make_unique<field_type>(mesh, layout);
+        mesh_m = mesh_type(owned, hx, origin);
+
+        field = std::make_unique<field_type>(mesh_m, layout_m);
 
 
-        std::shared_ptr<playout> pl = std::make_shared<playout>();
-        bunch = std::make_unique<bunch_type>(pl);
+        pl_m = std::make_shared<playout_type>();
+        bunch = std::make_unique<bunch_type>(pl_m);
 
         bunch->create(nParticles);
     }
+
+
 
     std::unique_ptr<field_type> field;
     std::unique_ptr<bunch_type> bunch;
     size_t nParticles;
     size_t nPoints;
+
+private:
+    flayout_type layout_m;
+    mesh_type mesh_m;
+    std::shared_ptr<playout_type> pl_m;
 };
 
 
@@ -81,9 +91,9 @@ TEST_F(PICTest, Scatter) {
         Q_host(i) = charge;
     }
 
+
     Kokkos::deep_copy(bunch->R, R_host);
     Kokkos::deep_copy(bunch->Q, Q_host);
-
 
     *field = 0.0;
 
