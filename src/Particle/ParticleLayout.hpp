@@ -56,7 +56,7 @@ namespace ippl {
 
 
     /*
-     * Functor to apply boundar conditions
+     * Functor to apply boundary conditions
      */
     template<typename T, unsigned Dim, class PT, class NDI>
     struct ApplyBC {
