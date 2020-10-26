@@ -38,8 +38,8 @@
 // #include "Index/NDIndex.h"
 
 // // IPPL Field Layout
-// #include "FieldLayout/FieldLayout.h"
-// #include "FieldLayout/CenteredFieldLayout.h"
+#include "FieldLayout/FieldLayout.h"
+#include "FieldLayout/CenteredFieldLayout.h"
 
 // // IPPL Meshes
 // #include "Meshes/UniformCartesian.h"
@@ -62,7 +62,7 @@
 // #include "Utility/DiscField.h"
 
 // IPPL Particles classes
-// #include "Particle/IpplParticleBase.h"
+#include "Particle/ParticleBase.h"
 // #include "Particle/PAssign.h"
 // #include "Particle/PAssignDefs.h"
 // #include "Particle/ParticleSpatialLayout.h"
@@ -90,7 +90,7 @@
 // #include "Particle/IntSUDS.h"
 
 // IPPL Math Types
-#include "AppTypes/Vector.h"
+#include "Types/Vector.h"
 // #include "AppTypes/Tenzor.h"
 // #include "AppTypes/SymTenzor.h"
 // #include "AppTypes/AntiSymTenzor.h"

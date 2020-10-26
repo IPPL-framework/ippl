@@ -1,47 +1,56 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- * 
- * This program was prepared by PSI. 
- * All rights in the program are reserved by PSI.
- * Neither PSI nor the author(s)
- * makes any warranty, express or implied, or assumes any liability or
- * responsibility for the use of this software
- *
- * Visit www.amas.web.psi for more details
- *
- ***************************************************************************/
+//
+// Class ParticleLayout
+//   Base class for all particle layout classes.
+//
+//   This class is used as the generic base class for all classes
+//   which maintain the information on where all the particles are located
+//   on a parallel machine.  It is responsible for performing particle
+//   load balancing.
+//
+//   If more general layout information is needed, such as the global -> local
+//   mapping for each particle, then derived classes must provide this info.
+//
+//   When particles are created or destroyed, this class is also responsible
+//   for determining where particles are to be created, gathering this
+//   information, and recalculating the global indices of all the particles.
+//   For consistency, creation and destruction requests are cached, and then
+//   performed all in one step when the update routine is called.
+//
+//   Derived classes must provide the following:
+//     1) Specific version of update and loadBalance.  These are not virtual,
+//        as this class is used as a template parameter (instead of being
+//        assigned to a base class pointer).
+//     2) Internal storage to maintain their specific layout mechanism
+//     3) the definition of a class pair_iterator, and a function
+//        void getPairlist(int, pair_iterator&, pair_iterator&) to get a
+//        begin/end iterator pair to access the local neighbor of the Nth
+//        local atom.  This is not a virtual function, it is a requirement of
+//        the templated class for use in other parts of the code.
+//
+// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- * 
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
+namespace ippl {
+    namespace detail {
 
-// include files
-#include "Particle/ParticleLayout.h"
-#include "Particle/ParticleBConds.h"
-
-
-
-/////////////////////////////////////////////////////////////////////
-// constructor
-template<class T, unsigned Dim>
-ParticleLayout<T, Dim>::ParticleLayout() {
-   
-  
-  setUpdateFlag(ALL, true);
+// /////////////////////////////////////////////////////////////////////
+// // constructor
+// template<class T, unsigned Dim>
+// ParticleLayout<T, Dim>::ParticleLayout() {
+//
+//
+// //   setUpdateFlag(ALL, true);
+// }
+    }
 }
-
-/***************************************************************************
- * $RCSfile: ParticleLayout.cpp,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:29 $
- * IPPL_VERSION_ID: $Id: ParticleLayout.cpp,v 1.1.1.1 2003/01/23 07:40:29 adelmann Exp $ 
- ***************************************************************************/
-
-

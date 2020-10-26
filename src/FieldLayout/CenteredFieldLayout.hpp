@@ -54,7 +54,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Cell> & cfl,
 {
   NDIndex<Dim> ndi;
   for (unsigned int d=0; d<Dim; d++)
-    ndi[d] = Index(mesh.gridSizes[d] - 1);
+    ndi[d] = Index(mesh.getGridsize(d) - 1);
   cfl.initialize(ndi, edt, vnodes);
 }
 
@@ -68,7 +68,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Vert> & cfl,
 {
   NDIndex<Dim> ndi;
   for (unsigned int d=0; d<Dim; d++)
-    ndi[d] = Index(mesh.gridSizes[d]);
+    ndi[d] = Index(mesh.getGridsize(d));
   cfl.initialize(ndi, edt, vnodes);
 }
 
@@ -82,7 +82,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Edge> & cfl,
 {
   NDIndex<Dim> ndi;
   for (unsigned int d=0; d<Dim; d++)
-    ndi[d] = Index(mesh.gridSizes[d]);
+    ndi[d] = Index(mesh.getGridsize(d));
   cfl.initialize(ndi, edt, vnodes);
 }
 
@@ -104,7 +104,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,
   unsigned npts[Dim], nGridPts;
   unsigned int d, c;
   for (d=0; d<Dim; d++) {
-    nGridPts = mesh.gridSizes[d];
+    nGridPts = mesh.getGridsize(d);
     npts[d] = 0;
     for (c=0; c<NComponents; c++) {
       if (CE[c + d*NComponents] == CELL) {
@@ -137,7 +137,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Cell> & cfl,
 		   int vnodes)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.gridSizes[d] - 1);
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d) - 1);
   cfl.initialize(ndi, edt, vnodesAlongDirection, recurse, vnodes);
 }
 
@@ -152,7 +152,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Vert> & cfl,
 		   int vnodes)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.gridSizes[d]);
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d));
   cfl.initialize(ndi, edt, vnodesAlongDirection, recurse, vnodes);
 }
 
@@ -167,7 +167,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Edge> & cfl,
 		   int vnodes)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.gridSizes[d]);
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d));
   cfl.initialize(ndi, edt, vnodesAlongDirection, recurse, vnodes);
 }
 
@@ -191,7 +191,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,
   unsigned npts[Dim], nGridPts;
   unsigned int d, c;
   for (d=0; d<Dim; d++) {
-    nGridPts = mesh.gridSizes[d];
+    nGridPts = mesh.getGridsize(d);
     npts[d] = 0;
     for (c=0; c<NComponents; c++) {
       if (CE[c + d*NComponents] == CELL) {
@@ -219,7 +219,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Cell> & cfl,
 		   const int *nend)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.gridSizes[d] - 1);
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d) - 1);
   cfl.initialize(ndi, dombegin, domend, nbegin, nend);
 }
 
@@ -234,7 +234,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Vert> & cfl,
 		   const int *nend)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.gridSizes[d]);
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d));
   cfl.initialize(ndi, dombegin, domend, nbegin, nend);
 }
 
@@ -249,7 +249,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Edge> & cfl,
 		   const int *nend)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.gridSizes[d]);
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d));
   cfl.initialize(ndi, dombegin, domend, nbegin, nend);
 }
 
@@ -272,7 +272,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,
   unsigned npts[Dim], nGridPts;
   unsigned int d, c;
   for (d=0; d<Dim; d++) {
-    nGridPts = mesh.gridSizes[d];
+    nGridPts = mesh.getGridsize(d);
     npts[d] = 0;
     for (c=0; c<NComponents; c++) {
       if (CE[c + d*NComponents] == CELL) {

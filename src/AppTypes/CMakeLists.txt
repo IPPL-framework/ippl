@@ -14,8 +14,6 @@ set (_HDRS
   TSVMetaDot.h
   TSVMeta.h
   TSVMetaUnary.h
-  Vector.h
-  Vector.hpp
   )
 
 include_directories (

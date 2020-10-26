@@ -20,7 +20,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#include "Field/ViewTypes.h"
+#include "Types/ViewTypes.h"
 
 #include "Expression/IpplExpressions.h"
 
@@ -129,6 +129,10 @@ namespace ippl {
 
 
         view_type getView() {
+            return dview_m;
+        }
+
+        const view_type getView() const {
             return dview_m;
         }
 

@@ -20,7 +20,6 @@
 
 #include "Meshes/Kokkos_Mesh.h"
 #include "Meshes/CartesianCentering.h"
-#include "AppTypes/Vector.h"
 
 namespace ippl {
 
