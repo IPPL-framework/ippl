@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < n; ++i) {
         ippl::Vector<double, 3> r = {unif(eng), unif(eng), unif(eng)};
         R_host(i) = r;
-        E_host(i) = 1.0;
+        E_host(i) = 0.0;
     }
     Kokkos::deep_copy(bunch.R, R_host);
     Kokkos::deep_copy(bunch.E, E_host);
