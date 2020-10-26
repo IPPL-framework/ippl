@@ -70,7 +70,7 @@ TEST_F(ParticleBaseTest, AddAttribute) {
 
     auto nAttributes = pbase->getAttributeNum();
 
-    EXPECT_EQ(3, nAttributes);
+    EXPECT_EQ(size_t(3), nAttributes);
 }
 
 
