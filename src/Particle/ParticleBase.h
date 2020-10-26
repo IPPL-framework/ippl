@@ -151,7 +151,7 @@ namespace ippl {
 
         /*!
          * Set the processor local number of particles
-         * @param nLotal number of particles
+         * @param nLocal number of particles
          */
         void setLocalNum(size_t nLocal) { localNum_m = nLocal; }
 
