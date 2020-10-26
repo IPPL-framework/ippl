@@ -48,37 +48,31 @@ namespace ippl {
         template<class PT, class NDI>
         void ParticleLayout<T, Dim>::applyBC(PT& R, const NDI& nr) {
             using mdrange = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-	    bc_type bc = this->getBConds();
-	    Kokkos::parallel_for("ParticleLayout::applyBC()",
+            Kokkos::parallel_for("ParticleLayout::applyBC()",
                                  mdrange({0, 0}, {R.size(), Dim}),
-				 ApplyBC(R, nr, bc));
-                                 //KOKKOS_CLASS_LAMBDA(const size_t i,
-	    //                                                     const size_t j)
-	//                                 {
-	//                           R(i)[j] = 1.0; //bc.apply(R(i)[j], j, nr);
-	//			     });
+                                 ApplyBC(R, nr, bc_m));
         }
     }
 
 
-
+    /*
+     * Functor to apply boundar conditions
+     */
     template<typename T, unsigned Dim, class PT, class NDI>
     struct ApplyBC {
-	PT pos_m;
-	NDI nr_m;
-	ParticleBConds<T, Dim> bc_m;
+        PT pos_m;
+        NDI nr_m;
+        ParticleBConds<T, Dim> bc_m;
 
-	ApplyBC(PT pos, NDI nr, ParticleBConds<T, Dim> bc)
-	{
-	    pos_m = pos;
-	    nr_m = nr;
-	    bc_m = bc;
-	    // temperature  = dv_temperature.template view<memory_space> ();
-	}
+        ApplyBC(PT pos, const NDI& nr, const ParticleBConds<T, Dim>& bc) {
+            pos_m = pos;
+            nr_m = nr;
+            bc_m = bc;
+        }
 
-	KOKKOS_INLINE_FUNCTION
-	void operator() (const size_t i, const size_t j) const {
-	    pos_m(i)[j] = bc_m.apply(pos_m(i)[j], j, nr_m);
-	}
+        KOKKOS_INLINE_FUNCTION
+        void operator() (const size_t i, const size_t j) const {
+            pos_m(i)[j] = bc_m.apply(pos_m(i)[j], j, nr_m);
+        }
     };
 }
