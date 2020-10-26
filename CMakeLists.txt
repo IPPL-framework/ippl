@@ -66,6 +66,12 @@ if (ENABLE_IPPLTESTS)
     add_subdirectory (test)
 endif ()
 
+option (BUILD_UNIT_TESTS "Unit tests" OFF)
+if (BUILD_UNIT_TESTS)
+    find_package (GTest REQUIRED HINT $ENV{GTEST_PREFIX})
+    add_subdirectory (unit_tests)
+endif ()
+
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config_install.cmake )
 
