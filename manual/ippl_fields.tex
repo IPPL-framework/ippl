@@ -1,0 +1,646 @@
+\chapter{Using the \texttt{Field} and Related Classes}
+
+This section introduces the interface of the \texttt{Field} class and related classes. We describe how
+to instantiate \texttt{Field} objects, use \texttt{Index} objects to perform index operations, perform expression
+operations with overloaded operators, apply boundary conditions, use the where construct for
+conditionals, invoke reduction operations, and use mathematical functions.
+
+\section{\texttt{Field} Object Instantiation}
+
+\subsection{\texttt{Field} Template Parameters} \label{sec:tmpl_params}
+
+The \texttt{Field} class is parametrized on 4 template parameters: type \texttt{T}, dimensionality \texttt{Dim},
+mesh type \texttt{Mesh}, and centering \texttt{Centering}.
+\begin{smallcode}
+Field<class T, unsigned Dim, class Mesh=UniformCartesian<Dim,MFLOAT=doub1e>,
+      class Centering=Mesh::DefaultCentering>
+\end{smallcode}
+The \texttt{T} parameter represents the type of data that can be stored inside of a \texttt{Field}. Currently,
+the \texttt{Field} class supports the intrinsic types \texttt{bool, int, float, double}. One may use any
+user-defined type or class as the template parameter; however, one must also add traits to the
+framework to implement the desired data-parallel promotion properties so that \texttt{Field} operations
+work. The framework includes 
+\begin{smallcode}
+Vektor<Dim, T>, Tenzor<Dim , T>, SymTenzor<Dim, T> 
+\end{smallcode}
+classes\footnote{The strange spellings avoid conflicts with other classes such as the STL vector class.}
+, which are (mathematical) vectors, tensors, and symmetric tensors whose
+elements are of type \texttt{T}. Traits are implemented in these classes so that they may serve as elements
+of fully-functional \texttt{Field} objects.
+The \texttt{Dim} parameter represent the dimensionality of the \texttt{Field} that is being constructed. This
+must correspond to the \texttt{Dim} parameters in all other objects used to construct the \texttt{Field}.
+The \texttt{Mesh} parameter represents the mesh on which the field is discretized. \ippl
+pre-defines two appropriate classes (\texttt{Cartesian} and \texttt{UniformCartesian}) to use for this
+parameter, one of which serves as the default value of the \texttt{Field} ``Mesh'' template parameter:
+\texttt{UniformCartesian<Dim, double>}. Refer to the \ippl User Refercnce for details on the
+\texttt{UniformCartesian} class; basically, it represents a \texttt{Cartesian} mesh with uniform grid spacings. 
+The \texttt{Cartesian} class represents a cartesian mesh with nonuniform grid spacings. NB.:
+the type parameter \texttt{MFLOAT} for \texttt{Cartesian} represents only the data type used to store internal
+information like mesh spacing values; if \texttt{double} satisfies the user, he need not specify it.
+
+The \texttt{Centering} parameter represents the centering of the field on its mesh. \ippl
+pre-defines \texttt{Cell} and \texttt{Vert} classes to represent cell and vertex centering, and has implementations 
+of appropriate mechanisms for \texttt{Cartesian} and other classes which use them. \ippl
+also predefines a \texttt{CartesianCentering} class to represent more general centerings--combinations 
+of vertex and cell centering direction-by-direction and component-by-component for
+\texttt{Field}s with multicomponent element types such as \texttt{Vektor}. Finally, \ippl predefines a
+wrapper class \texttt{CommonCartesianCenterings} with typedef’s several common special
+cases to represent face and edge centerings, for example, refer to the \ippl User Reference
+for details.
+
+\subsection{Invoking the \texttt{Field} Constructor} \label{sec:inv_field}
+
+There are six steps in the general construction of a \texttt{Field}:
+\begin{enumerate}
+    \item Construct \texttt{Index} objects, one for each dimension of the \texttt{Field}. The \texttt{Index} objects describe the desired index domain along the axis.
+    \item Construct an \texttt{NDIndex} object with the dimensions of the \texttt{Field}. A single \texttt{NDIndex} object contains N \texttt{Index} objects, and fully describes the total index domain.
+    \item Populate the \texttt{NDIndex} with the \texttt{Index} objects created in step 1.
+    \item Construct a \texttt{FieldLayout} object with the \texttt{NDIndex} object. The \texttt{FieldLayout} object will control how the data of a specified \texttt{Field} object will be partitioned among physical nodes in a parallel environment.
+    \item If desired, construct \texttt{BConds} and \texttt{GuardCellSizes} objects for specifying boundary conditions and guard-cell layers, respectively. If unspecified, these default to no-op and zero.
+    \item Finally, construct a \texttt{Field} with the \texttt{FieldLayout}, \texttt{BConds}, and \texttt{GuardCellSizes} object as arguments to the constructor. This target \texttt{Field} must be parametrized as described in Section \ref{sec:tmpl_params}. The \texttt{Dim} template parameter must match the one for the \texttt{FieldLayout} and other objects involved, or you will get a compiler error.
+\end{enumerate}
+
+For the cases of a 1,2, or 3 dimensional \texttt{Field}, you may omit steps 2 and 3; instead directly pass the one, two, or three \texttt{Index} objects as arguments to the \texttt{FieldLayout()} constructor. The \texttt{Dim} template parameter must match the number of \texttt{Index} objects passed or you will get a compiler error.
+
+The following code segment demonstrates the construction of a single two dimensional \texttt{Field} of \texttt{double}'s using the six-step method described above: \\
+\begin{code}
+unsigned Dim = 2;
+int Nx = 100, Ny = 50;
+Index I(Nx), J(Ny)l                 // Step 1
+NDIndex<Dim> domain;                // Step 2
+domain[0] = I;                      // Step 3
+domain[1] = J;                      // Step 3
+FieldLayout<Dim> layout(domain);    // Step 4
+Field<double, Dim> A(layout);       // Step 5
+\end{code}
+
+The following three examples show the construction of a 3 dimensional \texttt{Field} without the intermediate \texttt{NDIndex} construction:
+\begin{smallcode}
+Index I(100), J(5), K(25);
+FieldLayout<3> layout(I,J,K);
+Field<double, 3> A(layout);
+\end{smallcode}
+
+You may also construct \texttt{Field} via copy constructor, wherein a \texttt{Field} is copied into another \texttt{Field}. This results in an element-by-element copy of the data: 
+\begin{smallcode}
+// assuming we have constructed a 2D Field of doubles in A
+A = 2.0;
+Field<double, Dim> B(A);
+// B now contains the values 2.0 everywhere
+\end{smallcode}
+
+\section{The \texttt{Index} Class}
+
+The \texttt{Index} class represents a strided range of indices, and it is used to define the index extent of \texttt{Field} objects on construction and to reference subranges within \texttt{Field}'s in expressions. The constructor for \texttt{Index} takes one, two or three int arguments. In the case of three arguments, these represent the base index value, the bounding index value and the stride. The two and one-argument cases are simplifications, with the one-argument case being qualitatively different; in
+particular,
+\begin{smallcode}
+Index I(8);
+\end{smallcode}
+instantiates an \texttt{Index} object representing the range of integers from $0$ to $7$ inclusive, with implied stride $1$. The two-argument
+\begin{smallcode}
+Index J(2,8);
+\end{smallcode}
+instantiates an \texttt{Index} object representing the range of integers $[2,8]$, with implied stride 1. The three-argument
+\begin{smallcode}
+Index K(1,8,2);
+\end{smallcode}
+instantiates an \texttt{Index} object representing the range of integers $[1,8]$, with stride 2; that is the ordered set $\{1,3,5,7\}$.
+
+Note that the single argument in the one-argument case defines the number of elements, rather than the bound. This means that \texttt{Index J(8)}, which represents $[0,7]$, is different than \texttt{Index J(0,8)} and \texttt{Index J(0,8,1)}, which both mean $[0,8]$.
+
+As illustrated in Section \ref{sec:inv_field}, you use \texttt{Index}'s in constructing the \texttt{FieldLayout} object which goes into the \texttt{Field} constructor. The sizes of the \texttt{Index}'s used to construct the \texttt{FieldLayout} determine the size of the \texttt{Field} in each dimension; here size means the number of integers in the range represented by the \texttt{Index}. For example, the following code segment instantiates a 3-dimensional \texttt{Field A} having size 5 in the first dimension, size 9 in the second dimension, and size 4 in the
+third dimension: \\
+\begin{code}
+unsigned Dim = 3;
+int Nx = 5;
+int Ny = 9;
+int Nx = 4;
+Index I(Nx), J(Ny), K(Nz);
+FieldLayout<Dim> layout(I,J,K);
+Field<double, Dim> A(layout);
+\end{code}
+
+You can also use \texttt{Index} objects for initializing \texttt{Field} elements with integer ranges of values. This and more typical use of \texttt{Index} object in conjunction with \texttt{Field} objects is discussed in Section \ref{sec:index_fields}.
+
+Finally, \ippl defines various operators on \texttt{Index} objects, mostly used to represent finite-different stencil operations on \texttt{Field}'s, as described in Section \ref{sec:index_fields}. If
+\begin{smallcode}
+Index I(8);
+\end{smallcode}
+is an \texttt{Index} object representing $[0,7]$, then the expression
+\begin{smallcode}
+I - 1
+\end{smallcode}
+represents the range of the same length offset by $-1$, or $[-1,6]$. Similarly, the expression
+\begin{smallcode}
+I + 1
+\end{smallcode}
+represents $[2,8]$.
+
+\section{The \texttt{NDIndex} Class}
+
+The \texttt{NDIndex} class is primarily a container which holds \texttt{N} \texttt{Index} objects. It is templated on the spatial dimension \texttt{N}, and the constructor takes \texttt{N} \texttt{Index} arguments. For example: 
+\begin{smallcode}
+Index I(5), J(9), K(4);
+NDIndex<3> Domain(I, J, K);
+\end{smallcode}
+
+An \texttt{NDIndex} object appears as an array of \texttt{Index} objects; you may access the \texttt{Index} object for and dimension using the \texttt{[]} operator. For example:
+\begin{smallcode}
+Index tmpJ = Domain[1];
+\end{smallcode}
+
+\section{The \texttt{FieldLayout} Class}
+
+\texttt{FieldLayout} is the class responsible for determining where the data in a \texttt{Field} object is located. It is templated on the number of indices for the \texttt{Field}; when constructing a new \texttt{FieldLayout} object, you must tell it what is the index range for each dimension (or axis). A single \texttt{NDIndex} object may be used as the argument to a new \texttt{FieldLayout} instance:
+\begin{smallcode}
+Index I(5), J(9), K(4);
+NDIndex<3> Domain(I, J, K);
+FieldLayout<3> Layout(Domain);
+\end{smallcode}
+Or, possibly more conveniently, you may just specify the N \texttt{Index} objects to the constructor of the \texttt{FieldLayout} directly, without explicitly creating an \texttt{NDIndex} object:
+\begin{smallcode}
+Index I(5), J(9), K(4);
+FieldLayout<3> Layout(I, J, K);
+\end{smallcode}
+
+\subsection{Specifying Serial or Parallel Layout}
+
+By default, a \texttt{FieldLayout} object will partition all \texttt{N} dimensions in a parallel fashion. For example a 2D \texttt{Field} with indices running from $0 \ldots 5$ in each dimension, created with a \texttt{FieldLayout} specified as follows:
+\begin{smallcode}
+Index I(6), J(6);
+FieldLayout<3> Layout(I, J);
+\end{smallcode}
+will have both the \texttt{I} and \texttt{J} indices partitioned across the nodes in parallel. This would lead to a layout something like that shown in the following figure, if there are four nodes:
+
+TODO: BILD
+
+Unless you tell it otherwise, \texttt{FieldLayout} will attempt to distribute the data among the processors by subdividing each dimension in turn until it has the proper number of subregions. Those axes which are considered for subdivision are the \textit{parallel} axes, which means that a given node will only contain \texttt{Field} data for a subset of the indices along that dimension. You can, however, tell \texttt{FieldLayout} which axes to subdivide, and which to maintain as \textit{serial}. Serial axes are
+not ever partitioned by \texttt{FieldLayout}. You must have at least on parallel dimension in a given \texttt{FieldLayout}; by default, all axes are parallel.
+
+To specify serial axes, you provide additional arguments to the \texttt{FieldLayout} constructor, using the keywords \texttt{SERIAL} or \texttt{PARALLEL}. If you create a new \texttt{FieldLayout} by just specifying \texttt{N} \texttt{Index} objects, then you may provide up to \texttt{N} more arguments to the constructor to set the corresponding dimension's layout method. For example, we may change the earlier example of a 2D \texttt{Field} to have the second dimension use a serial layout as follows:
+\begin{smallcode}
+Index I(6), J(6);
+FieldLayout<3> Layout(I, J, PARALLEL, SERIAL);
+\end{smallcode}
+In this case, the data would be partitioned into four subregions like the following (the horizontal direction is the first dimension, the vertical direction the second)
+
+TODO: BILD
+
+If an \texttt{NDIndex} object is used to create the \texttt{FieldLayout} instead of several \texttt{Index} objects, to change the default layout style you must instead provide an array of keywords (of type \texttt{e\_dim\_tag}) specifying the layout for the \texttt{N} dimensions. For example: \\
+\begin{code}
+Index I(5), J(9), K(4);
+NDIndex<3> Domain(I, J, K);
+e_dim_tag ParallelMethod[2];
+ParallelMethod[0] = PARALLEL;
+ParallelMethod[1] = SERIAL;
+ParallelMethod[2] = SERIAL;
+FieldLayout<3> Layout(Domain, ParallelMethod);
+\end{code}
+
+\section{Boundary Condition Classes}
+
+One of the great frustrations in using data parallel objects is the proper representation of boundary conditions. Most data parallel environments (such as HPF or CMFortran) require that one perform special operations to observe periodic or reflected behaviour at the boundary. This requirement obscures the original clarity of the index notation. You construct \texttt{Field} objects within the \ippl framework using \texttt{BConds} boundary condition object which defines the behaviour of \texttt{Field} and \texttt{Field}
+indexing operations at the boundaries. This makes the same, clear indexing notation do the right thing under a variety of imposed boundary conditions.
+
+\subsection{Available Boundary Conditions}
+
+\ippl pre-defines classes to represent 6 different forms of boundary conditions:
+\begin{enumerate}
+    \item Periodic boundary condition: \texttt{PeriodicFace}
+    \item {\color{red} Positive reflecting boundary condition: \texttt{PosReflectFace}
+    \item Negative reflecting boundary condition: \texttt{NegReflectFace}
+    \item Constant boundary condition: \texttt{ConstantFace}}
+    \item Zero boundary condition (special case of constant): \texttt{ZeroFace}
+    \item {\color{red} Linear extrapolation boundary condition: \texttt{ExtrapolateFace}}
+\end{enumerate}
+The {\color{red} red} ones are not yet important.
+
+
+They represent boundary conditions for a single dimension of a (possibly) multidimensional field, for one ``side'' (or face) of the mesh along that dimension. That is, you must specify two boundary condition objects for each dimension of the \texttt{Field} -- one for each face of the mesh along that dimension. These classes are parametrized on the same four template parameters as \texttt{Field} (see Section \ref{sec:tmpl_params}); the defaults for \texttt{Mesh} and \texttt{Centering} are
+\texttt{UniformCartesian} and \texttt{Cell}. As a
+further refinement, you may specify boundary conditions for individual components of multicomponent \texttt{Field} elements such as \texttt{Vektor}.
+
+\subsection{Using Boundary Conditions With \texttt{Field}s}
+
+The \texttt{BConds} class is a container for the individual specialized boundary conditions; this is the argument passed to the \texttt{Field} constructor. A \texttt{BConds} object acts very much like an array of boundary conditions: when first created, the \texttt{BConds} object is empty, and you add new boundary condition objects to it by treating it as a vector and assigning to its elements. The basic procedure is to construct a \texttt{BConds} object, then construct new or use existing boundary condition objects (from the list
+above) to fill it, as illustrated in this example: \\
+\begin{code}
+unsigened Dim = 2;
+Index I(4), J(4);
+BConds<double, Dim> bc;
+bc[0] = new PeriodicFace<double, Dim>(0);
+bc[1] = new PeriodicFace<double, Dim>(1);
+bc[2] = new PeriodicFace<double, Dim>(2);
+bc[3] = new PeriodicFace<double, Dim>(3);
+Field Layout<Dim> layout(I, J);
+Field <double, Dim> A(layout, GuardCellSizes<Dim>(1), bc);
+\end{code}
+Again, the individual face boundary condition objects (in this example, \texttt{PeriodicFace}) perform their task for only a single face of the mesh. In this way, there may be different types of boundary conditions in different dimensions. The face boundary-condition constructors take an unsigned argument designating the face according the following numbering convention: The integers 0 and 1 apply to the boundaries of the first coordinate direction where 0 represents the negative face and 1
+represents the positive face. The integers 2 and 3 apply to the boundaries of the second coordinate direction where 2 represents the negative face and 3 represents the positive face. This pairing of integers and domains continues into higher dimensions. The constructors also take optional second and third unsigned parameters to specify a single \texttt{Field} element component rather than all of them. Refer to the \ippl User Reference for more details on these classes, and a detailed discussion
+of how the various boundary conditions affect \texttt{Field} operations.
+
+\subsection{Default Boundary Condition}
+
+If a \texttt{Field} is constructed with no \texttt{BConds} object specified, the default is for that \texttt{Field} to have NO boundary conditions. In that case, the boundary conditions container within the \texttt{Field} is empty. It is possible to add additional boundary conditions for a specific face to a \texttt{Field} after it has been constructed; to do so, retrieve the boundary condition container from the \texttt{Field} using the method \texttt{Field::getBConds()}, and then add new face-specific boundary conditions to the returned
+\texttt{BConds} container object as shown in the previous example.
+
+\section{The \texttt{GuardCellSizes} Class}
+
+A \texttt{GuardCellSizes} class, an optional argument to the \texttt{Field} constructor, represents the maximum separation (in elements) of \texttt{Field} elements which will be combined in \texttt{Field} expressions. Typically, this reflects the order of finite differencing in stencil operations. The primary reason for guard cells is parallelism -- a \texttt{Field} domain-decomposed into multiple subdomains with data from adjacent subdomains, so that the stencil operations
+have all required data locally. The \texttt{GuardCellSizes}
+class is parameterized on the unsigned value \texttt{Dim}, which represents the number of dimensions of the \texttt{Field} object. This \texttt{Dim} value must match the corresponding parameter value of the \texttt{Field} object.
+
+The constructor for \texttt{GuardCellSizes} takes either one or two arguments, which are either \texttt{unsigned} or \texttt{unsigned*}. The one-argument forms specify the same number of guard layers for all dimensions; the two-argument forms specify different numbers for the right and left faces; the unsigned forms specify the same number of layers for all dimensions; and the \texttt{unsigned*} forms specify different number of layers for the different dimensions: 
+\begin{smallcode}
+GuardCellSizes(unsigned s);  // Same no. left&right, same for all directions
+GuardCellSizes(unsigned *s); // Same no. left&right, value for each direction
+// Diff. left&right, same for all directions
+GuardCellSizes(unsigned l, unsigned r); 
+// Diff. left&right, value for each direction
+GuardCellSizes(unsigned *l, unsigned *r); 
+\end{smallcode}
+
+Section \ref{sec:index_fields}, ``Using \texttt{Index} Objects with \texttt{Field}'s'', shows examples using \texttt{Field} indexing to implement stencil operations. It discusses the numbers of guard layers required by one of the examples.
+
+\section{Operations on \texttt{Field} Objects}
+
+\subsection{Assignment}
+
+A single line of code which contains an assignment operator and a \texttt{Field} on the left hand side of the assignment operator is called a \texttt{Field} expression. Many different terms may appear on the right-hand side of a \texttt{Field} expression (or as the second argument in an \texttt{assign()} call as described below). These include scalars, \texttt{Index}'s, \texttt{Field}'s and \texttt{IndexingField}s's. Currently because of the lack of template member functions in
+C++ compilers, you must use the \texttt{assign()} function rather than the
+\texttt{operator=}:
+\begin{smallcode}
+assign(Lhs, Rhs);
+\end{smallcode}
+where \texttt{Lhs} and \texttt{Rhs} are \texttt{Field} expressions. When template member functions become available, you will simply write:
+\begin{smallcode}
+Lhs = Rhs
+\end{smallcode}
+
+Refer to the \ippl Users Reference for more details, and examples showing where you may use \texttt{operator=} and where you must use \texttt{assign()}. The following are examples of legal assignments:\\
+\begin{code}
+unsigned Dim = 2, int N = 100;
+Index I(N), J(N);
+FieldLayout<Dim> layout(I, J);
+Field<double, Dim> A(layout), B(layout), C(layout);
+A = 2.0;
+assign(A, 2.0 + B);
+assign(B, A + 2.0);
+assign(B[I][J], 3.0 + B[I][J]);
+assign(A[I][J], I + A[I][J]/C[I][J]);
+\end{code}
+
+For cases where more than one term exists on the right hand side of an assignment, the \texttt{assign()} call must be made. Any combination of scalars, \texttt{Field}'s, \texttt{IndexingField}'s (indexed \texttt{Field} objects; see Section \ref{sec:index_fields}), and \texttt{Index}'s can be put as the second argument of the \texttt{assing()} call. The only requirement in combining terms is that the appearance of an \texttt{Index} object anywhere inside of an expression requires that all the \texttt{Field} objects contained in the expression must be indexed. It
+is not possible to combine \texttt{Field}'s and \texttt{IndexingField}'s in a single expression. Nor is it possible to combine \texttt{Field}'s and \texttt{Index} objects in a single expression.
+
+Another intermediate solution to accommodate the lack of member function templates (and therefore the ability to use the \texttt{operator=} member function with more than one term on the right hand side of an expression) is the utilization of the accumulation operators (since this does not require member function templates). Thus, instead of writing
+\begin{smallcode}
+assign(A, 4.0 + B);
+\end{smallcode}
+one could write
+\begin{smallcode}
+A = 0.0;
+A += 4.0 + B;
+\end{smallcode}
+This technique can be used with any of the accumulation operators (\texttt{+=,-=,*=,/=}).
+
+\subsection{Using \texttt{Index} Objects with \texttt{Field}'s} \label{sec:index_fields}
+
+The \texttt{Field} object works intimately with \texttt{Index} objects to perform a wide variety of operations. Use the \texttt{Index} object to specify the access pattern into a data parallel \texttt{Field} object. Do this by using \texttt{Index} objects inside the brackets following a \texttt{Field} object as follows:
+\begin{smallcode}
+A[I][J] = B[I][J];
+\end{smallcode}
+A \texttt{Field} object followed by brackets containing \texttt{Index} objects is called an \texttt{IndexingField}, because \ippl internally uses an \texttt{IndexingField} class as the return value for the \texttt{Field::operator[]}.
+
+You can use \texttt{Index} objects to initialize a \texttt{Field} with integer range data -- that is, assign to a strided range of \texttt{Field} elements the values of a strided range of integers multiplied by the element type. This only works of multiplication by an int is defined for the \texttt{Field} element type, which it is for the intrinsic types $\{$\texttt{int, float, double, bool}$\}$ and the \ippl pre-defined \texttt{Field} element classes $\{$\texttt{Vektor, Tenzor,
+SymTenzor}$\}$. For multidimensional \texttt{Field}'s, the range of values is replicated along
+the other dimensions. For example, given a \texttt{Field} that is size 8 in its first dimension and size 4 in its second dimension, the code segment
+\begin{smallcode}
+assign(A[I][J], I);
+\end{smallcode}
+produces the following values in the \texttt{Field A}:
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|c|c|c|c|}
+        \hline
+        0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\
+        \hline
+        0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\        \hline
+        0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\        \hline
+        0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\        \hline
+        \end{tabular}
+   \label{tbl:t1}
+   \end{center}
+%
+(Here, as in subsequent figures like this displaying \texttt{Field} values, the positive direction of the first coordinate is from left to right and the positive direction for the second coordinate is from top to bottom.) Likewise, an assignment of the form
+\begin{smallcode}
+assign(A[I],[J], J);
+\end{smallcode}
+produces
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|c|c|c|c|}
+        \hline
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\        \hline
+        1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\        \hline
+        2 & 2 & 2 & 2 & 2 & 2 & 2 & 2 \\        \hline
+        3 & 3 & 3 & 3 & 3 & 3 & 3 & 3 \\        \hline
+        \end{tabular}
+   \label{tbl:t2}
+   \end{center}
+
+The \texttt{Index} objects used to access ranges of values in a \texttt{Field} object do not have to be the same \texttt{Index}'s used in constructing the \texttt{FieldLayout} object used to construct the \texttt{Field}. You can use \texttt{Index} objects of smaller size to access a subrange of the \texttt{Field}. For example, if we wanted to have an 8 by 8 \texttt{Field} with zeros everywhere except for a 4 by 4 subregion in the center, the following code segment would accomplish this goal: \\
+\begin{code}
+unsigned Dim = 2;
+Index I(8), J(8);
+Index I2(2,5), J2(2,5);
+FieldLayout<Dim> layout(I, J);
+Field<double, Dim> A(layout);
+A = 0.0;
+A[I2][J2] = 1.0;
+\end{code}
+This would produce the following values in the \texttt{Field A}:
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|c|c|c|c|}
+        \hline
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\        \hline
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\        \hline
+        0 & 0 & 1 & 1 & 1 & 1 & 0 & 0 \\        \hline
+        0 & 0 & 1 & 1 & 1 & 1 & 0 & 0 \\        \hline
+        0 & 0 & 1 & 1 & 1 & 1 & 0 & 0 \\        \hline
+        0 & 0 & 1 & 1 & 1 & 1 & 0 & 0 \\        \hline
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\        \hline
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\        \hline
+        \end{tabular}
+   \label{tbl:t2}
+   \end{center}
+
+The lower-limiting case range for an \texttt{Index} object is, of course, a single element. For this case you can just use an integer constant or variable; the following assigns a single element of the \texttt{Field A}: \\
+\begin{code}
+Index I(4), J(4);
+FieldLayout<2> layout(I, J);
+Field<double,2> A(layout);
+A = 0.0;
+A[1][1] = 1.0;
+\end{code}
+The resultant \texttt{Field A} contains the values:
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|}
+        \hline
+        0 & 0 & 0 & 0 \\        \hline
+        0 & 1 & 0 & 0 \\        \hline
+        0 & 0 & 0 & 0 \\        \hline
+        0 & 0 & 0 & 0 \\        \hline
+        \end{tabular}
+   \label{tbl:t2}
+   \end{center}
+
+The typical use for indexing is stencil operations, using \texttt{Index} expressions adding or subtracting integer constants to represent the finite differences. This amounts to global data transformation upon a \texttt{Field} through the use of \texttt{Index} operations. For example, if a 4 by 4 \texttt{Field} named \texttt{A} is initialized as follows: \\
+\begin{code}
+unsigned Dim = 2;
+int N = 4;
+Index I(N), J(N);
+FieldLayout<Dim> layout(I, J);
+Field<double, Dim> A(layout, GuardCellSizes<Dim>(1));
+assign(A[I][J], I + 1);
+\end{code}
+then the values in the \texttt{Field A} will be:
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|}
+        \hline
+        1 & 2 & 3 & 4 \\        \hline
+        1 & 2 & 3 & 4 \\        \hline
+        1 & 2 & 3 & 4 \\        \hline
+        1 & 2 & 3 & 4 \\        \hline
+        \end{tabular}
+   \label{tbl:t2}
+   \end{center}
+
+Now, let's form another \texttt{Field}, \texttt{B}, and assign to it the value of an \texttt{IndexingField} of A which represents an indexed operation:
+\begin{smallcode}
+Field<double, Dim> B(layout);
+assign(B[I][J], A[I+1][J]);
+\end{smallcode}
+
+Here we see that the \texttt{Field A} has been indexed with something other than a plain \texttt{Index} object. Rather, it has been indexed by an index expression. The \texttt{Index} objects have been overloaded to allow addition and subtraction by integers to produce other \texttt{Index} objects. The framework recognizes this operation as requesting that all the data in \texttt{A} be shifted to the left (along the first dimension in the negative direction) by 1 position. The \texttt{Field B} contains the values:
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|}
+        \hline
+        2 & 3 & 4 & 0 \\        \hline
+        2 & 3 & 4 & 0 \\        \hline
+        2 & 3 & 4 & 0 \\        \hline
+        2 & 3 & 4 & 0 \\        \hline
+        \end{tabular}
+   \label{tbl:t2}
+   \end{center}
+
+\texttt{Index}ing operations which access data beyond a \texttt{Field} boundary set the target positions to zero. For the reminder of this section, we shall assume this zero valued boundary condition (which is the default condition when no boundary condition is specified). A variety of boundary conditions can be set on each boundary of a \texttt{Field} and are discussed in detail in the next section.
+
+The \texttt{GuardCellSizes} object used to construct \texttt{Field A} in this example must specify at least on guard layer in the 1st dimension, to accommodate the ``$+1$'' in the indexing operation. The one used, \texttt{GuardCellSizes<Dim>(1)} allows ``$+/-1$'' indexing (as in a width-one stencil), and also allows width-one stencils in the 2nd dimension, because the use of the unsigned argument (the constant, 1) specifies one guard layer both left and right for all directions.
+
+Had we wished to shift the \texttt{Field A} down (along the second dimension in the negative direction) we could have written
+\begin{smallcode}
+assign(B[I][J], A[I][J+1]);
+\end{smallcode}
+Then the values in the \texttt{Field B} are:
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|}
+        \hline
+        1 & 2 & 3 & 4 \\        \hline
+        1 & 2 & 3 & 4 \\        \hline
+        1 & 2 & 3 & 4 \\        \hline
+        0 & 0 & 0 & 0 \\        \hline
+        \end{tabular}
+   \label{tbl:t2}
+   \end{center}
+
+You can shift in the positive or negative direction on any \texttt{Index} object used to index a \texttt{Field}. For example, \\
+\begin{code}
+unsigned Dim = 2;
+int N = 4;
+Index I(N), J(N);
+FieldLayout<Dim> layout(I, J);
+Field<double, Dim> A(layout, GuardCellSizes<Dim>(1));
+assign(A[I][J], I + J + 1);
+\end{code}
+will initialize the values in the \texttt{Field A} to:
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|}
+        \hline
+        1 & 2 & 3 & 4 \\        \hline
+        2 & 2 & 4 & 4 \\        \hline
+        3 & 4 & 5 & 6 \\        \hline
+        4 & 5 & 6 & 7 \\        \hline
+        \end{tabular}
+   \label{tbl:t2}
+   \end{center}
+%
+and the operation 
+\begin{smallcode}
+Field<double, Dim> B(layout);
+assign(B[I][J], A[I+1][J-2]);
+\end{smallcode}
+will produce a \texttt{Field B} with the values:
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|}
+        \hline
+        0 & 0 & 0 & 0 \\        \hline
+        0 & 0 & 0 & 0 \\        \hline
+        3 & 4 & 5 & 0 \\        \hline
+        4 & 5 & 6 & 0 \\        \hline
+        \end{tabular}
+   \end{center}
+
+\subsection{Overloaded operators}
+
+\ippl pre-defines a suite of overloaded operators with the \texttt{Field} class. These include the unary $-$ operator; the binary operators, $+$, $-$, $*$, and $/$; and the accumulation operators \texttt{+=, -=, *=, /=}. Traits~\cite{traits} determine the appropriate casts and promotions of mixed types inside \texttt{Field}. For example, a \texttt{Field} of \texttt{int}'s added to a \texttt{Field} of \texttt{double}'s would perform the correct promotion of \texttt{int} to \texttt{double} element by element. As mentioned earlier, the assign operator $=$ does not work
+for most cases because of the lack of member function templates. In addition, the relational operators are not directly available due to conflicts in the current HP reference STL implementation. This functionality is provided through the explicit inlined binary function calls:
+%
+   \begin{center}
+        \begin{tabular}{ll}
+        \hline
+        binary function relationals & corresponding relation operator \\
+        \hline
+        gt(A, B) & $A > B$ \\ 
+        lt(A, B) & $A < B$ \\ 
+        ge(A, B) & $A >= B$ \\ 
+        le(A, B) & $A  <= B$ \\ 
+        eq(A, B) & $A == B$ \\
+        ne(A, B) & $A != B$ \\
+        \hline
+        \end{tabular}
+   \end{center}
+%
+The return value of these binary relational functions is a conforming \texttt{Field} of \texttt{bool}'s. Here is an example using binary functional relationals in an expression: \\
+\begin{code}
+unsigned Dim = 2;
+Index I(8), J(4);
+FieldLayout<Dim> layout(I, J);
+Field<double, Dim> A(layout), B(layout), C(layout);
+A = 0.0;
+assign(B[I][J], J);
+assign(C[I][J], I);
+assign(A, lt(B, 2,0)*C);
+\end{code}
+The resulting \texttt{Field A} contains the values
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|c|c|c|c|}
+        \hline
+        0 & 1 & 2 & 3 & 4 & 5 & 6 & 7\\        \hline
+        0 & 1 & 2 & 3 & 4 & 5 & 6 & 7\\        \hline
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\        \hline
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\        \hline
+        \end{tabular}
+   \end{center}
+
+\subsection{The \texttt{where()} Function}
+
+Data parallel simulations often require element-by-element conditionals. The \ippl framework provides a \texttt{where} functions which reduces to the inlined conditional \texttt{operator?}: for each element of the \texttt{Field} objects passed to the \texttt{where()} function. The \texttt{where()} function takes three \texttt{Field} arguments:
+\begin{smallcode}
+assign(A, where(B, C, D));
+\end{smallcode}
+where the \texttt{Field B}'s a \texttt{Field} of \texttt{bool}'s. The value of \texttt{C} is placed into \texttt{A} everywhere that \texttt{B} is \texttt{true}, and the value of \texttt{D} is placed into \texttt{A} everywhere that \texttt{B} is \texttt{false}. Thus, \\
+\begin{code}
+unsigned Dim = 2;
+Index I(4), J(4);
+FieldLayout<Dim> layout(I, J);
+Field<double, Dim> A(layout), B(layout), C(layout);
+assign(B[I][J], I - 1);
+C = 1.0;
+assign(A[I][J], where( lt(B, C), B, C));
+\end{code}
+leaves the following values in \texttt{Field A}:
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|}
+        \hline
+        -1 & 0 & 1 & 1 \\        \hline
+        -1 & 0 & 1 & 1 \\        \hline
+        -1 & 0 & 1 & 1 \\        \hline
+        -1 & 0 & 1 & 1  \\        \hline
+        \end{tabular}
+   \end{center}
+
+Since \texttt{where()} returns a \texttt{Field}, invocations of \texttt{where()} may be used as arguments to where(); this allows nested element-by-element conditionals. The following example code\\
+\begin{code}
+unsigned Dim = 2;
+Index I(4), J(4);
+FieldLayout<Dim> layout(I, J);
+Field<double, Dim> A(layout), B(layout), C(layout), D(layout);
+assign(B[I][J], I - 1);
+assign(C[I][J], J - 1);
+D = 1.0;
+assign(A[I][J], where( lt(B, D), B, where( lt(C, D), C, D)));
+\end{code}
+leaves the following values in \texttt{Field A}:
+%
+   \begin{center}
+        \begin{tabular}{|c|c|c|c|}
+        \hline
+        -1 & 0 & -1 & -1 \\        \hline
+        -1 & 0 & 0 & 0 \\        \hline
+        -1 & 0 & 1 & 1 \\        \hline
+        -1 & 0 & 1 & 1  \\        \hline
+        \end{tabular}
+   \end{center}
+
+\subsection{Mathematical Functions on \texttt{Field}'s}
+
+As would be expected of any framework for scientific simulation, all the standard mathematical operations are included. The unary functions take a \texttt{Field} object and return a \texttt{Field} object of the same dimension and size where the unary operation has been performed upon each element of the \texttt{Field}. The binary functions take two conforming \texttt{Field}'s and apply the function pairwise to each member of the two \texttt{Field}'s to produce a new conforming \texttt{Field} containing the resultant values. The following
+functions, mirroring those in math.h, are available in the framework for \texttt{Field} operations:
+\begin{smallcode}
+acos, asine, atan, cos, sin, tan, cosh, sinh, tanh, 
+exp, log, log10, pow, sqrt, ceil, fabs, floor.
+\end{smallcode}
+For machines which provide them in \texttt{math.h}, \ippl provides the \texttt{Field} version of the \texttt{Bessel, gamma, and error} functions
+\begin{smallcode}
+erf, erfc, gamma, j0, j1, y0, y1.
+\end{smallcode}
+
+\subsection{Reduction Operations}
+
+\ippl includes several reduction operations with the \texttt{Field} class. These include determining the maximum and minimum elements of a \texttt{Field}, the global sum and product of all the elements in a \texttt{Field}, and determining the location of the minimum and maximum values within a \texttt{Field} (typically called minloc and maxloc).
+
+\textit{WARNING: Currently, these functions are only implemented on \texttt{Field} objects; they will not work on \texttt{Field} expressions. This means that invocations like \texttt{min(A+B)} and \texttt{min(2.0*A)} are illegal!}
+
+The following exampled code, which demonstrates the usage of these operators,\\
+\begin{code}
+unsigned Dim = 2;
+Index I(10), J(10);
+FieldLayout<Dim> layout(I, J);
+Field<double, Dim> A(layout);
+assign(A[I][J], I + J);
+cout << min(A) << endl;
+cout << max(A) << endl;
+cout << sum(A) << endl;
+cout << prod(A) << endl;
+\end{code}
+produces the following output:
+\begin{smallcode}
+0
+18
+900
+0
+\end{smallcode}
+
+The minloc and maxloc capabilities, rather than being separately named functions, are two-argument forms of the \texttt{min()} and \texttt{max()} functions. The second argument is an \texttt{NDIndex<Dim>} object, which is a multi-dimensional container for \texttt{Index} objects. The minloc and maxloc operations fill an \texttt{NDIndex<Dim>} object with one \texttt{Index} object for each dimension; each \texttt{Index} is of size one, representing a single point. The following code segment demonstrates: \\
+\begin{code}
+unsigned Dim = 2;
+Index I(10), J(10);
+FieldLayout<Dim> layout(I, J);
+Field<double, Dim> A(layout);
+assign(A[I][J], cos((I-2)*(I-2) + (J-2)*(J-2)));
+NDIndex<Dim> LocMin, LocMax;
+min(A, LocMin);
+max(A, LocMax);
+\end{code}
+The \texttt{NDIndex<Dim>} objects \texttt{LocMin} and \texttt{LocMax} now contain the position (index location) of the minimum and maximum elements of the \texttt{Field} object \texttt{A}.
+

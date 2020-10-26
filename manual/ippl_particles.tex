@@ -1,0 +1,301 @@
+\chapter{Particles}
+\label{sec:particles}
+This section describes the \ippl framework classes which provide the capability to performing particle-based simulations. We first describe how to design and instantiate \texttt{Particle} classes customized to the needs of a specific application, and then discuss the possible operations and expressions in which a particle object may be employed and end with an ready to use example.
+
+\section{Basic \texttt{Particle} Object Characteristics}
+
+The \ippl framework treats \texttt{Particle} classes as containers which store the characteristic data for \texttt{N} individual particles. Each particle has several attributes, such as position, mass, velocity, etc. Looked at in another way, \texttt{Particle} classes store several attribute containers, where each attribute container holds the value of that attribute for all \texttt{N} particles. \texttt{Particle} objects in \ippl may be thought of as shown in the following diagram: ...
+
+There are two particle attributes predefined, namely R (position) and ID a global unique identifier.
+
+The data type of each attribute, the number of attributes, and the names for these attributes are completely customizable, and are specified in the manner described in the following sections. Any number of different \texttt{Particle} classes may be defined and used within a given simulation. Also, the \texttt{Particle} objects may interact with \ippl \texttt{Field} objects or may be used independently. In addition to the attributes, each \texttt{Particle} object uses a specific layout mechanism, which describes the data of the individual particles is spread across the processors in a parallel environment. The \ippl framework provides several different \texttt{Particle} layout classes, any of which may be selected to partition the particle data among processors. The choice of layout depends on the intended use of the \texttt{Particle} object, as discussed later. Once defined and instantiated, \texttt{Particle} objects in the \ippl framework may be used in many ways, including:
+\begin{itemize}
+    \item Operations involving all the particles within a \texttt{Particle} object may be specified using simple expressions, in a manner very similar to that used for \texttt{Field} objects. These expressions may involve any of the attributes of the particles as well as other scalar data, and they may use not only the standard mathematical operators +, -, *, /, etc., but also standard mathematical functions such a s cos ( ) , exp ( ) , mod ( ) , etc.
+    \item Alternatively, you may set up explicit loops that perform operations involving the attributes of a single particle or a subset of all the particles.
+    \item \texttt{Particle}s may be created or destroyed during a simulation.
+    \item \texttt{Particle}-to-\texttt{Field} and \texttt{Field}-to-\texttt{Particle} operations may be performed (e.g., a particular \texttt{Particle} attribute may be deposited onto a specified \texttt{Field} using a chosen interpolation method). 
+\end{itemize}
+
+\section{Defining a User-Specified \texttt{Particle} Class}
+
+There is no specific class within the \ippl framework called \texttt{Particle}. Rather, the first step in deploying particles within a \ippl application is to define a user-specified \texttt{Particle} class, which contains the attributes required for each particle, as well as any, specific methods or data the user may need. To do this, the \texttt{ParticleBase} and \texttt{ParticleAttrib} classes are used, along with a selected subclass of the \texttt{ParticleLayout} class. The steps to follow in creating a new \texttt{Particle} class are:
+\begin{itemize}
+    \item Based on the type of interactions which the particles have with each other and with external objects such as a \texttt{Field}, select a method of distributing the particles among the nodes in a parallel machine.
+    \item Next, decide what attributes each particle should possess.
+    \item Third, create a subclass of \texttt{ParticleBase} which includes these attributes (specified as instances of the \texttt{ParticleAttrib} class template).
+    \item Finally, instantiate this user-defined subclass of \texttt{ParticleBase} and create and initialize storage for the particles which are to be maintained by this object. 
+\end{itemize}
+
+The following sections describe in more detail how to accomplish these steps.
+
+\subsection{Selecting a Layout: \texttt{ParticleLayout} and Derived Classes}
+
+When used in a parallel environment, the \ippl framework partitions the particles in a \texttt{Particle} container among the separate processors and includes tools to spread the work of computing and the results of expressions involving \texttt{Particle} attributes among the processing nodes. There are, however, different ways in which particles may be distributed among the processors, and the method which should be used depends upon how the particles in a \texttt{Particle}
+object will interact with each other and with \texttt{Field} objects (if at all). The \ippl framework includes different \texttt{Particle} layout mechanisms, which are all derived from the \texttt{ParticleLayout} class. Each \texttt{Particle} object needs its own layout object; that is, you cannot create a layout object and give it to more than one \texttt{Particle} object. The methods typically used to determine how to assign particles to particular nodes are based on analysis of the
+position (\texttt{R} attribute) of each particle. Thus, \texttt{ParticleLayout} and its derived classes have two template parameters: the type and the dimensionality of the particle position attribute (this particle position attribute is discussed in more detail later). The following sections describe the particle layout mechanisms currently available in the \ippl framework.
+
+\subsection{The \texttt{{\color{red} ParticleUniformLayout} Class}}
+{\color{red} can be removed}
+
+\subsection{The \texttt{ParticleSpatialLayout} Class}
+
+\texttt{ParticleSpatialLayout}, in contrast to \texttt{ParticleUniformLayout}, assigns particles to nodes based upon their spatial location relative to a \texttt{FieldLayout}. It is useful when the particles will be interacting with other particles in their neighborhood or with a \texttt{Field} object. \texttt{ParticleSpatialLayout} will keep a particle on the same node as that which contains the section of the \texttt{Field} in which the particle is located. If the particle moves to a new position, this layout will reassign it to a new node when necessary. This will maintain locality between the particles and any \texttt{Field} distributed using this \texttt{FieldLayout}. Further more it will help keep particles which are spatially close to each other local to the same processor as well. As with all the layout classes, \texttt{ParticleSpatialLayout} requires the type and dimensionality of the particle position attribute as template parameters. The constructor for \texttt{ParticleSpatialLayout} takes one argument: a pointer to a \texttt{FieldLayout} object that tells the \texttt{ParticleSpatialLayout} how the \texttt{Field} is allocated among the parallel processors, so that the particles may be maintained local to this \texttt{Field}. Note that you do not, need to create a \texttt{Field} instance itself, you only need to give \texttt{ParticleSpatialLayout} a \texttt{FieldLayout} object. An example of creating an instance of this class is as follows:
+\begin{smallcode}
+FieldLayout<3> myfieldlayout(Index(l6), Index(16), Index(32)); 
+ParticleSpatialLayout<double,3> myparticlelayout(&myfieldlayout);
+\end{smallcode}
+
+
+Note that the dimensionality of the \texttt{FieldLayout} and the \texttt{ParticleSpatialLayout} (in this example, 3) must be the same. You may also create a \texttt{ParticleSpatialLayout} instance without providing a \texttt{FieldLayout}. In this case, particles will remain on the node on which they were created. If at some future time you wish to provide a \texttt{FieldLayout} object to tell the \texttt{ParticleSpatialLayout} where to place the particles, you may do so using the \texttt{setFieldLayout} (\texttt{FieldLayout<Dim>*}) method of \texttt{ParticleSpatialLayout}. This is useful when reading particles in from an external source and the size of the spatial domain containing the particles is not known until all the particles have been read. The following example demonstrates the use of the capability:
+\begin{smallcode}
+ParticleSpatiaILayout<double,3> myparticleLayout; 
+// calculate the size of the domain required to contain all the particles 
+// create a new FieldLayout object based on these calculations 
+FieldLayout<3> myfieldlayout(Index(minx, maxx), Index (miny, maxy), 
+                             Index(minz,maxz);   
+myparticlelayout.setFieldLayout(&myfieldlayout);
+\end{smallcode}
+
+\texttt{ParticleSpatialLayout} also provides functionality to maintain cached ghost particles from neighboring nodes which might be required for particle - particle interaction. A caching policy can be defined using the fourth template parameter of \texttt{ParticleSpatialLayout}:
+\begin{smallcode}
+typedef UniformCartesian<Dim, double> Mesh_t;
+typedef ParticleSpatialLayout<double,Dim,Mesh_t,
+        BoxParticleCachingPolicy<double, Dim, Mesh_t> > playout_t;
+\end{smallcode}
+The available chaching policies are: \texttt{NoParticleCachingPolicy},\texttt{BoxParticleCachingPolicy} and \texttt{CellParticleCachingPolicy}. With \texttt{NoParticleCachingPolicy} there is no caching whatsoever. \texttt{BoxParticleCachingPolicy} extends the interface of \texttt{ParticleSpatialLayout} by two functions \texttt{void setCacheDimension(int d, T length)} and \texttt{void setAllCacheDimensions(T length)} which are used to set the size of the cached region around the local domain in units of space. \texttt{CellParticleCachingPolicy} extends the interface of \texttt{ParticleSpatialLayout} by two functions \texttt{void setCacheCellRange(int d, int length)} and \texttt{void setCacheCellRanges(int d, int length)} which are used to set the size of the cached region around the local domain in units of grid cells of the mesh. \texttt{BoxParticleCachingPolicy} is the default policy.
+
+The caching can be enabled or disabled by calling the \texttt{enableCaching()} or \texttt{disableCaching()} member functions of \texttt{ParticleSpatialLayout}. Caching is disabled by default.
+
+
+\subsection{Selecting Particle Attributes: The \texttt{ParticleAttrib} \\Class}
+
+\texttt{ParticleAttrib} is a class template that represents a single attribute of the particles in a \texttt{Particle} object. Each \texttt{ParticleAttrib} contains the data for that attribute for all the particles. Within a user-defined \texttt{Particle} class, you declare an instance of \texttt{ParticleAttrib} for each attribute the particles will possess and assigns to it an arbitrary name. \texttt{ParticleAttrib} requires one template parameter, the type of the data for the attribute. As an example, the statement:
+\begin{smallcode}
+ParticleAttrib<double> density; 
+\end{smallcode}
+
+declares an instance of \texttt{ParticleAttrib} named 'density', which will store a quantity of type double for all the particles of the \texttt{Particle} class that contains this data member.
+
+\subsection{Specifying a User-Defined \texttt{Particle} Class: \\The \texttt{ParticleBase} Class}
+
+\texttt{ParticleBase} is the class that all user-defined \texttt{Particle} classes must specify as their base class. It stores the list of attributes for the particles (which are maintained as instances of \texttt{ParticleAttrib}) and a selected parallel layout mechanism. In addition to providing all the capabilities for performing operations on the particles and their attributes, \texttt{ParticleBase} also defines two specific attributes which all user-defined \texttt{Particle} classes inherit:
+\begin{smallcode}
+ParticleAttrib<Vektor<T,Dim>>  R; 
+ParticleAttrib<unsigned>      ID;
+\end{smallcode}
+
+
+The first attribute, \texttt{R}, represents the position of each particle. Each position is stored as a \texttt{Vektor<T, Dim>}, which is a \ippl data type representing a dim-dimensional vector with elements of type \texttt{T}. The second attribute, \texttt{ID}, stores a unique unsigned integer value for each particle. The values are not guaranteed to be in any particular order, but they are guaranteed to be unique for each particle. \texttt{ParticleBase} has one template parameter, the layout class to be used to assign particles
+to processors (e.g., \texttt{ParticleSpatialLayout}). The data type and dimensionality of the particle position attribute (\texttt{R}) will be the same as those used to create the specific \texttt{ParticleLayout} derived class. Each \texttt{ParticleBase} contains one instance of the chosen layout class. There are two constructors for \texttt{ParticleBase}: a default constructor that creates a new instance of the layout class using the layout's default constructor, and a constructor which takes a pointer to an instance of the
+layout class. The second version of the \texttt{ParticleBase} constructor is useful when the desired layout class requires arguments to its constructor (e.g., \texttt{ParticleSpatialLayout}, which may be give in a \texttt{FieldLayout} pointer).
+
+Using \texttt{ParticleBase}, \texttt{ParticleAttrib}, and a selected class derived from \texttt{ParticleLayout,} you can create a user-defined \texttt{Particle} class using the following code template: \\
+\clearpage
+\begin{codeln}
+class Bunch : public ParticleBase< ParticleSpatiaILayout<double,3> > 
+{ 
+public: 
+    // Attributes for this particle class (besides position and ID). 
+    ParticleAttrib<double>             qm;      // q/m ratio 
+    ParticleAttribs Vektor<double,2> > vel; 	// velocity 
+
+    // constructor 
+    Bunch(Layout\_t *L) : ParticleBase<Layout\_t>(L) { 
+        addAttribute(qm); 
+        addAttribute(vel); 
+    } 
+}; 
+\end{codeln}
+
+Let us describe this example in detail by discussing the important lines in the order of use.
+
+Line 1: You may select whatever name is appropriate for the specialized \texttt{Particle} class, but it must be derived from \texttt{ParticleBase}. 
+
+In this case, we explicitly specify the type of layout to use (\texttt{ParticleSpatialLayout}), with particle position attribute type and dimensionality template parameters of double and 3, respectively. Alternatively, \texttt{Bunch} may have been declared as a class template itself and may have passed on the layout template parameters to \texttt{ParticleBase}. In that case, the first line would instead look like
+\begin{smallcode}
+template <class PLayout> 
+class Bunch : public ParticleBase<PLayout> 
+\end{smallcode}
+
+Lines 5-6: Here is where the attributes for the particles in the \texttt{Particle} object are declared. They may be given any name other than \texttt{R} or \texttt{ID}. Instead of stating the type and dimensionality of this attribute specifically, you may also use one of the following typedefs and constants defined in \texttt{ParticleBase}:
+\begin{itemize}
+          \item \texttt{Dim} - the dimensionality of the particle position attribute (in this example, 3)
+          \item \texttt{Position\_t} - the type of data used to store the position attribute components (here, this type is double)
+          \item \texttt{Layout\_t} - a synonym for the specified layout class
+          \item \texttt{ParticlePos\_t} - a typedef for the particle position attribute; it is shorthand for \texttt{ParticleAttrib< Vektor<Position\_t,Dim> >}
+\end{itemize}
+and could have been used to specify the attribute \texttt{vel} in the above example as \texttt{ParticlePos\_t vel};
+\begin{itemize}
+\item \texttt{ParticleIndex\_t} - a typedef for the particle global \texttt{ID} attribute; it is short for \texttt{ParticleAttrib<unsigned>} 
+\end{itemize}
+The constructor for this user-defined class must initialize \texttt{ParticleBase} with a pointer to an instance of the selected layout class. 
+
+In this example, the layout class is \texttt{ParticleSpatialLayout}, but using one of the typedefs listed above, we can abbreviate this as \texttt{Layout\_t}. Note that we only define one constructor here, omitting the default constructor. This is done because \texttt{ParticleSpatialLayout} (which we have hard-coded as the layout for this user-defined \texttt{Particle} class) requires an argument to its constructor, and this can only be provided if we use a constructor for our \texttt{Particle} class as shown here. A new instance of this class would be declared in an application as follows:
+\begin{smallcode}
+Bunch myBunch (new ParticleSpatialLayout<double,3>(myFieldLayout)); 
+\end{smallcode}
+where my\texttt{FieldLayout} was a \texttt{FieldLayout} object created previously. The only action that is required in the constructor for the derived class is to inform the base class of the declared attributes, 
+using the \texttt{addAttribute(.)} method of \texttt{ParticleBase}, which registers the specified \texttt{ParticleAttrib} instance with the parent class \texttt{ParticleBase}. The order in which attributes are registered is not important.
+
+\subsection{Example \texttt{Particle} Classes: {\color{red} The \texttt{Genparticle} and \texttt{GenArrayParticle}} Classes}
+{\color{red} can be removed}
+
+
+\subsection{Using \texttt{Particle} Classes in an Application}
+
+After a specific \texttt{Particle} class has been defined and created in a \ippl application, you may create and initialize new particles, delete unwanted particles, and perform computations involving these particles. This section describes how to accomplish these tasks.
+
+\subsection{Creating New \texttt{Particle}s}
+
+When a \texttt{Particle} object is created, it is initially empty. Storage for new particles is allocated using the create (unsigned) method of \texttt{ParticleBase}. For example, if a \texttt{Particle} object bunch has been created already, the statement
+\begin{smallcode}
+bunch.create(100); 
+\end{smallcode}
+
+
+will allocate storage for 100 new particles. All the attributes for the particles in the \texttt{Particle} object will have this new storage allocated. The data is uninitialized, except for the global \texttt{ID} attribute; you must assign the proper values to the position and any other attributes that have been defined. The new storage is appended to the end of any existing storage.
+
+\texttt{ParticleBase} includes two methods that allow you to query how many particles exist. The function \texttt{getTotalNum()} will return the total number of particles being stored among all the processors; the function \texttt{getLocalNum()} will return the number of particles just on the local node. Although the new storage space is allocated on the local processor on which the call to create was executed, the \texttt{Particle} class will not officially add the particles to its
+local count (and will not tell any other processors it has created these new particles) until you call the \texttt{update()} method of \texttt{ParticleBase}. Thus, a call to \texttt{getLocalNum()} will report the same number just before and just after the call to create. The storage does exist after create is called, but only after the \texttt{update} method (which is discussed in more detail in a later section) has been called will all the processors have correct information on their local and total particle counts.
+
+\subsection{Initializing Attribute Data}
+
+After calling create to allocate new storage, you must initialize the data. This should be done after calling create and before calling \texttt{update} for the \texttt{Particle} object. After the data is initialized, the \texttt{update} routine will properly distribute the particles to their correct node based on the layout mechanism chosen for that \texttt{Particle} object and possibly the positions of the particles as set during their initialization. The following example shows one way to initialize the data for newly
+created particles when running on a single-processor machine. (This example will be modified in the following section for the case of running in parallel.) \\
+\begin{code}
+// create and'initialize data for an instance of Bunch 
+Bunch myBunch(new Bunch::Layout\_t(myFieldLayout)); 
+int currLocalPtcls = myPtcls.getLocalNum(); 
+myBunch.create(100); 
+for (int i = 0; i < 100; i++) { 
+    myBunch.R[currLocalPtcls + i] = Vektor<double,3>(0.0, 1.0, 0.0); 
+    myBunch.vel[currLocalPtcls + i] Vektor<double,3>(1.0, 1.0, 1.0); 
+} 
+myBunch.update(); 
+\end{code}
+
+
+In this example, 100 new particles are created, and the \texttt{R} and \texttt{vel} attributes are initialized to \texttt{Vektor} quantities. Notice that each attribute is accessed simply by specifying it as a data member of the \texttt{myBunch} object. After create was called, even though the 100 particles were not added to the \texttt{Particle} object's count of local particles, the storage was allocated and it was possible to assign values to the new elements in the attribute storage
+(accessed simply using the \texttt{[]} indexing operator). Finally, calling \texttt{update} added the new storage to the count, of particles stored in \texttt{myBunch}. Further calls to getLocalNum and getTotalNum would report the proper values.
+
+\subsection{Initializing Attribute Data on Parallel Architectures}
+
+The code shown in the previous example has one problem when used on parallel architectures: the call to create is performed on each processor, so if there were P processors a total of 100*P particles would be created. This may be the desired behavior, if so, the previous example is sufficient. However, if you are reading data on particle positions and other attributes from a file or some other source, you may wish to create particles on a single processor, and then distribute the
+data to the proper nodes. To do this, you need to call create and assign initial data on only one node but call update on all the processors. The \texttt{singlelnitNode()} method of \texttt{ParticleBase} will return a boolean value indicating whether the local processor should be used to create and initialize new particles in this way. The following example demonstrates how to use this method for initializing particles: \\
+\begin{code}
+// create and'initialize data for an instance of Bunch 
+Bunch myBunch(new Bunch::Layout\_t(myFieldLayout)); 
+int currLocalPtcls = myPtcls.getLocalNum();
+if (myBunch.singleInitNode()) { 
+    myBunch.create(100);  
+    for (int i = 0; i < 100; i++) { 
+        myBunch.R[currLocalPtcls + i] = Vektor<double,3>(0.0, 1.0, 0.0); 
+        myBunch.vel[currLocalPtcls + i] Vektor<double,3>(1.0, 1.0, 1.0); 
+    }
+} 
+myBunch.update(); 
+\end{code}
+
+
+\subsection{Deleting \texttt{Particle}s}
+
+\texttt{Particle}s may also be deleted during a simulation. The method \texttt{destroy (unsigned M, unsigned I)} of \texttt{ParticleBase} will delete \texttt{M} particles, starting with the \texttt{I}th particle. The index \texttt{I} here refers to the local particle index, not the global \texttt{ID} value. Thus \texttt{I = 0} means delete particles starting with the first one on the local processor.
+
+Unlike the situation when creating new particles, the storage locations for the deleted particles will not be removed from attribute data storage until \texttt{update} is called. Instead, the requests to delete particles are cached until the update phase, at which time all the deletions are performed. You are allowed to issue multiple delete requests between \texttt{update}s. For example, if there are 100 particles on a local node, and you request to delete particles 0 to 10
+and then request to delete particles 60 to 70, nothing will change in the attribute storage until you call \texttt{update}, and no change will occur to the local and total particle counts until \texttt{update()} is complete.
+
+\subsection{Updating \texttt{Particle}s: The \texttt{update()} Method}
+
+The \texttt{update()} method of \texttt{ParticleBase} is responsible for making sure that all processors have correct information about how many particles exist and where they are located in a parallel machine. As mentioned previously, \texttt{update} must be called by all processors after a sequence of particle creation or deletion operations. The \texttt{update} method is also responsible for maintaining a proper assignment of particles to processors, based on the particular
+\texttt{ParticleLayout} class used to create the
+\texttt{ParticleBase} object. Typically, this layout mechanism depends on the position of particles, so when particles change their position, they may need to be reassigned to a new processor to maintain the proper layout. In this case, the \texttt{update} method should be called whenever a computation is complete which alters the attributes (e.g. position) that a layout depends upon. The following short example demonstrates using \texttt{update} in conjunction with some operation that alters the x-coordinate of a
+set of particles. \\
+\begin{code}
+// do some computation involving myBunch for several time steps 
+while (computation_done == false) { 
+    // for each particle, add some constant to the x coordinate 
+    myBunch.R(0) += 0.li 
+    // update the Particle object; this may move particles between nodes 
+    myBunch.update(); 
+    // determine if the computation is done, etc.
+}
+\end{code}
+
+\subsection{Using Particle Attributes in Expressions}
+
+Computations involving particle attributes may be performed in many ways. Data-parallel expressions that involve all particles of a given \texttt{Particle} object may be used, or specific loops may be written that employ attribute iterators.
+
+
+\subsubsection{Attribute Expressions}
+
+Just as with the \texttt{Field} class, you may perform data-parallel operations on particle attributes using a simple expression syntax, which the \ippl framework will translate into efficient inlined code. These operations will be performed for every particle. The expressions may include any of the attributes in a \texttt{Particle} object as well as scalar values, may use mathematical operators such as +, -, *, / etc., and may call standard mathematical functions such as \texttt{cos(
+)}, \texttt{exp( )}, \texttt{mod( )} , etc. for an attribute value of each particle. Some examples are shown below.
+\begin{smallcode}
+double dt = 2.0; 
+myBunch.R += myBunch.vel* dt; 
+myBunch. vel = 1. - log (1. + myBunch. R * myBunch. R) ; 
+myBunch.update(); 
+\end{smallcode}
+
+
+Attribute expressions will perform their operations on all the particles in the \texttt{Particle} object, including any new particles allocated via a call to create, even before update has been called. This fact is useful when initializing the attributes for newly created particles (e.g., to set the init value for some scalar quantity to zero). Generally, however, unless you are performing an initialization of new particles, you should avoid using particle expressions of this type after calls to create or destroy and before a call to update.
+
+Some attributes, such as \texttt{Vektor}s or \texttt{Tenzor}s, have multiple components, and you may wish to involve only the \texttt{N}th component of the attribute in an expression. To do so, use the \texttt{()} operator to select the \texttt{N}th component of that attribute. For instance, using \texttt{myBunch} from the previous example, you can change just the x-coordinate of the particle position attribute \texttt{R} as follows: 
+\begin{smallcode}
+myBunch.R(0) = myBunch.R(l) - cos(myBunch.R(2));
+\end{smallcode}
+
+
+For 2D or 3D quantities, use two or three indices. For example, if rho is a 3x3 \texttt{Tenzor} attribute of myBunch, you can do the following:
+\begin{smallcode}
+myBunch.rho(0,0) = -(myBunch.rho(0,l) + myBunch.rho(0,2)); 
+\end{smallcode}
+
+Attribute expressions may also use the where operator in much the same way as for \texttt{Field} expressions. The first argument to where is some expression that results in a \texttt{boolean} value for each particle. The second and third arguments are expressions that will be evaluated for a particle if the first argument is \texttt{true} or \texttt{false}, respectively, for that particle. For example,
+\begin{smallcode}
+myBunch.vel = where(myBunch.R(0) > 0.0, -2.0 * myBunch.vel, myBunch.vel) 
+\end{smallcode}
+
+changes the value of the \texttt{vel} attribute in \texttt{myBunch} when the x-coordinate of the particle position is positive.
+
+\subsection{\texttt{Particle} Iterator Loop}
+
+You also have the capability of performing operations on specific particles using iterators or standard indexing operations. The \texttt{ParticleAttrib} containers in a \texttt{Particle} class may be used just as regular \texttt{STL} containers. The \texttt{begin()} and \texttt{end()} methods of the \texttt{ParticleAttrib} class will return an iterator pointing to the first element and just past the last element, respectively, of the attribute. These iterators may be used in an explicit loop just as if they were pointers into the attribute array.
+\begin{smallcode}
+ParticleAttrib<unsigned>::iterator idptr, idend = myBunch.ID.end(); 
+for (idptr = myBunch.ID.begin(); idptr != idend; ++idptr) 
+    cout << "Particle ID value: " << *idptr << endl; 
+\end{smallcode}
+
+
+Iterators are available for all \texttt{ParticleAttribs}. As an alternative, you may simply use the \texttt{[]} operator to access the attribute data of the \texttt{N}th particle on a node, treating \texttt{ParticleAttrib} as a regular array of data.
+\begin{smallcode}
+int nptcls = myBunch.getLocalNum(); 
+for(int i=0; i < nptcls ++i) { 
+    cout << "Particle ID value: " << myPtcls.ID[i] << endl; 
+}
+\end{smallcode}
+
+
+\section{{\color{red}Nearest-Neighbor Interactions (Jakob)}}
+{\color{red} can be removed}
+
+
+\subsection{{\color{red}\texttt{Particle} - \texttt{Particle} Interactions}}
+{\color{red} can be removed}
+
+\subsection{\texttt{Particle} - \texttt{Field} Interactions}
+
+%\section{\texttt{Particle} - \texttt{Field} Interactions}
+
+Many particle-based simulation methods, including "particle-in-cell" (PIC) simulations, rely on the ability of particles to interact with field quantities. For instance, in particle-based accelerator (plasma) simulations, you typically track the motions of charged plasma particles in a combination of externally applied and self-generated electromagnetic fields. In a \ippl application, such fields might be stored as \texttt{Field} objects of type \texttt{Vektor} existing on a pre-defined mesh. Particles moving through this mesh must be able to "gather" the current value of a \texttt{Field} to their exact positions. Additionally, in order to compute the values of self-generated fields, the particles must be able to "scatter" the value of an attribute onto nearby mesh points, producing a \texttt{Field}. These gather/scatter operations are done using a set of \ippl interpolation methods.
+
+\ippl provides a hierarchy of interpolation classes, each derived from the base class \texttt{Interpolate} and each containing the basic \texttt{gather} and \texttt{scatter} functions. The \texttt{gather} method allows you to gather one or more specified \texttt{Field}s into an equal number of \texttt{ParticleAttribs}. Similarly, \texttt{scatter} will accumulate one or more \texttt{ParticleAttribs} on to an equal number of \texttt{Field} objects. An example of how to scatter the particle density to a \texttt{Field} is shown below.
+\begin{smallcode}
+InterpolateNGP<Dim> mylnterpolater(myBunch);           // create NGP interpolater 
+Field<double,Dim> ptcl_density(myfieldlayout);         // create density field 
+myInterpolator.scatter(myBunch.density,ptcl_density);  // do scattet 
+\end{smallcode}
+The various classes derived from \texttt{Interpolate} implement these \texttt{gather} and \texttt{scatter} methods using different well-known interpolation schemes, such as nearest grid point (NGP), linear interpolation, and the subtracted-dipole scheme (SUDS). You may use these provided classes as a template for deriving new classes from \texttt{Interpolate} that implement other interpolation schemes of interest.
+
+In case of the CIC Interpolation and non-cyclic boundary condition, care has to be taken to not place particles in the outer half of boundary cells. Otherwise values will be scattered out of the grid and be irretrivable.

@@ -1,0 +1,99 @@
+\chapter{Framework Setup}
+\label{sec:setup}
+
+\section{Initialising \ippl}
+\ippl is initialized by passing \texttt{argc} and \texttt{argv} to \texttt{Ippl()} constructor or by creating an instance of \texttt{Ippl::Options}, configuring it, and then passing that options object to \texttt{Ippl::initialize()}. After the \texttt{Ippl()} constructor call MPI (or any other parallel subsystem) is proper initialized. \\
+With \texttt{Ippl::getNodes()} or \texttt{Ippl::myNode()} you can for example gather information how many compute nodes/cores are available and on which of the nodes you are running. \\
+\begin{code} 
+#include "Ippl.h"
+int main(int argc, char *argv[])
+{
+    Ippl ippl(argc,argv);
+    .....
+\end{code}
+
+\section{ Utility Classes in \ippl}
+\ippl provides, and uses internally, a number of useful utility classes which you may find helpful when developing new applications. 
+
+\subsection{Inform Class}
+The Inform class is used to print messages to the console or to a file. It has an interface which is very similar to the iostream classes in C++, and it is mostly used in those situation where you might print a message to cout or cerr. An Inform object is created with a prefix string, which is then appended to all lines of output from the Inform object. Inform essentially takes in data to be printed, formats it for printing just as an ostream object would, but also appends the prefix message to all lines of output. Most important Inform will also indicate which node printed the message when running in parallel.
+
+\subsubsection{Constructing New Inform Objects}
+
+The constructor for Inform has the form 
+\begin{smallcode}
+Inform(char *prefix = 0, int node = 0)
+\end{smallcode}
+where prefix is a string to prepend to all output lines, and node indicates on what node the Inform object should actually print out the information it is given. Notice that both of these arguments have default values; if no arguments are used when creating a new Inform object, no prefix will be used, if only one argument is given, then node default to 0, which means this Inform object will only print out messages on node 0.
+\begin{smallcode}
+Inform blankmsg; 
+blankmsg << "Some text." << endl; 
+\end{smallcode}
+This Inform object will print the text it is given to standard out. The final "\texttt{endl}" is a special manipulator object, which signals the Inform objec t to print out the message it has been given. It will automatically append an endline to the message if it does not already have one at the end. It is important to use endl with an Inform object if it is not ever used, the Inform object will never print out its accumulated text.
+\begin{smallcode}
+Inform testmsg("mytest"); 
+testmsg << "More text. argc = " << argc << endl; 
+\end{smallcode}
+Here, the prefix is given, if this is used when running in serial, the output will look like:
+\begin{smallcode}
+mytest> More text. argc = 1 
+\end{smallcode}
+or, if you use this when there is more than one processor in use, the prefix will also include the node number in curly brackets:
+\begin{smallcode}
+mytest{0}> More text. argc = 1 
+\end{smallcode}
+On all other nodes than node 0, when this Inform object is used, it will not print out the message.
+\begin{smallcode}
+Inform testmsg("testall", INFORM_ALL_NODES); 
+\end{smallcode}
+This example is similar to the previous example, except the second argument explicitly specifies which node to print on. This can be a number from 0 .... (num nodes - 1), or, as in this example, it can be \texttt{INFORM\_ALL\_NODES} which indicates the message should be printed on ALL the nodes instead of just one. You can also change the node on which an Inform object will print after it has been created by using the \texttt{setprintNode(int)} method of \texttt{Inform}. 
+
+\subsubsection{Predefined Inform Objects}
+Creating new Inform objects for printing messages is useful in contexts where you would like a unique prefix to indicate where the message originated, say in a specific class method. However, the \ippl framework provides a set of predefined Inform instances which may be used to quickly generate output message or to make sure all messages have a common prefix. These Inform objects are static members of the IPPL class, which is used to initialize the framework. The predefined instances are:
+\begin{smallcode}
+IPPL::Info = new Inform ("IPPL") ; 
+IPPL::Warn = new Inform("Warning"); 
+IPPL::Error = new Inform("Error", INFORM_ALL_NODES);
+\end{smallcode}
+These three instances are used to print generally informative messages, warning messages, and error messages. \texttt{Info} and \texttt{Warn} only print on node 0 by default; \texttt{Error} will print on all nodes. You may use these to printmessages in your own application:
+\begin{smallcode}
+*IPPL::Info << "An informative message." << endl; 
+\end{smallcode}
+Notice that here that \texttt{Info} was first dereferenced, since it actually is a pointer to an \texttt{Inform} object. A better (and recommended) way to use these predefined instances is to use a macro which is defined for each instance. The macros to use are \texttt{INFOMSG}, \texttt{WARNMSG}, and \texttt{ERRORMSG}; an example of their use is:
+\begin{smallcode}
+WARNMSG("rhis is a warning: value = " << warnvalue << endl); 
+\end{smallcode}
+The argument to the macro is then given to the associated \texttt{Inform} object for printing. 
+
+\subsection{Timer Class}
+Timer is used to perform simple timings within a program for use in, e.g., benchmarking. It tracks real (clock) time elapsed, user time, and system time. It acts essentially as a stopwatch: 
+initially it is stopped, and YOU tell it to stop and start with method calls. The Timer constructor takes no arguments; you create a new Timer object, and use the following methods:
+\begin{smallcode}
+//Start the clock running. Time only accumulates in the Timer when it is running. 
+void start()
+void stop()         //Stop the clock. The clock may be started again later. 
+void clear()        //Resets the accumulated time to zero
+float clock_time()  //Reports the accumulated "wall clock" time in seconds. 
+float user_time()   //Reports theaccurnulated user CPU time in seconds. 
+float system_time() //Reports the accumulated system CPU time in seconds. 
+float cpu_time()    //Reports user_time() + system_time() 
+\end{smallcode}
+
+\clearpage
+
+Example how to use the timer class: \\
+\begin{code}
+
+IpplTimings::TimerRef selfFieldTimer_m;    \\ definition
+
+selfFieldTimer_m = IpplTimings::getTimer("computeSelfField");  
+ 
+selfFieldTimer_m.start(); 
+    /* compute something */
+selfFieldTimer_m.stop();
+
+IpplTimings::print();
+
+\end{code}
+
+
