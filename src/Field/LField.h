@@ -152,10 +152,13 @@ namespace ippl {
                     int> = 0>*/
         LField<T,Dim>& operator=(Expression<E, N> const& expr);
 
-        T sum();
-        T max();
-        T min();
-        T prod();
+        T sum(int nghost=0);
+        
+        T max(int nghost=0);
+        
+        T min(int nghost=0);
+        
+        T prod(int nghost=0);
 
     private:
         // Global vnode ID number for the associated Vnode (useful with more recent

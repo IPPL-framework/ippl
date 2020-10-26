@@ -117,21 +117,22 @@ namespace ippl {
     }
 
     #define DefineReduction(fun, name, op)                                                                   \
-    template<class T, unsigned Dim>                                                                          \
-    T LField<T, Dim>::name() {                                                                               \
+    template <typename T, unsigned Dim>                                                                      \
+    T LField<T, Dim>::name(int nghost) {                                                                     \
         T temp = 0.0;                                                                                        \
+        const int shift = nghost_m - nghost;                                                                 \
         Kokkos::parallel_reduce("fun",                                                                       \
-                               Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost_m, nghost_m, nghost_m},        \
-                                                                      {dview_m.extent(0) - nghost_m,         \
-                                                                       dview_m.extent(1) - nghost_m,         \
-                                                                       dview_m.extent(2) - nghost_m}),       \
+                               Kokkos::MDRangePolicy<Kokkos::Rank<3>>({shift, shift, shift},                 \
+                                                                      {dview_m.extent(0) - shift,            \
+                                                                       dview_m.extent(1) - shift,            \
+                                                                       dview_m.extent(2) - shift}),          \
                                KOKKOS_CLASS_LAMBDA(const int i, const int j,                                 \
                                                    const int k, T& valL) {                                   \
                                     T myVal = dview_m(i, j, k);                                              \
                                     op;                                                                      \
                                }, Kokkos::fun<T>(temp));                                                     \
         return temp;                                                                                         \
-    }                                                                                                        \
+    }                                                                                                        
 
     DefineReduction(Sum,  sum,  valL += myVal)
     DefineReduction(Max,  max,  if(myVal > valL) valL = myVal)

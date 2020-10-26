@@ -114,10 +114,10 @@ namespace ippl {
 
         void write(std::ostream& = std::cout);
 
-        T sum();
-        T max();
-        T min();
-        T prod();
+        T sum(int nghost=0);
+        T max(int nghost=0);
+        T min(int nghost=0);
+        T prod(int nghost=0);
 
 
     protected:
