@@ -13,12 +13,10 @@ link_directories (
     ${Kokkos_DIR}/..
 )
 
-set (IPPL_LIBS ippl)
-
 add_executable (Field Field.cpp)
 target_link_libraries (
     Field
-    ${IPPL_LIBS}
+    ippl
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
     boost_timer
