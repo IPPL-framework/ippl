@@ -5,7 +5,7 @@ template<class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout>
 {
 
-    Bunch(std::shared_ptr<PLayout>& playout)
+    Bunch(PLayout& playout)
     : ippl::ParticleBase<PLayout>(playout)
     {
         this->addAttribute(E);
@@ -18,10 +18,10 @@ struct Bunch : public ippl::ParticleBase<PLayout>
 int main(int argc, char *argv[]) {
     Ippl ippl(argc, argv);
 
-    typedef ippl::detail::ParticleLayout<double, 3> playout;
-    typedef Bunch<playout> bunch_type;
+    typedef ippl::detail::ParticleLayout<double, 3> playout_type;
+    typedef Bunch<playout_type> bunch_type;
 
-    std::shared_ptr<playout> pl = std::make_shared<playout>();
+    playout_type pl;
 
     bunch_type bunch(pl);
 

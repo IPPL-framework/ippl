@@ -99,6 +99,8 @@ namespace ippl {
         typedef PLayout                           Layout_t;
         typedef std::vector<detail::ParticleAttribBase<Properties...>*> attribute_container_t;
         typedef typename attribute_container_t::iterator  attribute_iterator;
+        typedef ParticleBConds<typename PLayout::value_type, PLayout::dim> bcs_type;
+        typedef typename bcs_type::ParticleBCond bc_type;
 
     public:
         //! view of particle positions
@@ -120,7 +122,7 @@ namespace ippl {
          * is null afterwards, i.e., layout == nullptr.
          * @param layout to be moved.
          */
-        ParticleBase(std::shared_ptr<PLayout>& layout);
+        ParticleBase(Layout_t& layout);
 
 
         /* cannot use '= default' since we get a
@@ -136,7 +138,7 @@ namespace ippl {
          * when the ParticleBase instance is constructed with the
          * default ctor.
          */
-        void initialize(std::shared_ptr<PLayout>& layout);
+        void initialize(Layout_t& layout);
 
         /*!
          * @returns processor local number of particles
@@ -153,12 +155,40 @@ namespace ippl {
         /*!
          * @returns particle layout
          */
-        PLayout& getLayout() { return *layout_m; }
+        Layout_t& getLayout() { return *layout_m; }
 
         /*!
          * @returns particle layout
          */
-        const PLayout& getLayout() const { return *layout_m; }
+        const Layout_t& getLayout() const { return *layout_m; }
+
+
+        /*!
+         * @returns the boundary condition of the particle layout
+         */
+        const bcs_type& getBConds() const {
+            return layout_m->getBConds();
+        }
+
+
+        /*!
+         * Set all boundary conditions
+         * @param bc the boundary conditions
+         */
+        void setBConds(const bcs_type& bcs) {
+            layout_m->setBConds(bcs);
+        }
+
+
+        /*!
+         * Set the boundary condition
+         * @param bc boundary condition
+         * @param i th boundary condition
+         */
+        void setBCond(const bc_type& bc, const int i) {
+            layout_m->setBCond(bc, i);
+        }
+
 
 
         /*!
@@ -209,17 +239,9 @@ namespace ippl {
         void destroy();
 
     private:
-        /*!
-         * Ctor called when layout == nullptr (i.e., by the default constructor)
-         * which happens always since all ctors call default ctor.
-         * @param layout is the particle layout
-         */
-        ParticleBase(std::shared_ptr<PLayout>&& layout);
-
-    private:
         //! particle layout
         // cannot use std::unique_ptr due to Kokkos
-        std::shared_ptr<PLayout> layout_m;
+        Layout_t* layout_m;
 
         //! processor local number of particles
         size_t localNum_m;
