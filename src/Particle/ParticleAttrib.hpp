@@ -41,15 +41,15 @@ namespace ippl {
                                                    Kokkos::View<int*> newIndex, size_t n) {
         Kokkos::View<T*> temp("temp", n);
         Kokkos::parallel_for("ParticleAttrib::destroy()",
-                             size(),
+                             dview_m.extent(0),
                              KOKKOS_CLASS_LAMBDA(const size_t i)
                              {
                                  if ( !invalidIndex(i) ) {
-                                    temp(newIndex(i)) = this->operator()(i);
+                                    temp(newIndex(i)) = dview_m(i);
                                  }
                              });
         this->resize(n);
-        Kokkos::deep_copy(*this, temp);
+        Kokkos::deep_copy(dview_m, temp);
     }
 
 
@@ -58,9 +58,9 @@ namespace ippl {
     ParticleAttrib<T, Properties...>::operator=(T x)
     {
         Kokkos::parallel_for("ParticleAttrib::operator=()",
-                             this->extent(0),
+                             dview_m.extent(0),
                              KOKKOS_CLASS_LAMBDA(const int i) {
-                                 this->operator()(i) = x;
+                                 dview_m(i) = x;
                             });
         return *this;
     }
@@ -74,9 +74,9 @@ namespace ippl {
         detail::CapturedExpression<E, N> expr_ = reinterpret_cast<const detail::CapturedExpression<E, N>&>(expr);
 
         Kokkos::parallel_for("ParticleAttrib::operator=()",
-                             this->extent(0),
+                             dview_m.extent(0),
                              KOKKOS_CLASS_LAMBDA(const int i) {
-                                 this->operator()(i) = expr_(i);
+                                 dview_m(i) = expr_(i);
                             });
         return *this;
     }
@@ -102,7 +102,7 @@ namespace ippl {
 
 
         Kokkos::parallel_for("ParticleAttrib::scatter",
-                             size(),
+                             dview_m.extent(0),
                              KOKKOS_CLASS_LAMBDA(const size_t idx)
                              {
                                  // find nearest grid point
@@ -116,7 +116,7 @@ namespace ippl {
                                  const int k = index[2] + 1;
 
                                  // scatter
-                                 const value_type& val = this->operator()(idx);
+                                 const value_type& val = dview_m(idx);
                                  Kokkos::atomic_add(&view(i-1, j-1, k-1), wlo[0] * wlo[1] * wlo[2] * val);
                                  Kokkos::atomic_add(&view(i-1, j-1, k  ), wlo[0] * wlo[1] * whi[2] * val);
                                  Kokkos::atomic_add(&view(i-1, j,   k-1), wlo[0] * whi[1] * wlo[2] * val);
@@ -162,7 +162,7 @@ namespace ippl {
                                  const int k = index[2] + 1;
 
                                  // scatter
-                                 value_type& val = this->operator()(idx);
+                                 value_type& val = dview_m(idx);
                                  val = wlo[0] * wlo[1] * wlo[2] * view(i-1, j-1, k-1)
                                      + wlo[0] * wlo[1] * whi[2] * view(i-1, j-1, k  )
                                      + wlo[0] * whi[1] * wlo[2] * view(i-1, j,   k-1)

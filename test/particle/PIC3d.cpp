@@ -664,8 +664,8 @@ int main(int argc, char *argv[]){
     std::mt19937_64 eng(42);
     std::uniform_real_distribution<double> unif(0.0, 1.0);
 
-    typename bunch_type::particle_position_type::HostMirror R_host = Kokkos::create_mirror(P->R);
-    typename ParticleAttrib<double>::HostMirror Q_host = Kokkos::create_mirror(P->qm);
+    typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
+    typename ParticleAttrib<double>::HostMirror Q_host = P->qm.getHostMirror();
 
     double q = 1.0 / totalP;
 
@@ -676,8 +676,8 @@ int main(int argc, char *argv[]){
         Q_host(i) = q;
     }
 
-    Kokkos::deep_copy(P->R, R_host);
-    Kokkos::deep_copy(P->qm, Q_host);
+    Kokkos::deep_copy(P->R.getView(), R_host);
+    Kokkos::deep_copy(P->qm.getView(), Q_host);
 
 
     msg << "particles created and initial conditions assigned " << endl;

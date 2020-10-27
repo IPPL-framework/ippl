@@ -34,15 +34,15 @@ int main(int argc, char *argv[]) {
     std::mt19937_64 eng;
     std::uniform_real_distribution<double> unif(0, 1);
 
-    typename bunch_type::particle_position_type::HostMirror R_host = Kokkos::create_mirror(bunch.R);
-    typename bunch_type::charge_container_type::HostMirror Q_host = Kokkos::create_mirror(bunch.Q);
+    typename bunch_type::particle_position_type::HostMirror R_host = bunch.R.getHostMirror();
+    typename bunch_type::charge_container_type::HostMirror Q_host = bunch.Q.getHostMirror();
     for(int i = 0; i < n; ++i) {
         ippl::Vector<double, 3> r = {unif(eng), unif(eng), unif(eng)};
         R_host(i) = r;
         Q_host(i) = 1.0;
     }
-    Kokkos::deep_copy(bunch.R, R_host);
-    Kokkos::deep_copy(bunch.Q, Q_host);
+    Kokkos::deep_copy(bunch.R.getView(), R_host);
+    Kokkos::deep_copy(bunch.Q.getView(), Q_host);
 
 
     int pt = 20;

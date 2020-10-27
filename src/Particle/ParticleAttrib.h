@@ -37,7 +37,6 @@ namespace ippl {
     // ParticleAttrib class definition
     template <typename T, class... Properties>
     class ParticleAttrib : public detail::ParticleAttribBase<Properties...>
-                         , public detail::ViewType<T, 1, Properties...>::view_type
                          , public Expression<ParticleAttrib<T, Properties...>,
                                              sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)>
     {
@@ -45,6 +44,7 @@ namespace ippl {
         typedef T value_type;
         using boolean_view_type = typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
         using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
+        using HostMirror = typename view_type::HostMirror;
 
         // Create storage for M particle attributes.  The storage is uninitialized.
         // New items are appended to the end of the array.
@@ -56,19 +56,39 @@ namespace ippl {
         virtual ~ParticleAttrib() = default;
        
         size_t size() const {
-            return this->extent(0);
+            return dview_m.extent(0);
         }
 
         void resize(size_t n) {
-            Kokkos::resize(*this, n);
+            Kokkos::resize(dview_m, n);
         }
 
         void print() {
-            typename view_type::HostMirror hview = Kokkos::create_mirror_view(*this);
-            Kokkos::deep_copy(hview, *this);
+            typename view_type::HostMirror hview = Kokkos::create_mirror_view(dview_m);
+            Kokkos::deep_copy(hview, dview_m);
             for (size_t i = 0; i < this->size(); ++i) {
                 std::cout << hview(i) << std::endl;
             }
+        }
+
+
+        KOKKOS_INLINE_FUNCTION
+        T& operator()(const size_t i) const {
+            return dview_m(i);
+        }
+
+
+        view_type getView() {
+            return dview_m;
+        }
+
+        const view_type getView() const {
+            return dview_m;
+        }
+
+
+        HostMirror getHostMirror() {
+            return Kokkos::create_mirror(dview_m);
         }
 
 
@@ -100,6 +120,10 @@ namespace ippl {
         void
         gather(const Field<T, Dim, M, C>& f,
                const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
+
+
+    private:
+        view_type dview_m;
     };
 }
 
