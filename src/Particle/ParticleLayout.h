@@ -89,8 +89,8 @@ namespace ippl {
              * Copy over the given boundary conditions.
              * @param bc are the boundary conditions
              */
-            void setBConds(const std::initializer_list<bc_type>& bcs) {
-                bcs_m = bcs;
+            void setBCond(const bc_type& bc, const int i) {
+                bcs_m[i] = bc;
             }
 
 

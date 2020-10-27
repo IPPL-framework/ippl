@@ -24,6 +24,9 @@
 #include "Region/NDRegion.h"
 #include "Index/NDIndex.h"
 
+#include <functional>
+#include <array>
+
 
 namespace ippl {
     //////////////////////////////////////////////////////////////////////
@@ -75,8 +78,7 @@ namespace ippl {
     class ParticleBConds {
 
     public:
-        // typedef for a pointer to boundary condition function
-        typedef T (*ParticleBCond)(const T, const T, const T);
+        using ParticleBCond = std::function<T(const T, const T, const T)>;
 
     public:
         /*!
@@ -85,7 +87,7 @@ namespace ippl {
          */
         ParticleBConds() {
             for (int d = (2 * Dim - 1); d >= 0; --d)
-                BCList[d] = ParticleNoBCond;
+                bcs_m[d] = ParticleNoBCond<T>;
         }
 
 
@@ -93,9 +95,12 @@ namespace ippl {
          * Initialize all BC's to null ones, which do not change
          * the value of the data any
          */
-        ParticleBConds(const std::initializer_list<ParticleBCond>& /*bcs*/) {
-//             for (int d = (2 * Dim - 1); d >= 0; --d)
-//                 BCList[d] = bcs[i];
+        ParticleBConds(std::initializer_list<ParticleBCond> bcs) {
+            PAssert(bcs.size() == bcs_m.size());
+            int i = 0;
+            for (auto bc : bcs) {
+                bcs_m[i++] = bc;
+            }
         }
 
 
@@ -104,7 +109,7 @@ namespace ippl {
          */
         ParticleBConds<T, Dim>& operator=(const ParticleBConds<T, Dim>& pbc) {
             for (int d = (2 * Dim - 1); d >= 0; --d)
-                BCList[d] = pbc.BCList[d];
+                bcs_m[d] = pbc.bcs_m[d];
             return *this;
         }
 
@@ -112,7 +117,7 @@ namespace ippl {
          *
          * @returns value of dth boundary condition
          */
-        ParticleBCond& operator[](unsigned d) { return BCList[d]; }
+        ParticleBCond& operator[](unsigned d) { return bcs_m[d]; }
 
         /*!
          * for the given value in the given dimension over the given NDRegion,
@@ -138,16 +143,16 @@ namespace ippl {
          */
         T apply(const T t, const unsigned d, const T m1, const T m2) const {
             if (t < m1)
-                return (BCList[d+d])(t, m1, m2);
+                return (bcs_m[d+d])(t, m1, m2);
             else if (t >= m2)                           // here we take into account that
-                return (BCList[d+d+1])(t, m1, m2);      // Region's store intervals [A,B)
+                return (bcs_m[d+d+1])(t, m1, m2);      // Region's store intervals [A,B)
             else
                 return t;
         }
 
     private:
         //! array storing the function pointers
-        ParticleBCond BCList[2 * Dim];
+        std::array<ParticleBCond, 2 * Dim> bcs_m;
     };
 }
 

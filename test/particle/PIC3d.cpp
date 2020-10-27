@@ -503,18 +503,11 @@ private:
 //
     void setBCAllPeriodic() {
 
-//         for (unsigned i=0; i < 2*Dim; i++) {
-//             this->setBConds({
-//                ippl::ParticlePeriodicBCond,
-//                ippl::ParticlePeriodicBCond,
-//                ippl::ParticlePeriodicBCond,
-//                ippl::ParticlePeriodicBCond,
-//                ippl::ParticlePeriodicBCond,
-//                ippl::ParticlePeriodicBCond
-//             });
+        for (unsigned i = 0; i < 2*Dim; i++) {
+            this->setBCond(ippl::ParticlePeriodicBCond<double>, i);
 // //             bc_m[i]  = new PeriodicFace<double  ,Dim,Mesh_t,Center_t>(i);
 // //             vbc_m[i] = new PeriodicFace<Vector_t,Dim,Mesh_t,Center_t>(i);
-//         }
+        }
     }
 //
 //     inline void setBCOOP() {

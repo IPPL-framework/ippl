@@ -182,8 +182,8 @@ namespace ippl {
         /*!
          * @param
          */
-        void setBConds(const std::initializer_list<bc_type>& bcs) {
-            layout_m->setBConds(bcs);
+        void setBCond(const bc_type& bc, const int i) {
+            layout_m->setBCond(bc, i);
         }
 
 
