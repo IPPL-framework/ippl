@@ -74,7 +74,32 @@ TEST_F(ParticleBaseTest, AddAttribute) {
 }
 
 
+TEST(ParticleBase, Initialize1) {
+    typedef ippl::detail::ParticleLayout<double, 3> playout_type;
+    typedef ippl::ParticleBase<playout_type> bunch_type;
 
+    playout_type pl;
+    bunch_type bunch(pl);
+
+    size_t localnum = bunch.getLocalNum();
+
+    EXPECT_EQ(size_t(0), localnum);
+}
+
+
+TEST(ParticleBase, Initialize2) {
+    typedef ippl::detail::ParticleLayout<double, 3> playout_type;
+    typedef ippl::ParticleBase<playout_type> bunch_type;
+
+    bunch_type bunch;
+
+    playout_type pl;
+    bunch.initialize(pl);
+
+    size_t localnum = bunch.getLocalNum();
+
+    EXPECT_EQ(size_t(0), localnum);
+}
 
 
 
