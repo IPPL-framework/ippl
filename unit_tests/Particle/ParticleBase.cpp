@@ -59,15 +59,15 @@ TEST_F(ParticleBaseTest, Destroy) {
     pbase->create(nParticles);
 
     using HostMirror = typename bunch_type::particle_index_type::HostMirror;
-    HostMirror ID_host = Kokkos::create_mirror(pbase->ID);
+    HostMirror ID_host = pbase->ID.getHostMirror();
 
-    Kokkos::deep_copy(ID_host, pbase->ID);
+    Kokkos::deep_copy(ID_host, pbase->ID.getView());
 
     for (size_t i = 0; i < nDestroy; ++i) {
         ID_host(i) = -1;
     }
 
-    Kokkos::deep_copy(pbase->ID, ID_host);
+    Kokkos::deep_copy(pbase->ID.getView(), ID_host);
 
     pbase->destroy();
 

@@ -69,7 +69,7 @@ namespace ippl {
         template<class PT, class NDI>
         void ParticleLayout<T, Dim>::applyBC(PT& R, const NDI& nr) {
             using mdrange = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-            long int len = R.extent(0);
+            long int len = R.getView().extent(0);
             Kokkos::parallel_for("ParticleLayout::applyBC()",
                                  mdrange({0, 0}, {len, Dim}),
                                  ApplyBC<T, Dim, PT, NDI>(R, nr, bcs_m));

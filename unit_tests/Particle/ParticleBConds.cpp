@@ -35,11 +35,11 @@ public:
 
         bunch->create(1);
 
-        HostR = Kokkos::create_mirror(bunch->R);
+        HostR = bunch->R.getHostMirror();
 
         HostR(0) = ippl::Vector<double, dim>({pos, pos, pos});
 
-        Kokkos::deep_copy(bunch->R, HostR);
+        Kokkos::deep_copy(bunch->R.getView(), HostR);
 
         // domain
         PRegion<double> region(0, len);
@@ -68,7 +68,7 @@ TEST_F(ParticleBCondsTest, UpperPeriodicBC) {
 
     bunch->getLayout().applyBC(bunch->R, nr);
 
-    Kokkos::deep_copy(HostR, bunch->R);
+    Kokkos::deep_copy(HostR, bunch->R.getView());
 
     ippl::Vector<double, dim> expected = {shift, shift, shift};
 
@@ -89,7 +89,7 @@ TEST_F(ParticleBCondsTest, UpperNoBC) {
 
     bunch->getLayout().applyBC(bunch->R, nr);
 
-    Kokkos::deep_copy(HostR, bunch->R);
+    Kokkos::deep_copy(HostR, bunch->R.getView());
 
     ippl::Vector<double, dim> expected = {
         len + shift,
@@ -114,7 +114,7 @@ TEST_F(ParticleBCondsTest, UpperReflectiveBC) {
 
     bunch->getLayout().applyBC(bunch->R, nr);
 
-    Kokkos::deep_copy(HostR, bunch->R);
+    Kokkos::deep_copy(HostR, bunch->R.getView());
 
     ippl::Vector<double, dim> expected = {
         len - shift,
@@ -138,7 +138,7 @@ TEST_F(ParticleBCondsTest, UpperSinkBC) {
 
     bunch->getLayout().applyBC(bunch->R, nr);
 
-    Kokkos::deep_copy(HostR, bunch->R);
+    Kokkos::deep_copy(HostR, bunch->R.getView());
 
     ippl::Vector<double, dim> expected = {len, len, len};
 
@@ -159,7 +159,7 @@ TEST_F(ParticleBCondsTest, LowerPeriodicBC) {
 
     bunch->getLayout().applyBC(bunch->R, nr);
 
-    Kokkos::deep_copy(HostR, bunch->R);
+    Kokkos::deep_copy(HostR, bunch->R.getView());
 
     ippl::Vector<double, dim> expected = {shift, shift, shift};
 
@@ -180,7 +180,7 @@ TEST_F(ParticleBCondsTest, LowerNoBC) {
 
     bunch->getLayout().applyBC(bunch->R, nr);
 
-    Kokkos::deep_copy(HostR, bunch->R);
+    Kokkos::deep_copy(HostR, bunch->R.getView());
 
     ippl::Vector<double, dim> expected = {
         shift,
@@ -205,7 +205,7 @@ TEST_F(ParticleBCondsTest, LowerReflectiveBC) {
 
     bunch->getLayout().applyBC(bunch->R, nr);
 
-    Kokkos::deep_copy(HostR, bunch->R);
+    Kokkos::deep_copy(HostR, bunch->R.getView());
 
     ippl::Vector<double, dim> expected = {
         shift,
@@ -229,7 +229,7 @@ TEST_F(ParticleBCondsTest, LowerSinkBC) {
 
     bunch->getLayout().applyBC(bunch->R, nr);
 
-    Kokkos::deep_copy(HostR, bunch->R);
+    Kokkos::deep_copy(HostR, bunch->R.getView());
 
     std::cout << HostR(0) << std::endl;
 
