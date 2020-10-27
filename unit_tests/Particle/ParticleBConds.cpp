@@ -231,8 +231,6 @@ TEST_F(ParticleBCondsTest, LowerSinkBC) {
 
     Kokkos::deep_copy(HostR, bunch->R.getView());
 
-    std::cout << HostR(0) << std::endl;
-
     ippl::Vector<double, dim> expected = {0, 0, 0};
 
     for (size_t i = 0; i < dim; ++i) {
