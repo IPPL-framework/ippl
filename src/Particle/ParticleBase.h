@@ -172,6 +172,7 @@ namespace ippl {
 
 
         /*!
+         * Set all boundary conditions
          * @param bc the boundary conditions
          */
         void setBConds(const bcs_type& bcs) {
@@ -180,7 +181,9 @@ namespace ippl {
 
 
         /*!
-         * @param
+         * Set the boundary condition
+         * @param bc boundary condition
+         * @param i th boundary condition
          */
         void setBCond(const bc_type& bc, const int i) {
             layout_m->setBCond(bc, i);
