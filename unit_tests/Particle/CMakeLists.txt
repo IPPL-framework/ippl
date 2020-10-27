@@ -22,6 +22,15 @@ target_link_libraries (
     boost_timer
 )
 
+add_executable (ParticleBConds ParticleBConds.cpp)
+target_link_libraries (
+    ParticleBConds
+    ippl
+    ${MPI_CXX_LIBRARIES}
+    ${GTEST_BOTH_LIBRARIES}
+    boost_timer
+)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

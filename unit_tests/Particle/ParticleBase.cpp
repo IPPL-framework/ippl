@@ -15,10 +15,10 @@ public:
     }
 
     void setup() {
-        playout_type pl;
-        pbase = std::make_unique<bunch_type>(pl);
+        pbase = std::make_unique<bunch_type>(pl_m);
     }
 
+    playout_type pl_m;
     std::unique_ptr<bunch_type> pbase;
 };
 

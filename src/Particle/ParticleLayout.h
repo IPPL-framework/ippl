@@ -93,8 +93,6 @@ namespace ippl {
                 bcs_m[i] = bc;
             }
 
-
-        protected:
             /*!
              * Apply the given boundary conditions to the current particle positions.
              * @tparam PT is the type of particle position attribute container
