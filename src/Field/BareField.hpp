@@ -98,7 +98,7 @@ namespace ippl {
     #define DefineFieldReduction(name, op)                     \
     template<typename T, unsigned Dim>                         \
     T BareField<T, Dim>::name(int nghost) {                    \
-        T temp = lfields_m[0]->name(nghost);                         \
+        T temp = lfields_m[0]->name(nghost);                   \
         for (size_t i = 1; i < lfields_m.size(); ++i) {        \
             T myVal = lfields_m[i]->name(nghost);              \
             op;                                                \
