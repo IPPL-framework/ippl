@@ -92,19 +92,6 @@ namespace ippl {
 
 
         /*!
-         * Initialize all BC's to null ones, which do not change
-         * the value of the data any
-         */
-        ParticleBConds(std::initializer_list<ParticleBCond> bcs) {
-            PAssert(bcs.size() == bcs_m.size());
-            int i = 0;
-            for (auto bc : bcs) {
-                bcs_m[i++] = bc;
-            }
-        }
-
-
-        /*!
          * Assignment operator
          */
         ParticleBConds<T, Dim>& operator=(const ParticleBConds<T, Dim>& pbc) {
