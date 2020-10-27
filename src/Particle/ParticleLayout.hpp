@@ -43,14 +43,36 @@
 
 namespace ippl {
     namespace detail {
+        /*
+         * Functor to apply boundary conditions
+         */
+        template<typename T, unsigned Dim, class PT, class NDI>
+        struct ApplyBC {
+            PT pos_m;
+            NDI nr_m;
+            ParticleBConds<T, Dim> bcs_m;
 
-// /////////////////////////////////////////////////////////////////////
-// // constructor
-// template<class T, unsigned Dim>
-// ParticleLayout<T, Dim>::ParticleLayout() {
-//
-//
-// //   setUpdateFlag(ALL, true);
-// }
+            ApplyBC(PT pos, const NDI& nr, const ParticleBConds<T, Dim>& bcs) {
+                pos_m = pos;
+                nr_m = nr;
+                bcs_m = bcs;
+            }
+
+            KOKKOS_INLINE_FUNCTION
+            void operator() (const size_t i, const size_t j) const {
+                pos_m(i)[j] = bcs_m.apply(pos_m(i)[j], j, nr_m);
+            }
+        };
+
+
+        template<typename T, unsigned Dim>
+        template<class PT, class NDI>
+        void ParticleLayout<T, Dim>::applyBC(PT& R, const NDI& nr) {
+            using mdrange = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+            long int len = R.extent(0);
+            Kokkos::parallel_for("ParticleLayout::applyBC()",
+                                 mdrange({0, 0}, {len, Dim}),
+                                 ApplyBC<T, Dim, PT, NDI>(R, nr, bcs_m));
+        }
     }
 }

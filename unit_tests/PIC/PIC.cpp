@@ -1,3 +1,20 @@
+//
+// Unit test PICTest
+//   Test scatter and gather particle-in-cell operations.
+//
+// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #include "Ippl.h"
 
 #include <cmath>
@@ -17,7 +34,7 @@ public:
     template<class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout>
     {
-        Bunch(std::shared_ptr<PLayout>& playout)
+        Bunch(PLayout& playout)
         : ippl::ParticleBase<PLayout>(playout)
         {
             this->addAttribute(Q);
@@ -31,8 +48,8 @@ public:
 
 
     PICTest()
-    : nParticles(1000)
-    , nPoints(5)
+    : nParticles(1000000)
+    , nPoints(100)
     {
         setup();
     }
@@ -55,8 +72,6 @@ public:
 
         field = std::make_unique<field_type>(mesh_m, layout_m);
 
-
-        pl_m = std::make_shared<playout_type>();
         bunch = std::make_unique<bunch_type>(pl_m);
 
         bunch->create(nParticles);
@@ -72,7 +87,7 @@ public:
 private:
     flayout_type layout_m;
     mesh_type mesh_m;
-    std::shared_ptr<playout_type> pl_m;
+    playout_type pl_m;
 };
 
 

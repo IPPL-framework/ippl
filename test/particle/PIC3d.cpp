@@ -28,6 +28,8 @@
 // #include <iostream>
 // #include <set>
 
+#include <random>
+
 // dimension of our positions
 constexpr unsigned Dim = 3;
 
@@ -223,20 +225,20 @@ public:
         this->addAttribute(P);
         this->addAttribute(E);
         this->addAttribute(B);
-//         setupBCs();
+        setupBCs();
         for (unsigned int i = 0; i < Dim; i++)
             decomp_m[i]=decomp[i];
     }
-//
-//     void setupBCs() {
+
+    void setupBCs() {
 //         if (bco_m == OOO)
 //             setBCAllOpen();
 //         else if (bco_m == PPP)
-//             setBCAllPeriodic();
+            setBCAllPeriodic();
 //         else
 //             setBCOOP();
-//     }
-//
+    }
+
 //     inline const Mesh_t& getMesh() const { return this->getLayout().getLayout().getMesh(); }
 //
 //     inline Mesh_t& getMesh() { return this->getLayout().getLayout().getMesh(); }
@@ -491,7 +493,7 @@ public:
 //         }
 //     }
 //
-// private:
+private:
 //
 //     inline void setBCAllOpen() {
 //         for (unsigned i=0; i < 2*Dim; i++) {
@@ -501,13 +503,14 @@ public:
 //         }
 //     }
 //
-//     inline void setBCAllPeriodic() {
-//         for (unsigned i=0; i < 2*Dim; i++) {
-//             this->getBConds()[i] = ParticlePeriodicBCond;
-//             bc_m[i]  = new PeriodicFace<double  ,Dim,Mesh_t,Center_t>(i);
-//             vbc_m[i] = new PeriodicFace<Vector_t,Dim,Mesh_t,Center_t>(i);
-//         }
-//     }
+    void setBCAllPeriodic() {
+
+        for (unsigned i = 0; i < 2*Dim; i++) {
+            this->setBCond(ippl::ParticlePeriodicBCond<double>, i);
+// //             bc_m[i]  = new PeriodicFace<double  ,Dim,Mesh_t,Center_t>(i);
+// //             vbc_m[i] = new PeriodicFace<Vector_t,Dim,Mesh_t,Center_t>(i);
+        }
+    }
 //
 //     inline void setBCOOP() {
 //         for (unsigned i=0; i < 2*Dim - 2; i++) {
@@ -607,68 +610,77 @@ int main(int argc, char *argv[]){
 //         msg << "BC == PPP" << endl;
 //     }
 //
-        e_dim_tag decomp[Dim];
-        unsigned serialDim = 3;
+    e_dim_tag decomp[Dim];
+    unsigned serialDim = 3;
 
-        msg << "Serial dimension is " << serialDim  << endl;
+    msg << "Serial dimension is " << serialDim  << endl;
 
-        std::unique_ptr<Mesh_t> mesh;
-        std::unique_ptr<FieldLayout_t> FL;
-        std::unique_ptr<ChargedParticles<PLayout_t> >  P;
-        std::unique_ptr<PLayout_t> PL;
+    std::unique_ptr<Mesh_t> mesh;
+    std::unique_ptr<FieldLayout_t> FL;
 
-        NDIndex<Dim> domain;
+    using bunch_type = ChargedParticles<PLayout_t>;
+
+    std::unique_ptr<bunch_type>  P;
+    std::unique_ptr<PLayout_t> PL;
+
+    NDIndex<Dim> domain;
 //     if (gCells) {
 //         for (unsigned i=0; i<Dim; i++)
 //             domain[i] = domain[i] = Index(nr[i] + 1);
 //     }
 //     else {
-        for (unsigned i = 0; i< Dim; i++) {
-            domain[i] = Index(nr[i]);
-        }
+    for (unsigned i = 0; i< Dim; i++) {
+        domain[i] = Index(nr[i]);
+    }
 //     }
 //
-        for (unsigned d = 0; d < Dim; ++d) {
-            decomp[d] = (d == serialDim) ? SERIAL : PARALLEL;
-        }
+    for (unsigned d = 0; d < Dim; ++d) {
+        decomp[d] = (d == serialDim) ? SERIAL : PARALLEL;
+    }
 
-        // create mesh and layout objects for this problem domain
-        mesh = std::make_unique<Mesh_t>(domain);
-        FL   = std::make_unique<FieldLayout_t>(*mesh, decomp);
-        PL   = std::make_unique<PLayout_t>(); //(*FL, *mesh);
-//
-//     if (myBC==OOO)
-//         P = new ChargedParticles<playout_t>(PL,myBC,myInterpol,decomp,gCells);
-//     else {
-//         /*
-//           In case of periodic BC's define
-//           the domain with hr and rmin
-//         */
-//
-        Vector_t hr(1.0);
-        Vector_t rmin(0.0);
-        Vector_t rmax(nr);
-//
-//         P = std::make_unique<ChargedParticles<PLayout_t> >(PL,/*myBC,myInterpol,*/hr,rmin,rmax,decomp/*,gCells*/);
-//     }
-//
-//     // initialize the particle object: do all initialization on one node,
-//     // and distribute to others
-//
-//     unsigned long int nloc = totalP / Ippl::getNodes();
-//
-//     P->create(nloc);
-//     for (unsigned long int i = 0; i< nloc; i++) {
-//         for (int d = 0; d<3; d++)
-//             P->R[i](d) =  IpplRandom() * nr[d];
-//     }
-//
-//     double q = 1.0/totalP;
-//
-//     // random initialization for charge-to-mass ratio
-//     assign(P->qm,q);
-//
-//     msg << "particles created and initial conditions assigned " << endl;
+    // create mesh and layout objects for this problem domain
+    mesh = std::make_unique<Mesh_t>(domain);
+    FL   = std::make_unique<FieldLayout_t>(*mesh, decomp);
+    PL   = std::make_unique<PLayout_t>(); //(*FL, *mesh);
+
+
+    /*
+     * In case of periodic BC's define
+     * the domain with hr and rmin
+     */
+    Vector_t hr(1.0);
+    Vector_t rmin(0.0);
+    Vector_t rmax(nr);
+
+    P = std::make_unique<bunch_type>(*PL,/*myBC,myInterpol,*/hr,rmin,rmax,decomp/*,gCells*/);
+
+    // initialize the particle object: do all initialization on one node,
+    // and distribute to others
+
+    unsigned long int nloc = totalP / Ippl::getNodes();
+
+    P->create(nloc);
+
+    std::mt19937_64 eng(42);
+    std::uniform_real_distribution<double> unif(0.0, 1.0);
+
+    typename bunch_type::particle_position_type::HostMirror R_host = Kokkos::create_mirror(P->R);
+    typename ParticleAttrib<double>::HostMirror Q_host = Kokkos::create_mirror(P->qm);
+
+    double q = 1.0 / totalP;
+
+    for (unsigned long int i = 0; i< nloc; i++) {
+        for (int d = 0; d<3; d++) {
+            R_host(i)[d] =  unif(eng) * nr[d];
+        }
+        Q_host(i) = q;
+    }
+
+    Kokkos::deep_copy(P->R, R_host);
+    Kokkos::deep_copy(P->qm, Q_host);
+
+
+    msg << "particles created and initial conditions assigned " << endl;
 //
 //     // redistribute particles based on spatial layout
 //     P->myUpdate();
