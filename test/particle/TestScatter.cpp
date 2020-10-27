@@ -77,14 +77,10 @@ int main(int argc, char *argv[]) {
     // Check charge conservation
     // We have not yet implemented periodic BCs so ghost layer charges are not
     // being summed up.
-    try {
-        double Total_charge_field = field.sum(1);
+    double Total_charge_field = field.sum(1);
 
-        std::cout << "Total charge in the field:" << Total_charge_field << std::endl;
-        std::cout << "Total charge of the particles:" << n;
-    } catch(const std::exception& e) {
-        std::cout << e.what() << std::endl;
-    }
+    std::cout << "Total charge in the field:" << Total_charge_field << std::endl;
+    std::cout << "Total charge of the particles:" << n;
 
     return 0;
 }
