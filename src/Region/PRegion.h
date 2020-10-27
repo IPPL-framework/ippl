@@ -78,8 +78,7 @@ public:
 
    // Destructor ... nothing to do
   KOKKOS_FUNCTION
-  ~PRegion() = default;
-  //~PRegion() { }
+  ~PRegion() { }
    
   KOKKOS_FUNCTION
   PRegion(const PRegion<T>&) = default;
