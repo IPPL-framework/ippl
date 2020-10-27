@@ -57,6 +57,7 @@ class NDRegion {
 
 public: 
   // Null ctor does nothing.
+  KOKKOS_FUNCTION
   NDRegion() {}
 
   // Construct from a simple array of PRegions
@@ -123,7 +124,10 @@ public:
   }
 
   // Return a reference to any of the PRegion<T> objects.
+  KOKKOS_INLINE_FUNCTION
   const PRegion<T>& operator[](unsigned d) const { return p[d]; }
+
+  KOKKOS_INLINE_FUNCTION
   PRegion<T>& operator[](unsigned d) { return p[d]; }
 
   // return the volume of this region

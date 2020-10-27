@@ -99,8 +99,8 @@ namespace ippl {
              * @tparam NDI is the type of index object (NDIndex or NDRegion)
              * @param
              */
-            template<class PT, class NDI>
-            void applyBC(PT& R, const NDI& nr);
+	    //            template<class PT, class NDI>
+		//            void applyBC(PT& R, const NDI& nr);
 
         private:
             //! the list of boundary conditions for this set of particles

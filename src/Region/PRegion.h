@@ -30,11 +30,13 @@
  *
  ***********************************************************************/
 
+// #include <Kokkos_Core.hpp>
+
 // include files
-#include "Message/Message.h"
+//#include "Message/Message.h"
 
-#include <iostream>
-
+//#include <iostream>
+/*
 // forward declarations
 template<class T> class PRegion;
 template <class T>
@@ -55,8 +57,8 @@ template <class T>
 PRegion<T> operator/(const PRegion<T>&, T);
 template<class T>
 std::ostream& operator<<(std::ostream&, const PRegion<T>&);
-
-template<class T>
+*/
+template<typename T>
 class PRegion {
 
 public:
@@ -65,21 +67,45 @@ public:
   //
 
   // Constructors
-  PRegion() : First(0), Last(1) {}                       // [0,1)
-  PRegion(T B) : First(0), Last(B) {}                    // [0,B)
-  PRegion(T A, T B) : First(A), Last(B) {}               // [A,B)
+  KOKKOS_FUNCTION
+  PRegion() = default; // : First(0), Last(1) {}                       // [0,1)
 
-  // Destructor ... nothing to do
-  ~PRegion() {}
+    KOKKOS_FUNCTION
+    PRegion(T B) : First(0), Last(B) {}                    // [0,B)
+   
+    KOKKOS_FUNCTION
+    PRegion(T A, T B) : First(A), Last(B) {}               // [A,B)
 
+   // Destructor ... nothing to do
+  KOKKOS_FUNCTION
+  ~PRegion() { }
+   
+  KOKKOS_FUNCTION
+  PRegion(const PRegion<T>&) = default;
+   
+  KOKKOS_INLINE_FUNCTION
+  PRegion<T>& operator=(const PRegion<T>& rhs) = default;
+    /*
   // General query functions
+  KOKKOS_INLINE_FUNCTION
   T min() const { return (First < Last ? First : Last); }  // smallest elem
+  
+  KOKKOS_INLINE_FUNCTION  
   T max() const { return (First > Last ? First : Last); }  // largest elem
-  T length() const { return (max() - min()); }	           // length of region
-  T first() const { return First; }		           // first element.
-  T last() const { return Last; }		           // last element.
-  bool empty() const { return (First == Last);}	           // is it empty?
 
+  KOKKOS_INLINE_FUNCTION
+  T length() const { return (max() - min()); }	           // length of region
+
+  KOKKOS_INLINE_FUNCTION
+  T first() const { return First; }		           // first element.
+
+  KOKKOS_INLINE_FUNCTION
+  T last() const { return Last; }		           // last element.
+
+  KOKKOS_INLINE_FUNCTION
+  bool empty() const { return (First == Last);}	           // is it empty?
+    */
+    /*
   // compute-assign operators
   PRegion<T>& operator+=(T t) {
     First += t;
@@ -208,14 +234,14 @@ public:
     m.get_iter(d);
     *this = PRegion<T>(d[0], d[1]);
     return m;
-  }
+    }*/
 
 private: 
   // The interval endpoints
   T First, Last;
 };
 
-
+/*
 // Additive operations.
 template <class T>
 inline 
@@ -272,7 +298,7 @@ std::ostream& operator<<(std::ostream& out, const PRegion<T>& r) {
   out << ')';
   return out;
 }
-
+*/
 
 #endif // PREGION_H
 

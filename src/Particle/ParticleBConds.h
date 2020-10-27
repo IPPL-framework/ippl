@@ -34,13 +34,13 @@ namespace ippl {
 
     // null BC; value is not changed
     template<typename T>
-    inline T ParticleNoBCond(const T t, const T /* minval */, const T /* maxval */) {
+	KOKKOS_INLINE_FUNCTION T ParticleNoBCond(const T t, const T /* minval */, const T /* maxval */) {
         return t;
     }
 
     // periodic BC; values wrap around at endpoints of the interval
     template<typename T>
-    inline T ParticlePeriodicBCond(const T t, const T minval, const T maxval) {
+    KOKKOS_INLINE_FUNCTION T ParticlePeriodicBCond(const T t, const T minval, const T maxval) {
         if (t < minval)
             return (maxval - (minval - t));
         else if (t >= maxval)
@@ -51,7 +51,7 @@ namespace ippl {
 
     // reflective BC; values bounce back from endpoints
     template<typename T>
-    inline T ParticleReflectiveBCond(const T t, const T minval, const T maxval) {
+    KOKKOS_INLINE_FUNCTION T ParticleReflectiveBCond(const T t, const T minval, const T maxval) {
         if (t < minval)
             return (minval + (minval - t));
         else if (t >= maxval)
@@ -62,7 +62,7 @@ namespace ippl {
 
     // sink BC; particles stick to the selected face
     template<typename T>
-    inline T ParticleSinkBCond(const T t, const T minval, const T maxval) {
+    KOKKOS_INLINE_FUNCTION T ParticleSinkBCond(const T t, const T minval, const T maxval) {
         if (t < minval)
             return minval;
         else if (t >= maxval)
@@ -78,38 +78,45 @@ namespace ippl {
     class ParticleBConds {
 
     public:
-        using ParticleBCond = std::function<T(const T, const T, const T)>;
+        typedef T (*ParticleBCond)(const T, const T, const T);
 
     public:
         /*!
          * Initialize all BC's to null ones, which do not change
          * the value of the data any
          */
+	KOKKOS_FUNCTION
         ParticleBConds() {
-            for (int d = (2 * Dim - 1); d >= 0; --d)
-                bcs_m[d] = ParticleNoBCond<T>;
+	    for (int d = (2 * Dim - 1); d >= 0; --d)
+		bcs_m[d] = ParticleNoBCond<T>;
         }
 
 
         /*!
          * Assignment operator
          */
+	KOKKOS_INLINE_FUNCTION
         ParticleBConds<T, Dim>& operator=(const ParticleBConds<T, Dim>& pbc) {
             for (int d = (2 * Dim - 1); d >= 0; --d)
                 bcs_m[d] = pbc.bcs_m[d];
             return *this;
         }
 
+	KOKKOS_FUNCTION
+	~ParticleBConds() = default;
+
         /*!
          *
          * @returns value of dth boundary condition
          */
+	KOKKOS_INLINE_FUNCTION
         ParticleBCond& operator[](unsigned d) { return bcs_m[d]; }
 
         /*!
          * for the given value in the given dimension over the given NDRegion,
          * apply the proper BC and return back the new value
          */
+	KOKKOS_INLINE_FUNCTION
         T apply(const T t, const unsigned d, const NDRegion<T,Dim>& nr) const {
             return apply(t, d, nr[d].min(), nr[d].max());
         }
@@ -120,6 +127,7 @@ namespace ippl {
          * added to the max value is due to the assumption of a cell-centered
          * field.
          */
+	KOKKOS_INLINE_FUNCTION
         T apply(const T t, const unsigned d, const NDIndex<Dim>& ni) const {
             return apply(t, d, ni[d].first(), ni[d].last() + 1);
         }
@@ -128,6 +136,7 @@ namespace ippl {
          * a different version of apply, where the user just specifies the min
          * and max values of the given dimension
          */
+	KOKKOS_INLINE_FUNCTION
         T apply(const T t, const unsigned d, const T m1, const T m2) const {
             if (t < m1)
                 return (bcs_m[d+d])(t, m1, m2);
@@ -139,7 +148,7 @@ namespace ippl {
 
     private:
         //! array storing the function pointers
-        std::array<ParticleBCond, 2 * Dim> bcs_m;
+        ParticleBCond bcs_m[2 * Dim];
     };
 }
 

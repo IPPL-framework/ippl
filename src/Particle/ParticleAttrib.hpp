@@ -54,6 +54,7 @@ namespace ippl {
 
 
     template<typename T, class... Properties>
+    KOKKOS_INLINE_FUNCTION
     ParticleAttrib<T, Properties...>&
     ParticleAttrib<T, Properties...>::operator=(T x)
     {
@@ -68,6 +69,7 @@ namespace ippl {
 
     template<typename T, class... Properties>
     template <typename E, size_t N>
+    KOKKOS_INLINE_FUNCTION
     ParticleAttrib<T, Properties...>&
     ParticleAttrib<T, Properties...>::operator=(Expression<E, N> const& expr)
     {
