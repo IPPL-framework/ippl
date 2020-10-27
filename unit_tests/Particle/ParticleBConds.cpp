@@ -27,7 +27,7 @@ public:
     typedef ippl::detail::ParticleLayout<double, dim> playout_type;
     typedef ippl::ParticleBase<playout_type> bunch_type;
 
-    ParticleBCondsTest() : xlen(0.2), xshift(0.1) {
+    ParticleBCondsTest() : len(0.2), shift(0.1) {
         setup();
     }
 
@@ -38,19 +38,23 @@ public:
 
         HostR = Kokkos::create_mirror(bunch->R);
 
-        HostR(0) = ippl::Vector<double, dim>({xlen + xshift, 0.0, 0.0});
+        HostR(0) = ippl::Vector<double, dim>({
+            len + shift,
+            len + shift,
+            len + shift
+        });
 
         Kokkos::deep_copy(bunch->R, HostR);
 
         // domain
-        PRegion<double> region(0, xlen);
+        PRegion<double> region(0, len);
         nr = NDRegion<double, dim>(region, region, region);
 
     }
 
     std::unique_ptr<bunch_type> bunch;
-    double xlen;
-    double xshift;
+    double len;
+    double shift;
     NDRegion<double, dim>  nr;
     typename bunch_type::particle_position_type::HostMirror HostR;
 
@@ -70,7 +74,7 @@ TEST_F(ParticleBCondsTest, PeriodicBC) {
 
     Kokkos::deep_copy(HostR, bunch->R);
 
-    ippl::Vector<double, dim> expected = {xshift, 0.0, 0.0};
+    ippl::Vector<double, dim> expected = {shift, shift, shift};
 
     for (size_t i = 0; i < dim; ++i) {
         EXPECT_DOUBLE_EQ(expected[i], HostR(0)[i]);
@@ -88,7 +92,11 @@ TEST_F(ParticleBCondsTest, NoBC) {
 
     Kokkos::deep_copy(HostR, bunch->R);
 
-    ippl::Vector<double, dim> expected = {xlen + xshift, 0.0, 0.0};
+    ippl::Vector<double, dim> expected = {
+        len + shift,
+        len + shift,
+        len + shift
+    };
 
     for (size_t i = 0; i < dim; ++i) {
         EXPECT_DOUBLE_EQ(expected[i], HostR(0)[i]);
@@ -106,7 +114,11 @@ TEST_F(ParticleBCondsTest, ReflectiveBC) {
 
     Kokkos::deep_copy(HostR, bunch->R);
 
-    ippl::Vector<double, dim> expected = {xlen - xshift, 0.0, 0.0};
+    ippl::Vector<double, dim> expected = {
+        len - shift,
+        len - shift,
+        len - shift
+    };
 
     for (size_t i = 0; i < dim; ++i) {
         EXPECT_DOUBLE_EQ(expected[i], HostR(0)[i]);
@@ -124,7 +136,7 @@ TEST_F(ParticleBCondsTest, SinkBC) {
 
     Kokkos::deep_copy(HostR, bunch->R);
 
-    ippl::Vector<double, dim> expected = {xlen, 0.0, 0.0};
+    ippl::Vector<double, dim> expected = {len, len, len};
 
     for (size_t i = 0; i < dim; ++i) {
         EXPECT_DOUBLE_EQ(expected[i], HostR(0)[i]);
