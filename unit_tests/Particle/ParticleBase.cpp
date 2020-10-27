@@ -7,15 +7,15 @@ class ParticleBaseTest : public ::testing::Test {
 
 public:
     static constexpr size_t dim = 3;
-    typedef ippl::detail::ParticleLayout<double, dim> playout;
-    typedef ippl::ParticleBase<playout> bunch_type;
+    typedef ippl::detail::ParticleLayout<double, dim> playout_type;
+    typedef ippl::ParticleBase<playout_type> bunch_type;
 
     ParticleBaseTest() {
         setup();
     }
 
     void setup() {
-        std::shared_ptr<playout> pl = std::make_shared<playout>();
+        playout_type pl;
         pbase = std::make_unique<bunch_type>(pl);
     }
 

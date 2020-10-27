@@ -223,19 +223,19 @@ public:
         this->addAttribute(P);
         this->addAttribute(E);
         this->addAttribute(B);
-//         setupBCs();
+        setupBCs();
         for (unsigned int i = 0; i < Dim; i++)
             decomp_m[i]=decomp[i];
     }
-//
-//     void setupBCs() {
+
+    void setupBCs() {
 //         if (bco_m == OOO)
 //             setBCAllOpen();
 //         else if (bco_m == PPP)
-//             setBCAllPeriodic();
+            setBCAllPeriodic();
 //         else
 //             setBCOOP();
-//     }
+    }
 //
 //     inline const Mesh_t& getMesh() const { return this->getLayout().getLayout().getMesh(); }
 //
@@ -491,7 +491,7 @@ public:
 //         }
 //     }
 //
-// private:
+private:
 //
 //     inline void setBCAllOpen() {
 //         for (unsigned i=0; i < 2*Dim; i++) {
@@ -501,13 +501,21 @@ public:
 //         }
 //     }
 //
-//     inline void setBCAllPeriodic() {
+    void setBCAllPeriodic() {
+
 //         for (unsigned i=0; i < 2*Dim; i++) {
-//             this->getBConds()[i] = ParticlePeriodicBCond;
-//             bc_m[i]  = new PeriodicFace<double  ,Dim,Mesh_t,Center_t>(i);
-//             vbc_m[i] = new PeriodicFace<Vector_t,Dim,Mesh_t,Center_t>(i);
+//             this->setBConds({
+//                ippl::ParticlePeriodicBCond,
+//                ippl::ParticlePeriodicBCond,
+//                ippl::ParticlePeriodicBCond,
+//                ippl::ParticlePeriodicBCond,
+//                ippl::ParticlePeriodicBCond,
+//                ippl::ParticlePeriodicBCond
+//             });
+// //             bc_m[i]  = new PeriodicFace<double  ,Dim,Mesh_t,Center_t>(i);
+// //             vbc_m[i] = new PeriodicFace<Vector_t,Dim,Mesh_t,Center_t>(i);
 //         }
-//     }
+    }
 //
 //     inline void setBCOOP() {
 //         for (unsigned i=0; i < 2*Dim - 2; i++) {
@@ -648,8 +656,8 @@ int main(int argc, char *argv[]){
         Vector_t hr(1.0);
         Vector_t rmin(0.0);
         Vector_t rmax(nr);
-//
-//         P = std::make_unique<ChargedParticles<PLayout_t> >(PL,/*myBC,myInterpol,*/hr,rmin,rmax,decomp/*,gCells*/);
+
+        P = std::make_unique<ChargedParticles<PLayout_t> >(*PL,/*myBC,myInterpol,*/hr,rmin,rmax,decomp/*,gCells*/);
 //     }
 //
 //     // initialize the particle object: do all initialization on one node,

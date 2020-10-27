@@ -17,7 +17,7 @@ public:
     template<class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout>
     {
-        Bunch(std::shared_ptr<PLayout>& playout)
+        Bunch(PLayout& playout)
         : ippl::ParticleBase<PLayout>(playout)
         {
             this->addAttribute(Q);
@@ -55,8 +55,6 @@ public:
 
         field = std::make_unique<field_type>(mesh_m, layout_m);
 
-
-        pl_m = std::make_shared<playout_type>();
         bunch = std::make_unique<bunch_type>(pl_m);
 
         bunch->create(nParticles);
@@ -72,7 +70,7 @@ public:
 private:
     flayout_type layout_m;
     mesh_type mesh_m;
-    std::shared_ptr<playout_type> pl_m;
+    playout_type pl_m;
 };
 
 
