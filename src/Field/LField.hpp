@@ -119,6 +119,7 @@ namespace ippl {
     #define DefineReduction(fun, name, op)                                                                   \
     template <typename T, unsigned Dim>                                                                      \
     T LField<T, Dim>::name(int nghost) {                                                                     \
+        PAssert_LE(nghost, nghost_m);                                                                        \
         T temp = 0.0;                                                                                        \
         const int shift = nghost_m - nghost;                                                                 \
         Kokkos::parallel_reduce("fun",                                                                       \
