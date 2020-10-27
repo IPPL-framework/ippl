@@ -46,7 +46,7 @@ namespace ippl {
         /*
          * Functor to apply boundary conditions
          */
-	/*        template<typename T, unsigned Dim, class PT, class NDI>
+	        template<typename T, unsigned Dim, class PT, class NDI>
         struct ApplyBC {
 	    typename PT::view_type pos_m;
             NDI nr_m;
@@ -60,7 +60,7 @@ namespace ippl {
 
             KOKKOS_INLINE_FUNCTION
             void operator() (const size_t i, const size_t j) const {
-                //pos_m(i)[j] = bcs_m.apply(pos_m(i)[j], j, nr_m);
+                pos_m(i)[j] = bcs_m.apply(pos_m(i)[j], j, nr_m);
             }
         };
 
@@ -73,6 +73,6 @@ namespace ippl {
             Kokkos::parallel_for("ParticleLayout::applyBC()",
                                  mdrange({0, 0}, {len, Dim}),
                                  ApplyBC<T, Dim, PT, NDI>(R.getView(), nr, bcs_m));
-				 }*/
+				 }
     }
 }

@@ -87,7 +87,6 @@ void toss_cookies( const char *cond, const char *file, int line )
 //---------------------------------------------------------------------------//
 // Function to perform the task of actually throwing an isistion.
 //---------------------------------------------------------------------------//
-
 void insist( const char *cond, const char *msg, const char *file, int line )
 {
     char* fullmsg = new char[ strlen(cond) + strlen(msg) + strlen(file) + 500 ];

@@ -78,14 +78,15 @@ public:
 
    // Destructor ... nothing to do
   KOKKOS_FUNCTION
-  ~PRegion() { }
+  ~PRegion() = default;
+  //~PRegion() { }
    
   KOKKOS_FUNCTION
   PRegion(const PRegion<T>&) = default;
    
   KOKKOS_INLINE_FUNCTION
   PRegion<T>& operator=(const PRegion<T>& rhs) = default;
-    /*
+    
   // General query functions
   KOKKOS_INLINE_FUNCTION
   T min() const { return (First < Last ? First : Last); }  // smallest elem
@@ -104,7 +105,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   bool empty() const { return (First == Last);}	           // is it empty?
-    */
+    
     /*
   // compute-assign operators
   PRegion<T>& operator+=(T t) {

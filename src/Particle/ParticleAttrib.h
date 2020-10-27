@@ -95,7 +95,7 @@ namespace ippl {
         /*!
          * Assign the same value to the whole attribute.
          */
-	KOKKOS_INLINE_FUNCTION
+	//KOKKOS_INLINE_FUNCTION
         ParticleAttrib<T, Properties...>& operator=(T x);
 
         /*!
@@ -106,7 +106,7 @@ namespace ippl {
          * @param expr is the expression
          */
         template <typename E, size_t N>
-	KOKKOS_INLINE_FUNCTION
+	//KOKKOS_INLINE_FUNCTION
         ParticleAttrib<T, Properties...>& operator=(Expression<E, N> const& expr);
 
 

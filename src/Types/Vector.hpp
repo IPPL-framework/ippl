@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Utility/PAssert.h"
+//#include "Utility/PAssert.h"
 
 #include <iomanip>
 #include <iostream>
@@ -43,7 +43,7 @@ namespace ippl {
     template<typename T, unsigned Dim>
     KOKKOS_FUNCTION
     Vector<T, Dim>::Vector(const std::initializer_list<T>& list) {
-        PAssert(list.size() == Dim);
+        //PAssert(list.size() == Dim);
         unsigned int i = 0;
         for (auto& l : list) {
             data_m[i] = l;
@@ -60,7 +60,7 @@ namespace ippl {
     template<typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION
     typename Vector<T, Dim>::value_t& Vector<T, Dim>::operator[](unsigned int i) {
-        PAssert(i < Dim);
+        //PAssert(i < Dim);
         return data_m[i];
     }
 
@@ -68,7 +68,7 @@ namespace ippl {
     template<typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION
     typename Vector<T, Dim>::value_t Vector<T, Dim>::operator[](unsigned int i) const {
-        PAssert(i < Dim);
+        //PAssert(i < Dim);
         return data_m[i];
     }
 
@@ -76,7 +76,7 @@ namespace ippl {
     template<typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION
     typename Vector<T, Dim>::value_t& Vector<T, Dim>::operator()(unsigned int i) {
-        PAssert(i < Dim);
+        //PAssert(i < Dim);
         return data_m[i];
     }
 
@@ -84,7 +84,7 @@ namespace ippl {
     template<typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION
     typename Vector<T, Dim>::value_t Vector<T, Dim>::operator()(unsigned int i) const {
-        PAssert(i < Dim);
+        //PAssert(i < Dim);
         return data_m[i];
     }
 

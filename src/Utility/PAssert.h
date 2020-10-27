@@ -51,12 +51,17 @@ class assertion: public std::runtime_error
     char *msg;
 public:
     assertion( const char *cond, const char *file, int line );
+    
     assertion( const char *m );
+    
     assertion( const assertion& a );
+    
     ~assertion() throw() { delete[] msg; }
+    
     assertion& operator=( const assertion& a );
 
     using std::runtime_error::what;
+    
     virtual const char* what() { return msg; };
 };
 
@@ -79,7 +84,6 @@ void toss_cookies( const char *cond, const char *astr, const char *bstr, S a, T 
 
     throw std::runtime_error(what);
 }
-
 void insist( const char *cond, const char *msg, const char *file, int line );
 
 //---------------------------------------------------------------------------//
