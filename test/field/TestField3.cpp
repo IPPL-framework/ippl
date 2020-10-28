@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 
     typedef ippl::Field<double, dim> Field_t;
 
-    typename Field_t::LField_t::view_type view = field(0).getView();
+    typename Field_t::LField_t::view_type& view = field(0).getView();
 
     //typename Field_t::LField_t::view_type::HostMirror host_view = 
     //                                                  Kokkos::create_mirror_view(view);

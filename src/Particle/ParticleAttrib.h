@@ -78,11 +78,11 @@ namespace ippl {
         }
 
 
-        view_type getView() {
+        view_type& getView() {
             return dview_m;
         }
 
-        const view_type getView() const {
+        const view_type& getView() const {
             return dview_m;
         }
 
