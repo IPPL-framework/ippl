@@ -54,10 +54,18 @@ namespace ippl {
         class ParticleLayout {
 
         public:
+            enum BC {
+                PERIODIC,
+                REFLECTIVE,
+                SINK,
+                NO
+            };
+
+
             typedef T                       value_type;
             typedef std::int64_t            index_type;
             typedef Vector<T, Dim>          vector_type;
-	    typedef ParticleBC<T, Dim, Kokkos::View<vector_type*>>  bcs_type;
+// 	    typedef ParticleBC<T, Dim, Kokkos::View<vector_type*>>  bcs_type;
 	    //	    typedef typename bcs_type::ParticleBCond bc_type;
 
             static constexpr unsigned dim = Dim;
@@ -101,11 +109,11 @@ namespace ippl {
              * @param
              */
 	    template<class PT>//, class NDI>
-		void applyBC(PT& R, NDRegion<T, Dim>& nr);
+		void applyBC(const PT& R, const NDRegion<T, Dim>& nr);
 
         private:
             //! the list of boundary conditions for this set of particles
-	    bcs_type bcs_m[2*Dim];
+            std::array<BC, 2 * Dim> bcs_m;
         };
     }
 }
