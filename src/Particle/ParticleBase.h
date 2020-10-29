@@ -99,8 +99,8 @@ namespace ippl {
         typedef PLayout                           Layout_t;
         typedef std::vector<detail::ParticleAttribBase<Properties...>*> attribute_container_t;
         typedef typename attribute_container_t::iterator  attribute_iterator;
-        typedef ParticleBConds<typename PLayout::value_type, PLayout::dim> bcs_type;
-        typedef typename bcs_type::ParticleBCond bc_type;
+	//        typedef ParticleBConds<typename PLayout::value_type, PLayout::dim> bcs_type;
+        //typedef typename bcs_type::ParticleBCond bc_type;
 
     public:
         //! view of particle positions
@@ -131,7 +131,7 @@ namespace ippl {
          * ::ippl::detail::ParticleAttribBase *> > ::~vector") from a __host__ __device__ function("ippl::ParticleBase<
          * ::ippl::ParticleLayout<double, (unsigned int)3u> > ::~ParticleBase") is not allowed
          */
-        ~ParticleBase() { };
+        ~ParticleBase() {} // = default; //{ }
 
         /*!
          * Initialize the particle layout. Needs to be called
@@ -166,18 +166,19 @@ namespace ippl {
         /*!
          * @returns the boundary condition of the particle layout
          */
-        const bcs_type& getBConds() const {
-            return layout_m->getBConds();
-        }
+	
+	//        const bcs_type& getBConds() const {
+        //    return layout_m->getBConds();
+	//    }
 
 
         /*!
          * Set all boundary conditions
          * @param bc the boundary conditions
          */
-        void setBConds(const bcs_type& bcs) {
+        /*void setBConds(const bcs_type& bcs) {
             layout_m->setBConds(bcs);
-        }
+	    }*/
 
 
         /*!
@@ -185,10 +186,9 @@ namespace ippl {
          * @param bc boundary condition
          * @param i th boundary condition
          */
-        void setBCond(const bc_type& bc, const int i) {
+	/*        void setBCond(const bc_type& bc, const int i) {
             layout_m->setBCond(bc, i);
-        }
-
+	    }*/
 
 
         /*!

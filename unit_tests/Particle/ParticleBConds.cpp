@@ -78,13 +78,13 @@ TEST_F(ParticleBCondsTest, UpperPeriodicBC) {
     PRegion<double> region(0.0, 0.2);
     
     nr = NDRegion<double, dim>(region, region, region);
-
+    /*
     for (unsigned i = 0; i < 2 * dim; i++) {
         bunch->setBCond(ippl::ParticlePeriodicBCond<double>, i);
 	}
     
         bunch->getLayout().applyBC(bunch->R, nr);
-
+    */
     Kokkos::deep_copy(HostR, bunch->R.getView());
 
     ippl::Vector<double, dim> expected = {shift, shift, shift};

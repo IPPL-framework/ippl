@@ -20,6 +20,7 @@ add_subdirectory (barefield)
 add_subdirectory (vector)
 add_subdirectory (field)
 add_subdirectory (particle)
+add_subdirectory (region)
 
 # vi: set et ts=4 sw=4 sts=4:
   

@@ -1,15 +1,5 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- * 
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
-
-#ifndef PREGION_H
-#define PREGION_H
+#ifndef IPPL_PREGION_H
+#define IPPL_PREGION_H
 
 /***********************************************************************
  * PRegion represents a (possibly continuous) numeric interval.  It is 
@@ -36,10 +26,11 @@
 //#include "Message/Message.h"
 
 //#include <iostream>
-/*
+
 // forward declarations
+namespace ippl {
 template<class T> class PRegion;
-template <class T>
+/*template <class T>
 PRegion<T> operator+(const PRegion<T>&, T);
 template <class T>
 PRegion<T> operator+(T, const PRegion<T>&);
@@ -54,10 +45,14 @@ PRegion<T> operator*(const PRegion<T>&, T);
 template <class T>
 PRegion<T> operator*(T, const PRegion<T>&);
 template <class T>
-PRegion<T> operator/(const PRegion<T>&, T);
+PRegion<T> operator/(const PRegion<T>&, T);*/
 template<class T>
 std::ostream& operator<<(std::ostream&, const PRegion<T>&);
-*/
+
+}
+
+namespace ippl {
+
 template<typename T>
 class PRegion {
 
@@ -68,22 +63,22 @@ public:
 
   // Constructors
   KOKKOS_FUNCTION
-  PRegion() = default; // : First(0), Last(1) {}                       // [0,1)
+  PRegion() : First(0), Last(1) {}                       // [0,1)
 
-    KOKKOS_FUNCTION
-    PRegion(T B) : First(0), Last(B) {}                    // [0,B)
+  KOKKOS_FUNCTION
+  PRegion(T B) : First(0), Last(B) {}                    // [0,B)
    
-    KOKKOS_FUNCTION
-    PRegion(T A, T B) : First(A), Last(B) {}               // [A,B)
+  KOKKOS_FUNCTION
+  PRegion(T A, T B) : First(A), Last(B) {}               // [A,B)
 
    // Destructor ... nothing to do
   KOKKOS_FUNCTION
   ~PRegion() { }
    
-  KOKKOS_FUNCTION
+    //KOKKOS_FUNCTION
   PRegion(const PRegion<T>&) = default;
    
-  KOKKOS_INLINE_FUNCTION
+    //KOKKOS_INLINE_FUNCTION
   PRegion<T>& operator=(const PRegion<T>& rhs) = default;
     
   // General query functions
@@ -105,23 +100,29 @@ public:
   KOKKOS_INLINE_FUNCTION
   bool empty() const { return (First == Last);}	           // is it empty?
     
-    /*
   // compute-assign operators
+  KOKKOS_INLINE_FUNCTION
   PRegion<T>& operator+=(T t) {
     First += t;
     Last += t;
     return *this;
   }
+
+  KOKKOS_INLINE_FUNCTION
   PRegion<T>& operator-=(T t) {
     First -= t;
     Last -= t;
     return *this;
   }
+
+  KOKKOS_INLINE_FUNCTION
   PRegion<T>& operator*=(T t) {
     First *= t;
     Last *= t;
     return *this;
   }
+  
+  KOKKOS_INLINE_FUNCTION
   PRegion<T>& operator/=(T t) {
     if (t != 0) {
       First /= t;
@@ -129,7 +130,7 @@ public:
     }
     return *this;
   }
-
+  /*
   // Intersect with another PRegion.  Since we have possibly continuous
   // variables, we do not consider the stride here, just where the two
   // intervals overlap (if at all)
@@ -241,6 +242,8 @@ private:
   T First, Last;
 };
 
+}
+
 /*
 // Additive operations.
 template <class T>
@@ -288,7 +291,10 @@ PRegion<T> operator/(const PRegion<T>& r, T t) {
   else        // This is an error!!
     return r;
 }
+*/
 
+
+namespace ippl {
 // Print out PRegion.
 template <class T>
 inline 
@@ -298,7 +304,7 @@ std::ostream& operator<<(std::ostream& out, const PRegion<T>& r) {
   out << ')';
   return out;
 }
-*/
+}
 
 #endif // PREGION_H
 

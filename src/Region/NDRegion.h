@@ -8,8 +8,8 @@
  *
  ***************************************************************************/
 
-#ifndef NDREGION_H
-#define NDREGION_H
+#ifndef IPPL_NDREGION_H
+#define IPPL_NDREGION_H
 
 /***********************************************************************
  * NDRegion is a simple container of N PRegion objects.  It is templated
@@ -20,13 +20,16 @@
 
 // include files
 #include "Region/PRegion.h"
-#include "Utility/PAssert.h"
+//#include "Utility/PAssert.h"
 
-#include <iostream>
-
+//#include <iostream>
+/*
 // forward declarations
 class Message;
+*/
+namespace ippl {
 template < class T, unsigned Dim > class NDRegion;
+/*
 template <class T, unsigned Dim>
 NDRegion<T,Dim> operator+(const NDRegion<T,Dim>&, T);
 template <class T, unsigned Dim>
@@ -49,8 +52,12 @@ template <class T, unsigned Dim>
 bool operator==(const NDRegion<T,Dim>&, const NDRegion<T,Dim>&);
 template <class T, unsigned Dim>
 bool operator!=(const NDRegion<T,Dim>&, const NDRegion<T,Dim>&);
+*/
 template < class T, unsigned Dim >
 std::ostream& operator<<(std::ostream&, const NDRegion<T,Dim>&);
+}
+
+namespace ippl {
 
 template < class T, unsigned Dim >
 class NDRegion {
@@ -60,6 +67,10 @@ public:
   KOKKOS_FUNCTION
   NDRegion() {}
 
+  KOKKOS_FUNCTION
+  ~NDRegion() { };
+
+    /*
   // Construct from a simple array of PRegions
   NDRegion(PRegion<T>* idx) {
     for (unsigned int i=0; i < Dim; i++)
@@ -75,13 +86,15 @@ public:
     PInsist(Dim==2, "Number of arguments does not match NDRegion dimension!!");
     p[0] = r1;
     p[1] = r2;
-  }
+    }*/
+
+  KOKKOS_FUNCTION
   NDRegion(const PRegion<T>& r1, const PRegion<T>& r2, const PRegion<T>& r3) {
-    PInsist(Dim==3, "Number of arguments does not match NDRegion dimension!!");
+      //    PInsist(Dim==3, "Number of arguments does not match NDRegion dimension!!");
     p[0] = r1;
     p[1] = r2;
     p[2] = r3;
-  }
+  }/*
   NDRegion(const PRegion<T>& r1, const PRegion<T>& r2, const PRegion<T>& r3,
            const PRegion<T>& r4) {
     PInsist(Dim==4, "Number of arguments does not match NDRegion dimension!!");
@@ -108,20 +121,22 @@ public:
     p[3] = r4;
     p[4] = r5;
     p[5] = r6;
-  }
-
+    }
+   */
   // copy constructor
+  KOKKOS_INLINE_FUNCTION
   NDRegion(const NDRegion<T,Dim>& nr) {
-    for (unsigned int i=0; i < Dim; i++)
-      p[i] = nr.p[i];
+      for (unsigned int i=0; i < Dim; i++)
+	  p[i] = nr.p[i];
   }
 
   // operator= definitions
+  KOKKOS_INLINE_FUNCTION
   NDRegion<T,Dim>& operator=(const NDRegion<T,Dim>& nr) {
     for (unsigned int i=0; i < Dim; i++)
       p[i] = nr.p[i];
     return *this;
-  }
+    }
 
   // Return a reference to any of the PRegion<T> objects.
   KOKKOS_INLINE_FUNCTION
@@ -130,6 +145,7 @@ public:
   KOKKOS_INLINE_FUNCTION
   PRegion<T>& operator[](unsigned d) { return p[d]; }
 
+    /*
   // return the volume of this region
   T volume() const {
     T v = p[0].length();
@@ -137,23 +153,30 @@ public:
       v *= p[i].length();
     return v;
   }
-
+    */
   // compute-assign operators
+  KOKKOS_INLINE_FUNCTION
   NDRegion<T,Dim>& operator+=(const T t) {
     for (unsigned int i=0; i < Dim; i++)
       p[i] += t;
     return *this;
   }
+
+  KOKKOS_INLINE_FUNCTION
   NDRegion<T,Dim>& operator-=(const T t) {
     for (unsigned int i=0; i < Dim; i++)
       p[i] -= t;
     return *this;
   }
+
+  KOKKOS_INLINE_FUNCTION
   NDRegion<T,Dim>& operator*=(const T t) {
     for (unsigned int i=0; i < Dim; i++)
       p[i] *= t;
     return *this;
   }
+
+  KOKKOS_INLINE_FUNCTION
   NDRegion<T,Dim>& operator/=(const T t) {
     if (t != 0) {
       for (unsigned int i=0; i < Dim; i++) p[i] /= t;
@@ -161,12 +184,14 @@ public:
     return *this;
   }
 
+  KOKKOS_INLINE_FUNCTION
   bool empty() const {
     for (unsigned int i=0; i < Dim; i++)
       if ( ! p[i].empty() )
 	return false;
     return true;
   }
+    /*
 
   // useful functions with DomainMap.
   NDRegion<T,Dim> intersect(const NDRegion<T,Dim>& nr) const {
@@ -231,14 +256,16 @@ public:
     for ( unsigned d = 0 ; d < Dim ; ++d )
       p[d].getMessage(m);
     return m;
-  }
+  }*/
 
 private:
-  PRegion<T> p[Dim];			// Array of PRegions
+    PRegion<T> p[Dim];			// Array of PRegions
 
 };
 
+}
 
+/*
 // Additive operations.
 template <class T, unsigned Dim>
 inline
@@ -311,8 +338,12 @@ inline
 bool operator!=(const NDRegion<T,Dim>& A, const NDRegion<T,Dim>& B) {
   return !(A == B);
 }
-
+*/
 // write NDRegion out to the given stream
+
+
+namespace ippl {
+
 template <class T, unsigned Dim>
 inline
 std::ostream& operator<<(std::ostream& out, const NDRegion<T,Dim>& idx) {
@@ -322,7 +353,9 @@ std::ostream& operator<<(std::ostream& out, const NDRegion<T,Dim>& idx) {
   return out;
 }
 
+}
 
+/*
 //////////////////////////////////////////////////////////////////////
 
 // Build some helper objects for use in DomainMap
@@ -355,7 +388,7 @@ public:
     return a.split(l,r);
   }
 };
-
+*/
 
 #endif // NDREGION_H
 

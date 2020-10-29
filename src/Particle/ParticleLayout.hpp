@@ -43,36 +43,36 @@
 
 namespace ippl {
     namespace detail {
-        /*
-         * Functor to apply boundary conditions
-         */
-	        template<typename T, unsigned Dim, class PT, class NDI>
-        struct ApplyBC {
-	    typename PT::view_type pos_m;
-            NDI nr_m;
-            ParticleBConds<T, Dim> bcs_m;
+	template <typename T, unsigned Dim, typename ViewType>
+	struct ApplyBC {
+	    ViewType view_m;
+	    NDRegion<T, Dim> nr_m;
+	    ParticleBC<T, Dim, ViewType> bcs_m[2*Dim];
 
-            ApplyBC(typename PT::view_type pos, const NDI& nr, const ParticleBConds<T, Dim>& bcs) {
-                pos_m = pos;
-                nr_m = nr;
-                bcs_m = bcs;
-            }
+	    ApplyBC(const ViewType& view, const ParticleBC<T, Dim, ViewType>* bcs, const NDRegion<T, Dim>& nr)
+		: view_m(view)
+		, nr_m(nr)
+	    {
+		for (unsigned i = 0; i < 2 * Dim; ++i) {
+		    bcs_m[i] = bcs[i];
+		}
+	    }
+	};
 
-            KOKKOS_INLINE_FUNCTION
-            void operator() (const size_t i, const size_t j) const {
-                pos_m(i)[j] = bcs_m.apply(pos_m(i)[j], j, nr_m);
-            }
-        };
 
 
         template<typename T, unsigned Dim>
-        template<class PT, class NDI>
-        void ParticleLayout<T, Dim>::applyBC(PT& R, const NDI& nr) {
-            using mdrange = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+        template<class PT>
+        void ParticleLayout<T, Dim>::applyBC(PT& R, NDRegion<T, Dim>& nr) {
+	    for(int i = 0; i < 6; ++i)
+		bcs_m[i] = ParticleBC<T, Dim, typename PT::view_type>();
+
+
+            using mdrange = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 	    long len = R.getView().extent(0);
-            Kokkos::parallel_for("ParticleLayout::applyBC()",
-                                 mdrange({0, 0}, {len, Dim}),
-                                 ApplyBC<T, Dim, PT, NDI>(R.getView(), nr, bcs_m));
-				 }
+	    Kokkos::parallel_for("",
+				 mdrange({0, 0, 0}, {len, Dim, 2 * Dim}),
+				 ApplyBC(R.getView(), bcs_m, nr));
+	}
     }
 }
