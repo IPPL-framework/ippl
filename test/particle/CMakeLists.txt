@@ -56,6 +56,14 @@ target_link_libraries (
 )
 
 
+add_executable (TestParticleBConds TestParticleBConds.cpp)
+target_link_libraries (
+    TestParticleBConds
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    boost_timer
+)
+
 
 # vi: set et ts=4 sw=4 sts=4:
 

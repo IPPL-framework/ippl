@@ -25,7 +25,7 @@ set (_HDRS
 #     ParticleBalancer.h
     ParticleBase.h
     ParticleBase.hpp
-#     ParticleBConds.h
+    ParticleBC.h
 #     ParticleCashedLayout.hpp
 #     ParticleCashedLayout.h
 #     ParticleInteractAttrib.hpp
