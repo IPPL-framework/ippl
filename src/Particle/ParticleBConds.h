@@ -29,9 +29,16 @@
 
 
 namespace ippl {
+    enum BC {
+        PERIODIC,
+        REFLECTIVE,
+        SINK,
+        NO
+    };
+
     namespace detail {
 
-        template<typename T, unsigned Dim, typename ViewType>
+        template<typename T, unsigned Dim, class ViewType>
         struct ParticleBC {
 
             using value_type = typename ViewType::value_type::value_type;
@@ -59,7 +66,7 @@ namespace ippl {
         };
 
 
-        template<typename T, unsigned Dim, typename ViewType>
+        template<typename T, unsigned Dim, class ViewType>
         struct PeriodicBC : public ParticleBC<T, Dim, ViewType> {
 
             using value_type = typename ParticleBC<T, Dim, ViewType>::value_type;
@@ -88,7 +95,7 @@ namespace ippl {
         };
 
 
-        template<typename T, unsigned Dim, typename ViewType>
+        template<typename T, unsigned Dim, class ViewType>
         struct ReflectiveBC : public ParticleBC<T, Dim, ViewType> {
 
             using value_type = typename ParticleBC<T, Dim, ViewType>::value_type;
@@ -117,7 +124,7 @@ namespace ippl {
         };
 
 
-        template<typename T, unsigned Dim, typename ViewType>
+        template<typename T, unsigned Dim, class ViewType>
         struct SinkBC : public ParticleBC<T, Dim, ViewType> {
 
             using value_type = typename ParticleBC<T, Dim, ViewType>::value_type;
@@ -145,15 +152,6 @@ namespace ippl {
             ~SinkBC() = default;
         };
     }
-
-
-//     template<typename T, unsigned Dim, typename ViewType>
-//     class ParticleBConds {
-//
-//
-//     private:
-//         std::array<detail::ParticleBC<T, Dim, ViewType>*, 2 * Dim> bcs_m;
-//     };
 }
 
 #endif

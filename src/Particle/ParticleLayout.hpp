@@ -44,11 +44,9 @@
 namespace ippl {
     namespace detail {
         template<typename T, unsigned Dim>
-        template<class PT>
-        void ParticleLayout<T, Dim>::applyBC(const PT& R, const NDRegion<T, Dim>& nr) {
-//             using mdrange = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-//             long len = R.getView().extent(0);
-
+        void ParticleLayout<T, Dim>::applyBC(const particle_position_type& R,
+                                             const NDRegion<T, Dim>& nr)
+        {
             /* loop over all faces
              * 0: lower x-face
              * 1: lower y-face
@@ -59,7 +57,7 @@ namespace ippl {
              */
             for (unsigned i = 0; i < 2 * Dim; ++i) {
                 unsigned face = i % Dim;
-                switch (i) {
+                switch (bcs_m[i]) {
                     case BC::PERIODIC:
                         Kokkos::parallel_for("Periodic BC",
                                              R.getView().extent(0),

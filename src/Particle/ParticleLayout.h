@@ -46,6 +46,10 @@
 
 #include "Particle/ParticleBConds.h"
 
+#include "Particle/ParticleAttrib.h"
+
+#include <map>
+
 namespace ippl {
     namespace detail {
         // ParticleLayout class definition.  Template parameters are the type
@@ -54,27 +58,23 @@ namespace ippl {
         class ParticleLayout {
 
         public:
-            enum BC {
-                PERIODIC,
-                REFLECTIVE,
-                SINK,
-                NO
-            };
 
+            typedef T                             value_type;
+            typedef std::int64_t                  index_type;
+            typedef Vector<T, Dim>                vector_type;
+            typedef ParticleAttrib<vector_type>   particle_position_type;
+            typedef std::array<BC, 2 * Dim>       bc_container_type;
 
-            typedef T                       value_type;
-            typedef std::int64_t            index_type;
-            typedef Vector<T, Dim>          vector_type;
-// 	    typedef ParticleBC<T, Dim, Kokkos::View<vector_type*>>  bcs_type;
-	    //	    typedef typename bcs_type::ParticleBCond bc_type;
 
             static constexpr unsigned dim = Dim;
 
         public:
-            ParticleLayout() { };
+            ParticleLayout()
+            {
+                bcs_m.fill(BC::NO);
+            };
 
-	    //	    KOKKOS_FUNCTION
-            ~ParticleLayout() { } // = default;
+            ~ParticleLayout() = default;
 
             template<class PBase>
             void update(PBase&) {
@@ -82,25 +82,13 @@ namespace ippl {
                 std::cout << "TODO" << std::endl;
             }
 
-
-            /*!
-             * @returns the boundary conditions container
-             */
-	    //            const bcs_type& getBConds() const { return bcs_m; }
-
             /*!
              * Copy over the given boundary conditions.
              * @param bcs are the boundary conditions
              */
-	    //            void setBConds(const bcs_type& bcs) { bcs_m = bcs; }
-
-            /*!
-             * Copy over the given boundary conditions.
-             * @param bc are the boundary conditions
-             */
-            /*void setBCond(const bc_type& bc, const int i) {
-                bcs_m[i] = bc;
-		}*/
+            void setBConds(bc_container_type bcs) {
+                bcs_m = bcs;
+            }
 
             /*!
              * Apply the given boundary conditions to the current particle positions.
@@ -108,12 +96,11 @@ namespace ippl {
              * @tparam NDI is the type of index object (NDIndex or NDRegion)
              * @param
              */
-	    template<class PT>//, class NDI>
-		void applyBC(const PT& R, const NDRegion<T, Dim>& nr);
+            void applyBC(const particle_position_type& R, const NDRegion<T, Dim>& nr);
 
         private:
             //! the list of boundary conditions for this set of particles
-            std::array<BC, 2 * Dim> bcs_m;
+            bc_container_type bcs_m;
         };
     }
 }
