@@ -44,7 +44,7 @@
 #ifndef IPPL_PARTICLE_LAYOUT_H
 #define IPPL_PARTICLE_LAYOUT_H
 
-#include "Particle/ParticleBConds.h"
+#include "Particle/ParticleBC.h"
 
 #include "Particle/ParticleAttrib.h"
 
@@ -86,9 +86,18 @@ namespace ippl {
              * Copy over the given boundary conditions.
              * @param bcs are the boundary conditions
              */
-            void setBConds(bc_container_type bcs) {
+            void setParticleBC(bc_container_type bcs) {
                 bcs_m = bcs;
             }
+
+            /*!
+             * Use the same boundary condition on each face
+             * @param bcs are the boundary conditions
+             */
+            void setParticleBC(BC bc) {
+                bcs_m.fill(bc);
+            }
+
 
             /*!
              * Apply the given boundary conditions to the current particle positions.

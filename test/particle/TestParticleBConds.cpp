@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
         BC::NO
     };
 
-    bunch->setBConds(bcs);
+    bunch->setParticleBC(bcs);
 
     bunch->getLayout().applyBC(bunch->R, nr);    
 

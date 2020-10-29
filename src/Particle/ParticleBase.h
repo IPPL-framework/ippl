@@ -164,8 +164,16 @@ namespace ippl {
          * Set all boundary conditions
          * @param bc the boundary conditions
          */
-        void setBConds(const bc_container_type& bcs) {
-            layout_m->setBConds(bcs);
+        void setParticleBC(const bc_container_type& bcs) {
+            layout_m->setParticleBC(bcs);
+        }
+
+        /*!
+         * Set all boundary conditions to this BC
+         * @param bc the boundary conditions
+         */
+        void setParticleBC(BC bc) {
+            layout_m->setParticleBC(bc);
         }
 
 

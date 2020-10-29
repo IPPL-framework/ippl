@@ -1,9 +1,6 @@
 //
-// Class ParticleBConds
-//   This is a container for a set of particle boundary condition
-//   functions. Boundary conditions for particles are not objects, but just
-//   functions which map a position X -> X', given the minimum and maximum
-//   values of the spatial domain.
+// Functor ParticleBC
+//   Functors specifying particle boundary conditions.
 //
 // Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
@@ -18,15 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#ifndef IPPL_PARTICLE_BCONDS_H
-#define IPPL_PARTICLE_BCONDS_H
+#ifndef IPPL_PARTICLE_BC_H
+#define IPPL_PARTICLE_BC_H
 
 #include "Region/NDRegion.h"
-#include "Index/NDIndex.h"
-
-#include <functional>
-#include <array>
-
 
 namespace ippl {
     enum BC {
