@@ -59,7 +59,7 @@ namespace ippl {
      */
     template<typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION
-    typename Vector<T, Dim>::value_t& Vector<T, Dim>::operator[](unsigned int i) {
+    typename Vector<T, Dim>::value_type& Vector<T, Dim>::operator[](unsigned int i) {
         //PAssert(i < Dim);
         return data_m[i];
     }
@@ -67,7 +67,7 @@ namespace ippl {
 
     template<typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION
-    typename Vector<T, Dim>::value_t Vector<T, Dim>::operator[](unsigned int i) const {
+    typename Vector<T, Dim>::value_type Vector<T, Dim>::operator[](unsigned int i) const {
         //PAssert(i < Dim);
         return data_m[i];
     }
@@ -75,7 +75,7 @@ namespace ippl {
 
     template<typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION
-    typename Vector<T, Dim>::value_t& Vector<T, Dim>::operator()(unsigned int i) {
+    typename Vector<T, Dim>::value_type& Vector<T, Dim>::operator()(unsigned int i) {
         //PAssert(i < Dim);
         return data_m[i];
     }
@@ -83,7 +83,7 @@ namespace ippl {
     
     template<typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION
-    typename Vector<T, Dim>::value_t Vector<T, Dim>::operator()(unsigned int i) const {
+    typename Vector<T, Dim>::value_type Vector<T, Dim>::operator()(unsigned int i) const {
         //PAssert(i < Dim);
         return data_m[i];
     }

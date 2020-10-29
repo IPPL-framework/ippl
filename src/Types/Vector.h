@@ -35,11 +35,11 @@ namespace ippl {
     template<typename T, unsigned Dim>
     class Vector : public Expression<Vector<T, Dim>, sizeof(T) * Dim> {
     public:
-        typedef T value_t;
+        typedef T value_type;
         static constexpr unsigned dim = Dim;
     
         KOKKOS_FUNCTION
-        Vector() : Vector(value_t(0)) { }
+        Vector() : Vector(value_type(0)) { }
 
 
         template<typename E, size_t N>
@@ -64,16 +64,16 @@ namespace ippl {
 
         // Get and Set Operations
         KOKKOS_INLINE_FUNCTION
-        value_t& operator[](unsigned int i);
+        value_type& operator[](unsigned int i);
 
         KOKKOS_INLINE_FUNCTION
-        value_t operator[](unsigned int i) const;
+        value_type operator[](unsigned int i) const;
 
         KOKKOS_INLINE_FUNCTION
-        value_t& operator()(unsigned int i);
+        value_type& operator()(unsigned int i);
 
         KOKKOS_INLINE_FUNCTION
-        value_t operator()(unsigned int i) const;
+        value_type operator()(unsigned int i) const;
 
         // Assignment Operators
         template<typename E, size_t N>

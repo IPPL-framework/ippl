@@ -33,6 +33,9 @@ namespace ippl {
 
         template<typename T, unsigned Dim, typename ViewType>
         struct ParticleBC {
+
+            using value_type = typename ViewType::value_type::value_type;
+
             ViewType view_m;
             double minval_m;
             double maxval_m;
@@ -59,6 +62,8 @@ namespace ippl {
         template<typename T, unsigned Dim, typename ViewType>
         struct PeriodicBC : public ParticleBC<T, Dim, ViewType> {
 
+            using value_type = typename ParticleBC<T, Dim, ViewType>::value_type;
+
             KOKKOS_INLINE_FUNCTION
             PeriodicBC() = default;
 
@@ -71,10 +76,11 @@ namespace ippl {
 
             KOKKOS_INLINE_FUNCTION
             void operator()(const size_t& i) const {
-                if (this->view_m(i)[this->dim_m] < this->minval_m)
-                    this->view_m(i)[this->dim_m] = (this->maxval_m - (this->minval_m - this->view_m(i)[this->dim_m]));
-                else if (this->view_m(i)[this->dim_m] >= this->maxval_m)
-                    this->view_m(i)[this->dim_m] = (this->minval_m + (this->view_m(i)[this->dim_m] - this->maxval_m));
+                value_type& value = this->view_m(i)[this->dim_m];
+                if (value < this->minval_m)
+                    value = (this->maxval_m - (this->minval_m - value));
+                else if (value >= this->maxval_m)
+                    value = (this->minval_m + (value - this->maxval_m));
             }
 
             KOKKOS_INLINE_FUNCTION
@@ -84,6 +90,8 @@ namespace ippl {
 
         template<typename T, unsigned Dim, typename ViewType>
         struct ReflectiveBC : public ParticleBC<T, Dim, ViewType> {
+
+            using value_type = typename ParticleBC<T, Dim, ViewType>::value_type;
 
             KOKKOS_INLINE_FUNCTION
             ReflectiveBC() = default;
@@ -97,10 +105,11 @@ namespace ippl {
 
             KOKKOS_INLINE_FUNCTION
             void operator()(const size_t& i) const {
-                if (this->view_m(i)[this->dim_m] < this->minval_m)
-                    this->view_m(i)[this->dim_m] = 2.0 * this->minval_m - this->view_m(i)[this->dim_m];
-                else if (this->view_m(i)[this->dim_m] >= this->maxval_m)
-                    this->view_m(i)[this->dim_m] = 2.0 * this->maxval_m - this->view_m(i)[this->dim_m];
+                value_type& value = this->view_m(i)[this->dim_m];
+                if (value < this->minval_m)
+                    value = 2.0 * this->minval_m - value;
+                else if (value >= this->maxval_m)
+                    value = 2.0 * this->maxval_m - value;
             }
 
             KOKKOS_INLINE_FUNCTION
@@ -110,6 +119,8 @@ namespace ippl {
 
         template<typename T, unsigned Dim, typename ViewType>
         struct SinkBC : public ParticleBC<T, Dim, ViewType> {
+
+            using value_type = typename ParticleBC<T, Dim, ViewType>::value_type;
 
             KOKKOS_INLINE_FUNCTION
             SinkBC() = default;
@@ -123,10 +134,11 @@ namespace ippl {
 
             KOKKOS_INLINE_FUNCTION
             void operator()(const size_t& i) const {
-                if (this->view_m(i)[this->dim_m] < this->minval_m)
-                    this->view_m(i)[this->dim_m] = this->minval_m;
-                else if (this->view_m(i)[this->dim_m] >= this->maxval_m)
-                    this->view_m(i)[this->dim_m] = this->maxval_m;
+                value_type& value = this->view_m(i)[this->dim_m];
+                if (value < this->minval_m)
+                    value = this->minval_m;
+                else if (value >= this->maxval_m)
+                    value = this->maxval_m;
             }
 
             KOKKOS_INLINE_FUNCTION
