@@ -80,26 +80,6 @@ namespace ippl {
 
 // TJW: so far, componentwise specification of BCondNoAction not possible
 
-//     template<typename T,
-//             unsigned Dim,
-//             class Mesh = UniformCartesian<double, Dim>,
-//             class Cell = typename Mesh::DefaultCentering>
-//     class BCondNoAction : public detail::BCondBase<T, Dim, Mesh, Cell>
-//     {
-//     public:
-//         BCondNoAction(int face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
-//
-// //     virtual void apply( Field<T, Dim, Mesh, Cell>& ) {}
-//         detail::BCondBase<T, Dim, Mesh, Cell>* clone() const
-//         {
-//             return new BCondNoAction<T, Dim, Mesh, Cell>( *this );
-//         }
-//
-//         // Print out information about the BC to a stream.
-//         virtual void write(std::ostream& out) const;
-//     };
-// }
-
 //////////////////////////////////////////////////////////////////////
 
 // template<class T,
