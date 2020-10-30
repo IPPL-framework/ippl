@@ -8,7 +8,7 @@ namespace ippl {
 
     template<typename T, unsigned Dim,
             class Mesh = UniformCartesian<double, Dim>,
-            class Centering = typename M::DefaultCentering >
+            class Centering = typename Mesh::DefaultCentering >
     class Field //: public FieldExpression<Field<T, Dim, Mesh, Centering>>
                 : public BareField<T, Dim> {
 
@@ -16,7 +16,7 @@ namespace ippl {
         typedef Mesh Mesh_t;
         typedef Centering Centering_t;
         typedef FieldLayout<Dim> Layout_t;
-        typedef
+//         typedef
 
         typedef typename BareField<T, Dim>::LField_t LField_t;
 
@@ -63,17 +63,17 @@ namespace ippl {
         template<typename T, unsigned Dim, class Mesh, class Centering>
         struct field_meta_grad : public FieldExpression<field_meta_grad<T, Dim, Mesh, Centering>> {
             field_meta_grad(const Field<T, Dim, Mesh, Centering>& u) : u_m(u) {
-                M& mesh = u.get_mesh();
+                Mesh& mesh = u.get_mesh();
 
                 xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
 
-                if constexpr(M::Dimension > 1) {
+                if constexpr(Mesh::Dimension > 1) {
                     xvector_m[1] = 0.0;
                     yvector_m[0] = 0.0;
                     yvector_m[1] = 0.5 / mesh.getMeshSpacing(1);
                 }
 
-                if constexpr(M::Dimension == 3) {
+                if constexpr(Mesh::Dimension == 3) {
                     xvector_m[2] = 0.0;
                     yvector_m[2] = 0.0;
                     zvector_m[0] = 0.0;
@@ -84,24 +84,24 @@ namespace ippl {
             }
 
             auto operator[](size_t i) const {
-                if constexpr (M::Dimension == 1) {
+                if constexpr (Mesh::Dimension == 1) {
                     return grad(u_m[i], xvector_m);
                 }
 
-                if constexpr (M::Dimension == 2) {
+                if constexpr (Mesh::Dimension == 2) {
                     return grad(u_m[i], xvector_m, yvector_m);
                 }
 
-                if constexpr (M::Dimension == 3) {
+                if constexpr (Mesh::Dimension == 3) {
                     return grad(u_m[i], xvector_m, yvector_m, zvector_m);
                 }
             }
 
         private:
             const Field<T, Dim, Mesh, Centering>& u_m;
-            typename M::vector_type xvector_m;
-            typename M::vector_type yvector_m;
-            typename M::vector_type zvector_m;
+            typename Mesh::vector_type xvector_m;
+            typename Mesh::vector_type yvector_m;
+            typename Mesh::vector_type zvector_m;
         };
     }
 
@@ -117,17 +117,17 @@ namespace ippl {
         template<typename T, unsigned Dim, class Mesh, class Centering>
         struct field_meta_div : public FieldExpression<field_meta_div<T, Dim, Mesh, Centering>> {
             field_meta_div(const Field<T, Dim, Mesh, Centering>& u) : u_m(u) {
-                M& mesh = u.get_mesh();
+                Mesh& mesh = u.get_mesh();
 
                 xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
 
-                if constexpr(M::Dimension > 1) {
+                if constexpr(Mesh::Dimension > 1) {
                     xvector_m[1] = 0.0;
                     yvector_m[0] = 0.0;
                     yvector_m[1] = 0.5 / mesh.getMeshSpacing(1);
                 }
 
-                if constexpr(M::Dimension == 3) {
+                if constexpr(Mesh::Dimension == 3) {
                     xvector_m[2] = 0.0;
                     yvector_m[2] = 0.0;
                     zvector_m[0] = 0.0;
@@ -137,24 +137,24 @@ namespace ippl {
             }
 
             auto operator[](size_t i) const {
-                if constexpr (M::Dimension == 1) {
+                if constexpr (Mesh::Dimension == 1) {
                     return div(u_m[i], xvector_m);
                 }
 
-                if constexpr (M::Dimension == 2) {
+                if constexpr (Mesh::Dimension == 2) {
                     return div(u_m[i], xvector_m, yvector_m);
                 }
 
-                if constexpr (M::Dimension == 3) {
+                if constexpr (Mesh::Dimension == 3) {
                     return div(u_m[i], xvector_m, yvector_m, zvector_m);
                 }
             }
 
         private:
             const Field<T, Dim, Mesh, Centering>& u_m;
-            typename M::vector_type xvector_m;
-            typename M::vector_type yvector_m;
-            typename M::vector_type zvector_m;
+            typename Mesh::vector_type xvector_m;
+            typename Mesh::vector_type yvector_m;
+            typename Mesh::vector_type zvector_m;
         };
     }
 
@@ -170,15 +170,15 @@ namespace ippl {
         template<typename T, unsigned Dim, class Mesh, class Centering>
         struct field_meta_laplace : public FieldExpression<field_meta_laplace<T, Dim, Mesh, Centering>> {
             field_meta_laplace(const Field<T, Dim, Mesh, Centering>& u) : u_m(u) {
-                M& mesh = u.get_mesh();
+                Mesh& mesh = u.get_mesh();
 
                 hvector_m[0] = 1.0 / std::pow(mesh.getMeshSpacing(0),2);
 
-                if constexpr(M::Dimension > 1) {
+                if constexpr(Mesh::Dimension > 1) {
                     hvector_m[1] = 1.0 / std::pow(mesh.getMeshSpacing(1),2);
                 }
 
-                if constexpr(M::Dimension == 3) {
+                if constexpr(Mesh::Dimension == 3) {
                     hvector_m[2] = 1.0 / std::pow(mesh.getMeshSpacing(2),2);
                 }
             }
@@ -189,7 +189,7 @@ namespace ippl {
 
         private:
             const Field<T, Dim, Mesh, Centering>& u_m;
-            typename M::vector_type hvector_m;
+            typename Mesh::vector_type hvector_m;
         };
     }
 
