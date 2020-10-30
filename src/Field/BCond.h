@@ -111,109 +111,109 @@ public:
 
 //////////////////////////////////////////////////////////////////////
 
-template<class T,
-         unsigned D, 
-         class M=UniformCartesian<D,double>, 
-         class C=typename M::DefaultCentering>
-class PeriodicFace : public BCondBase<T,D,M,C>
-{
-public:
-  // Constructor takes zero, one, or two int's specifying components of 
-  // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
-  // Zero int's specified means apply to all components; one means apply to
-  // component (i), and two means apply to component (i,j),
-  typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+// template<class T,
+//          unsigned D,
+//          class M=UniformCartesian<D,double>,
+//          class C=typename M::DefaultCentering>
+// class PeriodicFace : public BCondBase<T,D,M,C>
+// {
+// public:
+//   // Constructor takes zero, one, or two int's specifying components of
+//   // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
+//   // Zero int's specified means apply to all components; one means apply to
+//   // component (i), and two means apply to component (i,j),
+//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//
+//   PeriodicFace(unsigned f,
+// 	       int i = BCondBaseTDMC::allComponents,
+// 	       int j = BCondBaseTDMC::allComponents);
+//
+//   // Apply the boundary condition to a particular Field.
+//   virtual void apply( Field<T,D,M,C>& );
+//
+//   // Make a copy of the concrete type.
+//   virtual BCondBase<T,D,M,C>* clone() const
+//   {
+//     return new PeriodicFace<T,D,M,C>( *this );
+//   }
+//
+//   // Print out information about the BC to a stream.
+//   virtual void write(std::ostream& out) const;
+// };
 
-  PeriodicFace(unsigned f, 
-	       int i = BCondBaseTDMC::allComponents,
-	       int j = BCondBaseTDMC::allComponents);
-
-  // Apply the boundary condition to a particular Field.
-  virtual void apply( Field<T,D,M,C>& );
-
-  // Make a copy of the concrete type.
-  virtual BCondBase<T,D,M,C>* clone() const
-  {
-    return new PeriodicFace<T,D,M,C>( *this );
-  }
-
-  // Print out information about the BC to a stream.
-  virtual void write(std::ostream& out) const;
-};
 
 
+// //////////////////////////////////////////////////////////////////////
+// //BENI adds Periodic Boundary Conditions for Interpolations///////////
+// //////////////////////////////////////////////////////////////////////
+// template<class T,
+//          unsigned D,
+//          class M=UniformCartesian<D,double>,
+//          class C=typename M::DefaultCentering>
+// class InterpolationFace : public BCondBase<T,D,M,C>
+// {
+// public:
+//   // Constructor takes zero, one, or two int's specifying components of
+//   // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
+//   // Zero int's specified means apply to all components; one means apply to
+//   // component (i), and two means apply to component (i,j),
+//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//
+//   InterpolationFace(unsigned f,
+// 	       int i = BCondBaseTDMC::allComponents,
+// 	       int j = BCondBaseTDMC::allComponents);
+//
+//   // Apply the boundary condition to a particular Field.
+//   virtual void apply( Field<T,D,M,C>& );
+//
+//   // Make a copy of the concrete type.
+//   virtual BCondBase<T,D,M,C>* clone() const
+//   {
+//     return new InterpolationFace<T,D,M,C>( *this );
+//   }
+//
+//   // Print out information about the BC to a stream.
+//   virtual void write(std::ostream& out) const;
+// };
 
 //////////////////////////////////////////////////////////////////////
-//BENI adds Periodic Boundary Conditions for Interpolations///////////
-//////////////////////////////////////////////////////////////////////
-template<class T,
-         unsigned D,
-         class M=UniformCartesian<D,double>,
-         class C=typename M::DefaultCentering>
-class InterpolationFace : public BCondBase<T,D,M,C>
-{
-public:
-  // Constructor takes zero, one, or two int's specifying components of
-  // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
-  // Zero int's specified means apply to all components; one means apply to
-  // component (i), and two means apply to component (i,j),
-  typedef BCondBase<T,D,M,C> BCondBaseTDMC;
 
-  InterpolationFace(unsigned f,
-	       int i = BCondBaseTDMC::allComponents,
-	       int j = BCondBaseTDMC::allComponents);
-
-  // Apply the boundary condition to a particular Field.
-  virtual void apply( Field<T,D,M,C>& );
-
-  // Make a copy of the concrete type.
-  virtual BCondBase<T,D,M,C>* clone() const
-  {
-    return new InterpolationFace<T,D,M,C>( *this );
-  }
-
-  // Print out information about the BC to a stream.
-  virtual void write(std::ostream& out) const;
-};
-
-//////////////////////////////////////////////////////////////////////
-
-template<class T, unsigned D, 
-         class M=UniformCartesian<D,double>, 
-         class C=typename M::DefaultCentering>
-class ParallelPeriodicFace : public PeriodicFace<T,D,M,C>
-{
-public:
-
-  // Constructor takes zero, one, or two int's specifying components
-  // of multicomponent types like Vektor/Tenzor/AntiTenzor/SymTenzor
-  // this BC applies to.  Zero int's means apply to all components;
-  // one means apply to component (i), and two means apply to
-  // component (i,j),
-
-  typedef BCondBase<T,D,M,C> Base_t;
-
-  ParallelPeriodicFace(unsigned f, 
-		       int i = Base_t::allComponents,
-		       int j = Base_t::allComponents)
-    : PeriodicFace<T,D,M,C>(f,i,j) 
-  { }
-
-  // Apply the boundary condition to a particular Field.
-
-  virtual void apply( Field<T,D,M,C>& );
-
-  // Make a copy of the concrete type.
-
-  virtual Base_t * clone() const
-  {
-    return new ParallelPeriodicFace<T,D,M,C>( *this );
-  }
-
-  // Print out information about the BC to a stream.
-
-  virtual void write(std::ostream& out) const;
-};
+// template<class T, unsigned D,
+//          class M=UniformCartesian<D,double>,
+//          class C=typename M::DefaultCentering>
+// class ParallelPeriodicFace : public PeriodicFace<T,D,M,C>
+// {
+// public:
+//
+//   // Constructor takes zero, one, or two int's specifying components
+//   // of multicomponent types like Vektor/Tenzor/AntiTenzor/SymTenzor
+//   // this BC applies to.  Zero int's means apply to all components;
+//   // one means apply to component (i), and two means apply to
+//   // component (i,j),
+//
+//   typedef BCondBase<T,D,M,C> Base_t;
+//
+//   ParallelPeriodicFace(unsigned f,
+// 		       int i = Base_t::allComponents,
+// 		       int j = Base_t::allComponents)
+//     : PeriodicFace<T,D,M,C>(f,i,j)
+//   { }
+//
+//   // Apply the boundary condition to a particular Field.
+//
+//   virtual void apply( Field<T,D,M,C>& );
+//
+//   // Make a copy of the concrete type.
+//
+//   virtual Base_t * clone() const
+//   {
+//     return new ParallelPeriodicFace<T,D,M,C>( *this );
+//   }
+//
+//   // Print out information about the BC to a stream.
+//
+//   virtual void write(std::ostream& out) const;
+// };
 
 //////////////////////////////////////////////////////////////////////
 
@@ -222,80 +222,80 @@ public:
 // BENI adds parallel Interpolation Face
 //////////////////////////////////////////////////////////////////////
 
-template<class T, unsigned D,
-         class M=UniformCartesian<D,double>,
-         class C=typename M::DefaultCentering>
-class ParallelInterpolationFace : public InterpolationFace<T,D,M,C>
-{
-public:
-
-  // Constructor takes zero, one, or two int's specifying components
-  // of multicomponent types like Vektor/Tenzor/AntiTenzor/SymTenzor
-  // this BC applies to.  Zero int's means apply to all components;
-  // one means apply to component (i), and two means apply to
-  // component (i,j),
-
-  typedef BCondBase<T,D,M,C> Base_t;
-
-  ParallelInterpolationFace(unsigned f,
-		       int i = Base_t::allComponents,
-		       int j = Base_t::allComponents)
-    : InterpolationFace<T,D,M,C>(f,i,j)
-  { }
-
-  // Apply the boundary condition to a particular Field.
-
-  virtual void apply( Field<T,D,M,C>& );
-
-  // Make a copy of the concrete type.
-
-  virtual Base_t * clone() const
-  {
-    return new ParallelInterpolationFace<T,D,M,C>( *this );
-  }
-
-  // Print out information about the BC to a stream.
-
-  virtual void write(std::ostream& out) const;
-};
+// template<class T, unsigned D,
+//          class M=UniformCartesian<D,double>,
+//          class C=typename M::DefaultCentering>
+// class ParallelInterpolationFace : public InterpolationFace<T,D,M,C>
+// {
+// public:
+//
+//   // Constructor takes zero, one, or two int's specifying components
+//   // of multicomponent types like Vektor/Tenzor/AntiTenzor/SymTenzor
+//   // this BC applies to.  Zero int's means apply to all components;
+//   // one means apply to component (i), and two means apply to
+//   // component (i,j),
+//
+//   typedef BCondBase<T,D,M,C> Base_t;
+//
+//   ParallelInterpolationFace(unsigned f,
+// 		       int i = Base_t::allComponents,
+// 		       int j = Base_t::allComponents)
+//     : InterpolationFace<T,D,M,C>(f,i,j)
+//   { }
+//
+//   // Apply the boundary condition to a particular Field.
+//
+//   virtual void apply( Field<T,D,M,C>& );
+//
+//   // Make a copy of the concrete type.
+//
+//   virtual Base_t * clone() const
+//   {
+//     return new ParallelInterpolationFace<T,D,M,C>( *this );
+//   }
+//
+//   // Print out information about the BC to a stream.
+//
+//   virtual void write(std::ostream& out) const;
+// };
 
 //////////////////////////////////////////////////////////////////////////
 
 
-template<class T,
-         unsigned D, 
-         class M=UniformCartesian<D,double>, 
-         class C=typename M::DefaultCentering>
-class ExtrapolateFace : public BCondBase<T,D,M,C>
-{
-public:
-  // Constructor takes zero, one, or two int's specifying components of 
-  // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
-  // Zero int's specified means apply to all components; one means apply to
-  // component (i), and two means apply to component (i,j),
-  typedef BCondBase<T,D,M,C> BCondBaseTDMC;
-  ExtrapolateFace(unsigned f, T o, T s, 
-		  int i = BCondBaseTDMC::allComponents,
-		  int j = BCondBaseTDMC::allComponents);
-
-  // Apply the boundary condition to a given Field.
-  virtual void apply( Field<T,D,M,C>& );
-
-  // Make a copy of the concrete type.
-  virtual BCondBase<T,D,M,C>* clone() const
-  {
-    return new ExtrapolateFace<T,D,M,C>( *this );
-  }
-
-  // Print out some information about the BC to a given stream.
-  virtual void write(std::ostream&) const;
-
-  const T& getOffset() const { return Offset; }
-  const T& getSlope() const { return Slope; }
-
-protected:
-  T Offset, Slope;
-};
+// template<class T,
+//          unsigned D,
+//          class M=UniformCartesian<D,double>,
+//          class C=typename M::DefaultCentering>
+// class ExtrapolateFace : public BCondBase<T,D,M,C>
+// {
+// public:
+//   // Constructor takes zero, one, or two int's specifying components of
+//   // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
+//   // Zero int's specified means apply to all components; one means apply to
+//   // component (i), and two means apply to component (i,j),
+//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   ExtrapolateFace(unsigned f, T o, T s,
+// 		  int i = BCondBaseTDMC::allComponents,
+// 		  int j = BCondBaseTDMC::allComponents);
+//
+//   // Apply the boundary condition to a given Field.
+//   virtual void apply( Field<T,D,M,C>& );
+//
+//   // Make a copy of the concrete type.
+//   virtual BCondBase<T,D,M,C>* clone() const
+//   {
+//     return new ExtrapolateFace<T,D,M,C>( *this );
+//   }
+//
+//   // Print out some information about the BC to a given stream.
+//   virtual void write(std::ostream&) const;
+//
+//   const T& getOffset() const { return Offset; }
+//   const T& getSlope() const { return Slope; }
+//
+// protected:
+//   T Offset, Slope;
+// };
 
 
 //////////////////////////////////////////////////////////////////////
@@ -306,77 +306,77 @@ protected:
 // function is halfway between the last physical element and the first guard
 // element.
 
-template<class T,
-         unsigned D, 
-         class M=UniformCartesian<D,double>, 
-         class C=typename M::DefaultCentering>
-class ExtrapolateAndZeroFace : public BCondBase<T,D,M,C>
-{
-public:
-  // Constructor takes zero, one, or two int's specifying components of 
-  // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
-  // Zero int's specified means apply to all components; one means apply to
-  // component (i), and two means apply to component (i,j),
-  typedef BCondBase<T,D,M,C> BCondBaseTDMC;
-  ExtrapolateAndZeroFace(unsigned f, T o, T s, 
-		  int i = BCondBaseTDMC::allComponents,
-		  int j = BCondBaseTDMC::allComponents);
+// template<class T,
+//          unsigned D,
+//          class M=UniformCartesian<D,double>,
+//          class C=typename M::DefaultCentering>
+// class ExtrapolateAndZeroFace : public BCondBase<T,D,M,C>
+// {
+// public:
+//   // Constructor takes zero, one, or two int's specifying components of
+//   // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
+//   // Zero int's specified means apply to all components; one means apply to
+//   // component (i), and two means apply to component (i,j),
+//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   ExtrapolateAndZeroFace(unsigned f, T o, T s,
+// 		  int i = BCondBaseTDMC::allComponents,
+// 		  int j = BCondBaseTDMC::allComponents);
+//
+//   // Apply the boundary condition to a given Field.
+//   virtual void apply( Field<T,D,M,C>& );
+//
+//   // Make a copy of the concrete type.
+//   virtual BCondBase<T,D,M,C>* clone() const
+//   {
+//     return new ExtrapolateAndZeroFace<T,D,M,C>( *this );
+//   }
+//
+//   // Print out some information about the BC to a given stream.
+//   virtual void write(std::ostream&) const;
+//
+//   const T& getOffset() const { return Offset; }
+//   const T& getSlope() const { return Slope; }
+//
+// protected:
+//   T Offset, Slope;
+// };
 
-  // Apply the boundary condition to a given Field.
-  virtual void apply( Field<T,D,M,C>& );
 
-  // Make a copy of the concrete type.
-  virtual BCondBase<T,D,M,C>* clone() const
-  {
-    return new ExtrapolateAndZeroFace<T,D,M,C>( *this );
-  }
-
-  // Print out some information about the BC to a given stream.
-  virtual void write(std::ostream&) const;
-
-  const T& getOffset() const { return Offset; }
-  const T& getSlope() const { return Slope; }
-
-protected:
-  T Offset, Slope;
-};
-
-
-template<class T,
-         unsigned D, 
-         class M=UniformCartesian<D,double>, 
-         class C=typename M::DefaultCentering>
-class ConstantFace : public ExtrapolateFace<T,D,M,C>
-{
-public: 
-  typedef BCondBase<T,D,M,C> BCondBaseTDMC;
-  ConstantFace(unsigned f, T c,
-	       int i = BCondBaseTDMC::allComponents,
-	       int j = BCondBaseTDMC::allComponents)
-    : ExtrapolateFace<T,D,M,C>(f,c,0,i,j) {}
-
-  // Print out information about the BC to a stream.
-  virtual void write(std::ostream& out) const;
-};
+// template<class T,
+//          unsigned D,
+//          class M=UniformCartesian<D,double>,
+//          class C=typename M::DefaultCentering>
+// class ConstantFace : public ExtrapolateFace<T,D,M,C>
+// {
+// public:
+//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   ConstantFace(unsigned f, T c,
+// 	       int i = BCondBaseTDMC::allComponents,
+// 	       int j = BCondBaseTDMC::allComponents)
+//     : ExtrapolateFace<T,D,M,C>(f,c,0,i,j) {}
+//
+//   // Print out information about the BC to a stream.
+//   virtual void write(std::ostream& out) const;
+// };
 
 //////////////////////////////////////////////////////////////////////
 
-template<class T,
-         unsigned D, 
-         class M=UniformCartesian<D,double>, 
-         class C=typename M::DefaultCentering>
-class ZeroFace : public ExtrapolateFace<T,D,M,C>
-{
-public: 
-  typedef BCondBase<T,D,M,C> BCondBaseTDMC;
-  ZeroFace(unsigned f,
-	   int i = BCondBaseTDMC::allComponents,
-	   int j = BCondBaseTDMC::allComponents)
-    : ExtrapolateFace<T,D,M,C>(f,0,0,i,j) {}
-
-  // Print out information about the BC to a stream.
-  virtual void write(std::ostream& out) const;
-};
+// template<class T,
+//          unsigned D,
+//          class M=UniformCartesian<D,double>,
+//          class C=typename M::DefaultCentering>
+// class ZeroFace : public ExtrapolateFace<T,D,M,C>
+// {
+// public:
+//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   ZeroFace(unsigned f,
+// 	   int i = BCondBaseTDMC::allComponents,
+// 	   int j = BCondBaseTDMC::allComponents)
+//     : ExtrapolateFace<T,D,M,C>(f,0,0,i,j) {}
+//
+//   // Print out information about the BC to a stream.
+//   virtual void write(std::ostream& out) const;
+// };
 
 //////////////////////////////////////////////////////////////////////
 
@@ -386,22 +386,22 @@ public:
 // this because the zero point of an odd function is halfway between the last
 // physical element and the first guard element.
 
-template<class T,
-         unsigned D, 
-         class M=UniformCartesian<D,double>, 
-         class C=typename M::DefaultCentering>
-class ZeroGuardsAndZeroFace : public ExtrapolateAndZeroFace<T,D,M,C>
-{
-public: 
-  typedef BCondBase<T,D,M,C> BCondBaseTDMC;
-  ZeroGuardsAndZeroFace(unsigned f,
-			int i = BCondBaseTDMC::allComponents,
-			int j = BCondBaseTDMC::allComponents)
-    : ExtrapolateAndZeroFace<T,D,M,C>(f,0,0,i,j) {}
-
-  // Print out information about the BC to a stream.
-  virtual void write(std::ostream& out) const;
-};
+// template<class T,
+//          unsigned D,
+//          class M=UniformCartesian<D,double>,
+//          class C=typename M::DefaultCentering>
+// class ZeroGuardsAndZeroFace : public ExtrapolateAndZeroFace<T,D,M,C>
+// {
+// public:
+//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   ZeroGuardsAndZeroFace(unsigned f,
+// 			int i = BCondBaseTDMC::allComponents,
+// 			int j = BCondBaseTDMC::allComponents)
+//     : ExtrapolateAndZeroFace<T,D,M,C>(f,0,0,i,j) {}
+//
+//   // Print out information about the BC to a stream.
+//   virtual void write(std::ostream& out) const;
+// };
 
 
 //////////////////////////////////////////////////////////////////////
@@ -427,34 +427,34 @@ public:
 // types. --Tim Williams 1/26/1999
 // ----------------------------------------------------------------------------
 
-template<class T,
-         unsigned D, 
-         class M=UniformCartesian<D,double>, 
-         class C=typename M::DefaultCentering>
-class LinearExtrapolateFace : public BCondBase<T,D,M,C>
-{
-public:
-  // Constructor takes zero, one, or two int's specifying components of 
-  // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
-  // Zero int's specified means apply to all components; one means apply to
-  // component (i), and two means apply to component (i,j),
-  typedef BCondBase<T,D,M,C> BCondBaseTDMC;
-  LinearExtrapolateFace(unsigned f) :
-    BCondBase<T,D,M,C>(f) {}
-
-  // Apply the boundary condition to a given Field.
-  virtual void apply( Field<T,D,M,C> &A);
-
-  // Make a copy of the concrete type.
-  virtual BCondBase<T,D,M,C>* clone() const
-  {
-    return new LinearExtrapolateFace<T,D,M,C>( *this );
-  }
-
-  // Print out some information about the BC to a given stream.
-  virtual void write(std::ostream&) const;
-
-};
+// template<class T,
+//          unsigned D,
+//          class M=UniformCartesian<D,double>,
+//          class C=typename M::DefaultCentering>
+// class LinearExtrapolateFace : public BCondBase<T,D,M,C>
+// {
+// public:
+//   // Constructor takes zero, one, or two int's specifying components of
+//   // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
+//   // Zero int's specified means apply to all components; one means apply to
+//   // component (i), and two means apply to component (i,j),
+//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   LinearExtrapolateFace(unsigned f) :
+//     BCondBase<T,D,M,C>(f) {}
+//
+//   // Apply the boundary condition to a given Field.
+//   virtual void apply( Field<T,D,M,C> &A);
+//
+//   // Make a copy of the concrete type.
+//   virtual BCondBase<T,D,M,C>* clone() const
+//   {
+//     return new LinearExtrapolateFace<T,D,M,C>( *this );
+//   }
+//
+//   // Print out some information about the BC to a given stream.
+//   virtual void write(std::ostream&) const;
+//
+// };
 
 
 //////////////////////////////////////////////////////////////////////
