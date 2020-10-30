@@ -22,9 +22,9 @@ target_link_libraries (
     boost_timer
 )
 
-add_executable (ParticleBConds ParticleBConds.cpp)
+add_executable (ParticleBC ParticleBC.cpp)
 target_link_libraries (
-    ParticleBConds
+    ParticleBC
     ippl
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}

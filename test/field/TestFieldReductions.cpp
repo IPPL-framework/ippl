@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     field.initialize(mesh, layout);
     
-    typename field_type::LField_t::view_type view = field(0).getView();
+    typename field_type::LField_t::view_type& view = field(0).getView();
 
 
     Kokkos::parallel_for("Assign lfield", 

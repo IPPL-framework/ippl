@@ -98,8 +98,8 @@ TEST_F(PICTest, Scatter) {
 
     double charge = 0.5;
 
-    typename bunch_type::particle_position_type::HostMirror R_host = Kokkos::create_mirror(bunch->R);
-    typename bunch_type::charge_container_type::HostMirror Q_host = Kokkos::create_mirror(bunch->Q);
+    typename bunch_type::particle_position_type::HostMirror R_host = bunch->R.getHostMirror();
+    typename bunch_type::charge_container_type::HostMirror Q_host = bunch->Q.getHostMirror();
     for(size_t i = 0; i < nParticles; ++i) {
         ippl::Vector<double, dim> r = {unif(eng), unif(eng), unif(eng)};
         R_host(i) = r;
@@ -107,8 +107,8 @@ TEST_F(PICTest, Scatter) {
     }
 
 
-    Kokkos::deep_copy(bunch->R, R_host);
-    Kokkos::deep_copy(bunch->Q, Q_host);
+    Kokkos::deep_copy(bunch->R.getView(), R_host);
+    Kokkos::deep_copy(bunch->Q.getView(), Q_host);
 
     *field = 0.0;
 

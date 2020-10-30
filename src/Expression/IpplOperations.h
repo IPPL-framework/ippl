@@ -215,7 +215,7 @@ namespace ippl {
              */
             KOKKOS_INLINE_FUNCTION
             auto apply() const {
-                typename E1::value_t res = 0.0;
+                typename E1::value_type res = 0.0;
                 for (size_t i = 0; i < E1::dim; ++i) {
                     res += u_m[i] * v_m[i];
                 }

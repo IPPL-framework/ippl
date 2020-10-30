@@ -43,36 +43,42 @@
 
 namespace ippl {
     namespace detail {
-        /*
-         * Functor to apply boundary conditions
-         */
-        template<typename T, unsigned Dim, class PT, class NDI>
-        struct ApplyBC {
-            PT pos_m;
-            NDI nr_m;
-            ParticleBConds<T, Dim> bcs_m;
-
-            ApplyBC(PT pos, const NDI& nr, const ParticleBConds<T, Dim>& bcs) {
-                pos_m = pos;
-                nr_m = nr;
-                bcs_m = bcs;
-            }
-
-            KOKKOS_INLINE_FUNCTION
-            void operator() (const size_t i, const size_t j) const {
-                pos_m(i)[j] = bcs_m.apply(pos_m(i)[j], j, nr_m);
-            }
-        };
-
-
         template<typename T, unsigned Dim>
-        template<class PT, class NDI>
-        void ParticleLayout<T, Dim>::applyBC(PT& R, const NDI& nr) {
-            using mdrange = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-            long int len = R.extent(0);
-            Kokkos::parallel_for("ParticleLayout::applyBC()",
-                                 mdrange({0, 0}, {len, Dim}),
-                                 ApplyBC<T, Dim, PT, NDI>(R, nr, bcs_m));
+        void ParticleLayout<T, Dim>::applyBC(const particle_position_type& R,
+                                             const NDRegion<T, Dim>& nr)
+        {
+            /* loop over all faces
+             * 0: lower x-face
+             * 1: lower y-face
+             * 2: lower z-face
+             * 3: upper x-face
+             * 4: upper y-face
+             * 5: upper z-face
+             */
+            for (unsigned i = 0; i < 2 * Dim; ++i) {
+                unsigned face = i % Dim;
+                switch (bcs_m[i]) {
+                    case BC::PERIODIC:
+                        Kokkos::parallel_for("Periodic BC",
+                                             R.getView().extent(0),
+                                             PeriodicBC(R.getView(), nr, face));
+                        break;
+                    case BC::REFLECTIVE:
+                        Kokkos::parallel_for("Reflective BC",
+                                             R.getView().extent(0),
+                                             ReflectiveBC(R.getView(), nr, face));
+                        break;
+                    case BC::SINK:
+                        Kokkos::parallel_for("Sink BC",
+                                             R.getView().extent(0),
+                                             SinkBC(R.getView(), nr, face));
+                        break;
+                    case BC::NO:
+                    default:
+                        break;
+                }
+                Kokkos::fence();
+            }
         }
     }
 }

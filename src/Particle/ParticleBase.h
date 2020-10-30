@@ -73,8 +73,6 @@
 #ifndef IPPL_PARTICLE_BASE_H
 #define IPPL_PARTICLE_BASE_H
 
-
-#include "Particle/ParticleAttrib.h"
 #include "Particle/ParticleLayout.h"
 
 
@@ -92,15 +90,14 @@ namespace ippl {
     public:
         typedef typename PLayout::vector_type vector_type;
         typedef typename PLayout::index_type  index_type;
-        typedef ParticleAttrib<vector_type>   particle_position_type;
+        typedef typename PLayout::particle_position_type particle_position_type;
         typedef ParticleAttrib<index_type>    particle_index_type;
         typedef typename detail::ParticleAttribBase<Properties...>::boolean_view_type boolean_view_type;
 
         typedef PLayout                           Layout_t;
         typedef std::vector<detail::ParticleAttribBase<Properties...>*> attribute_container_t;
         typedef typename attribute_container_t::iterator  attribute_iterator;
-        typedef ParticleBConds<typename PLayout::value_type, PLayout::dim> bcs_type;
-        typedef typename bcs_type::ParticleBCond bc_type;
+        typedef typename PLayout::bc_container_type bc_container_type;
 
     public:
         //! view of particle positions
@@ -131,7 +128,7 @@ namespace ippl {
          * ::ippl::detail::ParticleAttribBase *> > ::~vector") from a __host__ __device__ function("ippl::ParticleBase<
          * ::ippl::ParticleLayout<double, (unsigned int)3u> > ::~ParticleBase") is not allowed
          */
-        ~ParticleBase() { };
+        ~ParticleBase() {} // = default; //{ }
 
         /*!
          * Initialize the particle layout. Needs to be called
@@ -164,31 +161,20 @@ namespace ippl {
 
 
         /*!
-         * @returns the boundary condition of the particle layout
-         */
-        const bcs_type& getBConds() const {
-            return layout_m->getBConds();
-        }
-
-
-        /*!
          * Set all boundary conditions
          * @param bc the boundary conditions
          */
-        void setBConds(const bcs_type& bcs) {
-            layout_m->setBConds(bcs);
+        void setParticleBC(const bc_container_type& bcs) {
+            layout_m->setParticleBC(bcs);
         }
-
 
         /*!
-         * Set the boundary condition
-         * @param bc boundary condition
-         * @param i th boundary condition
+         * Set all boundary conditions to this BC
+         * @param bc the boundary conditions
          */
-        void setBCond(const bc_type& bc, const int i) {
-            layout_m->setBCond(bc, i);
+        void setParticleBC(BC bc) {
+            layout_m->setParticleBC(bc);
         }
-
 
 
         /*!

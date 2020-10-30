@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
 
     LField_t lfield(domain);
 
-    typename LField_t::view_type view = lfield.getView();
+    typename LField_t::view_type& view = lfield.getView();
 
     double pi = acos(-1.0);
 
