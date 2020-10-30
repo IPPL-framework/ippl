@@ -1,12 +1,5 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- *
- ***************************************************************************/
-
-#ifndef BCOND_H
-#define BCOND_H
+#ifndef IPPL_FIELD_BC_H
+#define IPPL_FIELD_BC_H
 
 #include "Utility/IpplInfo.h"
 #include "Utility/RefCounted.h"
@@ -18,9 +11,6 @@
 // forward declarations
 template <unsigned D> class NDIndex;
 template <class T, unsigned D> class Vektor;
-template <class T, unsigned D> class Tenzor;
-template <class T, unsigned D> class SymTenzor;
-template <class T, unsigned D> class AntiSymTenzor;
 template<unsigned D, class T> class UniformCartesian;
 template<class T, unsigned D> class LField;
 template<class T, unsigned D> class BareField;
@@ -34,115 +24,6 @@ std::ostream& operator<<(std::ostream&, const BConds<T,D,M,C>&);
 
 //////////////////////////////////////////////////////////////////////
 
-//
-// Traits used by the single-component version of the applicative templates.
-// General case: this covers intrinsic types like double, bool automatically:
-//
-
-template<class T>
-struct ApplyToComponentType 
-{
-  typedef T type;
-};
-
-//
-// Specializations for multicomponent IPPL types;
-//
-template<class T,unsigned D>
-struct ApplyToComponentType< Vektor<T,D> > 
-{
-  typedef T type;
-};
-
-template<class T,unsigned D>
-struct ApplyToComponentType< Tenzor<T,D> > 
-{
-  typedef T type;
-};
-
-template<class T,unsigned D>
-struct ApplyToComponentType< SymTenzor<T,D> > 
-{
-  typedef T type;
-};
-
-template<class T,unsigned D>
-struct ApplyToComponentType< AntiSymTenzor<T,D> > 
-{
-  typedef T type;
-};
-
-// Helper classes for getting info about number of indices into 
-// BCond-class ctor functions.
-// Define tag types (like iterator tags in stl):
-
-class scalar_tag
-{
-};
-
-class vektor_tag
-{
-};
-
-class tenzor_tag
-{
-};
-
-class symtenzor_tag
-{
-};
-
-class antisymtenzor_tag
-{
-};
-
-// Implement tag types for intrinsic types:
-inline scalar_tag get_tag(std::complex<double>) { return scalar_tag(); }
-inline scalar_tag get_tag(double)   { return scalar_tag(); }
-inline scalar_tag get_tag(float)    { return scalar_tag(); }
-inline scalar_tag get_tag(int)      { return scalar_tag(); }
-inline scalar_tag get_tag(bool)     { return scalar_tag(); }
-inline scalar_tag get_tag(short)    { return scalar_tag(); }
-
-// Tag for Vektor types:
-template<class T, unsigned D>
-inline vektor_tag 
-get_tag(Vektor<T,D>) { return vektor_tag(); }
-
-// Tag for Tenzor types:
-template<class T, unsigned D>
-inline tenzor_tag 
-get_tag(Tenzor<T,D>) { return tenzor_tag(); }
-
-// Tag for AntiSymTenzor types
-template<class T, unsigned D>
-inline antisymtenzor_tag 
-get_tag(AntiSymTenzor<T,D>) { return antisymtenzor_tag(); }
-
-// Tag for SymTenzor types
-template<class T, unsigned D>
-inline symtenzor_tag 
-get_tag(SymTenzor<T,D>) { return symtenzor_tag(); }
-
-// Functions which return an enum value indicating scalar, vector, tensor,
-// or anti/symtensor type; used in constructors for PeriodicFace, etc., to
-// determine how to turn two 1D component indices into a single index value
-// for pointer offsetting into the Tenzor/Anti/SymTenzor object:
-enum TensorOrder_e { IPPL_SCALAR=0, IPPL_VECTOR=1, IPPL_TENSOR=2, 
-		     IPPL_SYMTENSOR=3, IPPL_ANTISYMTENSOR=4 } ;
-inline TensorOrder_e getTensorOrder(const scalar_tag& )
-{return IPPL_SCALAR;}
-inline TensorOrder_e getTensorOrder(const vektor_tag& )
-{return IPPL_VECTOR;}
-inline TensorOrder_e getTensorOrder(const tenzor_tag& )
-{return IPPL_TENSOR;}
-inline TensorOrder_e getTensorOrder(const antisymtenzor_tag& )
-{return IPPL_ANTISYMTENSOR;}
-inline TensorOrder_e getTensorOrder(const symtenzor_tag& )
-{return IPPL_SYMTENSOR;}
-
-//////////////////////////////////////////////////////////////////////
-
 template<class T, unsigned D, class M, class C>
 class BCondBase : public RefCounted
 {
@@ -153,11 +34,9 @@ public:
 
   // Constructor takes:
   // face: the face to apply the boundary condition on.
-  // i,j : what component of T to apply the boundary condition to.
+  // i : what component of T to apply the boundary condition to.
   // The components default to setting all components.
-  BCondBase(unsigned int face,
-	    int i = allComponents,
-	    int j = allComponents);
+  BCondBase(unsigned int face, int i = allComponents);
   virtual ~BCondBase() { }
 
   virtual void apply( Field<T,D,M,C>& ) = 0;

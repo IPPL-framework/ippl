@@ -1,15 +1,3 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- *
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
-
-// include files
-#include "Field/BCond.h"
 #include "Field/BareField.h"
 #include "Index/NDIndex.h"
 #include "Index/Index.h"
@@ -53,37 +41,10 @@ inline void PETE_apply(const OP<T>&, T&, const T&)                          \
  */
 
 template<class T, unsigned int D, class M, class C>
-BCondBase<T,D,M,C>::BCondBase(unsigned int face, int i, int j)
+BCondBase<T,D,M,C>::BCondBase(unsigned int face, int i)
 : m_face(face), m_changePhysical(false)
 {
-  // Must figure out if two, one, or no component indices are specified
-  // for which this BC is to apply; of none are specified, it applies to
-  // all components of the elements (of type T).
-  if (j != BCondBase<T,D,M,C>::allComponents) {
-    if (i == BCondBase<T,D,M,C>::allComponents)
-      ERRORMSG("BCondBase(): component 2 specified, component 1 not."
-	       << endl);
-    // For two specified component indices, must turn the two integer component
-    // index values into a single int value for Component, which is used in
-    // pointer offsets in applicative templates elsewhere. How to do this
-    // depends on what kind of two-index multicomponent object T is. Implement
-    // only for Tenzor, AntiSymTenzor, and SymTenzor (for now, at least):
-    if (getTensorOrder(get_tag(T())) == IPPL_TENSOR) {
-      m_component = i + j*D;
-    } else if (getTensorOrder(get_tag(T())) == IPPL_SYMTENSOR) {
-      int lo = i < j ? i : j;
-      int hi = i > j ? i : j;
-      m_component = ((hi+1)*hi/2) + lo;
-    } else if (getTensorOrder(get_tag(T())) == IPPL_ANTISYMTENSOR) {
-      PAssert_GT(i, j);
-      m_component = ((i-1)*i/2) + j;
-    } else {
-      ERRORMSG(
-        "BCondBase(): something other than [Sym,AntiSym]Tenzor specified"
-	<< " two component indices; not implemented." << endl);
-    }
 
-  } else {
     // For only one specified component index (including the default case of
     // BCondBase::allComponents meaning apply to all components of T, just
     // assign the Component value for use in pointer offsets into
@@ -4804,109 +4765,6 @@ void ComponentLinearExtrapolateFaceBCApply(ComponentLinearExtrapolateFace
   }
 }
 
-
-//----------------------------------------------------------------------
-
-template<class T, unsigned D, class M, class C>
-PatchBC<T,D,M,C>::
-PatchBC(unsigned face)
-  : BCondBase<T,D,M,C>(face)
-{
-
-
-}
-
-//-----------------------------------------------------------------------------
-// PatchBC::apply(Field)
-//
-// Loop over the patches of the Field, and call the user supplied
-// apply(Field::iterator) member function on each.
-//-----------------------------------------------------------------------------
-
-template<class T, unsigned D, class M, class C>
-void PatchBC<T,D,M,C>::apply( Field<T,D,M,C>& A )
-{
-
-
-
-  //------------------------------------------------------------
-  // Find the slab that is the destination.
-  //------------------------------------------------------------
-
-  //
-  // Get the physical domain for A.
-  //
-  const NDIndex<D>& domain( A.getDomain() );
-
-  //
-  // Start the calculation for the slab we'll be filling by adding
-  // guard cells to the domain of A.
-  //
-  NDIndex<D> slab = AddGuardCells(domain,A.getGuardCellSizes());
-
-  //
-  // Get which direction is perpendicular to the face we'll be
-  // filling.
-  //
-  unsigned d = this->getFace()/2;
-
-  //
-  // If the face is odd, we're looking at the 'upper' face, and if it
-  // is even we're looking at the 'lower'.  Calculate the Index for
-  // the dimension d.
-  //
-  if ( this->getFace() & 1 )
-    slab[d] = Index( domain[d].max() + 1,  domain[d].max() + A.rightGuard(d));
-  else
-    slab[d] = Index( domain[d].min() - A.leftGuard(d), domain[d].min()-1 );
-
-  //
-  // Loop over all the vnodes.  We'll take action if it touches the slab.
-  //
-  int lfindex = 0;
-  typename Field<T,D,M,C>::iterator_if fill_i;
-  typename Field<T,D,M,C>::iterator p = A.begin();
-  for (fill_i=A.begin_if(); fill_i!=A.end_if(); ++fill_i, ++lfindex)
-    {
-      //
-      // Cache some things we will use often below.
-      // fill: the current lfield.
-      // fill_alloc: the total domain for that lfield.
-      //
-      LField<T,D> &fill = *(*fill_i).second;
-      const NDIndex<D> &fill_alloc = fill.getAllocated();
-      const NDIndex<D> &fill_owned = fill.getOwned();
-
-      //
-      // Is this an lfield we care about?
-      //
-      if ( slab.touches( fill_alloc ) )
-        {
-	  // need to worry about compression here
-	  fill.Uncompress();
-
-	  //
-          // Find what part of this lfield is in the slab.
-	  //
-          NDIndex<D> dest = slab.intersect( fill_alloc );
-
-	  //
-	  // Set the iterator to the right spot in the Field.
-	  //
-	  vec<int,D> v;
-	  for (int i=0; i<D; ++i)
-	    v[i] = dest[i].first();
-	  p.SetCurrentLocation( FieldLoc<D>(v,lfindex) );
-
-	  //
-	  // Let the user function do its stuff.
-	  //
-	  applyPatch(p,dest);
-        }
-    }
-}
-
-//----------------------------------------------------------------------
 
 #undef COMPONENT_APPLY_BUILTIN
 
