@@ -3,36 +3,63 @@
 
 #include "Field/BareField.h"
 #include "Meshes/Kokkos_UniformCartesian.h"
+#include "Field/BCond.h"
 
 namespace ippl {
 
     template<typename T, unsigned Dim,
             class Mesh = UniformCartesian<double, Dim>,
-            class Centering = typename Mesh::DefaultCentering >
+            class Cell = typename Mesh::DefaultCentering >
     class Field //: public FieldExpression<Field<T, Dim, Mesh, Centering>>
                 : public BareField<T, Dim> {
 
     public:
         typedef Mesh Mesh_t;
-        typedef Centering Centering_t;
+        typedef Cell Centering_t;
         typedef FieldLayout<Dim> Layout_t;
-//         typedef
-
+        typedef BConds<T, Dim, Mesh, Cell> bc_container;
         typedef typename BareField<T, Dim>::LField_t LField_t;
 
-        // A default constructor, which should be used only if the user calls the
-        // 'initialize' function before doing anything else.  There are no special
-        // checks in the rest of the Field methods to check that the Field has
-        // been properly initialized.
+        /*!
+         * Default constructor, which should be used only if the user calls the
+         * 'initialize' function before doing anything else.  There are no special
+         * checks in the rest of the Field methods to check that the Field has
+         * been properly initialized
+         */
         Field();
 
         virtual ~Field() = default;
 
-        // Constructors including a Mesh object as argument:
-        Field(Mesh_t&, Layout_t&);
+        /*!
+         * Constructor which includes a Mesh and Layout object as argument
+         * @param m mesh
+         * @param l field layout
+         */
+        Field(Mesh_t& m, Layout_t& l);
 
-        // Initialize the Field, also specifying a mesh
-        void initialize(Mesh_t&, Layout_t&);
+        /*!
+         * Constructor which includes a Mesh and Layout object as argument
+         * @param m mesh
+         * @param l field layout
+         * @param bc boundary conditions at each face
+         */
+        Field(Mesh_t& m, Layout_t& l, const bc_container& bc);
+
+        /*!
+         * Initialize the Field, specifying a mesh and a field layout
+         * @param m mesh
+         * @param l field layout
+         */
+        void initialize(Mesh_t& m, Layout_t& l);
+
+
+        /*!
+         * Initialize the Field, specifying a mesh and a field layout
+         * @param m mesh
+         * @param l field layout
+         * @param bc boundary conditions at each face
+         */
+        void initialize(Mesh_t& m, Layout_t& l, const bc_container& bc);
 
         // Access to the mesh
         Mesh_t& get_mesh() const { return *mesh_m; }
@@ -40,11 +67,9 @@ namespace ippl {
         // Assignment from constants and other arrays.
         using BareField<T, Dim>::operator=;
 
-//         using BareField<T, Dim>::operator[];
-
     private:
-        //   // The boundary conditions.
-        //   bcond_container Bc;
+        //! Boundary conditions.
+        bc_container bc_m;
 
         // The Mesh object, and a flag indicating if we constructed it
         Mesh_t* mesh_m;
@@ -60,9 +85,9 @@ namespace ippl {
         /*
          * Gradient
          */
-        template<typename T, unsigned Dim, class Mesh, class Centering>
-        struct field_meta_grad : public FieldExpression<field_meta_grad<T, Dim, Mesh, Centering>> {
-            field_meta_grad(const Field<T, Dim, Mesh, Centering>& u) : u_m(u) {
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        struct field_meta_grad : public FieldExpression<field_meta_grad<T, Dim, Mesh, Cell>> {
+            field_meta_grad(const Field<T, Dim, Mesh, Cell>& u) : u_m(u) {
                 Mesh& mesh = u.get_mesh();
 
                 xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
@@ -98,25 +123,25 @@ namespace ippl {
             }
 
         private:
-            const Field<T, Dim, Mesh, Centering>& u_m;
+            const Field<T, Dim, Mesh, Cell>& u_m;
             typename Mesh::vector_type xvector_m;
             typename Mesh::vector_type yvector_m;
             typename Mesh::vector_type zvector_m;
         };
     }
 
-    template<typename T, unsigned Dim, class Mesh, class Centering>
-    detail::field_meta_grad<T, Dim, Mesh, Centering> grad(const Field<T, Dim, Mesh, Centering>& u) {
-        return detail::field_meta_grad<T, Dim, Mesh, Centering>(u);
+    template<typename T, unsigned Dim, class Mesh, class Cell>
+    detail::field_meta_grad<T, Dim, Mesh, Cell> grad(const Field<T, Dim, Mesh, Cell>& u) {
+        return detail::field_meta_grad<T, Dim, Mesh, Cell>(u);
     }
 
     namespace detail {
         /*
          * Divergence
          */
-        template<typename T, unsigned Dim, class Mesh, class Centering>
-        struct field_meta_div : public FieldExpression<field_meta_div<T, Dim, Mesh, Centering>> {
-            field_meta_div(const Field<T, Dim, Mesh, Centering>& u) : u_m(u) {
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        struct field_meta_div : public FieldExpression<field_meta_div<T, Dim, Mesh, Cell>> {
+            field_meta_div(const Field<T, Dim, Mesh, Cell>& u) : u_m(u) {
                 Mesh& mesh = u.get_mesh();
 
                 xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
@@ -151,25 +176,25 @@ namespace ippl {
             }
 
         private:
-            const Field<T, Dim, Mesh, Centering>& u_m;
+            const Field<T, Dim, Mesh, Cell>& u_m;
             typename Mesh::vector_type xvector_m;
             typename Mesh::vector_type yvector_m;
             typename Mesh::vector_type zvector_m;
         };
     }
 
-    template<typename T, unsigned Dim, class Mesh, class Centering>
-    detail::field_meta_div<T, Dim, Mesh, Centering> div(const Field<T, Dim, Mesh, Centering>& u) {
-        return detail::field_meta_div<T, Dim, Mesh, Centering>(u);
+    template<typename T, unsigned Dim, class Mesh, class Cell>
+    detail::field_meta_div<T, Dim, Mesh, Cell> div(const Field<T, Dim, Mesh, Cell>& u) {
+        return detail::field_meta_div<T, Dim, Mesh, Cell>(u);
     }
 
     namespace detail {
         /*
          * Laplacian
          */
-        template<typename T, unsigned Dim, class Mesh, class Centering>
-        struct field_meta_laplace : public FieldExpression<field_meta_laplace<T, Dim, Mesh, Centering>> {
-            field_meta_laplace(const Field<T, Dim, Mesh, Centering>& u) : u_m(u) {
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        struct field_meta_laplace : public FieldExpression<field_meta_laplace<T, Dim, Mesh, Cell>> {
+            field_meta_laplace(const Field<T, Dim, Mesh, Cell>& u) : u_m(u) {
                 Mesh& mesh = u.get_mesh();
 
                 hvector_m[0] = 1.0 / std::pow(mesh.getMeshSpacing(0),2);
@@ -188,14 +213,14 @@ namespace ippl {
             }
 
         private:
-            const Field<T, Dim, Mesh, Centering>& u_m;
+            const Field<T, Dim, Mesh, Cell>& u_m;
             typename Mesh::vector_type hvector_m;
         };
     }
 
-    template<typename T, unsigned Dim, class Mesh, class Centering>
-    detail::field_meta_laplace<T, Dim, Mesh, Centering> laplace(const Field<T, Dim, Mesh, Centering>& u) {
-        return detail::field_meta_laplace<T, Dim, Mesh, Centering>(u);
+    template<typename T, unsigned Dim, class Mesh, class Cell>
+    detail::field_meta_laplace<T, Dim, Mesh, Cell> laplace(const Field<T, Dim, Mesh, Cell>& u) {
+        return detail::field_meta_laplace<T, Dim, Mesh, Cell>(u);
     }
 }
 

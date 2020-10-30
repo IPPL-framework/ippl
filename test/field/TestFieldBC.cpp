@@ -22,21 +22,26 @@ int main(int argc, char *argv[]) {
     double dx = 1.0 / double(pt);
     ippl::Vector<double, 3> hx = {dx, dx, dx};
     ippl::Vector<double, 3> origin = {0, 0, 0};
-    ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+
+    using Mesh_t = ippl::UniformCartesian<double, 3>;
+
+    Mesh_t mesh(owned, hx, origin);
 
 
     typedef ippl::Field<double, dim> field_type;
 //     typedef ippl::Field<ippl::Vector<double, dim>, dim> vector_field_type;
 
-    field_type field(mesh, layout);
+    field_type::bc_container bc;
 
-//     vector_field_type vfield(mesh, layout);
+    // Boundary conditions--zero on all faces:
+    for (unsigned int i = 0; i < 2 * dim; ++i) {
+        bc[i] = std::make_shared<ippl::ConstantFace<double, 3> >(i, 0.0);
+        std::cout << *bc[i] << std::endl;
+    }
+
+    field_type field(mesh, layout, bc);
 
     field = 1.0;
-
-//     vfield = grad(field);
-//
-//     vfield.write();
 
     return 0;
 }

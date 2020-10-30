@@ -1,12 +1,17 @@
 #ifndef IPPL_FIELD_BC_H
 #define IPPL_FIELD_BC_H
 
-#include "Utility/IpplInfo.h"
-#include "Utility/RefCounted.h"
-#include "Utility/vmap.h"
+// #include "Utility/IpplInfo.h"
+// #include "Utility/RefCounted.h"
+// #include "Utility/vmap.h"
 
+
+#include <array>
 #include <iostream>
-#include <complex>
+#include <memory>
+// #include <complex>
+
+// #include "Meshes/Kokkos_UniformCartesian.h"
 
 // forward declarations
 // template <unsigned D> class NDIndex;
@@ -15,17 +20,23 @@
 // template<class T, unsigned D> class LField;
 // template<class T, unsigned D> class BareField;
 // template<class T, unsigned D, class M, class C> class Field;
-// template <class T, unsigned D, class M, class C> class BCondBase;
+//
 // template <class T, unsigned D, class M, class C>
-// std::ostream& operator<<(std::ostream&, const BCondBase<T,D,M,C>&);
-// template <class T, unsigned D, class M, class C> class BConds;
 // template <class T, unsigned D, class M, class C>
-// std::ostream& operator<<(std::ostream&, const BConds<T,D,M,C>&);
 
 namespace ippl {
     namespace detail {
+        template<typename T, unsigned Dim, class Mesh, class Cell> class BCondBase;
+        template<typename T, unsigned Dim, class Mesh, class Cell> class BConds;
 
-        template<typename T, unsigned Dim, class Mesh, class Centering>
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        std::ostream& operator<<(std::ostream&, const BCondBase<T, Dim, Mesh, Cell>&);
+
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        std::ostream& operator<<(std::ostream&, const BConds<T, Dim, Mesh, Cell>&);
+
+
+        template<typename T, unsigned Dim, class Mesh, class Cell>
         class BCondBase
         {
         public:
@@ -37,12 +48,13 @@ namespace ippl {
             // i : what component of T to apply the boundary condition to.
             // The components default to setting all components.
             BCondBase(unsigned int face, int i = allComponents);
-            virtual ~BCondBase() { }
 
-            virtual void apply( Field<T,D,M,C>& ) = 0;
-            virtual BCondBase<T,D,M,C>* clone() const = 0;
+            virtual ~BCondBase() = default;
 
-            virtual void write(std::ostream&) const;
+//             virtual void apply( Field<T, Dim, Mesh, Cell>& ) = 0;
+//             virtual BCondBase<T, Dim, Mesh, Cell>* clone() const = 0;
+
+            virtual void write(std::ostream&) const = 0;
 
                 // Return component of Field element on which BC applies
             int getComponent() const { return m_component; }
@@ -69,70 +81,146 @@ namespace ippl {
         template<typename T,
                  unsigned Dim,
                  class Mesh = UniformCartesian<double, Dim>,
-                 class Centering = typename Mesh::DefaultCentering>
-        class BConds //: public vmap<int, RefCountedP< BCondBase<T,D,M,C> > >
+                 class Cell = typename Mesh::DefaultCentering>
+        class ExtrapolateFace : public BCondBase<T, Dim, Mesh, Cell>
         {
         public:
-            //   typedef typename vmap<int, RefCountedP <BCondBase<T,D,M,C> > >::iterator
-            //     iterator;
-            //   typedef typename vmap<int, RefCountedP <BCondBase<T,D,M,C> > >::const_iterator
-            //     const_iterator;
-            void apply( Field<T,D,M,C>& a );
-            bool changesPhysicalCells() const;
-            virtual void write(std::ostream&) const;
+            // Constructor takes zero, one, or two int's specifying components of
+            // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
+            // Zero int's specified means apply to all components; one means apply to
+            // component (i), and two means apply to component (i,j),
+            using base_type = BCondBase<T, Dim, Mesh, Cell>;
+
+            ExtrapolateFace(unsigned f, T o, T s,
+                            int i = base_type::allComponents)
+            : base_type(f, i)
+            , Offset(o)
+            , Slope(s)
+            {}
+
+            virtual ~ExtrapolateFace() = default;
+
+        // Apply the boundary condition to a given Field.
+//         virtual void apply( Field<T, Dim, Mesh, Cell>& );
+
+//         // Make a copy of the concrete type.
+//         virtual BCondBase<T, Dim, Mesh, Cell>* clone() const
+//         {
+//             return new ExtrapolateFace<T, Dim, Mesh, Cell>( *this );
+//         }
+
+        // Print out some information about the BC to a given stream.
+        virtual void write(std::ostream&) const {};
+
+        const T& getOffset() const { return Offset; }
+        const T& getSlope() const { return Slope; }
+
+        protected:
+            T Offset, Slope;
         };
     }
+
+
+
+    template<typename T,
+             unsigned Dim,
+             class Mesh = UniformCartesian<double, Dim>,
+             class Cell = typename Mesh::DefaultCentering>
+    class ConstantFace : public detail::ExtrapolateFace<T, Dim, Mesh, Cell>
+    {
+    public:
+        ConstantFace(unsigned int face, T constant)
+        : detail::ExtrapolateFace<T, Dim, Mesh, Cell>(face, constant, 0)
+        {}
+
+        // Print out information about the BC to a stream.
+        virtual void write(std::ostream& out) const;
+    };
+
+
+
+    template<typename T,
+             unsigned Dim,
+             class Mesh = UniformCartesian<double, Dim>,
+             class Cell = typename Mesh::DefaultCentering>
+    class BConds //: public vmap<int, RefCountedP< BCondBase<T, Dim, Mesh, Cell> > >
+    {
+    public:
+        using bc_type = detail::BCondBase<T, Dim, Mesh, Cell>;
+        //   typedef typename vmap<int, RefCountedP <BCondBase<T, Dim, Mesh, Cell> > >::iterator
+        //     iterator;
+        //   typedef typename vmap<int, RefCountedP <BCondBase<T, Dim, Mesh, Cell> > >::const_iterator
+        //     const_iterator;
+//             void apply( Field<T, Dim, Mesh, Cell>& a );
+        bool changesPhysicalCells() const;
+        virtual void write(std::ostream&) const;
+
+        const std::shared_ptr<bc_type>& operator[](const int& i) const noexcept {
+            return bc_m[i];
+        }
+
+        std::shared_ptr<bc_type>& operator[](const int& i) noexcept {
+            return bc_m[i];
+        }
+
+    private:
+        std::array<
+            std::shared_ptr<bc_type>,
+            2 * Dim
+        > bc_m;
+    };
 }
 
 //////////////////////////////////////////////////////////////////////
 
 // TJW: so far, componentwise specification of BCondNoAction not possible
 
-template<class T,
-         unsigned D, 
-         class M=UniformCartesian<D,double>, 
-         class C=typename M::DefaultCentering>
-class BCondNoAction : public BCondBase<T,D,M,C>
-{
-public:
-  BCondNoAction(int face) : BCondBase<T,D,M,C>(face) {}
-
-  virtual void apply( Field<T,D,M,C>& ) {}
-  BCondBase<T,D,M,C>* clone() const
-  {
-    return new BCondNoAction<T,D,M,C>( *this );
-  }
-
-  // Print out information about the BC to a stream.
-  virtual void write(std::ostream& out) const;
-};
+//     template<typename T,
+//             unsigned Dim,
+//             class Mesh = UniformCartesian<double, Dim>,
+//             class Cell = typename Mesh::DefaultCentering>
+//     class BCondNoAction : public detail::BCondBase<T, Dim, Mesh, Cell>
+//     {
+//     public:
+//         BCondNoAction(int face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
+//
+// //     virtual void apply( Field<T, Dim, Mesh, Cell>& ) {}
+//         detail::BCondBase<T, Dim, Mesh, Cell>* clone() const
+//         {
+//             return new BCondNoAction<T, Dim, Mesh, Cell>( *this );
+//         }
+//
+//         // Print out information about the BC to a stream.
+//         virtual void write(std::ostream& out) const;
+//     };
+// }
 
 //////////////////////////////////////////////////////////////////////
 
 // template<class T,
 //          unsigned D,
 //          class M=UniformCartesian<D,double>,
-//          class C=typename M::DefaultCentering>
-// class PeriodicFace : public BCondBase<T,D,M,C>
+//          class C= typename M::DefaultCentering>
+// class PeriodicFace : public BCondBase<T, Dim, Mesh, Cell>
 // {
 // public:
 //   // Constructor takes zero, one, or two int's specifying components of
 //   // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
 //   // Zero int's specified means apply to all components; one means apply to
 //   // component (i), and two means apply to component (i,j),
-//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   typedef BCondBase<T, Dim, Mesh, Cell> BCondBaseTDMC;
 //
 //   PeriodicFace(unsigned f,
 // 	       int i = BCondBaseTDMC::allComponents,
 // 	       int j = BCondBaseTDMC::allComponents);
 //
 //   // Apply the boundary condition to a particular Field.
-//   virtual void apply( Field<T,D,M,C>& );
+//   virtual void apply( Field<T, Dim, Mesh, Cell>& );
 //
 //   // Make a copy of the concrete type.
-//   virtual BCondBase<T,D,M,C>* clone() const
+//   virtual BCondBase<T, Dim, Mesh, Cell>* clone() const
 //   {
-//     return new PeriodicFace<T,D,M,C>( *this );
+//     return new PeriodicFace<T, Dim, Mesh, Cell>( *this );
 //   }
 //
 //   // Print out information about the BC to a stream.
@@ -147,27 +235,27 @@ public:
 // template<class T,
 //          unsigned D,
 //          class M=UniformCartesian<D,double>,
-//          class C=typename M::DefaultCentering>
-// class InterpolationFace : public BCondBase<T,D,M,C>
+//          class C= typename M::DefaultCentering>
+// class InterpolationFace : public BCondBase<T, Dim, Mesh, Cell>
 // {
 // public:
 //   // Constructor takes zero, one, or two int's specifying components of
 //   // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
 //   // Zero int's specified means apply to all components; one means apply to
 //   // component (i), and two means apply to component (i,j),
-//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   typedef BCondBase<T, Dim, Mesh, Cell> BCondBaseTDMC;
 //
 //   InterpolationFace(unsigned f,
 // 	       int i = BCondBaseTDMC::allComponents,
 // 	       int j = BCondBaseTDMC::allComponents);
 //
 //   // Apply the boundary condition to a particular Field.
-//   virtual void apply( Field<T,D,M,C>& );
+//   virtual void apply( Field<T, Dim, Mesh, Cell>& );
 //
 //   // Make a copy of the concrete type.
-//   virtual BCondBase<T,D,M,C>* clone() const
+//   virtual BCondBase<T, Dim, Mesh, Cell>* clone() const
 //   {
-//     return new InterpolationFace<T,D,M,C>( *this );
+//     return new InterpolationFace<T, Dim, Mesh, Cell>( *this );
 //   }
 //
 //   // Print out information about the BC to a stream.
@@ -178,8 +266,8 @@ public:
 
 // template<class T, unsigned D,
 //          class M=UniformCartesian<D,double>,
-//          class C=typename M::DefaultCentering>
-// class ParallelPeriodicFace : public PeriodicFace<T,D,M,C>
+//          class C= typename M::DefaultCentering>
+// class ParallelPeriodicFace : public PeriodicFace<T, Dim, Mesh, Cell>
 // {
 // public:
 //
@@ -189,23 +277,23 @@ public:
 //   // one means apply to component (i), and two means apply to
 //   // component (i,j),
 //
-//   typedef BCondBase<T,D,M,C> Base_t;
+//   typedef BCondBase<T, Dim, Mesh, Cell> Base_t;
 //
 //   ParallelPeriodicFace(unsigned f,
 // 		       int i = Base_t::allComponents,
 // 		       int j = Base_t::allComponents)
-//     : PeriodicFace<T,D,M,C>(f,i,j)
+//     : PeriodicFace<T, Dim, Mesh, Cell>(f,i,j)
 //   { }
 //
 //   // Apply the boundary condition to a particular Field.
 //
-//   virtual void apply( Field<T,D,M,C>& );
+//   virtual void apply( Field<T, Dim, Mesh, Cell>& );
 //
 //   // Make a copy of the concrete type.
 //
 //   virtual Base_t * clone() const
 //   {
-//     return new ParallelPeriodicFace<T,D,M,C>( *this );
+//     return new ParallelPeriodicFace<T, Dim, Mesh, Cell>( *this );
 //   }
 //
 //   // Print out information about the BC to a stream.
@@ -222,8 +310,8 @@ public:
 
 // template<class T, unsigned D,
 //          class M=UniformCartesian<D,double>,
-//          class C=typename M::DefaultCentering>
-// class ParallelInterpolationFace : public InterpolationFace<T,D,M,C>
+//          class C= typename M::DefaultCentering>
+// class ParallelInterpolationFace : public InterpolationFace<T, Dim, Mesh, Cell>
 // {
 // public:
 //
@@ -233,23 +321,23 @@ public:
 //   // one means apply to component (i), and two means apply to
 //   // component (i,j),
 //
-//   typedef BCondBase<T,D,M,C> Base_t;
+//   typedef BCondBase<T, Dim, Mesh, Cell> Base_t;
 //
 //   ParallelInterpolationFace(unsigned f,
 // 		       int i = Base_t::allComponents,
 // 		       int j = Base_t::allComponents)
-//     : InterpolationFace<T,D,M,C>(f,i,j)
+//     : InterpolationFace<T, Dim, Mesh, Cell>(f,i,j)
 //   { }
 //
 //   // Apply the boundary condition to a particular Field.
 //
-//   virtual void apply( Field<T,D,M,C>& );
+//   virtual void apply( Field<T, Dim, Mesh, Cell>& );
 //
 //   // Make a copy of the concrete type.
 //
 //   virtual Base_t * clone() const
 //   {
-//     return new ParallelInterpolationFace<T,D,M,C>( *this );
+//     return new ParallelInterpolationFace<T, Dim, Mesh, Cell>( *this );
 //   }
 //
 //   // Print out information about the BC to a stream.
@@ -258,43 +346,6 @@ public:
 // };
 
 //////////////////////////////////////////////////////////////////////////
-
-
-// template<class T,
-//          unsigned D,
-//          class M=UniformCartesian<D,double>,
-//          class C=typename M::DefaultCentering>
-// class ExtrapolateFace : public BCondBase<T,D,M,C>
-// {
-// public:
-//   // Constructor takes zero, one, or two int's specifying components of
-//   // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
-//   // Zero int's specified means apply to all components; one means apply to
-//   // component (i), and two means apply to component (i,j),
-//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
-//   ExtrapolateFace(unsigned f, T o, T s,
-// 		  int i = BCondBaseTDMC::allComponents,
-// 		  int j = BCondBaseTDMC::allComponents);
-//
-//   // Apply the boundary condition to a given Field.
-//   virtual void apply( Field<T,D,M,C>& );
-//
-//   // Make a copy of the concrete type.
-//   virtual BCondBase<T,D,M,C>* clone() const
-//   {
-//     return new ExtrapolateFace<T,D,M,C>( *this );
-//   }
-//
-//   // Print out some information about the BC to a given stream.
-//   virtual void write(std::ostream&) const;
-//
-//   const T& getOffset() const { return Offset; }
-//   const T& getSlope() const { return Slope; }
-//
-// protected:
-//   T Offset, Slope;
-// };
-
 
 //////////////////////////////////////////////////////////////////////
 
@@ -307,26 +358,26 @@ public:
 // template<class T,
 //          unsigned D,
 //          class M=UniformCartesian<D,double>,
-//          class C=typename M::DefaultCentering>
-// class ExtrapolateAndZeroFace : public BCondBase<T,D,M,C>
+//          class C= typename M::DefaultCentering>
+// class ExtrapolateAndZeroFace : public BCondBase<T, Dim, Mesh, Cell>
 // {
 // public:
 //   // Constructor takes zero, one, or two int's specifying components of
 //   // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
 //   // Zero int's specified means apply to all components; one means apply to
 //   // component (i), and two means apply to component (i,j),
-//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   typedef BCondBase<T, Dim, Mesh, Cell> BCondBaseTDMC;
 //   ExtrapolateAndZeroFace(unsigned f, T o, T s,
 // 		  int i = BCondBaseTDMC::allComponents,
 // 		  int j = BCondBaseTDMC::allComponents);
 //
 //   // Apply the boundary condition to a given Field.
-//   virtual void apply( Field<T,D,M,C>& );
+//   virtual void apply( Field<T, Dim, Mesh, Cell>& );
 //
 //   // Make a copy of the concrete type.
-//   virtual BCondBase<T,D,M,C>* clone() const
+//   virtual BCondBase<T, Dim, Mesh, Cell>* clone() const
 //   {
-//     return new ExtrapolateAndZeroFace<T,D,M,C>( *this );
+//     return new ExtrapolateAndZeroFace<T, Dim, Mesh, Cell>( *this );
 //   }
 //
 //   // Print out some information about the BC to a given stream.
@@ -339,38 +390,20 @@ public:
 //   T Offset, Slope;
 // };
 
-
-// template<class T,
-//          unsigned D,
-//          class M=UniformCartesian<D,double>,
-//          class C=typename M::DefaultCentering>
-// class ConstantFace : public ExtrapolateFace<T,D,M,C>
-// {
-// public:
-//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
-//   ConstantFace(unsigned f, T c,
-// 	       int i = BCondBaseTDMC::allComponents,
-// 	       int j = BCondBaseTDMC::allComponents)
-//     : ExtrapolateFace<T,D,M,C>(f,c,0,i,j) {}
-//
-//   // Print out information about the BC to a stream.
-//   virtual void write(std::ostream& out) const;
-// };
-
 //////////////////////////////////////////////////////////////////////
 
 // template<class T,
 //          unsigned D,
 //          class M=UniformCartesian<D,double>,
-//          class C=typename M::DefaultCentering>
-// class ZeroFace : public ExtrapolateFace<T,D,M,C>
+//          class C= typename M::DefaultCentering>
+// class ZeroFace : public ExtrapolateFace<T, Dim, Mesh, Cell>
 // {
 // public:
-//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   typedef BCondBase<T, Dim, Mesh, Cell> BCondBaseTDMC;
 //   ZeroFace(unsigned f,
 // 	   int i = BCondBaseTDMC::allComponents,
 // 	   int j = BCondBaseTDMC::allComponents)
-//     : ExtrapolateFace<T,D,M,C>(f,0,0,i,j) {}
+//     : ExtrapolateFace<T, Dim, Mesh, Cell>(f,0,0,i,j) {}
 //
 //   // Print out information about the BC to a stream.
 //   virtual void write(std::ostream& out) const;
@@ -387,15 +420,15 @@ public:
 // template<class T,
 //          unsigned D,
 //          class M=UniformCartesian<D,double>,
-//          class C=typename M::DefaultCentering>
-// class ZeroGuardsAndZeroFace : public ExtrapolateAndZeroFace<T,D,M,C>
+//          class C= typename M::DefaultCentering>
+// class ZeroGuardsAndZeroFace : public ExtrapolateAndZeroFace<T, Dim, Mesh, Cell>
 // {
 // public:
-//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   typedef BCondBase<T, Dim, Mesh, Cell> BCondBaseTDMC;
 //   ZeroGuardsAndZeroFace(unsigned f,
 // 			int i = BCondBaseTDMC::allComponents,
 // 			int j = BCondBaseTDMC::allComponents)
-//     : ExtrapolateAndZeroFace<T,D,M,C>(f,0,0,i,j) {}
+//     : ExtrapolateAndZeroFace<T, Dim, Mesh, Cell>(f,0,0,i,j) {}
 //
 //   // Print out information about the BC to a stream.
 //   virtual void write(std::ostream& out) const;
@@ -428,25 +461,25 @@ public:
 // template<class T,
 //          unsigned D,
 //          class M=UniformCartesian<D,double>,
-//          class C=typename M::DefaultCentering>
-// class LinearExtrapolateFace : public BCondBase<T,D,M,C>
+//          class C= typename M::DefaultCentering>
+// class LinearExtrapolateFace : public BCondBase<T, Dim, Mesh, Cell>
 // {
 // public:
 //   // Constructor takes zero, one, or two int's specifying components of
 //   // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
 //   // Zero int's specified means apply to all components; one means apply to
 //   // component (i), and two means apply to component (i,j),
-//   typedef BCondBase<T,D,M,C> BCondBaseTDMC;
+//   typedef BCondBase<T, Dim, Mesh, Cell> BCondBaseTDMC;
 //   LinearExtrapolateFace(unsigned f) :
-//     BCondBase<T,D,M,C>(f) {}
+//     BCondBase<T, Dim, Mesh, Cell>(f) {}
 //
 //   // Apply the boundary condition to a given Field.
-//   virtual void apply( Field<T,D,M,C> &A);
+//   virtual void apply( Field<T, Dim, Mesh, Cell> &A);
 //
 //   // Make a copy of the concrete type.
-//   virtual BCondBase<T,D,M,C>* clone() const
+//   virtual BCondBase<T, Dim, Mesh, Cell>* clone() const
 //   {
-//     return new LinearExtrapolateFace<T,D,M,C>( *this );
+//     return new LinearExtrapolateFace<T, Dim, Mesh, Cell>( *this );
 //   }
 //
 //   // Print out some information about the BC to a given stream.
@@ -462,21 +495,25 @@ public:
 // write function for each of the above base classes.
 //
 
-template<class T, unsigned D, class M, class C >
-inline std::ostream&
-operator<<(std::ostream& o, const BCondBase<T,D,M,C>& bc)
-{
-  bc.write(o);
-  return o;
-}
+namespace ippl {
+    namespace detail {
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        inline std::ostream&
+        operator<<(std::ostream& os, const BCondBase<T, Dim, Mesh, Cell>& bc)
+        {
+            bc.write(os);
+            return os;
+        }
 
 
-template<class T, unsigned D, class M, class C >
-inline std::ostream&
-operator<<(std::ostream& o, const BConds<T,D,M,C>& bc)
-{
-  bc.write(o);
-  return o;
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        inline std::ostream&
+        operator<<(std::ostream& os, const BConds<T, Dim, Mesh, Cell>& bc)
+        {
+            bc.write(os);
+            return os;
+        }
+    }
 }
 
 #include "Field/BCond.hpp"

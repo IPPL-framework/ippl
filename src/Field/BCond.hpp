@@ -1,57 +1,58 @@
-#include "Field/BareField.h"
-#include "Index/NDIndex.h"
-#include "Index/Index.h"
-#include "Field/GuardCellSizes.h"
-#include "Field/BrickIterator.h"
-#include "Field/BrickExpression.h"
-#include "Meshes/Centering.h"
-#include "Meshes/CartesianCentering.h"
-#include "Utility/IpplInfo.h"
-#include "Utility/PAssert.h"
-#include "AppTypes/AppTypeTraits.h"
+// #include "Field/BareField.h"
+// #include "Index/NDIndex.h"
+// #include "Index/Index.h"
+// #include "Field/GuardCellSizes.h"
+// #include "Field/BrickIterator.h"
+// #include "Field/BrickExpression.h"
+// #include "Meshes/Centering.h"
+// #include "Meshes/CartesianCentering.h"
+// #include "Utility/IpplInfo.h"
+// #include "Utility/PAssert.h"
+// #include "AppTypes/AppTypeTraits.h"
 
 
-#include <iostream>
-#include <typeinfo>
-#include <vector>
+// #include <iostream>
+// #include <typeinfo>
+// #include <vector>
 
 //////////////////////////////////////////////////////////////////////
 
-template<class T, unsigned D, class M, class C>
-int BCondBase<T,D,M,C>::allComponents = -9999;
+template<typename T, unsigned Dim, class Mesh, class Cell>
+int ippl::detail::BCondBase<T, Dim, Mesh, Cell>::allComponents = -9999;
 
 //////////////////////////////////////////////////////////////////////
 
 // Use this macro to specialize PETE_apply functions for component-wise
 // operators and built-in types and print an error message.
-
+/*
 #define COMPONENT_APPLY_BUILTIN(OP,T)                                       \
 inline void PETE_apply(const OP<T>&, T&, const T&)                          \
 {                                                                           \
   ERRORMSG("Component boundary condition on a scalar (T)." << endl);        \
   Ippl::abort();                                                           \
-}
+}*/
 
 
 /*
 
-  Constructor for BCondBase<T,D,M,C>
+  Constructor for BCondBase<T, Dim, Mesh, Cell>
   Records the face, and figures out what component to remember.
 
  */
 
-template<class T, unsigned int D, class M, class C>
-BCondBase<T,D,M,C>::BCondBase(unsigned int face, int i)
-: m_face(face), m_changePhysical(false)
-{
+namespace ippl {
+    namespace detail {
 
-    // For only one specified component index (including the default case of
-    // BCondBase::allComponents meaning apply to all components of T, just
-    // assign the Component value for use in pointer offsets into
-    // single-component-index types in applicative templates elsewhere:
-    m_component = i;
-  }
-}
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        BCondBase<T, Dim, Mesh, Cell>::BCondBase(unsigned int face, int i)
+        : m_face(face), m_changePhysical(false)
+        {
+            // For only one specified component index (including the default case of
+            // BCondBase::allComponents meaning apply to all components of T, just
+            // assign the Component value for use in pointer offsets into
+            // single-component-index types in applicative templates elsewhere:
+            m_component = i;
+        }
 
 //////////////////////////////////////////////////////////////////////
 
@@ -64,10 +65,12 @@ BCondBase<T,D,M,C>::BCondBase(unsigned int face, int i)
 
  */
 
-template<class T, unsigned int D, class M, class C>
-void BCondBase<T,D,M,C>::write(std::ostream& out) const
-{
-  out << "BCondBase" << ", Face=" << m_face;
+//         template<typename T, unsigned Dim, class Mesh, class Cell>
+//         void BCondBase<T, Dim, Mesh, Cell>::write(std::ostream& out) const
+//         {
+//             out << "BCondBase" << ", Face=" << m_face;
+//         }
+    }
 }
 
 // template<class T, unsigned int D, class M, class C>
@@ -108,14 +111,16 @@ void BCondBase<T,D,M,C>::write(std::ostream& out) const
 //   out << "ZeroGuardsAndZeroFace" << ", Face=" << BCondBase<T,D,M,C>::m_face;
 // }
 //
-// template<class T, unsigned int D, class M, class C>
-// void ConstantFace<T,D,M,C>::write(std::ostream& out) const
-// {
-//   out << "ConstantFace"
-//       << ", Face=" << BCondBase<T,D,M,C>::m_face
-//       << ", Constant=" << this->Offset
-//       << std::endl;
-// }
+
+namespace ippl {
+    template<typename T, unsigned Dim, class Mesh, class Cell>
+    void ConstantFace<T, Dim, Mesh, Cell>::write(std::ostream& out) const
+    {
+        out << "ConstantFace"
+            << ", Face=" << this->m_face
+            << ", Constant=" << this->Offset;
+    }
+}
 //
 // template<class T, unsigned D, class M, class C>
 // void
@@ -147,43 +152,40 @@ void BCondBase<T,D,M,C>::write(std::ostream& out) const
 // }
 
 namespace ippl {
-    namespace detail {
-
-        template<class T, unsigned D, class M, class C>
+        template<typename T, unsigned Dim, class Mesh, class Cell>
         void
-        BConds<T,D,M,C>::write(std::ostream& os) const
+        BConds<T, Dim, Mesh, Cell>::write(std::ostream& os) const
         {
             os << "BConds:(" << std::endl;
-            const_iterator p=this->begin();
-            while (p!=this->end())
-            {
-                (*p).second->write(o);
-                ++p;
-                if (p!=this->end())
-                    os << " , " << std::endl;
-                else
-                    os << std::endl << ")" << std::endl << std::endl;
-            }
+//             const_iterator p=this->begin();
+//             while (p!=this->end())
+//             {
+//                 (*p).second->write(o);
+//                 ++p;
+//                 if (p!=this->end())
+//                     os << " , " << std::endl;
+//                 else
+//                     os << std::endl << ")" << std::endl << std::endl;
+//             }
         }
 
-        template<class T, unsigned D, class M, class C>
-        void
-        BConds<T,D,M,C>::apply( Field<T,D,M,C>& a )
-        {
-            for (iterator p=this->begin(); p!=this->end(); ++p)
-                (*p).second->apply(a);
-        }
+//         template<typename T, unsigned Dim, class Mesh, class Centering
+//         void
+//         BConds<T, Dim, Mesh, Cell>::apply( Field<T, Dim, Mesh, Cell>& a )
+//         {
+//             for (iterator p=this->begin(); p!=this->end(); ++p)
+//                 (*p).second->apply(a);
+//         }
 
-        template<class T, unsigned D, class M, class C>
+        template<typename T, unsigned Dim, class Mesh, class Cell>
         bool
-        BConds<T,D,M,C>::changesPhysicalCells() const
+        BConds<T, Dim, Mesh, Cell>::changesPhysicalCells() const
         {
-            for (const_iterator p=this->begin(); p!=this->end(); ++p)
-                if ((*p).second->changesPhysicalCells())
-                    return true;
+//             for (const_iterator p=this->begin(); p!=this->end(); ++p)
+//                 if ((*p).second->changesPhysicalCells())
+//                     return true;
             return false;
         }
-    }
 }
 
 //=============================================================================
@@ -1865,8 +1867,8 @@ namespace ippl {
 ////////////////////////////////////////
 // BENI adds CalcParallelInterpolationDomain
 /////////////////////////////////////////////
-template <class T, unsigned D, class M>
-inline void
+// template <class T, unsigned D, class M>
+// inline void
 // CalcParallelInterpolationDomain(const Field<T,D,M,Cell> &A,
 // 			   const ParallelInterpolationFace<T,D,M,Cell>& pf,
 // 			   NDIndex<D> &src_slab,
@@ -3382,7 +3384,7 @@ inline void
 // Applicative templates for ExtrapolateAndZeroFace:
 
 // Standard, for applying to all components of elemental type:
-template<class T>
+// template<class T>
 // struct OpExtrapolateAndZero
 // {
 //   OpExtrapolateAndZero(const T& o, const T& s) : Offset(o), Slope(s) {}
@@ -4549,4 +4551,4 @@ template<class T>
 //   }
 // }
 
-#undef COMPONENT_APPLY_BUILTIN
+// #undef COMPONENT_APPLY_BUILTIN

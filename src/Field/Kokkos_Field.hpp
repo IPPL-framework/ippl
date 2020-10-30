@@ -1,30 +1,43 @@
 namespace ippl {
 
-    //////////////////////////////////////////////////////////////////////////
-    // A default constructor, which should be used only if the user calls the
-    // 'initialize' function before doing anything else.  There are no special
-    // checks in the rest of the Field methods to check that the Field has
-    // been properly initialized
-    template<class T, unsigned Dim, class Mesh, class Centering>
-    Field<T, Dim, Mesh, Centering>::Field()
+    template<class T, unsigned Dim, class Mesh, class Cell>
+    Field<T, Dim, Mesh, Cell>::Field()
     : BareField<T, Dim>()
     , mesh_m(nullptr)
     { }
 
-    //////////////////////////////////////////////////////////////////////////
-    // Constructors which include a Mesh object as argument
-    template<class T, unsigned Dim, class Mesh, class Centering>
-    Field<T, Dim, Mesh, Centering>::Field(Mesh_t& m, Layout_t& l)
-        : BareField<T,Dim>(l)
-        , mesh_m(&m)
+
+    template<class T, unsigned Dim, class Mesh, class Cell>
+    Field<T, Dim, Mesh, Cell>::Field(Mesh_t& m, Layout_t& l)
+    : BareField<T,Dim>(l)
+    , mesh_m(&m)
     { }
 
 
-    //////////////////////////////////////////////////////////////////////////
-    // Initialize the Field, also specifying a mesh
-    template<class T, unsigned Dim, class Mesh, class Centering>
-    void Field<T, Dim, Mesh, Centering>::initialize(Mesh_t& m, Layout_t& l) {
+    template<class T, unsigned Dim, class Mesh, class Cell>
+    Field<T, Dim, Mesh, Cell>::Field(Mesh_t& m, Layout_t& l,
+                                          const bc_container& bc)
+    : Field<T,Dim>(m, l)
+    {
+        for (unsigned int i = 0; i < 2 * Dim; ++i) {
+            bc_m[i] = bc[i];
+        }
+    }
+
+
+    template<class T, unsigned Dim, class Mesh, class Cell>
+    void Field<T, Dim, Mesh, Cell>::initialize(Mesh_t& m, Layout_t& l)
+    {
         BareField<T,Dim>::initialize(l);
         mesh_m = &m;
+    }
+
+
+    template<class T, unsigned Dim, class Mesh, class Cell>
+    void Field<T, Dim, Mesh, Cell>::initialize(Mesh_t& m, Layout_t& l,
+                                                    const bc_container& bc)
+    {
+        initialize(m, l);
+        bc_m = bc;
     }
 }
