@@ -8,11 +8,11 @@ set (_HDRS
 #     AssignGeneralIBF.hpp
 #     Assign.h
 #     AssignTags.h
-    BareField.hpp
     BareField.h
+    BareField.hpp
 #     BareFieldIterator.h
-#     BCond.hpp
-#     BCond.h
+    BCond.h
+    BCond.hpp
 #     BrickExpression.hpp
 #     BrickExpression.h
 #     BrickIterator.hpp
@@ -21,17 +21,17 @@ set (_HDRS
 #     CompressedBrickIterator.h
 #     Field.hpp
 #     Field.h
-    Kokkos_Field.hpp
     Kokkos_Field.h
+    Kokkos_Field.hpp
 #     FieldLoc.h
 #     FieldSpec.h
-    GuardCellSizes.hpp
     GuardCellSizes.h
+    GuardCellSizes.hpp
 #     IndexedBareField.hpp
 #     IndexedBareField.h
 #     IndexedField.h
-    LField.hpp
     LField.h
+    LField.hpp
 #     ReductionLoc.hpp
 #     ReductionLoc.h
     )

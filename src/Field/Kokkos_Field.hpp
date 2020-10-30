@@ -5,16 +5,16 @@ namespace ippl {
     // 'initialize' function before doing anything else.  There are no special
     // checks in the rest of the Field methods to check that the Field has
     // been properly initialized
-    template<class T, unsigned Dim, class M, class C>
-    Field<T,Dim,M,C>::Field()
+    template<class T, unsigned Dim, class Mesh, class Centering>
+    Field<T, Dim, Mesh, Centering>::Field()
     : BareField<T, Dim>()
     , mesh_m(nullptr)
     { }
 
     //////////////////////////////////////////////////////////////////////////
     // Constructors which include a Mesh object as argument
-    template<class T, unsigned Dim, class M, class C>
-    Field<T,Dim,M,C>::Field(Mesh_t& m, Layout_t& l)
+    template<class T, unsigned Dim, class Mesh, class Centering>
+    Field<T, Dim, Mesh, Centering>::Field(Mesh_t& m, Layout_t& l)
         : BareField<T,Dim>(l)
         , mesh_m(&m)
     { }
@@ -22,8 +22,8 @@ namespace ippl {
 
     //////////////////////////////////////////////////////////////////////////
     // Initialize the Field, also specifying a mesh
-    template<class T, unsigned Dim, class M, class C>
-    void Field<T,Dim,M,C>::initialize(Mesh_t& m, Layout_t& l) {
+    template<class T, unsigned Dim, class Mesh, class Centering>
+    void Field<T, Dim, Mesh, Centering>::initialize(Mesh_t& m, Layout_t& l) {
         BareField<T,Dim>::initialize(l);
         mesh_m = &m;
     }

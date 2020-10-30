@@ -22,69 +22,67 @@
 // template <class T, unsigned D, class M, class C>
 // std::ostream& operator<<(std::ostream&, const BConds<T,D,M,C>&);
 
-//////////////////////////////////////////////////////////////////////
+namespace ippl {
+    namespace detail {
 
-template<class T, unsigned D, class M, class C>
-class BCondBase : public RefCounted
-{
-public:
+        template<typename T, unsigned Dim, class Mesh, class Centering>
+        class BCondBase
+        {
+        public:
+            // Special value designating application to all components of elements:
+            static int allComponents;
 
-  // Special value designating application to all components of elements:
-  static int allComponents;
+            // Constructor takes:
+            // face: the face to apply the boundary condition on.
+            // i : what component of T to apply the boundary condition to.
+            // The components default to setting all components.
+            BCondBase(unsigned int face, int i = allComponents);
+            virtual ~BCondBase() { }
 
-  // Constructor takes:
-  // face: the face to apply the boundary condition on.
-  // i : what component of T to apply the boundary condition to.
-  // The components default to setting all components.
-  BCondBase(unsigned int face, int i = allComponents);
-  virtual ~BCondBase() { }
+            virtual void apply( Field<T,D,M,C>& ) = 0;
+            virtual BCondBase<T,D,M,C>* clone() const = 0;
 
-  virtual void apply( Field<T,D,M,C>& ) = 0;
-  virtual BCondBase<T,D,M,C>* clone() const = 0;
+            virtual void write(std::ostream&) const;
 
-  virtual void write(std::ostream&) const;
+                // Return component of Field element on which BC applies
+            int getComponent() const { return m_component; }
 
-  // Return component of Field element on which BC applies
-  int getComponent() const { return m_component; }
+            // Return face on which BC applies
+            unsigned int getFace() const { return m_face; }
 
-  // Return face on which BC applies
-  unsigned int getFace() const { return m_face; }
+            // Returns whether or not this BC changes physical cells.
+            bool changesPhysicalCells() const { return m_changePhysical; }
 
-  // Returns whether or not this BC changes physical cells.
-  bool changesPhysicalCells() const { return m_changePhysical; }
+        protected:
+            // Following are hooks for BC-by-Field-element-component support:
+            // Component of Field elements (Vektor, e.g.) on which the BC applies:
+            int m_component;
 
-protected:
+            // What face to apply the boundary condition to.
+            unsigned int m_face;
 
-  // Following are hooks for BC-by-Field-element-component support:
-  // Component of Field elements (Vektor, e.g.) on which the BC applies:
-  int m_component;
-  
-  // What face to apply the boundary condition to.
-  unsigned int m_face;
+            // True if this boundary condition changes physical cells.
+            bool m_changePhysical;
+        };
 
-  // True if this boundary condition changes physical cells.
-  bool m_changePhysical;
-};
 
-//////////////////////////////////////////////////////////////////////
-
-template<
-  class T,
-  unsigned D,
-  class M=UniformCartesian<D,double>,
-  class C=typename M::DefaultCentering>
-class BConds
-  : public vmap<int, RefCountedP< BCondBase<T,D,M,C> > >
-{
-public: 
-  typedef typename vmap<int, RefCountedP <BCondBase<T,D,M,C> > >::iterator 
-    iterator; 
-  typedef typename vmap<int, RefCountedP <BCondBase<T,D,M,C> > >::const_iterator 
-    const_iterator; 
-  void apply( Field<T,D,M,C>& a );
-  bool changesPhysicalCells() const;
-  virtual void write(std::ostream&) const;
-};
+        template<typename T,
+                 unsigned Dim,
+                 class Mesh = UniformCartesian<double, Dim>,
+                 class Centering = typename Mesh::DefaultCentering>
+        class BConds //: public vmap<int, RefCountedP< BCondBase<T,D,M,C> > >
+        {
+        public:
+            //   typedef typename vmap<int, RefCountedP <BCondBase<T,D,M,C> > >::iterator
+            //     iterator;
+            //   typedef typename vmap<int, RefCountedP <BCondBase<T,D,M,C> > >::const_iterator
+            //     const_iterator;
+            void apply( Field<T,D,M,C>& a );
+            bool changesPhysicalCells() const;
+            virtual void write(std::ostream&) const;
+        };
+    }
+}
 
 //////////////////////////////////////////////////////////////////////
 
@@ -480,8 +478,6 @@ operator<<(std::ostream& o, const BConds<T,D,M,C>& bc)
   bc.write(o);
   return o;
 }
-
-//////////////////////////////////////////////////////////////////////
 
 #include "Field/BCond.hpp"
 

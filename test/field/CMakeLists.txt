@@ -45,6 +45,16 @@ target_link_libraries (
     ${MPI_CXX_LIBRARIES}
     boost_timer
 )
+
+
+add_executable (TestFieldBC TestFieldBC.cpp)
+target_link_libraries (
+    TestFieldBC
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    boost_timer
+)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

@@ -146,48 +146,44 @@ void BCondBase<T,D,M,C>::write(std::ostream& out) const
 //   o << "LinearExtrapolateFace, Face=" << BCondBase<T,D,M,C>::m_face;
 // }
 
-//////////////////////////////////////////////////////////////////////
+namespace ippl {
+    namespace detail {
 
-template<class T, unsigned D, class M, class C>
-void
-BConds<T,D,M,C>::write(std::ostream& o) const
-{
+        template<class T, unsigned D, class M, class C>
+        void
+        BConds<T,D,M,C>::write(std::ostream& os) const
+        {
+            os << "BConds:(" << std::endl;
+            const_iterator p=this->begin();
+            while (p!=this->end())
+            {
+                (*p).second->write(o);
+                ++p;
+                if (p!=this->end())
+                    os << " , " << std::endl;
+                else
+                    os << std::endl << ")" << std::endl << std::endl;
+            }
+        }
 
+        template<class T, unsigned D, class M, class C>
+        void
+        BConds<T,D,M,C>::apply( Field<T,D,M,C>& a )
+        {
+            for (iterator p=this->begin(); p!=this->end(); ++p)
+                (*p).second->apply(a);
+        }
 
-
-  o << "BConds:(" << std::endl;
-  const_iterator p=this->begin();
-  while (p!=this->end())
-    {
-      (*p).second->write(o);
-      ++p;
-      if (p!=this->end())
-        o << " , " << std::endl;
-      else
-          o << std::endl << ")" << std::endl << std::endl;
+        template<class T, unsigned D, class M, class C>
+        bool
+        BConds<T,D,M,C>::changesPhysicalCells() const
+        {
+            for (const_iterator p=this->begin(); p!=this->end(); ++p)
+                if ((*p).second->changesPhysicalCells())
+                    return true;
+            return false;
+        }
     }
-}
-
-//////////////////////////////////////////////////////////////////////
-
-template<class T, unsigned D, class M, class C>
-void
-BConds<T,D,M,C>::apply( Field<T,D,M,C>& a )
-{
-
-
-  for (iterator p=this->begin(); p!=this->end(); ++p)
-    (*p).second->apply(a);
-}
-
-template<class T, unsigned D, class M, class C>
-bool
-BConds<T,D,M,C>::changesPhysicalCells() const
-{
-  for (const_iterator p=this->begin(); p!=this->end(); ++p)
-    if ((*p).second->changesPhysicalCells())
-      return true;
-  return false;
 }
 
 //=============================================================================

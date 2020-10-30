@@ -7,15 +7,16 @@
 namespace ippl {
 
     template<typename T, unsigned Dim,
-            class M=UniformCartesian<double, Dim>,
-            class C=typename M::DefaultCentering >
-    class Field //: public FieldExpression<Field<T, Dim, M, C>>
+            class Mesh = UniformCartesian<double, Dim>,
+            class Centering = typename M::DefaultCentering >
+    class Field //: public FieldExpression<Field<T, Dim, Mesh, Centering>>
                 : public BareField<T, Dim> {
 
     public:
-        typedef M Mesh_t;
-        typedef C Centering_t;
+        typedef Mesh Mesh_t;
+        typedef Centering Centering_t;
         typedef FieldLayout<Dim> Layout_t;
+        typedef
 
         typedef typename BareField<T, Dim>::LField_t LField_t;
 
@@ -59,9 +60,9 @@ namespace ippl {
         /*
          * Gradient
          */
-        template<typename T, unsigned Dim, class M, class C>
-        struct field_meta_grad : public FieldExpression<field_meta_grad<T, Dim, M, C>> {
-            field_meta_grad(const Field<T, Dim, M, C>& u) : u_m(u) {
+        template<typename T, unsigned Dim, class Mesh, class Centering>
+        struct field_meta_grad : public FieldExpression<field_meta_grad<T, Dim, Mesh, Centering>> {
+            field_meta_grad(const Field<T, Dim, Mesh, Centering>& u) : u_m(u) {
                 M& mesh = u.get_mesh();
 
                 xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
@@ -97,25 +98,25 @@ namespace ippl {
             }
 
         private:
-            const Field<T, Dim, M, C>& u_m;
+            const Field<T, Dim, Mesh, Centering>& u_m;
             typename M::vector_type xvector_m;
             typename M::vector_type yvector_m;
             typename M::vector_type zvector_m;
         };
     }
 
-    template<typename T, unsigned Dim, class M, class C>
-    detail::field_meta_grad<T, Dim, M, C> grad(const Field<T, Dim, M, C>& u) {
-        return detail::field_meta_grad<T, Dim, M, C>(u);
+    template<typename T, unsigned Dim, class Mesh, class Centering>
+    detail::field_meta_grad<T, Dim, Mesh, Centering> grad(const Field<T, Dim, Mesh, Centering>& u) {
+        return detail::field_meta_grad<T, Dim, Mesh, Centering>(u);
     }
 
     namespace detail {
         /*
          * Divergence
          */
-        template<typename T, unsigned Dim, class M, class C>
-        struct field_meta_div : public FieldExpression<field_meta_div<T, Dim, M, C>> {
-            field_meta_div(const Field<T, Dim, M, C>& u) : u_m(u) {
+        template<typename T, unsigned Dim, class Mesh, class Centering>
+        struct field_meta_div : public FieldExpression<field_meta_div<T, Dim, Mesh, Centering>> {
+            field_meta_div(const Field<T, Dim, Mesh, Centering>& u) : u_m(u) {
                 M& mesh = u.get_mesh();
 
                 xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
@@ -150,25 +151,25 @@ namespace ippl {
             }
 
         private:
-            const Field<T, Dim, M, C>& u_m;
+            const Field<T, Dim, Mesh, Centering>& u_m;
             typename M::vector_type xvector_m;
             typename M::vector_type yvector_m;
             typename M::vector_type zvector_m;
         };
     }
 
-    template<typename T, unsigned Dim, class M, class C>
-    detail::field_meta_div<T, Dim, M, C> div(const Field<T, Dim, M, C>& u) {
-        return detail::field_meta_div<T, Dim, M, C>(u);
+    template<typename T, unsigned Dim, class Mesh, class Centering>
+    detail::field_meta_div<T, Dim, Mesh, Centering> div(const Field<T, Dim, Mesh, Centering>& u) {
+        return detail::field_meta_div<T, Dim, Mesh, Centering>(u);
     }
 
     namespace detail {
         /*
          * Laplacian
          */
-        template<typename T, unsigned Dim, class M, class C>
-        struct field_meta_laplace : public FieldExpression<field_meta_laplace<T, Dim, M, C>> {
-            field_meta_laplace(const Field<T, Dim, M, C>& u) : u_m(u) {
+        template<typename T, unsigned Dim, class Mesh, class Centering>
+        struct field_meta_laplace : public FieldExpression<field_meta_laplace<T, Dim, Mesh, Centering>> {
+            field_meta_laplace(const Field<T, Dim, Mesh, Centering>& u) : u_m(u) {
                 M& mesh = u.get_mesh();
 
                 hvector_m[0] = 1.0 / std::pow(mesh.getMeshSpacing(0),2);
@@ -187,14 +188,14 @@ namespace ippl {
             }
 
         private:
-            const Field<T, Dim, M, C>& u_m;
+            const Field<T, Dim, Mesh, Centering>& u_m;
             typename M::vector_type hvector_m;
         };
     }
 
-    template<typename T, unsigned Dim, class M, class C>
-    detail::field_meta_laplace<T, Dim, M, C> laplace(const Field<T, Dim, M, C>& u) {
-        return detail::field_meta_laplace<T, Dim, M, C>(u);
+    template<typename T, unsigned Dim, class Mesh, class Centering>
+    detail::field_meta_laplace<T, Dim, Mesh, Centering> laplace(const Field<T, Dim, Mesh, Centering>& u) {
+        return detail::field_meta_laplace<T, Dim, Mesh, Centering>(u);
     }
 }
 
