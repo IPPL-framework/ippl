@@ -9,18 +9,18 @@
 #include <complex>
 
 // forward declarations
-template <unsigned D> class NDIndex;
-template <class T, unsigned D> class Vektor;
-template<unsigned D, class T> class UniformCartesian;
-template<class T, unsigned D> class LField;
-template<class T, unsigned D> class BareField;
-template<class T, unsigned D, class M, class C> class Field;
-template <class T, unsigned D, class M, class C> class BCondBase;
-template <class T, unsigned D, class M, class C>
-std::ostream& operator<<(std::ostream&, const BCondBase<T,D,M,C>&);
-template <class T, unsigned D, class M, class C> class BConds;
-template <class T, unsigned D, class M, class C>
-std::ostream& operator<<(std::ostream&, const BConds<T,D,M,C>&);
+// template <unsigned D> class NDIndex;
+// template <class T, unsigned D> class Vektor;
+// template<unsigned D, class T> class UniformCartesian;
+// template<class T, unsigned D> class LField;
+// template<class T, unsigned D> class BareField;
+// template<class T, unsigned D, class M, class C> class Field;
+// template <class T, unsigned D, class M, class C> class BCondBase;
+// template <class T, unsigned D, class M, class C>
+// std::ostream& operator<<(std::ostream&, const BCondBase<T,D,M,C>&);
+// template <class T, unsigned D, class M, class C> class BConds;
+// template <class T, unsigned D, class M, class C>
+// std::ostream& operator<<(std::ostream&, const BConds<T,D,M,C>&);
 
 //////////////////////////////////////////////////////////////////////
 
