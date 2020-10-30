@@ -3,7 +3,7 @@
 
 #include "Field/BareField.h"
 #include "Meshes/Kokkos_UniformCartesian.h"
-#include "Field/BCond.h"
+#include "Field/BConds.h"
 
 namespace ippl {
 

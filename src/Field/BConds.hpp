@@ -17,9 +17,6 @@
 
 //////////////////////////////////////////////////////////////////////
 
-template<typename T, unsigned Dim, class Mesh, class Cell>
-int ippl::detail::BCondBase<T, Dim, Mesh, Cell>::allComponents = -9999;
-
 //////////////////////////////////////////////////////////////////////
 
 // Use this macro to specialize PETE_apply functions for component-wise
@@ -40,19 +37,6 @@ inline void PETE_apply(const OP<T>&, T&, const T&)                          \
 
  */
 
-namespace ippl {
-    namespace detail {
-
-        template<typename T, unsigned Dim, class Mesh, class Cell>
-        BCondBase<T, Dim, Mesh, Cell>::BCondBase(unsigned int face, int i)
-        : m_face(face), m_changePhysical(false)
-        {
-            // For only one specified component index (including the default case of
-            // BCondBase::allComponents meaning apply to all components of T, just
-            // assign the Component value for use in pointer offsets into
-            // single-component-index types in applicative templates elsewhere:
-            m_component = i;
-        }
 
 //////////////////////////////////////////////////////////////////////
 
@@ -68,59 +52,50 @@ namespace ippl {
 //         template<typename T, unsigned Dim, class Mesh, class Cell>
 //         void BCondBase<T, Dim, Mesh, Cell>::write(std::ostream& out) const
 //         {
-//             out << "BCondBase" << ", Face=" << m_face;
+//             out << "BCondBase" << ", Face=" << face_m;
 //         }
-    }
-}
+//     }
+// }
 
 // template<class T, unsigned int D, class M, class C>
 // void PeriodicFace<T,D,M,C>::write(std::ostream& out) const
 // {
-//   out << "PeriodicFace" << ", Face=" << BCondBase<T,D,M,C>::m_face;
+//   out << "PeriodicFace" << ", Face=" << BCondBase<T,D,M,C>::face_m;
 // }
 //
 // //BENI adds Interpolation face BC
 // template<class T, unsigned int D, class M, class C>
 // void InterpolationFace<T,D,M,C>::write(std::ostream& out) const
 // {
-//   out << "InterpolationFace" << ", Face=" << BCondBase<T,D,M,C>::m_face;
+//   out << "InterpolationFace" << ", Face=" << BCondBase<T,D,M,C>::face_m;
 // }
 //
 // //BENI adds ParallelInterpolation face BC
 // template<class T, unsigned int D, class M, class C>
 // void ParallelInterpolationFace<T,D,M,C>::write(std::ostream& out) const
 // {
-//   out << "ParallelInterpolationFace" << ", Face=" << BCondBase<T,D,M,C>::m_face;
+//   out << "ParallelInterpolationFace" << ", Face=" << BCondBase<T,D,M,C>::face_m;
 // }
 //
 // template<class T, unsigned int D, class M, class C>
 // void ParallelPeriodicFace<T,D,M,C>::write(std::ostream& out) const
 // {
-//   out << "ParallelPeriodicFace" << ", Face=" << BCondBase<T,D,M,C>::m_face;
+//   out << "ParallelPeriodicFace" << ", Face=" << BCondBase<T,D,M,C>::face_m;
 // }
 //
 // template<class T, unsigned int D, class M, class C>
 // void ZeroFace<T,D,M,C>::write(std::ostream& out) const
 // {
-//   out << "ZeroFace" << ", Face=" << BCondBase<T,D,M,C>::m_face;
+//   out << "ZeroFace" << ", Face=" << BCondBase<T,D,M,C>::face_m;
 // }
 //
 // template<class T, unsigned int D, class M, class C>
 // void ZeroGuardsAndZeroFace<T,D,M,C>::write(std::ostream& out) const
 // {
-//   out << "ZeroGuardsAndZeroFace" << ", Face=" << BCondBase<T,D,M,C>::m_face;
+//   out << "ZeroGuardsAndZeroFace" << ", Face=" << BCondBase<T,D,M,C>::face_m;
 // }
 //
 
-namespace ippl {
-    template<typename T, unsigned Dim, class Mesh, class Cell>
-    void ConstantFace<T, Dim, Mesh, Cell>::write(std::ostream& out) const
-    {
-        out << "ConstantFace"
-            << ", Face=" << this->m_face
-            << ", Constant=" << this->Offset;
-    }
-}
 //
 // template<class T, unsigned D, class M, class C>
 // void
@@ -128,7 +103,7 @@ namespace ippl {
 // {
 //
 //
-//   o << "ExtrapolateFace, Face=" << BCondBase<T,D,M,C>::m_face
+//   o << "ExtrapolateFace, Face=" << BCondBase<T,D,M,C>::face_m
 //     << ", Offset=" << Offset << ", Slope=" << Slope;
 // }
 //
@@ -138,7 +113,7 @@ namespace ippl {
 // {
 //
 //
-//   o << "ExtrapolateAndZeroFace, Face=" << BCondBase<T,D,M,C>::m_face
+//   o << "ExtrapolateAndZeroFace, Face=" << BCondBase<T,D,M,C>::face_m
 //     << ", Offset=" << Offset << ", Slope=" << Slope;
 // }
 //
@@ -148,7 +123,7 @@ namespace ippl {
 // {
 //
 //
-//   o << "LinearExtrapolateFace, Face=" << BCondBase<T,D,M,C>::m_face;
+//   o << "LinearExtrapolateFace, Face=" << BCondBase<T,D,M,C>::face_m;
 // }
 
 namespace ippl {
@@ -2777,9 +2752,9 @@ namespace ippl {
 //   unsigned d = ef.getFace()/2;
 //   int offset;
 //
-//   // The following bitwise AND logical test returns true if ef.m_face is odd
+//   // The following bitwise AND logical test returns true if ef.face_m is odd
 //   // (meaning the "high" or "right" face in the numbering convention) and
-//   // returns false if ef.m_face is even (meaning the "low" or "left" face in
+//   // returns false if ef.face_m is even (meaning the "low" or "left" face in
 //   // the numbering convention):
 //
 //   if (ef.getFace() & 1)
@@ -2909,9 +2884,9 @@ namespace ippl {
 //   unsigned d = ef.getFace()/2;
 //   int offset;
 //
-//   // The following bitwise AND logical test returns true if ef.m_face is odd
+//   // The following bitwise AND logical test returns true if ef.face_m is odd
 //   // (meaning the "high" or "right" face in the numbering convention) and
-//   // returns false if ef.m_face is even (meaning the "low" or "left" face
+//   // returns false if ef.face_m is even (meaning the "low" or "left" face
 //   // in the numbering convention):
 //
 //   if ( ef.getFace() & 1 )
@@ -3040,9 +3015,9 @@ namespace ippl {
 //   unsigned d = ef.getFace()/2;
 //   int offset;
 //
-//   // The following bitwise AND logical test returns true if ef.m_face is odd
+//   // The following bitwise AND logical test returns true if ef.face_m is odd
 //   // (meaning the "high" or "right" face in the numbering convention) and
-//   // returns false if ef.m_face is even (meaning the "low" or "left" face
+//   // returns false if ef.face_m is even (meaning the "low" or "left" face
 //   // in the numbering convention):
 //
 //   if ( ef.getFace() & 1 )
@@ -3173,9 +3148,9 @@ namespace ippl {
 //   unsigned d = ef.getFace()/2;
 //   int offset;
 //
-//   // The following bitwise AND logical test returns true if ef.m_face is odd
+//   // The following bitwise AND logical test returns true if ef.face_m is odd
 //   // (meaning the "high" or "right" face in the numbering convention) and
-//   // returns false if ef.m_face is even (meaning the "low" or "left" face
+//   // returns false if ef.face_m is even (meaning the "low" or "left" face
 //   // in the numbering convention):
 //
 //   if ( ef.getFace() & 1 )
@@ -3655,9 +3630,9 @@ namespace ippl {
 //   unsigned d = ef.getFace()/2;
 //   int offset;
 //
-//   // The following bitwise AND logical test returns true if ef.m_face is odd
+//   // The following bitwise AND logical test returns true if ef.face_m is odd
 //   // (meaning the "high" or "right" face in the numbering convention) and
-//   // returns false if ef.m_face is even (meaning the "low" or "left" face
+//   // returns false if ef.face_m is even (meaning the "low" or "left" face
 //   // in the numbering convention):
 //
 //   if (ef.getFace() & 1)
@@ -3788,9 +3763,9 @@ namespace ippl {
 //   unsigned d = ef.getFace()/2;
 //   int offset;
 //
-//   // The following bitwise AND logical test returns true if ef.m_face is odd
+//   // The following bitwise AND logical test returns true if ef.face_m is odd
 //   // (meaning the "high" or "right" face in the numbering convention) and
-//   // returns false if ef.m_face is even (meaning the "low" or "left" face in
+//   // returns false if ef.face_m is even (meaning the "low" or "left" face in
 //   // the numbering convention):
 //
 //   if ( ef.getFace() & 1 )
@@ -3951,9 +3926,9 @@ namespace ippl {
 //   unsigned d = ef.getFace()/2;
 //   int offset;
 //
-//   // The following bitwise AND logical test returns true if ef.m_face is odd
+//   // The following bitwise AND logical test returns true if ef.face_m is odd
 //   // (meaning the "high" or "right" face in the numbering convention) and
-//   // returns false if ef.m_face is even (meaning the "low" or "left" face in
+//   // returns false if ef.face_m is even (meaning the "low" or "left" face in
 //   // the numbering convention):
 //
 //   if ( ef.getFace() & 1 )
@@ -4115,9 +4090,9 @@ namespace ippl {
 //   int offset;
 //   bool setPhys = false;
 //
-//   // The following bitwise AND logical test returns true if ef.m_face is odd
+//   // The following bitwise AND logical test returns true if ef.face_m is odd
 //   // (meaning the "high" or "right" face in the numbering convention) and
-//   // returns false if ef.m_face is even (meaning the "low" or "left" face in
+//   // returns false if ef.face_m is even (meaning the "low" or "left" face in
 //   // the numbering convention):
 //
 //   if ( ef.getFace() & 1 )
@@ -4462,9 +4437,9 @@ namespace ippl {
 //   // Must loop explicitly over the number of guard layers:
 //   int nGuardLayers;
 //
-//   // The following bitwise AND logical test returns true if ef.m_face is odd
+//   // The following bitwise AND logical test returns true if ef.face_m is odd
 //   // (meaning the "high" or "right" face in the numbering convention) and
-//   // returns false if ef.m_face is even (meaning the "low" or "left" face in
+//   // returns false if ef.face_m is even (meaning the "low" or "left" face in
 //   // the numbering convention):
 //
 //   if (ef.getFace() & 1) {

@@ -11,8 +11,10 @@ set (_HDRS
     BareField.h
     BareField.hpp
 #     BareFieldIterator.h
-    BCond.h
-    BCond.hpp
+    BConds.h
+    BConds.hpp
+    BcTypes.h
+    BcTypes.hpp
 #     BrickExpression.hpp
 #     BrickExpression.h
 #     BrickIterator.hpp

@@ -5,10 +5,14 @@
 // #include "Utility/RefCounted.h"
 // #include "Utility/vmap.h"
 
+#include "Field/BcTypes.h"
 
 #include <array>
 #include <iostream>
 #include <memory>
+
+
+
 // #include <complex>
 
 // #include "Meshes/Kokkos_UniformCartesian.h"
@@ -25,118 +29,10 @@
 // template <class T, unsigned D, class M, class C>
 
 namespace ippl {
-    namespace detail {
-        template<typename T, unsigned Dim, class Mesh, class Cell> class BCondBase;
-        template<typename T, unsigned Dim, class Mesh, class Cell> class BConds;
+    template<typename T, unsigned Dim, class Mesh, class Cell> class BConds;
 
-        template<typename T, unsigned Dim, class Mesh, class Cell>
-        std::ostream& operator<<(std::ostream&, const BCondBase<T, Dim, Mesh, Cell>&);
-
-        template<typename T, unsigned Dim, class Mesh, class Cell>
-        std::ostream& operator<<(std::ostream&, const BConds<T, Dim, Mesh, Cell>&);
-
-
-        template<typename T, unsigned Dim, class Mesh, class Cell>
-        class BCondBase
-        {
-        public:
-            // Special value designating application to all components of elements:
-            static int allComponents;
-
-            // Constructor takes:
-            // face: the face to apply the boundary condition on.
-            // i : what component of T to apply the boundary condition to.
-            // The components default to setting all components.
-            BCondBase(unsigned int face, int i = allComponents);
-
-            virtual ~BCondBase() = default;
-
-//             virtual void apply( Field<T, Dim, Mesh, Cell>& ) = 0;
-//             virtual BCondBase<T, Dim, Mesh, Cell>* clone() const = 0;
-
-            virtual void write(std::ostream&) const = 0;
-
-                // Return component of Field element on which BC applies
-            int getComponent() const { return m_component; }
-
-            // Return face on which BC applies
-            unsigned int getFace() const { return m_face; }
-
-            // Returns whether or not this BC changes physical cells.
-            bool changesPhysicalCells() const { return m_changePhysical; }
-
-        protected:
-            // Following are hooks for BC-by-Field-element-component support:
-            // Component of Field elements (Vektor, e.g.) on which the BC applies:
-            int m_component;
-
-            // What face to apply the boundary condition to.
-            unsigned int m_face;
-
-            // True if this boundary condition changes physical cells.
-            bool m_changePhysical;
-        };
-
-
-        template<typename T,
-                 unsigned Dim,
-                 class Mesh = UniformCartesian<double, Dim>,
-                 class Cell = typename Mesh::DefaultCentering>
-        class ExtrapolateFace : public BCondBase<T, Dim, Mesh, Cell>
-        {
-        public:
-            // Constructor takes zero, one, or two int's specifying components of
-            // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
-            // Zero int's specified means apply to all components; one means apply to
-            // component (i), and two means apply to component (i,j),
-            using base_type = BCondBase<T, Dim, Mesh, Cell>;
-
-            ExtrapolateFace(unsigned f, T o, T s,
-                            int i = base_type::allComponents)
-            : base_type(f, i)
-            , Offset(o)
-            , Slope(s)
-            {}
-
-            virtual ~ExtrapolateFace() = default;
-
-        // Apply the boundary condition to a given Field.
-//         virtual void apply( Field<T, Dim, Mesh, Cell>& );
-
-//         // Make a copy of the concrete type.
-//         virtual BCondBase<T, Dim, Mesh, Cell>* clone() const
-//         {
-//             return new ExtrapolateFace<T, Dim, Mesh, Cell>( *this );
-//         }
-
-        // Print out some information about the BC to a given stream.
-        virtual void write(std::ostream&) const {};
-
-        const T& getOffset() const { return Offset; }
-        const T& getSlope() const { return Slope; }
-
-        protected:
-            T Offset, Slope;
-        };
-    }
-
-
-
-    template<typename T,
-             unsigned Dim,
-             class Mesh = UniformCartesian<double, Dim>,
-             class Cell = typename Mesh::DefaultCentering>
-    class ConstantFace : public detail::ExtrapolateFace<T, Dim, Mesh, Cell>
-    {
-    public:
-        ConstantFace(unsigned int face, T constant)
-        : detail::ExtrapolateFace<T, Dim, Mesh, Cell>(face, constant, 0)
-        {}
-
-        // Print out information about the BC to a stream.
-        virtual void write(std::ostream& out) const;
-    };
-
+    template<typename T, unsigned Dim, class Mesh, class Cell>
+    std::ostream& operator<<(std::ostream&, const BConds<T, Dim, Mesh, Cell>&);
 
 
     template<typename T,
@@ -169,6 +65,15 @@ namespace ippl {
             2 * Dim
         > bc_m;
     };
+
+
+    template<typename T, unsigned Dim, class Mesh, class Cell>
+    inline std::ostream&
+    operator<<(std::ostream& os, const BConds<T, Dim, Mesh, Cell>& bc)
+    {
+        bc.write(os);
+        return os;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -504,18 +409,9 @@ namespace ippl {
             bc.write(os);
             return os;
         }
-
-
-        template<typename T, unsigned Dim, class Mesh, class Cell>
-        inline std::ostream&
-        operator<<(std::ostream& os, const BConds<T, Dim, Mesh, Cell>& bc)
-        {
-            bc.write(os);
-            return os;
-        }
     }
 }
 
-#include "Field/BCond.hpp"
+#include "Field/BConds.hpp"
 
 #endif
