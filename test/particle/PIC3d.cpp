@@ -37,7 +37,8 @@ constexpr unsigned Dim = 3;
 typedef ippl::detail::ParticleLayout<double,Dim>   PLayout_t;
 typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
 typedef Cell                                       Center_t;
-typedef CenteredFieldLayout<Dim, Mesh_t, Center_t> FieldLayout_t;
+//typedef CenteredFieldLayout<Dim, Mesh_t, Center_t> FieldLayout_t;
+typedef FieldLayout<Dim> FieldLayout_t;
 
 
 template<typename T, unsigned Dim>
@@ -221,12 +222,15 @@ public:
          //dumpVTK(EFDMag_m,lDom,nr_m[0],nr_m[1],nr_m[2],iteration,hr_m[0],hr_m[1],hr_m[2]);
      }
 
+     //void scatterCIC(Field_t& field_temp) {
      void scatterCIC() {
          Inform m("scatter ");
          double initialQ = 1.0;//qm.sum();
          EFDMag_m = 0.0;
          scatter(qm, EFDMag_m, this->R);
+         //scatter(qm, field_temp, this->R);
          double Q_grid = EFDMag_m.sum(1);
+         //double Q_grid = field_temp.sum(1);
          m << "Q grid = " << Q_grid << endl;
          m << "Error = " << initialQ-Q_grid << endl;
      }
@@ -523,9 +527,14 @@ int main(int argc, char *argv[]){
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {0, 0, 0};
     mesh = std::make_unique<Mesh_t>(domain, hr, origin);
-    FL   = std::make_unique<FieldLayout_t>(*mesh, decomp);
+    //FL   = std::make_unique<FieldLayout_t>(*mesh, decomp);
+    FL   = std::make_unique<FieldLayout_t>(domain, decomp, 1);
     PL   = std::make_unique<PLayout_t>(); //(*FL, *mesh);
 
+    //ippl::UniformCartesian<double, 3> mesh_temp(domain, hr, origin);
+    //FieldLayout<3> layout(domain,decomp, 1);
+    //Field_t field_temp;
+    //field_temp.initialize(mesh_temp, layout);
 
     /*
      * In case of periodic BC's define
@@ -544,8 +553,8 @@ int main(int argc, char *argv[]){
 
     P->create(nloc);
 
-    std::mt19937_64 eng(42);
-    std::uniform_real_distribution<double> unif(0.0, 1.0);
+    std::mt19937_64 eng;//(42);
+    std::uniform_real_distribution<double> unif(0, 1);
 
     typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
     typename ParticleAttrib<double>::HostMirror Q_host = P->qm.getHostMirror();
@@ -584,6 +593,7 @@ int main(int argc, char *argv[]){
 //     msg << P->getFieldLayout() << endl;
 //
     msg << "scatter test" << endl;
+    //P->scatterCIC(field_temp);
     P->scatterCIC();
     
     P->initFields();
