@@ -3,10 +3,10 @@
 //   This test program sets up a simple sine-wave electric field in 3D,
 //   creates a population of particles with random q/m values (charge-to-mass
 //   ratio) and velocities, and then tracks their motions in the static
-//   electric field using nearest-grid-point interpolation.
+//   electric field using cloud-in-cell interpolation.
 //
 //   Usage:
-//     mpirun -np 2 PIC3d 128 128 128 10000 10 NGP OOP GUARDCELLS --commlib mpi --info 0
+//     mpirun -np 2 PIC3d 128 128 128 10000 10 OOP --commlib mpi --info 0
 //
 // Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
@@ -34,15 +34,10 @@
 constexpr unsigned Dim = 3;
 
 // some typedefs
-// typedef ParticleSpatialLayout<double,Dim>::SingleParticlePos_t Vector_t;
-typedef ippl::detail::ParticleLayout<double,Dim> PLayout_t;
-typedef ippl::UniformCartesian<double, Dim> Mesh_t;
+typedef ippl::detail::ParticleLayout<double,Dim>   PLayout_t;
+typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
 typedef Cell                                       Center_t;
 typedef CenteredFieldLayout<Dim, Mesh_t, Center_t> FieldLayout_t;
-// typedef Field<double, Dim, Mesh_t, Center_t>       Field_t;
-// typedef Field<Vector_t, Dim, Mesh_t, Center_t>     VField_t;
-// typedef IntCIC IntrplCIC_t;
-// typedef IntNGP IntrplNGP_t;
 
 
 template<typename T, unsigned Dim>
@@ -54,19 +49,17 @@ using Field = ippl::Field<T, Dim>;
 template<typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
 
-typedef Vector<double, Dim> Vector_t;
+typedef Vector<double, Dim>  Vector_t;
+typedef Field<double, Dim>   Field_t;
+typedef Field<Vector_t, Dim> VField_t;
 
 
-/*
-#define GUARDCELL 1
+//enum BC_t {OOO,OOP,PPP};
 
-enum BC_t {OOO,OOP,PPP};
-enum InterPol_t {NGP,CIC};
-
-const double pi = acos(-1.0);
+double pi = acos(-1.0);
 const double dt = 1.0;          // size of timestep
 
-
+/*
 void dumpVTK(Field<Vektor<double,3>,3> &EFD, NDIndex<3> lDom, int nx, int ny, int nz, int iteration,
              double dx, double dy, double dz) {
 
@@ -158,16 +151,8 @@ public:
     Field<Vector<double, Dim>, Dim> EFD_m;
     Field<double,Dim> EFDMag_m;
 
-//   BConds<double,Dim,Mesh_t,Center_t> bc_m;
-//   BConds<Vector_t,Dim,Mesh_t,Center_t> vbc_m;
 
     Vector<int, Dim> nr_m;
-
-//     BC_t bco_m;
-//     InterPol_t interpol_m;
-//     bool fieldNotInitialized_m;
-//     bool doRepart_m;
-//     bool withGuardCells_m;
 
     e_dim_tag decomp_m[Dim];
 
@@ -182,24 +167,6 @@ public:
     typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
     typename ippl::ParticleBase<PLayout>::particle_position_type B;  // magnetic field at particle position
 
-//     ChargedParticles(PLayout* pl, BC_t bc, InterPol_t interpol, e_dim_tag decomp[Dim], bool gCells) :
-//         IpplParticleBase<PLayout>(pl),
-//         bco_m(bc),
-//         interpol_m(interpol),
-//         fieldNotInitialized_m(true),
-//         doRepart_m(true),
-//         withGuardCells_m(gCells)
-//     {
-//         // register the particle attributes
-//         this->addAttribute(qm);
-//         this->addAttribute(P);
-//         this->addAttribute(E);
-//         this->addAttribute(B);
-//         setupBCs();
-//         for (unsigned int i=0; i<Dim; i++)
-//             decomp_m[i]=decomp[i];
-//     }
-//
 //     /*
 //       In case we have OOP or PPP boundary conditions
 //       we must define the domain, i.e can not be deduced from the
@@ -211,11 +178,6 @@ public:
                      Vector_t hr, Vector_t rmin, Vector_t rmax, e_dim_tag decomp[Dim]
                      /*, bool gCells*/)
     : ippl::ParticleBase<PLayout>(pl)
-//         bco_m(bc),
-//         interpol_m(interpol),
-// 	fieldNotInitialized_m(true),
-//         doRepart_m(true),
-//         withGuardCells_m(gCells),
     , hr_m(hr)
     , rmin_m(rmin)
     , rmax_m(rmax)
@@ -251,58 +213,23 @@ public:
 //         return dynamic_cast<FieldLayout_t&>(this->getLayout().getLayout().getFieldLayout());
 //     }
 //
-//     void gather(int iteration) {
-//         if (interpol_m==CIC)
-//             gatherCIC();
-//         else
-//             gatherNGP();
-//
-// 		scatterCIC();
-//         NDIndex<Dim> lDom = getFieldLayout().getLocalNDIndex();
-//         dumpVTK(EFDMag_m,lDom,nr_m[0],nr_m[1],nr_m[2],iteration,hr_m[0],hr_m[1],hr_m[2]);
-//     }
-//
-//     double scatter() {
-//         Inform m("scatter ");
-//         double initialQ = sum(qm);
-//         if (interpol_m==CIC)
-//             scatterCIC();
-//         else
-//             scatterNGP();
-//
-//         /*
-//           now sum over all gridpoints ... a bit nasty !
-//
-//         */
-//
-//         Field<double,Dim> tmpf;
-//         NDIndex<Dim> domain = getFieldLayout().getDomain();
-//
-//         FieldLayout_t *FL  = new FieldLayout_t(getMesh(), decomp_m);
-//         tmpf.initialize(getMesh(), *FL);
-//
-//         tmpf[domain] = EFDMag_m[domain];
-//
-//         NDIndex<Dim> idx = getFieldLayout().getLocalNDIndex();
-//         NDIndex<Dim> idxdom = getFieldLayout().getDomain();
-//         NDIndex<Dim> elem;
-//
-//         double Q = 0.0;
-//         for (int i=idx[0].min(); i<=idx[0].max(); ++i) {
-//             elem[0] = Index(i,i);
-//             for (int j=idx[1].min(); j<=idx[1].max(); ++j) {
-//                 elem[1] = Index(j,j);
-//                 for (int k=idx[2].min(); k<=idx[2].max(); ++k) {
-//                     elem[2] = Index(k,k);
-//                     Q +=  tmpf.localElement(elem);
-//                 }
-//             }
-//
-//         }
-//         reduce(Q,Q,OpAddAssign());
-//         m << "sum(qm)= " << initialQ << " sum(EFDMag)= " << sum(EFDMag_m) << endl;
-//         return initialQ-Q;
-//     }
+     void gatherCIC(/*int iteration*/) {
+
+        gather(this->E, EFD_m, this->R);
+ 		scatterCIC();
+        //NDIndex<Dim> lDom = getFieldLayout().getLocalNDIndex();
+         //dumpVTK(EFDMag_m,lDom,nr_m[0],nr_m[1],nr_m[2],iteration,hr_m[0],hr_m[1],hr_m[2]);
+     }
+
+     void scatterCIC() {
+         Inform m("scatter ");
+         double initialQ = 1.0;//qm.sum();
+         EFDMag_m = 0.0;
+         scatter(qm, EFDMag_m, this->R);
+         double Q_grid = EFDMag_m.sum(1);
+         m << "Q grid = " << Q_grid << endl;
+         m << "Error = " << initialQ-Q_grid << endl;
+     }
 //
 //     void myUpdate() {
 //
@@ -357,65 +284,71 @@ public:
 //         this->update();
 //     }
 //
-//     void gatherStatistics() {
-//         Inform m("gatherStatistics ");
-//         Inform m2a("gatherStatistics ",INFORM_ALL_NODES);
-//
-//         double *partPerNode = new double[Ippl::getNodes()];
-//         double *globalPartPerNode = new double[Ippl::getNodes()];
-//         for (int i=0; i<Ippl::getNodes(); i++) {
-//             partPerNode[i] = globalPartPerNode[i] = 0.0;
-//
-//         }
-//         partPerNode[Ippl::myNode()] = this->getLocalNum();
-//
-//         reduce(partPerNode,partPerNode+Ippl::getNodes(),globalPartPerNode,OpAddAssign());
-//
-//         for (int i=0; i<Ippl::getNodes(); i++)
-//             m << "Node " << i << " has "
-//               <<   globalPartPerNode[i]/this->getTotalNum()*100.0 << " \% of the total particles " << endl;
-//     }
-//
-//
-//
-//
-//     void initFields() {
-//         Inform m("initFields ");
-//
-//         NDIndex<Dim> domain = getFieldLayout().getDomain();
-//
-//         for (unsigned int i=0; i<Dim; i++)
-//             nr_m[i] = domain[i].length();
-//
-//         int nx = nr_m[0];
-//         int ny = nr_m[1];
-//         int nz = nr_m[2];
-//
-//         double phi0 = 0.1*nx;
-//
-//         m << "rmin= " << rmin_m << " rmax= " << rmax_m << " h= " << hr_m << " n= " << nr_m << endl;
-//
-//         Index I(nx), J(ny), K(nz);
-//
-//         assign(EFD_m[I][J][K](0), -2.0*pi*phi0/nx * cos(2.0*pi*(I+0.5)/nx) * cos(4.0*pi*(J+0.5)/ny) * cos(pi*(K+0.5)/nz));
-//
-//         assign(EFD_m[I][J][K](1),  4.0*pi*phi0/ny * sin(2.0*pi*(I+0.5)/nx) * sin(4.0*pi*(J+0.5)/ny));
-//
-//         assign(EFD_m[I][J][K](2),  4.0*pi*phi0/ny * sin(2.0*pi*(I+0.5)/nx) * sin(4.0*pi*(J+0.5)/ny));
-//
-//         assign(EFDMag_m[I][J][K],
-//                EFD_m[I][J][K](0) * EFD_m[I][J][K](0) +
-//                EFD_m[I][J][K](1) * EFD_m[I][J][K](1) +
-//                EFD_m[I][J][K](2) * EFD_m[I][J][K](2));
-//     }
-//
-//     Vector_t getRMin() { return rmin_m;}
-//     Vector_t getRMax() { return rmax_m;}
-//     Vector_t getHr() { return hr_m;}
-//
-//     void setRMin(Vector_t x) { rmin_m = x; }
-//     void setHr(Vector_t x) { hr_m = x; }
-//
+     
+     void initFields() {
+         Inform m("initFields ");
+
+         NDIndex<Dim> domain = EFD_m.getDomain();
+
+         for (unsigned int i=0; i<Dim; i++)
+             nr_m[i] = domain[i].length();
+
+         int nx = nr_m[0];
+         int ny = nr_m[1];
+         int nz = nr_m[2];
+
+         double phi0 = 0.1*nx;
+         double pi = acos(-1.0);
+
+         m << "rmin= " << rmin_m << " rmax= " << rmax_m << " h= " << hr_m << " n= " << nr_m << endl;
+
+
+         typename VField_t::LField_t::view_type& view = EFD_m(0).getView();
+
+         Kokkos::parallel_for("Assign EFD_m[0]", 
+                              Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+                                                                     {view.extent(0),
+                                                                      view.extent(1),
+                                                                      view.extent(2)}),
+                              KOKKOS_LAMBDA(const int i, const int j, const int k){
+
+                                view(i, j, k)[0] = -2.0*pi*phi0/nx * 
+                                                    cos(2.0*pi*(i+0.5)/nx) *
+                                                    cos(4.0*pi*(j+0.5)/ny) * cos(pi*(k+0.5)/nz);
+                              
+                              });
+         
+         Kokkos::parallel_for("Assign EFD_m[1]", 
+                              Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+                                                                     {view.extent(0),
+                                                                      view.extent(1),
+                                                                      view.extent(2)}),
+                              KOKKOS_LAMBDA(const int i, const int j, const int k){
+
+                                view(i, j, k)[1] = 4.0*pi*phi0/ny * 
+                                                   sin(2.0*pi*(i+0.5)/nx) * sin(4.0*pi*(j+0.5)/ny);
+                              
+                              });
+         
+         Kokkos::parallel_for("Assign EFD_m[2]", 
+                              Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+                                                                     {view.extent(0),
+                                                                      view.extent(1),
+                                                                      view.extent(2)}),
+                              KOKKOS_LAMBDA(const int i, const int j, const int k){
+
+                                view(i, j, k)[2] = 4.0*pi*phi0/ny * 
+                                                   sin(2.0*pi*(i+0.5)/nx) * sin(4.0*pi*(j+0.5)/ny);
+                              
+                              });
+
+         EFDMag_m = dot(EFD_m, EFD_m);
+     }
+
+     Vector_t getRMin() { return rmin_m;}
+     Vector_t getRMax() { return rmax_m;}
+     Vector_t getHr() { return hr_m;}
+
 //     void savePhaseSpace(std::string fn, int idx) {
 //
 //         int tag = Ippl::Comm->next_tag(IPPL_APP_TAG4, IPPL_APP_CYCLE);
@@ -506,11 +439,6 @@ private:
     void setBCAllPeriodic() {
 
         this->setParticleBC(ippl::BC::PERIODIC);
-
-//         for (unsigned i = 0; i < 2*Dim; i++) {
-// //             bc_m[i]  = new PeriodicFace<double  ,Dim,Mesh_t,Center_t>(i);
-// //             vbc_m[i] = new PeriodicFace<Vector_t,Dim,Mesh_t,Center_t>(i);
-//         }
     }
 //
 //     inline void setBCOOP() {
@@ -526,29 +454,6 @@ private:
 //         }
 //     }
 //
-//     inline void gatherNGP() {
-//         // create interpolater object (nearest-grid-point method)
-//         IntNGP myinterp;
-//         E.gather(EFD_m, this->R, myinterp);
-//     }
-//
-//     inline void gatherCIC() {
-//         // create interpolater object (cloud in cell method)
-//         IntCIC myinterp;
-//         E.gather(EFD_m, this->R, myinterp);
-//     }
-//
-//     inline void scatterCIC() {
-//         // create interpolater object (cloud in cell method)
-//         IntCIC myinterp;
-//         qm.scatter(EFDMag_m, this->R, myinterp);
-//     }
-//
-//     inline void scatterNGP() {
-//         // create interpolater object (cloud in cell method)
-//         IntNGP myinterp;
-//         qm.scatter(EFDMag_m, this->R, myinterp);
-//     }
 
 };
 
@@ -571,32 +476,12 @@ int main(int argc, char *argv[]){
 
     const unsigned int totalP = std::atoi(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
-//
-//     InterPol_t myInterpol;
-//     if (std::string(argv[6])==std::string("CIC"))
-//         myInterpol = CIC;
-//     else
-//         myInterpol = NGP;
-//
-//     bool gCells;
-//     gCells =  (std::string(argv[8])==std::string("GUARDCELLS"));
-//
+    
     msg << "Particle test PIC3d "
         << endl
         << "nt " << nt << " Np= "
         << totalP << " grid = " << nr
         << endl;
-//
-//     if (myInterpol==CIC)
-//         msg << "Cloud in cell (CIC) interpolation selected" << endl;
-//     else
-//         msg << "Nearest grid point (NGP) interpolation selected" << endl;
-//
-//     if (gCells)
-//         msg << "Using guard cells" << endl;
-//     else
-//         msg << "Not using guard cells" << endl;
-//
 //     BC_t myBC;
 //     if (std::string(argv[7])==std::string("OOO")) {
 //         myBC = OOO; // open boundary
@@ -611,10 +496,6 @@ int main(int argc, char *argv[]){
 //         msg << "BC == PPP" << endl;
 //     }
 //
-    e_dim_tag decomp[Dim];
-    unsigned serialDim = 3;
-
-    msg << "Serial dimension is " << serialDim  << endl;
 
     std::unique_ptr<Mesh_t> mesh;
     std::unique_ptr<FieldLayout_t> FL;
@@ -625,22 +506,23 @@ int main(int argc, char *argv[]){
     std::unique_ptr<PLayout_t> PL;
 
     NDIndex<Dim> domain;
-//     if (gCells) {
-//         for (unsigned i=0; i<Dim; i++)
-//             domain[i] = domain[i] = Index(nr[i] + 1);
-//     }
-//     else {
+    
     for (unsigned i = 0; i< Dim; i++) {
         domain[i] = Index(nr[i]);
     }
-//     }
-//
+    
+    e_dim_tag decomp[Dim];    
     for (unsigned d = 0; d < Dim; ++d) {
-        decomp[d] = (d == serialDim) ? SERIAL : PARALLEL;
+        decomp[d] = SERIAL;
     }
 
     // create mesh and layout objects for this problem domain
-    mesh = std::make_unique<Mesh_t>(domain);
+    double dx = 1.0 / double(nr[0]);
+    double dy = 1.0 / double(nr[1]);
+    double dz = 1.0 / double(nr[2]);
+    Vector_t hr = {dx, dy, dz};
+    Vector_t origin = {0, 0, 0};
+    mesh = std::make_unique<Mesh_t>(domain, hr, origin);
     FL   = std::make_unique<FieldLayout_t>(*mesh, decomp);
     PL   = std::make_unique<PLayout_t>(); //(*FL, *mesh);
 
@@ -649,11 +531,11 @@ int main(int argc, char *argv[]){
      * In case of periodic BC's define
      * the domain with hr and rmin
      */
-    Vector_t hr(1.0);
+    //Vector_t hr(1.0);
     Vector_t rmin(0.0);
-    Vector_t rmax(nr);
+    Vector_t rmax(1.0);
 
-    P = std::make_unique<bunch_type>(*PL,/*myBC,myInterpol,*/hr,rmin,rmax,decomp/*,gCells*/);
+    P = std::make_unique<bunch_type>(*PL,/*myBC,*/hr,rmin,rmax,decomp);
 
     // initialize the particle object: do all initialization on one node,
     // and distribute to others
@@ -668,20 +550,31 @@ int main(int argc, char *argv[]){
     typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
     typename ParticleAttrib<double>::HostMirror Q_host = P->qm.getHostMirror();
 
-    double q = 1.0 / totalP;
+    double q = 1.0/totalP;
 
     for (unsigned long int i = 0; i< nloc; i++) {
         for (int d = 0; d<3; d++) {
-            R_host(i)[d] =  unif(eng) * nr[d];
+            R_host(i)[d] =  unif(eng); //* nr[d];
         }
+        //Vector_t r = {unif(eng), unif(eng), unif(eng)};
+        //R_host(i) = r;
         Q_host(i) = q;
     }
 
     Kokkos::deep_copy(P->R.getView(), R_host);
     Kokkos::deep_copy(P->qm.getView(), Q_host);
+    P->P = 0.0;
 
+    ippl::PRegion<double> region0(0.0, 1.0);
+    ippl::PRegion<double> region1(0.0, 1.0);
+    ippl::PRegion<double> region2(0.0, 1.0);
+
+    ippl::NDRegion<double, Dim>  pr;
+    pr = ippl::NDRegion<double, Dim>(region0, region1, region2);
 
     msg << "particles created and initial conditions assigned " << endl;
+    P->EFD_m.initialize(*mesh, *FL);
+    P->EFDMag_m.initialize(*mesh, *FL);
 //
 //     // redistribute particles based on spatial layout
 //     P->myUpdate();
@@ -690,31 +583,34 @@ int main(int argc, char *argv[]){
 //     msg << P->getMesh() << endl;
 //     msg << P->getFieldLayout() << endl;
 //
-//     msg << "scatter test done delta= " <<  P->scatter() << endl;
-//
-//     P->initFields();
-//     msg << "P->initField() done " << endl;
-//
-//     // begin main timestep loop
-//     msg << "Starting iterations ..." << endl;
-//     for (unsigned int it=0; it<nt; it++) {
-//         P->gatherStatistics();
-//         // advance the particle positions
-//         // basic leapfrogging timestep scheme.  velocities are offset
-//         // by half a timestep from the positions.
-//         assign(P->R, P->R + dt * P->P);
-//
-//         // update particle distribution across processors
-//         P->myUpdate();
-//
-//         // gather the local value of the E field
-//         P->gather(it);
-//
-//         // advance the particle velocities
-//         assign(P->P, P->P + dt * P->qm * P->E);
-//         msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin()
-//             << P->getRMax() << P->getHr() << endl;
-//     }
+    msg << "scatter test" << endl;
+    P->scatterCIC();
+    
+    P->initFields();
+    msg << "P->initField() done " << endl;
+     // begin main timestep loop
+     msg << "Starting iterations ..." << endl;
+     for (unsigned int it=0; it<nt; it++) {
+         //P->gatherStatistics();
+         // advance the particle positions
+         // basic leapfrogging timestep scheme.  velocities are offset
+         // by half a timestep from the positions.
+         P->R = P->R + dt * P->P;
+
+         //Apply particle BCs
+         P->getLayout().applyBC(P->R, pr);
+
+         // update particle distribution across processors
+         //P->myUpdate();
+
+         // gather the local value of the E field
+         P->gatherCIC(/*it*/);
+
+         // advance the particle velocities
+         P->P = P->P + dt * P->qm * P->E;
+         msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin()
+             << P->getRMax() << P->getHr() << endl;
+     }
 //     Ippl::Comm->barrier();
     msg << "Particle test PIC3d: End." << endl;
 
