@@ -56,7 +56,7 @@ namespace ippl {
             ExtrapolateFace(unsigned face,
                             T offset,
                             T slope)
-            : base_type(face, i)
+            : base_type(face)
             , offset_m(offset)
             , slope_m(slope)
             {}
@@ -102,6 +102,38 @@ namespace ippl {
         ConstantFace(unsigned int face, T constant)
         : detail::ExtrapolateFace<T, Dim, Mesh, Cell>(face, constant, 0)
         {}
+
+        virtual void write(std::ostream& out) const;
+    };
+
+
+    template<typename T,
+             unsigned Dim,
+             class Mesh = UniformCartesian<double, Dim>,
+             class Cell = typename Mesh::DefaultCentering>
+    class ZeroFace : public ConstantFace<T, Dim, Mesh, Cell>
+    {
+    public:
+        ZeroFace(unsigned face)
+        : ConstantFace<T, Dim, Mesh, Cell>(face, 0.0)
+        {}
+
+        virtual void write(std::ostream& out) const;
+    };
+
+
+    template<typename T,
+             unsigned Dim,
+             class Mesh = UniformCartesian<double, Dim>,
+             class Cell = typename Mesh::DefaultCentering>
+    class PeriodicFace : public detail::BCondBase<T, Dim, Mesh, Cell>
+    {
+    public:
+        PeriodicFace(unsigned face)
+        : detail::BCondBase<T, Dim, Mesh, Cell>(face)
+        { }
+
+//         virtual void apply( Field<T, Dim, Mesh, Cell>& );
 
         virtual void write(std::ostream& out) const;
     };

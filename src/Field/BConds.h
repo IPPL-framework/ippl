@@ -76,44 +76,6 @@ namespace ippl {
     }
 }
 
-//////////////////////////////////////////////////////////////////////
-
-// TJW: so far, componentwise specification of BCondNoAction not possible
-
-//////////////////////////////////////////////////////////////////////
-
-// template<class T,
-//          unsigned D,
-//          class M=UniformCartesian<D,double>,
-//          class C= typename M::DefaultCentering>
-// class PeriodicFace : public BCondBase<T, Dim, Mesh, Cell>
-// {
-// public:
-//   // Constructor takes zero, one, or two int's specifying components of
-//   // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
-//   // Zero int's specified means apply to all components; one means apply to
-//   // component (i), and two means apply to component (i,j),
-//   typedef BCondBase<T, Dim, Mesh, Cell> BCondBaseTDMC;
-//
-//   PeriodicFace(unsigned f,
-// 	       int i = BCondBaseTDMC::allComponents,
-// 	       int j = BCondBaseTDMC::allComponents);
-//
-//   // Apply the boundary condition to a particular Field.
-//   virtual void apply( Field<T, Dim, Mesh, Cell>& );
-//
-//   // Make a copy of the concrete type.
-//   virtual BCondBase<T, Dim, Mesh, Cell>* clone() const
-//   {
-//     return new PeriodicFace<T, Dim, Mesh, Cell>( *this );
-//   }
-//
-//   // Print out information about the BC to a stream.
-//   virtual void write(std::ostream& out) const;
-// };
-
-
-
 // //////////////////////////////////////////////////////////////////////
 // //BENI adds Periodic Boundary Conditions for Interpolations///////////
 // //////////////////////////////////////////////////////////////////////

@@ -56,12 +56,6 @@ inline void PETE_apply(const OP<T>&, T&, const T&)                          \
 //         }
 //     }
 // }
-
-// template<class T, unsigned int D, class M, class C>
-// void PeriodicFace<T,D,M,C>::write(std::ostream& out) const
-// {
-//   out << "PeriodicFace" << ", Face=" << BCondBase<T,D,M,C>::face_m;
-// }
 //
 // //BENI adds Interpolation face BC
 // template<class T, unsigned int D, class M, class C>
@@ -83,11 +77,6 @@ inline void PETE_apply(const OP<T>&, T&, const T&)                          \
 //   out << "ParallelPeriodicFace" << ", Face=" << BCondBase<T,D,M,C>::face_m;
 // }
 //
-// template<class T, unsigned int D, class M, class C>
-// void ZeroFace<T,D,M,C>::write(std::ostream& out) const
-// {
-//   out << "ZeroFace" << ", Face=" << BCondBase<T,D,M,C>::face_m;
-// }
 //
 // template<class T, unsigned int D, class M, class C>
 // void ZeroGuardsAndZeroFace<T,D,M,C>::write(std::ostream& out) const
@@ -95,17 +84,6 @@ inline void PETE_apply(const OP<T>&, T&, const T&)                          \
 //   out << "ZeroGuardsAndZeroFace" << ", Face=" << BCondBase<T,D,M,C>::face_m;
 // }
 //
-
-//
-// template<class T, unsigned D, class M, class C>
-// void
-// ExtrapolateFace<T,D,M,C>::write(std::ostream& o) const
-// {
-//
-//
-//   o << "ExtrapolateFace, Face=" << BCondBase<T,D,M,C>::face_m
-//     << ", Offset=" << Offset << ", Slope=" << Slope;
-// }
 //
 // template<class T, unsigned D, class M, class C>
 // void
@@ -166,15 +144,6 @@ namespace ippl {
 //=============================================================================
 // Constructors for PeriodicFace, ExtrapolateFace classes
 //=============================================================================
-
-// template<class T, unsigned D, class M, class C>
-// PeriodicFace<T,D,M,C>::PeriodicFace(unsigned f, int i, int j)
-//   : BCondBase<T,D,M,C>(f,i,j)
-// {
-// 	//std::cout << "(1) Constructor periodic face called" << std::endl;
-//
-//
-// }
 //
 // //BENI adds Interpolation face BC
 // template<class T, unsigned D, class M, class C>

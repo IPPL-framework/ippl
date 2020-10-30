@@ -16,7 +16,7 @@ namespace ippl {
     void NoBcFace<T, Dim, Mesh, Cell>::write(std::ostream& out) const
     {
         out << "NoBcFace"
-            << ", Face=" << this->face_m;
+            << ", Face = " << this->face_m;
     }
 
 
@@ -24,7 +24,23 @@ namespace ippl {
     void ConstantFace<T, Dim, Mesh, Cell>::write(std::ostream& out) const
     {
         out << "ConstantFace"
-            << ", Face=" << this->face_m
-            << ", Constant=" << this->offset_m;
+            << ", Face = " << this->face_m
+            << ", Constant = " << this->offset_m;
+    }
+
+
+    template<typename T, unsigned Dim, class Mesh, class Cell>
+    void ZeroFace<T, Dim, Mesh, Cell>::write(std::ostream& out) const
+    {
+        out << "ZeroFace"
+            << ", Face = " << this->face_m;
+    }
+
+
+    template<typename T, unsigned Dim, class Mesh, class Cell>
+    void PeriodicFace<T, Dim, Mesh, Cell>::write(std::ostream& out) const
+    {
+        out << "PeriodicFace"
+            << ", Face = " << this->face_m;
     }
 }

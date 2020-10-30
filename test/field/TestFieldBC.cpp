@@ -34,8 +34,13 @@ int main(int argc, char *argv[]) {
     field_type::bc_container bc;
 
     // Boundary conditions--zero on all faces:
-    for (unsigned int i = 0; i < 2 * dim; ++i) {
-        bc[i] = std::make_shared<ippl::ConstantFace<double, 3> >(i, 0.0);
+    bc[0] = std::make_shared<ippl::NoBcFace<double, 3> >(0);
+    bc[1] = std::make_shared<ippl::ConstantFace<double, 3> >(1, 0);
+    bc[2] = std::make_shared<ippl::ZeroFace<double, 3> >(2);
+    bc[3] = std::make_shared<ippl::PeriodicFace<double, 3> >(3);
+
+
+    for (unsigned int i = 0; i < 4; ++i) {
         std::cout << *bc[i] << std::endl;
     }
 
