@@ -55,87 +55,87 @@ const double pi = acos(-1.0);
 const double dt = 1.0;          // size of timestep
 
 
-void dumpVTK(Field<Vektor<double,3>,3> &EFD, NDIndex<3> lDom, int nx, int ny, int nz, int iteration,
-             double dx, double dy, double dz) {
-
-    std::ofstream vtkout;
-    vtkout.precision(10);
-    vtkout.setf(std::ios::scientific, std::ios::floatfield);
-
-    std::stringstream fname;
-    fname << "data/ef_";
-    fname << std::setw(4) << std::setfill('0') << iteration;
-    fname << ".vtk";
-
-    // open a new data file for this iteration
-    // and start with header
-    vtkout.open(fname.str().c_str(), std::ios::out);
-    vtkout << "# vtk DataFile Version 2.0" << std::endl;
-    vtkout << "pic3d" << std::endl;
-    vtkout << "ASCII" << std::endl;
-    vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-    vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << std::endl;
-    vtkout << "ORIGIN 0 0 0" << std::endl;
-    vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-    vtkout << "POINT_DATA " << nx*ny*nz << std::endl;
-
-    vtkout << "VECTORS E-Field float" << std::endl;
-    for (int z=lDom[2].first(); z<lDom[2].last(); z++) {
-        for (int y=lDom[1].first(); y<lDom[1].last(); y++) {
-            for (int x=lDom[0].first(); x<lDom[0].last(); x++) {
-                Vektor<double, 3> tmp = EFD[x][y][z].get();
-                vtkout << tmp(0) << "\t"
-                       << tmp(1) << "\t"
-                       << tmp(2) << std::endl;
-            }
-        }
-    }
-
-    // close the output file for this iteration:
-    vtkout.close();
-}
-
-
-void dumpVTK(Field<double,3> &EFD, NDIndex<3> lDom, int nx, int ny, int nz, int iteration,
-             double dx, double dy, double dz) {
-
-    std::ofstream vtkout;
-    vtkout.precision(10);
-    vtkout.setf(std::ios::scientific, std::ios::floatfield);
-
-    std::stringstream fname;
-    fname << "data/scalar_";
-    fname << std::setw(4) << std::setfill('0') << iteration;
-    fname << ".vtk";
-
-    //SERIAL at the moment
-    //if (Ippl::myNode() == 0) {
-
-    // open a new data file for this iteration
-    // and start with header
-    vtkout.open(fname.str().c_str(), std::ios::out);
-    vtkout << "# vtk DataFile Version 2.0" << std::endl;
-    vtkout << "toyfdtd" << std::endl;
-    vtkout << "ASCII" << std::endl;
-    vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-    vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << std::endl;
-    vtkout << "ORIGIN 0 0 0" << std::endl;
-    vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-    vtkout << "POINT_DATA " << nx*ny*nz << std::endl;
-
-    vtkout << "SCALARS E-Field float" << std::endl;
-    vtkout << "LOOKUP_TABLE default" << std::endl;
-    for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
-        for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
-            for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
-                vtkout << EFD[x][y][z].get() << std::endl;
-            }
-        }
-    }
-
-    // close the output file for this iteration:
-    vtkout.close();
-}
+//void dumpVTK(Field<Vektor<double,3>,3> &EFD, NDIndex<3> lDom, int nx, int ny, int nz, int iteration,
+//             double dx, double dy, double dz) {
+//
+//    std::ofstream vtkout;
+//    vtkout.precision(10);
+//    vtkout.setf(std::ios::scientific, std::ios::floatfield);
+//
+//    std::stringstream fname;
+//    fname << "data/ef_";
+//    fname << std::setw(4) << std::setfill('0') << iteration;
+//    fname << ".vtk";
+//
+//    // open a new data file for this iteration
+//    // and start with header
+//    vtkout.open(fname.str().c_str(), std::ios::out);
+//    vtkout << "# vtk DataFile Version 2.0" << std::endl;
+//    vtkout << "pic3d" << std::endl;
+//    vtkout << "ASCII" << std::endl;
+//    vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
+//    vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << std::endl;
+//    vtkout << "ORIGIN 0 0 0" << std::endl;
+//    vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
+//    vtkout << "POINT_DATA " << nx*ny*nz << std::endl;
+//
+//    vtkout << "VECTORS E-Field float" << std::endl;
+//    for (int z=lDom[2].first(); z<lDom[2].last(); z++) {
+//        for (int y=lDom[1].first(); y<lDom[1].last(); y++) {
+//            for (int x=lDom[0].first(); x<lDom[0].last(); x++) {
+//                Vektor<double, 3> tmp = EFD[x][y][z].get();
+//                vtkout << tmp(0) << "\t"
+//                       << tmp(1) << "\t"
+//                       << tmp(2) << std::endl;
+//            }
+//        }
+//    }
+//
+//    // close the output file for this iteration:
+//    vtkout.close();
+//}
+//
+//
+//void dumpVTK(Field<double,3> &EFD, NDIndex<3> lDom, int nx, int ny, int nz, int iteration,
+//             double dx, double dy, double dz) {
+//
+//    std::ofstream vtkout;
+//    vtkout.precision(10);
+//    vtkout.setf(std::ios::scientific, std::ios::floatfield);
+//
+//    std::stringstream fname;
+//    fname << "data/scalar_";
+//    fname << std::setw(4) << std::setfill('0') << iteration;
+//    fname << ".vtk";
+//
+//    //SERIAL at the moment
+//    //if (Ippl::myNode() == 0) {
+//
+//    // open a new data file for this iteration
+//    // and start with header
+//    vtkout.open(fname.str().c_str(), std::ios::out);
+//    vtkout << "# vtk DataFile Version 2.0" << std::endl;
+//    vtkout << "toyfdtd" << std::endl;
+//    vtkout << "ASCII" << std::endl;
+//    vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
+//    vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << std::endl;
+//    vtkout << "ORIGIN 0 0 0" << std::endl;
+//    vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
+//    vtkout << "POINT_DATA " << nx*ny*nz << std::endl;
+//
+//    vtkout << "SCALARS E-Field float" << std::endl;
+//    vtkout << "LOOKUP_TABLE default" << std::endl;
+//    for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
+//        for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
+//            for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
+//                vtkout << EFD[x][y][z].get() << std::endl;
+//            }
+//        }
+//    }
+//
+//    // close the output file for this iteration:
+//    vtkout.close();
+//}
 
 
 
@@ -255,111 +255,113 @@ public:
         else
             scatterNGP();
 
-        /*
-          now sum over all gridpoints ... a bit nasty !
+        ///*
+        //  now sum over all gridpoints ... a bit nasty !
 
-        */
+        //*/
 
-        Field<double,Dim> tmpf;
-        NDIndex<Dim> domain = getFieldLayout().getDomain();
+        //Field<double,Dim> tmpf;
+        //NDIndex<Dim> domain = getFieldLayout().getDomain();
 
-        FieldLayout_t *FL  = new FieldLayout_t(getMesh(), decomp_m);
-        tmpf.initialize(getMesh(), *FL);
+        //FieldLayout_t *FL  = new FieldLayout_t(getMesh(), decomp_m);
+        //tmpf.initialize(getMesh(), *FL);
 
-        tmpf[domain] = EFDMag_m[domain];
+        //tmpf[domain] = EFDMag_m[domain];
 
-        NDIndex<Dim> idx = getFieldLayout().getLocalNDIndex();
-        NDIndex<Dim> idxdom = getFieldLayout().getDomain();
-        NDIndex<Dim> elem;
+        //NDIndex<Dim> idx = getFieldLayout().getLocalNDIndex();
+        //NDIndex<Dim> idxdom = getFieldLayout().getDomain();
+        //NDIndex<Dim> elem;
 
-        double Q = 0.0;
-        for (int i=idx[0].min(); i<=idx[0].max(); ++i) {
-            elem[0] = Index(i,i);
-            for (int j=idx[1].min(); j<=idx[1].max(); ++j) {
-                elem[1] = Index(j,j);
-                for (int k=idx[2].min(); k<=idx[2].max(); ++k) {
-                    elem[2] = Index(k,k);
-                    Q +=  tmpf.localElement(elem);
-                }
-            }
+        //double Q = 0.0;
+        //for (int i=idx[0].min(); i<=idx[0].max(); ++i) {
+        //    elem[0] = Index(i,i);
+        //    for (int j=idx[1].min(); j<=idx[1].max(); ++j) {
+        //        elem[1] = Index(j,j);
+        //        for (int k=idx[2].min(); k<=idx[2].max(); ++k) {
+        //            elem[2] = Index(k,k);
+        //            Q +=  tmpf.localElement(elem);
+        //        }
+        //    }
 
-        }
-        reduce(Q,Q,OpAddAssign());
-        m << "sum(qm)= " << initialQ << " sum(EFDMag)= " << sum(EFDMag_m) << endl;
-        return initialQ-Q;
+        //}
+        //reduce(Q,Q,OpAddAssign());
+        double Q_grid = sum(EFDMag_m);
+        m << "sum(qm)= " << initialQ << " Q_grid= " << Q_grid << endl;
+        //return initialQ-Q;
+        return initialQ-Q_grid;
     }
 
     void myUpdate() {
 
-        double hz   = hr_m[2];
-        double zmin = rmin_m[2];
-        double zmax = rmax_m[2];
+    //    double hz   = hr_m[2];
+    //    double zmin = rmin_m[2];
+    //    double zmax = rmax_m[2];
 
-        if (bco_m != PPP) {
-            bounds(this->R, rmin_m, rmax_m);
+    //    if (bco_m != PPP) {
+    //        bounds(this->R, rmin_m, rmax_m);
 
-            NDIndex<Dim> domain = this->getFieldLayout().getDomain();
+    //        NDIndex<Dim> domain = this->getFieldLayout().getDomain();
 
-            for (unsigned int i=0; i<Dim; i++)
-                nr_m[i] = domain[i].length();
+    //        for (unsigned int i=0; i<Dim; i++)
+    //            nr_m[i] = domain[i].length();
 
-            for (unsigned int i=0; i<Dim; i++)
-                hr_m[i] = (rmax_m[i] - rmin_m[i]) / (nr_m[i] - 1.0);
+    //        for (unsigned int i=0; i<Dim; i++)
+    //            hr_m[i] = (rmax_m[i] - rmin_m[i]) / (nr_m[i] - 1.0);
 
-            if (bco_m == OOP) {
-                rmin_m[2] = zmin;
-                rmax_m[2] = zmax;
-                hr_m[2] = hz;
-            }
+    //        if (bco_m == OOP) {
+    //            rmin_m[2] = zmin;
+    //            rmax_m[2] = zmax;
+    //            hr_m[2] = hz;
+    //        }
 
-            getMesh().set_meshSpacing(&(hr_m[0]));
-            getMesh().set_origin(rmin_m);
+    //        getMesh().set_meshSpacing(&(hr_m[0]));
+    //        getMesh().set_origin(rmin_m);
 
-            if(withGuardCells_m) {
-                EFD_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), vbc_m);
-                EFDMag_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), bc_m);
-            }
-            else {
-                EFD_m.initialize(getMesh(), getFieldLayout(), vbc_m);
-                EFDMag_m.initialize(getMesh(), getFieldLayout(), bc_m);
-            }
-        }
-        else {
-            if(fieldNotInitialized_m) {
-                fieldNotInitialized_m=false;
-                getMesh().set_meshSpacing(&(hr_m[0]));
-                getMesh().set_origin(rmin_m);
-                if(withGuardCells_m) {
-                    EFD_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), vbc_m);
-                    EFDMag_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), bc_m);
-                }
-                else {
-                    EFD_m.initialize(getMesh(), getFieldLayout(), vbc_m);
-                    EFDMag_m.initialize(getMesh(), getFieldLayout(), bc_m);
-                }
-            }
-        }
+    //        if(withGuardCells_m) {
+    //            EFD_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), vbc_m);
+    //            EFDMag_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), bc_m);
+    //        }
+    //        else {
+    //            EFD_m.initialize(getMesh(), getFieldLayout(), vbc_m);
+    //            EFDMag_m.initialize(getMesh(), getFieldLayout(), bc_m);
+    //        }
+    //    }
+    //    else {
+    //        if(fieldNotInitialized_m) {
+    //            fieldNotInitialized_m=false;
+    //            getMesh().set_meshSpacing(&(hr_m[0]));
+    //            getMesh().set_origin(rmin_m);
+    //            if(withGuardCells_m) {
+    //                EFD_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), vbc_m);
+    //                EFDMag_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), bc_m);
+    //            }
+    //            else {
+    //                EFD_m.initialize(getMesh(), getFieldLayout(), vbc_m);
+    //                EFDMag_m.initialize(getMesh(), getFieldLayout(), bc_m);
+    //            }
+    //        }
+    //    }
         this->update();
     }
 
-    void gatherStatistics() {
-        Inform m("gatherStatistics ");
-        Inform m2a("gatherStatistics ",INFORM_ALL_NODES);
+    //void gatherStatistics() {
+    //    Inform m("gatherStatistics ");
+    //    Inform m2a("gatherStatistics ",INFORM_ALL_NODES);
 
-        double *partPerNode = new double[Ippl::getNodes()];
-        double *globalPartPerNode = new double[Ippl::getNodes()];
-        for (int i=0; i<Ippl::getNodes(); i++) {
-            partPerNode[i] = globalPartPerNode[i] = 0.0;
+    //    double *partPerNode = new double[Ippl::getNodes()];
+    //    double *globalPartPerNode = new double[Ippl::getNodes()];
+    //    for (int i=0; i<Ippl::getNodes(); i++) {
+    //        partPerNode[i] = globalPartPerNode[i] = 0.0;
 
-        }
-        partPerNode[Ippl::myNode()] = this->getLocalNum();
+    //    }
+    //    partPerNode[Ippl::myNode()] = this->getLocalNum();
 
-        reduce(partPerNode,partPerNode+Ippl::getNodes(),globalPartPerNode,OpAddAssign());
+    //    reduce(partPerNode,partPerNode+Ippl::getNodes(),globalPartPerNode,OpAddAssign());
 
-        for (int i=0; i<Ippl::getNodes(); i++)
-            m << "Node " << i << " has "
-              <<   globalPartPerNode[i]/this->getTotalNum()*100.0 << " \% of the total particles " << endl;
-    }
+    //    for (int i=0; i<Ippl::getNodes(); i++)
+    //        m << "Node " << i << " has "
+    //          <<   globalPartPerNode[i]/this->getTotalNum()*100.0 << " \% of the total particles " << endl;
+    //}
 
 
 
@@ -401,82 +403,82 @@ public:
     void setRMin(Vector_t x) { rmin_m = x; }
     void setHr(Vector_t x) { hr_m = x; }
 
-    void savePhaseSpace(std::string fn, int idx) {
+    //void savePhaseSpace(std::string fn, int idx) {
 
-        int tag = Ippl::Comm->next_tag(IPPL_APP_TAG4, IPPL_APP_CYCLE);
-	std::vector<double> tmp;
-        tmp.clear();
+    //    int tag = Ippl::Comm->next_tag(IPPL_APP_TAG4, IPPL_APP_CYCLE);
+	//std::vector<double> tmp;
+    //    tmp.clear();
 
-        // every node ckecks if he has to dump particles
-        for (unsigned i=0; i<this->getLocalNum(); i++) {
-            tmp.push_back(this->ID[i]);
-            tmp.push_back(this->R[i](0));
-            tmp.push_back(this->R[i](1));
-            tmp.push_back(this->R[i](2));
-            tmp.push_back(this->P[i](0));
-            tmp.push_back(this->P[i](1));
-            tmp.push_back(this->P[i](2));
-        }
+    //    // every node ckecks if he has to dump particles
+    //    for (unsigned i=0; i<this->getLocalNum(); i++) {
+    //        tmp.push_back(this->ID[i]);
+    //        tmp.push_back(this->R[i](0));
+    //        tmp.push_back(this->R[i](1));
+    //        tmp.push_back(this->R[i](2));
+    //        tmp.push_back(this->P[i](0));
+    //        tmp.push_back(this->P[i](1));
+    //        tmp.push_back(this->P[i](2));
+    //    }
 
-        if(Ippl::myNode() == 0) {
- 	    std::ofstream ostr;
-            std::string Fn;
-            char numbuf[6];
-            sprintf(numbuf, "%05d", idx);
-            Fn = fn  + std::string(numbuf) + ".dat";
-            ostr.open(Fn.c_str(), std::ios::out );
-            ostr.precision(15);
-            ostr.setf(std::ios::scientific, std::ios::floatfield);
+    //    if(Ippl::myNode() == 0) {
+ 	//    std::ofstream ostr;
+    //        std::string Fn;
+    //        char numbuf[6];
+    //        sprintf(numbuf, "%05d", idx);
+    //        Fn = fn  + std::string(numbuf) + ".dat";
+    //        ostr.open(Fn.c_str(), std::ios::out );
+    //        ostr.precision(15);
+    //        ostr.setf(std::ios::scientific, std::ios::floatfield);
 
-            ostr << " x, px, y, py t, pt, id, node" << std::endl;
+    //        ostr << " x, px, y, py t, pt, id, node" << std::endl;
 
-            unsigned int dataBlocks=0;
-            double x,y,z,px,py,pz,id;
-            unsigned  vn;
+    //        unsigned int dataBlocks=0;
+    //        double x,y,z,px,py,pz,id;
+    //        unsigned  vn;
 
-            for (unsigned i=0; i < tmp.size(); i+=7)
-                ostr << tmp[i+1] << " " << tmp[i+4] << " " << tmp[i+2]  << " " \
-                     << tmp[i+5] << " " << tmp[i+3] << " " << tmp[i+6]  << " " \
-                     << tmp[i]   << " " << Ippl::myNode() << std::endl;
+    //        for (unsigned i=0; i < tmp.size(); i+=7)
+    //            ostr << tmp[i+1] << " " << tmp[i+4] << " " << tmp[i+2]  << " " \
+    //                 << tmp[i+5] << " " << tmp[i+3] << " " << tmp[i+6]  << " " \
+    //                 << tmp[i]   << " " << Ippl::myNode() << std::endl;
 
-            int notReceived =  Ippl::getNodes() - 1;
-            while (notReceived > 0) {
-                int node = COMM_ANY_NODE;
-                Message* rmsg =  Ippl::Comm->receive_block(node, tag);
-                if (rmsg == 0)
-                    ERRORMSG("Could not receive from client nodes in main." << endl);
-                notReceived--;
-                rmsg->get(&dataBlocks);
-                rmsg->get(&vn);
-                for (unsigned i=0; i < dataBlocks; i+=7) {
-                    rmsg->get(&id);
-                    rmsg->get(&x);
-                    rmsg->get(&y);
-                    rmsg->get(&z);
-                    rmsg->get(&px);
-                    rmsg->get(&py);
-                    rmsg->get(&pz);
-                    ostr << x  << "\t " << px  << "\t " << y  << "\t " \
-                         << py << "\t " << z << "\t " << pz << "\t "   \
-                         << id   << "\t " << vn << std::endl;
-                }
-                delete rmsg;
-            }
-            ostr.close();
-        }
-        else {
-            unsigned dataBlocks = 0;
-            Message* smsg = new Message();
-            dataBlocks = tmp.size();
-            smsg->put(dataBlocks);
-            smsg->put(Ippl::myNode());
-            for (unsigned i=0; i < tmp.size(); i++)
-                smsg->put(tmp[i]);
-            bool res = Ippl::Comm->send(smsg, 0, tag);
-            if (! res)
-                ERRORMSG("Ippl::Comm->send(smsg, 0, tag) failed " << endl;);
-        }
-    }
+    //        int notReceived =  Ippl::getNodes() - 1;
+    //        while (notReceived > 0) {
+    //            int node = COMM_ANY_NODE;
+    //            Message* rmsg =  Ippl::Comm->receive_block(node, tag);
+    //            if (rmsg == 0)
+    //                ERRORMSG("Could not receive from client nodes in main." << endl);
+    //            notReceived--;
+    //            rmsg->get(&dataBlocks);
+    //            rmsg->get(&vn);
+    //            for (unsigned i=0; i < dataBlocks; i+=7) {
+    //                rmsg->get(&id);
+    //                rmsg->get(&x);
+    //                rmsg->get(&y);
+    //                rmsg->get(&z);
+    //                rmsg->get(&px);
+    //                rmsg->get(&py);
+    //                rmsg->get(&pz);
+    //                ostr << x  << "\t " << px  << "\t " << y  << "\t " \
+    //                     << py << "\t " << z << "\t " << pz << "\t "   \
+    //                     << id   << "\t " << vn << std::endl;
+    //            }
+    //            delete rmsg;
+    //        }
+    //        ostr.close();
+    //    }
+    //    else {
+    //        unsigned dataBlocks = 0;
+    //        Message* smsg = new Message();
+    //        dataBlocks = tmp.size();
+    //        smsg->put(dataBlocks);
+    //        smsg->put(Ippl::myNode());
+    //        for (unsigned i=0; i < tmp.size(); i++)
+    //            smsg->put(tmp[i]);
+    //        bool res = Ippl::Comm->send(smsg, 0, tag);
+    //        if (! res)
+    //            ERRORMSG("Ippl::Comm->send(smsg, 0, tag) failed " << endl;);
+    //    }
+    //}
 
 private:
 
@@ -628,6 +630,53 @@ int main(int argc, char *argv[]){
 
     unsigned long int nloc = totalP / Ippl::getNodes();
 
+    ////For generating same distribution always
+    //std::mt19937_64 eng[2*Dim];
+   
+    ////There is no reason for picking 42 or multiplying by 
+    ////Dim with i, just want the initial seeds to be
+    ////farther apart.
+    //for (int i = 0; i < 2*3; ++i) {
+    //    eng[i].seed(42 + Dim * i);
+    //    eng[i].discard( nloc * Ippl::myNode());
+    //}
+
+    ////std::vector<double> mu(Dim);
+    ////std::vector<double> sd(Dim);
+    ////std::vector<double> states(Dim);
+   
+
+    ////mu[0] = nr[0]/2;
+    ////mu[1] = nr[1]/2;
+    ////mu[2] = nr[2]/2;
+    ////sd[0] = 0.15*nr[0];
+    ////sd[1] = 0.05*nr[1];
+    ////sd[2] = 0.20*nr[2];
+
+
+    ////std::uniform_real_distribution<double> dist_uniform (0.0, 1.0);
+    //std::uniform_real_distribution<double> dist_x (0.0, nr[0]);
+    //std::uniform_real_distribution<double> dist_y (0.0, nr[1]);
+    //std::uniform_real_distribution<double> dist_z (0.0, nr[2]);
+
+
+    //P->create(nloc);
+    //for (unsigned long int i = 0; i< nloc; i++) {
+    //    
+    //    //for (int istate = 0; istate < 3; ++istate) {
+    //    //    double u1 = dist_uniform(eng[istate*2]);
+    //    //    double u2 = dist_uniform(eng[istate*2+1]);
+    //    //    states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) * std::cos(2.0 * pi * u2)) + mu[istate]; 
+    //    //}    
+    //    //for (int d = 0; d<3; d++)
+    //    //    P->R[i](d) =  IpplRandom() * nr[d];
+    //        //P->R[i](d) = std::fabs(std::fmod(states[d],nr[d]));
+    //    P->R[i](0) = dist_x(eng[0]);
+    //    P->R[i](1) = dist_y(eng[1]);
+    //    P->R[i](2) = dist_z(eng[2]);
+    //}
+
+
     P->create(nloc);
     for (unsigned long int i = 0; i< nloc; i++) {
         for (int d = 0; d<3; d++)
@@ -644,9 +693,9 @@ int main(int argc, char *argv[]){
     // redistribute particles based on spatial layout
     P->myUpdate();
 
-    msg << "initial update and initial mesh done .... Q= " << sum(P->qm) << endl;
-    msg << P->getMesh() << endl;
-    msg << P->getFieldLayout() << endl;
+    //msg << "initial update and initial mesh done .... Q= " << sum(P->qm) << endl;
+    //msg << P->getMesh() << endl;
+    //msg << P->getFieldLayout() << endl;
 
     msg << "scatter test done delta= " <<  P->scatter() << endl;
 
@@ -656,7 +705,7 @@ int main(int argc, char *argv[]){
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
-        P->gatherStatistics();
+        //P->gatherStatistics();
         // advance the particle positions
         // basic leapfrogging timestep scheme.  velocities are offset
         // by half a timestep from the positions.
