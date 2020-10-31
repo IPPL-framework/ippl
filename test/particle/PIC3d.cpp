@@ -236,15 +236,15 @@ public:
         return dynamic_cast<FieldLayout_t&>(this->getLayout().getLayout().getFieldLayout());
     }
 
-    void gather(int iteration) {
+    void gather(int /*iteration*/) {
         if (interpol_m==CIC)
             gatherCIC();
         else
             gatherNGP();
 
 		scatterCIC();
-        NDIndex<Dim> lDom = getFieldLayout().getLocalNDIndex();
-        dumpVTK(EFDMag_m,lDom,nr_m[0],nr_m[1],nr_m[2],iteration,hr_m[0],hr_m[1],hr_m[2]);
+		//NDIndex<Dim> lDom = getFieldLayout().getLocalNDIndex();
+        //dumpVTK(EFDMag_m,lDom,nr_m[0],nr_m[1],nr_m[2],iteration,hr_m[0],hr_m[1],hr_m[2]);
     }
 
     double scatter() {
@@ -435,12 +435,12 @@ public:
     //        unsigned int dataBlocks=0;
     //        double x,y,z,px,py,pz,id;
     //        unsigned  vn;
-
-    //        for (unsigned i=0; i < tmp.size(); i+=7)
-    //            ostr << tmp[i+1] << " " << tmp[i+4] << " " << tmp[i+2]  << " " \
-    //                 << tmp[i+5] << " " << tmp[i+3] << " " << tmp[i+6]  << " " \
-    //                 << tmp[i]   << " " << Ippl::myNode() << std::endl;
-
+    /*
+            for (unsigned i=0; i < tmp.size(); i+=7)
+                ostr << tmp[i+1] << " " << tmp[i+4] << " " << tmp[i+2]  << " " \
+                     << tmp[i+5] << " " << tmp[i+3] << " " << tmp[i+6]  << " " \
+                     << tmp[i]   << " " << Ippl::myNode() << std::endl;
+    */
     //        int notReceived =  Ippl::getNodes() - 1;
     //        while (notReceived > 0) {
     //            int node = COMM_ANY_NODE;
@@ -458,9 +458,9 @@ public:
     //                rmsg->get(&px);
     //                rmsg->get(&py);
     //                rmsg->get(&pz);
-    //                ostr << x  << "\t " << px  << "\t " << y  << "\t " \
-    //                     << py << "\t " << z << "\t " << pz << "\t "   \
-    //                     << id   << "\t " << vn << std::endl;
+    /*                    ostr << x  << "\t " << px  << "\t " << y  << "\t " \
+                         << py << "\t " << z << "\t " << pz << "\t "   \
+                         << id   << "\t " << vn << std::endl;*/
     //            }
     //            delete rmsg;
     //        }

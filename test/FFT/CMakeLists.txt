@@ -3,7 +3,6 @@ message (STATUS "Adding test FFT found in ${_relPath}")
 
 include_directories (
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/ippl/src
 )
 
 link_directories (
