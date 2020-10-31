@@ -293,54 +293,54 @@ public:
 
     void myUpdate() {
 
-    //    double hz   = hr_m[2];
-    //    double zmin = rmin_m[2];
-    //    double zmax = rmax_m[2];
+        double hz   = hr_m[2];
+        double zmin = rmin_m[2];
+        double zmax = rmax_m[2];
 
-    //    if (bco_m != PPP) {
-    //        bounds(this->R, rmin_m, rmax_m);
+        if (bco_m != PPP) {
+            bounds(this->R, rmin_m, rmax_m);
 
-    //        NDIndex<Dim> domain = this->getFieldLayout().getDomain();
+            NDIndex<Dim> domain = this->getFieldLayout().getDomain();
 
-    //        for (unsigned int i=0; i<Dim; i++)
-    //            nr_m[i] = domain[i].length();
+            for (unsigned int i=0; i<Dim; i++)
+                nr_m[i] = domain[i].length();
 
-    //        for (unsigned int i=0; i<Dim; i++)
-    //            hr_m[i] = (rmax_m[i] - rmin_m[i]) / (nr_m[i] - 1.0);
+            for (unsigned int i=0; i<Dim; i++)
+                hr_m[i] = (rmax_m[i] - rmin_m[i]) / (nr_m[i] - 1.0);
 
-    //        if (bco_m == OOP) {
-    //            rmin_m[2] = zmin;
-    //            rmax_m[2] = zmax;
-    //            hr_m[2] = hz;
-    //        }
+            if (bco_m == OOP) {
+                rmin_m[2] = zmin;
+                rmax_m[2] = zmax;
+                hr_m[2] = hz;
+            }
 
-    //        getMesh().set_meshSpacing(&(hr_m[0]));
-    //        getMesh().set_origin(rmin_m);
+            getMesh().set_meshSpacing(&(hr_m[0]));
+            getMesh().set_origin(rmin_m);
 
-    //        if(withGuardCells_m) {
-    //            EFD_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), vbc_m);
-    //            EFDMag_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), bc_m);
-    //        }
-    //        else {
-    //            EFD_m.initialize(getMesh(), getFieldLayout(), vbc_m);
-    //            EFDMag_m.initialize(getMesh(), getFieldLayout(), bc_m);
-    //        }
-    //    }
-    //    else {
-    //        if(fieldNotInitialized_m) {
-    //            fieldNotInitialized_m=false;
-    //            getMesh().set_meshSpacing(&(hr_m[0]));
-    //            getMesh().set_origin(rmin_m);
-    //            if(withGuardCells_m) {
-    //                EFD_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), vbc_m);
-    //                EFDMag_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), bc_m);
-    //            }
-    //            else {
-    //                EFD_m.initialize(getMesh(), getFieldLayout(), vbc_m);
-    //                EFDMag_m.initialize(getMesh(), getFieldLayout(), bc_m);
-    //            }
-    //        }
-    //    }
+            if(withGuardCells_m) {
+                EFD_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), vbc_m);
+                EFDMag_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), bc_m);
+            }
+            else {
+                EFD_m.initialize(getMesh(), getFieldLayout(), vbc_m);
+                EFDMag_m.initialize(getMesh(), getFieldLayout(), bc_m);
+            }
+        }
+        else {
+            if(fieldNotInitialized_m) {
+                fieldNotInitialized_m=false;
+                getMesh().set_meshSpacing(&(hr_m[0]));
+                getMesh().set_origin(rmin_m);
+                if(withGuardCells_m) {
+                    EFD_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), vbc_m);
+                    EFDMag_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), bc_m);
+                }
+                else {
+                    EFD_m.initialize(getMesh(), getFieldLayout(), vbc_m);
+                    EFDMag_m.initialize(getMesh(), getFieldLayout(), bc_m);
+                }
+            }
+        }
         this->update();
     }
 
