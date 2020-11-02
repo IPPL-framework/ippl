@@ -32,6 +32,8 @@ Usage:
 #include <iostream>
 #include <set>
 
+#include <random>
+#include <chrono>
 // dimension of our positions
 const unsigned Dim = 3;
 
@@ -242,14 +244,15 @@ public:
         else
             gatherNGP();
 
-		scatterCIC();
+		scatter();
 		//NDIndex<Dim> lDom = getFieldLayout().getLocalNDIndex();
         //dumpVTK(EFDMag_m,lDom,nr_m[0],nr_m[1],nr_m[2],iteration,hr_m[0],hr_m[1],hr_m[2]);
     }
 
-    double scatter() {
+    void scatter() {
         Inform m("scatter ");
         double initialQ = sum(qm);
+        EFDMag_m = 0.0;
         if (interpol_m==CIC)
             scatterCIC();
         else
@@ -288,7 +291,7 @@ public:
         double Q_grid = sum(EFDMag_m);
         m << "sum(qm)= " << initialQ << " Q_grid= " << Q_grid << endl;
         //return initialQ-Q;
-        return initialQ-Q_grid;
+        //return initialQ-Q_grid;
     }
 
     void myUpdate() {
@@ -544,6 +547,7 @@ int main(int argc, char *argv[]){
 
     Vektor<int,Dim> nr(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]));
 
+    auto start = std::chrono::high_resolution_clock::now();    
     const unsigned int totalP = atoi(argv[4]);
     const unsigned int nt     = atoi(argv[5]);
 
@@ -678,9 +682,13 @@ int main(int argc, char *argv[]){
 
 
     P->create(nloc);
+    std::mt19937_64 eng;//(42);
+    std::uniform_real_distribution<double> unif(0, 1);
     for (unsigned long int i = 0; i< nloc; i++) {
         for (int d = 0; d<3; d++)
-            P->R[i](d) =  IpplRandom() * nr[d];
+            //P->R[i](d) =  IpplRandom() * nr[d];
+            P->R[i](d) =  unif(eng) * nr[d];
+
     }
 
     double q = 1.0/totalP;
@@ -697,7 +705,8 @@ int main(int argc, char *argv[]){
     //msg << P->getMesh() << endl;
     //msg << P->getFieldLayout() << endl;
 
-    msg << "scatter test done delta= " <<  P->scatter() << endl;
+    msg << "scatter test " << endl;
+    P->scatter();
 
     P->initFields();
     msg << "P->initField() done " << endl;
@@ -722,6 +731,11 @@ int main(int argc, char *argv[]){
         msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin()
             << P->getRMax() << P->getHr() << endl;
     }
+    
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> time_elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    std::cout << "Elapsed time: " << time_elapsed.count() << std::endl;
     Ippl::Comm->barrier();
     msg << "Particle test PIC3d: End." << endl;
     return 0;
