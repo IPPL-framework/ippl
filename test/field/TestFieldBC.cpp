@@ -38,11 +38,11 @@ int main(int argc, char *argv[]) {
     bc[1] = std::make_shared<ippl::ConstantFace<double, 3> >(1, 0);
     bc[2] = std::make_shared<ippl::ZeroFace<double, 3> >(2);
     bc[3] = std::make_shared<ippl::PeriodicFace<double, 3> >(3);
+    bc[4] = std::make_shared<ippl::NoBcFace<double, 3> >(4);
+    bc[5] = std::make_shared<ippl::ZeroFace<double, 3> >(5);
 
 
-    for (unsigned int i = 0; i < 4; ++i) {
-        std::cout << *bc[i] << std::endl;
-    }
+    std::cout << bc << std::endl;
 
     field_type field(mesh, layout, bc);
 

@@ -109,17 +109,14 @@ namespace ippl {
         void
         BConds<T, Dim, Mesh, Cell>::write(std::ostream& os) const
         {
-            os << "BConds:(" << std::endl;
-//             const_iterator p=this->begin();
-//             while (p!=this->end())
-//             {
-//                 (*p).second->write(o);
-//                 ++p;
-//                 if (p!=this->end())
-//                     os << " , " << std::endl;
-//                 else
-//                     os << std::endl << ")" << std::endl << std::endl;
-//             }
+            os << "BConds: (" << std::endl;
+            const_iterator it = bc_m.begin();
+            for ( ; it != bc_m.end() - 1; ++it) {
+                (*it)->write(os);
+                os << "," << std::endl;
+            }
+            (*it)->write(os);
+            os << std::endl << ")";
         }
 
 //         template<typename T, unsigned Dim, class Mesh, class Centering

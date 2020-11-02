@@ -43,10 +43,10 @@ namespace ippl {
     {
     public:
         using bc_type = detail::BCondBase<T, Dim, Mesh, Cell>;
-        //   typedef typename vmap<int, RefCountedP <BCondBase<T, Dim, Mesh, Cell> > >::iterator
-        //     iterator;
-        //   typedef typename vmap<int, RefCountedP <BCondBase<T, Dim, Mesh, Cell> > >::const_iterator
-        //     const_iterator;
+        using container = std::array<std::shared_ptr<bc_type>, 2 * Dim>;
+        using iterator = typename container::iterator;
+        using const_iterator = typename container::const_iterator;
+
 //             void apply( Field<T, Dim, Mesh, Cell>& a );
         bool changesPhysicalCells() const;
         virtual void write(std::ostream&) const;
@@ -60,10 +60,7 @@ namespace ippl {
         }
 
     private:
-        std::array<
-            std::shared_ptr<bc_type>,
-            2 * Dim
-        > bc_m;
+        container bc_m;
     };
 
 
@@ -341,18 +338,6 @@ namespace ippl {
 // Define global streaming functions that just call the
 // write function for each of the above base classes.
 //
-
-namespace ippl {
-    namespace detail {
-        template<typename T, unsigned Dim, class Mesh, class Cell>
-        inline std::ostream&
-        operator<<(std::ostream& os, const BCondBase<T, Dim, Mesh, Cell>& bc)
-        {
-            bc.write(os);
-            return os;
-        }
-    }
-}
 
 #include "Field/BConds.hpp"
 

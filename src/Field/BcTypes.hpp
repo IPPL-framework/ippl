@@ -9,6 +9,15 @@ namespace ippl {
         : face_m(face)
         , changePhysical_m(false)
         { }
+
+
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        inline std::ostream&
+        operator<<(std::ostream& os, const BCondBase<T, Dim, Mesh, Cell>& bc)
+        {
+            bc.write(os);
+            return os;
+        }
     }
 
 

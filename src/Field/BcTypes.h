@@ -65,7 +65,7 @@ namespace ippl {
 
 //         virtual void apply( Field<T, Dim, Mesh, Cell>& );
 
-            virtual void write(std::ostream&) const {};
+            virtual void write(std::ostream&) const = 0;
 
             const T& getOffset() const { return offset_m; }
             const T& getSlope() const { return slope_m; }
