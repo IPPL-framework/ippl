@@ -1,34 +1,15 @@
 #ifndef IPPL_FIELD_BC_H
 #define IPPL_FIELD_BC_H
 
-// #include "Utility/IpplInfo.h"
-// #include "Utility/RefCounted.h"
-// #include "Utility/vmap.h"
-
 #include "Field/BcTypes.h"
 
 #include <array>
 #include <iostream>
 #include <memory>
 
-
-
-// #include <complex>
-
-// #include "Meshes/Kokkos_UniformCartesian.h"
-
-// forward declarations
-// template <unsigned D> class NDIndex;
-// template <class T, unsigned D> class Vektor;
-// template<unsigned D, class T> class UniformCartesian;
-// template<class T, unsigned D> class LField;
-// template<class T, unsigned D> class BareField;
-// template<class T, unsigned D, class M, class C> class Field;
-//
-// template <class T, unsigned D, class M, class C>
-// template <class T, unsigned D, class M, class C>
-
 namespace ippl {
+    template<typename T, unsigned Dim, class Mesh, class Cell> class Field;
+
     template<typename T, unsigned Dim, class Mesh, class Cell> class BConds;
 
     template<typename T, unsigned Dim, class Mesh, class Cell>
@@ -47,7 +28,8 @@ namespace ippl {
         using iterator = typename container::iterator;
         using const_iterator = typename container::const_iterator;
 
-//             void apply( Field<T, Dim, Mesh, Cell>& a );
+        void apply(Field<T, Dim, Mesh, Cell>& field);
+
         bool changesPhysicalCells() const;
         virtual void write(std::ostream&) const;
 

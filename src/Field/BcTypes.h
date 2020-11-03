@@ -2,6 +2,8 @@
 #define IPPL_FIELD_BC_TYPES_H
 
 namespace ippl {
+    template<typename T, unsigned Dim, class Mesh, class Cell> class Field;
+
     namespace detail {
         template<typename T, unsigned Dim, class Mesh, class Cell> class BCondBase;
 
@@ -21,7 +23,7 @@ namespace ippl {
 
             virtual ~BCondBase() = default;
 
-//             virtual void apply( Field<T, Dim, Mesh, Cell>& ) = 0;
+            virtual void apply( Field<T, Dim, Mesh, Cell>& field) = 0;
 
             virtual void write(std::ostream&) const = 0;
 
@@ -63,7 +65,7 @@ namespace ippl {
 
             virtual ~ExtrapolateFace() = default;
 
-//         virtual void apply( Field<T, Dim, Mesh, Cell>& );
+            virtual void apply(Field<T, Dim, Mesh, Cell>& field);
 
             virtual void write(std::ostream&) const = 0;
 
@@ -86,7 +88,7 @@ namespace ippl {
         public:
             NoBcFace(int face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
 
-    //     virtual void apply( Field<T, Dim, Mesh, Cell>& ) {}
+            virtual void apply(Field<T, Dim, Mesh, Cell>& /*field*/) {}
 
             virtual void write(std::ostream& out) const;
     };
@@ -133,7 +135,7 @@ namespace ippl {
         : detail::BCondBase<T, Dim, Mesh, Cell>(face)
         { }
 
-//         virtual void apply( Field<T, Dim, Mesh, Cell>& );
+        virtual void apply(Field<T, Dim, Mesh, Cell>& /*field*/) {};
 
         virtual void write(std::ostream& out) const;
     };

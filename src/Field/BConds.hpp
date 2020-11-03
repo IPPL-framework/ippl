@@ -119,22 +119,25 @@ namespace ippl {
             os << std::endl << ")";
         }
 
-//         template<typename T, unsigned Dim, class Mesh, class Centering
-//         void
-//         BConds<T, Dim, Mesh, Cell>::apply( Field<T, Dim, Mesh, Cell>& a )
-//         {
-//             for (iterator p=this->begin(); p!=this->end(); ++p)
-//                 (*p).second->apply(a);
-//         }
+
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        void
+        BConds<T, Dim, Mesh, Cell>::apply(Field<T, Dim, Mesh, Cell>& field)
+        {
+            for (iterator it = bc_m.begin(); it != bc_m.end(); ++it) {
+                (*it)->apply(field);
+            }
+        }
 
         template<typename T, unsigned Dim, class Mesh, class Cell>
         bool
         BConds<T, Dim, Mesh, Cell>::changesPhysicalCells() const
         {
-//             for (const_iterator p=this->begin(); p!=this->end(); ++p)
-//                 if ((*p).second->changesPhysicalCells())
-//                     return true;
-            return false;
+            bool doesChange = false;
+            for (const_iterator it = bc_m.begin(); it != bc_m.end(); ++it) {
+                doesChange |= (*it)->changesPhysicalCells();
+            }
+            return doesChange;
         }
 }
 

@@ -18,6 +18,12 @@ namespace ippl {
             bc.write(os);
             return os;
         }
+
+
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        void ExtrapolateFace<T, Dim, Mesh, Cell>::apply(Field<T, Dim, Mesh, Cell>& /*field*/) {
+            //TODO
+        }
     }
 
 
