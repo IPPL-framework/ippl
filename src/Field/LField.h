@@ -53,6 +53,7 @@ namespace ippl {
         //! View type storing the data
         typedef typename detail::ViewType<T, Dim>::view_type view_type;
 
+        using HostMirror = typename view_type::HostMirror;
 
         /*! Constructor for an LField. The default constructor is deleted.
         * @param owned domain of "owned" region of LField (without guards)
@@ -134,6 +135,11 @@ namespace ippl {
 
         const view_type& getView() const {
             return dview_m;
+        }
+
+
+        HostMirror getHostMirror() {
+            return Kokkos::create_mirror(dview_m);
         }
 
         /*!

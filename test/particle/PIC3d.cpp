@@ -1,4 +1,3 @@
-//
 // Test PIC3d
 //   This test program sets up a simple sine-wave electric field in 3D,
 //   creates a population of particles with random q/m values (charge-to-mass
@@ -6,7 +5,7 @@
 //   electric field using cloud-in-cell interpolation.
 //
 //   Usage:
-//     mpirun -np 2 PIC3d 128 128 128 10000 10 OOP --commlib mpi --info 0
+//     srun ./PIC3d 128 128 128 10000 10 --info 10
 //
 // Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
@@ -22,13 +21,18 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "Ippl.h"
-// #include <string>
-// #include <fstream>
-// #include <vector>
-// #include <iostream>
-// #include <set>
+#include <string>
+#include <fstream>
+#include <vector>
+#include <iostream>
+#include <set>
 
 #include <random>
+#include <chrono>
+#include "Utility/Timer.h"
+#include "Utility/IpplCounter.h"
+#include "Utility/IpplStats.h"
+#include "Utility/IpplTimings.h"
 
 // dimension of our positions
 constexpr unsigned Dim = 3;
@@ -37,7 +41,6 @@ constexpr unsigned Dim = 3;
 typedef ippl::detail::ParticleLayout<double,Dim>   PLayout_t;
 typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
 typedef Cell                                       Center_t;
-//typedef CenteredFieldLayout<Dim, Mesh_t, Center_t> FieldLayout_t;
 typedef FieldLayout<Dim> FieldLayout_t;
 
 
@@ -58,12 +61,14 @@ typedef Field<Vector_t, Dim> VField_t;
 //enum BC_t {OOO,OOP,PPP};
 
 double pi = acos(-1.0);
-const double dt = 1.0;          // size of timestep
 
-/*
-void dumpVTK(Field<Vektor<double,3>,3> &EFD, NDIndex<3> lDom, int nx, int ny, int nz, int iteration,
+void dumpVTK(VField_t& EFD, int nx, int ny, int nz, int iteration,
              double dx, double dy, double dz) {
 
+
+    typename VField_t::LField_t::view_type::HostMirror host_view = EFD(0).getHostMirror();
+
+    Kokkos::deep_copy(host_view, EFD(0).getView());
     std::ofstream vtkout;
     vtkout.precision(10);
     vtkout.setf(std::ios::scientific, std::ios::floatfield);
@@ -80,19 +85,19 @@ void dumpVTK(Field<Vektor<double,3>,3> &EFD, NDIndex<3> lDom, int nx, int ny, in
     vtkout << "pic3d" << std::endl;
     vtkout << "ASCII" << std::endl;
     vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-    vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << std::endl;
-    vtkout << "ORIGIN 0 0 0" << std::endl;
+    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << std::endl;
+    vtkout << "ORIGIN "     << -dx  << " " << -dy  << " "  << -dz << std::endl;
     vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-    vtkout << "POINT_DATA " << nx*ny*nz << std::endl;
+    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << std::endl;
 
     vtkout << "VECTORS E-Field float" << std::endl;
-    for (int z=lDom[2].first(); z<lDom[2].last(); z++) {
-        for (int y=lDom[1].first(); y<lDom[1].last(); y++) {
-            for (int x=lDom[0].first(); x<lDom[0].last(); x++) {
-                Vektor<double, 3> tmp = EFD[x][y][z].get();
-                vtkout << tmp(0) << "\t"
-                       << tmp(1) << "\t"
-                       << tmp(2) << std::endl;
+    for (int z=0; z<nz+2; z++) {
+        for (int y=0; y<ny+2; y++) {
+            for (int x=0; x<nx+2; x++) {
+                
+                vtkout << host_view(x,y,z)[0] << "\t"
+                       << host_view(x,y,z)[1] << "\t"
+                       << host_view(x,y,z)[2] << std::endl;
             }
         }
     }
@@ -102,9 +107,11 @@ void dumpVTK(Field<Vektor<double,3>,3> &EFD, NDIndex<3> lDom, int nx, int ny, in
 }
 
 
-void dumpVTK(Field<double,3> &EFD, NDIndex<3> lDom, int nx, int ny, int nz, int iteration,
+void dumpVTK(Field_t& EFD, int nx, int ny, int nz, int iteration,
              double dx, double dy, double dz) {
 
+    typename Field_t::LField_t::view_type::HostMirror host_view = EFD(0).getHostMirror();
+    Kokkos::deep_copy(host_view, EFD(0).getView());
     std::ofstream vtkout;
     vtkout.precision(10);
     vtkout.setf(std::ios::scientific, std::ios::floatfield);
@@ -114,8 +121,7 @@ void dumpVTK(Field<double,3> &EFD, NDIndex<3> lDom, int nx, int ny, int nz, int 
     fname << std::setw(4) << std::setfill('0') << iteration;
     fname << ".vtk";
 
-    //SERIAL at the moment
-    //if (Ippl::myNode() == 0) {
+    double vol = dx*dy*dz;
 
     // open a new data file for this iteration
     // and start with header
@@ -124,25 +130,27 @@ void dumpVTK(Field<double,3> &EFD, NDIndex<3> lDom, int nx, int ny, int nz, int 
     vtkout << "toyfdtd" << std::endl;
     vtkout << "ASCII" << std::endl;
     vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-    vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << std::endl;
-    vtkout << "ORIGIN 0 0 0" << std::endl;
+    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << std::endl;
+    vtkout << "ORIGIN " << -dx << " " << -dy << " " << -dz << std::endl;
     vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-    vtkout << "POINT_DATA " << nx*ny*nz << std::endl;
+    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << std::endl;
 
-    vtkout << "SCALARS E-Field float" << std::endl;
+    vtkout << "SCALARS Rho float" << std::endl;
     vtkout << "LOOKUP_TABLE default" << std::endl;
-    for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
-        for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
-            for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
-                vtkout << EFD[x][y][z].get() << std::endl;
+    for (int z=0; z<nz+2; z++) {
+        for (int y=0; y<ny+2; y++) {
+            for (int x=0; x<nx+2; x++) {
+                
+                vtkout << host_view(x,y,z)/vol << std::endl;
             }
         }
     }
 
+
     // close the output file for this iteration:
     vtkout.close();
 }
-*/
+
 
 
 
@@ -161,6 +169,8 @@ public:
     Vector_t rmin_m;
     Vector_t rmax_m;
 
+    double Q_m;
+
 
 public:
     ParticleAttrib<double>     qm; // charge-to-mass ratio
@@ -175,13 +185,14 @@ public:
 //     */
 //
     ChargedParticles(PLayout& pl,
-//                      BC_t bc, InterPol_t interpol,
-                     Vector_t hr, Vector_t rmin, Vector_t rmax, e_dim_tag decomp[Dim]
-                     /*, bool gCells*/)
+//                   BC_t bc,
+                     Vector_t hr, Vector_t rmin, Vector_t rmax, e_dim_tag decomp[Dim], 
+                     double Q)
     : ippl::ParticleBase<PLayout>(pl)
     , hr_m(hr)
     , rmin_m(rmin)
     , rmax_m(rmax)
+    , Q_m(Q)
     {
 //         // register the particle attributes
         this->addAttribute(qm);
@@ -202,37 +213,42 @@ public:
 //             setBCOOP();
     }
 
-//     inline const Mesh_t& getMesh() const { return this->getLayout().getLayout().getMesh(); }
-//
-//     inline Mesh_t& getMesh() { return this->getLayout().getLayout().getMesh(); }
-//
-//     inline const FieldLayout_t& getFieldLayout() const {
-//         return dynamic_cast<FieldLayout_t&>( this->getLayout().getLayout().getFieldLayout());
-//     }
-//
-//     inline FieldLayout_t& getFieldLayout() {
-//         return dynamic_cast<FieldLayout_t&>(this->getLayout().getLayout().getFieldLayout());
-//     }
-//
-     void gatherCIC(/*int iteration*/) {
+     void gatherCIC(int iteration) {
 
+        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");           
+        IpplTimings::startTimer(gatherTimer);                                                    
         gather(this->E, EFD_m, this->R);
- 		scatterCIC();
-        //NDIndex<Dim> lDom = getFieldLayout().getLocalNDIndex();
-         //dumpVTK(EFDMag_m,lDom,nr_m[0],nr_m[1],nr_m[2],iteration,hr_m[0],hr_m[1],hr_m[2]);
+        Kokkos::fence();
+        IpplTimings::stopTimer(gatherTimer);                                                    
+
+        iteration *= 1;
+        scatterCIC();
+        //if(iteration % 1 == 0) {
+        //    static IpplTimings::TimerRef vtkTimer = IpplTimings::getTimer("dump VTK scalar");           
+        //    IpplTimings::startTimer(vtkTimer);                                                    
+        //    dumpVTK(EFDMag_m,nr_m[0],nr_m[1],nr_m[2],iteration,hr_m[0],hr_m[1],hr_m[2]);
+        //    Kokkos::fence();
+        //    IpplTimings::stopTimer(vtkTimer);                                                    
+        //}
      }
 
-     //void scatterCIC(Field_t& field_temp) {
      void scatterCIC() {
+         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
+         IpplTimings::startTimer(scatterTimer);                                                    
          Inform m("scatter ");
-         double initialQ = 1.0;//qm.sum();
          EFDMag_m = 0.0;
          scatter(qm, EFDMag_m, this->R);
-         //scatter(qm, field_temp, this->R);
+         Kokkos::fence();
+         IpplTimings::stopTimer(scatterTimer);                                                    
+         
+         static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check charge conservation");           
+         IpplTimings::startTimer(sumTimer);                                                    
          double Q_grid = EFDMag_m.sum(1);
-         //double Q_grid = field_temp.sum(1);
+         
          m << "Q grid = " << Q_grid << endl;
-         m << "Error = " << initialQ-Q_grid << endl;
+         m << "Error = " << Q_m-Q_grid << endl;
+         Kokkos::fence();
+         IpplTimings::stopTimer(sumTimer);                                                    
      }
 //
 //     void myUpdate() {
@@ -290,6 +306,8 @@ public:
 //
      
      void initFields() {
+         static IpplTimings::TimerRef initFieldsTimer = IpplTimings::getTimer("initFields");           
+         IpplTimings::startTimer(initFieldsTimer);                                                    
          Inform m("initFields ");
 
          NDIndex<Dim> domain = EFD_m.getDomain();
@@ -301,11 +319,13 @@ public:
          int ny = nr_m[1];
          int nz = nr_m[2];
 
-         double phi0 = 0.1*nx;
+         double phi0 = 0.1;
          double pi = acos(-1.0);
 
-         m << "rmin= " << rmin_m << " rmax= " << rmax_m << " h= " << hr_m << " n= " << nr_m << endl;
+         m << "rmin= " << rmin_m << " rmax= " << rmax_m << " h= " 
+           << hr_m << " n= " << nr_m << endl;
 
+         Vector_t hr = hr_m;
 
          typename VField_t::LField_t::view_type& view = EFD_m(0).getView();
 
@@ -316,9 +336,10 @@ public:
                                                                       view.extent(2)}),
                               KOKKOS_LAMBDA(const int i, const int j, const int k){
 
-                                view(i, j, k)[0] = -2.0*pi*phi0/nx * 
-                                                    cos(2.0*pi*(i+0.5)/nx) *
-                                                    cos(4.0*pi*(j+0.5)/ny) * cos(pi*(k+0.5)/nz);
+                                view(i, j, k)[0] = -2.0*pi*phi0 * 
+                                                    cos(2.0*pi*(i+0.5)*hr[0]) *
+                                                    cos(4.0*pi*(j+0.5)*hr[1]) * 
+                                                    cos(pi*(k+0.5)*hr[2]);
                               
                               });
          
@@ -329,8 +350,9 @@ public:
                                                                       view.extent(2)}),
                               KOKKOS_LAMBDA(const int i, const int j, const int k){
 
-                                view(i, j, k)[1] = 4.0*pi*phi0/ny * 
-                                                   sin(2.0*pi*(i+0.5)/nx) * sin(4.0*pi*(j+0.5)/ny);
+                                view(i, j, k)[1] = 4.0*pi*phi0 * 
+                                                   sin(2.0*pi*(i+0.5)*hr[0]) * 
+                                                   sin(4.0*pi*(j+0.5)*hr[1]);
                               
                               });
          
@@ -341,95 +363,54 @@ public:
                                                                       view.extent(2)}),
                               KOKKOS_LAMBDA(const int i, const int j, const int k){
 
-                                view(i, j, k)[2] = 4.0*pi*phi0/ny * 
-                                                   sin(2.0*pi*(i+0.5)/nx) * sin(4.0*pi*(j+0.5)/ny);
+                                view(i, j, k)[2] = 4.0*pi*phi0 * 
+                                                   sin(2.0*pi*(i+0.5)*hr[0]) * 
+                                                   sin(4.0*pi*(j+0.5)*hr[1]);
                               
                               });
 
          EFDMag_m = dot(EFD_m, EFD_m);
+         Kokkos::fence();
+         IpplTimings::stopTimer(initFieldsTimer);
+
+         //static IpplTimings::TimerRef vtkTimervec = IpplTimings::getTimer("dump VTK vector");           
+         //IpplTimings::startTimer(vtkTimervec);                                                    
+         //dumpVTK(EFD_m,nr_m[0],nr_m[1],nr_m[2],0,hr_m[0],hr_m[1],hr_m[2]);
+         //Kokkos::fence();
+         //IpplTimings::stopTimer(vtkTimervec);                                                    
      }
 
      Vector_t getRMin() { return rmin_m;}
      Vector_t getRMax() { return rmax_m;}
      Vector_t getHr() { return hr_m;}
 
-//     void savePhaseSpace(std::string fn, int idx) {
-//
-//         int tag = Ippl::Comm->next_tag(IPPL_APP_TAG4, IPPL_APP_CYCLE);
-// 	std::vector<double> tmp;
-//         tmp.clear();
-//
-//         // every node ckecks if he has to dump particles
-//         for (unsigned i=0; i<this->getLocalNum(); i++) {
-//             tmp.push_back(this->ID[i]);
-//             tmp.push_back(this->R[i](0));
-//             tmp.push_back(this->R[i](1));
-//             tmp.push_back(this->R[i](2));
-//             tmp.push_back(this->P[i](0));
-//             tmp.push_back(this->P[i](1));
-//             tmp.push_back(this->P[i](2));
-//         }
-//
-//         if(Ippl::myNode() == 0) {
-//  	    std::ofstream ostr;
-//             std::string Fn;
-//             char numbuf[6];
-//             sprintf(numbuf, "%05d", idx);
-//             Fn = fn  + std::string(numbuf) + ".dat";
-//             ostr.open(Fn.c_str(), std::ios::out );
-//             ostr.precision(15);
-//             ostr.setf(std::ios::scientific, std::ios::floatfield);
-//
-//             ostr << " x, px, y, py t, pt, id, node" << std::endl;
-//
-//             unsigned int dataBlocks=0;
-//             double x,y,z,px,py,pz,id;
-//             unsigned  vn;
-//
-//             for (unsigned i=0; i < tmp.size(); i+=7)
-//                 ostr << tmp[i+1] << " " << tmp[i+4] << " " << tmp[i+2]  << " "
-//                      << tmp[i+5] << " " << tmp[i+3] << " " << tmp[i+6]  << " "
-//                      << tmp[i]   << " " << Ippl::myNode() << std::endl;
-//
-//             int notReceived =  Ippl::getNodes() - 1;
-//             while (notReceived > 0) {
-//                 int node = COMM_ANY_NODE;
-//                 Message* rmsg =  Ippl::Comm->receive_block(node, tag);
-//                 if (rmsg == 0)
-//                     ERRORMSG("Could not receive from client nodes in main." << endl);
-//                 notReceived--;
-//                 rmsg->get(&dataBlocks);
-//                 rmsg->get(&vn);
-//                 for (unsigned i=0; i < dataBlocks; i+=7) {
-//                     rmsg->get(&id);
-//                     rmsg->get(&x);
-//                     rmsg->get(&y);
-//                     rmsg->get(&z);
-//                     rmsg->get(&px);
-//                     rmsg->get(&py);
-//                     rmsg->get(&pz);
-//                     ostr << x  << "\t " << px  << "\t " << y  << "\t "
-//                          << py << "\t " << z << "\t " << pz << "\t "
-//                          << id   << "\t " << vn << std::endl;
-//                 }
-//                 delete rmsg;
-//             }
-//             ostr.close();
-//         }
-//         else {
-//             unsigned dataBlocks = 0;
-//             Message* smsg = new Message();
-//             dataBlocks = tmp.size();
-//             smsg->put(dataBlocks);
-//             smsg->put(Ippl::myNode());
-//             for (unsigned i=0; i < tmp.size(); i++)
-//                 smsg->put(tmp[i]);
-//             bool res = Ippl::Comm->send(smsg, 0, tag);
-//             if (! res)
-//                 ERRORMSG("Ippl::Comm->send(smsg, 0, tag) failed " << endl;);
-//         }
-//     }
-//
+     void dumpParticleData(int iteration) {
+        
+        ParticleAttrib<Vector_t>::view_type& view = P.getView();
+        std::ofstream csvout;
+        csvout.precision(10);
+        csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+        std::stringstream fname;
+        fname << "data/energy.csv";
+        double Energy = 0.0;
+
+        csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+
+        Kokkos::parallel_reduce("Particle Energy", view.extent(0),
+                                KOKKOS_LAMBDA(const int i, double& valL){
+                                    double myVal = dot(view(i), view(i)).apply();
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(Energy));
+
+        Energy *= 0.5;
+        csvout << iteration << " "
+               << Energy << std::endl;
+
+        csvout.close();
+
+     }
+
 private:
 //
 //     inline void setBCAllOpen() {
@@ -460,7 +441,7 @@ private:
 //
 
 };
-
+
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     Inform msg(argv[0]);
@@ -478,6 +459,9 @@ int main(int argc, char *argv[]){
         std::atoi(argv[3])
     };
 
+    static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");           
+    IpplTimings::startTimer(mainTimer);                                                    
+    auto start = std::chrono::high_resolution_clock::now();    
     const unsigned int totalP = std::atoi(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
     
@@ -526,31 +510,29 @@ int main(int argc, char *argv[]){
     double dz = 1.0 / double(nr[2]);
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {0, 0, 0};
+    const double dt = 0.5 * dx; // size of timestep
     mesh = std::make_unique<Mesh_t>(domain, hr, origin);
-    //FL   = std::make_unique<FieldLayout_t>(*mesh, decomp);
     FL   = std::make_unique<FieldLayout_t>(domain, decomp, 1);
-    PL   = std::make_unique<PLayout_t>(); //(*FL, *mesh);
+    PL   = std::make_unique<PLayout_t>();
 
-    //ippl::UniformCartesian<double, 3> mesh_temp(domain, hr, origin);
-    //FieldLayout<3> layout(domain,decomp, 1);
-    //Field_t field_temp;
-    //field_temp.initialize(mesh_temp, layout);
 
     /*
      * In case of periodic BC's define
      * the domain with hr and rmin
      */
-    //Vector_t hr(1.0);
     Vector_t rmin(0.0);
     Vector_t rmax(1.0);
 
-    P = std::make_unique<bunch_type>(*PL,/*myBC,*/hr,rmin,rmax,decomp);
+    double Q=1e6;
+    P = std::make_unique<bunch_type>(*PL,/*myBC,*/hr,rmin,rmax,decomp,Q);
 
     // initialize the particle object: do all initialization on one node,
     // and distribute to others
 
     unsigned long int nloc = totalP / Ippl::getNodes();
 
+    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particles creation");           
+    IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
 
     std::mt19937_64 eng;//(42);
@@ -559,20 +541,58 @@ int main(int argc, char *argv[]){
     typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
     typename ParticleAttrib<double>::HostMirror Q_host = P->qm.getHostMirror();
 
-    double q = 1.0/totalP;
+    double q = P->Q_m/totalP;
 
     for (unsigned long int i = 0; i< nloc; i++) {
         for (int d = 0; d<3; d++) {
-            R_host(i)[d] =  unif(eng); //* nr[d];
+            R_host(i)[d] =  unif(eng);
         }
-        //Vector_t r = {unif(eng), unif(eng), unif(eng)};
-        //R_host(i) = r;
         Q_host(i) = q;
     }
+    ////For generating same distribution always
+    //std::mt19937_64 eng[2*Dim];
+   
+    ////There is no reason for picking 42 or multiplying by 
+    ////Dim with i, just want the initial seeds to be
+    ////farther apart.
+    //for (int i = 0; i < 2*3; ++i) {
+    //    eng[i].seed(42 + Dim * i);
+    //}
+
+    //std::vector<double> mu(Dim);
+    //std::vector<double> sd(Dim);
+    //std::vector<double> states(Dim);
+   
+
+    //mu[0] = 1.0/2;
+    //mu[1] = 1.0/2;
+    //mu[2] = 1.0/2;
+    //sd[0] = 0.15;
+    //sd[1] = 0.05;
+    //sd[2] = 0.20;
+
+
+    //std::uniform_real_distribution<double> dist_uniform (0.0, 1.0);
+
+    //for (unsigned long int i = 0; i< nloc; i++) {
+    //    
+    //    for (int istate = 0; istate < 3; ++istate) {
+    //        double u1 = dist_uniform(eng[istate*2]);
+    //        double u2 = dist_uniform(eng[istate*2+1]);
+    //        states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) 
+    //                         * std::cos(2.0 * pi * u2)) + mu[istate]; 
+    //    }    
+    //    for (int d = 0; d<3; d++)
+    //        R_host(i)[d] = std::fabs(std::fmod(states[d],1.0));
+    //    
+    //    Q_host(i) = q;
+    //}
 
     Kokkos::deep_copy(P->R.getView(), R_host);
     Kokkos::deep_copy(P->qm.getView(), Q_host);
     P->P = 0.0;
+    Kokkos::fence();
+    IpplTimings::stopTimer(particleCreation);                                                    
 
     ippl::PRegion<double> region0(0.0, 1.0);
     ippl::PRegion<double> region1(0.0, 1.0);
@@ -584,45 +604,68 @@ int main(int argc, char *argv[]){
     msg << "particles created and initial conditions assigned " << endl;
     P->EFD_m.initialize(*mesh, *FL);
     P->EFDMag_m.initialize(*mesh, *FL);
-//
-//     // redistribute particles based on spatial layout
-//     P->myUpdate();
-//
-//     msg << "initial update and initial mesh done .... Q= " << sum(P->qm) << endl;
-//     msg << P->getMesh() << endl;
-//     msg << P->getFieldLayout() << endl;
-//
+    
+    // redistribute particles based on spatial layout
+    // P->myUpdate();
+    
     msg << "scatter test" << endl;
-    //P->scatterCIC(field_temp);
     P->scatterCIC();
     
     P->initFields();
     msg << "P->initField() done " << endl;
-     // begin main timestep loop
-     msg << "Starting iterations ..." << endl;
-     for (unsigned int it=0; it<nt; it++) {
-         //P->gatherStatistics();
-         // advance the particle positions
-         // basic leapfrogging timestep scheme.  velocities are offset
-         // by half a timestep from the positions.
-         P->R = P->R + dt * P->P;
+    
+    // begin main timestep loop
+    msg << "Starting iterations ..." << endl;
+    for (unsigned int it=0; it<nt; it++) {
+        // advance the particle positions
+        // basic leapfrogging timestep scheme.  velocities are offset
+        // by half a timestep from the positions.
+        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("position update");           
+        IpplTimings::startTimer(RTimer);                                                    
+        P->R = P->R + dt * P->P;
+        Kokkos::fence();
+        IpplTimings::stopTimer(RTimer);                                                    
 
-         //Apply particle BCs
-         P->getLayout().applyBC(P->R, pr);
+        //Apply particle BCs
+        static IpplTimings::TimerRef BCTimer = IpplTimings::getTimer("apply particle BC");           
+        IpplTimings::startTimer(BCTimer);                                                    
+        P->getLayout().applyBC(P->R, pr);
+        Kokkos::fence();
+        IpplTimings::stopTimer(BCTimer);                                                    
 
-         // update particle distribution across processors
-         //P->myUpdate();
+        // update particle distribution across processors
+        //P->myUpdate();
 
-         // gather the local value of the E field
-         P->gatherCIC(/*it*/);
+        // gather the local value of the E field
+        P->gatherCIC(it);
 
-         // advance the particle velocities
-         P->P = P->P + dt * P->qm * P->E;
-         msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin()
-             << P->getRMax() << P->getHr() << endl;
-     }
-//     Ippl::Comm->barrier();
+
+        //static IpplTimings::TimerRef EnergyTimer = IpplTimings::getTimer("dump Energy");           
+        //IpplTimings::startTimer(EnergyTimer);                                                    
+        //P->dumpParticleData(it);
+        //Kokkos::fence();
+        //IpplTimings::stopTimer(EnergyTimer);                                                    
+
+        // advance the particle velocities
+        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocity update");           
+        IpplTimings::startTimer(PTimer);                                                    
+        P->P = P->P + dt * P->qm * P->E;
+        Kokkos::fence();
+        IpplTimings::stopTimer(PTimer);                                                    
+        msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin()
+            << P->getRMax() << P->getHr() << endl;
+    }
+    
     msg << "Particle test PIC3d: End." << endl;
+    Kokkos::fence();
+    IpplTimings::stopTimer(mainTimer);                                                    
+    IpplTimings::print();
+    IpplTimings::print(std::string("timing.dat"));
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> time_elapsed = 
+                                  std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    std::cout << "Elapsed time: " << time_elapsed.count() << std::endl;
 
     return 0;
 }

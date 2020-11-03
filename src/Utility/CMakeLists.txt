@@ -5,12 +5,12 @@ set (_SRCS
 #     DiscParticleFunctions.cpp
 #     FieldDebugFunctions.cpp
     Inform.cpp
-#     IpplCounter.cpp
+    IpplCounter.cpp
     IpplInfo.cpp
 #     IpplMemoryUsage.cpp
     IpplMessageCounter.cpp
     IpplStats.cpp
-#     IpplTimings.cpp
+    IpplTimings.cpp
     PAssert.cpp
 #     ParticleDebugFunctions.cpp
     RNGXDiv.cpp
@@ -38,13 +38,13 @@ set (_HDRS
 #     FieldPrint.h
 #     FieldPrint.hpp
     Inform.h
-#     IpplCounter.h
+    IpplCounter.h
 #     IpplException.h
     IpplInfo.h
 #     IpplMemoryUsage.h
     IpplMessageCounter.h
     IpplStats.h
-#     IpplTimings.h
+    IpplTimings.h
 #     NamedObj.h
     PAssert.h
 #     ParticleDebug.h
