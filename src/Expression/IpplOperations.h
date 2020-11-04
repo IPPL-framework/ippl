@@ -296,13 +296,7 @@ namespace ippl {
     /*!
      * User interface of gradient in three dimensions.
      * @tparam E expression type of left-hand side
-     * @tparam N size of expression
-     * @tparam Evec vector as an expression
-     * @tparam Nvec size of vector expression
      * @param u expression
-     * @param xvector
-     * @param yvector
-     * @param zvector
      */
 
     template <typename E,
@@ -363,13 +357,7 @@ namespace ippl {
     /*!
      * User interface of divergence in three dimensions.
      * @tparam E expression type of left-hand side
-     * @tparam N size of expression
-     * @tparam Evec vector as an expression
-     * @tparam Nvec size of vector expression
      * @param u expression
-     * @param xvector
-     * @param yvector
-     * @param zvector
      */
     template <typename E,
               typename = std::enable_if<detail::isFieldExpression<E>::value>>
@@ -384,15 +372,18 @@ namespace ippl {
         /*!
          * Meta function of Laplacian 
          */
-        template <typename E, typename Evec>
-        struct meta_laplace : public Expression<meta_laplace<E, Evec>, sizeof(E) + sizeof(Evec)> {
+        template <typename E>
+        struct meta_laplace : public FieldExpression<meta_laplace<E>> {
 
             KOKKOS_FUNCTION
-            meta_laplace(const E& u,
-                         const Evec& hvector)
+            meta_laplace(const E& u)
             : u_m(u)
-            , hvector_m(hvector)
-            { }
+            {
+                Mesh_t& mesh = u.get_mesh();
+                hvector_m[0] = 1.0 / std::pow(mesh.getMeshSpacing(0), 2);
+                hvector_m[1] = 1.0 / std::pow(mesh.getMeshSpacing(1), 2);
+                hvector_m[2] = 1.0 / std::pow(mesh.getMeshSpacing(2), 2);
+            }
 
 
             /*
@@ -407,8 +398,9 @@ namespace ippl {
             }
 
         private:
-            const E u_m;
-            const Evec hvector_m;
+            using Mesh_t = typename E::Mesh_t;
+            const E& u_m;
+            typename Mesh_t::vector_type hvector_m;
         };
     }
 
@@ -416,18 +408,14 @@ namespace ippl {
     /*!
      * User interface of Laplacian in three dimensions.
      * @tparam E expression type of left-hand side
-     * @tparam N size of expression
-     * @tparam Evec vector as an expression
-     * @tparam Nvec size of vector expression
      * @param u expression
      * @param hvector
      */
-    template <typename E, size_t N, typename Evec, size_t Nvec,
-              typename = std::enable_if_t<detail::isExpression<E>::value>>
+    template <typename E,
+              typename = std::enable_if<detail::isFieldExpression<E>::value>>
     KOKKOS_INLINE_FUNCTION
-    detail::meta_laplace<E, Evec> laplace(const detail::Expression<E, N>& u,
-                                          const detail::Expression<Evec, Nvec>& hvector) {
-        return detail::meta_laplace<E, Evec>(*static_cast<const E*>(&u), hvector);
+    detail::meta_laplace<E> laplace(const E& u) {
+        return detail::meta_laplace<E>(*static_cast<const E*>(&u));
     }
 
 

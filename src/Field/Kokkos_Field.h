@@ -55,46 +55,6 @@ namespace ippl {
 
 #include "Field/Kokkos_Field.hpp"
 
-
-namespace ippl {
-    namespace detail {
-        /*
-         * Laplacian
-         */
-        template <typename E>
-        struct field_meta_laplace : public FieldExpression<field_meta_laplace<E>> {
-            field_meta_laplace(const E& u) : u_m(u) {
-                Mesh_t& mesh = u.get_mesh();
-
-                hvector_m[0] = 1.0 / std::pow(mesh.getMeshSpacing(0),2);
-
-                if constexpr(Mesh_t::Dimension > 1) {
-                    hvector_m[1] = 1.0 / std::pow(mesh.getMeshSpacing(1),2);
-                }
-
-                if constexpr(Mesh_t::Dimension == 3) {
-                    hvector_m[2] = 1.0 / std::pow(mesh.getMeshSpacing(2),2);
-                }
-            }
-
-            auto operator()() const {
-                    return laplace(u_m, hvector_m);
-            }
-
-        private:
-            using Mesh_t = typename E::Mesh_t;
-            const E& u_m;
-            typename Mesh_t::vector_type hvector_m;
-        };
-    }
-
-    template <typename E,
-              typename = std::enable_if<detail::isFieldExpression<E>::value>>
-    detail::field_meta_laplace<E> laplace(const E& u) {
-        return detail::field_meta_laplace<E>(*static_cast<const E*>(&u));
-    }
-}
-
 #endif
 
 // vi: set et ts=4 sw=4 sts=4:
