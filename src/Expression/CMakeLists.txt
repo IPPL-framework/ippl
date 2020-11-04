@@ -4,7 +4,6 @@ set (_SRCS
 set (_HDRS
   IpplExpressions.h
   IpplOperations.h
-  IpplFieldOperations.h
   )
 
 include_directories (
