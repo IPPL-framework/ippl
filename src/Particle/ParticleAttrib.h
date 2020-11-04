@@ -37,14 +37,16 @@ namespace ippl {
     // ParticleAttrib class definition
     template <typename T, class... Properties>
     class ParticleAttrib : public detail::ParticleAttribBase<Properties...>
-                         , public Expression<ParticleAttrib<T, Properties...>,
-                                             sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)>
+                         , public detail::Expression<
+                                        ParticleAttrib<T, Properties...>,
+                                        sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)
+                            >
     {
     public:
         typedef T value_type;
         using boolean_view_type = typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
         using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
-        using HostMirror = typename view_type::HostMirror;
+        using HostMirror = typename view_type::host_mirror_type;
 
         // Create storage for M particle attributes.  The storage is uninitialized.
         // New items are appended to the end of the array.
@@ -64,7 +66,7 @@ namespace ippl {
         }
 
         void print() {
-            typename view_type::HostMirror hview = Kokkos::create_mirror_view(dview_m);
+            HostMirror hview = Kokkos::create_mirror_view(dview_m);
             Kokkos::deep_copy(hview, dview_m);
             for (size_t i = 0; i < this->size(); ++i) {
                 std::cout << hview(i) << std::endl;
@@ -107,7 +109,7 @@ namespace ippl {
          */
         template <typename E, size_t N>
 	//KOKKOS_INLINE_FUNCTION
-        ParticleAttrib<T, Properties...>& operator=(Expression<E, N> const& expr);
+        ParticleAttrib<T, Properties...>& operator=(detail::Expression<E, N> const& expr);
 
 
         //     // scatter the data from this attribute onto the given Field, using

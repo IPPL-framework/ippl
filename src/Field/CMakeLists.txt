@@ -30,8 +30,6 @@ set (_HDRS
 #     IndexedBareField.hpp
 #     IndexedBareField.h
 #     IndexedField.h
-    LField.hpp
-    LField.h
 #     ReductionLoc.hpp
 #     ReductionLoc.h
     )

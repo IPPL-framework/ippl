@@ -15,7 +15,6 @@
 // #include <complex>
 
 // Kokkos
-#include "Field/LField.h"
 #include "Field/BareField.h"
 #include "Field/Kokkos_Field.h"
 
