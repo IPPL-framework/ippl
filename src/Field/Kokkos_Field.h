@@ -9,10 +9,7 @@ namespace ippl {
     template <typename T, unsigned Dim,
               class M=UniformCartesian<double, Dim>,
               class C=typename M::DefaultCentering >
-    class Field : public detail::FieldExpression<
-                            Field<T, Dim, M, C>,
-                            sizeof(typename BareField<T, Dim>::view_type)>
-                , public BareField<T, Dim>
+    class Field : public BareField<T, Dim>
     {
     public:
         using Mesh_t      = M;

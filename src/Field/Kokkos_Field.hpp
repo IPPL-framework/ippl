@@ -1,7 +1,7 @@
 namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim, class M, class C>
-        struct isFieldExpression<Field<T, Dim, M, C>> : std::true_type {};
+        struct isExpression<Field<T, Dim, M, C>> : std::true_type {};
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -33,8 +33,35 @@ namespace ippl {
     }
 
 
-//     template<class T, unsigned Dim, class M, class C>
-//     void Field<T,Dim, M, C>::write(std::ostream& out) const {
-//         barefield_m.write(out);
-//     }
+    /*!
+     * User interface of gradient in three dimensions.
+     * @param u field
+     */
+    template <typename T, unsigned Dim, class M, class C>
+    KOKKOS_INLINE_FUNCTION
+    detail::meta_grad<Field<T, Dim, M, C>> grad(const Field<T, Dim, M, C>& u) {
+        return detail::meta_grad<Field<T, Dim, M, C>>(u);
+    }
+
+
+    /*!
+     * User interface of divergence in three dimensions.
+     * @param u field
+     */
+    template <typename T, unsigned Dim, class M, class C>
+    KOKKOS_INLINE_FUNCTION
+    detail::meta_div<Field<T, Dim, M, C>> div(const Field<T, Dim, M, C>& u) {
+        return detail::meta_div<Field<T, Dim, M, C>>(u);
+    }
+
+
+    /*!
+     * User interface of Laplacian in three dimensions.
+     * @param u field
+     */
+    template <typename T, unsigned Dim, class M, class C>
+    KOKKOS_INLINE_FUNCTION
+    detail::meta_laplace<Field<T, Dim, M, C>> laplace(const Field<T, Dim, M, C>& u) {
+        return detail::meta_laplace<Field<T, Dim, M, C>>(u);
+    }
 }

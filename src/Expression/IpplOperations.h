@@ -251,7 +251,7 @@ namespace ippl {
          */
 
         template <typename E>
-        struct meta_grad : public FieldExpression<meta_grad<E>, sizeof(E)> {
+        struct meta_grad : public Expression<meta_grad<E>, sizeof(E)> {
 
             KOKKOS_FUNCTION
             meta_grad(const E& u)
@@ -292,26 +292,13 @@ namespace ippl {
         };
     }
 
-    /*!
-     * User interface of gradient in three dimensions.
-     * @tparam E expression type of left-hand side
-     * @param u expression
-     */
-
-    template <typename E, size_t N,
-              typename = std::enable_if<detail::isFieldExpression<E>::value>>
-    KOKKOS_INLINE_FUNCTION
-    detail::meta_grad<E> grad(const detail::FieldExpression<E, N>& u) {
-        return detail::meta_grad<E>(*static_cast<const E*>(&u));
-    }
-
     namespace detail {
 
         /*!
          * Meta function of divergence
          */
         template <typename E>
-        struct meta_div : public FieldExpression<meta_div<E>, sizeof(E)> {
+        struct meta_div : public Expression<meta_div<E>, sizeof(E)> {
 
             KOKKOS_FUNCTION
             meta_div(const E& u)
@@ -350,29 +337,13 @@ namespace ippl {
             typename Mesh_t::vector_type yvector_m;
             typename Mesh_t::vector_type zvector_m;
         };
-    }
 
-
-    /*!
-     * User interface of divergence in three dimensions.
-     * @tparam E expression type of left-hand side
-     * @param u expression
-     */
-    template <typename E, size_t N,
-              typename = std::enable_if<detail::isFieldExpression<E>::value>>
-    KOKKOS_INLINE_FUNCTION
-    detail::meta_div<E> div(const detail::FieldExpression<E, N>& u) {
-        return detail::meta_div<E>(*static_cast<const E*>(&u));
-    }
-
-
-    namespace detail {
 
         /*!
          * Meta function of Laplacian 
          */
         template <typename E>
-        struct meta_laplace : public FieldExpression<meta_laplace<E>, sizeof(E)> {
+        struct meta_laplace : public Expression<meta_laplace<E>, sizeof(E)> {
 
             KOKKOS_FUNCTION
             meta_laplace(const E& u)
@@ -402,22 +373,6 @@ namespace ippl {
             typename Mesh_t::vector_type hvector_m;
         };
     }
-
-
-    /*!
-     * User interface of Laplacian in three dimensions.
-     * @tparam E expression type of left-hand side
-     * @param u expression
-     * @param hvector
-     */
-    template <typename E, size_t N,
-              typename = std::enable_if<detail::isFieldExpression<E>::value>>
-    KOKKOS_INLINE_FUNCTION
-    detail::meta_laplace<E> laplace(const detail::FieldExpression<E, N>& u) {
-        return detail::meta_laplace<E>(*static_cast<const E*>(&u));
-    }
-
-
 }
 
 #endif

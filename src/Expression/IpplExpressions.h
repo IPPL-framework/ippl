@@ -48,15 +48,6 @@ namespace ippl {
 
 
         /*!
-         * Basic field expression class for Field.
-         * FieldExpression classes need to inherit from this with the
-         * CRTP (curiously recursive template pattern) design
-         * pattern.
-         */
-        template <typename E, size_t N>
-        struct FieldExpression : public Expression<E, N> { };
-
-        /*!
          * This expression is only used to allocate
          * enough memory for the kernel on the device.
          * It is instantiated in the assignment operator
@@ -113,9 +104,6 @@ namespace ippl {
             value_type val_m;
         };
 
-
-    template <typename T>
-    struct isFieldExpression : std::false_type {};
 
     template <typename T>
     struct isExpression : std::false_type {};
