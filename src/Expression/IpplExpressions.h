@@ -58,8 +58,8 @@ namespace ippl {
             /*!
              * Access single element of the field expression
              */
-            auto operator()(/*size_t i*/) const {
-                return static_cast<const E&>(*this)();
+            auto operator()() const {
+                return static_cast<const E&>(*this);
             }
         };
 

@@ -250,19 +250,27 @@ namespace ippl {
          * Meta function of gradient
          */
 
-        template <typename E, typename Evec>
-        struct meta_grad : public Expression<meta_grad<E, Evec>, sizeof(E) + 3 * sizeof(Evec)> {
+        template <typename E>
+        struct meta_grad : public FieldExpression<meta_grad<E>> {
 
             KOKKOS_FUNCTION
-            meta_grad(const E& u,
-                    const Evec& xvector,
-                    const Evec& yvector,
-                    const Evec& zvector)
+            meta_grad(const E& u)
             : u_m(u)
-            , xvector_m(xvector)
-            , yvector_m(yvector)
-            , zvector_m(zvector)
-            { }
+            {
+                Mesh_t& mesh = u.get_mesh();
+
+                xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
+                xvector_m[1] = 0.0;
+                xvector_m[2] = 0.0;
+
+                yvector_m[0] = 0.0;
+                yvector_m[1] = 0.5 / mesh.getMeshSpacing(1);
+                yvector_m[2] = 0.0;
+
+                zvector_m[0] = 0.0;
+                zvector_m[1] = 0.0;
+                zvector_m[2] = 0.5 / mesh.getMeshSpacing(2);
+            }
 
 
             /*
@@ -277,10 +285,11 @@ namespace ippl {
             }
 
         private:
-            const E u_m;
-            const Evec xvector_m;
-            const Evec yvector_m;
-            const Evec zvector_m;
+            using Mesh_t = typename E::Mesh_t;
+            const E& u_m;
+            typename Mesh_t::vector_type xvector_m;
+            typename Mesh_t::vector_type yvector_m;
+            typename Mesh_t::vector_type zvector_m;
         };
     }
 
@@ -296,13 +305,11 @@ namespace ippl {
      * @param zvector
      */
 
-    template <typename E, size_t N, typename Evec, size_t Nvec>
+    template <typename E,
+              typename = std::enable_if<detail::isFieldExpression<E>::value>>
     KOKKOS_INLINE_FUNCTION
-    detail::meta_grad<E, Evec> grad(const detail::Expression<E, N>& u,
-                                    const detail::Expression<Evec, Nvec>& xvector,
-                                    const detail::Expression<Evec, Nvec>& yvector,
-                                    const detail::Expression<Evec, Nvec>& zvector) {
-        return detail::meta_grad<E, Evec>(*static_cast<const E*>(&u), xvector, yvector, zvector);
+    detail::meta_grad<E> grad(const detail::FieldExpression<E>& u) {
+        return detail::meta_grad<E>(*static_cast<const E*>(&u));
     }
 
     namespace detail {
@@ -310,19 +317,27 @@ namespace ippl {
         /*!
          * Meta function of divergence
          */
-        template <typename E, typename Evec>
-        struct meta_div : public Expression<meta_div<E, Evec>, sizeof(E) + 3 * sizeof(Evec)> {
+        template <typename E>
+        struct meta_div : public FieldExpression<meta_div<E>> {
 
             KOKKOS_FUNCTION
-            meta_div(const E& u,
-                    const Evec& xvector,
-                    const Evec& yvector,
-                    const Evec& zvector)
+            meta_div(const E& u)
             : u_m(u)
-            , xvector_m(xvector)
-            , yvector_m(yvector)
-            , zvector_m(zvector)
-            { }
+            {
+                Mesh_t& mesh = u.get_mesh();
+
+                xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
+                xvector_m[1] = 0.0;
+                xvector_m[2] = 0.0;
+
+                yvector_m[0] = 0.0;
+                yvector_m[1] = 0.5 / mesh.getMeshSpacing(1);
+                yvector_m[2] = 0.0;
+
+                zvector_m[0] = 0.0;
+                zvector_m[1] = 0.0;
+                zvector_m[2] = 0.5 / mesh.getMeshSpacing(2);
+            }
 
 
             /*
@@ -336,10 +351,11 @@ namespace ippl {
             }
 
         private:
-            const E u_m;
-            const Evec xvector_m;
-            const Evec yvector_m;
-            const Evec zvector_m;
+            using Mesh_t = typename E::Mesh_t;
+            const E& u_m;
+            typename Mesh_t::vector_type xvector_m;
+            typename Mesh_t::vector_type yvector_m;
+            typename Mesh_t::vector_type zvector_m;
         };
     }
 
@@ -355,14 +371,11 @@ namespace ippl {
      * @param yvector
      * @param zvector
      */
-    template <typename E, size_t N, typename Evec, size_t Nvec,
-              typename = std::enable_if_t<detail::isExpression<E>::value>>
+    template <typename E,
+              typename = std::enable_if<detail::isFieldExpression<E>::value>>
     KOKKOS_INLINE_FUNCTION
-    detail::meta_div<E, Evec> div(const detail::Expression<E, N>& u,
-                                  const detail::Expression<Evec, Nvec>& xvector,
-                                  const detail::Expression<Evec, Nvec>& yvector,
-                                  const detail::Expression<Evec, Nvec>& zvector) {
-        return detail::meta_div<E, Evec>(*static_cast<const E*>(&u), xvector, yvector, zvector);
+    detail::meta_div<E> div(const E& u) {
+        return detail::meta_div<E>(*static_cast<const E*>(&u));
     }
 
 
