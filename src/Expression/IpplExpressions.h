@@ -53,15 +53,8 @@ namespace ippl {
          * CRTP (curiously recursive template pattern) design
          * pattern.
          */
-        template <typename E>
-        struct FieldExpression {
-            /*!
-             * Access single element of the field expression
-             */
-            auto operator()() const {
-                return static_cast<const E&>(*this);
-            }
-        };
+        template <typename E, size_t N>
+        struct FieldExpression : public Expression<E, N> { };
 
         /*!
          * This expression is only used to allocate
@@ -87,7 +80,6 @@ namespace ippl {
          */
         template <typename T>
         struct Scalar : public Expression<Scalar<T>, sizeof(T)>
-                      , public FieldExpression<Scalar<T>>
         {
             typedef T value_type;
 
@@ -130,9 +122,6 @@ namespace ippl {
 
     template <typename T>
     struct isExpression<Scalar<T>> : std::true_type {};
-
-    template <typename T>
-    struct isFieldExpression<Scalar<T>> : std::true_type {};
 
     }
 }

@@ -37,12 +37,4 @@ namespace ippl {
 //     void Field<T,Dim, M, C>::write(std::ostream& out) const {
 //         barefield_m.write(out);
 //     }
-
-
-    template<class T, unsigned Dim, class M, class C>
-    template <typename E>
-    Field<T,Dim,M,C>& Field<T,Dim,M,C>::operator=(const detail::FieldExpression<E>& expr) {
-        *this = expr();
-        return *this;
-    }
 }

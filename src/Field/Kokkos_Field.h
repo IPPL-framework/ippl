@@ -9,7 +9,9 @@ namespace ippl {
     template <typename T, unsigned Dim,
               class M=UniformCartesian<double, Dim>,
               class C=typename M::DefaultCentering >
-    class Field : public detail::FieldExpression<Field<T, Dim, M, C>>
+    class Field : public detail::FieldExpression<
+                            Field<T, Dim, M, C>,
+                            sizeof(typename BareField<T, Dim>::view_type)>
                 , public BareField<T, Dim>
     {
     public:
@@ -40,9 +42,6 @@ namespace ippl {
         using BareField<T, Dim>::operator=;
 
         Field(const Field&) = default;
-
-        template <typename E>
-        Field& operator=(const detail::FieldExpression<E>& expr);
 
     private:
         //   // The boundary conditions.

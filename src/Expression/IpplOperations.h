@@ -251,7 +251,7 @@ namespace ippl {
          */
 
         template <typename E>
-        struct meta_grad : public FieldExpression<meta_grad<E>> {
+        struct meta_grad : public FieldExpression<meta_grad<E>, sizeof(E)> {
 
             KOKKOS_FUNCTION
             meta_grad(const E& u)
@@ -278,7 +278,6 @@ namespace ippl {
              */
             KOKKOS_INLINE_FUNCTION
             auto operator()(size_t i, size_t j, size_t k) const {
-
                 return xvector_m * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
                        yvector_m * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
                        zvector_m * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
@@ -299,10 +298,10 @@ namespace ippl {
      * @param u expression
      */
 
-    template <typename E,
+    template <typename E, size_t N,
               typename = std::enable_if<detail::isFieldExpression<E>::value>>
     KOKKOS_INLINE_FUNCTION
-    detail::meta_grad<E> grad(const detail::FieldExpression<E>& u) {
+    detail::meta_grad<E> grad(const detail::FieldExpression<E, N>& u) {
         return detail::meta_grad<E>(*static_cast<const E*>(&u));
     }
 
@@ -312,7 +311,7 @@ namespace ippl {
          * Meta function of divergence
          */
         template <typename E>
-        struct meta_div : public FieldExpression<meta_div<E>> {
+        struct meta_div : public FieldExpression<meta_div<E>, sizeof(E)> {
 
             KOKKOS_FUNCTION
             meta_div(const E& u)
@@ -359,10 +358,10 @@ namespace ippl {
      * @tparam E expression type of left-hand side
      * @param u expression
      */
-    template <typename E,
+    template <typename E, size_t N,
               typename = std::enable_if<detail::isFieldExpression<E>::value>>
     KOKKOS_INLINE_FUNCTION
-    detail::meta_div<E> div(const E& u) {
+    detail::meta_div<E> div(const detail::FieldExpression<E, N>& u) {
         return detail::meta_div<E>(*static_cast<const E*>(&u));
     }
 
@@ -373,7 +372,7 @@ namespace ippl {
          * Meta function of Laplacian 
          */
         template <typename E>
-        struct meta_laplace : public FieldExpression<meta_laplace<E>> {
+        struct meta_laplace : public FieldExpression<meta_laplace<E>, sizeof(E)> {
 
             KOKKOS_FUNCTION
             meta_laplace(const E& u)
@@ -411,10 +410,10 @@ namespace ippl {
      * @param u expression
      * @param hvector
      */
-    template <typename E,
+    template <typename E, size_t N,
               typename = std::enable_if<detail::isFieldExpression<E>::value>>
     KOKKOS_INLINE_FUNCTION
-    detail::meta_laplace<E> laplace(const E& u) {
+    detail::meta_laplace<E> laplace(const detail::FieldExpression<E, N>& u) {
         return detail::meta_laplace<E>(*static_cast<const E*>(&u));
     }
 
