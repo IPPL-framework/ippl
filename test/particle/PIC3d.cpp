@@ -66,9 +66,9 @@ void dumpVTK(VField_t& EFD, int nx, int ny, int nz, int iteration,
              double dx, double dy, double dz) {
 
 
-    typename VField_t::LField_t::view_type::HostMirror host_view = EFD(0).getHostMirror();
+    typename VField_t::view_type::host_mirror_type host_view = EFD.getHostMirror();
 
-    Kokkos::deep_copy(host_view, EFD(0).getView());
+    Kokkos::deep_copy(host_view, EFD.getView());
     std::ofstream vtkout;
     vtkout.precision(10);
     vtkout.setf(std::ios::scientific, std::ios::floatfield);
@@ -110,8 +110,8 @@ void dumpVTK(VField_t& EFD, int nx, int ny, int nz, int iteration,
 void dumpVTK(Field_t& EFD, int nx, int ny, int nz, int iteration,
              double dx, double dy, double dz) {
 
-    typename Field_t::LField_t::view_type::HostMirror host_view = EFD(0).getHostMirror();
-    Kokkos::deep_copy(host_view, EFD(0).getView());
+    typename Field_t::view_type::host_mirror_type host_view = EFD.getHostMirror();
+    Kokkos::deep_copy(host_view, EFD.getView());
     std::ofstream vtkout;
     vtkout.precision(10);
     vtkout.setf(std::ios::scientific, std::ios::floatfield);
@@ -150,9 +150,6 @@ void dumpVTK(Field_t& EFD, int nx, int ny, int nz, int iteration,
     // close the output file for this iteration:
     vtkout.close();
 }
-
-
-
 
 template<class PLayout>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
@@ -224,7 +221,7 @@ public:
         iteration *= 1;
         scatterCIC();
         //if(iteration % 1 == 0) {
-        //    static IpplTimings::TimerRef vtkTimer = IpplTimings::getTimer("dump VTK scalar");           
+        //    static IpplTimings::TimerRef vtkTimer = IpplTimings::getTimer("dumpVTKscalar");           
         //    IpplTimings::startTimer(vtkTimer);                                                    
         //    dumpVTK(EFDMag_m,nr_m[0],nr_m[1],nr_m[2],iteration,hr_m[0],hr_m[1],hr_m[2]);
         //    Kokkos::fence();
@@ -241,7 +238,7 @@ public:
          Kokkos::fence();
          IpplTimings::stopTimer(scatterTimer);                                                    
          
-         static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check charge conservation");           
+         static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("CheckCharge");           
          IpplTimings::startTimer(sumTimer);                                                    
          double Q_grid = EFDMag_m.sum(1);
          
@@ -324,7 +321,7 @@ public:
 
          Vector_t hr = hr_m;
 
-         typename VField_t::LField_t::view_type& view = EFD_m(0).getView();
+         typename VField_t::view_type& view = EFD_m.getView();
 
          Kokkos::parallel_for("Assign EFD_m[0]", 
                               Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
@@ -370,7 +367,7 @@ public:
          Kokkos::fence();
          IpplTimings::stopTimer(initFieldsTimer);
 
-         //static IpplTimings::TimerRef vtkTimervec = IpplTimings::getTimer("dump VTK vector");           
+         //static IpplTimings::TimerRef vtkTimervec = IpplTimings::getTimer("dumpVTKvector");           
          //IpplTimings::startTimer(vtkTimervec);                                                    
          //dumpVTK(EFD_m,nr_m[0],nr_m[1],nr_m[2],0,hr_m[0],hr_m[1],hr_m[2]);
          //Kokkos::fence();
@@ -528,7 +525,7 @@ int main(int argc, char *argv[]){
 
     unsigned long int nloc = totalP / Ippl::getNodes();
 
-    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particles creation");           
+    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
     IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
 
@@ -617,14 +614,14 @@ int main(int argc, char *argv[]){
         // advance the particle positions
         // basic leapfrogging timestep scheme.  velocities are offset
         // by half a timestep from the positions.
-        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("position update");           
+        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");           
         IpplTimings::startTimer(RTimer);                                                    
         P->R = P->R + dt * P->P;
         Kokkos::fence();
         IpplTimings::stopTimer(RTimer);                                                    
 
         //Apply particle BCs
-        static IpplTimings::TimerRef BCTimer = IpplTimings::getTimer("apply particle BC");           
+        static IpplTimings::TimerRef BCTimer = IpplTimings::getTimer("applyParticleBC");           
         IpplTimings::startTimer(BCTimer);                                                    
         P->getLayout().applyBC(P->R, pr);
         Kokkos::fence();
@@ -644,7 +641,7 @@ int main(int argc, char *argv[]){
         //IpplTimings::stopTimer(EnergyTimer);                                                    
 
         // advance the particle velocities
-        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocity update");           
+        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
         IpplTimings::startTimer(PTimer);                                                    
         P->P = P->P + dt * P->qm * P->E;
         Kokkos::fence();
