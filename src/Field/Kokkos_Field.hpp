@@ -40,7 +40,17 @@ namespace ippl {
     template <typename T, unsigned Dim, class M, class C>
     KOKKOS_INLINE_FUNCTION
     detail::meta_grad<Field<T, Dim, M, C>> grad(const Field<T, Dim, M, C>& u) {
-        return detail::meta_grad<Field<T, Dim, M, C>>(u);
+        M& mesh = u.get_mesh();
+        xvector[0] = 0.5 / mesh.getMeshSpacing(0);
+        xvector[1] = 0.0;
+        xvector[2] = 0.0;
+        yvector[0] = 0.0;
+        yvector[1] = 0.5 / mesh.getMeshSpacing(1);
+        yvector[2] = 0.0;
+        zvector[0] = 0.0;
+        zvector[1] = 0.0;
+        zvector[2] = 0.5 / mesh.getMeshSpacing(2);
+        return detail::meta_grad<Field<T, Dim, M, C>>(u, xvector, yvector, zvector);
     }
 
 

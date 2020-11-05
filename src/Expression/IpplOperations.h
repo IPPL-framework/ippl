@@ -254,23 +254,15 @@ namespace ippl {
         struct meta_grad : public Expression<meta_grad<E>, sizeof(E)> {
 
             KOKKOS_FUNCTION
-            meta_grad(const E& u)
+            meta_grad(const E& u,
+                      const E::vector_type& xvector,
+                      const E::vector_type& yvector,
+                      const E::vector_type& zvector)
             : u_m(u)
-            {
-                Mesh_t& mesh = u.get_mesh();
-
-                xvector_m[0] = 0.5 / mesh.getMeshSpacing(0);
-                xvector_m[1] = 0.0;
-                xvector_m[2] = 0.0;
-
-                yvector_m[0] = 0.0;
-                yvector_m[1] = 0.5 / mesh.getMeshSpacing(1);
-                yvector_m[2] = 0.0;
-
-                zvector_m[0] = 0.0;
-                zvector_m[1] = 0.0;
-                zvector_m[2] = 0.5 / mesh.getMeshSpacing(2);
-            }
+            , xvector_m(xvector)
+            , yvector_m(yvector)
+            , zvector_m(zvector)
+            { }
 
 
             /*
