@@ -27,8 +27,8 @@
 #include "Utility/IpplInfo.h"
 #include "Utility/IpplStats.h"
 #include "Utility/PAssert.h"
-#include "Utility/RandomNumberGen.h"
 #include "Utility/vmap.h"
+#include "Message/Message.h"
 #include "Message/CommCreator.h"
 #include "Message/Communicate.h"
 
@@ -261,7 +261,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                 find_smp_nodes();
 
                 // advance the default random number generator
-                IpplRandom.AdvanceSeed(Comm->myNode());
+//                 IpplRandom.AdvanceSeed(Comm->myNode());
 
                 // dbgmsg << "  Comm creation successful." << endl;
                 // dbgmsg << *this << endl;

@@ -2,40 +2,18 @@ set (_SRCS
     )
 
 set (_HDRS
-#     Assign.hpp
-#     AssignDefs.h
-#     AssignGeneralBF.hpp
-#     AssignGeneralIBF.hpp
-#     Assign.h
-#     AssignTags.h
-    BareField.h
     BareField.hpp
-#     BareFieldIterator.h
+    BareField.h
     BConds.h
     BConds.hpp
     BcTypes.h
     BcTypes.hpp
-#     BrickExpression.hpp
-#     BrickExpression.h
-#     BrickIterator.hpp
-#     BrickIterator.h
-#     CompressedBrickIterator.hpp
-#     CompressedBrickIterator.h
-#     Field.hpp
-#     Field.h
-    Kokkos_Field.h
     Kokkos_Field.hpp
-#     FieldLoc.h
-#     FieldSpec.h
-    GuardCellSizes.h
+    Kokkos_Field.h
     GuardCellSizes.hpp
-#     IndexedBareField.hpp
-#     IndexedBareField.h
-#     IndexedField.h
-    LField.h
+    GuardCellSizes.h
     LField.hpp
-#     ReductionLoc.hpp
-#     ReductionLoc.h
+    LField.h
     )
 
 include_DIRECTORIES (

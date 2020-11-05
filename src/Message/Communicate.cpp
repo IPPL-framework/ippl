@@ -38,7 +38,6 @@
 
 #include "Utility/IpplInfo.h"
 #include "Utility/IpplStats.h"
-// #include "Utility/RandomNumberGen.h"
 #include "Utility/PAssert.h"
 #include <cstdio>
 
