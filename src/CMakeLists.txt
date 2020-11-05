@@ -60,7 +60,6 @@ set (IPPL_BASEDIR_HDRS
     )
 add_ippl_headers (${IPPL_BASEDIR_HDRS})
 
-add_subdirectory (AppTypes)
 add_subdirectory (DomainMap)
 # add_subdirectory (FFT)
 add_subdirectory (Field)
