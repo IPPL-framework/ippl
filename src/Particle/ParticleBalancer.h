@@ -27,7 +27,6 @@
 
 // forward declarations
 template<class T, unsigned Dim, class Mesh, class CachingPolicy> class ParticleSpatialLayout;
-template<class T, unsigned Dim> class ParticleUniformLayout;
 template<class PLayout> class IpplParticleBase;
 
 
@@ -36,11 +35,6 @@ template<class PLayout> class IpplParticleBase;
 template<class T, unsigned Dim, class Mesh, class CachingPolicy>
 bool
 BinaryRepartition(IpplParticleBase<ParticleSpatialLayout<T,Dim,Mesh,CachingPolicy> >&, double = 0.0);
-
-// the same, but taking a uniform layout (this will not actually do anything)
-template<class T, unsigned Dim>
-bool
-BinaryRepartition(IpplParticleBase<ParticleUniformLayout<T,Dim> >&, double = 0.0);
 
 #include "Particle/ParticleBalancer.hpp"
 
