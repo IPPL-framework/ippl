@@ -315,9 +315,6 @@ public:
          for (unsigned int i=0; i<Dim; i++)
              nr_m[i] = domain[i].length();
 
-         int nx = nr_m[0];
-         int ny = nr_m[1];
-         int nz = nr_m[2];
 
          double phi0 = 0.1;
          double pi = acos(-1.0);
