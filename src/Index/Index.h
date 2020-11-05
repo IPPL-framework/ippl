@@ -225,7 +225,12 @@ And that is how the put and get schedules are calculated.
 
 
 // include files
-#include "PETE/IpplExpressions.h"
+// #include "PETE/IpplExpressions.h"
+
+#include <Kokkos_Core.hpp>
+
+#include "Expression/IpplExpressions.h"
+
 #include <iostream>
 
 // forward declarations
@@ -233,7 +238,7 @@ class Index;
 std::ostream& operator<<(std::ostream& out, const Index& I);
 
 
-class Index : public PETE_Expr<Index>
+class Index : public ippl::detail::Expression<Index, 3 * sizeof(int) /*need to check*/>
 {
 
 public:
@@ -308,71 +313,71 @@ public:
     int Stride;
   };
  
-  class cursor : public PETE_Expr<cursor>
-  {
-  private:
-    int Current;
-    int Stride;
-    int First;
-    unsigned Dim;
-    const Index* I;
-  public:
-    cursor() {}
-    cursor(const Index& i)
-      : Current(i.first()),
-	Stride(i.stride()),
-	First(i.first()),
-	Dim(0),
-	I(&i)
-      {
-      }
-
-    int operator*() const { return Current; }
-    int offset() const { return Current; }
-    int offset(int i) const
-      {
-	return Current +
-	  ( Dim==0 ? i*Stride : 0 );
-      }
-    int offset(int i, int j)  const
-      {
-	return Current +
-	  ( Dim==0 ? i*Stride : 0 ) +
-	  ( Dim==1 ? j*Stride : 0 );
-      }
-    int offset(int i, int j, int k) const
-      {
-	return Current +
-	  ( Dim==0 ? i*Stride : 0 ) +
-	  ( Dim==1 ? j*Stride : 0 ) +
-	  ( Dim==2 ? k*Stride : 0 );
-      }
-    void step(unsigned d)
-      {
-	if ( d==Dim )
-	  Current += Stride;
-      }
-    void rewind(unsigned d)
-      {
-	if ( d==Dim )
-	  Current = First;
-      }
-    bool plugBase(const Index& i, unsigned d=0)
-      {
-	Index plugged( I->plugBase(i) );
-	Current = First = plugged.first();
-	Stride = plugged.stride();
-	Dim = d;
-	return true;
-      }
-    int id() const { return I->id(); }
-
-    // PETE interface.
-    enum { IsExpr = 1 };
-    typedef cursor PETE_Expr_t;
-    typedef int PETE_Return_t;
-    cursor MakeExpression() const { return *this; }
-  };
+//   class cursor : public PETE_Expr<cursor>
+//   {
+//   private:
+//     int Current;
+//     int Stride;
+//     int First;
+//     unsigned Dim;
+//     const Index* I;
+//   public:
+//     cursor() {}
+//     cursor(const Index& i)
+//       : Current(i.first()),
+// 	Stride(i.stride()),
+// 	First(i.first()),
+// 	Dim(0),
+// 	I(&i)
+//       {
+//       }
+//
+//     int operator*() const { return Current; }
+//     int offset() const { return Current; }
+//     int offset(int i) const
+//       {
+// 	return Current +
+// 	  ( Dim==0 ? i*Stride : 0 );
+//       }
+//     int offset(int i, int j)  const
+//       {
+// 	return Current +
+// 	  ( Dim==0 ? i*Stride : 0 ) +
+// 	  ( Dim==1 ? j*Stride : 0 );
+//       }
+//     int offset(int i, int j, int k) const
+//       {
+// 	return Current +
+// 	  ( Dim==0 ? i*Stride : 0 ) +
+// 	  ( Dim==1 ? j*Stride : 0 ) +
+// 	  ( Dim==2 ? k*Stride : 0 );
+//       }
+//     void step(unsigned d)
+//       {
+// 	if ( d==Dim )
+// 	  Current += Stride;
+//       }
+//     void rewind(unsigned d)
+//       {
+// 	if ( d==Dim )
+// 	  Current = First;
+//       }
+//     bool plugBase(const Index& i, unsigned d=0)
+//       {
+// 	Index plugged( I->plugBase(i) );
+// 	Current = First = plugged.first();
+// 	Stride = plugged.stride();
+// 	Dim = d;
+// 	return true;
+//       }
+//     int id() const { return I->id(); }
+//
+//     // PETE interface.
+//     enum { IsExpr = 1 };
+//     typedef cursor PETE_Expr_t;
+//     typedef int PETE_Return_t;
+//     cursor MakeExpression() const { return *this; }
+//   };
 
   // Member functions.  Make almost all of these inline for efficiency.
 
@@ -445,29 +450,29 @@ public:
 
   static void findPut(const Index&,const Index&, const Index&,Index&,Index&);
 
-  // put data into a message to send to another node
-  Message& putMessage(Message& m) const {
-    int dbuf[3];
-    int *d = dbuf;
-    d[0] = first();
-    d[1] = stride();
-    d[2] = length();
-    m.put(d, d + 3);
-    return m;
-  }
-
-  // get data out from a message
-  Message& getMessage(Message& m) {
-    int dbuf[3];
-    int *d = dbuf;
-    m.get(d);
-    *this = Index(d[0], d[0] + (d[2] - 1)*d[1], d[1]);
-    return m;
-  }
+//   // put data into a message to send to another node
+//   Message& putMessage(Message& m) const {
+//     int dbuf[3];
+//     int *d = dbuf;
+//     d[0] = first();
+//     d[1] = stride();
+//     d[2] = length();
+//     m.put(d, d + 3);
+//     return m;
+//   }
+//
+//   // get data out from a message
+//   Message& getMessage(Message& m) {
+//     int dbuf[3];
+//     int *d = dbuf;
+//     m.get(d);
+//     *this = Index(d[0], d[0] + (d[2] - 1)*d[1], d[1]);
+//     return m;
+//   }
 
   // PETE interface.
-  typedef cursor PETE_Expr_t;
-  cursor MakeExpression() const { return cursor(*this); }
+//   typedef cursor PETE_Expr_t;
+//   cursor MakeExpression() const { return cursor(*this); }
 
 private: 
 

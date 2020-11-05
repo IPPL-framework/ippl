@@ -318,7 +318,7 @@ inline bool Index::split(Index& l, Index& r, double a) const
       return true;
   //  }
 }
-
+/*
 //////////////////////////////////////////////////////////////////////
 
 #define INDEX_PETE_DOUBLE_OPERATOR(OP,APP)			     \
@@ -357,8 +357,8 @@ INDEX_PETE_DOUBLE_OPERATOR(eq,OpEQ)
 INDEX_PETE_DOUBLE_OPERATOR(ne,OpNE)
 
 INDEX_PETE_DOUBLE_OPERATOR(Max,FnMax)
-INDEX_PETE_DOUBLE_OPERATOR(Min,FnMin)
-
+INDEX_PETE_DOUBLE_OPERATOR(Min,FnMin)*/
+/*
 #undef INDEX_PETE_DOUBLE_OPERATOR
 
 //////////////////////////////////////////////////////////////////////
@@ -439,7 +439,7 @@ INDEX_PETE_INT_OPERATOR(ne,OpNE)
 INDEX_PETE_INT_OPERATOR(Max,FnMax)
 INDEX_PETE_INT_OPERATOR(Min,FnMin)
 
-#undef INDEX_PETE_INT_OPERATOR
+#undef INDEX_PETE_INT_OPERATOR*/
 
 //////////////////////////////////////////////////////////////////////
 
