@@ -29,7 +29,6 @@ class UniformCartesian : public Mesh<T, Dim> {
 public:
     typedef typename Mesh<T, Dim>::vector_type vector_type;
     typedef BareField<vector_type, Dim> BareField_t;
-    typedef typename BareField_t::LField_t LField_t;
 
     typedef Cell DefaultCentering;
 

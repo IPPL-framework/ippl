@@ -10,8 +10,6 @@ set (_HDRS
     Kokkos_Field.h
     GuardCellSizes.hpp
     GuardCellSizes.h
-    LField.hpp
-    LField.h
     )
 
 include_DIRECTORIES (
