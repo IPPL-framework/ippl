@@ -9,7 +9,7 @@
 //   to perform operations involving this attribute with others.
 //
 //   ParticleAttrib is the primary element involved in expressions for
-//   particles (just as LField is the primary element there).  This file
+//   particles (just as BareField is the primary element there).  This file
 //   defines the necessary templated classes and functions to make
 //   ParticleAttrib a capable expression-template participant.
 //
@@ -71,9 +71,10 @@ namespace ippl {
     template <typename E, size_t N>
     //KOKKOS_INLINE_FUNCTION
     ParticleAttrib<T, Properties...>&
-    ParticleAttrib<T, Properties...>::operator=(Expression<E, N> const& expr)
+    ParticleAttrib<T, Properties...>::operator=(detail::Expression<E, N> const& expr)
     {
-        detail::CapturedExpression<E, N> expr_ = reinterpret_cast<const detail::CapturedExpression<E, N>&>(expr);
+        using capture_type = detail::CapturedExpression<E, N>;
+        capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
 
         Kokkos::parallel_for("ParticleAttrib::operator=()",
                              dview_m.extent(0),
@@ -90,8 +91,7 @@ namespace ippl {
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
     const
     {
-        // single LField only
-        typename Field<T, Dim, M, C>::LField_t::view_type view = f(0).getView();
+        typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
 
@@ -136,8 +136,7 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::gather(const Field<T, Dim, M, C>& f,
                                                   const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
-        // single LField only
-        const typename Field<T, Dim, M, C>::LField_t::view_type view = f(0).getView();
+        const typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
 

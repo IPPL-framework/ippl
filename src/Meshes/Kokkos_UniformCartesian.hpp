@@ -18,7 +18,6 @@
 #include "Utility/PAssert.h"
 #include "Utility/IpplInfo.h"
 #include "Field/BareField.h"
-#include "Field/LField.h"
 #include "Field/Kokkos_Field.h"
 
 namespace ippl {
@@ -518,16 +517,16 @@ namespace ippl {
         vertSpacings = vertexSpacing;
 
         // +++++++++++++++vertSpacings++++++++++++++
-        typename BareField_t::iterator_t lfield;
-        for (lfield = vertSpacings.begin();
-             lfield != vertSpacings.end(); ++lfield)
-        {
-//             LField_t& lfield_r = *(*lfield);
-
-//             const NDIndex<Dim> &owned = lfield_r.getOwned();
-            std::cout << "HI" << std::endl;
-
-        }
+//         typename BareField_t::iterator_t lfield;
+//         for (lfield = vertSpacings.begin();
+//              lfield != vertSpacings.end(); ++lfield)
+//         {
+// //             LField_t& lfield_r = *(*lfield);
+//
+// //             const NDIndex<Dim> &owned = lfield_r.getOwned();
+//             std::cout << "HI" << std::endl;
+//
+//         }
 
         // For uniform cartesian mesh, cell-cell spacings are identical to
         // vert-vert spacings:
