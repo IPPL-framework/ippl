@@ -251,21 +251,21 @@ namespace ippl {
          */
 
         template <typename E>
-	    struct meta_grad : public Expression<meta_grad<E>,
-	                                         sizeof(E) +
-	                                         3 * sizeof(typename E::Mesh_t::vector_type)>
+        struct meta_grad : public Expression<meta_grad<E>,
+                                             sizeof(E) + 3 * sizeof(typename E::Mesh_t::vector_type)>
        {
 
             KOKKOS_FUNCTION
             meta_grad(const E& u,
-	const typename E::Mesh_t::vector_type& xvector,
-	const typename E::Mesh_t::vector_type& yvector,
-	const typename E::Mesh_t::vector_type& zvector)
+                       const typename E::Mesh_t::vector_type& xvector,
+                       const typename E::Mesh_t::vector_type& yvector,
+                       const typename E::Mesh_t::vector_type& zvector)
             : u_m(u)
-	, xvector_m(xvector)
-	, yvector_m(yvector)
-	, zvector_m(zvector)
-    { }
+            , xvector_m(xvector)
+            , yvector_m(yvector)
+            , zvector_m(zvector)
+            { }
+
             /*
              * 3-dimensional grad
              */
@@ -276,9 +276,9 @@ namespace ippl {
                        zvector_m * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
             }
 
- private:
+        private:
             using Mesh_t = typename E::Mesh_t;
-	    using vector_type = typename Mesh_t::vector_type;
+            using vector_type = typename Mesh_t::vector_type;
             const E u_m;
             const vector_type xvector_m;
             const vector_type yvector_m;
@@ -292,18 +292,18 @@ namespace ippl {
          * Meta function of divergence
          */
         template <typename E>
-	    struct meta_div : public Expression<meta_div<E>, sizeof(E) + 3 * sizeof(typename E::Mesh_t::vector_type)> {
+        struct meta_div : public Expression<meta_div<E>, sizeof(E) + 3 * sizeof(typename E::Mesh_t::vector_type)> {
 
             KOKKOS_FUNCTION
-	    meta_div(const E& u,
-	             const typename E::Mesh_t::vector_type& xvector,
+            meta_div(const E& u,
+                     const typename E::Mesh_t::vector_type& xvector,
                      const typename E::Mesh_t::vector_type& yvector,
                      const typename E::Mesh_t::vector_type& zvector)
-	    : u_m(u)
-           , xvector_m(xvector)
-	   , yvector_m(yvector)
-	   , zvector_m(zvector)
-           { }
+            : u_m(u)
+            , xvector_m(xvector)
+            , yvector_m(yvector)
+            , zvector_m(zvector)
+            { }
 
             /*
              * 3-dimensional div
@@ -317,7 +317,7 @@ namespace ippl {
 
         private:
             using Mesh_t = typename E::Mesh_t;
-	    using vector_type =typename Mesh_t::vector_type;
+            using vector_type = typename Mesh_t::vector_type;
             const E u_m;
             const vector_type xvector_m;
             const vector_type yvector_m;
@@ -329,14 +329,14 @@ namespace ippl {
          * Meta function of Laplacian 
          */
         template <typename E>
-	    struct meta_laplace : public Expression<meta_laplace<E>, sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
+        struct meta_laplace : public Expression<meta_laplace<E>, sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
 
             KOKKOS_FUNCTION
-		meta_laplace(const E& u,
-	const typename E::Mesh_t::vector_type& hvector)
-		: u_m(u)
-	, hvector_m(hvector)
-        { }
+            meta_laplace(const E& u,
+                         const typename E::Mesh_t::vector_type& hvector)
+            : u_m(u)
+            , hvector_m(hvector)
+            { }
        
             /*
              * 3-dimensional Laplacian
@@ -351,7 +351,7 @@ namespace ippl {
 
         private:
             using Mesh_t = typename E::Mesh_t;
-	    using vector_type = typename Mesh_t::vector_type;
+            using vector_type = typename Mesh_t::vector_type;
             const E u_m;
             const vector_type hvector_m;
         };
