@@ -262,12 +262,10 @@ namespace ippl {
 	const typename E::Mesh_t::vector_type& yvector,
 	const typename E::Mesh_t::vector_type& zvector)
             : u_m(u)
-            , xvector_m(xvector)
-            , yvector_m(yvector)
-            , zvector_m(zvector)
-            { }
-
-
+	, xvector_m(xvector)
+	, yvector_m(yvector)
+	, zvector_m(zvector)
+    { }
             /*
              * 3-dimensional grad
              */
