@@ -27,7 +27,6 @@
 #include "FieldLayout/FieldLayout.h"
 #include "Message/Communicate.h"
 #include "Message/Message.h"
-#include "Utility/DiscMeta.h"
 #include "Utility/IpplInfo.h"
 #include "Utility/IpplStats.h"
 #include "Utility/PAssert.h"

@@ -25,7 +25,6 @@
 
 // IPPL Utilities
 // #include "Utility/Timer.h"
-// #include "Utility/RandomNumberGen.h"
 // #include "Utility/PAssert.h"
 #include "Utility/IpplInfo.h"
 // #include "Utility/IpplCounter.h"
@@ -56,10 +55,6 @@
 // #include "Field/IndexedBareField.h"
 // #include "Field/IndexedField.h"
 // #include "Field/GuardCellSizes.h"
-// #include "Utility/FieldPrint.h"
-// #include "Utility/FieldDebugPrint.h"
-// #include "Utility/FieldDebug.h"
-// #include "Utility/DiscField.h"
 
 // IPPL Particles classes
 #include "Particle/ParticleBase.h"
@@ -80,8 +75,6 @@
 // #include "Particle/PairBuilder/PairConditions.h"
 
 
-// #include "Utility/DiscParticle.h"
-// #include "Utility/ParticleDebug.h"
 
 // // IPPL Field <--> Particle interpolators
 // #include "Particle/IntNGP.h"
