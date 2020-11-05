@@ -1,8 +1,4 @@
 set (_SRCS
-#     DiscBuffer.cpp
-    DiscConfig.cpp
-    DiscMeta.cpp
-#     DiscParticleFunctions.cpp
 #     FieldDebugFunctions.cpp
     Inform.cpp
 #     IpplCounter.cpp
@@ -23,13 +19,6 @@ set (_SRCS
     )
 
 set (_HDRS
-#     DiscBuffer.h
-    DiscConfig.h
-#     DiscField.h
-#     DiscField.hpp
-    DiscMeta.h
-#     DiscParticle.h
-#     DiscType.h
 #     FieldDebug.h
 #     FieldDebug.hpp
 #     FieldDebugFunctions.h
