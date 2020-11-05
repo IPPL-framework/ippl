@@ -27,7 +27,6 @@
 #include "Particle/ParticleBalancer.h"
 #include "Particle/IpplParticleBase.h"
 #include "Particle/ParticleSpatialLayout.h"
-#include "Particle/ParticleUniformLayout.h"
 #include "Particle/ParticleAttrib.h"
 #include "Particle/IntNGP.h"
 #include "Region/RegionLayout.h"
@@ -136,14 +135,3 @@ BinaryRepartition(IpplParticleBase<ParticleSpatialLayout<T,Dim,Mesh,CachingPolic
   PB.update();
   return true;
 }
-
-
-// the same, but taking a uniform layout (this will not actually do anything)
-template<class T, unsigned Dim>
-bool
-BinaryRepartition(IpplParticleBase<ParticleUniformLayout<T,Dim> >& /*PB*/, double /*offset*/) {
-  // for a uniform layout, this repartition method does nothing, so just
-  // exit
-  return true;
-}
-

@@ -14,7 +14,6 @@ endmacro()
 #   add_subdirectory (${test})
 # endforeach()
 
-add_subdirectory (lfield)
 add_subdirectory (kokkos)
 add_subdirectory (barefield)
 add_subdirectory (vector)
