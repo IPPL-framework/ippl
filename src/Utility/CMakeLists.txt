@@ -3,7 +3,6 @@ set (_SRCS
     DiscConfig.cpp
     DiscMeta.cpp
 #     DiscParticleFunctions.cpp
-#     FieldDebugFunctions.cpp
     Inform.cpp
 #     IpplCounter.cpp
     IpplInfo.cpp
@@ -12,7 +11,6 @@ set (_SRCS
     IpplStats.cpp
 #     IpplTimings.cpp
     PAssert.cpp
-#     ParticleDebugFunctions.cpp
     RNGXDiv.cpp
     RandomNumberGen.cpp
     StaticIpplInfo.cpp
@@ -30,13 +28,6 @@ set (_HDRS
     DiscMeta.h
 #     DiscParticle.h
 #     DiscType.h
-#     FieldDebug.h
-#     FieldDebug.hpp
-#     FieldDebugFunctions.h
-#     FieldDebugPrint.h
-#     FieldDebugPrint.hpp
-#     FieldPrint.h
-#     FieldPrint.hpp
     Inform.h
 #     IpplCounter.h
 #     IpplException.h
@@ -47,9 +38,6 @@ set (_HDRS
 #     IpplTimings.h
 #     NamedObj.h
     PAssert.h
-#     ParticleDebug.h
-#     ParticleDebug.hpp
-#     ParticleDebugFunctions.h
 #     RNGAssignDefs.h
     RNGXDiv.h
     RandomNumberGen.h
