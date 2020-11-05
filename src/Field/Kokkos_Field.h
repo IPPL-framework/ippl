@@ -33,6 +33,7 @@ namespace ippl {
         void initialize(Mesh_t&, Layout_t&);
 
         // Access to the mesh
+        KOKKOS_INLINE_FUNCTION
         Mesh_t& get_mesh() const { return *mesh_m; }
 
         // Assignment from constants and other arrays.

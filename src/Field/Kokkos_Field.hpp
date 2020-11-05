@@ -38,17 +38,13 @@ namespace ippl {
      * @param u field
      */
     template <typename T, unsigned Dim, class M, class C>
-    KOKKOS_INLINE_FUNCTION
     detail::meta_grad<Field<T, Dim, M, C>> grad(const Field<T, Dim, M, C>& u) {
         M& mesh = u.get_mesh();
-        xvector[0] = 0.5 / mesh.getMeshSpacing(0);
-        xvector[1] = 0.0;
-        xvector[2] = 0.0;
-        yvector[0] = 0.0;
+	typename M::vector_type xvector(0);
+	xvector[0] = 0.5 / mesh.getMeshSpacing(0);
+	typename M::vector_type yvector(0);
         yvector[1] = 0.5 / mesh.getMeshSpacing(1);
-        yvector[2] = 0.0;
-        zvector[0] = 0.0;
-        zvector[1] = 0.0;
+	typename M::vector_type zvector(0);
         zvector[2] = 0.5 / mesh.getMeshSpacing(2);
         return detail::meta_grad<Field<T, Dim, M, C>>(u, xvector, yvector, zvector);
     }
@@ -59,9 +55,15 @@ namespace ippl {
      * @param u field
      */
     template <typename T, unsigned Dim, class M, class C>
-    KOKKOS_INLINE_FUNCTION
     detail::meta_div<Field<T, Dim, M, C>> div(const Field<T, Dim, M, C>& u) {
-        return detail::meta_div<Field<T, Dim, M, C>>(u);
+	M& mesh = u.get_mesh();
+        typename M::vector_type xvector(0);
+        xvector[0] = 0.5 / mesh.getMeshSpacing(0);
+        typename M::vector_type yvector(0);
+        yvector[1] = 0.5 / mesh.getMeshSpacing(1);
+        typename M::vector_type zvector(0);
+        zvector[2] = 0.5 / mesh.getMeshSpacing(2);
+        return detail::meta_div<Field<T, Dim, M, C>>(u, xvector, yvector, zvector);
     }
 
 
@@ -70,8 +72,12 @@ namespace ippl {
      * @param u field
      */
     template <typename T, unsigned Dim, class M, class C>
-    KOKKOS_INLINE_FUNCTION
     detail::meta_laplace<Field<T, Dim, M, C>> laplace(const Field<T, Dim, M, C>& u) {
-        return detail::meta_laplace<Field<T, Dim, M, C>>(u);
+	M& mesh = u.get_mesh();
+	typename M::vector_type hvector(0);
+	hvector[0] = 1.0 / std::pow(mesh.getMeshSpacing(0), 2);
+	hvector[1] = 1.0 / std::pow(mesh.getMeshSpacing(1), 2);
+	hvector[2] = 1.0 / std::pow(mesh.getMeshSpacing(2), 2);
+        return detail::meta_laplace<Field<T, Dim, M, C>>(u, hvector);
     }
 }
