@@ -25,7 +25,6 @@
 
 // include files
 #include "FieldLayout/FieldLayout.h"
-#include "FieldLayout/VRB.h"
 #include "Message/Communicate.h"
 #include "Message/Message.h"
 #include "Utility/DiscMeta.h"
@@ -634,7 +633,7 @@ FieldLayout<Dim>::setup(const NDIndex<Dim>& domain,
     // If we have been instructed to use recursive bisection, do that.
     // if not, deal them out in a simple manner.
     if ( recurse )
-        vnodeRecursiveBisection(Dim,sizes,nprocs,vnodeProcs);
+        Ippl::abort("Recursive Bisection not available.");
     else
         for ( v=0; v<vnodes; ++v )
             vnodeProcs[v] = (v*nprocs)/vnodes;

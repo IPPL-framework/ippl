@@ -1,5 +1,5 @@
 set (_SRCS
-  VRB.cpp
+
   )
 
 set (_HDRS
@@ -11,7 +11,6 @@ set (_HDRS
   FieldLayout.h
   FieldLayoutUser.h
   Vnode.h
-  VRB.h
   )
 
 include_DIRECTORIES (
