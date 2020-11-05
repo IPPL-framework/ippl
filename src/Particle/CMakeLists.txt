@@ -2,23 +2,9 @@ set (_SRCS
     )
 
 set (_HDRS
-#     BoxParticleCachingPolicy.h
-#     CellParticleCachingPolicy.h
-#     GenArrayParticle.h
-#     GenParticle.h
-#     IntCIC.h
 #     Interpolator.h
 #     IntNGP.h
-#     IntTSC.h
-#     IntSUDS.h
-#     NoParticleCachingPolicy.h
-#     PairBuilder/BasicPairBuilder.h
-#     PairBuilder/HashPairBuilder.h
-#     PairBuilder/HashPairBuilderPeriodic.h
-#     PairBuilder/PairConditions.h
-#     PairBuilder/SortingPairBuilder.h
     ParticleAttribBase.h
-#     ParticleAttribElem.h
     ParticleAttrib.h
     ParticleAttrib.hpp
 #     ParticleBalancer.hpp
@@ -26,21 +12,10 @@ set (_HDRS
     ParticleBase.h
     ParticleBase.hpp
     ParticleBC.h
-#     ParticleCashedLayout.hpp
-#     ParticleCashedLayout.h
-#     ParticleInteractAttrib.hpp
-#     ParticleInteractAttrib.h
-#     ParticleInteractLayout.hpp
-#     ParticleInteractLayout.h
     ParticleLayout.h
     ParticleLayout.hpp
 #     ParticleSpatialLayout.hpp
 #     ParticleSpatialLayout.h
-#     ParticleUniformLayout.hpp
-#     ParticleUniformLayout.h
-#     PAssign.hpp
-#     PAssignDefs.h
-#     PAssign.h
     )
 
 include_directories (
@@ -51,8 +26,6 @@ add_ippl_sources (${_SRCS})
 add_ippl_headers (${_HDRS})
 
 install (FILES ${_HDRS} DESTINATION include/Particle)
-
-# add_subdirectory (PairBuilder)
 
 # vi: set et ts=4 sw=4 sts=4:
 
