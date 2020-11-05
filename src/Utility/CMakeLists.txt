@@ -1,8 +1,4 @@
 set (_SRCS
-#     DiscBuffer.cpp
-    DiscConfig.cpp
-    DiscMeta.cpp
-#     DiscParticleFunctions.cpp
     Inform.cpp
 #     IpplCounter.cpp
     IpplInfo.cpp
@@ -11,8 +7,6 @@ set (_SRCS
     IpplStats.cpp
 #     IpplTimings.cpp
     PAssert.cpp
-    RNGXDiv.cpp
-    RandomNumberGen.cpp
     StaticIpplInfo.cpp
     Timer.cpp
     Unique.cpp
@@ -21,13 +15,6 @@ set (_SRCS
     )
 
 set (_HDRS
-#     DiscBuffer.h
-    DiscConfig.h
-#     DiscField.h
-#     DiscField.hpp
-    DiscMeta.h
-#     DiscParticle.h
-#     DiscType.h
     Inform.h
 #     IpplCounter.h
 #     IpplException.h
@@ -38,11 +25,7 @@ set (_HDRS
 #     IpplTimings.h
 #     NamedObj.h
     PAssert.h
-#     RNGAssignDefs.h
-    RNGXDiv.h
-    RandomNumberGen.h
     RefCounted.h
-#     SequenceGen.h
     StaticIpplInfo.h
     Timer.h
     Unique.h

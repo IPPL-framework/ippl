@@ -28,7 +28,6 @@
 #include "FieldLayout/VRB.h"
 #include "Message/Communicate.h"
 #include "Message/Message.h"
-#include "Utility/DiscMeta.h"
 #include "Utility/IpplInfo.h"
 #include "Utility/IpplStats.h"
 #include "Utility/PAssert.h"
@@ -1256,8 +1255,8 @@ bool FieldLayout<Dim>::write(const char *filename) {
 // users.  If an error occurs, return
 // false and leave our own layout unchanged.
 template<unsigned Dim>
-bool FieldLayout<Dim>::read(const char *filename) {
-
+bool FieldLayout<Dim>::read(const char */*filename*/) {
+/*
 
 
     // generate a tag to use for communication
@@ -1501,7 +1500,7 @@ bool FieldLayout<Dim>::read(const char *filename) {
     Repartition(vnlist, vnlist + localvnodes);
 
     // success!
-    delete [] vnlist;
+    delete [] vnlist;*/
     return true;
 }
 
