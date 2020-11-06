@@ -166,19 +166,6 @@ public:
   // may dynamically change.
   static int getProcesses(int, int);
 
-  // getSMPs: return number of SMP's (each of which may be running
-  // several processes)
-  static int getSMPs();
-
-  // getSMPNodes: return number of nodes on the SMP with the given index
-  static int getSMPNodes(int);
-
-  // mySMP: return ID of my SMP (numbered 0 ... getSMPs() - 1)
-  static int mySMP();
-
-  // mySMPNode: return relative node number within the nodes on our SMP
-  static int mySMPNode();
-
   // Return argc or argv as provided in the initialization
   static int getArgc() { return MyArgc; }
   static char **getArgv() { return MyArgv; }
@@ -186,11 +173,6 @@ public:
   // Static data about a limit to the number of nodes that should be used
   // in FFT operations.  If this is <= 0 or > number of nodes, it is ignored.
   static int maxFFTNodes() { return MaxFFTNodes; }
-
-  // Return boolean setting for whether we should attempt to use parallel
-  // I/O within a single SMP, for example by having multipple processors
-  // try to read from a single file (vs just having one node do it).
-  static bool perSMPParallelIO() { return PerSMPParallelIO; }
 
   //
   // Functions which return information about the Ippl library
@@ -273,20 +255,9 @@ private:
   static int MyNode;
   static int TotalNodes;
 
-  // Static data with SMP information.  These are changed after a new
-  // Communicate object is created.
-  static int NumSMPs;
-  static int *SMPIDList;
-  static int *SMPNodeList;
-
   // Static data about a limit to the number of nodes that should be used
   // in FFT operations.  If this is <= 0 or > number of nodes, it is ignored.
   static int MaxFFTNodes;
-
-  // A boolean setting for whether we should attempt to use parallel
-  // I/O within a single SMP, for example by having multipple processors
-  // try to read from a single file (vs just having one node do it).
-  static bool PerSMPParallelIO;
 
   static std::stack<StaticIpplInfo> stashedStaticMembers;
 
@@ -294,12 +265,6 @@ private:
   // option, and quit.  Arguments are: parameter, error message, bad value
   static void param_error(const char *, const char *, const char *);
   static void param_error(const char *, const char *, const char *, const char *);
-
-  // find out how many SMP's there are, and which processor we are on
-  // our local SMP (e.g., if there are two SMP's with 4 nodes each,
-  // the process will have a node number from 0 ... 7, and an SMP node
-  // number from 0 ... 3
-  static void find_smp_nodes();
 };
 
 // macros used to print out messages to the console or a directed file

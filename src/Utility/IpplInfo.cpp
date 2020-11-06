@@ -90,11 +90,7 @@ int  IpplInfo::MyArgc = 0;
 char **IpplInfo::MyArgv = 0;
 int  IpplInfo::MyNode = 0;
 int  IpplInfo::TotalNodes = 1;
-int  IpplInfo::NumSMPs = 1;
-int* IpplInfo::SMPIDList = 0;
-int* IpplInfo::SMPNodeList = 0;
 int  IpplInfo::MaxFFTNodes = 0;
-bool IpplInfo::PerSMPParallelIO = false;
 
 /////////////////////////////////////////////////////////////////////
 // print out current state to the given output stream
@@ -103,14 +99,7 @@ std::ostream& operator<<(std::ostream& o, const IpplInfo&) {
     o << "IPPL Framework Application Summary:\n";
     o << "  Running on node " << IpplInfo::myNode();
     o << ", out of " << IpplInfo::getNodes() << " total.\n";
-    o << "  Number of SMPs: " << IpplInfo::getSMPs() << "\n";
-    o << "  Relative SMP node: " << IpplInfo::mySMPNode();
-    o << ", out of " << IpplInfo::getSMPNodes(IpplInfo::mySMP());
-    o << " nodes.\n";
     o << "  Communication method: " << IpplInfo::Comm->name() << "\n";
-    o << "  Use per-SMP parallel IO? ";
-    o << IpplInfo::perSMPParallelIO() << "\n";
-
     o << "  Elapsed wall-clock time (in seconds): ";
     o << IpplInfo::Stats->getTime().clock_time() << "\n";
     o << "  Elapsed CPU-clock time (in seconds) : ";
@@ -189,7 +178,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                 // cache our node number and node count
             MyNode = Comm->myNode();
             TotalNodes = Comm->getNodes();
-            find_smp_nodes();
 
                 // advance the default random number generator
 //                 IpplRandom.AdvanceSeed(Comm->myNode());
@@ -296,14 +284,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                 // handled above in
                 if ( (i + 1) < argc && argv[i+1][0] != '-' )
                     ++i;
-
-            } else if ( ( strcmp(argv[i], "--persmppario") == 0 ) ) {
-                // Turn on the ability to use per-smp parallel IO
-                PerSMPParallelIO = true;
-
-            } else if ( ( strcmp(argv[i], "--nopersmppario") == 0 ) ) {
-                // Turn off the ability to use per-smp parallel IO
-                PerSMPParallelIO = false;
 
             } else if ( ( strcmp(argv[i], "--directio") == 0 ) ) {
                 // Turn on the use of Direct-IO, if possible
@@ -428,17 +408,9 @@ IpplInfo::~IpplInfo() {
 
         // delete other dynamically-allocated static objects
         delete [] MyArgv;
-        if (SMPIDList != 0) {
-            delete [] SMPIDList;
-        }
-        if (SMPNodeList != 0) {
-            delete [] SMPNodeList;
-        }
         delete Stats;
 
         MyArgv = 0;
-        SMPIDList = 0;
-        SMPNodeList = 0;
         Stats = 0;
     }
 }
@@ -531,42 +503,6 @@ int IpplInfo::myNode() {
 }
 
 
-/////////////////////////////////////////////////////////////////////
-// getSMPs: return number of SMP's (each of which may be running
-// several processes)
-int IpplInfo::getSMPs() {
-    return NumSMPs;
-}
-
-
-/////////////////////////////////////////////////////////////////////
-// getSMPNodes: return number of nodes on the SMP with the given index
-int IpplInfo::getSMPNodes(int smpindx) {
-    int num = 0;
-    if (SMPIDList == 0) {
-        num = 1;
-    } else {
-        for (int i=0; i < TotalNodes; ++i)
-            if (SMPIDList[i] == smpindx)
-                num++;
-    }
-    return num;
-}
-
-
-/////////////////////////////////////////////////////////////////////
-// mySMP: return ID of my SMP (numbered 0 ... getSMPs() - 1)
-int IpplInfo::mySMP() {
-    return (SMPIDList != 0 ? SMPIDList[MyNode] : 0);
-}
-
-
-/////////////////////////////////////////////////////////////////////
-// mySMPNode: return relative node number within the nodes on our SMP
-int IpplInfo::mySMPNode() {
-    return (SMPNodeList != 0 ? SMPNodeList[MyNode] : 0);
-}
-
 
 /////////////////////////////////////////////////////////////////////
 // printVersion: print out a version summary.  If the argument is true,
@@ -601,8 +537,6 @@ void IpplInfo::printHelp(char** argv) {
 
       #endif*/ //PROFILING_ON
     INFOMSG("   --maxfftnodes <n>   : Limit the nodes that work on FFT's.\n");
-    INFOMSG("   --persmppario       : Enable on-SMP parallel IO option.\n");
-    INFOMSG("   --nopersmppario     : Disable on-SMP parallel IO option (default).\n");
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -704,114 +638,6 @@ void IpplInfo::param_error(const char *param, const char *msg1,
 }
 
 
-/////////////////////////////////////////////////////////////////////
-// find out how many SMP's there are, and which processor we are on
-// our local SMP (e.g., if there are two SMP's with 4 nodes each,
-// the process will have a node number from 0 ... 7, and an SMP node
-// number from 0 ... 3
-void IpplInfo::find_smp_nodes() {
-    // Inform dbgmsg("IpplInfo::find_smp_nodes", INFORM_ALL_NODES);
-
-    // create a tag for use in sending info to/from other nodes
-    int tag = Comm->next_tag(IPPL_MAKE_HOST_MAP_TAG, IPPL_TAG_CYCLE);
-
-    // create arrays to store the Node -> SMP mapping, and the relative
-    // SMP node number
-    if (SMPIDList != 0)
-        delete [] SMPIDList;
-    if (SMPNodeList != 0)
-        delete [] SMPNodeList;
-    SMPIDList   = new int[TotalNodes];
-    SMPNodeList = new int[TotalNodes];
-
-    // obtain the hostname and processor ID to send out
-    char name[1024];
-    if (gethostname(name, 1023) != 0) {
-        ERRORMSG("Could not get hostname ... using localhost." << endl);
-        strcpy(name, "localhost");
-    }
-    std::string NodeName(name,strlen(name));
-    // dbgmsg << "My hostname is " << NodeName << endl;
-
-    // all other nodes send their hostname to node 0; node 0 gets the names,
-    // maps pnode ID's -> SMP ID's, then broadcasts all the necessary info to
-    // all other nodes
-    if (MyNode != 0) {
-        // other nodes send their node name to node 0
-        Message *msg = new Message;
-        ::putMessage(*msg,NodeName);
-        // dbgmsg << "Sending my name to node 0." << endl;
-        Comm->send(msg, 0, tag);
-
-        // receive back the SMPIDList mapping
-        int node = 0;
-        msg = Comm->receive_block(node, tag);
-        PInsist(msg != 0 && node == 0,
-                "SPMDList map not received from master in IpplInfo::find_smp_nodes!!");
-        ::getMessage_iter(*msg, SMPIDList);
-        ::getMessage_iter(*msg, SMPNodeList);
-        delete msg;
-    }
-    else {
-        // collect node names from everyone else, and then retransmit the collected
-        // list.
-        SMPIDList[0] = 0;
-        vmap<std::string,int> smpMap;
-        vmap<std::string,int>::iterator smpiter;
-        smpMap.insert(vmap<std::string,int>::value_type(NodeName, 0));
-        unsigned int unreceived = TotalNodes - 1;
-        while (unreceived-- > 0) {
-            // get the hostname from the remote node
-            int node = COMM_ANY_NODE;
-            Message *msg = Comm->receive_block(node, tag);
-            PInsist(msg != 0,
-                    "Hostname not received by master in IpplInfo::find_smp_nodes!!");
-            std::string nodename;
-            ::getMessage(*msg,nodename);
-            delete msg;
-            // dbgmsg <<"Received name '"<< nodename <<"' from node "<< node<<endl;
-
-            // put it in the mapping from hostname -> SMP ID, if necessary
-            smpiter = smpMap.find(nodename);
-            if (smpiter == smpMap.end())
-                smpMap.insert(vmap<std::string,int>::value_type(nodename,smpMap.size()));
-
-            // from the hostname, get the SMP ID number and store it in SMPIDList
-            SMPIDList[node] = smpMap[nodename];
-        }
-
-        // convert from SMPID mapping -> relative node number
-        for (int smpindx = 0; (unsigned int) smpindx < smpMap.size(); ++smpindx) {
-            int smpnodes = 0;
-            for (int n=0; n < TotalNodes; ++n) {
-                if (SMPIDList[n] == smpindx)
-                    SMPNodeList[n] = smpnodes++;
-            }
-        }
-
-        // broadcast SMP info to other nodes
-        if (TotalNodes > 1) {
-            Message *msg = new Message;
-            ::putMessage(*msg, SMPIDList, SMPIDList + TotalNodes);
-            ::putMessage(*msg, SMPNodeList, SMPNodeList + TotalNodes);
-            Comm->broadcast_others(msg, tag);
-        }
-    }
-
-    // compute number of SMP's ... necessary for all but node 0, but we'll do
-    // it for all
-    NumSMPs = 0;
-    for (int ns=0; ns < TotalNodes; ++ns)
-        if (SMPNodeList[ns] == 0)
-            NumSMPs++;
-
-    // dbgmsg << "Results of SMP mapping: NumSMPs = " << NumSMPs << endl;
-    // for (unsigned int n=0; n < TotalNodes; ++n) {
-    //   dbgmsg << "  n=" << n << ", SMPID=" << SMPIDList[n] << ", SMPNode=";
-    //   dbgmsg << SMPNodeList[n] << endl;
-    // }
-}
-
 void IpplInfo::stash() {
     PAssert_EQ(stashedStaticMembers.size(), 0);
 
@@ -832,11 +658,7 @@ void IpplInfo::stash() {
     obj.MyArgv =              MyArgv;
     obj.MyNode =              MyNode;
     obj.TotalNodes =          TotalNodes;
-    obj.NumSMPs =             NumSMPs;
-    obj.SMPIDList =           SMPIDList;
-    obj.SMPNodeList =         SMPNodeList;
     obj.MaxFFTNodes =         MaxFFTNodes;
-    obj.PerSMPParallelIO =    PerSMPParallelIO;
 
     stashedStaticMembers.push(obj);
 
@@ -856,11 +678,7 @@ void IpplInfo::stash() {
     MyArgv = 0;
     MyNode = 0;
     TotalNodes = 1;
-    NumSMPs = 1;
-    SMPIDList = 0;
-    SMPNodeList = 0;
     MaxFFTNodes = 0;
-    PerSMPParallelIO = false;
 }
 
 void IpplInfo::pop() {
@@ -872,8 +690,6 @@ void IpplInfo::pop() {
     // environment
     // Comm is deleted in destructor
     delete [] MyArgv;
-    delete [] SMPIDList;
-    delete [] SMPNodeList;
     delete Info;
     delete Warn;
     delete Error;
@@ -895,9 +711,5 @@ void IpplInfo::pop() {
     MyArgv =              obj.MyArgv;
     MyNode =              obj.MyNode;
     TotalNodes =          obj.TotalNodes;
-    NumSMPs =             obj.NumSMPs;
-    SMPIDList =           obj.SMPIDList;
-    SMPNodeList =         obj.SMPNodeList;
     MaxFFTNodes =         obj.MaxFFTNodes;
-    PerSMPParallelIO =    obj.PerSMPParallelIO;
 }
