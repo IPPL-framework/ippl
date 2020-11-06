@@ -1,37 +1,51 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- * 
- * This program was prepared by PSI. 
- * All rights in the program are reserved by PSI.
- * Neither PSI nor the author(s)
- * makes any warranty, express or implied, or assumes any liability or
- * responsibility for the use of this software
- *
- * Visit www.amas.web.psi for more details
- *
- ***************************************************************************/
-
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- * 
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
-
-//////////////////////////////////////////////////////////////////////
-// Major functions and test code for Index.
-// See main below for examples of use.
-//////////////////////////////////////////////////////////////////////
-
-// include files
+//
+// Class Index
+//   Define a slice in an array.
+//
+//   This essentially defines a list of evenly spaced numbers.
+//   Most commonly this list will be increasing (positive stride)
+//   but it can also have negative stride and be decreasing.
+//
+//   Index()      --> A null interval with no elements.
+//   Index(n)     --> make an Index on [0..n-1]
+//   Index(a,b)   --> make an Index on [a..b]
+//   Index(a,b,s) --> make an Index on [a..b] with stride s
+//
+//   Example1:
+//   --------
+//   Index I(10);           --> Index on [0..9]
+//   Index Low(5);          --> Index on [0..4]
+//   Index High(5,9);       --> Index on [5..9]
+//   Index IOdd(1,9,2);     --> Index on [1..9] stride 2
+//   Index IEven(0,9,2);    --> Index on [0..9] stride 2
+//
+//   Given an Index I(a,n,s), and an integer j you can do the following:
+//
+//   I+j  : a+j+i*s        for i in [0..n-1]
+//   j-I  : j-a-i*s
+//   j*I  : j*a + i*j*s
+//   I/j  : a/j + i*s/j
+//
+//   j/I we don't do because it is not a uniform stride, and we don't
+//   allow strides that are fractions.
+//
+// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #include "Index/Index.h"
 #include "Utility/PAssert.h"
 
+namespace ippl {
 
 //////////////////////////////////////////////////////////////////////
 
@@ -115,9 +129,9 @@ Index::intersect(const Index& rhs) const
     int rl = rhs.last();
     int f = lf > rf ? lf : rf;
     int l = ll < rl ? ll : rl;
-    ret.First = f;
-    ret.Length = ( (l>=f) ? l-f+1 : 0 );
-    ret.Stride = 1;
+    ret.first_m = f;
+    ret.length_m = ( (l>=f) ? l-f+1 : 0 );
+    ret.stride_m = 1;
     ret.BaseFirst = BaseFirst + f - lf;
     ret.Base = Base;
   }
@@ -130,7 +144,7 @@ Index::intersect(const Index& rhs) const
 
 static Index do_intersect(const Index &a, const Index &b)
 {
-  
+
   PAssert_GT(a.stride(), 0);		// This should be assured by the
   PAssert_GT(b.stride(), 0);		// caller of this function.
 
@@ -138,7 +152,7 @@ static Index do_intersect(const Index &a, const Index &b)
   int a_mul,b_mul;		// a_mul=newStride/a.stride() ...
   lcm(a.stride(),b.stride(),	// The input strides...
       newStride,a_mul,b_mul);	// the lcm of the strides of a and b.
-  
+
   // Find the offset from a.first() in units of newStride
   // that puts the ranges close together.
   int a_i = (b.first()-a.first())/a.stride();
@@ -172,21 +186,21 @@ static Index do_intersect(const Index &a, const Index &b)
 
 Index Index::general_intersect(const Index& that) const
 {
-  
+
   // If they just don't overlap, return null indexes.
   if ( (min() > that.max()) || (that.min() > max()) )
     return Index(0);
-  if ( (Stride==0) || (that.Stride==0) )
+  if ( (stride_m==0) || (that.stride_m==0) )
     return Index(0);
 
   // If one or the other counts -ve, reverse it and intersect result.
-  if ( that.Stride < 0 )
+  if ( that.stride_m < 0 )
     return intersect(that.reverse());
-  if ( Stride < 0 )
+  if ( stride_m < 0 )
     {
       Index r;
       r = reverse().intersect(that).reverse();
-      int diff = (r.First-First)/Stride;
+      int diff = (r.first_m-first_m)/stride_m;
       PAssert_GE(diff, 0);
       r.BaseFirst = BaseFirst + diff;
       return r;
@@ -195,7 +209,7 @@ Index Index::general_intersect(const Index& that) const
   // Getting closer to the real thing: intersect them.
   // Pass the one that starts lower as the first argument.
   Index r;
-  if ( First < that.First )
+  if ( first_m < that.first_m )
     r = do_intersect(*this,that);
   else
     r = do_intersect(that,*this);
@@ -203,93 +217,10 @@ Index Index::general_intersect(const Index& that) const
   // Set the base so you can find what parts correspond
   // to the original interval.
   r.Base = Base;
-  int diff = (r.First - First)/Stride;
+  int diff = (r.first_m - first_m)/stride_m;
   PAssert_GE(diff, 0);
   r.BaseFirst = BaseFirst + diff;
   return r;
 }
 
-//////////////////////////////////////////////////////////////////////
-
-#ifdef DEBUG_INDEX
-int main()
-{
-  
-  const int N  = 16;		// Number of grid points.
-  const int NP = 4;		// Number of processors.
-  const int NL = N/NP;		// Grid points per processor.
-  int p;			// processor counter.
-
-  Index Ranges[NP];		// an index for each processor.
-  for (p=0;p<NP;p++)		// On each processor
-    Ranges[p] = Index(p*NL,(p+1)*NL-1); // Set the local range
-
-  for (p=0;p<NP;p++)		// On each processor
-    cout << Ranges[p] << endl;
-
-  // work out A[Dest] = B[2*Dest];
-  // Dest = [0...N/2-1]
-  // Index Dest(N/2);
-  // Index Src = 2*Dest;
-
-  // Also try this:
-  // Index Dest(N);
-  // Index Src = N-1-Dest;
-
-  // and this
-  Index Dest(N);
-  Index Src = Dest - 1;
-
-  // another
-  // Index Dest(0,N/2,2);
-  // Index Src = Dest/2;
-
-  // yet another
-  // Index Dest = N-1-2*Index(N/2);
-  // Index Src = N-1-Dest;
-
-  cout << "Dest=" << Dest << endl;
-  cout << "Src =" << Src  << endl;
-
-  // Find out the gets from each processor for that operation.
-  for (p=0; p<NP; p++)
-    {
-      cout << "On vp=" << p << ", range=" << Ranges[p] << endl;
-
-      // Calculate what gets will be done.
-      Index LDRange = Dest.intersect(Ranges[p]); // Local Destination Range for p
-      Index SDRange = Src.plugBase(LDRange);     // Where that comes from.
-      cout << "LDRange = " << LDRange << endl;
-      cout << "SDRange = " << SDRange << endl;
-      for (int pp=0; pp<NP; pp++)
-	{              // Get from pp
-	  Index LSDRange = SDRange.intersect(Ranges[pp]); // what comes from pp
-	  if (!LSDRange.empty())
-	    {
-	      cout << "    from proc=" << pp << ", receive " << LSDRange << endl;
-	    }
-	}
-
-      // Calculate the puts.
-      Index LSRange = Src.intersect(Ranges[p]);
-      Index DSRange = Dest.plugBase(LSRange);    // The destination for that.
-      cout << "LSRange = " << LSRange << endl;
-      cout << "DSRange = " << DSRange << endl;
-      for (pp=0; pp<NP; pp++)
-	{		       // Put to pp
-	  Index LDSRange = LSRange.plugBase(DSRange.intersect(Ranges[pp]));
-	  if (!LDSRange.empty())
-	    {
-	      cout << "    send to pp=" << pp << ", the range=" << LDSRange << endl;
-	    }
-	}
-    }
 }
-
-#endif // DEBUG_INDEX
-
-/***************************************************************************
- * $RCSfile: Index.cpp,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:27 $
- * IPPL_VERSION_ID: $Id: Index.cpp,v 1.1.1.1 2003/01/23 07:40:27 adelmann Exp $ 
- ***************************************************************************/
