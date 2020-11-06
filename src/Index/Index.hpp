@@ -134,7 +134,7 @@ namespace ippl {
     }
 
 
-    inline unsigned int  Index::length() const {
+    inline size_t Index::length() const {
         return length_m;
     }
 

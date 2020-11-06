@@ -65,7 +65,7 @@
 #include <iostream>
 
 namespace ippl {
-    class Index : public ippl::detail::Expression<Index, 3 * sizeof(int) /*need to check*/>
+    class Index : public ippl::detail::Expression<Index, 3 * sizeof(int) + 2 * sizeof(size_t) /*need to check*/>
     {
     public:
         class iterator
@@ -181,7 +181,7 @@ namespace ippl {
         /*!
          * @returns the stride
          */
-        inline int stride() const
+        inline int stride() const;
 
         /*!
          * @returns the first element
