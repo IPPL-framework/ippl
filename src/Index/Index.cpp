@@ -132,7 +132,7 @@ Index::intersect(const Index& rhs) const
     ret.first_m = f;
     ret.length_m = ( (l>=f) ? l-f+1 : 0 );
     ret.stride_m = 1;
-    ret.BaseFirst = BaseFirst + f - lf;
+    ret.baseFirst_m = baseFirst_m + f - lf;
     ret.Base = Base;
   }
   else
@@ -202,7 +202,7 @@ Index Index::general_intersect(const Index& that) const
       r = reverse().intersect(that).reverse();
       int diff = (r.first_m-first_m)/stride_m;
       PAssert_GE(diff, 0);
-      r.BaseFirst = BaseFirst + diff;
+      r.baseFirst_m = baseFirst_m + diff;
       return r;
     }
 
@@ -219,7 +219,7 @@ Index Index::general_intersect(const Index& that) const
   r.Base = Base;
   int diff = (r.first_m - first_m)/stride_m;
   PAssert_GE(diff, 0);
-  r.BaseFirst = BaseFirst + diff;
+  r.baseFirst_m = baseFirst_m + diff;
   return r;
 }
 

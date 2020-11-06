@@ -150,11 +150,11 @@ namespace ippl {
 
         /*!
          * Instantiate Index with user-defined lower and upper
-         * bound [a, ..., b].
-         * @param a lower bound
-         * @param b upper bound
+         * bound [f, ..., l].
+         * @param f first element
+         * @param l last element
          */
-        inline Index(int a, int b);
+        inline Index(int f, int l);
 
 
         inline Index(int f, int l, int s);	// First to Last using Step.
@@ -229,10 +229,11 @@ namespace ippl {
         int stride_m;
         size_t length_m;    /// The number of elements
   
-        // Here we store the first element of the base index.
-        // This gets updated whenever we do index or set operations
-        // so we can do inverses quickly and easily.
-        unsigned BaseFirst;
+        /*! he first element of the base index.
+         * This gets updated whenever we do index or set operations
+         * so we can do inverses quickly and easily.
+         */
+        size_t baseFirst_m;
 
         // Keep id for the base so we can tell when two
         // indexes come from the same base.
