@@ -126,14 +126,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
     }
     // You can only specify argc, argv once; if it is done again, print a warning
     // and continue as if we had not given argc, argv.
-    if ( CommInitialized ) {
-      // ADA WARNMSG("Attempt to create IpplInfo with argc, argv again." << endl);
-      //WARNMSG("Using previous argc,argv settings." << endl);
-    } else {
-        // dbgmsg << "Starting initialization: argc = " << argc << ", " << endl;
-        // for (unsigned int dbgi=0; dbgi < argc; ++dbgi)
-        //   dbgmsg << "  argv[" << dbgi << "] = '" << argv[dbgi] << "'" << endl;
-
+    if ( !CommInitialized ) {
         // first make a pass through the arguments, figure out whether we should
         // run in parallel, and start up the parallel environment.  After this,
         // process all the other cmdline args
@@ -153,8 +146,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
         // create Communicate object now.
         // dbgmsg << "Setting up parallel environment ..." << endl;
         if (startcomm && nprocs != 0 && nprocs != 1) {
-            // dbgmsg << "  commlibarg=" << commtype << endl;
-            // dbgmsg << ", nprocs=" << nprocs << endl;
             Communicate *newcomm = CommCreator::create(commtype.c_str(),
                     argc, argv,
                     nprocs, comminit, mpicomm);
@@ -164,17 +155,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                 // cache our node number and node count
             MyNode = Comm->myNode();
             TotalNodes = Comm->getNodes();
-
-                // advance the default random number generator
-//                 IpplRandom.AdvanceSeed(Comm->myNode());
-
-                // dbgmsg << "  Comm creation successful." << endl;
-                // dbgmsg << *this << endl;
         }
-
-        // dbgmsg << "After comm init: argc = " << argc << ", " << endl;
-        // for (unsigned int dbgi=0; dbgi < argc; ++dbgi)
-        //   dbgmsg << "  argv[" << dbgi << "] = '" << argv[dbgi] << "'" << endl;
 
         // keep track of which arguments we do no use; these are returned
         retargc = 1;
