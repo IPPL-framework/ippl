@@ -1,5 +1,4 @@
 set (_SRCS
-    CRC.cpp
     Communicate.cpp
     CommCreator.cpp
     CommMPI.cpp
@@ -11,7 +10,6 @@ set (_HDRS
     CommCreator.h
     CommMPI.h
     Communicate.h
-    CRC.h
     DataTypes.h
     Formatter.h
     GlobalComm.hpp
