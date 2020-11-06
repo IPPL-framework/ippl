@@ -19,7 +19,7 @@
 // Construct from a simple array of Indexes
 template<unsigned Dim>
 inline
-NDIndex<Dim>::NDIndex(const Index* idx)
+NDIndex<Dim>::NDIndex(const ippl::Index* idx)
 {
   for (unsigned i=0; i<Dim; ++i)
     p[i]=idx[i];
@@ -166,7 +166,7 @@ NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r) const
 
 template<unsigned Dim>
 inline
-NDIndex<Dim>::NDIndex(const Index& i0)
+NDIndex<Dim>::NDIndex(const ippl::Index& i0)
 {
   PInsist(Dim==1, "Number of arguments does not match NDIndex dimension!!");
   p[0] = i0;
@@ -174,7 +174,7 @@ NDIndex<Dim>::NDIndex(const Index& i0)
 
 template<unsigned Dim>
 inline
-NDIndex<Dim>::NDIndex(const Index& i0,const Index& i1)
+NDIndex<Dim>::NDIndex(const ippl::Index& i0,const ippl::Index& i1)
 {
   PInsist(Dim==2, "Number of arguments does not match NDIndex dimension!!");
   p[0] = i0;
@@ -183,7 +183,7 @@ NDIndex<Dim>::NDIndex(const Index& i0,const Index& i1)
 
 template<unsigned Dim>
 inline
-NDIndex<Dim>::NDIndex(const Index& i0,const Index& i1,const Index& i2)
+NDIndex<Dim>::NDIndex(const ippl::Index& i0,const ippl::Index& i1,const ippl::Index& i2)
 {
   PInsist(Dim==3, "Number of arguments does not match NDIndex dimension!!");
   p[0] = i0;
@@ -193,8 +193,8 @@ NDIndex<Dim>::NDIndex(const Index& i0,const Index& i1,const Index& i2)
 
 template<unsigned Dim>
 inline
-NDIndex<Dim>::NDIndex(const Index& i0,const Index& i1,const Index& i2,
-                      const Index& i3)
+NDIndex<Dim>::NDIndex(const ippl::Index& i0,const ippl::Index& i1,const ippl::Index& i2,
+                      const ippl::Index& i3)
 {
   PInsist(Dim==4, "Number of arguments does not match NDIndex dimension!!");
   p[0] = i0;
@@ -205,8 +205,8 @@ NDIndex<Dim>::NDIndex(const Index& i0,const Index& i1,const Index& i2,
 
 template<unsigned Dim>
 inline
-NDIndex<Dim>::NDIndex(const Index& i0,const Index& i1,const Index& i2,
-                      const Index& i3,const Index& i4)
+NDIndex<Dim>::NDIndex(const ippl::Index& i0,const ippl::Index& i1,const ippl::Index& i2,
+                      const ippl::Index& i3,const ippl::Index& i4)
 {
   PInsist(Dim==5, "Number of arguments does not match NDIndex dimension!!");
   p[0] = i0;
@@ -218,8 +218,8 @@ NDIndex<Dim>::NDIndex(const Index& i0,const Index& i1,const Index& i2,
 
 template<unsigned Dim>
 inline
-NDIndex<Dim>::NDIndex(const Index& i0,const Index& i1,const Index& i2,
-                      const Index& i3,const Index& i4,const Index& i5)
+NDIndex<Dim>::NDIndex(const ippl::Index& i0,const ippl::Index& i1,const ippl::Index& i2,
+                      const ippl::Index& i3,const ippl::Index& i4,const ippl::Index& i5)
 {
   PInsist(Dim==6, "Number of arguments does not match NDIndex dimension!!");
   p[0] = i0;
@@ -231,20 +231,20 @@ NDIndex<Dim>::NDIndex(const Index& i0,const Index& i1,const Index& i2,
 }
 
 template<> inline
-NDIndex<2>::NDIndex(const NDIndex<1>& ndi, const Index& i)
+NDIndex<2>::NDIndex(const NDIndex<1>& ndi, const ippl::Index& i)
 {
   p[0] = ndi[0];
   p[1] = i;
 }
 template<> inline
-NDIndex<3>::NDIndex(const NDIndex<2>& ndi, const Index& i)
+NDIndex<3>::NDIndex(const NDIndex<2>& ndi, const ippl::Index& i)
 {
   p[0] = ndi[0];
   p[1] = ndi[1];
   p[2] = i;
 }
 template<> inline
-NDIndex<4>::NDIndex(const NDIndex<3>& ndi, const Index& i)
+NDIndex<4>::NDIndex(const NDIndex<3>& ndi, const ippl::Index& i)
 {
   p[0] = ndi[0];
   p[1] = ndi[1];
@@ -252,7 +252,7 @@ NDIndex<4>::NDIndex(const NDIndex<3>& ndi, const Index& i)
   p[3] = i;
 }
 template<> inline
-NDIndex<5>::NDIndex(const NDIndex<4>& ndi, const Index& i)
+NDIndex<5>::NDIndex(const NDIndex<4>& ndi, const ippl::Index& i)
 {
   p[0] = ndi[0];
   p[1] = ndi[1];
@@ -261,7 +261,7 @@ NDIndex<5>::NDIndex(const NDIndex<4>& ndi, const Index& i)
   p[4] = i;
 }
 template<> inline
-NDIndex<6>::NDIndex(const NDIndex<5>& ndi, const Index& i)
+NDIndex<6>::NDIndex(const NDIndex<5>& ndi, const ippl::Index& i)
 {
   p[0] = ndi[0];
   p[1] = ndi[1];

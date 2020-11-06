@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 
 
     int pt = 4;
-    Index I(pt);
+    ippl::Index I(pt);
     NDIndex<dim> owned(I, I, I);
 
     e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
@@ -45,9 +45,9 @@ int main(int argc, char *argv[]) {
 
     typedef ippl::Field<double, dim> Field_t;
 
-    typename Field_t::LField_t::view_type& view = field(0).getView();
+    typename Field_t::view_type& view = field.getView();
 
-    //typename Field_t::LField_t::view_type::HostMirror host_view = 
+    //typename Field_t::BareField_t::view_type::HostMirror host_view =
     //                                                  Kokkos::create_mirror_view(view);
 
     //int length = pt+2;
@@ -96,10 +96,10 @@ int main(int argc, char *argv[]) {
     field = div(vfield);
 
     field.write();
-    
+
     Lap = 0.0;
-    
-    Lap = laplace(field); 
+
+    Lap = laplace(field);
 
     Lap.write();
 

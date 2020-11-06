@@ -15,9 +15,8 @@
 // #include <complex>
 
 // Kokkos
-#include "Field/LField.h"
 #include "Field/BareField.h"
-#include "Field/Kokkos_Field.h"
+#include "Field/Field.h"
 
 // IPPL Communicate classes
 #include "Message/Communicate.h"
@@ -44,9 +43,6 @@
 // #include "Meshes/UniformCartesian.h"
 // #include "Meshes/Cartesian.h"
 
-// IPPL Expression Templates
-#include "PETE/IpplExpressions.h"
-
 // // IPPL Field classes
 // #include "Field/FieldSpec.h"
 // #include "Field/Field.h"
@@ -58,29 +54,12 @@
 
 // IPPL Particles classes
 #include "Particle/ParticleBase.h"
-// #include "Particle/PAssign.h"
-// #include "Particle/PAssignDefs.h"
 // #include "Particle/ParticleSpatialLayout.h"
-// #include "Particle/ParticleUniformLayout.h"
-// #include "Particle/ParticleInteractLayout.h"
-// #include "Particle/ParticleCashedLayout.h"
 // #include "Particle/ParticleBalancer.h"
-// #include "Particle/GenArrayParticle.h"
-// #include "Particle/GenParticle.h"
-// #include "Particle/NoParticleCachingPolicy.h"
-// #include "Particle/BoxParticleCachingPolicy.h"
-// #include "Particle/CellParticleCachingPolicy.h"
-// #include "Particle/PairBuilder/HashPairBuilder.h"
-// #include "Particle/PairBuilder/HashPairBuilderPeriodic.h"
-// #include "Particle/PairBuilder/PairConditions.h"
-
 
 
 // // IPPL Field <--> Particle interpolators
 // #include "Particle/IntNGP.h"
-// #include "Particle/IntCIC.h"
-// #include "Particle/IntTSC.h"
-// #include "Particle/IntSUDS.h"
 
 // IPPL Math Types
 #include "Types/Vector.h"

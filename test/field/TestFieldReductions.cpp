@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
 
 
     int pt = 4;
-    Index I(pt);
+    ippl::Index I(pt);
     NDIndex<dim> owned(I, I, I);
 
     e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     field.initialize(mesh, layout);
     
-    typename field_type::LField_t::view_type& view = field(0).getView();
+    typename field_type::view_type& view = field.getView();
 
 
     Kokkos::parallel_for("Assign lfield", 

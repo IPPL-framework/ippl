@@ -8,12 +8,10 @@ set (_HDRS
     BConds.hpp
     BcTypes.h
     BcTypes.hpp
-    Kokkos_Field.hpp
-    Kokkos_Field.h
+    Field.h
+    Field.hpp
     GuardCellSizes.hpp
     GuardCellSizes.h
-    LField.hpp
-    LField.h
     )
 
 include_DIRECTORIES (

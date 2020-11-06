@@ -9,14 +9,10 @@ set (_HDRS
     Cartesian.h
     CartesianStencilSetup.h
     Centering.h
-    Mesh.hpp
     Mesh.h
-    Kokkos_Mesh.h
-    Kokkos_Mesh.hpp
-    UniformCartesian.hpp
+    Mesh.hpp
     UniformCartesian.h
-    Kokkos_UniformCartesian.h
-    Kokkos_UniformCartesian.hpp
+    UniformCartesian.hpp
     )
 
 include_directories (
