@@ -9,7 +9,6 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
 #include "Message/GlobalComm.h"
-#include "PETE/IpplExpressions.h"
 
 #include <boost/algorithm/string/predicate.hpp>
 
