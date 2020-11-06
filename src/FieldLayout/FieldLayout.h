@@ -1,34 +1,27 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- * 
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
+//
+// Class FieldLayout
+//   FieldLayout describes how a given index space (represented by an NDIndex
+//   object) is distributed among MPI ranks (vnodes). It performs the initial
+//   partitioning, and stores a list of local and remote vnodes. The user may
+//   request that a particular dimension not be partitioned by flagging that
+//   axis as 'SERIAL' (instead of 'PARALLEL').
+//
+// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
+#ifndef IPPL_FIELD_LAYOUT_H
+#define IPPL_FIELD_LAYOUT_H
 
-#ifndef FIELD_LAYOUT_H
-#define FIELD_LAYOUT_H
-
-// FieldLayout describes how a given index space (represented by an NDIndex
-// object) is partitioned into vnodes.  It performs the initial partitioning,
-// and stores a list of local and remote vnodes. The user may request that a
-// particular dimension not be partitioned by flagging that axis as 'SERIAL'
-// (instead of 'PARALLEL').
-
-// For a power-of-two number of vnodes, using the basic constructor, the
-// partitioning is done using a recursive bisection method which makes cuts
-// along whole hyperplanes in the global index space. For non-power-of-two
-// vnodes with the basic constructor, the cuts do not necessarily go all the
-// way across all the elements in all directions. There is also a constructor
-// with extra arguments specifying the numbers of vnodes along each direction;
-// this one makes the specified number of cuts to divide up the given
-// directions. This last constructor obviously only works for numbers of vnodes
-// expressible as products of N numbers (in ND), though 1 is an allowable
-// number so it really allows any number of vnodes.
-
-// include files
 #include "FieldLayout/FieldLayoutUser.h"
 #include "FieldLayout/Vnode.h"
 #include "DomainMap/DomainMap.h"
@@ -40,9 +33,6 @@
 #include "Utility/Unique.h"
 #include "Utility/my_auto_ptr.h"
 #include "Utility/RefCounted.h"
-
-// #include "source/grid/brick.h"
-
 
 #include <iostream>
 
@@ -584,10 +574,4 @@ std::ostream& operator<<(std::ostream& out, const FieldLayout<Dim>& f) {
 
 #include "FieldLayout/FieldLayout.hpp"
 
-#endif // FIELD_LAYOUT_H
-
-/***************************************************************************
- * $RCSfile: FieldLayout.h,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:27 $
- * IPPL_VERSION_ID: $Id: FieldLayout.h,v 1.1.1.1 2003/01/23 07:40:27 adelmann Exp $ 
- ***************************************************************************/
+#endif

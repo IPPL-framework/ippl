@@ -1,29 +1,24 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- *
- * This program was prepared by PSI.
- * All rights in the program are reserved by PSI.
- * Neither PSI nor the author(s)
- * makes any warranty, express or implied, or assumes any liability or
- * responsibility for the use of this software
- *
- * Visit www.amas.web.psi for more details
- *
- ***************************************************************************/
-
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- *
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
-
-// include files
+//
+// Class FieldLayout
+//   FieldLayout describes how a given index space (represented by an NDIndex
+//   object) is distributed among MPI ranks (vnodes). It performs the initial
+//   partitioning, and stores a list of local and remote vnodes. The user may
+//   request that a particular dimension not be partitioned by flagging that
+//   axis as 'SERIAL' (instead of 'PARALLEL').
+//
+// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #include "FieldLayout/FieldLayout.h"
 #include "Message/Communicate.h"
 #include "Message/Message.h"
