@@ -27,7 +27,6 @@
 #include "Utility/IpplCounter.h"
 #include "Utility/IpplInfo.h"
 #include "Message/GlobalComm.h"
-#include "PETE/IpplExpressions.h"
 
 // forward references for counter routines
 #ifdef SGI_HW_COUNTERS

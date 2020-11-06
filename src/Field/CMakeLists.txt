@@ -6,8 +6,8 @@ set (_HDRS
     BareField.h
 #     BCond.hpp
 #     BCond.h
-    Kokkos_Field.hpp
-    Kokkos_Field.h
+    Field.hpp
+    Field.h
     GuardCellSizes.hpp
     GuardCellSizes.h
     )
