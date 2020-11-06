@@ -163,14 +163,45 @@ namespace ippl {
 
         int id() const { return Base; }
 
-        inline int min() const;		// the smallest element.
-        inline int max() const;		// the largest element.
-        inline unsigned int length() const;   // the number of elems.
-        inline int stride() const;		// the stride.
-        inline int first() const;		// the first element.
-        inline int last() const;		// the last element.
-        inline bool empty() const;		// is it empty?
-        inline int getBase() const;	// the id from the base index
+        /*!
+         * @returns the smallest element
+         */
+        inline int min() const;
+
+        /*!
+         * @returns the largest element
+         */
+        inline int max() const;
+
+        /*!
+         * @returns the number of elements
+         */
+        inline size_t length() const;
+
+        /*!
+         * @returns the stride
+         */
+        inline int stride() const
+
+        /*!
+         * @returns the first element
+         */
+        inline int first() const;
+
+        /*!
+         * @returns the last element
+         */
+        inline int last() const;
+
+        /*!
+         * @returns true if empty, otherwise false
+         */
+        inline bool empty() const;
+
+        /*!
+         * @returns the id from the base index
+         */
+        inline int getBase() const;
 
         // Additive operations.
         friend inline Index operator+(const Index&,int);
