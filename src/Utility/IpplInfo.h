@@ -247,10 +247,6 @@ public:
   // communication by deferring guard cell fills.
   static bool deferGuardCellFills;
 
-  // Static flag telling whether to try to (pseudo-)randomly offset the
-  // LField blocks to try to avoid cache conflicts.
-  static bool offsetStorage;
-
   // Static flag telling whether to try to do a TryCompress after each
   // individual LField has been processed in an expression.
   static bool extraCompressChecks;

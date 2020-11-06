@@ -32,13 +32,6 @@ public:
     // communication by deferring guard cell fills.
     bool deferGuardCellFills;
 
-    // flag telling whether to turn off compression in the Field classes.
-    bool noFieldCompression;
-
-    // flag telling whether to try to (pseudo-)randomly offset the
-    // LField blocks to try to avoid cache conflicts.
-    bool offsetStorage;
-
     // flag telling whether to try to do a TryCompress after each
     // individual LField has been processed in an expression.
     bool extraCompressChecks;
@@ -59,12 +52,6 @@ public:
 
     // flag indicating if we need to delete the comm object at the end.
     bool NeedDeleteComm;
-
-    // flag indicating whether to use checksums on messages
-    bool UseChecksums;
-
-    // flag indicating whether to retransmit messages when errors occur
-    bool Retransmit;
 
     // data with argc and argv
     int MyArgc;

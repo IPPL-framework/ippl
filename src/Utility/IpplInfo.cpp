@@ -101,7 +101,6 @@ int* IpplInfo::SMPNodeList = 0;
 int  IpplInfo::MaxFFTNodes = 0;
 int  IpplInfo::ChunkSize = 512*1024; // 512K == 64K doubles
 bool IpplInfo::PerSMPParallelIO = false;
-bool IpplInfo::offsetStorage = false;
 bool IpplInfo::extraCompressChecks = false;
 
 /////////////////////////////////////////////////////////////////////
@@ -119,8 +118,6 @@ std::ostream& operator<<(std::ostream& o, const IpplInfo&) {
     o << "  Disc read chunk size: " << IpplInfo::chunkSize() << " bytes.\n";
     o << "  Deferring guard cell fills? ";
     o << IpplInfo::deferGuardCellFills << "\n";
-    o << "  Offsetting storage? ";
-    o << IpplInfo::offsetStorage << "\n";
     o << "  Using extra compression checks in expressions? ";
     o << IpplInfo::extraCompressChecks << "\n";
     o << "  Use per-SMP parallel IO? ";
@@ -339,10 +336,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
             } else if ( ( strcmp(argv[i], "--defergcfill") == 0 ) ) {
                 // Turn on the defer guard cell fill optimization
                 deferGuardCellFills = true;
-
-            } else if ( ( strcmp(argv[i], "--offsetstorage") == 0 ) ) {
-                // Turn on the offset-storage modification to LFields
-                offsetStorage = true;
 
             } else if ( ( strcmp(argv[i], "--extracompcheck") == 0 ) ) {
                 // Turn on the extra compression checks in expressions
@@ -644,7 +637,6 @@ void IpplInfo::printHelp(char** argv) {
 
       #endif*/ //PROFILING_ON
     INFOMSG("   --defergcfill       : Turn on deferred guard cell fills.\n");
-    INFOMSG("   --offsetstorage     : Turn on random LField storage offsets.\n");
     INFOMSG("   --extracompcheck    : Turn on extra compression checks in evaluator.\n");
     INFOMSG("   --maxfftnodes <n>   : Limit the nodes that work on FFT's.\n");
     INFOMSG("   --chunksize <n>     : Set I/O chunk size.  Can end w/K,M,G.\n");
@@ -871,7 +863,6 @@ void IpplInfo::stash() {
     obj.Error =               Error;
     obj.Debug =               Debug;
     obj.deferGuardCellFills = deferGuardCellFills;
-    obj.offsetStorage =       offsetStorage;
     obj.extraCompressChecks = extraCompressChecks;
     obj.communicator_m =      communicator_m;
     obj.NumCreated =          NumCreated;
@@ -899,7 +890,6 @@ void IpplInfo::stash() {
     Debug = 0;
 
     deferGuardCellFills = false;
-    offsetStorage = false;
     extraCompressChecks = false;
     communicator_m = MPI_COMM_WORLD;
     NumCreated = 0;
@@ -942,7 +932,6 @@ void IpplInfo::pop() {
     Error =               obj.Error;
     Debug =               obj.Debug;
     deferGuardCellFills = obj.deferGuardCellFills;
-    offsetStorage =       obj.offsetStorage;
     extraCompressChecks = obj.extraCompressChecks;
     communicator_m =      obj.communicator_m;
     NumCreated =          obj.NumCreated;
