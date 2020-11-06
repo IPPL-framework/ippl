@@ -32,10 +32,6 @@ public:
     // communication by deferring guard cell fills.
     bool deferGuardCellFills;
 
-    // flag telling whether to try to do a TryCompress after each
-    // individual LField has been processed in an expression.
-    bool extraCompressChecks;
-
     MPI_Comm communicator_m;
 
     // counter indicating how many IpplInit objects have been created.

@@ -247,10 +247,6 @@ public:
   // communication by deferring guard cell fills.
   static bool deferGuardCellFills;
 
-  // Static flag telling whether to try to do a TryCompress after each
-  // individual LField has been processed in an expression.
-  static bool extraCompressChecks;
-
   // Static routine giving one a place to stop at with #$%$%#1 stupid
   // debuggers.
   static void here();
