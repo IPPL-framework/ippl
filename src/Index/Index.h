@@ -258,7 +258,6 @@ namespace ippl {
     std::ostream& operator<<(std::ostream& out, const Index& I);
 }
 
-
-#include "Index/IndexInlines.h"
+#include "Index/Index.hpp"
 
 #endif

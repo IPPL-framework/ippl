@@ -1,17 +1,47 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- * 
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
-
-#ifndef INDEX_INLINES_H
-#define INDEX_INLINES_H
-
-// include files
+//
+// Class Index
+//   Define a slice in an array.
+//
+//   This essentially defines a list of evenly spaced numbers.
+//   Most commonly this list will be increasing (positive stride)
+//   but it can also have negative stride and be decreasing.
+//
+//   Index()      --> A null interval with no elements.
+//   Index(n)     --> make an Index on [0..n-1]
+//   Index(a,b)   --> make an Index on [a..b]
+//   Index(a,b,s) --> make an Index on [a..b] with stride s
+//
+//   Example1:
+//   --------
+//   Index I(10);           --> Index on [0..9]
+//   Index Low(5);          --> Index on [0..4]
+//   Index High(5,9);       --> Index on [5..9]
+//   Index IOdd(1,9,2);     --> Index on [1..9] stride 2
+//   Index IEven(0,9,2);    --> Index on [0..9] stride 2
+//
+//   Given an Index I(a,n,s), and an integer j you can do the following:
+//
+//   I+j  : a+j+i*s        for i in [0..n-1]
+//   j-I  : j-a-i*s
+//   j*I  : j*a + i*j*s
+//   I/j  : a/j + i*s/j
+//
+//   j/I we don't do because it is not a uniform stride, and we don't
+//   allow strides that are fractions.
+//
+// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #include "Utility/Unique.h"
 #include "Utility/PAssert.h"
 
@@ -447,11 +477,3 @@ INDEX_PETE_INT_OPERATOR(Min,FnMin)
 //////////////////////////////////////////////////////////////////////
 
 }
-
-#endif // INDEX_INLINES_H
-
-/***************************************************************************
- * $RCSfile: IndexInlines.h,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:27 $
- * IPPL_VERSION_ID: $Id: IndexInlines.h,v 1.1.1.1 2003/01/23 07:40:27 adelmann Exp $ 
- ***************************************************************************/
