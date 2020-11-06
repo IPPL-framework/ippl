@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
 
     int pt = 20;
-    Index I(pt);
+    ippl::Index I(pt);
     NDIndex<3> owned(I, I, I);
 
     e_dim_tag allParallel[3];    // Specifies SERIAL, PARALLEL dims

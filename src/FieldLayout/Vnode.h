@@ -11,6 +11,7 @@
 // include files
 #include "Utility/RefCounted.h"
 #include "Index/NDIndex.h"
+#include "Message/Message.h"
 
 #include <iostream>
 

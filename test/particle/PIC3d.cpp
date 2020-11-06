@@ -289,11 +289,11 @@ public:
 //
 //         double Q = 0.0;
 //         for (int i=idx[0].min(); i<=idx[0].max(); ++i) {
-//             elem[0] = Index(i,i);
+//             elem[0] = ippl::Index(i,i);
 //             for (int j=idx[1].min(); j<=idx[1].max(); ++j) {
-//                 elem[1] = Index(j,j);
+//                 elem[1] = ippl::Index(j,j);
 //                 for (int k=idx[2].min(); k<=idx[2].max(); ++k) {
-//                     elem[2] = Index(k,k);
+//                     elem[2] = ippl::Index(k,k);
 //                     Q +=  tmpf.localElement(elem);
 //                 }
 //             }
@@ -395,7 +395,7 @@ public:
 //
 //         m << "rmin= " << rmin_m << " rmax= " << rmax_m << " h= " << hr_m << " n= " << nr_m << endl;
 //
-//         Index I(nx), J(ny), K(nz);
+//         ippl::Index I(nx), J(ny), K(nz);
 //
 //         assign(EFD_m[I][J][K](0), -2.0*pi*phi0/nx * cos(2.0*pi*(I+0.5)/nx) * cos(4.0*pi*(J+0.5)/ny) * cos(pi*(K+0.5)/nz));
 //
@@ -627,11 +627,11 @@ int main(int argc, char *argv[]){
     NDIndex<Dim> domain;
 //     if (gCells) {
 //         for (unsigned i=0; i<Dim; i++)
-//             domain[i] = domain[i] = Index(nr[i] + 1);
+//             domain[i] = domain[i] = ippl::Index(nr[i] + 1);
 //     }
 //     else {
     for (unsigned i = 0; i< Dim; i++) {
-        domain[i] = Index(nr[i]);
+        domain[i] = ippl::Index(nr[i]);
     }
 //     }
 //

@@ -54,7 +54,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Cell> & cfl,
 {
   NDIndex<Dim> ndi;
   for (unsigned int d=0; d<Dim; d++)
-    ndi[d] = Index(mesh.getGridsize(d) - 1);
+    ndi[d] = ippl::Index(mesh.getGridsize(d) - 1);
   cfl.initialize(ndi, edt, vnodes);
 }
 
@@ -68,7 +68,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Vert> & cfl,
 {
   NDIndex<Dim> ndi;
   for (unsigned int d=0; d<Dim; d++)
-    ndi[d] = Index(mesh.getGridsize(d));
+    ndi[d] = ippl::Index(mesh.getGridsize(d));
   cfl.initialize(ndi, edt, vnodes);
 }
 
@@ -82,7 +82,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Edge> & cfl,
 {
   NDIndex<Dim> ndi;
   for (unsigned int d=0; d<Dim; d++)
-    ndi[d] = Index(mesh.getGridsize(d));
+    ndi[d] = ippl::Index(mesh.getGridsize(d));
   cfl.initialize(ndi, edt, vnodes);
 }
 
@@ -114,7 +114,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,
       }
     }
   }
-  for (d=0; d<Dim; d++) ndi[d] = Index(npts[d]);
+  for (d=0; d<Dim; d++) ndi[d] = ippl::Index(npts[d]);
   cfl.initialize(ndi, edt, vnodes);
 }
 
@@ -137,7 +137,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Cell> & cfl,
 		   int vnodes)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d) - 1);
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = ippl::Index(mesh.getGridsize(d) - 1);
   cfl.initialize(ndi, edt, vnodesAlongDirection, recurse, vnodes);
 }
 
@@ -152,7 +152,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Vert> & cfl,
 		   int vnodes)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d));
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = ippl::Index(mesh.getGridsize(d));
   cfl.initialize(ndi, edt, vnodesAlongDirection, recurse, vnodes);
 }
 
@@ -167,7 +167,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Edge> & cfl,
 		   int vnodes)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d));
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = ippl::Index(mesh.getGridsize(d));
   cfl.initialize(ndi, edt, vnodesAlongDirection, recurse, vnodes);
 }
 
@@ -201,7 +201,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,
       }
     }
   }
-  for (d=0; d<Dim; d++) ndi[d] = Index(npts[d]);
+  for (d=0; d<Dim; d++) ndi[d] = ippl::Index(npts[d]);
   cfl.initialize(ndi, edt, vnodesAlongDirection, recurse, vnodes);
 }
 
@@ -219,7 +219,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Cell> & cfl,
 		   const int *nend)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d) - 1);
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = ippl::Index(mesh.getGridsize(d) - 1);
   cfl.initialize(ndi, dombegin, domend, nbegin, nend);
 }
 
@@ -234,7 +234,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Vert> & cfl,
 		   const int *nend)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d));
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = ippl::Index(mesh.getGridsize(d));
   cfl.initialize(ndi, dombegin, domend, nbegin, nend);
 }
 
@@ -249,7 +249,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,Edge> & cfl,
 		   const int *nend)
 {
   NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = Index(mesh.getGridsize(d));
+  for (unsigned int d=0; d<Dim; d++) ndi[d] = ippl::Index(mesh.getGridsize(d));
   cfl.initialize(ndi, dombegin, domend, nbegin, nend);
 }
 
@@ -284,7 +284,7 @@ centeredInitialize(CenteredFieldLayout<Dim,Mesh,
   }
 
   NDIndex<Dim> ndi;
-  for (d=0; d<Dim; d++) ndi[d] = Index(npts[d]);
+  for (d=0; d<Dim; d++) ndi[d] = ippl::Index(npts[d]);
   cfl.initialize(ndi, dombegin, domend, nbegin, nend);
 }
 

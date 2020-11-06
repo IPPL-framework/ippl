@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    Index I(10);
+    ippl::Index I(10);
     NDIndex<dim> owned(I, I, I);
 
 
