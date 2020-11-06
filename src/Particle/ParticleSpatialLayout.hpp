@@ -14,8 +14,6 @@
 #include "Message/Message.h"
 #include "Utility/IpplInfo.h"
 #include "Utility/IpplStats.h"
-#include "Utility/IpplMessageCounter.h"
-
 
 // forward declarations
 template <unsigned Dim> class FieldLayout;
@@ -157,16 +155,12 @@ void ParticleSpatialLayout<T,Dim,Mesh,CachingPolicy>::update(
         // local field space.  This is done in several passes, one for each
         // spatial dimension.  The NodeCount values are updated by this routine.
 
-        static IpplMessageCounterRegion swapCounter("Swap Particles");
-        swapCounter.begin();
 		//MPI_Pcontrol( 1,"swap_particles");
 
         if (canSwap==0)
             LocalNum = new_swap_particles(LocalNum, PData);
         else
             LocalNum = new_swap_particles(LocalNum, PData, *canSwap);
-
-        swapCounter.end();
     }
 
     // Save how many local particles we have.
