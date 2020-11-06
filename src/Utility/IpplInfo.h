@@ -69,16 +69,16 @@ public:
 
   // Inform object to use to print messages to the console (or even to a
   // file if requested)
-  static Inform *Info;
-  static Inform *Warn;
-  static Inform *Error;
-  static Inform *Debug;
+  static std::unique_ptr<Inform> Info;
+  static std::unique_ptr<Inform> Warn;
+  static std::unique_ptr<Inform> Error;
+  static std::unique_ptr<Inform> Debug;
 
   // the parallel communication object
-  static Communicate *Comm;
+  static std::unique_ptr<Communicate> Comm;
 
   // the statistics collection object
-  static IpplStats *Stats;
+  static std::unique_ptr<IpplStats> Stats;
 
 
   // Constructor 1: specify the argc, argv values from the cmd line.
@@ -223,9 +223,6 @@ private:
   // Static flag indicating whether we should print out stats info at the
   // end of the program.
   static bool PrintStats;
-
-  // Static flag indicating if we need to delete the comm object at the end.
-  static bool NeedDeleteComm;
 
   // Static data with argc and argv
   static int MyArgc;

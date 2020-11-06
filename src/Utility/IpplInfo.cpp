@@ -40,42 +40,35 @@
 
 /////////////////////////////////////////////////////////////////////
 // public static members of IpplInfo, initialized to default values
-Communicate *IpplInfo::Comm = 0;
-IpplStats  *IpplInfo::Stats = 0;
-Inform *IpplInfo::Info = 0;
-Inform *IpplInfo::Warn = 0;
-Inform *IpplInfo::Error = 0;
-Inform *IpplInfo::Debug = 0;
+std::unique_ptr<Communicate>  IpplInfo::Comm = 0;
+std::unique_ptr<IpplStats> IpplInfo::Stats = 0;
+std::unique_ptr<Inform> IpplInfo::Info = 0;
+std::unique_ptr<Inform> IpplInfo::Warn = 0;
+std::unique_ptr<Inform> IpplInfo::Error = 0;
+std::unique_ptr<Inform> IpplInfo::Debug = 0;
 
 void IpplInfo::instantiateGlobals() {
     if (Comm == 0)
-        Comm = new Communicate();
+        Comm = std::make_unique<Communicate>();
     if (Stats == 0)
-        Stats = new IpplStats();
+        Stats = std::make_unique<IpplStats>();
     if (Info == 0)
-        Info = new Inform("Ippl");
+        Info = std::make_unique<Inform>("Ippl");
     if (Warn == 0)
-        Warn = new Inform("Warning", std::cerr);
+        Warn = std::make_unique<Inform>("Warning", std::cerr);
     if (Error == 0)
-        Error = new Inform("Error", std::cerr, INFORM_ALL_NODES);
+        Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
     if (Debug == 0)
-        Debug = new Inform("**DEBUG**", std::cerr, INFORM_ALL_NODES);
+        Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
 }
 
 void IpplInfo::deleteGlobals() {
-    delete Comm;
-    delete Stats;
-    delete Info;
-    delete Warn;
-    delete Error;
-    delete Debug;
-
-    Comm = 0;
-    Stats = 0;
-    Info = 0;
-    Warn = 0;
-    Error = 0;
-    Debug = 0;
+    Comm.reset();
+    Stats.reset();
+    Info.reset();
+    Warn.reset();
+    Error.reset();
+    Debug.reset();
 }
 
 // private static members of IpplInfo, initialized to default values
@@ -83,7 +76,6 @@ MPI_Comm IpplInfo::communicator_m = MPI_COMM_WORLD;
 int  IpplInfo::NumCreated = 0;
 bool IpplInfo::CommInitialized = false;
 bool IpplInfo::PrintStats = false;
-bool IpplInfo::NeedDeleteComm = false;
 int  IpplInfo::MyArgc = 0;
 char **IpplInfo::MyArgv = 0;
 int  IpplInfo::MyNode = 0;
@@ -127,12 +119,12 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
     communicator_m = mpicomm;
 
     if (NumCreated == 0) {
-        Comm = new Communicate();
-        Stats = new IpplStats();
-        Info = new Inform("Ippl");
-        Warn = new Inform("Warning", std::cerr);
-        Error = new Inform("Error", std::cerr, INFORM_ALL_NODES);
-        Debug = new Inform("**DEBUG**", std::cerr, INFORM_ALL_NODES);
+        Comm = std::make_unique<Communicate>();
+        Stats = std::make_unique<IpplStats>();
+        Info = std::make_unique<Inform>("Ippl");
+        Warn = std::make_unique<Inform>("Warning", std::cerr);
+        Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
+        Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
     }
     // You can only specify argc, argv once; if it is done again, print a warning
     // and continue as if we had not given argc, argv.
@@ -169,9 +161,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                     argc, argv,
                     nprocs, comminit, mpicomm);
 
-            NeedDeleteComm = true;
-            delete Comm;
-            Comm = newcomm;
+            Comm = std::unique_ptr<Communicate>(newcomm);
 
                 // cache our node number and node count
             MyNode = Comm->myNode();
@@ -342,12 +332,12 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
 // Constructor 2: default constructor.
 IpplInfo::IpplInfo() {
     if (NumCreated == 0) {
-        Comm = new Communicate();
-        Stats = new IpplStats();
-        Info = new Inform("Ippl");
-        Warn = new Inform("Warning", std::cerr);
-        Error = new Inform("Error", std::cerr, INFORM_ALL_NODES);
-        Debug = new Inform("**DEBUG**", std::cerr, INFORM_ALL_NODES);
+        Comm = std::make_unique<Communicate>();
+        Stats = std::make_unique<IpplStats>();
+        Info = std::make_unique<Inform>("Ippl");
+        Warn = std::make_unique<Inform>("Warning", std::cerr);
+        Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
+        Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
     }
 
     // just indicate we've also been created
@@ -359,12 +349,12 @@ IpplInfo::IpplInfo() {
 // Constructor 3: copy constructor.
 IpplInfo::IpplInfo(const IpplInfo&) {
     if (NumCreated == 0) {
-        Comm = new Communicate();
-        Stats = new IpplStats();
-        Info = new Inform("Ippl");
-        Warn = new Inform("Warning", std::cerr);
-        Error = new Inform("Error", std::cerr, INFORM_ALL_NODES);
-        Debug = new Inform("**DEBUG**", std::cerr, INFORM_ALL_NODES);
+        Comm = std::make_unique<Communicate>();
+        Stats = std::make_unique<IpplStats>();
+        Info = std::make_unique<Inform>("Ippl");
+        Warn = std::make_unique<Inform>("Warning", std::cerr);
+        Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
+        Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
     }
 
     // just indicate we've also been created
@@ -388,23 +378,12 @@ IpplInfo::~IpplInfo() {
             printStatistics(statsmsg);
         }
 
-        // Delete the communications object, if necessary, to shut down parallel
-        // environment
-        if (NeedDeleteComm) {
-             // dbgmsg << "  Deleting comm object, since now NumCreated = ";
-             // dbgmsg << NumCreated << endl;
-             delete Comm;
-             Comm = 0;
-             NeedDeleteComm = false;
-        }
         CommInitialized = false;
 
         // delete other dynamically-allocated static objects
         delete [] MyArgv;
-        delete Stats;
-
         MyArgv = 0;
-        Stats = 0;
+        Stats.reset();
     }
 }
 
@@ -427,13 +406,6 @@ void IpplInfo::abort(const char *msg) {
         Inform statsmsg("Stats", INFORM_ALL_NODES);
         statsmsg << IpplInfo();
         printStatistics(statsmsg);
-    }
-
-    // delete communication object, if necessary
-    if (NeedDeleteComm) {
-        NeedDeleteComm = false;
-        delete Comm;
-        Comm = 0;
     }
 
     // that's it, folks this error will be propperly catched in the main
