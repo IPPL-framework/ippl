@@ -47,7 +47,6 @@
 #include "Message/Communicate.h"
 
 #include <iostream>
-#include <stack>
 
 //FIXME: Including this header here (regardless of the used commlib) here is
 //necessary to enable IPPL to work on a user define communicator group
