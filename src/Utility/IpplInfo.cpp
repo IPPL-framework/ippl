@@ -94,7 +94,6 @@ int  IpplInfo::NumSMPs = 1;
 int* IpplInfo::SMPIDList = 0;
 int* IpplInfo::SMPNodeList = 0;
 int  IpplInfo::MaxFFTNodes = 0;
-int  IpplInfo::ChunkSize = 512*1024; // 512K == 64K doubles
 bool IpplInfo::PerSMPParallelIO = false;
 
 /////////////////////////////////////////////////////////////////////
@@ -109,7 +108,6 @@ std::ostream& operator<<(std::ostream& o, const IpplInfo&) {
     o << ", out of " << IpplInfo::getSMPNodes(IpplInfo::mySMP());
     o << " nodes.\n";
     o << "  Communication method: " << IpplInfo::Comm->name() << "\n";
-    o << "  Disc read chunk size: " << IpplInfo::chunkSize() << " bytes.\n";
     o << "  Use per-SMP parallel IO? ";
     o << IpplInfo::perSMPParallelIO() << "\n";
 
@@ -307,22 +305,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                 // Turn off the ability to use per-smp parallel IO
                 PerSMPParallelIO = false;
 
-            } else if ( ( strcmp(argv[i], "--chunksize") == 0 ) ) {
-                // Set the I/O chunk size, used to limit how many items
-                // are read in or written to disk at one time.
-                if ( (i + 1) < argc && argv[i+1][0] != '-' && atoi(argv[i+1]) >= 0 ) {
-                    ChunkSize = atoi(argv[++i]);
-                    char units = static_cast<char>(toupper(argv[i][strlen(argv[i])-1]));
-                    if (units == 'K')
-                        ChunkSize *= 1024;
-                    else if (units == 'M')
-                        ChunkSize *= 1024*1024;
-                    else if (units == 'G')
-                        ChunkSize *= 1024*1024*1024;
-                } else {
-                    param_error(argv[i],
-                            "Please specify a timeout value (in seconds)", 0);
-                }
             } else if ( ( strcmp(argv[i], "--directio") == 0 ) ) {
                 // Turn on the use of Direct-IO, if possible
                 param_error(argv[i],
@@ -619,7 +601,6 @@ void IpplInfo::printHelp(char** argv) {
 
       #endif*/ //PROFILING_ON
     INFOMSG("   --maxfftnodes <n>   : Limit the nodes that work on FFT's.\n");
-    INFOMSG("   --chunksize <n>     : Set I/O chunk size.  Can end w/K,M,G.\n");
     INFOMSG("   --persmppario       : Enable on-SMP parallel IO option.\n");
     INFOMSG("   --nopersmppario     : Disable on-SMP parallel IO option (default).\n");
 }
@@ -855,7 +836,6 @@ void IpplInfo::stash() {
     obj.SMPIDList =           SMPIDList;
     obj.SMPNodeList =         SMPNodeList;
     obj.MaxFFTNodes =         MaxFFTNodes;
-    obj.ChunkSize =           ChunkSize;
     obj.PerSMPParallelIO =    PerSMPParallelIO;
 
     stashedStaticMembers.push(obj);
@@ -880,7 +860,6 @@ void IpplInfo::stash() {
     SMPIDList = 0;
     SMPNodeList = 0;
     MaxFFTNodes = 0;
-    ChunkSize = 512*1024; // 512K == 64K doubles
     PerSMPParallelIO = false;
 }
 
@@ -920,6 +899,5 @@ void IpplInfo::pop() {
     SMPIDList =           obj.SMPIDList;
     SMPNodeList =         obj.SMPNodeList;
     MaxFFTNodes =         obj.MaxFFTNodes;
-    ChunkSize =           obj.ChunkSize;
     PerSMPParallelIO =    obj.PerSMPParallelIO;
 }

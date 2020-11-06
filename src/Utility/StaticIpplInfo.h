@@ -64,9 +64,6 @@ public:
     // in FFT operations.  If this is <= 0 or > number of nodes, it is ignored.
     int MaxFFTNodes;
 
-    // Maximum read chunk size
-    int ChunkSize;
-
     // A boolean setting for whether we should attempt to use parallel
     // I/O within a single SMP, for example by having multipple processors
     // try to read from a single file (vs just having one node do it).

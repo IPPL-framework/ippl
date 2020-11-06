@@ -187,13 +187,6 @@ public:
   // in FFT operations.  If this is <= 0 or > number of nodes, it is ignored.
   static int maxFFTNodes() { return MaxFFTNodes; }
 
-  // Return the "read chunk size", the number of bytes that will be
-  // read in, at max, for most Disc read operations.  If the final
-  // character is 'K', 'M', or 'G', the number will mean the number
-  // of kilobytes, megabytes, or gigabytes.  The default is one MB.  If
-  // this is <= 0, then no limit should be used.
-  static int chunkSize() { return ChunkSize; }
-
   // Return boolean setting for whether we should attempt to use parallel
   // I/O within a single SMP, for example by having multipple processors
   // try to read from a single file (vs just having one node do it).
@@ -289,9 +282,6 @@ private:
   // Static data about a limit to the number of nodes that should be used
   // in FFT operations.  If this is <= 0 or > number of nodes, it is ignored.
   static int MaxFFTNodes;
-
-  // Maximum read chunk size
-  static int ChunkSize;
 
   // A boolean setting for whether we should attempt to use parallel
   // I/O within a single SMP, for example by having multipple processors
