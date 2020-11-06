@@ -32,8 +32,6 @@
 #include <Kokkos_Core.hpp>
 
 
-#include "Utility/IpplMessageCounter.h"
-
 // include mpi header file
 #include <mpi.h>
 
@@ -340,9 +338,6 @@ bool CommMPI::mysend(Message *msg, int node, int tag, int etag)
     // dbgmsg << "Sending MPI message of size " << size << " to node " << node;
     // dbgmsg << " with tag " << tag << "." << endl;
 
-    //messaging "profiler"
-    IpplMessageCounter::getInstance().registerMessage(size);
-
     errstat = MPI_Isend(outbuffer, size, MPI_BYTE, node, etag,
                         communicator, &request);
 
@@ -529,8 +524,6 @@ bool CommMPI::resend(void *buf, int buffsize, int node, int etag)
     // this will only work if we're sending to another node
     PInsist(node != myNode(), "Can only retransmit to other nodes");
 
-    IpplMessageCounter::getInstance().registerMessage(buffsize);
-
     // send the buffer out
     MPI_Request request;
     int errstat = MPI_Isend(buf, buffsize, MPI_BYTE, node, etag,
@@ -561,8 +554,6 @@ void CommMPI::cleanupMessage(void *d)
 
 bool CommMPI::raw_send(void *data, int size, int node, int tag)
 {
-    IpplMessageCounter::getInstance().registerMessage(size);
-
     return MPI_Send(data, size, MPI_BYTE, node, tag, communicator)
            == MPI_SUCCESS;
 }
@@ -570,8 +561,6 @@ bool CommMPI::raw_send(void *data, int size, int node, int tag)
 MPI_Request CommMPI::raw_isend(void *data, int size, int node, int tag)
 {
     MPI_Request request;
-
-    IpplMessageCounter::getInstance().registerMessage(size);
 
     MPI_Isend(data, size, MPI_BYTE, node, tag, communicator, &request);
     return request;
