@@ -18,7 +18,7 @@
 #include "Utility/PAssert.h"
 #include "Utility/IpplInfo.h"
 #include "Field/BareField.h"
-#include "Field/Kokkos_Field.h"
+#include "Field/Field.h"
 
 namespace ippl {
 
