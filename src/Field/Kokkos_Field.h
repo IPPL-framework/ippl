@@ -2,7 +2,7 @@
 #define IPPL_FIELD_H
 
 #include "Field/BareField.h"
-#include "Meshes/Kokkos_UniformCartesian.h"
+#include "Meshes/UniformCartesian.h"
 
 namespace ippl {
 

@@ -1,64 +1,44 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- * 
- * This program was prepared by PSI. 
- * All rights in the program are reserved by PSI.
- * Neither PSI nor the author(s)
- * makes any warranty, express or implied, or assumes any liability or
- * responsibility for the use of this software
- *
- * Visit www.amas.web.psi for more details
- *
- ***************************************************************************/
-
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- * 
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
-
-// include files
-#include "Meshes/Mesh.h"
-
-// static member data
-template<unsigned int Dim>
-std::string Mesh<Dim>::MeshBC_E_Names[3] = {"Reflective","Periodic  ","No BC     "};
+//
+// Class Mesh
+//   The Mesh base class. Right now, this mainly acts as a standard base
+//   class for all meshes so that other objects can register as users of
+//   the mesh and can be notified if the mesh changes (e.g., it is rescaled
+//   or restructured entirely).
+//
+// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
+namespace ippl {
+    template<typename T, unsigned Dim>
+    typename Mesh<T, Dim>::vector_type Mesh<T, Dim>::getOrigin() const {
+        return origin_m;
+    }
 
 
-//////////////////////////////////////////////////////////////////////////
-// default constructor for Mesh
-template<unsigned int Dim>
-Mesh<Dim>::Mesh() { }
+    template<typename T, unsigned Dim>
+    void Mesh<T, Dim>::setOrigin(const vector_type& origin) {
+        origin_m = origin;
+    }
 
 
-//////////////////////////////////////////////////////////////////////////
-// destructor for Mesh
-template<unsigned int Dim>
-Mesh<Dim>::~Mesh() { }
+    template<typename T, unsigned Dim>
+    const typename Mesh<T, Dim>::vector_type& Mesh<T, Dim>::getGridsize() const {
+        return gridSizes_m;
+    }
 
 
-//////////////////////////////////////////////////////////////////////////
-// notify all the registered FieldLayoutUser's that this Mesh has
-// changed.  This is done by called the 'Repartition' virtual function
-// in FieldLayoutUser
-template<unsigned int Dim>
-void Mesh<Dim>::notifyOfChange() {
-  // Repartition each registered user.
-  for (iterator_if p=begin_if(); p!=end_if(); ++p) {
-    FieldLayoutUser *user = (FieldLayoutUser *)((*p).second);
-    user->Repartition(this);
-  }
+    template<typename T, unsigned Dim>
+    T Mesh<T, Dim>::getGridsize(size_t dim) const {
+        return gridSizes_m[dim];
+    }
 }
-
-
-/***************************************************************************
- * $RCSfile: Mesh.cpp,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:28 $
- * IPPL_VERSION_ID: $Id: Mesh.cpp,v 1.1.1.1 2003/01/23 07:40:28 adelmann Exp $ 
- ***************************************************************************/
