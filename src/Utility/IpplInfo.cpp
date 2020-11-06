@@ -80,11 +80,6 @@ void IpplInfo::deleteGlobals() {
 
 std::stack<StaticIpplInfo> IpplInfo::stashedStaticMembers;
 
-// should we use the optimization of deferring guard cell fills until
-// absolutely needed?  Can be changed to true by specifying the
-// flag --defergcfill
-bool IpplInfo::deferGuardCellFills = false;
-
 // private static members of IpplInfo, initialized to default values
 MPI_Comm IpplInfo::communicator_m = MPI_COMM_WORLD;
 int  IpplInfo::NumCreated = 0;
@@ -115,8 +110,6 @@ std::ostream& operator<<(std::ostream& o, const IpplInfo&) {
     o << " nodes.\n";
     o << "  Communication method: " << IpplInfo::Comm->name() << "\n";
     o << "  Disc read chunk size: " << IpplInfo::chunkSize() << " bytes.\n";
-    o << "  Deferring guard cell fills? ";
-    o << IpplInfo::deferGuardCellFills << "\n";
     o << "  Use per-SMP parallel IO? ";
     o << IpplInfo::perSMPParallelIO() << "\n";
 
@@ -330,10 +323,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                     param_error(argv[i],
                             "Please specify a timeout value (in seconds)", 0);
                 }
-            } else if ( ( strcmp(argv[i], "--defergcfill") == 0 ) ) {
-                // Turn on the defer guard cell fill optimization
-                deferGuardCellFills = true;
-
             } else if ( ( strcmp(argv[i], "--directio") == 0 ) ) {
                 // Turn on the use of Direct-IO, if possible
                 param_error(argv[i],
@@ -629,7 +618,6 @@ void IpplInfo::printHelp(char** argv) {
       INFOMSG("             U - User, 1 - User1, 2 - User2, 3 - User3, 4 - User4\n");
 
       #endif*/ //PROFILING_ON
-    INFOMSG("   --defergcfill       : Turn on deferred guard cell fills.\n");
     INFOMSG("   --maxfftnodes <n>   : Limit the nodes that work on FFT's.\n");
     INFOMSG("   --chunksize <n>     : Set I/O chunk size.  Can end w/K,M,G.\n");
     INFOMSG("   --persmppario       : Enable on-SMP parallel IO option.\n");
@@ -854,7 +842,6 @@ void IpplInfo::stash() {
     obj.Warn =                Warn;
     obj.Error =               Error;
     obj.Debug =               Debug;
-    obj.deferGuardCellFills = deferGuardCellFills;
     obj.communicator_m =      communicator_m;
     obj.NumCreated =          NumCreated;
     obj.CommInitialized =     CommInitialized;
@@ -880,7 +867,6 @@ void IpplInfo::stash() {
     Error = 0;
     Debug = 0;
 
-    deferGuardCellFills = false;
     communicator_m = MPI_COMM_WORLD;
     NumCreated = 0;
     CommInitialized = false;
@@ -921,7 +907,6 @@ void IpplInfo::pop() {
     Warn =                obj.Warn;
     Error =               obj.Error;
     Debug =               obj.Debug;
-    deferGuardCellFills = obj.deferGuardCellFills;
     communicator_m =      obj.communicator_m;
     NumCreated =          obj.NumCreated;
     CommInitialized =     obj.CommInitialized;

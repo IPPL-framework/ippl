@@ -243,10 +243,6 @@ public:
   // restore all static members
   static void pop();
 
-  // Static flag telling whether to use optimization for reducing
-  // communication by deferring guard cell fills.
-  static bool deferGuardCellFills;
-
   // Static routine giving one a place to stop at with #$%$%#1 stupid
   // debuggers.
   static void here();

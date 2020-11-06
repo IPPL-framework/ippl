@@ -28,10 +28,6 @@ public:
     Inform *Error;
     Inform *Debug;
 
-    // flag telling whether to use optimization for reducing
-    // communication by deferring guard cell fills.
-    bool deferGuardCellFills;
-
     MPI_Comm communicator_m;
 
     // counter indicating how many IpplInit objects have been created.
