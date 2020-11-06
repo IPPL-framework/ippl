@@ -154,18 +154,6 @@ public:
   // considered as an entity which has a single IP address.
   static int getNodes();
 
-  // Return the number of contexts on a given node N.  A 'Context' is
-  // considered to be a single addressable memory space; for shared memory
-  // machines, this could be the whole machine or one of many separate sections
-  // each being treated as distinct from the others.
-  static int getContexts(int);
-
-  // Return the number of processes which are actively working on node N in
-  // context C. A 'Process' is not necessarily one in the strict Unix sense; it
-  // could be a lightweight thread or indeed a full process.  These numbers
-  // may dynamically change.
-  static int getProcesses(int, int);
-
   // Return argc or argv as provided in the initialization
   static int getArgc() { return MyArgc; }
   static char **getArgv() { return MyArgv; }

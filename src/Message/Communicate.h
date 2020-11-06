@@ -144,14 +144,6 @@ public:
     {
         return TotalNodes;
     }
-    int getContexts(const int n) const
-    {
-        return Contexts[n];
-    }
-    int getProcesses(const int n, const int c) const
-    {
-        return Processes[n][c];
-    }
     int myNode() const
     {
         return myHost;
@@ -261,8 +253,6 @@ protected:
     int TotalNodes;		// number of nodes available (0 ... # nodes-1)
     int myHost;			// which node am I?
     int ErrorStatus;		// error code, from above enumeration
-    std::vector<int> Contexts;		// the number of contexts per node
-    std::vector< std::vector<int> > Processes;   // number of running processes per context
 
     // An integer message number identifier; this is included in each
     // message, and continually increases as more messages are sent.

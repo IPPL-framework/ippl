@@ -483,20 +483,6 @@ int IpplInfo::getNodes() {
 
 
 /////////////////////////////////////////////////////////////////////
-// getContexts: return the number of 'Contexts' for the given node
-int IpplInfo::getContexts(const int n) {
-    return Comm->getContexts(n);
-}
-
-
-/////////////////////////////////////////////////////////////////////
-// getProcesses: return the number of 'Processes' for the given Node and Context
-int IpplInfo::getProcesses(const int n, const int c) {
-    return Comm->getProcesses(n, c);
-}
-
-
-/////////////////////////////////////////////////////////////////////
 // myNode: return which Node we are running on right now
 int IpplInfo::myNode() {
     return MyNode;

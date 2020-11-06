@@ -62,8 +62,6 @@ std::ostream& operator<<(std::ostream& o, const Communicate& c)
 // hosts 
 // Note: The base-class constructor does not need the argument info or
 // the number of nodes, it just by default sets the number of nodes=1
-// Also note: the derived classes should erase Contexts and Processes, and
-// put in the proper values.
 Communicate::Communicate(int, char **, int)
         : nextMsgNum(1)
 {
@@ -72,8 +70,6 @@ Communicate::Communicate(int, char **, int)
     TotalNodes = 1;
     myHost = 0;
     ErrorStatus = COMM_NOERROR;
-    Contexts.push_back(1);
-    Processes.push_back(Contexts); // using Contexts is just convenient here
 }
 
 

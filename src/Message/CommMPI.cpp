@@ -201,19 +201,6 @@ CommMPI::CommMPI(int& argc , char**& argv, int procs, bool mpiinit, MPI_Comm mpi
         MPI_Send(&myHost, 1, MPI_INT, 0, COMM_HOSTS_TAG, communicator);
 
     }
-
-    // set up the contexts and processes arrays properly
-    if (TotalNodes > 1)
-    {
-        std::vector<int> proccount;
-        proccount.push_back(1);
-        for (i = 1; i < TotalNodes; i++)
-        {
-            Contexts.push_back(1);
-            Processes.push_back(proccount);
-        }
-    }
-
 }
 
 
