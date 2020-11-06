@@ -278,11 +278,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                     param_error(argv[i],
                             "Please specify an output level from 0 to 5", 0);
 
-            } else if   ( strcmp(argv[i], "--profile") == 0 )  {
-                // handled above in
-                if ( (i + 1) < argc && argv[i+1][0] != '-' )
-                    ++i;
-
             } else if ( ( strcmp(argv[i], "--directio") == 0 ) ) {
                 // Turn on the use of Direct-IO, if possible
                 param_error(argv[i],
@@ -512,14 +507,6 @@ void IpplInfo::printHelp(char** argv) {
     INFOMSG("   --warn <n>          : Set warning message level.  0 = off.\n");
     INFOMSG("   --error <n>         : Set error message level.  0 = off.\n");
     INFOMSG("   --debug <n>         : Set debug message level.  0 = off.\n");
-    /*#ifdef PROFILING_ON
-      INFOMSG("   --profile <gr>  : Enable profiling for groups (e.g., M+P+io) \n");
-      INFOMSG("             M - Message, P - Pete, V - Viz, A - Assign, I - IO\n");
-      INFOMSG("             F - Field, L - Layout, S - Sparse, D - Domainmap \n");
-      INFOMSG("             Ut - Utility, R - Region, Ff - FFT \n");
-      INFOMSG("             U - User, 1 - User1, 2 - User2, 3 - User3, 4 - User4\n");
-
-      #endif*/ //PROFILING_ON
     INFOMSG("   --maxfftnodes <n>   : Limit the nodes that work on FFT's.\n");
 }
 
