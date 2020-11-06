@@ -24,8 +24,6 @@
 // arbitrary, but non-zero.
 #define IPPL_ABORT_TAG            5    // program should abort()
 #define IPPL_EXIT_TAG             6    // program should exit()
-#define IPPL_RETRANSMIT_TAG       7    // node should resend a message
-#define IPPL_MSG_OK_TAG           8    // some messages were sent correctly
 
 
 // tags for reduction

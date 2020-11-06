@@ -284,9 +284,6 @@ protected:
     // a list of messages which should be cleared out on other nodes
     std::vector<std::pair<int,MsgNum_t> > informOKList;
 
-    // a list of requests we must make to other nodes to resend messages
-    std::vector<std::pair<int,MsgNum_t> > requestList;
-
     // add a new message to the received message queues.  Return success.
     // arguments: message, sending node, tag
     bool add_msg(Message *, int, int);
@@ -387,37 +384,6 @@ protected:
 
     // take data out of the current receive buf and create a new Message
     Message *unpack_message(int &node, int &tag, void *pos);
-
-    //
-    // utility functions used for message caching/retransmit
-    //
-
-    // put the given message buffer in the sent-message cache, as a new
-    // CommSendInfo object storing the buffer and other information.
-    void add_to_send_cache(void *pos, MsgNum_t mnum, int size, int node);
-
-    // send off a request to have this message retransmitted to us
-    void request_retransmission(int node, MsgNum_t mnum);
-
-    // resend the data for message mnum ... calls the virtual 'resend'
-    void perform_resend(MsgNum_t mnum);
-
-    // get the resend information from a buffer sent in a message requesting
-    // retransmission
-    void unpack_retransmission_request(int nitems, void *pos);
-
-    // tell the sender that we received this message OK
-    void send_ok_message(int node, MsgNum_t mnum);
-
-    // unpack message with a list of OK message numbers, and delete them
-    // from our cache
-    void clear_ok_messages(int nitems, void *pos);
-
-    // remove a single OK message
-    void remove_single_ok_message(MsgNum_t mnum);
-
-    // process list of resend requests
-    void process_resend_requests();
 };
 
 #endif // COMMUNICATE_H

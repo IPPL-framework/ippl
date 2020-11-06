@@ -325,10 +325,6 @@ bool CommMPI::mysend(Message *msg, int node, int tag, int etag)
     MPI_Request request;
     MPI_Status status;
 
-    MPI_Status rec_status;
-    int src_node, rec_node, rec_tag, rec_size, rec_utag, bufid, rec_flag = 0;
-    Message* newmsg = NULL;
-
     // pack the message data into the buffer
     int size;
     void *outbuffer = pack_message(msg, tag, size, node);
@@ -344,54 +340,6 @@ bool CommMPI::mysend(Message *msg, int node, int tag, int etag)
 
     while (!flag)
     {
-        if (!Ippl::retransmit())
-        {
-            // get info about messages to be received
-            bufid = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, communicator,
-                               &rec_flag, &rec_status);
-            if ((bufid >= 0) && (rec_flag != 0) )
-            {
-                // a message is available to be received
-                src_node = rec_status.MPI_SOURCE;
-                rec_tag = rec_status.MPI_TAG;
-                MPI_Get_count(&rec_status, MPI_BYTE, &rec_size);
-                // dbgmsg<<"Receiving MPI message of size " << rec_size << " from node ";
-                // dbgmsg << src_node << "." << endl;
-                if ( (rec_size >= 0) && (rec_tag >= 0) && (src_node >= 0) )
-                {
-                    // message is a valid one, so malloc the output buffer
-                    void *rec_buff = makebuffer(rec_size);
-
-                    // blocking receive, unpack message
-                    MPI_Recv(rec_buff, rec_size, MPI_BYTE, src_node, rec_tag,
-                             communicator, &rec_status);
-
-                    newmsg = unpack_message(rec_node, rec_utag, rec_buff);
-
-                    // if there was an error unpacking, then the message had a problem
-                    // and is invalid, so throw this one away
-                    if (newmsg == 0)
-                    {
-                        // free up the buffer
-                        cleanupMessage(rec_buff);
-
-                    }
-                    else
-                    {
-                        // tell the message to inform us when the buffer is finished
-                        newmsg->useCommunicate(this, rec_buff);
-
-                        // put message in my message queue
-                        add_msg(newmsg, rec_node, rec_utag);
-                    }
-
-                    // reset other receive information
-                    newmsg = NULL; // reset message pointer
-                    rec_flag = 0; // reset receive flag
-                }
-            }
-        }
-
         // check for completion of send
         MPI_Test(&request, &flag, &status);
     }

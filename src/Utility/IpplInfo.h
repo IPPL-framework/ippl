@@ -183,12 +183,6 @@ public:
   static int getArgc() { return MyArgc; }
   static char **getArgv() { return MyArgv; }
 
-  // return true if we should use checksums on messages
-  static bool useChecksums() { return UseChecksums; }
-
-  // return true if we should try to retransmit messages on error
-  static bool retransmit() { return (UseChecksums && Retransmit); }
-
   // Static data about a limit to the number of nodes that should be used
   // in FFT operations.  If this is <= 0 or > number of nodes, it is ignored.
   static int maxFFTNodes() { return MaxFFTNodes; }
@@ -253,9 +247,6 @@ public:
   // communication by deferring guard cell fills.
   static bool deferGuardCellFills;
 
-  // Static flag telling whether to turn off compression in the Field classes.
-  static bool noFieldCompression;
-
   // Static flag telling whether to try to (pseudo-)randomly offset the
   // LField blocks to try to avoid cache conflicts.
   static bool offsetStorage;
@@ -291,12 +282,6 @@ private:
 
   // Static flag indicating if we need to delete the comm object at the end.
   static bool NeedDeleteComm;
-
-  // Static flag indicating whether to use checksums on messages
-  static bool UseChecksums;
-
-  // Static flag indicating whether to retransmit messages when errors occur
-  static bool Retransmit;
 
   // Static data with argc and argv
   static int MyArgc;

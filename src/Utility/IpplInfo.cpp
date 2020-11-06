@@ -85,10 +85,6 @@ std::stack<StaticIpplInfo> IpplInfo::stashedStaticMembers;
 // flag --defergcfill
 bool IpplInfo::deferGuardCellFills = false;
 
-// should we use the compression capabilities in {[Bare]Field,LField}? Can be
-// changed to false by specifying the flag --nofieldcompression
-bool IpplInfo::noFieldCompression = false;
-
 // private static members of IpplInfo, initialized to default values
 MPI_Comm IpplInfo::communicator_m = MPI_COMM_WORLD;
 int  IpplInfo::NumCreated = 0;
@@ -102,8 +98,6 @@ int  IpplInfo::TotalNodes = 1;
 int  IpplInfo::NumSMPs = 1;
 int* IpplInfo::SMPIDList = 0;
 int* IpplInfo::SMPNodeList = 0;
-bool IpplInfo::UseChecksums = false;
-bool IpplInfo::Retransmit = false;
 int  IpplInfo::MaxFFTNodes = 0;
 int  IpplInfo::ChunkSize = 512*1024; // 512K == 64K doubles
 bool IpplInfo::PerSMPParallelIO = false;
@@ -125,18 +119,12 @@ std::ostream& operator<<(std::ostream& o, const IpplInfo&) {
     o << "  Disc read chunk size: " << IpplInfo::chunkSize() << " bytes.\n";
     o << "  Deferring guard cell fills? ";
     o << IpplInfo::deferGuardCellFills << "\n";
-    o << "  Turning off Field compression? ";
-    o << IpplInfo::noFieldCompression << "\n";
     o << "  Offsetting storage? ";
     o << IpplInfo::offsetStorage << "\n";
     o << "  Using extra compression checks in expressions? ";
     o << IpplInfo::extraCompressChecks << "\n";
     o << "  Use per-SMP parallel IO? ";
     o << IpplInfo::perSMPParallelIO() << "\n";
-    o << "  Computing message CRC checksums? ";
-    o << IpplInfo::useChecksums() << "\n";
-    o << "  Retransmit messages on error (only if checkums on)? ";
-    o << IpplInfo::retransmit() << "\n";
 
     o << "  Elapsed wall-clock time (in seconds): ";
     o << IpplInfo::Stats->getTime().clock_time() << "\n";
@@ -200,36 +188,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
         commtype = std::string("mpi");
         startcomm = true;
 
-        for (i=1; i < argc; ++i) {
-            if ( ( strcmp(argv[i], "--processes") == 0 ) ||
-                    ( strcmp(argv[i], "-procs") == 0 ) ) {
-                // The user specified how many processes to use. This may not be useful
-                // for all communication methods.
-                if ( (i + 1) < argc && argv[i+1][0] != '-' && atoi(argv[i+1]) > 0 )
-                    nprocs = atoi(argv[++i]);
-                else
-                    param_error(argv[i],
-                            "Please specify a positive number of processes", 0);
-            } else if ( ( strcmp(argv[i], "--commlib") == 0 ) ||
-                    ( strcmp(argv[i], "-comm") == 0 ) ) {
-                // The user specified what kind of comm library to use
-                if ( (i + 1) < argc && argv[i+1][0] != '-' ) {
-                    commtype = argv[++i];
-                    startcomm = true;
-                } else {
-                    param_error(argv[i], "Please use one of: ",
-                                CommCreator::getAllLibraryNames(), 0);
-                    startcomm = false;
-                }
-
-            } else if ( strcmp(argv[i], "--nocomminit") == 0 ) {
-                // The user requested that we do not let the run-time system call
-                // whatever initialization routine it might have (like MPI_Init).
-                // This is in case another agency has already done the initialization.
-                comminit = false;
-            }
-        }
-
         // create Communicate object now.
         // dbgmsg << "Setting up parallel environment ..." << endl;
         if (startcomm && nprocs != 0 && nprocs != 1) {
@@ -239,33 +197,20 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                     argc, argv,
                     nprocs, comminit, mpicomm);
 
-            if (newcomm == 0) {
-                if (CommCreator::supported(commtype.c_str()))
-                    param_error("--commlib", "Could not initialize this ",
-                            "communication library.", commtype.c_str());
-                else if (CommCreator::known(commtype.c_str()))
-                    param_error("--commlib", "This communication library is not ",
-                            "available.", commtype.c_str());
-                else
-                    param_error("--commlib", "Please use one of: ",
-                            CommCreator::getAllLibraryNames(), 0);
-            } else {
-                // success, we have a new comm object
-                NeedDeleteComm = true;
-                delete Comm;
-                Comm = newcomm;
+            NeedDeleteComm = true;
+            delete Comm;
+            Comm = newcomm;
 
                 // cache our node number and node count
-                MyNode = Comm->myNode();
-                TotalNodes = Comm->getNodes();
-                find_smp_nodes();
+            MyNode = Comm->myNode();
+            TotalNodes = Comm->getNodes();
+            find_smp_nodes();
 
                 // advance the default random number generator
 //                 IpplRandom.AdvanceSeed(Comm->myNode());
 
                 // dbgmsg << "  Comm creation successful." << endl;
                 // dbgmsg << *this << endl;
-            }
         }
 
         // dbgmsg << "After comm init: argc = " << argc << ", " << endl;
@@ -286,16 +231,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
         // Parse command-line options, looking for ippl options.  When found,
         // save their suggested values and use them at the end to create data, etc.
         for (i=1; i < argc; ++i) {
-            if ( ( strcmp(argv[i], "--processes") == 0 ) ||
-                    ( strcmp(argv[i], "-procs") == 0 ) ) {
-                // handled above
-                if ( (i + 1) < argc && argv[i+1][0] != '-' && atoi(argv[i+1]) > 0 )
-                    ++i;
-
-            } else if ( ( strcmp(argv[i], "--nocomminit") == 0 ) ) {
-                // handled above, nothing to do here but skip the arg
-
-            } else if ( ( strcmp(argv[i], "--summary") == 0 ) ) {
+            if ( ( strcmp(argv[i], "--summary") == 0 ) ) {
                 // set flag to print out summary of Ippl library settings at the
                 // end of this constructor
                 printsummary = true;
@@ -314,13 +250,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                 }
                 INFOMSG(header << options << endl);
                 exit(0);
-
-            } else if ( ( strcmp(argv[i], "--checksums") == 0 ) ||
-                    ( strcmp(argv[i], "--checksum") == 0 ) ) {
-                UseChecksums = true;
-
-            } else if ( ( strcmp(argv[i], "--retransmit") == 0 ) ) {
-                Retransmit = true;
 
             } else if ( ( strcmp(argv[i], "--ipplversionall") == 0 ) ||
                         ( strcmp(argv[i], "-vall") == 0 ) ) {
@@ -378,12 +307,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                     param_error(argv[i],
                             "Please specify an output level from 0 to 5", 0);
 
-            } else if ( ( strcmp(argv[i], "--commlib") == 0 ) ||
-                    ( strcmp(argv[i], "-comm") == 0 ) ) {
-                // handled above
-                if ( (i + 1) < argc && argv[i+1][0] != '-' )
-                    ++i;
-
             } else if   ( strcmp(argv[i], "--profile") == 0 )  {
                 // handled above in
                 if ( (i + 1) < argc && argv[i+1][0] != '-' )
@@ -424,10 +347,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
             } else if ( ( strcmp(argv[i], "--extracompcheck") == 0 ) ) {
                 // Turn on the extra compression checks in expressions
                 extraCompressChecks = true;
-
-            } else if ( ( strcmp(argv[i], "--nofieldcompression") == 0 ) ) {
-                // Turn off compression in the Field classes
-                noFieldCompression = true;
 
             } else if ( ( strcmp(argv[i], "--directio") == 0 ) ) {
                 // Turn on the use of Direct-IO, if possible
@@ -707,11 +626,8 @@ void IpplInfo::printHelp(char** argv) {
     INFOMSG("Usage: " << argv[0] << " [<option> <option> ...]\n");
     INFOMSG("       The possible values for <option> are:\n");
     INFOMSG("   --summary           : Print IPPL lib summary at start.\n");
-    INFOMSG("   --processes <n>     : Number of parallel nodes to use.\n");
-    INFOMSG("   --commlib <x>       : Selects a parallel comm. library.\n");
     INFOMSG("                         <x> = ");
     INFOMSG(CommCreator::getAllLibraryNames() << "\n");
-    INFOMSG("   --nocomminit        : IPPL does not do communication\n");
     INFOMSG("                         initialization, assume already done.\n");
     INFOMSG("   --time              : Show total time used in execution.\n");
     INFOMSG("   --notime            : Do not show timing info (default).\n");
@@ -728,11 +644,8 @@ void IpplInfo::printHelp(char** argv) {
 
       #endif*/ //PROFILING_ON
     INFOMSG("   --defergcfill       : Turn on deferred guard cell fills.\n");
-    INFOMSG("   --nofieldcompression: Turn off compression in the Field classes.\n");
     INFOMSG("   --offsetstorage     : Turn on random LField storage offsets.\n");
     INFOMSG("   --extracompcheck    : Turn on extra compression checks in evaluator.\n");
-    INFOMSG("   --checksums         : Turn on CRC checksums for messages.\n");
-    INFOMSG("   --retransmit        : Resent messages if a CRC error occurs.\n");
     INFOMSG("   --maxfftnodes <n>   : Limit the nodes that work on FFT's.\n");
     INFOMSG("   --chunksize <n>     : Set I/O chunk size.  Can end w/K,M,G.\n");
     INFOMSG("   --persmppario       : Enable on-SMP parallel IO option.\n");
@@ -958,7 +871,6 @@ void IpplInfo::stash() {
     obj.Error =               Error;
     obj.Debug =               Debug;
     obj.deferGuardCellFills = deferGuardCellFills;
-    obj.noFieldCompression =  noFieldCompression;
     obj.offsetStorage =       offsetStorage;
     obj.extraCompressChecks = extraCompressChecks;
     obj.communicator_m =      communicator_m;
@@ -966,8 +878,6 @@ void IpplInfo::stash() {
     obj.CommInitialized =     CommInitialized;
     obj.PrintStats =          PrintStats;
     obj.NeedDeleteComm =      NeedDeleteComm;
-    obj.UseChecksums =        UseChecksums;
-    obj.Retransmit =          Retransmit;
     obj.MyArgc =              MyArgc;
     obj.MyArgv =              MyArgv;
     obj.MyNode =              MyNode;
@@ -989,7 +899,6 @@ void IpplInfo::stash() {
     Debug = 0;
 
     deferGuardCellFills = false;
-    noFieldCompression = false;
     offsetStorage = false;
     extraCompressChecks = false;
     communicator_m = MPI_COMM_WORLD;
@@ -997,8 +906,6 @@ void IpplInfo::stash() {
     CommInitialized = false;
     PrintStats = false;
     NeedDeleteComm = false;
-    UseChecksums = false;
-    Retransmit = false;
     MyArgc = 0;
     MyArgv = 0;
     MyNode = 0;
@@ -1035,7 +942,6 @@ void IpplInfo::pop() {
     Error =               obj.Error;
     Debug =               obj.Debug;
     deferGuardCellFills = obj.deferGuardCellFills;
-    noFieldCompression =  obj.noFieldCompression;
     offsetStorage =       obj.offsetStorage;
     extraCompressChecks = obj.extraCompressChecks;
     communicator_m =      obj.communicator_m;
@@ -1043,8 +949,6 @@ void IpplInfo::pop() {
     CommInitialized =     obj.CommInitialized;
     PrintStats =          obj.PrintStats;
     NeedDeleteComm =      obj.NeedDeleteComm;
-    UseChecksums =        obj.UseChecksums;
-    Retransmit =          obj.Retransmit;
     MyArgc =              obj.MyArgc;
     MyArgv =              obj.MyArgv;
     MyNode =              obj.MyNode;
