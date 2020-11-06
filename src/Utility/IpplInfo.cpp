@@ -477,12 +477,6 @@ void IpplInfo::printHelp(char** argv) {
 }
 
 /////////////////////////////////////////////////////////////////////
-// here: as in stop in IpplInfo::here (in the debugger)
-void IpplInfo::here()
-{
-}
-
-/////////////////////////////////////////////////////////////////////
 // print out statistics to the given Inform stream
 void IpplInfo::printStatistics(Inform &o) { Stats->print(o); }
 

@@ -198,10 +198,6 @@ public:
   // library (from IpplVersions.h)
   static const char *compileUser();
 
-  // Static routine giving one a place to stop at with #$%$%#1 stupid
-  // debuggers.
-  static void here();
-
   // print out statistics to the given Inform stream
   static void printStatistics(Inform&);
 
