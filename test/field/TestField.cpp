@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
     constexpr unsigned int dim = 3;
 
     int pt = 4;
-    Index I(pt);
+    ippl::Index I(pt);
     NDIndex<dim> owned(I, I, I);
 
     e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     vfield = grad(field);
 
-     vfield.write();
+    vfield.write();
 
     return 0;
 }
