@@ -26,8 +26,6 @@
 // include files
 #include "Utility/IpplInfo.h"
 #include "Utility/IpplStats.h"
-#include "Utility/PAssert.h"
-#include "Utility/vmap.h"
 #include "Message/Message.h"
 #include "Message/CommCreator.h"
 #include "Message/Communicate.h"
