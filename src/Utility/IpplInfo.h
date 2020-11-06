@@ -45,7 +45,6 @@
 // include files
 #include "Utility/Inform.h"
 #include "Message/Communicate.h"
-#include "Utility/StaticIpplInfo.h"
 
 #include <iostream>
 #include <stack>
@@ -200,12 +199,6 @@ public:
   // library (from IpplVersions.h)
   static const char *compileUser();
 
-  // stash all static members
-  static void stash();
-
-  // restore all static members
-  static void pop();
-
   // Static routine giving one a place to stop at with #$%$%#1 stupid
   // debuggers.
   static void here();
@@ -246,8 +239,6 @@ private:
   // Static data about a limit to the number of nodes that should be used
   // in FFT operations.  If this is <= 0 or > number of nodes, it is ignored.
   static int MaxFFTNodes;
-
-  static std::stack<StaticIpplInfo> stashedStaticMembers;
 
   // Indicate an error occurred while trying to parse the given command-line
   // option, and quit.  Arguments are: parameter, error message, bad value

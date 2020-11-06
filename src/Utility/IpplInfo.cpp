@@ -78,8 +78,6 @@ void IpplInfo::deleteGlobals() {
     Debug = 0;
 }
 
-std::stack<StaticIpplInfo> IpplInfo::stashedStaticMembers;
-
 // private static members of IpplInfo, initialized to default values
 MPI_Comm IpplInfo::communicator_m = MPI_COMM_WORLD;
 int  IpplInfo::NumCreated = 0;
@@ -621,81 +619,4 @@ void IpplInfo::param_error(const char *param, const char *msg1,
         ERRORMSG(msg2);
     ERRORMSG(endl);
     IpplInfo::abort(0);
-}
-
-
-void IpplInfo::stash() {
-    PAssert_EQ(stashedStaticMembers.size(), 0);
-
-    StaticIpplInfo obj;
-
-    obj.Comm =                Comm;
-    obj.Stats =               Stats;
-    obj.Info =                Info;
-    obj.Warn =                Warn;
-    obj.Error =               Error;
-    obj.Debug =               Debug;
-    obj.communicator_m =      communicator_m;
-    obj.NumCreated =          NumCreated;
-    obj.CommInitialized =     CommInitialized;
-    obj.PrintStats =          PrintStats;
-    obj.NeedDeleteComm =      NeedDeleteComm;
-    obj.MyArgc =              MyArgc;
-    obj.MyArgv =              MyArgv;
-    obj.MyNode =              MyNode;
-    obj.TotalNodes =          TotalNodes;
-    obj.MaxFFTNodes =         MaxFFTNodes;
-
-    stashedStaticMembers.push(obj);
-
-    Comm = 0;
-    Stats = 0;
-    Info = 0;
-    Warn = 0;
-    Error = 0;
-    Debug = 0;
-
-    communicator_m = MPI_COMM_WORLD;
-    NumCreated = 0;
-    CommInitialized = false;
-    PrintStats = false;
-    NeedDeleteComm = false;
-    MyArgc = 0;
-    MyArgv = 0;
-    MyNode = 0;
-    TotalNodes = 1;
-    MaxFFTNodes = 0;
-}
-
-void IpplInfo::pop() {
-    PAssert_EQ(stashedStaticMembers.size(), 1);
-
-    StaticIpplInfo obj = stashedStaticMembers.top();
-    stashedStaticMembers.pop();
-    // Delete the communications object, if necessary, to shut down parallel
-    // environment
-    // Comm is deleted in destructor
-    delete [] MyArgv;
-    delete Info;
-    delete Warn;
-    delete Error;
-    delete Debug;
-    delete Stats;
-
-    Comm =                obj.Comm;
-    Stats =               obj.Stats;
-    Info =                obj.Info;
-    Warn =                obj.Warn;
-    Error =               obj.Error;
-    Debug =               obj.Debug;
-    communicator_m =      obj.communicator_m;
-    NumCreated =          obj.NumCreated;
-    CommInitialized =     obj.CommInitialized;
-    PrintStats =          obj.PrintStats;
-    NeedDeleteComm =      obj.NeedDeleteComm;
-    MyArgc =              obj.MyArgc;
-    MyArgv =              obj.MyArgv;
-    MyNode =              obj.MyNode;
-    TotalNodes =          obj.TotalNodes;
-    MaxFFTNodes =         obj.MaxFFTNodes;
 }

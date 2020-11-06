@@ -6,7 +6,6 @@ set (_SRCS
     IpplStats.cpp
 #     IpplTimings.cpp
     PAssert.cpp
-    StaticIpplInfo.cpp
     Timer.cpp
     Unique.cpp
     User.cpp
@@ -24,7 +23,6 @@ set (_HDRS
 #     NamedObj.h
     PAssert.h
     RefCounted.h
-    StaticIpplInfo.h
     Timer.h
     Unique.h
     User.h
