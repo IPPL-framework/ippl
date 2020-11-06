@@ -26,15 +26,15 @@ namespace ippl {
      */
 
     #define DefineUnaryOperation(fun, name, op1, op2)                       \
-    template<typename E>                                                    \
-    struct fun : public Expression<fun<E>, sizeof(E)> {                     \
+    template <typename E>                                                   \
+    struct fun : public detail::Expression<fun<E>, sizeof(E)> {             \
         KOKKOS_FUNCTION                                                     \
         fun(const E& u) : u_m(u) { }                                        \
                                                                             \
         KOKKOS_INLINE_FUNCTION                                              \
         auto operator[](size_t i) const { return op1; }                     \
                                                                             \
-        template<typename ...Args>                                          \
+        template <typename ...Args>                                         \
         KOKKOS_INLINE_FUNCTION                                              \
         auto operator()(Args... args) const {                               \
             return op2;                                                     \
@@ -44,9 +44,9 @@ namespace ippl {
         const E u_m;                                                        \
     };                                                                      \
                                                                             \
-    template<typename E, size_t N>                                          \
+    template <typename E, size_t N>                                         \
     KOKKOS_INLINE_FUNCTION                                                  \
-    fun<E> name(const Expression<E, N>& u) {                                \
+    fun<E> name(const detail::Expression<E, N>& u) {                        \
         return fun<E>(*static_cast<const E*>(&u));                          \
     }                                                                       \
 
@@ -78,54 +78,54 @@ namespace ippl {
 
 
     /*!
-     * Macro to overload C++ operators for the Scalar, LField and Vector class.
+     * Macro to overload C++ operators for the Scalar, BareField and Vector class.
      * @param fun name of the expression template function
      * @param name overloaded operator
      * @param op1 operation for single index access
      * @param op2 operation for multiple indices access
      */
-    #define DefineBinaryOperation(fun, name, op1, op2)                      \
-    template<typename E1, typename E2>                                      \
-    struct fun : public Expression<fun<E1, E2>, sizeof(E1) + sizeof(E2)> {  \
-        KOKKOS_FUNCTION                                                     \
-        fun(const E1& u, const E2& v) : u_m(u), v_m(v) { }                  \
-                                                                            \
-        KOKKOS_INLINE_FUNCTION                                              \
-        auto operator[](size_t i) const { return op1; }                     \
-                                                                            \
-        template<typename ...Args>                                          \
-        KOKKOS_INLINE_FUNCTION                                              \
-        auto operator()(Args... args) const {                               \
-            return op2;                                                     \
-        }                                                                   \
-                                                                            \
-    private:                                                                \
-        const E1 u_m;                                                       \
-        const E2 v_m;                                                       \
-    };                                                                      \
-                                                                            \
-    template<typename E1, size_t N1, typename E2, size_t N2>                \
-    KOKKOS_INLINE_FUNCTION                                                  \
-    fun<E1, E2> name(const Expression<E1, N1>& u,                           \
-                     const Expression<E2, N2>& v) {                         \
-        return fun<E1, E2>(*static_cast<const E1*>(&u),                     \
-                           *static_cast<const E2*>(&v));                    \
-    }                                                                       \
-                                                                            \
-    template<typename E, size_t N, typename T,                              \
-             typename = std::enable_if_t<std::is_scalar<T>::value>>         \
-    KOKKOS_INLINE_FUNCTION                                                  \
-    fun<E, detail::Scalar<T>> name(const Expression<E, N>& u,               \
-                                   const T& v) {                            \
-        return fun<E, detail::Scalar<T>>(*static_cast<const E*>(&u), v);    \
-    }                                                                       \
-                                                                            \
-    template<typename E, size_t N, typename T,                              \
-             typename = std::enable_if_t<std::is_scalar<T>::value>>         \
-    KOKKOS_INLINE_FUNCTION                                                  \
-    fun<detail::Scalar<T>, E> name(const T& u,                              \
-                                   const Expression<E, N>& v) {             \
-        return fun<detail::Scalar<T>, E>(u, *static_cast<const E*>(&v));    \
+    #define DefineBinaryOperation(fun, name, op1, op2)                              \
+    template <typename E1, typename E2>                                             \
+    struct fun : public detail::Expression<fun<E1, E2>, sizeof(E1) + sizeof(E2)> {  \
+        KOKKOS_FUNCTION                                                             \
+        fun(const E1& u, const E2& v) : u_m(u), v_m(v) { }                          \
+                                                                                    \
+        KOKKOS_INLINE_FUNCTION                                                      \
+        auto operator[](size_t i) const { return op1; }                             \
+                                                                                    \
+        template <typename ...Args>                                                 \
+        KOKKOS_INLINE_FUNCTION                                                      \
+        auto operator()(Args... args) const {                                       \
+            return op2;                                                             \
+        }                                                                           \
+                                                                                    \
+    private:                                                                        \
+        const E1 u_m;                                                               \
+        const E2 v_m;                                                               \
+    };                                                                              \
+                                                                                    \
+    template <typename E1, size_t N1, typename E2, size_t N2>                       \
+    KOKKOS_INLINE_FUNCTION                                                          \
+    fun<E1, E2> name(const detail::Expression<E1, N1>& u,                           \
+                     const detail::Expression<E2, N2>& v) {                         \
+        return fun<E1, E2>(*static_cast<const E1*>(&u),                             \
+                           *static_cast<const E2*>(&v));                            \
+    }                                                                               \
+                                                                                    \
+    template <typename E, size_t N, typename T,                                     \
+             typename = std::enable_if_t<std::is_scalar<T>::value>>                 \
+    KOKKOS_INLINE_FUNCTION                                                          \
+    fun<E, detail::Scalar<T>> name(const detail::Expression<E, N>& u,               \
+                                   const T& v) {                                    \
+        return fun<E, detail::Scalar<T>>(*static_cast<const E*>(&u), v);            \
+    }                                                                               \
+                                                                                    \
+    template <typename E, size_t N, typename T,                                     \
+              typename = std::enable_if_t<std::is_scalar<T>::value>>                \
+    KOKKOS_INLINE_FUNCTION                                                          \
+    fun<detail::Scalar<T>, E> name(const T& u,                                      \
+                                   const detail::Expression<E, N>& v) {             \
+        return fun<detail::Scalar<T>, E>(u, *static_cast<const E*>(&v));            \
     }
 
     /// @cond
@@ -163,8 +163,8 @@ namespace ippl {
         /*!
          * Meta function of cross product. This function is only supported for 3-dimensional vectors.
          */
-        template<typename E1, typename E2>
-        struct meta_cross : public Expression<meta_cross<E1, E2>, sizeof(E1) + sizeof(E2)> {
+        template <typename E1, typename E2>
+        struct meta_cross : public detail::Expression<meta_cross<E1, E2>, sizeof(E1) + sizeof(E2)> {
             KOKKOS_FUNCTION
             meta_cross(const E1& u, const E2& v) : u_m(u), v_m(v) { }
 
@@ -179,9 +179,9 @@ namespace ippl {
             }
 
             /*
-             * This is required for LField::cross
+             * This is required for BareField::cross
              */
-            template<typename ...Args>
+            template <typename ...Args>
             KOKKOS_INLINE_FUNCTION
             auto operator()(Args... args) const {
                 return cross(u_m(args...), v_m(args...));
@@ -193,10 +193,10 @@ namespace ippl {
         };
     }
 
-    template<typename E1, size_t N1, typename E2, size_t N2>
+    template <typename E1, size_t N1, typename E2, size_t N2>
     KOKKOS_INLINE_FUNCTION
-    detail::meta_cross<E1, E2> cross(const Expression<E1, N1>& u,
-                                     const Expression<E2, N2>& v) {
+    detail::meta_cross<E1, E2> cross(const detail::Expression<E1, N1>& u,
+                                     const detail::Expression<E2, N2>& v) {
         return detail::meta_cross<E1, E2>(*static_cast<const E1*>(&u),
                                           *static_cast<const E2*>(&v));
     }
@@ -205,7 +205,7 @@ namespace ippl {
         /*!
          * Meta function of dot product.
          */
-        template<typename E1, typename E2>
+        template <typename E1, typename E2>
         struct meta_dot : public Expression<meta_dot<E1, E2>, sizeof(E1) + sizeof(E2)> {
             KOKKOS_FUNCTION
             meta_dot(const E1& u, const E2& v) : u_m(u), v_m(v) { }
@@ -223,9 +223,9 @@ namespace ippl {
             }
 
             /*
-             * This is required for LField::dot
+             * This is required for BareField::dot
              */
-            template<typename ...Args>
+            template <typename ...Args>
             KOKKOS_INLINE_FUNCTION
             auto operator()(Args... args) const {
                 return dot(u_m(args...), v_m(args...)).apply();
@@ -237,10 +237,10 @@ namespace ippl {
         };
     }
 
-    template<typename E1, size_t N1, typename E2, size_t N2>
+    template <typename E1, size_t N1, typename E2, size_t N2>
     KOKKOS_INLINE_FUNCTION
-    detail::meta_dot<E1, E2> dot(const Expression<E1, N1>& u,
-                                 const Expression<E2, N2>& v) {
+    detail::meta_dot<E1, E2> dot(const detail::Expression<E1, N1>& u,
+                                 const detail::Expression<E2, N2>& v) {
         return detail::meta_dot<E1, E2>(*static_cast<const E1*>(&u),
                                         *static_cast<const E2*>(&v));
     }
@@ -250,59 +250,40 @@ namespace ippl {
          * Meta function of gradient
          */
 
-        template<typename E, typename Evec>
-        struct meta_grad : public Expression<meta_grad<E, Evec>, sizeof(E) + 3 * sizeof(Evec)> {
+        template <typename E>
+        struct meta_grad : public Expression<meta_grad<E>,
+                                             sizeof(E) + 3 * sizeof(typename E::Mesh_t::vector_type)>
+       {
 
             KOKKOS_FUNCTION
             meta_grad(const E& u,
-                    const Evec& xvector,
-                    const Evec& yvector,
-                    const Evec& zvector)
+                       const typename E::Mesh_t::vector_type& xvector,
+                       const typename E::Mesh_t::vector_type& yvector,
+                       const typename E::Mesh_t::vector_type& zvector)
             : u_m(u)
             , xvector_m(xvector)
             , yvector_m(yvector)
             , zvector_m(zvector)
             { }
 
-
             /*
              * 3-dimensional grad
              */
             KOKKOS_INLINE_FUNCTION
             auto operator()(size_t i, size_t j, size_t k) const {
-
                 return xvector_m * (u_m(i+1, j,   k)   - u_m(i-1, j,   k  )) +
                        yvector_m * (u_m(i  , j+1, k)   - u_m(i  , j-1, k  )) +
                        zvector_m * (u_m(i  , j  , k+1) - u_m(i  , j  , k-1));
             }
 
         private:
+            using Mesh_t = typename E::Mesh_t;
+            using vector_type = typename Mesh_t::vector_type;
             const E u_m;
-            const Evec xvector_m;
-            const Evec yvector_m;
-            const Evec zvector_m;
+            const vector_type xvector_m;
+            const vector_type yvector_m;
+            const vector_type zvector_m;
         };
-    }
-
-    /*!
-     * User interface of gradient in three dimensions.
-     * @tparam E expression type of left-hand side
-     * @tparam N size of expression
-     * @tparam Evec vector as an expression
-     * @tparam Nvec size of vector expression
-     * @param u expression
-     * @param xvector
-     * @param yvector
-     * @param zvector
-     */
-
-    template<typename E, size_t N, typename Evec, size_t Nvec>
-    KOKKOS_INLINE_FUNCTION
-    detail::meta_grad<E, Evec> grad(const Expression<E, N>& u, 
-                                    const Expression<Evec, Nvec>& xvector, 
-                                    const Expression<Evec, Nvec>& yvector, 
-                                    const Expression<Evec, Nvec>& zvector) {
-        return detail::meta_grad<E, Evec>(*static_cast<const E*>(&u), xvector, yvector, zvector);
     }
 
     namespace detail {
@@ -310,20 +291,19 @@ namespace ippl {
         /*!
          * Meta function of divergence
          */
-        template<typename E, typename Evec>
-        struct meta_div : public Expression<meta_div<E, Evec>, sizeof(E) + 3 * sizeof(Evec)> {
+        template <typename E>
+        struct meta_div : public Expression<meta_div<E>, sizeof(E) + 3 * sizeof(typename E::Mesh_t::vector_type)> {
 
             KOKKOS_FUNCTION
             meta_div(const E& u,
-                    const Evec& xvector,
-                    const Evec& yvector,
-                    const Evec& zvector)
+                     const typename E::Mesh_t::vector_type& xvector,
+                     const typename E::Mesh_t::vector_type& yvector,
+                     const typename E::Mesh_t::vector_type& zvector)
             : u_m(u)
             , xvector_m(xvector)
             , yvector_m(yvector)
             , zvector_m(zvector)
             { }
-
 
             /*
              * 3-dimensional div
@@ -336,51 +316,28 @@ namespace ippl {
             }
 
         private:
+            using Mesh_t = typename E::Mesh_t;
+            using vector_type = typename Mesh_t::vector_type;
             const E u_m;
-            const Evec xvector_m;
-            const Evec yvector_m;
-            const Evec zvector_m;
+            const vector_type xvector_m;
+            const vector_type yvector_m;
+            const vector_type zvector_m;
         };
-    }
 
-
-    /*!
-     * User interface of divergence in three dimensions.
-     * @tparam E expression type of left-hand side
-     * @tparam N size of expression
-     * @tparam Evec vector as an expression
-     * @tparam Nvec size of vector expression
-     * @param u expression
-     * @param xvector
-     * @param yvector
-     * @param zvector
-     */
-    template<typename E, size_t N, typename Evec, size_t Nvec>
-    KOKKOS_INLINE_FUNCTION
-    detail::meta_div<E, Evec> div(const Expression<E, N>& u, 
-                                  const Expression<Evec, Nvec>& xvector, 
-                                  const Expression<Evec, Nvec>& yvector, 
-                                  const Expression<Evec, Nvec>& zvector) {
-        return detail::meta_div<E, Evec>(*static_cast<const E*>(&u), xvector, yvector, zvector);
-    }
-
-
-    namespace detail {
 
         /*!
          * Meta function of Laplacian 
          */
-        template<typename E, typename Evec>
-        struct meta_laplace : public Expression<meta_laplace<E, Evec>, sizeof(E) + sizeof(Evec)> {
+        template <typename E>
+        struct meta_laplace : public Expression<meta_laplace<E>, sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
 
             KOKKOS_FUNCTION
             meta_laplace(const E& u,
-                         const Evec& hvector)
+                         const typename E::Mesh_t::vector_type& hvector)
             : u_m(u)
             , hvector_m(hvector)
             { }
-
-
+       
             /*
              * 3-dimensional Laplacian
              */
@@ -393,28 +350,12 @@ namespace ippl {
             }
 
         private:
+            using Mesh_t = typename E::Mesh_t;
+            using vector_type = typename Mesh_t::vector_type;
             const E u_m;
-            const Evec hvector_m;
+            const vector_type hvector_m;
         };
     }
-
-
-    /*!
-     * User interface of Laplacian in three dimensions.
-     * @tparam E expression type of left-hand side
-     * @tparam N size of expression
-     * @tparam Evec vector as an expression
-     * @tparam Nvec size of vector expression
-     * @param u expression
-     * @param hvector
-     */
-    template<typename E, size_t N, typename Evec, size_t Nvec>
-    KOKKOS_INLINE_FUNCTION
-    detail::meta_laplace<E, Evec> laplace(const Expression<E, N>& u, const Expression<Evec, Nvec>& hvector) {
-        return detail::meta_laplace<E, Evec>(*static_cast<const E*>(&u), hvector);
-    }
-
-
 }
 
 #endif

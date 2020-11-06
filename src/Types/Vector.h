@@ -33,7 +33,7 @@ namespace ippl {
      * @tparam Dim vector dimension
      */
     template<typename T, unsigned Dim>
-    class Vector : public Expression<Vector<T, Dim>, sizeof(T) * Dim> {
+    class Vector : public detail::Expression<Vector<T, Dim>, sizeof(T) * Dim> {
     public:
         typedef T value_type;
         static constexpr unsigned dim = Dim;
@@ -44,7 +44,7 @@ namespace ippl {
 
         template<typename E, size_t N>
         KOKKOS_FUNCTION
-        Vector(const Expression<E, N>& expr);
+        Vector(const detail::Expression<E, N>& expr);
 
         KOKKOS_FUNCTION
         Vector(const Vector<T, Dim>&) = default;
@@ -78,23 +78,23 @@ namespace ippl {
         // Assignment Operators
         template<typename E, size_t N>
         KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator=(const Expression<E, N>& expr);
+        Vector<T, Dim>& operator=(const detail::Expression<E, N>& expr);
 
         template<typename E, size_t N>
         KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator+=(const Expression<E, N>& expr);
+        Vector<T, Dim>& operator+=(const detail::Expression<E, N>& expr);
 
         template<typename E, size_t N>
         KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator-=(const Expression<E, N>& expr);
+        Vector<T, Dim>& operator-=(const detail::Expression<E, N>& expr);
 
         template<typename E, size_t N>
         KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator*=(const Expression<E, N>& expr);
+        Vector<T, Dim>& operator*=(const detail::Expression<E, N>& expr);
 
         template<typename E, size_t N>
         KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator/=(const Expression<E, N>& expr);
+        Vector<T, Dim>& operator/=(const detail::Expression<E, N>& expr);
 
     private:
         T data_m[Dim];
