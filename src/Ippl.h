@@ -43,9 +43,6 @@
 // #include "Meshes/UniformCartesian.h"
 // #include "Meshes/Cartesian.h"
 
-// IPPL Expression Templates
-#include "PETE/IpplExpressions.h"
-
 // // IPPL Field classes
 // #include "Field/FieldSpec.h"
 // #include "Field/Field.h"
