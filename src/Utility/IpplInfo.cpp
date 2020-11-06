@@ -268,10 +268,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                     param_error(argv[i],
                             "Please specify an output level from 0 to 5", 0);
 
-            } else if ( ( strcmp(argv[i], "--directio") == 0 ) ) {
-                // Turn on the use of Direct-IO, if possible
-                param_error(argv[i],
-                        "Direct-IO is not available in this build of IPPL", 0);
             } else if ( ( strcmp(argv[i], "--maxfftnodes") == 0 ) ) {
                 // Limit the number of nodes that can participate in FFT operations
                 if ( (i + 1) < argc && argv[i+1][0] != '-' && atoi(argv[i+1]) > 0 )
