@@ -50,7 +50,7 @@ namespace ippl {
     };
 }
 
-#include "Field/Kokkos_Field.hpp"
+#include "Field/Field.hpp"
 
 #endif
 

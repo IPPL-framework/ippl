@@ -16,7 +16,7 @@
 
 // Kokkos
 #include "Field/BareField.h"
-#include "Field/Kokkos_Field.h"
+#include "Field/Field.h"
 
 // IPPL Communicate classes
 #include "Message/Communicate.h"
