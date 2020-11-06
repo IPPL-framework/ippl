@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     vfield = grad(field);
 
-     vfield.write();
+    vfield.write();
 
     return 0;
 }
