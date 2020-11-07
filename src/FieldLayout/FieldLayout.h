@@ -82,86 +82,12 @@ public:
   // call 'initialize' soon after (before using in any context)
   FieldLayout();
 
-  // Constructors for 1 ... 6 dimensions
-  // These specify only a total number of vnodes, allowing the constructor
-  // complete control on how to do the vnode partitioning of the index space:
-  FieldLayout(const Index& i1,
-	      e_dim_tag p1=PARALLEL, int vnodes=-1);
-  FieldLayout(const Index& i1, const Index& i2,
-	      e_dim_tag p1=PARALLEL, e_dim_tag p2=PARALLEL, int vnodes=-1);
-  FieldLayout(const Index& i1, const Index& i2, const Index& i3,
-	      e_dim_tag p1=PARALLEL, e_dim_tag p2=PARALLEL,
-	      e_dim_tag p3=PARALLEL, int vnodes=-1);
-
-  // These specify both the total number of vnodes and the numbers of vnodes
-  // along each dimension for the partitioning of the index space. Obviously
-  // this restricts the number of vnodes to be a product of the numbers along
-  // each dimension (the constructor implementation checks this):
-  FieldLayout(const Index& i1,
-	      e_dim_tag p1,
-	      unsigned vnodes1,
-	      bool recurse=false,
-              int vnodes=-1);
-  FieldLayout(const Index& i1, const Index& i2,
-	      e_dim_tag p1, e_dim_tag p2,
-	      unsigned vnodes1, unsigned vnodes2,
-	      bool recurse=false,int vnodes=-1);
-  FieldLayout(const Index& i1, const Index& i2, const Index& i3,
-	      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
-	      unsigned vnodes1, unsigned vnodes2, unsigned vnodes3,
-	      bool recurse=false, int vnodes=-1);
-
   // Next we have one for arbitrary dimension.
   // This one specifies only a total number of vnodes, allowing the constructor
   // complete control on how to do the vnode partitioning of the index space:
   FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p=0, int vnodes=-1) {
     initialize(domain,p,vnodes);
   }
-
-  // This one specifies both the total number of vnodes and the numbers of
-  // vnodes along each dimension for the partitioning of the index
-  // space. Obviously this restricts the number of vnodes to be a product of
-  // the numbers along each dimension (the constructor implementation checks
-  // this):
-  //
-  // The last argument is a bool for the algorithm to use for assigning vnodes
-  // to processors.  If it is false, hand the vnodes to the processors in a
-  // very simple but probably inefficient manner.  If it is true, use a binary
-  // recursive algorithm. This will usually be more efficient because it will
-  // generate less communication, but it will sometimes fail, particularly
-  // near the case of one vnode per processor. Because this can fail, it is
-  // not the default. This algorithm should only be used when you have 4 or
-  // more vnodes per processor.
-
-  FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p, 
-	      unsigned* vnodesPerDirection, 
-	      bool recurse=false, int vnodes=-1 ) {
-    initialize(domain,p,vnodesPerDirection,recurse,vnodes);
-  }
-
-  // Build a FieldLayout given the whole domain and
-  // begin and end iterators for the set of domains for the local Vnodes.
-  // It does a collective computation to find the remote Vnodes.
-  FieldLayout(const NDIndex<Dim>& Domain,
-	      const NDIndex<Dim>* begin, const NDIndex<Dim>* end);
-
-  // Build a FieldLayout given the whole domain and
-  // begin and end iterators for the set of Vnodes for the local Vnodes.
-  // It does a collective computation to find the remote Vnodes.
-  // This differs from the previous ctor in that it allows preservation of
-  // global Vnode integer ID numbers associated with the input Vnodes. --tjw
-  FieldLayout(const NDIndex<Dim>& Domain,
-	      const Vnode<Dim>* begin, const Vnode<Dim>* end);
-
-  // Constructor that takes a whole domain, and a pair of iterators over
-  // a list of NDIndex's and nodes so that the user specifies the entire
-  // decomposition.  No communication is done
-  // so these lists must match on all nodes.  A bit of error checking
-  // is done for overlapping blocks and illegal nodes, but not exhaustive
-  // error checking.
-  FieldLayout(const NDIndex<Dim>& Domain,
-	      const NDIndex<Dim>* dombegin, const NDIndex<Dim>* domend,
-	      const int *nbegin, const int *nend);
 
   // Destructor: Everything deletes itself automatically ... the base
   // class destructors inform all the FieldLayoutUser's we're going away.
@@ -172,46 +98,7 @@ public:
   // otherwise these are only called internally by the various non-default
   // FieldLayout constructors:
 
-  // These specify only a total number of vnodes, allowing the constructor
-  // complete control on how to do the vnode partitioning of the index space:
-  void initialize(const Index& i1,
-		  e_dim_tag p1=PARALLEL, int vnodes=-1);
-  void initialize(const Index& i1, const Index& i2,
-		  e_dim_tag p1=PARALLEL, e_dim_tag p2=PARALLEL, int vnodes=-1);
-  void initialize(const Index& i1, const Index& i2, const Index& i3,
-		  e_dim_tag p1=PARALLEL, e_dim_tag p2=PARALLEL,
-		  e_dim_tag p3=PARALLEL, int vnodes=-1);
   void initialize(const NDIndex<Dim>& domain, e_dim_tag *p=0, int vnodes=-1);
-
-  // These specify both the total number of vnodes and the numbers of vnodes
-  // along each dimension for the partitioning of the index space. Obviously
-  // this restricts the number of vnodes to be a product of the numbers along
-  // each dimension (the constructor implementation checks this):
-  void initialize(const Index& i1,
-		  e_dim_tag p1, 
-		  unsigned vnodes1, 
-		  bool recurse=false, int vnodes=-1);
-  void initialize(const Index& i1, const Index& i2,
-		  e_dim_tag p1, e_dim_tag p2, 
-		  unsigned vnodes1, unsigned vnodes2,
-		  bool recurse=false, int vnodes=-1);
-  void initialize(const Index& i1, const Index& i2, const Index& i3,
-		  e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, 
-		  unsigned vnodes1, unsigned vnodes2, unsigned vnodes3,
-		  bool recurse=false, int vnodes=-1);
-  void initialize(const NDIndex<Dim>& domain, e_dim_tag *p, 
-		  unsigned* vnodesPerDirection, 
-		  bool recurse=false, int vnodes=-1);
-
-  // Initialize that takes a whole domain, and a pair of iterators over
-  // a list of NDIndex's and nodes so that the user specifies the entire
-  // decomposition.  No communication is done
-  // so these lists must match on all nodes.  A bit of error checking
-  // is done for overlapping blocks and illegal nodes, but not exhaustive
-  // error checking.
-  void initialize(const NDIndex<Dim>& Domain,
-		  const NDIndex<Dim>* dombegin, const NDIndex<Dim>* domend,
-		  const int *nbegin, const int *nend);
 
   //
   // FieldLayout operations and information
@@ -303,9 +190,6 @@ public:
     return RequestedLayout[d];
   }
 
-  // When stored, return number of vnodes along a direction:
-  unsigned getVnodesPerDirection(unsigned dir);
-
   //
   // UserList operations
   //
@@ -335,11 +219,6 @@ private:
   unsigned int MinWidth[Dim];
   e_dim_tag RequestedLayout[Dim];
 
-  // Store the numbers of vnodes along each direction, when appropriate
-  // constructors were called; otherwise leave pointer unset for assertion
-  // checks.
-  unsigned* vnodesPerDirection_m;
-
   // calculate the minimum vnode sizes in each dimension
   void calcWidths();
 
@@ -348,7 +227,6 @@ private:
 
   // The routine which actually sets things up.
   void setup(const NDIndex<Dim>&, e_dim_tag *, int);
-  void setup(const NDIndex<Dim>&, e_dim_tag *, unsigned*, bool, int);
 };
 
 
@@ -357,118 +235,6 @@ private:
 // Definitions for the specialized constructors.
 // Just turn it into a call to the general ctor.
 
-//-----------------------------------------------------------------------------
-// These specify only a total number of vnodes, allowing the constructor
-// complete control on how to do the vnode partitioning of the index space:
-
-template<unsigned Dim>
-inline
-FieldLayout<Dim>::FieldLayout(const Index& i1, e_dim_tag p1, int vnodes)
-{
-  initialize(i1, p1, vnodes);
-}
-
-template<unsigned Dim>
-inline
-FieldLayout<Dim>::FieldLayout(const Index& i1,const Index& i2,
-			      e_dim_tag p1, e_dim_tag p2, int vnodes)
-{
-  initialize(i1, i2, p1, p2, vnodes);
-}
-
-template<unsigned Dim>
-inline
-FieldLayout<Dim>::FieldLayout(const Index& i1, const Index& i2, 
-			      const Index& i3,
-			      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
-			      int vnodes)
-{
-  initialize(i1, i2, i3, p1, p2, p3, vnodes);
-}
-
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
-// These specify both the total number of vnodes and the numbers of vnodes
-// along each dimension for the partitioning of the index space. Obviously
-// this restricts the number of vnodes to be a product of the numbers along
-// each dimension (the constructor implementation checks this):
-
-template<unsigned Dim>
-inline
-FieldLayout<Dim>::FieldLayout(const Index& i1, 
-			      e_dim_tag p1, 
-			      unsigned vnodes1,
-			      bool recurse, int vnodes)
-{
-  // Default to correct total vnodes:
-  if (vnodes == -1) vnodes = vnodes1;
-  // Verify than total vnodes is product of per-dimension vnode counts:
-  if ((unsigned int) vnodes != vnodes1) {
-    ERRORMSG("FieldLayout constructor: "
-	    << "(vnodes1 != vnodes)"
-	    << " ; vnodes1 = " << vnodes1 
-	    << " ; vnodes = " << vnodes << endl);
-  }
-  initialize(i1, p1, vnodes1, recurse,vnodes);
-}
-
-template<unsigned Dim>
-inline
-FieldLayout<Dim>::FieldLayout(const Index& i1,const Index& i2,
-			      e_dim_tag p1, e_dim_tag p2, 
-			      unsigned vnodes1, unsigned vnodes2,
-			      bool recurse, int vnodes)
-{
-  // Default to correct total vnodes:
-  if (vnodes == -1) vnodes = vnodes1*vnodes2;
-  // Verify than total vnodes is product of per-dimension vnode counts:
-  if ((unsigned int) vnodes != vnodes1*vnodes2) {
-    ERRORMSG("FieldLayout constructor: "
-	    << "(vnodes != vnodes1*vnodes2)"
-	    << " ; vnodes1 = " << vnodes1 << " ; vnodes2 = " << vnodes2 
-	    << " ; vnodes = " << vnodes << endl);
-  }
-  initialize(i1, i2, p1, p2, vnodes1, vnodes2, recurse, vnodes);
-}
-
-template<unsigned Dim>
-inline
-FieldLayout<Dim>::FieldLayout(const Index& i1, const Index& i2, 
-			      const Index& i3,
-			      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
-			      unsigned vnodes1, unsigned vnodes2, 
-			      unsigned vnodes3,
-			      bool recurse, int vnodes)
-{
-  // Default to correct total vnodes:
-  if (vnodes == -1) vnodes = vnodes1*vnodes2*vnodes3;
-  // Verify than total vnodes is product of per-dimension vnode counts:
-  if ((unsigned int) vnodes != vnodes1*vnodes2*vnodes3) {
-    ERRORMSG("FieldLayout constructor: "
-	    << "(vnodes != vnodes1*vnodes2*vnodes3)"
-	    << " ; vnodes1 = " << vnodes1 << " ; vnodes2 = " << vnodes2 
-	    << " ; vnodes3 = " << vnodes3 
-	    << " ; vnodes = " << vnodes << endl);
-  }
-  initialize(i1, i2, i3, p1, p2, p3, vnodes1, vnodes2, vnodes3, recurse, vnodes);
-}
-
-template<unsigned Dim>
-inline
-FieldLayout<Dim>::FieldLayout(const NDIndex<Dim> &Domain,
-			      const NDIndex<Dim> *dombegin,
-			      const NDIndex<Dim> *domend,
-			      const int *nbegin,
-			      const int *nend)
-{
-  initialize(Domain, dombegin, domend, nbegin, nend);
-}
-
-//-----------------------------------------------------------------------------
-
-
-//////////////////////////////////////////////////////////////////////
 
 // Accessor definitions.
 
