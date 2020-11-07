@@ -440,53 +440,49 @@ namespace ippl {
         e_dim_tag et[Dim];
         for (unsigned int d = 0; d < Dim; d++)
             et[d] = PARALLEL;
-        storeSpacingFields(et, -1);
+        storeSpacingFields(et);
     }
 
 
     template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::storeSpacingFields(e_dim_tag p1,
-                                                      int vnodes)
+    void UniformCartesian<T, Dim>::storeSpacingFields(e_dim_tag p1)
     {
         static_assert(Dim == 1, "Must be 1-dimensional.");
         e_dim_tag et[1];
         et[0] = p1;
-        storeSpacingFields(et, vnodes);
+        storeSpacingFields(et);
     }
 
 
     template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::storeSpacingFields(e_dim_tag p1,
-                                                      e_dim_tag p2,
-                                                      int vnodes)
+                                                      e_dim_tag p2)
     {
         static_assert(Dim == 2, "Must be 2-dimensional.");
         e_dim_tag et[2];
         et[0] = p1;
         et[1] = p2;
-        storeSpacingFields(et, vnodes);
+        storeSpacingFields(et);
     }
 
 
     template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::storeSpacingFields(e_dim_tag p1,
                                                       e_dim_tag p2,
-                                                      e_dim_tag p3,
-                                                      int vnodes)
+                                                      e_dim_tag p3)
     {
         static_assert(Dim == 3, "Must be 3-dimensional.");
         e_dim_tag et[3];
         et[0] = p1;
         et[1] = p2;
         et[2] = p3;
-        storeSpacingFields(et, vnodes);
+        storeSpacingFields(et);
     }
 
 
     // The general storeSpacingfields() function; others invoke this internally:
     template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::storeSpacingFields(e_dim_tag* et,
-                                                      int /*vnodes*/)
+    void UniformCartesian<T, Dim>::storeSpacingFields(e_dim_tag* et)
     {
         std::cout << "HI" << std::endl;
         // VERTEX-VERTEX SPACINGS (same as CELL-CELL SPACINGS for uniform):
@@ -538,46 +534,38 @@ namespace ippl {
         hasSpacingFields_m = true; // Flag this as having been done to this object.
     }
 
-// These specify both the total number of vnodes and the numbers of vnodes
-// along each dimension for the partitioning of the index space. Obviously
-// this restricts the number of vnodes to be a product of the numbers along
-// each dimension (the constructor implementation checks this): Special
-// cases for 1-3 dimensions, ala FieldLayout ctors (see FieldLayout.h for
-// more relevant comments, including definition of recurse):
-
 // 1D
 template<typename T, unsigned Dim>
 void UniformCartesian<T, Dim>::
 storeSpacingFields(e_dim_tag p1,
 			unsigned vnodes1,
-			bool recurse,
-			int vnodes) {
+			bool recurse) {
   e_dim_tag et[1];
   et[0] = p1;
   unsigned vnodesPerDirection[Dim];
   vnodesPerDirection[0] = vnodes1;
-  storeSpacingFields(et, vnodesPerDirection, recurse, vnodes);
+  storeSpacingFields(et, vnodesPerDirection, recurse);
 }
 // 2D
 template<typename T, unsigned Dim>
 void UniformCartesian<T, Dim>::
 storeSpacingFields(e_dim_tag p1, e_dim_tag p2,
 			unsigned vnodes1, unsigned vnodes2,
-			bool recurse,int vnodes) {
+			bool recurse) {
   e_dim_tag et[2];
   et[0] = p1;
   et[1] = p2;
   unsigned vnodesPerDirection[Dim];
   vnodesPerDirection[0] = vnodes1;
   vnodesPerDirection[1] = vnodes2;
-  storeSpacingFields(et, vnodesPerDirection, recurse, vnodes);
+  storeSpacingFields(et, vnodesPerDirection, recurse);
 }
 // 3D
 template<typename T, unsigned Dim>
 void UniformCartesian<T, Dim>::
 storeSpacingFields(e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
 			unsigned vnodes1, unsigned vnodes2, unsigned vnodes3,
-			bool recurse, int vnodes) {
+			bool recurse) {
   e_dim_tag et[3];
   et[0] = p1;
   et[1] = p2;
@@ -586,7 +574,7 @@ storeSpacingFields(e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
   vnodesPerDirection[0] = vnodes1;
   vnodesPerDirection[1] = vnodes2;
   vnodesPerDirection[2] = vnodes3;
-  storeSpacingFields(et, vnodesPerDirection, recurse, vnodes);
+  storeSpacingFields(et, vnodesPerDirection, recurse);
 }
 
 // TJW: Note: should clean up here eventually, and put redundant code from
@@ -597,7 +585,7 @@ template<typename T, unsigned Dim>
 void UniformCartesian<T, Dim>::
 storeSpacingFields(e_dim_tag */*p*/,
 		   unsigned* /*vnodesPerDirection*/,
-		   bool /*recurse*/, int /*vnodes*/)
+		   bool /*recurse*/)
 {
     /*
   // VERTEX-VERTEX SPACINGS (same as CELL-CELL SPACINGS for uniform):

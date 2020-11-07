@@ -33,34 +33,18 @@ public:
 
   // This one also works if nothing except mesh is specified:
   CenteredFieldLayout(Mesh& mesh, 
-		      e_dim_tag *p=0, 
-		      int vnodes=-1);
+		      e_dim_tag *p=0);
 
   // Special constructor which uses a existing partition
   // particular from expde
 
 
-  // Constructors for 1 ... 6 dimensions with parallel/serial specifiers:
   CenteredFieldLayout(Mesh& mesh, 
-		      e_dim_tag p1, 
-		      int vnodes=-1);
+		      e_dim_tag p1);
   CenteredFieldLayout(Mesh& mesh, 
-		      e_dim_tag p1, e_dim_tag p2, 
-		      int vnodes=-1);
+		      e_dim_tag p1, e_dim_tag p2);
   CenteredFieldLayout(Mesh& mesh, 
-		      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, 
-		      int vnodes=-1);
-  CenteredFieldLayout(Mesh& mesh, 
-		      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, e_dim_tag p4,
-		      int vnodes=-1);
-  CenteredFieldLayout(Mesh& mesh, 
-		      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, e_dim_tag p4,
-		      e_dim_tag p5,
-		      int vnodes=-1);
-  CenteredFieldLayout(Mesh& mesh, 
-		      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, e_dim_tag p4,
-		      e_dim_tag p5, e_dim_tag p6,
-		      int vnodes=-1);
+		      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3);
   //---------------------------------------------------------------------------
 
   //---------------------------------------------------------------------------
@@ -72,46 +56,23 @@ public:
   // Constructor for arbitrary dimension with parallel/serial specifier array:
   CenteredFieldLayout(Mesh& mesh, e_dim_tag *p, 
 		      unsigned* vnodesAlongDirection, 
-		      bool recurse=false,
-		      int vnodes=-1);
+		      bool recurse=false);
+
   // Constructors for 1 ... 6 dimensions with parallel/serial specifiers:
   CenteredFieldLayout(Mesh& mesh,
 		      e_dim_tag p1,
 		      unsigned vnodes1,
-		      bool recurse=false,
-		      int vnodes=-1);
+		      bool recurse=false);
+
   CenteredFieldLayout(Mesh& mesh,
 		      e_dim_tag p1, e_dim_tag p2,
 		      unsigned vnodes1, unsigned vnodes2,
-		      bool recurse=false,
-		      int vnodes=-1);
+		      bool recurse=false);
+
   CenteredFieldLayout(Mesh& mesh,
 		      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
 		      unsigned vnodes1, unsigned vnodes2, unsigned vnodes3,
-		      bool recurse=false,
-		      int vnodes=-1);
-  CenteredFieldLayout(Mesh& mesh,
-		      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, 
-		      e_dim_tag p4,
-		      unsigned vnodes1, unsigned vnodes2, unsigned vnodes3,
-		      unsigned vnodes4,
-		      bool recurse=false,
-		      int vnodes=-1);
-  CenteredFieldLayout(Mesh& mesh,
-		      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, 
-		      e_dim_tag p4, e_dim_tag p5,
-		      unsigned vnodes1, unsigned vnodes2, unsigned vnodes3,
-		      unsigned vnodes4, unsigned vnodes5,
-		      bool recurse=false,
-		      int vnodes=-1);
-  CenteredFieldLayout(Mesh& mesh,
-		      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, 
-		      e_dim_tag p4, e_dim_tag p5, e_dim_tag p6,
-		      unsigned vnodes1, unsigned vnodes2, unsigned vnodes3,
-		      unsigned vnodes4, unsigned vnodes5, unsigned vnodes6,
-		      bool recurse=false,
-		      int vnodes=-1);
-  //---------------------------------------------------------------------------
+		      bool recurse=false);
 
   //---------------------------------------------------------------------------
   // A constructor a a completely user-specified partitioning of the
@@ -126,10 +87,4 @@ public:
 
 #include "FieldLayout/CenteredFieldLayout.hpp"
 
-#endif // CENTERED_FIELD_LAYOUT_H
-
-/***************************************************************************
- * $RCSfile: CenteredFieldLayout.h,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:27 $
- * IPPL_VERSION_ID: $Id: CenteredFieldLayout.h,v 1.1.1.1 2003/01/23 07:40:27 adelmann Exp $ 
- ***************************************************************************/
+#endif
