@@ -35,28 +35,6 @@ public:
   CenteredFieldLayout(Mesh& mesh, 
 		      e_dim_tag *p=0);
 
-  // Special constructor which uses a existing partition
-  // particular from expde
-
-
-  CenteredFieldLayout(Mesh& mesh, 
-		      e_dim_tag p1);
-  CenteredFieldLayout(Mesh& mesh, 
-		      e_dim_tag p1, e_dim_tag p2);
-  CenteredFieldLayout(Mesh& mesh, 
-		      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3);
-  //---------------------------------------------------------------------------
-
-  //---------------------------------------------------------------------------
-  // These specify both the total number of vnodes and the numbers of vnodes
-  // along each dimension for the partitioning of the index space. Obviously
-  // this restricts the number of vnodes to be a product of the numbers along
-  // each dimension (the constructor implementation checks this):
-
-  // Constructor for arbitrary dimension with parallel/serial specifier array:
-  CenteredFieldLayout(Mesh& mesh, e_dim_tag *p, 
-		      unsigned* vnodesAlongDirection);
-
   //---------------------------------------------------------------------------
   // A constructor a a completely user-specified partitioning of the
   // mesh space.

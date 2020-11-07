@@ -119,19 +119,6 @@ template<unsigned Dim, class Mesh>
 inline void
 centeredInitialize(CenteredFieldLayout<Dim,Mesh,Cell> & cfl,
 		   const Mesh& mesh,
-		   e_dim_tag* edt,
-		   unsigned* vnodesAlongDirection)
-{
-  NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = ippl::Index(mesh.getGridsize(d) - 1);
-  cfl.initialize(ndi, edt, vnodesAlongDirection);
-}
-
-//------------------Cell centering---------------------------------------------
-template<unsigned Dim, class Mesh>
-inline void
-centeredInitialize(CenteredFieldLayout<Dim,Mesh,Cell> & cfl,
-		   const Mesh& mesh,
 		   const NDIndex<Dim> *dombegin,
 		   const NDIndex<Dim> *domend,
 		   const int *nbegin,
@@ -226,63 +213,6 @@ CenteredFieldLayout(Mesh& mesh,
   centeredInitialize(*this, mesh, p);
 }
 
-
-// Constructors for 1 ... 6 dimensions with parallel/serial specifiers:
-template<unsigned Dim, class Mesh, class Centering>
-CenteredFieldLayout<Dim,Mesh,Centering>::
-CenteredFieldLayout(Mesh& mesh,
-		    e_dim_tag p1)
-{
-
-  PInsist(Dim==1,
-    "Number of arguments does not match dimension of CenteredFieldLayout!!");
-  PInsist(Dim<=Mesh::Dimension,
-    "CenteredFieldLayout dimension cannot be greater than Mesh dimension!!");
-  centeredInitialize(*this, mesh, &p1);
-}
-template<unsigned Dim, class Mesh, class Centering>
-CenteredFieldLayout<Dim,Mesh,Centering>::
-CenteredFieldLayout(Mesh& mesh,
-		    e_dim_tag p1, e_dim_tag p2)
-{
-
-  PInsist(Dim==2,
-    "Number of arguments does not match dimension of CenteredFieldLayout!!");
-  PInsist(Dim<=Mesh::Dimension,
-    "CenteredFieldLayout dimension cannot be greater than Mesh dimension!!");
-  e_dim_tag edt[2];
-  edt[0] = p1; edt[1] = p2;
-  centeredInitialize(*this, mesh, edt);
-}
-template<unsigned Dim, class Mesh, class Centering>
-CenteredFieldLayout<Dim,Mesh,Centering>::
-CenteredFieldLayout(Mesh& mesh,
-		    e_dim_tag p1, e_dim_tag p2, e_dim_tag p3)
-{
-
-  PInsist(Dim==3,
-    "Number of arguments does not match dimension of CenteredFieldLayout!!");
-  PInsist(Dim<=Mesh::Dimension,
-    "CenteredFieldLayout dimension cannot be greater than Mesh dimension!!");
-  e_dim_tag edt[3];
-  edt[0] = p1; edt[1] = p2; edt[2] = p3;
-  centeredInitialize(*this, mesh, edt);
-}
-
-//-----------------------------------------------------------------------------
-
-// Constructor for arbitrary dimension with parallel/serial specifier array:
-template<unsigned Dim, class Mesh, class Centering>
-CenteredFieldLayout<Dim,Mesh,Centering>::
-CenteredFieldLayout(Mesh& mesh,
-		    e_dim_tag *p,
-		    unsigned* vnodesAlongDirection)
-{
-
-  PInsist(Dim<=Mesh::Dimension,
-    "CenteredFieldLayout dimension cannot be greater than Mesh dimension!!");
-  centeredInitialize(*this, mesh, p, vnodesAlongDirection);
-}
 
 //-----------------------------------------------------------------------------
 // A constructor for a completely user-specified partitioning of the

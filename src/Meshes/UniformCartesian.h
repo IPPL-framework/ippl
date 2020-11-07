@@ -170,11 +170,7 @@ public:
   // get passed in to construct the FieldLayout used to construct the
   // BareField's).
   void storeSpacingFields(); // Default; will have default layout
-  // Special cases for 1-3 dimensions, ala FieldLayout ctors:
-  void storeSpacingFields(e_dim_tag p1);
 
-  void storeSpacingFields(e_dim_tag p1, e_dim_tag p2);
-  void storeSpacingFields(e_dim_tag p1, e_dim_tag p2, e_dim_tag p3);
   // Next we have one for arbitrary dimension, ala FieldLayout ctor:
   // All the others call this one internally:
   void storeSpacingFields(e_dim_tag *p);

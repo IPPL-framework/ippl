@@ -444,42 +444,6 @@ namespace ippl {
     }
 
 
-    template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::storeSpacingFields(e_dim_tag p1)
-    {
-        static_assert(Dim == 1, "Must be 1-dimensional.");
-        e_dim_tag et[1];
-        et[0] = p1;
-        storeSpacingFields(et);
-    }
-
-
-    template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::storeSpacingFields(e_dim_tag p1,
-                                                      e_dim_tag p2)
-    {
-        static_assert(Dim == 2, "Must be 2-dimensional.");
-        e_dim_tag et[2];
-        et[0] = p1;
-        et[1] = p2;
-        storeSpacingFields(et);
-    }
-
-
-    template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::storeSpacingFields(e_dim_tag p1,
-                                                      e_dim_tag p2,
-                                                      e_dim_tag p3)
-    {
-        static_assert(Dim == 3, "Must be 3-dimensional.");
-        e_dim_tag et[3];
-        et[0] = p1;
-        et[1] = p2;
-        et[2] = p3;
-        storeSpacingFields(et);
-    }
-
-
     // The general storeSpacingfields() function; others invoke this internally:
     template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::storeSpacingFields(e_dim_tag* et)
