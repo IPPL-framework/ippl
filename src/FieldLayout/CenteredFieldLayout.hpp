@@ -50,12 +50,12 @@ inline void
 centeredInitialize(CenteredFieldLayout<Dim,Mesh,Cell> & cfl,
 		   const Mesh& mesh,
 		   e_dim_tag* edt,
-		   int vnodes)
+		   int /*vnodes*/)
 {
   NDIndex<Dim> ndi;
   for (unsigned int d=0; d<Dim; d++)
     ndi[d] = ippl::Index(mesh.getGridsize(d) - 1);
-  cfl.initialize(ndi, edt, vnodes);
+  cfl.initialize(ndi, edt/*, vnodes*/);
 }
 
 //------------------Vert centering---------------------------------------------

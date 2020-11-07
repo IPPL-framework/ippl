@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
         allParallel[d] = SERIAL;
 
     // all parallel layout, standard domain, normal axis order
-    FieldLayout<dim> layout(owned,allParallel, 1);
+    FieldLayout<dim> layout(owned,allParallel);
 
     double dx = 1.0 / double(pt);
     ippl::Vector<double, 3> hx = {dx, dx, dx};

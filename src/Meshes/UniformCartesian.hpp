@@ -486,7 +486,7 @@ namespace ippl {
     // The general storeSpacingfields() function; others invoke this internally:
     template<typename T, unsigned Dim>
     void UniformCartesian<T, Dim>::storeSpacingFields(e_dim_tag* et,
-                                                      int vnodes)
+                                                      int /*vnodes*/)
     {
         std::cout << "HI" << std::endl;
         // VERTEX-VERTEX SPACINGS (same as CELL-CELL SPACINGS for uniform):
@@ -499,13 +499,13 @@ namespace ippl {
 
         if (!hasSpacingFields_m) {
             // allocate layout and spacing field
-            FlCell = std::make_shared<FieldLayout<Dim>>(cells, et, vnodes);
+            FlCell = std::make_shared<FieldLayout<Dim>>(cells, et);
             // Note: enough guard cells only for existing Div(), etc. implementations:
             // (not really used by Div() etc for UniformCartesian); someday should make
             // this user-settable.
             VertSpacings = std::make_shared<BareField_t>(*FlCell);
 
-            FlVert = std::make_shared<FieldLayout<Dim>>(verts, et, vnodes);
+            FlVert = std::make_shared<FieldLayout<Dim>>(verts, et);
 
             CellSpacings = std::make_shared<BareField_t>(*FlVert);
         }

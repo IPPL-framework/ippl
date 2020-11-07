@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
         allParallel[d] = SERIAL;
 
     // all parallel layout, standard domain, normal axis order
-    FieldLayout<dim> layout(owned,allParallel, 1);
+    FieldLayout<dim> layout(owned, allParallel);
 
     typedef ippl::Vector<double, 3> vector_t;
     typedef ippl::BareField<vector_t, dim> bfield_t;

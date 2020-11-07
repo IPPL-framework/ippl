@@ -51,24 +51,18 @@ template<unsigned Dim>
 FieldLayout<Dim>::~FieldLayout() { }
 
 
-//////////////////////////////////////////////////////////////////////
-
 // Initialization functions, only to be called by the user of FieldLayout
 // objects when the FieldLayout was created using the default constructor;
 // otherwise these are only called internally by the various non-default
 // FieldLayout constructors:
 
-//-----------------------------------------------------------------------------
-// These specify only a total number of vnodes, allowing the constructor
-// complete control on how to do the vnode partitioning of the index space:
-
 template<unsigned Dim>
 void
 FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain,
-			     e_dim_tag *p, int vnodes) {
+			     e_dim_tag *p) {
 
 
-    setup(domain, p, vnodes);
+    setup(domain, p);
 }
 
 
@@ -85,7 +79,7 @@ FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain,
 template<unsigned Dim>
 void
 FieldLayout<Dim>::setup(const NDIndex<Dim>& domain,
-			e_dim_tag *userflags, int vnodes)
+			e_dim_tag *userflags)
 {
 
 
@@ -97,11 +91,9 @@ FieldLayout<Dim>::setup(const NDIndex<Dim>& domain,
     int myproc = Ippl::myNode();
 
     // If the user didn't specify the number of vnodes, make it equal nprocs
-    if (vnodes <= 0) vnodes = nprocs;
+    int vnodes = nprocs;
 
     Inform dbgmsg("FieldLayout::setup", INFORM_ALL_NODES);
-    // dbgmsg << "*** Domain=" << domain << ", nprocs=" << nprocs;
-    // dbgmsg << ", myproc=" << myproc << ", vnodes=" << vnodes << endl;
 
     // If the user did not specify parallel/serial flags then make all parallel.
     int parallel_count = 0;
@@ -117,15 +109,10 @@ FieldLayout<Dim>::setup(const NDIndex<Dim>& domain,
             totparelems *= domain[flagdim].length();
         }
     }
-    // Make sure at least one of the parallel/serial flags is parallel
-//     PInsist(parallel_count>0,"At least one dimension of a FieldLayout must be PARALLEL!");
-
     // Check to see if we have too few elements to partition.  If so, reduced
     // the number of vnodes (if necessary) to just the number of elements along
     // parallel dims.
     if (totparelems < vnodes) {
-        //dbgmsg << "Total parallel lengths = " << totparelems << "; reducing ";
-        //dbgmsg << "vnodes from " << vnodes << " to " << totparelems << endl;
         vnodes = totparelems;
     }
 
@@ -390,10 +377,3 @@ void FieldLayout<Dim>::write(std::ostream& out) const
     for (iterator_dv dv_i = v_ac->begin(); dv_i != v_ac->end(); ++ dv_i)
         out << " vnode " << icount++ << " : " << *((*dv_i).second) << std::endl;
 }
-
-
-/***************************************************************************
- * $RCSfile: FieldLayout.cpp,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:27 $
- * IPPL_VERSION_ID: $Id: FieldLayout.cpp,v 1.1.1.1 2003/01/23 07:40:27 adelmann Exp $
- ***************************************************************************/

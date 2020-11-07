@@ -40,7 +40,7 @@ public:
         for (unsigned int d = 0; d < dim; d++)
             allParallel[d] = SERIAL;
 
-        FieldLayout<dim> layout(owned,allParallel, 1);
+        FieldLayout<dim> layout(owned, allParallel);
 
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};

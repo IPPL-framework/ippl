@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
         allParallel[d] = SERIAL;
 
     // all parallel layout, standard domain, normal axis order
-    FieldLayout<3> layout(owned,allParallel, 1);
+    FieldLayout<3> layout(owned, allParallel);
 
     double dx = 1.0 / double(pt);
     ippl::Vector<double, 3> hx = {dx, dx, dx};

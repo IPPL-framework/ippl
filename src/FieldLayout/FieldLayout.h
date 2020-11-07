@@ -82,11 +82,8 @@ public:
   // call 'initialize' soon after (before using in any context)
   FieldLayout();
 
-  // Next we have one for arbitrary dimension.
-  // This one specifies only a total number of vnodes, allowing the constructor
-  // complete control on how to do the vnode partitioning of the index space:
-  FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p=0, int vnodes=-1) {
-    initialize(domain,p,vnodes);
+  FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p=0) {
+    initialize(domain,p);
   }
 
   // Destructor: Everything deletes itself automatically ... the base
@@ -98,16 +95,14 @@ public:
   // otherwise these are only called internally by the various non-default
   // FieldLayout constructors:
 
-  void initialize(const NDIndex<Dim>& domain, e_dim_tag *p=0, int vnodes=-1);
+  void initialize(const NDIndex<Dim>& domain, e_dim_tag *p=0);
 
   //
   // FieldLayout operations and information
   //
 
-  // Let the user set the local vnodes.
   // this does everything necessary to realign all the fields
   // associated with this FieldLayout!
-  // It inputs begin and end iterators for the local vnodes.
   void Repartition(const NDIndex<Dim>*, const NDIndex<Dim>*);
   void Repartition(const NDIndex<Dim>& domain) { Repartition(&domain,(&domain)+1); }
 
@@ -117,11 +112,6 @@ public:
 
   // Return the domain.
   const NDIndex<Dim>& getDomain() const { return Domain; }
-
-//tjw   // Compare FieldLayouts to see if they represent the same domain.
-//tjw   bool operator==(const FieldLayout<Dim>& x) const {
-//tjw     return Domain == x.Domain;
-//tjw   }
 
   // Compare FieldLayouts to see if they represent the same domain; if
   // dimensionalities are different, the NDIndex operator==() will return
@@ -226,7 +216,7 @@ private:
   void new_gc_layout(const GuardCellSizes<Dim>&);
 
   // The routine which actually sets things up.
-  void setup(const NDIndex<Dim>&, e_dim_tag *, int);
+  void setup(const NDIndex<Dim>&, e_dim_tag *);
 };
 
 

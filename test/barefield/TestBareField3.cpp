@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
         allParallel[d] = SERIAL;
 
     // all parallel layout, standard domain, normal axis order
-    FieldLayout<dim> layout(owned,allParallel, 1);
+    FieldLayout<dim> layout(owned, allParallel);
 
     typedef ippl::BareField<double, dim> bfield_t;
     bfield_t barefield(layout);
