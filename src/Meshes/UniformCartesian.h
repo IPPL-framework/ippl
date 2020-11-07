@@ -179,28 +179,6 @@ public:
   // All the others call this one internally:
   void storeSpacingFields(e_dim_tag *p);
 
-  // These specify both the total number of vnodes and the numbers of vnodes
-  // along each dimension for the partitioning of the index space. Obviously
-  // this restricts the number of vnodes to be a product of the numbers along
-  // each dimension (the constructor implementation checks this): Special
-  // cases for 1-3 dimensions, ala FieldLayout ctors (see FieldLayout.h for
-  // more relevant comments, including definition of recurse):
-  void storeSpacingFields(e_dim_tag p1,
-			  unsigned vnodes1,
-			  bool recurse=false);
-  void storeSpacingFields(e_dim_tag p1, e_dim_tag p2,
-			  unsigned vnodes1, unsigned vnodes2,
-			  bool recurse=false);
-  void storeSpacingFields(e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
-			  unsigned vnodes1, unsigned vnodes2, unsigned vnodes3,
-			  bool recurse=false);
-  // Next we have one for arbitrary dimension, ala FieldLayout ctor:
-  // All the others call this one internally:
-  void storeSpacingFields(e_dim_tag *p,
-			  unsigned* vnodesPerDirection,
-			  bool recurse=false);
-
-
   // Formatted output of UniformCartesian object:
   void print(std::ostream&);
 
