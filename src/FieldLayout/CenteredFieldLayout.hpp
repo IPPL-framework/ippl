@@ -120,77 +120,12 @@ inline void
 centeredInitialize(CenteredFieldLayout<Dim,Mesh,Cell> & cfl,
 		   const Mesh& mesh,
 		   e_dim_tag* edt,
-		   unsigned* vnodesAlongDirection,
-		   bool recurse)
+		   unsigned* vnodesAlongDirection)
 {
   NDIndex<Dim> ndi;
   for (unsigned int d=0; d<Dim; d++) ndi[d] = ippl::Index(mesh.getGridsize(d) - 1);
-  cfl.initialize(ndi, edt, vnodesAlongDirection, recurse);
+  cfl.initialize(ndi, edt, vnodesAlongDirection);
 }
-
-//------------------Vert centering---------------------------------------------
-template<unsigned Dim, class Mesh>
-inline void
-centeredInitialize(CenteredFieldLayout<Dim,Mesh,Vert> & cfl,
-		   const Mesh& mesh,
-		   e_dim_tag* edt,
-		   unsigned* vnodesAlongDirection,
-		   bool recurse)
-{
-  NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = ippl::Index(mesh.getGridsize(d));
-  cfl.initialize(ndi, edt, vnodesAlongDirection, recurse);
-}
-
-//------------------Edge centering---------------------------------------------
-template<unsigned Dim, class Mesh>
-inline void
-centeredInitialize(CenteredFieldLayout<Dim,Mesh,Edge> & cfl,
-		   const Mesh& mesh,
-		   e_dim_tag* edt,
-		   unsigned* vnodesAlongDirection,
-		   bool recurse)
-{
-  NDIndex<Dim> ndi;
-  for (unsigned int d=0; d<Dim; d++) ndi[d] = ippl::Index(mesh.getGridsize(d));
-  cfl.initialize(ndi, edt, vnodesAlongDirection, recurse);
-}
-
-//------------------CartesianCentering centering-------------------------------
-template<CenteringEnum* CE, unsigned Dim, class Mesh,
-         unsigned NComponents>
-inline void
-centeredInitialize(CenteredFieldLayout<Dim,Mesh,
-		   CartesianCentering<CE,Dim,NComponents> > & cfl,
-		   const Mesh& mesh,
-		   e_dim_tag* edt,
-		   unsigned* vnodesAlongDirection,
-		   bool recurse)
-{
-  NDIndex<Dim> ndi;
-  // For componentwise layout of Field of multicomponent object, like
-  // Field<Vektor...>, allow for maximal number of objects needed per
-  // dimension (the number for the object component requiring the maximal
-  // number):
-  unsigned npts[Dim], nGridPts;
-  unsigned int d, c;
-  for (d=0; d<Dim; d++) {
-    nGridPts = mesh.getGridsize(d);
-    npts[d] = 0;
-    for (c=0; c<NComponents; c++) {
-      if (CE[c + d*NComponents] == CELL) {
-	npts[d] = max(npts[d], (nGridPts - 1));
-      } else {
-	npts[d] = max(npts[d], nGridPts);
-      }
-    }
-  }
-  for (d=0; d<Dim; d++) ndi[d] = ippl::Index(npts[d]);
-  cfl.initialize(ndi, edt, vnodesAlongDirection, recurse);
-}
-
-//-----------------------------------------------------------------------------
-// This initializer just specifies a completely user-provided partitioning.
 
 //------------------Cell centering---------------------------------------------
 template<unsigned Dim, class Mesh>
@@ -341,64 +276,12 @@ template<unsigned Dim, class Mesh, class Centering>
 CenteredFieldLayout<Dim,Mesh,Centering>::
 CenteredFieldLayout(Mesh& mesh,
 		    e_dim_tag *p,
-		    unsigned* vnodesAlongDirection,
-		    bool recurse)
+		    unsigned* vnodesAlongDirection)
 {
 
   PInsist(Dim<=Mesh::Dimension,
     "CenteredFieldLayout dimension cannot be greater than Mesh dimension!!");
-  centeredInitialize(*this, mesh, p, vnodesAlongDirection, recurse);
-}
-
-template<unsigned Dim, class Mesh, class Centering>
-CenteredFieldLayout<Dim,Mesh,Centering>::
-CenteredFieldLayout(Mesh& mesh,
-		    e_dim_tag p1,
-		    unsigned vnodes1,
-		    bool recurse)
-{
-
-  PInsist(Dim==1,
-    "Number of arguments does not match dimension of CenteredFieldLayout!!");
-  PInsist(Dim<=Mesh::Dimension,
-    "CenteredFieldLayout dimension cannot be greater than Mesh dimension!!");
-  centeredInitialize(*this, mesh, &p1, &vnodes1, recurse);
-}
-template<unsigned Dim, class Mesh, class Centering>
-CenteredFieldLayout<Dim,Mesh,Centering>::
-CenteredFieldLayout(Mesh& mesh,
-		    e_dim_tag p1, e_dim_tag p2,
-		    unsigned vnodes1, unsigned vnodes2,
-		    bool recurse)
-{
-
-  PInsist(Dim==2,
-    "Number of arguments does not match dimension of CenteredFieldLayout!!");
-  PInsist(Dim<=Mesh::Dimension,
-    "CenteredFieldLayout dimension cannot be greater than Mesh dimension!!");
-  e_dim_tag edt[2];
-  edt[0] = p1; edt[1] = p2;
-  unsigned vad[2];
-  vad[0] = vnodes1; vad[1] = vnodes2;
-  centeredInitialize(*this, mesh, edt, vad, recurse);
-}
-template<unsigned Dim, class Mesh, class Centering>
-CenteredFieldLayout<Dim,Mesh,Centering>::
-CenteredFieldLayout(Mesh& mesh,
-		    e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
-		    unsigned vnodes1, unsigned vnodes2, unsigned vnodes3,
-		    bool recurse)
-{
-
-  PInsist(Dim==3,
-    "Number of arguments does not match dimension of CenteredFieldLayout!!");
-  PInsist(Dim<=Mesh::Dimension,
-    "CenteredFieldLayout dimension cannot be greater than Mesh dimension!!");
-  e_dim_tag edt[3];
-  edt[0] = p1; edt[1] = p2; edt[2] = p3;
-  unsigned vad[3];
-  vad[0] = vnodes1; vad[1] = vnodes2; vad[2] = vnodes3;
-  centeredInitialize(*this, mesh, edt, vad, recurse);
+  centeredInitialize(*this, mesh, p, vnodesAlongDirection);
 }
 
 //-----------------------------------------------------------------------------
@@ -416,10 +299,3 @@ CenteredFieldLayout(Mesh& mesh,
 
   centeredInitialize(*this, mesh, dombegin, domend, nbegin, nend);
 }
-
-
-/***************************************************************************
- * $RCSfile: CenteredFieldLayout.cpp,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:27 $
- * IPPL_VERSION_ID: $Id: CenteredFieldLayout.cpp,v 1.1.1.1 2003/01/23 07:40:27 adelmann Exp $
- ***************************************************************************/

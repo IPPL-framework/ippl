@@ -55,24 +55,7 @@ public:
 
   // Constructor for arbitrary dimension with parallel/serial specifier array:
   CenteredFieldLayout(Mesh& mesh, e_dim_tag *p, 
-		      unsigned* vnodesAlongDirection, 
-		      bool recurse=false);
-
-  // Constructors for 1 ... 6 dimensions with parallel/serial specifiers:
-  CenteredFieldLayout(Mesh& mesh,
-		      e_dim_tag p1,
-		      unsigned vnodes1,
-		      bool recurse=false);
-
-  CenteredFieldLayout(Mesh& mesh,
-		      e_dim_tag p1, e_dim_tag p2,
-		      unsigned vnodes1, unsigned vnodes2,
-		      bool recurse=false);
-
-  CenteredFieldLayout(Mesh& mesh,
-		      e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
-		      unsigned vnodes1, unsigned vnodes2, unsigned vnodes3,
-		      bool recurse=false);
+		      unsigned* vnodesAlongDirection);
 
   //---------------------------------------------------------------------------
   // A constructor a a completely user-specified partitioning of the
