@@ -62,6 +62,7 @@ class FieldLayout : private UserList
 {
 
 public:
+  using Index = ippl::Index;
   // Typedefs for containers.
   typedef vmap<Unique::type,my_auto_ptr<Vnode<Dim> > > ac_id_vnodes;
   typedef DomainMap<NDIndex<Dim>,RefCountedP< Vnode<Dim> >,
