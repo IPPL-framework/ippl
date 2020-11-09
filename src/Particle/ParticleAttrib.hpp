@@ -201,8 +201,8 @@ namespace ippl {
     }
 
     #define DefineReduction(fun, name, op)                                                                   \
-    template <typename T, unsigned Dim>                                                                      \
-    T BareField<T, Dim>::name() {                                                                            \
+    template<typename T, class... Properties>                                                                \
+    T ParticleAttrib<T, Properties...>::name() {                                                             \
         T temp = 0.0;                                                                                        \
         Kokkos::parallel_reduce("fun", dview_m.extent(0),                                                    \
                                KOKKOS_CLASS_LAMBDA(const int i, T& valL) {                                   \
