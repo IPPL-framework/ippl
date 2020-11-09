@@ -199,4 +199,21 @@ namespace ippl {
     {
         attrib.gather(f, pp);
     }
+
+    #define DefineReduction(fun, name, op)                                                                   \
+    template <typename T, unsigned Dim>                                                                      \
+    T BareField<T, Dim>::name() {                                                                            \
+        T temp = 0.0;                                                                                        \
+        Kokkos::parallel_reduce("fun", dview_m.extent(0),                                                    \
+                               KOKKOS_CLASS_LAMBDA(const int i, T& valL) {                                   \
+                                    T myVal = dview_m(i);                                                    \
+                                    op;                                                                      \
+                               }, Kokkos::fun<T>(temp));                                                     \
+        return temp;                                                                                         \
+    }
+
+    DefineReduction(Sum,  sum,  valL += myVal)
+    DefineReduction(Max,  max,  if(myVal > valL) valL = myVal)
+    DefineReduction(Min,  min,  if(myVal < valL) valL = myVal)
+    DefineReduction(Prod, prod, valL *= myVal)
 }
