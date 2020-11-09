@@ -2,7 +2,7 @@
 //   This test program sets up a simple sine-wave electric field in 3D,
 //   creates a population of particles with random q/m values (charge-to-mass
 //   ratio) and velocities, and then tracks their motions in the static
-//   electric field using cloud-in-cell interpolation.
+//   electric field using cloud-in-cell interpolation and periodic BCs.
 //
 //   Usage:
 //     srun ./PIC3d 128 128 128 10000 10 --info 10
@@ -30,7 +30,7 @@
 #include <random>
 #include <chrono>
 #include "Utility/Timer.h"
-#include "Utility/IpplCounter.h"
+//#include "Utility/IpplCounter.h"
 #include "Utility/IpplStats.h"
 #include "Utility/IpplTimings.h"
 
@@ -58,7 +58,6 @@ typedef Field<double, Dim>   Field_t;
 typedef Field<Vector_t, Dim> VField_t;
 
 
-//enum BC_t {OOO,OOP,PPP};
 
 double pi = acos(-1.0);
 
@@ -175,14 +174,12 @@ public:
     typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
     typename ippl::ParticleBase<PLayout>::particle_position_type B;  // magnetic field at particle position
 
-//     /*
-//       In case we have OOP or PPP boundary conditions
-//       we must define the domain, i.e can not be deduced from the
-//       particles as in the OOO case.
-//     */
-//
+    /*
+      For PPP boundary conditions
+      we must define the domain.
+   */
+
     ChargedParticles(PLayout& pl,
-//                   BC_t bc,
                      Vector_t hr, Vector_t rmin, Vector_t rmax, e_dim_tag decomp[Dim], 
                      double Q)
     : ippl::ParticleBase<PLayout>(pl)
@@ -191,7 +188,7 @@ public:
     , rmax_m(rmax)
     , Q_m(Q)
     {
-//         // register the particle attributes
+        // register the particle attributes
         this->addAttribute(qm);
         this->addAttribute(P);
         this->addAttribute(E);
@@ -202,12 +199,7 @@ public:
     }
 
     void setupBCs() {
-//         if (bco_m == OOO)
-//             setBCAllOpen();
-//         else if (bco_m == PPP)
-            setBCAllPeriodic();
-//         else
-//             setBCOOP();
+        setBCAllPeriodic();
     }
 
      void gatherCIC(int iteration) {
@@ -247,60 +239,6 @@ public:
          Kokkos::fence();
          IpplTimings::stopTimer(sumTimer);                                                    
      }
-//
-//     void myUpdate() {
-//
-//         double hz   = hr_m[2];
-//         double zmin = rmin_m[2];
-//         double zmax = rmax_m[2];
-//
-//         if (bco_m != PPP) {
-//             bounds(this->R, rmin_m, rmax_m);
-//
-//             NDIndex<Dim> domain = this->getFieldLayout().getDomain();
-//
-//             for (unsigned int i=0; i<Dim; i++)
-//                 nr_m[i] = domain[i].length();
-//
-//             for (unsigned int i=0; i<Dim; i++)
-//                 hr_m[i] = (rmax_m[i] - rmin_m[i]) / (nr_m[i] - 1.0);
-//
-//             if (bco_m == OOP) {
-//                 rmin_m[2] = zmin;
-//                 rmax_m[2] = zmax;
-//                 hr_m[2] = hz;
-//             }
-//
-//             getMesh().set_meshSpacing(&(hr_m[0]));
-//             getMesh().set_origin(rmin_m);
-//
-//             if(withGuardCells_m) {
-//                 EFD_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), vbc_m);
-//                 EFDMag_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), bc_m);
-//             }
-//             else {
-//                 EFD_m.initialize(getMesh(), getFieldLayout(), vbc_m);
-//                 EFDMag_m.initialize(getMesh(), getFieldLayout(), bc_m);
-//             }
-//         }
-//         else {
-//             if(fieldNotInitialized_m) {
-//                 fieldNotInitialized_m=false;
-//                 getMesh().set_meshSpacing(&(hr_m[0]));
-//                 getMesh().set_origin(rmin_m);
-//                 if(withGuardCells_m) {
-//                     EFD_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), vbc_m);
-//                     EFDMag_m.initialize(getMesh(), getFieldLayout(), GuardCellSizes<Dim>(1), bc_m);
-//                 }
-//                 else {
-//                     EFD_m.initialize(getMesh(), getFieldLayout(), vbc_m);
-//                     EFDMag_m.initialize(getMesh(), getFieldLayout(), bc_m);
-//                 }
-//             }
-//         }
-//         this->update();
-//     }
-//
      
      void initFields() {
          static IpplTimings::TimerRef initFieldsTimer = IpplTimings::getTimer("initFields");           
@@ -406,33 +344,10 @@ public:
      }
 
 private:
-//
-//     inline void setBCAllOpen() {
-//         for (unsigned i=0; i < 2*Dim; i++) {
-//             this->getBConds()[i] = ParticleNoBCond;
-//             bc_m[i]  = new ZeroFace<double  ,Dim,Mesh_t,Center_t>(i);
-//             vbc_m[i] = new ZeroFace<Vector_t,Dim,Mesh_t,Center_t>(i);
-//         }
-//     }
-//
     void setBCAllPeriodic() {
 
         this->setParticleBC(ippl::BC::PERIODIC);
     }
-//
-//     inline void setBCOOP() {
-//         for (unsigned i=0; i < 2*Dim - 2; i++) {
-//             bc_m[i]  = new ZeroFace<double  ,Dim,Mesh_t,Center_t>(i);
-//             vbc_m[i] = new ZeroFace<Vector_t,Dim,Mesh_t,Center_t>(i);
-//             this->getBConds()[i] = ParticleNoBCond;
-//         }
-//         for (unsigned i= 2*Dim - 2; i < 2*Dim; i++) {
-//             bc_m[i]  = new PeriodicFace<double  ,Dim,Mesh_t,Center_t>(i);
-//             vbc_m[i] = new PeriodicFace<Vector_t,Dim,Mesh_t,Center_t>(i);
-//             this->getBConds()[i] = ParticlePeriodicBCond;
-//         }
-//     }
-//
 
 };
 
@@ -464,20 +379,6 @@ int main(int argc, char *argv[]){
         << "nt " << nt << " Np= "
         << totalP << " grid = " << nr
         << endl;
-//     BC_t myBC;
-//     if (std::string(argv[7])==std::string("OOO")) {
-//         myBC = OOO; // open boundary
-//         msg << "BC == OOO" << endl;
-//     }
-//     else if (std::string(argv[7])==std::string("OOP")) {
-//         myBC = OOP; // open boundary in x and y, periodic in z
-//         msg << "BC == OOP" << endl;
-//     }
-//     else {
-//         myBC = PPP; // all periodic
-//         msg << "BC == PPP" << endl;
-//     }
-//
 
     std::unique_ptr<Mesh_t> mesh;
     std::unique_ptr<FieldLayout_t> FL;
@@ -488,9 +389,8 @@ int main(int argc, char *argv[]){
     std::unique_ptr<PLayout_t> PL;
 
     NDIndex<Dim> domain;
-    
     for (unsigned i = 0; i< Dim; i++) {
-        domain[i] = Index(nr[i]);
+        domain[i] = ippl::Index(nr[i]);
     }
     
     e_dim_tag decomp[Dim];    
@@ -518,7 +418,7 @@ int main(int argc, char *argv[]){
     Vector_t rmax(1.0);
 
     double Q=1e6;
-    P = std::make_unique<bunch_type>(*PL,/*myBC,*/hr,rmin,rmax,decomp,Q);
+    P = std::make_unique<bunch_type>(*PL,hr,rmin,rmax,decomp,Q);
 
     // initialize the particle object: do all initialization on one node,
     // and distribute to others
@@ -543,7 +443,7 @@ int main(int argc, char *argv[]){
         }
         Q_host(i) = q;
     }
-    ////For generating same distribution always
+    ////For Gaussian distribution
     //std::mt19937_64 eng[2*Dim];
    
     ////There is no reason for picking 42 or multiplying by 
@@ -599,9 +499,6 @@ int main(int argc, char *argv[]){
     P->EFD_m.initialize(*mesh, *FL);
     P->EFDMag_m.initialize(*mesh, *FL);
     
-    // redistribute particles based on spatial layout
-    // P->myUpdate();
-    
     msg << "scatter test" << endl;
     P->scatterCIC();
     
@@ -627,8 +524,6 @@ int main(int argc, char *argv[]){
         Kokkos::fence();
         IpplTimings::stopTimer(BCTimer);                                                    
 
-        // update particle distribution across processors
-        //P->myUpdate();
 
         // gather the local value of the E field
         P->gatherCIC(it);

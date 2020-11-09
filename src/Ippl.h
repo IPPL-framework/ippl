@@ -16,7 +16,7 @@
 
 // Kokkos
 #include "Field/BareField.h"
-#include "Field/Kokkos_Field.h"
+#include "Field/Field.h"
 
 // IPPL Communicate classes
 #include "Message/Communicate.h"
@@ -42,9 +42,6 @@
 // // IPPL Meshes
 // #include "Meshes/UniformCartesian.h"
 // #include "Meshes/Cartesian.h"
-
-// IPPL Expression Templates
-#include "PETE/IpplExpressions.h"
 
 // // IPPL Field classes
 // #include "Field/FieldSpec.h"

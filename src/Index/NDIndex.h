@@ -78,27 +78,27 @@ public:
   NDIndex() {}
 
   // Construct from a simple array of Indexes
-  NDIndex(const Index *idx);
+  NDIndex(const ippl::Index *idx);
 
   // Construct from individual indexes.
   // Only instantiate the ones that make sense.
-  NDIndex(const Index&);
-  NDIndex(const Index&,const Index&);
-  NDIndex(const Index&,const Index&,const Index&);
-  NDIndex(const Index&,const Index&,const Index&,
-          const Index&);
-  NDIndex(const Index&,const Index&,const Index&,
-          const Index&,const Index&);
-  NDIndex(const Index&,const Index&,const Index&,
-          const Index&,const Index&,const Index&);
-  NDIndex(const NDIndex<Dim-1>&, const Index&);
+  NDIndex(const ippl::Index&);
+  NDIndex(const ippl::Index&,const ippl::Index&);
+  NDIndex(const ippl::Index&,const ippl::Index&,const ippl::Index&);
+  NDIndex(const ippl::Index&,const ippl::Index&,const ippl::Index&,
+          const ippl::Index&);
+  NDIndex(const ippl::Index&,const ippl::Index&,const ippl::Index&,
+          const ippl::Index&,const ippl::Index&);
+  NDIndex(const ippl::Index&,const ippl::Index&,const ippl::Index&,
+          const ippl::Index&,const ippl::Index&,const ippl::Index&);
+  NDIndex(const NDIndex<Dim-1>&, const ippl::Index&);
 
   // Return a reference to any of the Indexes.
-  const Index& operator[](unsigned d) const
+  const ippl::Index& operator[](unsigned d) const
     {
       return p[d];
     }
-  Index& operator[](unsigned d)
+  ippl::Index& operator[](unsigned d)
     {
       return p[d];
     }
@@ -142,7 +142,7 @@ public:
     return m;
   }
 private:
-  Index p[Dim==0?1:Dim];			// Pointer to the indexes.
+  ippl::Index p[Dim==0?1:Dim];			// Pointer to the indexes.
 
 };
 

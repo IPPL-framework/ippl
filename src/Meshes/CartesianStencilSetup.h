@@ -27,46 +27,6 @@ template<unsigned Dim> struct Gradient   {};
 
 //----------------------------------------------------------------------
 //
-// Define the return types.
-//
-// These are the element by element return types.  They just encode 
-// the fact that divergence of a Vektor is a scalar, and gradient of
-// a scalar is a Vektor.  As such they are independent of centering
-// and use the tag base classes.
-//
-// These need to be filled out with specializations for Tenzors...
-// 
-//----------------------------------------------------------------------
-template<> struct PETEUnaryReturn< Divergence<1>, Vektor<double,1> > 
-{ typedef double type; };
-template<> struct PETEUnaryReturn< Divergence<2>, Vektor<double,2> > 
-{ typedef double type; };
-template<> struct PETEUnaryReturn< Divergence<3>, Vektor<double,3> > 
-{ typedef double type; };
-
-template<> struct PETEUnaryReturn< Divergence<1>, Vektor<float,1> > 
-{ typedef float type; };
-template<> struct PETEUnaryReturn< Divergence<2>, Vektor<float,2> > 
-{ typedef float type; };
-template<> struct PETEUnaryReturn< Divergence<3>, Vektor<float,3> > 
-{ typedef float type; };
-
-template<> struct PETEUnaryReturn< Gradient<1>, double > 
-{ typedef Vektor<double,1> type; };
-template<> struct PETEUnaryReturn< Gradient<2>, double > 
-{ typedef Vektor<double,2> type; };
-template<> struct PETEUnaryReturn< Gradient<3>, double > 
-{ typedef Vektor<double,3> type; };
-
-template<> struct PETEUnaryReturn< Gradient<1>, float > 
-{ typedef Vektor<float,1> type; };
-template<> struct PETEUnaryReturn< Gradient<2>, float > 
-{ typedef Vektor<float,2> type; };
-template<> struct PETEUnaryReturn< Gradient<3>, float > 
-{ typedef Vektor<float,3> type; };
-
-//----------------------------------------------------------------------
-//
 // Now derive from these general tags specific ones that include
 // the mesh and centerings.
 //
