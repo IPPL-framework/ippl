@@ -70,7 +70,7 @@ AddGuardCells(const NDIndex<Dim>& idx, const GuardCellSizes<Dim>& g)
 {
   NDIndex<Dim> ret;
   for (unsigned int d=0; d<Dim; ++d)
-    ret[d] = Index(idx[d].min() - g.left(d), idx[d].max() + g.right(d));
+    ret[d] = ippl::Index(idx[d].min() - g.left(d), idx[d].max() + g.right(d));
   return ret;
 }
 
