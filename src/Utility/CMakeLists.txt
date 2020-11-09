@@ -1,6 +1,5 @@
 set (_SRCS
     Inform.cpp
-    IpplCounter.cpp
     IpplInfo.cpp
 #     IpplMemoryUsage.cpp
     IpplStats.cpp
@@ -14,7 +13,6 @@ set (_SRCS
 
 set (_HDRS
     Inform.h
-    IpplCounter.h
 #     IpplException.h
     IpplInfo.h
 #     IpplMemoryUsage.h
