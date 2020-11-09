@@ -29,9 +29,6 @@
 
 #include <random>
 #include <chrono>
-#include "Utility/Timer.h"
-//#include "Utility/IpplCounter.h"
-#include "Utility/IpplStats.h"
 #include "Utility/IpplTimings.h"
 
 // dimension of our positions
