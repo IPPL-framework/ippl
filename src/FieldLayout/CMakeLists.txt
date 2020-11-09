@@ -3,12 +3,10 @@ set (_SRCS
   )
 
 set (_HDRS
-  BinaryBalancer.hpp
   BinaryBalancer.h
-  CenteredFieldLayout.hpp
-  CenteredFieldLayout.h
-  FieldLayout.hpp
+  BinaryBalancer.hpp
   FieldLayout.h
+  FieldLayout.hpp
   FieldLayoutUser.h
   Vnode.h
   )

@@ -38,7 +38,7 @@ constexpr unsigned Dim = 3;
 typedef ippl::detail::ParticleLayout<double,Dim> PLayout_t;
 typedef ippl::UniformCartesian<double, Dim> Mesh_t;
 typedef Cell                                       Center_t;
-typedef CenteredFieldLayout<Dim, Mesh_t, Center_t> FieldLayout_t;
+typedef FieldLayout<Dim> FieldLayout_t;
 // typedef Field<double, Dim, Mesh_t, Center_t>       Field_t;
 // typedef Field<Vector_t, Dim, Mesh_t, Center_t>     VField_t;
 // typedef IntCIC IntrplCIC_t;
@@ -641,7 +641,7 @@ int main(int argc, char *argv[]){
 
     // create mesh and layout objects for this problem domain
     mesh = std::make_unique<Mesh_t>(domain);
-    FL   = std::make_unique<FieldLayout_t>(*mesh, decomp);
+    FL   = std::make_unique<FieldLayout_t>(domain, decomp);
     PL   = std::make_unique<PLayout_t>(); //(*FL, *mesh);
 
 
