@@ -199,4 +199,21 @@ namespace ippl {
     {
         attrib.gather(f, pp);
     }
+
+    #define DefineParticleReduction(fun, name, op)                                                           \
+    template<typename T, class... Properties>                                                                \
+    T ParticleAttrib<T, Properties...>::name() {                                                             \
+        T temp = 0.0;                                                                                        \
+        Kokkos::parallel_reduce("fun", dview_m.extent(0),                                                    \
+                               KOKKOS_CLASS_LAMBDA(const int i, T& valL) {                                   \
+                                    T myVal = dview_m(i);                                                    \
+                                    op;                                                                      \
+                               }, Kokkos::fun<T>(temp));                                                     \
+        return temp;                                                                                         \
+    }
+
+    DefineParticleReduction(Sum,  sum,  valL += myVal)
+    DefineParticleReduction(Max,  max,  if(myVal > valL) valL = myVal)
+    DefineParticleReduction(Min,  min,  if(myVal < valL) valL = myVal)
+    DefineParticleReduction(Prod, prod, valL *= myVal)
 }
