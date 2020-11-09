@@ -200,7 +200,7 @@ namespace ippl {
         attrib.gather(f, pp);
     }
 
-    #define DefineReduction(fun, name, op)                                                                   \
+    #define DefineParticleReduction(fun, name, op)                                                           \
     template<typename T, class... Properties>                                                                \
     T ParticleAttrib<T, Properties...>::name() {                                                             \
         T temp = 0.0;                                                                                        \
@@ -212,8 +212,8 @@ namespace ippl {
         return temp;                                                                                         \
     }
 
-    DefineReduction(Sum,  sum,  valL += myVal)
-    DefineReduction(Max,  max,  if(myVal > valL) valL = myVal)
-    DefineReduction(Min,  min,  if(myVal < valL) valL = myVal)
-    DefineReduction(Prod, prod, valL *= myVal)
+    DefineParticleReduction(Sum,  sum,  valL += myVal)
+    DefineParticleReduction(Max,  max,  if(myVal > valL) valL = myVal)
+    DefineParticleReduction(Min,  min,  if(myVal < valL) valL = myVal)
+    DefineParticleReduction(Prod, prod, valL *= myVal)
 }
