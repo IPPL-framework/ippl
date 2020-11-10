@@ -65,6 +65,9 @@ private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /*version*/)
     {
+        // 10. November 2020
+        // https://www.boost.org/doc/libs/1_74_0/libs/serialization/doc/serialization.html#base
+
         // invoke serialization of the base class
         ar & boost::serialization::base_object<BunchBase>(*this);
 
