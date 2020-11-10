@@ -27,8 +27,8 @@
 #include "Utility/IpplInfo.h"
 #include "Utility/IpplStats.h"
 #include "Message/Message.h"
-#include "Message/CommCreator.h"
 #include "Message/Communicate.h"
+#include "Message/CommMPI.h"
 
 #include "IpplVersions.h"
 
@@ -146,11 +146,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
         // create Communicate object now.
         // dbgmsg << "Setting up parallel environment ..." << endl;
         if (startcomm && nprocs != 0 && nprocs != 1) {
-            Communicate *newcomm = CommCreator::create(commtype.c_str(),
-                    argc, argv,
-                    nprocs, comminit, mpicomm);
-
-            Comm = std::unique_ptr<Communicate>(newcomm);
+            Comm = std::make_unique<CommMPI>(argc, argv, nprocs, comminit, mpicomm);
 
                 // cache our node number and node count
             MyNode = Comm->myNode();
@@ -445,9 +441,6 @@ void IpplInfo::printHelp(char** argv) {
     INFOMSG("Usage: " << argv[0] << " [<option> <option> ...]\n");
     INFOMSG("       The possible values for <option> are:\n");
     INFOMSG("   --summary           : Print IPPL lib summary at start.\n");
-    INFOMSG("                         <x> = ");
-    INFOMSG(CommCreator::getAllLibraryNames() << "\n");
-    INFOMSG("                         initialization, assume already done.\n");
     INFOMSG("   --time              : Show total time used in execution.\n");
     INFOMSG("   --notime            : Do not show timing info (default).\n");
     INFOMSG("   --info <n>          : Set info message level.  0 = off.\n");
