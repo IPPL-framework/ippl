@@ -45,10 +45,8 @@
 // include files
 #include "Utility/Inform.h"
 #include "Message/Communicate.h"
-#include "Utility/StaticIpplInfo.h"
 
 #include <iostream>
-#include <stack>
 
 //FIXME: Including this header here (regardless of the used commlib) here is
 //necessary to enable IPPL to work on a user define communicator group
@@ -70,16 +68,16 @@ public:
 
   // Inform object to use to print messages to the console (or even to a
   // file if requested)
-  static Inform *Info;
-  static Inform *Warn;
-  static Inform *Error;
-  static Inform *Debug;
+  static std::unique_ptr<Inform> Info;
+  static std::unique_ptr<Inform> Warn;
+  static std::unique_ptr<Inform> Error;
+  static std::unique_ptr<Inform> Debug;
 
   // the parallel communication object
-  static Communicate *Comm;
+  static std::unique_ptr<Communicate> Comm;
 
   // the statistics collection object
-  static IpplStats *Stats;
+  static std::unique_ptr<IpplStats> Stats;
 
 
   // Constructor 1: specify the argc, argv values from the cmd line.
@@ -154,56 +152,13 @@ public:
   // considered as an entity which has a single IP address.
   static int getNodes();
 
-  // Return the number of contexts on a given node N.  A 'Context' is
-  // considered to be a single addressable memory space; for shared memory
-  // machines, this could be the whole machine or one of many separate sections
-  // each being treated as distinct from the others.
-  static int getContexts(int);
-
-  // Return the number of processes which are actively working on node N in
-  // context C. A 'Process' is not necessarily one in the strict Unix sense; it
-  // could be a lightweight thread or indeed a full process.  These numbers
-  // may dynamically change.
-  static int getProcesses(int, int);
-
-  // getSMPs: return number of SMP's (each of which may be running
-  // several processes)
-  static int getSMPs();
-
-  // getSMPNodes: return number of nodes on the SMP with the given index
-  static int getSMPNodes(int);
-
-  // mySMP: return ID of my SMP (numbered 0 ... getSMPs() - 1)
-  static int mySMP();
-
-  // mySMPNode: return relative node number within the nodes on our SMP
-  static int mySMPNode();
-
   // Return argc or argv as provided in the initialization
   static int getArgc() { return MyArgc; }
   static char **getArgv() { return MyArgv; }
 
-  // return true if we should use checksums on messages
-  static bool useChecksums() { return UseChecksums; }
-
-  // return true if we should try to retransmit messages on error
-  static bool retransmit() { return (UseChecksums && Retransmit); }
-
   // Static data about a limit to the number of nodes that should be used
   // in FFT operations.  If this is <= 0 or > number of nodes, it is ignored.
   static int maxFFTNodes() { return MaxFFTNodes; }
-
-  // Return the "read chunk size", the number of bytes that will be
-  // read in, at max, for most Disc read operations.  If the final
-  // character is 'K', 'M', or 'G', the number will mean the number
-  // of kilobytes, megabytes, or gigabytes.  The default is one MB.  If
-  // this is <= 0, then no limit should be used.
-  static int chunkSize() { return ChunkSize; }
-
-  // Return boolean setting for whether we should attempt to use parallel
-  // I/O within a single SMP, for example by having multipple processors
-  // try to read from a single file (vs just having one node do it).
-  static bool perSMPParallelIO() { return PerSMPParallelIO; }
 
   //
   // Functions which return information about the Ippl library
@@ -243,31 +198,6 @@ public:
   // library (from IpplVersions.h)
   static const char *compileUser();
 
-  // stash all static members
-  static void stash();
-
-  // restore all static members
-  static void pop();
-
-  // Static flag telling whether to use optimization for reducing
-  // communication by deferring guard cell fills.
-  static bool deferGuardCellFills;
-
-  // Static flag telling whether to turn off compression in the Field classes.
-  static bool noFieldCompression;
-
-  // Static flag telling whether to try to (pseudo-)randomly offset the
-  // LField blocks to try to avoid cache conflicts.
-  static bool offsetStorage;
-
-  // Static flag telling whether to try to do a TryCompress after each
-  // individual LField has been processed in an expression.
-  static bool extraCompressChecks;
-
-  // Static routine giving one a place to stop at with #$%$%#1 stupid
-  // debuggers.
-  static void here();
-
   // print out statistics to the given Inform stream
   static void printStatistics(Inform&);
 
@@ -289,15 +219,6 @@ private:
   // end of the program.
   static bool PrintStats;
 
-  // Static flag indicating if we need to delete the comm object at the end.
-  static bool NeedDeleteComm;
-
-  // Static flag indicating whether to use checksums on messages
-  static bool UseChecksums;
-
-  // Static flag indicating whether to retransmit messages when errors occur
-  static bool Retransmit;
-
   // Static data with argc and argv
   static int MyArgc;
   static char **MyArgv;
@@ -307,36 +228,14 @@ private:
   static int MyNode;
   static int TotalNodes;
 
-  // Static data with SMP information.  These are changed after a new
-  // Communicate object is created.
-  static int NumSMPs;
-  static int *SMPIDList;
-  static int *SMPNodeList;
-
   // Static data about a limit to the number of nodes that should be used
   // in FFT operations.  If this is <= 0 or > number of nodes, it is ignored.
   static int MaxFFTNodes;
-
-  // Maximum read chunk size
-  static int ChunkSize;
-
-  // A boolean setting for whether we should attempt to use parallel
-  // I/O within a single SMP, for example by having multipple processors
-  // try to read from a single file (vs just having one node do it).
-  static bool PerSMPParallelIO;
-
-  static std::stack<StaticIpplInfo> stashedStaticMembers;
 
   // Indicate an error occurred while trying to parse the given command-line
   // option, and quit.  Arguments are: parameter, error message, bad value
   static void param_error(const char *, const char *, const char *);
   static void param_error(const char *, const char *, const char *, const char *);
-
-  // find out how many SMP's there are, and which processor we are on
-  // our local SMP (e.g., if there are two SMP's with 4 nodes each,
-  // the process will have a node number from 0 ... 7, and an SMP node
-  // number from 0 ... 3
-  static void find_smp_nodes();
 };
 
 // macros used to print out messages to the console or a directed file
