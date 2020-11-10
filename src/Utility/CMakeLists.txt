@@ -3,7 +3,7 @@ set (_SRCS
     IpplInfo.cpp
 #     IpplMemoryUsage.cpp
     IpplStats.cpp
-#     IpplTimings.cpp
+    IpplTimings.cpp
     PAssert.cpp
     Timer.cpp
     Unique.cpp
@@ -17,7 +17,7 @@ set (_HDRS
     IpplInfo.h
 #     IpplMemoryUsage.h
     IpplStats.h
-#     IpplTimings.h
+    IpplTimings.h
 #     NamedObj.h
     PAssert.h
     RefCounted.h

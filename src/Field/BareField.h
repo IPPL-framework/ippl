@@ -58,6 +58,7 @@ namespace ippl {
 
         //! View type storing the data
         typedef typename detail::ViewType<T, Dim>::view_type view_type;
+        using HostMirror = typename view_type::host_mirror_type;
 
         typedef FieldLayout<Dim> Layout_t;
 
@@ -164,6 +165,10 @@ namespace ippl {
 
         const view_type& getView() const {
             return dview_m;
+        }
+
+        HostMirror getHostMirror() {
+            return Kokkos::create_mirror(dview_m);
         }
 
         /*!
