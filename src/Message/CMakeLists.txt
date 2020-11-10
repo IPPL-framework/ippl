@@ -1,13 +1,11 @@
 set (_SRCS
     Communicate.cpp
-    CommCreator.cpp
     CommMPI.cpp
     MessageFunctions.cpp
     Formatter.cpp
     )
 
 set (_HDRS
-    CommCreator.h
     CommMPI.h
     Communicate.h
     DataTypes.h
