@@ -3,7 +3,8 @@
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
 #include <boost/serialization/serialization.hpp>
-#include <boost/serialization/binary_object.hpp>
+#include <boost/serialization/array.hpp>
+// #include <boost/serialization/binary_object.hpp> // (used for other solution)
 
 #include <Kokkos_Core.hpp>
 
@@ -37,12 +38,19 @@ private:
     {
         // 9. November 2020
         // https://www.boost.org/doc/libs/1_63_0/libs/serialization/doc/wrappers.html
-        ar & boost::serialization::binary_object(mass_m.data(),
-                                                 sizeof(view_type::value_type) * mass_m.size());
-        ar & boost::serialization::binary_object(charge_m.data(),
-                                                 sizeof(view_type::value_type) * charge_m.size());
-        ar & boost::serialization::binary_object(id_m.data(),
-                                                 sizeof(id_type::value_type) * id_m.size());
+        ar & boost::serialization::make_array(mass_m.data(), mass_m.size());
+        ar & boost::serialization::make_array(charge_m.data(), charge_m.size());
+        ar & boost::serialization::make_array(id_m.data(), id_m.size());
+        /*
+         * Another maybe slower solution:
+         *
+         * ar & boost::serialization::binary_object(mass_m.data(),
+         *                                          sizeof(view_type::value_type) * mass_m.size());
+         * ar & boost::serialization::binary_object(charge_m.data(),
+         *                                          sizeof(view_type::value_type) * charge_m.size());
+         * ar & boost::serialization::binary_object(id_m.data(),
+         *                                          sizeof(id_type::value_type) * id_m.size());
+         */
     }
 };
 
