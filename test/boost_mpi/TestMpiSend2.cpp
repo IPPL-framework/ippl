@@ -37,9 +37,12 @@ private:
     {
         // 9. November 2020
         // https://www.boost.org/doc/libs/1_63_0/libs/serialization/doc/wrappers.html
-        ar & boost::serialization::binary_object(mass_m.data(), sizeof(double)*mass_m.size());
-        ar & boost::serialization::binary_object(charge_m.data(), sizeof(double)*charge_m.size());
-        ar & boost::serialization::binary_object(id_m.data(), sizeof(size_t)*id_m.size());
+        ar & boost::serialization::binary_object(mass_m.data(),
+                                                 sizeof(view_type::value_type) * mass_m.size());
+        ar & boost::serialization::binary_object(charge_m.data(),
+                                                 sizeof(view_type::value_type) * charge_m.size());
+        ar & boost::serialization::binary_object(id_m.data(),
+                                                 sizeof(id_type::value_type) * id_m.size());
     }
 };
 
