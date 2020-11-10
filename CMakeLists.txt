@@ -23,6 +23,9 @@ add_compile_options (-Wunused)
 add_compile_options (-Wextra)
 add_compile_options (-Werror)
 
+# allow deprecated functions
+add_compile_options (-Wno-deprecated-declarations)
+
 option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
 
 message (STATUS "Build type is: " ${CMAKE_BUILD_TYPE})
@@ -53,9 +56,9 @@ endif ()
 set (Boost_USE_MULTITHREADED OFF)
 set (Boost_USE_STATIC_RUNTIME OFF)
 find_package (Boost 1.66.0
-    REQUIRED COMPONENTS chrono filesystem iostreams regex serialization system timer)
+    REQUIRED COMPONENTS mpi filesystem iostreams regex serialization timer chrono system)
 message (STATUS "Found Boost include dir: ${Boost_INCLUDE_DIR}")
-message (STATUS "Found Boost library dir: ${Boost_LIBRARY_DIR}")
+message (STATUS "Found Boost library dir: ${Boost_LIBRARY_DIRS}")
 message (STATUS "Found Boost libraries: ${Boost_LIBRARIES}")
 include_directories (SYSTEM ${Boost_INCLUDE_DIRS})
 
