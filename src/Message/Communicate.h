@@ -41,73 +41,6 @@ const int COMM_ANY_NODE = (-1);
 const int COMM_ANY_TAG  = (-1);
 
 
-// A simple class used to store information for caching sent messages.  This
-// is only used if the 'retransmit' option is active.
-class CommSendInfo
-{
-public:
-    CommSendInfo()
-            : size_m(0), buf_m(0)
-    {
-    }
-
-    CommSendInfo(int size, char *buf, int node)
-            : size_m(size), node_m(node), buf_m(buf)
-    {
-    }
-
-    CommSendInfo(const CommSendInfo &c)
-            : size_m(c.size_m), node_m(c.node_m), buf_m(c.buf_m)
-    {
-    }
-
-    ~CommSendInfo()
-    {
-        // the user is actually responsible for freeing the buffer.  We
-        // do not do this automatically here
-    }
-
-    CommSendInfo &operator=(const CommSendInfo &c)
-    {
-        size_m = c.size_m;
-        buf_m = c.buf_m;
-        node_m = c.node_m;
-        return *this;
-    }
-
-    int size() const
-    {
-        return size_m;
-    }
-
-    int node() const
-    {
-        return node_m;
-    }
-
-    char *buf()
-    {
-        return buf_m;
-    }
-    const char *buf() const
-    {
-        return buf_m;
-    }
-
-    void freebuf()
-    {
-        if (buf_m != 0)
-            delete [] buf_m;
-        buf_m = 0;
-    }
-
-private:
-    int size_m;
-    int node_m;
-    char *buf_m;
-};
-
-
 // The base class for all specific Communicate objects
 class Communicate : public TagMaker
 {
@@ -258,21 +191,6 @@ protected:
     // message, and continually increases as more messages are sent.
     typedef long MsgNum_t;
     MsgNum_t nextMsgNum;
-
-    // An optional sent-message cache, used to attempt to retransmit
-    // messages if they are corrupted in-transit.  Messages are keyed on
-    // a message number, which is is unique for each message.
-    typedef std::map<MsgNum_t, CommSendInfo> SentCache_t;
-    SentCache_t sentMsgCache;
-
-    // a list of things to resend at the next opportunity
-    std::vector<MsgNum_t> resendList;
-
-    // a list of messages which have been received OK
-    std::vector<MsgNum_t> sentOKList;
-
-    // a list of messages which should be cleared out on other nodes
-    std::vector<std::pair<int,MsgNum_t> > informOKList;
 
     // add a new message to the received message queues.  Return success.
     // arguments: message, sending node, tag
