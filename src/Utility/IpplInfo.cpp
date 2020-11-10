@@ -27,8 +27,8 @@
 #include "Utility/IpplInfo.h"
 #include "Utility/IpplStats.h"
 #include "Message/Message.h"
-#include "Message/Communicate.h"
-#include "Message/CommMPI.h"
+// #include "Message/Communicate.h"
+// #include "Message/CommMPI.h"
 
 #include "IpplVersions.h"
 
@@ -38,7 +38,7 @@
 
 /////////////////////////////////////////////////////////////////////
 // public static members of IpplInfo, initialized to default values
-std::unique_ptr<Communicate>  IpplInfo::Comm = 0;
+std::unique_ptr<ippl::Communicate>  IpplInfo::Comm = 0;
 std::unique_ptr<IpplStats> IpplInfo::Stats = 0;
 std::unique_ptr<Inform> IpplInfo::Info = 0;
 std::unique_ptr<Inform> IpplInfo::Warn = 0;
@@ -47,7 +47,7 @@ std::unique_ptr<Inform> IpplInfo::Debug = 0;
 
 void IpplInfo::instantiateGlobals() {
     if (Comm == 0)
-        Comm = std::make_unique<Communicate>();
+        Comm = std::make_unique<ippl::Communicate>();
     if (Stats == 0)
         Stats = std::make_unique<IpplStats>();
     if (Info == 0)
@@ -117,7 +117,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
     communicator_m = mpicomm;
 
     if (NumCreated == 0) {
-        Comm = std::make_unique<Communicate>();
+        Comm = std::make_unique<ippl::Communicate>();
         Stats = std::make_unique<IpplStats>();
         Info = std::make_unique<Inform>("Ippl");
         Warn = std::make_unique<Inform>("Warning", std::cerr);
@@ -132,7 +132,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
         // process all the other cmdline args
         std::string commtype;
         bool startcomm = false;
-        bool comminit = true;         // do comm. system's init call
+//         bool comminit = true;         // do comm. system's init call
         int nprocs = (-1);		// num of processes to start; -1 means default
 
 
@@ -146,7 +146,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
         // create Communicate object now.
         // dbgmsg << "Setting up parallel environment ..." << endl;
         if (startcomm && nprocs != 0 && nprocs != 1) {
-            Comm = std::make_unique<CommMPI>(argc, argv, nprocs, comminit, mpicomm);
+            Comm = std::make_unique<ippl::Communicate>(argc, argv);
 
                 // cache our node number and node count
             MyNode = Comm->myNode();
@@ -303,7 +303,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
 // Constructor 2: default constructor.
 IpplInfo::IpplInfo() {
     if (NumCreated == 0) {
-        Comm = std::make_unique<Communicate>();
+        Comm = std::make_unique<ippl::Communicate>();
         Stats = std::make_unique<IpplStats>();
         Info = std::make_unique<Inform>("Ippl");
         Warn = std::make_unique<Inform>("Warning", std::cerr);
@@ -320,7 +320,7 @@ IpplInfo::IpplInfo() {
 // Constructor 3: copy constructor.
 IpplInfo::IpplInfo(const IpplInfo&) {
     if (NumCreated == 0) {
-        Comm = std::make_unique<Communicate>();
+        Comm = std::make_unique<ippl::Communicate>();
         Stats = std::make_unique<IpplStats>();
         Info = std::make_unique<Inform>("Ippl");
         Warn = std::make_unique<Inform>("Warning", std::cerr);

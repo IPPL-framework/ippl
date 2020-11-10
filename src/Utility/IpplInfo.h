@@ -44,7 +44,8 @@
 
 // include files
 #include "Utility/Inform.h"
-#include "Message/Communicate.h"
+// #include "Message/Communicate.h"
+#include "Message/CommBoostMpi.h"
 
 #include <iostream>
 
@@ -74,7 +75,7 @@ public:
   static std::unique_ptr<Inform> Debug;
 
   // the parallel communication object
-  static std::unique_ptr<Communicate> Comm;
+  static std::unique_ptr<ippl::Communicate> Comm;
 
   // the statistics collection object
   static std::unique_ptr<IpplStats> Stats;
