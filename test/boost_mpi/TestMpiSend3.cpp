@@ -68,7 +68,7 @@ private:
         // 10. November 2020
         // https://www.boost.org/doc/libs/1_74_0/libs/serialization/doc/serialization.html#base
 
-        // invoke serialization of the base class
+        // we need to serialize base class members
         ar & boost::serialization::base_object<BunchBase>(*this);
 
         ar & boost::serialization::make_array(charge_m.data(), charge_m.size());
