@@ -1,12 +1,10 @@
 set (_SRCS
     Inform.cpp
-#     IpplCounter.cpp
     IpplInfo.cpp
 #     IpplMemoryUsage.cpp
     IpplStats.cpp
-#     IpplTimings.cpp
+    IpplTimings.cpp
     PAssert.cpp
-    StaticIpplInfo.cpp
     Timer.cpp
     Unique.cpp
     User.cpp
@@ -15,16 +13,14 @@ set (_SRCS
 
 set (_HDRS
     Inform.h
-#     IpplCounter.h
 #     IpplException.h
     IpplInfo.h
 #     IpplMemoryUsage.h
     IpplStats.h
-#     IpplTimings.h
+    IpplTimings.h
 #     NamedObj.h
     PAssert.h
     RefCounted.h
-    StaticIpplInfo.h
     Timer.h
     Unique.h
     User.h

@@ -101,8 +101,8 @@ namespace ippl {
 
             /*!
              * Apply the given boundary conditions to the current particle positions.
-             * @tparam PT is the type of particle position attribute container
-             * @tparam NDI is the type of index object (NDIndex or NDRegion)
+             * @tparam R is the particle position attribute
+             * @tparam nr is the NDRegion
              * @param
              */
             void applyBC(const particle_position_type& R, const NDRegion<T, Dim>& nr);

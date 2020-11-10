@@ -125,6 +125,10 @@ namespace ippl {
         gather(const Field<T, Dim, M, C>& f,
                const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
 
+        T sum();
+        T max();
+        T min();
+        T prod();
 
     private:
         view_type dview_m;

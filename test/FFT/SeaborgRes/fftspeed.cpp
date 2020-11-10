@@ -129,20 +129,12 @@ int main(int argc, char *argv[]) {
     msg << "----------------------------" << endl;
 
     msg << "Doing transform at iteration " << i << " ..." << endl;
-    IpplCounter ca("RC Forward Transform");
-    ca.startCounter();
     fft.transform(-1, rho, crho);
-    ca.stopCounter();
-    ca.printIt();
 
     msg << "After transform, sum(crho) = " << sum(crho) << endl;
 
     msg << "Doing inverse transform at iteration " << i << " ..." << endl;
-    IpplCounter cb("RC Reverse Transform");
-    cb.startCounter();
     fft.transform(+1, crho, rho);
-    cb.stopCounter();
-    cb.printIt();
 
     msg << "After transform, sum(rho) = " << sum(rho) << endl;  
 
