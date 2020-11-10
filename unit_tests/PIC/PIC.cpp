@@ -92,7 +92,7 @@ private:
 
 
 
-TEST_F(PICTest, Scatter) {
+TEST_F(PICTest, ScatterGather) {
     std::mt19937_64 eng;
     std::uniform_real_distribution<double> unif(0, 1);
 
@@ -117,7 +117,17 @@ TEST_F(PICTest, Scatter) {
     double totalcharge = field->sum(1);
 
     ASSERT_DOUBLE_EQ(nParticles * charge, totalcharge);
+
+    bunch->Q = 0.0;
+
+    gather(bunch->Q, *field, bunch->R);
+
+    double chargeParticles = bunch->Q.sum();
+    
+    ASSERT_DOUBLE_EQ(chargeParticles, totalcharge);
+
 }
+
 
 
 
