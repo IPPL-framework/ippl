@@ -28,7 +28,7 @@
 #include "FieldLayout/VRB.h"
 #include "Message/Communicate.h"
 #include "Message/Message.h"
-#include "Utility/IpplInfo.h"
+#include "Ippl.h"
 #include "Utility/IpplStats.h"
 #include "Utility/PAssert.h"
 

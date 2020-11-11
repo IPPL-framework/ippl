@@ -26,7 +26,7 @@
 // include files
 #include "Utility/Inform.h"
 
-#include "Utility/IpplInfo.h"
+#include "Ippl.h"
 
 #include <fstream>
 #include <cstring>
