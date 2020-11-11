@@ -1,7 +1,6 @@
 #ifndef IPPL_COMM_MPI_H
 #define IPPL_COMM_MPI_H
 
-#include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
 
 // To be removed
@@ -13,7 +12,6 @@ namespace ippl {
     class Communicate : public TagMaker {
 
     public:
-        using env_type = boost::mpi::environment;
         using comm_type = boost::mpi::communicator;
         using kind_type = boost::mpi::comm_create_kind;
 
@@ -59,7 +57,6 @@ namespace ippl {
         }
 
     private:
-        env_type env_m;
         comm_type world_m;
 
         int rank_m;

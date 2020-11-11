@@ -1491,7 +1491,7 @@ void ParallelPeriodicFace<T,D,M,C>::apply( Field<T,D,M,C>& A )
   const Layout_t &layout      = A.getLayout();
   const GuardCellSizes<D> &gc = A.getGuardCellSizes();
 
-  int nprocs = Ippl::getNodes();
+  int nprocs = Ippl::Comm->getNodes();
 
   if (nprocs > 1) // Skip send/receive code if we're single-processor.
     {
@@ -2209,7 +2209,7 @@ void ParallelInterpolationFace<T,D,M,C>::apply( Field<T,D,M,C>& A )
   const Layout_t &layout      = A.getLayout();
   const GuardCellSizes<D> &gc = A.getGuardCellSizes();
 
-  int nprocs = Ippl::getNodes();
+  int nprocs = Ippl::Comm->getNodes();
 
   if (nprocs > 1) // Skip send/receive code if we're single-processor.
     {

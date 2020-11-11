@@ -45,21 +45,6 @@ std::unique_ptr<Inform> IpplInfo::Warn = 0;
 std::unique_ptr<Inform> IpplInfo::Error = 0;
 std::unique_ptr<Inform> IpplInfo::Debug = 0;
 
-void IpplInfo::instantiateGlobals() {
-    if (Comm == 0)
-        Comm = std::make_unique<ippl::Communicate>();
-    if (Stats == 0)
-        Stats = std::make_unique<IpplStats>();
-    if (Info == 0)
-        Info = std::make_unique<Inform>("Ippl");
-    if (Warn == 0)
-        Warn = std::make_unique<Inform>("Warning", std::cerr);
-    if (Error == 0)
-        Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
-    if (Debug == 0)
-        Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
-}
-
 void IpplInfo::deleteGlobals() {
     Comm.reset();
     Stats.reset();
@@ -71,22 +56,16 @@ void IpplInfo::deleteGlobals() {
 
 // private static members of IpplInfo, initialized to default values
 MPI_Comm IpplInfo::communicator_m = MPI_COMM_WORLD;
-int  IpplInfo::NumCreated = 0;
 bool IpplInfo::CommInitialized = false;
 bool IpplInfo::PrintStats = false;
-int  IpplInfo::MyArgc = 0;
-char **IpplInfo::MyArgv = 0;
-int  IpplInfo::MyNode = 0;
-int  IpplInfo::TotalNodes = 1;
-int  IpplInfo::MaxFFTNodes = 0;
 
 /////////////////////////////////////////////////////////////////////
 // print out current state to the given output stream
 std::ostream& operator<<(std::ostream& o, const IpplInfo&) {
     o << "------------------------------------------\n";
     o << "IPPL Framework Application Summary:\n";
-    o << "  Running on node " << IpplInfo::myNode();
-    o << ", out of " << IpplInfo::getNodes() << " total.\n";
+    o << "  Running on node " << IpplInfo::Comm->myNode();
+    o << ", out of " << IpplInfo::Comm->getNodes() << " total.\n";
     o << "  Communication method: " << IpplInfo::Comm->name() << "\n";
     o << "  Elapsed wall-clock time (in seconds): ";
     o << IpplInfo::Stats->getTime().clock_time() << "\n";
@@ -116,13 +95,12 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
 
     communicator_m = mpicomm;
 
-    if (NumCreated == 0) {
-        Stats = std::make_unique<IpplStats>();
-        Info = std::make_unique<Inform>("Ippl");
-        Warn = std::make_unique<Inform>("Warning", std::cerr);
-        Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
-        Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
-    }
+    Stats = std::make_unique<IpplStats>();
+    Info = std::make_unique<Inform>("Ippl");
+    Warn = std::make_unique<Inform>("Warning", std::cerr);
+    Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
+    Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
+
     // You can only specify argc, argv once; if it is done again, print a warning
     // and continue as if we had not given argc, argv.
     if ( !CommInitialized ) {
@@ -147,9 +125,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
         if (startcomm && nprocs != 0 && nprocs != 1) {
             Comm = std::make_unique<ippl::Communicate>(argc, argv, communicator_m);
 
-                // cache our node number and node count
-            MyNode = Comm->myNode();
-            TotalNodes = Comm->getNodes();
         }
 
         // keep track of which arguments we do no use; these are returned
@@ -242,14 +217,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                     param_error(argv[i],
                             "Please specify an output level from 0 to 5", 0);
 
-            } else if ( ( strcmp(argv[i], "--maxfftnodes") == 0 ) ) {
-                // Limit the number of nodes that can participate in FFT operations
-                if ( (i + 1) < argc && argv[i+1][0] != '-' && atoi(argv[i+1]) > 0 )
-                    MaxFFTNodes = atoi(argv[++i]);
-                else
-                    param_error(argv[i],
-                            "Please specify a maximum number of FFT nodes > 0", 0);
-
             } else if ( ( strcmp(argv[i], "--ipplhelp") == 0 ) ||
                     ( strcmp(argv[i], "-h") == 0 ) ||
                     ( strcmp(argv[i], "-?") == 0 ) ) {
@@ -271,16 +238,10 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
         // We can get on with creating and initializing all globally-used objects.
 
         // indicate back to the caller which arguments are left
-        MyArgc = retargc;
-        MyArgv = retargv;
         if (stripargs) {
             argc = retargc;
             argv = retargv;
         }
-
-        // Inform dbgmsg("IpplInfo::IpplInfo", INFORM_ALL_NODES);
-        // dbgmsg << "Created IpplInfo.  node = " << MyNode << " out of ";
-        // dbgmsg << TotalNodes << ", commlib = " << Comm->name() << endl;
 
         // now, at end, start the timer running, and print out a summary if asked
         Stats->getTime().stop();
@@ -290,7 +251,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
 
     // indicate we've created one more Ippl object
     CommInitialized = true;
-    NumCreated++;
 
     // At the very end, print out a summary if requested
     if (printsummary)
@@ -299,71 +259,20 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
 
 
 /////////////////////////////////////////////////////////////////////
-// Constructor 2: default constructor.
-IpplInfo::IpplInfo() {
-    if (NumCreated == 0) {
-        Comm = std::make_unique<ippl::Communicate>();
-        Stats = std::make_unique<IpplStats>();
-        Info = std::make_unique<Inform>("Ippl");
-        Warn = std::make_unique<Inform>("Warning", std::cerr);
-        Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
-        Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
-    }
-
-    // just indicate we've also been created
-    NumCreated++;
-}
-
-
-/////////////////////////////////////////////////////////////////////
-// Constructor 3: copy constructor.
-IpplInfo::IpplInfo(const IpplInfo&) {
-    if (NumCreated == 0) {
-        Comm = std::make_unique<ippl::Communicate>();
-        Stats = std::make_unique<IpplStats>();
-        Info = std::make_unique<Inform>("Ippl");
-        Warn = std::make_unique<Inform>("Warning", std::cerr);
-        Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
-        Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
-    }
-
-    // just indicate we've also been created
-    NumCreated++;
-}
-
-
-/////////////////////////////////////////////////////////////////////
 // Destructor: need to delete comm library if this is the last IpplInfo
 IpplInfo::~IpplInfo() {
-    // indicate we have one less instance; if this is the last one,
-    // close communication and clean up
-    // Inform dbgmsg("IpplInfo::~IpplInfo", INFORM_ALL_NODES);
-    // dbgmsg << "In destructor: Current NumCreated = " << NumCreated << endl;
-
-    if ((--NumCreated) == 0) {
-        // at end of program, print statistics if requested to do so
-        if (PrintStats) {
-            Inform statsmsg("Stats", INFORM_ALL_NODES);
-            statsmsg << *this;
-            printStatistics(statsmsg);
-        }
-
-        CommInitialized = false;
-
-        // delete other dynamically-allocated static objects
-        delete [] MyArgv;
-        MyArgv = 0;
-        Stats.reset();
+    // at end of program, print statistics if requested to do so
+    if (PrintStats) {
+        Inform statsmsg("Stats", INFORM_ALL_NODES);
+        statsmsg << *this;
+        printStatistics(statsmsg);
     }
+
+    CommInitialized = false;
+
+    Stats.reset();
 }
 
-
-/////////////////////////////////////////////////////////////////////
-// equal operator
-IpplInfo& IpplInfo::operator=(const IpplInfo&) {
-    // nothing to do, we don't even need to indicate we've made another
-    return *this;
-}
 
 void IpplInfo::abort(const char *msg) {
     // print out message, if one was provided
@@ -381,49 +290,6 @@ void IpplInfo::abort(const char *msg) {
     // that's it, folks this error will be propperly catched in the main
     throw std::runtime_error("Error form IpplInfo::abort");
 }
-
-
-/////////////////////////////////////////////////////////////////////
-// Signal to ALL the nodes that we should exit or abort.  If we abort,
-// a core file will be produced.  If we exit, no core file will be made.
-// The node which calls abortAllNodes will print out the given message;
-// the other nodes will print out that they are aborting due to a message
-// from this node.
-void IpplInfo::abortAllNodes(const char *msg) {
-    // print out message, if one was provided
-    if (msg != 0) {
-        ERRORMSG(msg << endl);
-    }
-
-    // print out final stats, if necessary
-    if (PrintStats) {
-        Inform statsmsg("Stats", INFORM_ALL_NODES);
-        statsmsg << IpplInfo();
-        printStatistics(statsmsg);
-    }
-
-    // broadcast out the kill message, if necessary
-    if (getNodes() > 1)
-        Comm->broadcast_others(new Message, IPPL_ABORT_TAG);
-
-    throw std::runtime_error("Error form IpplInfo::abortAllNodes");
-
-}
-
-/////////////////////////////////////////////////////////////////////
-// getNodes: return the number of 'Nodes' in use for the computation
-int IpplInfo::getNodes() {
-    return TotalNodes;
-}
-
-
-/////////////////////////////////////////////////////////////////////
-// myNode: return which Node we are running on right now
-int IpplInfo::myNode() {
-    return MyNode;
-}
-
-
 
 /////////////////////////////////////////////////////////////////////
 // printVersion: print out a version summary.  If the argument is true,
@@ -446,7 +312,6 @@ void IpplInfo::printHelp(char** argv) {
     INFOMSG("   --warn <n>          : Set warning message level.  0 = off.\n");
     INFOMSG("   --error <n>         : Set error message level.  0 = off.\n");
     INFOMSG("   --debug <n>         : Set debug message level.  0 = off.\n");
-    INFOMSG("   --maxfftnodes <n>   : Limit the nodes that work on FFT's.\n");
 }
 
 /////////////////////////////////////////////////////////////////////

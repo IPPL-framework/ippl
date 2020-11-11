@@ -490,7 +490,7 @@ void new_reduce(T* inout, int count, Op op, int root) {
 
     MPI_Op mpiOp = get_mpi_op<Op>(op);
 
-    if (Ippl::myNode() == root) {
+    if (Ippl::Comm->myNode() == root) {
         MPI_Reduce(MPI_IN_PLACE, inout, count, type,
                    mpiOp, root, Ippl::getComm());
     } else {

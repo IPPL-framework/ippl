@@ -44,7 +44,9 @@
 
 // include files
 #include "Utility/Inform.h"
-// #include "Message/Communicate.h"
+
+#include <boost/mpi/environment.hpp>
+
 #include "Message/CommBoostMpi.h"
 
 #include <iostream>
@@ -60,7 +62,7 @@ class IpplInfo;
 std::ostream& operator<<(std::ostream&, const IpplInfo&);
 
 
-class IpplInfo {
+class IpplInfo : public boost::mpi::environment {
 
 public:
   // an enumeration used to indicate whether to KEEP command-line arguments
@@ -91,43 +93,10 @@ public:
   // how the static data members are set up.  This is useful for declaring
   // automatic IpplInfo instances in functions after IpplInfo.has been
   // initially created in the main() routine.
-  IpplInfo();
-
-  // Constructor 3: copy constructor.  This will only copy non-static members
-  // (obviously), if any exist.
-  IpplInfo(const IpplInfo&);
+  IpplInfo() {};
 
   // Destructor.
   ~IpplInfo();
-
-  // Overload the = operator; does the same thing as the copy constructor.
-  IpplInfo& operator=(const IpplInfo&);
-
-
-  /* NOTE: The following initialize/finalize methods have not yet been
-     implemented.  Add them to IpplInfo.cpp if they are needed (bfh).
-  //
-  // Initialize and finalize routines ... initialize can be used if you
-  // created IpplInfo with the default constructor, and finalize() can
-  // be used to shut down IPPL and possibly exit the program
-  //
-
-  // initialize ourselves, if we have not yet done so, by parsing the
-  // command-line args and creating the Communication object.  This should
-  // be called by all the currently-running nodes.
-  void initialize(int &, char ** &);
-
-  // shut down the communication, and possibly exit.  This should be called
-  // by all the nodes, it will not work if it is called by just one node
-  // and you are running in parallel (in that case, the Communicate subclass
-  // destructor will hang).
-  void finalize();
-
-  // a version of finalize that will also shut down all the machines via
-  // a call to exit()
-  void finalize(int exitcode);
-  */
-
 
   //
   // Standard IPPL action methods (such as abort, etc)
@@ -136,30 +105,11 @@ public:
   // Kill the communication and throw runtime error exception.
   static void abort(const char * = 0);
 
-  // Signal to ALL the nodes to abort and throw runtime error exception
-  static void abortAllNodes(const char * = 0);
-
   //
   // Functions which return information about the current Ippl application.
   //
 
   static MPI_Comm getComm() {return communicator_m;}
-
-  // Return the number of the 'current' node.
-  static int myNode();
-
-  // Return the current number of nodes working in parallel, where
-  // each node may have more than one processor.  A 'Node' is basically
-  // considered as an entity which has a single IP address.
-  static int getNodes();
-
-  // Return argc or argv as provided in the initialization
-  static int getArgc() { return MyArgc; }
-  static char **getArgv() { return MyArgv; }
-
-  // Static data about a limit to the number of nodes that should be used
-  // in FFT operations.  If this is <= 0 or > number of nodes, it is ignored.
-  static int maxFFTNodes() { return MaxFFTNodes; }
 
   //
   // Functions which return information about the Ippl library
@@ -202,15 +152,10 @@ public:
   // print out statistics to the given Inform stream
   static void printStatistics(Inform&);
 
-  static void instantiateGlobals();
   static void deleteGlobals();
 private:
 
   static MPI_Comm communicator_m;
-
-  // Static counter indicating how many IpplInit objects have been created.
-  // When this gets back to zero, it's time to delete the Comm and quit.
-  static int NumCreated;
 
   // Static flag indicating whether this class has been created with
   // argc,argv specified ever.  This should only be done once.
@@ -219,19 +164,6 @@ private:
   // Static flag indicating whether we should print out stats info at the
   // end of the program.
   static bool PrintStats;
-
-  // Static data with argc and argv
-  static int MyArgc;
-  static char **MyArgv;
-
-  // Static data with my node number and total number of nodes.  These are
-  // only changed when a new Communicate object is created.
-  static int MyNode;
-  static int TotalNodes;
-
-  // Static data about a limit to the number of nodes that should be used
-  // in FFT operations.  If this is <= 0 or > number of nodes, it is ignored.
-  static int MaxFFTNodes;
 
   // Indicate an error occurred while trying to parse the given command-line
   // option, and quit.  Arguments are: parameter, error message, bad value

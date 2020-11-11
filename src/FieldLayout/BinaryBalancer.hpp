@@ -381,8 +381,8 @@ ReceiveReduce(NDIndex<Dim>& domain, BareField<double,Dim>& weights,
   // Build a count of the number of messages to expect.
   // We get *one message* from each node that has a touch.
   int expected = 0;
-  int nodes = Ippl::getNodes();
-  int mynode = Ippl::myNode();
+  int nodes = Ippl::Comm->getNodes();
+  int mynode = Ippl::Comm->myNode();
   bool* found_touch = new bool[nodes];
   for (i=0; i<nodes; ++i) found_touch[i] = false;
   // First look in the local vnodes of weights.

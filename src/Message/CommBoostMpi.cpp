@@ -5,8 +5,7 @@
 namespace ippl {
     Communicate::Communicate(int argc, char* argv[],
                              const MPI_Comm& comm)
-    : env_m(argc, argv)
-    , world_m(comm, kind_type::comm_duplicate)
+    : world_m(comm, kind_type::comm_duplicate)
     , rank_m(world_m.rank())
     , size_m(world_m.size())
     {

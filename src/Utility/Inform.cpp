@@ -94,7 +94,7 @@ Inform::Inform(const char *myname, const char *fname, const WriteMode opnmode,
 
   // only open a file if we're on the proper node
     MsgDest = 0;
-    if (pnode >= 0 && pnode == Ippl::myNode()) {
+    if (pnode >= 0 && pnode == Ippl::Comm->myNode()) {
         if (opnmode == OVERWRITE)
             MsgDest = new std::ofstream(fname, std::ios::out);
         else
@@ -103,7 +103,7 @@ Inform::Inform(const char *myname, const char *fname, const WriteMode opnmode,
 
     // make sure it was opened properly
     if ( MsgDest == 0 || ! (*MsgDest) ) {
-        if (pnode >= 0 && pnode == Ippl::myNode()) {
+        if (pnode >= 0 && pnode == Ippl::Comm->myNode()) {
             std::cerr << "Inform: Cannot open file '" << fname << "'." << std::endl;
         }
         NeedClose = false;
@@ -164,8 +164,8 @@ void Inform::display_single_line(char *buf) {
         *MsgDest << Name;
 
         // output the node number if necessary
-        if (Ippl::getNodes() > 1)
-            *MsgDest << "{" << Ippl::myNode() << "}";
+        if (Ippl::Comm->getNodes() > 1)
+            *MsgDest << "{" << Ippl::Comm->myNode() << "}";
 
         // output the message level number if necessary
         if ( MsgLevel > 1 )
@@ -248,7 +248,7 @@ Inform& Inform::setMessageLevel(const int ol) {
 Inform& Inform::outputMessage(void) {
 
     // print out the message (only if this is the master node)
-    if (PrintNode < 0 || PrintNode == Ippl::myNode()) {
+    if (PrintNode < 0 || PrintNode == Ippl::Comm->myNode()) {
         FormatBuf << std::ends;
         // extract C string and display
         MsgBuf = FormatBuf.str();

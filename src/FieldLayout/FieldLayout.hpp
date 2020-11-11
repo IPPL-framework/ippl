@@ -479,7 +479,7 @@ FieldLayout<Dim>::initialize(const NDIndex<Dim> &domain,
         }
 
         // Make sure the processor ID is OK
-        PInsist(nbegin[i] >= 0 && nbegin[i] < Ippl::getNodes(),
+        PInsist(nbegin[i] >= 0 && nbegin[i] < Ippl::Comm->getNodes(),
                 "A user-specified FieldLayout must have legal node assignments.");
 
         // Add in the volume of this domain
@@ -492,7 +492,7 @@ FieldLayout<Dim>::initialize(const NDIndex<Dim> &domain,
         bool nosplit = (dombegin[i].size() < 2);
 
         // Based on the assigned node, add to our local or remote lists
-        if (nbegin[i] == Ippl::myNode())
+        if (nbegin[i] == Ippl::Comm->myNode())
             Local_ac.insert(v1(Unique::get(), vnode));
         else
             remote_ac->insert(v2(dombegin[i], vnode), nosplit);
@@ -528,8 +528,8 @@ FieldLayout<Dim>::setup(const NDIndex<Dim>& domain,
     //INCIPPLSTAT(incFieldLayouts);
 
     // Find the number processors.
-    int nprocs = Ippl::getNodes();
-    int myproc = Ippl::myNode();
+    int nprocs = Ippl::Comm->getNodes();
+    int myproc = Ippl::Comm->myNode();
 
     // If the user didn't specify the number of vnodes, make it equal nprocs
     if (vnodes <= 0) vnodes = nprocs;
@@ -717,8 +717,8 @@ FieldLayout<Dim>::setup(const NDIndex<Dim>& domain,
 {
 
     // Find the number processors.
-    int nprocs = Ippl::getNodes();
-    int myproc = Ippl::myNode();
+    int nprocs = Ippl::Comm->getNodes();
+    int myproc = Ippl::Comm->myNode();
 
     // The number of vnodes must have been specified or computed by now:
     if (vnodes <= 0) ERRORMSG("FieldLayout::setup(): vnodes <= 0 "
@@ -1189,7 +1189,7 @@ bool FieldLayout<Dim>::write(const char *filename) {
     unsigned int d;
 
     // only do the read on node 0
-    if (Ippl::myNode() == 0) {
+    if (Ippl::Comm->myNode() == 0) {
         // create the file, make sure the creation is OK
         FILE *f = fopen(filename, "w");
         if (f == 0) {
@@ -1201,7 +1201,7 @@ bool FieldLayout<Dim>::write(const char *filename) {
         // write out FieldLayout information
         fprintf(f, "dim    = %d\n", Dim);
         fprintf(f, "vnodes = %d\n", numVnodes());
-        fprintf(f, "pnodes = %d\n", Ippl::getNodes());
+        fprintf(f, "pnodes = %d\n", Ippl::Comm->getNodes());
 
         fprintf(f, "domain =");
         for (d=0; d < Dim; ++d)
@@ -1273,7 +1273,7 @@ bool FieldLayout<Dim>::read(const char */*filename*/) {
     int ok = 1;
 
     // only do the read on node 0
-    if (Ippl::myNode() == 0) {
+    if (Ippl::Comm->myNode() == 0) {
         // read the file, make sure the read is OK
         DiscMeta f(filename);
 
@@ -1410,7 +1410,7 @@ bool FieldLayout<Dim>::read(const char */*filename*/) {
         }
 
         // Send out new layout info to other nodes
-        if (Ippl::getNodes() > 1) {
+        if (Ippl::Comm->getNodes() > 1) {
             Message *msg = new Message;
             msg->put(ok);
             if (ok != 0) {
@@ -1479,8 +1479,8 @@ bool FieldLayout<Dim>::read(const char */*filename*/) {
     // sort those vnodes to the top of the list.
     int localvnodes = 0;
     for (int v=0; v < fvnodes; ++v) {
-        int node = vnlist[v].getNode() % Ippl::getNodes();
-        if (node == Ippl::myNode()) {
+        int node = vnlist[v].getNode() % Ippl::Comm->getNodes();
+        if (node == Ippl::Comm->myNode()) {
             if (v > localvnodes) {
                 // move this vnode to the top
                 Vnode<Dim> tempv(vnlist[localvnodes]);
@@ -1581,7 +1581,7 @@ NDIndex<Dim> FieldLayout<Dim>::getLocalNDIndex()
     NDIndex<Dim> theId;
     for (iterator_iv localv = begin_iv(); localv != end_iv(); ++localv) {
         Vnode<Dim> *vn = (*localv).second.get();
-        if(vn->getNode() == Ippl::myNode())
+        if(vn->getNode() == Ippl::Comm->myNode())
             theId = vn->getDomain();
     }
     return theId;
