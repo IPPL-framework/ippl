@@ -89,10 +89,10 @@ Ippl::Ippl(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm)
 
     communicator_m = mpicomm;
 
-//     Info = std::make_unique<Inform>("Ippl");
-//     Warn = std::make_unique<Inform>("Warning", std::cerr);
-//     Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
-//     Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
+    Info = std::make_unique<Inform>("Ippl");
+    Warn = std::make_unique<Inform>("Warning", std::cerr);
+    Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
+    Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
 
     // You can only specify argc, argv once; if it is done again, print a warning
     // and continue as if we had not given argc, argv.
