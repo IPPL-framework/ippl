@@ -75,6 +75,17 @@ public:
         bunch = std::make_unique<bunch_type>(pl_m);
 
         bunch->create(nParticles);
+        
+        std::mt19937_64 eng;
+        std::uniform_real_distribution<double> unif(0, 1);
+
+        typename bunch_type::particle_position_type::HostMirror R_host = bunch->R.getHostMirror();
+        for(size_t i = 0; i < nParticles; ++i) {
+            ippl::Vector<double, dim> r = {unif(eng), unif(eng), unif(eng)};
+            R_host(i) = r;
+        }
+
+        Kokkos::deep_copy(bunch->R.getView(), R_host);
     }
 
 
@@ -92,25 +103,13 @@ private:
 
 
 
-TEST_F(PICTest, ScatterGather) {
-    std::mt19937_64 eng;
-    std::uniform_real_distribution<double> unif(0, 1);
+TEST_F(PICTest, Scatter) {
+
+    *field = 0.0;
 
     double charge = 0.5;
 
-    typename bunch_type::particle_position_type::HostMirror R_host = bunch->R.getHostMirror();
-    typename bunch_type::charge_container_type::HostMirror Q_host = bunch->Q.getHostMirror();
-    for(size_t i = 0; i < nParticles; ++i) {
-        ippl::Vector<double, dim> r = {unif(eng), unif(eng), unif(eng)};
-        R_host(i) = r;
-        Q_host(i) = charge;
-    }
-
-
-    Kokkos::deep_copy(bunch->R.getView(), R_host);
-    Kokkos::deep_copy(bunch->Q.getView(), Q_host);
-
-    *field = 0.0;
+    bunch->Q = charge;
 
     scatter(bunch->Q, *field, bunch->R);
 
@@ -118,19 +117,19 @@ TEST_F(PICTest, ScatterGather) {
 
     ASSERT_DOUBLE_EQ(nParticles * charge, totalcharge);
 
+}
+
+TEST_F(PICTest, Gather) {
+
+    *field = 1.0;
+
     bunch->Q = 0.0;
 
     gather(bunch->Q, *field, bunch->R);
 
-    double chargeParticles = bunch->Q.sum();
-    
-    ASSERT_DOUBLE_EQ(chargeParticles, totalcharge);
+    ASSERT_DOUBLE_EQ(nParticles, bunch->Q.sum());
 
 }
-
-
-
-
 
 int main(int argc, char *argv[]) {
     Ippl ippl(argc,argv);
