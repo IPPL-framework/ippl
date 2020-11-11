@@ -9,34 +9,29 @@
 class Message;
 
 namespace ippl {
-    class Communicate : public TagMaker {
+    class Communicate : boost::mpi::communicator
+                      , public TagMaker
+    {
 
     public:
-        using comm_type = boost::mpi::communicator;
         using kind_type = boost::mpi::comm_create_kind;
 
         Communicate() = default;
 
-        Communicate(int argc, char* argv[],
-                    const MPI_Comm& comm = MPI_COMM_WORLD);
+        Communicate(const MPI_Comm& comm = MPI_COMM_WORLD);
 
 
-        ~Communicate();
-
-
-        int myRank() const noexcept;
-
-        int getSize() const noexcept;
+        ~Communicate() = default;
 
 
         [[deprecated]]
         int myNode() const noexcept {
-            return myRank();
+            return this->rank();
         }
 
         [[deprecated]]
         int getNodes() const noexcept {
-            return getSize();
+            return this->size();
         }
 
 
@@ -55,27 +50,8 @@ namespace ippl {
         Message *receive_block(int& /*node*/, int& /*tag*/) {
             return nullptr;
         }
-
-    private:
-        comm_type world_m;
-
-        int rank_m;
-        int size_m;
     };
-
-
-
-    inline
-    int Communicate::myRank() const noexcept {
-        return rank_m;
-    }
-
-
-    inline
-    int Communicate::getSize() const noexcept {
-        return size_m;
-    }
-
 }
+
 
 #endif

@@ -35,6 +35,9 @@
 #include <cstdio>
 #include <csignal>
 
+
+#include <Kokkos_Core.hpp>
+
 /////////////////////////////////////////////////////////////////////
 // public static members of IpplInfo, initialized to default values
 std::unique_ptr<ippl::Communicate>  Ippl::Comm = 0;
@@ -71,7 +74,10 @@ std::ostream& operator<<(std::ostream& o, const Ippl&) {
 // The second argument controls whether the IPPL-specific command line
 // arguments are stripped out (the default) or left in (if the setting
 // is IpplInfo::KEEP).
-Ippl::Ippl(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
+Ippl::Ippl(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm)
+: boost::mpi::environment(argc, argv)
+{
+    Kokkos::initialize(argc, argv);
 
     int i;			// loop variables
     int retargc;			// number of args to return to caller
@@ -110,7 +116,7 @@ Ippl::Ippl(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
         // create Communicate object now.
         // dbgmsg << "Setting up parallel environment ..." << endl;
         if (startcomm && nprocs != 0 && nprocs != 1) {
-            Comm = std::make_unique<ippl::Communicate>(argc, argv, communicator_m);
+            Comm = std::make_unique<ippl::Communicate>(communicator_m);
 
         }
 
@@ -234,7 +240,9 @@ Ippl::Ippl(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
 
 /////////////////////////////////////////////////////////////////////
 // Destructor: need to delete comm library if this is the last IpplInfo
-Ippl::~Ippl() { }
+Ippl::~Ippl() {
+    Kokkos::finalize();
+}
 
 
 void Ippl::abort(const char *msg) {
