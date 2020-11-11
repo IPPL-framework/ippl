@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
         double Total_charge_field = field.sum(1);
 
         std::cout << "Total charge in the field:" << Total_charge_field << std::endl;
-        std::cout << "Total charge of the particles:" << bunch.Q.sum();
+        std::cout << "Total charge of the particles:" << bunch.Q.sum() << std::endl;
     } catch(const std::exception& e) {
         std::cout << e.what() << std::endl;
     }
