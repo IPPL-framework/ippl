@@ -43,6 +43,16 @@ target_link_libraries (
     boost_serialization
 )
 
+add_executable (TestMpiSend4 TestMpiSend4.cpp)
+target_link_libraries (
+    TestMpiSend4
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    boost_mpi
+    boost_timer
+    boost_serialization
+)
+
 
 # vi: set et ts=4 sw=4 sts=4:
 
