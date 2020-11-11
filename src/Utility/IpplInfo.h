@@ -45,8 +45,6 @@
 // include files
 #include "Utility/Inform.h"
 
-#include <boost/mpi/environment.hpp>
-
 #include "Message/CommBoostMpi.h"
 
 #include <iostream>
@@ -56,65 +54,10 @@
 //(without further increasing the number of defines).
 #include <mpi.h>
 
-// forward declarations
-class IpplStats;
-class IpplInfo;
-std::ostream& operator<<(std::ostream&, const IpplInfo&);
 
-
-class IpplInfo : public boost::mpi::environment {
+class IpplInfo {
 
 public:
-  // an enumeration used to indicate whether to KEEP command-line arguments
-  // or REMOVE them
-  enum { KEEP = 0, REMOVE = 1 };
-
-  // Inform object to use to print messages to the console (or even to a
-  // file if requested)
-  static std::unique_ptr<Inform> Info;
-  static std::unique_ptr<Inform> Warn;
-  static std::unique_ptr<Inform> Error;
-  static std::unique_ptr<Inform> Debug;
-
-  // the parallel communication object
-  static std::unique_ptr<ippl::Communicate> Comm;
-
-  // the statistics collection object
-  static std::unique_ptr<IpplStats> Stats;
-
-
-  // Constructor 1: specify the argc, argv values from the cmd line.
-  // The second argument controls whether the IPPL-specific command line
-  // arguments are stripped out (the default) or left in (if the setting
-  // is IpplInfo::KEEP).
-  IpplInfo(int&, char** &, int removeargs = REMOVE, MPI_Comm mpicomm = MPI_COMM_WORLD);
-
-  // Constructor 2: default constructor.  This will not change anything in
-  // how the static data members are set up.  This is useful for declaring
-  // automatic IpplInfo instances in functions after IpplInfo.has been
-  // initially created in the main() routine.
-  IpplInfo() {};
-
-  // Destructor.
-  ~IpplInfo();
-
-  //
-  // Standard IPPL action methods (such as abort, etc)
-  //
-
-  // Kill the communication and throw runtime error exception.
-  static void abort(const char * = 0);
-
-  //
-  // Functions which return information about the current Ippl application.
-  //
-
-  static MPI_Comm getComm() {return communicator_m;}
-
-  //
-  // Functions which return information about the Ippl library
-  //
-
   // printVersion: print out a version summary.  If the argument is true,
   // print out a detailed listing, otherwise a summary.
   static void printVersion(void);
@@ -148,36 +91,78 @@ public:
   // compileUser: return the username of the user who compiled this
   // library (from IpplVersions.h)
   static const char *compileUser();
-
-  // print out statistics to the given Inform stream
-  static void printStatistics(Inform&);
-
-  static void deleteGlobals();
-private:
-
-  static MPI_Comm communicator_m;
-
-  // Static flag indicating whether this class has been created with
-  // argc,argv specified ever.  This should only be done once.
-  static bool CommInitialized;
-
-  // Static flag indicating whether we should print out stats info at the
-  // end of the program.
-  static bool PrintStats;
-
-  // Indicate an error occurred while trying to parse the given command-line
-  // option, and quit.  Arguments are: parameter, error message, bad value
-  static void param_error(const char *, const char *, const char *);
-  static void param_error(const char *, const char *, const char *, const char *);
 };
 
-// macros used to print out messages to the console or a directed file
-#define INFOMSG(msg)  { *IpplInfo::Info << msg; }
-#define WARNMSG(msg)  { *IpplInfo::Warn << msg; }
-#define ERRORMSG(msg) { *IpplInfo::Error << msg; }
 
-// typedef so that we can have a 'Ippl' class that's easier to manipulate
-typedef IpplInfo Ippl;
+
+
+#include <boost/mpi/environment.hpp>
+
+class Ippl;
+std::ostream& operator<<(std::ostream&, const Ippl&);
+
+class Ippl : public boost::mpi::environment {
+
+public:
+    // an enumeration used to indicate whether to KEEP command-line arguments
+    // or REMOVE them
+    enum { KEEP = 0, REMOVE = 1 };
+
+    // the parallel communication object
+    static std::unique_ptr<ippl::Communicate> Comm;
+
+    //   // Inform object to use to print messages to the console (or even to a
+    //   // file if requested)
+    static std::unique_ptr<Inform> Info;
+    static std::unique_ptr<Inform> Warn;
+    static std::unique_ptr<Inform> Error;
+    static std::unique_ptr<Inform> Debug;
+
+    // Constructor 1: specify the argc, argv values from the cmd line.
+    // The second argument controls whether the IPPL-specific command line
+    // arguments are stripped out (the default) or left in (if the setting
+    // is IpplInfo::KEEP).
+    Ippl(int&, char** &, int removeargs = REMOVE, MPI_Comm mpicomm = MPI_COMM_WORLD);
+
+    // Constructor 2: default constructor.  This will not change anything in
+    // how the static data members are set up.  This is useful for declaring
+    // automatic IpplInfo instances in functions after IpplInfo.has been
+    // initially created in the main() routine.
+    Ippl() {};
+
+    // Destructor.
+    ~Ippl();
+
+    static MPI_Comm getComm() {return communicator_m;}
+
+    static MPI_Comm communicator_m;
+
+    // Static flag indicating whether this class has been created with
+    // argc,argv specified ever.  This should only be done once.
+    static bool CommInitialized;
+
+
+    // Kill the communication and throw runtime error exception.
+    static void abort(const char * = 0);
+
+    static void deleteGlobals();
+
+private:
+      // Indicate an error occurred while trying to parse the given command-line
+    // option, and quit.  Arguments are: parameter, error message, bad value
+    static void param_error(const char *, const char *, const char *);
+    static void param_error(const char *, const char *, const char *, const char *);
+
+    // Static flag indicating whether we should print out stats info at the
+    // end of the program.
+    static bool PrintStats;
+};
+
+
+// macros used to print out messages to the console or a directed file
+#define INFOMSG(msg)  { *Ippl::Info << msg; }
+#define WARNMSG(msg)  { *Ippl::Warn << msg; }
+#define ERRORMSG(msg) { *Ippl::Error << msg; }
 
 
 #endif // IPPL_INFO_H

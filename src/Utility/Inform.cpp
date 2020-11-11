@@ -56,8 +56,8 @@ void Inform::setup(const char *myname, int pnode) {
 
     On = true;
 
-    if (IpplInfo::Info != NULL) {
-        OutputLevel = IpplInfo::Info->getOutputLevel();
+    if (Ippl::Info != NULL) {
+        OutputLevel = Ippl::Info->getOutputLevel();
     } else {
         OutputLevel = MIN_INFORM_LEVEL;
     }

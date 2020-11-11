@@ -25,7 +25,6 @@
 
 // include files
 #include "Utility/IpplInfo.h"
-#include "Utility/IpplStats.h"
 #include "Message/Message.h"
 // #include "Message/Communicate.h"
 // #include "Message/CommMPI.h"
@@ -38,16 +37,13 @@
 
 /////////////////////////////////////////////////////////////////////
 // public static members of IpplInfo, initialized to default values
-std::unique_ptr<ippl::Communicate>  IpplInfo::Comm = 0;
-std::unique_ptr<IpplStats> IpplInfo::Stats = 0;
-std::unique_ptr<Inform> IpplInfo::Info = 0;
-std::unique_ptr<Inform> IpplInfo::Warn = 0;
-std::unique_ptr<Inform> IpplInfo::Error = 0;
-std::unique_ptr<Inform> IpplInfo::Debug = 0;
+std::unique_ptr<ippl::Communicate>  Ippl::Comm = 0;
+std::unique_ptr<Inform> Ippl::Info = 0;
+std::unique_ptr<Inform> Ippl::Warn = 0;
+std::unique_ptr<Inform> Ippl::Error = 0;
+std::unique_ptr<Inform> Ippl::Debug = 0;
 
-void IpplInfo::deleteGlobals() {
-    Comm.reset();
-    Stats.reset();
+void Ippl::deleteGlobals() {
     Info.reset();
     Warn.reset();
     Error.reset();
@@ -55,23 +51,17 @@ void IpplInfo::deleteGlobals() {
 }
 
 // private static members of IpplInfo, initialized to default values
-MPI_Comm IpplInfo::communicator_m = MPI_COMM_WORLD;
-bool IpplInfo::CommInitialized = false;
-bool IpplInfo::PrintStats = false;
-
+MPI_Comm Ippl::communicator_m = MPI_COMM_WORLD;
+bool Ippl::CommInitialized = false;
+//
 /////////////////////////////////////////////////////////////////////
 // print out current state to the given output stream
-std::ostream& operator<<(std::ostream& o, const IpplInfo&) {
+std::ostream& operator<<(std::ostream& o, const Ippl&) {
     o << "------------------------------------------\n";
     o << "IPPL Framework Application Summary:\n";
-    o << "  Running on node " << IpplInfo::Comm->myNode();
-    o << ", out of " << IpplInfo::Comm->getNodes() << " total.\n";
-    o << "  Communication method: " << IpplInfo::Comm->name() << "\n";
-    o << "  Elapsed wall-clock time (in seconds): ";
-    o << IpplInfo::Stats->getTime().clock_time() << "\n";
-    o << "  Elapsed CPU-clock time (in seconds) : ";
-    o << IpplInfo::Stats->getTime().cpu_time() << "\n";
-    o << "------------------------------------------\n";
+    o << "  Running on node " << Ippl::Comm->myNode();
+    o << ", out of " << Ippl::Comm->getNodes() << " total.\n";
+    o << "  Communication method: " << Ippl::Comm->name() << "\n";
     return o;
 }
 
@@ -81,25 +71,22 @@ std::ostream& operator<<(std::ostream& o, const IpplInfo&) {
 // The second argument controls whether the IPPL-specific command line
 // arguments are stripped out (the default) or left in (if the setting
 // is IpplInfo::KEEP).
-IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
+Ippl::Ippl(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
 
     int i;			// loop variables
     int retargc;			// number of args to return to caller
     char **retargv;		// arguments to return
     bool printsummary = false;	// print summary at end of constructor
 
-    //Inform dbgmsg("IpplInfo(argc,argv)", INFORM_ALL_NODES);
-
     // determine whether we should strip out ippl-specific arguments, or keep
     bool stripargs = (removeargs != KEEP);
 
     communicator_m = mpicomm;
 
-    Stats = std::make_unique<IpplStats>();
-    Info = std::make_unique<Inform>("Ippl");
-    Warn = std::make_unique<Inform>("Warning", std::cerr);
-    Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
-    Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
+//     Info = std::make_unique<Inform>("Ippl");
+//     Warn = std::make_unique<Inform>("Warning", std::cerr);
+//     Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
+//     Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
 
     // You can only specify argc, argv once; if it is done again, print a warning
     // and continue as if we had not given argc, argv.
@@ -147,8 +134,8 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                 printsummary = true;
 
             } else if ( ( strcmp(argv[i], "--ipplversion") == 0 ) ) {
-                printVersion();
-                std::string options = compileOptions();
+                IpplInfo::printVersion();
+                std::string options = IpplInfo::compileOptions();
                 std::string header("Compile-time options: ");
                 while (options.length() > 58) {
                     std::string line = options.substr(0, 58);
@@ -163,8 +150,8 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
 
             } else if ( ( strcmp(argv[i], "--ipplversionall") == 0 ) ||
                         ( strcmp(argv[i], "-vall") == 0 ) ) {
-                printVersion();
-                std::string options = compileOptions();
+                IpplInfo::printVersion();
+                std::string options = IpplInfo::compileOptions();
                 std::string header("Compile-time options: ");
                 while (options.length() > 58) {
                     std::string line = options.substr(0, 58);
@@ -176,14 +163,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                 }
                 INFOMSG(header << options << endl);
                 exit(0);
-
-            } else if ( ( strcmp(argv[i], "--time") == 0 ) ||
-                    ( strcmp(argv[i], "-time") == 0 ) ||
-                    ( strcmp(argv[i], "--statistics") == 0 ) ||
-                    ( strcmp(argv[i], "-stats") == 0 ) ) {
-                // The user specified that the program stats be printed at
-                // the end of the program.
-                PrintStats = true;
 
             } else if ( ( strcmp(argv[i], "--info") == 0 ) ) {
                 // Set the output level for informative messages.
@@ -221,7 +200,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
                     ( strcmp(argv[i], "-h") == 0 ) ||
                     ( strcmp(argv[i], "-?") == 0 ) ) {
                 // print out summary of command line switches and exit
-                printHelp(argv);
+                IpplInfo::printHelp(argv);
                 INFOMSG("   --ipplversion       : Print a brief version summary.\n");
                 INFOMSG("   --ipplversionall    : Print a detailed version summary.\n");
                 INFOMSG("   --ipplhelp          : Display this command-line summary.\n");
@@ -242,11 +221,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
             argc = retargc;
             argv = retargv;
         }
-
-        // now, at end, start the timer running, and print out a summary if asked
-        Stats->getTime().stop();
-        Stats->getTime().clear();
-        Stats->getTime().start();
     }
 
     // indicate we've created one more Ippl object
@@ -260,31 +234,13 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
 
 /////////////////////////////////////////////////////////////////////
 // Destructor: need to delete comm library if this is the last IpplInfo
-IpplInfo::~IpplInfo() {
-    // at end of program, print statistics if requested to do so
-    if (PrintStats) {
-        Inform statsmsg("Stats", INFORM_ALL_NODES);
-        statsmsg << *this;
-        printStatistics(statsmsg);
-    }
-
-    CommInitialized = false;
-
-    Stats.reset();
-}
+Ippl::~Ippl() { }
 
 
-void IpplInfo::abort(const char *msg) {
+void Ippl::abort(const char *msg) {
     // print out message, if one was provided
     if (msg != 0) {
         ERRORMSG(msg << endl);
-    }
-
-    // print out final stats, if necessary
-    if (PrintStats) {
-        Inform statsmsg("Stats", INFORM_ALL_NODES);
-        statsmsg << IpplInfo();
-        printStatistics(statsmsg);
     }
 
     // that's it, folks this error will be propperly catched in the main
@@ -313,11 +269,6 @@ void IpplInfo::printHelp(char** argv) {
     INFOMSG("   --error <n>         : Set error message level.  0 = off.\n");
     INFOMSG("   --debug <n>         : Set debug message level.  0 = off.\n");
 }
-
-/////////////////////////////////////////////////////////////////////
-// print out statistics to the given Inform stream
-void IpplInfo::printStatistics(Inform &o) { Stats->print(o); }
-
 
 /////////////////////////////////////////////////////////////////////
 // version: return the name of this version of Ippl, as a string
@@ -380,7 +331,7 @@ const char *IpplInfo::compileUser() {
 // param_error: print out an error message when an illegal cmd-line
 // parameter is encountered.
 // Arguments are: parameter, error message, bad value (if any)
-void IpplInfo::param_error(const char *param, const char *msg,
+void Ippl::param_error(const char *param, const char *msg,
         const char *bad) {
     if ( param != 0 )
         ERRORMSG(param << " ");
@@ -389,10 +340,10 @@ void IpplInfo::param_error(const char *param, const char *msg,
     if ( msg != 0 )
         ERRORMSG(": " << msg);
     ERRORMSG(endl);
-    IpplInfo::abort(0);
+    Ippl::abort(0);
 }
 
-void IpplInfo::param_error(const char *param, const char *msg1,
+void Ippl::param_error(const char *param, const char *msg1,
         const char *msg2, const char *bad) {
     if ( param != 0 )
         ERRORMSG(param << " ");
@@ -403,5 +354,5 @@ void IpplInfo::param_error(const char *param, const char *msg1,
     if ( msg2 != 0 )
         ERRORMSG(msg2);
     ERRORMSG(endl);
-    IpplInfo::abort(0);
+    Ippl::abort(0);
 }
