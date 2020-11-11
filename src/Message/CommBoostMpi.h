@@ -17,7 +17,9 @@ namespace ippl {
         using comm_type = boost::mpi::communicator;
         using kind_type = boost::mpi::comm_create_kind;
 
-        Communicate(int argc = 0, char* argv[] = nullptr,
+        Communicate() = default;
+
+        Communicate(int argc, char* argv[],
                     const MPI_Comm& comm = MPI_COMM_WORLD);
 
 

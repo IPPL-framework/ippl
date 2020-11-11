@@ -117,7 +117,6 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
     communicator_m = mpicomm;
 
     if (NumCreated == 0) {
-        Comm = std::make_unique<ippl::Communicate>();
         Stats = std::make_unique<IpplStats>();
         Info = std::make_unique<Inform>("Ippl");
         Warn = std::make_unique<Inform>("Warning", std::cerr);
@@ -146,7 +145,7 @@ IpplInfo::IpplInfo(int& argc, char**& argv, int removeargs, MPI_Comm mpicomm) {
         // create Communicate object now.
         // dbgmsg << "Setting up parallel environment ..." << endl;
         if (startcomm && nprocs != 0 && nprocs != 1) {
-            Comm = std::make_unique<ippl::Communicate>(argc, argv);
+            Comm = std::make_unique<ippl::Communicate>(argc, argv, communicator_m);
 
                 // cache our node number and node count
             MyNode = Comm->myNode();
