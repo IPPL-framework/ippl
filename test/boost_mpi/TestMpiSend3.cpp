@@ -26,7 +26,6 @@ public:
 
 public:
     view_type mass_m;
-    view_type charge_m;
     id_type id_m;
 
 
