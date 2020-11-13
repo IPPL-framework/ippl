@@ -4,7 +4,6 @@
 #include <boost/mpi/communicator.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/array.hpp>
-// #include <boost/serialization/binary_object.hpp> // (used for other solution)
 
 #include <Kokkos_Core.hpp>
 
@@ -36,21 +35,9 @@ private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /*version*/)
     {
-        // 9. November 2020
-        // https://www.boost.org/doc/libs/1_63_0/libs/serialization/doc/wrappers.html
         ar & boost::serialization::make_array(mass_m.data(), mass_m.size());
         ar & boost::serialization::make_array(charge_m.data(), charge_m.size());
         ar & boost::serialization::make_array(id_m.data(), id_m.size());
-        /*
-         * Another maybe slower solution:
-         *
-         * ar & boost::serialization::binary_object(mass_m.data(),
-         *                                          sizeof(view_type::value_type) * mass_m.size());
-         * ar & boost::serialization::binary_object(charge_m.data(),
-         *                                          sizeof(view_type::value_type) * charge_m.size());
-         * ar & boost::serialization::binary_object(id_m.data(),
-         *                                          sizeof(id_type::value_type) * id_m.size());
-         */
     }
 };
 
@@ -62,11 +49,10 @@ BOOST_IS_MPI_DATATYPE(Bunch)
 int main(int argc, char *argv[]) {
 
     mpi::environment env(argc, argv);
-
+    mpi::communicator world;
 
     Kokkos::initialize(argc,argv);
     {
-        mpi::communicator world;
 
         if (world.rank() == 0) {
             Bunch bunch(20);
@@ -77,6 +63,8 @@ int main(int argc, char *argv[]) {
                 bunch.charge_m(i) = 0.25;
             });
 
+            Kokkos::fence()
+
             for (int i = 1; i < world.size(); ++i) {
                 world.send(i, 42 /*tag*/, bunch);
             }
@@ -86,8 +74,17 @@ int main(int argc, char *argv[]) {
 
             world.recv(0, 42 /*tag*/, bunch);
 
+            Bunch::id_type::HostMirror h_id = Kokkos::create_mirror_view(bunch.id_m);
+            Kokkos::deep_copy(h_id, bunch.id_m);
+
+            Bunch::view_type::HostMirror h_charge =Kokkos::create_mirror_view(bunch.charge_m);
+            Kokkos::deep_copy(h_charge, bunch.charge_m);
+
+            Bunch::view_type::HostMirror h_mass =Kokkos::create_mirror_view(bunch.mass_m);
+            Kokkos::deep_copy(h_charge, bunch.mass_m);
+
             for (size_t i = 0; i < 20; ++i) {
-                std::cout << bunch.id_m(i) << " " << bunch.charge_m(i) << " " << bunch.mass_m(i) << std::endl;
+                std::cout << h_id(i) << " " << h_charge(i) << " " << h_mass(i) << std::endl;
             }
         }
     }
