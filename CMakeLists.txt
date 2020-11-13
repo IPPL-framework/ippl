@@ -46,10 +46,9 @@ message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
 find_package(Kokkos REQUIRED)
 
-# These are needed by KokkosKernels
 foreach(DEV ${Kokkos_DEVICES})
     if (DEV STREQUAL "CUDA")
-        find_package(CUDA REQUIRED COMPONENTS cudart)
+        find_package(CUDA REQUIRED)
     endif()
 endforeach()
 

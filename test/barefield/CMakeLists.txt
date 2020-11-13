@@ -20,6 +20,7 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
     boost_timer
+    ${CUDA_LIBRARIES}
 )
 
 add_executable (TestBareField2 TestBareField2.cpp)
@@ -28,6 +29,7 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
     boost_timer
+    ${CUDA_LIBRARIES}
 )
 
 add_executable (TestBareField3 TestBareField3.cpp)
@@ -36,6 +38,7 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
     boost_timer
+    ${CUDA_LIBRARIES}
 )
 
 # vi: set et ts=4 sw=4 sts=4:
