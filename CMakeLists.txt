@@ -46,6 +46,13 @@ message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
 find_package(Kokkos REQUIRED)
 
+# These are needed by KokkosKernels
+foreach(DEV ${Kokkos_DEVICES})
+    if (DEV STREQUAL "CUDA")
+        find_package(CUDA REQUIRED COMPONENTS cudart)
+    endif()
+endforeach()
+
 set (BOOSTROOT $ENV{BOOST_DIR})
 if (USE_STATIC_LIBRARIES)
     set (Boost_USE_STATIC_LIBS ON)
