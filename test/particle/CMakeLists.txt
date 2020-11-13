@@ -20,6 +20,7 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
     boost_timer
+    ${CUDA_LIBRARIES}
 )
 
 add_executable (TestScatter TestScatter.cpp)
@@ -28,6 +29,7 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
     boost_timer
+    ${CUDA_LIBRARIES}
 )
 
 add_executable (TestGather TestGather.cpp)
@@ -36,6 +38,7 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
     boost_timer
+    ${CUDA_LIBRARIES}
 )
 
 
@@ -45,6 +48,7 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
     boost_timer
+    ${CUDA_LIBRARIES}
 )
 
 add_executable (PIC3d PIC3d.cpp)
@@ -53,6 +57,7 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
     boost_timer
+    ${CUDA_LIBRARIES}
 )
 
 
@@ -62,6 +67,7 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
     boost_timer
+    ${CUDA_LIBRARIES}
 )
 
 
