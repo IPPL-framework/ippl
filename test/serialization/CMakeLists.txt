@@ -14,32 +14,14 @@ link_directories (
 set (IPPL_LIBS ippl)
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
-message (STATUS "---------------- ${Boost_LIBRARIES}")
-
-
-add_executable (TestBareField TestBareField.cpp)
+add_executable (serialize01 serialize01.cpp)
 target_link_libraries (
-    TestBareField
+    serialize01
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
+    boost_timer
 )
 
-add_executable (TestBareField2 TestBareField2.cpp)
-target_link_libraries (
-    TestBareField2
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
-)
-
-add_executable (TestBareField3 TestBareField3.cpp)
-target_link_libraries (
-    TestBareField3
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
-)
 
 # vi: set et ts=4 sw=4 sts=4:
 

@@ -74,7 +74,7 @@ void ParticleSpatialLayout<T,Dim,Mesh,CachingPolicy>::setup()
     RLayout.checkin(*this);
 
     // create storage for message pointers used in swapping particles
-    unsigned N = Ippl::getNodes();
+    unsigned N = Ippl::Comm->getNodes();
     SwapMsgList = new Message*[N];
     for (i = 0; i < Dim; ++i)
         SwapNodeList[i] = new bool[N];
@@ -121,8 +121,8 @@ void ParticleSpatialLayout<T,Dim,Mesh,CachingPolicy>::update(
     const ParticleAttrib<char>* canSwap)
 {
 
-    unsigned N = Ippl::getNodes();
-    unsigned myN = Ippl::myNode();
+    unsigned N = Ippl::Comm->getNodes();
+    unsigned myN = Ippl::Comm->myNode();
     size_t LocalNum   = PData.getLocalNum();
     size_t DestroyNum = PData.getDestroyNum();
     size_t TotalNum;
@@ -240,7 +240,7 @@ std::ostream& operator<<(std::ostream& out, const ParticleSpatialLayout<T,Dim,Me
 {
 
     out << "ParticleSpatialLayout, with particle distribution:\n    ";
-    for (unsigned int i=0; i < (unsigned int) Ippl::getNodes(); ++i)
+    for (unsigned int i=0; i < (unsigned int) Ippl::Comm->getNodes(); ++i)
         out << "Number of particles " << L.getNodeCount(i) << "  ";
     out << "\nSpatialLayout decomposition = " << L.getLayout();
     return out;
@@ -254,7 +254,7 @@ void ParticleSpatialLayout<T,Dim,Mesh,CachingPolicy>::printDebug(Inform& o)
 {
 
     o << "PSpatial: distrib = ";
-    for (int i=0; i < Ippl::getNodes(); ++i)
+    for (int i=0; i < Ippl::Comm->getNodes(); ++i)
         o << NodeCount[i] << "  ";
 }
 

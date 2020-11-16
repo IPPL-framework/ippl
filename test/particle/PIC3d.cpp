@@ -414,7 +414,7 @@ int main(int argc, char *argv[]){
     // initialize the particle object: do all initialization on one node,
     // and distribute to others
 
-    unsigned long int nloc = totalP / Ippl::getNodes();
+    unsigned long int nloc = totalP / Ippl::Comm->getNodes();
 
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
     IpplTimings::startTimer(particleCreation);                                                    

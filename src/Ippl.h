@@ -1,75 +1,93 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- * 
- ***************************************************************************/
-
-// Ippl.h
-// Comprehensive include file for IPPL applications
-// Includes all of the IPPL header files typically needed
-
+//
+// Class Ippl
+//   Ippl environment.
+//
+// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #ifndef IPPL_H
 #define IPPL_H
 
-// #include <complex>
+#include <iostream>
 
-// Kokkos
-#include "Field/BareField.h"
-#include "Field/Field.h"
+#include "Utility/Inform.h"
 
-// IPPL Communicate classes
-#include "Message/Communicate.h"
-#include "Message/GlobalComm.h"
+#include "Message/CommBoostMpi.h"
+#include <boost/mpi/environment.hpp>
 
-// IPPL Utilities
-// #include "Utility/Timer.h"
-// #include "Utility/PAssert.h"
-#include "Utility/IpplInfo.h"
-// #include "Utility/IpplStats.h"
-// #include "Utility/IpplTimings.h"
-// #include "Utility/IpplMemoryUsage.h"
+class Ippl;
+std::ostream& operator<<(std::ostream&, const Ippl&);
 
-// // IPPL Field Indexing
-// #include "Index/Index.h"
-// #include "Index/NDIndex.h"
+class Ippl : public boost::mpi::environment {
 
-// // IPPL Field Layout
-#include "FieldLayout/FieldLayout.h"
-#include "FieldLayout/CenteredFieldLayout.h"
+public:
+    // an enumeration used to indicate whether to KEEP command-line arguments
+    // or REMOVE them
+    enum { KEEP = 0, REMOVE = 1 };
 
-// // IPPL Meshes
-// #include "Meshes/UniformCartesian.h"
-// #include "Meshes/Cartesian.h"
+    // the parallel communication object
+    static std::unique_ptr<ippl::Communicate> Comm;
 
-// // IPPL Field classes
-// #include "Field/FieldSpec.h"
-// #include "Field/Field.h"
-// #include "Field/Assign.h"
-// #include "Field/AssignDefs.h"
-// #include "Field/IndexedBareField.h"
-// #include "Field/IndexedField.h"
-// #include "Field/GuardCellSizes.h"
+    //   // Inform object to use to print messages to the console (or even to a
+    //   // file if requested)
+    static std::unique_ptr<Inform> Info;
+    static std::unique_ptr<Inform> Warn;
+    static std::unique_ptr<Inform> Error;
+    static std::unique_ptr<Inform> Debug;
 
-// IPPL Particles classes
-#include "Particle/ParticleBase.h"
-// #include "Particle/ParticleSpatialLayout.h"
-// #include "Particle/ParticleBalancer.h"
+    // Constructor 1: specify the argc, argv values from the cmd line.
+    // The second argument controls whether the IPPL-specific command line
+    // arguments are stripped out (the default) or left in (if the setting
+    // is IpplInfo::KEEP).
+    Ippl(int&, char** &, int removeargs = REMOVE, MPI_Comm mpicomm = MPI_COMM_WORLD);
+
+    // Constructor 2: default constructor.  This will not change anything in
+    // how the static data members are set up.  This is useful for declaring
+    // automatic IpplInfo instances in functions after IpplInfo.has been
+    // initially created in the main() routine.
+    Ippl() {};
+
+    // Destructor.
+    ~Ippl();
+
+    static MPI_Comm getComm() {return communicator_m;}
+
+    static MPI_Comm communicator_m;
+
+    // Static flag indicating whether this class has been created with
+    // argc,argv specified ever.  This should only be done once.
+    static bool CommInitialized;
 
 
-// // IPPL Field <--> Particle interpolators
-// #include "Particle/IntNGP.h"
+    // Kill the communication and throw runtime error exception.
+    static void abort(const char * = 0);
 
-// IPPL Math Types
-#include "Types/Vector.h"
-// #include "AppTypes/Tenzor.h"
-// #include "AppTypes/SymTenzor.h"
-// #include "AppTypes/AntiSymTenzor.h"
+    static void deleteGlobals();
 
-// // IPPL FFTs
-// #include "FFT/FFT.h"
+private:
+      // Indicate an error occurred while trying to parse the given command-line
+    // option, and quit.  Arguments are: parameter, error message, bad value
+    static void param_error(const char *, const char *, const char *);
+    static void param_error(const char *, const char *, const char *, const char *);
+};
 
-// // IPPL Load balancing
-// #include "FieldLayout/BinaryBalancer.h"
+// macros used to print out messages to the console or a directed file
+#define INFOMSG(msg)  { *Ippl::Info << msg; }
+#define WARNMSG(msg)  { *Ippl::Warn << msg; }
+#define ERRORMSG(msg) { *Ippl::Error << msg; }
+
+
+//FIMXE remove (only for backwards compatibility)
+#include "IpplCore.h"
 
 #endif

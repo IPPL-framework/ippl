@@ -19,7 +19,7 @@ target_link_libraries (
     TestIpplParticleBase
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (TestScatter TestScatter.cpp)
@@ -27,7 +27,7 @@ target_link_libraries (
     TestScatter
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (TestGather TestGather.cpp)
@@ -35,7 +35,7 @@ target_link_libraries (
     TestGather
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 
@@ -44,7 +44,7 @@ target_link_libraries (
     TestExpression
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (PIC3d PIC3d.cpp)
@@ -52,7 +52,7 @@ target_link_libraries (
     PIC3d
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 
@@ -61,7 +61,7 @@ target_link_libraries (
     TestParticleBConds
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 

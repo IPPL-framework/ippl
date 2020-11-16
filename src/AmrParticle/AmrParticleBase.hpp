@@ -314,7 +314,7 @@ const double& AmrParticleBase<PLayout>::domainMapping(bool inverse) {
     }
     
     if ( std::isnan(scale) || std::isinf(scale) ) {
-        if ( !Ippl::myNode() )
+        if ( !Ippl::Comm->myNode() )
             throw IpplException("AmrParticleBase::domainMapping()",
                                 "Scale factor is Nan or Inf");
     }

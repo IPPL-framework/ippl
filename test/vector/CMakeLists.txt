@@ -19,7 +19,7 @@ target_link_libraries (
     TestVector
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (TestVector2 TestVector2.cpp)
@@ -27,7 +27,7 @@ target_link_libraries (
     TestVector2
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (TestVector3 TestVector3.cpp)
@@ -35,7 +35,7 @@ target_link_libraries (
     TestVector3
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 # vi: set et ts=4 sw=4 sts=4:
