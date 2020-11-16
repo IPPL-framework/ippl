@@ -30,6 +30,7 @@ namespace ippl {
 
         public:
             using buffer_type = typename ViewType<char*, 1, Properties...>;
+            using size_type = typename buffer_type::size_type;
 
             Archive(size_t size = 0);
 
@@ -60,7 +61,7 @@ namespace ippl {
             /*!
              * @returns the size of the buffer
              */
-            size_t getSize() const {
+            size_type getSize() const {
                 return buffer_m.size();
             }
 
