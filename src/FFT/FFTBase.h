@@ -123,7 +123,7 @@ public:
      * @return 
      */
     int transVnodes() const {
-	if (Ippl::maxFFTNodes() > 0 && Ippl::maxFFTNodes() <= Ippl::getNodes())
+	if (Ippl::maxFFTNodes() > 0 && Ippl::maxFFTNodes() <= Ippl::Comm->getNodes())
 	    return Ippl::maxFFTNodes();
 	else
 	    return (-1);

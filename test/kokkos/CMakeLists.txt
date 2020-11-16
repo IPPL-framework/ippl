@@ -19,7 +19,7 @@ target_link_libraries (
     TestVectorField
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (TestVectorField2 TestVectorField2.cpp)
@@ -27,7 +27,7 @@ target_link_libraries (
     TestVectorField2
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (TestVectorField3 TestVectorField3.cpp)
@@ -35,7 +35,7 @@ target_link_libraries (
     TestVectorField3
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (TestVectorField4 TestVectorField4.cpp)
@@ -43,7 +43,7 @@ target_link_libraries (
     TestVectorField4
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 # vi: set et ts=4 sw=4 sts=4:

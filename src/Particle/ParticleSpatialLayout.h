@@ -127,14 +127,14 @@ public:
     // get number of particles on a physical node
     int getNodeCount(unsigned i) const
     {
-        PAssert_LT(i, (unsigned int) Ippl::getNodes());
+        PAssert_LT(i, (unsigned int) Ippl::Comm->getNodes());
         return NodeCount[i];
     }
 
     // get flag for empty node domain
     bool getEmptyNode(unsigned i) const
     {
-        PAssert_LT(i, (unsigned int) Ippl::getNodes());
+        PAssert_LT(i, (unsigned int) Ippl::Comm->getNodes());
         return EmptyNode[i];
     }
 
@@ -228,7 +228,7 @@ protected:
         }
 
         // if we're not on node 0, send data to node 0
-        if (Ippl::myNode() != 0)
+        if (Ippl::Comm->myNode() != 0)
         {
             Message *msg = new Message;
             msg->put(haveLocal);
@@ -254,7 +254,7 @@ protected:
             SingleParticlePos_t tmpminpos;
             SingleParticlePos_t tmpmaxpos;
             size_t tmphaveLocal = 0;
-            unsigned unreceived = Ippl::getNodes() - 1;
+            unsigned unreceived = Ippl::Comm->getNodes() - 1;
 
             // collect data from other nodes
             while (unreceived > 0)
@@ -293,7 +293,7 @@ protected:
             }
 
             // send these values out to the other nodes
-            if (Ippl::getNodes() > 1)
+            if (Ippl::Comm->getNodes() > 1)
             {
                 Message *bmsg = new Message;
                 minpos.putMessage(*bmsg);
@@ -336,8 +336,8 @@ protected:
 
         unsigned d, i, j;			// loop variables
         size_t ip;
-        unsigned N = Ippl::getNodes();
-        unsigned myN = Ippl::myNode();
+        unsigned N = Ippl::Comm->getNodes();
+        unsigned myN = Ippl::Comm->myNode();
 
         // iterators used to search local domains
         typename RegionLayout<T,Dim,Mesh>::iterator_iv localV, localEnd = RLayout.end_iv();
@@ -635,7 +635,7 @@ protected:
 
         unsigned d, i, j;			// loop variables
         size_t ip;
-        unsigned N = Ippl::getNodes();
+        unsigned N = Ippl::Comm->getNodes();
 
         // iterators used to search local domains
         typename RegionLayout<T,Dim,Mesh>::iterator_iv localV, localEnd = RLayout.end_iv();
@@ -757,7 +757,7 @@ protected:
 
             }  // end for (d=0; d<Dim; ++d)
 
-		//std::cout << "node " << Ippl::myNode() << " sent particles " << sent - old_sent << std::endl;
+		//std::cout << "node " << Ippl::Comm->myNode() << " sent particles " << sent - old_sent << std::endl;
 		old_sent = sent;
 
         // return how many particles we have now
@@ -781,8 +781,8 @@ protected:
 
         unsigned d, i, j;			// loop variables
         size_t ip;
-        unsigned N = Ippl::getNodes();
-        unsigned myN = Ippl::myNode();
+        unsigned N = Ippl::Comm->getNodes();
+        unsigned myN = Ippl::Comm->myNode();
 
         // iterators used to search local domains
         typename RegionLayout<T,Dim,Mesh>::iterator_iv localV, localEnd = RLayout.end_iv();
@@ -1080,8 +1080,8 @@ protected:
         Ippl::Comm->barrier();
         static int sent = 0;
 
-        unsigned N = Ippl::getNodes();
-        unsigned myN = Ippl::myNode();
+        unsigned N = Ippl::Comm->getNodes();
+        unsigned myN = Ippl::Comm->myNode();
 
         typename RegionLayout<T,Dim,Mesh>::iterator_iv localV, localEnd = RLayout.end_iv();
         typename RegionLayout<T,Dim,Mesh>::iterator_dv remoteV;
@@ -1209,8 +1209,8 @@ protected:
         Ippl::Comm->barrier();
         static int sent = 0;
 
-        unsigned N = Ippl::getNodes();
-        unsigned myN = Ippl::myNode();
+        unsigned N = Ippl::Comm->getNodes();
+        unsigned myN = Ippl::Comm->myNode();
 
         typename RegionLayout<T,Dim,Mesh>::iterator_iv localV, localEnd = RLayout.end_iv();
         typename RegionLayout<T,Dim,Mesh>::iterator_dv remoteV;

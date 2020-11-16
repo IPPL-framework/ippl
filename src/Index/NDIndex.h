@@ -13,6 +13,7 @@
 
 // include files
 #include "Index/Index.h"
+#include "Message/Message.h"
 
 #include <iostream>
 
