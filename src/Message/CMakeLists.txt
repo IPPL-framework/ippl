@@ -1,6 +1,4 @@
 set (_SRCS
-#     Communicate.cpp
-#     CommMPI.cpp
     MessageFunctions.cpp
     Formatter.cpp
 
@@ -8,8 +6,8 @@ set (_SRCS
     )
 
 set (_HDRS
-#     CommMPI.h
-#     Communicate.h
+    Archive.h
+    Archive.hpp
     DataTypes.h
     Formatter.h
     GlobalComm.hpp
