@@ -13,7 +13,7 @@
 
 #include "Message/Message.h"
 #include "Utility/Inform.h"
-#include "Utility/IpplInfo.h"
+#include "Ippl.h"
 
 #include <iterator>
 #include <new>

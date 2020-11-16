@@ -206,7 +206,7 @@ protected:
 
     // if we're here, we did not find it ... it must not be local
     ERRORMSG("Interpolator::getFieldIter: attempt to access non-local index");
-    ERRORMSG(pt << " on node " << Ippl::myNode() << endl);
+    ERRORMSG(pt << " on node " << Ippl::Comm->myNode() << endl);
     ERRORMSG("Dumping local owned and allocated domains:" << endl);
     int lfc = 0;
     for ( lf_i = f.begin_if(); lf_i != lf_end ; ++lf_i, ++lfc ) {

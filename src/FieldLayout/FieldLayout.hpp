@@ -22,7 +22,7 @@
 #include "FieldLayout/FieldLayout.h"
 #include "Message/Communicate.h"
 #include "Message/Message.h"
-#include "Utility/IpplInfo.h"
+#include "Ippl.h"
 #include "Utility/IpplStats.h"
 #include "Utility/PAssert.h"
 
@@ -87,8 +87,8 @@ FieldLayout<Dim>::setup(const NDIndex<Dim>& domain,
     //INCIPPLSTAT(incFieldLayouts);
 
     // Find the number processors.
-    int nprocs = Ippl::getNodes();
-    int myproc = Ippl::myNode();
+    int nprocs = Ippl::Comm->getNodes();
+    int myproc = Ippl::Comm->myNode();
 
     // If the user didn't specify the number of vnodes, make it equal nprocs
     int vnodes = nprocs;
@@ -339,7 +339,7 @@ NDIndex<Dim> FieldLayout<Dim>::getLocalNDIndex()
     NDIndex<Dim> theId;
     for (iterator_iv localv = begin_iv(); localv != end_iv(); ++localv) {
         Vnode<Dim> *vn = (*localv).second.get();
-        if(vn->getNode() == Ippl::myNode())
+        if(vn->getNode() == Ippl::Comm->myNode())
             theId = vn->getDomain();
     }
     return theId;

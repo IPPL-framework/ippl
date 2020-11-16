@@ -75,15 +75,8 @@ Communicate::Communicate(int, char **, int)
 
 ////////////////////////////////////////////////////////////////////////////
 // Destructor.  Nothing to do at present.
-Communicate::~Communicate(void)
-{
-    
-
-    // delete the cached messages
-    SentCache_t::iterator cachei = sentMsgCache.begin();
-    for ( ; cachei != sentMsgCache.end(); ++cachei)
-        (*cachei).second.freebuf();
-}
+Communicate::~Communicate()
+{ }
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -230,11 +223,6 @@ bool Communicate::send(Message *msg, int node, int tag, bool delmsg)
 //      2. In receive queue
 Message* Communicate::receive(int& node, int& tag)
 {
-    
-
-    //Inform dbgmsg("Comm::receive", INFORM_ALL_NODES);
-    //dbgmsg << "Doing receive from node " << node << ", tag " << tag << endl;
-
     // do a check for a message from another node
     //dbgmsg << "Checking for queued message ..." << endl;
     Message *msg = find_msg(node, tag);
