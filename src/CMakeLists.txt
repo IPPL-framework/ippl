@@ -59,6 +59,7 @@ set (IPPL_BASEDIR_HDRS
     IpplVersions.h
     )
 add_ippl_headers (${IPPL_BASEDIR_HDRS})
+add_ippl_sources (Ippl.cpp)
 
 add_subdirectory (DomainMap)
 # add_subdirectory (FFT)
@@ -83,7 +84,7 @@ include_directories (
 
 add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
 
-target_link_libraries(ippl PUBLIC Kokkos::kokkos)
+target_link_libraries(ippl PUBLIC Kokkos::kokkos ${Boost_LIBRARIES})
 
 install (TARGETS ippl DESTINATION lib)
 install (FILES ${IPPL_BASEDIR_HDRS} DESTINATION include)

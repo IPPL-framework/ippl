@@ -19,7 +19,7 @@ target_link_libraries (
     TestPRegion
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (TestNDRegion TestNDRegion.cpp)
@@ -27,7 +27,7 @@ target_link_libraries (
     TestNDRegion
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 
