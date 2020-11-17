@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
     constexpr unsigned int dim = 3;
 
     int pt = 8;
-    Index I(pt);
+    ippl::Index I(pt);
     NDIndex<dim> owned(I, I, I);
 
     e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
@@ -31,22 +31,35 @@ int main(int argc, char *argv[]) {
     typedef ippl::Field<double, dim> field_type;
 //     typedef ippl::Field<ippl::Vector<double, dim>, dim> vector_field_type;
 
-    field_type::bc_container bc;
+    typedef ippl::BConds<double, dim> bcType; 
+    bcType bcField;
 
-    // Boundary conditions--zero on all faces:
-    bc[0] = std::make_shared<ippl::NoBcFace<double, 3> >(0);
-    bc[1] = std::make_shared<ippl::ConstantFace<double, 3> >(1, 0);
-    bc[2] = std::make_shared<ippl::ZeroFace<double, 3> >(2);
-    bc[3] = std::make_shared<ippl::PeriodicFace<double, 3> >(3);
-    bc[4] = std::make_shared<ippl::NoBcFace<double, 3> >(4);
-    bc[5] = std::make_shared<ippl::ZeroFace<double, 3> >(5);
+    //// Periodic Boundary conditions on all faces:
+    //for (i=0; i < 2*dim; ++i) {
+    //    bcField.bc_m[i] = std::make_shared<ippl::PeriodicFace<double, dim, mesh>>(i);
+    //}
+    //bc[0] = std::make_shared<ippl::NoBcFace<double, 3> >(0);
+    //bc[1] = std::make_shared<ippl::ConstantFace<double, 3> >(1, 0);
+    //bc[2] = std::make_shared<ippl::ZeroFace<double, 3> >(2);
+    //bc[3] = std::make_shared<ippl::PeriodicFace<double, 3> >(3);
+    //bc[4] = std::make_shared<ippl::NoBcFace<double, 3> >(4);
+    //bc[5] = std::make_shared<ippl::ZeroFace<double, 3> >(5);
 
+    //bcField.write();
 
-    std::cout << bc << std::endl;
+    //std::cout << bc << std::endl;
 
-    field_type field(mesh, layout, bc);
+    field_type field(mesh, layout);
 
     field = 1.0;
+
+    field = field * 10.0;
+
+    field.write();
+
+    //bcField.apply(field);
+
+    field.write();
 
     return 0;
 }

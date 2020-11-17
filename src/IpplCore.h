@@ -21,6 +21,7 @@
 
 #include "Field/BareField.h"
 #include "Field/Field.h"
+#include "Field/BConds.h"
 
 // IPPL Communicate classes
 #include "Message/Communicate.h"
