@@ -283,16 +283,10 @@ void FieldLayout<Dim>::calcWidths() {
 
 
 template<unsigned Dim>
-NDIndex<Dim> FieldLayout<Dim>::getLocalNDIndex()
+const typename FieldLayout<Dim>::NDIndex_t&
+FieldLayout<Dim>::getLocalNDIndex(int rank) const
 {
-/*
-    NDIndex<Dim> theId;
-    for (iterator_iv localv = begin_iv(); localv != end_iv(); ++localv) {
-        Vnode<Dim> *vn = (*localv).second.get();
-        if(vn->getNode() == Ippl::Comm->myNode())
-            theId = vn->getDomain();
-    }
-    return theId;*/
+    return hLocalDomains_m(rank);
 }
 
 

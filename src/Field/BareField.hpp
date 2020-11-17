@@ -66,7 +66,7 @@ namespace ippl {
     void BareField<T, Dim>::setup() {
         static_assert(Dim == 3, "Only 3-dimensional fields supported at the momment!");
 
-        owned_m = layout_m->getLocalDomain(Ippl::Comm->rank());
+        owned_m = layout_m->getLocalNDIndex();
 
         if constexpr(Dim == 1) {
             this->resize(owned_m[0].length() + 2 * nghost_m);
