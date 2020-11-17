@@ -49,12 +49,12 @@ int main(int argc, char *argv[]) {
     ippl::Index I(pt);
     NDIndex<3> owned(I, I, I);
 
-    e_dim_tag allParallel[3];    // Specifies SERIAL, PARALLEL dims
+    ippl::e_dim_tag allParallel[3];    // Specifies SERIAL, PARALLEL dims
     for (unsigned int d=0; d<3; d++)
-        allParallel[d] = SERIAL;
+        allParallel[d] = ippl::SERIAL;
 
     // all parallel layout, standard domain, normal axis order
-    FieldLayout<3> layout(owned, allParallel);
+    ippl::FieldLayout<3> layout(owned, allParallel);
 
     double dx = 1.0 / double(pt);
     ippl::Vector<double, 3> hx = {dx, dx, dx};

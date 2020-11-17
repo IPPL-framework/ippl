@@ -15,12 +15,12 @@ int main(int argc, char *argv[]) {
     NDIndex<dim> owned(I, I, I);
 
 
-    e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
+    ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
     for (unsigned int d=0; d<dim; d++)
-        allParallel[d] = SERIAL;
+        allParallel[d] = ippl::SERIAL;
 
     // all parallel layout, standard domain, normal axis order
-    FieldLayout<dim> layout(owned, allParallel);
+    ippl::FieldLayout<dim> layout(owned, allParallel);
 
     typedef ippl::BareField<double, dim> bfield_t;
     bfield_t barefield(layout);

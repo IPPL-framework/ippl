@@ -40,7 +40,6 @@
 
 // // IPPL Field Layout
 #include "FieldLayout/FieldLayout.h"
-#include "FieldLayout/CenteredFieldLayout.h"
 
 // // IPPL Meshes
 // #include "Meshes/UniformCartesian.h"
