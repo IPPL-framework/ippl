@@ -254,10 +254,11 @@ namespace ippl {
             auto& bview = buffer.getView(j);
             auto& view = this->getView(j);
 
-            PAssert(hash.size() == bview.size());
+            auto size = hash.size();
+            Kokkos::resize(bview, size);
 
             Kokkos::parallel_for("ParticleBase::pack()",
-                                 hash.size(),
+                                 size,
                                  KOKKOS_CLASS_LAMBDA(const size_t i) {
                                      bview(i) = view(hash(i));
             });
