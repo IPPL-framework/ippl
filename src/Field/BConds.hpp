@@ -126,6 +126,7 @@ namespace ippl {
         {
             for (iterator it = bc_m.begin(); it != bc_m.end(); ++it) {
                 (*it)->apply(field);
+                Kokkos::fence();
             }
         }
 

@@ -35,10 +35,12 @@ int main(int argc, char *argv[]) {
     bc_type bcField;
 
     // Periodic Boundary conditions on all faces:
-    for (int i=0; i < 2*dim; ++i) {
-        bcField.bc_m[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
-        //bcField.bc_m[i] = std::shared_ptr<ippl::PeriodicFace<double, dim>>(new ippl::PeriodicFace<double, dim>(i));
+    for (unsigned int i=0; i < 2*dim; ++i) {
+        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
     }
+    //for (unsigned int i=2; i < 6; ++i) {
+    //    bcField[i] = std::make_shared<ippl::NoBcFace<double, dim>>(i);
+    //}
     //bc[0] = std::make_shared<ippl::NoBcFace<double, 3> >(0);
     //bc[1] = std::make_shared<ippl::ConstantFace<double, 3> >(1, 0);
     //bc[2] = std::make_shared<ippl::ZeroFace<double, 3> >(2);
@@ -46,9 +48,9 @@ int main(int argc, char *argv[]) {
     //bc[4] = std::make_shared<ippl::NoBcFace<double, 3> >(4);
     //bc[5] = std::make_shared<ippl::ZeroFace<double, 3> >(5);
 
-    bcField.write();
+    //bcField.write();
 
-    //std::cout << bc << std::endl;
+    std::cout << bcField << std::endl;
 
     field_type field(mesh, layout);
 

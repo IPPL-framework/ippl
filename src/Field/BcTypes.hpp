@@ -73,8 +73,8 @@ namespace ippl {
                                                                       view.extent(2)}),
                                 KOKKOS_LAMBDA(const int j, const int k){
 
-                                view(0,  j, k) = view(Nx-1, j, k); 
-                                view(Nx, j, k) = view(1, j, k); 
+                                view(0,  j, k) = view(Nx-2, j, k); 
+                                view(Nx-1, j, k) = view(1, j, k); 
                               
                               });
        }
@@ -86,8 +86,8 @@ namespace ippl {
                                                                       view.extent(2)}),
                                 KOKKOS_LAMBDA(const int i, const int k){
 
-                                view(i,  0, k) = view(i, Ny-1, k); 
-                                view(i, Ny, k) = view(i, 1, k); 
+                                view(i,  0, k) = view(i, Ny-2, k); 
+                                view(i, Ny-1, k) = view(i, 1, k); 
                               
                               });
 
@@ -101,8 +101,8 @@ namespace ippl {
                                                                       view.extent(1)}),
                                 KOKKOS_LAMBDA(const int i, const int j){
 
-                                view(i,  j, 0)  = view(i, j, Nz-1); 
-                                view(i,  j, Nz) = view(i, j, 1); 
+                                view(i,  j, 0)  = view(i, j, Nz-2); 
+                                view(i,  j, Nz-1) = view(i, j, 1); 
                               
                               });
 
