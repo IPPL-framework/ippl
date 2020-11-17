@@ -48,6 +48,7 @@ namespace ippl {
 //                                 ,  public FieldLayoutUser
     {
     public:
+        using hash_type = typename ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >::hash_type;
 //         // pair iterator definition ... this layout does not allow for pairlists
 //         typedef int pair_t;
 //         typedef pair_t* pair_iterator;
@@ -145,6 +146,10 @@ namespace ippl {
 
     // perform common constructor tasks
         void setup();
+
+    private:
+        void fillHash(hash_type& hash);
+
     };
 }
 

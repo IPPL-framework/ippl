@@ -34,8 +34,8 @@
 
 namespace ippl {
 
-    template < typename T, unsigned Dim, class Mesh >
-    ParticleSpatialLayout<T,Dim,Mesh>::ParticleSpatialLayout(
+    template <typename T, unsigned Dim, class Mesh>
+    ParticleSpatialLayout<T, Dim, Mesh>::ParticleSpatialLayout(
         FieldLayout<Dim>& /*fl*/,
         Mesh& /*mesh*/)
 //     : rlayout_m(fl, mesh)
@@ -44,8 +44,8 @@ namespace ippl {
     }
 
 
-    template < typename T, unsigned Dim, class Mesh >
-    void ParticleSpatialLayout<T,Dim,Mesh>::setup()
+    template <typename T, unsigned Dim, class Mesh>
+    void ParticleSpatialLayout<T, Dim, Mesh>::setup()
     {
 /*
         unsigned i;			// loop variable
@@ -72,8 +72,8 @@ namespace ippl {
     }
 
 
-    template < typename T, unsigned Dim, class Mesh >
-    ParticleSpatialLayout<T,Dim,Mesh>::~ParticleSpatialLayout()
+    template <typename T, unsigned Dim, class Mesh>
+    ParticleSpatialLayout<T, Dim, Mesh>::~ParticleSpatialLayout()
     {
 //         delete [] NodeCount;
 //         delete [] EmptyNode;
@@ -88,7 +88,7 @@ namespace ippl {
 
 
     template <typename T, unsigned Dim, class Mesh>
-    void ParticleSpatialLayout<T,Dim,Mesh>::update(
+    void ParticleSpatialLayout<T, Dim, Mesh>::update(
         ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata)
     {
 //         this->applyBC(pdata.R, nr);
@@ -112,8 +112,16 @@ namespace ippl {
         // 1st step
 
 
-        // 2nd step
+        /*
+         * 2nd step
+         */
 
+        // send
+        hash_type hash("hash");
+
+        fillHash(hash);
+
+//         pdata.pack(...)
 
         // 3rd step
 
@@ -168,5 +176,12 @@ namespace ippl {
 //             msg->put(TotalNum);
 //             Ippl::Comm->broadcast_others(msg, tag2);
 //         }
+    }
+
+
+    template <typename T, unsigned Dim, class Mesh>
+    void ParticleSpatialLayout<T, Dim, Mesh>::fillHash(hash_type& /*hash*/)
+    {
+        //
     }
 }
