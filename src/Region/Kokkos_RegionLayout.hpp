@@ -1,0 +1,5 @@
+namespace ippl {
+    namespace detail {
+
+    }
+}
