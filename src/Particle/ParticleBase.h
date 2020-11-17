@@ -246,9 +246,20 @@ namespace ippl {
 
     protected:
 
+        /*!
+         * Fill attributes of buffer.
+         * @tparam Buffer is a bunch type
+         * @param buffer to send
+         * @param hash function to access index.
+         */
         template <class Buffer>
         void pack(Buffer& buffer, const hash_type& hash);
 
+        /*!
+         * Fill my attributes.
+         * @tparam Buffer is a bunch type
+         * @param buffer received
+         */
         template <class Buffer>
         void unpack(Buffer& buffer);
 
