@@ -58,4 +58,54 @@ namespace ippl {
         out << "PeriodicFace"
             << ", Face = " << this->face_m;
     }
+    
+    template<typename T, unsigned Dim, class Mesh, class Cell>
+    void PeriodicFace<T, Dim, Mesh, Cell>::apply(Field<T, Dim, Mesh, Cell>& field)
+    {
+       unsigned d = this->face_m / 2;
+       typename Field<T, Dim, Mesh, Cell>::view_type& view = field.getView();
+
+       if(d == 0) {
+           int Nx = view.extent(0);
+           Kokkos::parallel_for("Assign periodic field BC X", 
+                                Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
+                                                                     {view.extent(1),
+                                                                      view.extent(2)}),
+                                KOKKOS_LAMBDA(const int j, const int k){
+
+                                view(0,  j, k) = view(Nx-1, j, k); 
+                                view(Nx, j, k) = view(1, j, k); 
+                              
+                              });
+       }
+       else if(d == 1) {
+           int Ny = view.extent(1);
+           Kokkos::parallel_for("Assign periodic field BC Y", 
+                                Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
+                                                                     {view.extent(0),
+                                                                      view.extent(2)}),
+                                KOKKOS_LAMBDA(const int i, const int k){
+
+                                view(i,  0, k) = view(i, Ny-1, k); 
+                                view(i, Ny, k) = view(i, 1, k); 
+                              
+                              });
+
+
+       }
+       else {
+           int Nz = view.extent(2);
+           Kokkos::parallel_for("Assign periodic field BC Z", 
+                                Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
+                                                                     {view.extent(0),
+                                                                      view.extent(1)}),
+                                KOKKOS_LAMBDA(const int i, const int j){
+
+                                view(i,  j, 0)  = view(i, j, Nz-1); 
+                                view(i,  j, Nz) = view(i, j, 1); 
+                              
+                              });
+
+       }
+    }
 }

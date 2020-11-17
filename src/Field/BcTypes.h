@@ -50,7 +50,7 @@ namespace ippl {
         {
         public:
             // Constructor takes zero, one, or two int's specifying components of
-            // multicomponent types like Vektor/Tenzor/Anti/SymTenzor this BC applies to.
+            // multicomponent types like Vector this BC applies to.
             // Zero int's specified means apply to all components; one means apply to
             // component (i), and two means apply to component (i,j),
             using base_type = BCondBase<T, Dim, Mesh, Cell>;
