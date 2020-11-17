@@ -193,14 +193,6 @@ namespace ippl {
 
 
         /*!
-         * Redistribute particles among MPI ranks.
-         * This function calls the underlying particle layout
-         * routine.
-         */
-        void update();
-
-
-        /*!
          * Create nLocal processor local particles
          * @param nLocal number of local particles to be created
          */
@@ -223,6 +215,32 @@ namespace ippl {
          * @param
          */
         void destroy();
+
+
+        /*!
+         * Serialize to do MPI calls.
+         * @tparam Archive
+         * @param ar archive
+         */
+        template <class Archive>
+        void serialize(Archive& ar);
+
+
+        /*!
+         * Deserialize to do MPI calls.
+         * @tparam Archive
+         * @param ar archive
+         */
+        template <class Archive>
+        void deserialize(Archive& ar);
+
+
+        /*!
+         * Redistribute particles among MPI ranks.
+         * This function calls the underlying particle layout
+         * routine.
+         */
+        void update();
 
     private:
         //! particle layout
