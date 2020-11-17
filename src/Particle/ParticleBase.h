@@ -88,16 +88,17 @@ namespace ippl {
     class ParticleBase {
 
     public:
-        typedef typename PLayout::vector_type vector_type;
-        typedef typename PLayout::index_type  index_type;
-        typedef typename PLayout::particle_position_type particle_position_type;
-        typedef ParticleAttrib<index_type>    particle_index_type;
-        typedef typename detail::ParticleAttribBase<Properties...>::boolean_view_type boolean_view_type;
+        using vector_type            = typename PLayout::vector_type;
+        using index_type             = typename PLayout::index_type;
+        using particle_position_type = typename PLayout::particle_position_type ;
+        using particle_index_type    = ParticleAttrib<index_type>;
+        using boolean_view_type      = typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
 
-        typedef PLayout                           Layout_t;
-        typedef std::vector<detail::ParticleAttribBase<Properties...>*> attribute_container_t;
-        typedef typename attribute_container_t::iterator  attribute_iterator;
-        typedef typename PLayout::bc_container_type bc_container_type;
+        using  Layout_t              = PLayout;
+        using  attribute_container_t = std::vector<detail::ParticleAttribBase<Properties...>*>;
+        using  attribute_iterator    = typename attribute_container_t::iterator;
+        using  bc_container_type     = typename PLayout::bc_container_type;
+        using hash_type              = typename detail::ViewType<int, 1, Properties...>::view_type;
 
     public:
         //! view of particle positions
@@ -241,6 +242,15 @@ namespace ippl {
          * routine.
          */
         void update();
+
+
+    protected:
+
+        template <class Buffer>
+        void pack(Buffer& buffer, const hash_type& hash);
+
+        template <class Buffer>
+        void unpack(Buffer& buffer);
 
     private:
         //! particle layout

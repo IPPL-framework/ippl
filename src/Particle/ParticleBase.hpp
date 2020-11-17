@@ -242,4 +242,47 @@ namespace ippl {
         PAssert(layout_m != nullptr);
         layout_m->update(*this);
     }
+
+
+    template<class PLayout, class... Properties>
+    template <class Buffer>
+    void ParticleBase<PLayout, Properties...>::pack(Buffer& buffer,
+                                                    const hash_type& hash)
+    {
+        using size_type = typename attribute_container_t::size_type;
+        for (size_type j = 0; j < attributes_m.size(); ++j) {
+            auto& bview = buffer.getView(j);
+            auto& view = this->getView(j);
+
+            PAssert(hash.size() == bview.size());
+
+            Kokkos::parallel_for("ParticleBase::pack()",
+                                 hash.size(),
+                                 KOKKOS_CLASS_LAMBDA(const size_t i) {
+                                     bview(i) = view(hash(i));
+            });
+        }
+    }
+
+
+    template<class PLayout, class... Properties>
+    template <class Buffer>
+    void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer)
+    {
+        using size_type = typename attribute_container_t::size_type;
+        for (size_type j = 0; j < attributes_m.size(); ++j) {
+
+            auto& bview = buffer.getView(j);
+            auto& view = this->getView(j);
+
+            auto size = view.size();
+            Kokkos::resize(view, size + bview.size());
+
+            Kokkos::parallel_for("ParticleBase::unpack()",
+                                 bview.size(),
+                                 KOKKOS_CLASS_LAMBDA(const size_t i) {
+                                     view(size + i) = bview(i);
+            });
+        }
+    }
 }
