@@ -52,12 +52,14 @@ namespace ippl {
         using host_mirror_type = typename view_type::host_mirror_type;
 
 
-        // Default constructor, which should only be used if you are going to
-        // call 'initialize' soon after (before using in any context)
+        /*!
+         * Default constructor, which should only be used if you are going to
+         * call 'initialize' soon after (before using in any context)
+         */
         FieldLayout();
 
         FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p=0) {
-            initialize(domain,p);
+            initialize(domain, p);
         }
 
         // Destructor: Everything deletes itself automatically ... the base
@@ -103,7 +105,7 @@ namespace ippl {
         // for the requested dimension, report if the distribution was requested to
         // be SERIAL or PARALLEL
         e_dim_tag getRequestedDistribution(unsigned int d) const {
-            return RequestedLayout[d];
+            return requestedLayout_m[d];
         }
 
         //
@@ -114,12 +116,8 @@ namespace ippl {
     //   UserList::ID_t get_Id() const { return getUserListID(); }
 
         const NDIndex_t& getLocalNDIndex(int rank = Ippl::Comm->rank()) const;
-  //
-  // I/O
-  //
 
-    // Print it out.
-//     void write(std::ostream&) const;
+    void write(std::ostream& = std::cout) const;
 
     private:
         //! Global domain
@@ -134,13 +132,10 @@ namespace ippl {
         // The minimum width of vnodes in each dimension, and the type of
         // layout that the user requested (this might not be the case anymore).
         unsigned int MinWidth[Dim];
-        e_dim_tag RequestedLayout[Dim];
+        e_dim_tag requestedLayout_m[Dim];
 
         // calculate the minimum vnode sizes in each dimension
         void calcWidths();
-
-        // The routine which actually sets things up.
-        void setup(const NDIndex<Dim>&, e_dim_tag *);
     };
 }
 
