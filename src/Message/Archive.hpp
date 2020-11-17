@@ -17,6 +17,8 @@
 //
 #include "Archive.h"
 
+#include <cstring>
+
 namespace ippl {
     namespace detail {
 
