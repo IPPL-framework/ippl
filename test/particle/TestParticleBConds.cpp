@@ -40,10 +40,10 @@ int main(int argc, char *argv[]) {
 
     bunch_type::bc_container_type bcs = {
         BC::PERIODIC,
-        BC::REFLECTIVE,
-        BC::SINK,
         BC::PERIODIC,
         BC::REFLECTIVE,
+        BC::REFLECTIVE,
+        BC::SINK,
         BC::NO
     };
 
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
 
     Kokkos::deep_copy(HostR, bunch->R.getView());
 
-    ippl::Vector<double, dim> expected = {shift, shift, shift};
+    ippl::Vector<double, dim> expected = {shift, shift, pos};
 
     for (unsigned i = 0; i < 3; ++i) {
         std::cout << HostR(0)[i] << std::endl;
