@@ -17,6 +17,8 @@
 //
 #include "CommBoostMpi.h"
 
+#include "Archive.h"
+
 namespace ippl {
     Communicate::Communicate()
     : Communicate(MPI_COMM_WORLD)
@@ -26,4 +28,30 @@ namespace ippl {
     Communicate::Communicate(const MPI_Comm& comm)
     : boost::mpi::communicator(comm, kind_type::comm_duplicate)
     {}
+
+
+    template <class Buffer>
+    void Communicate::send(int dest, int tag, Buffer& buffer)
+    {
+        detail::Archive ar;
+        buffer.serialize(ar);
+        this->send(dest, tag, ar.getBuffer(), ar.getSize());
+    }
+
+
+    template <class Buffer>
+    void Communicate::recv(int src, int tag, Buffer& buffer)
+    {
+        boost::mpi::status msg = this->probe();
+
+        detail::Archive ar;
+
+//         if (msg.source() != src) {
+
+//         }
+
+        this->recv(src, tag, ar.getBuffer(), msg.m_count);
+
+        buffer.deserialize(ar);
+    }
 }

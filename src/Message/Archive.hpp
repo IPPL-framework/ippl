@@ -21,12 +21,14 @@ namespace ippl {
     namespace detail {
 
         template <class... Properties>
-        Archive<Properties...>::Archive(size_t size)
+        Archive<Properties...>::Archive()
         : writepos_m(0)
         , readpos_m(0)
-        , buffer_m("buffer", size)
+        , buffer_m("buffer")
         { }
 
+
+        template <class... Properties>
         template <typename T>
         void Archive<Properties...>::operator<<(const ViewType<T, 1, Properties...>& view) {
             size_t size = sizeof(T);
@@ -41,9 +43,11 @@ namespace ippl {
         }
 
 
+        template <class... Properties>
         template <typename T>
         void Archive<Properties...>::operator>>(const ViewType<T, 1, Properties...>& view) {
             size_t size = sizeof(T);
+            Kokkos::resize(buffer_m, buffer_m.size() + size * view.size());
             Kokkos::parallel_for("Archive::deserialize()", view.size(),
                                  KOKKOS_CLASS_LAMBDA(const int i) {
                                      std::memcpy(view.data() + i,

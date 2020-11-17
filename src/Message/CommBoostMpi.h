@@ -58,6 +58,16 @@ namespace ippl {
         }
 
 
+        using boost::mpi::communicator::send;
+        using boost::mpi::communicator::recv;
+
+        template <class Buffer>
+        void send(int dest, int tag, Buffer& buffer);
+
+        template <class Buffer>
+        void recv(int dest, int tag, Buffer& buffer);
+
+
         [[deprecated]]
         int broadcast_others(Message *, int, bool = true) {
             return 0;

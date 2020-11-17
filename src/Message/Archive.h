@@ -29,10 +29,11 @@ namespace ippl {
         class Archive {
 
         public:
-            using buffer_type = typename ViewType<char*, 1, Properties...>;
+            using buffer_type = typename ViewType<char, 1, Properties...>::view_type;
+            using pointer_type = typename buffer_type::pointer_type;
             using size_type = typename buffer_type::size_type;
 
-            Archive(size_t size = 0);
+            Archive();
 
             /*!
              * Serialize.
@@ -53,7 +54,7 @@ namespace ippl {
             /*!
              * @returns a pointer to the data of the buffer
              */
-            void* getBuffer() const {
+            pointer_type getBuffer() const {
                 return buffer_m.data();
             }
 

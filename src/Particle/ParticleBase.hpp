@@ -218,20 +218,20 @@ namespace ippl {
 
     template<class PLayout, class... Properties>
     template <class Archive>
-    void serialize(Archive& ar) {
+    void ParticleBase<PLayout, Properties...>::serialize(Archive& ar) {
         using size_type = typename attribute_container_t::size_type;
-        for (size_type i = 0; i < attrib_m.size(); ++i) {
-            ar << *attrib_m[i];
+        for (size_type i = 0; i < attributes_m.size(); ++i) {
+            ar << *attributes_m[i];
         }
     }
 
 
     template<class PLayout, class... Properties>
     template <class Archive>
-    void deserialize(Archive& ar) {
+    void ParticleBase<PLayout, Properties...>::deserialize(Archive& ar) {
         using size_type = typename attribute_container_t::size_type;
-        for (size_type i = 0; i < attrib_m.size(); ++i) {
-            ar >> *attrib_m[i];
+        for (size_type i = 0; i < attributes_m.size(); ++i) {
+            ar >> *attributes_m[i];
         }
     }
 
