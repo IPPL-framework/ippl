@@ -19,7 +19,7 @@ target_link_libraries (
     TestField
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (TestField2 TestField2.cpp)
@@ -27,7 +27,7 @@ target_link_libraries (
     TestField2
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (TestField3 TestField3.cpp)
@@ -35,7 +35,7 @@ target_link_libraries (
     TestField3
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 add_executable (TestFieldReductions TestFieldReductions.cpp)
@@ -43,7 +43,7 @@ target_link_libraries (
     TestFieldReductions
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 

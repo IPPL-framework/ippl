@@ -97,8 +97,8 @@ void IpplParticleBase<PLayout>::resetID(void) {
 
 
 
-  unsigned int nodes = Ippl::getNodes();
-  unsigned int myNode = Ippl::myNode();
+  unsigned int nodes = Ippl::Comm->getNodes();
+  unsigned int myNode = Ippl::Comm->myNode();
   size_t localNum = this->getLocalNum();
   size_t ip;
   int master = 0;

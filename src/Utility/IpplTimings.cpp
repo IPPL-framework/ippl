@@ -96,7 +96,7 @@ void Timing::print() {
     msg << level1
         << "-----------------------------------------------------------------";
     msg << "\n";
-    msg << "     Timing results for " << Ippl::getNodes() << " nodes:" << "\n";
+    msg << "     Timing results for " << Ippl::Comm->getNodes() << " nodes:" << "\n";
     msg << "-----------------------------------------------------------------";
     msg << "\n";
 
@@ -147,8 +147,8 @@ void Timing::print() {
             << " Wall max = " << std::setw(10) << wallmax << ","
             << " CPU max = " << std::setw(10) << cpumax << "\n"
             << std::string().assign(20,' ')
-            << " Wall avg = " << std::setw(10) << wallavg / Ippl::getNodes() << ","
-            << " CPU avg = " << std::setw(10) << cpuavg / Ippl::getNodes() << "\n"
+            << " Wall avg = " << std::setw(10) << wallavg / Ippl::Comm->getNodes() << ","
+            << " CPU avg = " << std::setw(10) << cpuavg / Ippl::Comm->getNodes() << "\n"
             << std::string().assign(20,' ')
             << " Wall min = " << std::setw(10) << wallmin << ","
             << " CPU min = " << std::setw(10) << cpumin << "\n"
@@ -176,7 +176,7 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
     /*
      *msg << "---------------------------------------------------------------------------";
      *msg << "\n";
-     *msg << "     Timing results for " << Ippl::getNodes() << " nodes:" << "\n";
+     *msg << "     Timing results for " << Ippl::Comm->getNodes() << " nodes:" << "\n";
      *msg << "---------------------------------------------------------------------------";
      *msg << " name nodes (cputot cpumax) (walltot wallmax) cpumin wallmin cpuav wallav  ";
      *msg << "\n";
@@ -208,7 +208,7 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
         for (int j=lengthName; j < 20; ++j) {
             *msg << ".";
         }
-        *msg  << " " << std::setw(6)  << Ippl::getNodes()
+        *msg  << " " << std::setw(6)  << Ippl::Comm->getNodes()
               << " " << std::setw(9) << std::setprecision(4) << cputotal
               << " " << std::setw(9) << std::setprecision(4) << walltotal
               << "\n";
@@ -253,13 +253,13 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
         for (int j=lengthName; j < 20; ++j) {
             *msg << ".";
         }
-        *msg << " " << std::setw(6) << Ippl::getNodes()
+        *msg << " " << std::setw(6) << Ippl::Comm->getNodes()
              << " " << std::setw(9) << std::setprecision(4) << cpumax
              << " " << std::setw(9) << std::setprecision(4) << wallmax
              << " " << std::setw(9) << std::setprecision(4) << cpumin
              << " " << std::setw(9) << std::setprecision(4) << wallmin
-             << " " << std::setw(9) << std::setprecision(4) << cpuavg / Ippl::getNodes()
-             << " " << std::setw(9) << std::setprecision(4) << wallavg / Ippl::getNodes()
+             << " " << std::setw(9) << std::setprecision(4) << cpuavg / Ippl::Comm->getNodes()
+             << " " << std::setw(9) << std::setprecision(4) << wallavg / Ippl::Comm->getNodes()
              << endl;
     }
     timer_stream->close();

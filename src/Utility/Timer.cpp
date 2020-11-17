@@ -21,6 +21,8 @@
 //
 #include "Timer.h"
 
+#include "Kokkos_Core.hpp"
+
 Timer::Timer() {
     this->clear();
 }
@@ -37,6 +39,7 @@ void Timer::start() {
 
 
 void Timer::stop() {
+    Kokkos::fence();
     timer_m.stop();
     
     boost::timer::cpu_times elapsed = timer_m.elapsed();
