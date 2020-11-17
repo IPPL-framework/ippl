@@ -29,26 +29,23 @@ int main(int argc, char *argv[]) {
 
 
     typedef ippl::Field<double, dim> field_type;
-//     typedef ippl::Field<ippl::Vector<double, dim>, dim> vector_field_type;
 
     typedef ippl::BConds<double, dim> bc_type; 
+
     bc_type bcField;
 
-    // Periodic Boundary conditions on all faces:
-    for (unsigned int i=0; i < 2*dim; ++i) {
+    //X direction periodic BC
+    for (unsigned int i=0; i < 2; ++i) {
         bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
     }
-    //for (unsigned int i=2; i < 6; ++i) {
-    //    bcField[i] = std::make_shared<ippl::NoBcFace<double, dim>>(i);
-    //}
-    //bc[0] = std::make_shared<ippl::NoBcFace<double, 3> >(0);
-    //bc[1] = std::make_shared<ippl::ConstantFace<double, 3> >(1, 0);
-    //bc[2] = std::make_shared<ippl::ZeroFace<double, 3> >(2);
-    //bc[3] = std::make_shared<ippl::PeriodicFace<double, 3> >(3);
-    //bc[4] = std::make_shared<ippl::NoBcFace<double, 3> >(4);
-    //bc[5] = std::make_shared<ippl::ZeroFace<double, 3> >(5);
-
-    //bcField.write();
+    //Lower Y face 
+    bcField[2] = std::make_shared<ippl::NoBcFace<double, dim>>(2);
+    //Higher Y face
+    bcField[3] = std::make_shared<ippl::ConstantFace<double, dim>>(3, 7.0);
+    //Lower Z face
+    bcField[4] = std::make_shared<ippl::ZeroFace<double, dim>>(4);
+    //Higher Z face
+    bcField[5] = std::make_shared<ippl::ExtrapolateFace<double, dim>>(5, 0.0, 1.0);
 
     std::cout << bcField << std::endl;
 

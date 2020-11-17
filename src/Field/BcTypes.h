@@ -41,43 +41,42 @@ namespace ippl {
             bool changePhysical_m;
         };
 
-
-        template<typename T,
-                 unsigned Dim,
-                 class Mesh = UniformCartesian<double, Dim>,
-                 class Cell = typename Mesh::DefaultCentering>
-        class ExtrapolateFace : public BCondBase<T, Dim, Mesh, Cell>
-        {
-        public:
-            // Constructor takes zero, one, or two int's specifying components of
-            // multicomponent types like Vector this BC applies to.
-            // Zero int's specified means apply to all components; one means apply to
-            // component (i), and two means apply to component (i,j),
-            using base_type = BCondBase<T, Dim, Mesh, Cell>;
-
-            ExtrapolateFace(unsigned face,
-                            T offset,
-                            T slope)
-            : base_type(face)
-            , offset_m(offset)
-            , slope_m(slope)
-            {}
-
-            virtual ~ExtrapolateFace() = default;
-
-            virtual void apply(Field<T, Dim, Mesh, Cell>& field);
-
-            virtual void write(std::ostream&) const = 0;
-
-            const T& getOffset() const { return offset_m; }
-            const T& getSlope() const { return slope_m; }
-
-        protected:
-            T offset_m;
-            T slope_m;
-        };
     }
+    
+    template<typename T,
+             unsigned Dim,
+             class Mesh = UniformCartesian<double, Dim>,
+             class Cell = typename Mesh::DefaultCentering>
+    class ExtrapolateFace : public detail::BCondBase<T, Dim, Mesh, Cell>
+    {
+    public:
+        // Constructor takes zero, one, or two int's specifying components of
+        // multicomponent types like Vector this BC applies to.
+        // Zero int's specified means apply to all components; one means apply to
+        // component (i), and two means apply to component (i,j),
+        using base_type = detail::BCondBase<T, Dim, Mesh, Cell>;
 
+        ExtrapolateFace(unsigned face,
+                        T offset,
+                        T slope)
+        : base_type(face)
+        , offset_m(offset)
+        , slope_m(slope)
+        {}
+
+        virtual ~ExtrapolateFace() = default;
+
+        virtual void apply(Field<T, Dim, Mesh, Cell>& field);
+
+        virtual void write(std::ostream& out) const;
+
+        const T& getOffset() const { return offset_m; }
+        const T& getSlope() const { return slope_m; }
+
+    protected:
+        T offset_m;
+        T slope_m;
+    };
 
     template<typename T,
              unsigned Dim,
@@ -98,11 +97,11 @@ namespace ippl {
              unsigned Dim,
              class Mesh = UniformCartesian<double, Dim>,
              class Cell = typename Mesh::DefaultCentering>
-    class ConstantFace : public detail::ExtrapolateFace<T, Dim, Mesh, Cell>
+    class ConstantFace : public ExtrapolateFace<T, Dim, Mesh, Cell>
     {
     public:
         ConstantFace(unsigned int face, T constant)
-        : detail::ExtrapolateFace<T, Dim, Mesh, Cell>(face, constant, 0)
+        : ExtrapolateFace<T, Dim, Mesh, Cell>(face, constant, 0)
         {}
 
         virtual void write(std::ostream& out) const;
