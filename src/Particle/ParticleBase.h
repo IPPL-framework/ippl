@@ -84,7 +84,7 @@ namespace ippl {
      * @tparam PLayout the particle layout implementing an algorithm to
      * distribute the particles among MPI ranks
      */
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     class ParticleBase {
 
     public:

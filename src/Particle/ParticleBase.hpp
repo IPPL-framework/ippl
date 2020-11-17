@@ -73,7 +73,7 @@
 
 namespace ippl {
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     ParticleBase<PLayout, Properties...>::ParticleBase()
     : layout_m(nullptr)
     , localNum_m(0)
@@ -85,7 +85,7 @@ namespace ippl {
         addAttribute(R);
     }
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     ParticleBase<PLayout, Properties...>::ParticleBase(PLayout& layout)
     : ParticleBase()
     {
@@ -93,13 +93,13 @@ namespace ippl {
     }
 
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     void ParticleBase<PLayout, Properties...>::addAttribute(detail::ParticleAttribBase<Properties...>& pa)
     {
         attributes_m.push_back(&pa);
     }
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     void ParticleBase<PLayout, Properties...>::initialize(PLayout& layout)
     {
 //         PAssert(layout_m == nullptr);
@@ -109,7 +109,7 @@ namespace ippl {
     }
 
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     void ParticleBase<PLayout, Properties...>::create(size_t nLocal)
     {
         PAssert(layout_m != nullptr);
@@ -131,7 +131,7 @@ namespace ippl {
         localNum_m += nLocal;
     }
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     void ParticleBase<PLayout, Properties...>::createWithID(index_type id)
     {
         PAssert(layout_m != nullptr);
@@ -147,7 +147,7 @@ namespace ippl {
         numNodes_m = Ippl::Comm->getNodes();
     }
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     void ParticleBase<PLayout, Properties...>::globalCreate(size_t nTotal)
     {
         PAssert(layout_m != nullptr);
@@ -165,7 +165,7 @@ namespace ippl {
     }
 
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     void ParticleBase<PLayout, Properties...>::destroy() {
 
         /* count the number of particles with ID == -1 and fill
@@ -216,7 +216,7 @@ namespace ippl {
     }
 
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     template <class Archive>
     void ParticleBase<PLayout, Properties...>::serialize(Archive& ar) {
         using size_type = typename attribute_container_t::size_type;
@@ -226,7 +226,7 @@ namespace ippl {
     }
 
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     template <class Archive>
     void ParticleBase<PLayout, Properties...>::deserialize(Archive& ar) {
         using size_type = typename attribute_container_t::size_type;
@@ -236,7 +236,7 @@ namespace ippl {
     }
 
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     void ParticleBase<PLayout, Properties...>::update()
     {
         PAssert(layout_m != nullptr);
@@ -244,7 +244,7 @@ namespace ippl {
     }
 
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     template <class Buffer>
     void ParticleBase<PLayout, Properties...>::pack(Buffer& buffer,
                                                     const hash_type& hash)
@@ -266,7 +266,7 @@ namespace ippl {
     }
 
 
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     template <class Buffer>
     void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer)
     {
