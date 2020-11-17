@@ -135,7 +135,7 @@ namespace ippl {
         : detail::BCondBase<T, Dim, Mesh, Cell>(face)
         { }
 
-        virtual void apply(Field<T, Dim, Mesh, Cell>& /*field*/) {};
+        virtual void apply(Field<T, Dim, Mesh, Cell>& field);
 
         virtual void write(std::ostream& out) const;
     };

@@ -31,13 +31,14 @@ int main(int argc, char *argv[]) {
     typedef ippl::Field<double, dim> field_type;
 //     typedef ippl::Field<ippl::Vector<double, dim>, dim> vector_field_type;
 
-    typedef ippl::BConds<double, dim> bcType; 
-    bcType bcField;
+    typedef ippl::BConds<double, dim> bc_type; 
+    bc_type bcField;
 
-    //// Periodic Boundary conditions on all faces:
-    //for (i=0; i < 2*dim; ++i) {
-    //    bcField.bc_m[i] = std::make_shared<ippl::PeriodicFace<double, dim, mesh>>(i);
-    //}
+    // Periodic Boundary conditions on all faces:
+    for (int i=0; i < 2*dim; ++i) {
+        bcField.bc_m[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
+        //bcField.bc_m[i] = std::shared_ptr<ippl::PeriodicFace<double, dim>>(new ippl::PeriodicFace<double, dim>(i));
+    }
     //bc[0] = std::make_shared<ippl::NoBcFace<double, 3> >(0);
     //bc[1] = std::make_shared<ippl::ConstantFace<double, 3> >(1, 0);
     //bc[2] = std::make_shared<ippl::ZeroFace<double, 3> >(2);
@@ -45,7 +46,7 @@ int main(int argc, char *argv[]) {
     //bc[4] = std::make_shared<ippl::NoBcFace<double, 3> >(4);
     //bc[5] = std::make_shared<ippl::ZeroFace<double, 3> >(5);
 
-    //bcField.write();
+    bcField.write();
 
     //std::cout << bc << std::endl;
 
@@ -57,7 +58,7 @@ int main(int argc, char *argv[]) {
 
     field.write();
 
-    //bcField.apply(field);
+    bcField.apply(field);
 
     field.write();
 
