@@ -38,16 +38,14 @@ namespace ippl {
 
     template< typename T, unsigned Dim>
     BareField<T, Dim>::BareField()
-    : vnode_m(0)
-    , nghost_m(1)
+    : nghost_m(1)
     , layout_m(nullptr)
     { }
 
 
     template< typename T, unsigned Dim>
     BareField<T, Dim>::BareField(Layout_t& l, int nghost)
-    : vnode_m(0)
-    , nghost_m(nghost)
+    : nghost_m(nghost)
 //     , owned_m(0)
     , layout_m(&l)
     {
@@ -64,23 +62,11 @@ namespace ippl {
     }
 
 
-    /* Using the data that has been initialized by the ctors,
-     * complete the construction by allocating the LFields.
-     */
     template<typename T, unsigned Dim>
     void BareField<T, Dim>::setup() {
         static_assert(Dim == 3, "Only 3-dimensional fields supported at the momment!");
 
-        // Loop over all the Vnodes, creating an field in each.
-        for (typename Layout_t::iterator_iv v_i=getLayout().begin_iv();
-             v_i != getLayout().end_iv(); ++v_i)
-        {
-            // Get the owned.
-            owned_m = (*v_i).second->getDomain();
-
-            // Get the global vnode number (ID number, value from 0 to nvnodes-1):
-            vnode_m = (*v_i).second->getVnode();
-        }
+        owned_m = layout_m->getLocalNDIndex();
 
         if constexpr(Dim == 1) {
             this->resize(owned_m[0].length() + 2 * nghost_m);
