@@ -65,7 +65,7 @@ namespace ippl {
         void send(int dest, int tag, Buffer& buffer);
 
         template <class Buffer>
-        void recv(int dest, int tag, Buffer& buffer);
+        void recv(int src, int tag, Buffer& buffer);
 
 
         [[deprecated]]
