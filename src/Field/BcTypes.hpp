@@ -1,5 +1,6 @@
 
 
+#include "Utility/IpplException.h"
 
 namespace ippl {
     namespace detail {
@@ -74,7 +75,7 @@ namespace ippl {
                                       });
                 break;
             default:
-                break;
+               throw IpplException("ExtrapolateFace::apply", "face number wrong");
         }
     }
     
@@ -163,7 +164,7 @@ namespace ippl {
                                     });
                break;
            default:
-               break;
+               throw IpplException("PeriodicFace::apply", "face number wrong");
        }
     }
 }
