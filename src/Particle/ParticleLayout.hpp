@@ -49,14 +49,15 @@ namespace ippl {
         {
             /* loop over all faces
              * 0: lower x-face
-             * 1: lower y-face
-             * 2: lower z-face
-             * 3: upper x-face
-             * 4: upper y-face
+             * 1: upper x-face
+             * 2: lower y-face
+             * 3: upper y-face
+             * 4: lower z-face
              * 5: upper z-face
              */
             for (unsigned i = 0; i < 2 * Dim; ++i) {
-                unsigned face = i % Dim;
+                //unsigned face = i % Dim;
+                unsigned face = i / 2;
                 switch (bcs_m[i]) {
                     case BC::PERIODIC:
                         Kokkos::parallel_for("Periodic BC",

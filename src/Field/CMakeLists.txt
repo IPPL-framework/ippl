@@ -4,10 +4,12 @@ set (_SRCS
 set (_HDRS
     BareField.hpp
     BareField.h
-#     BCond.hpp
-#     BCond.h
-    Field.hpp
+    BConds.h
+    BConds.hpp
+    BcTypes.h
+    BcTypes.hpp
     Field.h
+    Field.hpp
     GuardCellSizes.hpp
     GuardCellSizes.h
     )
