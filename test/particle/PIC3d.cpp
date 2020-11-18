@@ -38,7 +38,7 @@ constexpr unsigned Dim = 3;
 typedef ippl::detail::ParticleLayout<double,Dim>   PLayout_t;
 typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
 typedef Cell                                       Center_t;
-typedef FieldLayout<Dim> FieldLayout_t;
+typedef ippl::FieldLayout<Dim> FieldLayout_t;
 
 
 template<typename T, unsigned Dim>
@@ -156,7 +156,7 @@ public:
 
     Vector<int, Dim> nr_m;
 
-    e_dim_tag decomp_m[Dim];
+    ippl::e_dim_tag decomp_m[Dim];
 
     Vector_t hr_m;
     Vector_t rmin_m;
@@ -177,7 +177,7 @@ public:
    */
 
     ChargedParticles(PLayout& pl,
-                     Vector_t hr, Vector_t rmin, Vector_t rmax, e_dim_tag decomp[Dim], 
+                     Vector_t hr, Vector_t rmin, Vector_t rmax, ippl::e_dim_tag decomp[Dim],
                      double Q)
     : ippl::ParticleBase<PLayout>(pl)
     , hr_m(hr)
@@ -384,9 +384,9 @@ int main(int argc, char *argv[]){
         domain[i] = ippl::Index(nr[i]);
     }
     
-    e_dim_tag decomp[Dim];    
+    ippl::e_dim_tag decomp[Dim];
     for (unsigned d = 0; d < Dim; ++d) {
-        decomp[d] = SERIAL;
+        decomp[d] = ippl::SERIAL;
     }
 
     // create mesh and layout objects for this problem domain
@@ -397,7 +397,7 @@ int main(int argc, char *argv[]){
     Vector_t origin = {0, 0, 0};
     const double dt = 0.5 * dx; // size of timestep
     mesh = std::make_unique<Mesh_t>(domain, hr, origin);
-    FL   = std::make_unique<FieldLayout_t>(domain, decomp, 1);
+    FL   = std::make_unique<FieldLayout_t>(domain, decomp);
     PL   = std::make_unique<PLayout_t>();
 
 

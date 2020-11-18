@@ -73,6 +73,7 @@ add_subdirectory (Region)
 add_subdirectory (Utility)
 add_subdirectory (Expression)
 add_subdirectory (Types)
+add_subdirectory (Partition)
 
 if (ENABLE_AMR)
     add_subdirectory(AmrParticle)
