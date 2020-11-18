@@ -27,7 +27,7 @@ class PICTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
     typedef ippl::Field<double, dim> field_type;
-    typedef FieldLayout<dim> flayout_type;
+    typedef ippl::FieldLayout<dim> flayout_type;
     typedef ippl::UniformCartesian<double, dim> mesh_type;
     typedef ippl::detail::ParticleLayout<double, dim> playout_type;
 
@@ -58,11 +58,11 @@ public:
         ippl::Index I(nPoints);
         NDIndex<dim> owned(I, I, I);
 
-        e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
+        ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++)
-            allParallel[d] = SERIAL;
+            allParallel[d] = ippl::SERIAL;
 
-        layout_m = flayout_type (owned,allParallel, 1);
+        layout_m = flayout_type (owned, allParallel);
 
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};
