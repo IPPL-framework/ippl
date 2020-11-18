@@ -26,7 +26,7 @@
 class Message;
 
 namespace ippl {
-    class Communicate : boost::mpi::communicator
+    class Communicate : public boost::mpi::communicator
                       , public TagMaker
     {
 

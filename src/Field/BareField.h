@@ -21,21 +21,20 @@
 #include <Kokkos_Core.hpp>
 
 #include "Expression/IpplExpressions.h"
-#include "Index/NDIndex.h"
 #include "Types/ViewTypes.h"
+
+#include "FieldLayout/FieldLayout.h"
 
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
 
 #include <iostream>
-// #include <cinttypes>
 #include <cstdlib>
 
-// forward declarations
-class Index;
-template<unsigned Dim> class FieldLayout;
 
 namespace ippl {
+    class Index;
+
     /*!
      * @file BareField.h
      * A BareField represents a real field.
@@ -53,14 +52,15 @@ namespace ippl {
     {
 
     public:
+        using Layout_t = FieldLayout<Dim>;
+
         //! Domain type specifying the index region
-        typedef NDIndex<Dim> Domain_t;
+        using Domain_t = typename Layout_t::NDIndex_t;
 
         //! View type storing the data
-        typedef typename detail::ViewType<T, Dim>::view_type view_type;
+        using view_type = typename detail::ViewType<T, Dim>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
 
-        typedef FieldLayout<Dim> Layout_t;
 
         /*! A default constructor, which should be used only if the user calls the
          * 'initialize' function before doing anything else.  There are no special
@@ -112,13 +112,6 @@ namespace ippl {
          * @returns the index domain.
          */
         const Domain_t& getOwned()       const { return owned_m; }
-
-        /*!
-         * @returns the global vnode ID number (between 0 and nvnodes - 1)
-         */
-        int getVnode() const { return vnode_m; }
-
-
 
 
         // Access to the layout.
@@ -184,16 +177,6 @@ namespace ippl {
 
 
     private:
-        // Global vnode ID number for the associated Vnode (useful with more recent
-        // FieldLayouts which store a logical "array" of vnodes; user specifies
-        // numbers of vnodes along each direction). Classes or user codes that use
-        // BareField are responsible for setting and managing the values of this index;
-        // if unset, it has the value -1. Generally, this parameter value is set on
-        // construction of the vnode:
-
-        //!
-        int vnode_m;
-
         //! Number of ghost layers on each field boundary
         int nghost_m;
 
