@@ -13,7 +13,7 @@ set (_SRCS
 
 set (_HDRS
     Inform.h
-#     IpplException.h
+    IpplException.h
     IpplInfo.h
 #     IpplMemoryUsage.h
     IpplStats.h
