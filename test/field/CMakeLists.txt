@@ -52,7 +52,7 @@ target_link_libraries (
     TestFieldBC
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    boost_timer
+    ${Boost_LIBRARIES}
 )
 
 # vi: set et ts=4 sw=4 sts=4:

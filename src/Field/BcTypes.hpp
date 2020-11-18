@@ -28,80 +28,53 @@ namespace ippl {
         //extrapolation stuffs need to be added.
         unsigned d = this->face_m / 2;
         typename Field<T, Dim, Mesh, Cell>::view_type& view = field.getView();
-        if(d == 0) {
-            if(this->face_m == 0) {
-                Kokkos::parallel_for("Assign extrapolate BC face: 0", 
-                                      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
-                                                                             {view.extent(1),
-                                                                              view.extent(2)}),
-                                      KOKKOS_CLASS_LAMBDA(const int j, const int k){
-                                      
-                                      view(0, j, k) =  slope_m * view(1, j, k) + offset_m; 
-                                      
-                                      });
-            }
-            else {
-                int Nx = view.extent(0);
-                Kokkos::parallel_for("Assign extrapolate BC face: 1", 
-                                      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
-                                                                              {view.extent(1),
-                                                                               view.extent(2)}),
-                                      KOKKOS_CLASS_LAMBDA(const int j, const int k){
-
-                                      view(Nx-1, j, k) =  slope_m * view(Nx-2, j, k) 
-                                                          + offset_m; 
-                                      });
-                }
-            }
-        else if(d == 1) {
-            if(this->face_m == 2) {
-                Kokkos::parallel_for("Assign extrapolate BC face: 2", 
-                                      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
-                                                                              {view.extent(0),
-                                                                               view.extent(2)}),
-                                      KOKKOS_CLASS_LAMBDA(const int i, const int k){
-
-                                      view(i, 0, k) =  slope_m * view(i, 1, k) + offset_m; 
-                                       
-                                      });
-            }
-            else {
-                int Ny = view.extent(1);
-                Kokkos::parallel_for("Assign extrapolate BC face: 3", 
-                                      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
-                                                                              {view.extent(0),
-                                                                               view.extent(2)}),
-                                      KOKKOS_CLASS_LAMBDA(const int i, const int k){
-
-                                      view(i, Ny-1, k) =  slope_m * view(i, Ny-2, k) 
-                                                          + offset_m; 
-                                       });
-            }
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+        int src, dest;
+        if(this->face_m & 1) {
+            src  = view.extent(d) - 2;
+            dest = src + 1;
         }
         else {
-            if(this->face_m == 4) {
-                Kokkos::parallel_for("Assign extrapolate BC face: 4", 
-                                      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
-                                                                              {view.extent(0),
-                                                                               view.extent(1)}),
-                                      KOKKOS_CLASS_LAMBDA(const int i, const int j){
+            src  = 1;
+            dest = src - 1;
+        }
+        switch(d) {
+            case 0:
+                Kokkos::parallel_for("Assign extrapolate BC X", 
+                                      mdrange_type({0, 0},
+                                                   {view.extent(1),
+                                                    view.extent(2)}),
+                                      KOKKOS_CLASS_LAMBDA(const int j, const int k){
+                                      
+                                      view(dest, j, k) =  slope_m * view(src, j, k) + offset_m; 
+                                      
+                                      });
+                break;
 
-                                      view(i, j, 0) =  slope_m * view(i, j, 1) + offset_m; 
+            case 1:
+                Kokkos::parallel_for("Assign extrapolate BC Y", 
+                                      mdrange_type({0, 0},
+                                                   {view.extent(0),
+                                                    view.extent(2)}),
+                                      KOKKOS_CLASS_LAMBDA(const int i, const int k){
+
+                                      view(i, dest, k) =  slope_m * view(i, src, k) + offset_m; 
                                        
                                       });
-            }
-            else {
-                int Nz = view.extent(2);
-                Kokkos::parallel_for("Assign extrapolate BC face: 5", 
-                                      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
-                                                                              {view.extent(0),
-                                                                               view.extent(1)}),
+                break;
+            case 2:
+                Kokkos::parallel_for("Assign extrapolate BC Z", 
+                                      mdrange_type({0, 0},
+                                                   {view.extent(0),
+                                                    view.extent(1)}),
                                       KOKKOS_CLASS_LAMBDA(const int i, const int j){
 
-                                      view(i, j, Nz-1) =  slope_m * view(i, j, Nz-2) 
-                                                          + offset_m; 
-                                    });
-            }
+                                      view(i, j, dest) =  slope_m * view(i, j, src) + offset_m; 
+                                       
+                                      });
+                break;
+            default:
+                break;
         }
     }
     
@@ -149,48 +122,48 @@ namespace ippl {
     {
        unsigned d = this->face_m / 2;
        typename Field<T, Dim, Mesh, Cell>::view_type& view = field.getView();
+       using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+       int N = view.extent(d);
+       
+       switch (d) {
+           case 0:
+               Kokkos::parallel_for("Assign periodic field BC X", 
+                                     mdrange_type({0, 0},
+                                                  {view.extent(1),
+                                                   view.extent(2)}),
+                                     KOKKOS_CLASS_LAMBDA(const int j, const int k){
+                                    
+                                     view(0, j, k)   = view(N-2, j, k); 
+                                     view(N-1, j, k) = view(1, j, k); 
+                                   
+                                     });
+               break;
+           case 1:
+               Kokkos::parallel_for("Assign periodic field BC Y", 
+                                     mdrange_type({0, 0},
+                                                  {view.extent(0),
+                                                   view.extent(2)}),
+                                     KOKKOS_CLASS_LAMBDA(const int i, const int k){
 
-       if(d == 0) {
-           int Nx = view.extent(0);
-           Kokkos::parallel_for("Assign periodic field BC X", 
-                                Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
-                                                                     {view.extent(1),
-                                                                      view.extent(2)}),
-                                KOKKOS_CLASS_LAMBDA(const int j, const int k){
-
-                                view(0,  j, k) = view(Nx-2, j, k); 
-                                view(Nx-1, j, k) = view(1, j, k); 
+                                     view(i, 0, k)   = view(i, N-2, k); 
+                                     view(i, N-1, k) = view(i, 1, k); 
                               
-                              });
-       }
-       else if(d == 1) {
-           int Ny = view.extent(1);
-           Kokkos::parallel_for("Assign periodic field BC Y", 
-                                Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
-                                                                     {view.extent(0),
-                                                                      view.extent(2)}),
-                                KOKKOS_CLASS_LAMBDA(const int i, const int k){
+                                    });
+               break;
+           case 2:
+               Kokkos::parallel_for("Assign periodic field BC Z", 
+                                     mdrange_type({0, 0},
+                                                  {view.extent(0),
+                                                   view.extent(1)}),
+                                     KOKKOS_CLASS_LAMBDA(const int i, const int j){
 
-                                view(i,  0, k) = view(i, Ny-2, k); 
-                                view(i, Ny-1, k) = view(i, 1, k); 
+                                     view(i, j, 0)    = view(i, j, N-2); 
+                                     view(i, j, N-1)  = view(i, j, 1); 
                               
-                              });
-
-
-       }
-       else {
-           int Nz = view.extent(2);
-           Kokkos::parallel_for("Assign periodic field BC Z", 
-                                Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0},
-                                                                     {view.extent(0),
-                                                                      view.extent(1)}),
-                                KOKKOS_CLASS_LAMBDA(const int i, const int j){
-
-                                view(i,  j, 0)  = view(i, j, Nz-2); 
-                                view(i,  j, Nz-1) = view(i, j, 1); 
-                              
-                              });
-
+                                    });
+               break;
+           default:
+               break;
        }
     }
 }
