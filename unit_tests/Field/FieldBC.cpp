@@ -2,7 +2,8 @@
 // Unit test FieldTest
 //   Test the functionality of the class Field.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
+// Copyright (c) 2020, Sriramkrishnan Muralikrishnan, 
+// Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
 // This file is part of IPPL.
