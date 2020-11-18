@@ -68,6 +68,8 @@ namespace ippl {
 
             ~RegionLayout() = default;
 
+            const NDRegion_t& getDomain() const { return region_m; }
+
             void write(std::ostream& = std::cout) const;
 
         private:

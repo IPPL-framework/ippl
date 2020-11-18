@@ -92,13 +92,14 @@ namespace ippl {
         using index_type             = typename PLayout::index_type;
         using particle_position_type = typename PLayout::particle_position_type ;
         using particle_index_type    = ParticleAttrib<index_type>;
-        using boolean_view_type      = typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
+//         using boolean_view_type      = typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
 
-        using  Layout_t              = PLayout;
-        using  attribute_container_t = std::vector<detail::ParticleAttribBase<Properties...>*>;
-        using  attribute_iterator    = typename attribute_container_t::iterator;
-        using  bc_container_type     = typename PLayout::bc_container_type;
-        using hash_type              = typename detail::ViewType<int, 1, Properties...>::view_type;
+        using Layout_t              = PLayout;
+        using attribute_type        = typename detail::ParticleAttribBase<Properties...>;
+        using attribute_container_t = std::vector<attribute_type*>;
+        using attribute_iterator    = typename attribute_container_t::iterator;
+        using bc_container_type     = typename PLayout::bc_container_type;
+        using hash_type             = typename detail::ViewType<int, 1, Properties...>::view_type;
 
     public:
         //! view of particle positions
@@ -186,6 +187,14 @@ namespace ippl {
 
 
         /*!
+         * Get particle attribute
+         * @param i attribute number in container
+         * @returns a pointer to the attribute
+         */
+        attribute_type* getAttribute(size_t i);
+
+
+        /*!
          * @returns the number of attributes
          */
         typename attribute_container_t::size_type getAttributeNum() const {
@@ -244,7 +253,7 @@ namespace ippl {
         void update();
 
 
-    protected:
+//     protected:
 
         /*!
          * Fill attributes of buffer.

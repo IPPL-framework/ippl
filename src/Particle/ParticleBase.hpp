@@ -252,7 +252,7 @@ namespace ippl {
         using size_type = typename attribute_container_t::size_type;
         for (size_type j = 0; j < attributes_m.size(); ++j) {
             auto& bview = buffer.getView(j);
-            auto& view = this->getView(j);
+            auto& view = attributes_m[j]->getView(j);
 
             auto size = hash.size();
             Kokkos::resize(bview, size);
@@ -274,7 +274,7 @@ namespace ippl {
         for (size_type j = 0; j < attributes_m.size(); ++j) {
 
             auto& bview = buffer.getView(j);
-            auto& view = this->getView(j);
+            auto& view = attributes_m[j]->getView(j);
 
             auto size = view.size();
             Kokkos::resize(view, size + bview.size());
