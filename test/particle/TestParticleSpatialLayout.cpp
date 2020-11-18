@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     for (unsigned int d=0; d<dim; d++)
         allParallel[d] = ippl::SERIAL;
 
-    ippl::FieldLayout<dim> layout(owned,allParallel, 1);
+    ippl::FieldLayout<dim> layout(owned,allParallel);
 
     double dx = 1.0 / double(pt);
     ippl::Vector<double, 3> hx = {dx, dx, dx};
