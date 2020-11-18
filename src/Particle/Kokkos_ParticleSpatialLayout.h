@@ -49,6 +49,7 @@ namespace ippl {
     {
     public:
         using hash_type = typename ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >::hash_type;
+        using locate_type = typename detail::ViewType<int, 1>::view_type;
         using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
 
     public:
@@ -138,7 +139,12 @@ namespace ippl {
         void setup();
 
     private:
-        void fillHash(hash_type& hash);
+        void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
+                             locate_type& ranks) const;
+
+        void fillHash(int rank, const locate_type& ranks, hash_type& hash);
+
+        size_t numberOfSends(int rank, const locate_type& ranks);
 
     };
 }

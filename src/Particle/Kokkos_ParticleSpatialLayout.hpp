@@ -32,6 +32,8 @@
 // #include "Utility/IpplInfo.h"
 // #include "Utility/IpplStats.h"
 
+#include <vector>
+
 namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh>
@@ -91,9 +93,11 @@ namespace ippl {
     void ParticleSpatialLayout<T, Dim, Mesh>::update(
         ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata)
     {
-//         this->applyBC(pdata.R, nr);
+        this->applyBC(pdata.R, rlayout_m.getDomain());
 
-        if (Ippl::Comm->size() < 2) {
+        int nRanks = Ippl::Comm->size();
+
+        if (nRanks < 2) {
             // delete invalidated particles
             pdata.destroy();
             return;
@@ -107,24 +111,61 @@ namespace ippl {
          *   4. delete invalidated particles
          */
 
-
-        std::cout << rlayout_m << std::endl;
+        size_t localnum = pdata.getLocalNum();
 
         // 1st step
+        locate_type ranks("MPI ranks", localnum);
 
+        locateParticles(pdata, ranks);
 
         /*
          * 2nd step
          */
 
+        // figure out how many receives
+        MPI_Win win;
+        std::vector<int> nRecvs(nRanks, 0);
+        MPI_Win_create(nRecvs.data(), nRanks*sizeof(int), sizeof(int),
+                       MPI_INFO_NULL, *Ippl::Comm, &win);
+
+        std::vector<int> nSends(nRanks, 0);
+
+        MPI_Win_fence(0, win);
+
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (rank == Ippl::Comm->rank()) {
+                // we do not need to send to ourself
+                continue;
+            }
+            nSends[rank] = numberOfSends(rank, ranks);
+            MPI_Put(nSends.data() + rank, 1, MPI_INT, rank, Ippl::Comm->rank(),
+                    1, MPI_INT, win);
+        }
+        MPI_Win_fence(0, win);
+
         // send
-//         hash_type hash("hash");
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (nSends[rank] > 0) {
+                hash_type hash("hash", localnum);
+                fillHash(rank, ranks, hash);
 
-//         fillHash(hash);
+                ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> > buffer(pdata.getLayout());
+                buffer.create(nSends[rank]);
+//                 pdata.pack(buffer, hash);
+            }
 
-//         pdata.pack(...)
+
+
+        }
 
         // 3rd step
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (nRecvs[rank] > 0) {
+                ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> > buffer(pdata.getLayout());
+                buffer.create(nRecvs[rank]);
+//                 pdata.unpack(buffer);
+            }
+        }
 
 
         // 4th step
@@ -181,8 +222,56 @@ namespace ippl {
 
 
     template <typename T, unsigned Dim, class Mesh>
-    void ParticleSpatialLayout<T, Dim, Mesh>::fillHash(hash_type& /*hash*/)
+    void ParticleSpatialLayout<T, Dim, Mesh>::locateParticles(
+        const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& /*pdata*/,
+        locate_type& ranks) const
     {
-        //
+//         auto& positions = pdata.R.getView();
+        Kokkos::parallel_for(
+            "ParticleSpatialLayout::locateParticles()",
+            ranks.size(),
+            KOKKOS_CLASS_LAMBDA(const size_t /*i*/) {
+//             ranks(i)
+        });
+    }
+
+
+    template <typename T, unsigned Dim, class Mesh>
+    void ParticleSpatialLayout<T, Dim, Mesh>::fillHash(int rank,
+                                                       const locate_type& ranks,
+                                                       hash_type& hash)
+    {
+        /* Compute the prefix sum and fill the hash
+         */
+        Kokkos::parallel_scan(
+            "ParticleSpatialLayout::fillHash()",
+            ranks.size(),
+            KOKKOS_LAMBDA(const int i, int& idx, const bool final) {
+                if (final) {
+                    hash(i) = idx;
+                }
+
+                if (rank == ranks(i)) {
+                    idx += 1;
+                }
+            });
+    }
+
+
+    template <typename T, unsigned Dim, class Mesh>
+    size_t ParticleSpatialLayout<T, Dim, Mesh>::numberOfSends(
+        int rank,
+        const locate_type& ranks)
+    {
+        size_t nSends = 0;
+        Kokkos::parallel_reduce(
+            "ParticleSpatialLayout::numberOfSends()",
+            ranks.size(),
+            KOKKOS_CLASS_LAMBDA(const size_t i,
+                                size_t& num)
+            {
+                num += size_t(rank == ranks(i));
+            }, nSends);
+        return nSends;
     }
 }
