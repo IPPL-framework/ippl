@@ -32,6 +32,8 @@
 // #include "Utility/IpplInfo.h"
 // #include "Utility/IpplStats.h"
 
+#include <vector>
+
 namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh>
@@ -93,7 +95,9 @@ namespace ippl {
     {
         this->applyBC(pdata.R, rlayout_m.getDomain());
 
-        if (Ippl::Comm->size() < 2) {
+        int nRanks = Ippl::Comm->size();
+
+        if (nRanks < 2) {
             // delete invalidated particles
             pdata.destroy();
             return;
@@ -118,29 +122,50 @@ namespace ippl {
          * 2nd step
          */
 
-        // send
-        for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-            std::cout << "rank = " << rank << std::endl;
+        // figure out how many receives
+        MPI_Win win;
+        std::vector<int> nRecvs(nRanks, 0);
+        MPI_Win_create(nRecvs.data(), nRanks*sizeof(int), sizeof(int),
+                       MPI_INFO_NULL, *Ippl::Comm, &win);
+
+        std::vector<int> nSends(nRanks, 0);
+
+        MPI_Win_fence(0, win);
+
+        for (int rank = 0; rank < nRanks; ++rank) {
             if (rank == Ippl::Comm->rank()) {
                 // we do not need to send to ourself
                 continue;
             }
+            nSends[rank] = numberOfSends(rank, ranks);
+            MPI_Put(nSends.data() + rank, 1, MPI_INT, rank, Ippl::Comm->rank(),
+                    1, MPI_INT, win);
+        }
+        MPI_Win_fence(0, win);
 
-            size_t nSends = numberOfSends(rank, ranks);
-
-            std::cout << "nSends = " << nSends << std::endl;
-
-            if (nSends > 0) {
+        // send
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (nSends[rank] > 0) {
                 hash_type hash("hash", localnum);
                 fillHash(rank, ranks, hash);
 
                 ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> > buffer(pdata.getLayout());
-                buffer.create(nSends);
+                buffer.create(nSends[rank]);
 //                 pdata.pack(buffer, hash);
             }
+
+
+
         }
 
         // 3rd step
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (nRecvs[rank] > 0) {
+                ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> > buffer(pdata.getLayout());
+                buffer.create(nRecvs[rank]);
+//                 pdata.unpack(buffer);
+            }
+        }
 
 
         // 4th step

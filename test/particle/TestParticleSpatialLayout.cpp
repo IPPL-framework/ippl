@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     bunch.setParticleBC(bcs);
 
     int nRanks = Ippl::Comm->size();
-    int nParticles = 10;
+    int nParticles = 12;
 
     if (nParticles % nRanks > 0) {
         if (Ippl::Comm->rank() == 0) {
