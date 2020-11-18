@@ -32,7 +32,7 @@
 #include "Particle/ParticleLayout.h"
 #include "Particle/ParticleBase.h"
 
-// #include "Region/RegionLayout.h"
+#include "Region/Kokkos_RegionLayout.h"
 
 namespace ippl {
     /*!
@@ -49,17 +49,7 @@ namespace ippl {
     {
     public:
         using hash_type = typename ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >::hash_type;
-//         // pair iterator definition ... this layout does not allow for pairlists
-//         typedef int pair_t;
-//         typedef pair_t* pair_iterator;
-//         typedef typename ParticleLayout<T, Dim>::SingleParticlePos_t
-//         SingleParticlePos_t;
-//         typedef typename ParticleLayout<T, Dim>::Index_t Index_t;
-//
-//         // type of attributes this layout should use for position and ID
-//         typedef ParticleAttrib<SingleParticlePos_t> ParticlePos_t;
-//         typedef ParticleAttrib<Index_t>             ParticleIndex_t;
-//         using RegionLayout_t = RegionLayout<T, Dim, Mesh>;
+        using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
 
     public:
         // constructor: this one also takes a Mesh
@@ -133,7 +123,7 @@ namespace ippl {
 
     protected:
     //! The RegionLayout which determines where our particles go.
-//     RegionLayout_t rlayout_m;
+    RegionLayout_t rlayout_m;
 
     // The number of particles located on each physical node.
 //     size_t *NodeCount;

@@ -34,36 +34,66 @@
 #ifndef IPPL_REGION_LAYOUT_H
 #define IPPL_REGION_LAYOUT_H
 
-#include "Region/PRegion.h"
+#include <array>
+
+#include "Region/NDRegion.h"
 
 #include "Types/ViewTypes.h"
 
 namespace ippl {
     namespace detail {
 
+        template <typename T, unsigned Dim, class Mesh> class RegionLayout;
+        template <typename T, unsigned Dim, class Mesh>
+        std::ostream& operator<<(std::ostream&, const RegionLayout<T, Dim, Mesh>&);
+
         template <typename T, unsigned Dim, class Mesh/* = UniformCartesian<T, Dim> */>
         class RegionLayout
         {
         public:
-             using container_type = typename ViewType<PRegion<T, Dim>::view_type;
+             using NDRegion_t = NDRegion<T, Dim>;
+             using view_type = typename ViewType<NDRegion_t, 1>::view_type;
+             using host_mirror_type = typename view_type::host_mirror_type;
 
 
             // Default constructor.  To make this class actually work, the user
             // will have to later call 'changeDomain' to set the proper Domain
             // and get a new partitioning.
-//             RegionLayout()
+            RegionLayout();
 
             // Constructor which takes a FieldLayout and a MeshType
             // This one compares the domain of the FieldLayout and the domain of
             // the MeshType to determine the centering of the index space.
-//             RegionLayout(FieldLayout<Dim>&, Mesh&);
+            RegionLayout(const FieldLayout<Dim>&, const Mesh&);
 
-//             // Destructor.
-//             ~RegionLayout();
+            ~RegionLayout() = default;
+
+            void write(std::ostream& = std::cout) const;
 
         private:
-            container_type subdomains_m;
+            void changeDomain(const FieldLayout<Dim>&, const Mesh& mesh);
+            NDRegion_t convertNDIndex(const NDIndex<Dim>&, const Mesh& mesh) const;
+            void fillRegions(const FieldLayout<Dim>&, const Mesh& mesh);
+
+            //! Offset from 'normal' Index space to 'Mesh' Index space
+            std::array<int, Dim> indexOffset_m;
+
+            //! Offset needed between centering of Index space and Mesh points
+            std::array<bool, Dim> centerOffset_m;
+
+            NDRegion_t region_m;
+
+            //! local regions (device view)
+            view_type dLocalRegions_m;
+
+            //! local regions (host mirror view)
+            host_mirror_type hLocalRegions_m;
+
+            view_type subdomains_m;
         };
+
+
+
     }
 }
 

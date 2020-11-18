@@ -97,6 +97,8 @@ namespace ippl {
 
         const NDIndex_t& getLocalNDIndex(int rank = Ippl::Comm->rank()) const;
 
+        const host_mirror_type& getLocalDomains() const;
+
     void write(std::ostream& = std::cout) const;
 
     private:

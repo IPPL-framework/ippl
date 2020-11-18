@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
     ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
     for (unsigned int d=0; d<dim; d++)
-        allParallel[d] = ippl::SERIAL;
+        allParallel[d] = ippl::PARALLEL;
 
     ippl::FieldLayout<dim> layout(owned,allParallel);
 

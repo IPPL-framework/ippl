@@ -36,9 +36,9 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh>
     ParticleSpatialLayout<T, Dim, Mesh>::ParticleSpatialLayout(
-        FieldLayout<Dim>& /*fl*/,
-        Mesh& /*mesh*/)
-//     : rlayout_m(fl, mesh)
+        FieldLayout<Dim>& fl,
+        Mesh& mesh)
+    : rlayout_m(fl, mesh)
     {
         setup();
     }
@@ -108,6 +108,7 @@ namespace ippl {
          */
 
 
+        std::cout << rlayout_m << std::endl;
 
         // 1st step
 
@@ -117,9 +118,9 @@ namespace ippl {
          */
 
         // send
-        hash_type hash("hash");
+//         hash_type hash("hash");
 
-        fillHash(hash);
+//         fillHash(hash);
 
 //         pdata.pack(...)
 
