@@ -92,7 +92,6 @@ namespace ippl {
         using index_type             = typename PLayout::index_type;
         using particle_position_type = typename PLayout::particle_position_type ;
         using particle_index_type    = ParticleAttrib<index_type>;
-//         using boolean_view_type      = typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
 
         using Layout_t              = PLayout;
         using attribute_type        = typename detail::ParticleAttribBase<Properties...>;
@@ -191,7 +190,9 @@ namespace ippl {
          * @param i attribute number in container
          * @returns a pointer to the attribute
          */
-        attribute_type* getAttribute(size_t i);
+        attribute_type* getAttribute(size_t i) {
+            return attributes_m[i];
+        }
 
 
         /*!

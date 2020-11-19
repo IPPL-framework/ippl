@@ -33,6 +33,7 @@
 // #include "Utility/IpplStats.h"
 
 #include <vector>
+#include <numeric>
 
 namespace ippl {
 
@@ -151,7 +152,7 @@ namespace ippl {
 
                 ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> > buffer(pdata.getLayout());
                 buffer.create(nSends[rank]);
-//                 pdata.pack(buffer, hash);
+                pdata.pack(buffer, hash);
             }
 
 
@@ -159,11 +160,16 @@ namespace ippl {
         }
 
         // 3rd step
+
+        // create space for received particles
+        int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
+        pdata.create(nTotalRecvs);
+
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
                 ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> > buffer(pdata.getLayout());
                 buffer.create(nRecvs[rank]);
-//                 pdata.unpack(buffer);
+                pdata.unpack(buffer);
             }
         }
 

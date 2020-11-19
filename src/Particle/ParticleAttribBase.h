@@ -41,8 +41,11 @@ namespace ippl {
 
             virtual void destroy(boolean_view_type, Kokkos::View<int*>, size_t) = 0;
 
-            virtual ~ParticleAttribBase() = default;
+            virtual void pack(void*, const Kokkos::View<int*>&) const = 0;
 
+            virtual void unpack(void*) = 0;
+
+            virtual ~ParticleAttribBase() = default;
         };
     }
 }

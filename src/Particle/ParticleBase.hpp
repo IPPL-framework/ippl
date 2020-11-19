@@ -251,17 +251,7 @@ namespace ippl {
     {
         using size_type = typename attribute_container_t::size_type;
         for (size_type j = 0; j < attributes_m.size(); ++j) {
-            auto& bview = buffer.getView(j);
-            auto& view = attributes_m[j]->getView(j);
-
-            auto size = hash.size();
-            Kokkos::resize(bview, size);
-
-            Kokkos::parallel_for("ParticleBase::pack()",
-                                 size,
-                                 KOKKOS_CLASS_LAMBDA(const size_t i) {
-                                     bview(i) = view(hash(i));
-            });
+            attributes_m[j]->pack(buffer.getAttribute(j), hash);
         }
     }
 
@@ -272,18 +262,7 @@ namespace ippl {
     {
         using size_type = typename attribute_container_t::size_type;
         for (size_type j = 0; j < attributes_m.size(); ++j) {
-
-            auto& bview = buffer.getView(j);
-            auto& view = attributes_m[j]->getView(j);
-
-            auto size = view.size();
-            Kokkos::resize(view, size + bview.size());
-
-            Kokkos::parallel_for("ParticleBase::unpack()",
-                                 bview.size(),
-                                 KOKKOS_CLASS_LAMBDA(const size_t i) {
-                                     view(size + i) = bview(i);
-            });
+            attributes_m[j]->unpack(buffer.getAttribute(j));
         }
     }
 }
