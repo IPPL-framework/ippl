@@ -54,8 +54,11 @@ namespace ippl {
 
 
     template<typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::pack(void* buffer, const Kokkos::View<int*>& hash) const {
-        ParticleAttrib<T, Properties...>* buffer_p = static_cast<ParticleAttrib<T, Properties...>*>(buffer);
+    void ParticleAttrib<T, Properties...>::pack(void* buffer,
+                                                const Kokkos::View<int*>& hash) const
+    {
+        using this_type = ParticleAttrib<T, Properties...>;
+        this_type* buffer_p = static_cast<this_type*>(buffer);
         auto& view = buffer_p->dview_m;
         auto size = hash.size();
         Kokkos::resize(view, size);
@@ -71,7 +74,8 @@ namespace ippl {
 
     template <typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::unpack(void* buffer) {
-        ParticleAttrib<T, Properties...>* buffer_p = static_cast<ParticleAttrib<T, Properties...>*>(buffer);
+        using this_type = ParticleAttrib<T, Properties...>;
+        this_type* buffer_p = static_cast<this_type*>(buffer);
         auto& view = buffer_p->dview_m;
         auto size = dview_m.size();
         Kokkos::resize(dview_m, size + view.size());
