@@ -25,10 +25,6 @@
 //#include "Utility/PAssert.h"
 
 //#include <iostream>
-/*
-// forward declarations
-class Message;
-*/
 namespace ippl {
 template < class T, unsigned Dim > class NDRegion;
 /*
@@ -215,20 +211,6 @@ namespace ippl {
     }
     // split on this dimension
     return split(l, r, d);
-  }
-
-  // put data into a message to send to another node
-  Message& putMessage(Message& m) {
-    for ( unsigned d = 0 ; d < Dim ; ++d )
-      p[d].putMessage(m);
-    return m;
-  }
-
-  // get data out from a message
-  Message& getMessage(Message& m) {
-    for ( unsigned d = 0 ; d < Dim ; ++d )
-      p[d].getMessage(m);
-    return m;
   }*/
 
     private:

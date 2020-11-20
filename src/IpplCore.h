@@ -23,10 +23,6 @@
 #include "Field/Field.h"
 #include "Field/BConds.h"
 
-// IPPL Communicate classes
-#include "Message/Communicate.h"
-#include "Message/GlobalComm.h"
-
 // IPPL Utilities
 // #include "Utility/Timer.h"
 // #include "Utility/PAssert.h"

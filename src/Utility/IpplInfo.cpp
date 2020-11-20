@@ -16,9 +16,6 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "Utility/IpplInfo.h"
-#include "Message/Message.h"
-// #include "Message/Communicate.h"
-// #include "Message/CommMPI.h"
 
 #include "Ippl.h"
 

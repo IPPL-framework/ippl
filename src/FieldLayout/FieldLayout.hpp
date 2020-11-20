@@ -19,8 +19,6 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "FieldLayout/FieldLayout.h"
-#include "Message/Communicate.h"
-#include "Message/Message.h"
 #include "Ippl.h"
 #include "Utility/IpplStats.h"
 #include "Utility/PAssert.h"
