@@ -74,7 +74,7 @@ namespace ippl {
         }*/
     }
 
-
+    /*
     template <typename T, unsigned Dim, class Mesh>
     ParticleSpatialLayout<T, Dim, Mesh>::~ParticleSpatialLayout()
     {
@@ -87,7 +87,7 @@ namespace ippl {
 //
 //         // check ourselves out as a user of the RegionLayout
 //         RLayout.checkout(*this);
-    }
+}*/
 
 
     template <typename T, unsigned Dim, class Mesh>
@@ -169,7 +169,7 @@ namespace ippl {
             if (nRecvs[rank] > 0) {
                 using buffer_type = ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >;
                 buffer_type buffer(pdata.getLayout());
-                buffer.create(nRecvs[rank]);
+		buffer.create(nRecvs[rank]);
 
                 Ippl::Comm->recv(rank, 42, buffer);
 
@@ -178,7 +178,7 @@ namespace ippl {
         }
 
         pdata.setLocalNum(localnum + nTotalRecvs);
-
+	
 
         // 4th step
         pdata.destroy();

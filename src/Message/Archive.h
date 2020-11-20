@@ -83,7 +83,7 @@ namespace ippl {
                 return buffer_m.size();
             }
 
-            ~Archive() { }
+            ~Archive() = default;
 
         private:
             //! write position for serialization

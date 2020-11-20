@@ -74,7 +74,7 @@ namespace ippl {
                 bcs_m.fill(BC::NO);
             };
 
-            ~ParticleLayout() = default;
+            virtual ~ParticleLayout() = default;
 
             template<class PBase>
             void update(PBase&) {

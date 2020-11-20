@@ -56,10 +56,9 @@ namespace ippl {
         // constructor: this one also takes a Mesh
         ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&);
 
-        ParticleSpatialLayout() = delete;
+    ParticleSpatialLayout() : detail::ParticleLayout<T, Dim>() { }
 
-        // destructor
-        ~ParticleSpatialLayout();
+        ~ParticleSpatialLayout() = default;
 
     //
     // spatial decomposition layout information
@@ -138,7 +137,7 @@ namespace ippl {
     // perform common constructor tasks
         void setup();
 
-    private:
+    public:
         void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
                              locate_type& ranks) const;
 

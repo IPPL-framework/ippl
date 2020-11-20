@@ -50,17 +50,18 @@ namespace ippl {
         template <typename T, unsigned Dim>
         void Archive<Properties...>::operator<<(const Kokkos::View<Vector<T, Dim>*>& view) {
             size_t size = sizeof(T);
-            Kokkos::resize(buffer_m, buffer_m.size() + Dim * size * view.size());
+	    Kokkos::resize(buffer_m, buffer_m.size() + Dim * size * view.size());
+	    int len = view.size();
+	    using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
                 "Archive::serialize()",
-                view.size(),
-                KOKKOS_CLASS_LAMBDA(const int i) {
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        std::memcpy(buffer_m.data() + (Dim * i + d) * size + writepos_m,
-                                    &(*(view.data() + i))[d],
-                                    size);
-                    }
-            });
+                mdrange_t({0, 0}, {len, Dim}),
+                KOKKOS_CLASS_LAMBDA(const int i, const int d) {
+		    std::memcpy(buffer_m.data() + (Dim * i + d) * size + writepos_m,
+				&(*(view.data() + i))[d],
+				size);
+		
+		});
             writepos_m += Dim * size * view.size();
         }
 
@@ -86,15 +87,15 @@ namespace ippl {
         void Archive<Properties...>::operator>>(Kokkos::View<Vector<T, Dim>*>& view) {
             size_t size = sizeof(T);
             int count = view.size();
+	    using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
-                "Archive::deserialize()", count,
-                KOKKOS_CLASS_LAMBDA(const int i) {
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        std::memcpy(&(*(view.data() + i))[d],
-                                    buffer_m.data() + (Dim * i + d) * size + readpos_m,
-                                    size);
-                    }
-            });
+                "Archive::deserialize()",
+		mdrange_t({0, 0}, {count, Dim}),
+                KOKKOS_CLASS_LAMBDA(const int i, const int d) {
+		    std::memcpy(&(*(view.data() + i))[d],
+				buffer_m.data() + (Dim * i + d) * size + readpos_m,
+				size);
+		});
             readpos_m += Dim * size * view.size();
         }
     }
