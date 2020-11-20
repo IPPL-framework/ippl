@@ -78,9 +78,6 @@ namespace ippl {
         Message *receive_block(int& /*node*/, int& /*tag*/) {
             return nullptr;
         }
-
-	//private:
-	//detail::Archive ar_m;
     };
 
 

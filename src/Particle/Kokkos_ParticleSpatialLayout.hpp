@@ -163,13 +163,12 @@ namespace ippl {
 
         // create space for received particles
         int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
-//         pdata.create(nTotalRecvs);
 
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
                 using buffer_type = ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >;
                 buffer_type buffer(pdata.getLayout());
-		buffer.create(nRecvs[rank]);
+                buffer.create(nRecvs[rank]);
 
                 Ippl::Comm->recv(rank, 42, buffer);
 
@@ -178,7 +177,6 @@ namespace ippl {
         }
 
         pdata.setLocalNum(localnum + nTotalRecvs);
-	
 
         // 4th step
         pdata.destroy();
