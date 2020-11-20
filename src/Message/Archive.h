@@ -19,6 +19,7 @@
 #define IPPL_ARCHIVE_H
 
 #include "Types/ViewTypes.h"
+#include "Types/Vector.h"
 
 namespace ippl {
     namespace detail {
@@ -44,11 +45,27 @@ namespace ippl {
 
 
             /*!
+             * Serialize vector attributes
+             * @param view to take data from.
+             */
+            template <typename T, unsigned Dim>
+            void operator<<(const Kokkos::View<Vector<T, Dim>*>& view);
+
+
+            /*!
              * Deserialize.
              * @param view to put data to
              */
             template <typename T>
             void operator>>(typename /*ViewType<T, 1, Properties...>::view_type*/Kokkos::View<T*>& view);
+
+
+            /*!
+             * Deserialize vector attributes
+             * @param view to put data to
+             */
+            template <typename T, unsigned Dim>
+            void operator>>(Kokkos::View<Vector<T, Dim>*>& view);
 
 
             /*!
