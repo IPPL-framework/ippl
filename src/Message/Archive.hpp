@@ -36,7 +36,7 @@ namespace ippl {
             size_t size = sizeof(T);
             Kokkos::resize(buffer_m, buffer_m.size() + size * view.size());
             Kokkos::parallel_for(
-                "Archive::serialize()", view.size(),
+                "Archive::serialize()", view.extent(0),
                 KOKKOS_CLASS_LAMBDA(const int i) {
                     std::memcpy(buffer_m.data() + i * size + writepos_m,
                                 view.data() + i,
@@ -51,11 +51,10 @@ namespace ippl {
         void Archive<Properties...>::operator<<(const Kokkos::View<Vector<T, Dim>*>& view) {
             size_t size = sizeof(T);
             Kokkos::resize(buffer_m, buffer_m.size() + Dim * size * view.size());
-            long int len = view.size();
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
                 "Archive::serialize()",
-                mdrange_t({0, 0}, {len, Dim}),
+                mdrange_t({0, 0}, {(long int)view.extent(0), Dim}),
                 KOKKOS_CLASS_LAMBDA(const int i, const int d) {
                     std::memcpy(buffer_m.data() + (Dim * i + d) * size + writepos_m,
                                 &(*(view.data() + i))[d],
@@ -70,7 +69,7 @@ namespace ippl {
         void Archive<Properties...>::operator>>(Kokkos::View<T*>& view) {
             size_t size = sizeof(T);
             Kokkos::parallel_for(
-                "Archive::deserialize()", view.size(),
+                "Archive::deserialize()", view.extent(0),
                 KOKKOS_CLASS_LAMBDA(const int i) {
                     std::memcpy(view.data() + i,
                                 buffer_m.data() + i * size + readpos_m,
@@ -84,11 +83,10 @@ namespace ippl {
         template <typename T, unsigned Dim>
         void Archive<Properties...>::operator>>(Kokkos::View<Vector<T, Dim>*>& view) {
             size_t size = sizeof(T);
-            long int len = view.size();
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
                 "Archive::deserialize()",
-                mdrange_t({0, 0}, {len, Dim}),
+                mdrange_t({0, 0}, {(long int)view.extent(0), Dim}),
                 KOKKOS_CLASS_LAMBDA(const int i, const int d) {
                     std::memcpy(&(*(view.data() + i))[d],
                                 buffer_m.data() + (Dim * i + d) * size + readpos_m,

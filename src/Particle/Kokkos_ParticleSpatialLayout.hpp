@@ -279,7 +279,7 @@ namespace ippl {
          */
         Kokkos::parallel_scan(
             "ParticleSpatialLayout::fillHash()",
-            ranks.size(),
+            ranks.extent(0),
             KOKKOS_LAMBDA(const int i, int& idx, const bool final) {
                 if (final) {
                     hash(i) = idx;
@@ -300,7 +300,7 @@ namespace ippl {
         size_t nSends = 0;
         Kokkos::parallel_reduce(
             "ParticleSpatialLayout::numberOfSends()",
-            ranks.size(),
+            ranks.extent(0),
             KOKKOS_CLASS_LAMBDA(const size_t i,
                                 size_t& num)
             {
