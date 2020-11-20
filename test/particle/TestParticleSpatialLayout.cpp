@@ -72,12 +72,19 @@ int main(int argc, char *argv[]) {
 
     if (Ippl::Comm->rank() == 0) {
         std::cout << "Before update:" << std::endl;
-        for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-            std::cout << ID_host(i) << " " << R_host(i) << std::endl;
-        }
     }
 
-    Ippl::Comm->barrier();
+    for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
+        if (Ippl::Comm->rank() == rank) {
+            std::cout << "------------" << std::endl
+                      << "Rank " << rank << std::endl;
+            for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
+                std::cout << ID_host(i) << " " << R_host(i) << std::endl;
+            }
+        }
+        Ippl::Comm->barrier();
+    }
+
 
     bunch.update();
 
@@ -90,10 +97,18 @@ int main(int argc, char *argv[]) {
     Kokkos::deep_copy(ID_host, bunch.ID.getView());
 
     if (Ippl::Comm->rank() == 0) {
-        std::cout << "After update:" << std::endl;
-        for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-            std::cout << ID_host(i) << " " << R_host(i) << std::endl;
+        std::cout << "Before update:" << std::endl;
+    }
+
+    for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
+        if (Ippl::Comm->rank() == rank) {
+            std::cout << "------------" << std::endl
+                      << "Rank " << rank << std::endl;
+            for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
+                std::cout << ID_host(i) << " " << R_host(i) << std::endl;
+            }
         }
+        Ippl::Comm->barrier();
     }
 
     return 0;
