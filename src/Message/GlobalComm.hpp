@@ -25,8 +25,6 @@
 
 // include files
 #include "Message/GlobalComm.h"
-#include "Message/Communicate.h"
-#include "Message/Message.h"
 #include "Message/Tags.h"
 #include "Utility/IpplInfo.h"
 #include "Utility/IpplStats.h"
@@ -55,7 +53,7 @@ template <class InputIterator, class OutputIterator, class ReduceOp>
 bool reduce(Communicate& comm, InputIterator s1, InputIterator s2,
             OutputIterator t1, const ReduceOp& op, bool *IncludeVal)
 {
-
+/*
 
     // Inform dbgmsg("reduce-vector", INFORM_ALL_NODES);
 
@@ -183,7 +181,7 @@ bool reduce(Communicate& comm, InputIterator s1, InputIterator s2,
     if (useFlags != 0 && useFlags != IncludeVal)
         delete [] useFlags;
 
-    //INCIPPLSTAT(incReductions);
+    //INCIPPLSTAT(incReductions);*/
     return true;
 }
 
@@ -209,121 +207,121 @@ bool reduce_masked(Communicate& comm, T& input, T& output,
                    const ReduceOp& op, bool IncludeVal)
 {
 
-    // Inform dbgmsg("reduce_masked", INFORM_ALL_NODES);
-
-    // determine destination node and tags
-    int parent = 0;
-    int sendtag = comm.next_tag(COMM_REDUCE_SEND_TAG, COMM_REDUCE_CYCLE);
-    int rectag  = comm.next_tag(COMM_REDUCE_RECV_TAG, COMM_REDUCE_CYCLE);
-
-    if (comm.myNode() != parent)
-    {
-        // send the source data to node 0 if we are not node 0
-        Message *msg = new Message;
-        // dbgmsg << "sending message, includeflag=" << IncludeVal << ", to node ";
-        // dbgmsg << parent << " with tag " << sendtag << endl;
-        ::putMessage(*msg, IncludeVal);
-        if (IncludeVal)
-            ::putMessage(*msg, input);
-        if ( ! comm.send(msg, parent, sendtag) )
-        {
-            Ippl::abort("reduce: cannot send reduce scalar.");
-        }
-
-        // then we get the results back
-        msg = comm.receive_block(parent, rectag);
-        // dbgmsg << "received message with size = " << msg->size();
-        // dbgmsg << " from node " << parent << " with tag " << rectag << endl;
-        if ( ! msg || msg->size() < 1 )
-            Ippl::abort("reduce: cannot receive reduce results.");
-        getMessage(*msg, output);
-        delete msg;
-
-    }
-    else
-    {
-        // first copy the source into the target; this is like receiving
-        // from ourselves
-        if (IncludeVal)
-            output = input;
-
-        // if there are several nodes, we must get the other results
-        if (comm.getNodes() > 1)
-        {
-
-            // the parent receives all the messages and then broadcasts the
-            // reduced result
-            int notReceived = comm.getNodes() - 1;
-
-            // create a temporary array to store values from other nodes
-            T *recval = new T[notReceived];
-            bool *recflag = new bool[notReceived];
-
-            // get all messages
-            while (notReceived > 0)
-            {
-                // receive message
-                int fromnode = COMM_ANY_NODE;
-                Message *recmsg = comm.receive_block(fromnode, sendtag);
-                if ( ! recmsg || recmsg->size() < 1 )
-                    Ippl::abort("reduce: cannot receive reduce buffers.");
-
-                // get flag indicating if the message has any data; if it does,
-                // get it and store it
-                ::getMessage(*recmsg, recflag[fromnode - 1]);
-                if (recflag[fromnode - 1])
-                    ::getMessage(*recmsg, recval[fromnode - 1]);
-
-                // finished with this node's data
-                delete recmsg;
-                notReceived--;
-            }
-
-            // now loop through the received values and do the reduction
-            for (int n=1; n < comm.getNodes(); ++n)
-            {
-                if (recflag[n-1])
-                {
-                    if (IncludeVal)
-                    {
-                        PETE_apply(op, output, recval[n-1]);
-                    }
-                    else
-                    {
-                        output = recval[n-1];
-                        IncludeVal = true;
-                    }
-                }
-            }
-
-            // done with the temporary storage
-            delete [] recflag;
-            delete [] recval;
-        }
-
-        // Finally, broadcast the results out.  t2 should now point to the
-        // end of the target buffer.
-        if (comm.getNodes() > 1)
-        {
-            Message *sendmsg = new Message();
-            ::putMessage(*sendmsg, output);
-            // dbgmsg << "sending message with size " << sendmsg->size();
-            // dbgmsg << " to all nodes with tag " << rectag << endl;
-            if (comm.broadcast_others(sendmsg, rectag) != (comm.getNodes() - 1))
-                Ippl::abort("reduce: cannot send reduce results.");
-        }
-
-        // we're done ... but do a check to see that we reduced SOMETHING
-	/* ADA: can be "savely" ignored ...
-        if (!IncludeVal)
-        {
-            WARNMSG("reduce: there was nothing to reduce, since the masks ");
-            WARNMSG("were all false." << endl);
-        }
-	*/
-    }
-
-    //INCIPPLSTAT(incReductions);
+//     // Inform dbgmsg("reduce_masked", INFORM_ALL_NODES);
+//
+//     // determine destination node and tags
+//     int parent = 0;
+//     int sendtag = comm.next_tag(COMM_REDUCE_SEND_TAG, COMM_REDUCE_CYCLE);
+//     int rectag  = comm.next_tag(COMM_REDUCE_RECV_TAG, COMM_REDUCE_CYCLE);
+//
+//     if (comm.myNode() != parent)
+//     {
+//         // send the source data to node 0 if we are not node 0
+//         Message *msg = new Message;
+//         // dbgmsg << "sending message, includeflag=" << IncludeVal << ", to node ";
+//         // dbgmsg << parent << " with tag " << sendtag << endl;
+//         ::putMessage(*msg, IncludeVal);
+//         if (IncludeVal)
+//             ::putMessage(*msg, input);
+//         if ( ! comm.send(msg, parent, sendtag) )
+//         {
+//             Ippl::abort("reduce: cannot send reduce scalar.");
+//         }
+//
+//         // then we get the results back
+//         msg = comm.receive_block(parent, rectag);
+//         // dbgmsg << "received message with size = " << msg->size();
+//         // dbgmsg << " from node " << parent << " with tag " << rectag << endl;
+//         if ( ! msg || msg->size() < 1 )
+//             Ippl::abort("reduce: cannot receive reduce results.");
+//         getMessage(*msg, output);
+//         delete msg;
+//
+//     }
+//     else
+//     {
+//         // first copy the source into the target; this is like receiving
+//         // from ourselves
+//         if (IncludeVal)
+//             output = input;
+//
+//         // if there are several nodes, we must get the other results
+//         if (comm.getNodes() > 1)
+//         {
+//
+//             // the parent receives all the messages and then broadcasts the
+//             // reduced result
+//             int notReceived = comm.getNodes() - 1;
+//
+//             // create a temporary array to store values from other nodes
+//             T *recval = new T[notReceived];
+//             bool *recflag = new bool[notReceived];
+//
+//             // get all messages
+//             while (notReceived > 0)
+//             {
+//                 // receive message
+//                 int fromnode = COMM_ANY_NODE;
+//                 Message *recmsg = comm.receive_block(fromnode, sendtag);
+//                 if ( ! recmsg || recmsg->size() < 1 )
+//                     Ippl::abort("reduce: cannot receive reduce buffers.");
+//
+//                 // get flag indicating if the message has any data; if it does,
+//                 // get it and store it
+//                 ::getMessage(*recmsg, recflag[fromnode - 1]);
+//                 if (recflag[fromnode - 1])
+//                     ::getMessage(*recmsg, recval[fromnode - 1]);
+//
+//                 // finished with this node's data
+//                 delete recmsg;
+//                 notReceived--;
+//             }
+//
+//             // now loop through the received values and do the reduction
+//             for (int n=1; n < comm.getNodes(); ++n)
+//             {
+//                 if (recflag[n-1])
+//                 {
+//                     if (IncludeVal)
+//                     {
+//                         PETE_apply(op, output, recval[n-1]);
+//                     }
+//                     else
+//                     {
+//                         output = recval[n-1];
+//                         IncludeVal = true;
+//                     }
+//                 }
+//             }
+//
+//             // done with the temporary storage
+//             delete [] recflag;
+//             delete [] recval;
+//         }
+//
+//         // Finally, broadcast the results out.  t2 should now point to the
+//         // end of the target buffer.
+//         if (comm.getNodes() > 1)
+//         {
+//             Message *sendmsg = new Message();
+//             ::putMessage(*sendmsg, output);
+//             // dbgmsg << "sending message with size " << sendmsg->size();
+//             // dbgmsg << " to all nodes with tag " << rectag << endl;
+//             if (comm.broadcast_others(sendmsg, rectag) != (comm.getNodes() - 1))
+//                 Ippl::abort("reduce: cannot send reduce results.");
+//         }
+//
+//         // we're done ... but do a check to see that we reduced SOMETHING
+// 	/* ADA: can be "savely" ignored ...
+//         if (!IncludeVal)
+//         {
+//             WARNMSG("reduce: there was nothing to reduce, since the masks ");
+//             WARNMSG("were all false." << endl);
+//         }
+// 	*/
+//     }
+//
+//     //INCIPPLSTAT(incReductions);
     return true;
 }
 
@@ -354,7 +352,7 @@ bool scatter(Communicate& comm, InputIterator s1, InputIterator s2,
              RandomIterator t1, int *target_node,
              int *target_position, const ScatterOp& op)
 {
-
+/*
     int i;			// loop variables
     int tag = comm.next_tag(COMM_REDUCE_SCATTER_TAG, COMM_REDUCE_CYCLE);
 
@@ -430,7 +428,7 @@ bool scatter(Communicate& comm, InputIterator s1, InputIterator s2,
     // at the end, delete the scatter messages, and return success
     delete [] msg;
 
-    //INCIPPLSTAT(incScatters);
+    //INCIPPLSTAT(incScatters);*/
     return true;
 }
 
