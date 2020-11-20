@@ -4,8 +4,8 @@ set (_SRCS
 set (_HDRS
 #    NDRegion.h
     PRegion.h
-#    RegionLayout.hpp
-#    RegionLayout.h
+   Kokkos_RegionLayout.h
+   Kokkos_RegionLayout.hpp
 #    Rnode.h
     )
 

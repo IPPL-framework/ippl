@@ -50,10 +50,21 @@ namespace ippl {
 
         // Create storage for M particle attributes.  The storage is uninitialized.
         // New items are appended to the end of the array.
-        virtual void create(size_t);
+        void create(size_t) override;
 
-        virtual void destroy(boolean_view_type, Kokkos::View<int*> cc, size_t);
+        void destroy(boolean_view_type, Kokkos::View<int*> cc, size_t) override;
 
+        void pack(void*, const Kokkos::View<int*>&) const override;
+
+        void unpack(void*) override;
+
+        void serialize(detail::Archive<Properties...>& ar) override {
+            ar << dview_m;
+        }
+
+        void deserialize(detail::Archive<Properties...>& ar) override {
+            ar >> dview_m;
+        }
 
         virtual ~ParticleAttrib() = default;
        
@@ -84,7 +95,7 @@ namespace ippl {
             return dview_m;
         }
 
-        const view_type& getView() const {
+        const view_type& getView() const{
             return dview_m;
         }
 

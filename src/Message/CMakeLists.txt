@@ -1,15 +1,12 @@
 set (_SRCS
-#     Communicate.cpp
-#     CommMPI.cpp
     MessageFunctions.cpp
     Formatter.cpp
-
     CommBoostMpi.cpp
     )
 
 set (_HDRS
-#     CommMPI.h
-#     Communicate.h
+    Archive.h
+    Archive.hpp
     DataTypes.h
     Formatter.h
     GlobalComm.hpp
@@ -19,7 +16,6 @@ set (_HDRS
     Operations.h
     TagMaker.h
     Tags.h
-
     CommBoostMpi.h
     )
 

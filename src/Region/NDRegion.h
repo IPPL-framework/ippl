@@ -1,24 +1,26 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- * 
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
-
+//
+// Class NDRegion
+//   NDRegion is a simple container of N PRegion objects. It is templated
+//   on the type of data (T) and the number of PRegions (Dim). It can also
+//   be templated on the Mesh type, in order to provide a mesh for converting
+//   an NDIndex into an NDRegion.
+//
+// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #ifndef IPPL_NDREGION_H
 #define IPPL_NDREGION_H
 
-/***********************************************************************
- * NDRegion is a simple container of N PRegion objects.  It is templated
- * on the type of data (T) and the number of PRegions (Dim).  It can also
- * be templated on the Mesh type, in order to provide a mesh for converting
- * an NDIndex into an NDRegion.
- ***********************************************************************/
-
-// include files
 #include "Region/PRegion.h"
 //#include "Utility/PAssert.h"
 
@@ -58,17 +60,15 @@ std::ostream& operator<<(std::ostream&, const NDRegion<T,Dim>&);
 }
 
 namespace ippl {
+    template <typename T, unsigned Dim>
+    class NDRegion
+    {
+    public:
+        KOKKOS_FUNCTION
+        NDRegion() {}
 
-template < class T, unsigned Dim >
-class NDRegion {
-
-public: 
-  // Null ctor does nothing.
-  KOKKOS_FUNCTION
-  NDRegion() {}
-
-  KOKKOS_FUNCTION
-  ~NDRegion() { };
+        KOKKOS_FUNCTION
+        ~NDRegion() { };
 
     /*
   // Construct from a simple array of PRegions
@@ -94,35 +94,8 @@ public:
     p[0] = r1;
     p[1] = r2;
     p[2] = r3;
-  }/*
-  NDRegion(const PRegion<T>& r1, const PRegion<T>& r2, const PRegion<T>& r3,
-           const PRegion<T>& r4) {
-    PInsist(Dim==4, "Number of arguments does not match NDRegion dimension!!");
-    p[0] = r1;
-    p[1] = r2;
-    p[2] = r3;
-    p[3] = r4;
   }
-  NDRegion(const PRegion<T>& r1, const PRegion<T>& r2, const PRegion<T>& r3,
-           const PRegion<T>& r4, const PRegion<T>& r5) {
-    PInsist(Dim==5, "Number of arguments does not match NDRegion dimension!!");
-    p[0] = r1;
-    p[1] = r2;
-    p[2] = r3;
-    p[3] = r4;
-    p[4] = r5;
-  }
-  NDRegion(const PRegion<T>& r1, const PRegion<T>& r2, const PRegion<T>& r3,
-           const PRegion<T>& r4, const PRegion<T>& r5, const PRegion<T>& r6) {
-    PInsist(Dim==6, "Number of arguments does not match NDRegion dimension!!");
-    p[0] = r1;
-    p[1] = r2;
-    p[2] = r3;
-    p[3] = r4;
-    p[4] = r5;
-    p[5] = r6;
-    }
-   */
+
   // copy constructor
   KOKKOS_INLINE_FUNCTION
   NDRegion(const NDRegion<T,Dim>& nr) {
@@ -258,11 +231,10 @@ public:
     return m;
   }*/
 
-private:
-    PRegion<T> p[Dim];			// Array of PRegions
-
-};
-
+    private:
+        //! Array of PRegions
+        PRegion<T> p[Dim];
+    };
 }
 
 /*
@@ -390,10 +362,4 @@ public:
 };
 */
 
-#endif // NDREGION_H
-
-/***************************************************************************
- * $RCSfile: NDRegion.h,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:32 $
- * IPPL_VERSION_ID: $Id: NDRegion.h,v 1.1.1.1 2003/01/23 07:40:32 adelmann Exp $ 
- ***************************************************************************/
+#endif

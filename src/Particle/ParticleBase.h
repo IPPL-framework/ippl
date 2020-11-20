@@ -84,20 +84,21 @@ namespace ippl {
      * @tparam PLayout the particle layout implementing an algorithm to
      * distribute the particles among MPI ranks
      */
-    template<class PLayout, class... Properties>
+    template <class PLayout, class... Properties>
     class ParticleBase {
 
     public:
-        typedef typename PLayout::vector_type vector_type;
-        typedef typename PLayout::index_type  index_type;
-        typedef typename PLayout::particle_position_type particle_position_type;
-        typedef ParticleAttrib<index_type>    particle_index_type;
-        typedef typename detail::ParticleAttribBase<Properties...>::boolean_view_type boolean_view_type;
+        using vector_type            = typename PLayout::vector_type;
+        using index_type             = typename PLayout::index_type;
+        using particle_position_type = typename PLayout::particle_position_type ;
+        using particle_index_type    = ParticleAttrib<index_type>;
 
-        typedef PLayout                           Layout_t;
-        typedef std::vector<detail::ParticleAttribBase<Properties...>*> attribute_container_t;
-        typedef typename attribute_container_t::iterator  attribute_iterator;
-        typedef typename PLayout::bc_container_type bc_container_type;
+        using Layout_t              = PLayout;
+        using attribute_type        = typename detail::ParticleAttribBase<Properties...>;
+        using attribute_container_t = std::vector<attribute_type*>;
+        using attribute_iterator    = typename attribute_container_t::iterator;
+        using bc_container_type     = typename PLayout::bc_container_type;
+        using hash_type             = typename detail::ViewType<int, 1, Properties...>::view_type;
 
     public:
         //! view of particle positions
@@ -185,19 +186,21 @@ namespace ippl {
 
 
         /*!
+         * Get particle attribute
+         * @param i attribute number in container
+         * @returns a pointer to the attribute
+         */
+        attribute_type* getAttribute(size_t i) {
+            return attributes_m[i];
+        }
+
+
+        /*!
          * @returns the number of attributes
          */
         typename attribute_container_t::size_type getAttributeNum() const {
             return attributes_m.size();
         }
-
-
-        /*!
-         * Redistribute particles among MPI ranks.
-         * This function calls the underlying particle layout
-         * routine.
-         */
-        void update();
 
 
         /*!
@@ -223,6 +226,48 @@ namespace ippl {
          * @param
          */
         void destroy();
+
+
+        /*!
+         * Serialize to do MPI calls.
+         * @param ar archive
+         */
+        void serialize(detail::Archive<Properties...>& ar);
+
+
+        /*!
+         * Deserialize to do MPI calls.
+         * @param ar archive
+         */
+        void deserialize(detail::Archive<Properties...>& ar);
+
+
+        /*!
+         * Redistribute particles among MPI ranks.
+         * This function calls the underlying particle layout
+         * routine.
+         */
+        void update();
+
+
+//     protected:
+
+        /*!
+         * Fill attributes of buffer.
+         * @tparam Buffer is a bunch type
+         * @param buffer to send
+         * @param hash function to access index.
+         */
+        template <class Buffer>
+        void pack(Buffer& buffer, const hash_type& hash);
+
+        /*!
+         * Fill my attributes.
+         * @tparam Buffer is a bunch type
+         * @param buffer received
+         */
+        template <class Buffer>
+        void unpack(Buffer& buffer);
 
     private:
         //! particle layout
