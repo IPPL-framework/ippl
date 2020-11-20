@@ -773,25 +773,25 @@ WARN_LOGFILE           =
 
 INPUT                  = ../src/ \
                          ../src/Expression \
-                         ../src/Field/LField.h \
-                         ../src/Field/LField.hpp \
                          ../src/Field/BareField.h \
                          ../src/Field/BareField.hpp \
                          ../src/Field/Kokkos_Field.h \
                          ../src/Field/Kokkos_Field.hpp \
                          ../src/Field/ViewTypes.h \
-                         ../src/Meshes/Kokkos_Mesh.h \
-                         ../src/Meshes/Kokkos_Mesh.hpp \
-                         ../src/Meshes/Kokkos_UniformCartesian.h \
-                         ../src/Meshes/Kokkos_UniformCartesian.hpp \
+                         ../src/Meshes/Mesh.h \
+                         ../src/Meshes/Mesh.hpp \
+                         ../src/Meshes/UniformCartesian.h \
+                         ../src/Meshes/UniformCartesian.hpp \
                          ../src/AppTypes/Vector.h \
                          ../src/AppTypes/Vector.hpp \
-                         ../src/Particle/Kokkos_ParticleLayout.h \
-                         ../src/Particle/Kokkos_ParticleLayout.hpp \
+                         ../src/Particle/ParticleLayout.h \
+                         ../src/Particle/ParticleLayout.hpp \
                          ../src/Particle/ParticleBase.h \
                          ../src/Particle/ParticleBase.hpp \
-                         ../src/Particle/Kokkos_ParticleAttrib.h \
-                         ../src/Particle/Kokkos_ParticleAttrib.hpp
+                         ../src/Particle/ParticleAttrib.h \
+                         ../src/Particle/ParticleAttrib.hpp \
+                         ../src/Message/Archive.h \
+                         ../src/Message/Archive.hpp
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

@@ -82,33 +82,36 @@ namespace ippl {
 
 
     template <class Buffer>
-    void Communicate::send(int dest, int tag, Buffer& buffer)
+	void Communicate::send(int dest, int tag, Buffer& buffer)
     {
-        detail::Archive ar;
+	detail::Archive<> ar;
 
-        buffer.serialize(ar);
+	buffer.serialize(ar);
         MPI_Send(ar.getBuffer(), ar.getSize(),
                  MPI_BYTE, dest, tag, MPI_COMM_WORLD);
-
+	
 //         buffer.serialize(ar);
 //         this->send(dest, tag, ar.getBuffer(), ar.getSize());
     }
 
 
     template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer)
+	void Communicate::recv(int src, int tag, Buffer& buffer)
     {
-        MPI_Status status;
+	MPI_Status status;
 
         MPI_Probe(src, tag, MPI_COMM_WORLD, &status);
 
         int msize = 0;
         MPI_Get_count(&status, MPI_BYTE, &msize);
 
-        detail::Archive ar(msize);
+        detail::Archive<> ar(msize);
 
         MPI_Recv(ar.getBuffer(), ar.getSize(),
                 MPI_BYTE, src, tag, MPI_COMM_WORLD, &status);
+
+
+
     //         boost::mpi::status status = this->probe(src, tag);
 //
 //         detail::Archive ar;
