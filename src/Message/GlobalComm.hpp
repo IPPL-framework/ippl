@@ -27,7 +27,6 @@
 #include "Message/GlobalComm.h"
 #include "Message/Tags.h"
 #include "Utility/IpplInfo.h"
-#include "Utility/IpplStats.h"
 #include "Message/DataTypes.h"
 #include "Message/Operations.h"
 
@@ -180,8 +179,7 @@ bool reduce(Communicate& comm, InputIterator s1, InputIterator s2,
     // we're done
     if (useFlags != 0 && useFlags != IncludeVal)
         delete [] useFlags;
-
-    //INCIPPLSTAT(incReductions);*/
+*/
     return true;
 }
 
@@ -320,8 +318,6 @@ bool reduce_masked(Communicate& comm, T& input, T& output,
 //         }
 // 	*/
 //     }
-//
-//     //INCIPPLSTAT(incReductions);
     return true;
 }
 
@@ -427,8 +423,7 @@ bool scatter(Communicate& comm, InputIterator s1, InputIterator s2,
 
     // at the end, delete the scatter messages, and return success
     delete [] msg;
-
-    //INCIPPLSTAT(incScatters);*/
+*/
     return true;
 }
 
