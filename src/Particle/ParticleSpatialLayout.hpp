@@ -10,8 +10,6 @@
 #include "Particle/ParticleBConds.h"
 #include "Index/NDIndex.h"
 #include "Region/RegionLayout.h"
-#include "Message/Communicate.h"
-#include "Message/Message.h"
 #include "Utility/IpplInfo.h"
 #include "Utility/IpplStats.h"
 

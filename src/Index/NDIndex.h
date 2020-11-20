@@ -13,7 +13,6 @@
 
 // include files
 #include "Index/Index.h"
-#include "Message/Message.h"
 
 #include <iostream>
 
@@ -127,21 +126,6 @@ public:
   bool split(NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d) const;
   bool split(NDIndex<Dim>& l, NDIndex<Dim>& r) const;
 
-  // put data into a message to send to another node
-  Message& putMessage(Message& m) const {
-    unsigned d;
-    for ( d = 0 ; d < Dim ; ++d )
-      p[d].putMessage(m);
-    return m;
-  }
-
-  // get data out from a message
-  Message& getMessage(Message& m) {
-    unsigned d;
-    for ( d = 0 ; d < Dim ; ++d )
-      p[d].getMessage(m);
-    return m;
-  }
 private:
   ippl::Index p[Dim==0?1:Dim];			// Pointer to the indexes.
 

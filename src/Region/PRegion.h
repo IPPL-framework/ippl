@@ -23,7 +23,6 @@
 // #include <Kokkos_Core.hpp>
 
 // include files
-//#include "Message/Message.h"
 
 //#include <iostream>
 
@@ -219,24 +218,7 @@ public:
   bool operator==(const PRegion<T>& r) const {
     return ( (Last==r.Last) && (First==r.First) );
   }
-
-  // put data into a message to send to another node
-  Message& putMessage(Message& m) {
-    T d[2];
-    d[0] = First;
-    d[1] = Last;
-    m.put(d, d + 2);
-    return m;
-  }
-
-  // get data out from a message
-  Message& getMessage(Message& m) {
-    T d[2];
-    m.get_iter(d);
-    *this = PRegion<T>(d[0], d[1]);
-    return m;
-    }*/
-
+*/
 private: 
   // The interval endpoints
   T First, Last;

@@ -15,8 +15,6 @@
 #include "Particle/IpplParticleBase.h"
 #include "Particle/ParticleLayout.h"
 #include "Particle/ParticleAttrib.h"
-#include "Message/Message.h"
-#include "Message/Communicate.h"
 #include "Utility/Inform.h"
 #include "Utility/PAssert.h"
 #include "Utility/IpplInfo.h"
