@@ -14,8 +14,8 @@ set (_HDRS
     ParticleBC.h
     ParticleLayout.h
     ParticleLayout.hpp
-#     ParticleSpatialLayout.hpp
-#     ParticleSpatialLayout.h
+    Kokkos_ParticleSpatialLayout.h
+    Kokkos_ParticleSpatialLayout.hpp
     )
 
 include_directories (

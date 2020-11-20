@@ -57,7 +57,7 @@
 
 // IPPL Particles classes
 #include "Particle/ParticleBase.h"
-// #include "Particle/ParticleSpatialLayout.h"
+#include "Particle/Kokkos_ParticleSpatialLayout.h"
 // #include "Particle/ParticleBalancer.h"
 
 

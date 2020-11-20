@@ -29,20 +29,29 @@
 
 #include "Types/ViewTypes.h"
 
+#include "Message/Archive.h"
+
 namespace ippl {
     namespace detail {
         template<class... Properties>
         class ParticleAttribBase {
 
         public:
-            typedef typename detail::ViewType<bool, 1, Properties...>::view_type boolean_view_type;
+            typedef typename ViewType<bool, 1, Properties...>::view_type boolean_view_type;
 
             virtual void create(size_t) = 0;
 
             virtual void destroy(boolean_view_type, Kokkos::View<int*>, size_t) = 0;
 
-            virtual ~ParticleAttribBase() = default;
+            virtual void pack(void*, const Kokkos::View<int*>&) const = 0;
 
+            virtual void unpack(void*) = 0;
+
+            virtual void serialize(Archive<Properties...>& ar) = 0;
+
+            virtual void deserialize(Archive<Properties...>& ar) = 0;
+
+            virtual ~ParticleAttribBase() = default;
         };
     }
 }

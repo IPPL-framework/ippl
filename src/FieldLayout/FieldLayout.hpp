@@ -33,7 +33,7 @@
 
 namespace ippl {
 
-    template<unsigned Dim>
+    template <unsigned Dim>
     FieldLayout<Dim>::FieldLayout()
     : dLocalDomains_m("local domains (device)", 0)
     , hLocalDomains_m(Kokkos::create_mirror_view(dLocalDomains_m))
@@ -45,11 +45,11 @@ namespace ippl {
     }
 
 
-    template<unsigned Dim>
+    template <unsigned Dim>
     FieldLayout<Dim>::~FieldLayout() { }
 
 
-    template<unsigned Dim>
+    template <unsigned Dim>
     void
     FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain,
                                  e_dim_tag* userflags)
@@ -101,11 +101,19 @@ namespace ippl {
     }
 
 
-    template<unsigned Dim>
+    template <unsigned Dim>
     const typename FieldLayout<Dim>::NDIndex_t&
     FieldLayout<Dim>::getLocalNDIndex(int rank) const
     {
         return hLocalDomains_m(rank);
+    }
+
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::host_mirror_type&
+    FieldLayout<Dim>::getLocalDomains() const
+    {
+        return hLocalDomains_m;
     }
 
 
@@ -126,7 +134,7 @@ namespace ippl {
     }
 
 
-    template<unsigned Dim>
+    template <unsigned Dim>
     void FieldLayout<Dim>::calcWidths()
     {
         // initialize widths first

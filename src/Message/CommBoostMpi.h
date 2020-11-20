@@ -21,6 +21,7 @@
 #include <boost/mpi/communicator.hpp>
 
 // To be removed
+#include "Archive.h"
 #include "Message/Tags.h"
 #include "Message/TagMaker.h"
 class Message;
@@ -58,6 +59,24 @@ namespace ippl {
         }
 
 
+        using boost::mpi::communicator::send;
+        using boost::mpi::communicator::recv;
+
+
+        /*!
+         * \warning Only works with default spaces!
+         */
+        template <class Buffer>
+        void send(int dest, int tag, Buffer& buffer);
+
+
+        /*!
+         * \warning Only works with default spaces!
+         */
+        template <class Buffer>
+        void recv(int src, int tag, Buffer& buffer);
+
+
         [[deprecated]]
         int broadcast_others(Message *, int, bool = true) {
             return 0;
@@ -68,6 +87,38 @@ namespace ippl {
             return nullptr;
         }
     };
+
+
+    template <class Buffer>
+    void Communicate::send(int dest, int tag, Buffer& buffer)
+    {
+        // Attention: only works with default spaces
+        detail::Archive<> ar;
+
+        buffer.serialize(ar);
+        MPI_Send(ar.getBuffer(), ar.getSize(),
+                 MPI_BYTE, dest, tag, MPI_COMM_WORLD);
+    }
+
+
+    template <class Buffer>
+    void Communicate::recv(int src, int tag, Buffer& buffer)
+    {
+        MPI_Status status;
+
+        MPI_Probe(src, tag, MPI_COMM_WORLD, &status);
+
+        int msize = 0;
+        MPI_Get_count(&status, MPI_BYTE, &msize);
+
+        // Attention: only works with default spaces
+        detail::Archive<> ar(msize);
+
+        MPI_Recv(ar.getBuffer(), ar.getSize(),
+                MPI_BYTE, src, tag, MPI_COMM_WORLD, &status);
+
+        buffer.deserialize(ar);
+    }
 }
 
 
