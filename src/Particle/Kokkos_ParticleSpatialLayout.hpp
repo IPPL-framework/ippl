@@ -237,9 +237,11 @@ namespace ippl {
         locate_type& ranks) const
     {
         auto& positions = pdata.R.getView();
-        typename rlayout_m::view_type Regions = rlayout_m.getdLocalRegions();
-        using size_type = typename rlayout_m::view_type::size_type;
+        auto& ids = pdata.ID.getView();
+        typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
+        using size_type = typename RegionLayout_t::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+        int myRank = Ippl::Comm->rank();
         Kokkos::parallel_for(
             "ParticleSpatialLayout::locateParticles()",
             mdrange_type({0, 0},
@@ -260,8 +262,10 @@ namespace ippl {
                    (positions(i)[2] <= Regions(j)[2].max())) {
                     z_bool = true;    
                 }
-                if(x_bool && y_bool && z_bool)
+                if(x_bool && y_bool && z_bool){
                     ranks(i) = j;
+                    if(ranks(i) != myRank) ids(i) = -1;
+                }
         });
     }
 
