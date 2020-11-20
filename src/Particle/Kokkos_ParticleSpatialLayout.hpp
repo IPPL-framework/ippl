@@ -235,15 +235,35 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh>
     void ParticleSpatialLayout<T, Dim, Mesh>::locateParticles(
-        const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& /*pdata*/,
+        const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
         locate_type& ranks) const
     {
-//         auto& positions = pdata.R.getView();
+        auto& positions = pdata.R.getView();
+        typename rlayout_m::view_type Regions = rlayout_m.getdLocalRegions();
+        using size_type = typename rlayout_m::view_type::size_type;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
         Kokkos::parallel_for(
             "ParticleSpatialLayout::locateParticles()",
-            ranks.size(),
-            KOKKOS_CLASS_LAMBDA(const size_t /*i*/) {
-//             ranks(i)
+            mdrange_type({0, 0},
+                         {ranks.extent(0), Regions.extent(0)}), 
+            KOKKOS_CLASS_LAMBDA(const size_t i, const size_type j) {
+                bool x_bool = false;
+                bool y_bool = false;
+                bool z_bool = false;
+                if((positions(i)[0] >= Regions(j)[0].min()) &&
+                   (positions(i)[0] <= Regions(j)[0].max())) {
+                    x_bool = true;    
+                }
+                if((positions(i)[1] >= Regions(j)[1].min()) &&
+                   (positions(i)[1] <= Regions(j)[1].max())) {
+                    y_bool = true;    
+                }
+                if((positions(i)[2] >= Regions(j)[2].min()) &&
+                   (positions(i)[2] <= Regions(j)[2].max())) {
+                    z_bool = true;    
+                }
+                if(x_bool && y_bool && z_bool)
+                    ranks(i) = j;
         });
     }
 

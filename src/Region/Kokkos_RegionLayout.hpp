@@ -147,6 +147,12 @@ namespace ippl {
             }
         }
 
+        template <typename T, unsigned Dim, class Mesh>
+        const typename RegionLayout<T, Dim, Mesh>::view_type& 
+        RegionLayout<T, Dim, Mesh>::getdLocalRegions() const
+        {
+            return dLocalRegions_m;
+        }
 
         template <typename T, unsigned Dim, class Mesh>
         std::ostream& operator<<(std::ostream& out, const RegionLayout<T, Dim, Mesh>& rl)
