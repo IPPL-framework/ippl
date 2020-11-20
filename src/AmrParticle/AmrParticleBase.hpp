@@ -185,8 +185,6 @@ void AmrParticleBase<PLayout>::update(int lev_min, int lev_max, bool isRegrid) {
     //sort the particles by grid and level
     sort();
     
-    INCIPPLSTAT(incParticleUpdates);
-    
     IpplTimings::stopTimer(updateParticlesTimer_m);
 }
 
@@ -204,8 +202,6 @@ void AmrParticleBase<PLayout>::update(const ParticleAttrib<char>& canSwap) {
     
     //sort the particles by grid and level
     sort();
-    
-    INCIPPLSTAT(incParticleUpdates);
     
     IpplTimings::stopTimer(updateParticlesTimer_m);
 }
