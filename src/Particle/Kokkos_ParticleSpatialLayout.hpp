@@ -104,7 +104,7 @@ namespace ippl {
         // send
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nSends[rank] > 0) {
-                hash_type hash("hash", localnum);
+                hash_type hash("hash", nSends[rank]);
                 fillHash(rank, ranks, hash);
 
                 using buffer_type = ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >;
@@ -196,7 +196,9 @@ namespace ippl {
             ranks.extent(0),
             KOKKOS_LAMBDA(const int i, int& idx, const bool final) {
                 if (final) {
-                    hash(i) = idx;
+                    if (rank == ranks(i)) {
+                        hash(idx) = i;
+                    }
                 }
 
                 if (rank == ranks(i)) {
