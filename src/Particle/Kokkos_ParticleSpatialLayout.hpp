@@ -73,8 +73,9 @@ namespace ippl {
 
         // 1st step
         locate_type ranks("MPI ranks", localnum);
+        bool_type invalid("invalid", localnum);
 
-        locateParticles(pdata, ranks);
+        locateParticles(pdata, ranks, invalid);
 
         /*
          * 2nd step
@@ -133,6 +134,15 @@ namespace ippl {
         int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
         pdata.setLocalNum(localnum + nTotalRecvs);
 
+        Kokkos::parallel_for(
+            "set invalid",
+            localnum,
+            KOKKOS_LAMBDA(const int i) {
+                if (invalid(i)) {
+                    pdata.ID(i) = -1;
+                }
+            });
+
         // 4th step
         pdata.destroy();
 
@@ -147,10 +157,10 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh>
     void ParticleSpatialLayout<T, Dim, Mesh>::locateParticles(
         const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
-        locate_type& ranks) const
+        locate_type& ranks,
+        bool_type& invalid) const
     {
         auto& positions = pdata.R.getView();
-        auto& ids = pdata.ID.getView();
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
         using size_type = typename RegionLayout_t::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
@@ -177,7 +187,7 @@ namespace ippl {
                 }
                 if(x_bool && y_bool && z_bool){
                     ranks(i) = j;
-                    if(ranks(i) != myRank) ids(i) = -1;
+                    invalid(i) = (myRank != ranks(i));
                 }
         });
         Kokkos::fence();
