@@ -60,7 +60,7 @@ namespace ippl {
         using this_type = ParticleAttrib<T, Properties...>;
         this_type* buffer_p = static_cast<this_type*>(buffer);
         auto& view = buffer_p->dview_m;
-        auto size = hash.size();
+        auto size = hash.extent(0);
         Kokkos::resize(view, size);
 
         Kokkos::parallel_for(
@@ -77,12 +77,12 @@ namespace ippl {
         using this_type = ParticleAttrib<T, Properties...>;
         this_type* buffer_p = static_cast<this_type*>(buffer);
         auto& view = buffer_p->dview_m;
-        auto size = dview_m.size();
+        auto size = dview_m.extent(0);
         Kokkos::resize(dview_m, size + view.size());
 
         Kokkos::parallel_for(
             "ParticleAttrib::unpack()",
-            view.size(),
+            view.extent(0),
             KOKKOS_CLASS_LAMBDA(const size_t i) {
                 dview_m(size + i) = view(i);
         });
