@@ -8,7 +8,6 @@ set (_HDRS
   FieldLayout.h
   FieldLayout.hpp
   FieldLayoutUser.h
-  Vnode.h
   )
 
 include_DIRECTORIES (

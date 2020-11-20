@@ -20,7 +20,6 @@
 //
 #include "FieldLayout/FieldLayout.h"
 #include "Ippl.h"
-#include "Utility/IpplStats.h"
 #include "Utility/PAssert.h"
 
 #include "Partition/Partitioner.h"

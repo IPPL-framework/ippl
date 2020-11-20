@@ -15,7 +15,6 @@
 #include "FFT/FFT.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Field/BareField.h"
-#include "Utility/IpplStats.h"
 
 //=============================================================================
 // FFT CCTransform Constructors
@@ -147,9 +146,6 @@ FFT<CCTransform,Dim,T>::transform(
     typename FFT<CCTransform,Dim,T>::ComplexField_t& g,
     const bool& constInput)
 {
-    // indicate we're doing another FFT
-    //INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Fields
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -269,10 +265,6 @@ FFT<CCTransform,Dim,T>::transform(
     int direction,
     typename FFT<CCTransform,Dim,T>::ComplexField_t& f)
 {
-
-    // indicate we're doing another FFT
-    // INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Field
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -506,10 +498,6 @@ FFT<CCTransform,1U,T>::transform(
     typename FFT<CCTransform,1U,T>::ComplexField_t& g,
     const bool& constInput)
 {
-
-    // indicate we're doing another FFT
-    // INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Fields
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -614,10 +602,6 @@ FFT<CCTransform,1U,T>::transform(
     int direction,
     typename FFT<CCTransform,1U,T>::ComplexField_t& f)
 {
-
-    // indicate we're doing another FFT
-    // INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Field
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -945,9 +929,6 @@ FFT<RCTransform,Dim,T>::transform(
     typename FFT<RCTransform,Dim,T>::ComplexField_t& g,
     const bool& constInput)
 {
-    // indicate we're doing another fft
-    // incipplstat(incffts);
-
     // check domain of incoming fields
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -1191,9 +1172,6 @@ FFT<RCTransform,Dim,T>::transform(
     typename FFT<RCTransform,Dim,T>::RealField_t& g,
     const bool& constInput)
 {
-    // indicate we're doing another FFT
-    // INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Fields
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -1541,10 +1519,6 @@ FFT<RCTransform,1U,T>::transform(
     typename FFT<RCTransform,1U,T>::ComplexField_t& g,
     const bool& constInput)
 {
-
-    // indicate we're doing another FFT
-    //INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Fields
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -1647,10 +1621,6 @@ FFT<RCTransform,1U,T>::transform(
     typename FFT<RCTransform,1U,T>::RealField_t& g,
     const bool& constInput)
 {
-
-    // indicate we're doing another FFT
-    //INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Fields
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -2169,10 +2139,6 @@ FFT<SineTransform,Dim,T>::transform(
     FFT<SineTransform,Dim,T>::ComplexField_t& g,
     const bool& constInput)
 {
-
-    // indicate we're doing another FFT
-    //INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Fields
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -2440,10 +2406,6 @@ FFT<SineTransform,Dim,T>::transform(
     FFT<SineTransform,Dim,T>::RealField_t& g,
     const bool& constInput)
 {
-
-    // indicate we're doing another FFT
-    // INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Fields
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -2717,10 +2679,6 @@ FFT<SineTransform,Dim,T>::transform(
     FFT<SineTransform,Dim,T>::RealField_t& g,
     const bool& constInput)
 {
-
-    // indicate we're doing another FFT
-    //INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Fields
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -2851,9 +2809,6 @@ FFT<SineTransform,Dim,T>::transform(
     int direction,
     FFT<SineTransform,Dim,T>::RealField_t& f)
 {
-    // indicate we're doing another FFT
-    //INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Field
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -3097,9 +3052,6 @@ FFT<SineTransform,1U,T>::transform(
     FFT<SineTransform,1U,T>::RealField_t& g,
     const bool& constInput)
 {
-    // indicate we're doing another FFT
-    //INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Fields
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
@@ -3201,9 +3153,6 @@ FFT<SineTransform,1U,T>::transform(
     int direction,
     FFT<SineTransform,1U,T>::RealField_t& f)
 {
-    // indicate we're doing another FFT
-    //INCIPPLSTAT(incFFTs);
-
     // Check domain of incoming Field
     const Layout_t& in_layout = f.getLayout();
     const Domain_t& in_dom = in_layout.getDomain();
