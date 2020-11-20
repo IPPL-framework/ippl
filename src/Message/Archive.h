@@ -24,6 +24,8 @@
 namespace ippl {
     namespace detail {
         /*!
+         * @file Archive.h
+         * Serialize and desesrialize particle attributes.
          * @tparam Properties variadic template for Kokkos::View
          */
         template <class... Properties>
@@ -41,11 +43,15 @@ namespace ippl {
              * @param view to take data from.
              */
             template <typename T>
-            void operator<<(const /*typename ViewType<T, 1, Properties...>::view_type*/Kokkos::View<T*>& view);
+            void operator<<(const Kokkos::View<T*>& view);
 
 
             /*!
              * Serialize vector attributes
+             *
+             *\remark We need a specialized function for vectors since the vector is
+             * not a trivially copyable class. Hence, we cannot use std::memcpy directly.
+             *
              * @param view to take data from.
              */
             template <typename T, unsigned Dim>
@@ -57,11 +63,15 @@ namespace ippl {
              * @param view to put data to
              */
             template <typename T>
-            void operator>>(typename /*ViewType<T, 1, Properties...>::view_type*/Kokkos::View<T*>& view);
+            void operator>>(Kokkos::View<T*>& view);
 
 
             /*!
              * Deserialize vector attributes
+             *
+             * \remark We need a specialized function for vectors since the vector is
+             * not a trivially copyable class. Hence, we cannot use std::memcpy directly.
+             *
              * @param view to put data to
              */
             template <typename T, unsigned Dim>
@@ -71,7 +81,7 @@ namespace ippl {
             /*!
              * @returns a pointer to the data of the buffer
              */
-            /*pointer_type*/void* getBuffer() /*const*/ {
+            pointer_type getBuffer() {
                 return buffer_m.data();
             }
 
