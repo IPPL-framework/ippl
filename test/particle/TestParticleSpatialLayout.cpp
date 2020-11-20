@@ -61,9 +61,7 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
         ippl::Vector<double, dim> r = {unif(eng), unif(eng), unif(eng)};
         R_host(i) = r;
-        std::cout << R_host(i) << std::endl;
     }
-
     Kokkos::deep_copy(bunch.R.getView(), R_host);
 
 
@@ -97,7 +95,7 @@ int main(int argc, char *argv[]) {
     Kokkos::deep_copy(ID_host, bunch.ID.getView());
 
     if (Ippl::Comm->rank() == 0) {
-        std::cout << "Before update:" << std::endl;
+        std::cout << "After update:" << std::endl;
     }
 
     for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {

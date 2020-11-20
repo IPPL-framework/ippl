@@ -62,9 +62,17 @@ namespace ippl {
         using boost::mpi::communicator::send;
         using boost::mpi::communicator::recv;
 
+
+        /*!
+         * \warning Only works with default spaces!
+         */
         template <class Buffer>
         void send(int dest, int tag, Buffer& buffer);
 
+
+        /*!
+         * \warning Only works with default spaces!
+         */
         template <class Buffer>
         void recv(int src, int tag, Buffer& buffer);
 
@@ -81,9 +89,6 @@ namespace ippl {
     };
 
 
-    /*!
-     * \warning Only works with default spaces!
-     */
     template <class Buffer>
     void Communicate::send(int dest, int tag, Buffer& buffer)
     {
@@ -96,9 +101,6 @@ namespace ippl {
     }
 
 
-    /*!
-     * \warning Only works with default spaces!
-     */
     template <class Buffer>
     void Communicate::recv(int src, int tag, Buffer& buffer)
     {
