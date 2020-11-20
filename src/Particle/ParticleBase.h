@@ -230,20 +230,16 @@ namespace ippl {
 
         /*!
          * Serialize to do MPI calls.
-         * @tparam Archive
          * @param ar archive
          */
-        template <class Archive>
-        void serialize(Archive& ar);
+        void serialize(detail::Archive<Properties...>& ar);
 
 
         /*!
          * Deserialize to do MPI calls.
-         * @tparam Archive
          * @param ar archive
          */
-        template <class Archive>
-        void deserialize(Archive& ar);
+        void deserialize(detail::Archive<Properties...>& ar);
 
 
         /*!

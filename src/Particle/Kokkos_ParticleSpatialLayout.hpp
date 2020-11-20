@@ -150,28 +150,34 @@ namespace ippl {
                 hash_type hash("hash", localnum);
                 fillHash(rank, ranks, hash);
 
-                ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> > buffer(pdata.getLayout());
+                using buffer_type = ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >;
+                buffer_type buffer(pdata.getLayout());
                 buffer.create(nSends[rank]);
                 pdata.pack(buffer, hash);
+
+                Ippl::Comm->send(rank, 42, buffer);
             }
-
-
-
         }
 
         // 3rd step
 
         // create space for received particles
         int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
-        pdata.create(nTotalRecvs);
+//         pdata.create(nTotalRecvs);
 
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
-                ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> > buffer(pdata.getLayout());
+                using buffer_type = ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >;
+                buffer_type buffer(pdata.getLayout());
                 buffer.create(nRecvs[rank]);
+
+                Ippl::Comm->recv(rank, 42, buffer);
+
                 pdata.unpack(buffer);
             }
         }
+
+        pdata.setLocalNum(localnum + nTotalRecvs);
 
 
         // 4th step

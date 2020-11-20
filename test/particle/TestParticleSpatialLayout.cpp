@@ -66,19 +66,34 @@ int main(int argc, char *argv[]) {
 
     Kokkos::deep_copy(bunch.R.getView(), R_host);
 
-    std::cout << Ippl::Comm->rank() << " " << bunch.getLocalNum() << std::endl;
+
+    typename bunch_type::particle_index_type::HostMirror ID_host = bunch.ID.getHostMirror();
+    Kokkos::deep_copy(ID_host, bunch.ID.getView());
+
+    if (Ippl::Comm->rank() == 0) {
+        std::cout << "Before update:" << std::endl;
+        for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
+            std::cout << ID_host(i) << " " << R_host(i) << std::endl;
+        }
+    }
+
+    Ippl::Comm->barrier();
 
     bunch.update();
 
-    std::cout << "After update:" << std::endl;
+    Ippl::Comm->barrier();
 
-    std::cout << Ippl::Comm->rank() << " " << bunch.getLocalNum() << std::endl;
-
-
+    Kokkos::resize(R_host, bunch.R.size());
     Kokkos::deep_copy(R_host, bunch.R.getView());
 
-    for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-        std::cout << R_host(i) << std::endl;
+    Kokkos::resize(ID_host, bunch.ID.size());
+    Kokkos::deep_copy(ID_host, bunch.ID.getView());
+
+    if (Ippl::Comm->rank() == 0) {
+        std::cout << "After update:" << std::endl;
+        for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
+            std::cout << ID_host(i) << " " << R_host(i) << std::endl;
+        }
     }
 
     return 0;

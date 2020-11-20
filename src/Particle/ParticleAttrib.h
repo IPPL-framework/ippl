@@ -58,6 +58,14 @@ namespace ippl {
 
         void unpack(void*) override;
 
+        void serialize(detail::Archive<Properties...>& ar) override {
+            ar << dview_m;
+        }
+
+        void deserialize(detail::Archive<Properties...>& ar) override {
+            ar >> dview_m;
+        }
+
         virtual ~ParticleAttrib() = default;
        
         size_t size() const {

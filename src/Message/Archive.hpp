@@ -23,34 +23,35 @@ namespace ippl {
     namespace detail {
 
         template <class... Properties>
-        Archive<Properties...>::Archive()
+        Archive<Properties...>::Archive(int size)
         : writepos_m(0)
         , readpos_m(0)
-        , buffer_m("buffer")
+        , buffer_m("buffer", size)
         { }
 
 
         template <class... Properties>
         template <typename T>
-        void Archive<Properties...>::operator<<(const ViewType<T, 1, Properties...>& view) {
+        void Archive<Properties...>::operator<<(const Kokkos::View<T*>/*typename ViewType<T, 1, Properties...>::view_type*/& view) {
             size_t size = sizeof(T);
             Kokkos::resize(buffer_m, buffer_m.size() + size * view.size());
-            Kokkos::parallel_for("Archive::serialize()", view.size(),
-                                 KOKKOS_CLASS_LAMBDA(const int i) {
-                                     std::memcpy(buffer_m.data() + i * size + writepos_m,
-                                                 view.data() + i,
-                                                 size);
-                                });
-                writepos_m += size * view.size();
+            Kokkos::parallel_for(
+                "Archive::serialize()", view.size(),
+                KOKKOS_CLASS_LAMBDA(const int i) {
+                    std::memcpy(buffer_m.data() + i * size + writepos_m,
+                                view.data() + i,
+                                size);
+            });
+            writepos_m += size * view.size();
         }
 
 
         template <class... Properties>
         template <typename T>
-        void Archive<Properties...>::operator>>(const ViewType<T, 1, Properties...>& view) {
+        void Archive<Properties...>::operator>>(Kokkos::View<T*>/*typename ViewType<T, 1, Properties...>::view_type*/& view) {
             size_t size = sizeof(T);
-            Kokkos::resize(buffer_m, buffer_m.size() + size * view.size());
-            Kokkos::parallel_for("Archive::deserialize()", view.size(),
+            int count = view.size();
+            Kokkos::parallel_for("Archive::deserialize()", count,
                                  KOKKOS_CLASS_LAMBDA(const int i) {
                                      std::memcpy(view.data() + i,
                                                  buffer_m.data() + i * size + readpos_m,

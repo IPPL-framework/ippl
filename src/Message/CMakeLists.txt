@@ -1,7 +1,6 @@
 set (_SRCS
     MessageFunctions.cpp
     Formatter.cpp
-
     CommBoostMpi.cpp
     )
 
@@ -17,7 +16,6 @@ set (_HDRS
     Operations.h
     TagMaker.h
     Tags.h
-
     CommBoostMpi.h
     )
 

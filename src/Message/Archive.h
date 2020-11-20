@@ -33,14 +33,14 @@ namespace ippl {
             using pointer_type = typename buffer_type::pointer_type;
             using size_type = typename buffer_type::size_type;
 
-            Archive();
+            Archive(int size = 0);
 
             /*!
              * Serialize.
              * @param view to take data from.
              */
             template <typename T>
-            void operator<<(const ViewType<T, 1, Properties...>& view);
+            void operator<<(const /*typename ViewType<T, 1, Properties...>::view_type*/Kokkos::View<T*>& view);
 
 
             /*!
@@ -48,13 +48,13 @@ namespace ippl {
              * @param view to put data to
              */
             template <typename T>
-            void operator>>(const ViewType<T, 1, Properties...>& view);
+            void operator>>(typename /*ViewType<T, 1, Properties...>::view_type*/Kokkos::View<T*>& view);
 
 
             /*!
              * @returns a pointer to the data of the buffer
              */
-            pointer_type getBuffer() const {
+            /*pointer_type*/void* getBuffer() /*const*/ {
                 return buffer_m.data();
             }
 

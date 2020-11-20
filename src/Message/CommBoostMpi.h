@@ -21,6 +21,7 @@
 #include <boost/mpi/communicator.hpp>
 
 // To be removed
+#include "Archive.h"
 #include "Message/Tags.h"
 #include "Message/TagMaker.h"
 class Message;
@@ -78,6 +79,49 @@ namespace ippl {
             return nullptr;
         }
     };
+
+
+    template <class Buffer>
+    void Communicate::send(int dest, int tag, Buffer& buffer)
+    {
+        detail::Archive ar;
+
+        buffer.serialize(ar);
+        MPI_Send(ar.getBuffer(), ar.getSize(),
+                 MPI_BYTE, dest, tag, MPI_COMM_WORLD);
+
+//         buffer.serialize(ar);
+//         this->send(dest, tag, ar.getBuffer(), ar.getSize());
+    }
+
+
+    template <class Buffer>
+    void Communicate::recv(int src, int tag, Buffer& buffer)
+    {
+        MPI_Status status;
+
+        MPI_Probe(src, tag, MPI_COMM_WORLD, &status);
+
+        int msize = 0;
+        MPI_Get_count(&status, MPI_BYTE, &msize);
+
+        detail::Archive ar(msize);
+
+        MPI_Recv(ar.getBuffer(), ar.getSize(),
+                MPI_BYTE, src, tag, MPI_COMM_WORLD, &status);
+    //         boost::mpi::status status = this->probe(src, tag);
+//
+//         detail::Archive ar;
+//
+// //         if (msg.source() != src) {
+//
+// //         }
+//
+//         std::cout << "count = " << status.count() << std::endl;
+//         this->recv(src, tag, ar.getBuffer(), status.count);
+//
+        buffer.deserialize(ar);
+    }
 }
 
 
