@@ -25,7 +25,6 @@ set (_HDRS
     Unique.h
     User.h
     UserList.h
-#     Vec.h
     my_auto_ptr.h
     vmap.h
     vmap.hpp
