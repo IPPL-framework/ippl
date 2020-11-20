@@ -47,7 +47,7 @@ namespace ippl {
         Vector(const detail::Expression<E, N>& expr);
 
         KOKKOS_FUNCTION
-	    Vector(const Vector<T, Dim>& v) { for(unsigned d = 0; d < Dim; ++d) { data_m[d] = v.data_m[d]; } }
+        Vector(const Vector<T, Dim>& v);
 
         KOKKOS_FUNCTION
         Vector(const T& val);
