@@ -31,7 +31,10 @@
 #define IPPL_PREGION_H
 
 namespace ippl {
-
+    /*!
+     * @file PRegion.h
+     * @tparam T type of interval
+     */
     template <typename T>
     class PRegion
     {
