@@ -56,7 +56,7 @@ endif ()
 set (Boost_USE_MULTITHREADED OFF)
 set (Boost_USE_STATIC_RUNTIME OFF)
 find_package (Boost 1.66.0
-    REQUIRED COMPONENTS mpi filesystem iostreams regex serialization timer chrono system)
+    REQUIRED COMPONENTS mpi filesystem iostreams regex serialization timer chrono system program_options)
 message (STATUS "Found Boost include dir: ${Boost_INCLUDE_DIR}")
 message (STATUS "Found Boost library dir: ${Boost_LIBRARY_DIRS}")
 message (STATUS "Found Boost libraries: ${Boost_LIBRARIES}")
