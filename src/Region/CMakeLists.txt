@@ -5,6 +5,7 @@ set (_HDRS
    NDRegion.h
    NDRegion.hpp
    PRegion.h
+   PRegion.hpp
    RegionLayout.h
    RegionLayout.hpp
     )
