@@ -2,8 +2,9 @@ set (_SRCS
     )
 
 set (_HDRS
-#    NDRegion.h
-    PRegion.h
+   NDRegion.h
+   NDRegion.hpp
+   PRegion.h
    RegionLayout.h
    RegionLayout.hpp
     )
