@@ -29,7 +29,7 @@
 
 #include "Types/ViewTypes.h"
 
-#include "Message/Archive.h"
+#include "Communicate/Archive.h"
 
 namespace ippl {
     namespace detail {

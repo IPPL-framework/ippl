@@ -24,11 +24,11 @@
  ***************************************************************************/
 
 // include files
-#include "Message/GlobalComm.h"
-#include "Message/Tags.h"
+#include "Communicate/GlobalComm.h"
+#include "Communicate/Tags.h"
 #include "Utility/IpplInfo.h"
-#include "Message/DataTypes.h"
-#include "Message/Operations.h"
+#include "Communicate/DataTypes.h"
+#include "Communicate/Operations.h"
 
 #include <algorithm>
 
@@ -46,7 +46,7 @@
 // values included in the reduction (by default, this is true).  If this
 // pointer to the boolean array is null, all the values will be included.
 // NOTE: The input iterators must iterate over simple data objects,
-// which do not require their own special getMessage/putMessage.  If you
+// which do not require their own special getCommunicate/putMessage.  If you
 // need to reduce a complex quantity, use the scalar version of reduce.
 template <class InputIterator, class OutputIterator, class ReduceOp>
 bool reduce(Communicate& comm, InputIterator s1, InputIterator s2,

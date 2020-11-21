@@ -29,7 +29,7 @@ class Communicate;
 // values included in the reduction (by default, this is true).  If this
 // pointer to the boolean array is null, all the values will be included.
 // NOTE: The input iterators must iterate over simple data objects,
-// which do not require their own special getMessage/putMessage.  If you
+// which do not require their own special getCommunicate/putMessage.  If you
 // need to reduce a complex quantity, use the scalar version of reduce.
 template <class InputIterator, class OutputIterator, class ReduceOp>
 bool reduce(Communicate&, InputIterator, InputIterator, OutputIterator,
@@ -143,6 +143,6 @@ template <typename T, class Op>
 void allreduce(T& inout, int count, Op op);
 
 
-#include "Message/GlobalComm.hpp"
+#include "Communicate/GlobalComm.hpp"
 
 #endif // GLOBAL_COMM_H
