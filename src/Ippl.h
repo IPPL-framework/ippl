@@ -20,10 +20,10 @@
 
 #include <iostream>
 
-#include "Utility/Inform.h"
-
-#include "Message/CommBoostMpi.h"
 #include <boost/mpi/environment.hpp>
+
+#include "Communicate/Communicate.h"
+#include "Utility/Inform.h"
 
 class Ippl;
 std::ostream& operator<<(std::ostream&, const Ippl&);

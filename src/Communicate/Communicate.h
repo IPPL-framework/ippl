@@ -20,11 +20,9 @@
 
 #include <boost/mpi/communicator.hpp>
 
-// To be removed
-#include "Archive.h"
-#include "Message/Tags.h"
-#include "Message/TagMaker.h"
-class Message;
+#include "Communicate/Archive.h"
+#include "Communicate/Tags.h"
+#include "Communicate/TagMaker.h"
 
 namespace ippl {
     class Communicate : public boost::mpi::communicator
@@ -75,17 +73,6 @@ namespace ippl {
          */
         template <class Buffer>
         void recv(int src, int tag, Buffer& buffer);
-
-
-        [[deprecated]]
-        int broadcast_others(Message *, int, bool = true) {
-            return 0;
-        }
-
-        [[deprecated]]
-        Message *receive_block(int& /*node*/, int& /*tag*/) {
-            return nullptr;
-        }
     };
 
 

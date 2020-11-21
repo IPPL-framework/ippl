@@ -1,17 +1,17 @@
 set (_SRCS
-    CommBoostMpi.cpp
+    Communicate.cpp
     )
 
 set (_HDRS
     Archive.h
     Archive.hpp
+    Communicate.h
     DataTypes.h
 #     GlobalComm.hpp
 #     GlobalComm.h
     Operations.h
     TagMaker.h
     Tags.h
-    CommBoostMpi.h
     )
 
 include_directories (
@@ -21,7 +21,7 @@ include_directories (
 add_ippl_sources (${_SRCS})
 add_ippl_headers (${_HDRS})
 
-install (FILES ${_HDRS} DESTINATION include/Message)
+install (FILES ${_HDRS} DESTINATION include/Communicate)
 
 # vi: set et ts=4 sw=4 sts=4:
 
