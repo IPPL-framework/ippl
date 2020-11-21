@@ -25,6 +25,11 @@
 #include "Communicate/TagMaker.h"
 
 namespace ippl {
+    /*!
+     * @file Communicate.h
+     *
+     * \remark Calling the plain *this pointer returns the MPI communicator, e.g. MPI_COMM_WORLD.
+     */
     class Communicate : public boost::mpi::communicator
                       , public TagMaker
     {
@@ -60,7 +65,6 @@ namespace ippl {
         using boost::mpi::communicator::send;
         using boost::mpi::communicator::recv;
 
-
         /*!
          * \warning Only works with default spaces!
          */
@@ -84,7 +88,7 @@ namespace ippl {
 
         buffer.serialize(ar);
         MPI_Send(ar.getBuffer(), ar.getSize(),
-                 MPI_BYTE, dest, tag, MPI_COMM_WORLD);
+                 MPI_BYTE, dest, tag, *this);
     }
 
 
@@ -93,7 +97,7 @@ namespace ippl {
     {
         MPI_Status status;
 
-        MPI_Probe(src, tag, MPI_COMM_WORLD, &status);
+        MPI_Probe(src, tag, *this, &status);
 
         int msize = 0;
         MPI_Get_count(&status, MPI_BYTE, &msize);
@@ -102,7 +106,7 @@ namespace ippl {
         detail::Archive<> ar(msize);
 
         MPI_Recv(ar.getBuffer(), ar.getSize(),
-                MPI_BYTE, src, tag, MPI_COMM_WORLD, &status);
+                MPI_BYTE, src, tag, *this, &status);
 
         buffer.deserialize(ar);
     }

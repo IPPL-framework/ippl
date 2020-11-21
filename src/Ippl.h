@@ -49,7 +49,7 @@ public:
     // The second argument controls whether the IPPL-specific command line
     // arguments are stripped out (the default) or left in (if the setting
     // is IpplInfo::KEEP).
-    Ippl(int&, char** &, int removeargs = REMOVE, MPI_Comm mpicomm = MPI_COMM_WORLD);
+    Ippl(int&, char** &, MPI_Comm mpicomm = MPI_COMM_WORLD);
 
     // Constructor 2: default constructor.  This will not change anything in
     // how the static data members are set up.  This is useful for declaring
@@ -60,25 +60,12 @@ public:
     // Destructor.
     ~Ippl();
 
-    static MPI_Comm getComm() {return communicator_m;}
-
-    static MPI_Comm communicator_m;
-
-    // Static flag indicating whether this class has been created with
-    // argc,argv specified ever.  This should only be done once.
-    static bool CommInitialized;
-
+    static MPI_Comm getComm() {return *Ippl::Comm;}
 
     // Kill the communication and throw runtime error exception.
     static void abort(const char * = 0);
 
     static void deleteGlobals();
-
-private:
-      // Indicate an error occurred while trying to parse the given command-line
-    // option, and quit.  Arguments are: parameter, error message, bad value
-    static void param_error(const char *, const char *, const char *);
-    static void param_error(const char *, const char *, const char *, const char *);
 };
 
 // macros used to print out messages to the console or a directed file
