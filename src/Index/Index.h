@@ -158,9 +158,6 @@ namespace ippl {
         KOKKOS_FUNCTION
         ~Index() = default;
 
-        KOKKOS_INLINE_FUNCTION
-        int id() const { return base_m; }
-
         /*!
          * @returns the smallest element
          */
@@ -203,12 +200,6 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION
         bool empty() const noexcept;
 
-        /*!
-         * @returns the id from the base index
-         */
-        KOKKOS_INLINE_FUNCTION
-        int getBase() const noexcept;
-
         // Additive operations.
         friend inline Index operator+(const Index&,int);
         friend inline Index operator+(int,const Index&);
@@ -224,10 +215,6 @@ namespace ippl {
         // Intersect with another Index.
         KOKKOS_INLINE_FUNCTION
         Index intersect(const Index &) const;
-
-        // Test to see if two indexes are from the same base.
-        KOKKOS_INLINE_FUNCTION
-        bool sameBase(const Index&) const noexcept;
 
         // Test to see if there is any overlap between two Indexes.
         KOKKOS_INLINE_FUNCTION
@@ -272,10 +259,6 @@ namespace ippl {
          * so we can do inverses quickly and easily.
          */
         size_t baseFirst_m;
-
-        // Keep id for the base so we can tell when two
-        // indexes come from the same base.
-        int base_m;
 
         // Make an Index that interally counts the other direction.
         inline Index reverse() const;

@@ -42,7 +42,6 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Utility/Unique.h"
 #include "Utility/PAssert.h"
 
 
@@ -54,7 +53,6 @@ namespace ippl {
     , stride_m(0)
     , length_m(0)
     , baseFirst_m(0)
-    , base_m(Unique::get())
     { }
 
     inline
@@ -63,7 +61,6 @@ namespace ippl {
     , stride_m(1)
     , length_m(n)
     , baseFirst_m(0)
-    , base_m(Unique::get())
     { }
 
 
@@ -73,7 +70,6 @@ namespace ippl {
     , stride_m(1)
     , length_m(l-f+1)
     , baseFirst_m(0)
-    , base_m(Unique::get())
     {
         PAssert_GE(l - f + 1, 0);
     }
@@ -84,7 +80,6 @@ namespace ippl {
     : first_m(f)
     , stride_m(s)
     , baseFirst_m(0)
-    , base_m(Unique::get())
     {
         PAssert_NE(s, 0);
         if ( f==l ) {
@@ -105,7 +100,6 @@ namespace ippl {
     , stride_m(b.stride_m*m)
     , length_m(b.length_m)
     , baseFirst_m(b.baseFirst_m)
-    , base_m(b.base_m)
     { }
 
 
@@ -115,7 +109,6 @@ namespace ippl {
     , stride_m(s)
     , length_m(b->length_m)
     , baseFirst_m(b->baseFirst_m)
-    , base_m(b->base_m)
     { }
 
 
@@ -161,12 +154,6 @@ namespace ippl {
     }
 
 
-    KOKKOS_INLINE_FUNCTION
-    int Index::getBase() const noexcept {
-        return base_m;
-    }
-
-
     inline Index operator+(const Index& i, int off) {
         return Index(1,off,i);
     }
@@ -207,18 +194,11 @@ namespace ippl {
     }
 
 
-    KOKKOS_INLINE_FUNCTION
-    bool Index::sameBase(const Index& i) const noexcept {
-        return base_m == i.base_m;
-    }
-
-
     inline Index Index::reverse() const {
         Index j;
         j.first_m = last();
         j.length_m = length_m;
         j.stride_m = -stride_m;
-        j.base_m = base_m;
         j.baseFirst_m = baseFirst_m;
         return j;
     }
