@@ -54,7 +54,7 @@ namespace ippl {
     , stride_m(0)
     , length_m(0)
     , baseFirst_m(0)
-    , Base(Unique::get())
+    , base_m(Unique::get())
     { }
 
     inline
@@ -63,7 +63,7 @@ namespace ippl {
     , stride_m(1)
     , length_m(n)
     , baseFirst_m(0)
-    , Base(Unique::get())
+    , base_m(Unique::get())
     { }
 
 
@@ -73,7 +73,7 @@ namespace ippl {
     , stride_m(1)
     , length_m(l-f+1)
     , baseFirst_m(0)
-    , Base(Unique::get())
+    , base_m(Unique::get())
     {
         PAssert_GE(l - f + 1, 0);
     }
@@ -84,7 +84,7 @@ namespace ippl {
     : first_m(f)
     , stride_m(s)
     , baseFirst_m(0)
-    , Base(Unique::get())
+    , base_m(Unique::get())
     {
         PAssert_NE(s, 0);
         if ( f==l ) {
@@ -105,7 +105,7 @@ namespace ippl {
     , stride_m(b.stride_m*m)
     , length_m(b.length_m)
     , baseFirst_m(b.baseFirst_m)
-    , Base(b.Base)
+    , base_m(b.base_m)
     { }
 
 
@@ -115,47 +115,55 @@ namespace ippl {
     , stride_m(s)
     , length_m(b->length_m)
     , baseFirst_m(b->baseFirst_m)
-    , Base(b->Base)
+    , base_m(b->base_m)
     { }
 
 
-    inline int  Index::first()  const {
+    KOKKOS_INLINE_FUNCTION
+    int Index::first() const noexcept {
         return first_m;
     }
 
 
-    inline int  Index::stride() const {
+    KOKKOS_INLINE_FUNCTION
+    int Index::stride() const noexcept {
         return stride_m;
     }
 
 
-    inline bool Index::empty()  const {
-        return length_m==0;
+    KOKKOS_INLINE_FUNCTION
+    bool Index::empty()  const noexcept {
+        return length_m == 0;
     }
 
 
-    inline size_t Index::length() const {
+    KOKKOS_INLINE_FUNCTION
+    size_t Index::length() const noexcept {
         return length_m;
     }
 
 
-    inline int Index::last() const {
+    KOKKOS_INLINE_FUNCTION
+    int Index::last() const noexcept {
         return (length_m == 0) ? first_m : first_m + stride_m * (length_m - 1);
     }
 
 
-    inline int Index::min() const {
+    KOKKOS_INLINE_FUNCTION
+    int Index::min() const noexcept {
         return (stride_m >= 0) ? first_m : first_m + stride_m * (length_m - 1);
     }
 
 
-    inline int Index::max() const{
+    KOKKOS_INLINE_FUNCTION
+    int Index::max() const noexcept {
         return (stride_m >= 0) ? first_m + stride_m * (length_m - 1) : first_m;
     }
 
 
-    inline int Index::getBase() const {
-        return Base;
+    KOKKOS_INLINE_FUNCTION
+    int Index::getBase() const noexcept {
+        return base_m;
     }
 
 
@@ -199,19 +207,9 @@ namespace ippl {
     }
 
 
-    inline bool Index::sameBase(const Index& i) const {
-        return Base == i.Base;
-    }
-
-
-    inline Index Index::plugBase(const Index &a) const {
-        Index ret;
-        ret.baseFirst_m = a.baseFirst_m;
-        ret.length_m = a.length_m;
-        ret.stride_m = stride_m;
-        ret.first_m = first_m + stride_m*(a.baseFirst_m-baseFirst_m);
-        ret.Base = Base;
-        return ret;
+    KOKKOS_INLINE_FUNCTION
+    bool Index::sameBase(const Index& i) const noexcept {
+        return base_m == i.base_m;
     }
 
 
@@ -220,52 +218,26 @@ namespace ippl {
         j.first_m = last();
         j.length_m = length_m;
         j.stride_m = -stride_m;
-        j.Base = Base;
+        j.base_m = base_m;
         j.baseFirst_m = baseFirst_m;
         return j;
     }
 
 
-    inline bool Index::touches(const Index&a) const {
+    KOKKOS_INLINE_FUNCTION
+    bool Index::touches(const Index&a) const {
         return (min() <= a.max()) && (max() >= a.min());
     }
 
 
-    inline bool Index::contains(const Index&a) const {
+    KOKKOS_INLINE_FUNCTION
+    bool Index::contains(const Index&a) const {
         return (min() <= a.min()) && (max() >= a.max());
     }
 
 
-    inline bool Index::containsAllPoints(const Index &b) const {
-        // Find min and max values of type domains
-        int a0 = min();
-        int a1 = max();
-        int  s = stride();
-        int b0 = b.min();
-        int b1 = b.max();
-        int  t = b.stride();
-        if (s < 0)
-            s = -s;
-        if (t < 0)
-            t = -t;
-
-        // We can do a quick short-circuit check to make sure they do not overlap
-        // at all just from their endpoints.  If they don't even do this, we can
-        // quit and say they do not touch.
-        bool quicktest = (a0 <= b0 && a1 >= b1);
-        if (!quicktest || s == 1)
-            return quicktest;
-
-        // OK, the endpoints of a contain those of b, and we must find out if
-        // all the points in b are found in a.  This will be true if:
-        //   1. The stride of b is a multipple of the stride of a
-        //   2. The endpoints of b are found in a
-        // If either of these conditions are false, a does not contain b
-        return (t % s == 0) && ((b0-a0) % s == 0) && ((a1-b1) % s == 0);
-    }
-
-
-    inline bool Index::split(Index& l, Index& r) const {
+    KOKKOS_INLINE_FUNCTION
+    bool Index::split(Index& l, Index& r) const {
         PAssert_EQ(stride_m, 1);
         PAssert_GT(length_m, 1);
         int first = first_m;
@@ -277,7 +249,8 @@ namespace ippl {
     }
 
 
-    inline bool Index::split(Index& l, Index& r, double a) const {
+    KOKKOS_INLINE_FUNCTION
+    bool Index::split(Index& l, Index& r, double a) const {
         PAssert_EQ(stride_m, 1);
         PAssert_GT(length_m, 1);
         PAssert_LT(a, 1.0);

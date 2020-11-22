@@ -45,19 +45,6 @@
 #ifndef IPPL_INDEX_H
 #define IPPL_INDEX_H
 
-
-
-//
-//
-// All of this would be quite straightforward in serial, the fun
-// begins in parallel. Indexes are not parallel objects, but they
-// have operations defined for them for making regular section
-// transfer calculations easier: intersect and plugBase.
-//
-// The idea is that we represent the part of A and B that reside on
-// various processors with an Index. That index is the local domain
-// of the array.
-
 #include <Kokkos_Core.hpp>
 
 #include "Expression/IpplExpressions.h"
@@ -140,13 +127,15 @@ namespace ippl {
         /*!
          * Instantiate Index without any range.
          */
+        KOKKOS_FUNCTION
         Index();
 
         /*!
          * Instantiate Index with range [0, ..., n-1]
          * @param n number of elements
          */
-        inline Index(size_t n);
+        KOKKOS_FUNCTION
+        Index(size_t n);
 
         /*!
          * Instantiate Index with user-defined lower and upper
@@ -154,54 +143,71 @@ namespace ippl {
          * @param f first element
          * @param l last element
          */
-        inline Index(int f, int l);
+        KOKKOS_FUNCTION
+        Index(int f, int l);
 
+        /*!
+         * First to Last using Step.
+         * @param f first element
+         * @param l last element
+         * @param s step
+         */
+        KOKKOS_FUNCTION
+        Index(int f, int l, int s);
 
-        inline Index(int f, int l, int s);	// First to Last using Step.
-
+        KOKKOS_FUNCTION
         ~Index() = default;
 
-        int id() const { return Base; }
+        KOKKOS_INLINE_FUNCTION
+        int id() const { return base_m; }
 
         /*!
          * @returns the smallest element
          */
-        inline int min() const;
+        KOKKOS_INLINE_FUNCTION
+        int min() const noexcept;
 
         /*!
          * @returns the largest element
          */
-        inline int max() const;
+        KOKKOS_INLINE_FUNCTION
+        int max() const noexcept;
 
         /*!
          * @returns the number of elements
          */
-        inline size_t length() const;
+        KOKKOS_INLINE_FUNCTION
+        size_t length() const noexcept;
 
         /*!
          * @returns the stride
          */
-        inline int stride() const;
+        KOKKOS_INLINE_FUNCTION
+        int stride() const noexcept;
 
         /*!
          * @returns the first element
          */
-        inline int first() const;
+        KOKKOS_INLINE_FUNCTION
+        int first() const noexcept;
 
         /*!
          * @returns the last element
          */
-        inline int last() const;
+        KOKKOS_INLINE_FUNCTION
+        int last() const noexcept;
 
         /*!
          * @returns true if empty, otherwise false
          */
-        inline bool empty() const;
+        KOKKOS_INLINE_FUNCTION
+        bool empty() const noexcept;
 
         /*!
          * @returns the id from the base index
          */
-        inline int getBase() const;
+        KOKKOS_INLINE_FUNCTION
+        int getBase() const noexcept;
 
         // Additive operations.
         friend inline Index operator+(const Index&,int);
@@ -216,24 +222,25 @@ namespace ippl {
         friend inline Index operator/(const Index&,int);
 
         // Intersect with another Index.
+        KOKKOS_INLINE_FUNCTION
         Index intersect(const Index &) const;
 
-        // Plug the base range of one into another.
-        inline Index plugBase(const Index &) const;
-
         // Test to see if two indexes are from the same base.
-        inline bool sameBase(const Index&) const;
+        KOKKOS_INLINE_FUNCTION
+        bool sameBase(const Index&) const noexcept;
 
         // Test to see if there is any overlap between two Indexes.
-        inline bool touches (const Index&a) const;
+        KOKKOS_INLINE_FUNCTION
+        bool touches (const Index&a) const;
         // Test to see if one contains another (endpoints only)
-        inline bool contains(const Index&a) const;
-        // Test to see if one contains another (all points)
-        inline bool containsAllPoints(const Index &b) const;
+        KOKKOS_INLINE_FUNCTION
+        bool contains(const Index&a) const;
         // Split one into two.
-        inline bool split(Index& l, Index& r) const;
+        KOKKOS_INLINE_FUNCTION
+        bool split(Index& l, Index& r) const;
         // Split index into two with a ratio between 0 and 1.
-        inline bool split(Index& l, Index& r, double a) const;
+        KOKKOS_INLINE_FUNCTION
+        bool split(Index& l, Index& r, double a) const;
 
         // iterator begin
         iterator begin() { return iterator(first_m,stride_m); }
@@ -241,6 +248,7 @@ namespace ippl {
         iterator end() { return iterator(first_m+stride_m*length_m,stride_m); }
 
         // An operator< so we can impose some sort of ordering.
+        KOKKOS_INLINE_FUNCTION
         bool operator<(const Index& r) const
         {
             return (   (length_m< r.length_m) ||
@@ -248,12 +256,11 @@ namespace ippl {
                                             ( (first_m==r.first_m) && (length_m>0) && (stride_m<r.stride_m) ) ) ) );
         }
         // Test for equality.
-        bool operator==(const Index& r) const
+        KOKKOS_INLINE_FUNCTION
+        bool operator==(const Index& r) const noexcept
         {
             return (length_m==r.length_m) && (first_m==r.first_m) && (stride_m==r.stride_m);
         }
-
-        static void findPut(const Index&,const Index&, const Index&,Index&,Index&);
 
     private:
         int first_m;        /// First index element
@@ -268,7 +275,7 @@ namespace ippl {
 
         // Keep id for the base so we can tell when two
         // indexes come from the same base.
-        int Base;
+        int base_m;
 
         // Make an Index that interally counts the other direction.
         inline Index reverse() const;

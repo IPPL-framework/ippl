@@ -114,6 +114,7 @@ namespace ippl {
     // Intersect, with the code for the common case of
     // both strides equal to one.
     //
+    KOKKOS_INLINE_FUNCTION
     Index Index::intersect(const Index& rhs) const {
         Index ret = DontInitialize() ;
         if ( (stride()==1) && (rhs.stride()==1) ) {
@@ -127,7 +128,7 @@ namespace ippl {
             ret.length_m = ( (l>=f) ? l-f+1 : 0 );
             ret.stride_m = 1;
             ret.baseFirst_m = baseFirst_m + f - lf;
-            ret.Base = Base;
+            ret.base_m = base_m;
         }
         else
             ret = general_intersect(rhs);
@@ -208,7 +209,7 @@ namespace ippl {
 
         // Set the base so you can find what parts correspond
         // to the original interval.
-        r.Base = Base;
+        r.base_m = base_m;
         int diff = (r.first_m - first_m)/stride_m;
         PAssert_GE(diff, 0);
         r.baseFirst_m = baseFirst_m + diff;
