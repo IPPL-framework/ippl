@@ -201,16 +201,30 @@ namespace ippl {
         bool empty() const noexcept;
 
         // Additive operations.
-        friend inline Index operator+(const Index&,int);
-        friend inline Index operator+(int,const Index&);
-        friend inline Index operator-(const Index&,int);
-        friend inline Index operator-(int,const Index&);
+        KOKKOS_INLINE_FUNCTION
+        friend Index operator+(const Index&,int);
+
+        KOKKOS_INLINE_FUNCTION
+        friend Index operator+(int,const Index&);
+
+        KOKKOS_INLINE_FUNCTION
+        friend Index operator-(const Index&,int);
+
+        KOKKOS_INLINE_FUNCTION
+        friend Index operator-(int,const Index&);
 
         // Multipplicative operations.
-        friend inline Index operator-(const Index&);
-        friend inline Index operator*(const Index&,int);
-        friend inline Index operator*(int,const Index&);
-        friend inline Index operator/(const Index&,int);
+        KOKKOS_INLINE_FUNCTION
+        friend Index operator-(const Index&);
+
+        KOKKOS_INLINE_FUNCTION
+        friend Index operator*(const Index&,int);
+
+        KOKKOS_INLINE_FUNCTION
+        friend Index operator*(int,const Index&);
+
+        KOKKOS_INLINE_FUNCTION
+        friend Index operator/(const Index&,int);
 
         // Intersect with another Index.
         KOKKOS_INLINE_FUNCTION
@@ -261,12 +275,17 @@ namespace ippl {
         size_t baseFirst_m;
 
         // Make an Index that interally counts the other direction.
-        inline Index reverse() const;
+        KOKKOS_INLINE_FUNCTION
+        Index reverse() const;
 
         // Construct with a given base. This is private because
         // the interface shouldn't depend on how this is done.
-        inline Index(int m, int a, const Index &b);
-        inline Index(int f, int s, const Index *b);
+
+        KOKKOS_INLINE_FUNCTION
+        Index(int m, int a, const Index &b);
+
+        KOKKOS_INLINE_FUNCTION
+        Index(int f, int s, const Index *b);
 
         // Do a general intersect if the strides are not both 1.
         KOKKOS_INLINE_FUNCTION

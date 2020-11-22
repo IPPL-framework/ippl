@@ -135,6 +135,7 @@ namespace ippl {
     }
 
 
+    KOKKOS_INLINE_FUNCTION
     static Index do_intersect(const Index &a, const Index &b)
     {
         PAssert_GT(a.stride(), 0);        // This should be assured by the

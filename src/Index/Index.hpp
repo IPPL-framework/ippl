@@ -154,47 +154,56 @@ namespace ippl {
     }
 
 
-    inline Index operator+(const Index& i, int off) {
+    KOKKOS_INLINE_FUNCTION
+    Index operator+(const Index& i, int off) {
         return Index(1,off,i);
     }
 
 
-    inline Index operator+(int off, const Index& i) {
+    KOKKOS_INLINE_FUNCTION
+    Index operator+(int off, const Index& i) {
         return Index(1,off,i);
     }
 
 
-    inline Index operator-(const Index& i, int off) {
+    KOKKOS_INLINE_FUNCTION
+    Index operator-(const Index& i, int off) {
         return Index(1,-off,i);
     }
 
 
-    inline Index operator-(int off, const Index& i) {
+    KOKKOS_INLINE_FUNCTION
+    Index operator-(int off, const Index& i) {
         return Index(-1,off,i);
     }
 
 
-    inline Index operator-(const Index& i)  {
+    KOKKOS_INLINE_FUNCTION
+    Index operator-(const Index& i)  {
         return Index(-1,0,i);
     }
 
 
-    inline Index operator*(const Index& i, int m) {
+    KOKKOS_INLINE_FUNCTION
+    Index operator*(const Index& i, int m) {
         return Index(m,0,i);
     }
 
 
-    inline Index operator*(int m, const Index& i) {
+    KOKKOS_INLINE_FUNCTION
+    Index operator*(int m, const Index& i) {
         return Index(m,0,i);
     }
 
 
-    inline Index operator/(const Index& i, int d) {
+    KOKKOS_INLINE_FUNCTION
+    Index operator/(const Index& i, int d) {
         return Index(i.first_m/d, i.stride_m/d, &i);
     }
 
 
-    inline Index Index::reverse() const {
+    KOKKOS_INLINE_FUNCTION
+    Index Index::reverse() const {
         Index j;
         j.first_m = last();
         j.length_m = length_m;
