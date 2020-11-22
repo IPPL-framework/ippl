@@ -4,7 +4,6 @@ set (_SRCS
 
 set (_HDRS
     Index.h
-    Index.hpp
     NDIndex.h
     NDIndex.hpp
     )
