@@ -296,4 +296,6 @@ namespace ippl {
     std::ostream& operator<<(std::ostream& out, const Index& I);
 }
 
+#include "Index/Index.hpp"
+
 #endif
