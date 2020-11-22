@@ -6,7 +6,7 @@ set (_HDRS
     Index.h
     Index.hpp
     NDIndex.h
-    NDIndexInlines.h
+    NDIndex.hpp
     )
 
 include_directories (
