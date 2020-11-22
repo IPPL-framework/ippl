@@ -92,7 +92,7 @@ namespace ippl {
     template <typename T>
     KOKKOS_INLINE_FUNCTION
     T PRegion<T>::length() const noexcept {
-        return max() - min();
+        return b_m - a_m;
     }
 
 
