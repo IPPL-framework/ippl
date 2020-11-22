@@ -176,6 +176,7 @@ namespace ippl {
     }
 
 
+    KOKKOS_INLINE_FUNCTION
     Index Index::general_intersect(const Index& that) const
     {
 

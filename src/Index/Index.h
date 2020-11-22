@@ -269,6 +269,7 @@ namespace ippl {
         inline Index(int f, int s, const Index *b);
 
         // Do a general intersect if the strides are not both 1.
+        KOKKOS_INLINE_FUNCTION
         Index general_intersect(const Index&) const;
     };
 
