@@ -60,7 +60,7 @@ namespace ippl {
     // This version is optimized for small s1 and s2 and
     // just uses an exhaustive search.
     //////////////////////////////////////////////////////////////////////
-    inline
+    KOKKOS_INLINE_FUNCTION
     void lcm(int s1, int s2, int &s, int &m1, int &m2)
     {
         PAssert_GT(s1, 0);   // For simplicity, make some assumptions.

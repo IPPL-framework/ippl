@@ -47,7 +47,7 @@
 
 namespace ippl {
 
-    inline
+    KOKKOS_FUNCTION
     Index::Index()
     : first_m(0)
     , stride_m(0)
@@ -55,7 +55,7 @@ namespace ippl {
     , baseFirst_m(0)
     { }
 
-    inline
+    KOKKOS_FUNCTION
     Index::Index(size_t n)
     : first_m(0)
     , stride_m(1)
@@ -64,7 +64,7 @@ namespace ippl {
     { }
 
 
-    inline
+    KOKKOS_FUNCTION
     Index::Index(int f, int l)
     : first_m(f)
     , stride_m(1)
@@ -75,7 +75,7 @@ namespace ippl {
     }
 
 
-    inline
+    KOKKOS_FUNCTION
     Index::Index(int f, int l, int s)
     : first_m(f)
     , stride_m(s)
@@ -94,7 +94,7 @@ namespace ippl {
     }
 
 
-    inline
+    KOKKOS_INLINE_FUNCTION
     Index::Index(int m, int a, const Index &b)
     : first_m(b.first_m*m+a)
     , stride_m(b.stride_m*m)
@@ -103,7 +103,7 @@ namespace ippl {
     { }
 
 
-    inline
+    KOKKOS_INLINE_FUNCTION
     Index::Index(int f, int s, const Index *b)
     : first_m(f)
     , stride_m(s)
