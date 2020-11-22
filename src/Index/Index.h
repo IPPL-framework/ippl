@@ -270,10 +270,6 @@ namespace ippl {
 
         // Do a general intersect if the strides are not both 1.
         Index general_intersect(const Index&) const;
-
-        // Provide a way to not initialize on construction.
-        class DontInitialize {};
-        Index(DontInitialize) {}
     };
 
 

@@ -116,7 +116,7 @@ namespace ippl {
     //
     KOKKOS_INLINE_FUNCTION
     Index Index::intersect(const Index& rhs) const {
-        Index ret = DontInitialize() ;
+        Index ret;
         if ( (stride()==1) && (rhs.stride()==1) ) {
             int lf = first();
             int rf = rhs.first();
