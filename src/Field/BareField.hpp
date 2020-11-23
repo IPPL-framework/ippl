@@ -18,7 +18,6 @@
 #include "Field/BareField.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Utility/Inform.h"
-#include "Utility/Unique.h"
 #include "Utility/IpplInfo.h"
 
 #include <map>

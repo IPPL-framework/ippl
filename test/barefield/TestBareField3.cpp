@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     constexpr unsigned int dim = 3;
 
     ippl::Index I(10);
-    NDIndex<dim> owned(I, I, I);
+    ippl::NDIndex<dim> owned(I, I, I);
 
 
     ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims

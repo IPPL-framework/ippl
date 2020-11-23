@@ -238,7 +238,7 @@ public:
          IpplTimings::startTimer(initFieldsTimer);                                                    
          Inform m("initFields ");
 
-         NDIndex<Dim> domain = EFD_m.getDomain();
+         ippl::NDIndex<Dim> domain = EFD_m.getDomain();
 
          for (unsigned int i=0; i<Dim; i++)
              nr_m[i] = domain[i].length();
@@ -379,7 +379,7 @@ int main(int argc, char *argv[]){
     std::unique_ptr<bunch_type>  P;
     std::unique_ptr<PLayout_t> PL;
 
-    NDIndex<Dim> domain;
+    ippl::NDIndex<Dim> domain;
     for (unsigned i = 0; i< Dim; i++) {
         domain[i] = ippl::Index(nr[i]);
     }
