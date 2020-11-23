@@ -112,6 +112,7 @@ namespace ippl {
 //     // needed, and handles create and destroy requests.  When complete,
 //     // all nodes have correct layout information.
 
+        template <class BufferType>
         void update(ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }

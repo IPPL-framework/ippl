@@ -247,6 +247,7 @@ namespace ippl {
          * This function calls the underlying particle layout
          * routine.
          */
+        template <class BufferType>
         void update();
 
 

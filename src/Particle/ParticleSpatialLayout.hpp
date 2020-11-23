@@ -48,6 +48,7 @@ namespace ippl {
 
 
     template <typename T, unsigned Dim, class Mesh>
+    template <class BufferType>
     void ParticleSpatialLayout<T, Dim, Mesh>::update(
         ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata)
     {
@@ -108,8 +109,7 @@ namespace ippl {
                 hash_type hash("hash", nSends[rank]);
                 fillHash(rank, ranks, hash);
 
-                using buffer_type = ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >;
-                buffer_type buffer(pdata.getLayout());
+                BufferType buffer(pdata.getLayout());
                 buffer.create(nSends[rank]);
                 pdata.pack(buffer, hash);
 
@@ -120,8 +120,7 @@ namespace ippl {
         // 3rd step
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
-                using buffer_type = ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >;
-                buffer_type buffer(pdata.getLayout());
+                BufferType buffer(pdata.getLayout());
                 buffer.create(nRecvs[rank]);
 
                 Ippl::Comm->recv(rank, 42, buffer);
