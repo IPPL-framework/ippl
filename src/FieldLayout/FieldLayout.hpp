@@ -39,6 +39,8 @@ namespace ippl {
             requestedLayout_m[d] = PARALLEL;
             minWidth_m[d] = 0;
         }
+
+        neighbors_m.fill(-1);
     }
 
 
@@ -92,6 +94,8 @@ namespace ippl {
 
         partition.split(domain, hLocalDomains_m, requestedLayout_m, nRanks);
 
+        findNeighbors();
+
         Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
 
         calcWidths();
@@ -108,9 +112,24 @@ namespace ippl {
 
     template <unsigned Dim>
     const typename FieldLayout<Dim>::host_mirror_type&
-    FieldLayout<Dim>::getLocalDomains() const
+    FieldLayout<Dim>::getHostLocalDomains() const
     {
         return hLocalDomains_m;
+    }
+
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::view_type&
+    FieldLayout<Dim>::getDeviceLocalDomains() const
+    {
+        return dLocalDomains_m;
+    }
+
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::neighbor_container_type&
+    FieldLayout<Dim>::getNeigbors() const {
+        return neighbors_m;
     }
 
 
@@ -147,5 +166,12 @@ namespace ippl {
                     minWidth_m[d] = dom[d].length();
             }
         }
+    }
+
+
+    template <unsigned Dim>
+    void FieldLayout<Dim>::findNeighbors() {
+
+
     }
 }

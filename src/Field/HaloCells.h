@@ -20,6 +20,8 @@
 
 #include "Index/NDIndex.h"
 #include "Types/ViewTypes.h"
+// #include "Communicate/Archive.h"
+#include "FieldLayout/FieldLayout.h"
 
 #include <array>
 
@@ -36,6 +38,7 @@ namespace ippl {
             using lower_type = typename ViewType<T, Dim, Kokkos::LayoutStride>::view_type;
             using upper_type = typename ViewType<T, Dim, Kokkos::LayoutStride>::view_type;
             using view_type  = typename detail::ViewType<T, Dim>::view_type;
+            using Layout_t   = FieldLayout<Dim>;
 
             HaloCells();
 
@@ -46,6 +49,13 @@ namespace ippl {
             upper_type& upper(unsigned int dim);
 
             void fillHalo(const T& value);
+
+            void exchangeHalo(view_type&, const Layout_t* layout, int nghost);
+
+
+//             void pack(view_type&, const Kokkos::View<int*>&) const;
+//
+//             void unpack(view_type&);
 
         private:
             /*! lower halo cells (ordering x, y, z)

@@ -130,7 +130,7 @@ namespace ippl {
 
         void fillLocalHalo(const T& value);
 
-        void fillHalo();
+        void exchangeHalo();
 
 
         // Assignment from a constant.

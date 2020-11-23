@@ -89,6 +89,12 @@ namespace ippl {
 
 
     template <typename T, unsigned Dim>
+    void BareField<T, Dim>::exchangeHalo() {
+        halo_m.exchangeHalo(dview_m, layout_m, nghost_m);
+    }
+
+
+    template <typename T, unsigned Dim>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         Kokkos::parallel_for("BareField::operator=(T)",

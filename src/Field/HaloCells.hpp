@@ -82,5 +82,26 @@ namespace ippl {
                 });
             }
         }
+
+
+        template <typename T, unsigned Dim>
+        void HaloCells<T, Dim>::exchangeHalo(view_type& view,
+                                             const Layout_t* layout,
+                                             int nghost)
+        {
+//             using nd_view_type = Layout_t::view_type;
+
+//             nd_view_type
+
+            // pack internal data from view
+
+            // send data
+
+            // receive data
+
+            // unpack received
+
+            // assign data to halo subviews
+        }
     }
 }

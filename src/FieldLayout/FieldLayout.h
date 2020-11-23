@@ -45,6 +45,7 @@ namespace ippl {
         using NDIndex_t = NDIndex<Dim>;
         using view_type = typename detail::ViewType<NDIndex_t, 1>::view_type;
         using host_mirror_type = typename view_type::host_mirror_type;
+        using neighbor_container_type = std::array<int, 2 * Dim>;
 
 
         /*!
@@ -97,7 +98,11 @@ namespace ippl {
 
         const NDIndex_t& getLocalNDIndex(int rank = Ippl::Comm->rank()) const;
 
-        const host_mirror_type& getLocalDomains() const;
+        const host_mirror_type& getHostLocalDomains() const;
+
+        const view_type& getDeviceLocalDomains() const;
+
+        const neighbor_container_type& getNeighbors() const;
 
     void write(std::ostream& = std::cout) const;
 
@@ -115,7 +120,17 @@ namespace ippl {
 
         unsigned int minWidth_m[Dim];
 
+        /*!
+         * This container has length 2*Dim. Each index represents a face
+         * (ordering: x low, x high, y low, y high, z low, z high). The
+         * value is the rank it shares the interface. A negative value
+         * denotes that it is on the physical / mesh boundary.
+         */
+        neighbor_container_type neighbors_m;
+
         void calcWidths();
+
+        void findNeighbors();
     };
 
 
