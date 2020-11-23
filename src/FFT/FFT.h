@@ -156,8 +156,7 @@ FFT(const Domain_t& cdomain, const bool& compressTemps=false)
                 const Domain_t& first_dom = tempLayouts_m[idim]->getDomain();
                 // check that zeroth axis is the same and is serial
                 // and that there are no guard cells
-                skipTranspose = ( (in_dom[0].sameBase(first_dom[0])) &&
-                                  (in_dom[0].length() == first_dom[0].length()) &&
+                skipTranspose = ( (in_dom[0].length() == first_dom[0].length()) &&
                                   (in_layout.getDistribution(0) == SERIAL) &&
                                   (f.getGC() == FFT<CCTransform,Dim,T>::nullGC) );
             }
@@ -169,8 +168,7 @@ FFT(const Domain_t& cdomain, const bool& compressTemps=false)
                 const Domain_t& last_dom = tempLayouts_m[idim]->getDomain();
                 // check that zeroth axis is the same and is serial
                 // and that there are no guard cells
-                skipTranspose = ( (in_dom[0].sameBase(last_dom[0])) &&
-                                  (in_dom[0].length() == last_dom[0].length()) &&
+                skipTranspose = ( (in_dom[0].length() == last_dom[0].length()) &&
                                   (in_layout.getDistribution(0) == SERIAL) &&
                                   (f.getGC() == FFT<CCTransform,Dim,T>::nullGC) );
             }

@@ -16,7 +16,6 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "Utility/Inform.h"
-#include "Utility/Unique.h"
 #include "Utility/IpplInfo.h"
 
 #include <map>
