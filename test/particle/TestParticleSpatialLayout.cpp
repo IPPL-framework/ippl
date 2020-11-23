@@ -9,13 +9,15 @@ struct Bunch : public ippl::ParticleBase<PLayout>
     Bunch(PLayout& playout)
     : ippl::ParticleBase<PLayout>(playout)
     {
-        //this->addAttribute(expectedRank);
+        this->addAttribute(expectedRank);
         this->addAttribute(Q);
     }
 
-    //typedef ippl::ParticleAttrib<int> rank_type;
+    ~Bunch(){ }
+
+    typedef ippl::ParticleAttrib<int> rank_type;
     typedef ippl::ParticleAttrib<double> charge_type;
-    //rank_type expectedRank;
+    rank_type expectedRank;
     charge_type Q;
 
     void update() {
@@ -86,18 +88,6 @@ int main(int argc, char *argv[]) {
         ippl::Vector<double, dim> r = {unif(eng), unif(eng), unif(eng)};
         R_host(i) = r;
     }
-    //if (Ippl::Comm->rank() == 0) {
-    //    for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-    //        ippl::Vector<double, dim> r = {0.75, 0.75, 0.75};
-    //        R_host(i) = r;
-    //    }
-    //}
-    //else if (Ippl::Comm->rank() == 1) {
-    //    for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-    //        ippl::Vector<double, dim> r = {0.25, 0.25, 0.25};
-    //        R_host(i) = r;
-    //    }
-    //}
 
     bunch.Q = 1.0;
     Ippl::Comm->barrier();
@@ -106,43 +96,43 @@ int main(int argc, char *argv[]) {
     typedef ippl::detail::RegionLayout<double, 3, Mesh_t> RegionLayout_t;
     RegionLayout_t RLayout = pl.getRegionLayout();
 
-    //auto& positions = bunch.R.getView();
-    //typename RegionLayout_t::view_type Regions = RLayout.getdLocalRegions();
-    //using size_type = typename RegionLayout_t::view_type::size_type;
-    //using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-    //typedef ippl::ParticleAttrib<int> ER_t;
-    //ER_t::view_type ER = bunch.expectedRank.getView();
+    auto& positions = bunch.R.getView();
+    typename RegionLayout_t::view_type Regions = RLayout.getdLocalRegions();
+    using size_type = typename RegionLayout_t::view_type::size_type;
+    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+    typedef ippl::ParticleAttrib<int> ER_t;
+    ER_t::view_type ER = bunch.expectedRank.getView();
 
-    //Kokkos::parallel_for("Expected Rank",
-    //        mdrange_type({0, 0},
-    //                     {ER.extent(0), Regions.extent(0)}), 
-    //        KOKKOS_LAMBDA(const size_t i, const size_type j) {
-    //            bool x_bool = false;
-    //            bool y_bool = false;
-    //            bool z_bool = false;
-    //            if((positions(i)[0] >= Regions(j)[0].min()) &&
-    //               (positions(i)[0] <= Regions(j)[0].max())) {
-    //                x_bool = true;    
-    //            }
-    //            if((positions(i)[1] >= Regions(j)[1].min()) &&
-    //               (positions(i)[1] <= Regions(j)[1].max())) {
-    //                y_bool = true;    
-    //            }
-    //            if((positions(i)[2] >= Regions(j)[2].min()) &&
-    //               (positions(i)[2] <= Regions(j)[2].max())) {
-    //                z_bool = true;    
-    //            }
-    //            if(x_bool && y_bool && z_bool){
-    //                ER(i) = j;
-    //            }
-    //    });
-    //Kokkos::fence();
+    Kokkos::parallel_for("Expected Rank",
+            mdrange_type({0, 0},
+                         {ER.extent(0), Regions.extent(0)}), 
+            KOKKOS_LAMBDA(const size_t i, const size_type j) {
+                bool x_bool = false;
+                bool y_bool = false;
+                bool z_bool = false;
+                if((positions(i)[0] >= Regions(j)[0].min()) &&
+                   (positions(i)[0] <= Regions(j)[0].max())) {
+                    x_bool = true;    
+                }
+                if((positions(i)[1] >= Regions(j)[1].min()) &&
+                   (positions(i)[1] <= Regions(j)[1].max())) {
+                    y_bool = true;    
+                }
+                if((positions(i)[2] >= Regions(j)[2].min()) &&
+                   (positions(i)[2] <= Regions(j)[2].max())) {
+                    z_bool = true;    
+                }
+                if(x_bool && y_bool && z_bool){
+                    ER(i) = j;
+                }
+        });
+    Kokkos::fence();
 
     typename bunch_type::particle_index_type::HostMirror ID_host = bunch.ID.getHostMirror();
     Kokkos::deep_copy(ID_host, bunch.ID.getView());
 
-    //ER_t::view_type::host_mirror_type ER_host = bunch.expectedRank.getHostMirror();
-    //Kokkos::deep_copy(ER_host, bunch.expectedRank.getView());
+    ER_t::view_type::host_mirror_type ER_host = bunch.expectedRank.getHostMirror();
+    Kokkos::deep_copy(ER_host, bunch.expectedRank.getView());
     typedef ippl::ParticleAttrib<double> Q_t;
     Q_t::view_type::host_mirror_type Q_host = bunch.Q.getHostMirror();
 
@@ -156,7 +146,7 @@ int main(int argc, char *argv[]) {
             std::cout << "------------" << std::endl
                       << "Rank " << rank << std::endl;
             for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-                std::cout << ID_host(i) << " " << R_host(i) << " " << Q_host(i) << std::endl;
+                std::cout << ID_host(i) << " " << R_host(i) << " " << Q_host(i) << " " << ER_host(i) << std::endl;
             }
         }
         Ippl::Comm->barrier();
@@ -178,8 +168,8 @@ int main(int argc, char *argv[]) {
     Kokkos::resize(Q_host, bunch.Q.size());
     Kokkos::deep_copy(Q_host, bunch.Q.getView());
     
-    //Kokkos::resize(ER_host, bunch.expectedRank.size());
-    //Kokkos::deep_copy(ER_host, bunch.expectedRank.getView());
+    Kokkos::resize(ER_host, bunch.expectedRank.size());
+    Kokkos::deep_copy(ER_host, bunch.expectedRank.getView());
 
     if (Ippl::Comm->rank() == 0) {
         std::cout << "After update:" << std::endl;
@@ -190,7 +180,7 @@ int main(int argc, char *argv[]) {
             std::cout << "------------" << std::endl
                       << "Rank " << rank << std::endl;
             for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-                std::cout << ID_host(i) << " " << R_host(i) << " " << Q_host(i) << std::endl;
+                std::cout << ID_host(i) << " " << R_host(i) << " " << Q_host(i) << " " << ER_host(i) << std::endl;
             }
         }
         Ippl::Comm->barrier();
