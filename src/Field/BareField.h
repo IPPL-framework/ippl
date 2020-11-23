@@ -130,6 +130,8 @@ namespace ippl {
 
         void fillLocalHalo(const T& value);
 
+        void fillHalo();
+
 
         // Assignment from a constant.
         BareField<T, Dim>& operator=(T x);

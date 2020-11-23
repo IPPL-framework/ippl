@@ -60,5 +60,27 @@ namespace ippl {
         HaloCells<T, Dim>::upper(unsigned int dim) {
             return upperHalo_m[dim];
         }
+
+
+        template <typename T, unsigned Dim>
+        void HaloCells<T, Dim>::fillHalo(const T& value) {
+            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+            using Kokkos::parallel_for;
+            for (unsigned int i = 0; i < Dim; ++i) {
+                auto& lo = lower(i);
+                auto& hi = upper(i);
+                parallel_for("BareField::fillLocalHalo",
+                             mdrange_type({0, 0, 0},
+                                          {lo.extent(0),
+                                           lo.extent(1),
+                                           lo.extent(2)}),
+                             KOKKOS_CLASS_LAMBDA(const int i,
+                                                 const int j,
+                                                 const int k) {
+                                 lo(i, j, k) = value;
+                                 hi(i, j, k) = value;
+                });
+            }
+        }
     }
 }

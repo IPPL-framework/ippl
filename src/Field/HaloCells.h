@@ -45,6 +45,8 @@ namespace ippl {
 
             upper_type& upper(unsigned int dim);
 
+            void fillHalo(const T& value);
+
         private:
             /*! lower halo cells (ordering x, y, z)
              * x --> lower y-z plane
