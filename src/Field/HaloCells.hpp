@@ -69,7 +69,7 @@ namespace ippl {
             for (unsigned int i = 0; i < Dim; ++i) {
                 auto& lo = lower(i);
                 auto& hi = upper(i);
-                parallel_for("BareField::fillLocalHalo",
+                parallel_for("HaloCells::fillHalo()",
                              mdrange_type({0, 0, 0},
                                           {lo.extent(0),
                                            lo.extent(1),
