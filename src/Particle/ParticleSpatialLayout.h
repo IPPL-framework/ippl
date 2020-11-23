@@ -114,6 +114,7 @@ namespace ippl {
 
         void update(ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata);
 
+        const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
     //
     // virtual functions for FieldLayoutUser's (and other UserList users)
     //
