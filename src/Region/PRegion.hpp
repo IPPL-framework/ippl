@@ -78,14 +78,14 @@ namespace ippl {
     template <typename T>
     KOKKOS_INLINE_FUNCTION
     T PRegion<T>::min() const noexcept {
-        return std::min(std::abs(a_m), std::abs(b_m));
+        return a_m;
     }
 
 
     template <typename T>
     KOKKOS_INLINE_FUNCTION
     T PRegion<T>::max() const noexcept {
-        return std::max(std::abs(a_m), std::abs(b_m));
+        return b_m;
     }
 
 
@@ -93,20 +93,6 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION
     T PRegion<T>::length() const noexcept {
         return b_m - a_m;
-    }
-
-
-    template <typename T>
-    KOKKOS_INLINE_FUNCTION
-    T PRegion<T>::first() const noexcept {
-        return a_m;
-    }
-
-
-    template <typename T>
-    KOKKOS_INLINE_FUNCTION
-    T PRegion<T>::last() const noexcept {
-        return b_m;
     }
 
 

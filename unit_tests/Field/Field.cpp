@@ -34,7 +34,7 @@ public:
 
     void setup() {
         ippl::Index I(nPoints);
-        NDIndex<dim> owned(I, I, I);
+        ippl::NDIndex<dim> owned(I, I, I);
 
         ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++)
