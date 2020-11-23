@@ -49,78 +49,101 @@
 
 #include "Expression/IpplExpressions.h"
 
-// #include <iostream>
+#include <iostream>
 
 namespace ippl {
-    class Index : public ippl::detail::Expression<Index, 3 * sizeof(int) + 2 * sizeof(size_t) /*need to check*/>
+    class Index : public ippl::detail::Expression<Index, 2 * sizeof(int) + 2 * sizeof(size_t)>
     {
     public:
         class iterator
         {
         public:
-            iterator()                          : Current(0)      , stride_m(0)      {}
-            iterator(int current, int stride=1) : Current(current), stride_m(stride) {}
+            iterator()
+            : current_m(0)
+            , stride_m(0)
+            { }
 
-            int operator*() { return Current ; }
+            iterator(int current, int stride = 1)
+            : current_m(current)
+            , stride_m(stride)
+            { }
+
+            int operator*() { return current_m ; }
+
             iterator operator--(int)
             {
                 iterator tmp = *this;
-                Current -= stride_m;             // Post decrement
+                current_m -= stride_m;             // Post decrement
                 return tmp;
             }
+
             iterator& operator--()
             {
-                Current -= stride_m;
+                current_m -= stride_m;
                 return (*this);
             }
+
             iterator operator++(int)
             {
                 iterator tmp = *this;
-                Current += stride_m;              // Post increment
+                current_m += stride_m;              // Post increment
                 return tmp;
             }
+
             iterator& operator++()
             {
-                Current += stride_m;
+                current_m += stride_m;
                 return (*this);
             }
+
             iterator& operator+=(int i)
             {
-                Current += (stride_m * i);
+                current_m += (stride_m * i);
                 return *this;
             }
+
             iterator& operator-=(int i)
             {
-                Current -= (stride_m * i);
+                current_m -= (stride_m * i);
                 return *this;
             }
+
             iterator operator+(int i) const
             {
-                return iterator(Current+i*stride_m,stride_m);
+                return iterator(current_m + i * stride_m, stride_m);
             }
+
             iterator operator-(int i) const
             {
-                return iterator(Current-i*stride_m,stride_m);
+                return iterator(current_m - i * stride_m, stride_m);
             }
+
             int operator[](int i) const
             {
-                return Current + i * stride_m;
+                return current_m + i * stride_m;
             }
+
             bool operator==(const iterator &y) const
             {
-                return (Current == y.Current) && (stride_m == y.stride_m);
+                return (current_m == y.current_m) && (stride_m == y.stride_m);
             }
+
             bool operator<(const iterator &y) const
             {
-                return (Current < y.Current)||
-                ((Current==y.Current)&&(stride_m<y.stride_m));
+                return (current_m < y.current_m)||
+                ((current_m==y.current_m)&&(stride_m<y.stride_m));
             }
+
             bool operator!=(const iterator &y) const { return !((*this) == y); }
+
             bool operator> (const iterator &y) const { return y < (*this); }
+
             bool operator<=(const iterator &y) const { return !(y < (*this)); }
+
             bool operator>=(const iterator &y) const { return !((*this) < y); }
+
         private:
-            int Current;
+            int current_m;
             int stride_m;
         };
  
@@ -244,9 +267,9 @@ namespace ippl {
         bool split(Index& l, Index& r, double a) const;
 
         // iterator begin
-        iterator begin() { return iterator(first_m,stride_m); }
+        iterator begin() { return iterator(first_m, stride_m); }
         // iterator end
-        iterator end() { return iterator(first_m+stride_m*length_m,stride_m); }
+        iterator end() { return iterator(first_m + stride_m * length_m, stride_m); }
 
         // An operator< so we can impose some sort of ordering.
         KOKKOS_INLINE_FUNCTION
