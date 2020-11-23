@@ -16,7 +16,6 @@ set (_HDRS
     IpplInfo.h
 #     IpplMemoryUsage.h
     IpplTimings.h
-#     NamedObj.h
     PAssert.h
     Timer.h
     Unique.h
