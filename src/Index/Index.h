@@ -47,12 +47,10 @@
 
 #include <Kokkos_Core.hpp>
 
-#include "Expression/IpplExpressions.h"
-
 #include <iostream>
 
 namespace ippl {
-    class Index : public ippl::detail::Expression<Index, 2 * sizeof(int) + sizeof(size_t)>
+    class Index
     {
     public:
         class iterator
