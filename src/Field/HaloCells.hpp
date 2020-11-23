@@ -54,6 +54,7 @@ namespace ippl {
             return lowerHalo_m[dim];
         }
 
+
         template <typename T, unsigned Dim>
         typename HaloCells<T, Dim>::upper_type&
         HaloCells<T, Dim>::upper(unsigned int dim) {
