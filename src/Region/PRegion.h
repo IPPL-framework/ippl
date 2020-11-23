@@ -67,13 +67,13 @@ namespace ippl {
         PRegion<T>& operator=(const PRegion<T>& rhs);
     
         /*!
-         * @returns the minimum of the absolute values
+         * @returns the lower bound
          */
         KOKKOS_INLINE_FUNCTION
         T min() const noexcept;
 
         /*!
-         * @returns the maximum of the absolute values
+         * @returns the upper bound
          */
         KOKKOS_INLINE_FUNCTION
         T max() const noexcept;
@@ -83,18 +83,6 @@ namespace ippl {
          */
         KOKKOS_INLINE_FUNCTION
         T length() const noexcept;
-
-        /*!
-         * @returns the lower bound
-         */
-        KOKKOS_INLINE_FUNCTION
-        T first() const noexcept;
-
-        /*!
-         * @returns the upper bound
-         */
-        KOKKOS_INLINE_FUNCTION
-        T last() const noexcept;
 
         /*!
          * @returns true if empty
