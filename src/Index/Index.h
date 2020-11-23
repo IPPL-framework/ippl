@@ -49,7 +49,7 @@
 
 #include "Expression/IpplExpressions.h"
 
-#include <iostream>
+// #include <iostream>
 
 namespace ippl {
     class Index : public ippl::detail::Expression<Index, 3 * sizeof(int) + 2 * sizeof(size_t) /*need to check*/>
@@ -127,14 +127,14 @@ namespace ippl {
         /*!
          * Instantiate Index without any range.
          */
-        KOKKOS_FUNCTION
+        KOKKOS_INLINE_FUNCTION
         Index();
 
         /*!
          * Instantiate Index with range [0, ..., n-1]
          * @param n number of elements
          */
-        KOKKOS_FUNCTION
+        KOKKOS_INLINE_FUNCTION
         Index(size_t n);
 
         /*!
@@ -143,7 +143,7 @@ namespace ippl {
          * @param f first element
          * @param l last element
          */
-        KOKKOS_FUNCTION
+        KOKKOS_INLINE_FUNCTION
         Index(int f, int l);
 
         /*!
@@ -152,10 +152,10 @@ namespace ippl {
          * @param l last element
          * @param s step
          */
-        KOKKOS_FUNCTION
+        KOKKOS_INLINE_FUNCTION
         Index(int f, int l, int s);
 
-        KOKKOS_FUNCTION
+        KOKKOS_INLINE_FUNCTION
         ~Index() = default;
 
         /*!
@@ -293,7 +293,11 @@ namespace ippl {
     };
 
 
-    std::ostream& operator<<(std::ostream& out, const Index& I);
+    inline
+    std::ostream& operator<<(std::ostream& out, const Index& I) {
+        out << '[' << I.first() << ':' << I.last() << ':' << I.stride() << ']';
+        return out;
+    }
 }
 
 #include "Index/Index.hpp"

@@ -46,7 +46,7 @@
 
 namespace ippl {
 
-    KOKKOS_FUNCTION
+    KOKKOS_INLINE_FUNCTION
     Index::Index()
     : first_m(0)
     , stride_m(0)
@@ -54,7 +54,7 @@ namespace ippl {
     , baseFirst_m(0)
     { }
 
-    KOKKOS_FUNCTION
+    KOKKOS_INLINE_FUNCTION
     Index::Index(size_t n)
     : first_m(0)
     , stride_m(1)
@@ -63,7 +63,7 @@ namespace ippl {
     { }
 
 
-    KOKKOS_FUNCTION
+    KOKKOS_INLINE_FUNCTION
     Index::Index(int f, int l)
     : first_m(f)
     , stride_m(1)
@@ -74,7 +74,7 @@ namespace ippl {
     }
 
 
-    KOKKOS_FUNCTION
+    KOKKOS_INLINE_FUNCTION
     Index::Index(int f, int l, int s)
     : first_m(f)
     , stride_m(s)
@@ -249,13 +249,6 @@ namespace ippl {
         l = Index(first, mid);
         r = Index(mid+1,first+length-1);
         return true;
-    }
-
-
-
-    std::ostream& operator<<(std::ostream& out, const Index& I) {
-        out << '[' << I.first() << ':' << I.last() << ':' << I.stride() << ']';
-        return out;
     }
 
 
