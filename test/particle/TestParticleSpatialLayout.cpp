@@ -131,6 +131,9 @@ int main(int argc, char *argv[]) {
     typename bunch_type::particle_index_type::HostMirror ID_host = bunch.ID.getHostMirror();
     Kokkos::deep_copy(ID_host, bunch.ID.getView());
 
+    ER_t::view_type::host_mirror_type ER_host = bunch.expectedRank.getHostMirror();
+    Kokkos::deep_copy(ER_host, bunch.expectedRank.getView());
+    
     if (Ippl::Comm->rank() == 0) {
         std::cout << "Before update:" << std::endl;
     }
@@ -140,13 +143,14 @@ int main(int argc, char *argv[]) {
             std::cout << "------------" << std::endl
                       << "Rank " << rank << std::endl;
             for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-                std::cout << ID_host(i) << " " << R_host(i) << std::endl;
+                std::cout << ID_host(i) << " " << R_host(i) << " " << ER_host(i) << std::endl;
             }
         }
         Ippl::Comm->barrier();
     }
 
     std::cout << layout << std::endl;
+    std::cout << RLayout << std::endl;
 
     bunch.update();
 
@@ -158,7 +162,7 @@ int main(int argc, char *argv[]) {
     Kokkos::resize(ID_host, bunch.ID.size());
     Kokkos::deep_copy(ID_host, bunch.ID.getView());
     
-    ER_t::view_type::host_mirror_type ER_host = bunch.expectedRank.getHostMirror();
+    Kokkos::resize(ER_host, bunch.expectedRank.size());
     Kokkos::deep_copy(ER_host, bunch.expectedRank.getView());
 
     if (Ippl::Comm->rank() == 0) {
