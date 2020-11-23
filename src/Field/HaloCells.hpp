@@ -32,18 +32,23 @@ namespace ippl {
         {
             using Kokkos::subview;
             using Kokkos::ALL;
+            using Kokkos::make_pair;
 
-            lower[0] = subview(view, 0, ALL(), ALL());
-            upper[0] = subview(view, view.extent(0), ALL(), ALL());
+            lower[0] = subview(view, make_pair(0, nghost), ALL(), ALL());
+
+            auto xext = view.extent(0);
+            upper[0] = subview(view, make_pair(xext - nghost, xext), ALL(), ALL());
 
             if constexpr(Dim > 1) {
-                lower[1] = subview(view, ALL(), 0, ALL());
-                upper[1] = subview(view, ALL(), view.extent(1), ALL());
+                auto yext = view.extent(1);
+                lower[1] = subview(view, ALL(), make_pair(0, nghost), ALL());
+                upper[1] = subview(view, ALL(), make_pair(yext - nghost, yext), ALL());
             }
 
             if constexpr(Dim > 2) {
-                lower[2] = subview(view, ALL(), ALL(), 0);
-                upper[2] = subview(view, ALL(), ALL(), view.extent(2));
+                auto zext = view.extent(2);
+                lower[2] = subview(view, ALL(), ALL(), make_pair(0, nghost));
+                upper[2] = subview(view, ALL(), ALL(), make_pair(zext - nghost, zext));
             }
         }
 
