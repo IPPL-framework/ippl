@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
     bunch.setParticleBC(bcs);
 
     int nRanks = Ippl::Comm->size();
-    int nParticles = 8;
+    unsigned int nParticles = 8;
 
     if (nParticles % nRanks > 0) {
         if (Ippl::Comm->rank() == 0) {
@@ -146,7 +146,8 @@ int main(int argc, char *argv[]) {
             std::cout << "------------" << std::endl
                       << "Rank " << rank << std::endl;
             for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-                std::cout << ID_host(i) << " " << R_host(i) << " " << Q_host(i) << " " << ER_host(i) << std::endl;
+                std::cout << ID_host(i) << " " << R_host(i) << " " 
+                          << Q_host(i) << " " << ER_host(i) << std::endl;
             }
         }
         Ippl::Comm->barrier();
@@ -180,11 +181,22 @@ int main(int argc, char *argv[]) {
             std::cout << "------------" << std::endl
                       << "Rank " << rank << std::endl;
             for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-                std::cout << ID_host(i) << " " << R_host(i) << " " << Q_host(i) << " " << ER_host(i) << std::endl;
+                std::cout << ID_host(i) << " " << R_host(i) << " " 
+                          << Q_host(i) << " " << ER_host(i) << std::endl;
             }
         }
         Ippl::Comm->barrier();
     }
 
+    unsigned int Total_particles = 0;
+    unsigned int local_particles = bunch.getLocalNum();
+
+    MPI_Allreduce(&local_particles, &Total_particles, 1, 
+                  MPI_UNSIGNED, MPI_SUM, Ippl::getComm());
+
+    if (Ippl::Comm->rank() == 0) {
+        std::cout << "Total particles before: " << nParticles 
+                  << " " << "after: " << Total_particles << std::endl;
+    }
     return 0;
 }
