@@ -31,14 +31,14 @@ namespace ippl {
         struct isExpression<BareField<T, Dim>> : std::true_type {};
     }
 
-    template< typename T, unsigned Dim>
+    template <typename T, unsigned Dim>
     BareField<T, Dim>::BareField()
     : nghost_m(1)
     , layout_m(nullptr)
     { }
 
 
-    template< typename T, unsigned Dim>
+    template <typename T, unsigned Dim>
     BareField<T, Dim>::BareField(Layout_t& l, int nghost)
     : nghost_m(nghost)
 //     , owned_m(0)
@@ -47,7 +47,7 @@ namespace ippl {
         setup();
     }
 
-    template<typename T, unsigned Dim>
+    template <typename T, unsigned Dim>
     void BareField<T, Dim>::initialize(Layout_t& l, int nghost) {
         if (layout_m == 0) {
             layout_m = &l;
@@ -57,7 +57,7 @@ namespace ippl {
     }
 
 
-    template<typename T, unsigned Dim>
+    template <typename T, unsigned Dim>
     void BareField<T, Dim>::setup() {
         static_assert(Dim == 3, "Only 3-dimensional fields supported at the momment!");
 
@@ -76,14 +76,14 @@ namespace ippl {
     }
 
 
-    template<class T, unsigned Dim>
-    template<typename ...Args>
-    void BareField<T,Dim>::resize(Args... args) {
+    template <typename T, unsigned Dim>
+    template <typename ...Args>
+    void BareField<T, Dim>::resize(Args... args) {
         Kokkos::resize(dview_m, args...);
     }
 
 
-    template<typename T, unsigned Dim>
+    template <typename T, unsigned Dim>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         Kokkos::parallel_for("BareField::operator=(T)",
@@ -99,7 +99,7 @@ namespace ippl {
     }
 
 
-    template<typename T, unsigned Dim>
+    template <typename T, unsigned Dim>
     template <typename E, size_t N>
     BareField<T, Dim>& BareField<T, Dim>::operator=(const detail::Expression<E, N>& expr) {
         using capture_type = detail::CapturedExpression<E, N>;
@@ -117,7 +117,7 @@ namespace ippl {
     }
 
 
-    template<class T, unsigned Dim>
+    template <typename T, unsigned Dim>
     void BareField<T,Dim>::write(std::ostream& out) const {
         Kokkos::fence();
         detail::write<T>(dview_m, out);
