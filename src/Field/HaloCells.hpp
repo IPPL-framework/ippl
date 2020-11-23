@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Field/HaloCells.h"
-
 namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim>
