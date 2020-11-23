@@ -283,8 +283,7 @@ FFTBase<Dim,T>::checkDomain(const FFTBase<Dim,T>::Domain_t& dom1,
 	    // if we have not yet found a match for this dimension,
 	    // compare length and base of Index objects
 	    if (!matched[d1]) {
-		found = ( dom1[d].length()==dom2[d1].length() &&
-			  dom1[d].sameBase(dom2[d1]) );
+		found = ( dom1[d].length()==dom2[d1].length() );
 		// if equivalent, mark this dimension as matched
 		if (found) matched[d1] = true;
 	    }

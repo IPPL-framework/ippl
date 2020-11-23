@@ -179,8 +179,7 @@ FFT<CCTransform,Dim,T>::transform(
             const Domain_t& first_dom = tempLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (in_dom[0].sameBase(first_dom[0])) &&
-                              (in_dom[0].length() == first_dom[0].length()) &&
+            skipTranspose = ( (in_dom[0].length() == first_dom[0].length()) &&
                               (in_layout.getDistribution(0) == SERIAL) &&
                               (f.getGC() == FFT<CCTransform,Dim,T>::nullGC) );
         }
@@ -192,8 +191,7 @@ FFT<CCTransform,Dim,T>::transform(
             const Domain_t& last_dom = tempLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (out_dom[0].sameBase(last_dom[0])) &&
-                              (out_dom[0].length() == last_dom[0].length()) &&
+            skipTranspose = ( (out_dom[0].length() == last_dom[0].length()) &&
                               (out_layout.getDistribution(0) == SERIAL) &&
                               (g.getGC() == FFT<CCTransform,Dim,T>::nullGC) );
         }
@@ -295,8 +293,7 @@ FFT<CCTransform,Dim,T>::transform(
             const Domain_t& first_dom = tempLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (in_dom[0].sameBase(first_dom[0])) &&
-                              (in_dom[0].length() == first_dom[0].length()) &&
+            skipTranspose = ( (in_dom[0].length() == first_dom[0].length()) &&
                               (in_layout.getDistribution(0) == SERIAL) &&
                               (f.getGC() == FFT<CCTransform,Dim,T>::nullGC) );
         }
@@ -308,8 +305,7 @@ FFT<CCTransform,Dim,T>::transform(
             const Domain_t& last_dom = tempLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (in_dom[0].sameBase(last_dom[0])) &&
-                              (in_dom[0].length() == last_dom[0].length()) &&
+            skipTranspose = ( (in_dom[0].length() == last_dom[0].length()) &&
                               (in_layout.getDistribution(0) == SERIAL) &&
                               (f.getGC() == FFT<CCTransform,Dim,T>::nullGC) );
         }
@@ -523,8 +519,7 @@ FFT<CCTransform,1U,T>::transform(
     if (!constInput) {
         // check that zeroth axis is the same, has one vnode,
         // and that there are no guard cells
-        skipTranspose = ( (in_dom[0].sameBase(temp_dom[0])) &&
-                          (in_dom[0].length() == temp_dom[0].length()) &&
+        skipTranspose = ( (in_dom[0].length() == temp_dom[0].length()) &&
                           (in_layout.numVnodes() == 1) &&
                           (f.getGC() == FFT<CCTransform,1U,T>::nullGC) );
     }
@@ -535,8 +530,7 @@ FFT<CCTransform,1U,T>::transform(
 
     // check that zeroth axis is the same, has one vnode
     // and that there are no guard cells
-    skipFinal = ( (out_dom[0].sameBase(temp_dom[0])) &&
-                  (out_dom[0].length() == temp_dom[0].length()) &&
+    skipFinal = ( (out_dom[0].length() == temp_dom[0].length()) &&
                   (out_layout.numVnodes() == 1) &&
                   (g.getGC() == FFT<CCTransform,1U,T>::nullGC) );
 
@@ -624,8 +618,7 @@ FFT<CCTransform,1U,T>::transform(
 
     // check that zeroth axis is the same, has one vnode,
     // and that there are no guard cells
-    skipTranspose = ( (in_dom[0].sameBase(temp_dom[0])) &&
-                      (in_dom[0].length() == temp_dom[0].length()) &&
+    skipTranspose = ( (in_dom[0].length() == temp_dom[0].length()) &&
                       (in_layout.numVnodes() == 1) &&
                       (f.getGC() == FFT<CCTransform,1U,T>::nullGC) );
 
@@ -1081,7 +1074,6 @@ FFT<RCTransform,Dim,T>::transform(
             // axis matches what we expect and is serial.  only need to
             // check first axis since we're just fft'ing that one dimension.
             skipTranspose = (g.getGC() == FFT<RCTransform,Dim,T>::nullGC &&
-                             out_dom[0].sameBase(last_dom[0]) &&
                              out_dom[0].length() == last_dom[0].length() &&
                              out_layout.getDistribution(0) == SERIAL);
         }
@@ -1206,8 +1198,7 @@ FFT<RCTransform,Dim,T>::transform(
             const Domain_t& first_dom = tempLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (in_dom[0].sameBase(first_dom[0])) &&
-                              (in_dom[0].length() == first_dom[0].length()) &&
+            skipTranspose = ( (in_dom[0].length() == first_dom[0].length()) &&
                               (in_layout.getDistribution(0) == SERIAL) &&
                               (f.getGC() == FFT<RCTransform,Dim,T>::nullGC) );
         }
@@ -2184,8 +2175,7 @@ FFT<SineTransform,Dim,T>::transform(
             const Domain_t& first_dom = tempRLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (in_dom[0].sameBase(first_dom[0])) &&
-                              (in_dom[0].length() == first_dom[0].length()) &&
+            skipTranspose = ( (in_dom[0].length() == first_dom[0].length()) &&
                               (in_layout.getDistribution(0) == SERIAL) &&
                               (f.getGC() == FFT<SineTransform,Dim,T>::nullGC) );
         }
@@ -2326,8 +2316,7 @@ FFT<SineTransform,Dim,T>::transform(
             const Domain_t& last_dom = tempLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (out_dom[0].sameBase(last_dom[0])) &&
-                              (out_dom[0].length() == last_dom[0].length()) &&
+            skipTranspose = ( (out_dom[0].length() == last_dom[0].length()) &&
                               (out_layout.getDistribution(0) == SERIAL) &&
                               (g.getGC() == FFT<SineTransform,Dim,T>::nullGC) );
         }
@@ -2449,8 +2438,7 @@ FFT<SineTransform,Dim,T>::transform(
             const Domain_t& first_dom = tempLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (in_dom[0].sameBase(first_dom[0])) &&
-                              (in_dom[0].length() == first_dom[0].length()) &&
+            skipTranspose = ( (in_dom[0].length() == first_dom[0].length()) &&
                               (in_layout.getDistribution(0) == SERIAL) &&
                               (f.getGC() == FFT<SineTransform,Dim,T>::nullGC) );
         }
@@ -2599,8 +2587,7 @@ FFT<SineTransform,Dim,T>::transform(
             const Domain_t& last_dom = tempRLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (out_dom[0].sameBase(last_dom[0])) &&
-                              (out_dom[0].length() == last_dom[0].length()) &&
+            skipTranspose = ( (out_dom[0].length() == last_dom[0].length()) &&
                               (out_layout.getDistribution(0) == SERIAL) &&
                               (g.getGC() == FFT<SineTransform,Dim,T>::nullGC) );
         }
@@ -2718,8 +2705,7 @@ FFT<SineTransform,Dim,T>::transform(
             const Domain_t& first_dom = tempRLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (in_dom[0].sameBase(first_dom[0])) &&
-                              (in_dom[0].length() == first_dom[0].length()) &&
+            skipTranspose = ( (in_dom[0].length() == first_dom[0].length()) &&
                               (in_layout.getDistribution(0) == SERIAL) &&
                               (f.getGC() == FFT<SineTransform,Dim,T>::nullGC) );
         }
@@ -2731,8 +2717,7 @@ FFT<SineTransform,Dim,T>::transform(
             const Domain_t& last_dom = tempRLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (out_dom[0].sameBase(last_dom[0])) &&
-                              (out_dom[0].length() == last_dom[0].length()) &&
+            skipTranspose = ( (out_dom[0].length() == last_dom[0].length()) &&
                               (out_layout.getDistribution(0) == SERIAL) &&
                               (g.getGC() == FFT<SineTransform,Dim,T>::nullGC) );
         }
@@ -2845,8 +2830,7 @@ FFT<SineTransform,Dim,T>::transform(
             const Domain_t& first_dom = tempRLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (in_dom[0].sameBase(first_dom[0])) &&
-                              (in_dom[0].length() == first_dom[0].length()) &&
+            skipTranspose = ( (in_dom[0].length() == first_dom[0].length()) &&
                               (in_layout.getDistribution(0) == SERIAL) &&
                               (f.getGC() == FFT<SineTransform,Dim,T>::nullGC) );
         }
@@ -2858,8 +2842,7 @@ FFT<SineTransform,Dim,T>::transform(
             const Domain_t& last_dom = tempRLayouts_m[idim]->getDomain();
             // check that zeroth axis is the same and is serial
             // and that there are no guard cells
-            skipTranspose = ( (in_dom[0].sameBase(last_dom[0])) &&
-                              (in_dom[0].length() == last_dom[0].length()) &&
+            skipTranspose = ( (in_dom[0].length() == last_dom[0].length()) &&
                               (in_layout.getDistribution(0) == SERIAL) &&
                               (f.getGC() == FFT<SineTransform,Dim,T>::nullGC) );
         }
@@ -3076,8 +3059,7 @@ FFT<SineTransform,1U,T>::transform(
     if (!constInput) {
         // check that zeroth axis is the same, has one vnode
         // and that there are no guard cells
-        skipTranspose = ( (in_dom[0].sameBase(temp_dom[0])) &&
-                          (in_dom[0].length() == temp_dom[0].length()) &&
+        skipTranspose = ( (in_dom[0].length() == temp_dom[0].length()) &&
                           (in_layout.numVnodes() == 1) &&
                           (f.getGC() == FFT<SineTransform,1U,T>::nullGC) );
     }
@@ -3088,8 +3070,7 @@ FFT<SineTransform,1U,T>::transform(
 
     // check that zeroth axis is the same, has one vnode
     // and that there are no guard cells
-    skipFinal = ( (out_dom[0].sameBase(temp_dom[0])) &&
-                  (out_dom[0].length() == temp_dom[0].length()) &&
+    skipFinal = ( (out_dom[0].length() == temp_dom[0].length()) &&
                   (out_layout.numVnodes() == 1) &&
                   (g.getGC() == FFT<SineTransform,1U,T>::nullGC) );
 
@@ -3174,8 +3155,7 @@ FFT<SineTransform,1U,T>::transform(
 
     // check that zeroth axis is the same and is serial
     // and that there are no guard cells
-    skipTranspose = ( (in_dom[0].sameBase(temp_dom[0])) &&
-                      (in_dom[0].length() == temp_dom[0].length()) &&
+    skipTranspose = ( (in_dom[0].length() == temp_dom[0].length()) &&
                       (in_layout.numVnodes() == 1) &&
                       (f.getGC() == FFT<SineTransform,1U,T>::nullGC) );
 
@@ -3185,8 +3165,7 @@ FFT<SineTransform,1U,T>::transform(
 
     // check that zeroth axis is the same, has one vnode
     // and that there are no guard cells
-    skipFinal = ( (in_dom[0].sameBase(temp_dom[0])) &&
-                  (in_dom[0].length() == temp_dom[0].length()) &&
+    skipFinal = ( (in_dom[0].length() == temp_dom[0].length()) &&
                   (in_layout.numVnodes() == 1) &&
                   (f.getGC() == FFT<SineTransform,1U,T>::nullGC) );
 
