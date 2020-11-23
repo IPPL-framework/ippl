@@ -127,6 +127,10 @@ namespace ippl {
         const Index& getIndex(unsigned d) const {return getLayout().getDomain()[d];}
         const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
 
+
+        void fillLocalHalo(const T& value);
+
+
         // Assignment from a constant.
         BareField<T, Dim>& operator=(T x);
 

@@ -78,6 +78,29 @@ namespace ippl {
     template <typename ...Args>
     void BareField<T, Dim>::resize(Args... args) {
         Kokkos::resize(dview_m, args...);
+        halo_m.resize(dview_m, nghost_m);
+    }
+
+
+    template <typename T, unsigned Dim>
+    void BareField<T, Dim>::fillLocalHalo(const T& value) {
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        using Kokkos::parallel_for;
+        for (unsigned int i = 0; i < Dim; ++i) {
+            auto& lo = halo_m.lower(i);
+            auto& hi = halo_m.upper(i);
+            parallel_for("BareField::fillLocalHalo",
+                         mdrange_type({0, 0, 0},
+                                      {lo.extent(0),
+                                       lo.extent(1),
+                                       lo.extent(2)}),
+                         KOKKOS_CLASS_LAMBDA(const int i,
+                                             const int j,
+                                             const int k) {
+                             lo(i, j, k) = value;
+                             hi(i, j, k) = value;
+            });
+        }
     }
 
 
