@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Field/BareField.h"
-#include "FieldLayout/FieldLayout.h"
 #include "Utility/Inform.h"
 #include "Utility/Unique.h"
 #include "Utility/IpplInfo.h"

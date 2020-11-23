@@ -28,6 +28,8 @@
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
 
+#include "Field/HaloCells.h"
+
 #include <iostream>
 #include <cstdlib>
 
@@ -55,7 +57,7 @@ namespace ippl {
         using Layout_t = FieldLayout<Dim>;
 
         //! Domain type specifying the index region
-        using Domain_t = typename Layout_t::NDIndex_t;
+        using Domain_t = NDIndex<Dim>;
 
         //! View type storing the data
         using view_type = typename detail::ViewType<T, Dim>::view_type;
@@ -186,6 +188,8 @@ namespace ippl {
         //! Domain of the data
         Domain_t owned_m;
 
+        detail::HaloCells<T, Dim> halo_m;
+
         /*!
          * Allocate field.
          */
@@ -195,8 +199,6 @@ namespace ippl {
         Layout_t* layout_m;
     };
 }
-
-//////////////////////////////////////////////////////////////////////
 
 #include "Field/BareField.hpp"
 

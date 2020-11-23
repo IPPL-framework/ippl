@@ -19,7 +19,7 @@
 #define IPPL_GUARD_CELLS_H
 
 #include "Index/NDIndex.h"
-#include "Types/ViewType.h"
+#include "Types/ViewTypes.h"
 
 #include <array>
 
@@ -33,15 +33,31 @@ namespace ippl {
 
         public:
             // check Kokkos::LayoutRight or Kokkos::LayoutLeft
-            using lower_type  = typename ViewType::<T, Dim - 1, Kokkos::LayoutStride>::view_type;
-            using upper_type = typename ViewType::<T, Dim - 1, Kokkos::LayoutStride>::view_type;
+            using lower_type = typename ViewType<T, Dim - 1, Kokkos::LayoutStride>::view_type;
+            using upper_type = typename ViewType<T, Dim - 1, Kokkos::LayoutStride>::view_type;
+            using view_type  = typename detail::ViewType<T, Dim>::view_type;
 
-            HaloCells() = delete;
+            HaloCells();
 
-            HaloCells(int nghost);
+            HaloCells(int nghost, const view_type&);
+
+            lower_type& lower(unsigned int dim);
+
+            upper_type& upper(unsigned int dim);
 
         private:
+            /*! lower halo cells (ordering x, y, z)
+             * x --> y-z plane
+             * y --> x-z plane
+             * z --> x-y plane
+             */
             std::array<lower_type, Dim> lowerHalo_m;
+
+            /*! upper halo cells (ordering x, y, z)
+             * x --> y-z plane
+             * y --> x-z plane
+             * z --> x-y plane
+             */
             std::array<upper_type, Dim> upperHalo_m;
         };
     }
