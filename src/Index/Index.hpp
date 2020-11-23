@@ -385,8 +385,6 @@ namespace ippl {
         {
             Index r;
             r = reverse().intersect(that).reverse();
-            int diff = (r.first_m-first_m)/stride_m;
-            PAssert_GE(diff, 0);
             return r;
         }
 
@@ -398,10 +396,6 @@ namespace ippl {
         else
             r = do_intersect(that,*this);
 
-        // Set the base so you can find what parts correspond
-        // to the original interval.
-        int diff = (r.first_m - first_m)/stride_m;
-        PAssert_GE(diff, 0);
         return r;
     }
 }
