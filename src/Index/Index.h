@@ -52,7 +52,7 @@
 #include <iostream>
 
 namespace ippl {
-    class Index : public ippl::detail::Expression<Index, 2 * sizeof(int) + 2 * sizeof(size_t)>
+    class Index : public ippl::detail::Expression<Index, 2 * sizeof(int) + sizeof(size_t)>
     {
     public:
         class iterator
@@ -291,12 +291,6 @@ namespace ippl {
         int stride_m;
         size_t length_m;    /// The number of elements
   
-        /*! he first element of the base index.
-         * This gets updated whenever we do index or set operations
-         * so we can do inverses quickly and easily.
-         */
-        size_t baseFirst_m;
-
         // Make an Index that interally counts the other direction.
         KOKKOS_INLINE_FUNCTION
         Index reverse() const;

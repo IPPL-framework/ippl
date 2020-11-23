@@ -51,7 +51,6 @@ namespace ippl {
     : first_m(0)
     , stride_m(0)
     , length_m(0)
-    , baseFirst_m(0)
     { }
 
     KOKKOS_INLINE_FUNCTION
@@ -59,7 +58,6 @@ namespace ippl {
     : first_m(0)
     , stride_m(1)
     , length_m(n)
-    , baseFirst_m(0)
     { }
 
 
@@ -68,7 +66,6 @@ namespace ippl {
     : first_m(f)
     , stride_m(1)
     , length_m(l-f+1)
-    , baseFirst_m(0)
     {
         PAssert_GE(l - f + 1, 0);
     }
@@ -78,7 +75,6 @@ namespace ippl {
     Index::Index(int f, int l, int s)
     : first_m(f)
     , stride_m(s)
-    , baseFirst_m(0)
     {
         PAssert_NE(s, 0);
         if ( f==l ) {
@@ -98,7 +94,6 @@ namespace ippl {
     : first_m(b.first_m*m+a)
     , stride_m(b.stride_m*m)
     , length_m(b.length_m)
-    , baseFirst_m(b.baseFirst_m)
     { }
 
 
@@ -107,7 +102,6 @@ namespace ippl {
     : first_m(f)
     , stride_m(s)
     , length_m(b->length_m)
-    , baseFirst_m(b->baseFirst_m)
     { }
 
 
@@ -207,7 +201,6 @@ namespace ippl {
         j.first_m = last();
         j.length_m = length_m;
         j.stride_m = -stride_m;
-        j.baseFirst_m = baseFirst_m;
         return j;
     }
 
@@ -326,7 +319,6 @@ namespace ippl {
             ret.first_m = f;
             ret.length_m = ( (l>=f) ? l-f+1 : 0 );
             ret.stride_m = 1;
-            ret.baseFirst_m = baseFirst_m + f - lf;
         }
         else
             ret = general_intersect(rhs);
@@ -395,7 +387,6 @@ namespace ippl {
             r = reverse().intersect(that).reverse();
             int diff = (r.first_m-first_m)/stride_m;
             PAssert_GE(diff, 0);
-            r.baseFirst_m = baseFirst_m + diff;
             return r;
         }
 
@@ -411,7 +402,6 @@ namespace ippl {
         // to the original interval.
         int diff = (r.first_m - first_m)/stride_m;
         PAssert_GE(diff, 0);
-        r.baseFirst_m = baseFirst_m + diff;
         return r;
     }
 }
