@@ -19,7 +19,9 @@ struct Bunch : public ippl::ParticleBase<PLayout>
     charge_type Q;
 
     void update() {
-        ippl::ParticleBase<PLayout>::update<Bunch<PLayout>>();
+        PLayout& layout = this->getLayout();
+        layout.update(*this);
+//         ippl::ParticleBase<PLayout>::update<Bunch<PLayout> >();
     }
 };
 

@@ -113,7 +113,7 @@ namespace ippl {
 //     // all nodes have correct layout information.
 
         template <class BufferType>
-        void update(ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata);
+        void update(/*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
     //

@@ -50,7 +50,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh>
     template <class BufferType>
     void ParticleSpatialLayout<T, Dim, Mesh>::update(
-        ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata)
+        /*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata)
     {
         this->applyBC(pdata.R, rlayout_m.getDomain());
 
