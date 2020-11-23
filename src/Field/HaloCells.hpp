@@ -1,5 +1,5 @@
 //
-// Class GuardCells
+// Class HaloCells
 //   The guard / ghost cells of BareField.
 //
 // Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Field/GuardCells.h"
+#include "Field/HaloCells.h"
 
 namespace ippl {
     namespace detail {
@@ -23,13 +23,3 @@ namespace ippl {
 
     }
 }
-
-
-// template<unsigned Dim>
-// std::ostream&
-// operator<<(std::ostream& out, const GuardCells<Dim>& gc)
-// {
-//   for (unsigned d=0; d<Dim; ++d)
-//     out << "[" << gc.left(d) << "," << gc.right(d) << "]";
-//   return out;
-// }
