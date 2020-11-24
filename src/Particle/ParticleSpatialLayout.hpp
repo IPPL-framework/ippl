@@ -128,7 +128,7 @@ namespace ippl {
                 requests.resize(requests.size() + 1);
 
                 BufferType buffer(pdata.getLayout());
-                buffer.create(nRecvs[rank]);
+                buffer.create(nSends[rank]);
 
                 pdata.pack(buffer, hash);
 
