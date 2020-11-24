@@ -73,7 +73,15 @@ namespace ippl {
         size_t localnum = pdata.getLocalNum();
 
         // 1st step
+
+        /* the values specify the rank where
+         * the particle with that index should go
+         */
         locate_type ranks("MPI ranks", localnum);
+
+        /* 0 --> particle valid
+         * 1 --> particle invalid
+         */
         bool_type invalid("invalid", localnum);
 
         locateParticles(pdata, ranks, invalid);

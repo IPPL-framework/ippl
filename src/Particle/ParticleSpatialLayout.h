@@ -145,8 +145,17 @@ namespace ippl {
                              locate_type& ranks,
                              bool_type& invalid) const;
 
+        /*!
+         * @param rank we sent to
+         * @param ranks a container specifying where a particle at the i-th index should go.
+         * @param hash a mapping to fill the send buffer contiguously
+         */
         void fillHash(int rank, const locate_type& ranks, hash_type& hash);
 
+        /*!
+         * @param rank we sent to
+         * @param ranks a container specifying where a particle at the i-th index should go.
+         */
         size_t numberOfSends(int rank, const locate_type& ranks);
 
     };
