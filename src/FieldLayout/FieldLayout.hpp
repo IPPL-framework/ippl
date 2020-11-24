@@ -128,7 +128,7 @@ namespace ippl {
 
     template <unsigned Dim>
     const typename FieldLayout<Dim>::neighbor_container_type&
-    FieldLayout<Dim>::getNeigbors() const {
+    FieldLayout<Dim>::getNeighbors() const {
         return neighbors_m;
     }
 
@@ -171,7 +171,11 @@ namespace ippl {
 
     template <unsigned Dim>
     void FieldLayout<Dim>::findNeighbors() {
-
-
+        if ( Ippl::Comm->rank() == 0 ) {
+            auto& nd = hLocalDomains_m[0];
+            for (size_t i = 0; i < hLocalDomains_m.size(); ++i) {
+                std::cout << nd << " " << hLocalDomains_m[i] << " " << nd.contains(hLocalDomains_m[i]) << std::endl;
+            }
+        }
     }
 }
