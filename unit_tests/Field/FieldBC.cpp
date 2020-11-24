@@ -1,6 +1,6 @@
 //
-// Unit test FieldTest
-//   Test the functionality of the class Field.
+// Unit test FieldBC
+//   Test field boundary conditions.
 //
 // Copyright (c) 2020, Sriramkrishnan Muralikrishnan, 
 // Paul Scherrer Institut, Villigen PSI, Switzerland
