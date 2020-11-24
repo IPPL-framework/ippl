@@ -26,6 +26,7 @@
 //
 #include <vector>
 #include <numeric>
+#include <memory>
 
 namespace ippl {
 
@@ -112,16 +113,27 @@ namespace ippl {
         MPI_Win_fence(0, win);
 
         // send
+        std::vector<MPI_Request> requests(0);
+        using archive_type = Communicate::archive_type;
+        std::vector<std::unique_ptr<archive_type>> archives(0);
+
+        int tag = Ippl::Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
+
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nSends[rank] > 0) {
                 hash_type hash("hash", nSends[rank]);
                 fillHash(rank, ranks, hash);
 
+                archives.push_back(std::make_unique<archive_type>());
+                requests.resize(requests.size() + 1);
+
                 BufferType buffer(pdata.getLayout());
-                buffer.create(nSends[rank]);
+                buffer.create(nRecvs[rank]);
+
                 pdata.pack(buffer, hash);
 
-                Ippl::Comm->send(rank, 42, buffer);
+                Ippl::Comm->isend(rank, tag, buffer, *(archives.back()),
+                                  requests.back());
             }
         }
 
@@ -131,10 +143,15 @@ namespace ippl {
                 BufferType buffer(pdata.getLayout());
                 buffer.create(nRecvs[rank]);
 
-                Ippl::Comm->recv(rank, 42, buffer);
+                Ippl::Comm->recv(rank, tag, buffer);
 
                 pdata.unpack(buffer);
             }
+        }
+
+        if (requests.size() > 0) {
+            MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+            archives.clear();
         }
 
         // create space for received particles
@@ -152,12 +169,6 @@ namespace ippl {
 
         // 4th step
         pdata.destroy();
-
-
-//         // At this point, we can send our particle count updates to node 0, and
-//         // receive back the particle layout.
-//         int tag1 = Ippl::Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
-//         int tag2 = Ippl::Comm->next_tag(P_SPATIAL_RETURN_TAG, P_LAYOUT_CYCLE);
     }
 
 
