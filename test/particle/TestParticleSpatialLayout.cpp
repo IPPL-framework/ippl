@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    int pt = 8;
+    int pt = 1024;
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
 
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
     bunch.setParticleBC(bcs);
 
     int nRanks = Ippl::Comm->size();
-    unsigned int nParticles = 8;
+    unsigned int nParticles = std::pow(256, 3);
 
     if (nParticles % nRanks > 0) {
         if (Ippl::Comm->rank() == 0) {
@@ -141,20 +141,20 @@ int main(int argc, char *argv[]) {
         std::cout << "Before update:" << std::endl;
     }
 
-    for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-        if (Ippl::Comm->rank() == rank) {
-            std::cout << "------------" << std::endl
-                      << "Rank " << rank << std::endl;
-            for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-                std::cout << ID_host(i) << " " << R_host(i) << " " 
-                          << Q_host(i) << " " << ER_host(i) << std::endl;
-            }
-        }
-        Ippl::Comm->barrier();
-    }
+    //for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
+    //    if (Ippl::Comm->rank() == rank) {
+    //        std::cout << "------------" << std::endl
+    //                  << "Rank " << rank << std::endl;
+    //        for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
+    //            std::cout << ID_host(i) << " " << R_host(i) << " " 
+    //                      << Q_host(i) << " " << ER_host(i) << std::endl;
+    //        }
+    //    }
+    //    Ippl::Comm->barrier();
+    //}
 
     std::cout << layout << std::endl;
-    std::cout << RLayout << std::endl;
+    //std::cout << RLayout << std::endl;
 
     bunch.update();
 
@@ -176,18 +176,23 @@ int main(int argc, char *argv[]) {
         std::cout << "After update:" << std::endl;
     }
 
-    for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-        if (Ippl::Comm->rank() == rank) {
-            std::cout << "------------" << std::endl
-                      << "Rank " << rank << std::endl;
+    //for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
+    //    if (Ippl::Comm->rank() == rank) {
+    //        std::cout << "------------" << std::endl
+    //                  << "Rank " << rank << std::endl;
             for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-                std::cout << ID_host(i) << " " << R_host(i) << " " 
-                          << Q_host(i) << " " << ER_host(i) << std::endl;
+                if(Ippl::Comm->rank() != ER_host(i)) {
+                    std::cout << "Particle with ID: " << ID_host(i) << " "  
+                              << "has wrong rank!" << std::endl;
+                }
             }
-        }
+    //    }
         Ippl::Comm->barrier();
-    }
+    //}
 
+    if (Ippl::Comm->rank() == 0) {
+        std::cout << "All expected ranks correct!!" << std::endl;
+    }
     unsigned int Total_particles = 0;
     unsigned int local_particles = bunch.getLocalNum();
 

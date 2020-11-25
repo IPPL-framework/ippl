@@ -61,8 +61,8 @@ public:
 
 
     ParticleSendRecv()
-    : nParticles(8)
-    , nPoints(8)
+    : nParticles(std::pow(256,3))
+    , nPoints(1024)
     {
         setup();
     }
@@ -113,7 +113,7 @@ public:
         std::uniform_real_distribution<double> unif(0, 1);
 
         typename bunch_type::particle_position_type::HostMirror R_host = bunch->R.getHostMirror();
-        for(size_t i = 0; i < nParticles; ++i) {
+        for(size_t i = 0; i < bunch->getLocalNum(); ++i) {
             ippl::Vector<double, dim> r = {unif(eng), unif(eng), unif(eng)};
             R_host(i) = r;
         }
@@ -170,6 +170,7 @@ TEST_F(ParticleSendRecv, SendAndRecieve) {
 
     bunch->update();
     ER_t::view_type::host_mirror_type ER_host = bunch->expectedRank.getHostMirror();
+    Kokkos::resize(ER_host, bunch->expectedRank.size());
     Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
 
     for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
