@@ -66,6 +66,12 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION
         NDIndex<Dim> intersect(const NDIndex<Dim>&) const;
 
+        /*!
+         * Intersect with another NDIndex.
+         */
+        KOKKOS_INLINE_FUNCTION
+        NDIndex<Dim> grow(int ncells) const;
+
 
         KOKKOS_INLINE_FUNCTION
         bool touches(const NDIndex<Dim>&) const;

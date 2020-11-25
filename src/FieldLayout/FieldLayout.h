@@ -54,9 +54,7 @@ namespace ippl {
          */
         FieldLayout();
 
-        FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p=0) {
-            initialize(domain, p);
-        }
+        FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p=0);
 
         // Destructor: Everything deletes itself automatically ... the base
         // class destructors inform all the FieldLayoutUser's we're going away.

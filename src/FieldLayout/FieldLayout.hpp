@@ -45,6 +45,14 @@ namespace ippl {
 
 
     template <unsigned Dim>
+    FieldLayout<Dim>::FieldLayout(const NDIndex<Dim>& domain, e_dim_tag* p)
+    : FieldLayout()
+    {
+        initialize(domain, p);
+    }
+
+
+    template <unsigned Dim>
     FieldLayout<Dim>::~FieldLayout() { }
 
 
@@ -171,10 +179,57 @@ namespace ippl {
 
     template <unsigned Dim>
     void FieldLayout<Dim>::findNeighbors() {
-        if ( Ippl::Comm->rank() == 0 ) {
-            auto& nd = hLocalDomains_m[0];
-            for (size_t i = 0; i < hLocalDomains_m.size(); ++i) {
-                std::cout << nd << " " << hLocalDomains_m[i] << " " << nd.contains(hLocalDomains_m[i]) << std::endl;
+
+        /* just to be safe, we reset the neighbor list
+         * (at the moment this is unnecessary, but as soon as
+         * we have a repartitioner we need this call).
+         */
+        neighbors_m.fill(-1);
+
+        int myRank = Ippl::Comm->rank();
+
+        // get may local box
+        auto& nd = hLocalDomains_m[myRank];
+
+        // grow the box by one cell in each dimension
+        auto gnd = nd.grow(1);
+
+        for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
+            if (rank == myRank) {
+                // do not compare with my domain
+                continue;
+            }
+
+            if (gnd.touches(hLocalDomains_m[rank])) {
+                /* my grown domain touches another
+                 * --> it is a neighbor
+                 */
+                auto intersect = gnd.intersect(hLocalDomains_m[rank]);
+                for (unsigned int d = 0; d < Dim; ++d) {
+                    const Index& index = intersect[d];
+
+                    if (index.length() == 1) {
+                        /* We found the
+                         * intersecting dimension.
+                         * Now, we need to figure out which face
+                         * (upper or lower)
+                         */
+
+                        /* if lower --> 0
+                         * else upper --> 1
+                         */
+                        int inc = (gnd[d].first() == index.first()) ? 0 : 1;
+
+                        /* x low  --> 0
+                         * x high --> 1
+                         * y low  --> 2
+                         * y high --> 3
+                         * z low  --> 4
+                         * z high --> 5
+                         */
+                        neighbors_m[inc + 2 * d] = rank;
+                    }
+                }
             }
         }
     }
