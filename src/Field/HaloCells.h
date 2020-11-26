@@ -50,22 +50,18 @@ namespace ippl {
              * z --> lower x-y plane
              * z --> upper x-y plane
              */
-            auto lowerHalo(view_type&, unsigned int dim);
+            auto getHaloSubView(const view_type&, unsigned int face);
 
-            auto upperHalo(view_type&, unsigned int dim);
-
-            auto lowerInternal(view_type&, unsigned int dim);
-
-            auto upperInternal(view_type&, unsigned int dim);
+            auto getInternalSubView(const view_type&, unsigned int face);
 
             void fillHalo(view_type& view, const T& value);
 
             void exchangeHalo(view_type&, const Layout_t* layout, int nghost);
 
 
-            void pack(view_type&, int index) const;
-//
-//             void unpack(view_type&);
+            void pack(auto& internal, view_type&) const;
+
+            void unpack(auto& halo, view_type&) const;
 
         private:
             /*!
@@ -77,8 +73,7 @@ namespace ippl {
 
             void fillCorners(const view_type&, int nghost);
 
-            auto lower(bounds_type& bounds, const view_type&, unsigned int dim);
-            auto upper(bounds_type& bounds, const view_type&, unsigned int dim);
+            auto subview(bounds_type& bounds, const view_type&, unsigned int face);
 
 
             /*! lower halo cells (ordering x, y, z)

@@ -35,29 +35,19 @@ namespace ippl {
 
         template <typename T, unsigned Dim>
         auto
-        HaloCells<T, Dim>::lowerHalo(view_type& view, unsigned int dim) {
-            return lower(haloBounds_m, view, dim);
+        HaloCells<T, Dim>::getHaloSubView(const view_type& view,
+                                          unsigned int face)
+        {
+            return subview(haloBounds_m, view, face);
         }
 
 
         template <typename T, unsigned Dim>
         auto
-        HaloCells<T, Dim>::upperHalo(view_type& view, unsigned int dim) {
-            return upper(haloBounds_m, view, dim);
-        }
-
-
-        template <typename T, unsigned Dim>
-        auto
-        HaloCells<T, Dim>::lowerInternal(view_type& view, unsigned int dim) {
-            return lower(internalBounds_m, view, dim);
-        }
-
-
-        template <typename T, unsigned Dim>
-        auto
-        HaloCells<T, Dim>::upperInternal(view_type& view, unsigned int dim) {
-            return upper(internalBounds_m, view, dim);
+        HaloCells<T, Dim>::getInternalSubView(const view_type& view,
+                                              unsigned int face)
+        {
+            return subview(internalBounds_m, view, face);
         }
 
 
@@ -66,27 +56,25 @@ namespace ippl {
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             using Kokkos::parallel_for;
 
-            for (unsigned int dim = 0; dim < 3; ++dim) {
-                auto lo = lowerHalo(view, dim);
-                auto hi = upperHalo(view, dim);
+            for (unsigned int face = 0; face < 2 * Dim; ++face) {
+                auto halo = getHaloSubView(view, face);
 
                 parallel_for("HaloCells::fillHalo()",
                              mdrange_type({0, 0, 0},
-                                          {lo.extent(0),
-                                           lo.extent(1),
-                                           lo.extent(2)}),
+                                          {halo.extent(0),
+                                           halo.extent(1),
+                                           halo.extent(2)}),
                              KOKKOS_CLASS_LAMBDA(const int i,
                                                  const int j,
                                                  const int k) {
-                                 lo(i, j, k) = value;
-                                 hi(i, j, k) = value;
+                                 halo(i, j, k) = value;
                 });
             }
         }
 
 
         template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::exchangeHalo(view_type& /*view*/,
+        void HaloCells<T, Dim>::exchangeHalo(view_type& view,
                                              const Layout_t* layout,
                                              int /*nghost*/)
         {
@@ -103,19 +91,27 @@ namespace ippl {
 //             nd_view_type
 
             // send
-            for (size_t i = 0; i < neighbors.size(); ++i) {
-                if (neighbors[i] < 0) {
+            for (size_t face = 0; face < neighbors.size(); ++face) {
+                if (neighbors[face] < 0) {
                     /* if we are on a physical / mesh boundary
                      * --> rank number is negative, hence, we do nothing
                      */
                     continue;
                 }
 
+                auto internal = getInternalSubView(view, face);
 
                 // pack internal data from view
-//                 view_type buffer("buffer", 10, 10, 10);
+                view_type buffer("buffer",
+                                 internal.extent(0),
+                                 internal.extent(1),
+                                 internal.extent(2));
 
-//                 pack(buffer, i);
+//                 for (size_t i = 0; i < Dim; ++i) {
+//                     std::cout << view.stride(i) << " " << buffer.stride(i) << " " << internal.stride(i) << std::endl;
+//                 }
+
+                pack(internal, buffer);
 
                 // send data
             }
@@ -130,31 +126,41 @@ namespace ippl {
                 }
 
 
+//                 view_type buffer("buffer");
+
                 // receive data
 
                 // unpack received
-//                 view_type buffer("buffer");
-//                 unpack(view, buffer, nghost);
-
-                // assign data to halo subviews
+//                 unpack(halo, buffer);
             }
         }
 
 
         template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::pack(view_type& buffer, int index) const {
-//             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-//
-//             auto& halo = halo_m[index];
-//
-//             Kokkos::parallel_for(
-//                 "HaloCells::pack()",
-//                 mdrange_type({0, 0, 0},
-//                              {halo.extent(0), halo.extent(1), halo.extent(2)}),
-//                 KOKKOS_CLASS_LAMBDA(const int i, const int j, const int k) {
-//                     std::cout << i << " " << j << " " << k << std::endl;
-//                     buffer(i, j, k) = halo(i, j, k);
-//             });
+        void HaloCells<T, Dim>::pack(auto& internal, view_type& buffer) const {
+            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+            Kokkos::parallel_for(
+                "HaloCells::pack()",
+                mdrange_type({0, 0, 0},
+                             {internal.extent(0), internal.extent(1), internal.extent(2)}),
+                KOKKOS_CLASS_LAMBDA(const int i, const int j, const int k) {
+                    buffer(i, j, k) = internal(i, j, k);
+            });
+        }
+
+
+        template <typename T, unsigned Dim>
+        void HaloCells<T, Dim>::unpack(auto& halo, view_type& buffer) const {
+            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+            Kokkos::parallel_for(
+                "HaloCells::pack()",
+                mdrange_type({0, 0, 0},
+                             {buffer.extent(0), buffer.extent(1), buffer.extent(2)}),
+                KOKKOS_CLASS_LAMBDA(const int i, const int j, const int k) {
+                    halo(i, j, k) = buffer(i, j, k);
+            });
         }
 
 
@@ -187,26 +193,14 @@ namespace ippl {
             }
         }
 
-
         template <typename T, unsigned Dim>
         auto
-        HaloCells<T, Dim>::lower(bounds_type& bounds, const view_type& view, unsigned int dim) {
+        HaloCells<T, Dim>::subview(bounds_type& bounds, const view_type& view, unsigned int face) {
             using Kokkos::make_pair;
             return Kokkos::subview(view,
-                                   make_pair(bounds[2 * dim][0], bounds[2 * dim][1]),
-                                   make_pair(bounds[2 * dim][2], bounds[2 * dim][3]),
-                                   make_pair(bounds[2 * dim][4], bounds[2 * dim][5]));
-        }
-
-
-        template <typename T, unsigned Dim>
-        auto
-        HaloCells<T, Dim>::upper(bounds_type& bounds, const view_type& view, unsigned int dim) {
-            using Kokkos::make_pair;
-            return Kokkos::subview(view,
-                                   make_pair(bounds[2 * dim + 1][0], bounds[2 * dim + 1][1]),
-                                   make_pair(bounds[2 * dim + 1][2], bounds[2 * dim + 1][3]),
-                                   make_pair(bounds[2 * dim + 1][4], bounds[2 * dim + 1][5]));
+                                   make_pair(bounds[face][0], bounds[face][1]),
+                                   make_pair(bounds[face][2], bounds[face][3]),
+                                   make_pair(bounds[face][4], bounds[face][5]));
         }
     }
 }
