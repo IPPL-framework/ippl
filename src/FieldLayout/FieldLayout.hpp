@@ -39,8 +39,6 @@ namespace ippl {
             requestedLayout_m[d] = PARALLEL;
             minWidth_m[d] = 0;
         }
-
-        neighbors_m.fill(-1);
     }
 
 
@@ -184,7 +182,9 @@ namespace ippl {
          * (at the moment this is unnecessary, but as soon as
          * we have a repartitioner we need this call).
          */
-        neighbors_m.fill(-1);
+        for (size_t i = 0; i < 2 * Dim; ++i) {
+            neighbors_m[i].clear();
+        }
 
         int myRank = Ippl::Comm->rank();
 
@@ -227,7 +227,8 @@ namespace ippl {
                          * z low  --> 4
                          * z high --> 5
                          */
-                        neighbors_m[inc + 2 * d] = rank;
+                        neighbors_m[inc + 2 * d].push_back(rank);
+                        std::cout << Ippl::Comm->rank() << " " << inc + 2 * d << " " << rank << std::endl;
                     }
                 }
             }

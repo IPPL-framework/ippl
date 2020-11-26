@@ -24,7 +24,9 @@
 #include "Index/NDIndex.h"
 #include "Types/ViewTypes.h"
 
+#include <array>
 #include <iostream>
+#include <vector>
 
 namespace ippl {
 
@@ -45,7 +47,7 @@ namespace ippl {
         using NDIndex_t = NDIndex<Dim>;
         using view_type = typename detail::ViewType<NDIndex_t, 1>::view_type;
         using host_mirror_type = typename view_type::host_mirror_type;
-        using neighbor_container_type = std::array<int, 2 * Dim>;
+        using neighbor_container_type = std::array<std::vector<int>, 2 * Dim>;
 
 
         /*!
@@ -120,9 +122,10 @@ namespace ippl {
 
         /*!
          * This container has length 2*Dim. Each index represents a face
-         * (ordering: x low, x high, y low, y high, z low, z high). The
-         * value is the rank it shares the interface. A negative value
-         * denotes that it is on the physical / mesh boundary.
+         * (ordering: x low, x high, y low, y high, z low, z high). Each
+         * index contains a vector (length is equal to the number of ranks
+         * it shares the face with). The values are the ranks sharing the face.
+         * An empty vector denotes a physical / mesh boundary.
          */
         neighbor_container_type neighbors_m;
 

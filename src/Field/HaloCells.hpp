@@ -92,9 +92,8 @@ namespace ippl {
 
             // send
             for (size_t face = 0; face < neighbors.size(); ++face) {
-                if (neighbors[face] < 0) {
+                if (neighbors[face].empty()) {
                     /* if we are on a physical / mesh boundary
-                     * --> rank number is negative, hence, we do nothing
                      */
                     continue;
                 }
@@ -117,10 +116,9 @@ namespace ippl {
             }
 
             // receive
-            for (size_t i = 0; i < neighbors.size(); ++i) {
-                if (neighbors[i] < 0) {
+            for (size_t face = 0; face < neighbors.size(); ++face) {
+                if (neighbors[face].empty()) {
                     /* if we are on a physical / mesh boundary
-                     * --> rank number is negative, hence, we do nothing
                      */
                     continue;
                 }
