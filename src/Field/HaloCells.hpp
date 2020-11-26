@@ -70,9 +70,6 @@ namespace ippl {
                 auto lo = lowerHalo(view, dim);
                 auto hi = upperHalo(view, dim);
 
-                auto b1 = lowerInternal(view, dim);
-                auto b2 = upperInternal(view, dim);
-
                 parallel_for("HaloCells::fillHalo()",
                              mdrange_type({0, 0, 0},
                                           {lo.extent(0),
@@ -83,9 +80,6 @@ namespace ippl {
                                                  const int k) {
                                  lo(i, j, k) = value;
                                  hi(i, j, k) = value;
-
-                                 b1(i, j, k) = value + 1;
-                                 b2(i, j, k) = value + 1;
                 });
             }
         }
