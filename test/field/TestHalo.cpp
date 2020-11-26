@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <typeinfo>
+#include <array>
 
 int main(int argc, char *argv[]) {
 
@@ -9,18 +10,24 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    int pt = 4;
-    ippl::Index I(pt);
-    NDIndex<dim> owned(I, I, I);
+    std::array<int, dim> pt = {8, 7, 13};
+    ippl::Index I(pt[0]);
+    ippl::Index J(pt[1]);
+    ippl::Index K(pt[2]);
+    ippl::NDIndex<dim> owned(I, J, K);
 
     ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
     for (unsigned int d=0; d<dim; d++)
-        allParallel[d] = ippl::SERIAL;
+        allParallel[d] = ippl::PARALLEL;
 
-    ippl::FieldLayout<dim> layout(owned,allParallel);
+    ippl::FieldLayout<dim> layout(owned, allParallel);
 
-    double dx = 1.0 / double(pt);
-    ippl::Vector<double, 3> hx = {dx, dx, dx};
+    std::array<double, dim> dx = {
+        1.0 / double(pt[0]),
+        1.0 / double(pt[1]),
+        1.0 / double(pt[2]),
+    };
+    ippl::Vector<double, 3> hx = {dx[0], dx[1], dx[2]};
     ippl::Vector<double, 3> origin = {0, 0, 0};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
@@ -31,7 +38,9 @@ int main(int argc, char *argv[]) {
 
     field = 1.0;
 
-    field.write();
+//     field.write();
+
+//     field.exchangeHalo();
 
     std::cout << std::endl;
 

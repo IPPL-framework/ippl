@@ -83,7 +83,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::fillLocalHalo(const T& value) {
-        halo_m.fillHalo(value);
+        halo_m.fillHalo(dview_m, value);
     }
 
 

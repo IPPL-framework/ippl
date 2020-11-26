@@ -25,7 +25,6 @@
 
 #include <array>
 
-
 namespace ippl {
     namespace detail {
 
@@ -34,43 +33,69 @@ namespace ippl {
         {
 
         public:
-            // check Kokkos::LayoutRight or Kokkos::LayoutLeft
-            using lower_type = typename ViewType<T, Dim, Kokkos::LayoutStride>::view_type;
-            using upper_type = typename ViewType<T, Dim, Kokkos::LayoutStride>::view_type;
-            using view_type  = typename detail::ViewType<T, Dim>::view_type;
-            using Layout_t   = FieldLayout<Dim>;
+            using bound_type = std::array<long, 2 * Dim>;
+            using bounds_type = std::array<bound_type, 2 * Dim>;
+            using view_type = typename detail::ViewType<T, Dim>::view_type;
+            using Layout_t  = FieldLayout<Dim>;
 
             HaloCells();
 
             void resize(const view_type&, int nghost);
 
-            lower_type& lower(unsigned int dim);
+            /*! lower halo cells (ordering x, y, z)
+             * x --> lower y-z plane
+             * x --> upper y-z plane
+             * y --> lower x-z plane
+             * y --> upper x-z plane
+             * z --> lower x-y plane
+             * z --> upper x-y plane
+             */
+            auto lowerHalo(view_type&, unsigned int dim);
 
-            upper_type& upper(unsigned int dim);
+            auto upperHalo(view_type&, unsigned int dim);
 
-            void fillHalo(const T& value);
+            auto lowerInternal(view_type&, unsigned int dim);
+
+            auto upperInternal(view_type&, unsigned int dim);
+
+            void fillHalo(view_type& view, const T& value);
 
             void exchangeHalo(view_type&, const Layout_t* layout, int nghost);
 
 
-//             void pack(view_type&, const Kokkos::View<int*>&) const;
+            void pack(view_type&, int index) const;
 //
 //             void unpack(view_type&);
 
         private:
+            /*!
+             * @param shift number of shifts to internal cells
+             */
+            void fillBounds(bounds_type& bounds,
+                            const view_type&, int nghost,
+                            int shift = 0);
+
+            void fillCorners(const view_type&, int nghost);
+
+            auto lower(bounds_type& bounds, const view_type&, unsigned int dim);
+            auto upper(bounds_type& bounds, const view_type&, unsigned int dim);
+
+
             /*! lower halo cells (ordering x, y, z)
              * x --> lower y-z plane
-             * y --> lower x-z plane
-             * z --> lower x-y plane
-             */
-            std::array<lower_type, Dim> lowerHalo_m;
-
-            /*! upper halo cells (ordering x, y, z)
              * x --> upper y-z plane
+             * y --> lower x-z plane
              * y --> upper x-z plane
+             * z --> lower x-y plane
              * z --> upper x-y plane
              */
-            std::array<upper_type, Dim> upperHalo_m;
+            bounds_type haloBounds_m;
+
+            /*!
+             * These subviews correspond to the internal data that is used
+             * to exchange.
+             */
+            bounds_type internalBounds_m;
         };
     }
 }
