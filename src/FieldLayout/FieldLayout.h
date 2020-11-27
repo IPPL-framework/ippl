@@ -133,13 +133,31 @@ namespace ippl {
 
         /*!
          * Neighboring ranks that store the edge values.
-         * Array ordering: x low, x high, y low, y high, z low, z high
+         * [(x low,  y low,  z low),  (x low,  y high, z low)]  --> edge 0
+         * [(x high, y low,  z low),  (x high, y high, z low)]  --> edge 1
+         * [(x low,  y low,  z low),  (x high, y low,  z low)]  --> edge 2
+         * [(x low,  y high, z low),  (x high, y high, z low)]  --> edge 3
+         * [(x low,  y low,  z low),  (x low,  y low,  z high)] --> edge 4
+         * [(x high, y low,  z low),  (x high, y low,  z high)] --> edge 5
+         * [(x low,  y high, z low),  (x low,  y high, z high)] --> edge 6
+         * [(x high, y high, z low),  (x high, y high, z high)] --> edge 7
+         * [(x low,  y low,  z high), (x low,  y high, z high)] --> edge 8
+         * [(x high, y low,  z high), (x high, y high, z high)] --> edge 9
+         * [(x low,  y low,  z high), (x high, y low,  z high)] --> edge 10
+         * [(x low,  y high, z high), (x high, y high, z high)] --> edge 11
          */
         neighbor_container_type edgeNeighbors_m;
 
         /*!
          * Neighboring ranks that have the vertex value (corner cell).
-         * Array ordering: x low, x high, y low, y high, z low, z high
+         * x low,  y low,  z low  --> vertex index 0
+         * x high, y low,  z low  --> vertex index 1
+         * x low,  y high, z low  --> vertex index 2
+         * x high, y high, z low  --> vertex index 3
+         * x low,  y low,  z high --> vertex index 4
+         * x high, y low,  z high --> vertex index 5
+         * x low,  y high, z high --> vertex index 6
+         * x high, y high, z high --> vertex index 7
          */
         std::array<int, 2 << (Dim - 1)> vertexNeighbors_m;
 

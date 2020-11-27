@@ -180,7 +180,8 @@ namespace ippl {
 
 
         template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::pack(auto& internal, view_type& buffer) const {
+        template <class SubViewType>
+        void HaloCells<T, Dim>::pack(SubViewType& internal, view_type& buffer) const {
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
             Kokkos::parallel_for(
@@ -194,7 +195,8 @@ namespace ippl {
 
 
         template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::unpack(auto& halo, view_type& buffer) const {
+        template <class SubViewType>
+        void HaloCells<T, Dim>::unpack(SubViewType& halo, view_type& buffer) const {
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
             Kokkos::parallel_for(

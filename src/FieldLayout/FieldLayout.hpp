@@ -208,31 +208,60 @@ namespace ippl {
 
                 std::cout << myRank << " " << rank << " " << gnd << " " << hLocalDomains_m[rank] << " " << intersect << std::endl;
 
+                /* check how many dimension have length > 1.
+                 * Vertices are scalars --> all dimensions have length 1
+                 * Edges are vectors --> 1 dimension has length > 1
+                 * Faces are matrices --> 2 dimensions have length > 1
+                 */
+                int nDim = 0;
                 for (unsigned int d = 0; d < Dim; ++d) {
                     const Index& index = intersect[d];
-
-                    if (index.length() == 1) {
-                        /* We found the
-                         * intersecting dimension.
-                         * Now, we need to figure out which face
-                         * (upper or lower)
-                         */
-
-                        /* if lower --> 0
-                         * else upper --> 1
-                         */
-                        int inc = (gnd[d].first() == index.first()) ? 0 : 1;
-
-                        /* x low  --> 0
-                         * x high --> 1
-                         * y low  --> 2
-                         * y high --> 3
-                         * z low  --> 4
-                         * z high --> 5
-                         */
-                        faceNeighbors_m[inc + 2 * d].push_back(rank);
-                    }
+                    nDim += (index.length() > 1) ? 1 : 0;
                 }
+
+
+                switch (nDim) {
+
+                case 0:
+                    // vertex
+
+                    break;
+                case 1:
+                    // edge
+                    break;
+                case 2:
+                    // face
+                    break;
+                default:
+                    // error
+                }
+
+
+//                 for (unsigned int d = 0; d < Dim; ++d) {
+//                     const Index& index = intersect[d];
+//
+//                     if (index.length() == 1) {
+//                         /* We found the
+//                          * intersecting dimension.
+//                          * Now, we need to figure out which face
+//                          * (upper or lower)
+//                          */
+//
+//                         /* if lower --> 0
+//                          * else upper --> 1
+//                          */
+//                         int inc = (gnd[d].first() == index.first()) ? 0 : 1;
+//
+//                         /* x low  --> 0
+//                          * x high --> 1
+//                          * y low  --> 2
+//                          * y high --> 3
+//                          * z low  --> 4
+//                          * z high --> 5
+//                          */
+//                         faceNeighbors_m[inc + 2 * d].push_back(rank);
+//                     }
+//                 }
             }
         }
     }

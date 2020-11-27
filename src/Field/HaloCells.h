@@ -65,9 +65,11 @@ namespace ippl {
             void exchangeHalo(view_type&, const Layout_t* layout, int nghost);
 
 
-            void pack(auto& internal, view_type&) const;
+            template <class SubViewType>
+            void pack(SubViewType& internal, view_type&) const;
 
-            void unpack(auto& halo, view_type&) const;
+            template <class SubViewType>
+            void unpack(SubViewType& halo, view_type&) const;
 
         private:
             /*!
