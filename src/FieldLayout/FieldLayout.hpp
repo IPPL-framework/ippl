@@ -260,7 +260,9 @@ namespace ippl {
             /* if lower --> 0
              * else upper --> 1
              */
-            int add = (grown[d].first() == intersect[d].first()) ? 0 : 1;
+            const bool isLower = (grown[d].first() == intersect[d].first());
+
+            int add = (isLower) ? 0 : 1;
 
             index += (add << d);
         }

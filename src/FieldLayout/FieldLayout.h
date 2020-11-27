@@ -109,9 +109,14 @@ namespace ippl {
         void write(std::ostream& = std::cout) const;
 
     private:
-        void addVertex(const NDIndex_t& grown, const NDIndex_t& overlap, int rank);
-        void addEdge(const NDIndex_t& grown, const NDIndex_t& overlap, int rank);
-        void addFace(const NDIndex_t& grown, const NDIndex_t& overlap, int rank);
+        /*!
+         * @param grown the grown domain of myRank
+         * @param inersect the intersection between grown and the remote domain
+         * @param rank the rank of the remote domain
+         */
+        void addVertex(const NDIndex_t& grown, const NDIndex_t& intersect, int rank);
+        void addEdge(const NDIndex_t& grown, const NDIndex_t& intersect, int rank);
+        void addFace(const NDIndex_t& grown, const NDIndex_t& intersect, int rank);
 
     private:
         //! Global domain
