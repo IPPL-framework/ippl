@@ -319,6 +319,8 @@ namespace ippl {
             int jump = d * nEdgesPerDim;
             index += jump;
         }
+
+        edgeNeighbors_m[index].push_back(rank);
     }
 
 
