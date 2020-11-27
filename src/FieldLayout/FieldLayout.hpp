@@ -278,8 +278,47 @@ namespace ippl {
                                    const NDIndex_t& /*intersect*/,
                                    int /*rank*/)
     {
+        /*!
+         * Neighboring ranks that store the edge values.
+         *
+         * horizontal
+         * [(x low,  y low,  z low),  (x high, y low,  z low)]  --> edge 0
+         * [(x low,  y high, z low),  (x high, y high, z low)]  --> edge 1
+         * [(x low,  y low,  z high), (x high, y low,  z high)] --> edge 2
+         * [(x low,  y high, z high), (x high, y high, z high)] --> edge 3
+         *
+         * vertical
+         * [(x low,  y low,  z low),  (x low,  y high, z low)]  --> edge 4
+         * [(x high, y low,  z low),  (x high, y high, z low)]  --> edge 5
+         * [(x low,  y low,  z high), (x low,  y high, z high)] --> edge 6
+         * [(x high, y low,  z high), (x high, y high, z high)] --> edge 7
+         *
+         * longitudinal
+         * [(x low,  y low,  z low),  (x low,  y low,  z high)] --> edge 8
+         * [(x high, y low,  z low),  (x high, y low,  z high)] --> edge 9
+         * [(x low,  y high, z low),  (x low,  y high, z high)] --> edge 10
+         * [(x high, y high, z low),  (x high, y high, z high)] --> edge 11
+         */
 
 
+        int nEdgesPerDim = (1 << (Dim - 1));
+
+        size_t index = 0;
+
+        int num = 1;
+        for (size_t d = 0; d < Dim; ++d) {
+
+            if (intersect[d].length() == 1) {
+                const bool isLower = (grown[d].first() == intersect[d].first());
+                index += (isLower) ? 0 : num;
+                ++num;
+                continue;
+            }
+
+
+            int jump = d * nEdgesPerDim;
+            index += jump;
+        }
     }
 
 
