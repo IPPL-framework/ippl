@@ -245,6 +245,15 @@ namespace ippl {
                                      const NDIndex_t& intersect,
                                      int rank)
     {
+        /* The following routine computes the correct index
+         * of the vertex.
+         *
+         * Example vertex 5: x high, y low, z high:
+         *
+         * 1st iteration: add = 1 --> index = 1
+         * 2nd iteration: add = 0 --> index += 0 --> index = 1
+         * 3rd iteration: add = 1 --> index += 4 --> index = 5
+         */
         size_t index = 0;
         for (size_t d = 0; d < Dim; ++d) {
 
