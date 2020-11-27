@@ -274,9 +274,9 @@ namespace ippl {
 
 
     template <unsigned Dim>
-    void FieldLayout<Dim>::addEdge(const NDIndex_t& /*grown*/,
-                                   const NDIndex_t& /*intersect*/,
-                                   int /*rank*/)
+    void FieldLayout<Dim>::addEdge(const NDIndex_t& grown,
+                                   const NDIndex_t& intersect,
+                                   int rank)
     {
         /*!
          * Neighboring ranks that store the edge values.
