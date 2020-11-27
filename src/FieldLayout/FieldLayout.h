@@ -109,6 +109,11 @@ namespace ippl {
         void write(std::ostream& = std::cout) const;
 
     private:
+        void addVertex(const NDIndex_t& grown, const NDIndex_t& overlap, int rank);
+        void addEdge(const NDIndex_t& grown, const NDIndex_t& overlap, int rank);
+        void addFace(const NDIndex_t& grown, const NDIndex_t& overlap, int rank);
+
+    private:
         //! Global domain
         NDIndex_t gDomain_m;
 

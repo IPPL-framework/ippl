@@ -223,45 +223,84 @@ namespace ippl {
                 switch (nDim) {
 
                 case 0:
-                    // vertex
-
+                    addVertex(gnd, intersect, rank);
                     break;
                 case 1:
-                    // edge
+                    addEdge(gnd, intersect, rank);
                     break;
                 case 2:
-                    // face
+                    addFace(gnd, intersect, rank);
                     break;
                 default:
                     // error
+                    std::runtime_error("");
                 }
+            }
+        }
+    }
 
 
-//                 for (unsigned int d = 0; d < Dim; ++d) {
-//                     const Index& index = intersect[d];
-//
-//                     if (index.length() == 1) {
-//                         /* We found the
-//                          * intersecting dimension.
-//                          * Now, we need to figure out which face
-//                          * (upper or lower)
-//                          */
-//
-//                         /* if lower --> 0
-//                          * else upper --> 1
-//                          */
-//                         int inc = (gnd[d].first() == index.first()) ? 0 : 1;
-//
-//                         /* x low  --> 0
-//                          * x high --> 1
-//                          * y low  --> 2
-//                          * y high --> 3
-//                          * z low  --> 4
-//                          * z high --> 5
-//                          */
-//                         faceNeighbors_m[inc + 2 * d].push_back(rank);
-//                     }
-//                 }
+    template <unsigned Dim>
+    void FieldLayout<Dim>::addVertex(const NDIndex_t& grown,
+                                     const NDIndex_t& intersect,
+                                     int rank)
+    {
+        size_t index = 0;
+        for (size_t d = 0; d < Dim; ++d) {
+
+            /* if lower --> 0
+             * else upper --> 1
+             */
+            int add = (grown[d].first() == intersect[d].first()) ? 0 : 1;
+
+            index += (add << d);
+        }
+
+        PAssert(index < vertexNeighbors_m.size());
+
+        vertexNeighbors_m[index] = rank;
+    }
+
+
+    template <unsigned Dim>
+    void FieldLayout<Dim>::addEdge(const NDIndex_t& /*grown*/,
+                                   const NDIndex_t& /*intersect*/,
+                                   int /*rank*/)
+    {
+
+
+    }
+
+
+    template <unsigned Dim>
+    void FieldLayout<Dim>::addFace(const NDIndex_t& grown,
+                                   const NDIndex_t& intersect,
+                                   int rank)
+    {
+        for (unsigned int d = 0; d < Dim; ++d) {
+            const Index& index = intersect[d];
+
+            if (index.length() == 1) {
+                /* We found the
+                 * intersecting dimension.
+                 * Now, we need to figure out which face
+                 * (upper or lower)
+                 */
+
+                /* if lower --> 0
+                 * else upper --> 1
+                 */
+                int inc = (grown[d].first() == index.first()) ? 0 : 1;
+
+                /* x low  --> 0
+                 * x high --> 1
+                 * y low  --> 2
+                 * y high --> 3
+                 * z low  --> 4
+                 * z high --> 5
+                 */
+                faceNeighbors_m[inc + 2 * d].push_back(rank);
+                break;
             }
         }
     }
