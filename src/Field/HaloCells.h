@@ -33,6 +33,12 @@ namespace ippl {
         {
 
         public:
+            struct intersect_type {
+                std::array<long, Dim> lo;
+                std::array<long, Dim> hi;
+            };
+
+
             using bound_type = std::array<long, 2 * Dim>;
             using bounds_type = std::array<bound_type, 2 * Dim>;
             using view_type = typename detail::ViewType<T, Dim>::view_type;
@@ -71,9 +77,12 @@ namespace ippl {
                             const view_type&, int nghost,
                             int shift = 0);
 
-            void fillCorners(const view_type&, int nghost);
+            intersect_type getInternalBounds(const NDIndex<Dim>&, const NDIndex<Dim>&, int face, int nghost);
+
 
             auto subview(bounds_type& bounds, const view_type&, unsigned int face);
+
+            auto makeSubview(const view_type&, const intersect_type&);
 
 
             /*! lower halo cells (ordering x, y, z)

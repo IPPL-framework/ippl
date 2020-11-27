@@ -72,6 +72,9 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION
         NDIndex<Dim> grow(int ncells) const;
 
+        KOKKOS_INLINE_FUNCTION
+        NDIndex<Dim> grow(int ncells, int dim) const;
+
 
         KOKKOS_INLINE_FUNCTION
         bool touches(const NDIndex<Dim>&) const;

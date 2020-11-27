@@ -10,7 +10,8 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    std::array<int, dim> pt = {8, 7, 13};
+//     std::array<int, dim> pt = {8, 7, 13};
+    std::array<int, dim> pt = {8, 8, 8};
     ippl::Index I(pt[0]);
     ippl::Index J(pt[1]);
     ippl::Index K(pt[2]);
@@ -36,17 +37,29 @@ int main(int argc, char *argv[]) {
 
     field_type field(mesh, layout, 2);
 
-    field = 1.0;
+    field = 5.0;
 
 //     field.write();
 
+//     layout.findNeighbors(2);
+
+
 //     field.exchangeHalo();
-
-    std::cout << std::endl;
-
-    field.fillLocalHalo(2.0);
-
-    field.write();
+//
+// //     std::cout << std::endl;
+//
+// //     field.fillLocalHalo(2.0);
+//
+//     int nRanks = Ippl::Comm->size();
+//
+//     for (int rank = 0; rank < nRanks; ++rank) {
+//         if (rank == Ippl::Comm->rank()) {
+//             std::cout << field.getOwned().grow(2) << std::endl;
+//             field.write();
+//             std::cout << "--------------------------" << std::endl;
+//         }
+//         Ippl::Comm->barrier();
+//     }
 
     return 0;
 }

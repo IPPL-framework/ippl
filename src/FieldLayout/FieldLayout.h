@@ -102,9 +102,11 @@ namespace ippl {
 
         const view_type& getDeviceLocalDomains() const;
 
-        const neighbor_container_type& getNeighbors() const;
+        const neighbor_container_type& getFaceNeighbors() const;
 
-    void write(std::ostream& = std::cout) const;
+        void findNeighbors(int nghost = 1);
+
+        void write(std::ostream& = std::cout) const;
 
     private:
         //! Global domain
@@ -127,11 +129,21 @@ namespace ippl {
          * it shares the face with). The values are the ranks sharing the face.
          * An empty vector denotes a physical / mesh boundary.
          */
-        neighbor_container_type neighbors_m;
+        neighbor_container_type faceNeighbors_m;
+
+        /*!
+         * Neighboring ranks that store the edge values.
+         * Array ordering: x low, x high, y low, y high, z low, z high
+         */
+        neighbor_container_type edgeNeighbors_m;
+
+        /*!
+         * Neighboring ranks that have the vertex value (corner cell).
+         * Array ordering: x low, x high, y low, y high, z low, z high
+         */
+        std::array<int, 2 << (Dim - 1)> vertexNeighbors_m;
 
         void calcWidths();
-
-        void findNeighbors();
     };
 
 

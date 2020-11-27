@@ -134,8 +134,8 @@ namespace ippl {
 
     template <unsigned Dim>
     const typename FieldLayout<Dim>::neighbor_container_type&
-    FieldLayout<Dim>::getNeighbors() const {
-        return neighbors_m;
+    FieldLayout<Dim>::getFaceNeighbors() const {
+        return faceNeighbors_m;
     }
 
 
@@ -176,14 +176,14 @@ namespace ippl {
 
 
     template <unsigned Dim>
-    void FieldLayout<Dim>::findNeighbors() {
+    void FieldLayout<Dim>::findNeighbors(int nghost) {
 
         /* just to be safe, we reset the neighbor list
          * (at the moment this is unnecessary, but as soon as
          * we have a repartitioner we need this call).
          */
         for (size_t i = 0; i < 2 * Dim; ++i) {
-            neighbors_m[i].clear();
+            faceNeighbors_m[i].clear();
         }
 
         int myRank = Ippl::Comm->rank();
@@ -192,7 +192,7 @@ namespace ippl {
         auto& nd = hLocalDomains_m[myRank];
 
         // grow the box by one cell in each dimension
-        auto gnd = nd.grow(1);
+        auto gnd = nd.grow(nghost);
 
         for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
             if (rank == myRank) {
@@ -205,6 +205,9 @@ namespace ippl {
                  * --> it is a neighbor
                  */
                 auto intersect = gnd.intersect(hLocalDomains_m[rank]);
+
+                std::cout << myRank << " " << rank << " " << gnd << " " << hLocalDomains_m[rank] << " " << intersect << std::endl;
+
                 for (unsigned int d = 0; d < Dim; ++d) {
                     const Index& index = intersect[d];
 
@@ -227,8 +230,7 @@ namespace ippl {
                          * z low  --> 4
                          * z high --> 5
                          */
-                        neighbors_m[inc + 2 * d].push_back(rank);
-                        std::cout << Ippl::Comm->rank() << " " << inc + 2 * d << " " << rank << std::endl;
+                        faceNeighbors_m[inc + 2 * d].push_back(rank);
                     }
                 }
             }
