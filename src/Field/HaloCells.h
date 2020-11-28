@@ -48,41 +48,38 @@ namespace ippl {
 
             void resize(const view_type&, int nghost);
 
-            /*! lower halo cells (ordering x, y, z)
-             * x --> lower y-z plane
-             * x --> upper y-z plane
-             * y --> lower x-z plane
-             * y --> upper x-z plane
-             * z --> lower x-y plane
-             * z --> upper x-y plane
-             */
-            auto getHaloSubView(const view_type&, unsigned int face);
+//             /*! lower halo cells (ordering x, y, z)
+//              * x --> lower y-z plane
+//              * x --> upper y-z plane
+//              * y --> lower x-z plane
+//              * y --> upper x-z plane
+//              * z --> lower x-y plane
+//              * z --> upper x-y plane
+//              */
+//             auto getHaloSubView(const view_type&, unsigned int face);
 
-            auto getInternalSubView(const view_type&, unsigned int face);
+//             auto getInternalSubView(const view_type&, unsigned int face);
 
             void fillHalo(view_type& view, const T& value);
 
             void exchangeHalo(view_type&, const Layout_t* layout, int nghost);
 
 
-            template <class SubViewType>
-            void pack(SubViewType& internal, view_type&) const;
+            void pack(const intersect_type& range,
+                      const view_type& view,
+                      view_type& buffer);
 
-            template <class SubViewType>
-            void unpack(SubViewType& halo, view_type&) const;
+            void unpack(const intersect_type& range,
+                        const view_type& view,
+                        view_type& buffer);
 
         private:
-            /*!
-             * @param shift number of shifts to internal cells
-             */
-            void fillBounds(bounds_type& bounds,
-                            const view_type&, int nghost,
-                            int shift = 0);
+            intersect_type getInternalBounds(const NDIndex<Dim>&, const NDIndex<Dim>&,
+                                             unsigned int dim, int nghost);
 
-            intersect_type getInternalBounds(const NDIndex<Dim>&, const NDIndex<Dim>&, int face, int nghost);
+            intersect_type getHaloBounds(const NDIndex<Dim>&, const NDIndex<Dim>&,
+                                         unsigned int dim, int nghost);
 
-
-            auto subview(bounds_type& bounds, const view_type&, unsigned int face);
 
             auto makeSubview(const view_type&, const intersect_type&);
 

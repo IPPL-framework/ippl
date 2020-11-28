@@ -25,51 +25,49 @@ namespace ippl {
 
 
         template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::resize(const view_type& view, int nghost)
+        void HaloCells<T, Dim>::resize(const view_type& /*view*/, int /*nghost*/)
         {
-            fillBounds(haloBounds_m, view, nghost);
 
-            fillBounds(internalBounds_m, view, nghost, nghost);
         }
 
 
-        template <typename T, unsigned Dim>
-        auto
-        HaloCells<T, Dim>::getHaloSubView(const view_type& view,
-                                          unsigned int face)
-        {
-            return subview(haloBounds_m, view, face);
-        }
+//         template <typename T, unsigned Dim>
+//         auto
+//         HaloCells<T, Dim>::getHaloSubView(const view_type& view,
+//                                           unsigned int face)
+//         {
+//             return subview(haloBounds_m, view, face);
+//         }
+
+
+//         template <typename T, unsigned Dim>
+//         auto
+//         HaloCells<T, Dim>::getInternalSubView(const view_type& view,
+//                                               unsigned int face)
+//         {
+//             return subview(internalBounds_m, view, face);
+//         }
 
 
         template <typename T, unsigned Dim>
-        auto
-        HaloCells<T, Dim>::getInternalSubView(const view_type& view,
-                                              unsigned int face)
-        {
-            return subview(internalBounds_m, view, face);
-        }
-
-
-        template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::fillHalo(view_type& view, const T& value) {
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-            using Kokkos::parallel_for;
-
-            for (unsigned int face = 0; face < 2 * Dim; ++face) {
-                auto halo = getHaloSubView(view, face);
-
-                parallel_for("HaloCells::fillHalo()",
-                             mdrange_type({0, 0, 0},
-                                          {halo.extent(0),
-                                           halo.extent(1),
-                                           halo.extent(2)}),
-                             KOKKOS_CLASS_LAMBDA(const int i,
-                                                 const int j,
-                                                 const int k) {
-                                 halo(i, j, k) = value;
-                });
-            }
+        void HaloCells<T, Dim>::fillHalo(view_type& /*view*/, const T& /*value*/) {
+//             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+//             using Kokkos::parallel_for;
+//
+//             for (unsigned int face = 0; face < 2 * Dim; ++face) {
+//                 auto halo = getHaloSubView(view, face);
+//
+//                 parallel_for("HaloCells::fillHalo()",
+//                              mdrange_type({0, 0, 0},
+//                                           {halo.extent(0),
+//                                            halo.extent(1),
+//                                            halo.extent(2)}),
+//                              KOKKOS_CLASS_LAMBDA(const int i,
+//                                                  const int j,
+//                                                  const int k) {
+//                                  halo(i, j, k) = value;
+//                 });
+//             }
         }
 
 
@@ -82,160 +80,100 @@ namespace ippl {
              * denotes a face. The value tells which MPI rank
              * we need to send to.
              */
-            using n_type = typename Layout_t::neighbor_container_type;
-            const n_type& neighbors = layout->getNeighbors();
+            using n_type = typename Layout_t::face_neighbor_type;
+            const n_type& neighboringFaces = layout->getFaceNeighbors();
             const auto& lDomains = layout->getHostLocalDomains();
 
 
             int myRank = Ippl::Comm->rank();
 
-//             using nd_view_type = Layout_t::view_type;
-
-//             nd_view_type
+            std::cout << "myRank = " << myRank << " " << lDomains[myRank] << std::endl;
 
             // send
-            for (size_t face = 0; face < neighbors.size(); ++face) {
-//                 if (neighbors[face].empty()) {
-//                     /* if we are on a physical / mesh boundary
-//                      */
-//                     continue;
-//                 }
+            for (size_t face = 0; face < neighboringFaces.size(); ++face) {
+                for (size_t i = 0; i < neighboringFaces[face].size(); ++i) {
 
-                for (size_t i = 0; i < neighbors[face].size(); ++i) {
+                    int rank = neighboringFaces[face][i];
 
-                    int rank = neighbors[face][i];
-
-                    intersect_type range = getInternalBounds(lDomains[myRank], lDomains[rank], face, nghost);
-
-                    auto sview = makeSubview(view, range);
+                    unsigned int dim = layout->getDimOfFace(face);
+                    intersect_type range = getInternalBounds(lDomains[myRank], lDomains[rank], dim, nghost);
 
 
-                    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-                    using Kokkos::parallel_for;
+                    view_type buffer;
 
-                    for (size_t d = 0; d < Dim; ++d) {
-                        std::cout << range.lo[d] << " " << range.hi[d] << std::endl;
-                    }
-
-                    parallel_for(
-                        "HaloCells::fillHalo()",
-                        mdrange_type({0, 0, 0},
-                                     {sview.extent(0),
-                                      sview.extent(1),
-                                      sview.extent(2)}),
-                        KOKKOS_CLASS_LAMBDA(const int ii,
-                                            const int ji,
-                                            const int ki)
-                        {
-                            sview(ii, ji, ki) = rank;
-                        });
-
-
-//                     for (size_t i = 0; i < Dim; ++i) {
-//                         std::cout << sview.extent(i) << " ";
-// //                         std::cout << i << " " << intersect.lo[i] << " " << intersect.hi[i] << std::endl;
-//                     } std::cout << std::endl;
-
-//                     std::cout << myRank << " "
-//                               << lDomains[myRank] << " "
-//                               << lDomains[rank] << " "
-//                               << getIntersect(gnd, lDomains[rank]) << std::endl;
+                    pack(range, view, buffer);
 
                 }
-
-//                 auto internal = getInternalSubView(view, face, intersect);
-//
-//                 // pack internal data from view
-//                 view_type buffer("buffer",
-//                                  internal.extent(0),
-//                                  internal.extent(1),
-//                                  internal.extent(2));
-//
-// //                 for (size_t i = 0; i < Dim; ++i) {
-// //                     std::cout << view.stride(i) << " " << buffer.stride(i) << " " << internal.stride(i) << std::endl;
-// //                 }
-//
-//                 pack(internal, buffer);
-
-                // send data
             }
 
             // receive
-            for (size_t face = 0; face < neighbors.size(); ++face) {
-                if (neighbors[face].empty()) {
-                    /* if we are on a physical / mesh boundary
-                     */
-                    continue;
+            for (size_t face = 0; face < neighboringFaces.size(); ++face) {
+                for (size_t i = 0; i < neighboringFaces[face].size(); ++i) {
+
+                    int rank = neighboringFaces[face][i];
+
+                    unsigned int dim = layout->getDimOfFace(face);
+                    intersect_type range = getHaloBounds(lDomains[myRank], lDomains[rank], dim, nghost);
+
+
+                    view_type buffer;
+
+                    unpack(range, view, buffer);
                 }
-
-
-//                 view_type buffer("buffer");
-
-                // receive data
-
-                // unpack received
-//                 unpack(halo, buffer);
             }
         }
 
 
         template <typename T, unsigned Dim>
-        template <class SubViewType>
-        void HaloCells<T, Dim>::pack(SubViewType& internal, view_type& buffer) const {
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
-            Kokkos::parallel_for(
-                "HaloCells::pack()",
-                mdrange_type({0, 0, 0},
-                             {internal.extent(0), internal.extent(1), internal.extent(2)}),
-                KOKKOS_CLASS_LAMBDA(const int i, const int j, const int k) {
-                    buffer(i, j, k) = internal(i, j, k);
-            });
-        }
-
-
-        template <typename T, unsigned Dim>
-        template <class SubViewType>
-        void HaloCells<T, Dim>::unpack(SubViewType& halo, view_type& buffer) const {
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
-            Kokkos::parallel_for(
-                "HaloCells::pack()",
-                mdrange_type({0, 0, 0},
-                             {buffer.extent(0), buffer.extent(1), buffer.extent(2)}),
-                KOKKOS_CLASS_LAMBDA(const int i, const int j, const int k) {
-                    halo(i, j, k) = buffer(i, j, k);
-            });
-        }
-
-
-        template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::fillBounds(bounds_type& bounds,
-                                           const view_type& view,
-                                           int nghost,
-                                           int shift)
+        void HaloCells<T, Dim>::pack(const intersect_type& range,
+                                     const view_type& view,
+                                     view_type& buffer)
         {
-            for (size_t i = 0; i < Dim; ++i) {
-                for (size_t j = 0; j < Dim; ++j) {
-                    if (i == j) {
-                        // lower bound
-                        bounds[2 * i][2 * j] = shift;
-                        bounds[2 * i][2 * j + 1] = nghost + shift;
+            auto subview = makeSubview(view, range);
 
-                        // upper bound
-                        bounds[2 * i + 1][2 * j] = view.extent(j) - nghost - shift;
-                        bounds[2 * i + 1][2 * j + 1] = view.extent(j) - shift;
-                    } else {
-                        // lower bound
-                        bounds[2 * i][2 * j] = nghost;
-                        bounds[2 * i][2 * j + 1] = view.extent(j) - nghost;
+            Kokkos::resize(buffer,
+                           subview.extent(0),
+                           subview.extent(1),
+                           subview.extent(2));
 
-                        // upper bound
-                        bounds[2 * i + 1][2 * j] = nghost;
-                        bounds[2 * i + 1][2 * j + 1] = view.extent(j) - nghost;
-                    }
+            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+            Kokkos::parallel_for(
+                "HaloCells::pack()",
+                mdrange_type({0, 0, 0},
+                             {subview.extent(0),
+                              subview.extent(1),
+                              subview.extent(2)}),
+                KOKKOS_CLASS_LAMBDA(const int i,
+                                    const int j,
+                                    const int k)
+                {
+                    buffer(i, j, k) = subview(i, j, k);
                 }
-            }
+            );
+        }
+
+
+        template <typename T, unsigned Dim>
+        void HaloCells<T, Dim>::unpack(const intersect_type& range,
+                                       const view_type& view,
+                                       view_type& buffer)
+        {
+            auto subview = makeSubview(view, range);
+
+            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+            Kokkos::parallel_for(
+                "HaloCells::unpack()",
+                mdrange_type({0, 0, 0},
+                             {buffer.extent(0),
+                              buffer.extent(1),
+                              buffer.extent(2)}),
+                KOKKOS_CLASS_LAMBDA(const int i,
+                                    const int j,
+                                    const int k)
+                {
+                    subview(i, j, k) = buffer(i, j, k);
+                }
+            );
         }
 
 
@@ -243,38 +181,52 @@ namespace ippl {
         typename
         HaloCells<T, Dim>::intersect_type HaloCells<T, Dim>::getInternalBounds(const NDIndex<Dim>& owned,
                                                                                const NDIndex<Dim>& remote,
-                                                                               int face,
+                                                                               unsigned int dim,
                                                                                int nghost)
         {
             // remote domain increased by nghost cells
-            NDIndex<Dim> gnd = remote.grow(nghost, face);
+            NDIndex<Dim> gnd = remote.grow(nghost, dim);
 
             NDIndex<Dim> overlap = gnd.intersect(owned);
 
             intersect_type intersect;
 
             /* Obtain the intersection bounds with local ranges of the view.
-             * Add "+1" to the upper bound since Kokkos loops always to "extent-1".
+             * Add "+1" to the upper bound since Kokkos loops always to "< extent".
              */
-            std::cout << overlap << " " << owned << std::endl;
             for (size_t i = 0; i < Dim; ++i) {
                 intersect.lo[i] = overlap[i].first() - owned[i].first() /*offset*/ + nghost;
-                intersect.hi[i] = overlap[i].last()  - owned[i].first() /*offset*/ + 1 + nghost;
+                intersect.hi[i] = overlap[i].last()  - owned[i].first() /*offset*/ + nghost + 1;
             }
 
             return intersect;
         }
 
-        template <typename T, unsigned Dim>
-        auto
-        HaloCells<T, Dim>::subview(bounds_type& bounds, const view_type& view, unsigned int face) {
-            using Kokkos::make_pair;
-            return Kokkos::subview(view,
-                                   make_pair(bounds[face][0], bounds[face][1]),
-                                   make_pair(bounds[face][2], bounds[face][3]),
-                                   make_pair(bounds[face][4], bounds[face][5]));
-        }
 
+        template <typename T, unsigned Dim>
+        typename
+        HaloCells<T, Dim>::intersect_type HaloCells<T, Dim>::getHaloBounds(const NDIndex<Dim>& owned,
+                                                                               const NDIndex<Dim>& remote,
+                                                                               unsigned int dim,
+                                                                               int nghost)
+        {
+            // remote domain increased by nghost cells
+            NDIndex<Dim> gnd = owned.grow(nghost, dim);
+
+            NDIndex<Dim> overlap = gnd.intersect(remote);
+
+            intersect_type intersect;
+
+            /* Obtain the intersection bounds with local ranges of the view.
+             * Add "+1" to the upper bound since Kokkos loops always to "< extent".
+             */
+            for (size_t i = 0; i < Dim; ++i) {
+                intersect.lo[i] = overlap[i].first() - owned[i].first() /*offset*/ + nghost;
+                intersect.hi[i] = overlap[i].last()  - owned[i].first() /*offset*/ + nghost + 1;
+            }
+
+            return intersect;
+        }
 
         template <typename T, unsigned Dim>
         auto
