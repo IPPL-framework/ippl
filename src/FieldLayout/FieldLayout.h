@@ -47,8 +47,8 @@ namespace ippl {
         using NDIndex_t = NDIndex<Dim>;
         using view_type = typename detail::ViewType<NDIndex_t, 1>::view_type;
         using host_mirror_type = typename view_type::host_mirror_type;
-        using neighbor_container_type = std::array<std::vector<int>, 2 * Dim>;
-        using edge_container_type = std::array<std::vector<int>, Dim * (1 << (Dim - 1))>;
+        using face_neighbor_type = std::array<std::vector<int>, 2 * Dim>;
+        using edge_neighbor_type = std::array<std::vector<int>, Dim * (1 << (Dim - 1))>;
         using vertex_neighbor_type = std::array<int, 2 << (Dim - 1)>;
 
 
@@ -104,9 +104,16 @@ namespace ippl {
 
         const view_type& getDeviceLocalDomains() const;
 
-        const neighbor_container_type& getFaceNeighbors() const;
+        const face_neighbor_type& getFaceNeighbors() const;
 
-        const edge_container_type& getEdgeNeighbors() const;
+        /*!
+         * Get the dimension of the face. It is based on the ordering:
+         * x low, x high, y low, y high, z low, z high
+         * @returns the dimension of the face
+         */
+        unsigned int getDimOfFace(unsigned int face) const { return face / 2; }
+
+        const edge_neighbor_type& getEdgeNeighbors() const;
 
         const vertex_neighbor_type& getVertexNeighbors() const;
 
@@ -145,7 +152,7 @@ namespace ippl {
          * it shares the face with). The values are the ranks sharing the face.
          * An empty vector denotes a physical / mesh boundary.
          */
-        neighbor_container_type faceNeighbors_m;
+        face_neighbor_type faceNeighbors_m;
 
         /*!
          * Neighboring ranks that store the edge values.
@@ -164,11 +171,11 @@ namespace ippl {
          * [(x low,  y high, z low),  (x low,  y high, z high)] --> edge 10
          * [(x high, y high, z low),  (x high, y high, z high)] --> edge 11
          */
-         */
-        edge_container_type edgeNeighbors_m;
+        edge_neighbor_type edgeNeighbors_m;
 
         /*!
-         * Neighboring ranks that have the vertex value (corner cell).
+         * Neighboring ranks that have the vertex value (corner cell). The value
+         * is negative, i.e. -1, if the vertex is on a mesh boundary.
          * x low,  y low,  z low  --> vertex index 0
          * x high, y low,  z low  --> vertex index 1
          * x low,  y high, z low  --> vertex index 2

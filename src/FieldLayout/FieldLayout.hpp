@@ -133,14 +133,14 @@ namespace ippl {
 
 
     template <unsigned Dim>
-    const typename FieldLayout<Dim>::neighbor_container_type&
+    const typename FieldLayout<Dim>::face_neighbor_type&
     FieldLayout<Dim>::getFaceNeighbors() const {
         return faceNeighbors_m;
     }
 
 
     template <unsigned Dim>
-    const typename FieldLayout<Dim>::edge_container_type&
+    const typename FieldLayout<Dim>::edge_neighbor_type&
     FieldLayout<Dim>::getEdgeNeighbors() const {
         return edgeNeighbors_m;
     }
