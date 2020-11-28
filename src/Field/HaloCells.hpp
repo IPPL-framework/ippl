@@ -79,9 +79,9 @@ namespace ippl {
                     FieldData<T> fd;
 
                     Kokkos::resize(fd.buffer,
-                                   (range.hi[0] - range.lo[0] + 1) *
-                                   (range.hi[1] - range.lo[1] + 1) *
-                                   (range.hi[2] - range.lo[2] + 1));
+                                   (range.hi[0] - range.lo[0]) *
+                                   (range.hi[1] - range.lo[1]) *
+                                   (range.hi[2] - range.lo[2]));
 
                     std::cout << "receive: " << fd.buffer.size() << std::endl;
 
