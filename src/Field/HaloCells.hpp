@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
+#include <memory>
+#include <vector>
+
 namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim>
@@ -43,6 +46,12 @@ namespace ippl {
             std::cout << "myRank = " << myRank << " " << lDomains[myRank] << std::endl;
 
             // send
+            std::vector<MPI_Request> requests(0);
+            using archive_type = Communicate::archive_type;
+            std::vector<std::unique_ptr<archive_type>> archives(0);
+
+            int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
+
             for (size_t face = 0; face < neighboringFaces.size(); ++face) {
                 for (size_t i = 0; i < neighboringFaces[face].size(); ++i) {
 
@@ -52,6 +61,10 @@ namespace ippl {
                     intersect_type range = getInternalBounds(lDomains[myRank], lDomains[rank], dim, nghost);
 
 
+                    archives.push_back(std::make_unique<archive_type>());
+                    requests.resize(requests.size() + 1);
+
+
                     FieldData<T> fd;
                     pack(range, view, fd);
 
@@ -59,7 +72,9 @@ namespace ippl {
 
                     std::cout << "send: " << fd.buffer.size() << std::endl;
 
-                    Ippl::Comm->send(rank, 42, fd);
+                    Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
+                                      requests.back());
+
 
                     std::cout << myRank << " sent." << std::endl;
 
@@ -85,7 +100,7 @@ namespace ippl {
 
                     std::cout << "receive: " << fd.buffer.size() << std::endl;
 
-                    Ippl::Comm->recv(rank, 42, fd);
+                    Ippl::Comm->recv(rank, tag, fd);
 
                     std::cout << myRank << " received." << std::endl;
 
@@ -93,6 +108,11 @@ namespace ippl {
 
                     std::cout << myRank << " unpacked." << std::endl;
                 }
+            }
+
+            if (requests.size() > 0) {
+                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+                archives.clear();
             }
         }
 

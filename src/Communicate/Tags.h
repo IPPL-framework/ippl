@@ -39,6 +39,15 @@
 #define BC_TAG_CYCLE              1000
 
 // Field<T,Dim> tags
+namespace ippl {
+    namespace detail {
+        #define HALO_FACE_TAG           20000
+        #define HALO_EDGE_TAG           30000
+        #define HALO_VERTEX_TAG         40000
+        #define HALO_TAG_CYCLE           1000
+    }
+}
+
 #define F_GUARD_CELLS_TAG       20000 // Field::fillGuardCells()
 #define F_WRITE_TAG             21000 // Field::write()
 #define F_READ_TAG              22000 // Field::read()
@@ -50,26 +59,17 @@
 #define F_LAYOUT_IO_TAG         28000 // Reduction in minloc/maxloc
 #define F_TAG_CYCLE              1000
 
-// Tags for FieldView and FieldBlock
-#define FV_2D_TAG               30000 // FieldView::update_2D_data()
-#define FV_3D_TAG               31000 // FieldView::update_2D_data()
-#define FV_TAG_CYCLE             1000
-
-#define FB_WRITE_TAG            32000 // FieldBlock::write()
-#define FB_READ_TAG             33000 // FieldBlock::read()
-#define FB_TAG_CYCLE             1000
-
-#define FP_GATHER_TAG           34000 // FieldPrint::print()
-#define FP_TAG_CYCLE             1000
-
-// Tags for DiskField
-#define DF_MAKE_HOST_MAP_TAG    35000
-#define DF_FIND_RECV_NODES_TAG  36000
-#define DF_QUERY_TAG            37000
-#define DF_READ_TAG             38000
-#define DF_OFFSET_TAG           39000
-#define DF_READ_META_TAG        40000
-#define DF_TAG_CYCLE             1000
+// // Tags for FieldView and FieldBlock
+// #define FV_2D_TAG               30000 // FieldView::update_2D_data()
+// #define FV_3D_TAG               31000 // FieldView::update_2D_data()
+// #define FV_TAG_CYCLE             1000
+//
+// #define FB_WRITE_TAG            32000 // FieldBlock::write()
+// #define FB_READ_TAG             33000 // FieldBlock::read()
+// #define FB_TAG_CYCLE             1000
+//
+// #define FP_GATHER_TAG           34000 // FieldPrint::print()
+// #define FP_TAG_CYCLE             1000
 
 // Special tags used by Particle classes for communication.
 #define P_WEIGHTED_LAYOUT_TAG   50000
