@@ -347,11 +347,11 @@ int main(int argc, char *argv[]){
     Inform msg(argv[0]);
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    if (argc != 6) {
-        msg << "PIC3d [mx] [mx] [my] [#particles] [#time steps]"
-            << endl;
-        return -1;
-    }
+    //if (argc != 6) {
+    //    msg << "PIC3d [mx] [mx] [my] [#particles] [#time steps]"
+    //        << endl;
+    //    return -1;
+    //}
 
     ippl::Vector<int,Dim> nr = {
         std::atoi(argv[1]),
