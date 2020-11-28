@@ -37,63 +37,63 @@ int main(int argc, char *argv[]) {
 
     field_type field(mesh, layout, 2);
 
-    field = 5.0;
+    field = Ippl::Comm->rank();
 
-    auto& domains = layout.getHostLocalDomains();
+//     auto& domains = layout.getHostLocalDomains();
+//
+//     for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
+//
+//         if (rank == Ippl::Comm->rank()) {
+//             auto& faces = layout.getFaceNeighbors();
+//             auto& edges = layout.getEdgeNeighbors();
+//             auto& vertices = layout.getVertexNeighbors();
+//
+//             int nFaces = 0, nEdges = 0, nVertices = 0;
+//             for (size_t i = 0; i < faces.size(); ++i) {
+//                 nFaces += faces[i].size();
+//             }
+//
+//             for (size_t i = 0; i < edges.size(); ++i) {
+//                 nEdges += edges[i].size();
+//             }
+//
+//             for (size_t i = 0; i < vertices.size(); ++i) {
+//                 nVertices += (vertices[i] > -1) ? 1: 0;
+//             }
+//
+//
+//             std::cout << "rank " << rank << ": " << std::endl
+//                       << " - domain:   " << domains[rank] << std::endl
+//                       << " - faces:    " << nFaces << std::endl
+//                       << " - edges:    " << nEdges << std::endl
+//                       << " - vertices: " << nVertices << std::endl
+//                       << "--------------------------------------" << std::endl;
+//         }
+//         Ippl::Comm->barrier();
+//     }
 
-    for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
 
-        if (rank == Ippl::Comm->rank()) {
-            auto& faces = layout.getFaceNeighbors();
-            auto& edges = layout.getEdgeNeighbors();
-            auto& vertices = layout.getVertexNeighbors();
-
-            int nFaces = 0, nEdges = 0, nVertices = 0;
-            for (size_t i = 0; i < faces.size(); ++i) {
-                nFaces += faces[i].size();
-            }
-
-            for (size_t i = 0; i < edges.size(); ++i) {
-                nEdges += edges[i].size();
-            }
-
-            for (size_t i = 0; i < vertices.size(); ++i) {
-                nVertices += (vertices[i] > -1) ? 1: 0;
-            }
-
-
-            std::cout << "rank " << rank << ": " << std::endl
-                      << " - domain:   " << domains[rank] << std::endl
-                      << " - faces:    " << nFaces << std::endl
-                      << " - edges:    " << nEdges << std::endl
-                      << " - vertices: " << nVertices << std::endl
-                      << "--------------------------------------" << std::endl;
-        }
-        Ippl::Comm->barrier();
-    }
-
-
-//     field.write();
 
 //     layout.findNeighbors(2);
 
 
-//     field.exchangeHalo();
+    field.exchangeHalo();
 //
 // //     std::cout << std::endl;
 //
 // //     field.fillLocalHalo(2.0);
 //
-//     int nRanks = Ippl::Comm->size();
-//
-//     for (int rank = 0; rank < nRanks; ++rank) {
-//         if (rank == Ippl::Comm->rank()) {
-//             std::cout << field.getOwned().grow(2) << std::endl;
-//             field.write();
-//             std::cout << "--------------------------" << std::endl;
-//         }
-//         Ippl::Comm->barrier();
-//     }
+    int nRanks = Ippl::Comm->size();
+
+    for (int rank = 0; rank < nRanks; ++rank) {
+        if (rank == Ippl::Comm->rank()) {
+            std::cout << "Rank = " << rank << " ";
+            std::cout << field.getOwned().grow(2) << std::endl;
+            field.write();
+            std::cout << "--------------------------" << std::endl;
+        }
+        Ippl::Comm->barrier();
+    }
 
     return 0;
 }

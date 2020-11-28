@@ -52,9 +52,16 @@ namespace ippl {
                     intersect_type range = getInternalBounds(lDomains[myRank], lDomains[rank], dim, nghost);
 
 
-                    view_type buffer;
+                    FieldData<T> fd;
+                    pack(range, view, fd);
 
-                    pack(range, view, buffer);
+                    std::cout << myRank << " packed." << std::endl;
+
+                    std::cout << "send: " << fd.buffer.size() << std::endl;
+
+                    Ippl::Comm->send(rank, 42, fd);
+
+                    std::cout << myRank << " sent." << std::endl;
 
                 }
             }
@@ -69,9 +76,22 @@ namespace ippl {
                     intersect_type range = getHaloBounds(lDomains[myRank], lDomains[rank], dim, nghost);
 
 
-                    view_type buffer;
+                    FieldData<T> fd;
 
-                    unpack(range, view, buffer);
+                    Kokkos::resize(fd.buffer,
+                                   (range.hi[0] - range.lo[0] + 1) *
+                                   (range.hi[1] - range.lo[1] + 1) *
+                                   (range.hi[2] - range.lo[2] + 1));
+
+                    std::cout << "receive: " << fd.buffer.size() << std::endl;
+
+                    Ippl::Comm->recv(rank, 42, fd);
+
+                    std::cout << myRank << " received." << std::endl;
+
+                    unpack(range, view, fd);
+
+                    std::cout << myRank << " unpacked." << std::endl;
                 }
             }
         }
@@ -80,14 +100,13 @@ namespace ippl {
         template <typename T, unsigned Dim>
         void HaloCells<T, Dim>::pack(const intersect_type& range,
                                      const view_type& view,
-                                     view_type& buffer)
+                                     FieldData<T>& fd)
         {
             auto subview = makeSubview(view, range);
 
-            Kokkos::resize(buffer,
-                           subview.extent(0),
-                           subview.extent(1),
-                           subview.extent(2));
+            auto& buffer = fd.buffer;
+
+            Kokkos::resize(buffer, subview.extent(0) * subview.extent(1) * subview.extent(2));
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(
@@ -100,7 +119,8 @@ namespace ippl {
                                     const int j,
                                     const int k)
                 {
-                    buffer(i, j, k) = subview(i, j, k);
+                    int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
+                    buffer(l) = subview(i, j, k);
                 }
             );
         }
@@ -109,22 +129,24 @@ namespace ippl {
         template <typename T, unsigned Dim>
         void HaloCells<T, Dim>::unpack(const intersect_type& range,
                                        const view_type& view,
-                                       view_type& buffer)
+                                       FieldData<T>& fd)
         {
             auto subview = makeSubview(view, range);
+            auto buffer = fd.buffer;
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(
                 "HaloCells::unpack()",
                 mdrange_type({0, 0, 0},
-                             {buffer.extent(0),
-                              buffer.extent(1),
-                              buffer.extent(2)}),
+                             {subview.extent(0),
+                              subview.extent(1),
+                              subview.extent(2)}),
                 KOKKOS_CLASS_LAMBDA(const int i,
                                     const int j,
                                     const int k)
                 {
-                    subview(i, j, k) = buffer(i, j, k);
+                    int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
+                    subview(i, j, k) = buffer(l);
                 }
             );
         }

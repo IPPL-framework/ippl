@@ -20,13 +20,26 @@
 
 #include "Index/NDIndex.h"
 #include "Types/ViewTypes.h"
-// #include "Communicate/Archive.h"
+#include "Communicate/Archive.h"
 #include "FieldLayout/FieldLayout.h"
-
 #include <array>
 
 namespace ippl {
     namespace detail {
+        template <typename T>
+        struct FieldData {
+            using view_type = typename detail::ViewType<T, 1>::view_type;
+
+            void serialize(Archive<>& ar) {
+                ar << buffer;
+            }
+
+            void deserialize(Archive<>& ar) {
+                ar >> buffer;
+            }
+
+            view_type buffer;
+        };
 
         template <typename T, unsigned Dim>
         class HaloCells
@@ -51,13 +64,14 @@ namespace ippl {
 
             void pack(const intersect_type& range,
                       const view_type& view,
-                      view_type& buffer);
+                      FieldData<T>& fd);
 
             void unpack(const intersect_type& range,
                         const view_type& view,
-                        view_type& buffer);
+                        FieldData<T>& fd);
 
         private:
+
             intersect_type getInternalBounds(const NDIndex<Dim>&, const NDIndex<Dim>&,
                                              unsigned int dim, int nghost);
 
