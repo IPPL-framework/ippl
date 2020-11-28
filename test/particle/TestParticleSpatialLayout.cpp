@@ -80,6 +80,13 @@ int main(int argc, char *argv[]) {
 
     bunch.create(nParticles / nRanks);
 
+#ifdef KOKKOS_ENABLE_CUDA
+    int id = -1;
+    auto err = cudaGetDevice(&id);
+    if (err != cudaSuccess) printf("kernel cuda error: %d, %s\n", (int)err, cudaGetErrorString(err));
+    std::cout << "Rank " << Ippl::Comm->rank() << " has device " << id << "\n";
+#endif
+
     std::mt19937_64 eng(Ippl::Comm->rank());
     std::uniform_real_distribution<double> unif(0, 1);
 
