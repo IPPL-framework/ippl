@@ -73,10 +73,23 @@ namespace ippl {
         private:
 
             intersect_type getInternalBounds(const NDIndex<Dim>&, const NDIndex<Dim>&,
-                                             unsigned int dim, int nghost);
+                                             int nghost);
 
             intersect_type getHaloBounds(const NDIndex<Dim>&, const NDIndex<Dim>&,
-                                         unsigned int dim, int nghost);
+                                         int nghost);
+
+
+            void exchangeFaces(view_type& view,
+                               const Layout_t* layout,
+                               int nghost);
+
+            void exchangeEdges(view_type& view,
+                               const Layout_t* layout,
+                               int nghost);
+
+            void exchangeVertices(view_type& view,
+                                  const Layout_t* layout,
+                                  int nghost);
 
 
             auto makeSubview(const view_type&, const intersect_type&);

@@ -32,16 +32,29 @@ namespace ippl {
                                              const Layout_t* layout,
                                              int nghost)
         {
+            exchangeFaces(view, layout, nghost);
+
+            exchangeEdges(view, layout, nghost);
+
+            exchangeVertices(view, layout, nghost);
+        }
+
+
+        template <typename T, unsigned Dim>
+        void HaloCells<T, Dim>::exchangeFaces(view_type& view,
+                                              const Layout_t* layout,
+                                              int nghost)
+        {
             /* The neighbor list has length 2 * Dim. Each index
              * denotes a face. The value tells which MPI rank
              * we need to send to.
              */
-            using n_type = typename Layout_t::face_neighbor_type;
-            const n_type& neighboringFaces = layout->getFaceNeighbors();
+            using neighbor_type = typename Layout_t::face_neighbor_type;
+            const neighbor_type& neighbors = layout->getFaceNeighbors();
             const auto& lDomains = layout->getHostLocalDomains();
 
-
             int myRank = Ippl::Comm->rank();
+
 
             std::cout << "myRank = " << myRank << " " << lDomains[myRank] << std::endl;
 
@@ -52,13 +65,12 @@ namespace ippl {
 
             int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
 
-            for (size_t face = 0; face < neighboringFaces.size(); ++face) {
-                for (size_t i = 0; i < neighboringFaces[face].size(); ++i) {
+            for (size_t face = 0; face < neighbors.size(); ++face) {
+                for (size_t i = 0; i < neighbors[face].size(); ++i) {
 
-                    int rank = neighboringFaces[face][i];
+                    int rank = neighbors[face][i];
 
-                    unsigned int dim = layout->getDimOfFace(face);
-                    intersect_type range = getInternalBounds(lDomains[myRank], lDomains[rank], dim, nghost);
+                    intersect_type range = getInternalBounds(lDomains[myRank], lDomains[rank], nghost);
 
 
                     archives.push_back(std::make_unique<archive_type>());
@@ -68,27 +80,86 @@ namespace ippl {
                     FieldData<T> fd;
                     pack(range, view, fd);
 
-                    std::cout << myRank << " packed." << std::endl;
-
-                    std::cout << "send: " << fd.buffer.size() << std::endl;
-
                     Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
                                       requests.back());
-
-
-                    std::cout << myRank << " sent." << std::endl;
 
                 }
             }
 
             // receive
-            for (size_t face = 0; face < neighboringFaces.size(); ++face) {
-                for (size_t i = 0; i < neighboringFaces[face].size(); ++i) {
+            for (size_t face = 0; face < neighbors.size(); ++face) {
+                for (size_t i = 0; i < neighbors[face].size(); ++i) {
 
-                    int rank = neighboringFaces[face][i];
+                    int rank = neighbors[face][i];
 
-                    unsigned int dim = layout->getDimOfFace(face);
-                    intersect_type range = getHaloBounds(lDomains[myRank], lDomains[rank], dim, nghost);
+                    intersect_type range = getHaloBounds(lDomains[myRank], lDomains[rank], nghost);
+
+                    FieldData<T> fd;
+
+                    Kokkos::resize(fd.buffer,
+                                   (range.hi[0] - range.lo[0]) *
+                                   (range.hi[1] - range.lo[1]) *
+                                   (range.hi[2] - range.lo[2]));
+
+                    Ippl::Comm->recv(rank, tag, fd);
+
+                    unpack(range, view, fd);
+                }
+            }
+
+            if (requests.size() > 0) {
+                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+                archives.clear();
+            }
+        }
+
+
+        template <typename T, unsigned Dim>
+        void HaloCells<T, Dim>::exchangeEdges(view_type& view,
+                                              const Layout_t* layout,
+                                              int nghost)
+        {
+            using neighbor_type = typename Layout_t::edge_neighbor_type;
+            const neighbor_type& neighbors = layout->getEdgeNeighbors();
+            const auto& lDomains = layout->getHostLocalDomains();
+
+            int myRank = Ippl::Comm->rank();
+
+            // send
+            std::vector<MPI_Request> requests(0);
+            using archive_type = Communicate::archive_type;
+            std::vector<std::unique_ptr<archive_type>> archives(0);
+
+            int tag = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
+
+            for (size_t edge = 0; edge < neighbors.size(); ++edge) {
+                for (size_t i = 0; i < neighbors[edge].size(); ++i) {
+
+                    int rank = neighbors[edge][i];
+
+                    intersect_type range = getInternalBounds(lDomains[myRank], lDomains[rank], nghost);
+
+
+                    archives.push_back(std::make_unique<archive_type>());
+                    requests.resize(requests.size() + 1);
+
+
+                    FieldData<T> fd;
+                    pack(range, view, fd);
+
+                    Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
+                                      requests.back());
+
+                }
+            }
+
+            // receive
+            for (size_t edge = 0; edge < neighbors.size(); ++edge) {
+                for (size_t i = 0; i < neighbors[edge].size(); ++i) {
+
+                    int rank = neighbors[edge][i];
+
+                    intersect_type range = getHaloBounds(lDomains[myRank], lDomains[rank], nghost);
 
 
                     FieldData<T> fd;
@@ -98,16 +169,81 @@ namespace ippl {
                                    (range.hi[1] - range.lo[1]) *
                                    (range.hi[2] - range.lo[2]));
 
-                    std::cout << "receive: " << fd.buffer.size() << std::endl;
-
                     Ippl::Comm->recv(rank, tag, fd);
 
-                    std::cout << myRank << " received." << std::endl;
-
                     unpack(range, view, fd);
-
-                    std::cout << myRank << " unpacked." << std::endl;
                 }
+            }
+
+            if (requests.size() > 0) {
+                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+                archives.clear();
+            }
+        }
+
+
+        template <typename T, unsigned Dim>
+        void HaloCells<T, Dim>::exchangeVertices(view_type& view,
+                                                 const Layout_t* layout,
+                                                 int nghost)
+        {
+            using neighbor_type = typename Layout_t::vertex_neighbor_type;
+            const neighbor_type& neighbors = layout->getVertexNeighbors();
+            const auto& lDomains = layout->getHostLocalDomains();
+
+            int myRank = Ippl::Comm->rank();
+
+            // send
+            std::vector<MPI_Request> requests(0);
+            using archive_type = Communicate::archive_type;
+            std::vector<std::unique_ptr<archive_type>> archives(0);
+
+            int tag = Ippl::Comm->next_tag(HALO_VERTEX_TAG, HALO_TAG_CYCLE);
+
+            for (size_t vertex = 0; vertex < neighbors.size(); ++vertex) {
+                if (neighbors[vertex] < 0) {
+                    // we are on a mesh / physical boundary
+                    continue;
+                }
+
+                int rank = neighbors[vertex];
+
+                intersect_type range = getInternalBounds(lDomains[myRank], lDomains[rank], nghost);
+
+
+                archives.push_back(std::make_unique<archive_type>());
+                requests.resize(requests.size() + 1);
+
+
+                FieldData<T> fd;
+                pack(range, view, fd);
+
+                Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
+                                    requests.back());
+            }
+
+            // receive
+            for (size_t vertex = 0; vertex < neighbors.size(); ++vertex) {
+                if (neighbors[vertex] < 0) {
+                    // we are on a mesh / physical boundary
+                    continue;
+                }
+
+                int rank = neighbors[vertex];
+
+                intersect_type range = getHaloBounds(lDomains[myRank], lDomains[rank], nghost);
+
+
+                FieldData<T> fd;
+
+                Kokkos::resize(fd.buffer,
+                               (range.hi[0] - range.lo[0]) *
+                               (range.hi[1] - range.lo[1]) *
+                               (range.hi[2] - range.lo[2]));
+
+                Ippl::Comm->recv(rank, tag, fd);
+
+                unpack(range, view, fd);
             }
 
             if (requests.size() > 0) {
@@ -176,11 +312,10 @@ namespace ippl {
         typename
         HaloCells<T, Dim>::intersect_type HaloCells<T, Dim>::getInternalBounds(const NDIndex<Dim>& owned,
                                                                                const NDIndex<Dim>& remote,
-                                                                               unsigned int dim,
                                                                                int nghost)
         {
             // remote domain increased by nghost cells
-            NDIndex<Dim> gnd = remote.grow(nghost, dim);
+            NDIndex<Dim> gnd = remote.grow(nghost);
 
             NDIndex<Dim> overlap = gnd.intersect(owned);
 
@@ -202,11 +337,10 @@ namespace ippl {
         typename
         HaloCells<T, Dim>::intersect_type HaloCells<T, Dim>::getHaloBounds(const NDIndex<Dim>& owned,
                                                                                const NDIndex<Dim>& remote,
-                                                                               unsigned int dim,
                                                                                int nghost)
         {
             // remote domain increased by nghost cells
-            NDIndex<Dim> gnd = owned.grow(nghost, dim);
+            NDIndex<Dim> gnd = owned.grow(nghost);
 
             NDIndex<Dim> overlap = gnd.intersect(remote);
 
