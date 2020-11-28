@@ -149,18 +149,21 @@ namespace ippl {
 
         /*!
          * Neighboring ranks that store the edge values.
-         * [(x low,  y low,  z low),  (x low,  y high, z low)]  --> edge 0
-         * [(x high, y low,  z low),  (x high, y high, z low)]  --> edge 1
-         * [(x low,  y low,  z low),  (x high, y low,  z low)]  --> edge 2
-         * [(x low,  y high, z low),  (x high, y high, z low)]  --> edge 3
-         * [(x low,  y low,  z low),  (x low,  y low,  z high)] --> edge 4
-         * [(x high, y low,  z low),  (x high, y low,  z high)] --> edge 5
-         * [(x low,  y high, z low),  (x low,  y high, z high)] --> edge 6
-         * [(x high, y high, z low),  (x high, y high, z high)] --> edge 7
-         * [(x low,  y low,  z high), (x low,  y high, z high)] --> edge 8
-         * [(x high, y low,  z high), (x high, y high, z high)] --> edge 9
-         * [(x low,  y low,  z high), (x high, y low,  z high)] --> edge 10
-         * [(x low,  y high, z high), (x high, y high, z high)] --> edge 11
+         * [(x low,  y low,  z low),  (x high, y low,  z low)]  --> edge 0
+         * [(x low,  y high, z low),  (x high, y high, z low)]  --> edge 1
+         * [(x low,  y low,  z high), (x high, y low,  z high)] --> edge 2
+         * [(x low,  y high, z high), (x high, y high, z high)] --> edge 3
+         *
+         * [(x low,  y low,  z low),  (x low,  y high, z low)]  --> edge 4
+         * [(x high, y low,  z low),  (x high, y high, z low)]  --> edge 5
+         * [(x low,  y low,  z high), (x low,  y high, z high)] --> edge 6
+         * [(x high, y low,  z high), (x high, y high, z high)] --> edge 7
+         *
+         * [(x low,  y low,  z low),  (x low,  y low,  z high)] --> edge 8
+         * [(x high, y low,  z low),  (x high, y low,  z high)] --> edge 9
+         * [(x low,  y high, z low),  (x low,  y high, z high)] --> edge 10
+         * [(x high, y high, z low),  (x high, y high, z high)] --> edge 11
+         */
          */
         edge_container_type edgeNeighbors_m;
 
