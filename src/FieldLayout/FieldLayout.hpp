@@ -206,8 +206,6 @@ namespace ippl {
                  */
                 auto intersect = gnd.intersect(hLocalDomains_m[rank]);
 
-                std::cout << myRank << " " << rank << " " << gnd << " " << hLocalDomains_m[rank] << " " << intersect << std::endl;
-
                 /* check how many dimension have length > 1.
                  * Vertices are scalars --> all dimensions have length 1
                  * Edges are vectors --> 1 dimension has length > 1
