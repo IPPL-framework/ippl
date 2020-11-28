@@ -113,7 +113,15 @@ namespace ippl {
          * Index domain of the local field.
          * @returns the index domain.
          */
-        const Domain_t& getOwned()       const { return owned_m; }
+        const Domain_t& getOwned() const { return owned_m; }
+
+        /*!
+         * Index domain of the allocated field.
+         * @returns the allocated index domain (including ghost cells)
+         */
+        const Domain_t getAllocated() const {
+            return owned_m.grow(nghost_m);
+        }
 
 
         // Access to the layout.
