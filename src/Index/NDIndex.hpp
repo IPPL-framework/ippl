@@ -109,9 +109,9 @@ namespace ippl {
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION
-    NDIndex<Dim> NDIndex<Dim>::grow(int ncells, int dim) const
+    NDIndex<Dim> NDIndex<Dim>::grow(int ncells, unsigned int dim) const
     {
-        NDIndex<Dim> r;
+        NDIndex<Dim> r = *this;
         r[dim] = indices_m[dim].grow(ncells);
         return r;
     }

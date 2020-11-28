@@ -73,7 +73,7 @@ namespace ippl {
         NDIndex<Dim> grow(int ncells) const;
 
         KOKKOS_INLINE_FUNCTION
-        NDIndex<Dim> grow(int ncells, int dim) const;
+        NDIndex<Dim> grow(int ncells, unsigned int dim) const;
 
 
         KOKKOS_INLINE_FUNCTION
