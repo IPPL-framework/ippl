@@ -48,6 +48,8 @@ namespace ippl {
         using view_type = typename detail::ViewType<NDIndex_t, 1>::view_type;
         using host_mirror_type = typename view_type::host_mirror_type;
         using neighbor_container_type = std::array<std::vector<int>, 2 * Dim>;
+        using edge_container_type = std::array<std::vector<int>, Dim * (1 << (Dim - 1))>;
+        using vertex_neighbor_type = std::array<int, 2 << (Dim - 1)>;
 
 
         /*!
@@ -104,6 +106,10 @@ namespace ippl {
 
         const neighbor_container_type& getFaceNeighbors() const;
 
+        const edge_container_type& getEdgeNeighbors() const;
+
+        const vertex_neighbor_type& getVertexNeighbors() const;
+
         void findNeighbors(int nghost = 1);
 
         void write(std::ostream& = std::cout) const;
@@ -156,7 +162,7 @@ namespace ippl {
          * [(x low,  y low,  z high), (x high, y low,  z high)] --> edge 10
          * [(x low,  y high, z high), (x high, y high, z high)] --> edge 11
          */
-        neighbor_container_type edgeNeighbors_m;
+        edge_container_type edgeNeighbors_m;
 
         /*!
          * Neighboring ranks that have the vertex value (corner cell).
@@ -169,7 +175,7 @@ namespace ippl {
          * x low,  y high, z high --> vertex index 6
          * x high, y high, z high --> vertex index 7
          */
-        std::array<int, 2 << (Dim - 1)> vertexNeighbors_m;
+        vertex_neighbor_type vertexNeighbors_m;
 
         void calcWidths();
     };

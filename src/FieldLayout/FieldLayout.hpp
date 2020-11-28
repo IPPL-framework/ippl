@@ -140,6 +140,20 @@ namespace ippl {
 
 
     template <unsigned Dim>
+    const typename FieldLayout<Dim>::edge_container_type&
+    FieldLayout<Dim>::getEdgeNeighbors() const {
+        return edgeNeighbors_m;
+    }
+
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::vertex_neighbor_type&
+    FieldLayout<Dim>::getVertexNeighbors() const {
+        return vertexNeighbors_m;
+    }
+
+
+    template <unsigned Dim>
     void FieldLayout<Dim>::write(std::ostream& out) const
     {
         if (Ippl::Comm->rank() > 0) {
@@ -182,9 +196,15 @@ namespace ippl {
          * (at the moment this is unnecessary, but as soon as
          * we have a repartitioner we need this call).
          */
-        for (size_t i = 0; i < 2 * Dim; ++i) {
+        for (size_t i = 0; i < faceNeighbors_m.size(); ++i) {
             faceNeighbors_m[i].clear();
         }
+
+        for (size_t i = 0; i < edgeNeighbors_m.size(); ++i) {
+            edgeNeighbors_m[i].clear();
+        }
+
+        vertexNeighbors_m.fill(-1);
 
         int myRank = Ippl::Comm->rank();
 
@@ -317,6 +337,8 @@ namespace ippl {
             int jump = d * nEdgesPerDim;
             index += jump;
         }
+
+        PAssert(index < edgeNeighbors_m.size());
 
         edgeNeighbors_m[index].push_back(rank);
     }
