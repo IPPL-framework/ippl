@@ -136,8 +136,6 @@ namespace ippl {
         const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
 
 
-        void fillLocalHalo(const T& value);
-
         void exchangeHalo();
 
 

@@ -25,53 +25,6 @@ namespace ippl {
 
 
         template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::resize(const view_type& /*view*/, int /*nghost*/)
-        {
-
-        }
-
-
-//         template <typename T, unsigned Dim>
-//         auto
-//         HaloCells<T, Dim>::getHaloSubView(const view_type& view,
-//                                           unsigned int face)
-//         {
-//             return subview(haloBounds_m, view, face);
-//         }
-
-
-//         template <typename T, unsigned Dim>
-//         auto
-//         HaloCells<T, Dim>::getInternalSubView(const view_type& view,
-//                                               unsigned int face)
-//         {
-//             return subview(internalBounds_m, view, face);
-//         }
-
-
-        template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::fillHalo(view_type& /*view*/, const T& /*value*/) {
-//             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-//             using Kokkos::parallel_for;
-//
-//             for (unsigned int face = 0; face < 2 * Dim; ++face) {
-//                 auto halo = getHaloSubView(view, face);
-//
-//                 parallel_for("HaloCells::fillHalo()",
-//                              mdrange_type({0, 0, 0},
-//                                           {halo.extent(0),
-//                                            halo.extent(1),
-//                                            halo.extent(2)}),
-//                              KOKKOS_CLASS_LAMBDA(const int i,
-//                                                  const int j,
-//                                                  const int k) {
-//                                  halo(i, j, k) = value;
-//                 });
-//             }
-        }
-
-
-        template <typename T, unsigned Dim>
         void HaloCells<T, Dim>::exchangeHalo(view_type& view,
                                              const Layout_t* layout,
                                              int nghost)

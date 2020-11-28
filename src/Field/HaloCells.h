@@ -46,22 +46,6 @@ namespace ippl {
 
             HaloCells();
 
-            void resize(const view_type&, int nghost);
-
-//             /*! lower halo cells (ordering x, y, z)
-//              * x --> lower y-z plane
-//              * x --> upper y-z plane
-//              * y --> lower x-z plane
-//              * y --> upper x-z plane
-//              * z --> lower x-y plane
-//              * z --> upper x-y plane
-//              */
-//             auto getHaloSubView(const view_type&, unsigned int face);
-
-//             auto getInternalSubView(const view_type&, unsigned int face);
-
-            void fillHalo(view_type& view, const T& value);
-
             void exchangeHalo(view_type&, const Layout_t* layout, int nghost);
 
 

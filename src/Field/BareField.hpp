@@ -77,13 +77,6 @@ namespace ippl {
     template <typename ...Args>
     void BareField<T, Dim>::resize(Args... args) {
         Kokkos::resize(dview_m, args...);
-        halo_m.resize(dview_m, nghost_m);
-    }
-
-
-    template <typename T, unsigned Dim>
-    void BareField<T, Dim>::fillLocalHalo(const T& value) {
-        halo_m.fillHalo(dview_m, value);
     }
 
 
