@@ -3,6 +3,7 @@
 #include <iostream>
 #include <typeinfo>
 #include <array>
+#include <fstream>
 
 int main(int argc, char *argv[]) {
 
@@ -87,10 +88,10 @@ int main(int argc, char *argv[]) {
 
     for (int rank = 0; rank < nRanks; ++rank) {
         if (rank == Ippl::Comm->rank()) {
-            std::cout << "Rank = " << rank << " ";
+            std::ofstream out("field_" + std::to_string(rank) + ".dat", std::ios::out);
             std::cout << field.getOwned().grow(2) << std::endl;
-            field.write();
-            std::cout << "--------------------------" << std::endl;
+            field.write(out);
+            out.close();
         }
         Ippl::Comm->barrier();
     }
