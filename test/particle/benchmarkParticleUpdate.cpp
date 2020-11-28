@@ -83,13 +83,18 @@ public:
     , rmax_m(rmax)
     , Q_m(Q)
     {
+        setupBCs();
+        for (unsigned int i = 0; i < Dim; i++)
+            decomp_m[i]=decomp[i];
+    }
+
+    ChargedParticles(PLayout& pl)
+    : ippl::ParticleBase<PLayout>(pl)
+    {
         // register the particle attributes
         this->addAttribute(qm);
         this->addAttribute(P);
         this->addAttribute(E);
-        setupBCs();
-        for (unsigned int i = 0; i < Dim; i++)
-            decomp_m[i]=decomp[i];
     }
 
     ~ChargedParticles(){ }
