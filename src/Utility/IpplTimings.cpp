@@ -103,11 +103,10 @@ void Timing::print() {
     {
         TimerInfo *tptr = TimerList[0].get();
         double walltotal = 0.0, cputotal = 0.0;
-        //reduce(tptr->wallTime, walltotal, OpMaxAssign());
-        //reduce(tptr->cpuTime, cputotal, OpMaxAssign());
-        //Single Core
-        walltotal = tptr->wallTime;
-        cputotal = tptr->cpuTime;
+        MPI_Allreduce(&tptr->wallTime, &walltotal, 1, 
+                      MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+        MPI_Allreduce(&tptr->cpuTime, &cputotal, 1, 
+                      MPI_DOUBLE, MPI_MAX, Ippl::getComm());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
         msg << tptr->name.substr(0,lengthName)
             << std::string().assign(20 - lengthName,'.')
@@ -127,19 +126,18 @@ void Timing::print() {
         TimerInfo *tptr = TimerList[i].get();
         double wallmax = 0.0, cpumax = 0.0, wallmin = 0.0, cpumin = 0.0;
         double wallavg = 0.0, cpuavg = 0.0;
-        //reduce(tptr->wallTime, wallmax, OpMaxAssign());
-        //reduce(tptr->cpuTime,  cpumax,  OpMaxAssign());
-        //reduce(tptr->wallTime, wallmin, OpMinAssign());
-        //reduce(tptr->cpuTime,  cpumin,  OpMinAssign());
-        //reduce(tptr->wallTime, wallavg, OpAddAssign());
-        //reduce(tptr->cpuTime,  cpuavg,  OpAddAssign());
-        //Single Core
-        wallmax = tptr->wallTime;
-        wallavg = wallmax;
-        wallmin = wallmax;
-        cpumax = tptr->cpuTime;
-        cpuavg = cpumax;
-        cpumin = cpumax;
+        MPI_Allreduce(&tptr->wallTime, &wallmax, 1, 
+                      MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+        MPI_Allreduce(&tptr->cpuTime, &cpumax, 1, 
+                      MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+        MPI_Allreduce(&tptr->wallTime, &wallmin, 1, 
+                      MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+        MPI_Allreduce(&tptr->cpuTime, &cpumin, 1, 
+                      MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+        MPI_Allreduce(&tptr->wallTime, &wallavg, 1, 
+                      MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(&tptr->cpuTime, &cpuavg, 1, 
+                      MPI_DOUBLE, MPI_SUM, Ippl::getComm());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
 
         msg << tptr->name.substr(0,lengthName)
@@ -198,11 +196,10 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
     {
         TimerInfo *tptr = TimerList[0].get();
         double walltotal = 0.0, cputotal = 0.0;
-        //reduce(tptr->wallTime, walltotal, OpMaxAssign());
-        //reduce(tptr->cpuTime, cputotal, OpMaxAssign());
-        //Single Core
-        walltotal = tptr->wallTime;
-        cputotal = tptr->cpuTime;
+        MPI_Allreduce(&tptr->wallTime, &walltotal, 1, 
+                      MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+        MPI_Allreduce(&tptr->cpuTime, &cputotal, 1, 
+                      MPI_DOUBLE, MPI_MAX, Ippl::getComm());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
         *msg << tptr->name.substr(0,lengthName);
         for (int j=lengthName; j < 20; ++j) {
@@ -235,19 +232,18 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
         TimerInfo *tptr = TimerList[i].get();
         double wallmax = 0.0, cpumax = 0.0, wallmin = 0.0, cpumin = 0.0;
         double wallavg = 0.0, cpuavg = 0.0;
-        //reduce(tptr->wallTime, wallmax, OpMaxAssign());
-        //reduce(tptr->cpuTime,  cpumax,  OpMaxAssign());
-        //reduce(tptr->wallTime, wallmin, OpMinAssign());
-        //reduce(tptr->cpuTime,  cpumin,  OpMinAssign());
-        //reduce(tptr->wallTime, wallavg, OpAddAssign());
-        //reduce(tptr->cpuTime,  cpuavg,  OpAddAssign());
-        //Single Core
-        wallmax = tptr->wallTime;
-        wallavg = wallmax;
-        wallmin = wallmax;
-        cpumax = tptr->cpuTime;
-        cpuavg = cpumax;
-        cpumin = cpumax;
+        MPI_Allreduce(&tptr->wallTime, &wallmax, 1, 
+                      MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+        MPI_Allreduce(&tptr->cpuTime, &cpumax, 1, 
+                      MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+        MPI_Allreduce(&tptr->wallTime, &wallmin, 1, 
+                      MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+        MPI_Allreduce(&tptr->cpuTime, &cpumin, 1, 
+                      MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+        MPI_Allreduce(&tptr->wallTime, &wallavg, 1, 
+                      MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(&tptr->cpuTime, &cpuavg, 1, 
+                      MPI_DOUBLE, MPI_SUM, Ippl::getComm());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
         *msg << tptr->name.substr(0,lengthName);
         for (int j=lengthName; j < 20; ++j) {

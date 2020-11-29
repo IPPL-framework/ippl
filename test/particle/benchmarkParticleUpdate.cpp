@@ -332,14 +332,12 @@ int main(int argc, char *argv[]){
         P->gatherStatistics(totalP, it);
         Ippl::Comm->barrier();
         IpplTimings::stopTimer(gatherStat);                                                    
-        //msg << "Stats done" << endl;
 
         static IpplTimings::TimerRef RandPTimer = IpplTimings::getTimer("RandomP");           
         IpplTimings::startTimer(RandPTimer);                                                    
         std::mt19937_64 engP;//(42);
-        engP.seed(42 + 10*it);
+        engP.seed(42 + 10*it + 100*Ippl::Comm->rank());
         Kokkos::resize(P_host, P->P.size());
-        //engP.discard( nloc * Ippl::Comm->rank());
         for (unsigned long int i = 0; i<P->getLocalNum(); i++) {
             for (int d = 0; d<3; d++) {
                 P_host(i)[d] =  unifP(engP);
@@ -347,7 +345,6 @@ int main(int argc, char *argv[]){
         }
         Kokkos::deep_copy(P->P.getView(), P_host);
         IpplTimings::stopTimer(RandPTimer);                                                    
-        //msg << "P assigned" << endl;
         
         
         // advance the particle positions
@@ -357,13 +354,9 @@ int main(int argc, char *argv[]){
         IpplTimings::startTimer(RTimer);                                                    
         P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);                                                    
-        //msg << "R updated" << endl;
         
-        static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
         IpplTimings::startTimer(UpdateTimer);
-        //msg << "Before update" << endl;
         P->update();
-        //msg << "After update" << endl;
         IpplTimings::stopTimer(UpdateTimer);                                                    
 
         //static IpplTimings::TimerRef EnergyTimer = IpplTimings::getTimer("dump Energy");           
