@@ -194,7 +194,7 @@ namespace ippl {
         Kokkos::View<int*> newIndex("newIndex", localNum_m);
         Kokkos::parallel_scan("Scan in ParticleBase::destroy()",
                               localNum_m,
-                              KOKKOS_LAMBDA(const int i, int& idx, const bool final)
+                              KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
                               {
                                   if (final) {
                                       newIndex(i) = idx;

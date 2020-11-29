@@ -45,7 +45,7 @@ namespace ippl {
                                       mdrange_type({0, 0},
                                                    {view.extent(1),
                                                     view.extent(2)}),
-                                      KOKKOS_CLASS_LAMBDA(const int j, const int k){
+                                      KOKKOS_CLASS_LAMBDA(const size_t j, const size_t k){
                                       
                                       view(dest, j, k) =  slope_m * view(src, j, k) + offset_m; 
                                       
@@ -57,7 +57,7 @@ namespace ippl {
                                       mdrange_type({0, 0},
                                                    {view.extent(0),
                                                     view.extent(2)}),
-                                      KOKKOS_CLASS_LAMBDA(const int i, const int k){
+                                      KOKKOS_CLASS_LAMBDA(const size_t i, const size_t k){
 
                                       view(i, dest, k) =  slope_m * view(i, src, k) + offset_m; 
                                        
@@ -68,7 +68,7 @@ namespace ippl {
                                       mdrange_type({0, 0},
                                                    {view.extent(0),
                                                     view.extent(1)}),
-                                      KOKKOS_CLASS_LAMBDA(const int i, const int j){
+                                      KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j){
 
                                       view(i, j, dest) =  slope_m * view(i, j, src) + offset_m; 
                                        
@@ -132,7 +132,7 @@ namespace ippl {
                                      mdrange_type({0, 0},
                                                   {view.extent(1),
                                                    view.extent(2)}),
-                                     KOKKOS_CLASS_LAMBDA(const int j, const int k){
+                                     KOKKOS_CLASS_LAMBDA(const size_t j, const size_t k){
                                     
                                      view(0, j, k)   = view(N-2, j, k); 
                                      view(N-1, j, k) = view(1, j, k); 
@@ -144,7 +144,7 @@ namespace ippl {
                                      mdrange_type({0, 0},
                                                   {view.extent(0),
                                                    view.extent(2)}),
-                                     KOKKOS_CLASS_LAMBDA(const int i, const int k){
+                                     KOKKOS_CLASS_LAMBDA(const size_t i, const size_t k){
 
                                      view(i, 0, k)   = view(i, N-2, k); 
                                      view(i, N-1, k) = view(i, 1, k); 
@@ -156,7 +156,7 @@ namespace ippl {
                                      mdrange_type({0, 0},
                                                   {view.extent(0),
                                                    view.extent(1)}),
-                                     KOKKOS_CLASS_LAMBDA(const int i, const int j){
+                                     KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j){
 
                                      view(i, j, 0)    = view(i, j, N-2); 
                                      view(i, j, N-1)  = view(i, j, 1); 

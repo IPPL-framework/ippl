@@ -59,6 +59,12 @@ namespace ippl {
 
             HaloCells();
 
+            void fillLocalHalo(view_type& view,
+                               const T& value,
+                               int nghost);
+
+            void accumulateHalo(view_type&, const Layout_t* layout, int nghost);
+
             void exchangeHalo(view_type&, const Layout_t* layout, int nghost);
 
 
@@ -69,6 +75,7 @@ namespace ippl {
             void unpack(const intersect_type& range,
                         const view_type& view,
                         FieldData<T>& fd);
+
 
         private:
 

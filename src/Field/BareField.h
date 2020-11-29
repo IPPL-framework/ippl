@@ -123,6 +123,14 @@ namespace ippl {
             return owned_m.grow(nghost_m);
         }
 
+        /*!
+         * Set ghost / halo cells to a constant value
+         */
+        void fillLocalHalo(const T& value);
+
+
+        void accumulateHalo();
+
 
         // Access to the layout.
         Layout_t &getLayout() const

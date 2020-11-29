@@ -137,7 +137,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "set invalid",
             localnum,
-            KOKKOS_LAMBDA(const int i) {
+            KOKKOS_LAMBDA(const size_t i) {
                 if (invalid(i)) {
                     pdata.ID(i) = -1;
                 }
@@ -204,7 +204,7 @@ namespace ippl {
         Kokkos::parallel_scan(
             "ParticleSpatialLayout::fillHash()",
             ranks.extent(0),
-            KOKKOS_LAMBDA(const int i, int& idx, const bool final) {
+            KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
                 if (final) {
                     if (rank == ranks(i)) {
                         hash(idx) = i;

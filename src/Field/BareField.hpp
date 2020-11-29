@@ -81,6 +81,18 @@ namespace ippl {
 
 
     template <typename T, unsigned Dim>
+    void BareField<T, Dim>::fillLocalHalo(const T& value) {
+        halo_m.fillLocalHalo(dview_m, value, nghost_m);
+    }
+
+
+    template <typename T, unsigned Dim>
+    void BareField<T, Dim>::accumulateHalo() {
+        halo_m.accumulateHalo(dview_m, layout_m, nghost_m);
+    }
+
+
+    template <typename T, unsigned Dim>
     void BareField<T, Dim>::exchangeHalo() {
         halo_m.exchangeHalo(dview_m, layout_m, nghost_m);
     }
@@ -95,7 +107,10 @@ namespace ippl {
                                            dview_m.extent(1),
                                            dview_m.extent(2)
                                     }),
-                             KOKKOS_CLASS_LAMBDA(const int i, const int j, const int k) {
+                             KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                 const size_t j,
+                                                 const size_t k)
+                             {
                                  dview_m(i, j, k) = x;
                              });
         return *this;
@@ -113,8 +128,11 @@ namespace ippl {
                                           {dview_m.extent(0) - nghost_m,
                                            dview_m.extent(1) - nghost_m,
                                            dview_m.extent(2) - nghost_m}),
-                             KOKKOS_CLASS_LAMBDA(const int i, const int j, const int k) {
-                             dview_m(i, j, k) = expr_(i, j, k);
+                             KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                 const size_t j,
+                                                 const size_t k)
+                             {
+                                dview_m(i, j, k) = expr_(i, j, k);
                              });
         return *this;
     }
@@ -132,14 +150,14 @@ namespace ippl {
     T BareField<T, Dim>::name(int nghost) {                                                                  \
         PAssert_LE(nghost, nghost_m);                                                                        \
         T temp = 0.0;                                                                                        \
-        const int shift = nghost_m - nghost;                                                                 \
+        const size_t shift = nghost_m - nghost;                                                              \
         Kokkos::parallel_reduce("fun",                                                                       \
                                Kokkos::MDRangePolicy<Kokkos::Rank<3>>({shift, shift, shift},                 \
                                                                       {dview_m.extent(0) - shift,            \
                                                                        dview_m.extent(1) - shift,            \
                                                                        dview_m.extent(2) - shift}),          \
-                               KOKKOS_CLASS_LAMBDA(const int i, const int j,                                 \
-                                                   const int k, T& valL) {                                   \
+                               KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j,                           \
+                                                   const size_t k, T& valL) {                                \
                                     T myVal = dview_m(i, j, k);                                              \
                                     op;                                                                      \
                                }, Kokkos::fun<T>(temp));                                                     \

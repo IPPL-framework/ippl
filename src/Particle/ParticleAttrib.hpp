@@ -95,7 +95,7 @@ namespace ippl {
     {
         Kokkos::parallel_for("ParticleAttrib::operator=()",
                              dview_m.extent(0),
-                             KOKKOS_CLASS_LAMBDA(const int i) {
+                             KOKKOS_CLASS_LAMBDA(const size_t i) {
                                  dview_m(i) = x;
                             });
         return *this;
@@ -113,7 +113,7 @@ namespace ippl {
 
         Kokkos::parallel_for("ParticleAttrib::operator=()",
                              dview_m.extent(0),
-                             KOKKOS_CLASS_LAMBDA(const int i) {
+                             KOKKOS_CLASS_LAMBDA(const size_t i) {
                                  dview_m(i) = expr_(i);
                             });
         return *this;
@@ -126,6 +126,8 @@ namespace ippl {
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
     const
     {
+        f.fillLocalHalo(0.0);
+
         typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
@@ -137,32 +139,35 @@ namespace ippl {
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx = 1.0 / dx;
 
+        Kokkos::parallel_for(
+            "ParticleAttrib::scatter",
+            dview_m.extent(0),
+            KOKKOS_CLASS_LAMBDA(const size_t idx)
+            {
+                // find nearest grid point
+                vector_type l = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Dim> index = l;
+                Vector<double, Dim> whi = l - index;
+                Vector<double, Dim> wlo = 1.0 - whi;
 
-        Kokkos::parallel_for("ParticleAttrib::scatter",
-                             dview_m.extent(0),
-                             KOKKOS_CLASS_LAMBDA(const size_t idx)
-                             {
-                                 // find nearest grid point
-                                 vector_type l = (pp(idx) - origin) * invdx + 0.5;
-                                 Vector<int, Dim> index = l;
-                                 Vector<double, Dim> whi = l - index;
-                                 Vector<double, Dim> wlo = 1.0 - whi;
+                const size_t i = index[0] + 1;
+                const size_t j = index[1] + 1;
+                const size_t k = index[2] + 1;
 
-                                 const int i = index[0] + 1;
-                                 const int j = index[1] + 1;
-                                 const int k = index[2] + 1;
+                // scatter
+                const value_type& val = dview_m(idx);
+                Kokkos::atomic_add(&view(i-1, j-1, k-1), wlo[0] * wlo[1] * wlo[2] * val);
+                Kokkos::atomic_add(&view(i-1, j-1, k  ), wlo[0] * wlo[1] * whi[2] * val);
+                Kokkos::atomic_add(&view(i-1, j,   k-1), wlo[0] * whi[1] * wlo[2] * val);
+                Kokkos::atomic_add(&view(i-1, j,   k  ), wlo[0] * whi[1] * whi[2] * val);
+                Kokkos::atomic_add(&view(i,   j-1, k-1), whi[0] * wlo[1] * wlo[2] * val);
+                Kokkos::atomic_add(&view(i,   j-1, k  ), whi[0] * wlo[1] * whi[2] * val);
+                Kokkos::atomic_add(&view(i,   j,   k-1), whi[0] * whi[1] * wlo[2] * val);
+                Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
+            }
+        );
 
-                                 // scatter
-                                 const value_type& val = dview_m(idx);
-                                 Kokkos::atomic_add(&view(i-1, j-1, k-1), wlo[0] * wlo[1] * wlo[2] * val);
-                                 Kokkos::atomic_add(&view(i-1, j-1, k  ), wlo[0] * wlo[1] * whi[2] * val);
-                                 Kokkos::atomic_add(&view(i-1, j,   k-1), wlo[0] * whi[1] * wlo[2] * val);
-                                 Kokkos::atomic_add(&view(i-1, j,   k  ), wlo[0] * whi[1] * whi[2] * val);
-                                 Kokkos::atomic_add(&view(i,   j-1, k-1), whi[0] * wlo[1] * wlo[2] * val);
-                                 Kokkos::atomic_add(&view(i,   j-1, k  ), whi[0] * wlo[1] * whi[2] * val);
-                                 Kokkos::atomic_add(&view(i,   j,   k-1), whi[0] * whi[1] * wlo[2] * val);
-                                 Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
-                             });
+        f.accumulateHalo();
     }
 
 
@@ -183,31 +188,33 @@ namespace ippl {
         const vector_type invdx = 1.0 / dx;
 
 
-        Kokkos::parallel_for("ParticleAttrib::gather",
-                             size(),
-                             KOKKOS_CLASS_LAMBDA(const size_t idx)
-                             {
-                                 // find nearest grid point
-                                 vector_type l = (pp(idx) - origin) * invdx + 0.5;
-                                 Vector<int, Dim> index = l;
-                                 Vector<double, Dim> whi = l - index;
-                                 Vector<double, Dim> wlo = 1.0 - whi;
+        Kokkos::parallel_for(
+            "ParticleAttrib::gather",
+            size(),
+            KOKKOS_CLASS_LAMBDA(const size_t idx)
+            {
+                // find nearest grid point
+                vector_type l = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Dim> index = l;
+                Vector<double, Dim> whi = l - index;
+                Vector<double, Dim> wlo = 1.0 - whi;
 
-                                 const int i = index[0] + 1;
-                                 const int j = index[1] + 1;
-                                 const int k = index[2] + 1;
+                const size_t i = index[0] + 1;
+                const size_t j = index[1] + 1;
+                const size_t k = index[2] + 1;
 
-                                 // scatter
-                                 value_type& val = dview_m(idx);
-                                 val = wlo[0] * wlo[1] * wlo[2] * view(i-1, j-1, k-1)
-                                     + wlo[0] * wlo[1] * whi[2] * view(i-1, j-1, k  )
-                                     + wlo[0] * whi[1] * wlo[2] * view(i-1, j,   k-1)
-                                     + wlo[0] * whi[1] * whi[2] * view(i-1, j,   k  )
-                                     + whi[0] * wlo[1] * wlo[2] * view(i,   j-1, k-1)
-                                     + whi[0] * wlo[1] * whi[2] * view(i,   j-1, k  )
-                                     + whi[0] * whi[1] * wlo[2] * view(i,   j,   k-1)
-                                     + whi[0] * whi[1] * whi[2] * view(i,   j,   k  );
-                             });
+                // scatter
+                value_type& val = dview_m(idx);
+                val = wlo[0] * wlo[1] * wlo[2] * view(i-1, j-1, k-1)
+                    + wlo[0] * wlo[1] * whi[2] * view(i-1, j-1, k  )
+                    + wlo[0] * whi[1] * wlo[2] * view(i-1, j,   k-1)
+                    + wlo[0] * whi[1] * whi[2] * view(i-1, j,   k  )
+                    + whi[0] * wlo[1] * wlo[2] * view(i,   j-1, k-1)
+                    + whi[0] * wlo[1] * whi[2] * view(i,   j-1, k  )
+                    + whi[0] * whi[1] * wlo[2] * view(i,   j,   k-1)
+                    + whi[0] * whi[1] * whi[2] * view(i,   j,   k  );
+            }
+        );
     }
 
 
@@ -240,7 +247,7 @@ namespace ippl {
     T ParticleAttrib<T, Properties...>::name() {                                                             \
         T temp = 0.0;                                                                                        \
         Kokkos::parallel_reduce("fun", dview_m.extent(0),                                                    \
-                               KOKKOS_CLASS_LAMBDA(const int i, T& valL) {                                   \
+                               KOKKOS_CLASS_LAMBDA(const size_t i, T& valL) {                                \
                                     T myVal = dview_m(i);                                                    \
                                     op;                                                                      \
                                }, Kokkos::fun<T>(temp));                                                     \
