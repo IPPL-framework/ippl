@@ -23,7 +23,7 @@ namespace ippl {
         template <typename T, unsigned Dim>
         HaloCells<T, Dim>::HaloCells()
         {
-            static_assert(Dim < 4, "Dimension must be less than 4!");
+            static_assert(Dim == 3, "Dimension must be 3!");
         }
 
 
@@ -32,37 +32,37 @@ namespace ippl {
                                               const T& value,
                                               int nghost)
         {
-//             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-//
-//             intersect_type domain;
-//
-//             for (unsigned int d = 0; d < Dim; ++d) {
-//
-//                 domain.lo.fill(0);
-//                 domain.hi.fill(nghost);
-//
-//                 for (unsigned int i = 0; i < 2; ++i) {
-//                     domain.hi[d] = view.extent(d);
-//
-//                     auto halo = makeSubview(view, domain);
-//
-//                     std::cout << halo.extent(0) << " " << halo.extent(1) << " " << halo.extent(2) << std::endl;
-//
-//                     Kokkos::parallel_for(
-//                         "HaloCells::fillLocalHalo()",
-//                         mdrange_type({0, 0, 0},
-//                                      {halo.extent(0),
-//                                       halo.extent(1),
-//                                       halo.extent(2)}),
-//                         KOKKOS_CLASS_LAMBDA(const size_t i,
-//                                             const size_t j,
-//                                             const size_t k)
-//                         {
-//                             halo(i, j, k) = value;
-//                         }
-//                     );
-//                 }
-//             }
+            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+            intersect_type domain;
+
+            for (unsigned int d = 0; d < Dim; ++d) {
+
+                domain.lo.fill(0);
+                domain.hi.fill(nghost);
+
+                for (unsigned int i = 0; i < 2; ++i) {
+                    domain.hi[d] = view.extent(d);
+
+                    auto halo = makeSubview(view, domain);
+
+                    std::cout << halo.extent(0) << " " << halo.extent(1) << " " << halo.extent(2) << std::endl;
+
+                    Kokkos::parallel_for(
+                        "HaloCells::fillLocalHalo()",
+                        mdrange_type({0, 0, 0},
+                                     {halo.extent(0),
+                                      halo.extent(1),
+                                      halo.extent(2)}),
+                        KOKKOS_CLASS_LAMBDA(const size_t i,
+                                            const size_t j,
+                                            const size_t k)
+                        {
+                            halo(i, j, k) = value;
+                        }
+                    );
+                }
+            }
         }
 
 
@@ -118,7 +118,8 @@ namespace ippl {
 
                     int rank = neighbors[face][i];
 
-                    intersect_type range = getInternalBounds(lDomains[myRank], lDomains[rank], nghost);
+                    // owned domain increased by nghost cells
+                    intersect_type range = getBounds(lDomains[myRank], lDomains[rank], nghost);
 
 
                     archives.push_back(std::make_unique<archive_type>());
@@ -140,7 +141,8 @@ namespace ippl {
 
                     int rank = neighbors[face][i];
 
-                    intersect_type range = getHaloBounds(lDomains[myRank], lDomains[rank], nghost);
+                    // remote domain increased by nghost cells
+                    intersect_type range = getBounds(lDomains[rank], lDomains[myRank], nghost);
 
                     FieldData<T> fd;
 
@@ -185,7 +187,7 @@ namespace ippl {
 
                     int rank = neighbors[edge][i];
 
-                    intersect_type range = getInternalBounds(lDomains[myRank], lDomains[rank], nghost);
+                    intersect_type range = getBounds(lDomains[myRank], lDomains[rank], nghost);
 
 
                     archives.push_back(std::make_unique<archive_type>());
@@ -207,7 +209,7 @@ namespace ippl {
 
                     int rank = neighbors[edge][i];
 
-                    intersect_type range = getHaloBounds(lDomains[myRank], lDomains[rank], nghost);
+                    intersect_type range = getBounds(lDomains[rank], lDomains[myRank], nghost);
 
 
                     FieldData<T> fd;
@@ -256,7 +258,7 @@ namespace ippl {
 
                 int rank = neighbors[vertex];
 
-                intersect_type range = getInternalBounds(lDomains[myRank], lDomains[rank], nghost);
+                intersect_type range = getBounds(lDomains[myRank], lDomains[rank], nghost);
 
 
                 archives.push_back(std::make_unique<archive_type>());
@@ -279,7 +281,7 @@ namespace ippl {
 
                 int rank = neighbors[vertex];
 
-                intersect_type range = getHaloBounds(lDomains[myRank], lDomains[rank], nghost);
+                intersect_type range = getBounds(lDomains[rank], lDomains[myRank], nghost);
 
 
                 FieldData<T> fd;
@@ -358,14 +360,13 @@ namespace ippl {
 
         template <typename T, unsigned Dim>
         typename
-        HaloCells<T, Dim>::intersect_type HaloCells<T, Dim>::getInternalBounds(const NDIndex<Dim>& owned,
-                                                                               const NDIndex<Dim>& remote,
-                                                                               int nghost)
+        HaloCells<T, Dim>::intersect_type HaloCells<T, Dim>::getBounds(const NDIndex<Dim>& nd1,
+                                                                       const NDIndex<Dim>& nd2,
+                                                                       int nghost)
         {
-            // remote domain increased by nghost cells
-            NDIndex<Dim> gnd = remote.grow(nghost);
+            NDIndex<Dim> gnd = nd2.grow(nghost);
 
-            NDIndex<Dim> overlap = gnd.intersect(owned);
+            NDIndex<Dim> overlap = gnd.intersect(nd1);
 
             intersect_type intersect;
 
@@ -373,37 +374,13 @@ namespace ippl {
              * Add "+1" to the upper bound since Kokkos loops always to "< extent".
              */
             for (size_t i = 0; i < Dim; ++i) {
-                intersect.lo[i] = overlap[i].first() - owned[i].first() /*offset*/ + nghost;
-                intersect.hi[i] = overlap[i].last()  - owned[i].first() /*offset*/ + nghost + 1;
+                intersect.lo[i] = overlap[i].first() - nd1[i].first() /*offset*/ + nghost;
+                intersect.hi[i] = overlap[i].last()  - nd1[i].first() /*offset*/ + nghost + 1;
             }
 
             return intersect;
         }
 
-
-        template <typename T, unsigned Dim>
-        typename
-        HaloCells<T, Dim>::intersect_type HaloCells<T, Dim>::getHaloBounds(const NDIndex<Dim>& owned,
-                                                                               const NDIndex<Dim>& remote,
-                                                                               int nghost)
-        {
-            // remote domain increased by nghost cells
-            NDIndex<Dim> gnd = owned.grow(nghost);
-
-            NDIndex<Dim> overlap = gnd.intersect(remote);
-
-            intersect_type intersect;
-
-            /* Obtain the intersection bounds with local ranges of the view.
-             * Add "+1" to the upper bound since Kokkos loops always to "< extent".
-             */
-            for (size_t i = 0; i < Dim; ++i) {
-                intersect.lo[i] = overlap[i].first() - owned[i].first() /*offset*/ + nghost;
-                intersect.hi[i] = overlap[i].last()  - owned[i].first() /*offset*/ + nghost + 1;
-            }
-
-            return intersect;
-        }
 
         template <typename T, unsigned Dim>
         auto
