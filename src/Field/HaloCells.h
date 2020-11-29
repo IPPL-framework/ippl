@@ -41,6 +41,25 @@ namespace ippl {
             view_type buffer;
         };
 
+
+        struct assign {
+            template <typename T>
+            KOKKOS_INLINE_FUNCTION
+            void operator()(T& lhs, const T& rhs) const {
+                lhs = rhs;
+            }
+        };
+
+
+        struct plus {
+            template <typename T>
+            KOKKOS_INLINE_FUNCTION
+            void operator()(T& lhs, const T& rhs) const {
+                lhs += rhs;
+            }
+        };
+
+
         template <typename T, unsigned Dim>
         class HaloCells
         {
@@ -49,6 +68,12 @@ namespace ippl {
             struct intersect_type {
                 std::array<long, Dim> lo;
                 std::array<long, Dim> hi;
+            };
+
+
+            enum SendOrder {
+                HALO_TO_INTERNAL,
+                INTERNAL_TO_HALO
             };
 
 
@@ -65,13 +90,14 @@ namespace ippl {
 
             void accumulateHalo(view_type&, const Layout_t* layout, int nghost);
 
-            void exchangeHalo(view_type&, const Layout_t* layout, int nghost);
+            void fillHalo(view_type&, const Layout_t* layout, int nghost);
 
 
             void pack(const intersect_type& range,
                       const view_type& view,
                       FieldData<T>& fd);
 
+            template <class Op>
             void unpack(const intersect_type& range,
                         const view_type& view,
                         FieldData<T>& fd);
@@ -79,23 +105,31 @@ namespace ippl {
 
         private:
 
-            intersect_type getBounds(const NDIndex<Dim>&, const NDIndex<Dim>&,
+            intersect_type getBounds(const NDIndex<Dim>&,
+                                     const NDIndex<Dim>&,
+                                     const NDIndex<Dim>&,
                                      int nghost);
 
 //             intersect_type getHaloBounds(
 
 
+            template <class Op>
             void exchangeFaces(view_type& view,
                                const Layout_t* layout,
-                               int nghost);
+                               int nghost,
+                               SendOrder order);
 
+            template <class Op>
             void exchangeEdges(view_type& view,
                                const Layout_t* layout,
-                               int nghost);
+                               int nghost,
+                               SendOrder order);
 
+            template <class Op>
             void exchangeVertices(view_type& view,
                                   const Layout_t* layout,
-                                  int nghost);
+                                  int nghost,
+                                  SendOrder order);
 
 
             auto makeSubview(const view_type&, const intersect_type&);

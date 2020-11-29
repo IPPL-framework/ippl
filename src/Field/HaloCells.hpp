@@ -67,31 +67,37 @@ namespace ippl {
 
 
         template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::accumulateHalo(view_type& /*view*/,
-                                               const Layout_t* /*layout*/,
-                                               int /*nghost*/)
+        void HaloCells<T, Dim>::accumulateHalo(view_type& view,
+                                               const Layout_t* layout,
+                                               int nghost)
         {
+            exchangeFaces<plus>(view, layout, nghost, HALO_TO_INTERNAL);
 
+            exchangeEdges<plus>(view, layout, nghost, HALO_TO_INTERNAL);
+
+            exchangeVertices<plus>(view, layout, nghost, HALO_TO_INTERNAL);
         }
 
 
         template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::exchangeHalo(view_type& view,
-                                             const Layout_t* layout,
-                                             int nghost)
+        void HaloCells<T, Dim>::fillHalo(view_type& view,
+                                         const Layout_t* layout,
+                                         int nghost)
         {
-            exchangeFaces(view, layout, nghost);
+            exchangeFaces<assign>(view, layout, nghost, INTERNAL_TO_HALO);
 
-            exchangeEdges(view, layout, nghost);
+            exchangeEdges<assign>(view, layout, nghost, INTERNAL_TO_HALO);
 
-            exchangeVertices(view, layout, nghost);
+            exchangeVertices<assign>(view, layout, nghost, INTERNAL_TO_HALO);
         }
 
 
         template <typename T, unsigned Dim>
+        template <class Op>
         void HaloCells<T, Dim>::exchangeFaces(view_type& view,
                                               const Layout_t* layout,
-                                              int nghost)
+                                              int nghost,
+                                              SendOrder order)
         {
             /* The neighbor list has length 2 * Dim. Each index
              * denotes a face. The value tells which MPI rank
@@ -118,8 +124,14 @@ namespace ippl {
 
                     int rank = neighbors[face][i];
 
-                    // owned domain increased by nghost cells
-                    intersect_type range = getBounds(lDomains[myRank], lDomains[rank], nghost);
+                    intersect_type range;
+                    if (order == INTERNAL_TO_HALO) {
+                        std::cout <<"HI" << std::endl;
+                        // owned domain increased by nghost cells
+                        range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                    } else {
+                        range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                    }
 
 
                     archives.push_back(std::make_unique<archive_type>());
@@ -141,8 +153,13 @@ namespace ippl {
 
                     int rank = neighbors[face][i];
 
-                    // remote domain increased by nghost cells
-                    intersect_type range = getBounds(lDomains[rank], lDomains[myRank], nghost);
+                    intersect_type range;
+                    if (order == INTERNAL_TO_HALO) {
+                        // remote domain increased by nghost cells
+                        range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                    } else {
+                        range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                    }
 
                     FieldData<T> fd;
 
@@ -153,7 +170,7 @@ namespace ippl {
 
                     Ippl::Comm->recv(rank, tag, fd);
 
-                    unpack(range, view, fd);
+                    unpack<Op>(range, view, fd);
                 }
             }
 
@@ -165,9 +182,11 @@ namespace ippl {
 
 
         template <typename T, unsigned Dim>
+        template <class Op>
         void HaloCells<T, Dim>::exchangeEdges(view_type& view,
                                               const Layout_t* layout,
-                                              int nghost)
+                                              int nghost,
+                                              SendOrder order)
         {
             using neighbor_type = typename Layout_t::edge_neighbor_type;
             const neighbor_type& neighbors = layout->getEdgeNeighbors();
@@ -187,8 +206,13 @@ namespace ippl {
 
                     int rank = neighbors[edge][i];
 
-                    intersect_type range = getBounds(lDomains[myRank], lDomains[rank], nghost);
-
+                    intersect_type range;
+                    if (order == INTERNAL_TO_HALO) {
+                        // owned domain increased by nghost cells
+                        range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                    } else {
+                        range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                    }
 
                     archives.push_back(std::make_unique<archive_type>());
                     requests.resize(requests.size() + 1);
@@ -209,8 +233,13 @@ namespace ippl {
 
                     int rank = neighbors[edge][i];
 
-                    intersect_type range = getBounds(lDomains[rank], lDomains[myRank], nghost);
-
+                    intersect_type range;
+                    if (order == INTERNAL_TO_HALO) {
+                        // remote domain increased by nghost cells
+                        range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                    } else {
+                        range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                    }
 
                     FieldData<T> fd;
 
@@ -221,7 +250,7 @@ namespace ippl {
 
                     Ippl::Comm->recv(rank, tag, fd);
 
-                    unpack(range, view, fd);
+                    unpack<Op>(range, view, fd);
                 }
             }
 
@@ -233,9 +262,11 @@ namespace ippl {
 
 
         template <typename T, unsigned Dim>
+        template <class Op>
         void HaloCells<T, Dim>::exchangeVertices(view_type& view,
                                                  const Layout_t* layout,
-                                                 int nghost)
+                                                 int nghost,
+                                                 SendOrder order)
         {
             using neighbor_type = typename Layout_t::vertex_neighbor_type;
             const neighbor_type& neighbors = layout->getVertexNeighbors();
@@ -258,8 +289,13 @@ namespace ippl {
 
                 int rank = neighbors[vertex];
 
-                intersect_type range = getBounds(lDomains[myRank], lDomains[rank], nghost);
-
+                intersect_type range;
+                if (order == INTERNAL_TO_HALO) {
+                    // owned domain increased by nghost cells
+                    range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                } else {
+                    range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                }
 
                 archives.push_back(std::make_unique<archive_type>());
                 requests.resize(requests.size() + 1);
@@ -281,8 +317,13 @@ namespace ippl {
 
                 int rank = neighbors[vertex];
 
-                intersect_type range = getBounds(lDomains[rank], lDomains[myRank], nghost);
-
+                intersect_type range;
+                if (order == INTERNAL_TO_HALO) {
+                    // remote domain increased by nghost cells
+                    range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                } else {
+                    range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                }
 
                 FieldData<T> fd;
 
@@ -293,7 +334,7 @@ namespace ippl {
 
                 Ippl::Comm->recv(rank, tag, fd);
 
-                unpack(range, view, fd);
+                unpack<Op>(range, view, fd);
             }
 
             if (requests.size() > 0) {
@@ -333,12 +374,17 @@ namespace ippl {
 
 
         template <typename T, unsigned Dim>
+        template <class Op>
         void HaloCells<T, Dim>::unpack(const intersect_type& range,
                                        const view_type& view,
                                        FieldData<T>& fd)
         {
             auto subview = makeSubview(view, range);
             auto buffer = fd.buffer;
+
+            // 29. November 2020
+            // https://stackoverflow.com/questions/3735398/operator-as-template-parameter
+            Op op;
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(
@@ -352,7 +398,7 @@ namespace ippl {
                                     const size_t k)
                 {
                     int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
-                    subview(i, j, k) = buffer(l);
+                    op(subview(i, j, k), buffer(l));
                 }
             );
         }
@@ -362,6 +408,7 @@ namespace ippl {
         typename
         HaloCells<T, Dim>::intersect_type HaloCells<T, Dim>::getBounds(const NDIndex<Dim>& nd1,
                                                                        const NDIndex<Dim>& nd2,
+                                                                       const NDIndex<Dim>& offset,
                                                                        int nghost)
         {
             NDIndex<Dim> gnd = nd2.grow(nghost);
@@ -374,8 +421,8 @@ namespace ippl {
              * Add "+1" to the upper bound since Kokkos loops always to "< extent".
              */
             for (size_t i = 0; i < Dim; ++i) {
-                intersect.lo[i] = overlap[i].first() - nd1[i].first() /*offset*/ + nghost;
-                intersect.hi[i] = overlap[i].last()  - nd1[i].first() /*offset*/ + nghost + 1;
+                intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/ + nghost;
+                intersect.hi[i] = overlap[i].last()  - offset[i].first() /*offset*/ + nghost + 1;
             }
 
             return intersect;

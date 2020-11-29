@@ -11,8 +11,8 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    std::array<int, dim> pt = {8, 7, 13};
-//     std::array<int, dim> pt = {16, 16, 16};
+//     std::array<int, dim> pt = {8, 7, 13};
+    std::array<int, dim> pt = {8, 8, 8};
     ippl::Index I(pt[0]);
     ippl::Index J(pt[1]);
     ippl::Index K(pt[2]);
@@ -78,11 +78,12 @@ int main(int argc, char *argv[]) {
 //     layout.findNeighbors(2);
 
 
-    field.exchangeHalo();
+//     field.fillHalo();
+    field.accumulateHalo();
 //
 // //     std::cout << std::endl;
 //
-    field.fillLocalHalo(10.0);
+//     field.fillLocalHalo(10.0);
 //
     int nRanks = Ippl::Comm->size();
 

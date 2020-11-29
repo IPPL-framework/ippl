@@ -128,6 +128,7 @@ namespace ippl {
          */
         void fillLocalHalo(const T& value);
 
+        void fillHalo();
 
         void accumulateHalo();
 
@@ -142,9 +143,6 @@ namespace ippl {
 
         const Index& getIndex(unsigned d) const {return getLayout().getDomain()[d];}
         const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
-
-
-        void exchangeHalo();
 
 
         // Assignment from a constant.

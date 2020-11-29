@@ -87,14 +87,14 @@ namespace ippl {
 
 
     template <typename T, unsigned Dim>
-    void BareField<T, Dim>::accumulateHalo() {
-        halo_m.accumulateHalo(dview_m, layout_m, nghost_m);
+    void BareField<T, Dim>::fillHalo() {
+        halo_m.fillHalo(dview_m, layout_m, nghost_m);
     }
 
 
     template <typename T, unsigned Dim>
-    void BareField<T, Dim>::exchangeHalo() {
-        halo_m.exchangeHalo(dview_m, layout_m, nghost_m);
+    void BareField<T, Dim>::accumulateHalo() {
+        halo_m.accumulateHalo(dview_m, layout_m, nghost_m);
     }
 
 
