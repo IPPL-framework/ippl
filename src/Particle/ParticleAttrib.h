@@ -133,7 +133,7 @@ namespace ippl {
 
         template <unsigned Dim, class M, class C, typename P2>
         void
-        gather(const Field<T, Dim, M, C>& f,
+        gather(Field<T, Dim, M, C>& f,
                const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
 
         T sum();

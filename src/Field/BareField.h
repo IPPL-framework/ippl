@@ -28,6 +28,8 @@
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
 
+#include "Field/HaloCells.h"
+
 #include <iostream>
 #include <cstdlib>
 
@@ -55,7 +57,7 @@ namespace ippl {
         using Layout_t = FieldLayout<Dim>;
 
         //! Domain type specifying the index region
-        using Domain_t = typename Layout_t::NDIndex_t;
+        using Domain_t = NDIndex<Dim>;
 
         //! View type storing the data
         using view_type = typename detail::ViewType<T, Dim>::view_type;
@@ -111,7 +113,19 @@ namespace ippl {
          * Index domain of the local field.
          * @returns the index domain.
          */
-        const Domain_t& getOwned()       const { return owned_m; }
+        const Domain_t& getOwned() const { return owned_m; }
+
+        /*!
+         * Index domain of the allocated field.
+         * @returns the allocated index domain (including ghost cells)
+         */
+        const Domain_t getAllocated() const {
+            return owned_m.grow(nghost_m);
+        }
+
+        void fillHalo();
+
+        void accumulateHalo();
 
 
         // Access to the layout.
@@ -124,6 +138,7 @@ namespace ippl {
 
         const Index& getIndex(unsigned d) const {return getLayout().getDomain()[d];}
         const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
+
 
         // Assignment from a constant.
         BareField<T, Dim>& operator=(T x);
@@ -186,6 +201,8 @@ namespace ippl {
         //! Domain of the data
         Domain_t owned_m;
 
+        detail::HaloCells<T, Dim> halo_m;
+
         /*!
          * Allocate field.
          */
@@ -195,8 +212,6 @@ namespace ippl {
         Layout_t* layout_m;
     };
 }
-
-//////////////////////////////////////////////////////////////////////
 
 #include "Field/BareField.hpp"
 

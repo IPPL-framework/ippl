@@ -10,8 +10,8 @@ set (_HDRS
     BcTypes.hpp
     Field.h
     Field.hpp
-    GuardCellSizes.hpp
-    GuardCellSizes.h
+    HaloCells.h
+    HaloCells.hpp
     )
 
 include_DIRECTORIES (

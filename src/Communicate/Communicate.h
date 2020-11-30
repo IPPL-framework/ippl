@@ -37,6 +37,9 @@ namespace ippl {
     public:
         using kind_type = boost::mpi::comm_create_kind;
 
+        // Attention: only works with default spaces
+        using archive_type = detail::Archive<>;
+
         Communicate();
 
         Communicate(const MPI_Comm& comm = MPI_COMM_WORLD);
@@ -77,6 +80,20 @@ namespace ippl {
          */
         template <class Buffer>
         void recv(int src, int tag, Buffer& buffer);
+
+
+        /*!
+         * \warning Only works with default spaces!
+         */
+        template <class Buffer>
+        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&);
+
+
+        /*!
+         * \warning Only works with default spaces!
+         */
+        template <class Buffer>
+        void irecv(int src, int tag, Buffer& buffer);
     };
 
 
@@ -84,9 +101,10 @@ namespace ippl {
     void Communicate::send(int dest, int tag, Buffer& buffer)
     {
         // Attention: only works with default spaces
-        detail::Archive<> ar;
+        archive_type ar;
 
         buffer.serialize(ar);
+
         MPI_Send(ar.getBuffer(), ar.getSize(),
                  MPI_BYTE, dest, tag, *this);
     }
@@ -103,12 +121,23 @@ namespace ippl {
         MPI_Get_count(&status, MPI_BYTE, &msize);
 
         // Attention: only works with default spaces
-        detail::Archive<> ar(msize);
+        archive_type ar(msize);
 
         MPI_Recv(ar.getBuffer(), ar.getSize(),
                 MPI_BYTE, src, tag, *this, &status);
 
         buffer.deserialize(ar);
+    }
+
+
+    template <class Buffer>
+    void Communicate::isend(int dest, int tag, Buffer& buffer,
+                            archive_type& ar, MPI_Request& request)
+    {
+        buffer.serialize(ar);
+
+        MPI_Isend(ar.getBuffer(), ar.getSize(),
+                  MPI_BYTE, dest, tag, *this, &request);
     }
 }
 
