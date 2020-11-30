@@ -124,15 +124,18 @@ public:
             std::cout << "Total particles in the sim. " << totalP 
                       << " " << "after update: " 
                       << Total_particles << std::endl;
-            std::cerr << "Total particles not matched after update in iteration:" 
+            std::cout << "Total particles not matched after update in iteration:" 
                       << " " << iteration << std::endl;
             }
+            exit(1);
         }
 
         
         std::cout << "Rank " << Ippl::Comm->rank() << " has " 
-                  << (double)local_particles/Total_particles*100.0 
-                  << "percent of the total particles " << std::endl;
+                  //<< (double)local_particles/Total_particles*100.0 
+                  << local_particles
+                  //<< "percent of the total particles " << std::endl;
+                  << "local particles" << std::endl;
     }
 
      Vector_t getRMin() { return rmin_m;}
@@ -227,7 +230,7 @@ int main(int argc, char *argv[]){
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {0, 0, 0};
     double hr_min = std::min({dx, dy, dz}, comp);
-    const double dt = 1.0;//0.5 * hr_min; // size of timestep
+    const double dt = 0.5 * hr_min; // size of timestep
     
     //mesh = std::make_unique<Mesh_t>(domain, hr, origin);
     //FL   = std::make_unique<FieldLayout_t>(domain, decomp);
@@ -254,6 +257,7 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
 
+    //Ippl::Comm->barrier();
     std::mt19937_64 eng;//(42);
     eng.seed(42);
     eng.discard( nloc * Ippl::Comm->rank());
@@ -261,12 +265,18 @@ int main(int argc, char *argv[]){
 
     typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
 
+    //double sum_coord=0.0;
 
     for (unsigned long int i = 0; i< nloc; i++) {
         for (int d = 0; d<3; d++) {
             R_host(i)[d] =  unif(eng);
+            //sum_coord += R_host(i)[d];
         }
     }
+
+    //std::cout << "Rank: " << Ippl::Comm->rank() << "sum coord"
+    //          << " " << sum_coord << std::endl;
+    //Ippl::Comm->barrier();
     ////For Gaussian distribution
     //std::mt19937_64 eng[2*Dim];
    
@@ -317,10 +327,11 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(UpdateTimer);                                                    
 
 
+    //typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
     msg << "particles created and initial conditions assigned " << endl;
     
-    typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
-    std::uniform_real_distribution<double> unifP(0, hr_min);
+    //std::uniform_real_distribution<double> unifP(0, hr_min);
+    //typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
     
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
@@ -335,16 +346,18 @@ int main(int argc, char *argv[]){
 
         static IpplTimings::TimerRef RandPTimer = IpplTimings::getTimer("RandomP");           
         IpplTimings::startTimer(RandPTimer);                                                    
-        std::mt19937_64 engP;//(42);
-        engP.seed(42 + 10*it + 100*Ippl::Comm->rank());
-        Kokkos::resize(P_host, P->P.size());
-        for (unsigned long int i = 0; i<P->getLocalNum(); i++) {
-            for (int d = 0; d<3; d++) {
-                P_host(i)[d] =  unifP(engP);
-            }
-        }
-        Kokkos::deep_copy(P->P.getView(), P_host);
+        //std::mt19937_64 engP;//(42);
+        //engP.seed(42 + 10*it + 100*Ippl::Comm->rank());
+        //Kokkos::resize(P_host, P->P.size());
+        //for (unsigned long int i = 0; i<P->getLocalNum(); i++) {
+        //    for (int d = 0; d<3; d++) {
+        //        P_host(i)[d] =  unifP(engP);
+        //    }
+        //}
+        //Kokkos::deep_copy(P->P.getView(), P_host);
+        P->P = 0.1;
         IpplTimings::stopTimer(RandPTimer);                                                    
+        Ippl::Comm->barrier();
         
         
         // advance the particle positions
@@ -365,10 +378,10 @@ int main(int argc, char *argv[]){
         //IpplTimings::stopTimer(EnergyTimer);                                                    
 
         // advance the particle velocities
-        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
-        IpplTimings::startTimer(PTimer);                                                    
-        P->P = P->P + dt * P->qm * P->E;
-        IpplTimings::stopTimer(PTimer);                                                    
+        //static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
+        //IpplTimings::startTimer(PTimer);                                                    
+        //P->P = P->P + dt * P->qm * P->E;
+        //IpplTimings::stopTimer(PTimer);                                                    
         msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin()
             << P->getRMax() << P->getHr() << endl;
     }
