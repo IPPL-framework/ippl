@@ -34,17 +34,7 @@ namespace ippl {
         FieldLayout<Dim>& fl,
         Mesh& mesh)
     : rlayout_m(fl, mesh)
-    {
-        setup();
-    }
-
-
-    template <typename T, unsigned Dim, class Mesh>
-    void ParticleSpatialLayout<T, Dim, Mesh>::setup()
-    {
-        // remove
-    }
-
+    { }
 
 
     template <typename T, unsigned Dim, class Mesh>
