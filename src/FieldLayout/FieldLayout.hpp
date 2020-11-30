@@ -210,10 +210,10 @@ namespace ippl {
 
         int myRank = Ippl::Comm->rank();
 
-        // get may local box
+        // get my local box
         auto& nd = hLocalDomains_m[myRank];
 
-        // grow the box by one cell in each dimension
+        // grow the box by nghost cells in each dimension
         auto gnd = nd.grow(nghost);
 
         for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {

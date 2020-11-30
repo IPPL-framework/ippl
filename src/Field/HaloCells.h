@@ -143,7 +143,7 @@ namespace ippl {
         private:
             /*!
              * Obtain the bounds to send / receive. The second domain, i.e.,
-             * nd2, is grown be nghost cells in each dimension in order to
+             * nd2, is grown by nghost cells in each dimension in order to
              * figure out the intersecting cells.
              * @param nd1 either remote or owned domain
              * @param nd2 either remote or owned domain
