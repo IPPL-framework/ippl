@@ -72,14 +72,6 @@ namespace ippl {
 
             HaloCells();
 
-            /*!
-             * @param view the original field data
-             * @param value which is assigned to the ghost cells
-             * @param nghost the number of ghost cells per dimension
-             */
-            void fillLocalHalo(view_type& view,
-                               const T& value,
-                               int nghost);
 
             /*!
              * Send halo data to internal cells. This operation uses

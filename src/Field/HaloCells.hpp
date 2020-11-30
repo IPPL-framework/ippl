@@ -28,45 +28,6 @@ namespace ippl {
 
 
         template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::fillLocalHalo(view_type& /*view*/,
-                                              const T& /*value*/,
-                                              int /*nghost*/)
-        {
-//             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-//
-//             bound_type domain;
-//
-//             for (unsigned int d = 0; d < Dim; ++d) {
-//
-//                 domain.lo.fill(0);
-//                 domain.hi.fill(nghost);
-//
-//                 for (unsigned int i = 0; i < 2; ++i) {
-//                     domain.hi[d] = view.extent(d);
-//
-//                     auto halo = makeSubview(view, domain);
-//
-//                     std::cout << halo.extent(0) << " " << halo.extent(1) << " " << halo.extent(2) << std::endl;
-//
-//                     Kokkos::parallel_for(
-//                         "HaloCells::fillLocalHalo()",
-//                         mdrange_type({0, 0, 0},
-//                                      {halo.extent(0),
-//                                       halo.extent(1),
-//                                       halo.extent(2)}),
-//                         KOKKOS_CLASS_LAMBDA(const size_t i,
-//                                             const size_t j,
-//                                             const size_t k)
-//                         {
-//                             halo(i, j, k) = value;
-//                         }
-//                     );
-//                 }
-//             }
-        }
-
-
-        template <typename T, unsigned Dim>
         void HaloCells<T, Dim>::accumulateHalo(view_type& view,
                                                const Layout_t* layout,
                                                int nghost)
