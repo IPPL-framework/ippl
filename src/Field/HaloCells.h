@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#ifndef IPPL_GUARD_CELLS_H
-#define IPPL_GUARD_CELLS_H
+#ifndef IPPL_HALO_CELLS_H
+#define IPPL_HALO_CELLS_H
 
 #include "Index/NDIndex.h"
 #include "Types/ViewTypes.h"
