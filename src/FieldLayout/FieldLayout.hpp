@@ -24,6 +24,8 @@
 
 #include "Partition/Partitioner.h"
 
+#include "Utility/IpplException.h"
+
 
 #include <cstdlib>
 #include <limits>
@@ -250,8 +252,9 @@ namespace ippl {
                     addFace(gnd, intersect, rank);
                     break;
                 default:
-                    // error
-                    std::runtime_error("");
+                    throw IpplException(
+                        "FieldLayout::findNeighbors()",
+                        "Failed to identify grid point. Neither a face, edge or vertex grid point.");
                 }
             }
         }
