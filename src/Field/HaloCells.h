@@ -117,7 +117,6 @@ namespace ippl {
                         FieldBufferData<T>& fd);
 
 
-        private:
             /*!
              * Operator for the unpack function.
              * This operator is used in case of INTERNAL_TO_HALO.
@@ -141,6 +140,7 @@ namespace ippl {
                 }
             };
 
+        private:
             /*!
              * Obtain the bounds to send / receive. The second domain, i.e.,
              * nd2, is grown be nghost cells in each dimension in order to
