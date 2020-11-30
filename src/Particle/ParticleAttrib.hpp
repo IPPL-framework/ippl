@@ -171,9 +171,11 @@ namespace ippl {
 
     template<typename T, class... Properties>
     template <unsigned Dim, class M, class C, typename P2>
-    void ParticleAttrib<T, Properties...>::gather(const Field<T, Dim, M, C>& f,
+    void ParticleAttrib<T, Properties...>::gather(Field<T, Dim, M, C>& f,
                                                   const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
+        f.fillHalo();
+
         const typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
@@ -234,7 +236,7 @@ namespace ippl {
 
     template<typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
     inline
-    void gather(ParticleAttrib<P1, Properties...>& attrib, const Field<P1, Dim, M, C>& f,
+    void gather(ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
                 const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
         attrib.gather(f, pp);
