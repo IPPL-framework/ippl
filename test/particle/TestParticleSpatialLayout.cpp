@@ -23,7 +23,6 @@ struct Bunch : public ippl::ParticleBase<PLayout>
     void update() {
         PLayout& layout = this->getLayout();
         layout.update(*this);
-//         ippl::ParticleBase<PLayout>::update<Bunch<PLayout> >();
     }
 };
 
@@ -148,20 +147,8 @@ int main(int argc, char *argv[]) {
         std::cout << "Before update:" << std::endl;
     }
 
-    //for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-    //    if (Ippl::Comm->rank() == rank) {
-    //        std::cout << "------------" << std::endl
-    //                  << "Rank " << rank << std::endl;
-    //        for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-    //            std::cout << ID_host(i) << " " << R_host(i) << " " 
-    //                      << Q_host(i) << " " << ER_host(i) << std::endl;
-    //        }
-    //    }
-    //    Ippl::Comm->barrier();
-    //}
 
     std::cout << layout << std::endl;
-    //std::cout << RLayout << std::endl;
 
     bunch.update();
 
@@ -183,30 +170,22 @@ int main(int argc, char *argv[]) {
         std::cout << "After update:" << std::endl;
     }
 
-    //for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-    //    if (Ippl::Comm->rank() == rank) {
-    //        std::cout << "------------" << std::endl
-    //                  << "Rank " << rank << std::endl;
-            for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-                if(Ippl::Comm->rank() != ER_host(i)) {
-                    std::cout << "Particle with ID: " << ID_host(i) << " "  
-                              << "has wrong rank!" << std::endl;
-                }
+    for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
+        if(Ippl::Comm->rank() != ER_host(i)) {
+            std::cout << "Particle with ID: " << ID_host(i) << " "  
+                      << "has wrong rank!" << std::endl;
             }
-    //    }
-        Ippl::Comm->barrier();
-    //}
+        }
+    Ippl::Comm->barrier();
 
-    if (Ippl::Comm->rank() == 0) {
-        std::cout << "All expected ranks correct!!" << std::endl;
-    }
     unsigned int Total_particles = 0;
     unsigned int local_particles = bunch.getLocalNum();
 
-    MPI_Allreduce(&local_particles, &Total_particles, 1, 
-                  MPI_UNSIGNED, MPI_SUM, Ippl::getComm());
-
+    MPI_Reduce(&local_particles, &Total_particles, 1, 
+                MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
     if (Ippl::Comm->rank() == 0) {
+        std::cout << "All expected ranks correct!!" << std::endl;
+        
         std::cout << "Total particles before: " << nParticles 
                   << " " << "after: " << Total_particles << std::endl;
     }
