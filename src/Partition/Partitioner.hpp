@@ -129,7 +129,7 @@ namespace ippl {
                 v = vtot;
             }
 
-            // Make sure we had a power of two number of nSplits.
+            // Make sure v is the same number of nSplits at this stage.
             PAssert_EQ(v, nSplits);
 
             for (size_t i = 0; i < domains_c.size(); ++i) {

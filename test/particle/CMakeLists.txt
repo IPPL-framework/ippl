@@ -35,6 +35,8 @@ target_link_libraries (TestParticleBConds ${IPPL_LIBS})
 add_executable (TestParticleSpatialLayout TestParticleSpatialLayout.cpp)
 target_link_libraries (TestParticleSpatialLayout ${IPPL_LIBS})
 
+add_executable (benchmarkParticleUpdate benchmarkParticleUpdate.cpp)
+target_link_libraries (benchmarkParticleUpdate ${IPPL_LIBS})
 
 # vi: set et ts=4 sw=4 sts=4:
 

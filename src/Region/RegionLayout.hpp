@@ -60,7 +60,7 @@ namespace ippl {
             // set our index space offset
             for (unsigned int d = 0; d < Dim; ++d) {
                 indexOffset_m[d] = fl.getDomain()[d].first();
-                centerOffset_m[d] = (mesh.getGridsize(d) > fl.getDomain()[d].length());
+                centerOffset_m[d] = 1;
             }
 
             region_m = convertNDIndex(fl.getDomain(), mesh);
@@ -93,19 +93,6 @@ namespace ippl {
             Vector<T, Dim> lastCoord = mesh.getVertexPosition(lastPoint);
             NDRegion_t ndregion;
             for (unsigned int d = 0; d < Dim; d++) {
-                if (!centerOffset_m[d]) { // vertex centering, so offset region endpoints
-                    if ( !(firstPoint[d] == Index(0,0)) ) {
-                        firstPoint[d] = firstPoint[d] - 1;
-                        firstCoord = mesh.getVertexPosition(firstPoint);
-                        firstCoord(d) = firstCoord(d) +
-                                        0.5 * mesh.getDeltaVertex(firstPoint)(d);
-                    }
-                    int fin = mesh.getGridsize(d)-1;
-                    if ( !(lastPoint[d] == Index(fin, fin)) ) {
-                        lastCoord(d) = lastCoord(d) +
-                                       0.5 * mesh.getDeltaVertex(lastPoint)(d);
-                    }
-                }
                 ndregion[d] = PRegion<T>(firstCoord(d), lastCoord(d));
             }
             return ndregion;
