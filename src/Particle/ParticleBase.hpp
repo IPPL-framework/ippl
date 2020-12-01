@@ -235,10 +235,11 @@ namespace ippl {
 
 
     template <class PLayout, class... Properties>
+//     template <class BufferType>
     void ParticleBase<PLayout, Properties...>::update()
     {
         PAssert(layout_m != nullptr);
-        layout_m->update(*this);
+//         layout_m->update<BufferType>(*this);
     }
 
 
