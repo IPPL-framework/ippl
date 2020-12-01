@@ -17,6 +17,8 @@
 //
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
+#include "Ippl.h"
+#include "Communicate/DataTypes.h"
 
 #include <map>
 #include <utility>
@@ -156,7 +158,8 @@ namespace ippl {
                                     op;                                                                      \
                                }, Kokkos::fun<T>(temp));                                                     \
         T globaltemp = 0.0;                                                                                  \
-        MPI_Allreduce(&temp, &globaltemp, 1, T, MPI_Op, getComm());                                          \
+        MPI_Datatype type = get_mpi_datatype<T>(temp);                                                       \
+        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());                                 \
         return globaltemp;                                                                                   \
     }
 
