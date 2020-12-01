@@ -137,6 +137,10 @@ namespace ippl {
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx = 1.0 / dx;
 
+        const FieldLayout<Dim>& layout = f.getLayout(); 
+        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
+        const int nghost = f.getNghost();
+
         Kokkos::parallel_for(
             "ParticleAttrib::scatter",
             dview_m.extent(0),
@@ -148,9 +152,10 @@ namespace ippl {
                 Vector<double, Dim> whi = l - index;
                 Vector<double, Dim> wlo = 1.0 - whi;
 
-                const size_t i = index[0] + 1;
-                const size_t j = index[1] + 1;
-                const size_t k = index[2] + 1;
+                const size_t i = index[0] - lDom[0].first() + nghost;
+                const size_t j = index[1] - lDom[1].first() + nghost;
+                const size_t k = index[2] - lDom[2].first() + nghost;
+
 
                 // scatter
                 const value_type& val = dview_m(idx);
@@ -187,6 +192,9 @@ namespace ippl {
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx = 1.0 / dx;
 
+        const FieldLayout<Dim>& layout = f.getLayout(); 
+        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
+        const int nghost = f.getNghost();
 
         Kokkos::parallel_for(
             "ParticleAttrib::gather",
@@ -199,9 +207,9 @@ namespace ippl {
                 Vector<double, Dim> whi = l - index;
                 Vector<double, Dim> wlo = 1.0 - whi;
 
-                const size_t i = index[0] + 1;
-                const size_t j = index[1] + 1;
-                const size_t k = index[2] + 1;
+                const size_t i = index[0] - lDom[0].first() + nghost;
+                const size_t j = index[1] - lDom[1].first() + nghost;
+                const size_t k = index[2] - lDom[2].first() + nghost;
 
                 // scatter
                 value_type& val = dview_m(idx);
