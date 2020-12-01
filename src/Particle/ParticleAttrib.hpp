@@ -26,6 +26,8 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
+#include "Ippl.h"
+#include "Communicate/DataTypes.h"
 
 namespace ippl {
 
@@ -252,7 +254,8 @@ namespace ippl {
                                     op;                                                                      \
                                }, Kokkos::fun<T>(temp));                                                     \
         T globaltemp = 0.0;                                                                                  \
-        MPI_Allreduce(&temp, &globaltemp, 1, T, MPI_Op, getComm());                                          \
+        MPI_Datatype type = get_mpi_datatype<T>(temp);                                                       \
+        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());                                 \
         return globaltemp;                                                                                   \
     }
 
