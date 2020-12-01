@@ -60,67 +60,10 @@ namespace ippl {
 
         ~ParticleSpatialLayout() = default;
 
-    //
-    // spatial decomposition layout information
-    //
-
-    // retrieve a reference to the FieldLayout object in use.  This may be used,
-    // e.g., to construct a Field with the same layout as the Particles.  Note
-    // that if this object was constructed by providing a RegionLayout in the
-    // constructor, then this generated FieldLayout will not necessarily match
-    // up with the Region (it will be offset by some amount).  But, if this
-    // object was either 1) created with a FieldLayout to begin with, or 2)
-    // created with no layout, and one was generated internally, then the
-    // returned FieldLayout will match and can be used to make new Fields or
-    // Particles.
-//     FieldLayout<Dim>& getFieldLayout()
-//     {
-//         return RLayout.getFieldLayout();
-//     }
-
-//     // retrieve a reference to the RegionLayout object in use
-//     RegionLayout<T,Dim,Mesh>& getLayout()
-//     {
-//         return RLayout;
-//     }
-//     const RegionLayout<T,Dim,Mesh>& getLayout() const
-//     {
-//         return RLayout;
-//     }
-
-//     // get number of particles on a physical node
-//     int getNodeCount(unsigned i) const
-//     {
-//         PAssert_LT(i, (unsigned int) Ippl::Comm->getNodes());
-//         return NodeCount[i];
-//     }
-
-//     // get flag for empty node domain
-//     bool getEmptyNode(unsigned i) const
-//     {
-//         PAssert_LT(i, (unsigned int) Ippl::Comm->getNodes());
-//         return EmptyNode[i];
-//     }
-
-    //
-    // Particle swapping/update routines
-    //
-
-//     // Update the location and indices of all atoms in the given IpplParticleBase
-//     // object.  This handles swapping particles among processors if
-//     // needed, and handles create and destroy requests.  When complete,
-//     // all nodes have correct layout information.
-
         template <class BufferType>
         void update(/*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
-    //
-    // virtual functions for FieldLayoutUser's (and other UserList users)
-    //
-
-    // Repartition onto a new layout
-//     virtual void Repartition(UserList *);
 
 
     protected:
