@@ -37,7 +37,7 @@ namespace ippl {
             Kokkos::resize(buffer_m, buffer_m.size() + size * view.size());
             Kokkos::parallel_for(
                 "Archive::serialize()", view.extent(0),
-                KOKKOS_CLASS_LAMBDA(const int i) {
+                KOKKOS_CLASS_LAMBDA(const size_t i) {
                     std::memcpy(buffer_m.data() + i * size + writepos_m,
                                 view.data() + i,
                                 size);
@@ -55,7 +55,7 @@ namespace ippl {
             Kokkos::parallel_for(
                 "Archive::serialize()",
                 mdrange_t({0, 0}, {(long int)view.extent(0), Dim}),
-                KOKKOS_CLASS_LAMBDA(const int i, const int d) {
+                KOKKOS_CLASS_LAMBDA(const size_t i, const size_t d) {
                     std::memcpy(buffer_m.data() + (Dim * i + d) * size + writepos_m,
                                 &(*(view.data() + i))[d],
                                 size);
@@ -70,7 +70,7 @@ namespace ippl {
             size_t size = sizeof(T);
             Kokkos::parallel_for(
                 "Archive::deserialize()", view.extent(0),
-                KOKKOS_CLASS_LAMBDA(const int i) {
+                KOKKOS_CLASS_LAMBDA(const size_t i) {
                     std::memcpy(view.data() + i,
                                 buffer_m.data() + i * size + readpos_m,
                                 size);
@@ -87,7 +87,7 @@ namespace ippl {
             Kokkos::parallel_for(
                 "Archive::deserialize()",
                 mdrange_t({0, 0}, {(long int)view.extent(0), Dim}),
-                KOKKOS_CLASS_LAMBDA(const int i, const int d) {
+                KOKKOS_CLASS_LAMBDA(const size_t i, const size_t d) {
                     std::memcpy(&(*(view.data() + i))[d],
                                 buffer_m.data() + (Dim * i + d) * size + readpos_m,
                                 size);

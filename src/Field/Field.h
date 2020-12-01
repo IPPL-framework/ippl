@@ -27,10 +27,10 @@ namespace ippl {
         virtual ~Field() = default;
 
         // Constructors including a Mesh object as argument:
-        Field(Mesh_t&, Layout_t&);
+        Field(Mesh_t&, Layout_t&, int nghost = 1);
 
         // Initialize the Field, also specifying a mesh
-        void initialize(Mesh_t&, Layout_t&);
+        void initialize(Mesh_t&, Layout_t&, int nghost = 1);
 
         // Access to the mesh
         KOKKOS_INLINE_FUNCTION

@@ -325,6 +325,17 @@ namespace ippl {
         return ret;
     }
 
+    KOKKOS_INLINE_FUNCTION
+    Index Index::grow(int ncells) const {
+        Index index;
+
+        index.first_m = this->first_m - ncells;
+        index.length_m = this->length_m + 2 * ncells;
+        index.stride_m = this->stride_m;
+
+        return index;
+    }
+
 
     KOKKOS_INLINE_FUNCTION
     static Index do_intersect(const Index &a, const Index &b)

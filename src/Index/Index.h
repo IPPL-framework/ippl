@@ -251,6 +251,10 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION
         Index intersect(const Index &) const;
 
+        // Intersect with another Index.
+        KOKKOS_INLINE_FUNCTION
+        Index grow(int ncells) const;
+
         // Test to see if there is any overlap between two Indexes.
         KOKKOS_INLINE_FUNCTION
         bool touches (const Index&a) const;

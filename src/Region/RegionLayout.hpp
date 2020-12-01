@@ -117,7 +117,7 @@ namespace ippl {
                                                      const Mesh& mesh)
         {
             using domain_type = typename FieldLayout<Dim>::host_mirror_type;
-            const domain_type& ldomains = fl.getLocalDomains();
+            const domain_type& ldomains = fl.getHostLocalDomains();
 
             Kokkos::resize(hLocalRegions_m, ldomains.size());
             Kokkos::resize(dLocalRegions_m, ldomains.size());

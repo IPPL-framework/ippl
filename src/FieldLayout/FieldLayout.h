@@ -24,7 +24,9 @@
 #include "Index/NDIndex.h"
 #include "Types/ViewTypes.h"
 
+#include <array>
 #include <iostream>
+#include <vector>
 
 namespace ippl {
 
@@ -45,6 +47,9 @@ namespace ippl {
         using NDIndex_t = NDIndex<Dim>;
         using view_type = typename detail::ViewType<NDIndex_t, 1>::view_type;
         using host_mirror_type = typename view_type::host_mirror_type;
+        using face_neighbor_type = std::array<std::vector<int>, 2 * Dim>;
+        using edge_neighbor_type = std::array<std::vector<int>, Dim * (1 << (Dim - 1))>;
+        using vertex_neighbor_type = std::array<int, 2 << (Dim - 1)>;
 
 
         /*!
@@ -53,9 +58,7 @@ namespace ippl {
          */
         FieldLayout();
 
-        FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p=0) {
-            initialize(domain, p);
-        }
+        FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p=0);
 
         // Destructor: Everything deletes itself automatically ... the base
         // class destructors inform all the FieldLayoutUser's we're going away.
@@ -97,9 +100,36 @@ namespace ippl {
 
         const NDIndex_t& getLocalNDIndex(int rank = Ippl::Comm->rank()) const;
 
-        const host_mirror_type& getLocalDomains() const;
+        const host_mirror_type& getHostLocalDomains() const;
 
-    void write(std::ostream& = std::cout) const;
+        const view_type& getDeviceLocalDomains() const;
+
+        const face_neighbor_type& getFaceNeighbors() const;
+
+        /*!
+         * Get the dimension of the face. It is based on the ordering:
+         * x low, x high, y low, y high, z low, z high
+         * @returns the dimension of the face
+         */
+        unsigned int getDimOfFace(unsigned int face) const { return face / 2; }
+
+        const edge_neighbor_type& getEdgeNeighbors() const;
+
+        const vertex_neighbor_type& getVertexNeighbors() const;
+
+        void findNeighbors(int nghost = 1);
+
+        void write(std::ostream& = std::cout) const;
+
+    private:
+        /*!
+         * @param grown the grown domain of myRank
+         * @param inersect the intersection between grown and the remote domain
+         * @param rank the rank of the remote domain
+         */
+        void addVertex(const NDIndex_t& grown, const NDIndex_t& intersect, int rank);
+        void addEdge(const NDIndex_t& grown, const NDIndex_t& intersect, int rank);
+        void addFace(const NDIndex_t& grown, const NDIndex_t& intersect, int rank);
 
     private:
         //! Global domain
@@ -114,6 +144,48 @@ namespace ippl {
         e_dim_tag requestedLayout_m[Dim];
 
         unsigned int minWidth_m[Dim];
+
+        /*!
+         * This container has length 2*Dim. Each index represents a face
+         * (ordering: x low, x high, y low, y high, z low, z high). Each
+         * index contains a vector (length is equal to the number of ranks
+         * it shares the face with). The values are the ranks sharing the face.
+         * An empty vector denotes a physical / mesh boundary.
+         */
+        face_neighbor_type faceNeighbors_m;
+
+        /*!
+         * Neighboring ranks that store the edge values.
+         * [(x low,  y low,  z low),  (x high, y low,  z low)]  --> edge 0
+         * [(x low,  y high, z low),  (x high, y high, z low)]  --> edge 1
+         * [(x low,  y low,  z high), (x high, y low,  z high)] --> edge 2
+         * [(x low,  y high, z high), (x high, y high, z high)] --> edge 3
+         *
+         * [(x low,  y low,  z low),  (x low,  y high, z low)]  --> edge 4
+         * [(x high, y low,  z low),  (x high, y high, z low)]  --> edge 5
+         * [(x low,  y low,  z high), (x low,  y high, z high)] --> edge 6
+         * [(x high, y low,  z high), (x high, y high, z high)] --> edge 7
+         *
+         * [(x low,  y low,  z low),  (x low,  y low,  z high)] --> edge 8
+         * [(x high, y low,  z low),  (x high, y low,  z high)] --> edge 9
+         * [(x low,  y high, z low),  (x low,  y high, z high)] --> edge 10
+         * [(x high, y high, z low),  (x high, y high, z high)] --> edge 11
+         */
+        edge_neighbor_type edgeNeighbors_m;
+
+        /*!
+         * Neighboring ranks that have the vertex value (corner cell). The value
+         * is negative, i.e. -1, if the vertex is on a mesh boundary.
+         * x low,  y low,  z low  --> vertex index 0
+         * x high, y low,  z low  --> vertex index 1
+         * x low,  y high, z low  --> vertex index 2
+         * x high, y high, z low  --> vertex index 3
+         * x low,  y low,  z high --> vertex index 4
+         * x high, y low,  z high --> vertex index 5
+         * x low,  y high, z high --> vertex index 6
+         * x high, y high, z high --> vertex index 7
+         */
+        vertex_neighbor_type vertexNeighbors_m;
 
         void calcWidths();
     };
