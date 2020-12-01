@@ -45,7 +45,6 @@ namespace ippl {
               class Mesh = UniformCartesian<T, Dim>
               >
     class ParticleSpatialLayout : public detail::ParticleLayout<T, Dim>
-//                                 ,  public FieldLayoutUser
     {
     public:
         using hash_type = typename ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >::hash_type;
@@ -125,20 +124,8 @@ namespace ippl {
 
 
     protected:
-    //! The RegionLayout which determines where our particles go.
-    RegionLayout_t rlayout_m;
-
-    // The number of particles located on each physical node.
-//     size_t *NodeCount;
-
-    // Flag for which nodes have no local domain
-//     bool* EmptyNode;
-
-//     unsigned NeighborNodes[Dim];
-
-
-    // perform common constructor tasks
-        void setup();
+        //! The RegionLayout which determines where our particles go.
+        RegionLayout_t rlayout_m;
 
     public:
         void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
