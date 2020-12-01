@@ -139,7 +139,7 @@ namespace ippl {
     }
 
 
-    #define DefineReduction(fun, name, op)                                                                   \
+    #define DefineReduction(fun, name, op, MPI_Op)                                                           \
     template <typename T, unsigned Dim>                                                                      \
     T BareField<T, Dim>::name(int nghost) {                                                                  \
         PAssert_LE(nghost, nghost_m);                                                                        \
@@ -155,13 +155,15 @@ namespace ippl {
                                     T myVal = dview_m(i, j, k);                                              \
                                     op;                                                                      \
                                }, Kokkos::fun<T>(temp));                                                     \
-        return temp;                                                                                         \
+        T globaltemp = 0.0;                                                                                  \
+        MPI_Allreduce(&temp, &globaltemp, 1, T, MPI_Op, getComm());                                          \
+        return globaltemp;                                                                                   \
     }
 
-    DefineReduction(Sum,  sum,  valL += myVal)
-    DefineReduction(Max,  max,  if(myVal > valL) valL = myVal)
-    DefineReduction(Min,  min,  if(myVal < valL) valL = myVal)
-    DefineReduction(Prod, prod, valL *= myVal)
+    DefineReduction(Sum,  sum,  valL += myVal, MPI_SUM)
+    DefineReduction(Max,  max,  if(myVal > valL) valL = myVal, MPI_MAX)
+    DefineReduction(Min,  min,  if(myVal < valL) valL = myVal, MPI_MIN)
+    DefineReduction(Prod, prod, valL *= myVal, MPI_PROD)
 
 
 }
