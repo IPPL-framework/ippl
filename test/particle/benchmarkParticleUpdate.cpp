@@ -43,11 +43,6 @@ using ParticleAttrib = ippl::ParticleAttrib<T>;
 typedef Vector<double, Dim>  Vector_t;
 
 
-bool comp(int a, int b)
-{
-    return (a < b);
-}
-
 template<class PLayout>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
 public:
@@ -219,7 +214,7 @@ int main(int argc, char *argv[]){
     double dz = 1.0 / double(nr[2]);
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {0, 0, 0};
-    double hr_min = std::min({dx, dy, dz}, comp);
+    double hr_min = std::min({dx, dy, dz});
     const double dt = 1.0; // size of timestep
     
 
@@ -244,7 +239,7 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
 
-    std::mt19937_64 eng;//(42);
+    std::mt19937_64 eng;
     eng.seed(42);
     eng.discard( nloc * Ippl::Comm->rank());
     std::uniform_real_distribution<double> unif(0, 1);
@@ -258,44 +253,6 @@ int main(int argc, char *argv[]){
         }
     }
 
-    ////For Gaussian distribution
-    //std::mt19937_64 eng[2*Dim];
-   
-    ////There is no reason for picking 42 or multiplying by 
-    ////Dim with i, just want the initial seeds to be
-    ////farther apart.
-    //for (int i = 0; i < 2*3; ++i) {
-    //    eng[i].seed(42 + Dim * i);
-    //}
-
-    //std::vector<double> mu(Dim);
-    //std::vector<double> sd(Dim);
-    //std::vector<double> states(Dim);
-   
-
-    //mu[0] = 1.0/2;
-    //mu[1] = 1.0/2;
-    //mu[2] = 1.0/2;
-    //sd[0] = 0.15;
-    //sd[1] = 0.05;
-    //sd[2] = 0.20;
-
-
-    //std::uniform_real_distribution<double> dist_uniform (0.0, 1.0);
-
-    //for (unsigned long int i = 0; i< nloc; i++) {
-    //    
-    //    for (int istate = 0; istate < 3; ++istate) {
-    //        double u1 = dist_uniform(eng[istate*2]);
-    //        double u2 = dist_uniform(eng[istate*2+1]);
-    //        states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) 
-    //                         * std::cos(2.0 * pi * u2)) + mu[istate]; 
-    //    }    
-    //    for (int d = 0; d<3; d++)
-    //        R_host(i)[d] = std::fabs(std::fmod(states[d],1.0));
-    //    
-    //    Q_host(i) = q;
-    //}
 
     Kokkos::deep_copy(P->R.getView(), R_host);
     P->qm = P->Q_m/totalP;
@@ -333,7 +290,6 @@ int main(int argc, char *argv[]){
             }
         }
         Kokkos::deep_copy(P->P.getView(), P_host);
-        //P->P = 0.1;
         IpplTimings::stopTimer(RandPTimer);                                                    
         Ippl::Comm->barrier();
         
@@ -350,10 +306,6 @@ int main(int argc, char *argv[]){
         P->update();
         IpplTimings::stopTimer(UpdateTimer);                                                    
 
-        //static IpplTimings::TimerRef EnergyTimer = IpplTimings::getTimer("dump Energy");           
-        //IpplTimings::startTimer(EnergyTimer);                                                    
-        //P->dumpParticleData(it);
-        //IpplTimings::stopTimer(EnergyTimer);                                                    
 
         // advance the particle velocities
         static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
