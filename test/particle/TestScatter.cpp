@@ -15,6 +15,11 @@ struct Bunch : public ippl::ParticleBase<PLayout>
     
     typedef ippl::ParticleAttrib<double> charge_container_type;
     charge_container_type Q;
+
+    void update() {
+        PLayout& layout = this->getLayout();
+        layout.update(*this);
+    }
 };
 
 int main(int argc, char *argv[]) {
@@ -23,7 +28,7 @@ int main(int argc, char *argv[]) {
     typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
     typedef Bunch<playout_type> bunch_type;
 
-    int pt = 64;
+    int pt = 512;
     ippl::Index I(pt);
     ippl::NDIndex<3> owned(I, I, I);
 
@@ -49,7 +54,7 @@ int main(int argc, char *argv[]) {
     field.initialize(mesh, layout);
 
     int nRanks = Ippl::Comm->size();
-    unsigned int nParticles = 4;//std::pow(256,3);
+    unsigned int nParticles = std::pow(256,3);
     
     if (nParticles % nRanks > 0) {
         if (Ippl::Comm->rank() == 0) {
@@ -65,8 +70,7 @@ int main(int argc, char *argv[]) {
     std::mt19937_64 eng;
     eng.seed(42);
     eng.discard( nLoc * Ippl::Comm->rank());
-    //std::uniform_real_distribution<double> unif(hx[0]/1.5, 1-(hx[0]/1.5));
-    std::uniform_real_distribution<double> unif(0.3, 0.6);
+    std::uniform_real_distribution<double> unif(hx[0]/2, 1-(hx[0]/2));
 
     typename bunch_type::particle_position_type::HostMirror R_host = bunch.R.getHostMirror();
     for(unsigned int i = 0; i < nLoc; ++i) {
@@ -77,6 +81,8 @@ int main(int argc, char *argv[]) {
 
     bunch.Q = 1.0;
 
+    bunch.update();
+    
     field = 0.0;
 
     scatter(bunch.Q, field, bunch.R);
@@ -85,10 +91,11 @@ int main(int argc, char *argv[]) {
 
     // Check charge conservation
     try {
-        double Total_charge_field = field.sum(0);
+        double Total_charge_field = field.sum();
 
         std::cout << "Total charge in the field:" << Total_charge_field << std::endl;
         std::cout << "Total charge of the particles:" << bunch.Q.sum() << std::endl;
+        std::cout << "Error:" << std::fabs(bunch.Q.sum() - Total_charge_field) << std::endl;
     } catch(const std::exception& e) {
         std::cout << e.what() << std::endl;
     }

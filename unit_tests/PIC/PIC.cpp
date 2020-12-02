@@ -44,6 +44,11 @@ public:
         
         typedef ippl::ParticleAttrib<double> charge_container_type;
         charge_container_type Q;
+        
+        void update() {
+            PLayout& layout = this->getLayout();
+            layout.update(*this);
+        }
     };
 
 
@@ -52,7 +57,7 @@ public:
 
     PICTest()
     : nParticles(std::pow(256,3))
-    , nPoints(1024)
+    , nPoints(512)
     {
         setup();
     }
@@ -128,6 +133,8 @@ TEST_F(PICTest, Scatter) {
 
     bunch->Q = charge;
 
+    bunch->update();
+
     scatter(bunch->Q, *field, bunch->R);
 
     double totalcharge = field->sum();
@@ -142,6 +149,8 @@ TEST_F(PICTest, Gather) {
 
     bunch->Q = 0.0;
 
+    bunch->update();
+    
     gather(bunch->Q, *field, bunch->R);
 
     ASSERT_DOUBLE_EQ(nParticles, bunch->Q.sum());

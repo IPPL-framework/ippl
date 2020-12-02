@@ -171,7 +171,7 @@ namespace ippl {
                 Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
             }
         );
-
+            
         f.accumulateHalo();
     }
 
@@ -181,6 +181,7 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::gather(Field<T, Dim, M, C>& f,
                                                   const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
+
         f.fillHalo();
 
         const typename Field<T, Dim, M, C>::view_type view = f.getView();
