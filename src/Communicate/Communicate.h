@@ -94,6 +94,7 @@ namespace ippl {
          */
         template <class Buffer>
         void irecv(int src, int tag, Buffer& buffer);
+
     };
 
 

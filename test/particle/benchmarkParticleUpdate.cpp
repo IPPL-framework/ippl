@@ -64,9 +64,9 @@ public:
     typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
 
     /*
-      For PPP boundary conditions
-      we must define the domain.
-   */
+      This constructor is mandatory for all derived classes from
+      ParticleBase as the update function invokes this
+    */
     ChargedParticles(PLayout& pl)
     : ippl::ParticleBase<PLayout>(pl)
     {
@@ -110,24 +110,26 @@ public:
         unsigned int Total_particles = 0;
         unsigned int local_particles = this->getLocalNum();
 
-        MPI_Allreduce(&local_particles, &Total_particles, 1, 
-                      MPI_UNSIGNED, MPI_SUM, Ippl::getComm());
+        MPI_Reduce(&local_particles, &Total_particles, 1, 
+                      MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
 
-        if(Total_particles != totalP) {
-            if(Ippl::Comm->rank() == 0) {
-            std::cout << "Total particles in the sim. " << totalP 
-                      << " " << "after update: " 
-                      << Total_particles << std::endl;
-            std::cout << "Total particles not matched after update in iteration:" 
-                      << " " << iteration << std::endl;
+        if(Ippl::Comm->rank() == 0) {
+            if(Total_particles != totalP) {
+                std::cout << "Total particles in the sim. " << totalP 
+                          << " " << "after update: " 
+                          << Total_particles << std::endl;
+                std::cout << "Total particles not matched after update in iteration:" 
+                          << " " << iteration << std::endl;
+                exit(1);
             }
-            exit(1);
         }
 
+        Ippl::Comm->barrier();
         
         std::cout << "Rank " << Ippl::Comm->rank() << " has " 
-                  << (double)local_particles/Total_particles*100.0 
-                  << "percent of the total particles " << std::endl;
+                  //<< (double)local_particles/Total_particles*100.0 
+                  << local_particles << std::endl; 
+                  //<< "percent of the total particles " << std::endl;
     }
 
      Vector_t getRMin() { return rmin_m;}
@@ -209,11 +211,13 @@ int main(int argc, char *argv[]){
     }
 
     // create mesh and layout objects for this problem domain
-    double dx = 1.0 / double(nr[0]);
-    double dy = 1.0 / double(nr[1]);
-    double dz = 1.0 / double(nr[2]);
+    Vector_t rmin(0.0);
+    Vector_t rmax(1.0);
+    double dx = rmax[0] / double(nr[0]);
+    double dy = rmax[1] / double(nr[1]);
+    double dz = rmax[2] / double(nr[2]);
     Vector_t hr = {dx, dy, dz};
-    Vector_t origin = {0, 0, 0};
+    Vector_t origin = {rmin[0], rmin[1], rmin[2]};
     double hr_min = std::min({dx, dy, dz});
     const double dt = 1.0; // size of timestep
     
@@ -226,8 +230,6 @@ int main(int argc, char *argv[]){
      * In case of periodic BC's define
      * the domain with hr and rmin
      */
-    Vector_t rmin(0.0);
-    Vector_t rmax(1.0);
 
     double Q=1e6;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
@@ -239,18 +241,29 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
 
-    std::mt19937_64 eng;
-    eng.seed(42);
-    eng.discard( nloc * Ippl::Comm->rank());
+    std::mt19937_64 eng[Dim];
+    for (unsigned i = 0; i < Dim; ++i) {
+        eng[i].seed(42 + i * Dim);
+        eng[i].discard( nloc * Ippl::Comm->rank());
+    }
     std::uniform_real_distribution<double> unif(0, 1);
 
     typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
 
-
+    double sum_coord=0.0;
     for (unsigned long int i = 0; i< nloc; i++) {
         for (int d = 0; d<3; d++) {
-            R_host(i)[d] =  unif(eng);
+            R_host(i)[d] =  unif(eng[d]);
+            sum_coord += R_host(i)[d];
         }
+    }
+    double global_sum_coord = 0.0;
+    MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
+                MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+
+
+    if(Ippl::Comm->rank() == 0) {
+        std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
     }
 
 
@@ -281,15 +294,26 @@ int main(int argc, char *argv[]){
 
         static IpplTimings::TimerRef RandPTimer = IpplTimings::getTimer("RandomP");           
         IpplTimings::startTimer(RandPTimer);                                                    
-        std::mt19937_64 engP;
-        engP.seed(42 + 10*it + 100*Ippl::Comm->rank());
-        Kokkos::resize(P_host, P->P.size());
+        //std::mt19937_64 engP;
+        //engP.seed(42 + 10*it + 100*Ippl::Comm->rank());
+        //Kokkos::resize(P_host, P->P.size());
+        double sum_coord=0.0;
+        Kokkos::resize(R_host, P->R.size());
+        Kokkos::deep_copy(R_host, P->R.getView());
         for (unsigned long int i = 0; i<P->getLocalNum(); i++) {
             for (int d = 0; d<3; d++) {
-                P_host(i)[d] =  unifP(engP);
+                //P_host(i)[d] =  unifP(engP);
+                sum_coord += R_host(i)[d];
             }
         }
-        Kokkos::deep_copy(P->P.getView(), P_host);
+        double global_sum_coord = 0.0;
+        MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
+                   MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        if(Ippl::Comm->rank() == 0) {
+            std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
+        }
+        P->P = 0.001;
+        //Kokkos::deep_copy(P->P.getView(), P_host);
         IpplTimings::stopTimer(RandPTimer);                                                    
         Ippl::Comm->barrier();
         
@@ -308,10 +332,10 @@ int main(int argc, char *argv[]){
 
 
         // advance the particle velocities
-        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
-        IpplTimings::startTimer(PTimer);                                                    
-        P->P = P->P + dt * P->qm * P->E;
-        IpplTimings::stopTimer(PTimer);                                                    
+        //static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
+        //IpplTimings::startTimer(PTimer);                                                    
+        //P->P = P->P + dt * P->qm * P->E;
+        //IpplTimings::stopTimer(PTimer);                                                    
         msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin()
             << P->getRMax() << P->getHr() << endl;
     }

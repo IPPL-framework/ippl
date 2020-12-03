@@ -53,6 +53,8 @@ int main(int argc, char *argv[]) {
 
     field.initialize(mesh, layout);
 
+    bunch.setParticleBC(ippl::BC::PERIODIC);
+    
     int nRanks = Ippl::Comm->size();
     unsigned int nParticles = std::pow(256,3);
     
@@ -73,11 +75,21 @@ int main(int argc, char *argv[]) {
     std::uniform_real_distribution<double> unif(hx[0]/2, 1-(hx[0]/2));
 
     typename bunch_type::particle_position_type::HostMirror R_host = bunch.R.getHostMirror();
+    double sum_coord = 0.0;
     for(unsigned int i = 0; i < nLoc; ++i) {
         ippl::Vector<double, 3> r = {unif(eng), unif(eng), unif(eng)};
         R_host(i) = r;
+        sum_coord += r[0] + r[1] + r[2];
     }
     Kokkos::deep_copy(bunch.R.getView(), R_host);
+
+    double global_sum_coord = 0.0;
+    MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
+                MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+
+    if(Ippl::Comm->rank() == 0) {
+        std::cout << "Sum coord: " << global_sum_coord << std::endl;
+    }
 
     bunch.Q = 1.0;
 
