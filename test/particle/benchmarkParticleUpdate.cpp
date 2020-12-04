@@ -1,7 +1,8 @@
 //   Usage:
 //     srun ./benchmarkParticleUpdate 128 128 128 10000 10 --info 10
 //
-// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// Copyright (c) 2020, Sriramkrishnan Muralikrishnan
+// Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
 // This file is part of IPPL.
@@ -127,9 +128,7 @@ public:
         Ippl::Comm->barrier();
         
         std::cout << "Rank " << Ippl::Comm->rank() << " has " 
-                  //<< (double)local_particles/Total_particles*100.0 
                   << local_particles << std::endl; 
-                  //<< "percent of the total particles " << std::endl;
     }
 
      Vector_t getRMin() { return rmin_m;}
@@ -294,15 +293,15 @@ int main(int argc, char *argv[]){
 
         static IpplTimings::TimerRef RandPTimer = IpplTimings::getTimer("RandomP");           
         IpplTimings::startTimer(RandPTimer);                                                    
-        //std::mt19937_64 engP;
-        //engP.seed(42 + 10*it + 100*Ippl::Comm->rank());
-        //Kokkos::resize(P_host, P->P.size());
+        std::mt19937_64 engP;
+        engP.seed(42 + 10*it + 100*Ippl::Comm->rank());
+        Kokkos::resize(P_host, P->P.size());
         double sum_coord=0.0;
         Kokkos::resize(R_host, P->R.size());
         Kokkos::deep_copy(R_host, P->R.getView());
         for (unsigned long int i = 0; i<P->getLocalNum(); i++) {
             for (int d = 0; d<3; d++) {
-                //P_host(i)[d] =  unifP(engP);
+                P_host(i)[d] =  unifP(engP);
                 sum_coord += R_host(i)[d];
             }
         }
@@ -312,8 +311,7 @@ int main(int argc, char *argv[]){
         if(Ippl::Comm->rank() == 0) {
             std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
         }
-        P->P = 0.001;
-        //Kokkos::deep_copy(P->P.getView(), P_host);
+        Kokkos::deep_copy(P->P.getView(), P_host);
         IpplTimings::stopTimer(RandPTimer);                                                    
         Ippl::Comm->barrier();
         
@@ -332,10 +330,10 @@ int main(int argc, char *argv[]){
 
 
         // advance the particle velocities
-        //static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
-        //IpplTimings::startTimer(PTimer);                                                    
-        //P->P = P->P + dt * P->qm * P->E;
-        //IpplTimings::stopTimer(PTimer);                                                    
+        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
+        IpplTimings::startTimer(PTimer);                                                    
+        P->P = P->P + dt * P->qm * P->E;
+        IpplTimings::stopTimer(PTimer);                                                    
         msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin()
             << P->getRMax() << P->getHr() << endl;
     }
