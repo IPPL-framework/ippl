@@ -1,13 +1,14 @@
 // Test PIC3d
 //   This test program sets up a simple sine-wave electric field in 3D,
-//   creates a population of particles with random q/m values (charge-to-mass
-//   ratio) and velocities, and then tracks their motions in the static
-//   electric field using cloud-in-cell interpolation and periodic BCs.
+//   creates a population of particles with random positions and and velocities, 
+//   and then tracks their motions in the static
+//   electric field using cloud-in-cell interpolation and periodic particle BCs.
 //
 //   Usage:
 //     srun ./PIC3d 128 128 128 10000 10 --info 10
 //
-// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// Copyright (c) 2020, Sriramkrishnan Muralikrishnan, 
+// Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
 // This file is part of IPPL.
@@ -54,96 +55,6 @@ typedef Field<Vector_t, Dim> VField_t;
 
 double pi = acos(-1.0);
 
-//TODO Make dumpVTK work for multi-procs efficiently!
-//void dumpVTK(VField_t& EFD, int nx, int ny, int nz, int iteration,
-//             double dx, double dy, double dz) {
-//
-//
-//    typename VField_t::view_type::host_mirror_type host_view = EFD.getHostMirror();
-//
-//    Kokkos::deep_copy(host_view, EFD.getView());
-//    std::ofstream vtkout;
-//    vtkout.precision(10);
-//    vtkout.setf(std::ios::scientific, std::ios::floatfield);
-//
-//    std::stringstream fname;
-//    fname << "data/ef_";
-//    fname << std::setw(4) << std::setfill('0') << iteration;
-//    fname << ".vtk";
-//
-//    // open a new data file for this iteration
-//    // and start with header
-//    vtkout.open(fname.str().c_str(), std::ios::out);
-//    vtkout << "# vtk DataFile Version 2.0" << std::endl;
-//    vtkout << "pic3d" << std::endl;
-//    vtkout << "ASCII" << std::endl;
-//    vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-//    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << std::endl;
-//    vtkout << "ORIGIN "     << -dx  << " " << -dy  << " "  << -dz << std::endl;
-//    vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-//    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << std::endl;
-//
-//    vtkout << "VECTORS E-Field float" << std::endl;
-//    for (int z=0; z<nz+2; z++) {
-//        for (int y=0; y<ny+2; y++) {
-//            for (int x=0; x<nx+2; x++) {
-//                
-//                vtkout << host_view(x,y,z)[0] << "\t"
-//                       << host_view(x,y,z)[1] << "\t"
-//                       << host_view(x,y,z)[2] << std::endl;
-//            }
-//        }
-//    }
-//
-//    // close the output file for this iteration:
-//    vtkout.close();
-//}
-//
-//
-//void dumpVTK(Field_t& EFD, int nx, int ny, int nz, int iteration,
-//             double dx, double dy, double dz) {
-//
-//    typename Field_t::view_type::host_mirror_type host_view = EFD.getHostMirror();
-//    Kokkos::deep_copy(host_view, EFD.getView());
-//    std::ofstream vtkout;
-//    vtkout.precision(10);
-//    vtkout.setf(std::ios::scientific, std::ios::floatfield);
-//
-//    std::stringstream fname;
-//    fname << "data/scalar_";
-//    fname << std::setw(4) << std::setfill('0') << iteration;
-//    fname << ".vtk";
-//
-//    double vol = dx*dy*dz;
-//
-//    // open a new data file for this iteration
-//    // and start with header
-//    vtkout.open(fname.str().c_str(), std::ios::out);
-//    vtkout << "# vtk DataFile Version 2.0" << std::endl;
-//    vtkout << "toyfdtd" << std::endl;
-//    vtkout << "ASCII" << std::endl;
-//    vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-//    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << std::endl;
-//    vtkout << "ORIGIN " << -dx << " " << -dy << " " << -dz << std::endl;
-//    vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-//    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << std::endl;
-//
-//    vtkout << "SCALARS Rho float" << std::endl;
-//    vtkout << "LOOKUP_TABLE default" << std::endl;
-//    for (int z=0; z<nz+2; z++) {
-//        for (int y=0; y<ny+2; y++) {
-//            for (int x=0; x<nx+2; x++) {
-//                
-//                vtkout << host_view(x,y,z)/vol << std::endl;
-//            }
-//        }
-//    }
-//
-//
-//    // close the output file for this iteration:
-//    vtkout.close();
-//}
-
 template<class PLayout>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
 public:
@@ -182,7 +93,10 @@ public:
     }
     
     ChargedParticles(PLayout& pl,
-                     Vector_t hr, Vector_t rmin, Vector_t rmax, ippl::e_dim_tag decomp[Dim],
+                     Vector_t hr, 
+                     Vector_t rmin, 
+                     Vector_t rmax, 
+                     ippl::e_dim_tag decomp[Dim],
                      double Q)
     : ippl::ParticleBase<PLayout>(pl)
     , hr_m(hr)
@@ -210,64 +124,53 @@ public:
 
 
     void gatherStatistics(unsigned int totalP, int iteration) {
-
-        unsigned int Total_particles = 0;
-        unsigned int local_particles = this->getLocalNum();
-
-        MPI_Reduce(&local_particles, &Total_particles, 1, 
-                      MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
-
-        if(Ippl::Comm->rank() == 0) {
-            if(Total_particles != totalP) {
-                std::cout << "Total particles in the sim. " << totalP 
-                          << " " << "after update: " 
-                          << Total_particles << std::endl;
-                std::cout << "Total particles not matched after update in iteration:" 
-                          << " " << iteration << std::endl;
-            }
-            exit(1);
-        }
-
-        Ippl::Comm->barrier();
         
         std::cout << "Rank " << Ippl::Comm->rank() << " has " 
-                  << (double)local_particles/Total_particles*100.0 
+                  << (double)this->getLocalNum()/totalP*100.0 
                   << "percent of the total particles " << std::endl;
     }
     
-    void gatherCIC(int iteration) {
+    void gatherCIC(unsigned int totalP, int iteration) {
 
-        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");           
-        IpplTimings::startTimer(gatherTimer);                                                    
+        //static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");           
+        //IpplTimings::startTimer(gatherTimer);                                                    
         gather(this->E, EFD_m, this->R);
-        IpplTimings::stopTimer(gatherTimer);                                                    
+        //IpplTimings::stopTimer(gatherTimer);                                                    
 
-        iteration *= 1;
-        scatterCIC();
-        //if(iteration % 1 == 0) {
-        //    static IpplTimings::TimerRef vtkTimer = IpplTimings::getTimer("dumpVTKscalar");           
-        //    IpplTimings::startTimer(vtkTimer);                                                    
-        //    dumpVTK(EFDMag_m,nr_m[0],nr_m[1],nr_m[2],iteration,hr_m[0],hr_m[1],hr_m[2]);
-        //    IpplTimings::stopTimer(vtkTimer);                                                    
-        //}
+        scatterCIC(totalP, iteration);
     }
 
-    void scatterCIC() {
+    void scatterCIC(unsigned int totalP, int iteration) {
          
-         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
-         IpplTimings::startTimer(scatterTimer);                                                    
+         //static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
+         //IpplTimings::startTimer(scatterTimer);                                                    
          Inform m("scatter ");
          EFDMag_m = 0.0;
          scatter(qm, EFDMag_m, this->R);
-         IpplTimings::stopTimer(scatterTimer);                                                    
+         //IpplTimings::stopTimer(scatterTimer);                                                    
          
          static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("CheckCharge");           
          IpplTimings::startTimer(sumTimer);                                                    
          double Q_grid = EFDMag_m.sum();
          
+         unsigned int Total_particles = 0;
+         unsigned int local_particles = this->getLocalNum();
+
+         MPI_Reduce(&local_particles, &Total_particles, 1, 
+                       MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
+
+         if(Ippl::Comm->rank() == 0) {
+             if(Total_particles != totalP) {
+                 std::cout << "Total particles in the sim. " << totalP 
+                           << " " << "after update: " 
+                           << Total_particles << std::endl;
+                 std::cout << "Total particles not matched in iteration: " 
+                           << iteration << std::endl;
+                 exit(1);
+             }
+         }
+         
          m << "Rel. error in charge conservation = " << std::fabs((Q_m-Q_grid)/Q_m) << endl;
-         m << "Charge in grid = " << Q_grid << endl;
-         //m << "Error in charge conservation = " << std::fabs(qm.sum()-Q_grid) << endl;
          IpplTimings::stopTimer(sumTimer);                                                    
     }
      
@@ -284,12 +187,10 @@ public:
 
          double phi0 = 0.1;
          double pi = acos(-1.0);
+         // scale_fact so that particles move more
          double scale_fact = 1e6;
 
          Vector_t hr = hr_m;
-
-         m << "rmin= " << rmin_m << " rmax= " << rmax_m << " h= " 
-           << hr_m << " n= " << nr_m << endl;
 
 
          typename VField_t::view_type& view = EFD_m.getView();
@@ -355,15 +256,8 @@ public:
          EFDMag_m = sqrt(EFDMag_m);
          IpplTimings::stopTimer(initFieldsTimer);
 
-         //static IpplTimings::TimerRef vtkTimervec = IpplTimings::getTimer("dumpVTKvector");           
-         //IpplTimings::startTimer(vtkTimervec);                                                    
-         //dumpVTK(EFD_m,nr_m[0],nr_m[1],nr_m[2],0,hr_m[0],hr_m[1],hr_m[2]);
-         //IpplTimings::stopTimer(vtkTimervec);                                                    
      }
 
-     //Vector_t getRMin() { return rmin_m;}
-     //Vector_t getRMax() { return rmax_m;}
-     //Vector_t getHr() { return hr_m;}
 
      void dumpParticleData(int iteration) {
         
@@ -471,6 +365,11 @@ int main(int argc, char *argv[]){
 
     unsigned long int nloc = totalP / Ippl::Comm->size();
 
+    int rest = (int) (totalP - nloc * Ippl::Comm->size());
+    
+    if ( Ippl::Comm->rank() < rest )
+        ++nloc;
+
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
     IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
@@ -480,8 +379,7 @@ int main(int argc, char *argv[]){
         eng[i].seed(42 + i * Dim);
         eng[i].discard( nloc * Ippl::Comm->rank());
     }
-    double dx_ref = 1.0/64;
-    std::uniform_real_distribution<double> unif(rmin[0]+(dx_ref/2), rmax[0]-(dx_ref/2));
+    std::uniform_real_distribution<double> unif(rmin[0], rmax[0]);
 
     typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
 
@@ -500,44 +398,6 @@ int main(int argc, char *argv[]){
         std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
     }
 
-    ////For Gaussian distribution
-    //std::mt19937_64 eng[2*Dim];
-   
-    ////There is no reason for picking 42 or multiplying by 
-    ////Dim with i, just want the initial seeds to be
-    ////farther apart.
-    //for (int i = 0; i < 2*3; ++i) {
-    //    eng[i].seed(42 + Dim * i);
-    //}
-
-    //std::vector<double> mu(Dim);
-    //std::vector<double> sd(Dim);
-    //std::vector<double> states(Dim);
-   
-
-    //mu[0] = 1.0/2;
-    //mu[1] = 1.0/2;
-    //mu[2] = 1.0/2;
-    //sd[0] = 0.15;
-    //sd[1] = 0.05;
-    //sd[2] = 0.20;
-
-
-    //std::uniform_real_distribution<double> dist_uniform (0.0, 1.0);
-
-    //for (unsigned long int i = 0; i< nloc; i++) {
-    //    
-    //    for (int istate = 0; istate < 3; ++istate) {
-    //        double u1 = dist_uniform(eng[istate*2]);
-    //        double u2 = dist_uniform(eng[istate*2+1]);
-    //        states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) 
-    //                         * std::cos(2.0 * pi * u2)) + mu[istate]; 
-    //    }    
-    //    for (int d = 0; d<3; d++)
-    //        R_host(i)[d] = std::fabs(std::fmod(states[d],1.0));
-    //    
-    //    Q_host(i) = q;
-    //}
 
     Kokkos::deep_copy(P->R.getView(), R_host);
     P->qm = P->Q_m/totalP;
@@ -548,20 +408,13 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(UpdateTimer);                                               
     P->update();
     IpplTimings::stopTimer(UpdateTimer);                                                    
-    
-    //ippl::PRegion<double> region0(rmin[0] + (dx/2), rmax[0] - (dx/2));
-    //ippl::PRegion<double> region1(rmin[1] + (dy/2), rmax[1] - (dy/2));
-    //ippl::PRegion<double> region2(rmin[2] + (dz/2), rmax[2] - (dz/2));
-
-    //ippl::NDRegion<double, Dim>  pr;
-    //pr = ippl::NDRegion<double, Dim>(region0, region1, region2);
 
     msg << "particles created and initial conditions assigned " << endl;
     P->EFD_m.initialize(mesh, FL);
     P->EFDMag_m.initialize(mesh, FL);
     
     msg << "scatter test" << endl;
-    P->scatterCIC();
+    P->scatterCIC(totalP, 0);
     
     P->initFields();
     msg << "P->initField() done " << endl;
@@ -570,11 +423,6 @@ int main(int argc, char *argv[]){
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
     
-        //static IpplTimings::TimerRef gatherStat = IpplTimings::getTimer("gatherStatistics");           
-        //IpplTimings::startTimer(gatherStat);                                                    
-        //P->gatherStatistics(totalP, it);
-        //IpplTimings::stopTimer(gatherStat);                                                    
-        
         
         // advance the particle positions
         // basic leapfrogging timestep scheme.  velocities are offset
@@ -584,23 +432,14 @@ int main(int argc, char *argv[]){
         P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);                                                    
 
-        //Apply particle BCs
-        //static IpplTimings::TimerRef BCTimer = IpplTimings::getTimer("applyParticleBC");           
-        //IpplTimings::startTimer(BCTimer);                                                    
-        //P->getLayout().applyBC(P->R, pr);
-        //IpplTimings::stopTimer(BCTimer);
 
         IpplTimings::startTimer(UpdateTimer);
         P->update();
         IpplTimings::stopTimer(UpdateTimer);                                                    
         
         // gather the local value of the E field and also scatter the charge
-        P->gatherCIC(it);
+        P->gatherCIC(totalP, it+1);
 
-        //static IpplTimings::TimerRef EnergyTimer = IpplTimings::getTimer("dump Energy");           
-        //IpplTimings::startTimer(EnergyTimer);                                                    
-        //P->dumpParticleData(it);
-        //IpplTimings::stopTimer(EnergyTimer);                                                    
 
         // advance the particle velocities
         static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
