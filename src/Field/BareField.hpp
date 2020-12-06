@@ -84,13 +84,17 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::fillHalo() {
-        halo_m.fillHalo(dview_m, layout_m, nghost_m);
+        if(Ippl::Comm->size() > 1) {
+            halo_m.fillHalo(dview_m, layout_m, nghost_m);
+        }
     }
 
 
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::accumulateHalo() {
-        halo_m.accumulateHalo(dview_m, layout_m, nghost_m);
+        if(Ippl::Comm->size() > 1) {
+            halo_m.accumulateHalo(dview_m, layout_m, nghost_m);
+        }
     }
 
 

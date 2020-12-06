@@ -29,7 +29,7 @@ public:
     typedef ippl::Field<double, dim> field_type;
     typedef ippl::FieldLayout<dim> flayout_type;
     typedef ippl::UniformCartesian<double, dim> mesh_type;
-    typedef ippl::detail::ParticleLayout<double, dim> playout_type;
+    typedef ippl::ParticleSpatialLayout<double, dim> playout_type;
 
     template<class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout>
@@ -39,8 +39,16 @@ public:
         {
             this->addAttribute(Q);
         }
+        
+        ~Bunch(){ }
+        
         typedef ippl::ParticleAttrib<double> charge_container_type;
         charge_container_type Q;
+        
+        void update() {
+            PLayout& layout = this->getLayout();
+            layout.update(*this);
+        }
     };
 
 
@@ -48,8 +56,8 @@ public:
 
 
     PICTest()
-    : nParticles(1000000)
-    , nPoints(100)
+    : nParticles(std::pow(256,3))
+    , nPoints(512)
     {
         setup();
     }
@@ -60,7 +68,7 @@ public:
 
         ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++)
-            allParallel[d] = ippl::SERIAL;
+            allParallel[d] = ippl::PARALLEL;
 
         layout_m = flayout_type (owned, allParallel);
 
@@ -72,17 +80,31 @@ public:
 
         field = std::make_unique<field_type>(mesh_m, layout_m);
 
+        pl_m = playout_type(layout_m, mesh_m);
+        
         bunch = std::make_unique<bunch_type>(pl_m);
+        
+        int nRanks = Ippl::Comm->size();
+        if (nParticles % nRanks > 0) {
+            if (Ippl::Comm->rank() == 0) {
+                std::cerr << nParticles << " not a multiple of " << nRanks << std::endl;
+            }
+            exit(1);
+        }
 
-        bunch->create(nParticles);
+        size_t nloc = nParticles / nRanks;
+        bunch->create(nloc);
         
         std::mt19937_64 eng;
-        std::uniform_real_distribution<double> unif(0, 1);
+        eng.seed(42);
+        eng.discard( nloc * Ippl::Comm->rank());
+        std::uniform_real_distribution<double> unif(hx[0]/2, 1-(hx[0]/2));
 
         typename bunch_type::particle_position_type::HostMirror R_host = bunch->R.getHostMirror();
-        for(size_t i = 0; i < nParticles; ++i) {
-            ippl::Vector<double, dim> r = {unif(eng), unif(eng), unif(eng)};
-            R_host(i) = r;
+        for(size_t i = 0; i < nloc; ++i) {
+            for (int d = 0; d<3; d++) {
+                R_host(i)[d] =  unif(eng);
+            }
         }
 
         Kokkos::deep_copy(bunch->R.getView(), R_host);
@@ -111,9 +133,11 @@ TEST_F(PICTest, Scatter) {
 
     bunch->Q = charge;
 
+    bunch->update();
+
     scatter(bunch->Q, *field, bunch->R);
 
-    double totalcharge = field->sum(1);
+    double totalcharge = field->sum();
 
     ASSERT_DOUBLE_EQ(nParticles * charge, totalcharge);
 
@@ -125,6 +149,8 @@ TEST_F(PICTest, Gather) {
 
     bunch->Q = 0.0;
 
+    bunch->update();
+    
     gather(bunch->Q, *field, bunch->R);
 
     ASSERT_DOUBLE_EQ(nParticles, bunch->Q.sum());

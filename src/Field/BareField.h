@@ -123,6 +123,8 @@ namespace ippl {
             return owned_m.grow(nghost_m);
         }
 
+        int getNghost() const { return nghost_m; }
+
         void fillHalo();
 
         void accumulateHalo();
