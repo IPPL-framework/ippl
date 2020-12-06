@@ -26,6 +26,8 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
+#include "Ippl.h"
+#include "Communicate/DataTypes.h"
 
 namespace ippl {
 
@@ -242,7 +244,7 @@ namespace ippl {
         attrib.gather(f, pp);
     }
 
-    #define DefineParticleReduction(fun, name, op)                                                           \
+    #define DefineParticleReduction(fun, name, op, MPI_Op)                                                   \
     template<typename T, class... Properties>                                                                \
     T ParticleAttrib<T, Properties...>::name() {                                                             \
         T temp = 0.0;                                                                                        \
@@ -251,11 +253,14 @@ namespace ippl {
                                     T myVal = dview_m(i);                                                    \
                                     op;                                                                      \
                                }, Kokkos::fun<T>(temp));                                                     \
-        return temp;                                                                                         \
+        T globaltemp = 0.0;                                                                                  \
+        MPI_Datatype type = get_mpi_datatype<T>(temp);                                                       \
+        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());                                 \
+        return globaltemp;                                                                                   \
     }
 
-    DefineParticleReduction(Sum,  sum,  valL += myVal)
-    DefineParticleReduction(Max,  max,  if(myVal > valL) valL = myVal)
-    DefineParticleReduction(Min,  min,  if(myVal < valL) valL = myVal)
-    DefineParticleReduction(Prod, prod, valL *= myVal)
+    DefineParticleReduction(Sum,  sum,  valL += myVal, MPI_SUM)
+    DefineParticleReduction(Max,  max,  if(myVal > valL) valL = myVal, MPI_MAX)
+    DefineParticleReduction(Min,  min,  if(myVal < valL) valL = myVal, MPI_MIN)
+    DefineParticleReduction(Prod, prod, valL *= myVal, MPI_PROD)
 }
