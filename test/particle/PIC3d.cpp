@@ -137,7 +137,6 @@ public:
         gather(this->E, EFD_m, this->R);
         //IpplTimings::stopTimer(gatherTimer);                                                    
 
-        scatterCIC(totalP, iteration);
     }
 
     void scatterCIC(unsigned int totalP, int iteration) {
@@ -437,7 +436,10 @@ int main(int argc, char *argv[]){
         P->update();
         IpplTimings::stopTimer(UpdateTimer);                                                    
         
-        // gather the local value of the E field and also scatter the charge
+        //scatter the charge onto the underlying grid
+        P->scatterCIC(totalP, it+1);
+        
+        // gather the local value of the E field
         P->gatherCIC(totalP, it+1);
 
 
