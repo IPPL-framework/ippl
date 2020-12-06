@@ -55,24 +55,25 @@ namespace ippl {
              * 4: lower z-face
              * 5: upper z-face
              */
-            for (unsigned i = 0; i < 2 * Dim; ++i) {
+            for (unsigned face = 0; face < 2 * Dim; ++face) {
                 //unsigned face = i % Dim;
-                unsigned face = i / 2;
-                switch (bcs_m[i]) {
+                unsigned d = face / 2;
+                bool isUpper = face & 1;
+                switch (bcs_m[face]) {
                     case BC::PERIODIC:
                         Kokkos::parallel_for("Periodic BC",
                                              R.getView().extent(0),
-                                             PeriodicBC(R.getView(), nr, face));
+                                             PeriodicBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::REFLECTIVE:
                         Kokkos::parallel_for("Reflective BC",
                                              R.getView().extent(0),
-                                             ReflectiveBC(R.getView(), nr, face));
+                                             ReflectiveBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::SINK:
                         Kokkos::parallel_for("Sink BC",
                                              R.getView().extent(0),
-                                             SinkBC(R.getView(), nr, face));
+                                             SinkBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::NO:
                     default:
