@@ -65,6 +65,8 @@ public:
     // Kill the communication and throw runtime error exception.
     static void abort(const char * = 0);
 
+    static void fence();
+
     static void deleteGlobals();
 };
 

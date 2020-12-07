@@ -165,3 +165,8 @@ void Ippl::abort(const char *msg) {
     // that's it, folks this error will be propperly catched in the main
     throw std::runtime_error("Error form IpplInfo::abort");
 }
+
+
+void Ippl::fence() {
+    Kokkos::fence();
+}
