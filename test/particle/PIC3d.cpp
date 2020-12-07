@@ -130,7 +130,7 @@ public:
                   << "percent of the total particles " << std::endl;
     }
     
-    void gatherCIC(unsigned int totalP, int iteration) {
+    void gatherCIC() {
 
         //static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");           
         //IpplTimings::startTimer(gatherTimer);                                                    
@@ -440,7 +440,7 @@ int main(int argc, char *argv[]){
         P->scatterCIC(totalP, it+1);
         
         // gather the local value of the E field
-        P->gatherCIC(totalP, it+1);
+        P->gatherCIC();
 
 
         // advance the particle velocities
