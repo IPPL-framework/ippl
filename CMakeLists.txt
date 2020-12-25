@@ -49,6 +49,8 @@ message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
 find_package(Kokkos REQUIRED)
 
+find_package(Heffte REQUIRED)
+
 set (BOOSTROOT $ENV{BOOST_DIR})
 if (USE_STATIC_LIBRARIES)
     set (Boost_USE_STATIC_LIBS ON)
