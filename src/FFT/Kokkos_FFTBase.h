@@ -30,17 +30,18 @@ namespace ippl {
     template <unsigned Dim, class T>
     std::ostream& operator<<(std::ostream&, const FFTBase<Dim,T>&);
     
-    /// character strings for transform types
-    //inline 
-    //std::string getTransformType(unsigned int i) 
-    //{
-    //    static const char* transformTypeString_g[4] = { "complex-to-complex FFT",
-    //                                                    "real-to-complex FFT",
-    //                                                    "sine transform",
-    //                                                    "cosine transform" };
-    //
-    //    return std::string(transformTypeString_g[i % 4]);
-    //}
+    // character strings for transform types
+    inline 
+    std::string getTransformType(unsigned int i) 
+    {
+        static const char* transformTypeString_g[2] = { "complex-to-complex FFT",
+                                                        "real-to-complex FFT",
+                                                        //"sine transform",
+                                                        //"cosine transform" 
+                                                      };
+    
+        return std::string(transformTypeString_g[i % 2]);
+    }
     
     /*!
       The FFTBase class handles duties for the FFT class that do not involve
@@ -57,10 +58,10 @@ namespace ippl {
         // Some externally visible typedefs and enums.
         enum { dimensions = Dim };               // dimension
         typedef T Precision_t;                   // precision
-        //typedef NDIndex<Dim> Domain_t;           // domain type
+        typedef NDIndex<Dim> Domain_t;           // domain type
     
         // Enumeration of transform types, used by derived FFT classes
-        //enum FFT_e { ccFFT, rcFFT, sineFFT, cosineFFT };
+        enum FFT_e { ccFFT, rcFFT };
     
         // Type used for performing 1D FFTs
         typedef heffte::fft3d<heffteBackend> InternalFFT_t;
@@ -143,10 +144,10 @@ namespace ippl {
         Precision_t& getNormFact(void) { return normFact_m; }
     
         /// get our domain
-        //const Domain_t& getDomain(void) const { return Domain_m; }
+        const Domain_t& getDomain(void) const { return Domain_m; }
     
         /// compare indexes of two domains
-        //bool checkDomain(const Domain_t& dom1, const Domain_t& dom2) const;
+        bool checkDomain(const Domain_t& dom1, const Domain_t& dom2) const;
     
     
     private: 
@@ -154,7 +155,7 @@ namespace ippl {
         /// Stores user-defined names for FFT directions:
         std::map<const char*,int> directions_m;
     
-        //FFT_e transformType_m;     ///< Indicates which type of transform we do
+        FFT_e transformType_m;     ///< Indicates which type of transform we do
         //bool transformDims_m[Dim]; ///< Indicates which dimensions are transformed.
         //unsigned nTransformDims_m; ///< Stores the number of dims to be transformed
         //unsigned* activeDims_m;    ///< Stores the numbers of these dims (0,1,2).
@@ -166,7 +167,7 @@ namespace ippl {
         Precision_t normFact_m;
     
         /// Domain of the input field, mainly used to check axis sizes and ordering, former const Domain_t& Domain_m;
-        //Domain_t Domain_m;
+        Domain_t Domain_m;
     
     };
     
@@ -207,7 +208,6 @@ namespace ippl {
     FFTBase<Dim,T,FFTBackend>::getDirection(const char* directionName) const {
         return (*(directions_m.find(directionName))).second;
     }
-}
 
 ///** 
 // * query whether this dimension is to be transformed
@@ -237,46 +237,47 @@ namespace ippl {
 //    return activeDims_m[d];
 //}
 //
-///** 
-// * helper function for comparing domains
-// * 
-// * @param Dim 
-// * @param dom1 
-// * @param Dim 
-// * @param dom2 
-// * 
-// * @return 
-// */
-//template <unsigned Dim, class T>
-//inline bool
-//FFTBase<Dim,T>::checkDomain(const FFTBase<Dim,T>::Domain_t& dom1,
-//                            const FFTBase<Dim,T>::Domain_t& dom2) const {
-//    // check whether domains are equivalent
-//    // we require that some permutation of the axes gives a matching domain.
-//    static bool matched[Dim];
-//    bool found;
-//    unsigned d, d1;
-//    // initialize matched array to false
-//    for (d=0; d<Dim; ++d) matched[d] = false;
-//    d=0;
-//    while (d<Dim) {
-//	d1=0;
-//	found = false;
-//	while (!found && d1<Dim) {
-//	    // if we have not yet found a match for this dimension,
-//	    // compare length and base of Index objects
-//	    if (!matched[d1]) {
-//		found = ( dom1[d].length()==dom2[d1].length() );
-//		// if equivalent, mark this dimension as matched
-//		if (found) matched[d1] = true;
-//	    }
-//	    ++d1;
-//	}
-//	if (!found) return false;
-//	++d;
-//    }
-//    return true;
-//}
+    /** 
+     * helper function for comparing domains
+     * 
+     * @param Dim 
+     * @param dom1 
+     * @param Dim 
+     * @param dom2 
+     * 
+     * @return 
+     */
+    template <unsigned Dim, class T>
+    inline bool
+    FFTBase<Dim,T>::checkDomain(const FFTBase<Dim,T>::Domain_t& dom1,
+                                const FFTBase<Dim,T>::Domain_t& dom2) const {
+        // check whether domains are equivalent
+        // we require that some permutation of the axes gives a matching domain.
+        static bool matched[Dim];
+        bool found;
+        unsigned d, d1;
+        // initialize matched array to false
+        for (d=0; d<Dim; ++d) matched[d] = false;
+        d=0;
+        while (d<Dim) {
+    	d1=0;
+    	found = false;
+    	while (!found && d1<Dim) {
+    	    // if we have not yet found a match for this dimension,
+    	    // compare length and base of Index objects
+    	    if (!matched[d1]) {
+    		found = ( dom1[d].length()==dom2[d1].length() );
+    		// if equivalent, mark this dimension as matched
+    		if (found) matched[d1] = true;
+    	    }
+    	    ++d1;
+    	}
+    	if (!found) return false;
+    	++d;
+        }
+        return true;
+    }
+}
 
 #include "FFT/FFTBase.hpp"
 

@@ -49,32 +49,30 @@
 //        if (transformDims_m[d]) activeDims_m[icount++] = d;
 //
 //}
-//
-//template <unsigned Dim, class T>
-//FFTBase<Dim,T>::FFTBase(FFTBase<Dim,T>::FFT_e transform,
-//                        const FFTBase<Dim,T>::Domain_t& domain,
-//                        bool compressTemps)
-//: transformType_m(transform),               // transform type
-//    Domain_m(domain),                         // field domain
-//    compressTempFields_m(compressTemps)       // compress temp fields?
-//{
-//
-//    // Tau profiling
-//
-//    // Default, transform all dims:
-//    nTransformDims_m = Dim;
-//    activeDims_m = new unsigned[Dim];
-//    for (unsigned d=0; d<Dim; d++) {
-//        transformDims_m[d] = true;
-//        activeDims_m[d] = d;
-//    }
-//
-//}
+
+namespace ippl {
+    template <unsigned Dim, class T>
+    FFTBase<Dim,T>::FFTBase(FFTBase<Dim,T>::FFT_e transform,
+                            const FFTBase<Dim,T>::Domain_t& domain)
+    : transformType_m(transform),               // transform type
+      Domain_m(domain),                         // field domain
+    {
+    
+        // Tau profiling
+    
+        // Default, transform all dims:
+        //nTransformDims_m = Dim;
+        //activeDims_m = new unsigned[Dim];
+        //for (unsigned d=0; d<Dim; d++) {
+        //    transformDims_m[d] = true;
+        //    activeDims_m[d] = d;
+        //}
+    
+    }
 
 //-----------------------------------------------------------------------------
 // I/O: write out information about FFT object:
 //-----------------------------------------------------------------------------
-namespace ippl {
     template <unsigned Dim, class T, class FFTBackend>
     void FFTBase<Dim,T,FFTBackend>::write(std::ostream& out) const {
     
@@ -87,7 +85,7 @@ namespace ippl {
         for (mi = directions_m.begin(); mi != m_end; ++mi)
             out << "[" << (*mi).first << "," << (*mi).second << "]" << std::endl;
         // Output type of transform
-        //out << "Transform type = " << getTransformType(transformType_m) << std::endl;
+        out << "Transform type = " << getTransformType(transformType_m) << std::endl;
         // Output which dims are transformed:
         //out << "Transform dimensions: ";
         //for (unsigned d=0; d<Dim; ++d) {
@@ -97,8 +95,8 @@ namespace ippl {
         //    else
         //        out << "false" << std::endl;
         //}
-        //out << std::endl;
-        //out << "Input Field domain = " << Domain_m << std::endl; // Output the domain.
+        out << std::endl;
+        out << "Input Field domain = " << Domain_m << std::endl; // Output the domain.
         out << "---------------FFT Object Dump End---------------------" << std::endl;
     
         return;
