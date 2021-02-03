@@ -26,7 +26,7 @@
 namespace ippl {
 
     // forward declarations
-    template <unsigned Dim, class T, class FFTBackend> class FFTBase;
+    template <unsigned Dim, class T> class FFTBase;
     template <unsigned Dim, class T>
     std::ostream& operator<<(std::ostream&, const FFTBase<Dim,T>&);
     
@@ -51,7 +51,7 @@ namespace ippl {
     
       FFT Base Class to do stuff that is independent of transform type
     */
-    template <unsigned Dim, class T, class FFTBackend>
+    template <unsigned Dim, class T>
     class FFTBase {
     
     public: 
@@ -64,7 +64,7 @@ namespace ippl {
         enum FFT_e { ccFFT, rcFFT };
     
         // Type used for performing 1D FFTs
-        typedef heffte::fft3d<heffteBackend> InternalFFT_t;
+        //typedef heffte::fft3d<heffteBackend> InternalFFT_t;
     
         FFTBase() {}  
       
@@ -138,7 +138,7 @@ namespace ippl {
         //unsigned activeDimension(unsigned d) const;
     
         /// access the internal FFT Engine
-        InternalFFT_t& getEngine(void) { return FFTEngine_m; }
+        //InternalFFT_t& getEngine(void) { return FFTEngine_m; }
     
         /// get the FFT normalization factor
         Precision_t& getNormFact(void) { return normFact_m; }
@@ -161,7 +161,7 @@ namespace ippl {
         //unsigned* activeDims_m;    ///< Stores the numbers of these dims (0,1,2).
     
         /// Internal FFT object for performing serial FFTs.
-        InternalFFT_t FFTEngine_m;
+        //InternalFFT_t FFTEngine_m;
     
         /// Normalization factor:
         Precision_t normFact_m;
@@ -177,7 +177,7 @@ namespace ippl {
     /// Define operator<< to invoke write() member function:
     template <unsigned Dim, class T>
     inline std::ostream&
-    operator<<(std::ostream& out, const FFTBase<Dim,T,FFTBackend>& fft)
+    operator<<(std::ostream& out, const FFTBase<Dim,T>& fft)
     {
         fft.write(out);
         return out;
@@ -187,9 +187,9 @@ namespace ippl {
         Allow the user to name the transform directions, for code clarity.
         Typical values might be "x_to_k", "k_to_x", "t_to_omega", "omega_to_t"
     */
-    template <unsigned Dim, class T, class FFTBackend>
+    template <unsigned Dim, class T>
     inline void
-    FFTBase<Dim,T,FFTBackend>::setDirectionName(int direction,
+    FFTBase<Dim,T>::setDirectionName(int direction,
                                      const char* directionName) {
         PAssert_EQ(std::abs(direction), 1);
         directions_m[directionName] = direction;
@@ -203,9 +203,9 @@ namespace ippl {
      * 
      * @return 
      */
-    template <unsigned Dim, class T, class FFTBackend>
+    template <unsigned Dim, class T>
     inline int
-    FFTBase<Dim,T,FFTBackend>::getDirection(const char* directionName) const {
+    FFTBase<Dim,T>::getDirection(const char* directionName) const {
         return (*(directions_m.find(directionName))).second;
     }
 

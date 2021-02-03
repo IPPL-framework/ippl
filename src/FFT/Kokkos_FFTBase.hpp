@@ -73,8 +73,8 @@ namespace ippl {
 //-----------------------------------------------------------------------------
 // I/O: write out information about FFT object:
 //-----------------------------------------------------------------------------
-    template <unsigned Dim, class T, class FFTBackend>
-    void FFTBase<Dim,T,FFTBackend>::write(std::ostream& out) const {
+    template <unsigned Dim, class T>
+    void FFTBase<Dim,T>::write(std::ostream& out) const {
     
       
         // Dump contents of FFT object
