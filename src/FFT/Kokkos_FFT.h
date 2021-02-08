@@ -79,6 +79,31 @@ namespace ippl {
     //        static const auto scaling_type = heffte::scale::symmetric;
     //    };
 
+        template <typename>
+        struct isCudaComplexT : public std::false_type {};
+#ifdef KOKKOS_ENABLE_CUDA
+        template <>
+        struct isCudaComplexT<cufftComplex> : public std::true_type {};
+        
+        template <>
+        struct isCudaComplexT<cufftDoubleComplex> : public std::true_type {};
+#endif
+        template <class T>
+        struct isCudaComplex : public isCudaComplexT<typename std::remove_cv<T>::type>::type
+        {
+        };
+          
+        template <typename>
+        struct isStdComplexT : public std::false_type {};
+        
+        template <class T>
+        struct isStdComplexT<std::complex<T>> : public std::true_type {};
+        
+        template <class T>
+        struct isStdComplex : public isStdComplexT<typename std::remove_cv<T>::type>::type
+        {
+        };
+        
         template <class T>
         struct HeffteBackendType {};
 
@@ -160,23 +185,53 @@ namespace ippl {
            setup performs all the initializations necessary after the transform
            directions have been specified.
         */
-        void setup(void);
+        void setup(const std::array<int, Dim>& low, 
+                   const std::array<int, Dim>& high,
+                   const HeffteParams& params);
     
-        /**
-           How the temporary field's are laid out; these are computed from the
-           input Field's domain. This will be allocated as an array of FieldLayouts
-           with nTransformDims elements. Each is SERIAL along the zeroth dimension
-           and the axes are permuted so that the transform direction is first
-        */
-        //Layout_t** tempLayouts_m;
-    
-        /** The array of temporary fields, one for each transform direction
-            These use the corresponding tempLayouts.
-        */
-        //ComplexField_t** tempFields_m;
+        template <class ComplexType>
+        KOKKOS_INLINE_FUNCTION ComplexType 
+        copyFromKokkosComplex( Complex_t fVal, ComplexType tempFieldVal,
+                               typename std::enable_if<( is_cuda_complex<ComplexType>::value ),
+                               int>::type* = 0 )
+        {
+            tempFieldVal.x = fVal.real();
+            tempFieldVal.y = fVal.imag();
+            return tempFieldVal;
+        }
+        template <class ComplexType>
+        KOKKOS_INLINE_FUNCTION Complex_t 
+        copyToKokkosComplex( ComplexType tempFieldVal, Complex_t fVal
+                               typename std::enable_if<( is_cuda_complex<ComplexType>::value ),
+                               int>::type* = 0 )
+        {
+            fVal.real() = tempFieldVal.x;
+            fVal.imag() = tempFieldVal.y;
+            return fVal;
+        }
+        template <class ComplexType>
+        KOKKOS_INLINE_FUNCTION ComplexType 
+        copyFromKokkosComplex( Complex_t fVal, ComplexType tempFieldVal,
+                               typename std::enable_if<( is_std_complex<ComplexType>::value ),
+                               int>::type* = 0 )
+        {
+            tempFieldVal.real( fVal.real() );
+            tempFieldVal.imag( fVal.imag() );
+            return tempFieldVal;
+        }
+        template <class ComplexType>
+        KOKKOS_INLINE_FUNCTION Complex_t 
+        copyToKokkosComplex( ComplexType tempFieldVal, Complex_t fVal
+                               typename std::enable_if<( is_std_complex<ComplexType>::value ),
+                               int>::type* = 0 )
+        {
+            fVal.real() = tempFieldVal.real();
+            fVal.imag() = tempFieldVal.imag();
+            return fVal;
+        }
 
-         std::shared_ptr<heffte::fft3d<heffteBackend>> heffte_m;
-         Kokkos::View<heffteComplex_t*> tempField_m;
+        std::shared_ptr<heffte::fft3d<heffteBackend>> heffte_m;
+        Kokkos::View<heffteComplex_t*> tempField_m;
     
     };
     

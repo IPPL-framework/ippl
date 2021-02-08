@@ -35,9 +35,18 @@ namespace ippl {
     : FFTBase<Dim,T>(FFT<CCTransform,Dim,T>::ccFFT, cdomain)
     {
     
-    
+        std::array<int, Dim> low; 
+        std::array<int, Dim> high;
+
+        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
+
+        low = {lDom[0].first(), lDom[1].first(), lDom[2].first()};
+        high = {lDom[0].length() + lDom[0].first() - 1,
+                lDom[1].length() + lDom[1].first() - 1,
+                lDom[2].length() + lDom[2].first() - 1};
+
         // set up the temporary fields
-        setup();
+        setup(low, high);
     }
     
     
@@ -47,30 +56,24 @@ namespace ippl {
     */
     template <size_t Dim, class T>
     void
-    FFT<CCTransform,Dim,T>::setup(void)
+    FFT<CCTransform,Dim,T>::setup(const std::array<int, Dim>& low, 
+                                  const std::array<int, Dim>& high,
+                                  const HeffteParams& params)
     {
-        // Tau profiling
-    
-        tempLayouts_m = new Layout_t*[nTransformDims];
-        tempFields_m = new ComplexField_t*[nTransformDims];
-    
-        for (size_t dim=0; dim<nTransformDims; ++dim) {
-            // Get input Field's domain
-            const Domain_t& ndic = this->getDomain();
-            // make new domain with permuted Indexes, activeDim first
-            Domain_t ndip;
-            ndip[0] = ndic[activeDim];
-            for (d=1; d<Dim; ++d) {
-                size_t nextDim = activeDim + d;
-                if (nextDim >= Dim) nextDim -= Dim;
-                ndip[d] = ndic[nextDim];
-            }
-            // generate temporary field layout
-            tempLayouts_m[dim] = new Layout_t(ndip, serialParallel, this->transVnodes());
-            // generate temporary Field
-            tempFields_m[dim] = new ComplexField_t(*tempLayouts_m[dim]);
-        }
-    
+   
+         heffte::box3d inbox = { low, high };
+         heffte::box3d outbox = { low, high };
+
+         heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
+         heffteOptions.use_alltoall = params.getAllToAll();
+         heffteOptions.use_pencils = params.getPencils();
+         heffteOptions.use_reorder = params.getReorder();
+
+         heffte_m = std::make_shared<heffte::fft3d<heffteBackend>>(inbox, outbox, Ippl::getComm(), heffteOptions);
+         
+         int fftsize = std::max( heffte_m->size_outbox(), heffte_m->size_inbox() );
+         tempField_m = Kokkos::View<heffteComplex_t*>(Kokkos::ViewAllocateWithoutInitializing( "tempField_m" ), fftsize );
+  
         return;
     }
     
@@ -92,14 +95,61 @@ namespace ippl {
         typename FFT<CCTransform,Dim,T>::ComplexField_t& f)
     {
         // Check domain of incoming Field
-        const Layout_t& in_layout = f.getLayout();
-        const Domain_t& in_dom = in_layout.getDomain();
-        PAssert_EQ(this->checkDomain(this->getDomain(),in_dom), true);
+        //const Layout_t& in_layout = f.getLayout();
+        //const Domain_t& in_dom = in_layout.getDomain();
+        //PAssert_EQ(this->checkDomain(this->getDomain(),in_dom), true);
+       typename ComplexField_t::view_type& fview = f.getView();
+       const int nghost = f.getNghost();
+       //std::array<int, Dim> length;
+
+     
+       auto viewtempField = createView<heffteComplex_t, Kokkos::LayoutRight>({fview.extent(0) - nghost, 
+                                                                              fview.extent(1) - nghost,
+                                                                              fview.extent(2) - nghost}, 
+                                                                              tempField_m.data());
+
+       using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+       Kokkos::parallel_for("copy from Kokkos FFT",
+                            mdrange_type({nghost, nghost, nghost},
+                                         {fview.extent(0) - nghost, 
+                                          fview.extent(1) - nghost,
+                                          fview.extent(2) - nghost
+                                         }),
+                            KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                const size_t j,
+                                                const size_t k,)
+                            {
+                              viewtempField(i, j, k) = copyFromKokkosComplex(fview(i, j, k), 
+                                                                             viewtempField(i, j, k));  
+                            });
+       if ( direction == 1 )
+       {
+           heffte_m->forward( tempField_m.data(), tempField_m.data(), heffte::scale::full );
+       }
+       else if ( direction == -1 )
+       {
+           heffte_m->backward( tempField_m.data(), tempField_m.data(), heffte::scale::none );
+       }
+       else
+       {
+           throw std::logic_error( "Only 1:forward and -1:backward are allowed as directions" );
+       }
+
     
-    
-        // Normalize:
-        if (direction == +1)
-            f *= Complex_t(this->getNormFact(), 0.0);
+       Kokkos::parallel_for("copy to Kokkos FFT",
+                            mdrange_type({nghost, nghost, nghost},
+                                         {fview.extent(0) - nghost, 
+                                          fview.extent(1) - nghost,
+                                          fview.extent(2) - nghost
+                                         }),
+                            KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                const size_t j,
+                                                const size_t k,)
+                            {
+                              fview(i, j, k) = copyToKokkosComplex(viewtempField(i, j, k), 
+                                                                   fview(i, j, k));  
+                            });
     
         return;
     }
