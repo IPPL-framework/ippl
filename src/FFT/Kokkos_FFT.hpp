@@ -32,7 +32,7 @@ namespace ippl {
     FFT<CCTransform,Dim,T>::FFT(
         const Layout_t& layout
         const HeffteParams& params)
-    : FFTBase<Dim,T>(FFT<CCTransform,Dim,T>::ccFFT, cdomain)
+//    : FFTBase<Dim,T>(FFT<CCTransform,Dim,T>::ccFFT, cdomain)
     {
     
         std::array<int, Dim> low; 

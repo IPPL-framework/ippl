@@ -3,8 +3,8 @@ set (_SRCS
     )
 
 set (_HDRS
-    Kokkos_FFTBase.hpp
-    Kokkos_FFTBase.h
+#    Kokkos_FFTBase.hpp
+#    Kokkos_FFTBase.h
     Kokkos_FFT.hpp
     Kokkos_FFT.h
 #    fftpack_FFT.h

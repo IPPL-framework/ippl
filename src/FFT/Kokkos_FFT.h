@@ -18,7 +18,7 @@
 #ifndef IPPL_FFT_FFT_H
 #define IPPL_FFT_FFT_H
 
-#include "FFT/Kokkos_FFTBase.h"
+//#include "FFT/Kokkos_FFTBase.h"
 
 // forward declarations
 //template <unsigned Dim> class FieldLayout;
@@ -141,13 +141,15 @@ namespace ippl {
        Non-specialized FFT class.  We specialize based on Transform tag class
     */
     template <class Transform, size_t Dim, class T>
-    class FFT : public FFTBase<Dim,T> {};
+    //class FFT : public FFTBase<Dim,T> {};
+    class FFT {};
     
     /**
        complex-to-complex FFT class
     */
     template <size_t Dim, class T>
-    class FFT<CCTransform,Dim,T> : public FFTBase<Dim,T> {
+    //class FFT<CCTransform,Dim,T> : public FFTBase<Dim,T> {
+    class FFT<CCTransform,Dim,T> {
     
     public:
     
@@ -176,7 +178,7 @@ namespace ippl {
         /**
            invoke using string for direction name
         */
-        void transform(const char* directionName, ComplexField_t& f);
+        //void transform(const char* directionName, ComplexField_t& f);
     
     
     private:
@@ -239,16 +241,16 @@ namespace ippl {
     /**
        invoke CC transform using direction name string
     */
-    template <size_t Dim, class T>
-    inline void
-    FFT<CCTransform,Dim,T>::transform(
-        const char* directionName,
-        typename FFT<CCTransform,Dim,T>::ComplexField_t& f)
-    {
-        int dir = this->getDirection(directionName);
-        transform(dir, f);
-        return;
-    }
+    //template <size_t Dim, class T>
+    //inline void
+    //FFT<CCTransform,Dim,T>::transform(
+    //    const char* directionName,
+    //    typename FFT<CCTransform,Dim,T>::ComplexField_t& f)
+    //{
+    //    int dir = this->getDirection(directionName);
+    //    transform(dir, f);
+    //    return;
+    //}
     
     ///**
     //   real-to-complex FFT class
