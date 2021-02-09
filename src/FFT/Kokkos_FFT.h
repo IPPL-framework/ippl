@@ -19,6 +19,10 @@
 #define IPPL_FFT_FFT_H
 
 //#include "FFT/Kokkos_FFTBase.h"
+#include <heffte_fft3d.h>
+#include <array>
+#include <memory>
+#include <type_traits>
 
 // forward declarations
 //template <unsigned Dim> class FieldLayout;
@@ -395,7 +399,7 @@ namespace ippl {
     //
     //
 }
-#include "FFT/FFT.hpp"
+#include "FFT/Kokkos_FFT.hpp"
 #endif // IPPL_FFT_FFT_H
 
 // vi: set et ts=4 sw=4 sts=4:

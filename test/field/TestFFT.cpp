@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     fftParams.setPencils( true );
     fftParams.setReorder( true );
 
-    typedef FFT<CCTransform, 3, double> FFT_type;
+    typedef ippl::FFT<CCTransform, 3, double> FFT_type;
 
     std::unique_ptr<FFT_type> fft;
 
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 
     std::complex<double> max_error(0.0, 0.0);
     MPI_Reduce(&max_error_local, &max_error, 1, 
-                    MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
+               MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
 
     if(Ippl::Comm->rank() == 0) {
         std::cout << "Max. error " << std::setprecision(16) << max_error << std::endl;
