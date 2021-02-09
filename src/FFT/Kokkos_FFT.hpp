@@ -30,7 +30,7 @@ namespace ippl {
     
     template <size_t Dim, class T>
     FFT<CCTransform,Dim,T>::FFT(
-        const Layout_t& layout
+        const Layout_t& layout,
         const HeffteParams& params)
 //    : FFTBase<Dim,T>(FFT<CCTransform,Dim,T>::ccFFT, cdomain)
     {
@@ -40,13 +40,14 @@ namespace ippl {
 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
 
-        low = {lDom[0].first(), lDom[1].first(), lDom[2].first()};
-        high = {lDom[0].length() + lDom[0].first() - 1,
-                lDom[1].length() + lDom[1].first() - 1,
-                lDom[2].length() + lDom[2].first() - 1};
+        low = {(int)lDom[0].first(), (int)lDom[1].first(), (int)lDom[2].first()};
+        high = {(int)lDom[0].length() + (int)lDom[0].first() - 1,
+                (int)lDom[1].length() + (int)lDom[1].first() - 1,
+                (int)lDom[2].length() + (int)lDom[2].first() - 1};
 
         // set up the temporary fields
-        setup(low, high);
+        setup(low, high, params);
+        Kokkos::resize(tempField_m, lDom[0].length(), lDom[1].length(), lDom[2].length()); 
     }
     
     
@@ -71,8 +72,8 @@ namespace ippl {
 
          heffte_m = std::make_shared<heffte::fft3d<heffteBackend>>(inbox, outbox, Ippl::getComm(), heffteOptions);
          
-         int fftsize = std::max( heffte_m->size_outbox(), heffte_m->size_inbox() );
-         tempField_m = Kokkos::View<heffteComplex_t*>(Kokkos::ViewAllocateWithoutInitializing( "tempField_m" ), fftsize );
+         //int fftsize = std::max( heffte_m->size_outbox(), heffte_m->size_inbox() );
+         //tempField_m = Kokkos::View<heffteComplex_t*>(Kokkos::ViewAllocateWithoutInitializing( "tempField_m" ), fftsize );
   
         return;
     }
@@ -103,10 +104,10 @@ namespace ippl {
        //std::array<int, Dim> length;
 
      
-       auto viewtempField = createView<heffteComplex_t, Kokkos::LayoutRight>({fview.extent(0) - nghost, 
-                                                                              fview.extent(1) - nghost,
-                                                                              fview.extent(2) - nghost}, 
-                                                                              tempField_m.data());
+       //auto viewtempField = createView<heffteComplex_t, Kokkos::LayoutRight>({fview.extent(0) - nghost, 
+       //                                                                       fview.extent(1) - nghost,
+       //                                                                       fview.extent(2) - nghost}, 
+       //                                                                       tempField_m.data());
 
        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
@@ -118,10 +119,10 @@ namespace ippl {
                                          }),
                             KOKKOS_CLASS_LAMBDA(const size_t i,
                                                 const size_t j,
-                                                const size_t k,)
+                                                const size_t k)
                             {
-                              viewtempField(i, j, k) = copyFromKokkosComplex(fview(i, j, k), 
-                                                                             viewtempField(i, j, k));  
+                              tempField_m(i, j, k) = copyFromKokkosComplex(fview(i, j, k), 
+                                                                             tempField_m(i, j, k));  
                             });
        if ( direction == 1 )
        {
@@ -145,9 +146,9 @@ namespace ippl {
                                          }),
                             KOKKOS_CLASS_LAMBDA(const size_t i,
                                                 const size_t j,
-                                                const size_t k,)
+                                                const size_t k)
                             {
-                              fview(i, j, k) = copyToKokkosComplex(viewtempField(i, j, k), 
+                              fview(i, j, k) = copyToKokkosComplex(tempField_m(i, j, k), 
                                                                    fview(i, j, k));  
                             });
     

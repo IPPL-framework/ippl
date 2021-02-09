@@ -113,30 +113,30 @@ namespace ippl {
 
 #ifdef Heffte_ENABLE_FFTW
         template <class T>
-        struct HeffeBackendType<T> {
+        struct HeffteBackendType<T> {
             using backend = heffte::backend::fftw;
             using complexType = std::complex<T>;
-        }
+        };
 #endif
 #ifdef Heffte_ENABLE_MKL
         template <class T>
-        struct HeffeBackendType<T> {
+        struct HeffteBackendType<T> {
             using backend = heffte::backend::mkl;
             using complexType = std::complex<T>;
-        }
+        };
 #endif
 #ifdef Heffte_ENABLE_CUDA
-#ifdef Kokkos_ENABLE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
         template <>
-        struct HeffeBackendType<double> {
+        struct HeffteBackendType<double> {
             using backend = heffte::backend::cufft;
             using complexType = cufftDoubleComplex;
-        }
+        };
         template <>
-        struct HeffeBackendType<float> {
+        struct HeffteBackendType<float> {
             using backend = heffte::backend::cufft;
             using complexType = cufftComplex;
-        }
+        };
 #endif
 #endif
     }
@@ -162,8 +162,8 @@ namespace ippl {
         typedef Field<Complex_t,Dim> ComplexField_t;
         //typedef typename FFTBase<Dim,T>::Domain_t Domain_t;
 
-        using heffteBackend = detail::HeffteBackendType<T>::backend;
-        using heffteComplex_t = detail::HeffteBackendType<T>::complexType;
+        using heffteBackend = typename detail::HeffteBackendType<T>::backend;
+        using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
         
 
         /** Create a new FFT object with the layout for the input Field and parameters
@@ -198,17 +198,18 @@ namespace ippl {
         template <class ComplexType>
         KOKKOS_INLINE_FUNCTION ComplexType 
         copyFromKokkosComplex( Complex_t fVal, ComplexType tempFieldVal,
-                               typename std::enable_if<( is_cuda_complex<ComplexType>::value ),
+                               typename std::enable_if<( detail::isCudaComplex<ComplexType>::value ),
                                int>::type* = 0 )
         {
             tempFieldVal.x = fVal.real();
             tempFieldVal.y = fVal.imag();
             return tempFieldVal;
         }
+
         template <class ComplexType>
         KOKKOS_INLINE_FUNCTION Complex_t 
-        copyToKokkosComplex( ComplexType tempFieldVal, Complex_t fVal
-                               typename std::enable_if<( is_cuda_complex<ComplexType>::value ),
+        copyToKokkosComplex( ComplexType tempFieldVal, Complex_t fVal,
+                               typename std::enable_if<( detail::isCudaComplex<ComplexType>::value ),
                                int>::type* = 0 )
         {
             fVal.real() = tempFieldVal.x;
@@ -218,7 +219,7 @@ namespace ippl {
         template <class ComplexType>
         KOKKOS_INLINE_FUNCTION ComplexType 
         copyFromKokkosComplex( Complex_t fVal, ComplexType tempFieldVal,
-                               typename std::enable_if<( is_std_complex<ComplexType>::value ),
+                               typename std::enable_if<( detail::isStdComplex<ComplexType>::value ),
                                int>::type* = 0 )
         {
             tempFieldVal.real( fVal.real() );
@@ -227,8 +228,8 @@ namespace ippl {
         }
         template <class ComplexType>
         KOKKOS_INLINE_FUNCTION Complex_t 
-        copyToKokkosComplex( ComplexType tempFieldVal, Complex_t fVal
-                               typename std::enable_if<( is_std_complex<ComplexType>::value ),
+        copyToKokkosComplex( ComplexType tempFieldVal, Complex_t fVal,
+                               typename std::enable_if<( detail::isStdComplex<ComplexType>::value ),
                                int>::type* = 0 )
         {
             fVal.real() = tempFieldVal.real();
@@ -237,7 +238,8 @@ namespace ippl {
         }
 
         std::shared_ptr<heffte::fft3d<heffteBackend>> heffte_m;
-        Kokkos::View<heffteComplex_t*> tempField_m;
+        //Kokkos::View<heffteComplex_t*> tempField_m;
+        Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> tempField_m;
     
     };
     

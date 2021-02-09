@@ -38,11 +38,11 @@ int main(int argc, char *argv[]) {
 
     ippl::HeffteParams fftParams;
 
-    fftParams.setAlltoAll( true );
+    fftParams.setAllToAll( true );
     fftParams.setPencils( true );
     fftParams.setReorder( true );
 
-    typedef ippl::FFT<CCTransform, 3, double> FFT_type;
+    typedef ippl::FFT<ippl::CCTransform, 3, double> FFT_type;
 
     std::unique_ptr<FFT_type> fft;
 
@@ -53,9 +53,9 @@ int main(int argc, char *argv[]) {
 
     const int nghost = field.getNghost();
 
-    for (int i = nghost; i < view.extent(0) - nghost; ++i) {
-        for (int j = nghost; j < view.extent(1) - nghost; ++j) {
-            for (int k = nghost; k < view.extent(2) - nghost; ++k) {
+    for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
+        for (size_t j = nghost; j < view.extent(1) - nghost; ++j) {
+            for (size_t k = nghost; k < view.extent(2) - nghost; ++k) {
     
                 field_host(i, j, k).real() = 1.0; 
                 field_host(i, j, k).imag() = 1.0; 
@@ -73,27 +73,28 @@ int main(int argc, char *argv[]) {
     
     auto field_result = Kokkos::create_mirror_view_and_copy( Kokkos::HostSpace(), field.getView() );
 
-    std::complex<double> max_error_local(0.0, 0.0);
-    for (int i = nghost; i < view.extent(0) - nghost; ++i) {
-        for (int j = nghost; j < view.extent(1) - nghost; ++j) {
-            for (int k = nghost; k < view.extent(2) - nghost; ++k) {
-    
-                double error_real = std::fabs(field_host(i, j, k).real() - field_result(i, j, k).real());
-                double error_imag = std::fabs(field_host(i, j, k).imag() - field_result(i, j, k).imag());
+    //std::complex<double> max_error_local(0.0, 0.0);
+    //for (int i = nghost; i < view.extent(0) - nghost; ++i) {
+    //    for (int j = nghost; j < view.extent(1) - nghost; ++j) {
+    //        for (int k = nghost; k < view.extent(2) - nghost; ++k) {
+    //
+    //            std::complex<double> error(std::fabs(field_host(i, j, k).real() - field_result(i, j, k).real()), 
+    //                                       std::fabs(field_host(i, j, k).imag() - field_result(i, j, k).imag()));
 
-                if(error_real > max_error_local.real()) max_error_local.real() = error_real;
-                if(error_imag > max_error_local.imag()) max_error_local.imag() = error_imag;
-                              
-            }
-        }
-    }
+    //            //if(error.real() > max_error_local.real()) max_error_local.real() = error.real();
+    //            //if(error.imag() > max_error_local.imag()) max_error_local.imag() = error.imag();
+    //            max_error_local.real( error.real() );             
+    //            max_error_local.imag( error.imag() );             
+    //        }
+    //    }
+    //}
 
-    std::complex<double> max_error(0.0, 0.0);
-    MPI_Reduce(&max_error_local, &max_error, 1, 
-               MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
+    //std::complex<double> max_error(0.0, 0.0);
+    //MPI_Reduce(&max_error_local, &max_error, 1, 
+    //           MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
 
-    if(Ippl::Comm->rank() == 0) {
-        std::cout << "Max. error " << std::setprecision(16) << max_error << std::endl;
-    }
+    //if(Ippl::Comm->rank() == 0) {
+    //    std::cout << "Max. error " << std::setprecision(16) << max_error << std::endl;
+    //}
     return 0;
 }
