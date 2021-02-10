@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    std::array<int, dim> pt = {8, 8, 8};
+    std::array<int, dim> pt = {4, 4, 4};
     ippl::Index I(pt[0]);
     ippl::Index J(pt[1]);
     ippl::Index K(pt[2]);
@@ -73,28 +73,29 @@ int main(int argc, char *argv[]) {
     
     auto field_result = Kokkos::create_mirror_view_and_copy( Kokkos::HostSpace(), field.getView() );
 
-    //std::complex<double> max_error_local(0.0, 0.0);
-    //for (int i = nghost; i < view.extent(0) - nghost; ++i) {
-    //    for (int j = nghost; j < view.extent(1) - nghost; ++j) {
-    //        for (int k = nghost; k < view.extent(2) - nghost; ++k) {
-    //
-    //            std::complex<double> error(std::fabs(field_host(i, j, k).real() - field_result(i, j, k).real()), 
-    //                                       std::fabs(field_host(i, j, k).imag() - field_result(i, j, k).imag()));
+    Kokkos::complex<double> max_error_local(0.0, 0.0);
+    for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
+        for (size_t j = nghost; j < view.extent(1) - nghost; ++j) {
+            for (size_t k = nghost; k < view.extent(2) - nghost; ++k) {
+    
+                Kokkos::complex<double> error(std::fabs(field_host(i, j, k).real() - field_result(i, j, k).real()), 
+                                              std::fabs(field_host(i, j, k).imag() - field_result(i, j, k).imag()));
 
-    //            //if(error.real() > max_error_local.real()) max_error_local.real() = error.real();
-    //            //if(error.imag() > max_error_local.imag()) max_error_local.imag() = error.imag();
-    //            max_error_local.real( error.real() );             
-    //            max_error_local.imag( error.imag() );             
-    //        }
-    //    }
-    //}
+                if(error.real() > max_error_local.real()) max_error_local.real() = error.real();
+                if(error.imag() > max_error_local.imag()) max_error_local.imag() = error.imag();
+                //std::cout << "Initial: " << std::setprecision(16) << field_host(i, j, k) << std::endl;
+                //std::cout << "Final: " << std::setprecision(16) << field_result(i, j, k) << std::endl;
+                std::cout << "Error: " << std::setprecision(16) << error << std::endl;
+            }
+        }
+    }
 
-    //std::complex<double> max_error(0.0, 0.0);
-    //MPI_Reduce(&max_error_local, &max_error, 1, 
-    //           MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
+    Kokkos::complex<double> max_error(0.0, 0.0);
+    MPI_Reduce(&max_error_local, &max_error, 1, 
+               MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
 
-    //if(Ippl::Comm->rank() == 0) {
-    //    std::cout << "Max. error " << std::setprecision(16) << max_error << std::endl;
-    //}
+    if(Ippl::Comm->rank() == 0) {
+        std::cout << "Max. error " << std::setprecision(16) << max_error << std::endl;
+    }
     return 0;
 }
