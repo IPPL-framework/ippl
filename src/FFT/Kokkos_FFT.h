@@ -173,12 +173,13 @@ namespace ippl {
     
     
         // Destructor
-        ~FFT(void);
+        //~FFT(void);
+        ~FFT() = default;
     
         /** Do the FFT: specify +1 or -1 to indicate forward or inverse
             transform, or specify the user-defined name string for the direction.
         */
-        void transform(int direction, ComplexField_t& f);
+        void transform(int direction, ComplexField_t& f); 
         /**
            invoke using string for direction name
         */
@@ -195,50 +196,69 @@ namespace ippl {
                    const std::array<int, Dim>& high,
                    const HeffteParams& params);
     
-        template <class ComplexType>
-        KOKKOS_INLINE_FUNCTION ComplexType 
-        copyFromKokkosComplex( Complex_t fVal, ComplexType tempFieldVal,
-                               typename std::enable_if<( detail::isCudaComplex<ComplexType>::value ),
-                               int>::type* = 0 )
+        //template <class ComplexType>
+        //KOKKOS_INLINE_FUNCTION ComplexType 
+        //copyFromKokkosComplex( Complex_t fVal, ComplexType tempFieldVal,
+        //                       typename std::enable_if<( detail::isCudaComplex<ComplexType>::value ),
+        //                       int>::type* = 0 )
+        //{
+        //    tempFieldVal.x = fVal.real();
+        //    tempFieldVal.y = fVal.imag();
+        //    return tempFieldVal;
+        //}
+
+        //template <class ComplexType>
+        //KOKKOS_INLINE_FUNCTION Complex_t 
+        //copyToKokkosComplex( ComplexType tempFieldVal, Complex_t fVal,
+        //                       typename std::enable_if<( detail::isCudaComplex<ComplexType>::value ),
+        //                       int>::type* = 0 )
+        //{
+        //    fVal.real() = tempFieldVal.x;
+        //    fVal.imag() = tempFieldVal.y;
+        //    return fVal;
+        //}
+        
+#ifdef KOKKOS_ENABLE_CUDA
+        KOKKOS_INLINE_FUNCTION void 
+        copyFromKokkosComplex( Complex_t& fVal, heffteComplex_t& tempFieldVal )
         {
             tempFieldVal.x = fVal.real();
             tempFieldVal.y = fVal.imag();
-            return tempFieldVal;
+            //return tempFieldVal;
         }
 
-        template <class ComplexType>
-        KOKKOS_INLINE_FUNCTION Complex_t 
-        copyToKokkosComplex( ComplexType tempFieldVal, Complex_t fVal,
-                               typename std::enable_if<( detail::isCudaComplex<ComplexType>::value ),
-                               int>::type* = 0 )
+        KOKKOS_INLINE_FUNCTION void 
+        copyToKokkosComplex( heffteComplex_t& tempFieldVal, Complex_t& fVal )
         {
             fVal.real() = tempFieldVal.x;
             fVal.imag() = tempFieldVal.y;
-            return fVal;
+            //return fVal;
         }
-        template <class ComplexType>
-        KOKKOS_INLINE_FUNCTION ComplexType 
-        copyFromKokkosComplex( Complex_t fVal, ComplexType tempFieldVal,
-                               typename std::enable_if<( detail::isStdComplex<ComplexType>::value ),
-                               int>::type* = 0 )
-        {
-            tempFieldVal.real( fVal.real() );
-            tempFieldVal.imag( fVal.imag() );
-            return tempFieldVal;
-        }
-        template <class ComplexType>
-        KOKKOS_INLINE_FUNCTION Complex_t 
-        copyToKokkosComplex( ComplexType tempFieldVal, Complex_t fVal,
-                               typename std::enable_if<( detail::isStdComplex<ComplexType>::value ),
-                               int>::type* = 0 )
-        {
-            fVal.real() = tempFieldVal.real();
-            fVal.imag() = tempFieldVal.imag();
-            return fVal;
-        }
+#endif
+        //template <class ComplexType>
+        //KOKKOS_INLINE_FUNCTION ComplexType 
+        //copyFromKokkosComplex( Complex_t fVal, ComplexType tempFieldVal,
+        //                       typename std::enable_if<( detail::isStdComplex<ComplexType>::value ),
+        //                       int>::type* = 0 )
+        //{
+        //    tempFieldVal.real( fVal.real() );
+        //    tempFieldVal.imag( fVal.imag() );
+        //    return tempFieldVal;
+        //}
+        //template <class ComplexType>
+        //KOKKOS_INLINE_FUNCTION Complex_t 
+        //copyToKokkosComplex( ComplexType tempFieldVal, Complex_t fVal,
+        //                       typename std::enable_if<( detail::isStdComplex<ComplexType>::value ),
+        //                       int>::type* = 0 )
+        //{
+        //    fVal.real() = tempFieldVal.real();
+        //    fVal.imag() = tempFieldVal.imag();
+        //    return fVal;
+        //}
 
         std::shared_ptr<heffte::fft3d<heffteBackend>> heffte_m;
         //Kokkos::View<heffteComplex_t*> tempField_m;
+        //Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> tempField_m;
         Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> tempField_m;
     
     };

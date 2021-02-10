@@ -75,18 +75,18 @@ namespace ippl {
          //int fftsize = std::max( heffte_m->size_outbox(), heffte_m->size_inbox() );
          //tempField_m = Kokkos::View<heffteComplex_t*>(Kokkos::ViewAllocateWithoutInitializing( "tempField_m" ), fftsize );
   
-        return;
+        //return;
     }
     
     //-----------------------------------------------------------------------------
     // Destructor
     //-----------------------------------------------------------------------------
     
-    template <size_t Dim, class T>
-    FFT<CCTransform,Dim,T>::~FFT(void) {
-    
-        // Tau profiling
-    }
+    //template <size_t Dim, class T>
+    //FFT<CCTransform,Dim,T>::~FFT(void) {
+    //
+    //    // Tau profiling
+    //}
     
     
     template <size_t Dim, class T>
@@ -94,6 +94,7 @@ namespace ippl {
     FFT<CCTransform,Dim,T>::transform(
         int direction,
         typename FFT<CCTransform,Dim,T>::ComplexField_t& f)
+        //ComplexField_t& f)
     {
         // Check domain of incoming Field
         //const Layout_t& in_layout = f.getLayout();
@@ -121,8 +122,9 @@ namespace ippl {
                                                 const size_t j,
                                                 const size_t k)
                             {
-                              tempField_m(i, j, k) = copyFromKokkosComplex(fview(i, j, k), 
-                                                                             tempField_m(i, j, k));  
+                              //tempField_m(i, j, k) = this->copyFromKokkosComplex(fview(i, j, k), 
+                              //                                               tempField_m(i, j, k));  
+                              this->copyFromKokkosComplex(fview(i, j, k), tempField_m(i, j, k));  
                             });
        if ( direction == 1 )
        {
@@ -148,11 +150,12 @@ namespace ippl {
                                                 const size_t j,
                                                 const size_t k)
                             {
-                              fview(i, j, k) = copyToKokkosComplex(tempField_m(i, j, k), 
-                                                                   fview(i, j, k));  
+                              //fview(i, j, k) = this->copyToKokkosComplex(tempField_m(i, j, k), 
+                              //                                     fview(i, j, k));  
+                              this->copyToKokkosComplex(tempField_m(i, j, k), fview(i, j, k));  
                             });
     
-        return;
+        //return;
     }
     
     

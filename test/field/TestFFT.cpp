@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    Kokkos::deep_copy(view, field_host);
+    Kokkos::deep_copy(field.getView(), field_host);
 
     //Forward transform
     fft->transform(1, field);
