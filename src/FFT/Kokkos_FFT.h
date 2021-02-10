@@ -50,7 +50,7 @@ namespace ippl {
     //class FFTScaleNone {};
     //
     //class FFTScaleSymmetric {};
-    
+
     class HeffteParams {
         bool alltoall = true;
         bool pencils = true;
@@ -175,6 +175,23 @@ namespace ippl {
         // Destructor
         //~FFT(void);
         ~FFT() = default;
+//#ifdef KOKKOS_ENABLE_CUDA
+//        KOKKOS_INLINE_FUNCTION void 
+//        copyFromKokkosComplex( Complex_t& fVal, heffteComplex_t& tempFieldVal )
+//        {
+//            tempFieldVal.x = fVal.real();
+//            tempFieldVal.y = fVal.imag();
+//            //return tempFieldVal;
+//        }
+//
+//        KOKKOS_INLINE_FUNCTION void 
+//        copyToKokkosComplex( heffteComplex_t& tempFieldVal, Complex_t& fVal )
+//        {
+//            fVal.real() = tempFieldVal.x;
+//            fVal.imag() = tempFieldVal.y;
+//            //return fVal;
+//        }
+//#endif
     
         /** Do the FFT: specify +1 or -1 to indicate forward or inverse
             transform, or specify the user-defined name string for the direction.
@@ -218,23 +235,6 @@ namespace ippl {
         //    return fVal;
         //}
         
-#ifdef KOKKOS_ENABLE_CUDA
-        KOKKOS_INLINE_FUNCTION void 
-        copyFromKokkosComplex( Complex_t& fVal, heffteComplex_t& tempFieldVal )
-        {
-            tempFieldVal.x = fVal.real();
-            tempFieldVal.y = fVal.imag();
-            //return tempFieldVal;
-        }
-
-        KOKKOS_INLINE_FUNCTION void 
-        copyToKokkosComplex( heffteComplex_t& tempFieldVal, Complex_t& fVal )
-        {
-            fVal.real() = tempFieldVal.x;
-            fVal.imag() = tempFieldVal.y;
-            //return fVal;
-        }
-#endif
         //template <class ComplexType>
         //KOKKOS_INLINE_FUNCTION ComplexType 
         //copyFromKokkosComplex( Complex_t fVal, ComplexType tempFieldVal,
@@ -259,7 +259,7 @@ namespace ippl {
         std::shared_ptr<heffte::fft3d<heffteBackend>> heffte_m;
         //Kokkos::View<heffteComplex_t*> tempField_m;
         //Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> tempField_m;
-        Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> tempField_m;
+        //Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> tempField_m;
     
     };
     

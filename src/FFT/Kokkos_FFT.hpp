@@ -45,9 +45,8 @@ namespace ippl {
                 (int)lDom[1].length() + (int)lDom[1].first() - 1,
                 (int)lDom[2].length() + (int)lDom[2].first() - 1};
 
-        // set up the temporary fields
         setup(low, high, params);
-        Kokkos::resize(tempField_m, lDom[0].length(), lDom[1].length(), lDom[2].length()); 
+        //Kokkos::resize(tempField_m, lDom[0].length(), lDom[1].length(), lDom[2].length()); 
     }
     
     
@@ -78,15 +77,6 @@ namespace ippl {
         //return;
     }
     
-    //-----------------------------------------------------------------------------
-    // Destructor
-    //-----------------------------------------------------------------------------
-    
-    //template <size_t Dim, class T>
-    //FFT<CCTransform,Dim,T>::~FFT(void) {
-    //
-    //    // Tau profiling
-    //}
     
     
     template <size_t Dim, class T>
@@ -96,11 +86,7 @@ namespace ippl {
         typename FFT<CCTransform,Dim,T>::ComplexField_t& f)
         //ComplexField_t& f)
     {
-        // Check domain of incoming Field
-        //const Layout_t& in_layout = f.getLayout();
-        //const Domain_t& in_dom = in_layout.getDomain();
-        //PAssert_EQ(this->checkDomain(this->getDomain(),in_dom), true);
-       typename ComplexField_t::view_type& fview = f.getView();
+       auto fview = f.getView();
        const int nghost = f.getNghost();
        //std::array<int, Dim> length;
 
@@ -109,6 +95,11 @@ namespace ippl {
        //                                                                       fview.extent(1) - nghost,
        //                                                                       fview.extent(2) - nghost}, 
        //                                                                       tempField_m.data());
+       
+       Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> tempField;
+       Kokkos::resize(tempField, fview.extent(0) - nghost, 
+                                 fview.extent(1) - nghost,
+                                 fview.extent(2) - nghost);
 
        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
@@ -118,21 +109,28 @@ namespace ippl {
                                           fview.extent(1) - nghost,
                                           fview.extent(2) - nghost
                                          }),
-                            KOKKOS_CLASS_LAMBDA(const size_t i,
+                            KOKKOS_LAMBDA(const size_t i,
                                                 const size_t j,
                                                 const size_t k)
                             {
                               //tempField_m(i, j, k) = this->copyFromKokkosComplex(fview(i, j, k), 
                               //                                               tempField_m(i, j, k));  
-                              this->copyFromKokkosComplex(fview(i, j, k), tempField_m(i, j, k));  
+                              //this->copyFromKokkosComplex(fview(i, j, k), tempField(i, j, k));  
+#ifdef KOKKOS_ENABLE_CUDA
+                              tempField(i, j, k).x = fview(i, j, k).real();
+                              tempField(i, j, k).y = fview(i, j, k).imag();
+#else
+                              tempField(i, j, k).real() = fview(i, j, k).real();
+                              tempField(i, j, k).imag() = fview(i, j, k).imag();
+#endif
                             });
        if ( direction == 1 )
        {
-           heffte_m->forward( tempField_m.data(), tempField_m.data(), heffte::scale::full );
+           heffte_m->forward( tempField.data(), tempField.data(), heffte::scale::full );
        }
        else if ( direction == -1 )
        {
-           heffte_m->backward( tempField_m.data(), tempField_m.data(), heffte::scale::none );
+           heffte_m->backward( tempField.data(), tempField.data(), heffte::scale::none );
        }
        else
        {
@@ -146,16 +144,22 @@ namespace ippl {
                                           fview.extent(1) - nghost,
                                           fview.extent(2) - nghost
                                          }),
-                            KOKKOS_CLASS_LAMBDA(const size_t i,
+                            KOKKOS_LAMBDA(const size_t i,
                                                 const size_t j,
                                                 const size_t k)
                             {
                               //fview(i, j, k) = this->copyToKokkosComplex(tempField_m(i, j, k), 
                               //                                     fview(i, j, k));  
-                              this->copyToKokkosComplex(tempField_m(i, j, k), fview(i, j, k));  
+                              //this->copyToKokkosComplex(tempField(i, j, k), fview(i, j, k));  
+#ifdef KOKKOS_ENABLE_CUDA
+                              fview(i, j, k).real() = tempField(i, j, k).x;
+                              fview(i, j, k).imag() = tempField(i, j, k).y;
+#else
+                              fview(i, j, k).real() = tempField(i, j, k).real();
+                              fview(i, j, k).imag() = tempField(i, j, k).imag();
+#endif
                             });
     
-        //return;
     }
     
     
