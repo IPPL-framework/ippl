@@ -123,8 +123,8 @@ namespace ippl {
                               //viewtempField(i, j, k).x = fview(i, j, k).real();
                               //viewtempField(i, j, k).y = fview(i, j, k).imag();
 #else
-                              tempField(i, j, k).real() = fview(i, j, k).real();
-                              tempField(i, j, k).imag() = fview(i, j, k).imag();
+                              tempField(i-nghost, j-nghost, k-nghost).real( fview(i, j, k).real() );
+                              tempField(i-nghost, j-nghost, k-nghost).imag( fview(i, j, k).imag() );
 #endif
                             });
        if ( direction == 1 )
@@ -162,8 +162,8 @@ namespace ippl {
                               //fview(i, j, k).real() = viewtempField(i, j, k).x;
                               //fview(i, j, k).imag() = viewtempField(i, j, k).y;
 #else
-                              fview(i, j, k).real() = tempField(i, j, k).real();
-                              fview(i, j, k).imag() = tempField(i, j, k).imag();
+                              fview(i, j, k).real() = tempField(i-nghost, j-nghost, k-nghost).real();
+                              fview(i, j, k).imag() = tempField(i-nghost, j-nghost, k-nghost).imag();
 #endif
                             });
     

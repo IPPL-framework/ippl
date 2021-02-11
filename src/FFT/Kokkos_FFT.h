@@ -112,17 +112,27 @@ namespace ippl {
         struct HeffteBackendType {};
 
 #ifdef Heffte_ENABLE_FFTW
-        template <class T>
-        struct HeffteBackendType<T> {
+        template <>
+        struct HeffteBackendType<float> {
             using backend = heffte::backend::fftw;
-            using complexType = std::complex<T>;
+            using complexType = std::complex<float>;
+        };
+        template <>
+        struct HeffteBackendType<double> {
+            using backend = heffte::backend::fftw;
+            using complexType = std::complex<double>;
         };
 #endif
 #ifdef Heffte_ENABLE_MKL
-        template <class T>
-        struct HeffteBackendType<T> {
+        template <>
+        struct HeffteBackendType<float> {
             using backend = heffte::backend::mkl;
-            using complexType = std::complex<T>;
+            using complexType = std::complex<float>;
+        };
+        template <>
+        struct HeffteBackendType<float> {
+            using backend = heffte::backend::mkl;
+            using complexType = std::complex<double>;
         };
 #endif
 #ifdef Heffte_ENABLE_CUDA
