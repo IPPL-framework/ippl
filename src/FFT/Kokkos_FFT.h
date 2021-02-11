@@ -159,6 +159,7 @@ namespace ippl {
     
         typedef FieldLayout<Dim> Layout_t;
         typedef Kokkos::complex<T> Complex_t;
+        //typedef std::complex<T> Complex_t;
         typedef Field<Complex_t,Dim> ComplexField_t;
         //typedef typename FFTBase<Dim,T>::Domain_t Domain_t;
 
@@ -263,6 +264,9 @@ namespace ippl {
     
     };
     
+    template <class T, class... Params>
+    Kokkos::View<T***, Params..., Kokkos::MemoryUnmanaged>
+    createView( const std::array<int, 3>& length, T* data );
     
     /**
        invoke CC transform using direction name string

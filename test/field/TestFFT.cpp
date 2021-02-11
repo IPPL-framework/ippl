@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    std::array<int, dim> pt = {4, 4, 4};
+    std::array<int, dim> pt = {8, 8, 8};
     ippl::Index I(pt[0]);
     ippl::Index J(pt[1]);
     ippl::Index K(pt[2]);
@@ -33,6 +33,8 @@ int main(int argc, char *argv[]) {
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
     typedef ippl::Field<Kokkos::complex<double>, dim> field_type;
+    //typedef ippl::Field<Kokkos::complex<float>, dim> field_type;
+    //typedef ippl::Field<std::complex<double>, dim> field_type;
 
     field_type field(mesh, layout);
 
@@ -74,6 +76,7 @@ int main(int argc, char *argv[]) {
     auto field_result = Kokkos::create_mirror_view_and_copy( Kokkos::HostSpace(), field.getView() );
 
     Kokkos::complex<double> max_error_local(0.0, 0.0);
+    //std::complex<double> max_error_local(0.0, 0.0);
     for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
         for (size_t j = nghost; j < view.extent(1) - nghost; ++j) {
             for (size_t k = nghost; k < view.extent(2) - nghost; ++k) {
@@ -90,12 +93,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    Kokkos::complex<double> max_error(0.0, 0.0);
-    MPI_Reduce(&max_error_local, &max_error, 1, 
-               MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
+    //Kokkos::complex<double> max_error(0.0, 0.0);
+    //MPI_Reduce(&max_error_local, &max_error, 1, 
+    //           MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
 
-    if(Ippl::Comm->rank() == 0) {
-        std::cout << "Max. error " << std::setprecision(16) << max_error << std::endl;
-    }
+    //if(Ippl::Comm->rank() == 0) {
+    std::cout << "Rank:" << Ippl::Comm->rank() << "Max. error " << std::setprecision(16) << max_error_local << std::endl;
+    //}
     return 0;
 }
