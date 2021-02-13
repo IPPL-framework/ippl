@@ -64,13 +64,6 @@ target_link_libraries (
     ${Boost_LIBRARIES}
 )
 
-add_executable (TestFFT TestFFT.cpp)
-target_link_libraries (
-    TestFFT
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
-)
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

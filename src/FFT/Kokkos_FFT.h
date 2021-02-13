@@ -55,13 +55,16 @@ namespace ippl {
         bool alltoall = true;
         bool pencils = true;
         bool reorder = true;
+        int  rcdirection = 0;
         public:
             void setAllToAll( bool value ) { alltoall = value; }
             void setPencils( bool value ) { pencils = value; }
             void setReorder( bool value ) { reorder = value; }
+            void setRCDirection( int value ) { rcdirection = value; }
             bool getAllToAll() const { return alltoall; }
             bool getPencils() const { return pencils; }
             bool getReorder() const { return reorder; }
+            int  getRCDirection() const { return rcdirection; }
     };
 
     namespace detail {
@@ -277,163 +280,55 @@ namespace ippl {
     template <class T, class... Params>
     Kokkos::View<T***, Params..., Kokkos::MemoryUnmanaged>
     createView( const std::array<int, 3>& length, T* data );
-    
+
     /**
-       invoke CC transform using direction name string
+       real-to-complex FFT class
     */
-    //template <size_t Dim, class T>
-    //inline void
-    //FFT<CCTransform,Dim,T>::transform(
-    //    const char* directionName,
-    //    typename FFT<CCTransform,Dim,T>::ComplexField_t& f)
-    //{
-    //    int dir = this->getDirection(directionName);
-    //    transform(dir, f);
-    //    return;
-    //}
+    template <size_t Dim, class T>
+    class FFT<RCTransform,Dim,T> {
     
-    ///**
-    //   real-to-complex FFT class
-    //*/
-    //template <size_t Dim, class T>
-    //class FFT<RCTransform,Dim,T> : public FFTBase<Dim,T> {
-    //
-    //private:
-    //
-    //public:
-    //
-    //    // typedefs
-    //    typedef FieldLayout<Dim> Layout_t;
-    //    typedef BareField<T,Dim> RealField_t;
-    //    typedef LField<T,Dim> RealLField_t;
-    //    typedef std::complex<T> Complex_t;
-    //    typedef BareField<Complex_t,Dim> ComplexField_t;
-    //    typedef LField<Complex_t,Dim> ComplexLField_t;
-    //    typedef typename FFTBase<Dim, T>::Domain_t Domain_t;
-    //
-    //    // Constructors:
-    //
-    //    /** Create a new FFT object with the given domains for input/output Fields
-    //        Specify which dimensions to transform along.
-    //        Optional argument compress indicates whether or not to compress
-    //        temporary Fields in between uses.
-    //    */
-    //    FFT(const Domain_t& rdomain, const Domain_t& cdomain,
-    //        const bool transformTheseDims[Dim], const bool& compressTemps=false);
-    //
-    //    /**
-    //       Same as above, but transform all dims:
-    //    */
-    //    FFT(const Domain_t& rdomain, const Domain_t& cdomain,
-    //        const bool& compressTemps=false, int serialAxes = 1);
-    //
-    //    // Destructor
-    //    ~FFT(void);
-    //
-    //    /** real-to-complex FFT: specify +1 or -1 to indicate forward or inverse
-    //        transform, or specify the user-defined name string for the direction.
-    //        Supply a second BareField to store the output.
-    //        optional argument constInput indicates whether or not to treat the
-    //        input Field argument f as const.  If not, we can use it as a temporary
-    //        in order to avoid an additional data transpose.
-    //    */
-    //    void transform(int direction, RealField_t& f, ComplexField_t& g,
-    //                   const bool& constInput=false);
-    //    void transform(const char* directionName, RealField_t& f,
-    //                   ComplexField_t& g, const bool& constInput=false);
-    //
-    //    /** real-to-complex FFT on GPU: transfer the real field to GPU execute FFT
-    //        return the pointer to memory on GPU where complex results are stored
-    //    */
-    //    /** complex-to-real FFT
-    //        Same as above, but with input and output field types reversed.
-    //    */
-    //    void transform(int direction, ComplexField_t& f, RealField_t& g,
-    //                   const bool& constInput=false);
-    //    void transform(const char* directionName, ComplexField_t& f,
-    //                   RealField_t& g, const bool& constInput=false);
-    //
-    //    /** complex-to-real FFT on GPU: pass pointer to GPU memory where complex field
-    //        is stored, do the inverse FFT and transfer real field back to host memory
-    //    */
-    //
-    //private:
-    //
-    //    /**
-    //       setup performs all the initializations necessary after the transform
-    //       directions have been specified.
-    //    */
-    //    void setup(void);
-    //
-    //    /** How the temporary fields are laid out; these are computed from the
-    //        input Field's domain. This will be allocated as an array of FieldLayouts
-    //        with nTransformDims elements. Each is SERIAL along the zeroth dimension
-    //        and the axes are permuted so that the transform direction is first
-    //    */
-    //    Layout_t** tempLayouts_m;
-    //
-    //    /**
-    //       extra layout for the one real Field needed
-    //    */
-    //    Layout_t* tempRLayout_m;
-    //
-    //    /** The array of temporary fields, one for each transform direction
-    //        These use the corresponding tempLayouts.
-    //    */
-    //    ComplexField_t** tempFields_m;
-    //
-    //    /**
-    //       We need one real internal Field in this case.
-    //    */
-    //    RealField_t* tempRField_m;
-    //
-    //    /**
-    //       domain of the resulting complex fields
-    //       const Domain_t& complexDomain_m;
-    //    */
-    //    Domain_t complexDomain_m;
-    //
-    //    /**
-    //       number of axes to make serial
-    //    */
-    //    int serialAxes_m;
-    //};
-    //
-    //// Inline function definitions
-    //
-    ///**
-    //   invoke real-to-complex transform using string for transform direction
-    //*/
-    //template <size_t Dim, class T>
-    //inline void
-    //FFT<RCTransform,Dim,T>::transform(
-    //    const char* directionName,
-    //    typename FFT<RCTransform,Dim,T>::RealField_t& f,
-    //    typename FFT<RCTransform,Dim,T>::ComplexField_t& g,
-    //    const bool& constInput)
-    //{
-    //    int dir = this->getDirection(directionName);
-    //    transform(dir, f, g, constInput);
-    //    return;
-    //}
-    //
-    ///**
-    //   invoke complex-to-real transform using string for transform direction
-    //*/
-    //template <size_t Dim, class T>
-    //inline void
-    //FFT<RCTransform,Dim,T>::transform(
-    //    const char* directionName,
-    //    typename FFT<RCTransform,Dim,T>::ComplexField_t& f,
-    //    typename FFT<RCTransform,Dim,T>::RealField_t& g,
-    //    const bool& constInput)
-    //{
-    //    int dir = this->getDirection(directionName);
-    //    transform(dir, f, g, constInput);
-    //    return;
-    //}
-    //
-    //
+    public:
+    
+        typedef FieldLayout<Dim> Layout_t;
+        typedef Kokkos::complex<T> Complex_t;
+        typedef Field<T,Dim> RealField_t;
+        typedef Field<Complex_t,Dim> ComplexField_t;
+
+        using heffteBackend = typename detail::HeffteBackendType<T>::backend;
+        using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
+        
+
+        /** Create a new FFT object with the layout for the input and output Fields and parameters
+         *  for heffte.
+        */
+        FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const HeffteParams& params);
+    
+    
+        ~FFT() = default;
+    
+        /** Do the FFT: specify +1 or -1 to indicate forward or inverse
+            transform.
+        */
+        void transform(int direction, RealField_t& f, ComplexField_t& g); 
+    
+    
+    private:
+    
+        /**
+           setup performs the initialization necessary after the transform
+           directions have been specified.
+        */
+        void setup(const std::array<int, Dim>& lowInput, 
+                   const std::array<int, Dim>& highInput,
+                   const std::array<int, Dim>& lowOutput, 
+                   const std::array<int, Dim>& highOutput,
+                   const HeffteParams& params);
+    
+
+        std::shared_ptr<heffte::fft3d_r2c<heffteBackend>> heffte_m;
+    
+    };
+
 }
 #include "FFT/Kokkos_FFT.hpp"
 #endif // IPPL_FFT_FFT_H
