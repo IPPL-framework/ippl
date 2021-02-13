@@ -1,13 +1,27 @@
 //
-// IPPL FFT
+// Class FFT
+//   The FFT class performs complex-to-complex, 
+//   real-to-complex on IPPL Fields. 
+//   FFT is templated on the type of transform to be performed, 
+//   the dimensionality of the Field to transform, and the
+//   floating-point precision type of the Field (float or double).
+//   Currently, we use heffte for taking the transforms and the class FFT
+//   serves as an interface between IPPL and heffte.
 //
-// Copyright (c) 2008-2018
+// Copyright (c) 2021, Sriramkrishnan Muralikrishnan, 
 // Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved.
+// All rights reserved
 //
-// OPAL is licensed under GNU GPL version 3.
+// This file is part of IPPL.
 //
-
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 /**
    Implementations for FFT constructor/destructor and transforms
 */
@@ -25,14 +39,13 @@ namespace ippl {
     
     /**
        Create a new FFT object of type CCTransform, with a
-       given domain. Also specify which dimensions to transform along.
+       given layout and heffte parameters.
     */
     
     template <size_t Dim, class T>
     FFT<CCTransform,Dim,T>::FFT(
         const Layout_t& layout,
         const HeffteParams& params)
-//    : FFTBase<Dim,T>(FFT<CCTransform,Dim,T>::ccFFT, cdomain)
     {
     
         std::array<int, Dim> low; 
@@ -50,8 +63,7 @@ namespace ippl {
     
     
     /**
-       setup performs all the initializations necessary after the transform
-       directions have been specified.
+           setup performs the initialization necessary.
     */
     template <size_t Dim, class T>
     void
@@ -70,10 +82,6 @@ namespace ippl {
 
          heffte_m = std::make_shared<heffte::fft3d<heffteBackend>>(inbox, outbox, Ippl::getComm(), heffteOptions);
          
-         //int fftsize = std::max( heffte_m->size_outbox(), heffte_m->size_inbox() );
-         //tempField_m = Kokkos::View<heffteComplex_t*>(Kokkos::ViewAllocateWithoutInitializing( "tempField_m" ), fftsize );
-  
-        //return;
     }
     
  
@@ -83,24 +91,18 @@ namespace ippl {
     FFT<CCTransform,Dim,T>::transform(
         int direction,
         typename FFT<CCTransform,Dim,T>::ComplexField_t& f)
-        //ComplexField_t& f)
     {
        auto fview = f.getView();
        const int nghost = f.getNghost();
-       //std::array<int, Dim> length;
 
-       //length = {(int)fview.extent(0) - nghost, 
-       //          (int)fview.extent(1) - nghost,
-       //          (int)fview.extent(2) - nghost};
-     
-       //auto viewtempField = createView<heffteComplex_t, Kokkos::LayoutRight>(length, tempField_m.data());
-       
+       /**
+        *This copy to a temporary Kokkos view is needed because heffte accepts input and output data
+        *in layout right (usual C++) format, whereas default Kokkos views can be layout left or right
+        *depending on whether the device is gpu or cpu.
+       */
        Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> tempField("tempField", fview.extent(0) - 2*nghost,
                                                                                    fview.extent(1) - 2*nghost,
                                                                                    fview.extent(2) - 2*nghost);
-       //Kokkos::resize(tempField, fview.extent(0) - nghost, 
-       //                          fview.extent(1) - nghost,
-       //                          fview.extent(2) - nghost);
 
        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
@@ -114,14 +116,9 @@ namespace ippl {
                                                 const size_t j,
                                                 const size_t k)
                             {
-                              //tempField_m(i, j, k) = this->copyFromKokkosComplex(fview(i, j, k), 
-                              //                                               tempField_m(i, j, k));  
-                              //this->copyFromKokkosComplex(fview(i, j, k), tempField(i, j, k));  
 #ifdef KOKKOS_ENABLE_CUDA
                               tempField(i-nghost, j-nghost, k-nghost).x = fview(i, j, k).real();
                               tempField(i-nghost, j-nghost, k-nghost).y = fview(i, j, k).imag();
-                              //viewtempField(i, j, k).x = fview(i, j, k).real();
-                              //viewtempField(i, j, k).y = fview(i, j, k).imag();
 #else
                               tempField(i-nghost, j-nghost, k-nghost).real( fview(i, j, k).real() );
                               tempField(i-nghost, j-nghost, k-nghost).imag( fview(i, j, k).imag() );
@@ -130,12 +127,10 @@ namespace ippl {
        if ( direction == 1 )
        {
            heffte_m->forward( tempField.data(), tempField.data(), heffte::scale::full );
-           //heffte_m->forward( viewtempField.data(), viewtempField.data(), heffte::scale::full );
        }
        else if ( direction == -1 )
        {
            heffte_m->backward( tempField.data(), tempField.data(), heffte::scale::none );
-           //heffte_m->backward( viewtempField.data(), viewtempField.data(), heffte::scale::none );
        }
        else
        {
@@ -153,14 +148,9 @@ namespace ippl {
                                           const size_t j,
                                           const size_t k)
                             {
-                              //fview(i, j, k) = this->copyToKokkosComplex(tempField_m(i, j, k), 
-                              //                                     fview(i, j, k));  
-                              //this->copyToKokkosComplex(tempField(i, j, k), fview(i, j, k));  
 #ifdef KOKKOS_ENABLE_CUDA
                               fview(i, j, k).real() = tempField(i-nghost, j-nghost, k-nghost).x;
                               fview(i, j, k).imag() = tempField(i-nghost, j-nghost, k-nghost).y;
-                              //fview(i, j, k).real() = viewtempField(i, j, k).x;
-                              //fview(i, j, k).imag() = viewtempField(i, j, k).y;
 #else
                               fview(i, j, k).real() = tempField(i-nghost, j-nghost, k-nghost).real();
                               fview(i, j, k).imag() = tempField(i-nghost, j-nghost, k-nghost).imag();
@@ -169,13 +159,6 @@ namespace ippl {
     
     }
     
-    template <class T, class... Params>
-    Kokkos::View<T***, Params..., Kokkos::MemoryUnmanaged>
-    createView( const std::array<int, 3>& length, T* data )
-    {
-        return Kokkos::View<T***, Params..., Kokkos::MemoryUnmanaged>(
-               data, length[0], length[1], length[2]);
-    }
     
     //=============================================================================
     // FFT RCTransform Constructors
@@ -251,6 +234,11 @@ namespace ippl {
        const int nghostf = f.getNghost();
        const int nghostg = g.getNghost();
 
+       /**
+        *This copy to a temporary Kokkos view is needed because heffte accepts input and output data
+        *in layout right (usual C++) format, whereas default Kokkos views can be layout left or right
+        *depending on whether the device is gpu or cpu.
+       */
        Kokkos::View<T***,Kokkos::LayoutRight> tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
                                                                        fview.extent(1) - 2*nghostf,
                                                                        fview.extent(2) - 2*nghostf);
