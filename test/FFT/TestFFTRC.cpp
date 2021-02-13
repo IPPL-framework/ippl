@@ -4,6 +4,7 @@
 #include <typeinfo>
 #include <array>
 #include <fstream>
+#include <random>
 
 int main(int argc, char *argv[]) {
 
@@ -44,20 +45,22 @@ int main(int argc, char *argv[]) {
     fftParams.setReorder( true );
     fftParams.setRCDirection( 0 );
 
+    ippl::NDIndex<dim> ownedOutput;
+
     if(fftParams.getRCDirection() == 0) {
-        ippl::Index Ioutput(pt[0]/2 + 1);
-        ippl::Index Joutput(pt[1]);
-        ippl::Index Koutput(pt[2]);
+        ownedOutput[0] = ippl::Index(pt[0]/2 + 1);
+        ownedOutput[1] = ippl::Index(pt[1]);
+        ownedOutput[2] = ippl::Index(pt[2]);
     }
     else if(fftParams.getRCDirection() == 1) {
-        ippl::Index Ioutput(pt[0]);
-        ippl::Index Joutput(pt[1]/2 + 1);
-        ippl::Index Koutput(pt[2]);
+        ownedOutput[0] = ippl::Index(pt[0]);
+        ownedOutput[1] = ippl::Index(pt[1]/2 + 1);
+        ownedOutput[2] = ippl::Index(pt[2]);
     }
     else if(fftParams.getRCDirection() == 2) {
-        ippl::Index Ioutput(pt[0]);
-        ippl::Index Joutput(pt[1]);
-        ippl::Index Koutput(pt[2]/2 + 1);
+        ownedOutput[0] = ippl::Index(pt[0]);
+        ownedOutput[1] = ippl::Index(pt[1]);
+        ownedOutput[2] = ippl::Index(pt[2]/2 + 1);
     }
     else {
         if (Ippl::Comm->rank() == 0) {
@@ -65,7 +68,6 @@ int main(int argc, char *argv[]) {
         }
         return 0;
     }
-    ippl::NDIndex<dim> ownedOutput(Ioutput, Joutput, Koutput);
     ippl::FieldLayout<dim> layoutOutput(ownedOutput, allParallel);
 
     ippl::UniformCartesian<double, 3> meshOutput(ownedOutput, hx, origin);
@@ -81,12 +83,14 @@ int main(int argc, char *argv[]) {
     typename field_type_real::HostMirror fieldInput_host = fieldInput.getHostMirror();
 
     const int nghost = fieldInput.getNghost();
+    std::mt19937_64 eng(42 + Ippl::Comm->rank());
+    std::uniform_real_distribution<double> unif(0, 1);
 
     for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
         for (size_t j = nghost; j < view.extent(1) - nghost; ++j) {
             for (size_t k = nghost; k < view.extent(2) - nghost; ++k) {
     
-                fieldInput_host(i, j, k) = 1.0; 
+                fieldInput_host(i, j, k) = unif(eng);//1.0; 
                               
             }
         }

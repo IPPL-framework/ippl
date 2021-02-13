@@ -20,6 +20,7 @@
 
 //#include "FFT/Kokkos_FFTBase.h"
 #include <heffte_fft3d.h>
+#include <heffte_fft3d_r2c.h>
 #include <array>
 #include <memory>
 #include <type_traits>
