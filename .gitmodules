@@ -1,0 +1,3 @@
+[submodule "src/Solver"]
+	path = src/Solver
+	url = git@gitlab.psi.ch:OPAL/Libraries/ippl-solvers.git

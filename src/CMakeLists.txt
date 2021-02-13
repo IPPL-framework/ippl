@@ -74,6 +74,11 @@ add_subdirectory (Expression)
 add_subdirectory (Types)
 add_subdirectory (Partition)
 
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Solver/CMakeLists.txt")
+    message (STATUS "Adding Solver subdirectory")
+    add_subdirectory (Solver)
+endif ()
+
 if (ENABLE_AMR)
     add_subdirectory(AmrParticle)
 endif ()
