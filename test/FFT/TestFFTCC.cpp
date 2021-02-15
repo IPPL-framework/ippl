@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
     field_type field(mesh, layout);
 
-    ippl::HeffteParams fftParams;
+    ippl::FFTParams fftParams;
 
     fftParams.setAllToAll( true );
     fftParams.setPencils( true );
@@ -78,19 +78,28 @@ int main(int argc, char *argv[]) {
     fft->transform(-1, field);
 
     
-    auto field_result = Kokkos::create_mirror_view_and_copy( Kokkos::HostSpace(), field.getView() );
+    auto field_result = Kokkos::create_mirror_view_and_copy(
+                        Kokkos::HostSpace(), field.getView());
 
     Kokkos::complex<double> max_error_local(0.0, 0.0);
     for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
         for (size_t j = nghost; j < view.extent(1) - nghost; ++j) {
             for (size_t k = nghost; k < view.extent(2) - nghost; ++k) {
     
-                Kokkos::complex<double> error(std::fabs(field_host(i, j, k).real() - field_result(i, j, k).real()), 
-                                              std::fabs(field_host(i, j, k).imag() - field_result(i, j, k).imag()));
+                Kokkos::complex<double> 
+                    error(std::fabs(field_host(i, j, k).real() - 
+                                    field_result(i, j, k).real()), 
+                          std::fabs(field_host(i, j, k).imag() - 
+                                    field_result(i, j, k).imag()));
 
-                if(error.real() > max_error_local.real()) max_error_local.real() = error.real();
-                if(error.imag() > max_error_local.imag()) max_error_local.imag() = error.imag();
-                std::cout << "Error: " << std::setprecision(16) << error << std::endl;
+                if(error.real() > max_error_local.real()) 
+                    max_error_local.real() = error.real();
+                
+                if(error.imag() > max_error_local.imag()) 
+                    max_error_local.imag() = error.imag();
+                std::cout << "Error: " 
+                          << std::setprecision(16) 
+                          << error << std::endl;
             }
         }
     }
@@ -100,7 +109,9 @@ int main(int argc, char *argv[]) {
     //           MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
 
     //if(Ippl::Comm->rank() == 0) {
-    std::cout << "Rank:" << Ippl::Comm->rank() << "Max. error " << std::setprecision(16) << max_error_local << std::endl;
+    std::cout << "Rank:" << Ippl::Comm->rank() 
+              << "Max. error " << std::setprecision(16) << max_error_local 
+              << std::endl;
     //}
     return 0;
 }

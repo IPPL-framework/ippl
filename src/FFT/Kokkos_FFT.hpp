@@ -33,9 +33,9 @@
 
 namespace ippl {
 
-    //=============================================================================
+    //=========================================================================
     // FFT CCTransform Constructors
-    //=============================================================================
+    //=========================================================================
     
     /**
        Create a new FFT object of type CCTransform, with a
@@ -45,19 +45,34 @@ namespace ippl {
     template <size_t Dim, class T>
     FFT<CCTransform,Dim,T>::FFT(
         const Layout_t& layout,
-        const HeffteParams& params)
+        const FFTParams& params)
     {
     
-        std::array<int, Dim> low; 
-        std::array<int, Dim> high;
+
+        /**
+         * Heffte requires to pass a 3D array even for 2D and 
+         * 1D FFTs we just have to make the length in other 
+         * dimensions to be 1. 
+         */
+        std::array<int, 3> low; 
+        std::array<int, 3> high;
 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
 
-        low = {(int)lDom[0].first(), (int)lDom[1].first(), (int)lDom[2].first()};
-        high = {(int)lDom[0].length() + (int)lDom[0].first() - 1,
-                (int)lDom[1].length() + (int)lDom[1].first() - 1,
-                (int)lDom[2].length() + (int)lDom[2].first() - 1};
+        low.fill(0);
+        high.fill(0);
 
+        /**
+         * Static cast to int is necessary, otherwise it gives errors.
+         * However, even with this it may so happen that for large systems 
+         * this might result in negative values due to an overflow. At the 
+         * moment there is not an easy way to fix this.
+         */
+        for(size_t d = 0; d < Dim; ++d) {
+            low[d] = static_cast<int>(lDom[d].first());
+            high[d] = static_cast<int>(lDom[d].length() + lDom[d].first() - 1);
+        }
+        
         setup(low, high, params);
     }
     
@@ -69,18 +84,20 @@ namespace ippl {
     void
     FFT<CCTransform,Dim,T>::setup(const std::array<int, Dim>& low, 
                                   const std::array<int, Dim>& high,
-                                  const HeffteParams& params)
+                                  const FFTParams& params)
     {
    
-         heffte::box3d inbox = { low, high };
-         heffte::box3d outbox = { low, high };
+         heffte::box3d inbox = {low, high};
+         heffte::box3d outbox = {low, high};
 
-         heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
+         heffte::plan_options heffteOptions = 
+             heffte::default_options<heffteBackend>();
          heffteOptions.use_alltoall = params.getAllToAll();
          heffteOptions.use_pencils = params.getPencils();
          heffteOptions.use_reorder = params.getReorder();
 
-         heffte_m = std::make_shared<heffte::fft3d<heffteBackend>>(inbox, outbox, Ippl::getComm(), heffteOptions);
+         heffte_m = std::make_shared<heffte::fft3d<heffteBackend>>
+                    (inbox, outbox, Ippl::getComm(), heffteOptions);
          
     }
     
@@ -96,13 +113,15 @@ namespace ippl {
        const int nghost = f.getNghost();
 
        /**
-        *This copy to a temporary Kokkos view is needed because heffte accepts input and output data
-        *in layout right (usual C++) format, whereas default Kokkos views can be layout left or right
-        *depending on whether the device is gpu or cpu.
+        *This copy to a temporary Kokkos view is needed because heffte accepts 
+        *input and output data in layout right (usual C++) format, whereas 
+        *default Kokkos views can be layout left or right depending on whether 
+        *the device is gpu or cpu.
        */
-       Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> tempField("tempField", fview.extent(0) - 2*nghost,
-                                                                                   fview.extent(1) - 2*nghost,
-                                                                                   fview.extent(2) - 2*nghost);
+       Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> 
+           tempField("tempField", fview.extent(0) - 2*nghost,
+                                  fview.extent(1) - 2*nghost,
+                                  fview.extent(2) - 2*nghost);
 
        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
@@ -117,24 +136,31 @@ namespace ippl {
                                                 const size_t k)
                             {
 #ifdef KOKKOS_ENABLE_CUDA
-                              tempField(i-nghost, j-nghost, k-nghost).x = fview(i, j, k).real();
-                              tempField(i-nghost, j-nghost, k-nghost).y = fview(i, j, k).imag();
+                              tempField(i-nghost, j-nghost, k-nghost).x = 
+                              fview(i, j, k).real();
+                              tempField(i-nghost, j-nghost, k-nghost).y = 
+                              fview(i, j, k).imag();
 #else
-                              tempField(i-nghost, j-nghost, k-nghost).real( fview(i, j, k).real() );
-                              tempField(i-nghost, j-nghost, k-nghost).imag( fview(i, j, k).imag() );
+                              tempField(i-nghost, j-nghost, k-nghost).real(
+                                      fview(i, j, k).real());
+                              tempField(i-nghost, j-nghost, k-nghost).imag(
+                                      fview(i, j, k).imag());
 #endif
                             });
        if ( direction == 1 )
        {
-           heffte_m->forward( tempField.data(), tempField.data(), heffte::scale::full );
+           heffte_m->forward(tempField.data(), tempField.data(), 
+                             heffte::scale::full);
        }
        else if ( direction == -1 )
        {
-           heffte_m->backward( tempField.data(), tempField.data(), heffte::scale::none );
+           heffte_m->backward(tempField.data(), tempField.data(), 
+                              heffte::scale::none);
        }
        else
        {
-           throw std::logic_error( "Only 1:forward and -1:backward are allowed as directions" );
+           throw std::logic_error(
+                "Only 1:forward and -1:backward are allowed as directions");
        }
 
     
@@ -149,49 +175,71 @@ namespace ippl {
                                           const size_t k)
                             {
 #ifdef KOKKOS_ENABLE_CUDA
-                              fview(i, j, k).real() = tempField(i-nghost, j-nghost, k-nghost).x;
-                              fview(i, j, k).imag() = tempField(i-nghost, j-nghost, k-nghost).y;
+                              fview(i, j, k).real() = 
+                              tempField(i-nghost, j-nghost, k-nghost).x;
+                              fview(i, j, k).imag() = 
+                              tempField(i-nghost, j-nghost, k-nghost).y;
 #else
-                              fview(i, j, k).real() = tempField(i-nghost, j-nghost, k-nghost).real();
-                              fview(i, j, k).imag() = tempField(i-nghost, j-nghost, k-nghost).imag();
+                              fview(i, j, k).real() = 
+                              tempField(i-nghost, j-nghost, k-nghost).real();
+                              fview(i, j, k).imag() = 
+                              tempField(i-nghost, j-nghost, k-nghost).imag();
 #endif
                             });
     
     }
     
     
-    //=============================================================================
+    //========================================================================
     // FFT RCTransform Constructors
-    //=============================================================================
+    //========================================================================
     
     /**
-       Create a new FFT object of type RCTransform, with given input and output layouts and heffte parameters. 
+       *Create a new FFT object of type RCTransform, with given input and output 
+       *layouts and heffte parameters. 
     */
     
     template <size_t Dim, class T>
     FFT<RCTransform,Dim,T>::FFT(
         const Layout_t& layoutInput,
         const Layout_t& layoutOutput,
-        const HeffteParams& params)
+        const FFTParams& params)
     {
     
-        std::array<int, Dim> lowInput; 
-        std::array<int, Dim> highInput;
-        std::array<int, Dim> lowOutput; 
-        std::array<int, Dim> highOutput;
+        /**
+         * Heffte requires to pass a 3D array even for 2D and 
+         * 1D FFTs we just have to make the length in other 
+         * dimensions to be 1. 
+         */
+        std::array<int, 3> lowInput; 
+        std::array<int, 3> highInput;
+        std::array<int, 3> lowOutput; 
+        std::array<int, 3> highOutput;
 
         const NDIndex<Dim>& lDomInput = layoutInput.getLocalNDIndex();
         const NDIndex<Dim>& lDomOutput = layoutOutput.getLocalNDIndex();
 
-        lowInput = {(int)lDomInput[0].first(), (int)lDomInput[1].first(), (int)lDomInput[2].first()};
-        highInput = {(int)lDomInput[0].length() + (int)lDomInput[0].first() - 1,
-                     (int)lDomInput[1].length() + (int)lDomInput[1].first() - 1,
-                     (int)lDomInput[2].length() + (int)lDomInput[2].first() - 1};
-   
-        lowOutput = {(int)lDomOutput[0].first(), (int)lDomOutput[1].first(), (int)lDomOutput[2].first()};
-        highOutput = {(int)lDomOutput[0].length() + (int)lDomOutput[0].first() - 1,
-                     (int)lDomOutput[1].length() + (int)lDomOutput[1].first() - 1,
-                     (int)lDomOutput[2].length() + (int)lDomOutput[2].first() - 1};
+        lowInput.fill(0);
+        highInput.fill(0);
+        lowOutput.fill(0);
+        highOutput.fill(0);
+
+        /**
+         * Static cast to int is necessary, otherwise it gives errors.
+         * However, even with this it may so happen that for large systems 
+         * this might result in negative values due to an overflow. At the 
+         * moment there is not an easy way to fix this.
+         */
+        for(size_t d = 0; d < Dim; ++d) {
+            lowInput[d] = static_cast<int>(lDomInput[d].first());
+            highInput[d] = static_cast<int>(lDomInput[d].length() + 
+                           lDomInput[d].first() - 1);
+            
+            lowOutput[d] = static_cast<int>(lDomOutput[d].first());
+            highOutput[d] = static_cast<int>(lDomOutput[d].length() + 
+                            lDomOutput[d].first() - 1);
+        }
+        
 
         setup(lowInput, highInput, lowOutput, highOutput, params);
     }
@@ -206,19 +254,21 @@ namespace ippl {
                                   const std::array<int, Dim>& highInput,
                                   const std::array<int, Dim>& lowOutput, 
                                   const std::array<int, Dim>& highOutput,
-                                  const HeffteParams& params)
+                                  const FFTParams& params)
     {
    
-         heffte::box3d inbox = { lowInput, highInput };
-         heffte::box3d outbox = { lowOutput, highOutput };
+         heffte::box3d inbox = {lowInput, highInput};
+         heffte::box3d outbox = {lowOutput, highOutput};
 
-         heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
+         heffte::plan_options heffteOptions = 
+             heffte::default_options<heffteBackend>();
          heffteOptions.use_alltoall = params.getAllToAll();
          heffteOptions.use_pencils = params.getPencils();
          heffteOptions.use_reorder = params.getReorder();
 
-         heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend>>(inbox, outbox, params.getRCDirection(), 
-                                                                       Ippl::getComm(), heffteOptions);
+         heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend>>
+                    (inbox, outbox, params.getRCDirection(), Ippl::getComm(), 
+                     heffteOptions);
          
     }
     
@@ -235,17 +285,20 @@ namespace ippl {
        const int nghostg = g.getNghost();
 
        /**
-        *This copy to a temporary Kokkos view is needed because heffte accepts input and output data
-        *in layout right (usual C++) format, whereas default Kokkos views can be layout left or right
+        *This copy to a temporary Kokkos view is needed because heffte 
+        *accepts input and output data in layout right (usual C++) format, 
+        *whereas default Kokkos views can be layout left or right
         *depending on whether the device is gpu or cpu.
        */
-       Kokkos::View<T***,Kokkos::LayoutRight> tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
-                                                                       fview.extent(1) - 2*nghostf,
-                                                                       fview.extent(2) - 2*nghostf);
+       Kokkos::View<T***,Kokkos::LayoutRight> 
+           tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
+                                    fview.extent(1) - 2*nghostf,
+                                    fview.extent(2) - 2*nghostf);
 
-       Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> tempFieldg("tempFieldg", gview.extent(0) - 2*nghostg,
-                                                                                   gview.extent(1) - 2*nghostg,
-                                                                                   gview.extent(2) - 2*nghostg);
+       Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight> 
+           tempFieldg("tempFieldg", gview.extent(0) - 2*nghostg,
+                                    gview.extent(1) - 2*nghostg,
+                                    gview.extent(2) - 2*nghostg);
 
        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
@@ -259,7 +312,8 @@ namespace ippl {
                                           const size_t j,
                                           const size_t k)
                             {
-                              tempFieldf(i-nghostf, j-nghostf, k-nghostf) = fview(i, j, k);
+                              tempFieldf(i-nghostf, j-nghostf, k-nghostf) = 
+                              fview(i, j, k);
                             });
        Kokkos::parallel_for("copy from Kokkos g field in FFT",
                             mdrange_type({nghostg, nghostg, nghostg},
@@ -272,24 +326,31 @@ namespace ippl {
                                           const size_t k)
                             {
 #ifdef KOKKOS_ENABLE_CUDA
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).x = gview(i, j, k).real();
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).y = gview(i, j, k).imag();
+                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).x = 
+                              gview(i, j, k).real();
+                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).y = 
+                              gview(i, j, k).imag();
 #else
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).real( gview(i, j, k).real() );
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).imag( gview(i, j, k).imag() );
+                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).real(
+                                      gview(i, j, k).real());
+                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).imag(
+                                      gview(i, j, k).imag());
 #endif
                             });
        if ( direction == 1 )
        {
-           heffte_m->forward( tempFieldf.data(), tempFieldg.data(), heffte::scale::full );
+           heffte_m->forward( tempFieldf.data(), tempFieldg.data(), 
+                              heffte::scale::full );
        }
        else if ( direction == -1 )
        {
-           heffte_m->backward( tempFieldg.data(), tempFieldf.data(), heffte::scale::none );
+           heffte_m->backward( tempFieldg.data(), tempFieldf.data(), 
+                               heffte::scale::none );
        }
        else
        {
-           throw std::logic_error( "Only 1:forward and -1:backward are allowed as directions" );
+           throw std::logic_error(
+                "Only 1:forward and -1:backward are allowed as directions");
        }
 
        Kokkos::parallel_for("copy to Kokkos f field FFT",
@@ -302,7 +363,8 @@ namespace ippl {
                                           const size_t j,
                                           const size_t k)
                             {
-                              fview(i, j, k) = tempFieldf(i-nghostf, j-nghostf, k-nghostf);
+                              fview(i, j, k) = 
+                              tempFieldf(i-nghostf, j-nghostf, k-nghostf);
                             });
        
        Kokkos::parallel_for("copy to Kokkos g field FFT",
@@ -316,11 +378,15 @@ namespace ippl {
                                           const size_t k)
                             {
 #ifdef KOKKOS_ENABLE_CUDA
-                              gview(i, j, k).real() = tempFieldg(i-nghostg, j-nghostg, k-nghostg).x;
-                              gview(i, j, k).imag() = tempFieldg(i-nghostg, j-nghostg, k-nghostg).y;
+                              gview(i, j, k).real() = 
+                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).x;
+                              gview(i, j, k).imag() = 
+                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).y;
 #else
-                              gview(i, j, k).real() = tempFieldg(i-nghostg, j-nghostg, k-nghostg).real();
-                              gview(i, j, k).imag() = tempFieldg(i-nghostg, j-nghostg, k-nghostg).imag();
+                              gview(i, j, k).real() = 
+                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).real();
+                              gview(i, j, k).imag() = 
+                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).imag();
 #endif
                             });
     

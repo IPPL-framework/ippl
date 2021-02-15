@@ -33,14 +33,10 @@
 #include <type_traits>
 
 #include "FieldLayout/FieldLayout.h"
+#include "Field/Field.h"
 
 namespace ippl {
 
-    /**
-        forward declarations
-    */
-    template <typename T, unsigned Dim, class Mesh, class Cell> class Field;
-    
     /**
        Tag classes for CC type of Fourier transforms
     */
@@ -51,7 +47,7 @@ namespace ippl {
     class RCTransform {};
     
 
-    class HeffteParams {
+    class FFTParams {
         bool alltoall = true;
         bool pencils = true;
         bool reorder = true;
@@ -134,10 +130,10 @@ namespace ippl {
         using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
         
 
-        /** Create a new FFT object with the layout for the input Field and parameters
-         *  for heffte.
+        /** Create a new FFT object with the layout for the input Field and 
+         * parameters for heffte.
         */
-        FFT(const Layout_t& layout, const HeffteParams& params);
+        FFT(const Layout_t& layout, const FFTParams& params);
     
         // Destructor
         ~FFT() = default;
@@ -155,7 +151,7 @@ namespace ippl {
         */
         void setup(const std::array<int, Dim>& low, 
                    const std::array<int, Dim>& high,
-                   const HeffteParams& params);
+                   const FFTParams& params);
     
         std::shared_ptr<heffte::fft3d<heffteBackend>> heffte_m;
     };
@@ -178,10 +174,10 @@ namespace ippl {
         using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
         
 
-        /** Create a new FFT object with the layout for the input and output Fields and parameters
-         *  for heffte.
+        /** Create a new FFT object with the layout for the input and output Fields 
+         * and parameters for heffte.
         */
-        FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const HeffteParams& params);
+        FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const FFTParams& params);
     
     
         ~FFT() = default;
@@ -202,7 +198,7 @@ namespace ippl {
                    const std::array<int, Dim>& highInput,
                    const std::array<int, Dim>& lowOutput, 
                    const std::array<int, Dim>& highOutput,
-                   const HeffteParams& params);
+                   const FFTParams& params);
     
 
         std::shared_ptr<heffte::fft3d_r2c<heffteBackend>> heffte_m;

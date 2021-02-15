@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
     field_type_real fieldInput(meshInput, layoutInput);
 
-    ippl::HeffteParams fftParams;
+    ippl::FFTParams fftParams;
 
     fftParams.setAllToAll( true );
     fftParams.setPencils( true );
@@ -64,7 +64,9 @@ int main(int argc, char *argv[]) {
     }
     else {
         if (Ippl::Comm->rank() == 0) {
-            std::cerr << "RCDirection need to be 0, 1 or 2 and it indicates the dimension in which data is shortened" << std::endl;
+            std::cerr << "RCDirection need to be 0, 1 or 2 and it" 
+                      << "indicates the dimension in which data is shortened" 
+                      << std::endl;
         }
         return 0;
     }
@@ -80,7 +82,8 @@ int main(int argc, char *argv[]) {
     fft = std::make_unique<FFT_type>(layoutInput, layoutOutput, fftParams);
 
     typename field_type_real::view_type& view = fieldInput.getView();    
-    typename field_type_real::HostMirror fieldInput_host = fieldInput.getHostMirror();
+    typename field_type_real::HostMirror fieldInput_host = 
+                                         fieldInput.getHostMirror();
 
     const int nghost = fieldInput.getNghost();
     std::mt19937_64 eng(42 + Ippl::Comm->rank());
@@ -103,17 +106,22 @@ int main(int argc, char *argv[]) {
     //Reverse transform
     fft->transform(-1, fieldInput, fieldOutput);
     
-    auto field_result = Kokkos::create_mirror_view_and_copy( Kokkos::HostSpace(), fieldInput.getView() );
+    auto field_result = Kokkos::create_mirror_view_and_copy(
+                        Kokkos::HostSpace(), fieldInput.getView());
 
     double max_error_local = 0.0;
     for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
         for (size_t j = nghost; j < view.extent(1) - nghost; ++j) {
             for (size_t k = nghost; k < view.extent(2) - nghost; ++k) {
     
-                double error = std::fabs(fieldInput_host(i, j, k) - field_result(i, j, k));
+                double error = std::fabs(fieldInput_host(i, j, k) - 
+                                         field_result(i, j, k));
 
-                if(error > max_error_local) max_error_local = error;
-                std::cout << "Error: " << std::setprecision(16) << error << std::endl;
+                if(error > max_error_local) 
+                    max_error_local = error;
+                
+                std::cout << "Error: " 
+                          << std::setprecision(16) << error << std::endl;
             }
         }
     }
@@ -123,7 +131,9 @@ int main(int argc, char *argv[]) {
     //           MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
 
     //if(Ippl::Comm->rank() == 0) {
-    std::cout << "Rank:" << Ippl::Comm->rank() << "Max. error " << std::setprecision(16) << max_error_local << std::endl;
+    std::cout << "Rank:" << Ippl::Comm->rank() 
+              << "Max. error " << std::setprecision(16) << max_error_local 
+              << std::endl;
     //}
     return 0;
 }
