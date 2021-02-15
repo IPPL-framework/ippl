@@ -63,10 +63,8 @@ namespace ippl {
         high.fill(0);
 
         /**
-         * Static cast to int is necessary, otherwise it gives errors.
-         * However, even with this it may so happen that for large systems 
-         * this might result in negative values due to an overflow. At the 
-         * moment there is not an easy way to fix this.
+         * Static cast to int is necessary, as heffte::box3d requires it
+         * like that.
          */
         for(size_t d = 0; d < Dim; ++d) {
             low[d] = static_cast<int>(lDom[d].first());
@@ -132,8 +130,8 @@ namespace ippl {
                                           fview.extent(2) - nghost
                                          }),
                             KOKKOS_LAMBDA(const size_t i,
-                                                const size_t j,
-                                                const size_t k)
+                                          const size_t j,
+                                          const size_t k)
                             {
 #ifdef KOKKOS_ENABLE_CUDA
                               tempField(i-nghost, j-nghost, k-nghost).x = 
@@ -225,10 +223,8 @@ namespace ippl {
         highOutput.fill(0);
 
         /**
-         * Static cast to int is necessary, otherwise it gives errors.
-         * However, even with this it may so happen that for large systems 
-         * this might result in negative values due to an overflow. At the 
-         * moment there is not an easy way to fix this.
+         * Static cast to int is necessary, as heffte::box3d requires it
+         * like that.
          */
         for(size_t d = 0; d < Dim; ++d) {
             lowInput[d] = static_cast<int>(lDomInput[d].first());
@@ -311,10 +307,9 @@ namespace ippl {
                             KOKKOS_LAMBDA(const size_t i,
                                           const size_t j,
                                           const size_t k)
-                            {
-                              tempFieldf(i-nghostf, j-nghostf, k-nghostf) = 
-                              fview(i, j, k);
-                            });
+       {
+            tempFieldf(i-nghostf, j-nghostf, k-nghostf) = fview(i, j, k);
+       });
        Kokkos::parallel_for("copy from Kokkos g field in FFT",
                             mdrange_type({nghostg, nghostg, nghostg},
                                          {gview.extent(0) - nghostg, 
@@ -362,10 +357,9 @@ namespace ippl {
                             KOKKOS_LAMBDA(const size_t i,
                                           const size_t j,
                                           const size_t k)
-                            {
-                              fview(i, j, k) = 
-                              tempFieldf(i-nghostf, j-nghostf, k-nghostf);
-                            });
+       {
+            fview(i, j, k) = tempFieldf(i-nghostf, j-nghostf, k-nghostf);
+       });
        
        Kokkos::parallel_for("copy to Kokkos g field FFT",
                             mdrange_type({nghostg, nghostg, nghostg},
