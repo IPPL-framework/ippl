@@ -34,7 +34,7 @@
 // #include "Index/NDIndex.h"
 
 #include "FieldLayout/FieldLayout.h"
-#include "FFT/Kokkos_FFT.h"
+#include "FFT/FFT.h"
 
 // // IPPL Meshes
 // #include "Meshes/UniformCartesian.h"
