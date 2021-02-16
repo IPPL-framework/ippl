@@ -18,12 +18,13 @@ add_subdirectory (kokkos)
 add_subdirectory (barefield)
 add_subdirectory (vector)
 add_subdirectory (field)
+add_subdirectory (FFT)
 add_subdirectory (particle)
 add_subdirectory (region)
 add_subdirectory (serialization)
 
 # vi: set et ts=4 sw=4 sts=4:
-  
+
 # Local Variables:
 # mode: cmake
 # cmake-tab-width: 4

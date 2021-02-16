@@ -62,7 +62,7 @@ add_ippl_headers (${IPPL_BASEDIR_HDRS})
 add_ippl_sources (Ippl.cpp)
 
 add_subdirectory (Communicate)
-# add_subdirectory (FFT)
+add_subdirectory (FFT)
 add_subdirectory (Field)
 add_subdirectory (FieldLayout)
 add_subdirectory (Index)
