@@ -2,8 +2,8 @@ set (_SRCS
     )
 
 set (_HDRS
-    Kokkos_FFT.hpp
-    Kokkos_FFT.h
+    FFT.hpp
+    FFT.h
     )
 
 include_directories (
