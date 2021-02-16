@@ -6,7 +6,10 @@
 //   the dimensionality of the Field to transform, and the
 //   floating-point precision type of the Field (float or double).
 //   Currently, we use heffte for taking the transforms and the class FFT
-//   serves as an interface between IPPL and heffte.
+//   serves as an interface between IPPL and heffte. In making this interface,
+//   we have utilized ideas from Cabana library 
+//   https://github.com/ECP-copa/Cabana especially for the temporary 
+//   field with layout right for passing into heffte. 
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan, 
 // Paul Scherrer Institut, Villigen PSI, Switzerland
