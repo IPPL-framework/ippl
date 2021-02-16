@@ -1,17 +1,17 @@
 //
 // Class FFT
-//   The FFT class performs complex-to-complex, 
-//   real-to-complex on IPPL Fields. 
-//   FFT is templated on the type of transform to be performed, 
+//   The FFT class performs complex-to-complex,
+//   real-to-complex on IPPL Fields.
+//   FFT is templated on the type of transform to be performed,
 //   the dimensionality of the Field to transform, and the
 //   floating-point precision type of the Field (float or double).
 //   Currently, we use heffte for taking the transforms and the class FFT
 //   serves as an interface between IPPL and heffte. In making this interface,
-//   we have utilized ideas from Cabana library 
-//   https://github.com/ECP-copa/Cabana especially for the temporary 
-//   field with layout right for passing into heffte. 
+//   we have utilized ideas from Cabana library
+//   https://github.com/ECP-copa/Cabana especially for the temporary
+//   field with layout right for passing into heffte.
 //
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan, 
+// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -48,7 +48,7 @@ namespace ippl {
        Tag classes for RC type of Fourier transforms
     */
     class RCTransform {};
-    
+
 
     class FFTParams {
         bool alltoall = true;
@@ -67,7 +67,7 @@ namespace ippl {
     };
 
     namespace detail {
-        
+
         template <class T>
         struct HeffteBackendType {};
 
@@ -116,58 +116,58 @@ namespace ippl {
     */
     template <class Transform, size_t Dim, class T>
     class FFT {};
-    
+
     /**
        complex-to-complex FFT class
     */
     template <size_t Dim, class T>
     class FFT<CCTransform,Dim,T> {
-    
+
     public:
-    
+
         typedef FieldLayout<Dim> Layout_t;
         typedef Kokkos::complex<T> Complex_t;
         typedef Field<Complex_t,Dim> ComplexField_t;
 
         using heffteBackend = typename detail::HeffteBackendType<T>::backend;
         using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
-        
 
-        /** Create a new FFT object with the layout for the input Field and 
+
+        /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
         */
         FFT(const Layout_t& layout, const FFTParams& params);
-    
+
         // Destructor
         ~FFT() = default;
-    
+
         /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
-            transform. The output is over-written in the input. 
+            transform. The output is over-written in the input.
         */
-        void transform(int direction, ComplexField_t& f); 
-    
-    
+        void transform(int direction, ComplexField_t& f);
+
+
     private:
-    
+
         /**
            setup performs the initialization necessary.
         */
-        void setup(const std::array<int, Dim>& low, 
+        void setup(const std::array<int, Dim>& low,
                    const std::array<int, Dim>& high,
                    const FFTParams& params);
-    
+
         std::shared_ptr<heffte::fft3d<heffteBackend>> heffte_m;
     };
-    
+
 
     /**
        real-to-complex FFT class
     */
     template <size_t Dim, class T>
     class FFT<RCTransform,Dim,T> {
-    
+
     public:
-    
+
         typedef FieldLayout<Dim> Layout_t;
         typedef Kokkos::complex<T> Complex_t;
         typedef Field<T,Dim> RealField_t;
@@ -175,41 +175,41 @@ namespace ippl {
 
         using heffteBackend = typename detail::HeffteBackendType<T>::backend;
         using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
-        
 
-        /** Create a new FFT object with the layout for the input and output Fields 
+
+        /** Create a new FFT object with the layout for the input and output Fields
          * and parameters for heffte.
         */
         FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const FFTParams& params);
-    
-    
+
+
         ~FFT() = default;
-    
+
         /** Do the FFT: specify +1 or -1 to indicate forward or inverse
             transform.
         */
-        void transform(int direction, RealField_t& f, ComplexField_t& g); 
-    
-    
+        void transform(int direction, RealField_t& f, ComplexField_t& g);
+
+
     private:
-    
+
         /**
            setup performs the initialization necessary after the transform
            directions have been specified.
         */
-        void setup(const std::array<int, Dim>& lowInput, 
+        void setup(const std::array<int, Dim>& lowInput,
                    const std::array<int, Dim>& highInput,
-                   const std::array<int, Dim>& lowOutput, 
+                   const std::array<int, Dim>& lowOutput,
                    const std::array<int, Dim>& highOutput,
                    const FFTParams& params);
-    
+
 
         std::shared_ptr<heffte::fft3d_r2c<heffteBackend>> heffte_m;
-    
+
     };
 
 }
-#include "FFT/Kokkos_FFT.hpp"
+#include "FFT/FFT.hpp"
 #endif // IPPL_FFT_FFT_H
 
 // vi: set et ts=4 sw=4 sts=4:
