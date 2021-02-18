@@ -32,6 +32,11 @@ namespace ippl {
 
             // Returns whether or not this BC changes physical cells.
             bool changesPhysicalCells() const { return changePhysical_m; }
+        
+            enum BcTag { 
+                PERIODIC,
+                NON_PERIODIC 
+            };
 
         protected:
             // What face to apply the boundary condition to.
@@ -72,10 +77,14 @@ namespace ippl {
 
         const T& getOffset() const { return offset_m; }
         const T& getSlope() const { return slope_m; }
+        const BcTag& getBcTag() const { return bctag_m; }
 
     protected:
         T offset_m;
         T slope_m;
+
+    private:
+        BcTag bctag_m = NON_PERIODIC;
     };
 
     template<typename T,
@@ -90,6 +99,11 @@ namespace ippl {
             virtual void apply(Field<T, Dim, Mesh, Cell>& /*field*/) {}
 
             virtual void write(std::ostream& out) const;
+        
+            const BcTag& getBcTag() const { return bctag_m; }
+        
+        private:
+            BcTag bctag_m = NON_PERIODIC;
     };
 
 
@@ -137,6 +151,11 @@ namespace ippl {
         virtual void apply(Field<T, Dim, Mesh, Cell>& field);
 
         virtual void write(std::ostream& out) const;
+        
+        const BcTag& getBcTag() const { return bctag_m; }
+    
+    private:
+        BcTag bctag_m = PERIODIC;
     };
 }
 

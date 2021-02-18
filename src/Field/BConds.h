@@ -10,14 +10,21 @@
 namespace ippl {
     template<typename T, unsigned Dim, class Mesh, class Cell> class Field;
 
-    template<typename T, unsigned Dim, class Mesh, class Cell> class BConds;
+    //template<typename T, unsigned Dim, class Mesh, class Cell> class BConds;
 
-    template<typename T, unsigned Dim, class Mesh, class Cell>
-    std::ostream& operator<<(std::ostream&, const BConds<T, Dim, Mesh, Cell>&);
+    //template<typename T, unsigned Dim, class Mesh, class Cell>
+    //std::ostream& operator<<(std::ostream&, const BConds<T, Dim, Mesh, Cell>&);
+    template<unsigned Dim, class Mesh, class Cell> class BConds;
+
+    template<unsigned Dim, class Mesh, class Cell>
+    std::ostream& operator<<(std::ostream&, const BConds<Dim, Mesh, Cell>&);
 
 
-    template<typename T,
-             unsigned Dim,
+    //template<typename T,
+    //         unsigned Dim,
+    //         class Mesh = UniformCartesian<double, Dim>,
+    //         class Cell = typename Mesh::DefaultCentering>
+    template<unsigned Dim,
              class Mesh = UniformCartesian<double, Dim>,
              class Cell = typename Mesh::DefaultCentering>
     class BConds //: public vmap<int, RefCountedP< BCondBase<T, Dim, Mesh, Cell> > >

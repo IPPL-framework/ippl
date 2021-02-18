@@ -39,6 +39,7 @@ namespace ippl {
      */
     template <typename T, unsigned Dim, class M, class C>
     detail::meta_grad<Field<T, Dim, M, C>> grad(const Field<T, Dim, M, C>& u) {
+        u.fillHalo();
         M& mesh = u.get_mesh();
         typename M::vector_type xvector(0);
         xvector[0] = 0.5 / mesh.getMeshSpacing(0);
@@ -56,6 +57,7 @@ namespace ippl {
      */
     template <typename T, unsigned Dim, class M, class C>
     detail::meta_div<Field<T, Dim, M, C>> div(const Field<T, Dim, M, C>& u) {
+        u.fillHalo();
         M& mesh = u.get_mesh();
         typename M::vector_type xvector(0);
         xvector[0] = 0.5 / mesh.getMeshSpacing(0);
@@ -73,6 +75,7 @@ namespace ippl {
      */
     template <typename T, unsigned Dim, class M, class C>
     detail::meta_laplace<Field<T, Dim, M, C>> laplace(const Field<T, Dim, M, C>& u) {
+        u.fillHalo();
         M& mesh = u.get_mesh();
         typename M::vector_type hvector(0);
         hvector[0] = 1.0 / std::pow(mesh.getMeshSpacing(0), 2);

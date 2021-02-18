@@ -71,6 +71,8 @@ namespace ippl {
 
         void initialize(const NDIndex<Dim>& domain, e_dim_tag *p=0);
 
+        void setBConds
+
 
         // Return the domain.
         const NDIndex<Dim>& getDomain() const { return gDomain_m; }
@@ -186,6 +188,8 @@ namespace ippl {
          * x high, y high, z high --> vertex index 7
          */
         vertex_neighbor_type vertexNeighbors_m;
+
+
 
         void calcWidths();
     };
