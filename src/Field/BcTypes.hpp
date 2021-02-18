@@ -25,8 +25,18 @@ namespace ippl {
     template<typename T, unsigned Dim, class Mesh, class Cell>
     void ExtrapolateFace<T, Dim, Mesh, Cell>::apply(Field<T, Dim, Mesh, Cell>& field) 
     {
-        //We only support constant extrapolation for the moment, other higher order 
-        //extrapolation stuffs need to be added.
+        //We only support constant extrapolation for the moment, other 
+        //higher order extrapolation stuffs need to be added.
+
+        if(Ippl::Comm->size() > 1) {
+            const Layout_t& layout = field.getLayout(); 
+            using neighbor_type = typename Layout_t::face_neighbor_type;
+            const neighbor_type& neighbors = layout.getFaceNeighbors();
+            
+            if(neighbors[this->face_m].size() > 0)
+                return;
+        }
+
         unsigned d = this->face_m / 2;
         typename Field<T, Dim, Mesh, Cell>::view_type& view = field.getView();
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
@@ -42,40 +52,41 @@ namespace ippl {
         switch(d) {
             case 0:
                 Kokkos::parallel_for("Assign extrapolate BC X", 
-                                      mdrange_type({0, 0},
-                                                   {view.extent(1),
-                                                    view.extent(2)}),
-                                      KOKKOS_CLASS_LAMBDA(const size_t j, const size_t k){
-                                      
-                                      view(dest, j, k) =  slope_m * view(src, j, k) + offset_m; 
-                                      
-                                      });
-                break;
+                                        mdrange_type({0, 0},
+                                                    {view.extent(1),
+                                                     view.extent(2)}),
+                                        KOKKOS_CLASS_LAMBDA(const size_t j, 
+                                                            const size_t k)
+                    {
+                        view(dest, j, k) =  slope_m * view(src, j, k) + offset_m; 
+                    });
+                    break;
 
             case 1:
                 Kokkos::parallel_for("Assign extrapolate BC Y", 
-                                      mdrange_type({0, 0},
-                                                   {view.extent(0),
-                                                    view.extent(2)}),
-                                      KOKKOS_CLASS_LAMBDA(const size_t i, const size_t k){
-
-                                      view(i, dest, k) =  slope_m * view(i, src, k) + offset_m; 
-                                       
-                                      });
-                break;
+                                       mdrange_type({0, 0},
+                                                     {view.extent(0),
+                                                      view.extent(2)}),
+                                       KOKKOS_CLASS_LAMBDA(const size_t i, 
+                                                           const size_t k)
+                    {
+                        view(i, dest, k) =  slope_m * view(i, src, k) + offset_m; 
+                    });
+                    break;
             case 2:
                 Kokkos::parallel_for("Assign extrapolate BC Z", 
                                       mdrange_type({0, 0},
-                                                   {view.extent(0),
-                                                    view.extent(1)}),
-                                      KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j){
-
-                                      view(i, j, dest) =  slope_m * view(i, j, src) + offset_m; 
-                                       
-                                      });
-                break;
+                                                    {view.extent(0),
+                                                     view.extent(1)}),
+                                     KOKKOS_CLASS_LAMBDA(const size_t i, 
+                                                         const size_t j)
+                    {
+                        view(i, j, dest) =  slope_m * view(i, j, src) + offset_m; 
+                    });
+                    break;
             default:
-               throw IpplException("ExtrapolateFace::apply", "face number wrong");
+                throw IpplException("ExtrapolateFace::apply", 
+                                       "face number wrong");
         }
     }
     
