@@ -2,6 +2,7 @@
 #define IPPL_FIELD_H
 
 #include "Field/BareField.h"
+#include "Field/BConds.h"
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {
@@ -17,6 +18,7 @@ namespace ippl {
         using Layout_t    = FieldLayout<Dim>;
         using BareField_t = BareField<T, Dim>;
         using view_type   = typename BareField_t::view_type;
+        using BConds_t = BConds<T, Dim>;
 
         // A default constructor, which should be used only if the user calls the
         // 'initialize' function before doing anything else.  There are no special
@@ -27,15 +29,16 @@ namespace ippl {
         virtual ~Field() = default;
 
         // Constructors including a Mesh object as argument:
-        Field(Mesh_t&, Layout_t&, int nghost = 1);
+        Field(Mesh_t&, Layout_t&, BConds_t&, int nghost = 1);
 
         // Initialize the Field, also specifying a mesh
-        void initialize(Mesh_t&, Layout_t&, int nghost = 1);
+        void initialize(Mesh_t&, Layout_t&, BConds_t&, int nghost = 1);
 
         // Access to the mesh
         KOKKOS_INLINE_FUNCTION
         Mesh_t& get_mesh() const { return *mesh_m; }
 
+        BConds_t& getBConds() const { return bc_m; }
         // Assignment from constants and other arrays.
         using BareField<T, Dim>::operator=;
 
@@ -47,6 +50,8 @@ namespace ippl {
 
         // The Mesh object, and a flag indicating if we constructed it
         Mesh_t* mesh_m;
+
+        BConds_t bc_m;
     };
 }
 
