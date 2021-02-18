@@ -56,6 +56,7 @@ namespace ippl {
         public:
             using view_type = typename detail::ViewType<T, Dim>::view_type;
             using Layout_t  = FieldLayout<Dim>;
+            using BConds_t  = BConds<T, Dim>;
 
             struct bound_type {
                 // lower bounds (ordering: x, y, z)
@@ -139,8 +140,6 @@ namespace ippl {
                     lhs += rhs;
                 }
             };
-
-        private:
             /*!
              * Obtain the bounds to send / receive. The second domain, i.e.,
              * nd2, is grown by nghost cells in each dimension in order to
@@ -154,6 +153,16 @@ namespace ippl {
                                  const NDIndex<Dim>& nd2,
                                  const NDIndex<Dim>& offset,
                                  int nghost);
+            /*!
+             * Extract the subview of the original data. This does not copy.
+             * A subview points to the same memory.
+             * @param view is the original field data
+             * @param intersect the bounds of the intersection
+             */
+            auto makeSubview(const view_type& view,
+                             const bound_type& intersect);
+
+        private:
 
             /*!
              * Exchange the data of faces.
@@ -201,14 +210,6 @@ namespace ippl {
                                   SendOrder order);
 
 
-            /*!
-             * Extract the subview of the original data. This does not copy.
-             * A subview points to the same memory.
-             * @param view is the original field data
-             * @param intersect the bounds of the intersection
-             */
-            auto makeSubview(const view_type& view,
-                             const bound_type& intersect);
         };
     }
 }

@@ -15,11 +15,14 @@ namespace ippl {
         class BCondBase
         {
         public:
+            
+            using Layout_t = FieldLayout<Dim>;
             // Constructor takes:
             // face: the face to apply the boundary condition on.
             // i : what component of T to apply the boundary condition to.
             // The components default to setting all components.
             BCondBase(unsigned int face);
+
 
             virtual ~BCondBase() = default;
 
