@@ -218,7 +218,9 @@ namespace ippl {
 
                         Ippl::Comm->recv(rank, tag, fdRecv);
 
-                        halo.unpack<HaloCells_t::assign>(rangeRecv, view, fdRecv);
+                        using assign_t = typename HaloCells_t::assign;
+
+                        halo.template unpack<assign_t>(rangeRecv, view, fdRecv);
                     }
                 }
 
