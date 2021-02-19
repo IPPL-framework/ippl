@@ -178,8 +178,8 @@ namespace ippl {
                 std::vector<MPI_Request> requests(0);
                 using archive_type = Communicate::archive_type;
                 std::vector<std::unique_ptr<archive_type>> archives(0);
-                int tag = Ippl::Comm->next_tag(detail::HALO_FACE_TAG, 
-                                               detail::HALO_TAG_CYCLE);
+                
+                int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
 
                 //Now, we are ready to intersect
                 for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
@@ -191,10 +191,10 @@ namespace ippl {
                         using HaloCells_t = detail::HaloCells<T, Dim>;
                         HaloCells_t& halo = field.getHalo();
                         lDomains[rank][d] = lDomains[rank][d] - offset;
-                        
-                        HaloCells_t::bound_type rangeSend = 
-                            halo.getBounds(nd, lDomains[rank], nd, nghost);
-                         
+                       
+                        using range_t = typename HaloCells_t::bound_type;
+                        range_t rangeSend = halo.getBounds(nd, lDomains[rank], 
+                                                           nd, nghost);
 
                         archives.push_back(std::make_unique<archive_type>());
                         requests.resize(requests.size() + 1);
@@ -204,7 +204,8 @@ namespace ippl {
 
                         Ippl::Comm->isend(rank, tag, fdSend, *(archives.back()),
                                           requests.back());
-                        HaloCells_t::bound_type rangeRecv;
+                        
+                        range_t rangeRecv;
 
                         rangeRecv.lo[d] = rangeSend.lo[d] + offsetRecv;
                         rangeRecv.hi[d] = rangeSend.hi[d] + offsetRecv;

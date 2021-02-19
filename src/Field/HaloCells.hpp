@@ -343,7 +343,7 @@ namespace ippl {
 
 
         template <typename T, unsigned Dim>
-        template <class Op>
+        template <typename Op>
         void HaloCells<T, Dim>::unpack(const bound_type& range,
                                        const view_type& view,
                                        FieldBufferData<T>& fd)

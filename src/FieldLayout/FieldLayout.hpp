@@ -48,7 +48,7 @@ namespace ippl {
     FieldLayout<Dim>::FieldLayout(const NDIndex<Dim>& domain, e_dim_tag* p)
     : FieldLayout()
     {
-        initialize(domain, p, bcField);
+        initialize(domain, p);
     }
 
 

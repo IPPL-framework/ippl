@@ -71,8 +71,6 @@ namespace ippl {
 
         void initialize(const NDIndex<Dim>& domain, e_dim_tag *p=0);
 
-        void setBConds
-
 
         // Return the domain.
         const NDIndex<Dim>& getDomain() const { return gDomain_m; }

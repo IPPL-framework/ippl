@@ -56,7 +56,6 @@ namespace ippl {
         public:
             using view_type = typename detail::ViewType<T, Dim>::view_type;
             using Layout_t  = FieldLayout<Dim>;
-            using BConds_t  = BConds<T, Dim>;
 
             struct bound_type {
                 // lower bounds (ordering: x, y, z)
@@ -112,7 +111,7 @@ namespace ippl {
              * @param fd the buffer to unpack from (received data)
              * @tparam Op the data assigment operator
              */
-            template <class Op>
+            template <typename Op>
             void unpack(const bound_type& range,
                         const view_type& view,
                         FieldBufferData<T>& fd);

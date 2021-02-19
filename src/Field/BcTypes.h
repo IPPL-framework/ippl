@@ -21,7 +21,6 @@ namespace ippl {
         {
         public:
             
-            using Layout_t = FieldLayout<Dim>;
             // Constructor takes:
             // face: the face to apply the boundary condition on.
             // i : what component of T to apply the boundary condition to.
@@ -63,6 +62,7 @@ namespace ippl {
         // Zero int's specified means apply to all components; one means apply to
         // component (i), and two means apply to component (i,j),
         using base_type = detail::BCondBase<T, Dim, Mesh, Cell>;
+        using Layout_t = FieldLayout<Dim>;
 
         ExtrapolateFace(unsigned face,
                         T offset,
@@ -80,7 +80,6 @@ namespace ippl {
 
         const T& getOffset() const { return offset_m; }
         const T& getSlope() const { return slope_m; }
-        const BcTag& getBcTag() const { return bctag_m; }
 
     protected:
         T offset_m;
@@ -100,7 +99,6 @@ namespace ippl {
 
             virtual void write(std::ostream& out) const;
         
-            const BcTag& getBcTag() const { return bctag_m; }
     };
 
 
@@ -141,6 +139,8 @@ namespace ippl {
     class PeriodicFace : public detail::BCondBase<T, Dim, Mesh, Cell>
     {
     public:
+        using Layout_t = FieldLayout<Dim>;
+        
         PeriodicFace(unsigned face)
         : detail::BCondBase<T, Dim, Mesh, Cell>(face)
         { }
@@ -149,7 +149,6 @@ namespace ippl {
 
         virtual void write(std::ostream& out) const;
         
-        const BcTag& getBcTag() const { return bctag_m; }
     };
 }
 
