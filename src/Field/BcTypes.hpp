@@ -1,6 +1,7 @@
 
 
 #include "Utility/IpplException.h"
+#include "Field/HaloCells.h"
 
 namespace ippl {
     namespace detail {
@@ -37,6 +38,10 @@ namespace ippl {
                 return;
         }
 
+        //If we are here then it is a processor with the face on the physical 
+        //boundary or it is the single core case. Then the following code is same
+        //irrespective of either it is a single core or multi-core case as the
+        //non-periodic BC is local to apply.
         unsigned d = this->face_m / 2;
         typename Field<T, Dim, Mesh, Cell>::view_type& view = field.getView();
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
@@ -139,9 +144,10 @@ namespace ippl {
             const Layout_t& layout = field.getLayout(); 
             using neighbor_type = typename Layout_t::face_neighbor_type;
             const neighbor_type& neighbors = layout.getFaceNeighbors();
+            
             if(neighbors[this->face_m].size() == 0) {
                 
-                //this processor contains faces on mesh/physical boundary
+                //this face is  on mesh/physical boundary
                 const int nghost = field.getNghost();
                 int myRank = Ippl::Comm->rank();
                 const auto& lDomains = layout.getHostLocalDomains();
@@ -155,14 +161,16 @@ namespace ippl {
                 // grow the box by nghost cells in dimension d of face_m
                 auto gnd = nd.grow(nghost, d);
 
-                int offset;
+                int offset, offsetRecv;
                 if(this->face_m & 1) {
                     //upper face
                     offset = -domain[d].length();
+                    offsetRecv = 1;
                 }
                 else {
                     //lower face
                     offset = domain[d].length();
+                    offsetRecv = -1;
                 }
                 //shift by offset
                 gnd[d] = gnd[d] + offset;
@@ -180,24 +188,26 @@ namespace ippl {
                     }
                     
                     if (gnd.touches(lDomains[rank])) {
-                        using HaloCells_t = detail::HaloCells<T, Dim>
+                        using HaloCells_t = detail::HaloCells<T, Dim>;
                         HaloCells_t& halo = field.getHalo();
                         lDomains[rank][d] = lDomains[rank][d] - offset;
                         
                         HaloCells_t::bound_type rangeSend = 
-                            halo.getBounds(nd, lDomains, nd, nghost);
+                            halo.getBounds(nd, lDomains[rank], nd, nghost);
                          
 
                         archives.push_back(std::make_unique<archive_type>());
                         requests.resize(requests.size() + 1);
 
                         detail::FieldBufferData<T> fdSend;
-                        pack(rangeSend, view, fdSend);
+                        halo.pack(rangeSend, view, fdSend);
 
                         Ippl::Comm->isend(rank, tag, fdSend, *(archives.back()),
                                           requests.back());
-                        HaloCells_t::bound_type rangeRecv = 
-                            halo.getBounds(lDomains, nd, nd, nghost);
+                        HaloCells_t::bound_type rangeRecv;
+
+                        rangeRecv.lo[d] = rangeSend.lo[d] + offsetRecv;
+                        rangeRecv.hi[d] = rangeSend.hi[d] + offsetRecv;
                         
                         detail::FieldBufferData<T> fdRecv;
                         Kokkos::resize(fdRecv.buffer,

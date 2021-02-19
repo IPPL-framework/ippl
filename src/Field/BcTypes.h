@@ -1,6 +1,11 @@
 #ifndef IPPL_FIELD_BC_TYPES_H
 #define IPPL_FIELD_BC_TYPES_H
 
+#include "Index/NDIndex.h"
+#include "Types/ViewTypes.h"
+#include "Communicate/Archive.h"
+#include "FieldLayout/FieldLayout.h"
+
 namespace ippl {
     template<typename T, unsigned Dim, class Mesh, class Cell> class Field;
 
