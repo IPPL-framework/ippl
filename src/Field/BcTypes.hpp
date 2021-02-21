@@ -44,6 +44,7 @@ namespace ippl {
         //non-periodic BC is local to apply.
         unsigned d = this->face_m / 2;
         typename Field<T, Dim, Mesh, Cell>::view_type& view = field.getView();
+        const int nghost = field.getNghost();
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
         int src, dest;
         if(this->face_m & 1) {
@@ -57,37 +58,37 @@ namespace ippl {
         switch(d) {
             case 0:
                 Kokkos::parallel_for("Assign extrapolate BC X", 
-                                        mdrange_type({0, 0},
-                                                    {view.extent(1),
-                                                     view.extent(2)}),
+                                        mdrange_type({nghost, nghost},
+                                                     {view.extent(1) - nghost,
+                                                      view.extent(2) - nghost}),
                                         KOKKOS_CLASS_LAMBDA(const size_t j, 
                                                             const size_t k)
-                    {
-                        view(dest, j, k) =  slope_m * view(src, j, k) + offset_m; 
-                    });
+                {
+                    view(dest, j, k) =  slope_m * view(src, j, k) + offset_m; 
+                });
                     break;
 
             case 1:
                 Kokkos::parallel_for("Assign extrapolate BC Y", 
-                                       mdrange_type({0, 0},
-                                                     {view.extent(0),
-                                                      view.extent(2)}),
-                                       KOKKOS_CLASS_LAMBDA(const size_t i, 
-                                                           const size_t k)
-                    {
-                        view(i, dest, k) =  slope_m * view(i, src, k) + offset_m; 
-                    });
+                                        mdrange_type({nghost, nghost},
+                                                     {view.extent(0) - nghost,
+                                                      view.extent(2) - nghost}),
+                                        KOKKOS_CLASS_LAMBDA(const size_t i, 
+                                                            const size_t k)
+                {
+                    view(i, dest, k) =  slope_m * view(i, src, k) + offset_m; 
+                });
                     break;
             case 2:
                 Kokkos::parallel_for("Assign extrapolate BC Z", 
-                                      mdrange_type({0, 0},
-                                                    {view.extent(0),
-                                                     view.extent(1)}),
-                                     KOKKOS_CLASS_LAMBDA(const size_t i, 
-                                                         const size_t j)
-                    {
-                        view(i, j, dest) =  slope_m * view(i, j, src) + offset_m; 
-                    });
+                                        mdrange_type({nghost, nghost},
+                                                     {view.extent(0) - nghost,
+                                                      view.extent(1) - nghost}),
+                                        KOKKOS_CLASS_LAMBDA(const size_t i, 
+                                                            const size_t j)
+                {
+                    view(i, j, dest) =  slope_m * view(i, j, src) + offset_m; 
+                });
                     break;
             default:
                 throw IpplException("ExtrapolateFace::apply", 
@@ -139,24 +140,22 @@ namespace ippl {
     {
        unsigned int d = this->face_m / 2;
        typename Field<T, Dim, Mesh, Cell>::view_type& view = field.getView();
+       const Layout_t& layout = field.getLayout(); 
+       const int nghost = field.getNghost();
+       int myRank = Ippl::Comm->rank();
+       const auto& lDomains = layout.getHostLocalDomains();
+       const auto& domain = layout.getDomain(); 
 
-       if(Ippl::Comm->size() > 1) {
-            const Layout_t& layout = field.getLayout(); 
+       if(lDomains[myRank][d].length() < domain[d].length()) {
+            //Only along this dimension we need communication.
             using neighbor_type = typename Layout_t::face_neighbor_type;
             const neighbor_type& neighbors = layout.getFaceNeighbors();
             
             if(neighbors[this->face_m].size() == 0) {
                 
                 //this face is  on mesh/physical boundary
-                const int nghost = field.getNghost();
-                int myRank = Ippl::Comm->rank();
-                const auto& lDomains = layout.getHostLocalDomains();
-
                 // get my local box
                 auto& nd = lDomains[myRank];
-                
-                // get global box
-                auto& domain = layout.getDomain(); 
 
                 // grow the box by nghost cells in dimension d of face_m
                 auto gnd = nd.grow(nghost, d);
@@ -193,34 +192,34 @@ namespace ippl {
                         lDomains[rank][d] = lDomains[rank][d] - offset;
                        
                         using range_t = typename HaloCells_t::bound_type;
-                        range_t rangeSend = halo.getBounds(nd, lDomains[rank], 
+                        range_t range = halo.getBounds(nd, lDomains[rank], 
                                                            nd, nghost);
 
                         archives.push_back(std::make_unique<archive_type>());
                         requests.resize(requests.size() + 1);
 
                         detail::FieldBufferData<T> fdSend;
-                        halo.pack(rangeSend, view, fdSend);
+                        
+                        halo.pack(range, view, fdSend);
 
                         Ippl::Comm->isend(rank, tag, fdSend, *(archives.back()),
                                           requests.back());
                         
-                        range_t rangeRecv;
-
-                        rangeRecv.lo[d] = rangeSend.lo[d] + offsetRecv;
-                        rangeRecv.hi[d] = rangeSend.hi[d] + offsetRecv;
+                        range.lo[d] = range.lo[d] + offsetRecv;
+                        range.hi[d] = range.hi[d] + offsetRecv;
                         
                         detail::FieldBufferData<T> fdRecv;
+                        
                         Kokkos::resize(fdRecv.buffer,
-                                   (rangeRecv.hi[0] - rangeRecv.lo[0]) *
-                                   (rangeRecv.hi[1] - rangeRecv.lo[1]) *
-                                   (rangeRecv.hi[2] - rangeRecv.lo[2]));
+                                   (range.hi[0] - range.lo[0]) *
+                                   (range.hi[1] - range.lo[1]) *
+                                   (range.hi[2] - range.lo[2]));
 
                         Ippl::Comm->recv(rank, tag, fdRecv);
 
                         using assign_t = typename HaloCells_t::assign;
 
-                        halo.template unpack<assign_t>(rangeRecv, view, fdRecv);
+                        halo.template unpack<assign_t>(range, view, fdRecv);
                     }
                 }
 
@@ -240,9 +239,10 @@ namespace ippl {
             switch (d) {
                 case 0:
                     Kokkos::parallel_for("Assign periodic field BC X", 
-                                          mdrange_type({0, 0},
-                                                       {view.extent(1),
-                                                        view.extent(2)}),
+                                          mdrange_type({nghost, nghost},
+                                                       {view.extent(1) - nghost,
+                                                        view.extent(2) - nghost
+                                                       }),
                                           KOKKOS_CLASS_LAMBDA(const size_t j, 
                                                               const size_t k)
                                           {
@@ -252,9 +252,10 @@ namespace ippl {
                     break;
                 case 1:
                     Kokkos::parallel_for("Assign periodic field BC Y", 
-                                          mdrange_type({0, 0},
-                                                       {view.extent(0),
-                                                        view.extent(2)}),
+                                          mdrange_type({nghost, nghost},
+                                                       {view.extent(0) - nghost,
+                                                        view.extent(2) - nghost
+                                                       }),
                                           KOKKOS_CLASS_LAMBDA(const size_t i, 
                                                               const size_t k)
                                           {
@@ -264,9 +265,10 @@ namespace ippl {
                     break;
                 case 2:
                     Kokkos::parallel_for("Assign periodic field BC Z", 
-                                          mdrange_type({0, 0},
-                                                       {view.extent(0),
-                                                        view.extent(1)}),
+                                          mdrange_type({nghost, nghost},
+                                                       {view.extent(0) - nghost,
+                                                        view.extent(1) - nghost
+                                                       }),
                                           KOKKOS_CLASS_LAMBDA(const size_t i, 
                                                               const size_t j)
                                           {
