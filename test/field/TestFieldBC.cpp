@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    int pt = 8;
+    int pt = 32;
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
 
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
     int nRanks = Ippl::Comm->size();
     for (int rank = 0; rank < nRanks; ++rank) {
         if (rank == Ippl::Comm->rank()) {
-            std::ofstream out("field_allbc_" + std::to_string(rank) + ".dat", std::ios::out);
+            std::ofstream out("field_allbc1_" + std::to_string(rank) + ".dat", std::ios::out);
             field.write(out);
             out.close();
         }
