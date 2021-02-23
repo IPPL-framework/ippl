@@ -51,6 +51,7 @@ find_package(Kokkos REQUIRED)
 
 option (ENABLE_FFT "Enable FFT transform" OFF)
 if (ENABLE_FFT)
+    add_definitions (-DENABLE_FFT)
     find_package(Heffte REQUIRED)
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
