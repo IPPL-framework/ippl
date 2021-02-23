@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    int pt = 32;
+    int pt = 16;
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
 
