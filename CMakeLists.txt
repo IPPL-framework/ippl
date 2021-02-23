@@ -49,8 +49,12 @@ message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
 find_package(Kokkos REQUIRED)
 
-find_package(Heffte REQUIRED)
-message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
+option (ENABLE_FFT "Enable FFT transform" OFF)
+if (ENABLE_FFT)
+    add_definitions (-DENABLE_FFT)
+    find_package(Heffte REQUIRED)
+    message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
+endif ()
 
 set (BOOSTROOT $ENV{BOOST_DIR})
 if (USE_STATIC_LIBRARIES)
