@@ -63,7 +63,10 @@ add_ippl_sources (Ippl.cpp)
 
 add_subdirectory (Communicate)
 if (ENABLE_FFT)
+    set (HEFFTE_LIBRARY Heffte::Heffte)
     add_subdirectory (FFT)
+else()
+    set (HEFFTE_LIBRARY "")
 endif()
 add_subdirectory (Field)
 add_subdirectory (FieldLayout)
@@ -91,7 +94,7 @@ include_directories (
 
 add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
 
-target_link_libraries(ippl PUBLIC Kokkos::kokkos ${Boost_LIBRARIES} Heffte::Heffte)
+target_link_libraries(ippl PUBLIC Kokkos::kokkos ${Boost_LIBRARIES} ${HEFFTE_LIBRARY})
 
 install (TARGETS ippl DESTINATION lib)
 install (FILES ${IPPL_BASEDIR_HDRS} DESTINATION include)
