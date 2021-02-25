@@ -731,6 +731,7 @@ void BareField<T,Dim>::accumGuardCells()
     // now do main loop over LFields, packing overlaps into proper messages
     for (lf_i = begin_if(); lf_i != lf_e; ++lf_i) {
       
+      std::cout << "LField Proc:" << Ippl::myNode() << std::endl;
       // Cache some information about this local array.
       LField<T,Dim> &lf = *((*lf_i).second);
       const NDIndex<Dim>& lo = lf.getOwned();

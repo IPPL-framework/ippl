@@ -317,6 +317,17 @@ public:
 
   void write(std::ostream&);
 
+  void print() {
+      std::cout << "Node = " << Ippl::myNode()
+                << " #LFields = " << Locals_ac.size()
+                << " Domain: ";
+      for (iterator_if it = begin_if(); it != end_if(); ++it) {
+          LField<T,Dim> &rf = *(*it).second;
+          std::cout << rf.getOwned() << std::endl;
+      }
+  }
+
+
   //
   // PETE interface.
   //

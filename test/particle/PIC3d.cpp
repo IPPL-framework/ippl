@@ -170,7 +170,6 @@ public:
     ParticleAttrib<double>     qm; // charge-to-mass ratio
     typename PL::ParticlePos_t P;  // particle velocity
     typename PL::ParticlePos_t E;  // electric field at particle position
-    typename PL::ParticlePos_t B;  // magnetic field at particle position
 
     ChargedParticles(PL* pl, BC_t bc, InterPol_t interpol, e_dim_tag decomp[Dim], bool gCells) :
         IpplParticleBase<PL>(pl),
@@ -290,6 +289,7 @@ public:
         //reduce(Q,Q,OpAddAssign());
         double Q_grid = sum(EFDMag_m);
         m << "sum(qm)= " << initialQ << " Q_grid= " << Q_grid << endl;
+        EFDMag_m.print();
         //return initialQ-Q;
         //return initialQ-Q_grid;
     }
@@ -345,26 +345,27 @@ public:
             }
         }
         this->update();
+        //BinaryRepartition(*this);
     }
 
-    //void gatherStatistics() {
-    //    Inform m("gatherStatistics ");
-    //    Inform m2a("gatherStatistics ",INFORM_ALL_NODES);
+    void gatherStatistics() {
+        Inform m("gatherStatistics ");
+        Inform m2a("gatherStatistics ",INFORM_ALL_NODES);
 
-    //    double *partPerNode = new double[Ippl::getNodes()];
-    //    double *globalPartPerNode = new double[Ippl::getNodes()];
-    //    for (int i=0; i<Ippl::getNodes(); i++) {
-    //        partPerNode[i] = globalPartPerNode[i] = 0.0;
+        double *partPerNode = new double[Ippl::getNodes()];
+        double *globalPartPerNode = new double[Ippl::getNodes()];
+        for (int i=0; i<Ippl::getNodes(); i++) {
+            partPerNode[i] = globalPartPerNode[i] = 0.0;
 
-    //    }
-    //    partPerNode[Ippl::myNode()] = this->getLocalNum();
+        }
+        partPerNode[Ippl::myNode()] = this->getLocalNum();
 
-    //    reduce(partPerNode,partPerNode+Ippl::getNodes(),globalPartPerNode,OpAddAssign());
+        reduce(partPerNode,partPerNode+Ippl::getNodes(),globalPartPerNode,OpAddAssign());
 
-    //    for (int i=0; i<Ippl::getNodes(); i++)
-    //        m << "Node " << i << " has "
-    //          <<   globalPartPerNode[i]/this->getTotalNum()*100.0 << " \% of the total particles " << endl;
-    //}
+        for (int i=0; i<Ippl::getNodes(); i++)
+            m << "Node " << i << " has "
+              <<   globalPartPerNode[i]/this->getTotalNum()*100.0 << " \% of the total particles " << endl;
+    }
 
 
 
@@ -588,9 +589,6 @@ int main(int argc, char *argv[]){
     }
 
     e_dim_tag decomp[Dim];
-    unsigned serialDim = 2;
-
-    msg << "Serial dimension is " << serialDim  << endl;
 
     Mesh_t *mesh;
     FieldLayout_t *FL;
@@ -607,7 +605,8 @@ int main(int argc, char *argv[]){
     }
 
     for (unsigned d=0; d < Dim; ++d)
-        decomp[d] = (d == serialDim) ? SERIAL : PARALLEL;
+        //decomp[d] = (d == serialDim) ? SERIAL : PARALLEL;
+        decomp[d] = PARALLEL;
 
     // create mesh and layout objects for this problem domain
     mesh          = new Mesh_t(domain);
@@ -622,9 +621,9 @@ int main(int argc, char *argv[]){
           the domain with hr and rmin
         */
 
-        Vector_t hr(1.0);
+        Vector_t hr(1.0/nr[0]);
         Vector_t rmin(0.0);
-        Vector_t rmax(nr);
+        Vector_t rmax(1.0);
 
         P = new ChargedParticles<playout_t>(PL,myBC,myInterpol,hr,rmin,rmax,decomp,gCells);
     }
@@ -634,76 +633,53 @@ int main(int argc, char *argv[]){
 
     unsigned long int nloc = totalP / Ippl::getNodes();
 
-    ////For generating same distribution always
-    //std::mt19937_64 eng[2*Dim];
-   
-    ////There is no reason for picking 42 or multiplying by 
-    ////Dim with i, just want the initial seeds to be
-    ////farther apart.
-    //for (int i = 0; i < 2*3; ++i) {
-    //    eng[i].seed(42 + Dim * i);
-    //    eng[i].discard( nloc * Ippl::myNode());
-    //}
+    int rest = (int) (totalP - nloc * Ippl::getNodes());
+    
+    if ( Ippl::myNode() < rest )
+        ++nloc;
 
-    ////std::vector<double> mu(Dim);
-    ////std::vector<double> sd(Dim);
-    ////std::vector<double> states(Dim);
-   
-
-    ////mu[0] = nr[0]/2;
-    ////mu[1] = nr[1]/2;
-    ////mu[2] = nr[2]/2;
-    ////sd[0] = 0.15*nr[0];
-    ////sd[1] = 0.05*nr[1];
-    ////sd[2] = 0.20*nr[2];
-
-
-    ////std::uniform_real_distribution<double> dist_uniform (0.0, 1.0);
-    //std::uniform_real_distribution<double> dist_x (0.0, nr[0]);
-    //std::uniform_real_distribution<double> dist_y (0.0, nr[1]);
-    //std::uniform_real_distribution<double> dist_z (0.0, nr[2]);
-
-
-    //P->create(nloc);
-    //for (unsigned long int i = 0; i< nloc; i++) {
-    //    
-    //    //for (int istate = 0; istate < 3; ++istate) {
-    //    //    double u1 = dist_uniform(eng[istate*2]);
-    //    //    double u2 = dist_uniform(eng[istate*2+1]);
-    //    //    states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) * std::cos(2.0 * pi * u2)) + mu[istate]; 
-    //    //}    
-    //    //for (int d = 0; d<3; d++)
-    //    //    P->R[i](d) =  IpplRandom() * nr[d];
-    //        //P->R[i](d) = std::fabs(std::fmod(states[d],nr[d]));
-    //    P->R[i](0) = dist_x(eng[0]);
-    //    P->R[i](1) = dist_y(eng[1]);
-    //    P->R[i](2) = dist_z(eng[2]);
-    //}
-
-
+    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
+    IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
-    std::mt19937_64 eng;//(42);
-    std::uniform_real_distribution<double> unif(0, 1);
-    for (unsigned long int i = 0; i< nloc; i++) {
-        for (int d = 0; d<3; d++)
-            //P->R[i](d) =  IpplRandom() * nr[d];
-            P->R[i](d) =  unif(eng) * nr[d];
+    
+    std::mt19937_64 eng[Dim];
+    for (unsigned i = 0; i < Dim; ++i) {
+        eng[i].seed(42 + i * Dim);
+        eng[i].discard( nloc * Ippl::myNode());
+    }
+    std::uniform_real_distribution<double> unif(0, 1.0);
 
+    double sum_coord=0.0;
+    for (unsigned long int i = 0; i< nloc; i++) {
+        for (int d = 0; d<3; d++) {
+            P->R(i)[d] =  unif(eng[d]);
+            sum_coord += P->R(i)[d];
+        }
+    }
+    double global_sum_coord = 0.0;
+    MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
+               MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+
+    if(Ippl::myNode() == 0) {
+        std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
     }
 
+    assign(P->P, 0.0);
     double q = 1.0/totalP;
 
     // random initialization for charge-to-mass ratio
     assign(P->qm,q);
+    IpplTimings::stopTimer(particleCreation);                                                    
+
 
     msg << "particles created and initial conditions assigned " << endl;
 
     // redistribute particles based on spatial layout
     P->myUpdate();
 
-    //msg << "initial update and initial mesh done .... Q= " << sum(P->qm) << endl;
-    //msg << P->getMesh() << endl;
-    //msg << P->getFieldLayout() << endl;
+    msg << "initial update and initial mesh done .... Q= " << sum(P->qm) << endl;
+    msg << P->getMesh() << endl;
+    msg << P->getFieldLayout() << endl;
 
     msg << "scatter test " << endl;
     P->scatter();
@@ -720,7 +696,7 @@ int main(int argc, char *argv[]){
         // by half a timestep from the positions.
         assign(P->R, P->R + dt * P->P);
 
-        // update particle distribution across processors
+       // update particle distribution across processors
         P->myUpdate();
 
         // gather the local value of the E field
@@ -735,7 +711,7 @@ int main(int argc, char *argv[]){
     auto end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> time_elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-    std::cout << "Elapsed time: " << time_elapsed.count() << std::endl;
+    //std::cout << "Elapsed time: " << time_elapsed.count() << std::endl;
     Ippl::Comm->barrier();
     msg << "Particle test PIC3d: End." << endl;
     return 0;
