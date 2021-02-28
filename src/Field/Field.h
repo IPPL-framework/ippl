@@ -51,6 +51,9 @@ namespace ippl {
         // Assignment from constants and other arrays.
         using BareField<T, Dim>::operator=;
 
+        // Norms
+        T l2_norm() const;
+
         Field(const Field&) = default;
 
     private:

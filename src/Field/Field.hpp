@@ -42,6 +42,45 @@ namespace ippl {
 
 
     /*!
+     * Computes the inner product of two fields
+     * @param f1 first field
+     * @param f2 second field
+     * @return Result of f1^T f2
+     */
+    template <typename T, unsigned Dim>
+    T innerProduct(const Field<T, Dim>& f1, const Field<T, Dim>& f2) {
+        T sum = 0;
+        const int shift = f1.getNghost();
+        auto view1 = f1.getView();
+        auto view2 = f2.getView();
+        Kokkos::parallel_reduce("Field::innerProduct(Field&, Field&)",
+            Kokkos::MDRangePolicy<Kokkos::Rank<3>>({shift, shift, shift}, {
+                view1.extent(0) - shift,
+                view1.extent(1) - shift,
+                view1.extent(2) - shift}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
+                val += view1(i, j, k) * view2(i, j, k);
+            },
+            Kokkos::Sum<T>(sum)
+        );
+        T globalSum = 0;
+        MPI_Datatype type = get_mpi_datatype<T>(sum);
+        MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
+        return globalSum;
+    }
+
+    /*!
+     * Computes the Euclidean norm of the field
+     * @return L2 norm of *this
+     */
+    template<typename T, unsigned Dim, class M, class C>
+    T Field<T, Dim, M, C>::l2_norm() const {
+        T innerProd = innerProduct(*this, *this);
+        return std::sqrt(innerProd);
+    }
+
+
+    /*!
      * User interface of gradient in three dimensions.
      * @param u field
      */
