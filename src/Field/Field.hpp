@@ -80,7 +80,9 @@ namespace ippl {
         T local = 0;
         const int shift = field.getNghost();
         auto view = field.getView();
-        if (p == 0) {
+        switch (p) {
+        case 0:
+        {
             Kokkos::parallel_reduce("Field::norm(0)",
                 Kokkos::MDRangePolicy<Kokkos::Rank<3>>({shift, shift, shift}, {
                     view.extent(0) - shift,
@@ -96,9 +98,11 @@ namespace ippl {
             MPI_Datatype type = get_mpi_datatype<T>(local);
             MPI_Allreduce(&local, &globalMax, 1, type, MPI_MAX, Ippl::getComm());
             return globalMax;
-        } else if (p == 2) {
+        }
+        case 2:
             return std::sqrt(innerProduct(field, field));
-        } else {
+        default:
+        {
             Kokkos::parallel_reduce("Field::norm(int) general",
                 Kokkos::MDRangePolicy<Kokkos::Rank<3>>({shift, shift, shift}, {
                     view.extent(0) - shift,
@@ -113,6 +117,7 @@ namespace ippl {
             MPI_Datatype type = get_mpi_datatype<T>(local);
             MPI_Allreduce(&local, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
             return std::pow(globalSum, 1.0 / p);
+        }
         }
     }
 
