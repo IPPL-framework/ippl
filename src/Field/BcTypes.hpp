@@ -148,10 +148,15 @@ namespace ippl {
 
        if(lDomains[myRank][d].length() < domain[d].length()) {
             //Only along this dimension we need communication.
-            using neighbor_type = typename Layout_t::face_neighbor_type;
-            const neighbor_type& neighbors = layout.getFaceNeighbors();
+            //using neighbor_type = typename Layout_t::face_neighbor_type;
+            //const neighbor_type& neighbors = layout.getFaceNeighbors();
+
+            bool isUpper = this->face_m & 1;
+
             
-            if(neighbors[this->face_m].size() == 0) {
+            //if(neighbors[this->face_m].size() == 0) {
+            if(((!isUpper) && (lDomains[myRank][d].min() == domain[d].min())) ||
+               ((isUpper) && (lDomains[myRank][d].max() == domain[d].max()))) {
                 
                 //this face is  on mesh/physical boundary
                 // get my local box
@@ -180,12 +185,14 @@ namespace ippl {
                 
                 int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
 
+                std::cout << "Rank in boundary: " << myRank << "with face: " 
+                          << this->face_m << std::endl; 
                 //Now, we are ready to intersect
                 for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
                     if (rank == myRank) {
                         continue;
                     }
-                    
+                   
                     if (gnd.touches(lDomains[rank])) {
                         using HaloCells_t = detail::HaloCells<T, Dim>;
                         HaloCells_t& halo = field.getHalo();
@@ -210,12 +217,12 @@ namespace ippl {
                         archives.push_back(std::make_unique<archive_type>());
                         requests.resize(requests.size() + 1);
 
-                        for(unsigned int di=0; di < Dim; ++di) {
-                        std::cout << "Rank: " << myRank << "Dim: " << di 
-                                  << "Sending range lo: " << range.lo[di] << std::endl; 
-                        std::cout << "Rank: " << myRank << "Dim: " << di 
-                                  << "Sending range hi: " << range.hi[di] << std::endl; 
-                        }
+                        //for(unsigned int di=0; di < Dim; ++di) {
+                        //std::cout << "Rank: " << myRank << "Dim: " << di 
+                        //          << "Sending range lo: " << range.lo[di] << std::endl; 
+                        //std::cout << "Rank: " << myRank << "Dim: " << di 
+                        //          << "Sending range hi: " << range.hi[di] << std::endl; 
+                        //}
 
                         detail::FieldBufferData<T> fdSend;
                         
@@ -224,17 +231,64 @@ namespace ippl {
                         Ippl::Comm->isend(rank, tag, fdSend, *(archives.back()),
                                           requests.back());
                         
+                        std::cout << "Sent to Rank " << rank << "from rank " << myRank << std::endl; 
+                        //range.lo[d] = range.lo[d] + offsetRecv;
+                        //range.hi[d] = range.hi[d] + offsetRecv;
+                        //
+                        //detail::FieldBufferData<T> fdRecv;
+                        
+                        //for(unsigned int di=0; di < Dim; ++di) {
+                        //std::cout << "Rank: " << myRank << "Dim: " << di 
+                        //          << "Recv range lo: " << range.lo[di] << std::endl; 
+                        //std::cout << "Rank: " << myRank << "Dim: " << di 
+                        //          << "Recv range hi: " << range.hi[di] << std::endl; 
+                        //}
+                        //Kokkos::resize(fdRecv.buffer,
+                        //           (range.hi[0] - range.lo[0]) *
+                        //           (range.hi[1] - range.lo[1]) *
+                        //           (range.hi[2] - range.lo[2]));
+
+                        //Ippl::Comm->recv(rank, tag, fdRecv);
+
+                        //using assign_t = typename HaloCells_t::assign;
+
+                        //halo.template unpack<assign_t>(range, view, fdRecv);
+                        //std::cout << "Recieved from Rank " << rank << std::endl; 
+                    }
+                }
+
+                for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
+                    if (rank == myRank) {
+                        continue;
+                    }
+                    
+                    if (gnd.touches(lDomains[rank])) {
+                        using HaloCells_t = detail::HaloCells<T, Dim>;
+                        HaloCells_t& halo = field.getHalo();
+                        auto ndNeighbor = lDomains[rank];
+                        ndNeighbor[d] = ndNeighbor[d] - offset;
+                       
+                        using range_t = typename HaloCells_t::bound_type;
+                        
+                        NDIndex<Dim> gnd2 = ndNeighbor.grow(nghost, d);
+
+                        NDIndex<Dim> overlap = gnd2.intersect(nd);
+
+                        range_t range;
+
+                        /* Obtain the intersection bounds with local ranges of the view.
+                         * Add "+1" to the upper bound since Kokkos loops always to "< extent".
+                        */
+                        for (size_t i = 0; i < Dim; ++i) {
+                        range.lo[i] = overlap[i].first() - nd[i].first() /*offset*/ + nghost;
+                        range.hi[i] = overlap[i].last()  - nd[i].first() /*offset*/ + nghost + 1;
+                        }
+                        
                         range.lo[d] = range.lo[d] + offsetRecv;
                         range.hi[d] = range.hi[d] + offsetRecv;
                         
                         detail::FieldBufferData<T> fdRecv;
                         
-                        for(unsigned int di=0; di < Dim; ++di) {
-                        std::cout << "Rank: " << myRank << "Dim: " << di 
-                                  << "Recv range lo: " << range.lo[di] << std::endl; 
-                        std::cout << "Rank: " << myRank << "Dim: " << di 
-                                  << "Recv range hi: " << range.hi[di] << std::endl; 
-                        }
                         Kokkos::resize(fdRecv.buffer,
                                    (range.hi[0] - range.lo[0]) *
                                    (range.hi[1] - range.lo[1]) *
@@ -243,54 +297,10 @@ namespace ippl {
                         Ippl::Comm->recv(rank, tag, fdRecv);
 
                         using assign_t = typename HaloCells_t::assign;
-
                         halo.template unpack<assign_t>(range, view, fdRecv);
+                        std::cout << "Recieved from Rank " << rank << "by rank " << myRank << std::endl; 
                     }
                 }
-
-                //for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-                //    if (rank == myRank) {
-                //        continue;
-                //    }
-                //    
-                //    if (gnd.touches(lDomains[rank])) {
-                //        using HaloCells_t = detail::HaloCells<T, Dim>;
-                //        HaloCells_t& halo = field.getHalo();
-                //        auto ndNeighbor = lDomains[rank];
-                //        ndNeighbor[d] = ndNeighbor[d] - offset;
-                //       
-                //        using range_t = typename HaloCells_t::bound_type;
-                //        
-                //        NDIndex<Dim> gnd2 = ndNeighbor.grow(nghost, d);
-
-                //        NDIndex<Dim> overlap = gnd2.intersect(nd);
-
-                //        range_t range;
-
-                //        /* Obtain the intersection bounds with local ranges of the view.
-                //         * Add "+1" to the upper bound since Kokkos loops always to "< extent".
-                //        */
-                //        for (size_t i = 0; i < Dim; ++i) {
-                //        range.lo[i] = overlap[i].first() - nd[i].first() /*offset*/ + nghost;
-                //        range.hi[i] = overlap[i].last()  - nd[i].first() /*offset*/ + nghost + 1;
-                //        }
-                //        
-                //        range.lo[d] = range.lo[d] + offsetRecv;
-                //        range.hi[d] = range.hi[d] + offsetRecv;
-                //        
-                //        detail::FieldBufferData<T> fdRecv;
-                //        
-                //        Kokkos::resize(fdRecv.buffer,
-                //                   (range.hi[0] - range.lo[0]) *
-                //                   (range.hi[1] - range.lo[1]) *
-                //                   (range.hi[2] - range.lo[2]));
-
-                //        Ippl::Comm->recv(rank, tag, fdRecv);
-
-                //        using assign_t = typename HaloCells_t::assign;
-                //        halo.template unpack<assign_t>(range, view, fdRecv);
-                //    }
-                //}
                 if (requests.size() > 0) {
                     MPI_Waitall(requests.size(), requests.data(), 
                                 MPI_STATUSES_IGNORE);

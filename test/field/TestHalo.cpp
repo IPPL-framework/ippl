@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     typedef ippl::Field<double, dim> field_type;
 
-    field_type field(mesh, layout, 2);
+    field_type field(mesh, layout);
 
     field = Ippl::Comm->rank();
 
@@ -78,8 +78,8 @@ int main(int argc, char *argv[]) {
 //     layout.findNeighbors(2);
 
 
-//     field.fillHalo();
-    field.accumulateHalo();
+    field.fillHalo();
+//    field.accumulateHalo();
 //
 // //     std::cout << std::endl;
 //
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
     for (int rank = 0; rank < nRanks; ++rank) {
         if (rank == Ippl::Comm->rank()) {
             std::ofstream out("field_" + std::to_string(rank) + ".dat", std::ios::out);
-            std::cout << field.getOwned().grow(2) << std::endl;
+            std::cout << field.getOwned().grow(1) << std::endl;
             field.write(out);
             out.close();
         }

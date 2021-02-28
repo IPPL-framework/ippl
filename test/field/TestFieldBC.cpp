@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    int pt = 16;
+    int pt = 8;
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
 
@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
     bcField[5] = std::make_shared<ippl::ExtrapolateFace<double, dim>>(5, 0.0, 1.0);
 
     std::cout << bcField << std::endl;
+    std::cout << layout << std::endl;
 
     field_type field(mesh, layout);
 
