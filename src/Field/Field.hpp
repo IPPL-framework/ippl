@@ -70,13 +70,50 @@ namespace ippl {
     }
 
     /*!
-     * Computes the Euclidean norm of the field
-     * @return L2 norm of *this
+     * Computes the Lp-norm of a field
+     * @param field field
+     * @param p desired norm (default 2)
+     * @return The desired norm of the field
      */
     template<typename T, unsigned Dim, class M, class C>
-    T Field<T, Dim, M, C>::l2_norm() const {
-        T innerProd = innerProduct(*this, *this);
-        return std::sqrt(innerProd);
+    T norm(Field<T, Dim, M, C> field, int p = 2) {
+        T local = 0;
+        const int shift = field.getNghost();
+        auto view = field.getView();
+        if (p == 0) {
+            Kokkos::parallel_reduce("Field::norm(0)",
+                Kokkos::MDRangePolicy<Kokkos::Rank<3>>({shift, shift, shift}, {
+                    view.extent(0) - shift,
+                    view.extent(1) - shift,
+                    view.extent(2) - shift}),
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
+                    T myVal = std::abs(view(i, j, k));
+                    if (myVal > val) val = myVal;
+                },
+                Kokkos::Max<T>(local)
+            );
+            T globalMax = 0;
+            MPI_Datatype type = get_mpi_datatype<T>(local);
+            MPI_Allreduce(&local, &globalMax, 1, type, MPI_MAX, Ippl::getComm());
+            return globalMax;
+        } else if (p == 2) {
+            return std::sqrt(innerProduct(field, field));
+        } else {
+            Kokkos::parallel_reduce("Field::norm(int) general",
+                Kokkos::MDRangePolicy<Kokkos::Rank<3>>({shift, shift, shift}, {
+                    view.extent(0) - shift,
+                    view.extent(1) - shift,
+                    view.extent(2) - shift}),
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& val) {
+                    val += std::pow(std::abs(view(i, j, k)), p);
+                },
+                Kokkos::Sum<T>(local)
+            );
+            T globalSum = 0;
+            MPI_Datatype type = get_mpi_datatype<T>(local);
+            MPI_Allreduce(&local, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
+            return std::pow(globalSum, 1.0 / p);
+        }
     }
 
 
