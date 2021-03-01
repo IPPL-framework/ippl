@@ -34,7 +34,10 @@
 // #include "Index/NDIndex.h"
 
 #include "FieldLayout/FieldLayout.h"
-#include "FFT/FFT.h"
+
+#ifdef ENABLE_FFT
+    #include "FFT/FFT.h"
+#endif
 
 // // IPPL Meshes
 // #include "Meshes/UniformCartesian.h"
