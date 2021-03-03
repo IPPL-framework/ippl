@@ -30,8 +30,8 @@ namespace ippl {
 
             virtual ~BCondBase() = default;
 
-            virtual void apply( Field<T, Dim, Mesh, Cell>& field) = 0;
-
+            virtual void findBCNeighbors(Field<T, Dim, Mesh, Cell>& field) = 0;
+            virtual void apply(Field<T, Dim, Mesh, Cell>& field) = 0;
             virtual void write(std::ostream&) const = 0;
 
             // Return face on which BC applies
@@ -63,6 +63,7 @@ namespace ippl {
         // component (i), and two means apply to component (i,j),
         using base_type = detail::BCondBase<T, Dim, Mesh, Cell>;
         using Layout_t = FieldLayout<Dim>;
+        using Field_t = Field<T, Dim, Mesh, Cell>;
 
         ExtrapolateFace(unsigned face,
                         T offset,
@@ -74,7 +75,8 @@ namespace ippl {
 
         virtual ~ExtrapolateFace() = default;
 
-        virtual void apply(Field<T, Dim, Mesh, Cell>& field);
+        virtual void findBCNeighbors(Field_t& /*field*/) {}
+        virtual void apply(Field_t& field);
 
         virtual void write(std::ostream& out) const;
 
@@ -93,9 +95,11 @@ namespace ippl {
     class NoBcFace : public detail::BCondBase<T, Dim, Mesh, Cell>
     {
         public:
+            using Field_t = Field<T, Dim, Mesh, Cell>;
             NoBcFace(int face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
 
-            virtual void apply(Field<T, Dim, Mesh, Cell>& /*field*/) {}
+            virtual void findBCNeighbors(Field_t& /*field*/) {}
+            virtual void apply(Field_t& /*field*/) {}
 
             virtual void write(std::ostream& out) const;
         
@@ -140,14 +144,20 @@ namespace ippl {
     {
     public:
         using Layout_t = FieldLayout<Dim>;
+        using Field_t = Field<T, Dim, Mesh, Cell>;
+        using face_neighbor_type = std::array<std::vector<int>, 2 * Dim>;
         
         PeriodicFace(unsigned face)
         : detail::BCondBase<T, Dim, Mesh, Cell>(face)
         { }
 
-        virtual void apply(Field<T, Dim, Mesh, Cell>& field);
+        virtual void findBCNeighbors(Field_t& field);
+        virtual void apply(Field_t& field);
 
         virtual void write(std::ostream& out) const;
+
+    private:
+        face_neighbor_type faceNeighbors_m;
         
     };
 }

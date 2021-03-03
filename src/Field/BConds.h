@@ -28,6 +28,7 @@ namespace ippl {
         using iterator = typename container::iterator;
         using const_iterator = typename container::const_iterator;
 
+        void findBCNeighbors(Field<T, Dim, Mesh, Cell>& field);
         void apply(Field<T, Dim, Mesh, Cell>& field);
 
         bool changesPhysicalCells() const;

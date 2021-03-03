@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <typeinfo>
+#include <array>
+#include <fstream>
 
 int main(int argc, char *argv[]) {
 
@@ -47,8 +49,8 @@ int main(int argc, char *argv[]) {
     //Higher Z face
     bcField[5] = std::make_shared<ippl::ExtrapolateFace<double, dim>>(5, 0.0, 1.0);
 
-    std::cout << bcField << std::endl;
-    std::cout << layout << std::endl;
+    //std::cout << bcField << std::endl;
+    //std::cout << layout << std::endl;
 
     field_type field(mesh, layout);
 
@@ -56,12 +58,14 @@ int main(int argc, char *argv[]) {
 
     field = field * 10.0;
 
+
+    bcField.findBCNeighbors(field);
     bcField.apply(field);
 
     int nRanks = Ippl::Comm->size();
     for (int rank = 0; rank < nRanks; ++rank) {
         if (rank == Ippl::Comm->rank()) {
-            std::ofstream out("field_allbc1_" + std::to_string(rank) + ".dat", std::ios::out);
+            std::ofstream out("field_allbc_" + std::to_string(rank) + ".dat", std::ios::out);
             field.write(out);
             out.close();
         }

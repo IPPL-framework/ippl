@@ -119,6 +119,16 @@ namespace ippl {
             os << std::endl << ")";
         }
 
+        template<typename T, unsigned Dim, class Mesh, class Cell>
+        void
+        BConds<T, Dim, Mesh, Cell>::findBCNeighbors(Field<T, Dim, Mesh, Cell>& field)
+        {
+            for (iterator it = bc_m.begin(); it != bc_m.end(); ++it) {
+                (*it)->findBCNeighbors(field);
+            }
+            Kokkos::fence();
+            Ippl::Comm->barrier();
+        }
 
         template<typename T, unsigned Dim, class Mesh, class Cell>
         void
@@ -126,8 +136,9 @@ namespace ippl {
         {
             for (iterator it = bc_m.begin(); it != bc_m.end(); ++it) {
                 (*it)->apply(field);
-                Kokkos::fence();
             }
+            Kokkos::fence();
+            Ippl::Comm->barrier();
         }
 
         template<typename T, unsigned Dim, class Mesh, class Cell>
