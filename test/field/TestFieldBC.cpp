@@ -37,17 +37,17 @@ int main(int argc, char *argv[]) {
     bc_type bcField;
 
     //X direction periodic BC
-    for (unsigned int i=0; i < 2; ++i) {
+    for (unsigned int i=0; i < 6; ++i) {
         bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
     }
-    //Lower Y face 
-    bcField[2] = std::make_shared<ippl::NoBcFace<double, dim>>(2);
-    //Higher Y face
-    bcField[3] = std::make_shared<ippl::ConstantFace<double, dim>>(3, 7.0);
-    //Lower Z face
-    bcField[4] = std::make_shared<ippl::ZeroFace<double, dim>>(4);
-    //Higher Z face
-    bcField[5] = std::make_shared<ippl::ExtrapolateFace<double, dim>>(5, 0.0, 1.0);
+    //////Lower Y face 
+    //bcField[2] = std::make_shared<ippl::NoBcFace<double, dim>>(2);
+    ////Higher Y face
+    //bcField[3] = std::make_shared<ippl::ConstantFace<double, dim>>(3, 7.0);
+    ////Lower Z face
+    //bcField[4] = std::make_shared<ippl::ZeroFace<double, dim>>(4);
+    ////Higher Z face
+    //bcField[5] = std::make_shared<ippl::ExtrapolateFace<double, dim>>(5, 0.0, 1.0);
 
     //std::cout << bcField << std::endl;
     //std::cout << layout << std::endl;

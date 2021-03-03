@@ -225,9 +225,6 @@ namespace ippl {
                 // get my local box
                 auto& nd = lDomains[myRank];
 
-                // grow the box by nghost cells in dimension d of face_m
-                auto gnd = nd.grow(nghost, d);
-
                 int offset, offsetRecv;
                 if(face & 1) {
                     //upper face
@@ -239,8 +236,6 @@ namespace ippl {
                     offset = domain[d].length();
                     offsetRecv = -1;
                 }
-                //shift by offset
-                gnd[d] = gnd[d] + offset;
                 
                 std::vector<MPI_Request> requests(0);
                 using archive_type = Communicate::archive_type;
