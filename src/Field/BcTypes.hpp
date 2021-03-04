@@ -24,7 +24,7 @@ namespace ippl {
     }
 
     template<typename T, unsigned Dim, class Mesh, class Cell>
-    void ExtrapolateFace<T, Dim, Mesh, Cell>::apply(Field<T, Dim, Mesh, Cell>& field) 
+    void ExtrapolateFace<T, Dim, Mesh, Cell>::apply(Field_t& field) 
     {
         //We only support constant extrapolation for the moment, other 
         //higher order extrapolation stuffs need to be added.
@@ -49,7 +49,7 @@ namespace ippl {
         //boundary or it is the single core case. Then the following code is same
         //irrespective of either it is a single core or multi-core case as the
         //non-periodic BC is local to apply.
-        typename Field<T, Dim, Mesh, Cell>::view_type& view = field.getView();
+        typename Field_t::view_type& view = field.getView();
         const int nghost = field.getNghost();
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
         int src, dest;
@@ -201,11 +201,11 @@ namespace ippl {
     }
 
     template<typename T, unsigned Dim, class Mesh, class Cell>
-    void PeriodicFace<T, Dim, Mesh, Cell>::apply(Field<T, Dim, Mesh, Cell>& field)
+    void PeriodicFace<T, Dim, Mesh, Cell>::apply(Field_t& field)
     {
        unsigned int face = this->face_m; 
        unsigned int d = face / 2;
-       typename Field<T, Dim, Mesh, Cell>::view_type& view = field.getView();
+       typename Field_t::view_type& view = field.getView();
        const Layout_t& layout = field.getLayout(); 
        const int nghost = field.getNghost();
        int myRank = Ippl::Comm->rank();
@@ -246,7 +246,7 @@ namespace ippl {
                 using HaloCells_t = detail::HaloCells<T, Dim>;
                 using range_t = typename HaloCells_t::bound_type;
                 HaloCells_t& halo = field.getHalo();
-                std::vector<range_t> rangeNeighbors_m;
+                std::vector<range_t> rangeNeighbors;
                 rangeNeighbors_m.clear();
                 
                 for (size_t i = 0; i < faceNeighbors_m[face].size(); ++i) {
@@ -269,7 +269,7 @@ namespace ippl {
                                       + nghost + 1;
                     }
                     
-                    rangeNeighbors_m.push_back(range);    
+                    rangeNeighbors.push_back(range);    
                     archives.push_back(std::make_unique<archive_type>());
                     requests.resize(requests.size() + 1);
 
@@ -285,7 +285,7 @@ namespace ippl {
 
                     int rank = faceNeighbors_m[face][i];
                     
-                    range_t range = rangeNeighbors_m[i];
+                    range_t range = rangeNeighbors[i];
 
                     range.lo[d] = range.lo[d] + offsetRecv;
                     range.hi[d] = range.hi[d] + offsetRecv;
