@@ -211,6 +211,10 @@ namespace ippl {
        int myRank = Ippl::Comm->rank();
        const auto& lDomains = layout.getHostLocalDomains();
        const auto& domain = layout.getDomain(); 
+      
+       //We have to put tag here so that the matchtag inside
+       //the if is proper.
+       int tag = Ippl::Comm->next_tag(BC_PARALLEL_PERIODIC_TAG, BC_TAG_CYCLE);
 
        if(lDomains[myRank][d].length() < domain[d].length()) {
             //Only along this dimension we need communication.
@@ -225,29 +229,29 @@ namespace ippl {
                 // get my local box
                 auto& nd = lDomains[myRank];
 
-                int offset, offsetRecv;
+                int offset, offsetRecv, matchtag;
                 if(face & 1) {
                     //upper face
                     offset = -domain[d].length();
                     offsetRecv = 1;
+                    matchtag = tag - 1;
                 }
                 else {
                     //lower face
                     offset = domain[d].length();
                     offsetRecv = -1;
+                    matchtag = tag + 1;
                 }
                 
                 std::vector<MPI_Request> requests(0);
                 using archive_type = Communicate::archive_type;
                 std::vector<std::unique_ptr<archive_type>> archives(0);
                 
-                int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
-                
                 using HaloCells_t = detail::HaloCells<T, Dim>;
                 using range_t = typename HaloCells_t::bound_type;
                 HaloCells_t& halo = field.getHalo();
                 std::vector<range_t> rangeNeighbors;
-                rangeNeighbors_m.clear();
+                rangeNeighbors.clear();
                 
                 for (size_t i = 0; i < faceNeighbors_m[face].size(); ++i) {
 
@@ -279,6 +283,10 @@ namespace ippl {
 
                     Ippl::Comm->isend(rank, tag, fdSend, *(archives.back()),
                                       requests.back());
+                    std::cout << "Sent from rank: " << myRank 
+                              << " to rank: " << rank 
+                              << " for face: " << face
+                              << " with tag: " << tag << std::endl;
                 }
                 
                 for (size_t i = 0; i < faceNeighbors_m[face].size(); ++i) {
@@ -297,7 +305,12 @@ namespace ippl {
                                    (range.hi[1] - range.lo[1]) *
                                    (range.hi[2] - range.lo[2]));
 
-                    Ippl::Comm->recv(rank, tag, fdRecv);
+                    Ippl::Comm->recv(rank, matchtag, fdRecv);
+
+                    std::cout << "Received from rank: " << rank 
+                              << " by rank: " << myRank
+                              << " for face: " << face
+                              << " with tag: " << matchtag << std::endl;
 
                     using assign_t = typename HaloCells_t::assign;
                     halo.template unpack<assign_t>(range, view, fdRecv);
