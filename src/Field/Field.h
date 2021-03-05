@@ -12,6 +12,9 @@ namespace ippl {
     class Field : public BareField<T, Dim>
     {
     public:
+        typedef T type;
+        const unsigned dimension = Dim;
+
         using Mesh_t      = M;
         using Centering_t = C;
         using Layout_t    = FieldLayout<Dim>;
