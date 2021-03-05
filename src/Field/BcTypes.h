@@ -21,6 +21,9 @@ namespace ippl {
         class BCondBase
         {
         public:
+
+            using Field_t = Field<T, Dim, Mesh, Cell>;
+            using Layout_t = FieldLayout<Dim>;
             
             // Constructor takes:
             // face: the face to apply the boundary condition on.
@@ -63,8 +66,8 @@ namespace ippl {
         // Zero int's specified means apply to all components; one means apply to
         // component (i), and two means apply to component (i,j),
         using base_type = detail::BCondBase<T, Dim, Mesh, Cell>;
-        using Layout_t = FieldLayout<Dim>;
-        using Field_t = Field<T, Dim, Mesh, Cell>;
+        using Field_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
+        using Layout_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Layout_t;
 
         ExtrapolateFace(unsigned face,
                         T offset,
@@ -96,7 +99,8 @@ namespace ippl {
     class NoBcFace : public detail::BCondBase<T, Dim, Mesh, Cell>
     {
         public:
-            using Field_t = Field<T, Dim, Mesh, Cell>;
+            
+            using Field_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
             NoBcFace(int face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
 
             virtual void findBCNeighbors(Field_t& /*field*/) {}
@@ -144,9 +148,9 @@ namespace ippl {
     class PeriodicFace : public detail::BCondBase<T, Dim, Mesh, Cell>
     {
     public:
-        using Layout_t = FieldLayout<Dim>;
-        using Field_t = Field<T, Dim, Mesh, Cell>;
         using face_neighbor_type = std::array<std::vector<int>, 2 * Dim>;
+        using Field_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
+        using Layout_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Layout_t;
         
         PeriodicFace(unsigned face)
         : detail::BCondBase<T, Dim, Mesh, Cell>(face)
