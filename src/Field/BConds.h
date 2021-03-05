@@ -28,6 +28,10 @@ namespace ippl {
         using iterator = typename container::iterator;
         using const_iterator = typename container::const_iterator;
 
+
+        BConds() = default;
+        ~BConds() = default;
+
         void findBCNeighbors(Field<T, Dim, Mesh, Cell>& field);
         void apply(Field<T, Dim, Mesh, Cell>& field);
 

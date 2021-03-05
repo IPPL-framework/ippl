@@ -70,7 +70,9 @@ int main(int argc, char *argv[]) {
     int nRanks = Ippl::Comm->size();
     for (int rank = 0; rank < nRanks; ++rank) {
         if (rank == Ippl::Comm->rank()) {
-            std::ofstream out("field_allperiodicBC_" + std::to_string(rank) + ".dat", std::ios::out);
+            std::ofstream out("field_allBC_" + 
+                             std::to_string(rank) + 
+                             ".dat", std::ios::out);
             field.write(out);
             out.close();
         }

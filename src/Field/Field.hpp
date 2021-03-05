@@ -13,25 +13,31 @@ namespace ippl {
     Field<T,Dim,M,C>::Field()
     : BareField<T, Dim>()
     , mesh_m(nullptr)
+    , bc_m() 
     { }
 
     //////////////////////////////////////////////////////////////////////////
     // Constructors which include a Mesh object as argument
     template<class T, unsigned Dim, class M, class C>
-    Field<T,Dim,M,C>::Field(Mesh_t& m, Layout_t& l, /*BConds_t& bc,*/ int nghost)
+    Field<T,Dim,M,C>::Field(Mesh_t& m, Layout_t& l, int nghost)
     : BareField<T,Dim>(l, nghost)
     , mesh_m(&m)
-    //, bc_m(bc) 
-    { }
+    { 
+        for (unsigned int face=0; face < 2 * Dim; ++face) {
+            bc_m[face] = std::make_shared<NoBcFace<T, Dim>>(face);
+        }
+    }
 
 
     //////////////////////////////////////////////////////////////////////////
     // Initialize the Field, also specifying a mesh
     template<class T, unsigned Dim, class M, class C>
-    void Field<T,Dim,M,C>::initialize(Mesh_t& m, Layout_t& l, /*BConds_t& bc,*/ int nghost) {
+    void Field<T,Dim,M,C>::initialize(Mesh_t& m, Layout_t& l, int nghost) {
         BareField<T,Dim>::initialize(l, nghost);
         mesh_m = &m;
-        //bc_m = bc;
+        for (unsigned int face=0; face < 2 * Dim; ++face) {
+            bc_m[face] = std::make_shared<NoBcFace<T, Dim>>(face);
+        }
     }
 
 
@@ -42,8 +48,8 @@ namespace ippl {
     template <typename T, unsigned Dim, class M, class C>
     detail::meta_grad<Field<T, Dim, M, C>> grad(Field<T, Dim, M, C>& u) {
         u.fillHalo();
-        //BConds_t& bcField = u.getBConds();
-        //bcField.apply(u);
+        BConds<T,Dim>& bcField = u.getFieldBC();
+        bcField.apply(u);
         M& mesh = u.get_mesh();
         typename M::vector_type xvector(0);
         xvector[0] = 0.5 / mesh.getMeshSpacing(0);
@@ -62,8 +68,8 @@ namespace ippl {
     template <typename T, unsigned Dim, class M, class C>
     detail::meta_div<Field<T, Dim, M, C>> div(Field<T, Dim, M, C>& u) {
         u.fillHalo();
-        //BConds_t& bcField = u.getBConds();
-        //bcField.apply(u);
+        BConds<T,Dim>& bcField = u.getFieldBC();
+        bcField.apply(u);
         M& mesh = u.get_mesh();
         typename M::vector_type xvector(0);
         xvector[0] = 0.5 / mesh.getMeshSpacing(0);
@@ -82,8 +88,8 @@ namespace ippl {
     template <typename T, unsigned Dim, class M, class C>
     detail::meta_laplace<Field<T, Dim, M, C>> laplace(Field<T, Dim, M, C>& u) {
         u.fillHalo();
-        //BConds_t& bcField = u.getBConds();
-        //bcField.apply(u);
+        BConds<T,Dim>& bcField = u.getFieldBC();
+        bcField.apply(u);
         M& mesh = u.get_mesh();
         typename M::vector_type hvector(0);
         hvector[0] = 1.0 / std::pow(mesh.getMeshSpacing(0), 2);

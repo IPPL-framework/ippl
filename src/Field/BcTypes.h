@@ -5,6 +5,7 @@
 #include "Types/ViewTypes.h"
 #include "Communicate/Archive.h"
 #include "FieldLayout/FieldLayout.h"
+#include "Meshes/UniformCartesian.h"
 
 namespace ippl {
     template<typename T, unsigned Dim, class Mesh, class Cell> class Field;

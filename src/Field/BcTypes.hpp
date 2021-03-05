@@ -283,10 +283,6 @@ namespace ippl {
 
                     Ippl::Comm->isend(rank, tag, fdSend, *(archives.back()),
                                       requests.back());
-                    std::cout << "Sent from rank: " << myRank 
-                              << " to rank: " << rank 
-                              << " for face: " << face
-                              << " with tag: " << tag << std::endl;
                 }
                 
                 for (size_t i = 0; i < faceNeighbors_m[face].size(); ++i) {
@@ -307,10 +303,6 @@ namespace ippl {
 
                     Ippl::Comm->recv(rank, matchtag, fdRecv);
 
-                    std::cout << "Received from rank: " << rank 
-                              << " by rank: " << myRank
-                              << " for face: " << face
-                              << " with tag: " << matchtag << std::endl;
 
                     using assign_t = typename HaloCells_t::assign;
                     halo.template unpack<assign_t>(range, view, fdRecv);
