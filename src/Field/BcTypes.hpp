@@ -1,4 +1,31 @@
-
+//   This file contains the abstract base class for 
+//   field boundary conditions and other child classes
+//   which represent specific BCs. At the moment the 
+//   following field BCs are supported
+//   
+//   1. Periodic BC
+//   2. Zero BC
+//   3. Specifying a constant BC
+//   4. No BC (default option)
+//   5. Constant extrapolation BC
+//   Only cell-centered field BCs are implemented 
+//   at the moment.
+// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// Matthias Frey, University of St Andrews, 
+// St Andrews, Scotland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 #include "Utility/IpplException.h"
 #include "Field/HaloCells.h"
@@ -322,15 +349,21 @@ namespace ippl {
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             int N = view.extent(d)-1;
-            
+
+            std::array<long, 3> ext;
+
+            for (size_t i = 0; i < Dim; ++i) {
+                ext[i] = view.extent(i) - nghost;
+            }
+
             switch (d) {
                 case 0:
                     Kokkos::parallel_for("Assign periodic field BC X", 
-                                          mdrange_type({nghost, nghost, nghost},
-                                                       {view.extent(0) - nghost,
-                                                        view.extent(1) - nghost,
-                                                        view.extent(2) - nghost}),
-                                          KOKKOS_CLASS_LAMBDA(const size_t i,
+                                          mdrange_type({0, nghost, nghost},
+                                                       {(long)nghost,
+                                                        ext[1],
+                                                        ext[2]}),
+                                          KOKKOS_CLASS_LAMBDA(const int i,
                                                               const size_t j, 
                                                               const size_t k)
                     {
@@ -338,114 +371,41 @@ namespace ippl {
                         //the domain proceeding outwards for both lower and 
                         //upper faces. The extra brackets and explicit mention 
                         //of 0 is for better readability of the code
-                        const int destLower = static_cast<int>(0+(nghost-1)-i);
-                        const int destUpper = static_cast<int>(N-(nghost-1)+i);
                         
-                        const int srcLower = static_cast<int>(N-nghost-i);
-                        const int srcUpper = static_cast<int>(0+nghost+i);
-                        
-                        view(destLower, j, k) = view(srcLower, j, k); 
-                        view(destUpper, j, k) = view(srcUpper, j, k); 
+                        view(0+(nghost-1)-i, j, k) = view(N-nghost-i, j, k); 
+                        view(N-(nghost-1)+i, j, k) = view(0+nghost+i, j, k); 
                     });
                     break;
                 case 1:
                     Kokkos::parallel_for("Assign periodic field BC Y", 
-                                          mdrange_type({nghost, nghost, nghost},
-                                                       {view.extent(0) - nghost,
-                                                        view.extent(1) - nghost,
-                                                        view.extent(2) - nghost}),
+                                          mdrange_type({nghost, 0, nghost},
+                                                       {ext[0],
+                                                        (long)nghost,
+                                                        ext[2]}),
                                           KOKKOS_CLASS_LAMBDA(const size_t i, 
-                                                              const size_t j,
+                                                              const int j,
                                                               const size_t k)
                     {
-                        //const size_t destLower = static_cast<size_t>(0+(nghost-1)-j);
-                        //const size_t destUpper = static_cast<size_t>(N-(nghost-1)+j);
-                        //
-                        //const size_t srcLower = static_cast<size_t>(N-nghost-j);
-                        //const size_t srcUpper = static_cast<size_t>(0+nghost+j);
-                        const int destLower = static_cast<int>(0+(nghost-1)-j);
-                        const int destUpper = static_cast<int>(N-(nghost-1)+j);
-                        
-                        const int srcLower = static_cast<int>(N-nghost-j);
-                        const int srcUpper = static_cast<int>(0+nghost+j);
-                        
-                        view(i, destLower, k) = view(i, srcLower, k); 
-                        view(i, destUpper, k) = view(i, srcUpper, k); 
+                        view(i, 0+(nghost-1)-j, k) = view(i, N-nghost-j, k); 
+                        view(i, N-(nghost-1)+j, k) = view(i, 0+nghost+j, k); 
                     });
                     break;
                 case 2:
                     Kokkos::parallel_for("Assign periodic field BC Z", 
-                                          mdrange_type({nghost, nghost, nghost},
-                                                       {view.extent(0) - nghost,
-                                                        view.extent(1) - nghost,
-                                                        view.extent(2) - nghost}),
+                                          mdrange_type({nghost, nghost, 0},
+                                                       {ext[0],
+                                                        ext[1],
+                                                        (long)nghost}),
                                           KOKKOS_CLASS_LAMBDA(const size_t i, 
                                                               const size_t j, 
-                                                              const size_t k)
+                                                              const int k)
                     {
-                        //const size_t destLower = static_cast<size_t>(0+(nghost-1)-k);
-                        //const size_t destUpper = static_cast<size_t>(N-(nghost-1)+k);
-                        //
-                        //const size_t srcLower =  static_cast<size_t>(N-nghost-k);
-                        //const size_t srcUpper =  static_cast<size_t>(0+nghost+k);
-                        const int destLower = static_cast<int>(0+(nghost-1)-k);
-                        const int destUpper = static_cast<int>(N-(nghost-1)+k);
-                        
-                        const int srcLower = static_cast<int>(N-nghost-k);
-                        const int srcUpper = static_cast<int>(0+nghost+k);
-                        
-                        view(i, j, destLower) = view(i, j, srcLower); 
-                        view(i, j, destUpper) = view(i, j, srcUpper); 
+                        view(i, j, 0+(nghost-1)-k) = view(i, j, N-nghost-k); 
+                        view(i, j, N-(nghost-1)+k) = view(i, j, 0+nghost+k); 
                     });
                     break;
                 default:
                     throw IpplException("PeriodicFace::apply", "face number wrong");
-
-            //using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-            //int N = view.extent(d);
-            //
-            //switch (d) {
-            //    case 0:
-            //        Kokkos::parallel_for("Assign periodic field BC X", 
-            //                              mdrange_type({nghost, nghost},
-            //                                           {view.extent(1) - nghost,
-            //                                            view.extent(2) - nghost
-            //                                           }),
-            //                              KOKKOS_CLASS_LAMBDA(const size_t j, 
-            //                                                  const size_t k)
-            //                              {
-            //                              view(0, j, k)   = view(N-2, j, k); 
-            //                              view(N-1, j, k) = view(1, j, k); 
-            //                              });
-            //        break;
-            //    case 1:
-            //        Kokkos::parallel_for("Assign periodic field BC Y", 
-            //                              mdrange_type({nghost, nghost},
-            //                                           {view.extent(0) - nghost,
-            //                                            view.extent(2) - nghost
-            //                                           }),
-            //                              KOKKOS_CLASS_LAMBDA(const size_t i, 
-            //                                                  const size_t k)
-            //                              {
-            //                              view(i, 0, k)   = view(i, N-2, k); 
-            //                              view(i, N-1, k) = view(i, 1, k); 
-            //                              });
-            //        break;
-            //    case 2:
-            //        Kokkos::parallel_for("Assign periodic field BC Z", 
-            //                              mdrange_type({nghost, nghost},
-            //                                           {view.extent(0) - nghost,
-            //                                            view.extent(1) - nghost
-            //                                           }),
-            //                              KOKKOS_CLASS_LAMBDA(const size_t i, 
-            //                                                  const size_t j)
-            //                              {
-            //                              view(i, j, 0)    = view(i, j, N-2); 
-            //                              view(i, j, N-1)  = view(i, j, 1); 
-            //                              });
-            //        break;
-            //    default:
-            //        throw IpplException("PeriodicFace::apply", "face number wrong");
 
             }
        }

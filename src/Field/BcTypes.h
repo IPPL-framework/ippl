@@ -1,3 +1,31 @@
+//   This file contains the abstract base class for 
+//   field boundary conditions and other child classes
+//   which represent specific BCs. At the moment the 
+//   following field BCs are supported
+//   
+//   1. Periodic BC
+//   2. Zero BC
+//   3. Specifying a constant BC
+//   4. No BC (default option)
+//   5. Constant extrapolation BC
+//   Only cell-centered field BCs are implemented 
+//   at the moment.
+// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// Matthias Frey, University of St Andrews, 
+// St Andrews, Scotland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #ifndef IPPL_FIELD_BC_TYPES_H
 #define IPPL_FIELD_BC_TYPES_H
 
