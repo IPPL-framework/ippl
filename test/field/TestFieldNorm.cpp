@@ -42,21 +42,30 @@ int main(int argc, char *argv[]) {
 
     field = pi/4;
 
-    Kokkos::Profiling::pushRegion("Single Kernel");
-    double fastL2Norm = ippl::norm(field);
+    double l2 = sqrt(pow(pt, 3)) * pi / 4;
+    double l1 = pow(pt, 3) * pi / 4;
+    double linf = pi / 4;
+
+    Kokkos::Profiling::pushRegion("L2 Norm");
+    double compute_l2 = ippl::norm(field);
     Kokkos::Profiling::popRegion();
 
-    std::cout << fastL2Norm << std::endl;
-
-    Kokkos::Profiling::pushRegion("Double Kernel");
-    field = field * field;
-    double slowL2Norm = sqrt(field.sum());
+    Kokkos::Profiling::pushRegion("L1 Norm");
+    double compute_l1 = ippl::norm(field, 1);
     Kokkos::Profiling::popRegion();
 
-    if (slowL2Norm == fastL2Norm) {
-        std::cout << "Slow norm matches fast norm\n";
-    } else {
-        std::cout << slowL2Norm << std::endl;
+    Kokkos::Profiling::pushRegion("Max Norm");
+    double compute_linf = ippl::norm(field, 0);
+    Kokkos::Profiling::popRegion();
+
+    if (abs(compute_l2 - l2) > 1e-6) {
+        std::cerr << "L2 norm for N = " << pt << " does not match. Deviation: " << abs(l2 - compute_l2) << std::endl;
+    }
+    if (abs(compute_l1 - l1) > 1e-6) {
+        std::cerr << "L1 norm for N = " << pt << " does not match. Deviation: " << abs(l1 - compute_l1) << std::endl;
+    }
+    if (compute_linf != linf) {
+        std::cerr << "Max norm for N = " << pt << " does not match. Deviation: " << abs(linf - compute_linf) << std::endl;
     }
 
     return 0;
