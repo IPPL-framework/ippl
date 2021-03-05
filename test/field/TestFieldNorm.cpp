@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     int pt = 4;
 
     if (argc == 2) {
-        pt = (int)strtol(argv[1], NULL, 10);
+        pt = 1 << (int)strtol(argv[1], NULL, 10);
     }
 
     constexpr unsigned int dim = 3;
