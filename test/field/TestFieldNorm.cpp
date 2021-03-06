@@ -5,6 +5,13 @@
 
 #include <cstdlib>
 
+void checkError(double computed, double correct, int N, int p, double tolerance = 1e-16) {
+    double relError = fabs(computed - correct) / correct;
+    if (relError > tolerance) {
+        std::cerr << "L" << p << " norm for N = " << N << " does not match.\n\tGot " << computed << ", expected " << correct << ". Relative error: " << relError << std::endl;
+    }
+}
+
 int main(int argc, char *argv[]) {
 
     Ippl ippl(argc,argv);
@@ -42,7 +49,7 @@ int main(int argc, char *argv[]) {
 
     field = pi/4;
 
-    double l2 = sqrt(pow(pt, 3)) * pi / 4;
+    double l2 = pow(pt, 1.5) * pi / 4;
     double l1 = pow(pt, 3) * pi / 4;
     double linf = pi / 4;
 
@@ -58,15 +65,9 @@ int main(int argc, char *argv[]) {
     double compute_linf = ippl::norm(field, 0);
     Kokkos::Profiling::popRegion();
 
-    if (abs(compute_l2 - l2) > 1e-6) {
-        std::cerr << "L2 norm for N = " << pt << " does not match. Deviation: " << abs(l2 - compute_l2) << std::endl;
-    }
-    if (abs(compute_l1 - l1) > 1e-6) {
-        std::cerr << "L1 norm for N = " << pt << " does not match. Deviation: " << abs(l1 - compute_l1) << std::endl;
-    }
-    if (compute_linf != linf) {
-        std::cerr << "Max norm for N = " << pt << " does not match. Deviation: " << abs(linf - compute_linf) << std::endl;
-    }
+    checkError(compute_l2, l2, pt, 2);
+    checkError(compute_l1, l1, pt, 1);
+    checkError(compute_linf, linf, pt, 0);
 
     return 0;
 }
