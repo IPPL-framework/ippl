@@ -264,13 +264,13 @@ namespace ippl {
                 if(face & 1) {
                     //upper face
                     offset = -domain[d].length();
-                    offsetRecv = 1;
+                    offsetRecv = nghost;
                     matchtag = tag - 1;
                 }
                 else {
                     //lower face
                     offset = domain[d].length();
-                    offsetRecv = -1;
+                    offsetRecv = -nghost;
                     matchtag = tag + 1;
                 }
                 
