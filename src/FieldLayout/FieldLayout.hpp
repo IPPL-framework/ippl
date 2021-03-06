@@ -208,6 +208,7 @@ namespace ippl {
 
         vertexNeighbors_m.fill(-1);
 
+
         int myRank = Ippl::Comm->rank();
 
         // get my local box
