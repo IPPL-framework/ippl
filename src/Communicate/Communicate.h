@@ -117,12 +117,13 @@ namespace ippl {
         MPI_Status status;
 
         MPI_Probe(src, tag, *this, &status);
-
+        
         int msize = 0;
         MPI_Get_count(&status, MPI_BYTE, &msize);
 
         // Attention: only works with default spaces
         archive_type ar(msize);
+
 
         MPI_Recv(ar.getBuffer(), ar.getSize(),
                 MPI_BYTE, src, tag, *this, &status);

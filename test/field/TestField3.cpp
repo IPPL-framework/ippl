@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <typeinfo>
+#include <array>
+#include <fstream>
 
 int main(int argc, char *argv[]) {
 
@@ -9,17 +11,17 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-
     int pt = 4;
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
 
-    ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
+    ippl::e_dim_tag decomp[dim];    // Specifies SERIAL, PARALLEL dims
     for (unsigned int d=0; d<dim; d++)
-        allParallel[d] = ippl::SERIAL;
+        //decomp[d] = ippl::PARALLEL;
+        decomp[d] = ippl::SERIAL;
 
     // all parallel layout, standard domain, normal axis order
-    ippl::FieldLayout<dim> layout(owned,allParallel);
+    ippl::FieldLayout<dim> layout(owned,decomp);
 
     //Unit box 
     double dx = 1.0 / double(pt);
@@ -33,75 +35,96 @@ int main(int argc, char *argv[]) {
     typedef ippl::Field<double, dim> field_type;
     typedef ippl::Field<ippl::Vector<double, dim>, dim> vector_field_type;
 
-    field_type field, Lap;
+    typedef ippl::Vector<double, dim> Vector_t;
 
-    vector_field_type vfield;
-
-    field.initialize(mesh, layout);
-    
-    vfield.initialize(mesh, layout);
-    
-    Lap.initialize(mesh,layout);
+    field_type field(mesh, layout);
+    field_type Lap(mesh, layout);
+    vector_field_type vfield(mesh, layout);
 
     typedef ippl::Field<double, dim> Field_t;
 
     typename Field_t::view_type& view = field.getView();
+    typedef ippl::BConds<double, dim> bc_type; 
+    typedef ippl::BConds<Vector_t, dim> vbc_type; 
 
-    //typename Field_t::BareField_t::view_type::HostMirror host_view =
-    //                                                  Kokkos::create_mirror_view(view);
+    bc_type bcField;
+    vbc_type vbcField;
 
-    //int length = pt+2;
+    //X direction periodic BC
+    for (unsigned int i=0; i < 6; ++i) {
+        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
+        vbcField[i] = std::make_shared<ippl::PeriodicFace<Vector_t, dim>>(i);
+    }
+    ////Lower Y face 
+    //bcField[2] = std::make_shared<ippl::NoBcFace<double, dim>>(2);
+    //vbcField[2] = std::make_shared<ippl::NoBcFace<Vector_t, dim>>(2);
+    ////Higher Y face
+    //bcField[3] = std::make_shared<ippl::ConstantFace<double, dim>>(3, 7.0);
+    //vbcField[3] = std::make_shared<ippl::ConstantFace<Vector_t, dim>>(3, 7.0);
+    ////Lower Z face
+    //bcField[4] = std::make_shared<ippl::ZeroFace<double, dim>>(4);
+    //vbcField[4] = std::make_shared<ippl::ZeroFace<Vector_t, dim>>(4);
+    ////Higher Z face
+    //bcField[5] = std::make_shared<ippl::ExtrapolateFace<double, dim>>(5, 0.0, 1.0);
+    //vbcField[5] = std::make_shared<ippl::ExtrapolateFace<Vector_t, dim>>(5, 0.0, 1.0);
 
-    //for (int i = 0; i < length; ++i) {
-    //    for (int j = 0; j < length; ++j) {
-    //        for (int k = 0; k < length; ++k) {
-    //                
-    //            double x = (i + 0.5) * hx[0] + origin[0];
-    //            double y = (j + 0.5) * hx[1] + origin[1];
-    //            double z = (k + 0.5) * hx[2] + origin[2];
+    field.setFieldBC(bcField);
+    Lap.setFieldBC(bcField);
+    vfield.setFieldBC(vbcField);
 
-    //            //host_view(i, j, k) = 3.0 * x + 4.0 * y + 5.0 * z;
-    //            //host_view(i, j, k) = 3.0 * pow(x,2) + 4.0 * pow(y,2) + 5.0 * pow(z,2);
-    //            host_view(i, j, k) = sin(pi * x) * cos(pi * y) * exp(z);
-    //        }
-    //    }
-    //}
+    const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
+    const int nghost = field.getNghost();
+    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-    //Kokkos::deep_copy(view,host_view);
+    Kokkos::parallel_for("Assign field", 
+                          mdrange_type({nghost, nghost, nghost},
+                                       {view.extent(0) - nghost,
+                                        view.extent(1) - nghost,
+                                        view.extent(2) - nghost}),
+                          KOKKOS_LAMBDA(const int i, 
+                                        const int j, 
+                                        const int k)
+                          {
+                            //local to global index conversion
+                            const size_t ig = i + lDom[0].first() + nghost;
+                            const size_t jg = j + lDom[1].first() + nghost;
+                            const size_t kg = k + lDom[2].first() + nghost;
+                            double x = (ig + 0.5) * hx[0];
+                            double y = (jg + 0.5) * hx[1];
+                            double z = (kg + 0.5) * hx[2];
 
-
-    Kokkos::parallel_for("Assign lfield", 
-                          Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
-                                                                 {view.extent(0),view.extent(1),view.extent(2)}),
-                          KOKKOS_LAMBDA(const int i, const int j, const int k){
-            
-                            double x = (i + 0.5) * hx[0] + origin[0];
-                            double y = (j + 0.5) * hx[1] + origin[1];
-                            double z = (k + 0.5) * hx[2] + origin[2];
-
-                            //view(i, j, k) = 3.0 * x + 4.0 * y + 5.0 * z;
-                            view(i, j, k) = sin(pi * x) * cos(pi * y) * exp(z);
-
-
+                            //view(i, j, k) = 3.0*pow(x,1) + 4.0*pow(y,1) + 5.0*pow(z,1);
+                            //view(i, j, k) = sin(pi * x) * cos(pi * y) * exp(z);
+                            view(i, j, k) = sin(pi * x) * sin(pi * y) * sin(pi * z);
                           });
 
 
 
-    field.write();
+    //field.write();
 
-    vfield = grad(field);
+    //vfield = grad(field);
 
-    vfield.write();
+    //vfield.write();
 
-    field = div(vfield);
+    //field = div(vfield);
 
-    field.write();
+    //field.write();
 
     Lap = 0.0;
 
     Lap = laplace(field);
 
-    Lap.write();
+    int nRanks = Ippl::Comm->size();
+    for (int rank = 0; rank < nRanks; ++rank) {
+        if (rank == Ippl::Comm->rank()) {
+            std::ofstream out("LaplacePeriodicBCSerial_" + 
+                              std::to_string(rank) + 
+                              ".dat", std::ios::out);
+            Lap.write(out);
+            out.close();
+        }
+        Ippl::Comm->barrier();
+    }
 
 
     return 0;
