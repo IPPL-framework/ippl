@@ -183,7 +183,7 @@ public:
         this->addAttribute(qm);
         this->addAttribute(P);
         this->addAttribute(E);
-        this->addAttribute(B);
+        //this->addAttribute(B);
         setupBCs();
         for (unsigned int i=0; i<Dim; i++)
             decomp_m[i]=decomp[i];
@@ -210,7 +210,7 @@ public:
         this->addAttribute(qm);
         this->addAttribute(P);
         this->addAttribute(E);
-        this->addAttribute(B);
+        //this->addAttribute(B);
         setupBCs();
         for (unsigned int i=0; i<Dim; i++)
             decomp_m[i]=decomp[i];
@@ -289,7 +289,7 @@ public:
         //reduce(Q,Q,OpAddAssign());
         double Q_grid = sum(EFDMag_m);
         m << "sum(qm)= " << initialQ << " Q_grid= " << Q_grid << endl;
-        EFDMag_m.print();
+        //EFDMag_m.print();
         //return initialQ-Q;
         //return initialQ-Q_grid;
     }
@@ -345,7 +345,7 @@ public:
             }
         }
         this->update();
-        //BinaryRepartition(*this);
+        BinaryRepartition(*this);
     }
 
     void gatherStatistics() {
@@ -634,28 +634,79 @@ int main(int argc, char *argv[]){
     unsigned long int nloc = totalP / Ippl::getNodes();
 
     int rest = (int) (totalP - nloc * Ippl::getNodes());
-    
+        
     if ( Ippl::myNode() < rest )
         ++nloc;
 
-    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
-    IpplTimings::startTimer(particleCreation);                                                    
-    P->create(nloc);
     
-    std::mt19937_64 eng[Dim];
-    for (unsigned i = 0; i < Dim; ++i) {
-        eng[i].seed(42 + i * Dim);
+    // For creation of Gaussian distribution of particles
+    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
+    P->create(nloc);
+    //For generating same distribution always
+    std::mt19937_64 eng[2*Dim];
+   
+    //There is no reason for picking 42 or multiplying by 
+    //Dim with i, just want the initial seeds to be
+    //farther apart.
+    for (int i = 0; i < 2*3; ++i) {
+        eng[i].seed(42 + Dim * i);
         eng[i].discard( nloc * Ippl::myNode());
     }
-    std::uniform_real_distribution<double> unif(0, 1.0);
+
+    std::vector<double> mu(Dim);
+    std::vector<double> sd(Dim);
+    std::vector<double> states(Dim);
+   
+
+    mu[0] = 0.5;
+    mu[1] = 0.5;
+    mu[2] = 0.5;
+    sd[0] = 0.15*1.0;
+    sd[1] = 0.05*1.0;
+    sd[2] = 0.20*1.0;
+
+
+    std::uniform_real_distribution<double> dist_uniform (0.0, 1.0);
 
     double sum_coord=0.0;
-    for (unsigned long int i = 0; i< nloc; i++) {
+    for (unsigned long int i = 0; i < nloc; ++i) {
+
+        for (int istate = 0; istate < 3; ++istate) {
+            double u1 = dist_uniform(eng[istate*2]);
+            double u2 = dist_uniform(eng[istate*2+1]);
+            states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) 
+                            * std::cos(2.0 * pi * u2)) + mu[istate]; 
+        } 
+
         for (int d = 0; d<3; d++) {
-            P->R(i)[d] =  unif(eng[d]);
-            sum_coord += P->R(i)[d];
+            P->R[i](d) = std::fabs(std::fmod(states[d],nr[d]));
+            sum_coord += P->R[i](d);
+            P->P[i](d) = 0.0;
         }
     }
+
+    // For creation of uniform distribution of particles
+    //static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
+    //IpplTimings::startTimer(particleCreation);                                                    
+    //P->create(nloc);
+    //
+    //std::mt19937_64 eng[Dim];
+    //for (unsigned i = 0; i < Dim; ++i) {
+    //    eng[i].seed(42 + i * Dim);
+    //    eng[i].discard( nloc * Ippl::myNode());
+    //}
+    //std::uniform_real_distribution<double> unif(0, 1.0);
+
+
+    //double sum_coord=0.0;
+    //for (unsigned long int i = 0; i< nloc; i++) {
+    //    for (int d = 0; d<3; d++) {
+    //        P->R[i](d) =  unif(eng[d]);
+    //        sum_coord += P->R[i](d);
+    //        P->P[i](d) = 0.0;
+    //    }
+    //}
+    
     double global_sum_coord = 0.0;
     MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
                MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
@@ -664,8 +715,7 @@ int main(int argc, char *argv[]){
         std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
     }
 
-    assign(P->P, 0.0);
-    double q = 1.0/totalP;
+    double q = 1e4/totalP;
 
     // random initialization for charge-to-mass ratio
     assign(P->qm,q);
@@ -690,7 +740,7 @@ int main(int argc, char *argv[]){
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
-        //P->gatherStatistics();
+        P->gatherStatistics();
         // advance the particle positions
         // basic leapfrogging timestep scheme.  velocities are offset
         // by half a timestep from the positions.
