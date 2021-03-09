@@ -1,4 +1,4 @@
-# Independent Parallel Particle Layer (IPPL)
+# Independent Parallel Particle Layer (IPPL) v 1.0
 
 IPPL represents the backend of OPAL implementing particles, meshes and operations on them to do PIC codes. This branch is the 
 version 1.0 of the library which is MPI parallelized and work with only CPUs. 
