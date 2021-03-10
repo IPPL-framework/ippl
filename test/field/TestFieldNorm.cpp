@@ -1,14 +1,18 @@
+// Usage: ./TestFieldNorm (log_2 field size) --info 10
 #include "Ippl.h"
+#include "Utility/IpplTimings.h"
 
 #include <iostream>
 #include <typeinfo>
 
 #include <cstdlib>
 
-void checkError(double computed, double correct, int N, int p, double tolerance = 1e-16) {
-    double relError = fabs(computed - correct) / correct;
+void checkError(double computed, double correct, int N, int p, Inform& mout, Inform& merr, double tolerance = 1e-16) {
+    double absError = fabs(computed - correct);
+    double relError = absError / correct;
+    mout << "(" << N << ", L" << p << "): " << absError << "," << relError << endl;
     if (relError > tolerance) {
-        std::cerr << "L" << p << " norm for N = " << N << " does not match.\n\tGot " << computed << ", expected " << correct << ". Relative error: " << relError << std::endl;
+        merr << "L" << p << " norm for N = " << N << " does not match.\n\tGot " << computed << ", expected " << correct << ". Relative error: " << relError << endl;
     }
 }
 
@@ -18,7 +22,7 @@ int main(int argc, char *argv[]) {
 
     int pt = 4;
 
-    if (argc == 2) {
+    if (argc >= 2) {
         pt = 1 << (int)strtol(argv[1], NULL, 10);
     }
 
@@ -53,21 +57,30 @@ int main(int argc, char *argv[]) {
     double l1 = pow(pt, 3) * pi / 4;
     double linf = pi / 4;
 
-    Kokkos::Profiling::pushRegion("L2 Norm");
+    IpplTimings::TimerRef l2Timer = IpplTimings::getTimer("L2"),
+        l1Timer = IpplTimings::getTimer("L1"),
+        l0Timer = IpplTimings::getTimer("Max");
+
+    IpplTimings::startTimer(l2Timer);
     double compute_l2 = ippl::norm(field);
-    Kokkos::Profiling::popRegion();
+    IpplTimings::stopTimer(l2Timer);
 
-    Kokkos::Profiling::pushRegion("L1 Norm");
+    IpplTimings::startTimer(l1Timer);
     double compute_l1 = ippl::norm(field, 1);
-    Kokkos::Profiling::popRegion();
+    IpplTimings::stopTimer(l1Timer);
 
-    Kokkos::Profiling::pushRegion("Max Norm");
+    IpplTimings::startTimer(l0Timer);
     double compute_linf = ippl::norm(field, 0);
-    Kokkos::Profiling::popRegion();
+    IpplTimings::stopTimer(l0Timer);
 
-    checkError(compute_l2, l2, pt, 2);
-    checkError(compute_l1, l1, pt, 1);
-    checkError(compute_linf, linf, pt, 0);
+    IpplTimings::print("timings.dat");
+
+    Inform m1("DATA");
+    Inform m2("Deviation", std::cerr);
+
+    checkError(compute_l2, l2, pt, 2, m1, m2);
+    checkError(compute_l1, l1, pt, 1, m1, m2);
+    checkError(compute_linf, linf, pt, 0, m1, m2);
 
     return 0;
 }
