@@ -14,7 +14,7 @@ namespace ippl {
     {
     public:
         typedef T type;
-        const unsigned dimension = Dim;
+        static constexpr unsigned dimension = Dim;
 
         using Mesh_t      = M;
         using Centering_t = C;
