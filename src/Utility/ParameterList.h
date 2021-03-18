@@ -45,7 +45,8 @@ namespace ippl {
                                        bool,
                                        std::string,
                                        unsigned int,
-                                       int>;
+                                       int,
+                                       ParameterList>;
 
         template <typename T>
         void add(const std::string& key, const T& value) {
