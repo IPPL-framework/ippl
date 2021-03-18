@@ -20,8 +20,8 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#ifndef IPPL_PARAMETERS_H
-#define IPPL_PARAMETERS_H
+#ifndef IPPL_PARAMETER_LIST_H
+#define IPPL_PARAMETER_LIST_H
 
 #include <iostream>
 #include <iomanip>
