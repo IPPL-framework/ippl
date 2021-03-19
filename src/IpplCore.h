@@ -49,7 +49,6 @@
 #include "Types/Vector.h"
 
 // // IPPL Load balancing
-// #include "Particle/ParticleBalancer.h"
-// #include "FieldLayout/BinaryBalancer.h"
+#include "Decomposition/OrthogonalRecursiveBisection.h"
 
 #endif

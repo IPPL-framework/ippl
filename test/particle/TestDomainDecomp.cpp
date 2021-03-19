@@ -19,6 +19,7 @@ constexpr unsigned Dim = 3;
 typedef ippl::ParticleSpatialLayout<double,Dim>   PLayout_t;
 typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
+typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t> ORB;
 
 template<typename T, unsigned Dim>
 using Vector = ippl::Vector<T, Dim>;
@@ -34,8 +35,6 @@ typedef Field<double, Dim>   Field_t;
 typedef Field<Vector_t, Dim> VField_t;
 
 double pi = acos(-1.0);
-
-class NBinaryBalancer;
 
 template<class PLayout>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
@@ -102,11 +101,11 @@ public:
         PLayout& layout = this->getLayout();
         layout.update(*this);
     }
-
+    
+    ORB orb; 
+    
     void nUpdate() {
-        // std::cout << "Type of this: " << typeid(this).name() << std::endl;
-        // nTest();
-        std::cout << NBinaryRepartition(*this) << std::endl;
+        std::cout << orb.BinaryRepartition(*this) << std::endl;
     }
 
     void gatherStatistics(unsigned int totalP, int iteration) {

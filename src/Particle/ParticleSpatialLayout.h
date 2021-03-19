@@ -51,10 +51,12 @@ namespace ippl {
         using locate_type = typename detail::ViewType<int, 1>::view_type;
         using bool_type = typename detail::ViewType<bool, 1>::view_type;
         using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
+        // using Mesh_t = UniformCartesian<double,Dim>;
 
     public:
         // constructor: this one also takes a Mesh
         ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&);
+        // ParticleSpatialLayout(FieldLayout<Dim>&, Mesh_t&);
 
         ParticleSpatialLayout() : detail::ParticleLayout<T, Dim>() { }
 
@@ -64,11 +66,17 @@ namespace ippl {
         void update(/*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
-
-
+    
+        FieldLayout<Dim>& getFieldLayout() { return flayout_m; }        
+        Mesh& getMesh() { return mesh_m; }
+  
     protected:
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
+         
+        // TEMPORARY
+        FieldLayout<Dim> flayout_m;
+        Mesh mesh_m;        
 
     public:
         void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,

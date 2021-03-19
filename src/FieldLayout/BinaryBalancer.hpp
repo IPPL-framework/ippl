@@ -598,6 +598,11 @@ CalcBinaryRepartition(FieldLayout<Dim>& layout, BareField<double,Dim>& weights)
   int myproc = Ippl::Comm->myNode();
   domains.reserve(nprocs);
   procs.reserve(nprocs);
+
+  // Testing
+  std::cout << procs << std::endl;
+
+
   // Start the list with just the top level domain.
   domains.push_back( layout.getDomain() );
   procs.push_back( nprocs );

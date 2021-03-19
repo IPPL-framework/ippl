@@ -14,16 +14,16 @@ endmacro()
 #   add_subdirectory (${test})
 # endforeach()
 
-add_subdirectory (kokkos)
-add_subdirectory (barefield)
-add_subdirectory (vector)
-add_subdirectory (field)
+#add_subdirectory (kokkos)
+#add_subdirectory (barefield)
+#add_subdirectory (vector)
+#add_subdirectory (field)
 if (ENABLE_FFT)
-    add_subdirectory (FFT)
+#    add_subdirectory (FFT)
 endif()
 add_subdirectory (particle)
-add_subdirectory (region)
-add_subdirectory (serialization)
+#add_subdirectory (region)
+#add_subdirectory (serialization)
 
 # vi: set et ts=4 sw=4 sts=4:
 

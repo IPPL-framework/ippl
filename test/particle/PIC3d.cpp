@@ -308,7 +308,9 @@ int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     Inform msg(argv[0]);
     Inform msg2all(argv[0],INFORM_ALL_NODES);
-
+    
+    // Testing message inform
+    Inform ml("ML");
 
     ippl::Vector<int,Dim> nr = {
         std::atoi(argv[1]),
@@ -356,8 +358,7 @@ int main(int argc, char *argv[]){
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp);
     PLayout_t PL(FL, mesh);
-
-
+    
     double Q=1.0;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
@@ -372,6 +373,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
     IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
+
     
     std::mt19937_64 eng[Dim];
     for (unsigned i = 0; i < Dim; ++i) {
@@ -402,12 +404,15 @@ int main(int argc, char *argv[]){
     P->qm = P->Q_m/totalP;
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);                                                    
+    
+    // Testing
+    ml << "----UPDATE----" << endl;
 
     static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
     IpplTimings::startTimer(UpdateTimer);                                               
     P->update();
     IpplTimings::stopTimer(UpdateTimer);                                                    
-
+    
     msg << "particles created and initial conditions assigned " << endl;
     P->EFD_m.initialize(mesh, FL);
     P->EFDMag_m.initialize(mesh, FL);
@@ -455,6 +460,10 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(mainTimer);                                                    
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
+    
+    // Testing
+    ml << "--------FINISHED-------" << endl
+       << FL << endl;
 
     return 0;
 }

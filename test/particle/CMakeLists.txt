@@ -14,29 +14,32 @@ link_directories (
 set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
-add_executable (TestIpplParticleBase TestIpplParticleBase.cpp)
-target_link_libraries (TestIpplParticleBase ${IPPL_LIBS})
+#add_executable (TestIpplParticleBase TestIpplParticleBase.cpp)
+#target_link_libraries (TestIpplParticleBase ${IPPL_LIBS})
 
-add_executable (TestScatter TestScatter.cpp)
-target_link_libraries (TestScatter ${IPPL_LIBS})
+#add_executable (TestScatter TestScatter.cpp)
+#target_link_libraries (TestScatter ${IPPL_LIBS})
 
-add_executable (TestGather TestGather.cpp)
-target_link_libraries (TestGather ${IPPL_LIBS})
+#add_executable (TestGather TestGather.cpp)
+#target_link_libraries (TestGather ${IPPL_LIBS})
 
-add_executable (TestExpression TestExpression.cpp)
-target_link_libraries (TestExpression ${IPPL_LIBS})
+#add_executable (TestExpression TestExpression.cpp)
+#target_link_libraries (TestExpression ${IPPL_LIBS})
 
-add_executable (PIC3d PIC3d.cpp)
-target_link_libraries (PIC3d ${IPPL_LIBS})
+#add_executable (PIC3d PIC3d.cpp)
+#target_link_libraries (PIC3d ${IPPL_LIBS})
 
-add_executable (TestParticleBConds TestParticleBConds.cpp)
-target_link_libraries (TestParticleBConds ${IPPL_LIBS})
+add_executable (TestDomainDecomp TestDomainDecomp.cpp)
+target_link_libraries (TestDomainDecomp ${IPPL_LIBS})
 
-add_executable (TestParticleSpatialLayout TestParticleSpatialLayout.cpp)
-target_link_libraries (TestParticleSpatialLayout ${IPPL_LIBS})
+#add_executable (TestParticleBConds TestParticleBConds.cpp)
+#target_link_libraries (TestParticleBConds ${IPPL_LIBS})
 
-add_executable (benchmarkParticleUpdate benchmarkParticleUpdate.cpp)
-target_link_libraries (benchmarkParticleUpdate ${IPPL_LIBS})
+#add_executable (TestParticleSpatialLayout TestParticleSpatialLayout.cpp)
+#target_link_libraries (TestParticleSpatialLayout ${IPPL_LIBS})
+
+#add_executable (benchmarkParticleUpdate benchmarkParticleUpdate.cpp)
+#target_link_libraries (benchmarkParticleUpdate ${IPPL_LIBS})
 
 # vi: set et ts=4 sw=4 sts=4:
 
