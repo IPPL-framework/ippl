@@ -10,8 +10,10 @@ namespace ippl {
 /*
   @class OrthogonalRecursiveBisection
 */
-template<class T, unsigned Dim, class Mesh>
+// template<class T, unsigned Dim, class M = UniformCartesian<T,Dim> >
+template<class T, unsigned Dim, class M>
 class OrthogonalRecursiveBisection {
+public:
 /*!
   @tparam T 
   @tparam Dim dimension
@@ -25,7 +27,7 @@ class OrthogonalRecursiveBisection {
   - Repartition the field FL
   - Update P using the field FL
 */
-bool NBinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,Mesh> >& P); 
+static bool BinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,M> >& P); 
 
 
 /*!
@@ -41,8 +43,7 @@ bool NBinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,Mesh> >& P);
   - Find median of reduced weights
   - Divide field at median
 */
-void
-NCalcBinaryRepartition(FieldLayout<Dim>& FL, Field<T, Dim>& BF);
+void CalcBinaryRepartition(FieldLayout<Dim>& FL, Field<T, Dim>& BF);
 
 
 /*!
@@ -53,8 +54,7 @@ NCalcBinaryRepartition(FieldLayout<Dim>& FL, Field<T, Dim>& BF);
 
   Find cutting axis as the longest axis of the field layout.
 */
-int
-NFindCutAxis(FieldLayout<Dim>& FL); 
+int FindCutAxis(FieldLayout<Dim>& FL); 
 
 
 /*!
@@ -67,8 +67,7 @@ NFindCutAxis(FieldLayout<Dim>& FL);
   Performs reduction on field BF in all dimension except that determined by cutAxis,
   store result in res.  
 */
-void
-NPerformReduction(Field<T, Dim> BF, std::vector<T>& res, int cutAxis); 
+void PerformReduction(Field<T, Dim> BF, std::vector<T>& res, int cutAxis); 
 
 
 /*!
@@ -77,8 +76,7 @@ NPerformReduction(Field<T, Dim> BF, std::vector<T>& res, int cutAxis);
  
   Find median of array V
 */
-int
-NFindMedian(std::vector<T>& V);
+int FindMedian(std::vector<T>& V);
 
 
 /*!
@@ -91,9 +89,11 @@ NFindMedian(std::vector<T>& V);
 
   Cut field layout along the cut axis at the median
 */
-void
-NCutDomain(FieldLayout<Dim>& FL, int cutAxis, int median);
+void CutDomain(FieldLayout<Dim>& FL, int cutAxis, int median);
 
+static void nTest() {
+   std::cout << "Hello" << std::endl;
+}
 
 }; // class
 } // namespace
