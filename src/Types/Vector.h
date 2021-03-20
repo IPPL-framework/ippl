@@ -37,7 +37,7 @@ namespace ippl {
     public:
         typedef T value_type;
         static constexpr unsigned dim = Dim;
-    
+
         KOKKOS_FUNCTION
         Vector() : Vector(value_type(0)) { }
 
@@ -47,7 +47,7 @@ namespace ippl {
         Vector(const detail::Expression<E, N>& expr);
 
         KOKKOS_FUNCTION
-        Vector(const Vector<T, Dim>& v);
+        Vector(const Vector<T, Dim>& v) = default;
 
         KOKKOS_FUNCTION
         Vector(const T& val);
@@ -60,7 +60,7 @@ namespace ippl {
 
         KOKKOS_FUNCTION
         ~Vector() { }
-        
+
 
         // Get and Set Operations
         KOKKOS_INLINE_FUNCTION
