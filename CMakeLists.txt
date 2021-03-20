@@ -31,7 +31,7 @@ option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
 message (STATUS "Build type is: " ${CMAKE_BUILD_TYPE})
 
 # Select flags.
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "-O3")
