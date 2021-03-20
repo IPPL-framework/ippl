@@ -63,7 +63,7 @@ namespace ippl {
         T get(const std::string& key) {
             if (!params_m.contains(key)) {
                 throw IpplException("ParameterList::get()",
-                                    "Parameter '" + key + "' not contained.")
+                                    "Parameter '" + key + "' not contained.");
             }
             return std::get<T>(params_m[key]);
         }
