@@ -48,8 +48,17 @@ namespace ippl {
                                        int,
                                        ParameterList>;
 
+        /*!
+         * Add a single parameter to this list.
+         * @param key is the name of the parameter
+         * @param value is the parameter value
+         */
         template <typename T>
         void add(const std::string& key, const T& value) {
+            if (params_m.contains(key)) {
+                throw IpplException("ParameterList::add()",
+                                    "Parameter '" + key + "' already exists.");
+            }
             params_m[key] = value;
         }
 
@@ -91,6 +100,19 @@ namespace ippl {
             }
         }
 
+        /*!
+         * Update the single parameter value of this list.
+         * @param key is the name of the parameter
+         * @param value is the parameter value
+         */
+        template <typename T>
+        void update(const std::string& key, const T& value) {
+            if (!params_m.contains(key)) {
+                throw IpplException("ParameterList::update()",
+                                    "Parameter '" + key + "' does not exist.");
+            }
+            params_m[key] = value;
+        }
 
         /*!
          * Print this parameter list.
