@@ -126,12 +126,25 @@ namespace ippl {
          */
         friend
         std::ostream& operator<<(std::ostream& os, const ParameterList& sp) {
+            static int indent = -4;
+
+            indent += 4;
+            if (indent > 0) {
+                os << '\n';
+            }
             for (const auto& [key, value] : sp.params_m) {
                 std::visit([&](auto&& arg){
-                    os << std::left << std::setw(20) << key
-                       << " " << arg << '\n';
+                    os << std::string(indent, ' ') << std::left << std::setw(20) << key
+                       << " " << arg;
                 }, value);
+                // 21 March 2021
+                // https://stackoverflow.com/questions/289715/last-key-in-a-stdmap
+                if (key != std::prev(sp.params_m.end())->first) {
+                    os << '\n';
+                }
             }
+            indent -= 4;
+
             return os;
         }
 
