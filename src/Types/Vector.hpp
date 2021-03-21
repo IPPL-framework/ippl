@@ -39,15 +39,6 @@ namespace ippl {
 
     template<typename T, unsigned Dim>
     KOKKOS_FUNCTION
-    Vector<T, Dim>::Vector(const Vector<T, Dim>& v) {
-        for (unsigned int i = 0; i < Dim; ++i) {
-            data_m[i] = v.data_m[i];
-        }
-    }
-
-
-    template<typename T, unsigned Dim>
-    KOKKOS_FUNCTION
     Vector<T, Dim>::Vector(const T& val) {
         for (unsigned i = 0; i < Dim; ++i) {
             data_m[i] = val;
@@ -95,7 +86,7 @@ namespace ippl {
         return data_m[i];
     }
 
-    
+
     template<typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION
     typename Vector<T, Dim>::value_type Vector<T, Dim>::operator()(unsigned int i) const {
@@ -129,7 +120,7 @@ namespace ippl {
         }
         return *this;
     }
-    
+
 
     template<typename T, unsigned Dim>
     template<typename E, size_t N>
