@@ -39,9 +39,7 @@ set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 
 
 if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-    if (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL "9.0.0")
-        set (CMAKE_CXX_STANDARD 20)
-    endif ()
+    set (CMAKE_CXX_STANDARD 20)
 endif ()
 
 
