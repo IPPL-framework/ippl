@@ -134,7 +134,10 @@ namespace ippl {
             }
             for (const auto& [key, value] : sp.params_m) {
                 std::visit([&](auto&& arg){
-                    os << std::string(indent, ' ') << std::left << std::setw(20) << key
+                    // 21 March 2021
+                    // https://stackoverflow.com/questions/15884284/c-printing-spaces-or-tabs-given-a-user-input-integer
+                    os << std::string(indent, ' ')
+                       << std::left << std::setw(20) << key
                        << " " << arg;
                 }, value);
                 // 21 March 2021
