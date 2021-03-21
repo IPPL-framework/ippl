@@ -57,7 +57,11 @@ namespace ippl {
         template <typename T>
         void add(const std::string& key, const T& value) {
 #ifndef NDEBUG
+    #if __cplusplus > 201703L
             if (params_m.contains(key)) {
+    #else
+            if (params_m.find(key) != params_m.end()) {
+    #endif
                 throw IpplException("ParameterList::add()",
                                     "Parameter '" + key + "' already exists.");
             }
@@ -74,7 +78,11 @@ namespace ippl {
         template <typename T>
         T get(const std::string& key) {
 #ifndef NDEBUG
+    #if __cplusplus > 201703L
             if (!params_m.contains(key)) {
+    #else
+            if (params_m.find(key) == params_m.end()) {
+    #endif
                 throw IpplException("ParameterList::get()",
                                     "Parameter '" + key + "' not contained.");
             }
@@ -99,7 +107,11 @@ namespace ippl {
          */
         void update(const ParameterList& p) noexcept {
             for (const auto& [key, value] : p.params_m) {
+#if __cplusplus > 201703L
                 if (params_m.contains(key)) {
+#else
+                if (params_m.find(key) != params_m.end()) {
+#endif
                     params_m[key] = value;
                 }
             }
@@ -113,7 +125,11 @@ namespace ippl {
         template <typename T>
         void update(const std::string& key, const T& value) {
 #ifndef NDEBUG
+    #if __cplusplus > 201703L
             if (!params_m.contains(key)) {
+    #else
+            if (params_m.find(key) == params_m.end()) {
+    #endif
                 throw IpplException("ParameterList::update()",
                                     "Parameter '" + key + "' does not exist.");
             }
