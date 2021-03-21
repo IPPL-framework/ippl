@@ -25,30 +25,56 @@ class ParameterListTest : public ::testing::Test {
 
 public:
 
-    ParameterListTest() {
-    }
+    ParameterListTest() { }
 };
 
 
+TEST_F(ParameterListTest, Add) {
 
-TEST_F(ParameterListTest, Get) {
+    ippl::ParameterList p;
+    p.add<double>("tolerance", 1.0e-8);
 
-    double tol = 1.0e-8;
+    bool isContained = false;
+    try {
+        p.add<double>("tolerance", 1.0e-9);
+    } catch(...) {
+        isContained = true;
+    }
 
-    ParameterList p;
-    p.add<double>("tolerance", tol);
+    EXPECT_EQ(isContained, true);
+}
+
+
+TEST_F(ParameterListTest, UpdateSingle) {
+
+    double tol = 1.0e-6;
+
+    ippl::ParameterList p;
+    p.add<double>("tolerance", 1.0e-9);
+
+    p.update("tolerance", tol);
 
     EXPECT_EQ(p.get<double>("tolerance"), tol);
+
+
+    bool isContained = true;
+    try {
+        p.update<bool>("enable", true);
+    } catch(...) {
+        isContained = false;
+    }
+
+    EXPECT_EQ(isContained, false);
 }
 
 
 TEST_F(ParameterListTest, Merge) {
 
-    ParameterList p1;
+    ippl::ParameterList p1;
     p1.add<double>("tolerance", 1.0e-8);
     p1.add<bool>("is enabled", false);
 
-    ParameterList p2;
+    ippl::ParameterList p2;
 
     double tol = 1.0e-12;
     int size = 5;
@@ -66,11 +92,11 @@ TEST_F(ParameterListTest, Merge) {
 
 TEST_F(ParameterListTest, Update) {
 
-    ParameterList p1;
+    ippl::ParameterList p1;
     p1.add<double>("tolerance", 1.0e-8);
     p1.add<bool>("is enabled", false);
 
-    ParameterList p2;
+    ippl::ParameterList p2;
 
     double tol = 1.0e-12;
 
@@ -79,13 +105,12 @@ TEST_F(ParameterListTest, Update) {
 
     p1.update(p2);
 
-
     bool isContained = false;
-    int size = 0;
     try {
-        size = p1.get<int>("size");
+        int size = p1.get<int>("size");
+        size += 1;
         isContained = true;
-    } catch {
+    } catch(...) {
         // do nothing here
     }
 
