@@ -264,6 +264,9 @@ namespace ippl {
         // Split one into two.
         KOKKOS_INLINE_FUNCTION
         bool split(Index& l, Index& r) const;
+        // Split one into two at index i.
+        KOKKOS_INLINE_FUNCTION
+        bool split(Index& l, Index& r, int i) const;
         // Split index into two with a ratio between 0 and 1.
         KOKKOS_INLINE_FUNCTION
         bool split(Index& l, Index& r, double a) const;

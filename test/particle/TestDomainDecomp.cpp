@@ -105,7 +105,7 @@ public:
     ORB orb; 
     
     void nUpdate() {
-        std::cout << orb.BinaryRepartition(*this) << std::endl;
+        orb.BinaryRepartition(*this);
     }
 
     void gatherStatistics(unsigned int totalP, int iteration) {
@@ -307,7 +307,7 @@ int main(int argc, char *argv[]){
     const unsigned int totalP = std::atoi(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
     
-    msg << "Particle test PIC3d "
+    msg << "TestDomainDecomp"
         << endl
         << "nt " << nt << " Np= "
         << totalP << " grid = " << nr
@@ -380,7 +380,7 @@ int main(int argc, char *argv[]){
                MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
     if(Ippl::Comm->rank() == 0) {
-        std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
+        // std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
     }
 
 
@@ -394,18 +394,45 @@ int main(int argc, char *argv[]){
     P->update();
     IpplTimings::stopTimer(UpdateTimer);                                                    
     
-    msg << "particles created and initial conditions assigned " << endl;
+    // msg << "particles created and initial conditions assigned " << endl;
     P->EFD_m.initialize(mesh, FL);
     P->EFDMag_m.initialize(mesh, FL);
     
-    msg << "scatter test" << endl;
+    // msg << "scatter test" << endl;
     P->scatterCIC(totalP, 0);
     
     P->initFields();
-    msg << "P->initField() done " << endl;
+    // msg << "P->initField() done " << endl;
     
-    ml << "Testing NBinaryBalancer" << endl;
-    // NBinaryBalancer::NBinaryRepartition();
+    std::mt19937_64 eng_[2*Dim];
+    for (int i = 0; i < 2*3; ++i) {
+        eng_[i].seed(42 + Dim * i);
+        eng_[i].discard( nloc * 0); // previously myNode instead of 0
+    }
+    std::vector<double> mu(Dim);
+    std::vector<double> sd(Dim);
+    std::vector<double> states(Dim);
+    mu[0] = 0.25;
+    mu[1] = 0.25;
+    mu[2] = 0.25;
+    sd[0] = 0.15*1.0;
+    sd[1] = 0.05*1.0;
+    sd[2] = 0.20*1.0;
+    std::uniform_real_distribution<double> dist_uniform (0.0, 1.0);
+    for (unsigned long int i = 0; i < nloc; ++i) {
+        for (int istate = 0; istate < 3; ++istate) {
+            double u1 = dist_uniform(eng_[istate*2]);
+            double u2 = dist_uniform(eng_[istate*2+1]);
+            states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) 
+                            * std::cos(2.0 * pi * u2)) + mu[istate]; 
+        } 
+        for (int d = 0; d<3; d++) {
+            // P->R[i](d) = std::fabs(std::fmod(states[d],nr[d]));
+            // P->P[i](d) = 0.0;
+        }
+    }
+    
+    msg << "Testing BinaryBalancer" << endl;
     P->nUpdate();
  
     /*

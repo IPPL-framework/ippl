@@ -17,16 +17,15 @@ namespace ippl {
     template<class T, unsigned Dim, class M>
     class OrthogonalRecursiveBisection {
     public:
+        using view_type = typename detail::ViewType<T, Dim>::view_type;
+        
         /*!
-          @tparam T 
-          @tparam Dim dimension
-          @tparam Mesh
           @param ParticleBase<ParticleSpatialLayout<T,Dim,Mesh>>& P
   
           Performs scatter operation of particles into nodes.
           - Define a field layout FL (copy of one in P)
-          - Create a field BF with using the mesh of P and the field layout
-          - Scatter particles into field FL (MPI)
+          - Create a field BF using the mesh of P and the field layout
+          - Scatter particles into field layout FL (MPI)
           - Repartition the field FL
           - Update P using the field FL
         */
@@ -34,8 +33,6 @@ namespace ippl {
 
 
         /*!
-          @tparam T
-          @tparam Dim dimension
           @param FieldLayout<Dim>& FL
           @param Field<T, Dim>& BF
 
@@ -50,19 +47,14 @@ namespace ippl {
 
 
         /*!
-          @tparam Dim dimension
-          @param FieldLayout<Dim>& FL
+          @param NDIndex<Dim>& domain
   
-          Comment: Another domain as parameter needed?
-
           Find cutting axis as the longest axis of the field layout.
         */
-         int FindCutAxis(FieldLayout<Dim>& FL); 
+         int FindCutAxis(NDIndex<Dim>& domain); 
 
 
         /*!
-          @tparam T
-          @tparam Dim dimension
           @param Field<T, Dim>& BF
           @param std::vector<T>& res
           @param int cutAxis
@@ -70,7 +62,7 @@ namespace ippl {
           Performs reduction on field BF in all dimension except that determined by cutAxis,
           store result in res.  
         */
-        void PerformReduction(Field<T, Dim> BF, std::vector<T>& res, int cutAxis); 
+        void PerformReduction(Field<T, Dim> BF, std::vector<T>& res, unsigned int cutAxis); 
 
 
         /*!
@@ -82,15 +74,15 @@ namespace ippl {
 
 
         /*!
-          @param FieldLayout<Dim>& FL
+          @param std::vector<NDIndex<Dim>>& domains
+          @param std::vector<int>& procs
+          @param int it iterator
           @param int cutAxis
           @param int median
 
-          Comment: perhaps also pass the procs...
-
           Cut field layout along the cut axis at the median
         */
-        void CutDomain(FieldLayout<Dim>& FL, int cutAxis, int median);
+        void CutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median);
 
 
     }; // class
