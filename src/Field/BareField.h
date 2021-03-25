@@ -141,6 +141,7 @@ namespace ippl {
         const Index& getIndex(unsigned d) const {return getLayout().getDomain()[d];}
         const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
 
+        detail::HaloCells<T, Dim>& getHalo() { return halo_m; }
 
         // Assignment from a constant.
         BareField<T, Dim>& operator=(T x);

@@ -85,9 +85,11 @@ namespace ippl {
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
                         // owned domain increased by nghost cells
-                        range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                        range = getBounds(lDomains[myRank], lDomains[rank], 
+                                          lDomains[myRank], nghost);
                     } else {
-                        range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                        range = getBounds(lDomains[rank], lDomains[myRank], 
+                                          lDomains[myRank], nghost);
                     }
 
 
@@ -113,9 +115,11 @@ namespace ippl {
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
                         // remote domain increased by nghost cells
-                        range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                        range = getBounds(lDomains[rank], lDomains[myRank], 
+                                          lDomains[myRank], nghost);
                     } else {
-                        range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                        range = getBounds(lDomains[myRank], lDomains[rank], 
+                                          lDomains[myRank], nghost);
                     }
 
                     FieldBufferData<T> fd;
@@ -166,9 +170,11 @@ namespace ippl {
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
                         // owned domain increased by nghost cells
-                        range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                        range = getBounds(lDomains[myRank], lDomains[rank], 
+                                          lDomains[myRank], nghost);
                     } else {
-                        range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                        range = getBounds(lDomains[rank], lDomains[myRank], 
+                                          lDomains[myRank], nghost);
                     }
 
                     archives.push_back(std::make_unique<archive_type>());
@@ -193,9 +199,11 @@ namespace ippl {
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
                         // remote domain increased by nghost cells
-                        range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                        range = getBounds(lDomains[rank], lDomains[myRank], 
+                                          lDomains[myRank], nghost);
                     } else {
-                        range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                        range = getBounds(lDomains[myRank], lDomains[rank], 
+                                          lDomains[myRank], nghost);
                     }
 
                     FieldBufferData<T> fd;
@@ -249,9 +257,11 @@ namespace ippl {
                 bound_type range;
                 if (order == INTERNAL_TO_HALO) {
                     // owned domain increased by nghost cells
-                    range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                    range = getBounds(lDomains[myRank], lDomains[rank], 
+                                      lDomains[myRank], nghost);
                 } else {
-                    range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                    range = getBounds(lDomains[rank], lDomains[myRank], 
+                                      lDomains[myRank], nghost);
                 }
 
                 archives.push_back(std::make_unique<archive_type>());
@@ -277,9 +287,11 @@ namespace ippl {
                 bound_type range;
                 if (order == INTERNAL_TO_HALO) {
                     // remote domain increased by nghost cells
-                    range = getBounds(lDomains[rank], lDomains[myRank], lDomains[myRank], nghost);
+                    range = getBounds(lDomains[rank], lDomains[myRank], 
+                                      lDomains[myRank], nghost);
                 } else {
-                    range = getBounds(lDomains[myRank], lDomains[rank], lDomains[myRank], nghost);
+                    range = getBounds(lDomains[myRank], lDomains[rank], 
+                                      lDomains[myRank], nghost);
                 }
 
                 FieldBufferData<T> fd;
@@ -331,7 +343,7 @@ namespace ippl {
 
 
         template <typename T, unsigned Dim>
-        template <class Op>
+        template <typename Op>
         void HaloCells<T, Dim>::unpack(const bound_type& range,
                                        const view_type& view,
                                        FieldBufferData<T>& fd)

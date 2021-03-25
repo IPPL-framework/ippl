@@ -111,7 +111,7 @@ namespace ippl {
              * @param fd the buffer to unpack from (received data)
              * @tparam Op the data assigment operator
              */
-            template <class Op>
+            template <typename Op>
             void unpack(const bound_type& range,
                         const view_type& view,
                         FieldBufferData<T>& fd);
@@ -139,8 +139,6 @@ namespace ippl {
                     lhs += rhs;
                 }
             };
-
-        private:
             /*!
              * Obtain the bounds to send / receive. The second domain, i.e.,
              * nd2, is grown by nghost cells in each dimension in order to
@@ -154,6 +152,8 @@ namespace ippl {
                                  const NDIndex<Dim>& nd2,
                                  const NDIndex<Dim>& offset,
                                  int nghost);
+
+        private:
 
             /*!
              * Exchange the data of faces.
@@ -200,7 +200,6 @@ namespace ippl {
                                   int nghost,
                                   SendOrder order);
 
-
             /*!
              * Extract the subview of the original data. This does not copy.
              * A subview points to the same memory.
@@ -209,6 +208,7 @@ namespace ippl {
              */
             auto makeSubview(const view_type& view,
                              const bound_type& intersect);
+
         };
     }
 }

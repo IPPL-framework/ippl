@@ -187,6 +187,8 @@ namespace ippl {
          */
         vertex_neighbor_type vertexNeighbors_m;
 
+
+
         void calcWidths();
     };
 
