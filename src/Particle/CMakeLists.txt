@@ -3,7 +3,6 @@ set (_SRCS
 
 set (_HDRS
 #     Interpolator.h
-#     IntNGP.h
     ParticleAttribBase.h
     ParticleAttrib.h
     ParticleAttrib.hpp

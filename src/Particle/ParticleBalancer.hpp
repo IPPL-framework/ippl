@@ -28,7 +28,6 @@
 #include "Particle/IpplParticleBase.h"
 #include "Particle/ParticleSpatialLayout.h"
 #include "Particle/ParticleAttrib.h"
-#include "Particle/IntNGP.h"
 #include "Region/RegionLayout.h"
 #include "Index/NDIndex.h"
 #include "FieldLayout/FieldLayout.h"
@@ -46,7 +45,7 @@ BinaryRepartition(IpplParticleBase<ParticleSpatialLayout<T,Dim,Mesh,CachingPolic
 
 
 
-  static IntNGP interp; // to scatter particle density
+//   static IntNGP interp; // to scatter particle density
 
   //Inform dbgmsg("Particle BinaryRepartition", INFORM_ALL_NODES);
   //dbgmsg << "Performing particle load balancing, for ";
