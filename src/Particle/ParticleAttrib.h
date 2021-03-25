@@ -34,6 +34,11 @@
 
 namespace ippl {
 
+    enum Interpl_t {
+        NGP_t,
+        CIC_t
+    };
+
     // ParticleAttrib class definition
     template <typename T, class... Properties>
     class ParticleAttrib : public detail::ParticleAttribBase<Properties...>
@@ -67,7 +72,7 @@ namespace ippl {
         }
 
         virtual ~ParticleAttrib() = default;
-       
+
         size_t size() const {
             return dview_m.extent(0);
         }
@@ -91,11 +96,11 @@ namespace ippl {
         }
 
 
-        view_type& getView() {
+        view_type getView() {
             return dview_m;
         }
 
-        const view_type& getView() const{
+        const view_type getView() const{
             return dview_m;
         }
 
@@ -127,14 +132,14 @@ namespace ippl {
 //     // the given Position attribute
         template <unsigned Dim, class M, class C, typename P2>
         void
-        scatter(Field<T, Dim, M, C>& f,
-                const ParticleAttrib<Vector<P2, Dim>, Properties... >& pp) const;
+        scatterCIC(Field<T, Dim, M, C>& f,
+                   const ParticleAttrib<Vector<P2, Dim>, Properties... >& pp) const;
 
 
         template <unsigned Dim, class M, class C, typename P2>
         void
-        gather(Field<T, Dim, M, C>& f,
-               const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
+        gatherCIC(Field<T, Dim, M, C>& f,
+                  const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
 
         T sum();
         T max();

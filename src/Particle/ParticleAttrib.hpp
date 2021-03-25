@@ -124,8 +124,8 @@ namespace ippl {
 
     template<typename T, class... Properties>
     template <unsigned Dim, class M, class C, class PT>
-    void ParticleAttrib<T, Properties...>::scatter(Field<T,Dim,M,C>& f,
-                                                   const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
+    void ParticleAttrib<T, Properties...>::scatterCIC(Field<T,Dim,M,C>& f,
+                                                      const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
     const
     {
         typename Field<T, Dim, M, C>::view_type view = f.getView();
@@ -139,7 +139,7 @@ namespace ippl {
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx = 1.0 / dx;
 
-        const FieldLayout<Dim>& layout = f.getLayout(); 
+        const FieldLayout<Dim>& layout = f.getLayout();
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
         const int nghost = f.getNghost();
 
@@ -171,15 +171,15 @@ namespace ippl {
                 Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
             }
         );
-            
+
         f.accumulateHalo();
     }
 
 
     template<typename T, class... Properties>
     template <unsigned Dim, class M, class C, typename P2>
-    void ParticleAttrib<T, Properties...>::gather(Field<T, Dim, M, C>& f,
-                                                  const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
+    void ParticleAttrib<T, Properties...>::gatherCIC(Field<T, Dim, M, C>& f,
+                                                     const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
 
         f.fillHalo();
@@ -195,7 +195,7 @@ namespace ippl {
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx = 1.0 / dx;
 
-        const FieldLayout<Dim>& layout = f.getLayout(); 
+        const FieldLayout<Dim>& layout = f.getLayout();
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
         const int nghost = f.getNghost();
 
@@ -234,23 +234,71 @@ namespace ippl {
      * Non-class function
      *
      */
+    template<Interpl_t, typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
+    void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
+                        const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
+
+    template<Interpl_t, typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
+    inline
+    void gather(ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
+                const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
 
 
-    template<typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
+    template <Interpl_t I,
+              typename P1,
+              unsigned Dim,
+              class M,
+              class C,
+              typename P2,
+              class... Properties,
+              std::enable_if_t<I == CIC_t, bool> = true>
     inline
     void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
                  const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
-        attrib.scatter(f, pp);
+        attrib.scatterCIC(f, pp);
+    }
+
+    template <typename P1,
+              unsigned Dim,
+              class M,
+              class C,
+              typename P2,
+              class... Properties>
+    inline
+    void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
+                 const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
+    {
+        scatter<CIC_t>(attrib, f, pp);
     }
 
 
-    template<typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
+    template <Interpl_t I,
+              typename P1,
+              unsigned Dim,
+              class M,
+              class C,
+              typename P2,
+              class... Properties,
+              std::enable_if_t<I == CIC_t, bool> = true>
     inline
     void gather(ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
                 const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
-        attrib.gather(f, pp);
+        attrib.gatherCIC(f, pp);
+    }
+
+    template<typename P1,
+             unsigned Dim,
+             class M,
+             class C,
+             typename P2,
+             class... Properties>
+    inline
+    void gather(ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
+                const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
+    {
+        gather<CIC_t>(attrib, f, pp);
     }
 
     #define DefineParticleReduction(fun, name, op, MPI_Op)                                                   \
