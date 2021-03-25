@@ -34,11 +34,6 @@
 
 namespace ippl {
 
-    enum Interpl_t {
-        NGP_t,
-        CIC_t
-    };
-
     // ParticleAttrib class definition
     template <typename T, class... Properties>
     class ParticleAttrib : public detail::ParticleAttribBase<Properties...>
@@ -141,6 +136,18 @@ namespace ippl {
         gatherCIC(Field<T, Dim, M, C>& f,
                   const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
 
+
+        template <unsigned Dim, class M, class C, typename P2>
+        void
+        scatterNGP(Field<T, Dim, M, C>& f,
+                   const ParticleAttrib<Vector<P2, Dim>, Properties... >& pp) const;
+
+
+        template <unsigned Dim, class M, class C, typename P2>
+        void
+        gatherNGP(Field<T, Dim, M, C>& f,
+                  const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
+
         T sum();
         T max();
         T min();
@@ -152,5 +159,6 @@ namespace ippl {
 }
 
 #include "Particle/ParticleAttrib.hpp"
+#include "Particle/ParticleInterpl.hpp"
 
 #endif

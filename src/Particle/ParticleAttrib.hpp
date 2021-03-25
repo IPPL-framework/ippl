@@ -144,7 +144,7 @@ namespace ippl {
         const int nghost = f.getNghost();
 
         Kokkos::parallel_for(
-            "ParticleAttrib::scatter",
+            "ParticleAttrib::scatterCIC",
             dview_m.extent(0),
             KOKKOS_CLASS_LAMBDA(const size_t idx)
             {
@@ -200,7 +200,7 @@ namespace ippl {
         const int nghost = f.getNghost();
 
         Kokkos::parallel_for(
-            "ParticleAttrib::gather",
+            "ParticleAttrib::gatherCIC",
             size(),
             KOKKOS_CLASS_LAMBDA(const size_t idx)
             {
@@ -229,77 +229,87 @@ namespace ippl {
     }
 
 
-
-    /*
-     * Non-class function
-     *
-     */
-    template<Interpl_t, typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
-    void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-                        const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
-
-    template<Interpl_t, typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
-    inline
-    void gather(ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-                const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
-
-
-    template <Interpl_t I,
-              typename P1,
-              unsigned Dim,
-              class M,
-              class C,
-              typename P2,
-              class... Properties,
-              std::enable_if_t<I == CIC_t, bool> = true>
-    inline
-    void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-                 const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
+    template<typename T, class... Properties>
+    template <unsigned Dim, class M, class C, class PT>
+    void ParticleAttrib<T, Properties...>::scatterNGP(Field<T,Dim,M,C>& f,
+                                                      const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
+    const
     {
-        attrib.scatterCIC(f, pp);
+        typename Field<T, Dim, M, C>::view_type view = f.getView();
+
+        const M& mesh = f.get_mesh();
+
+        using vector_type = typename M::vector_type;
+        using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
+
+        const vector_type& dx = mesh.getMeshSpacing();
+        const vector_type& origin = mesh.getOrigin();
+        const vector_type invdx = 1.0 / dx;
+
+        const FieldLayout<Dim>& layout = f.getLayout();
+        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
+        const int nghost = f.getNghost();
+
+        Kokkos::parallel_for(
+            "ParticleAttrib::scatterNGP",
+            dview_m.extent(0),
+            KOKKOS_CLASS_LAMBDA(const size_t idx)
+            {
+                // find nearest grid point
+                vector_type l = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Dim> index = l;
+
+                const size_t i = index[0] - lDom[0].first() + nghost;
+                const size_t j = index[1] - lDom[1].first() + nghost;
+                const size_t k = index[2] - lDom[2].first() + nghost;
+
+
+                // scatter
+                const value_type& val = dview_m(idx);
+                Kokkos::atomic_add(&view(i-1, j-1, k-1), val);
+            }
+        );
     }
 
-    template <typename P1,
-              unsigned Dim,
-              class M,
-              class C,
-              typename P2,
-              class... Properties>
-    inline
-    void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-                 const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
+
+    template<typename T, class... Properties>
+    template <unsigned Dim, class M, class C, typename P2>
+    void ParticleAttrib<T, Properties...>::gatherNGP(Field<T, Dim, M, C>& f,
+                                                     const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
-        scatter<CIC_t>(attrib, f, pp);
+        const typename Field<T, Dim, M, C>::view_type view = f.getView();
+
+        const M& mesh = f.get_mesh();
+
+        using vector_type = typename M::vector_type;
+
+        const vector_type& dx = mesh.getMeshSpacing();
+        const vector_type& origin = mesh.getOrigin();
+        const vector_type invdx = 1.0 / dx;
+
+        const FieldLayout<Dim>& layout = f.getLayout();
+        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
+        const int nghost = f.getNghost();
+
+        Kokkos::parallel_for(
+            "ParticleAttrib::gatherNGP",
+            size(),
+            KOKKOS_CLASS_LAMBDA(const size_t idx)
+            {
+                // find nearest grid point
+                vector_type l = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Dim> index = l;
+
+                const size_t i = index[0] - lDom[0].first() + nghost;
+                const size_t j = index[1] - lDom[1].first() + nghost;
+                const size_t k = index[2] - lDom[2].first() + nghost;
+
+                // scatter
+                dview_m(idx) = view(i-1, j-1, k-1);
+            }
+        );
     }
 
-
-    template <Interpl_t I,
-              typename P1,
-              unsigned Dim,
-              class M,
-              class C,
-              typename P2,
-              class... Properties,
-              std::enable_if_t<I == CIC_t, bool> = true>
-    inline
-    void gather(ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-                const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
-    {
-        attrib.gatherCIC(f, pp);
-    }
-
-    template<typename P1,
-             unsigned Dim,
-             class M,
-             class C,
-             typename P2,
-             class... Properties>
-    inline
-    void gather(ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-                const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
-    {
-        gather<CIC_t>(attrib, f, pp);
-    }
 
     #define DefineParticleReduction(fun, name, op, MPI_Op)                                                   \
     template<typename T, class... Properties>                                                                \

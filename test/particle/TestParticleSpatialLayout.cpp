@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
     typedef ippl::detail::RegionLayout<double, 3, Mesh_t> RegionLayout_t;
     RegionLayout_t RLayout = pl.getRegionLayout();
 
-    auto& positions = bunch.R.getView();
+    auto positions = bunch.R.getView();
     typename RegionLayout_t::view_type Regions = RLayout.getdLocalRegions();
     using size_type = typename RegionLayout_t::view_type::size_type;
     using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
@@ -111,22 +111,22 @@ int main(int argc, char *argv[]) {
 
     Kokkos::parallel_for("Expected Rank",
             mdrange_type({0, 0},
-                         {ER.extent(0), Regions.extent(0)}), 
+                         {ER.extent(0), Regions.extent(0)}),
             KOKKOS_LAMBDA(const size_t i, const size_type j) {
                 bool x_bool = false;
                 bool y_bool = false;
                 bool z_bool = false;
                 if((positions(i)[0] >= Regions(j)[0].min()) &&
                    (positions(i)[0] <= Regions(j)[0].max())) {
-                    x_bool = true;    
+                    x_bool = true;
                 }
                 if((positions(i)[1] >= Regions(j)[1].min()) &&
                    (positions(i)[1] <= Regions(j)[1].max())) {
-                    y_bool = true;    
+                    y_bool = true;
                 }
                 if((positions(i)[2] >= Regions(j)[2].min()) &&
                    (positions(i)[2] <= Regions(j)[2].max())) {
-                    z_bool = true;    
+                    z_bool = true;
                 }
                 if(x_bool && y_bool && z_bool){
                     ER(i) = j;
@@ -159,10 +159,10 @@ int main(int argc, char *argv[]) {
 
     Kokkos::resize(ID_host, bunch.ID.size());
     Kokkos::deep_copy(ID_host, bunch.ID.getView());
-    
+
     Kokkos::resize(Q_host, bunch.Q.size());
     Kokkos::deep_copy(Q_host, bunch.Q.getView());
-    
+
     Kokkos::resize(ER_host, bunch.expectedRank.size());
     Kokkos::deep_copy(ER_host, bunch.expectedRank.getView());
 
@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
 
     for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
         if(Ippl::Comm->rank() != ER_host(i)) {
-            std::cout << "Particle with ID: " << ID_host(i) << " "  
+            std::cout << "Particle with ID: " << ID_host(i) << " "
                       << "has wrong rank!" << std::endl;
             }
         }
@@ -181,12 +181,12 @@ int main(int argc, char *argv[]) {
     unsigned int Total_particles = 0;
     unsigned int local_particles = bunch.getLocalNum();
 
-    MPI_Reduce(&local_particles, &Total_particles, 1, 
+    MPI_Reduce(&local_particles, &Total_particles, 1,
                 MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
     if (Ippl::Comm->rank() == 0) {
         std::cout << "All expected ranks correct!!" << std::endl;
-        
-        std::cout << "Total particles before: " << nParticles 
+
+        std::cout << "Total particles before: " << nParticles
                   << " " << "after: " << Total_particles << std::endl;
     }
     return 0;

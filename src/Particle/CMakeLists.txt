@@ -2,7 +2,6 @@ set (_SRCS
     )
 
 set (_HDRS
-#     Interpolator.h
     ParticleAttribBase.h
     ParticleAttrib.h
     ParticleAttrib.hpp
@@ -11,6 +10,7 @@ set (_HDRS
     ParticleBase.h
     ParticleBase.hpp
     ParticleBC.h
+    ParticleInterpl.hpp
     ParticleLayout.h
     ParticleLayout.hpp
     ParticleSpatialLayout.h
