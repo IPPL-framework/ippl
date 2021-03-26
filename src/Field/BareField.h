@@ -174,6 +174,7 @@ namespace ippl {
             return dview_m;
         }
 
+
         const view_type& getView() const {
             return dview_m;
         }

@@ -17,7 +17,9 @@ namespace ippl {
     template<class T, unsigned Dim, class M>
     class OrthogonalRecursiveBisection {
     public:
+        using view_type_t = typename detail::ViewType<NDIndex<Dim>, 1>::view_type;
         using view_type = typename detail::ViewType<T, Dim>::view_type;
+        using host_mirror_type = typename view_type_t::host_mirror_type;
         
         /*!
           @param ParticleBase<ParticleSpatialLayout<T,Dim,Mesh>>& P
@@ -62,7 +64,7 @@ namespace ippl {
           Performs reduction on field BF in all dimension except that determined by cutAxis,
           store result in res.  
         */
-        void PerformReduction(Field<T, Dim> BF, std::vector<T>& res, unsigned int cutAxis); 
+        void PerformReduction(Field<T,Dim>& BF, std::vector<T>& res, unsigned int cutAxis); 
 
 
         /*!
@@ -84,7 +86,8 @@ namespace ippl {
         */
         void CutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median);
 
-
+private:
+       ParticleAttrib<T> PAttrib_m;
     }; // class
 
 } // namespace

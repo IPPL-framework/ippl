@@ -198,6 +198,8 @@ public:
          const int nghost = EFD_m.getNghost();
          using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
+
+
          Kokkos::parallel_for("Assign EFD_m[0]", 
                               mdrange_type({nghost, nghost, nghost},
                                             {view.extent(0) - nghost,
@@ -304,14 +306,12 @@ private:
 
 };
 
-int main(int argc, char *argv[]){
+
+int main(int argc, char *argv[]) {
     Ippl ippl(argc, argv);
     Inform msg(argv[0]);
     Inform msg2all(argv[0],INFORM_ALL_NODES);
     
-    // Testing message inform
-    Inform ml("ML");
-
     ippl::Vector<int,Dim> nr = {
         std::atoi(argv[1]),
         std::atoi(argv[2]),
@@ -405,9 +405,6 @@ int main(int argc, char *argv[]){
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);                                                    
     
-    // Testing
-    ml << "----UPDATE----" << endl;
-
     static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
     IpplTimings::startTimer(UpdateTimer);                                               
     P->update();
@@ -460,10 +457,6 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(mainTimer);                                                    
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
-    
-    // Testing
-    ml << "--------FINISHED-------" << endl
-       << FL << endl;
 
     return 0;
 }

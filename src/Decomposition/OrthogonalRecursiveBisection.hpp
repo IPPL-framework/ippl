@@ -14,23 +14,21 @@ namespace ippl {
     template < class T, unsigned Dim, class M>
     bool 
     OrthogonalRecursiveBisection<T,Dim,M>::BinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,M> >& P) {
+       // Declaring field layout and field
        FieldLayout<Dim>& FL = P.getLayout().getFieldLayout();
+       ParticleSpatialLayout<T,Dim,M> part = P.getLayout();
        UniformCartesian<T,Dim> mesh = P.getLayout().getMesh();
-       Field<T,Dim> BF(mesh, FL);
+       Field<T,Dim,M> BF(mesh, FL);
    
-       // Scattering of particles in Field
-       // ***The scatter methods are all commented in Interpolator.h... needs new writing?
+       // Scattering of particle positions in field
+       testScatter(BF, P.R);
 
        // Domain Decomposition
-       int rank;
-       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-       if (rank == 0)
+       if (Ippl::Comm->rank() == 0)
           CalcBinaryRepartition(FL, BF); 
-   
 
        // Update particles
-       // ...
-
+       std::cout << "ORB finished" << std::endl;
 
        return true;
     }
@@ -38,19 +36,24 @@ namespace ippl {
     template < class T, unsigned Dim, class M>
     void
     OrthogonalRecursiveBisection<T,Dim,M>::CalcBinaryRepartition(FieldLayout<Dim>& FL, Field<T, Dim>& BF) {
-       int nprocs;
-       MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+       int nprocs = Ippl::Comm->size();
 
        // Start with whole domain and total number of nodes
-       std::vector<NDIndex<Dim>> domains = {FL.getDomain()};
+       view_type_t localDeviceDom = FL.getDeviceLocalDomains();
+       host_mirror_type localHostDom = FL.getHostLocalDomains();
+       std::vector<NDIndex<Dim>> domains = {FL.getLocalNDIndex()}; // Local domain
        std::vector<int> procs = {nprocs};
 
        /**PRINT**/
-       std::cout << "Field Layout's domain: " << domains[0] << std::endl;
-       
+       std::cout << "FieldLayout.getLocalNDIndex(): " << domains[0] << std::endl;
+       std::cout << "FieldLayout.getDeviceLocalDomains() (ghost): " << localDeviceDom.extent(0) << std::endl;
+       std::cout << "FieldLayout.getHostLocalDomains() (ghost): " << localHostDom.extent(0) << std::endl;
+       std::cout << "Number of nodes: " << nprocs << std::endl;
+        
        // Start recursive repartition loop 
        int it = 0;
-       int maxprocs = nprocs;      
+       // nprocs = 2; // shouldn't do this
+       int maxprocs = nprocs; 
        while (maxprocs > 1) {
           // Find cut axis
           int cutAxis = FindCutAxis(domains[it]);
@@ -64,6 +67,8 @@ namespace ippl {
 
           /**PRINT**/
           std::cout << "reduced size: " << reduced.size() << std::endl;
+          for (unsigned int i = 0; i < reduced.size(); i++)
+             std::cout << "reduced[" << i << "]: " << reduced[i] << std::endl;
          
           // Find median of reduced weights
           int median = FindMedian(reduced);
@@ -106,33 +111,29 @@ namespace ippl {
     } 
 
     
-    // PROBLEM: Dimension handling
-    // PROBLEM: Subview handling
+    // Comment: currently works for 3d only
     template < class T, unsigned Dim, class M>
     void
-    OrthogonalRecursiveBisection<T,Dim,M>::PerformReduction(Field<T, Dim> BF, std::vector<T>& res, unsigned int cutAxis) {
+    OrthogonalRecursiveBisection<T,Dim,M>::PerformReduction(Field<T,Dim>& BF, std::vector<T>& res, unsigned int cutAxis) {
        // Return if Dim == 1
        if (Dim <= 1)
           return;
-       
+
+       using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;       
+ 
+       // Get Field's weights
        const view_type& data = BF.getView();
        
        /***PRINT***/
-       std::cout << "BF's domain: " << BF.getDomain() << std::endl;
-       std::cout << "BF.size(" << cutAxis << "): " << BF.size(cutAxis) << std::endl;
-       std::cout << "BF.getView().extent(" << cutAxis << "): " << data.extent(cutAxis) << std::endl;
+       std::cout << "Field's domain: " << BF.getDomain() << std::endl;
+       // std::cout << "BF.size(" << cutAxis << "): " << BF.size(cutAxis) << std::endl;
+       std::cout << "BF.getView().extent(" << cutAxis << ") (size + 2 ghost): " << data.extent(cutAxis) << std::endl;
        
-       // std::cout << "Data(0,0,0): " << data(0,0,0) << std::endl;      
-  
        // Iterate along cutAxis
        for (int i = 0; i < BF.size(cutAxis); i++) { 
-          T weight = T(0);
+          // Slicing view perpendincular to cutAxis
           auto data_i = Kokkos::subview(data, i, Kokkos::ALL, Kokkos::ALL);
-          // Dirty
           switch (cutAxis) {
-            case 0:
-             // data_i = Kokkos::subview(data, i, Kokkos::ALL, Kokkos::ALL);
-             break;
             case 1:
              data_i = Kokkos::subview(data, Kokkos::ALL, i, Kokkos::ALL);
              break;
@@ -141,18 +142,22 @@ namespace ippl {
              break;
           }
           // Perform reduction over weights
-          // parallel_reduce ? 
-          for (unsigned int k = 0; k < data_i.extent(0); k++) {
-             for (unsigned int j = 0; j < data_i.extent(1); j++) 
-                // weight += data_i(k,j);
-                weight += i + k + j;
-          } 
-          res.push_back(weight);
+          T tempRes = T(0);
+ 
           /*
-          parallel_reduce("weight reduction", data_i.extent(0), [=](int k, int j, T& weight) {
-             weight += data_i(k, j);
-          }, res);
-          */         
+          Kokkos::parallel_for("Test for", mdrange_t({0,0},{data_i.extent(0), data_i.extent(1)}), 
+                                                      KOKKOS_CLASS_LAMBDA (const int k, const int j) {
+              data_i(k,j) = 1.0;       
+          });*/
+           
+          Kokkos::parallel_reduce("Weight reduction", mdrange_t({0,0},{data_i.extent(0), data_i.extent(1)}),
+                                                      KOKKOS_LAMBDA (const int k, const int j, T& weight) {
+             weight += data_i(k,j);
+          }, tempRes);
+
+          Kokkos::fence();
+
+          res.push_back(tempRes); 
        } 
     }
 

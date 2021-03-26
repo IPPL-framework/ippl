@@ -105,7 +105,9 @@ public:
     ORB orb; 
     
     void nUpdate() {
-        orb.BinaryRepartition(*this);
+        bool repartition = orb.BinaryRepartition(*this);
+        if (repartition != true)
+           std::cout << "Could not repartition!" << std::endl;
     }
 
     void gatherStatistics(unsigned int totalP, int iteration) {
@@ -337,7 +339,7 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.5 * dx; // size of timestep
+    // const double dt = 0.5 * dx; // size of timestep
 
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp);
@@ -394,86 +396,19 @@ int main(int argc, char *argv[]){
     P->update();
     IpplTimings::stopTimer(UpdateTimer);                                                    
     
-    // msg << "particles created and initial conditions assigned " << endl;
+    msg << "particles created and initial conditions assigned " << endl;
     P->EFD_m.initialize(mesh, FL);
     P->EFDMag_m.initialize(mesh, FL);
     
-    // msg << "scatter test" << endl;
+    msg << "scatter test" << endl;
     P->scatterCIC(totalP, 0);
     
     P->initFields();
-    // msg << "P->initField() done " << endl;
-    
-    std::mt19937_64 eng_[2*Dim];
-    for (int i = 0; i < 2*3; ++i) {
-        eng_[i].seed(42 + Dim * i);
-        eng_[i].discard( nloc * 0); // previously myNode instead of 0
-    }
-    std::vector<double> mu(Dim);
-    std::vector<double> sd(Dim);
-    std::vector<double> states(Dim);
-    mu[0] = 0.25;
-    mu[1] = 0.25;
-    mu[2] = 0.25;
-    sd[0] = 0.15*1.0;
-    sd[1] = 0.05*1.0;
-    sd[2] = 0.20*1.0;
-    std::uniform_real_distribution<double> dist_uniform (0.0, 1.0);
-    for (unsigned long int i = 0; i < nloc; ++i) {
-        for (int istate = 0; istate < 3; ++istate) {
-            double u1 = dist_uniform(eng_[istate*2]);
-            double u2 = dist_uniform(eng_[istate*2+1]);
-            states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) 
-                            * std::cos(2.0 * pi * u2)) + mu[istate]; 
-        } 
-        for (int d = 0; d<3; d++) {
-            // P->R[i](d) = std::fabs(std::fmod(states[d],nr[d]));
-            // P->P[i](d) = 0.0;
-        }
-    }
+    msg << "P->initField() done " << endl;
     
     msg << "Testing BinaryBalancer" << endl;
     P->nUpdate();
  
-    /*
-    // begin main timestep loop
-    msg << "Starting iterations ..." << endl;
-    for (unsigned int it=0; it<nt; it++) {
-    
-        
-        // advance the particle positions
-        // basic leapfrogging timestep scheme.  velocities are offset
-        // by half a timestep from the positions.
-        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");           
-        IpplTimings::startTimer(RTimer);                                                    
-        P->R = P->R + dt * P->P;
-        IpplTimings::stopTimer(RTimer);                                                    
-
-
-        IpplTimings::startTimer(UpdateTimer);
-        P->update();
-        IpplTimings::stopTimer(UpdateTimer);                                                    
-        
-        //scatter the charge onto the underlying grid
-        P->scatterCIC(totalP, it+1);
-        
-        // gather the local value of the E field
-        P->gatherCIC();
-
-
-        // advance the particle velocities
-        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
-        IpplTimings::startTimer(PTimer);                                                    
-        P->P = P->P + dt * P->qm * P->E;
-        IpplTimings::stopTimer(PTimer);                                                    
-        msg << "Finished iteration " << it << endl;
-    }
-    
-    msg << "Particle test PIC3d: End." << endl;
-    IpplTimings::stopTimer(mainTimer);                                                    
-    IpplTimings::print();
-    IpplTimings::print(std::string("timing.dat"));
-    */ 
  
     return 0;
 }
