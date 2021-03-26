@@ -41,7 +41,7 @@ TEST_F(ParameterListTest, Add) {
         isContained = true;
     }
 
-    EXPECT_EQ(isContained, true);
+    ASSERT_TRUE(isContained);
 }
 
 
@@ -54,7 +54,7 @@ TEST_F(ParameterListTest, UpdateSingle) {
 
     p.update("tolerance", tol);
 
-    EXPECT_EQ(p.get<double>("tolerance"), tol);
+    ASSERT_DOUBLE_EQ(p.get<double>("tolerance"), tol);
 
 
     bool isContained = true;
@@ -64,7 +64,7 @@ TEST_F(ParameterListTest, UpdateSingle) {
         isContained = false;
     }
 
-    EXPECT_EQ(isContained, false);
+    ASSERT_FALSE(isContained);
 }
 
 
@@ -84,9 +84,9 @@ TEST_F(ParameterListTest, Merge) {
 
     p1.merge(p2);
 
-    EXPECT_EQ(p1.get<double>("tolerance"), tol);
-    EXPECT_EQ(p1.get<int>("size"), size);
-    EXPECT_EQ(p1.get<bool>("is enabled"), false);
+    ASSERT_DOUBLE_EQ(p1.get<double>("tolerance"), tol);
+    ASSERT_EQ(p1.get<int>("size"), size);
+    ASSERT_FALSE(p1.get<bool>("is enabled"));
 }
 
 
@@ -114,9 +114,9 @@ TEST_F(ParameterListTest, Update) {
         // do nothing here
     }
 
-    EXPECT_EQ(p1.get<double>("tolerance"), tol);
-    EXPECT_EQ(isContained, false);
-    EXPECT_EQ(p1.get<bool>("is enabled"), false);
+    ASSERT_DOUBLE_EQ(p1.get<double>("tolerance"), tol);
+    ASSERT_FALSE(isContained);
+    ASSERT_FALSE(p1.get<bool>("is enabled"));
 }
 
 
