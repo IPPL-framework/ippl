@@ -39,12 +39,12 @@ public:
         {
             this->addAttribute(Q);
         }
-        
+
         ~Bunch(){ }
-        
+
         typedef ippl::ParticleAttrib<double> charge_container_type;
         charge_container_type Q;
-        
+
         void update() {
             PLayout& layout = this->getLayout();
             layout.update(*this);
@@ -56,8 +56,8 @@ public:
 
 
     PICTest()
-    : nParticles(std::pow(256,3))
-    , nPoints(512)
+    : nParticles(std::pow(32, 3))
+    , nPoints(32)
     {
         setup();
     }
@@ -81,9 +81,9 @@ public:
         field = std::make_unique<field_type>(mesh_m, layout_m);
 
         pl_m = playout_type(layout_m, mesh_m);
-        
+
         bunch = std::make_unique<bunch_type>(pl_m);
-        
+
         int nRanks = Ippl::Comm->size();
         if (nParticles % nRanks > 0) {
             if (Ippl::Comm->rank() == 0) {
@@ -94,7 +94,7 @@ public:
 
         size_t nloc = nParticles / nRanks;
         bunch->create(nloc);
-        
+
         std::mt19937_64 eng;
         eng.seed(42);
         eng.discard( nloc * Ippl::Comm->rank());
@@ -125,35 +125,71 @@ private:
 
 
 
-TEST_F(PICTest, Scatter) {
+TEST_F(PICTest, ScatterCIC) {
 
     *field = 0.0;
 
-    double charge = 0.5;
+    double charge = 1.0 / double(nParticles);
 
     bunch->Q = charge;
 
     bunch->update();
 
-    scatter(bunch->Q, *field, bunch->R);
+    scatter<ippl::CIC_t>(bunch->Q, *field, bunch->R);
 
     double totalcharge = field->sum();
 
-    ASSERT_DOUBLE_EQ(nParticles * charge, totalcharge);
+    double expected = 1.0;
+
+    ASSERT_DOUBLE_EQ(expected, totalcharge);
 
 }
 
-TEST_F(PICTest, Gather) {
+TEST_F(PICTest, GatherCIC) {
 
     *field = 1.0;
 
     bunch->Q = 0.0;
 
     bunch->update();
-    
-    gather(bunch->Q, *field, bunch->R);
 
-    ASSERT_DOUBLE_EQ(nParticles, bunch->Q.sum());
+    gather<ippl::CIC_t>(bunch->Q, *field, bunch->R);
+
+    ASSERT_DOUBLE_EQ(double(nParticles), bunch->Q.sum());
+
+}
+
+TEST_F(PICTest, ScatterNGP) {
+
+    *field = 0.0;
+
+    double charge = 1.0 / double(nParticles);
+
+    bunch->Q = charge;
+
+    bunch->update();
+
+    scatter<ippl::NGP_t>(bunch->Q, *field, bunch->R);
+
+    double totalcharge = field->sum();
+
+    double expected = 1.0;
+
+    ASSERT_DOUBLE_EQ(expected, totalcharge);
+
+}
+
+TEST_F(PICTest, GatherNGP) {
+
+    *field = 1.0;
+
+    bunch->Q = 0.0;
+
+    bunch->update();
+
+    gather<ippl::NGP_t>(bunch->Q, *field, bunch->R);
+
+    ASSERT_DOUBLE_EQ(double(nParticles), bunch->Q.sum());
 
 }
 

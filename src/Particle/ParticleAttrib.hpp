@@ -269,6 +269,8 @@ namespace ippl {
                 Kokkos::atomic_add(&view(i-1, j-1, k-1), val);
             }
         );
+
+        f.accumulateHalo();
     }
 
 
@@ -277,6 +279,8 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::gatherNGP(Field<T, Dim, M, C>& f,
                                                      const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
+        f.fillHalo();
+
         const typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
