@@ -46,55 +46,35 @@ public:
                      const vector_type& hx,
                      const vector_type& origin);
 
-    /*
-     * Dim == 1
-     */
-    UniformCartesian(const Index& I,
+
+    template <class... Args,
+              std::enable_if_t<
+                std::conjunction<
+                    std::is_same<Index, Args>...>::value
+                >
+             >
+    UniformCartesian(const Args&... args,
                      bool evalCellVolume = true);
 
-    UniformCartesian(const Index& I,
-                     const vector_type& hx);
-
-    UniformCartesian(const Index& I,
-                     const vector_type& hx,
-                     const vector_type& origin);
-
-    /*
-     * Dim == 2
-     */
-    UniformCartesian(const Index& I,
-                     const Index& J,
-                     bool evalCellVolume = true);
-
-    UniformCartesian(const Index& I,
-                     const Index& J,
-                     const vector_type& hx);
-
-    UniformCartesian(const Index& I,
-                     const Index& J,
-                     const vector_type& hx,
-                     const vector_type& origin);
-
-    /*
-     * Dim == 3
-     */
-    UniformCartesian(const Index& I,
-                     const Index& J,
-                     const Index& K,
-                     bool evalCellVolume = true);
-
-    UniformCartesian(const Index& I,
-                     const Index& J,
-                     const Index& K,
+    template <class... Args,
+              std::enable_if_t<
+                std::conjunction<
+                    std::is_same<Index, Args>...>::value
+                >
+             >
+    UniformCartesian(const Args&... args,
                      const vector_type& hx);
 
 
-    UniformCartesian(const Index& I,
-                     const Index& J,
-                     const Index& K,
+    template <class... Args,
+              std::enable_if_t<
+                std::conjunction<
+                    std::is_same<Index, Args>...>::value
+                >
+             >
+    UniformCartesian(const Args&... args,
                      const vector_type& hx,
                      const vector_type& origin);
-
 
     ~UniformCartesian() = default;
 
@@ -152,10 +132,21 @@ public:
         return vertexVertexSpacing;
     }
 
-
 private:
+    UniformCartesian(std::initializer_list<Index> indices,
+                     bool evalCellVolume);
+
+    UniformCartesian(std::initializer_list<Index> indices,
+                     const vector_type& hx);
+
+    UniformCartesian(std::initializer_list<Index> indices,
+                     const vector_type& hx,
+                     const vector_type& origin);
+
+
     vector_type meshSpacing_m;     // delta-x, delta-y (>1D), delta-z (>2D)
     T volume_m;                     // Cell length(1D), area(2D), or volume (>2D)
+
 
 
 
