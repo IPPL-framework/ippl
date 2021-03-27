@@ -68,50 +68,50 @@ namespace ippl {
 
 
     template <typename T, unsigned Dim>
-    template <class... Args,
+    template <class... Indices,
               std::enable_if_t<
                 std::conjunction<
-                    std::is_same<Index, Args>...>::value
+                    std::is_same<Index, Indices>...>::value
                 >
              >
-    UniformCartesian<T, Dim>::UniformCartesian(const Args&... args,
+    UniformCartesian<T, Dim>::UniformCartesian(const Indices&... indices,
                                                bool evalCellVolume)
-    : UniformCartesian({args...}, evalCellVolume)
+    : UniformCartesian({indices...}, evalCellVolume)
     {
-        static_assert(Dim == sizeof...(args),
+        static_assert(Dim == sizeof...(indices),
                       "UniformCartesian: Wrong number of arguments.");
     }
 
 
     template <typename T, unsigned Dim>
-    template <class... Args,
+    template <class... Indices,
               std::enable_if_t<
                 std::conjunction<
-                    std::is_same<Index, Args>...>::value
+                    std::is_same<Index, Indices>...>::value
                 >
              >
-    UniformCartesian<T, Dim>::UniformCartesian(const Args&... args,
+    UniformCartesian<T, Dim>::UniformCartesian(const Indices&... indices,
                                                const vector_type& hx)
-    : UniformCartesian({args...}, hx)
+    : UniformCartesian({indices...}, hx)
     {
-        static_assert(Dim == sizeof...(args),
+        static_assert(Dim == sizeof...(indices),
                       "UniformCartesian: Wrong number of arguments.");
     }
 
 
     template <typename T, unsigned Dim>
-    template <class... Args,
+    template <class... Indices,
               std::enable_if_t<
                 std::conjunction<
-                    std::is_same<Index, Args>...>::value
+                    std::is_same<Index, Indices>...>::value
                 >
              >
-    UniformCartesian<T, Dim>::UniformCartesian(const Args&... args,
+    UniformCartesian<T, Dim>::UniformCartesian(const Indices&... indices,
                                                const vector_type& hx,
                                                const vector_type& origin)
-    : UniformCartesian({args...}, hx, origin)
+    : UniformCartesian({indices...}, hx, origin)
     {
-        static_assert(Dim == sizeof...(args),
+        static_assert(Dim == sizeof...(indices),
                       "UniformCartesian: Wrong number of arguments.");
     }
 

@@ -47,32 +47,32 @@ public:
                      const vector_type& origin);
 
 
-    template <class... Args,
+    template <class... Indices,
               std::enable_if_t<
                 std::conjunction<
-                    std::is_same<Index, Args>...>::value
+                    std::is_same<Index, Indices>...>::value
                 >
              >
-    UniformCartesian(const Args&... args,
+    UniformCartesian(const Indices&... indices,
                      bool evalCellVolume = true);
 
-    template <class... Args,
+    template <class... Indices,
               std::enable_if_t<
                 std::conjunction<
-                    std::is_same<Index, Args>...>::value
+                    std::is_same<Index, Indices>...>::value
                 >
              >
-    UniformCartesian(const Args&... args,
+    UniformCartesian(const Indices&... indices,
                      const vector_type& hx);
 
 
-    template <class... Args,
+    template <class... Indices,
               std::enable_if_t<
                 std::conjunction<
-                    std::is_same<Index, Args>...>::value
+                    std::is_same<Index, Indices>...>::value
                 >
              >
-    UniformCartesian(const Args&... args,
+    UniformCartesian(const Indices&... indices,
                      const vector_type& hx,
                      const vector_type& origin);
 
