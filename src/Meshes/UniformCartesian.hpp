@@ -79,7 +79,7 @@ namespace ippl {
     : UniformCartesian({args...}, evalCellVolume)
     {
         static_assert(Dim == sizeof...(args),
-                      "Wrong number of arguments.");
+                      "UniformCartesian: Wrong number of arguments.");
     }
 
 
@@ -95,7 +95,7 @@ namespace ippl {
     : UniformCartesian({args...}, hx)
     {
         static_assert(Dim == sizeof...(args),
-                      "Wrong number of arguments.");
+                      "UniformCartesian: Wrong number of arguments.");
     }
 
 
@@ -112,45 +112,7 @@ namespace ippl {
     : UniformCartesian({args...}, hx, origin)
     {
         static_assert(Dim == sizeof...(args),
-                      "Wrong number of arguments.");
-    }
-
-
-
-    template <typename T, unsigned Dim>
-    UniformCartesian<T, Dim>::UniformCartesian(std::initializer_list<Index> indices,
-                                               bool evalCellVolume)
-    {
-        unsigned int i = 0;
-        for (auto& index : indices) {
-            this->gridSizes_m[i] = index.length();
-            meshSpacing_m[i] = index.stride();
-            this->origin_m(i) = index.first();
-            ++i;
-        }
-        if (evalCellVolume)
-            updateCellVolume_m();
-
-        set_Dvc();
-    }
-
-
-    template <typename T, unsigned Dim>
-    UniformCartesian<T, Dim>::UniformCartesian(std::initializer_list<Index> indices,
-                                               const vector_type& hx)
-        : UniformCartesian(indices, false)
-    {
-        setMeshSpacing(hx);
-    }
-
-
-    template <typename T, unsigned Dim>
-    UniformCartesian<T, Dim>::UniformCartesian(std::initializer_list<Index> indices,
-                                               const vector_type& hx,
-                                               const vector_type& origin)
-        : UniformCartesian(indices, hx)
-    {
-        this->setOrigin(origin);
+                      "UniformCartesian: Wrong number of arguments.");
     }
 
 
@@ -244,52 +206,102 @@ namespace ippl {
 
 
     template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::initialize(const Index& I) {
-        PInsist(Dim==1, "Number of Index arguments does not match mesh dimension!!");
-        setup_m();
-        this->gridSizes_m[0] = I.length();
-        meshSpacing_m[0] = I.stride();
-        this->origin_m(0) = I.first();
+    template <class... Indices,
+              std::enable_if_t<
+                std::conjunction<
+                    std::is_same<Index, Indices>...>::value
+                >
+             >
+    void UniformCartesian<T, Dim>::initialize(const Indices&... indices) {
 
-        updateCellVolume_m();
-        set_Dvc();
+        static_assert(Dim == sizeof...(indices),
+                      "UniformCartesian::initialize: Wrong number of arguments.");
+
+        this->initialize({indices...});
     }
 
-
     template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::initialize(const Index& I,
+    template <class... Indices,
+              std::enable_if_t<
+                std::conjunction<
+                    std::is_same<Index, Indices>...>::value
+                >
+             >
+    void UniformCartesian<T, Dim>::initialize(const Indices&... indices,
                                               const vector_type& hx)
     {
-        PInsist(Dim==1, "Number of Index arguments does not match mesh dimension!!");
-        setup_m();
-        this->gridSizes_m[0] = I.length();
-        this->origin_m(0) = I.first();
 
-        this->setMeshSpacing(hx);      // Set mesh spacings and compute cell volume_m
+        static_assert(Dim == sizeof...(indices),
+                      "UniformCartesian::initialize: Wrong number of arguments.");
+
+        this->initialize({indices...}, hx);
     }
 
 
     template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::initialize(const Index& I,
+    template <class... Indices,
+              std::enable_if_t<
+                std::conjunction<
+                    std::is_same<Index, Indices>...>::value
+                >
+             >
+    void UniformCartesian<T, Dim>::initialize(const Indices&... indices,
                                               const vector_type& hx,
                                               const vector_type& origin)
     {
-        this->initialize(I, hx);
+        this->initialize({indices...}, hx);
         this->sorigin_m = origin;
     }
 
 
-    template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::initialize(const Index& I, const Index& J)
+    template <typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(std::initializer_list<Index> indices,
+                                               bool evalCellVolume)
     {
-        PInsist(Dim==2, "Number of Index arguments does not match mesh dimension!!");
+        unsigned int i = 0;
+        for (auto& index : indices) {
+            this->gridSizes_m[i] = index.length();
+            meshSpacing_m[i] = index.stride();
+            this->origin_m(i) = index.first();
+            ++i;
+        }
+        if (evalCellVolume)
+            updateCellVolume_m();
+
+        set_Dvc();
+    }
+
+
+    template <typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(std::initializer_list<Index> indices,
+                                               const vector_type& hx)
+        : UniformCartesian(indices, false)
+    {
+        setMeshSpacing(hx);
+    }
+
+
+    template <typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(std::initializer_list<Index> indices,
+                                               const vector_type& hx,
+                                               const vector_type& origin)
+        : UniformCartesian(indices, hx)
+    {
+        this->setOrigin(origin);
+    }
+
+
+    template<typename T, unsigned Dim>
+    void UniformCartesian<T, Dim>::initialize(std::initializer_list<Index> indices) {
         setup_m();
-        this->gridSizes_m[0] = I.length();
-        this->gridSizes_m[1] = J.length();
-        meshSpacing_m[0] = I.stride();
-        meshSpacing_m[1] = J.stride();
-        this->origin_m(0) = I.first();      // Default this->origin_m at (I.first(),J.first())
-        this->origin_m(1) = J.first();
+
+        unsigned int i = 0;
+        for (auto& index : indices) {
+            this->gridSizes_m[i] = index.length();
+            meshSpacing_m[i] = index.stride();
+            this->origin_m(i) = index.first();
+            ++i;
+        }
 
         updateCellVolume_m();
         set_Dvc();
@@ -297,82 +309,19 @@ namespace ippl {
 
 
     template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::initialize(const Index& I,
-                                              const Index& J,
+    void UniformCartesian<T, Dim>::initialize(std::initializer_list<Index> indices,
                                               const vector_type& hx)
     {
-        PInsist(Dim==2, "Number of Index arguments does not match mesh dimension!!");
         setup_m();
-        this->gridSizes_m[0] = I.length();
-        this->gridSizes_m[1] = J.length();
-        this->origin_m(0) = I.first();      // Default this->origin_m at (I.first(),J.first())
-        this->origin_m(1) = J.first();
 
-        this->setMeshSpacing(hx);      // Set mesh spacings and compute cell volume_m
-    }
+        unsigned int i = 0;
+        for (auto& index : indices) {
+            this->gridSizes_m[i] = index.length();
+            this->origin_m(i) = index.first();
+            ++i;
+        }
 
-
-    template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::initialize(const Index& I,
-                                              const Index& J,
-                                              const vector_type& hx,
-                                              const vector_type& origin)
-    {
-        this->initialize(I, J, hx);
-        this->origin_m = origin;
-    }
-
-
-    template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::initialize(const Index& I,
-                                              const Index& J,
-                                              const Index& K)
-    {
-        PInsist(Dim==3, "Number of Index arguments does not match mesh dimension!!");
-        setup_m();
-        this->gridSizes_m[0] = I.length();
-        this->gridSizes_m[1] = J.length();
-        this->gridSizes_m[2] = K.length();
-        meshSpacing_m[0] = I.stride();
-        meshSpacing_m[1] = J.stride();
-        meshSpacing_m[2] = K.stride();
-        this->origin_m(0) = I.first();
-        this->origin_m(1) = J.first();
-        this->origin_m(2) = K.first();
-
-        updateCellVolume_m();
-        set_Dvc();
-    }
-
-
-    template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::initialize(const Index& I,
-                                              const Index& J,
-                                              const Index& K,
-                                              const vector_type& hx)
-    {
-        PInsist(Dim==3, "Number of Index arguments does not match mesh dimension!!");
-        setup_m();
-        this->gridSizes_m[0] = I.length();
-        this->gridSizes_m[1] = J.length();
-        this->gridSizes_m[2] = K.length();
-        this->origin_m(0) = I.first();
-        this->origin_m(1) = J.first();
-        this->origin_m(2) = K.first();
         this->setMeshSpacing(hx);
-    }
-
-
-    template<typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::initialize(const Index& I,
-                                              const Index& J,
-                                              const Index& K,
-                                              const vector_type& hx,
-                                              const vector_type& origin)
-    {
-        PInsist(Dim==3, "Number of Index arguments does not match mesh dimension!!");
-        this->initialize(I, J, K, hx);
-        this->origin_m = origin;
     }
 
 

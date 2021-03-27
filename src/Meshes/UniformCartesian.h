@@ -85,23 +85,33 @@ public:
     void initialize(const NDIndex<Dim>& ndi, const vector_type& hx,
                     const vector_type& origin);
 
-    void initialize(const Index& I);
-    void initialize(const Index& I, const vector_type& hx);
-    void initialize(const Index& I, const vector_type& hx,
+
+    template <class... Indices,
+              std::enable_if_t<
+                std::conjunction<
+                    std::is_same<Index, Indices>...>::value
+                >
+             >
+    void initialize(const Indices&... indices);
+
+
+    template <class... Indices,
+              std::enable_if_t<
+                std::conjunction<
+                    std::is_same<Index, Indices>...>::value
+                >
+             >
+    void initialize(const Indices&... indices, const vector_type& hx);
+
+
+    template <class... Indices,
+              std::enable_if_t<
+                std::conjunction<
+                    std::is_same<Index, Indices>...>::value
+                >
+             >
+    void initialize(const Indices&... indices, const vector_type& hx,
                     const vector_type& origin);
-
-    void initialize(const Index& I, const Index& J);
-    void initialize(const Index& I, const Index& J, const vector_type& hx);
-    void initialize(const Index& I, const Index& J, const vector_type& hx,
-                    const vector_type& origin);
-
-
-    void initialize(const Index& I, const Index& J, const Index& K);
-    void initialize(const Index& I, const Index& J, const Index& K,
-                    const vector_type& hx);
-    void initialize(const Index& I, const Index& J, const Index& K,
-                    const vector_type& hx, const vector_type& origin);
-
 
 
     // Get the spacings of mesh vertex positions along specified direction
@@ -142,6 +152,11 @@ private:
     UniformCartesian(std::initializer_list<Index> indices,
                      const vector_type& hx,
                      const vector_type& origin);
+
+    void initialize(std::initializer_list<Index> indices);
+
+    void initialize(std::initializer_list<Index> indices,
+                    const vector_type& hx);
 
 
     vector_type meshSpacing_m;     // delta-x, delta-y (>1D), delta-z (>2D)
