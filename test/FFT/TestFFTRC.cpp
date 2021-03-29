@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    std::array<int, dim> pt = {16, 16, 16};
+    std::array<int, dim> pt = {4, 4, 4};
     ippl::Index Iinput(pt[0]);
     ippl::Index Jinput(pt[1]);
     ippl::Index Kinput(pt[2]);

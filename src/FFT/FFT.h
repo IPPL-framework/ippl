@@ -76,11 +76,13 @@ namespace ippl {
         struct HeffteBackendType<float> {
             using backend = heffte::backend::fftw;
             using complexType = std::complex<float>;
+            std::array<int, 3> order = {2, 1, 0};
         };
         template <>
         struct HeffteBackendType<double> {
             using backend = heffte::backend::fftw;
             using complexType = std::complex<double>;
+            std::array<int, 3> order = {2, 1, 0};
         };
 #endif
 #ifdef Heffte_ENABLE_MKL
@@ -88,11 +90,13 @@ namespace ippl {
         struct HeffteBackendType<float> {
             using backend = heffte::backend::mkl;
             using complexType = std::complex<float>;
+            std::array<int, 3> order = {2, 1, 0};
         };
         template <>
         struct HeffteBackendType<float> {
             using backend = heffte::backend::mkl;
             using complexType = std::complex<double>;
+            std::array<int, 3> order = {2, 1, 0};
         };
 #endif
 #ifdef Heffte_ENABLE_CUDA
@@ -101,11 +105,13 @@ namespace ippl {
         struct HeffteBackendType<double> {
             using backend = heffte::backend::cufft;
             using complexType = cufftDoubleComplex;
+            std::array<int, 3> order = {0, 1, 2};
         };
         template <>
         struct HeffteBackendType<float> {
             using backend = heffte::backend::cufft;
             using complexType = cufftComplex;
+            std::array<int, 3> order = {0, 1, 2};
         };
 #endif
 #endif
@@ -176,6 +182,7 @@ namespace ippl {
         using heffteBackend = typename detail::HeffteBackendType<T>::backend;
         using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
 
+        //typedef Field<heffteComplex_t,Dim> ComplexField_t;
 
         /** Create a new FFT object with the layout for the input and output Fields
          * and parameters for heffte.
@@ -203,6 +210,7 @@ namespace ippl {
                    const std::array<int, Dim>& highOutput,
                    const FFTParams& params);
 
+        detail::HeffteBackendType<T> backend;
 
         std::shared_ptr<heffte::fft3d_r2c<heffteBackend>> heffte_m;
 
