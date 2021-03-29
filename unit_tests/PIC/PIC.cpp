@@ -139,7 +139,7 @@ TEST_F(PICTest, Scatter) {
 
     double totalcharge = field->sum();
 
-    ASSERT_DOUBLE_EQ(nParticles * charge, totalcharge);
+    ASSERT_NEAR((nParticles * charge - totalcharge)/(nParticles * charge), 0.0, 1e-13);
 
 }
 
@@ -153,7 +153,7 @@ TEST_F(PICTest, Gather) {
     
     gather(bunch->Q, *field, bunch->R);
 
-    ASSERT_DOUBLE_EQ(nParticles, bunch->Q.sum());
+    ASSERT_DOUBLE_EQ((nParticles - bunch->Q.sum())/nParticles, 0.0);
 
 }
 

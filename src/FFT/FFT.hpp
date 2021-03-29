@@ -152,7 +152,7 @@ namespace ippl {
        if ( direction == 1 )
        {
            heffte_m->forward(tempField.data(), tempField.data(),
-                             heffte::scale::full);
+                             heffte::scale::none);
        }
        else if ( direction == -1 )
        {
@@ -213,10 +213,10 @@ namespace ippl {
          * 1D FFTs we just have to make the length in other
          * dimensions to be 1.
          */
-        std::array<long long, Dim> lowInput;
-        std::array<long long, Dim> highInput;
-        std::array<long long, Dim> lowOutput;
-        std::array<long long, Dim> highOutput;
+        std::array<int, 3> lowInput;
+        std::array<int, 3> highInput;
+        std::array<int, 3> lowOutput;
+        std::array<int, 3> highOutput;
 
         const NDIndex<Dim>& lDomInput = layoutInput.getLocalNDIndex();
         const NDIndex<Dim>& lDomOutput = layoutOutput.getLocalNDIndex();
@@ -240,7 +240,25 @@ namespace ippl {
                             lDomOutput[d].first() - 1);
         }
 
+        //lowInput[0] = static_cast<int>(lDomInput[2].first());
+        //highInput[0] = static_cast<int>(lDomInput[2].length() +
+        //                   lDomInput[2].first() - 1);
+        //lowInput[1] = static_cast<int>(lDomInput[1].first());
+        //highInput[1] = static_cast<int>(lDomInput[1].length() +
+        //                   lDomInput[1].first() - 1);
+        //lowInput[2] = static_cast<int>(lDomInput[0].first());
+        //highInput[2] = static_cast<int>(lDomInput[0].length() +
+        //                   lDomInput[0].first() - 1);
 
+        //lowOutput[0] = static_cast<int>(lDomOutput[2].first());
+        //highOutput[0] = static_cast<int>(lDomOutput[2].length() +
+        //                   lDomOutput[2].first() - 1);
+        //lowOutput[1] = static_cast<int>(lDomOutput[1].first());
+        //highOutput[1] = static_cast<int>(lDomOutput[1].length() +
+        //                   lDomOutput[1].first() - 1);
+        //lowOutput[2] = static_cast<int>(lDomOutput[0].first());
+        //highOutput[2] = static_cast<int>(lDomOutput[0].length() +
+        //                   lDomOutput[0].first() - 1);
         setup(lowInput, highInput, lowOutput, highOutput, params);
     }
 
@@ -257,6 +275,8 @@ namespace ippl {
                                   const FFTParams& params)
     {
 
+         //heffte::box3d inbox = {lowInput, highInput, backend.order};
+         //heffte::box3d outbox = {lowOutput, highOutput, backend.order};
          heffte::box3d inbox = {lowInput, highInput};
          heffte::box3d outbox = {lowOutput, highOutput};
 
@@ -291,12 +311,12 @@ namespace ippl {
         *the device is gpu or cpu. Also the data types which heFFTe accepts are
         * different from Kokkos.
        */
-       Kokkos::View<T***,Kokkos::LayoutLeft>
+       Kokkos::View<T***, Kokkos::LayoutLeft>
            tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
                                     fview.extent(1) - 2*nghostf,
                                     fview.extent(2) - 2*nghostf);
 
-       Kokkos::View<heffteComplex_t***,Kokkos::LayoutLeft>
+       Kokkos::View<heffteComplex_t***, Kokkos::LayoutLeft>
            tempFieldg("tempFieldg", gview.extent(0) - 2*nghostg,
                                     gview.extent(1) - 2*nghostg,
                                     gview.extent(2) - 2*nghostg);
@@ -337,21 +357,27 @@ namespace ippl {
                                       gview(i, j, k).imag());
 #endif
                             });
+
        if ( direction == 1 )
        {
            heffte_m->forward( tempFieldf.data(), tempFieldg.data(),
                               heffte::scale::full );
+           //heffte_m->forward( fview.data(), gview.data(),
+           //                   heffte::scale::full );
        }
        else if ( direction == -1 )
        {
            heffte_m->backward( tempFieldg.data(), tempFieldf.data(),
                                heffte::scale::none );
+           //heffte_m->backward( gview.data(), fview.data(),
+           //                    heffte::scale::none );
        }
        else
        {
            throw std::logic_error(
                 "Only 1:forward and -1:backward are allowed as directions");
        }
+
 
        Kokkos::parallel_for("copy to Kokkos f field FFT",
                             mdrange_type({nghostf, nghostf, nghostf},
