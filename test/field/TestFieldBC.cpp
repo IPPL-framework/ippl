@@ -71,9 +71,9 @@ int main(int argc, char *argv[]) {
                                         const int k)
     {
         //local to global index conversion
-        const size_t ig = i + lDom[0].first() + nghost;
-        //const size_t jg = j + lDom[1].first() + nghost;
-        //const size_t kg = k + lDom[2].first() + nghost;
+        const size_t ig = i + lDom[0].first() - nghost;
+        //const size_t jg = j + lDom[1].first() - nghost;
+        //const size_t kg = k + lDom[2].first() - nghost;
         double x = (ig + 0.5) * hx[0];
         //double y = (jg + 0.5) * hx[1];
         //double z = (kg + 0.5) * hx[2];

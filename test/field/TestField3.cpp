@@ -17,16 +17,16 @@ int main(int argc, char *argv[]) {
 
     ippl::e_dim_tag decomp[dim];    // Specifies SERIAL, PARALLEL dims
     for (unsigned int d=0; d<dim; d++)
-        //decomp[d] = ippl::PARALLEL;
-        decomp[d] = ippl::SERIAL;
+        decomp[d] = ippl::PARALLEL;
+        //decomp[d] = ippl::SERIAL;
 
     // all parallel layout, standard domain, normal axis order
     ippl::FieldLayout<dim> layout(owned,decomp);
 
     //Unit box 
-    double dx = 1.0 / double(pt);
+    double dx = 2.0 / double(pt);
     ippl::Vector<double, 3> hx = {dx, dx, dx};
-    ippl::Vector<double, 3> origin = {0, 0, 0};
+    ippl::Vector<double, 3> origin = {-1.0, -1.0, -1.0};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
     double pi = acos(-1.0);
@@ -39,11 +39,13 @@ int main(int argc, char *argv[]) {
 
     field_type field(mesh, layout);
     field_type Lap(mesh, layout);
+    field_type Lap_exact(mesh, layout);
     vector_field_type vfield(mesh, layout);
 
     typedef ippl::Field<double, dim> Field_t;
 
     typename Field_t::view_type& view = field.getView();
+    typename Field_t::view_type& view_exact = Lap_exact.getView();
     typedef ippl::BConds<double, dim> bc_type; 
     typedef ippl::BConds<Vector_t, dim> vbc_type; 
 
@@ -86,16 +88,17 @@ int main(int argc, char *argv[]) {
                                         const int k)
                           {
                             //local to global index conversion
-                            const size_t ig = i + lDom[0].first() + nghost;
-                            const size_t jg = j + lDom[1].first() + nghost;
-                            const size_t kg = k + lDom[2].first() + nghost;
-                            double x = (ig + 0.5) * hx[0];
-                            double y = (jg + 0.5) * hx[1];
-                            double z = (kg + 0.5) * hx[2];
+                            const size_t ig = i + lDom[0].first() - nghost;
+                            const size_t jg = j + lDom[1].first() - nghost;
+                            const size_t kg = k + lDom[2].first() - nghost;
+                            double x = (ig + 0.5) * hx[0] + origin[0];
+                            double y = (jg + 0.5) * hx[1] + origin[1];
+                            double z = (kg + 0.5) * hx[2] + origin[2];
 
                             //view(i, j, k) = 3.0*pow(x,1) + 4.0*pow(y,1) + 5.0*pow(z,1);
                             //view(i, j, k) = sin(pi * x) * cos(pi * y) * exp(z);
                             view(i, j, k) = sin(pi * x) * sin(pi * y) * sin(pi * z);
+                            view_exact(i, j, k) = -3.0 * pi * pi * sin(pi * x) * sin(pi * y) * sin(pi * z);
                           });
 
 
@@ -114,17 +117,27 @@ int main(int argc, char *argv[]) {
 
     Lap = laplace(field);
 
-    int nRanks = Ippl::Comm->size();
-    for (int rank = 0; rank < nRanks; ++rank) {
-        if (rank == Ippl::Comm->rank()) {
-            std::ofstream out("LaplacePeriodicBCSerial_" + 
-                              std::to_string(rank) + 
-                              ".dat", std::ios::out);
-            Lap.write(out);
-            out.close();
+    Lap = Lap - Lap_exact;
+
+    Lap = pow(Lap, 2);
+    Lap_exact = pow(Lap_exact, 2);
+    double error = sqrt(Lap.sum());
+    error = error/sqrt(Lap_exact.sum());
+
+    //int nRanks = Ippl::Comm->size();
+    //for (int rank = 0; rank < nRanks; ++rank) {
+        //if (rank == Ippl::Comm->rank()) {
+        //    std::ofstream out("LaplacePeriodicBCSerial_" + 
+        //                      std::to_string(rank) + 
+        //                      ".dat", std::ios::out);
+        //    Lap.write(out);
+        //    out.close();
+        //}
+        //Ippl::Comm->barrier();
+        if (Ippl::Comm->rank() == 0) {
+            std::cout << "Error: " << error << std::endl;
         }
-        Ippl::Comm->barrier();
-    }
+    //}
 
 
     return 0;
