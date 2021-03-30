@@ -57,14 +57,15 @@ namespace ippl {
 
 
         /*!
-          @param Field<T, Dim>& BF
-          @param std::vector<T>& res
+          @param Field<T, Dim>& BF field of weights
+          @param std::vector<T>& res result of reduction
+          @param NDIndex<Dim>& dom domain to reduce
           @param int cutAxis
 
           Performs reduction on field BF in all dimension except that determined by cutAxis,
           store result in res.  
         */
-        void PerformReduction(Field<T,Dim>& BF, std::vector<T>& res, unsigned int cutAxis); 
+        void PerformReduction(Field<T,Dim>& BF, std::vector<T>& res, NDIndex<Dim>& dom, unsigned int cutAxis); 
 
 
         /*!

@@ -296,8 +296,7 @@ int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     Inform msg(argv[0]);
     Inform msg2all(argv[0],INFORM_ALL_NODES);
-    Inform ml("ML");
-
+  
     ippl::Vector<int,Dim> nr = {
         std::atoi(argv[1]),
         std::atoi(argv[2]),
@@ -344,7 +343,10 @@ int main(int argc, char *argv[]){
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp);
     PLayout_t PL(FL, mesh);
-    
+   
+    // FL 
+    std::cout << FL << std::endl;
+ 
     double Q=1.0;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
@@ -360,7 +362,6 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
 
-    
     std::mt19937_64 eng[Dim];
     for (unsigned i = 0; i < Dim; ++i) {
         eng[i].seed(42 + i * Dim);
@@ -371,9 +372,9 @@ int main(int argc, char *argv[]){
     typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
 
     double sum_coord=0.0;
-    for (unsigned long int i = 0; i< nloc; i++) {
+    for (unsigned long int i = 0; i < nloc; i++) {
         for (int d = 0; d<3; d++) {
-            R_host(i)[d] =  unif(eng[d]);
+            R_host(i)[d] = unif(eng[d]);
             sum_coord += R_host(i)[d];
         }
     }

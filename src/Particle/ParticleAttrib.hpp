@@ -184,7 +184,7 @@ namespace ippl {
         const M& mesh = f.get_mesh();
 
         using vector_type = typename M::vector_type;
-        using value_type  = typename ParticleAttrib<P1, Properties...>::value_type;
+        // using value_type  = typename ParticleAttrib<P1, Properties...>::value_type;
 
         const vector_type& dx = mesh.getMeshSpacing();
         const vector_type& origin = mesh.getOrigin();

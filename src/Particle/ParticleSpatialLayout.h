@@ -66,8 +66,11 @@ namespace ippl {
         void update(/*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
-         
+        
+        // KOKKOS_INLINE_FUNCTION     
         FieldLayout<Dim>& getFieldLayout() { return flayout_m; }        
+
+        // KOKKOS_INLINE_FUNCTION
         Mesh_t& getMesh() { return mesh_m; }
   
     protected:
