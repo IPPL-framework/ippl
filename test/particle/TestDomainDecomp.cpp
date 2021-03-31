@@ -344,9 +344,6 @@ int main(int argc, char *argv[]){
     FieldLayout_t FL(domain, decomp);
     PLayout_t PL(FL, mesh);
    
-    // FL 
-    std::cout << FL << std::endl;
- 
     double Q=1.0;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 

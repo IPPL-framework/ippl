@@ -88,7 +88,7 @@ namespace ippl {
         void CutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median);
 
 private:
-       ParticleAttrib<T> PAttrib_m;
+        std::vector<MPI_Comm> comms_m = {Ippl::getComm()};
     }; // class
 
 } // namespace
