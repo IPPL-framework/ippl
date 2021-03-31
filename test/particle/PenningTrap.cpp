@@ -26,6 +26,7 @@
 
 #include <random>
 #include "Utility/IpplTimings.h"
+#include "Solver/FFTPeriodicPoissonSolver.h"
 
 // dimension of our positions
 constexpr unsigned Dim = 3;
@@ -52,6 +53,97 @@ typedef ippl::FFTPeriodicPoissonSolver<VField_t, Field_t,double,Dim> Solver_t;
 
 double pi = acos(-1.0);
 
+void dumpVTK(VField_t& E, int nx, int ny, int nz, int iteration,
+             double dx, double dy, double dz) {
+
+
+    typename VField_t::view_type::host_mirror_type host_view = E.getHostMirror();
+
+    Kokkos::deep_copy(host_view, E.getView());
+    std::ofstream vtkout;
+    vtkout.precision(10);
+    vtkout.setf(std::ios::scientific, std::ios::floatfield);
+
+    std::stringstream fname;
+    fname << "data/ef_";
+    fname << std::setw(4) << std::setfill('0') << iteration;
+    fname << ".vtk";
+
+    // open a new data file for this iteration
+    // and start with header
+    vtkout.open(fname.str().c_str(), std::ios::out);
+    vtkout << "# vtk DataFile Version 2.0" << std::endl;
+    vtkout << "PenningTrap" << std::endl;
+    vtkout << "ASCII" << std::endl;
+    vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
+    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << std::endl;
+    vtkout << "ORIGIN "     << -2*dx  << " " << -2*dy  << " "  << -2*dz << std::endl;
+    vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
+    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << std::endl;
+
+    vtkout << "VECTORS E-Field float" << std::endl;
+    for (int z=0; z<nz+2; z++) {
+        for (int y=0; y<ny+2; y++) {
+            for (int x=0; x<nx+2; x++) {
+
+                vtkout << host_view(x,y,z)[0] << "\t"
+                       << host_view(x,y,z)[1] << "\t"
+                       << host_view(x,y,z)[2] << std::endl;
+            }
+        }
+    }
+
+    // close the output file for this iteration:
+    vtkout.close();
+}
+
+
+void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration,
+             double dx, double dy, double dz) {
+
+    typename Field_t::view_type::host_mirror_type host_view = rho.getHostMirror();
+    Kokkos::deep_copy(host_view, rho.getView());
+    std::ofstream vtkout;
+    vtkout.precision(10);
+    vtkout.setf(std::ios::scientific, std::ios::floatfield);
+
+    std::stringstream fname;
+    fname << "data/scalar_";
+    fname << std::setw(4) << std::setfill('0') << iteration;
+    fname << ".vtk";
+
+    //double vol = dx*dy*dz;
+
+    // open a new data file for this iteration
+    // and start with header
+    vtkout.open(fname.str().c_str(), std::ios::out);
+    vtkout << "# vtk DataFile Version 2.0" << std::endl;
+    vtkout << "PenningTrap" << std::endl;
+    vtkout << "ASCII" << std::endl;
+    vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
+    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << std::endl;
+    vtkout << "ORIGIN " << -2*dx << " " << -2*dy << " " << -2*dz << std::endl;
+    vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
+    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << std::endl;
+
+    vtkout << "SCALARS Rho float" << std::endl;
+    vtkout << "LOOKUP_TABLE default" << std::endl;
+    for (int z=0; z<nz+2; z++) {
+        for (int y=0; y<ny+2; y++) {
+            for (int x=0; x<nx+2; x++) {
+
+                vtkout << host_view(x,y,z) << std::endl;
+            }
+        }
+    }
+
+
+    // close the output file for this iteration:
+    vtkout.close();
+}
+
+
+
 template<class PLayout>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
 public:
@@ -70,11 +162,11 @@ public:
 
     std::string stype_m;
 
-    std::unique_ptr<Solver_t> solver_mp;
+    std::shared_ptr<Solver_t> solver_mp;
 
 
 public:
-    ParticleAttrib<double>     qm; // charge-to-mass ratio
+    ParticleAttrib<double>     q; // charge
     typename ippl::ParticleBase<PLayout>::particle_position_type P;  // particle velocity
     typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
 
@@ -87,7 +179,7 @@ public:
     : ippl::ParticleBase<PLayout>(pl)
     {
         // register the particle attributes
-        this->addAttribute(qm);
+        this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
     }
@@ -105,7 +197,7 @@ public:
     , Q_m(Q)
     {
         // register the particle attributes
-        this->addAttribute(qm);
+        this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
         setupBCs();
@@ -132,21 +224,45 @@ public:
     
     void gatherCIC() {
 
-        //static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");           
-        //IpplTimings::startTimer(gatherTimer);                                                    
+        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather"); 
+        Inform m("gather");
+        IpplTimings::startTimer(gatherTimer);                                                    
         gather(this->E, E_m, this->R);
-        //IpplTimings::stopTimer(gatherTimer);                                                    
+        IpplTimings::stopTimer(gatherTimer);
+        const int nghost = E_m.getNghost();
+        auto Eview = E_m.getView();
+        Vector_t normE;
+
+
+        for (unsigned d=0; d<Dim; ++d) {
+
+        double temp = 0.0;                                                                                        
+        Kokkos::parallel_reduce("Vector E reduce",                                                                       
+                                Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},                 
+                                                                       {Eview.extent(0) - nghost,            
+                                                                        Eview.extent(1) - nghost,            
+                                                                        Eview.extent(2) - nghost}),          
+                                           KOKKOS_LAMBDA(const size_t i, const size_t j,                           
+                                                        const size_t k, double& valL) {                                
+                                                double myVal = pow(Eview(i, j, k)[d], 2);                                              
+                                                valL += myVal;                                                                      
+                                           }, Kokkos::Sum<double>(temp));                                                     
+                    double globaltemp = 0.0;                                                                                  
+                    MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());                                 
+                    normE[d] = sqrt(globaltemp);
+        }
+        m << "E norm: " << normE << endl;
 
     }
 
-    void scatterCIC(unsigned int totalP, int iteration) {
+    void scatterCIC(unsigned int totalP, int iteration, Vector_t& hrField) {
          
-         //static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
-         //IpplTimings::startTimer(scatterTimer);                                                    
+         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
+         IpplTimings::startTimer(scatterTimer);                                                    
          Inform m("scatter ");
          rho_m = 0.0;
-         scatter(qm, rho_m, this->R);
-         //IpplTimings::stopTimer(scatterTimer);                                                    
+         scatter(q, rho_m, this->R);
+         IpplTimings::stopTimer(scatterTimer);                                                    
          
          static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("CheckCharge");           
          IpplTimings::startTimer(sumTimer);                                                    
@@ -170,13 +286,24 @@ public:
          }
          
          m << "Rel. error in charge conservation = " << std::fabs((Q_m-Q_grid)/Q_m) << endl;
-         IpplTimings::stopTimer(sumTimer);                                                    
+         m << "Rho sum = " << Q_grid << endl;
+         IpplTimings::stopTimer(sumTimer);
+
+         rho_m = rho_m / (hrField[0] * hrField[1] * hrField[2]);
+
+         //dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
+
+         //rho = rho_e - rho_i
+         rho_m = rho_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
     }
     
     void initSolver() {
 
-        if(stype_m == "FFTSolver")
+        Inform m("solver ");
+        if(stype_m == "FFT")
             initFFTSolver();
+        else
+            m << "No solver matches the argument" << endl;
 
     }
 
@@ -191,7 +318,7 @@ public:
         fftParams.setReorder( true );
         fftParams.setRCDirection( 0 );
 
-        solver_mp = std::make_unique<Solver_t>(fftParams);
+        solver_mp = std::make_shared<Solver_t>(fftParams);
 
         solver_mp->setParameters(sp);
         
@@ -302,10 +429,12 @@ int main(int argc, char *argv[]){
     PLayout_t PL(FL, mesh);
 
 
-    double Q = 1562.5;
+    double Q = -1562.5;
+    double Bext = 5.0;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
 
+    P->nr_m = nr;
     unsigned long int nloc = totalP / Ippl::Comm->size();
 
     int rest = (int) (totalP - nloc * Ippl::Comm->size());
@@ -317,7 +446,7 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
 
-    Vector_t length;
+    Vector_t length = rmax - rmin;
     
     std::mt19937_64 eng[4*Dim];
     for (unsigned i = 0; i < 4*Dim; ++i) {
@@ -325,9 +454,9 @@ int main(int argc, char *argv[]){
         eng[i].discard( nloc * Ippl::Comm->rank());
     }
     
-    std::vector<double> mu(2*AMREX_SPACEDIM);
-    std::vector<double> sd(2*AMREX_SPACEDIM);
-    std::vector<double> states(2*AMREX_SPACEDIM);
+    std::vector<double> mu(2*Dim);
+    std::vector<double> sd(2*Dim);
+    std::vector<double> states(2*Dim);
    
 
     for (unsigned d = 0; d<Dim; d++) {
@@ -346,7 +475,7 @@ int main(int argc, char *argv[]){
 
     double sum_coord=0.0;
     for (unsigned long int i = 0; i< nloc; i++) {
-        for (unsigned istate = 0; istate < 2*AMREX_SPACEDIM; ++istate) {
+        for (unsigned istate = 0; istate < 2*Dim; ++istate) {
             double u1 = dist_uniform(eng[istate*2]);
             double u2 = dist_uniform(eng[istate*2+1]);
             states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) * 
@@ -370,8 +499,20 @@ int main(int argc, char *argv[]){
 
     Kokkos::deep_copy(P->R.getView(), R_host);
     Kokkos::deep_copy(P->P.getView(), P_host);
-    P->qm = P->Q_m/totalP;
+    P->q = P->Q_m/totalP;
     IpplTimings::stopTimer(particleCreation);                                                    
+
+
+    Vector_t originField = {rmin[0]-hr[0], rmin[1]-hr[1], rmin[2]-hr[2]};
+    double dxField = (rmax[0] + hr[0] - originField[0]) / nr[0];
+    double dyField = (rmax[1] + hr[1] - originField[1]) / nr[1];
+    double dzField = (rmax[2] + hr[2] - originField[2]) / nr[2];
+
+    Vector_t hrField = {dxField, dyField, dzField};
+    Mesh_t meshField(domain, hrField, originField);
+
+    P->E_m.initialize(meshField, FL);
+    P->rho_m.initialize(meshField, FL);
 
     static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
     IpplTimings::startTimer(UpdateTimer);                                               
@@ -379,55 +520,94 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(UpdateTimer);                                                    
 
     msg << "particles created and initial conditions assigned " << endl;
-    P->E_m.initialize(mesh, FL);
-    P->rho_m.initialize(mesh, FL);
 
     P->stype_m = argv[6];
     P->initSolver();
     
     msg << "scatter test" << endl;
-    P->scatterCIC(totalP, 0);
+    P->scatterCIC(totalP, 0, hrField);
     
    
+    static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");           
+    IpplTimings::startTimer(SolveTimer);                                               
     P->solver_mp->solve();
+    IpplTimings::stopTimer(SolveTimer);
+
+    P->gatherCIC();
+
+    auto Rview = P->R.getView();
+    auto Pview = P->P.getView();
+    auto Eview = P->E.getView();
+
+    P->dumpParticleData(0);
 
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
-    
+   
+        // kick
+        // Here, we assume a constant charge-to-mass ratio of -1 for 
+        // all the particles hence eliminating the need to store mass as 
+        // an attribute
+        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
+        IpplTimings::startTimer(PTimer);                                                    
+        double V0 = 30*rmax[2];
+        Kokkos::parallel_for("Kick1", Rview.extent(0),
+                              KOKKOS_LAMBDA(const size_t j){
         
-        // advance the particle positions
-        // basic leapfrogging timestep scheme.  velocities are offset
-        // by half a timestep from the positions.
+        double Eext_x = -(Rview(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));
+        double Eext_y = -(Rview(j)[1] - (rmax[1]/2)) * (V0/(2*pow(rmax[2],2)));
+        double Eext_z =  (Rview(j)[2] - (rmax[2]/2)) * (V0/(pow(rmax[2],2)));
+        
+        Pview(j)[0] -= 0.5 * dt * ((Eview(j)[0] + Eext_x) + Pview(j)[1] * Bext);
+        Pview(j)[1] -= 0.5 * dt * ((Eview(j)[1] + Eext_y) - Pview(j)[0] * Bext);
+        Pview(j)[2] -= 0.5 * dt *  (Eview(j)[2] + Eext_z);
+        
+        });
+        IpplTimings::stopTimer(PTimer);                                                    
+        
+        // drift
         static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");           
         IpplTimings::startTimer(RTimer);                                                    
         P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);                                                    
 
-
+        
         IpplTimings::startTimer(UpdateTimer);
         P->update();
         IpplTimings::stopTimer(UpdateTimer);                                                    
         
         //scatter the charge onto the underlying grid
-        P->scatterCIC(totalP, it+1);
+        P->scatterCIC(totalP, it+1, hrField);
         
         //Field solve
+        IpplTimings::startTimer(SolveTimer);                                               
         P->solver_mp->solve();
+        IpplTimings::stopTimer(SolveTimer);                                               
         
         // gather the local value of the E field
         P->gatherCIC();
 
-
-        // advance the particle velocities
-        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
         IpplTimings::startTimer(PTimer);                                                    
-        P->P = P->P + dt * P->qm * P->E;
+        Kokkos::parallel_for("Kick2", Rview.extent(0),
+                              KOKKOS_LAMBDA(const size_t j){
+        
+        double Eext_x = -(Rview(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));
+        double Eext_y = -(Rview(j)[1] - (rmax[1]/2)) * (V0/(2*pow(rmax[2],2)));
+        double Eext_z =  (Rview(j)[2] - (rmax[2]/2)) * (V0/(pow(rmax[2],2)));
+        
+        Pview(j)[0] -= 0.5 * dt * ((Eview(j)[0] + Eext_x) + Pview(j)[1] * Bext);
+        Pview(j)[1] -= 0.5 * dt * ((Eview(j)[1] + Eext_y) - Pview(j)[0] * Bext);
+        Pview(j)[2] -= 0.5 * dt *  (Eview(j)[2] + Eext_z);
+        
+        });
         IpplTimings::stopTimer(PTimer);                                                    
+
+        P->dumpParticleData(it+1);
         msg << "Finished iteration " << it << endl;
     }
     
-    msg << "Particle test PIC3d: End." << endl;
+    msg << "Penning Trap: End." << endl;
     IpplTimings::stopTimer(mainTimer);                                                    
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
