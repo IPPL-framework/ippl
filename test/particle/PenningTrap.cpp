@@ -164,6 +164,8 @@ public:
 
     std::shared_ptr<Solver_t> solver_mp;
 
+    double time_m;
+
 
 public:
     ParticleAttrib<double>     q; // charge
@@ -225,33 +227,9 @@ public:
     void gatherCIC() {
 
         static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather"); 
-        Inform m("gather");
         IpplTimings::startTimer(gatherTimer);                                                    
         gather(this->E, E_m, this->R);
         IpplTimings::stopTimer(gatherTimer);
-        const int nghost = E_m.getNghost();
-        auto Eview = E_m.getView();
-        Vector_t normE;
-
-
-        for (unsigned d=0; d<Dim; ++d) {
-
-        double temp = 0.0;                                                                                        
-        Kokkos::parallel_reduce("Vector E reduce",                                                                       
-                                Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},                 
-                                                                       {Eview.extent(0) - nghost,            
-                                                                        Eview.extent(1) - nghost,            
-                                                                        Eview.extent(2) - nghost}),          
-                                           KOKKOS_LAMBDA(const size_t i, const size_t j,                           
-                                                        const size_t k, double& valL) {                                
-                                                double myVal = pow(Eview(i, j, k)[d], 2);                                              
-                                                valL += myVal;                                                                      
-                                           }, Kokkos::Sum<double>(temp));                                                     
-                    double globaltemp = 0.0;                                                                                  
-                    MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());                                 
-                    normE[d] = sqrt(globaltemp);
-        }
-        m << "E norm: " << normE << endl;
 
     }
 
@@ -286,12 +264,11 @@ public:
          }
          
          m << "Rel. error in charge conservation = " << std::fabs((Q_m-Q_grid)/Q_m) << endl;
-         m << "Rho sum = " << Q_grid << endl;
          IpplTimings::stopTimer(sumTimer);
 
          rho_m = rho_m / (hrField[0] * hrField[1] * hrField[2]);
 
-         //dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
+         dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
 
          //rho = rho_e - rho_i
          rho_m = rho_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
@@ -329,15 +306,15 @@ public:
 
 
 
-     void dumpParticleData(int iteration) {
+     void dumpData() {
         
-        ParticleAttrib<Vector_t>::view_type& view = P.getView();
+        auto Pview = P.getView();
         
         double Energy = 0.0;
 
-        Kokkos::parallel_reduce("Particle Energy", view.extent(0),
+        Kokkos::parallel_reduce("Particle Energy", Pview.extent(0),
                                 KOKKOS_LAMBDA(const int i, double& valL){
-                                    double myVal = dot(view(i), view(i)).apply();
+                                    double myVal = dot(Pview(i), Pview(i)).apply();
                                     valL += myVal;
                                 }, Kokkos::Sum<double>(Energy));
 
@@ -347,23 +324,78 @@ public:
         MPI_Reduce(&Energy, &gEnergy, 1, 
                     MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
+
+        const int nghostE = E_m.getNghost();
+        auto Eview = E_m.getView();
+        Vector_t normE;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+        for (unsigned d=0; d<Dim; ++d) {
+
+        double temp = 0.0;                                                                                        
+        Kokkos::parallel_reduce("Vector E reduce",                                                                       
+                                mdrange_type({nghostE, nghostE, nghostE},                 
+                                             {Eview.extent(0) - nghostE,            
+                                              Eview.extent(1) - nghostE,            
+                                              Eview.extent(2) - nghostE}),          
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,                           
+                                              const size_t k, double& valL) 
+                                {                                
+                                    double myVal = pow(Eview(i, j, k)[d], 2);                                              
+                                    valL += myVal;                                                                      
+                                }, Kokkos::Sum<double>(temp));                                                     
+            double globaltemp = 0.0;                                                                                  
+            MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());                                 
+            normE[d] = sqrt(globaltemp);
+        }
+
+        const int nghostRho = rho_m.getNghost();
+        auto Rhoview = rho_m.getView();
+        double normRho;
+
+        double temp = 0.0;                                                                                        
+        Kokkos::parallel_reduce("Vector Rho reduce",                                                                       
+                                mdrange_type({nghostRho, nghostRho, nghostRho},                 
+                                             {Rhoview.extent(0) - nghostRho,            
+                                              Rhoview.extent(1) - nghostRho,            
+                                              Rhoview.extent(2) - nghostRho}),          
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,                           
+                                              const size_t k, double& valL) 
+                                {                                
+                                    double myVal = pow(Rhoview(i, j, k), 2);                                              
+                                    valL += myVal;                                                                      
+                                }, Kokkos::Sum<double>(temp));                                                     
+        double globaltemp = 0.0;                                                                                  
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());                                 
+        normRho = sqrt(globaltemp);
+
+
         if(Ippl::Comm->rank() == 0) {
             std::ofstream csvout;
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             std::stringstream fname;
-            fname << "data/energy.csv";
+            fname << "data/ParticleField_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
             csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
 
-            csvout << iteration << " "
-                   << gEnergy << std::endl;
+            if(time_m == 0.0) {
+                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2" << std::endl;
+            }
+
+            csvout << time_m << " "
+                   << gEnergy << " "
+                   << normRho << " "
+                   << normE[0] << " "
+                   << normE[1] << " "
+                   << normE[2] << std::endl;
 
             csvout.close();
         }
         
         Ippl::Comm->barrier();
-
 
      }
 
@@ -514,7 +546,7 @@ int main(int argc, char *argv[]){
     P->E_m.initialize(meshField, FL);
     P->rho_m.initialize(meshField, FL);
 
-    static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
+    static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("Update");           
     IpplTimings::startTimer(UpdateTimer);                                               
     P->update();
     IpplTimings::stopTimer(UpdateTimer);                                                    
@@ -523,8 +555,9 @@ int main(int argc, char *argv[]){
 
     P->stype_m = argv[6];
     P->initSolver();
+
+    P->time_m = 0.0;
     
-    msg << "scatter test" << endl;
     P->scatterCIC(totalP, 0, hrField);
     
    
@@ -535,22 +568,26 @@ int main(int argc, char *argv[]){
 
     P->gatherCIC();
 
-    auto Rview = P->R.getView();
-    auto Pview = P->P.getView();
-    auto Eview = P->E.getView();
 
-    P->dumpParticleData(0);
+    static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");           
+    IpplTimings::startTimer(dumpDataTimer);                                               
+    P->dumpData();
+    IpplTimings::stopTimer(dumpDataTimer);                                               
 
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
    
-        // kick
+        // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
         // Here, we assume a constant charge-to-mass ratio of -1 for 
         // all the particles hence eliminating the need to store mass as 
         // an attribute
-        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
+        // kick
+        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityPush");           
         IpplTimings::startTimer(PTimer);                                                    
+        auto Rview = P->R.getView();
+        auto Pview = P->P.getView();
+        auto Eview = P->E.getView();
         double V0 = 30*rmax[2];
         Kokkos::parallel_for("Kick1", Rview.extent(0),
                               KOKKOS_LAMBDA(const size_t j){
@@ -566,13 +603,13 @@ int main(int argc, char *argv[]){
         });
         IpplTimings::stopTimer(PTimer);                                                    
         
-        // drift
-        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");           
+        //drift
+        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionPush");           
         IpplTimings::startTimer(RTimer);                                                    
         P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);                                                    
 
-        
+        //Since the particles have moved spatially update them to correct processors 
         IpplTimings::startTimer(UpdateTimer);
         P->update();
         IpplTimings::stopTimer(UpdateTimer);                                                    
@@ -585,26 +622,33 @@ int main(int argc, char *argv[]){
         P->solver_mp->solve();
         IpplTimings::stopTimer(SolveTimer);                                               
         
-        // gather the local value of the E field
+        // gather E field
         P->gatherCIC();
 
-        IpplTimings::startTimer(PTimer);                                                    
-        Kokkos::parallel_for("Kick2", Rview.extent(0),
+        //kick
+        IpplTimings::startTimer(PTimer);
+        auto R2view = P->R.getView();
+        auto P2view = P->P.getView();
+        auto E2view = P->E.getView();
+        Kokkos::parallel_for("Kick2", R2view.extent(0),
                               KOKKOS_LAMBDA(const size_t j){
         
-        double Eext_x = -(Rview(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));
-        double Eext_y = -(Rview(j)[1] - (rmax[1]/2)) * (V0/(2*pow(rmax[2],2)));
-        double Eext_z =  (Rview(j)[2] - (rmax[2]/2)) * (V0/(pow(rmax[2],2)));
+        double Eext_x = -(R2view(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));
+        double Eext_y = -(R2view(j)[1] - (rmax[1]/2)) * (V0/(2*pow(rmax[2],2)));
+        double Eext_z =  (R2view(j)[2] - (rmax[2]/2)) * (V0/(pow(rmax[2],2)));
         
-        Pview(j)[0] -= 0.5 * dt * ((Eview(j)[0] + Eext_x) + Pview(j)[1] * Bext);
-        Pview(j)[1] -= 0.5 * dt * ((Eview(j)[1] + Eext_y) - Pview(j)[0] * Bext);
-        Pview(j)[2] -= 0.5 * dt *  (Eview(j)[2] + Eext_z);
+        P2view(j)[0] -= 0.5 * dt * ((E2view(j)[0] + Eext_x) + P2view(j)[1] * Bext);
+        P2view(j)[1] -= 0.5 * dt * ((E2view(j)[1] + Eext_y) - P2view(j)[0] * Bext);
+        P2view(j)[2] -= 0.5 * dt *  (E2view(j)[2] + Eext_z);
         
         });
         IpplTimings::stopTimer(PTimer);                                                    
 
-        P->dumpParticleData(it+1);
-        msg << "Finished iteration " << it << endl;
+        P->time_m += dt;
+        IpplTimings::startTimer(dumpDataTimer);                                               
+        P->dumpData();
+        IpplTimings::stopTimer(dumpDataTimer);                                               
+        msg << "Finished iteration: " << it << " time: " << P->time_m << endl;
     }
     
     msg << "Penning Trap: End." << endl;
