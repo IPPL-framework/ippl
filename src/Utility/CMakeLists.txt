@@ -24,6 +24,7 @@ set (_HDRS
     my_auto_ptr.h
     vmap.h
     vmap.hpp
+    ParameterList.h
     )
 
 include_directories (
