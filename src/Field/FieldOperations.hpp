@@ -2,7 +2,7 @@
 // File FieldOperations
 //   Differential operators, norms, and a scalar product for fields
 //
-// Copyright (c) 2021
+// Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
 // This file is part of IPPL.

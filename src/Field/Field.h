@@ -2,7 +2,7 @@
 // Class Field
 //   BareField with a mesh and configurable boundary conditions
 //
-// Copyright (c) 2021
+// Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
 // This file is part of IPPL.
