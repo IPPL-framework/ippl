@@ -10,6 +10,7 @@ set (_HDRS
     BcTypes.hpp
     Field.h
     Field.hpp
+    FieldOperations.hpp
     HaloCells.h
     HaloCells.hpp
     )
