@@ -7,12 +7,14 @@
 
 #include <cstdlib>
 
-void checkError(double computed, double correct, int N, int p, Inform& mout, Inform& merr, double tolerance = 1e-16) {
+void checkError(double computed, double correct, int N, int p,
+        Inform& mout, Inform& merr, double tolerance = 1e-16) {
     double absError = fabs(computed - correct);
     double relError = absError / correct;
     mout << "(" << N << ", L" << p << "): " << absError << "," << relError << endl;
     if (relError > tolerance) {
-        merr << "L" << p << " norm for N = " << N << " does not match.\n\tGot " << computed << ", expected " << correct << ". Relative error: " << relError << endl;
+        merr << "L" << p << " norm for N = " << N << " does not match.\n\tGot "
+            << computed << ", expected " << correct << ". Relative error: " << relError << endl;
     }
 }
 

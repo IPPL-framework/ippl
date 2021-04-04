@@ -90,7 +90,8 @@ namespace ippl {
                     view.extent(2) - shift}),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
                     T myVal = std::abs(view(i, j, k));
-                    if (myVal > val) val = myVal;
+                    if (myVal > val)
+                        val = myVal;
                 },
                 Kokkos::Max<T>(local)
             );
