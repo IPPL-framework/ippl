@@ -52,7 +52,7 @@ namespace ippl {
      * @return The desired norm of the field
      */
     template<typename T, unsigned Dim, class M, class C>
-    T norm(Field<T, Dim, M, C> field, int p = 2) {
+    T norm(const Field<T, Dim, M, C>& field, int p = 2) {
         T local = 0;
         const int shift = field.getNghost();
         auto view = field.getView();
