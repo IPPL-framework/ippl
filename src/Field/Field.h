@@ -1,3 +1,20 @@
+//
+// Class Field
+//   BareField with a mesh and configurable boundary conditions
+//
+// Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #ifndef IPPL_FIELD_H
 #define IPPL_FIELD_H
 
@@ -14,7 +31,7 @@ namespace ippl {
     {
     public:
         typedef T type;
-        const unsigned dimension = Dim;
+        static constexpr unsigned dimension = Dim;
 
         using Mesh_t      = M;
         using Centering_t = C;
@@ -64,6 +81,7 @@ namespace ippl {
 }
 
 #include "Field/Field.hpp"
+#include "Field/FieldOperations.hpp"
 
 #endif
 
