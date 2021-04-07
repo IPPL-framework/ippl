@@ -53,7 +53,8 @@ public:
     const vector_type& getMeshSpacing() const;
 
     T getCellVolume() const;
-
+    
+    void updateCellVolume_m();
 
     // (x,y,z) coordinates of indexed vertex:
     vector_type getVertexPosition(const NDIndex<Dim>& ndi) const {
