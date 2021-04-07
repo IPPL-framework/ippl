@@ -33,6 +33,8 @@ public:
 
     UniformCartesian();
 
+    UniformCartesian(const NDIndex<Dim>& ndi);
+
     UniformCartesian(const NDIndex<Dim>& ndi,
                      const vector_type& hx,
                      const vector_type& origin);
