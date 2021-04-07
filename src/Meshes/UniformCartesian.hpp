@@ -53,6 +53,12 @@ namespace ippl {
 
         this->setOrigin(origin);
     }
+    
+    template<typename T, unsigned Dim>
+    void UniformCartesian<T, Dim>::setMeshSpacing(const vector_type& meshSpacing) {
+        meshSpacing_m = meshSpacing;
+        this->updateCellVolume_m();
+    }
 
 
     template<typename T, unsigned Dim>
