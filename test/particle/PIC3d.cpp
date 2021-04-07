@@ -206,9 +206,9 @@ public:
                               KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k){
 
                                 //local to global index conversion
-                                const size_t ig = i + lDom[0].first() + nghost;
-                                const size_t jg = j + lDom[1].first() + nghost;
-                                const size_t kg = k + lDom[2].first() + nghost;
+                                const size_t ig = i + lDom[0].first() - nghost;
+                                const size_t jg = j + lDom[1].first() - nghost;
+                                const size_t kg = k + lDom[2].first() - nghost;
                                 
                                 view(i, j, k)[0] = -scale_fact*2.0*pi*phi0 * 
                                                     cos(2.0*pi*(ig+0.5)*hr[0]) *
@@ -225,8 +225,8 @@ public:
                               KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k){
                                 
                                 //local to global index conversion
-                                const size_t ig = i + lDom[0].first() + nghost;
-                                const size_t jg = j + lDom[1].first() + nghost;
+                                const size_t ig = i + lDom[0].first() - nghost;
+                                const size_t jg = j + lDom[1].first() - nghost;
 
                                 view(i, j, k)[1] = scale_fact*4.0*pi*phi0 * 
                                                    sin(2.0*pi*(ig+0.5)*hr[0]) * 
@@ -242,8 +242,8 @@ public:
                               KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k){
                                 
                                 //local to global index conversion
-                                const size_t ig = i + lDom[0].first() + nghost;
-                                const size_t jg = j + lDom[1].first() + nghost;
+                                const size_t ig = i + lDom[0].first() - nghost;
+                                const size_t jg = j + lDom[1].first() - nghost;
 
                                 view(i, j, k)[2] = scale_fact*4.0*pi*phi0 * 
                                                    sin(2.0*pi*(ig+0.5)*hr[0]) * 

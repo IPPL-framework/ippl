@@ -71,12 +71,12 @@ int main(int argc, char *argv[]) {
                                         const int k)
     {
         //local to global index conversion
-        const size_t ig = i + lDom[0].first() + nghost;
-        //const size_t jg = j + lDom[1].first() + nghost;
-        //const size_t kg = k + lDom[2].first() + nghost;
-        double x = (ig + 0.5) * hx[0];
-        //double y = (jg + 0.5) * hx[1];
-        //double z = (kg + 0.5) * hx[2];
+        const size_t ig = i + lDom[0].first() - nghost;
+        //const size_t jg = j + lDom[1].first() - nghost;
+        //const size_t kg = k + lDom[2].first() - nghost;
+        double x = origin[0] + (ig + 0.5) * hx[0];
+        //double y = origin[1] + (jg + 0.5) * hx[1];
+        //double z = origin[2] + (kg + 0.5) * hx[2];
 
         //view(i, j, k) = 3.0*pow(x,1) + 4.0*pow(y,1) + 5.0*pow(z,1);
         //view(i, j, k) = sin(pi * x) * cos(pi * y) * exp(z);
