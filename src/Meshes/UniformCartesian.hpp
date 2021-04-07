@@ -28,6 +28,18 @@ namespace ippl {
         , volume_m(0.0)
     { }
 
+    template <typename T, unsigned Dim>
+    UniformCartesian<T, Dim>::UniformCartesian(const NDIndex<Dim>& ndi)
+    {
+        volume_m = 1.0;
+        for (unsigned d = 0; d < Dim; ++d) {
+            this->gridSizes_m[d] = ndi[d].length();
+            meshSpacing_m[d]     = ndi[d].stride();
+            this->origin_m(d)    = ndi[d].first();
+            volume_m *= meshSpacing_m[d];
+        }
+    }
+
 
     template<typename T, unsigned Dim>
     UniformCartesian<T, Dim>::UniformCartesian(const NDIndex<Dim>& ndi,
