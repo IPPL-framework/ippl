@@ -80,4 +80,14 @@ namespace ippl {
     T UniformCartesian<T, Dim>::getCellVolume() const {
         return volume_m;
     }
+    
+    template<typename T, unsigned Dim>
+    void UniformCartesian<T, Dim>::updateCellVolume_m() {
+        // update cell volume
+        volume_m = 1.0;
+        for (unsigned i = 0; i < Dim; ++i) {
+            volume_m *= meshSpacing_m[i];
+        }
+    }
+
 }
