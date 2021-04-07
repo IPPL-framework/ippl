@@ -119,7 +119,7 @@ namespace ippl {
         *default Kokkos views can be layout left or right depending on whether
         *the device is gpu or cpu.
        */
-       Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight>
+       Kokkos::View<heffteComplex_t***,Kokkos::LayoutLeft>
            tempField("tempField", fview.extent(0) - 2*nghost,
                                   fview.extent(1) - 2*nghost,
                                   fview.extent(2) - 2*nghost);
@@ -289,12 +289,12 @@ namespace ippl {
         *whereas default Kokkos views can be layout left or right
         *depending on whether the device is gpu or cpu.
        */
-       Kokkos::View<T***,Kokkos::LayoutRight>
+       Kokkos::View<T***,Kokkos::LayoutLeft>
            tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
                                     fview.extent(1) - 2*nghostf,
                                     fview.extent(2) - 2*nghostf);
 
-       Kokkos::View<heffteComplex_t***,Kokkos::LayoutRight>
+       Kokkos::View<heffteComplex_t***,Kokkos::LayoutLeft>
            tempFieldg("tempFieldg", gview.extent(0) - 2*nghostg,
                                     gview.extent(1) - 2*nghostg,
                                     gview.extent(2) - 2*nghostg);
