@@ -115,9 +115,10 @@ namespace ippl {
 
        /**
         *This copy to a temporary Kokkos view is needed because heffte accepts
-        *input and output data in layout right (usual C++) format, whereas
+        *input and output data in layout left by default, whereas
         *default Kokkos views can be layout left or right depending on whether
-        *the device is gpu or cpu.
+        *the device is gpu or cpu. Also the data types which heFFTe accepts are
+        * different from Kokkos.
        */
        Kokkos::View<heffteComplex_t***,Kokkos::LayoutLeft>
            tempField("tempField", fview.extent(0) - 2*nghost,
@@ -284,10 +285,11 @@ namespace ippl {
        const int nghostg = g.getNghost();
 
        /**
-        *This copy to a temporary Kokkos view is needed because heffte
-        *accepts input and output data in layout right (usual C++) format,
-        *whereas default Kokkos views can be layout left or right
-        *depending on whether the device is gpu or cpu.
+        *This copy to a temporary Kokkos view is needed because heffte accepts
+        *input and output data in layout left by default, whereas
+        *default Kokkos views can be layout left or right depending on whether
+        *the device is gpu or cpu. Also the data types which heFFTe accepts are
+        * different from Kokkos.
        */
        Kokkos::View<T***,Kokkos::LayoutLeft>
            tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
