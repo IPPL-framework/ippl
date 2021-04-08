@@ -31,7 +31,7 @@ namespace ippl {
           - Repartition the field FL
           - Update P using the field FL
         */
-        bool BinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,M> >& P); 
+        bool BinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,M> >& P, FieldLayout<Dim>& FL, UniformCartesian<T,Dim> mesh); 
 
 
         /*!
@@ -65,7 +65,7 @@ namespace ippl {
           Performs reduction on field BF in all dimension except that determined by cutAxis,
           store result in res.  
         */
-        void PerformReduction(Field<T,Dim>& BF, std::vector<T>& res, NDIndex<Dim>& dom, unsigned int cutAxis); 
+        void PerformReduction(Field<T,Dim>& BF, std::vector<T>& res, unsigned int cutAxis); 
 
 
         /*!
@@ -88,7 +88,9 @@ namespace ippl {
         void CutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median);
 
 private:
-        std::vector<MPI_Comm> comms_m = {Ippl::getComm()};
+        // std::vector<MPI_Comm> comms_m = {Ippl::getComm()};
+        MPI_Comm comm_m = Ippl::getComm(); // MPI_COMM_WORLD
+        int color_m = 0;
     }; // class
 
 } // namespace

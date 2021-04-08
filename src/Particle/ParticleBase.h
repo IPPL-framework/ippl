@@ -159,8 +159,11 @@ namespace ippl {
          * @returns particle layout
          */
         const Layout_t& getLayout() const { return *layout_m; }
-
-
+ 
+        // ML
+        // void setFieldLayout(const FL& fl) { layout_m.setFieldLayout(fl); }
+       
+           
         /*!
          * Set all boundary conditions
          * @param bc the boundary conditions
@@ -247,7 +250,7 @@ namespace ippl {
          * This function calls the underlying particle layout
          * routine.
          */
-//         template <class BufferType>
+        // template <class BufferType>
         void update();
 
 

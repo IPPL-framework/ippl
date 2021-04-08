@@ -74,7 +74,7 @@ namespace ippl {
 
         // Return the domain.
         const NDIndex<Dim>& getDomain() const { return gDomain_m; }
-
+ 
         // Compare FieldLayouts to see if they represent the same domain; if
         // dimensionalities are different, the NDIndex operator==() will return
         // false:
@@ -120,6 +120,9 @@ namespace ippl {
         void findNeighbors(int nghost = 1);
 
         void write(std::ostream& = std::cout) const;
+        
+        // ML 
+        // void updateLayout(const std::vector<NDIndex_t>& domains); 
 
     private:
         /*!

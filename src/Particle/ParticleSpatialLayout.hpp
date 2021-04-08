@@ -34,14 +34,14 @@ namespace ippl {
     ParticleSpatialLayout<T, Dim, Mesh>::ParticleSpatialLayout(
         FieldLayout<Dim>& fl,
         Mesh& mesh)
-    : rlayout_m(fl, mesh), flayout_m(fl), mesh_m(mesh)
+    : rlayout_m(fl, mesh)
     { }
     
     /*
     template <typename T, unsigned Dim, class Mesh>
     ParticleSpatialLayout<T, Dim, Mesh>::ParticleSpatialLayout(
         FieldLayout<Dim>& fl,
-        Mesh_t& mesh)
+        Mesh& mesh)
     : rlayout_m(fl, mesh), flayout_m(fl), mesh_m(mesh)
     { }
     */    

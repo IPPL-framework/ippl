@@ -233,7 +233,7 @@ namespace ippl {
         }
     }
 
-
+ 
     template <class PLayout, class... Properties>
 //     template <class BufferType>
     void ParticleBase<PLayout, Properties...>::update()
@@ -241,6 +241,16 @@ namespace ippl {
         PAssert(layout_m != nullptr);
 //         layout_m->update<BufferType>(*this);
     }
+
+
+    // ML
+/*    template <class PLayout, class... Properties>
+    void ParticleBase<PLayout, Properties...>::update()
+    {
+        PAssert(layout_m != nullptr);
+        layout_m->update(*this);
+    }
+*/
 
 
     template <class PLayout, class... Properties>

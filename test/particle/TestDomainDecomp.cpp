@@ -104,10 +104,12 @@ public:
     
     ORB orb; 
     
-    void nUpdate() {
-        bool repartition = orb.BinaryRepartition(*this);
+    void balance(FieldLayout_t& fl, Mesh_t& mesh) {
+        bool repartition = orb.BinaryRepartition(*this, fl, mesh);
         if (repartition != true)
            std::cout << "Could not repartition!" << std::endl;
+        else
+           std::cout << "ORB finished" << std::endl;
     }
 
     void gatherStatistics(unsigned int totalP, int iteration) {
@@ -343,7 +345,11 @@ int main(int argc, char *argv[]){
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp);
     PLayout_t PL(FL, mesh);
-   
+    
+    /**PRINT**/
+    msg << "FIELD LAYOUT (INITIAL)" << endl;
+    msg << FL << endl;   
+ 
     double Q=1.0;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
@@ -394,19 +400,22 @@ int main(int argc, char *argv[]){
     P->update();
     IpplTimings::stopTimer(UpdateTimer);                                                    
     
-    msg << "particles created and initial conditions assigned " << endl;
+    // msg << "particles created and initial conditions assigned " << endl;
     P->EFD_m.initialize(mesh, FL);
     P->EFDMag_m.initialize(mesh, FL);
     
-    msg << "scatter test" << endl;
+    // msg << "scatter test" << endl;
     P->scatterCIC(totalP, 0);
     
     P->initFields();
-    msg << "P->initField() done " << endl;
+    // msg << "P->initField() done " << endl;
     
     msg << "Testing BinaryBalancer" << endl;
-    P->nUpdate();
+    P->balance(FL, mesh);
  
+    /**PRINT**/
+    // msg << "FIELD LAYOUT (POST ORB)" << endl;
+    // msg << P->getLayout().getFieldLayout() << endl;   
  
     return 0;
 }

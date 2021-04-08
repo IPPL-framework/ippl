@@ -56,7 +56,6 @@ namespace ippl {
     public:
         // constructor: this one also takes a Mesh
         ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&);
-        // ParticleSpatialLayout(FieldLayout<Dim>&, Mesh_t&);
 
         ParticleSpatialLayout() : detail::ParticleLayout<T, Dim>() { }
 
@@ -67,19 +66,22 @@ namespace ippl {
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
         
-        // KOKKOS_INLINE_FUNCTION     
-        FieldLayout<Dim>& getFieldLayout() { return flayout_m; }        
+        // ML
+        // void setFieldLayout(const FieldLayout<Dim>& fl) { flayout_m = fl; }
 
-        // KOKKOS_INLINE_FUNCTION
-        Mesh_t& getMesh() { return mesh_m; }
+        // ML      
+        // FieldLayout<Dim>& getFieldLayout() { return flayout_m; }        
+
+        // ML
+        // Mesh_t& getMesh() { return mesh_m; }
   
     protected:
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
          
         // TEMPORARY
-        FieldLayout<Dim> flayout_m;
-        Mesh_t mesh_m;        
+        // FieldLayout<Dim> flayout_m;
+        // Mesh_t mesh_m;        
 
     public:
         void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
