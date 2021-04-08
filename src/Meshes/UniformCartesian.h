@@ -43,7 +43,9 @@ public:
     void initialize(const NDIndex<Dim>& ndi,
                     const vector_type& hx,
                     const vector_type& origin);
-
+                    
+    // Set the spacings of mesh vertex positions (recompute Dvc, cell volume):
+    void setMeshSpacing(const vector_type& meshSpacing);
 
     // Get the spacings of mesh vertex positions along specified direction
     T getMeshSpacing(unsigned dim) const;
@@ -51,7 +53,8 @@ public:
     const vector_type& getMeshSpacing() const;
 
     T getCellVolume() const;
-
+    
+    void updateCellVolume_m();
 
     // (x,y,z) coordinates of indexed vertex:
     vector_type getVertexPosition(const NDIndex<Dim>& ndi) const {
