@@ -23,6 +23,8 @@ namespace ippl {
         
         /*!
           @param ParticleBase<ParticleSpatialLayout<T,Dim,Mesh>>& P
+          @param FieldLayout<Dim>& FL
+          @param UniformCartesian<T,Dim>& mesh
   
           Performs scatter operation of particles into nodes.
           - Define a field layout FL (copy of one in P)
@@ -31,7 +33,7 @@ namespace ippl {
           - Repartition the field FL
           - Update P using the field FL
         */
-        bool BinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,M> >& P, FieldLayout<Dim>& FL, UniformCartesian<T,Dim> mesh); 
+        bool BinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,M> >& P, FieldLayout<Dim>& FL, UniformCartesian<T,Dim>& mesh); 
 
 
         /*!
@@ -65,7 +67,7 @@ namespace ippl {
           Performs reduction on field BF in all dimension except that determined by cutAxis,
           store result in res.  
         */
-        void PerformReduction(Field<T,Dim>& BF, std::vector<T>& res, unsigned int cutAxis); 
+        void PerformReduction(Field<T,Dim>& BF, std::vector<T>& res, unsigned int cutAxis, NDIndex<Dim>& dom); 
 
 
         /*!

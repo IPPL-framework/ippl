@@ -370,10 +370,11 @@ int main(int argc, char *argv[]){
         eng[i].seed(42 + i * Dim);
         eng[i].discard( nloc * Ippl::Comm->rank());
     }
+
     std::uniform_real_distribution<double> unif(rmin[0], rmax[0]);
 
     typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
-
+   
     double sum_coord=0.0;
     for (unsigned long int i = 0; i < nloc; i++) {
         for (int d = 0; d<3; d++) {
