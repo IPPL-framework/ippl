@@ -7,9 +7,8 @@
 //   floating-point precision type of the Field (float or double).
 //   Currently, we use heffte for taking the transforms and the class FFT
 //   serves as an interface between IPPL and heffte. In making this interface,
-//   we have utilized ideas from Cabana library
-//   https://github.com/ECP-copa/Cabana especially for the temporary
-//   field with layout right for passing into heffte.
+//   we have referred Cabana library.
+//   https://github.com/ECP-copa/Cabana.
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -268,8 +267,6 @@ namespace ippl {
                                   const FFTParams& params)
     {
 
-         //heffte::box3d inbox = {lowInput, highInput, backend_m.order};
-         //heffte::box3d outbox = {lowOutput, highOutput, backend_m.order};
          heffte::box3d inbox = {lowInput, highInput};
          heffte::box3d outbox = {lowOutput, highOutput};
 
@@ -363,13 +360,9 @@ namespace ippl {
            
            //static IpplTimings::TimerRef ForwardTimer = IpplTimings::getTimer("ForwardFFT");           
            //IpplTimings::startTimer(ForwardTimer);                                               
-           //heffte_m->forward( tempFieldf.data(), tempFieldg.data(),
-           //                   heffte::scale::full );
            heffte_m->forward( tempFieldf.data(), tempFieldg.data(), workspace_m.data(),
                               heffte::scale::full );
            //IpplTimings::stopTimer(ForwardTimer);                                               
-           //heffte_m->forward( fview.data(), gview.data(), workspace_m.data(),
-           //                   heffte::scale::full );
        }
        else if ( direction == -1 )
        {
@@ -378,8 +371,6 @@ namespace ippl {
            heffte_m->backward( tempFieldg.data(), tempFieldf.data(), workspace_m.data(),
                                heffte::scale::none );
            //IpplTimings::stopTimer(InverseTimer);                                               
-           //heffte_m->backward( gview.data(), fview.data(), workspace_m.data(),
-           //                    heffte::scale::none );
        }
        else
        {

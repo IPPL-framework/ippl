@@ -7,9 +7,8 @@
 //   floating-point precision type of the Field (float or double).
 //   Currently, we use heffte for taking the transforms and the class FFT
 //   serves as an interface between IPPL and heffte. In making this interface,
-//   we have utilized ideas from Cabana library
-//   https://github.com/ECP-copa/Cabana especially for the temporary
-//   field with layout right for passing into heffte.
+//   we have referred Cabana library
+//   https://github.com/ECP-copa/Cabana.
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -76,13 +75,11 @@ namespace ippl {
         struct HeffteBackendType<float> {
             using backend = heffte::backend::fftw;
             using complexType = std::complex<float>;
-            std::array<int, 3> order = {2, 1, 0};
         };
         template <>
         struct HeffteBackendType<double> {
             using backend = heffte::backend::fftw;
             using complexType = std::complex<double>;
-            std::array<int, 3> order = {2, 1, 0};
         };
 #endif
 #ifdef Heffte_ENABLE_MKL
@@ -90,13 +87,11 @@ namespace ippl {
         struct HeffteBackendType<float> {
             using backend = heffte::backend::mkl;
             using complexType = std::complex<float>;
-            std::array<int, 3> order = {2, 1, 0};
         };
         template <>
         struct HeffteBackendType<float> {
             using backend = heffte::backend::mkl;
             using complexType = std::complex<double>;
-            std::array<int, 3> order = {2, 1, 0};
         };
 #endif
 #ifdef Heffte_ENABLE_CUDA
@@ -105,13 +100,11 @@ namespace ippl {
         struct HeffteBackendType<double> {
             using backend = heffte::backend::cufft;
             using complexType = cufftDoubleComplex;
-            std::array<int, 3> order = {0, 1, 2};
         };
         template <>
         struct HeffteBackendType<float> {
             using backend = heffte::backend::cufft;
             using complexType = cufftComplex;
-            std::array<int, 3> order = {0, 1, 2};
         };
 #endif
 #endif
@@ -213,7 +206,6 @@ namespace ippl {
                    const std::array<int, Dim>& highOutput,
                    const FFTParams& params);
 
-        detail::HeffteBackendType<T> backend_m;
 
         std::shared_ptr<heffte::fft3d_r2c<heffteBackend>> heffte_m;
         workspace_t workspace_m;
