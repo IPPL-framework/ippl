@@ -28,6 +28,7 @@
 //
 #include "Ippl.h"
 #include "Communicate/DataTypes.h"
+#include "Utility/IpplTimings.h"
 
 namespace ippl {
 
@@ -128,6 +129,8 @@ namespace ippl {
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
     const
     {
+        static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("Scatter");           
+        IpplTimings::startTimer(scatterTimer);                                               
         typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
@@ -171,8 +174,12 @@ namespace ippl {
                 Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
             }
         );
+        IpplTimings::stopTimer(scatterTimer);                                               
             
+        static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("AccumulateHalo");           
+        IpplTimings::startTimer(accumulateHaloTimer);                                               
         f.accumulateHalo();
+        IpplTimings::stopTimer(accumulateHaloTimer);                                               
     }
 
 
@@ -182,8 +189,13 @@ namespace ippl {
                                                   const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
 
+        static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("FillHalo");           
+        IpplTimings::startTimer(fillHaloTimer);                                               
         f.fillHalo();
+        IpplTimings::stopTimer(fillHaloTimer);                                               
 
+        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("Gather");           
+        IpplTimings::startTimer(gatherTimer);                                               
         const typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
@@ -226,6 +238,7 @@ namespace ippl {
                     + whi[0] * whi[1] * whi[2] * view(i,   j,   k  );
             }
         );
+        IpplTimings::stopTimer(gatherTimer);                                               
     }
 
 

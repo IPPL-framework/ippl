@@ -137,7 +137,7 @@ namespace ippl {
 
         using heffteBackend = typename detail::HeffteBackendType<T>::backend;
         using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
-
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<heffteComplex_t>;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
@@ -163,6 +163,8 @@ namespace ippl {
                    const FFTParams& params);
 
         std::shared_ptr<heffte::fft3d<heffteBackend>> heffte_m;
+        workspace_t workspace_m;
+
     };
 
 
@@ -175,14 +177,15 @@ namespace ippl {
     public:
 
         typedef FieldLayout<Dim> Layout_t;
-        typedef Kokkos::complex<T> Complex_t;
         typedef Field<T,Dim> RealField_t;
-        typedef Field<Complex_t,Dim> ComplexField_t;
 
         using heffteBackend = typename detail::HeffteBackendType<T>::backend;
         using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
+        using workspace_t = typename heffte::fft3d_r2c<heffteBackend>::template buffer_container<heffteComplex_t>;
 
-        //typedef Field<heffteComplex_t,Dim> ComplexField_t;
+        typedef Kokkos::complex<T> Complex_t;
+        //typedef heffteComplex_t Complex_t;
+        typedef Field<Complex_t,Dim> ComplexField_t;
 
         /** Create a new FFT object with the layout for the input and output Fields
          * and parameters for heffte.
@@ -210,9 +213,10 @@ namespace ippl {
                    const std::array<int, Dim>& highOutput,
                    const FFTParams& params);
 
-        detail::HeffteBackendType<T> backend;
+        detail::HeffteBackendType<T> backend_m;
 
         std::shared_ptr<heffte::fft3d_r2c<heffteBackend>> heffte_m;
+        workspace_t workspace_m;
 
     };
 
