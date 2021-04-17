@@ -23,6 +23,7 @@
 #include <vector>
 #include <iostream>
 #include <set>
+#include <chrono>
 
 #include <random>
 #include "Utility/IpplTimings.h"
@@ -166,6 +167,8 @@ public:
 
     double time_m;
 
+    double rhoNorm_m;
+
 
 public:
     ParticleAttrib<double>     q; // charge
@@ -212,6 +215,7 @@ public:
     }
 
     void update() {
+        
         PLayout& layout = this->getLayout();
         layout.update(*this);
     }
@@ -226,26 +230,30 @@ public:
     
     void gatherCIC() {
 
-        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather"); 
-        IpplTimings::startTimer(gatherTimer);                                                    
+        //static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather"); 
+        //IpplTimings::startTimer(gatherTimer);                                                    
         gather(this->E, E_m, this->R);
-        IpplTimings::stopTimer(gatherTimer);
+        //IpplTimings::stopTimer(gatherTimer);
 
     }
 
     void scatterCIC(unsigned int totalP, int iteration, Vector_t& hrField) {
          
-         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
-         IpplTimings::startTimer(scatterTimer);                                                    
+         
          Inform m("scatter ");
+         
+         //m << "Total particles = " << Total_particles << endl;
+        
+        //static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
+         //IpplTimings::startTimer(scatterTimer);                                                    
          rho_m = 0.0;
          scatter(q, rho_m, this->R);
-         IpplTimings::stopTimer(scatterTimer);                                                    
+         //IpplTimings::stopTimer(scatterTimer);                                                    
          
-         static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("CheckCharge");           
+         static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check");           
          IpplTimings::startTimer(sumTimer);                                                    
          double Q_grid = rho_m.sum();
-         
+        
          unsigned int Total_particles = 0;
          unsigned int local_particles = this->getLocalNum();
 
@@ -262,13 +270,34 @@ public:
                  exit(1);
              }
          }
-         
+
+
          m << "Rel. error in charge conservation = " << std::fabs((Q_m-Q_grid)/Q_m) << endl;
-         IpplTimings::stopTimer(sumTimer);
 
          rho_m = rho_m / (hrField[0] * hrField[1] * hrField[2]);
 
-         dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
+         const int nghostRho = rho_m.getNghost();
+         auto Rhoview = rho_m.getView();
+         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+         double temp = 0.0;                                                                                        
+         Kokkos::parallel_reduce("Rho reduce",                                                                       
+                                mdrange_type({nghostRho, nghostRho, nghostRho},                 
+                                             {Rhoview.extent(0) - nghostRho,            
+                                              Rhoview.extent(1) - nghostRho,            
+                                              Rhoview.extent(2) - nghostRho}),          
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,                           
+                                              const size_t k, double& valL) 
+                                {                                
+                                    double myVal = pow(Rhoview(i, j, k), 2);                                              
+                                    valL += myVal;                                                                      
+                                }, Kokkos::Sum<double>(temp));                                                     
+         double globaltemp = 0.0;                                                                                  
+         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());                                 
+         rhoNorm_m = sqrt(globaltemp);
+         IpplTimings::stopTimer(sumTimer);
+         
+         //dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
 
          //rho = rho_e - rho_i
          rho_m = rho_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
@@ -290,9 +319,9 @@ public:
         
         ippl::FFTParams fftParams;
 
-        fftParams.setAllToAll( true );
+        fftParams.setAllToAll( false );
         fftParams.setPencils( true );
-        fftParams.setReorder( true );
+        fftParams.setReorder( false );
         fftParams.setRCDirection( 0 );
 
         solver_mp = std::make_shared<Solver_t>(fftParams);
@@ -349,25 +378,6 @@ public:
             normE[d] = sqrt(globaltemp);
         }
 
-        const int nghostRho = rho_m.getNghost();
-        auto Rhoview = rho_m.getView();
-        double normRho;
-
-        double temp = 0.0;                                                                                        
-        Kokkos::parallel_reduce("Vector Rho reduce",                                                                       
-                                mdrange_type({nghostRho, nghostRho, nghostRho},                 
-                                             {Rhoview.extent(0) - nghostRho,            
-                                              Rhoview.extent(1) - nghostRho,            
-                                              Rhoview.extent(2) - nghostRho}),          
-                                KOKKOS_LAMBDA(const size_t i, const size_t j,                           
-                                              const size_t k, double& valL) 
-                                {                                
-                                    double myVal = pow(Rhoview(i, j, k), 2);                                              
-                                    valL += myVal;                                                                      
-                                }, Kokkos::Sum<double>(temp));                                                     
-        double globaltemp = 0.0;                                                                                  
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());                                 
-        normRho = sqrt(globaltemp);
 
 
         if(Ippl::Comm->rank() == 0) {
@@ -387,7 +397,7 @@ public:
 
             csvout << time_m << " "
                    << gEnergy << " "
-                   << normRho << " "
+                   << rhoNorm_m << " "
                    << normE[0] << " "
                    << normE[1] << " "
                    << normE[2] << std::endl;
@@ -409,10 +419,12 @@ private:
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
-    Inform msg(argv[0]);
+    //Inform msg(argv[0]);
+    Inform msg("PenningTrap");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
 
+    auto start = std::chrono::high_resolution_clock::now();
     ippl::Vector<int,Dim> nr = {
         std::atoi(argv[1]),
         std::atoi(argv[2]),
@@ -421,7 +433,7 @@ int main(int argc, char *argv[]){
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");           
     IpplTimings::startTimer(mainTimer);                                                    
-    const unsigned int totalP = std::atoi(argv[4]);
+    const unsigned long long int totalP = std::atoi(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
     
     msg << "Penning Trap "
@@ -467,12 +479,18 @@ int main(int argc, char *argv[]){
 
 
     P->nr_m = nr;
-    unsigned long int nloc = totalP / Ippl::Comm->size();
+    unsigned long long int nloc = totalP / Ippl::Comm->size();
 
     int rest = (int) (totalP - nloc * Ippl::Comm->size());
     
-    if ( Ippl::Comm->rank() < rest )
-        ++nloc;
+    //if ( Ippl::Comm->rank() < rest )
+    //    ++nloc;
+
+    if ( rest > 0 ) {
+        msg << "Total particles are not an exact multiple of ranks" << endl;
+        exit(1);
+    }
+
 
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
     IpplTimings::startTimer(particleCreation);                                                    
@@ -506,7 +524,7 @@ int main(int argc, char *argv[]){
     typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
 
     double sum_coord=0.0;
-    for (unsigned long int i = 0; i< nloc; i++) {
+    for (unsigned long long int i = 0; i< nloc; i++) {
         for (unsigned istate = 0; istate < 2*Dim; ++istate) {
             double u1 = dist_uniform(eng[istate*2]);
             double u2 = dist_uniform(eng[istate*2+1]);
@@ -546,10 +564,10 @@ int main(int argc, char *argv[]){
     P->E_m.initialize(meshField, FL);
     P->rho_m.initialize(meshField, FL);
 
-    static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("Update");           
-    IpplTimings::startTimer(UpdateTimer);                                               
+    //static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("Update");           
+    //IpplTimings::startTimer(UpdateTimer);                                               
     P->update();
-    IpplTimings::stopTimer(UpdateTimer);                                                    
+    //IpplTimings::stopTimer(UpdateTimer);                                                    
 
     msg << "particles created and initial conditions assigned " << endl;
 
@@ -610,9 +628,9 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(RTimer);                                                    
 
         //Since the particles have moved spatially update them to correct processors 
-        IpplTimings::startTimer(UpdateTimer);
+        //IpplTimings::startTimer(UpdateTimer);
         P->update();
-        IpplTimings::stopTimer(UpdateTimer);                                                    
+        //IpplTimings::stopTimer(UpdateTimer);                                                    
         
         //scatter the charge onto the underlying grid
         P->scatterCIC(totalP, it+1, hrField);
@@ -655,6 +673,10 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(mainTimer);                                                    
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> time_chrono = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
 
     return 0;
 }

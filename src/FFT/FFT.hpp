@@ -32,6 +32,7 @@
 #include "FFT/FFT.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Field/BareField.h"
+#include "Utility/IpplTimings.h"
 
 
 namespace ippl {
@@ -100,6 +101,9 @@ namespace ippl {
          heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>
                     (inbox, outbox, Ippl::getComm(), heffteOptions);
 
+         //heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+         workspace_m = workspace_t(heffte_m->size_workspace());
+
     }
 
 
@@ -114,11 +118,14 @@ namespace ippl {
        const int nghost = f.getNghost();
 
        /**
-        *This copy to a temporary Kokkos view is needed because heffte accepts
-        *input and output data in layout left by default, whereas
-        *default Kokkos views can be layout left or right depending on whether
-        *the device is gpu or cpu. Also the data types which heFFTe accepts are
-        * different from Kokkos.
+        *This copy to a temporary Kokkos view is needed because of following
+        *reasons:
+        *1) heffte wants the input and output fields without ghost layers
+        *2) heffte's data types are different than Kokkos::complex
+        *3) heffte accepts data in layout left (by default) eventhough this
+        *can be changed during heffte box creation
+        *Points 2 and 3 are slightly less of a concern and the main one is 
+        *point 1.
        */
        Kokkos::View<heffteComplex_t***,Kokkos::LayoutLeft>
            tempField("tempField", fview.extent(0) - 2*nghost,
@@ -149,14 +156,18 @@ namespace ippl {
                                       fview(i, j, k).imag());
 #endif
                             });
+
+
+
+
        if ( direction == 1 )
        {
-           heffte_m->forward(tempField.data(), tempField.data(),
-                             heffte::scale::none);
+           heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
+                             heffte::scale::full);
        }
        else if ( direction == -1 )
        {
-           heffte_m->backward(tempField.data(), tempField.data(),
+           heffte_m->backward(tempField.data(), tempField.data(), workspace_m.data(),
                               heffte::scale::none);
        }
        else
@@ -240,25 +251,6 @@ namespace ippl {
                             lDomOutput[d].first() - 1);
         }
 
-        //lowInput[0] = static_cast<int>(lDomInput[2].first());
-        //highInput[0] = static_cast<int>(lDomInput[2].length() +
-        //                   lDomInput[2].first() - 1);
-        //lowInput[1] = static_cast<int>(lDomInput[1].first());
-        //highInput[1] = static_cast<int>(lDomInput[1].length() +
-        //                   lDomInput[1].first() - 1);
-        //lowInput[2] = static_cast<int>(lDomInput[0].first());
-        //highInput[2] = static_cast<int>(lDomInput[0].length() +
-        //                   lDomInput[0].first() - 1);
-
-        //lowOutput[0] = static_cast<int>(lDomOutput[2].first());
-        //highOutput[0] = static_cast<int>(lDomOutput[2].length() +
-        //                   lDomOutput[2].first() - 1);
-        //lowOutput[1] = static_cast<int>(lDomOutput[1].first());
-        //highOutput[1] = static_cast<int>(lDomOutput[1].length() +
-        //                   lDomOutput[1].first() - 1);
-        //lowOutput[2] = static_cast<int>(lDomOutput[0].first());
-        //highOutput[2] = static_cast<int>(lDomOutput[0].length() +
-        //                   lDomOutput[0].first() - 1);
         setup(lowInput, highInput, lowOutput, highOutput, params);
     }
 
@@ -275,8 +267,8 @@ namespace ippl {
                                   const FFTParams& params)
     {
 
-         //heffte::box3d inbox = {lowInput, highInput, backend.order};
-         //heffte::box3d outbox = {lowOutput, highOutput, backend.order};
+         //heffte::box3d inbox = {lowInput, highInput, backend_m.order};
+         //heffte::box3d outbox = {lowOutput, highOutput, backend_m.order};
          heffte::box3d inbox = {lowInput, highInput};
          heffte::box3d outbox = {lowOutput, highOutput};
 
@@ -289,6 +281,9 @@ namespace ippl {
          heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>
                     (inbox, outbox, params.getRCDirection(), Ippl::getComm(),
                      heffteOptions);
+        
+         //heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+         workspace_m = workspace_t(heffte_m->size_workspace());
 
     }
 
@@ -305,11 +300,14 @@ namespace ippl {
        const int nghostg = g.getNghost();
 
        /**
-        *This copy to a temporary Kokkos view is needed because heffte accepts
-        *input and output data in layout left by default, whereas
-        *default Kokkos views can be layout left or right depending on whether
-        *the device is gpu or cpu. Also the data types which heFFTe accepts are
-        * different from Kokkos.
+        *This copy to a temporary Kokkos view is needed because of following
+        *reasons:
+        *1) heffte wants the input and output fields without ghost layers
+        *2) heffte's data types are different than Kokkos::complex
+        *3) heffte accepts data in layout left (by default) eventhough this
+        *can be changed during heffte box creation
+        *Points 2 and 3 are slightly less of a concern and the main one is 
+        *point 1.
        */
        Kokkos::View<T***, Kokkos::LayoutLeft>
            tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
@@ -358,18 +356,28 @@ namespace ippl {
 #endif
                             });
 
+      
        if ( direction == 1 )
        {
-           heffte_m->forward( tempFieldf.data(), tempFieldg.data(),
+           
+           //static IpplTimings::TimerRef ForwardTimer = IpplTimings::getTimer("ForwardFFT");           
+           //IpplTimings::startTimer(ForwardTimer);                                               
+           //heffte_m->forward( tempFieldf.data(), tempFieldg.data(),
+           //                   heffte::scale::full );
+           heffte_m->forward( tempFieldf.data(), tempFieldg.data(), workspace_m.data(),
                               heffte::scale::full );
-           //heffte_m->forward( fview.data(), gview.data(),
+           //IpplTimings::stopTimer(ForwardTimer);                                               
+           //heffte_m->forward( fview.data(), gview.data(), workspace_m.data(),
            //                   heffte::scale::full );
        }
        else if ( direction == -1 )
        {
-           heffte_m->backward( tempFieldg.data(), tempFieldf.data(),
+           //static IpplTimings::TimerRef InverseTimer = IpplTimings::getTimer("InverseFFT");           
+           //IpplTimings::startTimer(InverseTimer);                                               
+           heffte_m->backward( tempFieldg.data(), tempFieldf.data(), workspace_m.data(),
                                heffte::scale::none );
-           //heffte_m->backward( gview.data(), fview.data(),
+           //IpplTimings::stopTimer(InverseTimer);                                               
+           //heffte_m->backward( gview.data(), fview.data(), workspace_m.data(),
            //                    heffte::scale::none );
        }
        else

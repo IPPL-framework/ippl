@@ -27,6 +27,7 @@
 #include <vector>
 #include <numeric>
 #include <memory>
+#include "Utility/IpplTimings.h"
 
 namespace ippl {
 
@@ -43,8 +44,13 @@ namespace ippl {
     void ParticleSpatialLayout<T, Dim, Mesh>::update(
         /*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata)
     {
+        static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("ParticleBC");           
+        IpplTimings::startTimer(ParticleBCTimer);                                               
         this->applyBC(pdata.R, rlayout_m.getDomain());
+        IpplTimings::stopTimer(ParticleBCTimer);                                               
 
+        static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
+        IpplTimings::startTimer(ParticleUpdateTimer);                                               
         int nRanks = Ippl::Comm->size();
 
         if (nRanks < 2) {
@@ -61,6 +67,8 @@ namespace ippl {
          *   4. delete invalidated particles
          */
 
+        static IpplTimings::TimerRef step1Timer = IpplTimings::getTimer("locateParticles");           
+        IpplTimings::startTimer(step1Timer);                                               
         size_t localnum = pdata.getLocalNum();
 
         // 1st step
@@ -76,12 +84,15 @@ namespace ippl {
         bool_type invalid("invalid", localnum);
 
         locateParticles(pdata, ranks, invalid);
+        IpplTimings::stopTimer(step1Timer);                                               
 
         /*
          * 2nd step
          */
 
         // figure out how many receives
+        static IpplTimings::TimerRef step2Timer = IpplTimings::getTimer("SendPreprocess");           
+        IpplTimings::startTimer(step2Timer);                                               
         MPI_Win win;
         std::vector<int> nRecvs(nRanks, 0);
         MPI_Win_create(nRecvs.data(), nRanks*sizeof(int), sizeof(int),
@@ -101,7 +112,10 @@ namespace ippl {
                     1, MPI_INT, win);
         }
         MPI_Win_fence(0, win);
+        IpplTimings::stopTimer(step2Timer);                                               
 
+        static IpplTimings::TimerRef step3Timer = IpplTimings::getTimer("ParticleSend");           
+        IpplTimings::startTimer(step3Timer);                                               
         // send
         std::vector<MPI_Request> requests(0);
         using archive_type = Communicate::archive_type;
@@ -126,7 +140,10 @@ namespace ippl {
                                   requests.back());
             }
         }
+        IpplTimings::stopTimer(step3Timer);                                               
 
+        static IpplTimings::TimerRef step4Timer = IpplTimings::getTimer("ParticleRecv");           
+        IpplTimings::startTimer(step4Timer);                                               
         // 3rd step
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
@@ -143,7 +160,10 @@ namespace ippl {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
             archives.clear();
         }
+        IpplTimings::stopTimer(step4Timer);                                               
 
+        static IpplTimings::TimerRef step5Timer = IpplTimings::getTimer("ParticleDestroy");           
+        IpplTimings::startTimer(step5Timer);                                               
         // create space for received particles
         int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
         pdata.setLocalNum(localnum + nTotalRecvs);
@@ -159,6 +179,8 @@ namespace ippl {
 
         // 4th step
         pdata.destroy();
+        IpplTimings::stopTimer(step5Timer);                                               
+        IpplTimings::stopTimer(ParticleUpdateTimer);                                               
     }
 
 
