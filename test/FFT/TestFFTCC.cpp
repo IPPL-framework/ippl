@@ -10,19 +10,32 @@ int main(int argc, char *argv[]) {
 
     Ippl ippl(argc,argv);
 
+    Inform msg("TestFFTCC ",INFORM_ALL_NODES);
+
+    static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
+    IpplTimings::startTimer(mainTimer);
+
+    static IpplTimings::TimerRef fieldInit = IpplTimings::getTimer("fieldInit");
+    IpplTimings::startTimer(fieldInit);
+
     constexpr unsigned int dim = 3;
 
-    std::array<int, dim> pt = {32, 32, 32};
+    std::array<int,dim> pt = {
+      std::atoi(argv[1]),
+      std::atoi(argv[2]),
+      std::atoi(argv[3])
+    };
+
     ippl::Index I(pt[0]);
     ippl::Index J(pt[1]);
     ippl::Index K(pt[2]);
     ippl::NDIndex<dim> owned(I, J, K);
 
-    ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
+    ippl::e_dim_tag domDec[dim];   
     for (unsigned int d=0; d<dim; d++)
-        allParallel[d] = ippl::PARALLEL;
+        domDec[d] = ippl::PARALLEL;
 
-    ippl::FieldLayout<dim> layout(owned, allParallel);
+    ippl::FieldLayout<dim> layout(owned, domDec);
 
     std::array<double, dim> dx = {
         1.0 / double(pt[0]),
@@ -58,13 +71,15 @@ int main(int argc, char *argv[]) {
     
     std::mt19937_64 engImag(43 + Ippl::Comm->rank());
     std::uniform_real_distribution<double> unifImag(0, 1);
+    
+    msg << "(" << view.extent(0) << "," << view.extent(1) << "," << view.extent(2)  << ")" << endl;
 
     for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
         for (size_t j = nghost; j < view.extent(1) - nghost; ++j) {
             for (size_t k = nghost; k < view.extent(2) - nghost; ++k) {
     
-                field_host(i, j, k).real() = unifReal(engReal);//1.0; 
-                field_host(i, j, k).imag() = unifImag(engImag);//1.0; 
+                field_host(i, j, k).real() = unifReal(engReal);
+                field_host(i, j, k).imag() = unifImag(engImag);
                               
             }
         }
@@ -72,11 +87,22 @@ int main(int argc, char *argv[]) {
 
     Kokkos::deep_copy(field.getView(), field_host);
 
-    //Forward transform
-    fft->transform(1, field);
-    //Reverse transform
-    fft->transform(-1, field);
+    IpplTimings::stopTimer(fieldInit);
 
+    //Forward transform
+    static IpplTimings::TimerRef forwardT = IpplTimings::getTimer("forwardT");
+    IpplTimings::startTimer(forwardT);
+    fft->transform(1, field);
+    IpplTimings::stopTimer(forwardT);
+
+    //Reverse transform
+    static IpplTimings::TimerRef backwarT = IpplTimings::getTimer("backwarT");
+    IpplTimings::startTimer(backwarT);
+    fft->transform(-1, field);
+    IpplTimings::stopTimer(backwarT);
+
+    static IpplTimings::TimerRef postProc = IpplTimings::getTimer("postProc");
+    IpplTimings::startTimer(postProc);
     
     auto field_result = Kokkos::create_mirror_view_and_copy(
                         Kokkos::HostSpace(), field.getView());
@@ -97,21 +123,15 @@ int main(int argc, char *argv[]) {
                 
                 if(error.imag() > max_error_local.imag()) 
                     max_error_local.imag() = error.imag();
-                std::cout << "Error: " 
-                          << std::setprecision(16) 
-                          << error << std::endl;
             }
         }
     }
 
-    //Kokkos::complex<double> max_error(0.0, 0.0);
-    //MPI_Reduce(&max_error_local, &max_error, 1, 
-    //           MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
-
-    //if(Ippl::Comm->rank() == 0) {
-    std::cout << "Rank:" << Ippl::Comm->rank() 
-              << "Max. error " << std::setprecision(16) << max_error_local 
-              << std::endl;
-    //}
+    msg << "Error= " << std::setprecision(16) << max_error_local << endl;
+    IpplTimings::stopTimer(postProc);
+    IpplTimings::stopTimer(mainTimer);
+    IpplTimings::print();
+    std::string fn = std::string("TestFFTCC-")+std::string(argv[1]);
+    IpplTimings::print(fn);
     return 0;
 }
