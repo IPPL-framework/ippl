@@ -53,6 +53,7 @@ namespace ippl {
        // Start recursive repartition loop 
        int it = 0;
        int maxprocs = nprocs; 
+       int step = 1; // just for debugging
        while (maxprocs > 1) {
           // Find cut axis
           int cutAxis = FindCutAxis(domains[it]);
@@ -68,15 +69,17 @@ namespace ippl {
           
           /**PRINT**/
           if (split_rank == 0) {
-          std::ofstream myfile;
-          myfile.open ("run.txt");
-          // myfile.open ("run" + std::to_string(split_rank) + ".txt");
-          myfile << median << "\n";
-          for (unsigned int i = 0; i < reduced.size(); i++){
-             std::cout << "reduced[" << i << "]: " << reduced[i] << std::endl;
-             myfile << reduced[i] << "\n";
-          }
-          myfile.close();
+             std::ofstream myfile;
+             myfile.open ("run" + std::to_string(step) + ".txt");
+             // myfile.open ("run" + std::to_string(split_rank) + ".txt");
+             myfile << domains[it] << "\n";
+             myfile << median << "\n";
+             for (unsigned int i = 0; i < reduced.size(); i++){
+                std::cout << "reduced[" << i << "]: " << reduced[i] << std::endl;
+                myfile << reduced[i] << "\n";
+             }
+             myfile.close();
+             step++;
           }
          
           // Cut domains and procs
@@ -89,6 +92,27 @@ namespace ippl {
              std::cout << domains[i] << " (proc:" << procs[i] << ")" << std::endl;
           }}
 
+          /* If not included in local reduction
+           * Set median as half of domain and divide in two
+           * Receive right decomposition in non-blocking directive and override them
+           */
+          /*
+          if (!included_m) {
+             int median = domains[it].length() / 2;
+             CutDomain(domains, procs, it, cutAxis, median);
+             // MPI_Irecv(...);  
+          }
+          */
+          /* Idea for communication : everybody knows about who is included
+           * -> bad because for large number of ranks, large arrays must be communicated
+           */
+          
+          /* Idea for communication : splitting communicator based on whether it is included
+          MPI_Comm_split(MPI_COMM_WORLD, included_ranks[rank], rank, &comm_m); 
+          MPI_Allreduce(&comm_m, data);
+          MPI_Comm_free(&comm_m);
+          */
+
           // Update max procs
           maxprocs = 0;
           for (unsigned int i = 0; i < procs.size(); i++) {
@@ -96,7 +120,7 @@ namespace ippl {
                 maxprocs = procs[i];
                 it = i;
              } 
-          }
+          } 
        }
        
        // Update FieldLayout with new domains 
@@ -139,8 +163,9 @@ namespace ippl {
       int localFirst = localDom[cutAxis].first();
       int nghost = BF.getNghost();
       const view_type& data = BF.getView();
-
-      if (Dim == 2) {
+      
+      /*
+      if constexpr (Dim == 2) {
         // Determining perpendicular bounds
         int perpAxis = (cutAxis+1) % 2;
         int inferior, superior;
@@ -149,70 +174,96 @@ namespace ippl {
 
         if (superior < inferior) // Processor not involved in reduction
            return;    
-/*
+
+        // Translate bounds for Kokkos extents 
+        if ((size_t)inferior >= localDom[perpAxis].length()) {
+           inferior -= localDom[perpAxis].length();
+           superior -= localDom[perpAxis].length();
+        }
+        // The +3 comes from make_pair(0,N) <-> 0,..,N-1 and there are 2 ghost layers
+        superior += 3;
+
         // Reduction
-        auto data_i = Kokkos::subview(data, 0, Kokkos::ALL);
+        
+        auto data_i = Kokkos::subview(data, 0, Kokkos::make_pair(inferior, superior), 0);
         for (int i = nghost; i < axisSize+nghost; i++) {   // (Kokkos) Bounds take into account ghost layers
            // Slicing view perpendicular to cutAxis
            if (cutAxis == 0)
-             data_i = Kokkos::subview(data, i, Kokkos::make_pair(inferior, superior));
+             data_i = Kokkos::subview(data, i, Kokkos::make_pair(inferior, superior), 0);
            else
-             data_i = Kokkos::subview(data, Kokkos::make_pair(inferior, superior), i); 
+             data_i = Kokkos::subview(data, Kokkos::make_pair(inferior, superior), i, 0); 
 
            // Perform reduction over weights
            T tempRes = T(0);
           
            // unsure about ghosts....
+           
            Kokkos::parallel_reduce("Weight reduction", data_i.extent(0), KOKKOS_CLASS_LAMBDA (const int j, T& weight) {
               weight += data_i(j);
            }, tempRes);
            
            Kokkos::fence();
-
+           
            rankWeights[localFirst + i - 1] = tempRes;
-        } */         
-      } else if (Dim == 3) {
+        }        
+      } else if constexpr (Dim == 3) { //else if constexpr (Dim == 3) {*/
  
-       /***PRINT***/
-       std::cout << "Local domain (owned): " << localDom << std::endl;
-       std::cout << "Local axis size: " << axisSize << std::endl;
-       std::cout << "Local first index: " << localFirst << std::endl;
-       std::cout << "Data's extents (0,1,2): (" << data.extent(0) << "," << data.extent(1) << "," << data.extent(2) << ")" << std::endl;
-
        // std::vector<T> rankReduce(BF.getDomain()[cutAxis].length()); // [0,...,0]  
        
-       /*// face has two directions: 1 and 2 
+       // face has two directions: 1 and 2 
        int perpAxis1 = (cutAxis+1) % 3;
        int perpAxis2 = (cutAxis+2) % 3;
-       // The 3 comes from make_pair(0,N) <-> 0,..,N-1 and there are 2 ghost layers
        int inferior1 = std::max(localDom[perpAxis1].first(), dom[perpAxis1].first());
        int inferior2 = std::max(localDom[perpAxis2].first(), dom[perpAxis2].first());
        int superior1 = std::min(localDom[perpAxis1].last(), dom[perpAxis1].last());
        int superior2 = std::min(localDom[perpAxis2].last(), dom[perpAxis2].last());
-       }
+       
+       /***PRINT***/
+       std::cout << "Local domain (owned): " << localDom << std::endl;
+       std::cout << "Domain to reduce: " << dom << std::endl;
+       std::cout << "Local axis size: " << axisSize << std::endl;
+       std::cout << "Local first index: " << localFirst << std::endl;
+       std::cout << "(inferior1, superior1): (" << inferior1 << ", " << superior1 << ")" << std::endl;
+       std::cout << "(inferior2, superior2): (" << inferior2 << ", " << superior2 << ")" << std::endl;
+       std::cout << "Data's extents (0,1,2): (" << data.extent(0) << "," << data.extent(1) << "," << data.extent(2) << ")" << std::endl;
+
        
        if (superior1 < inferior1 || superior2 < inferior2) // Processor is not involved in reduction
          return;
 
-       */
-
-       // auto data_i = Kokkos::subview(data, i, Kokkos::make_pair(inferior1, superior1), Kokkos::make_pair(inferior2, superior2));
+       // Translate bounds for Kokkos extents 
+       if ((size_t)inferior1 >= localDom[perpAxis1].length()) {
+          inferior1 -= localDom[perpAxis1].length();
+          superior1 -= localDom[perpAxis1].length();
+       }
+       if ((size_t)inferior2 >= localDom[perpAxis2].length()) {
+          inferior2 -= localDom[perpAxis2].length();
+          superior2 -= localDom[perpAxis2].length();
+       }
+       // The +3 comes from make_pair(0,N) <-> 0,..,N-1 and there are 2 ghost layers
+       superior1 += 3; superior2 += 3;
+ 
+       /*
+     
+  
+       */       
+ 
+ 
+       auto data_i = Kokkos::subview(data, 0, Kokkos::make_pair(inferior1, superior1), Kokkos::make_pair(inferior2, superior2));
        
        // Iterate along cutAxis
-       auto data_i = Kokkos::subview(data, 0, Kokkos::ALL, Kokkos::ALL);
        for (int i = nghost; i < axisSize+nghost; i++) {   // (Kokkos) Bounds take into account ghost layers
-       // for (int i = 0; i < axisSize; i++) {
           // Slicing view perpendicular to cutAxis
           switch (cutAxis) {
             default:
             case 0:
-             data_i = Kokkos::subview(data, i, Kokkos::ALL, Kokkos::ALL);
+             data_i = Kokkos::subview(data, i, Kokkos::make_pair(inferior1, superior1), Kokkos::make_pair(inferior2, superior2));
              break;
             case 1:
-             data_i = Kokkos::subview(data, Kokkos::ALL, i, Kokkos::ALL);
+             data_i = Kokkos::subview(data, Kokkos::make_pair(inferior2, superior2), i, Kokkos::make_pair(inferior1, superior1));
              break;
             case 2:
-             data_i = Kokkos::subview(data, Kokkos::ALL, Kokkos::ALL, i);
+             data_i = Kokkos::subview(data, Kokkos::make_pair(inferior1, superior1), Kokkos::make_pair(inferior2, superior2), i);
              break;
           }
 
@@ -226,10 +277,10 @@ namespace ippl {
           
           Kokkos::fence();
 
-          rankWeights[localFirst + i - 1] = tempRes;
+          rankWeights[localFirst + i - nghost] = tempRes;
        }
 
-       } // if (Dim == 3)
+       // } // if (Dim == 3)
 
        std::cout << "rank " << Ippl::Comm->rank() << ": [";
        for (unsigned int i = 0; i < rankWeights.size(); i++) {
@@ -253,8 +304,14 @@ namespace ippl {
        T sum = T(0);
        for (unsigned int i = 0; i < V.size(); i++) {
           sum += V[i];
-          if (sum >= half) 
-             return i;
+          if (sum >= half) { // [45, 30, 20], tot=95 -> 47.5, (75 - 47.5)< (45 - 47.5)
+             T previous = sum - V[i];
+             if ((sum + previous) < tot && V[i] != 0.0)
+             // if ((sum - half) < (half - previous))
+                return i;
+             else
+                return (i >= 1) ? (i-1) : 0;
+          }
        } 
        return 0;
     }

@@ -420,9 +420,6 @@ int main(int argc, char *argv[]) {
     P->initFields();
     msg << "P->initField() done " << endl;
   
-    std::cout << "Nodes: " << Ippl::Comm->size() << std::endl;   
-  
-    // begin main timestep loop
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
     

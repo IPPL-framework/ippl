@@ -218,8 +218,8 @@ public:
                                 const size_t jg = j + lDom[1].first() + nghost;
 
                                 view(i, j, k)[1] = scale_fact*4.0*pi*phi0 * 
-                                                   sin(2.0*pi*(ig+0.5)*hr[0]) * 
-                                                   sin(4.0*pi*(jg+0.5)*hr[1]);
+                                                   sin(2.0*pi*(ig+0.5)*hr[0]) *   // x grid point
+                                                   sin(4.0*pi*(jg+0.5)*hr[1]);    
                               
                               });
          
@@ -245,7 +245,17 @@ public:
          IpplTimings::stopTimer(initFieldsTimer);
 
      }
-
+     
+     
+     void initPositions() {
+        // typename ChargedParticles<PLayout_t>::particle_position_type::HostMirror R_host = this->R.getHostMirror();
+        // typename VField_t::view_type R_host  = this->R.getHostMirror();
+        // typename ippl::ParticleBase<PLayout_t>::particle_position_type::HostMirror R_host  = this->R.getHostMirror();
+        // auto subview makeSubview(R_host, range);
+        // std::cout << "R_host(): " << typeid(R_host).name() << std::endl;
+        // std::cout << "R.getView(): " << typeid(this->R.getView()).name() << std::endl;
+        
+     }
 
      void dumpParticleData(int iteration) {
         
@@ -372,9 +382,41 @@ int main(int argc, char *argv[]){
     }
 
     std::uniform_real_distribution<double> unif(rmin[0], rmax[0]);
-
+  
+    msg << "Positions follow uniform distribution U(" << rmin[0] << "," << rmax[0] << ")" << endl;
+ 
+    // int N = nr[0];
+    // P->create(totalP/Ippl::Comm->size());
+    // typename bunch_type::particle_position_type::view_type R_view = P->R.getView();
+    
+    /* 
+    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+    Kokkos::parallel_for("initPositions", mdrange_type({0,0,0},{N,N,N}), 
+                                            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+       int l = i + j * N + k * N * N;
+       double e = (k % 2 == 0) ? 0.0 : 0.3;
+       R_view(l) = 0.4 + e;
+       // R_view(l) = 0.5;
+    });  
+    Kokkos::parallel_for("initPositions", mdrange_type({0,0,0},{N,N,N}), 
+                                            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+       int l = i + j * N + k * N * N;
+       double e = (k % 2 == 0) ? 0.0 : 0.3;
+       R_view(l) = 0.4 + e;
+       // R_view(l) = 0.5;
+       const size_t ig = i + lDom[0].first() + nghost;
+       const size_t jg = j + lDom[1].first() + nghost;
+       const size_t kg = k + lDom[2].first() + nghost;
+       // x = (ig+0.5)*hr[0]
+       // y = (jg+0.5)*hr[1]
+       // z = (kg+0.5)*hr[2]
+       R_view(i) = Vector(x, y, z);
+       R_view(i)[d] = ... 
+    }); 
+    Kokkos::deep_copy(P->R.getView(), R_view);
+    std::cout << "copied" << std::endl;
+    */
     typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
-   
     double sum_coord=0.0;
     for (unsigned long int i = 0; i < nloc; i++) {
         for (int d = 0; d<3; d++) {
@@ -382,14 +424,16 @@ int main(int argc, char *argv[]){
             sum_coord += R_host(i)[d];
         }
     }
+
+    
     double global_sum_coord = 0.0;
     MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
                MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-
+    
     if(Ippl::Comm->rank() == 0) {
         // std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
     }
-
+      
 
     Kokkos::deep_copy(P->R.getView(), R_host);
     P->qm = P->Q_m/totalP;
@@ -397,7 +441,7 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(particleCreation);                                                    
     
     static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
-    IpplTimings::startTimer(UpdateTimer);                                               
+    IpplTimings::startTimer(UpdateTimer);                                              
     P->update();
     IpplTimings::stopTimer(UpdateTimer);                                                    
     
@@ -408,6 +452,7 @@ int main(int argc, char *argv[]){
     // msg << "scatter test" << endl;
     P->scatterCIC(totalP, 0);
     
+    // std::cout << "just before initFields()" << std::endl; 
     P->initFields();
     // msg << "P->initField() done " << endl;
     
