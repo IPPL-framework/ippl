@@ -63,6 +63,14 @@ target_link_libraries (
     ${Boost_LIBRARIES}
 )
 
+add_executable (TestFieldIntegral TestFieldIntegral.cpp)
+target_link_libraries (
+    TestFieldIntegral
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
