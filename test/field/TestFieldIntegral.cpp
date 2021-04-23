@@ -52,5 +52,18 @@ int main(int argc, char *argv[]) {
     PAssert_EQ(field.getVolumeIntegral(), 0.);
     std::cout << "Volume integral test passed" << std::endl;
 
+    Kokkos::parallel_for("assign field 2", policy,
+        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+            double x = (i + 0.5) * hx[0] + origin[0];
+            double y = (j + 0.5) * hx[1] + origin[1];
+            double z = (k + 0.5) * hx[2] + origin[2];
+
+            view(i, j, k) = 2 * x * x + sin(pi * y) * cos(pi * z);
+        }
+    );
+
+    PAssert_EQ(field.getVolumeIntegral(), 2. / 3);
+    std::cout << "Second volume integral test passed" << std::endl;
+
     return 0;
 }
