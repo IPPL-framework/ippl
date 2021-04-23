@@ -55,4 +55,17 @@ namespace ippl {
             bc_m[face] = std::make_shared<NoBcFace<T, Dim>>(face);
         }
     }
+
+    template<class T, unsigned Dim, class M, class C>
+    Kokkos::MDRangePolicy<Kokkos::Rank<Dim>> Field<T,Dim,M,C>::getRangePolicy() const {
+        using type = typename Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>::array_index_type;
+        Kokkos::Array<type, Dim> begin, end;
+        auto view = this->getView();
+        const int shift = this->getNghost();
+        for (unsigned int d = 0; d < Dim; ++d) {
+            begin[d] = shift;
+            end[d] = view.extent(d) - shift;
+        }
+        return Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>(begin, end);
+    }
 }
