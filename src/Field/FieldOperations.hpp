@@ -19,34 +19,77 @@
 namespace ippl {
 
     namespace detail {
-        template <typename T, unsigned Dim, typename ... Indices>
-        class InnerProductFunctorBase {
-            using field = const Field<T, Dim>&;
-            using view = typename detail::ViewType<T, Dim>::view_type;
-            view v1;
-            view v2;
 
-        public:
-            InnerProductFunctorBase(field f1, field f2) {
-                v1 = f1.getView();
-                v2 = f2.getView();
-            }
+        #define DefineBaseFunctor(name)                                 \
+        template <typename T, unsigned Dim>                             \
+        class name : public name##Base<T, Dim> {};
 
-            void operator()(Indices ... i, T& val) const {
-                val += v1(i...) * v2(i...);
-            }
+        #define DefineBinaryFunctorBase(name, op)                       \
+        template <typename T, unsigned Dim, typename ... Indices>       \
+        class name##Base {                                              \
+            using field = const Field<T, Dim>&;                         \
+            using view = typename detail::ViewType<T, Dim>::view_type;  \
+            view v1, v2;                                                \
+                                                                        \
+        public:                                                         \
+            name##Base(field f1, field f2) {                            \
+                v1 = f1.getView();                                      \
+                v2 = f2.getView();                                      \
+            }                                                           \
+                                                                        \
+            void operator()(Indices ... i, T& val) const {              \
+                op                                                      \
+            }                                                           \
+        };                                                              \
+        DefineBaseFunctor(name)
+
+        #define DefineUnaryFunctorBase(name, op)                        \
+        template <typename T, unsigned Dim, typename ... Indices>       \
+        class name##Base {                                              \
+            using field = const Field<T, Dim>&;                         \
+            using view = typename detail::ViewType<T, Dim>::view_type;  \
+            const int p;                                                \
+            view v;                                                     \
+                                                                        \
+        public:                                                         \
+            name##Base(field f, int p = 0) : p(p) {                     \
+                v = f.getView();                                        \
+            }                                                           \
+                                                                        \
+            void operator()(Indices ... i, T& val) const {              \
+                op                                                      \
+            }                                                           \
+        };                                                              \
+        DefineBaseFunctor(name)
+
+        #define DefineFunctor(name, dim, indices...)                    \
+        template <typename T>                                           \
+        class name<T, dim> : public name##Base<T, dim, indices> {       \
+        public:                                                         \
+            using Base = name##Base<T, dim, indices>;                   \
+            using Base::name##Base;                                     \
+            using Base::operator();                                     \
         };
 
-        template <typename T, unsigned Dim>
-        class InnerProductFunctor : public InnerProductFunctorBase<T, Dim> {};
+        #define Define3DFunctor(name) DefineFunctor(name, 3, const size_t, const size_t, const size_t)
+        #define Define2DFunctor(name) DefineFunctor(name, 2, const size_t, const size_t)
 
-        template <typename T>
-        class InnerProductFunctor<T, 3> : public InnerProductFunctorBase<T, 3, const size_t, const size_t, const size_t> {
-        public:
-            using Base = InnerProductFunctorBase<T, 3, const size_t, const size_t, const size_t>;
-            using Base::InnerProductFunctorBase;
-            using Base::operator();
-        };
+        DefineBinaryFunctorBase(InnerProductFunctor, val += v1(i...) * v2(i...);)
+        Define2DFunctor(InnerProductFunctor)
+        Define3DFunctor(InnerProductFunctor)
+
+        DefineUnaryFunctorBase(InfNormFunctor,
+            T myVal = std::abs(v(i...));
+            if (myVal > val)
+                val = myVal;
+        )
+        Define2DFunctor(InfNormFunctor)
+        Define3DFunctor(InfNormFunctor)
+
+        DefineUnaryFunctorBase(LpNormFunctor, val += std::pow(std::abs(v(i...)), p);)
+        Define2DFunctor(LpNormFunctor)
+        Define3DFunctor(LpNormFunctor)
+
     }
 
     /*!
@@ -82,12 +125,9 @@ namespace ippl {
         switch (p) {
         case 0:
         {
+            detail::InfNormFunctorBase functor = detail::InfNormFunctor<T, Dim>(field);
             Kokkos::parallel_reduce("Field::norm(0)", field.getRangePolicy(),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
-                    T myVal = std::abs(view(i, j, k));
-                    if (myVal > val)
-                        val = myVal;
-                },
+                functor,
                 Kokkos::Max<T>(local)
             );
             T globalMax = 0;
@@ -99,10 +139,9 @@ namespace ippl {
             return std::sqrt(innerProduct(field, field));
         default:
         {
+            detail::LpNormFunctorBase functor = detail::LpNormFunctor<T, Dim>(field, p);
             Kokkos::parallel_reduce("Field::norm(int) general", field.getRangePolicy(),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& val) {
-                    val += std::pow(std::abs(view(i, j, k)), p);
-                },
+                functor,
                 Kokkos::Sum<T>(local)
             );
             T globalSum = 0;
