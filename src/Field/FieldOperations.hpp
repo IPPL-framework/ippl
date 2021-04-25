@@ -17,6 +17,38 @@
 //
 
 namespace ippl {
+
+    namespace detail {
+        template <typename T, unsigned Dim, typename ... Indices>
+        class InnerProductFunctorBase {
+            using field = const Field<T, Dim>&;
+            using view = typename detail::ViewType<T, Dim>::view_type;
+            view v1;
+            view v2;
+
+        public:
+            InnerProductFunctorBase(field f1, field f2) {
+                v1 = f1.getView();
+                v2 = f2.getView();
+            }
+
+            void operator()(Indices ... i, T& val) const {
+                val += v1(i...) * v2(i...);
+            }
+        };
+
+        template <typename T, unsigned Dim>
+        class InnerProductFunctor : public InnerProductFunctorBase<T, Dim> {};
+
+        template <typename T>
+        class InnerProductFunctor<T, 3> : public InnerProductFunctorBase<T, 3, const size_t, const size_t, const size_t> {
+        public:
+            using Base = InnerProductFunctorBase<T, 3, const size_t, const size_t, const size_t>;
+            using Base::InnerProductFunctorBase;
+            using Base::operator();
+        };
+    }
+
     /*!
      * Computes the inner product of two fields
      * @param f1 first field
@@ -26,12 +58,9 @@ namespace ippl {
     template <typename T, unsigned Dim>
     T innerProduct(const Field<T, Dim>& f1, const Field<T, Dim>& f2) {
         T sum = 0;
-        auto view1 = f1.getView();
-        auto view2 = f2.getView();
+        detail::InnerProductFunctorBase functor = detail::InnerProductFunctor<T, Dim>(f1, f2);
         Kokkos::parallel_reduce("Field::innerProduct(Field&, Field&)", f1.getRangePolicy(),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
-                val += view1(i, j, k) * view2(i, j, k);
-            },
+            functor,
             Kokkos::Sum<T>(sum)
         );
         T globalSum = 0;
