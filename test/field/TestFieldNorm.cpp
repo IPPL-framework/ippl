@@ -28,61 +28,71 @@ int main(int argc, char *argv[]) {
         pt = 1 << (int)strtol(argv[1], NULL, 10);
     }
 
-    constexpr unsigned int dim = 3;
-
-
     ippl::Index I(pt);
-    ippl::NDIndex<dim> owned(I, I, I);
+    ippl::NDIndex<3> owned3(I, I, I);
+    ippl::NDIndex<2> owned2(I, I);
 
-    ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
-    for (unsigned int d=0; d<dim; d++)
-        allParallel[d] = ippl::PARALLEL;
+    ippl::e_dim_tag d3[3], d2[2];    // Specifies SERIAL, PARALLEL dims
+    for (unsigned int d=0; d<3; d++) {
+        d3[d] = ippl::PARALLEL;
+        if (d < 2) d2[d] = ippl::PARALLEL;
+    }
 
     // all parallel layout, standard domain, normal axis order
-    ippl::FieldLayout<dim> layout(owned,allParallel);
+    ippl::FieldLayout<3> layout3(owned3,d3);
+    ippl::FieldLayout<2> layout2(owned2,d2);
 
     double dx = 1.0 / double(pt);
-    ippl::Vector<double, 3> hx = {dx, dx, dx};
-    ippl::Vector<double, 3> origin = {0, 0, 0};
-    ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+    ippl::Vector<double, 3> hx3 = {dx, dx, dx};
+    ippl::Vector<double, 3> origin3 = {0, 0, 0};
+    ippl::UniformCartesian<double, 3> mesh3(owned3, hx3, origin3);
+
+    ippl::Vector<double, 2> hx2 = {dx, dx};
+    ippl::Vector<double, 2> origin2 = {0, 0};
+    ippl::UniformCartesian<double, 2> mesh2(owned2, hx2, origin2);
 
 
-    typedef ippl::Field<double, dim> field_type;
+    typedef ippl::Field<double, 3> field3;
+    typedef ippl::Field<double, 2> field2;
 
-    field_type field(mesh, layout);
+    field3 _3d(mesh3, layout3);
+    field2 _2d(mesh2, layout2);
 
     double pi = acos(-1.0);
 
-    field = pi/4;
+    _3d = pi/4;
+    auto view2 = _2d.getView();
+    Kokkos::parallel_for("assign 2D", _2d.getRangePolicy(),
+        KOKKOS_LAMBDA(const size_t i, const size_t j) {
+            view2(i, j) = pi / 4;
+        }
+    );
 
     double l2 = pow(pt, 1.5) * pi / 4;
     double l1 = pow(pt, 3) * pi / 4;
     double linf = pi / 4;
 
-    IpplTimings::TimerRef l2Timer = IpplTimings::getTimer("L2"),
-        l1Timer = IpplTimings::getTimer("L1"),
-        l0Timer = IpplTimings::getTimer("Max");
+    double compute_l2 = ippl::norm(_3d);
+    double compute_l1 = ippl::norm(_3d, 1);
+    double compute_linf = ippl::norm(_3d, 0);
 
-    IpplTimings::startTimer(l2Timer);
-    double compute_l2 = ippl::norm(field);
-    IpplTimings::stopTimer(l2Timer);
-
-    IpplTimings::startTimer(l1Timer);
-    double compute_l1 = ippl::norm(field, 1);
-    IpplTimings::stopTimer(l1Timer);
-
-    IpplTimings::startTimer(l0Timer);
-    double compute_linf = ippl::norm(field, 0);
-    IpplTimings::stopTimer(l0Timer);
-
-    IpplTimings::print("timings.dat");
-
-    Inform m1("DATA");
+    Inform mD3("3D"), mD2("2D");
     Inform m2("Deviation", std::cerr);
 
-    checkError(compute_l2, l2, pt, 2, m1, m2);
-    checkError(compute_l1, l1, pt, 1, m1, m2);
-    checkError(compute_linf, linf, pt, 0, m1, m2);
+    checkError(compute_l2, l2, pt, 2, mD3, m2);
+    checkError(compute_l1, l1, pt, 1, mD3, m2);
+    checkError(compute_linf, linf, pt, 0, mD3, m2);
+
+    l2 = pt * pi / 4;
+    l1 = pt * pt * pi / 4;
+
+    compute_l2 = ippl::norm(_2d);
+    compute_l1 = ippl::norm(_2d, 1);
+    compute_linf = ippl::norm(_2d, 0);
+
+    checkError(compute_l2, l2, pt, 2, mD2, m2);
+    checkError(compute_l1, l1, pt, 1, mD2, m2);
+    checkError(compute_linf, linf, pt, 0, mD2, m2);
 
     return 0;
 }
