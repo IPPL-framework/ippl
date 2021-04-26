@@ -37,6 +37,7 @@ namespace ippl {
                 v2 = f2.getView();                                      \
             }                                                           \
                                                                         \
+            KOKKOS_IMPL_FUNCTION                                        \
             void operator()(Indices ... i, T& val) const {              \
                 op                                                      \
             }                                                           \
@@ -56,6 +57,7 @@ namespace ippl {
                 v = f.getView();                                        \
             }                                                           \
                                                                         \
+            KOKKOS_IMPL_FUNCTION                                        \
             void operator()(Indices ... i, T& val) const {              \
                 op                                                      \
             }                                                           \
