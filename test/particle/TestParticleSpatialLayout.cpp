@@ -102,6 +102,7 @@ int main(int argc, char *argv[]) {
     typedef ippl::detail::RegionLayout<double, 3, Mesh_t> RegionLayout_t;
     RegionLayout_t RLayout = pl.getRegionLayout();
 
+
     auto& positions = bunch.R.getView();
     typename RegionLayout_t::view_type Regions = RLayout.getdLocalRegions();
     using size_type = typename RegionLayout_t::view_type::size_type;
