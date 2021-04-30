@@ -36,15 +36,13 @@ namespace ippl {
         Mesh& mesh)
     : rlayout_m(fl, mesh)
     { }
-    
-    /*
+   
+ 
     template <typename T, unsigned Dim, class Mesh>
-    ParticleSpatialLayout<T, Dim, Mesh>::ParticleSpatialLayout(
-        FieldLayout<Dim>& fl,
-        Mesh& mesh)
-    : rlayout_m(fl, mesh), flayout_m(fl), mesh_m(mesh)
-    { }
-    */    
+    void
+    ParticleSpatialLayout<T, Dim, Mesh>::updateLayout(FieldLayout<Dim>& fl, Mesh& mesh) {
+        rlayout_m.changeDomain(fl, mesh); 
+    }
 
 
     template <typename T, unsigned Dim, class Mesh>

@@ -55,24 +55,21 @@ namespace ippl {
     template <unsigned Dim>
     FieldLayout<Dim>::~FieldLayout() { }
 
-    // NEEDS TO BE TESTED!!
-    /*
     template <unsigned Dim>
     void
     FieldLayout<Dim>::updateLayout(const std::vector<NDIndex<Dim>>& domains) {
-        if (domains.size() == 0)
+        if (domains.empty())
            return;
         
         for (unsigned int i = 0; i < domains.size(); i++)
            hLocalDomains_m(i) = domains[i];
         
-        Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
-
         findNeighbors();
+
+        Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
 
         calcWidths();
     }
-    */
 
     template <unsigned Dim>
     void

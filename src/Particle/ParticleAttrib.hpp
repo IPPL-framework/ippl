@@ -176,56 +176,6 @@ namespace ippl {
     }
 
 
-    template<typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
-    void testScatter(Field<P1, Dim, M, C>& f, const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
-    {
-        typename Field<P1, Dim, M, C>::view_type view = f.getView();
-
-        const M& mesh = f.get_mesh();
-
-        using vector_type = typename M::vector_type;
-        // using value_type  = typename ParticleAttrib<P1, Properties...>::value_type;
-
-        const vector_type& dx = mesh.getMeshSpacing();
-        const vector_type& origin = mesh.getOrigin();
-        const vector_type invdx = 1.0 / dx;
-
-        const FieldLayout<Dim>& layout = f.getLayout(); 
-        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
-        const int nghost = f.getNghost();
-
-        Kokkos::parallel_for(
-            "ParticleAttrib::tempScatter",
-            pp.getView().extent(0),
-            KOKKOS_LAMBDA(const size_t idx)
-            {
-                // find nearest grid point
-                vector_type l = (pp(idx) - origin) * invdx + 0.5;
-                Vector<int, Dim> index = l;
-                Vector<double, Dim> whi = l - index;
-                Vector<double, Dim> wlo = 1.0 - whi;
-
-                const size_t i = index[0] - lDom[0].first() + nghost;
-                const size_t j = index[1] - lDom[1].first() + nghost;
-                const size_t k = index[2] - lDom[2].first() + nghost;
-
-                // scatter
-                // const value_type& val = (idx);
-                Kokkos::atomic_add(&view(i-1, j-1, k-1), wlo[0] * wlo[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i-1, j-1, k  ), wlo[0] * wlo[1] * whi[2]);
-                Kokkos::atomic_add(&view(i-1, j,   k-1), wlo[0] * whi[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i-1, j,   k  ), wlo[0] * whi[1] * whi[2]);
-                Kokkos::atomic_add(&view(i,   j-1, k-1), whi[0] * wlo[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i,   j-1, k  ), whi[0] * wlo[1] * whi[2]);
-                Kokkos::atomic_add(&view(i,   j,   k-1), whi[0] * whi[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2]);
-            }
-        );
-            
-        f.accumulateHalo();
-    }
-
-
     template<typename T, class... Properties>
     template <unsigned Dim, class M, class C, typename P2>
     void ParticleAttrib<T, Properties...>::gather(Field<T, Dim, M, C>& f,

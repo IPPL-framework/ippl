@@ -101,41 +101,50 @@ public:
         PLayout& layout = this->getLayout();
         layout.update(*this);
     }
+
+    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh) {
+        // Update local fields
+        this->EFD_m.initialize(mesh, fl);
+        this->EFDMag_m.initialize(mesh, fl);
+
+        // Update layout with new FieldLayout
+        PLayout& layout = this->getLayout();
+        layout.updateLayout(fl, mesh);
+        layout.update(*this);
+    }
     
     ORB orb; 
-    
+    int step = 1; 
     void balance(FieldLayout_t& fl, Mesh_t& mesh) {
-        bool repartition = orb.BinaryRepartition(*this, fl, mesh);
-        if (repartition != true)
+        bool repartition = orb.BinaryRepartition(*this, fl, mesh, step);
+        step++;
+        if (repartition != true) {
            std::cout << "Could not repartition!" << std::endl;
-        else
-           std::cout << "ORB finished" << std::endl;
+           return;
+        }
+        this->updateLayout(fl, mesh);
     }
 
-    void gatherStatistics(unsigned int totalP, int iteration) {
-        
+    void gatherStatistics(unsigned int totalP) {
         std::cout << "Rank " << Ippl::Comm->rank() << " has " 
                   << (double)this->getLocalNum()/totalP*100.0 
-                  << "percent of the total particles " << std::endl;
+                  << " percent of the total particles " << std::endl;
     }
     
     void gatherCIC() {
-
-        //static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");           
-        //IpplTimings::startTimer(gatherTimer);                                                    
+        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");           
+        IpplTimings::startTimer(gatherTimer);                                                    
         gather(this->E, EFD_m, this->R);
-        //IpplTimings::stopTimer(gatherTimer);                                                    
-
+        IpplTimings::stopTimer(gatherTimer);                                                    
     }
 
     void scatterCIC(unsigned int totalP, int iteration) {
-         
-         //static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
-         //IpplTimings::startTimer(scatterTimer);                                                    
+         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
+         IpplTimings::startTimer(scatterTimer);                                                    
          Inform m("scatter ");
          EFDMag_m = 0.0;
          scatter(qm, EFDMag_m, this->R);
-         //IpplTimings::stopTimer(scatterTimer);                                                    
+         IpplTimings::stopTimer(scatterTimer);                                                    
          
          static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("CheckCharge");           
          IpplTimings::startTimer(sumTimer);                                                    
@@ -254,7 +263,6 @@ public:
         // auto subview makeSubview(R_host, range);
         // std::cout << "R_host(): " << typeid(R_host).name() << std::endl;
         // std::cout << "R.getView(): " << typeid(this->R.getView()).name() << std::endl;
-        
      }
 
      void dumpParticleData(int iteration) {
@@ -350,7 +358,7 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    // const double dt = 0.5 * dx; // size of timestep
+    const double dt = 0.5 * dx; // size of timestep
 
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp);
@@ -381,41 +389,9 @@ int main(int argc, char *argv[]){
         eng[i].discard( nloc * Ippl::Comm->rank());
     }
 
+    msg << "Positions follow uniform distribution U(" << rmin[0] << "," << rmax[0] << ")" << endl;
     std::uniform_real_distribution<double> unif(rmin[0], rmax[0]);
   
-    msg << "Positions follow uniform distribution U(" << rmin[0] << "," << rmax[0] << ")" << endl;
- 
-    // int N = nr[0];
-    // P->create(totalP/Ippl::Comm->size());
-    // typename bunch_type::particle_position_type::view_type R_view = P->R.getView();
-    
-    /* 
-    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-    Kokkos::parallel_for("initPositions", mdrange_type({0,0,0},{N,N,N}), 
-                                            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-       int l = i + j * N + k * N * N;
-       double e = (k % 2 == 0) ? 0.0 : 0.3;
-       R_view(l) = 0.4 + e;
-       // R_view(l) = 0.5;
-    });  
-    Kokkos::parallel_for("initPositions", mdrange_type({0,0,0},{N,N,N}), 
-                                            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-       int l = i + j * N + k * N * N;
-       double e = (k % 2 == 0) ? 0.0 : 0.3;
-       R_view(l) = 0.4 + e;
-       // R_view(l) = 0.5;
-       const size_t ig = i + lDom[0].first() + nghost;
-       const size_t jg = j + lDom[1].first() + nghost;
-       const size_t kg = k + lDom[2].first() + nghost;
-       // x = (ig+0.5)*hr[0]
-       // y = (jg+0.5)*hr[1]
-       // z = (kg+0.5)*hr[2]
-       R_view(i) = Vector(x, y, z);
-       R_view(i)[d] = ... 
-    }); 
-    Kokkos::deep_copy(P->R.getView(), R_view);
-    std::cout << "copied" << std::endl;
-    */
     typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
     double sum_coord=0.0;
     for (unsigned long int i = 0; i < nloc; i++) {
@@ -424,44 +400,96 @@ int main(int argc, char *argv[]){
             sum_coord += R_host(i)[d];
         }
     }
-
     
     double global_sum_coord = 0.0;
     MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
                MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
     
     if(Ippl::Comm->rank() == 0) {
-        // std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
+        std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
     }
-      
 
     Kokkos::deep_copy(P->R.getView(), R_host);
     P->qm = P->Q_m/totalP;
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);                                                    
     
+    /*
+    msg << "Positions are set on grid points" << endl;
+    typename bunch_type::particle_position_type::view_type R_view = P->R.getView();
+    int N = nr[0];
+    // msg << "EXTENT: " << R_view.extent(0) << " and N = " << N << endl;
+    const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+    // Number of iterations: N/2 * N * N
+    int size = Ippl::Comm->size();
+    Kokkos::parallel_for("initPositions", mdrange_type({0,0,0},{N/size,N,N}), 
+                                            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+       const size_t ig = i + lDom[0].first();
+       const size_t jg = j + lDom[1].first();
+       const size_t kg = k + lDom[2].first();
+
+       // int l = i + j * N + k * N * N;
+       int l = i + j * N / size + k * N * N / size; 
+       R_view(l)[0] = (ig+0.5)*hr[0];
+       R_view(l)[1] = (jg+0.5)*hr[1];
+       R_view(l)[2] = (kg+0.5)*hr[2];
+    }); 
+    */
+    
     static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
     IpplTimings::startTimer(UpdateTimer);                                              
     P->update();
     IpplTimings::stopTimer(UpdateTimer);                                                    
     
-    // msg << "particles created and initial conditions assigned " << endl;
+    msg << "particles created and initial conditions assigned " << endl;
     P->EFD_m.initialize(mesh, FL);
     P->EFDMag_m.initialize(mesh, FL);
     
-    // msg << "scatter test" << endl;
-    P->scatterCIC(totalP, 0);
-    
-    // std::cout << "just before initFields()" << std::endl; 
     P->initFields();
-    // msg << "P->initField() done " << endl;
+    msg << "P->initField() done " << endl;
     
     msg << "Testing BinaryBalancer" << endl;
+    static IpplTimings::TimerRef particleBalancing = IpplTimings::getTimer("particleBalancing");           
+    IpplTimings::startTimer(particleBalancing);                                                    
     P->balance(FL, mesh);
+    IpplTimings::stopTimer(particleBalancing);                                                    
+    msg << "Balancing finished" << endl;
+    
+    P->scatterCIC(totalP, 0);
+    msg << "scatter test done" << endl;
+    
  
-    /**PRINT**/
-    // msg << "FIELD LAYOUT (POST ORB)" << endl;
-    // msg << P->getLayout().getFieldLayout() << endl;   
+    msg << "Starting iterations ..." << endl;
+    for (unsigned int it=0; it<nt; it++) {
+        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");           
+        IpplTimings::startTimer(RTimer);                                                    
+        P->R = P->R + dt * P->P;
+        IpplTimings::stopTimer(RTimer);                                                    
+        // IpplTimings::startTimer(UpdateTimer);
+        // P->update();
+
+        // balance
+        P->balance(FL, mesh);
+        
+        //scatter the charge onto the underlying grid
+        P->scatterCIC(totalP, it+1);
+        
+        // gather the local value of the E field
+        P->gatherCIC();
+
+        // advance the particle velocities
+        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");           
+        IpplTimings::startTimer(PTimer);                                                    
+        P->P = P->P + dt * P->qm * P->E;
+        IpplTimings::stopTimer(PTimer);                                                    
+        msg << "Finished iteration " << it << endl;
+
+        P->gatherStatistics(totalP);
+    }
+    IpplTimings::stopTimer(mainTimer);                                                    
+    IpplTimings::print();
+    IpplTimings::print(std::string("timing.dat"));
  
     return 0;
 }

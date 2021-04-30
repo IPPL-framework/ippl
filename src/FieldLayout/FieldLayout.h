@@ -121,8 +121,7 @@ namespace ippl {
 
         void write(std::ostream& = std::cout) const;
         
-        // ML 
-        // void updateLayout(const std::vector<NDIndex_t>& domains); 
+        void updateLayout(const std::vector<NDIndex_t>& domains); 
 
     private:
         /*!

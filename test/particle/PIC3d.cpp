@@ -4,6 +4,9 @@
 //   and then tracks their motions in the static
 //   electric field using cloud-in-cell interpolation and periodic particle BCs.
 //
+//   This test also provides a base for load-balancing using a domain-decomposition
+//   based on an ORB.
+//
 //   Usage:
 //     srun ./PIC3d 128 128 128 10000 10 --info 10
 //
@@ -38,7 +41,7 @@ constexpr unsigned Dim = 3;
 typedef ippl::ParticleSpatialLayout<double,Dim>   PLayout_t;
 typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
-
+typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t> ORB;
 
 template<typename T, unsigned Dim>
 using Vector = ippl::Vector<T, Dim>;
@@ -122,12 +125,36 @@ public:
         layout.update(*this);
     }
 
+    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh) {
+        // Update local fields
+        this->EFD_m.initialize(mesh, fl);
+        this->EFDMag_m.initialize(mesh, fl);
 
-    void gatherStatistics(unsigned int totalP, int iteration) {
+        // Update layout with new FieldLayout
+        PLayout& layout = this->getLayout();
+        layout.updateLayout(fl, mesh);
+        layout.update(*this);
+    }
+
+    ORB orb; 
+    int step = 1;  // temporary: for output
+    void balance(FieldLayout_t& fl, Mesh_t& mesh) {
+        // Repartition the domains
+        bool repartition = orb.BinaryRepartition(*this, fl, mesh, step);
+        step++;
+        if (repartition != true) {
+           std::cout << "Could not repartition!" << std::endl;
+           return;
+        }
+        // Update
+        this->updateLayout(fl, mesh);
+    }
+
+    void gatherStatistics(unsigned int totalP) {
         
         std::cout << "Rank " << Ippl::Comm->rank() << " has " 
                   << (double)this->getLocalNum()/totalP*100.0 
-                  << "percent of the total particles " << std::endl;
+                  << " percent of the total particles " << std::endl;
     }
     
     void gatherCIC() {
@@ -297,6 +324,88 @@ public:
 
 
      }
+    
+    // @param tag
+    //        2 -> uniform(0,1)
+    //        1 -> normal(0,1)
+    //        0 -> gridpoints 
+    void initPositions(FieldLayout_t& fl, Vector_t& hr, unsigned int nloc, int tag = 2) {
+        Inform m("initPositions ");
+        typename ippl::ParticleBase<PLayout>::particle_position_type::HostMirror R_host = this->R.getHostMirror();  // particle velocity
+
+        std::mt19937_64 eng[Dim];
+        for (unsigned i = 0; i < Dim; ++i) {
+            eng[i].seed(42 + i * Dim);
+            eng[i].discard( nloc * Ippl::Comm->rank());
+        }
+       
+        std::mt19937_64 engN[4*Dim];
+        for (unsigned i = 0; i < 4*Dim; ++i) {
+           engN[i].seed(42 + i * Dim);
+           engN[i].discard(nloc * Ippl::Comm->rank());
+        }
+
+        if (tag == 0) {
+           m << "Positions are set on grid points" << endl;
+           // typename bunch_type::particle_position_type::view_type R_view = P->R.getView();
+           int N = fl.getDomain()[0].length();   // this only works for boxes
+           const ippl::NDIndex<Dim>& lDom = fl.getLocalNDIndex();
+           using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+           int size = Ippl::Comm->size();
+           // Loops over particles          
+           Kokkos::parallel_for("initPositions", mdrange_type({0,0,0},{N/size,N,N}), 
+                                                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+              const size_t ig = j + lDom[0].first(); // index i doesn't sweep through the required size
+              const size_t jg = j + lDom[1].first();
+              const size_t kg = k + lDom[2].first();
+
+              // int l = i + j * N + k * N * N;
+              int l = i + j * N / size + k * N * N / size; 
+              R_host(l)[0] = (ig+0.5)*hr[0];
+              R_host(l)[1] = (jg+0.5)*hr[1];
+              R_host(l)[2] = (kg+0.5)*hr[2];
+           });
+           
+        } else if (tag == 1) {
+           m << "Positions follow normal distribution" << endl;
+           std::vector<double> mu(Dim);
+           std::vector<double> sd(Dim);
+           std::vector<double> states(Dim);
+ 
+           Vector_t length = {1.0, 1.0, 1.0}; 
+ 
+           for (unsigned d = 0; d<Dim; d++) 
+              mu[d] = length[d]/4.0;  
+           
+           sd[0] = 0.2*length[0];
+           sd[1] = 0.2*length[1];
+           sd[2] = 0.2*length[2];
+    
+           std::uniform_real_distribution<double> dist_uniform(0.0, 1.0);
+
+           double sum_coord=0.0;
+           for (unsigned long long int i = 0; i< nloc; i++) {
+              for (unsigned d = 0; d<Dim; d++) {
+                 double u1 = dist_uniform(engN[d*2]);
+                 double u2 = dist_uniform(engN[d*2+1]);
+                 states[d] = sd[d] * std::sqrt(-2.0 * std::log(u1)) * std::cos(2.0 * pi * u2) + mu[d];
+                 R_host(i)[d] =  std::fabs(std::fmod(states[d],length[d]));
+                 sum_coord += R_host(i)[d];
+              }
+           }
+        } else {
+           double rmin = 0.0, rmax = 1.0;
+           m << "Positions follow uniform distribution U(" << rmin << "," << rmax << ")" << endl;
+           std::uniform_real_distribution<double> unif(rmin, rmax);
+           for (unsigned long int i = 0; i < nloc; i++) 
+              for (int d = 0; d<3; d++) 
+                 R_host(i)[d] = unif(eng[d]);
+        }
+           
+        // Copy to device
+        Kokkos::deep_copy(this->R.getView(), R_host);
+     }
+
 
 private:
     void setBCAllPeriodic() {
@@ -359,6 +468,10 @@ int main(int argc, char *argv[]) {
     FieldLayout_t FL(domain, decomp);
     PLayout_t PL(FL, mesh);
     
+    /**PRINT**/
+    msg << "FIELD LAYOUT (INITIAL)" << endl;
+    msg << FL << endl;
+ 
     double Q=1.0;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
@@ -373,15 +486,23 @@ int main(int argc, char *argv[]) {
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
     IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
+    // Verifying that particles are created
+    double totalParticles = 0.0;
+    double localParticles = P->getLocalNum();
+    MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+    if (Ippl::Comm->rank() == 0)
+        std::cout << "Total particles: " << totalParticles << std::endl;
+    P->initPositions(FL, hr, nloc, 0);
 
-    
+    /*
     std::mt19937_64 eng[Dim];
     for (unsigned i = 0; i < Dim; ++i) {
         eng[i].seed(42 + i * Dim);
         eng[i].discard( nloc * Ippl::Comm->rank());
     }
     std::uniform_real_distribution<double> unif(rmin[0], rmax[0]);
-
+    msg << "Positions follow uniform distribution U(" << rmin[0] << "," << rmax[0] << ")" << endl;
+    
     typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
 
     double sum_coord=0.0;
@@ -401,26 +522,33 @@ int main(int argc, char *argv[]) {
 
 
     Kokkos::deep_copy(P->R.getView(), R_host);
+    */
     P->qm = P->Q_m/totalP;
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);                                                    
-    
+
     static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
     IpplTimings::startTimer(UpdateTimer);                                               
     P->update();
     IpplTimings::stopTimer(UpdateTimer);                                                    
+ 
+    static IpplTimings::TimerRef particleBalancing = IpplTimings::getTimer("particleBalancing");           
+    IpplTimings::startTimer(particleBalancing);                                                    
+    P->balance(FL, mesh);
+    IpplTimings::stopTimer(particleBalancing);                                                    
+    msg << "Balancing finished" << endl;
     
     msg << "particles created and initial conditions assigned " << endl;
     P->EFD_m.initialize(mesh, FL);
     P->EFDMag_m.initialize(mesh, FL);
     
-    msg << "scatter test" << endl;
     P->scatterCIC(totalP, 0);
+    msg << "scatter test done" << endl;
     
+    msg << "Starting iterations ..." << endl;
     P->initFields();
     msg << "P->initField() done " << endl;
   
-    msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
     
         
@@ -432,10 +560,12 @@ int main(int argc, char *argv[]) {
         P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);                                                    
 
-
         IpplTimings::startTimer(UpdateTimer);
         P->update();
-        IpplTimings::stopTimer(UpdateTimer);                                                    
+        IpplTimings::stopTimer(UpdateTimer);
+
+        // Load-balancing
+        P->balance(FL, mesh);
         
         //scatter the charge onto the underlying grid
         P->scatterCIC(totalP, it+1);
@@ -450,6 +580,8 @@ int main(int argc, char *argv[]) {
         P->P = P->P + dt * P->qm * P->E;
         IpplTimings::stopTimer(PTimer);                                                    
         msg << "Finished iteration " << it << endl;
+
+        P->gatherStatistics(totalP);
     }
     
     msg << "Particle test PIC3d: End." << endl;

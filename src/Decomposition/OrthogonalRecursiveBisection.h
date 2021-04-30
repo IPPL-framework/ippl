@@ -33,7 +33,7 @@ namespace ippl {
           - Repartition the field FL
           - Update P using the field FL
         */
-        bool BinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,M> >& P, FieldLayout<Dim>& FL, UniformCartesian<T,Dim>& mesh); 
+        bool BinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,M> >& P, FieldLayout<Dim>& FL, UniformCartesian<T,Dim>& mesh, int step); 
 
 
         /*!
@@ -47,7 +47,7 @@ namespace ippl {
           - Find median of reduced weights
           - Divide field at median
         */
-        void CalcBinaryRepartition(FieldLayout<Dim>& FL, Field<T, Dim>& BF);
+        void CalcBinaryRepartition(FieldLayout<Dim>& FL, Field<T, Dim>& BF, int step);
 
 
         /*!
@@ -68,7 +68,7 @@ namespace ippl {
           store result in res.  
         */
         void PerformReduction(Field<T,Dim>& BF, std::vector<T>& res, unsigned int cutAxis, NDIndex<Dim>& dom); 
-
+ 
 
         /*!
           @param std::vector<T>& V
@@ -88,11 +88,10 @@ namespace ippl {
           Cut field layout along the cut axis at the median
         */
         void CutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median);
+ 
+        void scatterR(Field<T, Dim, M>& f, const ParticleAttrib<Vector<T, Dim>>& pr);
 
-private:
-        // std::vector<MPI_Comm> comms_m = {Ippl::getComm()};
-        MPI_Comm comm_m = Ippl::getComm(); // MPI_COMM_WORLD
-        int color_m = 0;
+
     }; // class
 
 } // namespace

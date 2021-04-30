@@ -235,7 +235,7 @@ namespace ippl {
         PAssert_GT(length_m, 1);
         int first = first_m;
         int length = length_m;
-        if (i >= length)
+        if (i >= (first + length))
            return false;
         l = Index(first, i);
         r = Index(i+1,first+length-1);
