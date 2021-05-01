@@ -68,6 +68,8 @@ namespace ippl {
         // Assignment from constants and other arrays.
         using BareField<T, Dim>::operator=;
 
+        Kokkos::MDRangePolicy<Kokkos::Rank<Dim>> getRangePolicy() const;
+
         Field(const Field&) = default;
 
     private:
