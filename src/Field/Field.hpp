@@ -30,7 +30,7 @@ namespace ippl {
     Field<T,Dim,M,C>::Field()
     : BareField<T, Dim>()
     , mesh_m(nullptr)
-    , bc_m() 
+    , bc_m()
     { }
 
     //////////////////////////////////////////////////////////////////////////
@@ -39,7 +39,7 @@ namespace ippl {
     Field<T,Dim,M,C>::Field(Mesh_t& m, Layout_t& l, int nghost)
     : BareField<T,Dim>(l, nghost)
     , mesh_m(&m)
-    { 
+    {
         for (unsigned int face=0; face < 2 * Dim; ++face) {
             bc_m[face] = std::make_shared<NoBcFace<T, Dim>>(face);
         }

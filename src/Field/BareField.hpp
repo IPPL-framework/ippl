@@ -100,13 +100,9 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        range_policy_type mdrange = getRangePolicy(0);
         Kokkos::parallel_for("BareField::operator=(T)",
-                             mdrange_type({0, 0, 0},
-                                          {dview_m.extent(0),
-                                           dview_m.extent(1),
-                                           dview_m.extent(2)
-                                    }),
+                             mdrange,
                              KOKKOS_CLASS_LAMBDA(const size_t i,
                                                  const size_t j,
                                                  const size_t k)
@@ -122,12 +118,10 @@ namespace ippl {
     BareField<T, Dim>& BareField<T, Dim>::operator=(const detail::Expression<E, N>& expr) {
         using capture_type = detail::CapturedExpression<E, N>;
         capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+        range_policy_type mdrange = getRangePolicy(nghost_m);
         Kokkos::parallel_for("BareField::operator=(const Expression&)",
-                             mdrange_type({nghost_m, nghost_m, nghost_m},
-                                          {dview_m.extent(0) - nghost_m,
-                                           dview_m.extent(1) - nghost_m,
-                                           dview_m.extent(2) - nghost_m}),
+                             mdrange,
                              KOKKOS_CLASS_LAMBDA(const size_t i,
                                                  const size_t j,
                                                  const size_t k)
