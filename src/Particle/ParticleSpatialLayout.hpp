@@ -36,7 +36,11 @@ namespace ippl {
         FieldLayout<Dim>& fl,
         Mesh& mesh)
     : rlayout_m(fl, mesh)
-    { }
+    {
+        for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
+            archives_m.push_back(archive_type(1e7));
+        }
+    }
 
 
     template <typename T, unsigned Dim, class Mesh>
@@ -45,13 +49,13 @@ namespace ippl {
         ///*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata)
         BufferType& pdata, BufferType& buffer)
     {
-        static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("ParticleBC");           
-        IpplTimings::startTimer(ParticleBCTimer);                                               
+        static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("ParticleBC");
+        IpplTimings::startTimer(ParticleBCTimer);
         this->applyBC(pdata.R, rlayout_m.getDomain());
-        IpplTimings::stopTimer(ParticleBCTimer);                                               
+        IpplTimings::stopTimer(ParticleBCTimer);
 
-        static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
-        IpplTimings::startTimer(ParticleUpdateTimer);                                               
+        static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("ParticleUpdate");
+        IpplTimings::startTimer(ParticleUpdateTimer);
         int nRanks = Ippl::Comm->size();
 
         if (nRanks < 2) {
@@ -68,8 +72,8 @@ namespace ippl {
          *   4. delete invalidated particles
          */
 
-        static IpplTimings::TimerRef step1Timer = IpplTimings::getTimer("locateParticles");           
-        IpplTimings::startTimer(step1Timer);                                               
+        static IpplTimings::TimerRef step1Timer = IpplTimings::getTimer("locateParticles");
+        IpplTimings::startTimer(step1Timer);
         size_t localnum = pdata.getLocalNum();
 
         // 1st step
@@ -85,15 +89,15 @@ namespace ippl {
         bool_type invalid("invalid", localnum);
 
         locateParticles(pdata, ranks, invalid);
-        IpplTimings::stopTimer(step1Timer);                                               
+        IpplTimings::stopTimer(step1Timer);
 
         /*
          * 2nd step
          */
 
         // figure out how many receives
-        static IpplTimings::TimerRef step2Timer = IpplTimings::getTimer("SendPreprocess");           
-        IpplTimings::startTimer(step2Timer);                                               
+        static IpplTimings::TimerRef step2Timer = IpplTimings::getTimer("SendPreprocess");
+        IpplTimings::startTimer(step2Timer);
         MPI_Win win;
         std::vector<int> nRecvs(nRanks, 0);
         MPI_Win_create(nRecvs.data(), nRanks*sizeof(int), sizeof(int),
@@ -113,14 +117,12 @@ namespace ippl {
                     1, MPI_INT, win);
         }
         MPI_Win_fence(0, win);
-        IpplTimings::stopTimer(step2Timer);                                               
+        IpplTimings::stopTimer(step2Timer);
 
-        static IpplTimings::TimerRef step3Timer = IpplTimings::getTimer("ParticleSend");           
-        IpplTimings::startTimer(step3Timer);                                               
+        static IpplTimings::TimerRef step3Timer = IpplTimings::getTimer("ParticleSend");
+        IpplTimings::startTimer(step3Timer);
         // send
         std::vector<MPI_Request> requests(0);
-        using archive_type = Communicate::archive_type;
-        std::vector<std::unique_ptr<archive_type>> archives(0);
 
         int tag = Ippl::Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
 
@@ -129,10 +131,9 @@ namespace ippl {
                 hash_type hash("hash", nSends[rank]);
                 fillHash(rank, ranks, hash);
 
-                archives.push_back(std::make_unique<archive_type>());
                 requests.resize(requests.size() + 1);
 
-                std::cout << "Rank " << Ippl::Comm->rank() << " sends " << nSends[rank] 
+                std::cout << "Rank " << Ippl::Comm->rank() << " sends " << nSends[rank]
                           << " to rank  " << rank << std::endl;
 
                 //BufferType buffer(pdata.getLayout());
@@ -140,14 +141,14 @@ namespace ippl {
 
                 pdata.pack(buffer, hash);
 
-                Ippl::Comm->isend(rank, tag, buffer, *(archives.back()),
+                Ippl::Comm->isend(rank, tag, buffer, archives_m[rank],
                                   requests.back());
             }
         }
-        IpplTimings::stopTimer(step3Timer);                                               
+        IpplTimings::stopTimer(step3Timer);
 
-        static IpplTimings::TimerRef step4Timer = IpplTimings::getTimer("ParticleRecv");           
-        IpplTimings::startTimer(step4Timer);                                               
+        static IpplTimings::TimerRef step4Timer = IpplTimings::getTimer("ParticleRecv");
+        IpplTimings::startTimer(step4Timer);
         // 3rd step
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
@@ -162,12 +163,11 @@ namespace ippl {
 
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-            archives.clear();
         }
-        IpplTimings::stopTimer(step4Timer);                                               
+        IpplTimings::stopTimer(step4Timer);
 
-        static IpplTimings::TimerRef step5Timer = IpplTimings::getTimer("ParticleDestroy");           
-        IpplTimings::startTimer(step5Timer);                                               
+        static IpplTimings::TimerRef step5Timer = IpplTimings::getTimer("ParticleDestroy");
+        IpplTimings::startTimer(step5Timer);
         // create space for received particles
         int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
         pdata.setLocalNum(localnum + nTotalRecvs);
@@ -183,8 +183,8 @@ namespace ippl {
 
         // 4th step
         pdata.destroy();
-        IpplTimings::stopTimer(step5Timer);                                               
-        IpplTimings::stopTimer(ParticleUpdateTimer);                                               
+        IpplTimings::stopTimer(step5Timer);
+        IpplTimings::stopTimer(ParticleUpdateTimer);
     }
 
 
@@ -202,22 +202,22 @@ namespace ippl {
         Kokkos::parallel_for(
             "ParticleSpatialLayout::locateParticles()",
             mdrange_type({0, 0},
-                         {ranks.extent(0), Regions.extent(0)}), 
+                         {ranks.extent(0), Regions.extent(0)}),
             KOKKOS_CLASS_LAMBDA(const size_t i, const size_type j) {
                 bool x_bool = false;
                 bool y_bool = false;
                 bool z_bool = false;
                 if((positions(i)[0] >= Regions(j)[0].min()) &&
                    (positions(i)[0] <= Regions(j)[0].max())) {
-                    x_bool = true;    
+                    x_bool = true;
                 }
                 if((positions(i)[1] >= Regions(j)[1].min()) &&
                    (positions(i)[1] <= Regions(j)[1].max())) {
-                    y_bool = true;    
+                    y_bool = true;
                 }
                 if((positions(i)[2] >= Regions(j)[2].min()) &&
                    (positions(i)[2] <= Regions(j)[2].max())) {
-                    z_bool = true;    
+                    z_bool = true;
                 }
                 if(x_bool && y_bool && z_bool){
                     ranks(i) = j;

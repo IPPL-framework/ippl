@@ -51,6 +51,7 @@ namespace ippl {
         using locate_type = typename detail::ViewType<int, 1>::view_type;
         using bool_type = typename detail::ViewType<bool, 1>::view_type;
         using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
+        using archive_type = Communicate::archive_type;
 
     public:
         // constructor: this one also takes a Mesh
@@ -71,6 +72,8 @@ namespace ippl {
     protected:
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
+
+        std::vector<archive_type> archives_m;
 
     public:
         void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
