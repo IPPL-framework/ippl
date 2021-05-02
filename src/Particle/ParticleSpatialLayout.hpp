@@ -38,7 +38,7 @@ namespace ippl {
     : rlayout_m(fl, mesh)
     {
         for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-            archives_m.push_back(archive_type(1e7));
+            archives_m[rank] = archive_type(1e7);
         }
     }
 

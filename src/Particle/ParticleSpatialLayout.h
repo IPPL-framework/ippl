@@ -73,7 +73,7 @@ namespace ippl {
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
 
-        std::vector<archive_type> archives_m;
+        archive_type archives_m[8];
 
     public:
         void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
