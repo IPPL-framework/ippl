@@ -131,7 +131,7 @@ namespace ippl {
                                     Kokkos::Max)
 
     template <typename T, unsigned Dim>
-    T norm2(const BareField<T, Dim>& bf, const int nghost) {
+    T norm2(const BareField<T, Dim>& bf, const int nghost = 0) {
         return std::sqrt(innerProduct(bf, bf, nghost));
     }
 }

@@ -100,7 +100,7 @@ namespace ippl {
     template <typename T, unsigned Dim>
     template <unsigned dim, std::enable_if_t<(dim == 2), bool>>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
-        policy_type policy = getRangePolicy(0);
+        policy_type policy = getRangePolicy(nghost_m);
 
         Kokkos::parallel_for("BareField::operator=(T)",
                             policy,
@@ -116,7 +116,7 @@ namespace ippl {
     template <typename T, unsigned Dim>
     template <unsigned dim, std::enable_if_t<(dim == 3), bool>>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
-        policy_type policy = getRangePolicy(0);
+        policy_type policy = getRangePolicy(nghost_m);
 
         Kokkos::parallel_for("BareField::operator=(T)",
                             policy,
@@ -178,9 +178,8 @@ namespace ippl {
     template <typename T, unsigned Dim>                                         \
     template <unsigned dim, std::enable_if_t<(dim == 2), bool>>                 \
     T BareField<T, Dim>::name(int nghost) {                                     \
-        PAssert_LE(nghost, nghost_m);                                           \
         T temp = 0.0;                                                           \
-        policy_type policy = getRangePolicy(nghost_m - nghost);                 \
+        policy_type policy = getRangePolicy(nghost);                            \
         Kokkos::parallel_reduce("fun",                                          \
                                 policy,                                         \
                                 KOKKOS_CLASS_LAMBDA(const size_t i,             \
@@ -200,9 +199,8 @@ namespace ippl {
     template <typename T, unsigned Dim>                                         \
     template <unsigned dim, std::enable_if_t<(dim == 3), bool>>                 \
     T BareField<T, Dim>::name(int nghost) {                                     \
-        PAssert_LE(nghost, nghost_m);                                           \
         T temp = 0.0;                                                           \
-        policy_type policy = getRangePolicy(nghost_m - nghost);                 \
+        policy_type policy = getRangePolicy(nghost);                            \
         Kokkos::parallel_reduce("fun",                                          \
                                 policy,                                         \
                                 KOKKOS_CLASS_LAMBDA(const size_t i,             \
