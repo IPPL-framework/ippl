@@ -257,5 +257,6 @@ namespace ippl {
 }
 
 #include "Field/BareField.hpp"
+#include "Field/BareFieldOperations.hpp"
 
 #endif
