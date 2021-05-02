@@ -17,95 +17,95 @@
 //
 
 namespace ippl {
-    #define DefineBinaryBareFieldOperation2D(fun, op, kokkos_op)            \
-    template <typename T, unsigned Dim,                                     \
-              std::enable_if_t<(Dim == 2), bool> = true>                    \
-    T fun(const BareField<T, Dim>& bf1,                                     \
-          const BareField<T, Dim>& bf2,                                     \
-          const int nghost = 0)                                             \
-    {                                                                       \
-        T sum = 0;                                                          \
-        Kokkos::parallel_reduce("BareField::fun",                           \
-                                bf1.getRangePolicy(nghost),                 \
-                                KOKKOS_LAMBDA(const size_t i,               \
-                                              const size_t j,               \
-                                              T& val)                       \
-                                {                                           \
-                                    op;                                     \
-                                }, kokkos_op<T>(sum));                      \
-        T globalSum = 0;                                                    \
-        MPI_Datatype type = get_mpi_datatype<T>(sum);                       \
-        MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm()); \
-        return globalSum;                                                   \
+    #define DefineBinaryBareFieldOperation2D(fun, op, kokkos_op)        \
+    template <typename T, unsigned Dim,                                 \
+              std::enable_if_t<(Dim == 2), bool> = true>                \
+    T fun(const BareField<T, Dim>& bf1,                                 \
+          const BareField<T, Dim>& bf2,                                 \
+          const int nghost = 0)                                         \
+    {                                                                   \
+        T lres = 0;                                                     \
+        Kokkos::parallel_reduce("BareField::fun",                       \
+                                bf1.getRangePolicy(nghost),             \
+                                KOKKOS_LAMBDA(const size_t i,           \
+                                              const size_t j,           \
+                                              T& val)                   \
+                                {                                       \
+                                    op;                                 \
+                                }, kokkos_op<T>(lres));                 \
+        T gres = 0;                                                     \
+        MPI_Datatype type = get_mpi_datatype<T>(lres);                  \
+        MPI_Allreduce(&lres, &gres, 1, type, MPI_SUM, Ippl::getComm()); \
+        return gres;                                                    \
     }
 
 
-    #define DefineBinaryBareFieldOperation3D(fun, op, kokkos_op)            \
-    template <typename T, unsigned Dim,                                     \
-              std::enable_if_t<(Dim == 3), bool> = true>                    \
-    T fun(const BareField<T, Dim>& bf1,                                     \
-          const BareField<T, Dim>& bf2,                                     \
-          const int nghost = 0)                                             \
-    {                                                                       \
-        T sum = 0;                                                          \
-        Kokkos::parallel_reduce("BareField::fun",                           \
-                                bf1.getRangePolicy(nghost),                 \
-                                KOKKOS_LAMBDA(const size_t i,               \
-                                              const size_t j,               \
-                                              const size_t k,               \
-                                              T& val)                       \
-                                {                                           \
-                                    op;                                     \
-                                }, kokkos_op<T>(sum));                      \
-        T globalSum = 0;                                                    \
-        MPI_Datatype type = get_mpi_datatype<T>(sum);                       \
-        MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm()); \
-        return globalSum;                                                   \
+    #define DefineBinaryBareFieldOperation3D(fun, op, kokkos_op)        \
+    template <typename T, unsigned Dim,                                 \
+              std::enable_if_t<(Dim == 3), bool> = true>                \
+    T fun(const BareField<T, Dim>& bf1,                                 \
+          const BareField<T, Dim>& bf2,                                 \
+          const int nghost = 0)                                         \
+    {                                                                   \
+        T lres = 0;                                                     \
+        Kokkos::parallel_reduce("BareField::fun",                       \
+                                bf1.getRangePolicy(nghost),             \
+                                KOKKOS_LAMBDA(const size_t i,           \
+                                              const size_t j,           \
+                                              const size_t k,           \
+                                              T& val)                   \
+                                {                                       \
+                                    op;                                 \
+                                }, kokkos_op<T>(lres));                 \
+        T gres = 0;                                                     \
+        MPI_Datatype type = get_mpi_datatype<T>(lres);                  \
+        MPI_Allreduce(&lres, &gres, 1, type, MPI_SUM, Ippl::getComm()); \
+        return gres;                                                    \
     }
 
 
-    #define DefineUnaryBareFieldOperation2D(fun, op, kokkos_op)             \
-    template <typename T, unsigned Dim,                                     \
-              std::enable_if_t<(Dim == 2), bool> = true>                    \
-    T fun(const BareField<T, Dim>& bf,                                      \
-          const int nghost = 0)                                             \
-    {                                                                       \
-        T sum = 0;                                                          \
-        Kokkos::parallel_reduce("BareField::fun",                           \
-                                bf.getRangePolicy(nghost),                  \
-                                KOKKOS_LAMBDA(const size_t i,               \
-                                              const size_t j,               \
-                                              T& val)                       \
-                                {                                           \
-                                    op;                                     \
-                                }, kokkos_op<T>(sum));                      \
-        T globalSum = 0;                                                    \
-        MPI_Datatype type = get_mpi_datatype<T>(sum);                       \
-        MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm()); \
-        return globalSum;                                                   \
-    }                                                                       \
+    #define DefineUnaryBareFieldOperation2D(fun, op, kokkos_op)         \
+    template <typename T, unsigned Dim,                                 \
+              std::enable_if_t<(Dim == 2), bool> = true>                \
+    T fun(const BareField<T, Dim>& bf,                                  \
+          const int nghost = 0)                                         \
+    {                                                                   \
+        T lres = 0;                                                     \
+        Kokkos::parallel_reduce("BareField::fun",                       \
+                                bf.getRangePolicy(nghost),              \
+                                KOKKOS_LAMBDA(const size_t i,           \
+                                              const size_t j,           \
+                                              T& val)                   \
+                                {                                       \
+                                    op;                                 \
+                                }, kokkos_op<T>(lres));                 \
+        T gres = 0;                                                     \
+        MPI_Datatype type = get_mpi_datatype<T>(lres);                  \
+        MPI_Allreduce(&lres, &gres, 1, type, MPI_SUM, Ippl::getComm()); \
+        return gres;                                                    \
+    }
 
 
-    #define DefineUnaryBareFieldOperation3D(fun, op, kokkos_op)             \
-    template <typename T, unsigned Dim,                                     \
-              std::enable_if_t<(Dim == 3), bool> = true>                    \
-    T fun(const BareField<T, Dim>& bf,                                      \
-          const int nghost = 0)                                             \
-    {                                                                       \
-        T sum = 0;                                                          \
-        Kokkos::parallel_reduce("BareField::fun",                           \
-                                bf.getRangePolicy(nghost),                  \
-                                KOKKOS_LAMBDA(const size_t i,               \
-                                              const size_t j,               \
-                                              const size_t k,               \
-                                              T& val)                       \
-                                {                                           \
-                                    op;                                     \
-                                }, kokkos_op<T>(sum));                      \
-        T globalSum = 0;                                                    \
-        MPI_Datatype type = get_mpi_datatype<T>(sum);                       \
-        MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm()); \
-        return globalSum;                                                   \
+    #define DefineUnaryBareFieldOperation3D(fun, op, kokkos_op)         \
+    template <typename T, unsigned Dim,                                 \
+              std::enable_if_t<(Dim == 3), bool> = true>                \
+    T fun(const BareField<T, Dim>& bf,                                  \
+          const int nghost = 0)                                         \
+    {                                                                   \
+        T lres = 0;                                                     \
+        Kokkos::parallel_reduce("BareField::fun",                       \
+                                bf.getRangePolicy(nghost),              \
+                                KOKKOS_LAMBDA(const size_t i,           \
+                                              const size_t j,           \
+                                              const size_t k,           \
+                                              T& val)                   \
+                                {                                       \
+                                    op;                                 \
+                                }, kokkos_op<T>(lres));                 \
+        T gres = 0;                                                     \
+        MPI_Datatype type = get_mpi_datatype<T>(lres);                  \
+        MPI_Allreduce(&lres, &gres, 1, type, MPI_SUM, Ippl::getComm()); \
+        return gres;                                                    \
     }
 
 

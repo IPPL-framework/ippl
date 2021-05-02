@@ -56,7 +56,7 @@ public:
 
 
 
-TEST_F(FieldTest, FieldSum) {
+TEST_F(FieldTest, Sum) {
     double val = 1.0;
 
     *field = val;
@@ -64,6 +64,38 @@ TEST_F(FieldTest, FieldSum) {
     double sum = field->sum();
 
     ASSERT_DOUBLE_EQ(val * std::pow(nPoints, dim), sum);
+}
+
+
+TEST_F(FieldTest, Norm1) {
+    double val = -1.5;
+
+    *field = val;
+
+    double norm1 = norm1(*field);
+
+    ASSERT_DOUBLE_EQ(-val * std::pow(nPoints, dim), norm1);
+}
+
+
+TEST_F(FieldTest, Norm2) {
+    double val = 1.5;
+
+    *field = val;
+
+    double norm2 = norm2(*field);
+
+    ASSERT_DOUBLE_EQ(std::sqrt(val * val * std::pow(nPoints, dim)), norm2);
+}
+
+TEST_F(FieldTest, NormInf) {
+    double val = 1.5;
+
+    *field = val;
+
+    double normInf = normInf(*field);
+
+    ASSERT_DOUBLE_EQ(val, normInf);
 }
 
 
