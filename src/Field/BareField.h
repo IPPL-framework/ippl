@@ -202,7 +202,7 @@ namespace ippl {
         template <unsigned dim = Dim, std::enable_if_t<(dim == 2), bool> = true>
         policy_type getRangePolicy(const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
-            const int shift = nghost_m - nghost;
+            const size_t shift = nghost_m - nghost;
             return policy_type({shift, shift},
                                {dview_m.extent(0) - shift,
                                 dview_m.extent(1) - shift});
@@ -211,7 +211,7 @@ namespace ippl {
         template <unsigned dim = Dim, std::enable_if_t<(dim == 3), bool> = true>
         policy_type getRangePolicy(const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
-            const int shift = nghost_m - nghost;
+            const size_t shift = nghost_m - nghost;
             return policy_type({shift, shift, shift},
                                {dview_m.extent(0) - shift,
                                 dview_m.extent(1) - shift,

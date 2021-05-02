@@ -17,7 +17,7 @@
 //
 
 namespace ippl {
-    #define DefineBinaryBareFieldOperation2D(fun, op, kokkos_op)        \
+    #define DefineBinaryBareFieldOperation2D(fun, op, kokkos_op, mpi_op)\
     template <typename T, unsigned Dim,                                 \
               std::enable_if_t<(Dim == 2), bool> = true>                \
     T fun(const BareField<T, Dim>& bf1,                                 \
@@ -35,12 +35,12 @@ namespace ippl {
                                 }, kokkos_op<T>(lres));                 \
         T gres = 0;                                                     \
         MPI_Datatype type = get_mpi_datatype<T>(lres);                  \
-        MPI_Allreduce(&lres, &gres, 1, type, MPI_SUM, Ippl::getComm()); \
+        MPI_Allreduce(&lres, &gres, 1, type, mpi_op, Ippl::getComm());  \
         return gres;                                                    \
     }
 
 
-    #define DefineBinaryBareFieldOperation3D(fun, op, kokkos_op)        \
+    #define DefineBinaryBareFieldOperation3D(fun, op, kokkos_op, mpi_op)\
     template <typename T, unsigned Dim,                                 \
               std::enable_if_t<(Dim == 3), bool> = true>                \
     T fun(const BareField<T, Dim>& bf1,                                 \
@@ -59,12 +59,12 @@ namespace ippl {
                                 }, kokkos_op<T>(lres));                 \
         T gres = 0;                                                     \
         MPI_Datatype type = get_mpi_datatype<T>(lres);                  \
-        MPI_Allreduce(&lres, &gres, 1, type, MPI_SUM, Ippl::getComm()); \
+        MPI_Allreduce(&lres, &gres, 1, type, mpi_op, Ippl::getComm());  \
         return gres;                                                    \
     }
 
 
-    #define DefineUnaryBareFieldOperation2D(fun, op, kokkos_op)         \
+    #define DefineUnaryBareFieldOperation2D(fun, op, kokkos_op, mpi_op) \
     template <typename T, unsigned Dim,                                 \
               std::enable_if_t<(Dim == 2), bool> = true>                \
     T fun(const BareField<T, Dim>& bf,                                  \
@@ -81,20 +81,21 @@ namespace ippl {
                                 }, kokkos_op<T>(lres));                 \
         T gres = 0;                                                     \
         MPI_Datatype type = get_mpi_datatype<T>(lres);                  \
-        MPI_Allreduce(&lres, &gres, 1, type, MPI_SUM, Ippl::getComm()); \
+        MPI_Allreduce(&lres, &gres, 1, type, mpi_op, Ippl::getComm());  \
         return gres;                                                    \
     }
 
 
-    #define DefineUnaryBareFieldOperation3D(fun, op, kokkos_op)         \
+    #define DefineUnaryBareFieldOperation3D(fun, op, kokkos_op, mpi_op) \
     template <typename T, unsigned Dim,                                 \
               std::enable_if_t<(Dim == 3), bool> = true>                \
     T fun(const BareField<T, Dim>& bf,                                  \
           const int nghost = 0)                                         \
     {                                                                   \
         T lres = 0;                                                     \
+        auto policy = bf.getRangePolicy(nghost);                        \
         Kokkos::parallel_reduce("BareField::fun",                       \
-                                bf.getRangePolicy(nghost),              \
+                                policy,                                 \
                                 KOKKOS_LAMBDA(const size_t i,           \
                                               const size_t j,           \
                                               const size_t k,           \
@@ -104,31 +105,31 @@ namespace ippl {
                                 }, kokkos_op<T>(lres));                 \
         T gres = 0;                                                     \
         MPI_Datatype type = get_mpi_datatype<T>(lres);                  \
-        MPI_Allreduce(&lres, &gres, 1, type, MPI_SUM, Ippl::getComm()); \
+        MPI_Allreduce(&lres, &gres, 1, type, mpi_op, Ippl::getComm());  \
         return gres;                                                    \
     }
 
 
     DefineBinaryBareFieldOperation2D(innerProduct,
                                      val += bf1(i, j) * bf2(i, j);,
-                                     Kokkos::Sum)
+                                     Kokkos::Sum, MPI_SUM)
     DefineBinaryBareFieldOperation3D(innerProduct,
                                      val += bf1(i, j, k) * bf2(i, j, k);,
-                                     Kokkos::Sum)
+                                     Kokkos::Sum, MPI_SUM)
 
     DefineUnaryBareFieldOperation2D(norm1,
                                     val += std::abs(bf(i, j)),
-                                    Kokkos::Sum)
+                                    Kokkos::Sum, MPI_SUM)
     DefineUnaryBareFieldOperation3D(norm1,
                                     val += std::abs(bf(i, j, k)),
-                                    Kokkos::Sum)
+                                    Kokkos::Sum, MPI_SUM)
 
     DefineUnaryBareFieldOperation2D(normInf,
                                     val = std::abs(bf(i, j)),
-                                    Kokkos::Max)
+                                    Kokkos::Max, MPI_MAX)
     DefineUnaryBareFieldOperation3D(normInf,
                                     val = std::abs(bf(i, j, k)),
-                                    Kokkos::Max)
+                                    Kokkos::Max, MPI_MAX)
 
     template <typename T, unsigned Dim>
     T norm2(const BareField<T, Dim>& bf, const int nghost = 0) {
