@@ -145,16 +145,32 @@ namespace ippl {
         detail::HaloCells<T, Dim>& getHalo() { return halo_m; }
 
         // Assignment from a constant.
+        template <unsigned dim = Dim, std::enable_if_t<(dim == 2), bool> = true>
+        BareField<T, Dim>& operator=(T x);
+
+        template <unsigned dim = Dim, std::enable_if_t<(dim == 3), bool> = true>
         BareField<T, Dim>& operator=(T x);
 
         /*!
-         * Assign an arbitrary BareField expression
+         * Assign an arbitrary BareField expression (2D version)
          * @tparam E expression type
          * @tparam N size of the expression, this is necessary for running on the
          * device since otherwise it does not allocate enough memory
          * @param expr is the expression
          */
-        template <typename E, size_t N>
+        template <typename E, size_t N,
+                  unsigned dim = Dim, std::enable_if_t<(dim == 2), bool> = true>
+        BareField<T, Dim>& operator=(const detail::Expression<E, N>& expr);
+
+        /*!
+         * Assign an arbitrary BareField expression (3D version)
+         * @tparam E expression type
+         * @tparam N size of the expression, this is necessary for running on the
+         * device since otherwise it does not allocate enough memory
+         * @param expr is the expression
+         */
+        template <typename E, size_t N,
+                  unsigned dim = Dim, std::enable_if_t<(dim == 3), bool> = true>
         BareField<T, Dim>& operator=(const detail::Expression<E, N>& expr);
 
         /*!
@@ -183,14 +199,14 @@ namespace ippl {
             return Kokkos::create_mirror(dview_m);
         }
 
-        template<unsigned dim = Dim, std::enable_if_t<(dim == 2), bool> = true>
+        template <unsigned dim = Dim, std::enable_if_t<(dim == 2), bool> = true>
         policy_type getRangePolicy(int nghost) const {
             return policy_type({nghost, nghost},
                                {dview_m.extent(0) - nghost,
                                dview_m.extent(1) - nghost});
         }
 
-        template<unsigned dim = Dim, std::enable_if_t<(dim == 3), bool> = true>
+        template <unsigned dim = Dim, std::enable_if_t<(dim == 3), bool> = true>
         policy_type getRangePolicy(int nghost) const {
             return policy_type({nghost, nghost, nghost},
                                {dview_m.extent(0) - nghost,
@@ -204,11 +220,19 @@ namespace ippl {
          */
         void write(std::ostream& out = std::cout) const;
 
-        T sum(int nghost = 0);
-        T max(int nghost = 0);
-        T min(int nghost = 0);
-        T prod(int nghost = 0);
+        #define DefineOperation(fun)                                \
+        template <unsigned dim = Dim,                               \
+                  std::enable_if_t<(dim == 2), bool> = true>        \
+        T fun(int nghost = 0);                                      \
+                                                                    \
+        template <unsigned dim = Dim,                               \
+                  std::enable_if_t<(dim == 3), bool> = true>        \
+        T fun(int nghost = 0);
 
+        DefineOperation(sum)
+        DefineOperation(max)
+        DefineOperation(min)
+        DefineOperation(prod)
 
     private:
         //! Number of ghost layers on each field boundary

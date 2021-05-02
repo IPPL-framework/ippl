@@ -58,13 +58,11 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::setup() {
-        static_assert(Dim == 3, "Only 3-dimensional fields supported at the momment!");
+        static_assert(Dim == 2 || Dim == 3, "Only 2D and 3D fields supported at the momment!");
 
         owned_m = layout_m->getLocalNDIndex();
 
-        if constexpr(Dim == 1) {
-            this->resize(owned_m[0].length() + 2 * nghost_m);
-        } else if constexpr(Dim == 2) {
+        if constexpr(Dim == 2) {
             this->resize(owned_m[0].length() + 2 * nghost_m,
                          owned_m[1].length() + 2 * nghost_m);
         } else if constexpr(Dim == 3) {
@@ -98,42 +96,60 @@ namespace ippl {
     }
 
 
+
     template <typename T, unsigned Dim>
+    template <unsigned dim, std::enable_if_t<(dim == 2), bool>>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
         policy_type policy = getRangePolicy(0);
 
-        if constexpr(Dim == 1) {
-            Kokkos::parallel_for("BareField::operator=(T)",
-                                policy,
-                                KOKKOS_CLASS_LAMBDA(const size_t i)
-                                {
-                                    dview_m(i) = x;
-                                });
-        } else if constexpr(Dim == 2) {
-            Kokkos::parallel_for("BareField::operator=(T)",
-                                policy,
-                                KOKKOS_CLASS_LAMBDA(const size_t i,
-                                                    const size_t j)
-                                {
-                                    dview_m(i, j) = x;
-                                });
-        } else if constexpr(Dim == 3) {
-            Kokkos::parallel_for("BareField::operator=(T)",
-                                policy,
-                                KOKKOS_CLASS_LAMBDA(const size_t i,
-                                                    const size_t j,
-                                                    const size_t k)
-                                {
-                                    dview_m(i, j, k) = x;
-                                });
-        }
-
+        Kokkos::parallel_for("BareField::operator=(T)",
+                            policy,
+                            KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                const size_t j)
+                            {
+                                dview_m(i, j) = x;
+                            });
         return *this;
     }
 
 
     template <typename T, unsigned Dim>
-    template <typename E, size_t N>
+    template <unsigned dim, std::enable_if_t<(dim == 3), bool>>
+    BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
+        policy_type policy = getRangePolicy(0);
+
+        Kokkos::parallel_for("BareField::operator=(T)",
+                            policy,
+                            KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                const size_t j,
+                                                const size_t k)
+                            {
+                                dview_m(i, j, k) = x;
+                            });
+        return *this;
+    }
+
+
+    template <typename T, unsigned Dim>
+    template <typename E, size_t N, unsigned dim, std::enable_if_t<(dim == 2), bool>>
+    BareField<T, Dim>& BareField<T, Dim>::operator=(const detail::Expression<E, N>& expr) {
+        using capture_type = detail::CapturedExpression<E, N>;
+        capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
+
+        policy_type policy = getRangePolicy(nghost_m);
+        Kokkos::parallel_for("BareField::operator=(const Expression&)",
+                             policy,
+                             KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                 const size_t j)
+                             {
+                                dview_m(i, j) = expr_(i, j);
+                             });
+        return *this;
+    }
+
+
+    template <typename T, unsigned Dim>
+    template <typename E, size_t N, unsigned dim, std::enable_if_t<(dim == 3), bool>>
     BareField<T, Dim>& BareField<T, Dim>::operator=(const detail::Expression<E, N>& expr) {
         using capture_type = detail::CapturedExpression<E, N>;
         capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
@@ -158,32 +174,53 @@ namespace ippl {
     }
 
 
-    #define DefineReduction(fun, name, op, MPI_Op)                                                           \
-    template <typename T, unsigned Dim>                                                                      \
-    T BareField<T, Dim>::name(int nghost) {                                                                  \
-        PAssert_LE(nghost, nghost_m);                                                                        \
-        T temp = 0.0;                                                                                        \
-        const size_t shift = nghost_m - nghost;                                                              \
-        Kokkos::parallel_reduce("fun",                                                                       \
-                               Kokkos::MDRangePolicy<Kokkos::Rank<3>>({shift, shift, shift},                 \
-                                                                      {dview_m.extent(0) - shift,            \
-                                                                       dview_m.extent(1) - shift,            \
-                                                                       dview_m.extent(2) - shift}),          \
-                               KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j,                           \
-                                                   const size_t k, T& valL) {                                \
-                                    T myVal = dview_m(i, j, k);                                              \
-                                    op;                                                                      \
-                               }, Kokkos::fun<T>(temp));                                                     \
-        T globaltemp = 0.0;                                                                                  \
-        MPI_Datatype type = get_mpi_datatype<T>(temp);                                                       \
-        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());                                 \
-        return globaltemp;                                                                                   \
+    #define DefineReduction(fun, name, op, MPI_Op)                              \
+    template <typename T, unsigned Dim>                                         \
+    template <unsigned dim, std::enable_if_t<(dim == 2), bool>>                 \
+    T BareField<T, Dim>::name(int nghost) {                                     \
+        PAssert_LE(nghost, nghost_m);                                           \
+        T temp = 0.0;                                                           \
+        policy_type policy = getRangePolicy(nghost_m - nghost);                 \
+        Kokkos::parallel_reduce("fun",                                          \
+                                policy,                                         \
+                                KOKKOS_CLASS_LAMBDA(const size_t i,             \
+                                                    const size_t j,             \
+                                                    T& valL)                    \
+                                {                                               \
+                                    T myVal = dview_m(i, j);                    \
+                                    op;                                         \
+                                }, Kokkos::fun<T>(temp));                       \
+        T globaltemp = 0.0;                                                     \
+        MPI_Datatype type = get_mpi_datatype<T>(temp);                          \
+        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());    \
+        return globaltemp;                                                      \
+    }                                                                           \
+                                                                                \
+                                                                                \
+    template <typename T, unsigned Dim>                                         \
+    template <unsigned dim, std::enable_if_t<(dim == 3), bool>>                 \
+    T BareField<T, Dim>::name(int nghost) {                                     \
+        PAssert_LE(nghost, nghost_m);                                           \
+        T temp = 0.0;                                                           \
+        policy_type policy = getRangePolicy(nghost_m - nghost);                 \
+        Kokkos::parallel_reduce("fun",                                          \
+                                policy,                                         \
+                                KOKKOS_CLASS_LAMBDA(const size_t i,             \
+                                                    const size_t j,             \
+                                                    const size_t k,             \
+                                                    T& valL)                    \
+                                {                                               \
+                                    T myVal = dview_m(i, j, k);                 \
+                                    op;                                         \
+                                }, Kokkos::fun<T>(temp));                       \
+        T globaltemp = 0.0;                                                     \
+        MPI_Datatype type = get_mpi_datatype<T>(temp);                          \
+        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());    \
+        return globaltemp;                                                      \
     }
 
     DefineReduction(Sum,  sum,  valL += myVal, MPI_SUM)
     DefineReduction(Max,  max,  if(myVal > valL) valL = myVal, MPI_MAX)
     DefineReduction(Min,  min,  if(myVal < valL) valL = myVal, MPI_MIN)
     DefineReduction(Prod, prod, valL *= myVal, MPI_PROD)
-
-
 }
