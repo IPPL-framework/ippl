@@ -67,7 +67,7 @@ namespace ippl {
          */
         template <unsigned Dim>
         struct RangePolicy {
-            typedef Kokkos::MDRangePolicy<Kokkos::Rank<Dim>> range_policy_type;
+            typedef Kokkos::MDRangePolicy<Kokkos::Rank<Dim>> policy_type;
         };
 
         /*!
@@ -75,7 +75,7 @@ namespace ippl {
          */
         template <>
         struct RangePolicy<1> {
-            typedef Kokkos::RangePolicy<> range_policy_type;
+            typedef Kokkos::RangePolicy<> policy_type;
         };
 
 
