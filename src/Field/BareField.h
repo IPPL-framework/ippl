@@ -204,8 +204,8 @@ namespace ippl {
             PAssert_LE(nghost, nghost_m);
             const int shift = nghost_m - nghost;
             return policy_type({shift, shift},
-                               {dview_m.extent(0) + shift,
-                                dview_m.extent(1) + shift});
+                               {dview_m.extent(0) - shift,
+                                dview_m.extent(1) - shift});
         }
 
         template <unsigned dim = Dim, std::enable_if_t<(dim == 3), bool> = true>
@@ -213,9 +213,9 @@ namespace ippl {
             PAssert_LE(nghost, nghost_m);
             const int shift = nghost_m - nghost;
             return policy_type({shift, shift, shift},
-                               {dview_m.extent(0) + shift,
-                                dview_m.extent(1) + nghost,
-                                dview_m.extent(2) + shift});
+                               {dview_m.extent(0) - shift,
+                                dview_m.extent(1) - shift,
+                                dview_m.extent(2) - shift});
         }
 
         /*!
