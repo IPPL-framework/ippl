@@ -101,14 +101,33 @@ namespace ippl {
     template <typename T, unsigned Dim>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
         policy_type policy = getRangePolicy(0);
-        Kokkos::parallel_for("BareField::operator=(T)",
-                             policy,
-                             KOKKOS_CLASS_LAMBDA(const size_t i,
-                                                 const size_t j,
-                                                 const size_t k)
-                             {
-                                 dview_m(i, j, k) = x;
-                             });
+
+        if constexpr(Dim == 1) {
+            Kokkos::parallel_for("BareField::operator=(T)",
+                                policy,
+                                KOKKOS_CLASS_LAMBDA(const size_t i)
+                                {
+                                    dview_m(i) = x;
+                                });
+        } else if constexpr(Dim == 2) {
+            Kokkos::parallel_for("BareField::operator=(T)",
+                                policy,
+                                KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                    const size_t j)
+                                {
+                                    dview_m(i, j) = x;
+                                });
+        } else if constexpr(Dim == 3) {
+            Kokkos::parallel_for("BareField::operator=(T)",
+                                policy,
+                                KOKKOS_CLASS_LAMBDA(const size_t i,
+                                                    const size_t j,
+                                                    const size_t k)
+                                {
+                                    dview_m(i, j, k) = x;
+                                });
+        }
+
         return *this;
     }
 
