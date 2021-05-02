@@ -100,9 +100,9 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
-        range_policy_type mdrange = getRangePolicy(0);
+        policy_type policy = getRangePolicy(0);
         Kokkos::parallel_for("BareField::operator=(T)",
-                             mdrange,
+                             policy,
                              KOKKOS_CLASS_LAMBDA(const size_t i,
                                                  const size_t j,
                                                  const size_t k)
@@ -119,9 +119,9 @@ namespace ippl {
         using capture_type = detail::CapturedExpression<E, N>;
         capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
 
-        range_policy_type mdrange = getRangePolicy(nghost_m);
+        policy_type policy = getRangePolicy(nghost_m);
         Kokkos::parallel_for("BareField::operator=(const Expression&)",
-                             mdrange,
+                             policy,
                              KOKKOS_CLASS_LAMBDA(const size_t i,
                                                  const size_t j,
                                                  const size_t k)
