@@ -38,7 +38,8 @@ namespace ippl {
     : rlayout_m(fl, mesh)
     {
         for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-            archives_m[rank] = archive_type(1e7);
+            sendar_m[rank] = archive_type(1e7);
+            recvar_m[rank] = archive_type(1e7);
         }
     }
 
@@ -141,7 +142,7 @@ namespace ippl {
 
                 pdata.pack(buffer, hash);
 
-                Ippl::Comm->isend(rank, tag, buffer, archives_m[rank],
+                Ippl::Comm->isend(rank, tag, buffer, sendar_m[rank],
                                   requests.back());
             }
         }
@@ -155,7 +156,7 @@ namespace ippl {
                 //BufferType buffer(pdata.getLayout());
                 //buffer.create(nRecvs[rank]);
 
-                Ippl::Comm->recv(rank, tag, buffer);
+                Ippl::Comm->recv(rank, tag, buffer, recvar_m[rank],  6 * nRecvs[rank]);
 
                 pdata.unpack(buffer);
             }

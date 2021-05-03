@@ -81,6 +81,9 @@ namespace ippl {
         template <class Buffer>
         void recv(int src, int tag, Buffer& buffer);
 
+        template <class Buffer>
+        void recv(int src, int tag, Buffer& buffer, archive_type& ar, int msize);
+
 
         /*!
          * \warning Only works with default spaces!
@@ -117,7 +120,7 @@ namespace ippl {
         MPI_Status status;
 
         MPI_Probe(src, tag, *this, &status);
-        
+
         int msize = 0;
         MPI_Get_count(&status, MPI_BYTE, &msize);
 
@@ -126,6 +129,16 @@ namespace ippl {
 
 
         MPI_Recv(ar.getBuffer(), ar.getSize(),
+                MPI_BYTE, src, tag, *this, &status);
+
+        buffer.deserialize(ar);
+    }
+
+    template <class Buffer>
+    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, int msize)
+    {
+        MPI_Status status;
+        MPI_Recv(ar.getBuffer(), msize,
                 MPI_BYTE, src, tag, *this, &status);
 
         buffer.deserialize(ar);
