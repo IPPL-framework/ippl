@@ -163,9 +163,15 @@ namespace ippl {
 
                 Ippl::Comm->recv(rank, tag, buffer, *recvar_m[rank],  6 * nRecvs[rank]);
 
+                std::cout << "Rank " << Ippl::Comm->rank() << " receive done." << std::endl;
+
                 pdata.unpack(buffer);
+
+                std::cout << "Rank " << Ippl::Comm->rank() << " unpack done." << std::endl;
             }
         }
+
+        std::cout << "Rank " << Ippl::Comm->rank() << " sending and receiving done." << std::endl;
 
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
