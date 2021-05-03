@@ -33,6 +33,7 @@ namespace ippl {
         template <class... Properties>
         template <typename T>
         void Archive<Properties...>::operator<<(const Kokkos::View<T*>& view) {
+            readpos_m = 0;
             size_t size = sizeof(T);
             Kokkos::parallel_for(
                 "Archive::serialize()", view.extent(0),
@@ -48,6 +49,7 @@ namespace ippl {
         template <class... Properties>
         template <typename T, unsigned Dim>
         void Archive<Properties...>::operator<<(const Kokkos::View<Vector<T, Dim>*>& view) {
+            readpos_m = 0;
             size_t size = sizeof(T);
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
@@ -65,6 +67,7 @@ namespace ippl {
         template <class... Properties>
         template <typename T>
         void Archive<Properties...>::operator>>(Kokkos::View<T*>& view) {
+            writepos_m = 0;
             size_t size = sizeof(T);
             Kokkos::parallel_for(
                 "Archive::deserialize()", view.extent(0),
@@ -80,6 +83,7 @@ namespace ippl {
         template <class... Properties>
         template <typename T, unsigned Dim>
         void Archive<Properties...>::operator>>(Kokkos::View<Vector<T, Dim>*>& view) {
+            writepos_m = 0;
             size_t size = sizeof(T);
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
