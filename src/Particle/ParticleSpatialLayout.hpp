@@ -159,7 +159,7 @@ namespace ippl {
                 std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nRecvs[rank]
                           << " from rank  " << rank << std::endl;
 
-                Ippl::Comm->recv(rank, tag, buffer, *recvar_m[rank],  6 * nRecvs[rank]);
+                Ippl::Comm->recv(rank, tag, buffer, *recvar_m[rank],  4 * nRecvs[rank]);
 
                 pdata.unpack(buffer);
             }
