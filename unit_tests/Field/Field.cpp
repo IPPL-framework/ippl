@@ -27,7 +27,7 @@ public:
     typedef ippl::Field<double, dim> field_type;
 
     FieldTest()
-    : nPoints(4)
+    : nPoints(8)
     {
         setup();
     }
@@ -89,11 +89,29 @@ TEST_F(FieldTest, Norm2) {
 }
 
 TEST_F(FieldTest, NormInf) {
-    double val = 1.5;
 
-    *field = val;
+    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
+
+    auto view = field->getView();
+    auto policy = field->getRangePolicy(0);
+
+    Kokkos::parallel_for("Assign field",
+                         policy,
+                         KOKKOS_LAMBDA(const int i,
+                                       const int j,
+                                       const int k)
+    {
+        const size_t ig = i + lDom[0].first();
+        const size_t jg = j + lDom[1].first();
+        const size_t kg = k + lDom[2].first();
+
+        view(i, j, k) = -1.0 + (ig + jg + kg);
+    });
+
 
     double normInf = ippl::normInf(*field);
+
+    double val = -1.0 + 3 * nPoints;
 
     ASSERT_DOUBLE_EQ(val, normInf);
 }
