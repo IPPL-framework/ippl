@@ -148,6 +148,8 @@ namespace ippl {
         }
         IpplTimings::stopTimer(step3Timer);
 
+        Ippl::Comm->barrier();
+
         static IpplTimings::TimerRef step4Timer = IpplTimings::getTimer("ParticleRecv");
         IpplTimings::startTimer(step4Timer);
         // 3rd step
