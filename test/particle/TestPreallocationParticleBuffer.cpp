@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
     bunch_type bunchBuffer(pl);
     bunchBuffer.create(100000);
 
-    int nsteps = 300;
+    int nsteps = 5;
 
     for (int nt=0; nt < nsteps; ++nt) {
 

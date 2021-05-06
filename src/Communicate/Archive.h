@@ -90,7 +90,7 @@ namespace ippl {
              * @returns the size of the buffer
              */
             size_type getSize() const {
-                return 600000; //writepos_m / sizeof(char);
+                return writepos_m; /// sizeof(char);
             }
 
             ~Archive() = default;

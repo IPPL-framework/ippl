@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     //std::cout << bcField << std::endl;
     std::cout << layout << std::endl;
 
-    field_type field(mesh, layout, 2);
+    field_type field(mesh, layout, 1);
 
     field = 1.0;
 
