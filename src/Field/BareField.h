@@ -100,6 +100,8 @@ namespace ippl {
          */
         void initialize(Layout_t& l, int nghost = 1);
 
+        // ML
+        void updateLayout(Layout_t&, int nghost = 1);
 
         /*!
          * Local field size.

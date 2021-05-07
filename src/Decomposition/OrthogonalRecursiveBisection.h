@@ -13,27 +13,22 @@ namespace ippl {
       @tparam Dim dimension
       @tparam M mesh
     */
-    // template<class T, unsigned Dim, class M = UniformCartesian<T,Dim> >
     template<class T, unsigned Dim, class M>
     class OrthogonalRecursiveBisection {
     public:
         using view_type_t = typename detail::ViewType<NDIndex<Dim>, 1>::view_type;
         using view_type = typename detail::ViewType<T, Dim>::view_type;
         using host_mirror_type = typename view_type_t::host_mirror_type;
-        
+
         /*!
-          @param ParticleBase<ParticleSpatialLayout<T,Dim,Mesh>>& P
+          @param const ParticleAttrib<Vector<T,Dim>>& R particle positions
+          @param Field<T,Dim,M>& BF particle density
           @param FieldLayout<Dim>& FL
-          @param UniformCartesian<T,Dim>& mesh
   
-          Performs scatter operation of particles into nodes.
-          - Define a field layout FL (copy of one in P)
-          - Create a field BF using the mesh of P and the field layout
-          - Scatter particles into field layout FL (MPI)
-          - Repartition the field FL
-          - Update P using the field FL
+          1. Performs scatter operation of particle positions in field
+          2. Updates field layout by calling repartition on field
         */
-        bool BinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,M> >& P, FieldLayout<Dim>& FL, UniformCartesian<T,Dim>& mesh, int step); 
+        bool BinaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, Field<T,Dim,M>& BF, FieldLayout<Dim>& FL, int step); 
 
 
         /*!
@@ -47,7 +42,7 @@ namespace ippl {
           - Find median of reduced weights
           - Divide field at median
         */
-        void CalcBinaryRepartition(FieldLayout<Dim>& FL, Field<T, Dim>& BF, int step);
+        bool CalcBinaryRepartition(FieldLayout<Dim>& FL, Field<T, Dim>& BF, int step);
 
 
         /*!
@@ -89,8 +84,14 @@ namespace ippl {
         */
         void CutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median);
  
-        void scatterR(Field<T, Dim, M>& f, const ParticleAttrib<Vector<T, Dim>>& pr);
+        
+        /*!
+          @param Field<T,Dim,M>& f
+          @param const ParticleAttrib<Vector<T,Dim>>& pr particle positions
 
+          Scattering of particle positions in field using a CIC method
+        */
+        void scatterR(Field<T,Dim,M>& f, const ParticleAttrib<Vector<T,Dim>>& pr);
 
     }; // class
 

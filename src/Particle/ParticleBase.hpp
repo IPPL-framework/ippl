@@ -243,16 +243,6 @@ namespace ippl {
     }
 
 
-    // ML
-/*    template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::update()
-    {
-        PAssert(layout_m != nullptr);
-        layout_m->update(*this);
-    }
-*/
-
-
     template <class PLayout, class... Properties>
     template <class Buffer>
     void ParticleBase<PLayout, Properties...>::pack(Buffer& buffer,

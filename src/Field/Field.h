@@ -54,6 +54,9 @@ namespace ippl {
 
         // Initialize the Field, also specifying a mesh
         void initialize(Mesh_t&, Layout_t&, int nghost = 1);
+        
+        // ML
+        void updateLayout(Layout_t&, int nghost = 1);
 
         void setFieldBC(BConds_t& bc) {
             bc_m = bc;

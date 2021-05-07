@@ -29,9 +29,6 @@ target_link_libraries (TestExpression ${IPPL_LIBS})
 add_executable (PIC3d PIC3d.cpp)
 target_link_libraries (PIC3d ${IPPL_LIBS})
 
-add_executable (TestDomainDecomp TestDomainDecomp.cpp)
-target_link_libraries (TestDomainDecomp ${IPPL_LIBS})
-
 add_executable (TestParticleBConds TestParticleBConds.cpp)
 target_link_libraries (TestParticleBConds ${IPPL_LIBS})
 

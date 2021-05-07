@@ -160,10 +160,6 @@ namespace ippl {
          */
         const Layout_t& getLayout() const { return *layout_m; }
  
-        // ML
-        // void setFieldLayout(const FL& fl) { layout_m.setFieldLayout(fl); }
-       
-           
         /*!
          * Set all boundary conditions
          * @param bc the boundary conditions

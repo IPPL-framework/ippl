@@ -55,4 +55,10 @@ namespace ippl {
             bc_m[face] = std::make_shared<NoBcFace<T, Dim>>(face);
         }
     }
+ 
+    // ML 
+    template<class T, unsigned Dim, class M, class C>
+    void Field<T,Dim,M,C>::updateLayout(Layout_t& l, int nghost) {
+        BareField<T,Dim>::updateLayout(l, nghost);
+    }
 }

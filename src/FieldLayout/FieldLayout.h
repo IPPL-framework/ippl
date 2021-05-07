@@ -83,6 +83,14 @@ namespace ippl {
             return gDomain_m == x.getDomain();
         }
 
+        bool operator==(const FieldLayout<Dim>& x) const {
+            for (unsigned int i = 0; i < Dim; i++) {
+               if (!(hLocalDomains_m(Ippl::Comm->rank())[i] == x.getLocalNDIndex()[i]))
+                  return false;
+            }
+            return true;
+        }
+
         // for the requested dimension, report if the distribution is
         // SERIAL or PARALLEL
         e_dim_tag getDistribution(unsigned int d) const {

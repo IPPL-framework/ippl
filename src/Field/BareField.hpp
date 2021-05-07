@@ -55,6 +55,14 @@ namespace ippl {
         }
     }
 
+    // ML
+    template <typename T, unsigned Dim>
+    void BareField<T, Dim>::updateLayout(Layout_t& l, int nghost) {
+         // std::cout << "Got in BareField::updateLayout()" << std::endl;
+         layout_m = &l;
+         nghost_m = nghost;
+         setup();
+    }
 
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::setup() {

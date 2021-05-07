@@ -14,25 +14,25 @@ namespace ippl {
 
     template < class T, unsigned Dim, class M>
     bool 
-    OrthogonalRecursiveBisection<T,Dim,M>::BinaryRepartition(ParticleBase<ParticleSpatialLayout<T,Dim,M> >& P, FieldLayout<Dim>& FL, UniformCartesian<T,Dim>& mesh, int step) {
-       // Definiong a field using the field layout and mesh
-       Field<T,Dim,M> BF(mesh, FL);
-   
+    OrthogonalRecursiveBisection<T,Dim,M>::BinaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, Field<T,Dim,M>& BF, FieldLayout<Dim>& FL, int step) {
        // Scattering of particle positions in field
-       scatterR(BF, P.R);
+       BF = 0.0;
+       scatterR(BF, R);
+       R.getView();
 
        // Domain Decomposition
-       CalcBinaryRepartition(FL, BF, step); 
-       
-       return true;
+       if (CalcBinaryRepartition(FL, BF, step))
+          return true;
+       else 
+          return false;
     }
 
     template < class T, unsigned Dim, class M>
-    void
+    bool 
     OrthogonalRecursiveBisection<T,Dim,M>::CalcBinaryRepartition(FieldLayout<Dim>& FL, Field<T, Dim>& BF, int step) {
        int nprocs = Ippl::Comm->size();
        
-       std::cout << "Starting repartition with: " << BF.sum() << " particles." << std::endl;
+       // std::cout << "(after) BF.sum(): " << BF.sum() << " particles." << std::endl;
  
        // Start with whole domain and total number of nodes
        std::vector<NDIndex<Dim>> domains = {FL.getDomain()};
@@ -83,11 +83,13 @@ namespace ippl {
           CutDomain(domains, procs, it, cutAxis, median);
 
           /***PRINT***/
-          /*if (Ippl::Comm->rank() == 0) {
+          /*
+          if (Ippl::Comm->rank() == 0) {
           std::cout << "New domains:" << std::endl;
           for (unsigned int i = 0; i < domains.size(); i++) {
              std::cout << domains[i] << std::endl; // << " (proc:" << procs[i] << ")" << std::endl;
-          }}*/
+          }}
+          */
 
           // Update max procs
           maxprocs = 0;
@@ -107,7 +109,9 @@ namespace ippl {
        if (Ippl::Comm->rank() == 0) {
        std::ofstream myfile;
        myfile.open ("domains" + std::to_string(step) + ".txt");
+       // std::cout << "New domains: " << std::endl;
        for (unsigned int i = 0; i < domains.size(); i++) {
+          // std::cout << domains[i] << std::endl;
           myfile << domains[i][0].first() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
                  << domains[i][0].first() << " " << domains[i][1].last() << " " << domains[i][2].first() << " "
                  << domains[i][0].last() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
@@ -116,7 +120,12 @@ namespace ippl {
        }}
        
        // Update FieldLayout with new domains 
-       FL.updateLayout(domains);
+       if (domains.empty())
+          return false;
+       else {
+          FL.updateLayout(domains);
+          return true;
+       }
     }
 
     
@@ -133,7 +142,7 @@ namespace ippl {
              maxLength = domain[d].length();
              cutAxis = d;
           }
-       }
+      }
 
        return cutAxis;
     } 
@@ -279,6 +288,7 @@ namespace ippl {
     template < class T, unsigned Dim, class M>
     void 
     OrthogonalRecursiveBisection<T,Dim,M>::scatterR(Field<T, Dim, M>& f, const ParticleAttrib<Vector<T, Dim>>& pr) {
+
         typename Field<T, Dim, M>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
