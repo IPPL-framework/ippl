@@ -53,6 +53,7 @@ public:
     const vector_type& getMeshSpacing() const;
 
     T getCellVolume() const;
+    T getMeshVolume() const;
     
     void updateCellVolume_m();
 
