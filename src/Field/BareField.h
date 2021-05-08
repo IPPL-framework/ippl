@@ -62,6 +62,7 @@ namespace ippl {
         //! View type storing the data
         using view_type = typename detail::ViewType<T, Dim>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
+        using policy_type = typename detail::RangePolicy<Dim>::policy_type;
 
 
         /*! A default constructor, which should be used only if the user calls the
@@ -144,16 +145,32 @@ namespace ippl {
         detail::HaloCells<T, Dim>& getHalo() { return halo_m; }
 
         // Assignment from a constant.
+        template <unsigned dim = Dim, std::enable_if_t<(dim == 2), bool> = true>
+        BareField<T, Dim>& operator=(T x);
+
+        template <unsigned dim = Dim, std::enable_if_t<(dim == 3), bool> = true>
         BareField<T, Dim>& operator=(T x);
 
         /*!
-         * Assign an arbitrary BareField expression
+         * Assign an arbitrary BareField expression (2D version)
          * @tparam E expression type
          * @tparam N size of the expression, this is necessary for running on the
          * device since otherwise it does not allocate enough memory
          * @param expr is the expression
          */
-        template <typename E, size_t N>
+        template <typename E, size_t N,
+                  unsigned dim = Dim, std::enable_if_t<(dim == 2), bool> = true>
+        BareField<T, Dim>& operator=(const detail::Expression<E, N>& expr);
+
+        /*!
+         * Assign an arbitrary BareField expression (3D version)
+         * @tparam E expression type
+         * @tparam N size of the expression, this is necessary for running on the
+         * device since otherwise it does not allocate enough memory
+         * @param expr is the expression
+         */
+        template <typename E, size_t N,
+                  unsigned dim = Dim, std::enable_if_t<(dim == 3), bool> = true>
         BareField<T, Dim>& operator=(const detail::Expression<E, N>& expr);
 
         /*!
@@ -182,17 +199,44 @@ namespace ippl {
             return Kokkos::create_mirror(dview_m);
         }
 
+        template <unsigned dim = Dim, std::enable_if_t<(dim == 2), bool> = true>
+        policy_type getRangePolicy(const int nghost = 0) const {
+            PAssert_LE(nghost, nghost_m);
+            const size_t shift = nghost_m - nghost;
+            return policy_type({shift, shift},
+                               {dview_m.extent(0) - shift,
+                                dview_m.extent(1) - shift});
+        }
+
+        template <unsigned dim = Dim, std::enable_if_t<(dim == 3), bool> = true>
+        policy_type getRangePolicy(const int nghost = 0) const {
+            PAssert_LE(nghost, nghost_m);
+            const size_t shift = nghost_m - nghost;
+            return policy_type({shift, shift, shift},
+                               {dview_m.extent(0) - shift,
+                                dview_m.extent(1) - shift,
+                                dview_m.extent(2) - shift});
+        }
+
         /*!
          * Print the BareField.
          * @param out stream
          */
         void write(std::ostream& out = std::cout) const;
 
-        T sum(int nghost = 0);
-        T max(int nghost = 0);
-        T min(int nghost = 0);
-        T prod(int nghost = 0);
+        #define DefineOperation(fun)                                \
+        template <unsigned dim = Dim,                               \
+                  std::enable_if_t<(dim == 2), bool> = true>        \
+        T fun(int nghost = 0);                                      \
+                                                                    \
+        template <unsigned dim = Dim,                               \
+                  std::enable_if_t<(dim == 3), bool> = true>        \
+        T fun(int nghost = 0);
 
+        DefineOperation(sum)
+        DefineOperation(max)
+        DefineOperation(min)
+        DefineOperation(prod)
 
     private:
         //! Number of ghost layers on each field boundary
@@ -217,5 +261,6 @@ namespace ippl {
 }
 
 #include "Field/BareField.hpp"
+#include "Field/BareFieldOperations.hpp"
 
 #endif

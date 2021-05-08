@@ -17,6 +17,7 @@ add_executable (Field Field.cpp)
 target_link_libraries (
     Field
     ippl
+    pthread
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -26,6 +27,7 @@ add_executable (FieldBC FieldBC.cpp)
 target_link_libraries (
     FieldBC
     ippl
+    pthread
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
     ${Boost_LIBRARIES}
