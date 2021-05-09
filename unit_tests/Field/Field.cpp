@@ -116,7 +116,24 @@ TEST_F(FieldTest, NormInf) {
     ASSERT_DOUBLE_EQ(val, normInf);
 }
 
+TEST_F(FieldTest, VolumeIntegral) {
+    const double dx = 1. / nPoints;
+    auto view = field->getView();
+    auto policy = field->getRangePolicy();
+    const double pi = acos(-1.0);
 
+    Kokkos::parallel_for("assign field", policy,
+        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+            double x = (i + 0.5) * dx;
+            double y = (j + 0.5) * dx;
+            double z = (k + 0.5) * dx;
+
+            view(i, j, k) = sin(2 * pi * x) * sin(2 * pi * y) * sin(2 * pi * z);
+        }
+    );
+
+    ASSERT_NEAR(field->getVolumeIntegral(), 0., 1e-15);
+}
 
 
 int main(int argc, char *argv[]) {

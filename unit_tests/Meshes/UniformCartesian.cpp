@@ -41,6 +41,7 @@ TEST_F(UniformCartesianTest, Constructor1D) {
     double length = mesh.getCellVolume();
 
     ASSERT_DOUBLE_EQ(length, dx);
+    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
 }
 
 
@@ -57,6 +58,7 @@ TEST_F(UniformCartesianTest, Constructor2D) {
     double area = mesh.getCellVolume();
 
     ASSERT_DOUBLE_EQ(area, dx * dx);
+    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
 }
 
 
@@ -73,6 +75,7 @@ TEST_F(UniformCartesianTest, Constructor3D) {
     double volume = mesh.getCellVolume();
 
     ASSERT_DOUBLE_EQ(volume, dx * dx * dx);
+    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
 }
 
 TEST_F(UniformCartesianTest, Initialize1D) {
@@ -90,6 +93,7 @@ TEST_F(UniformCartesianTest, Initialize1D) {
     double length = mesh.getCellVolume();
 
     ASSERT_DOUBLE_EQ(length, dx);
+    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
 }
 
 
@@ -108,6 +112,7 @@ TEST_F(UniformCartesianTest, Initialize2D) {
     double area = mesh.getCellVolume();
 
     ASSERT_DOUBLE_EQ(area, dx * dx);
+    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
 }
 
 
@@ -126,6 +131,7 @@ TEST_F(UniformCartesianTest, Initialize3D) {
     double volume = mesh.getCellVolume();
 
     ASSERT_DOUBLE_EQ(volume, dx * dx * dx);
+    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
 }
 
 
