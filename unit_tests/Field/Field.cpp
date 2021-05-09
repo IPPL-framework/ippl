@@ -1,6 +1,6 @@
 //
 // Unit test FieldTest
-//   Test the functionality of the class Field.
+//   Test the functionality of the classes Field and BareField.
 //
 // Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
@@ -64,6 +64,54 @@ TEST_F(FieldTest, Sum) {
     double sum = field->sum();
 
     ASSERT_DOUBLE_EQ(val * std::pow(nPoints, dim), sum);
+}
+
+TEST_F(FieldTest, Min) {
+    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
+
+    auto view = field->getView();
+    auto policy = field->getRangePolicy(0);
+
+    Kokkos::parallel_for("Assign field",
+                         policy,
+                         KOKKOS_LAMBDA(const int i,
+                                       const int j,
+                                       const int k)
+    {
+        const size_t ig = i + lDom[0].first();
+        const size_t jg = j + lDom[1].first();
+        const size_t kg = k + lDom[2].first();
+
+        view(i, j, k) = -1.0 + (ig + jg + kg);
+    });
+
+    double min = field->min();
+    // minimum value -1 + nghost + nghost + nghost
+    ASSERT_DOUBLE_EQ(min, 2.);
+}
+
+TEST_F(FieldTest, Max) {
+    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
+
+    auto view = field->getView();
+    auto policy = field->getRangePolicy(0);
+
+    Kokkos::parallel_for("Assign field",
+                         policy,
+                         KOKKOS_LAMBDA(const int i,
+                                       const int j,
+                                       const int k)
+    {
+        const size_t ig = i + lDom[0].first();
+        const size_t jg = j + lDom[1].first();
+        const size_t kg = k + lDom[2].first();
+
+        view(i, j, k) = -1.0 + (ig + jg + kg);
+    });
+
+    double max = field->max();
+    double expected = -1. + nPoints * 3;
+    ASSERT_DOUBLE_EQ(max, expected);
 }
 
 
