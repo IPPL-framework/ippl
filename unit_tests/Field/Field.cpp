@@ -115,6 +115,12 @@ TEST_F(FieldTest, Max) {
 }
 
 TEST_F(FieldTest, Prod) {
+    *field = 2.;
+    double val = field->prod();
+    ASSERT_DOUBLE_EQ(val, pow(2, nPoints * nPoints * nPoints));
+}
+
+TEST_F(FieldTest, ScalarMultiplication) {
     *field = 1.;
     *field = *field * 10;
 
