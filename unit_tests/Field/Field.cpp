@@ -114,6 +114,21 @@ TEST_F(FieldTest, Max) {
     ASSERT_DOUBLE_EQ(max, expected);
 }
 
+TEST_F(FieldTest, Prod) {
+    *field = 1.;
+    *field = *field * 10;
+
+    auto view = field->getView();
+    const int nghost = field->getNghost();
+    for (size_t i = nghost; i < nPoints - nghost; ++i) {
+        for (size_t j = nghost; j < nPoints - nghost; ++j) {
+            for (size_t k = nghost; k < nPoints - nghost; ++k) {
+                ASSERT_DOUBLE_EQ(view(i,j,k), 10.);
+            }
+        }
+    }
+}
+
 
 TEST_F(FieldTest, Norm1) {
     double val = -1.5;
