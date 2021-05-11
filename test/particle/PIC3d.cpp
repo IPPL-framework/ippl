@@ -64,8 +64,7 @@ public:
     Field<Vector<double, Dim>, Dim> EFD_m;
     Field<double,Dim> EFDMag_m;
 
-    // Field used for ORB
-    Field<double,Dim> BF_m;
+    // ORB
     ORB orb; 
 
     Vector<int, Dim> nr_m;
@@ -132,7 +131,6 @@ public:
         // Update local fields
         this->EFD_m.updateLayout(fl);
         this->EFDMag_m.updateLayout(fl);
-        this->BF_m.updateLayout(fl);
         
         // Update layout with new FieldLayout
         PLayout& layout = this->getLayout();
@@ -140,16 +138,19 @@ public:
         layout.update(*this);
     }
 
+    void initializeORB(FieldLayout_t& fl, Mesh_t& mesh) {
+        orb.initialize(fl, mesh);
+    }
+
     int step = 1;  // temporary: for output
     void repartition(FieldLayout_t& fl, Mesh_t& mesh) {
         // Repartition the domains
-        bool res = orb.BinaryRepartition(this->R, this->BF_m, fl, step);
+        bool res = orb.binaryRepartition(this->R, fl, step);
         step++;
         if (res != true) {
            std::cout << "Could not repartition!" << std::endl;
            return;
         } 
-        // std::cout << fl << std::endl;
         // Update
         this->updateLayout(fl, mesh);
     }
@@ -515,8 +516,8 @@ int main(int argc, char *argv[]) {
     double localParticles = P->getLocalNum();
     MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
     msg << "Total particles: " << totalParticles << endl;
-    // P->initPositions(FL, hr, nloc, 2);
-
+    P->initPositions(FL, hr, nloc, 1);
+    /*
     std::mt19937_64 eng[Dim];
     for (unsigned i = 0; i < Dim; ++i) {
         eng[i].seed(42 + i * Dim);
@@ -543,7 +544,7 @@ int main(int argc, char *argv[]) {
     }
 
     Kokkos::deep_copy(P->R.getView(), R_host); 
-
+    */
     P->qm = P->Q_m/totalP;
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);                                                    
@@ -566,7 +567,7 @@ int main(int argc, char *argv[]) {
     
     P->EFD_m.initialize(meshField, FL);
     P->EFDMag_m.initialize(meshField, FL);
-    P->BF_m.initialize(meshField, FL);
+    P->initializeORB(FL, meshField);
     /*
     P->EFD_m.initialize(mesh, FL);
     P->EFDMag_m.initialize(mesh, FL);

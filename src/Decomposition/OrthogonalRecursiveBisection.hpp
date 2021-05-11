@@ -11,31 +11,34 @@
 
 namespace ippl {
 
+    template <class T, unsigned Dim, class M>
+    void
+    OrthogonalRecursiveBisection<T,Dim,M>::initialize(FieldLayout<Dim>& fl, UniformCartesian<T,Dim>& mesh) {
+       bf_m.initialize(mesh, fl);
+    }
 
-    template < class T, unsigned Dim, class M>
+    template <class T, unsigned Dim, class M>
     bool 
-    OrthogonalRecursiveBisection<T,Dim,M>::BinaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, Field<T,Dim,M>& BF, FieldLayout<Dim>& FL, int step) {
+    OrthogonalRecursiveBisection<T,Dim,M>::binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl, int step) {
        // Scattering of particle positions in field
-       BF = 0.0;
-       scatterR(BF, R);
-       R.getView();
+       scatterR(R);
 
        // Domain Decomposition
-       if (CalcBinaryRepartition(FL, BF, step))
+       if (calcBinaryRepartition(fl, step))
           return true;
        else 
           return false;
     }
 
-    template < class T, unsigned Dim, class M>
+    template <class T, unsigned Dim, class M>
     bool 
-    OrthogonalRecursiveBisection<T,Dim,M>::CalcBinaryRepartition(FieldLayout<Dim>& FL, Field<T, Dim>& BF, int step) {
+    OrthogonalRecursiveBisection<T,Dim,M>::calcBinaryRepartition(FieldLayout<Dim>& fl, int step) {
        int nprocs = Ippl::Comm->size();
        
-       // std::cout << "(after) BF.sum(): " << BF.sum() << " particles." << std::endl;
+       std::cout << "bf_m.sum(): " << bf_m.sum() << " particles." << std::endl;
  
        // Start with whole domain and total number of nodes
-       std::vector<NDIndex<Dim>> domains = {FL.getDomain()};
+       std::vector<NDIndex<Dim>> domains = {fl.getDomain()};
        std::vector<int> procs = {nprocs};
 
        // Arrays for reduction 
@@ -44,52 +47,25 @@ namespace ippl {
        // Start recursive repartition loop 
        int it = 0;
        int maxprocs = nprocs; 
-       // int loopstep = 1; // just for debugging
        while (maxprocs > 1) {
           // Find cut axis
-          int cutAxis = FindCutAxis(domains[it]);
+          int cutAxis = findCutAxis(domains[it]);
          
           // Reserve space
           reduced.resize(domains[it][cutAxis].length());
           reducedRank.resize(domains[it][cutAxis].length());
 
           // Peform reduction with field of weights and communicate to the other ranks
-          PerformReduction(BF, reducedRank, cutAxis, domains[it]); 
+          performReduction(reducedRank, cutAxis, domains[it]); 
+
+          // Communicate to all the reduced weights
           MPI_Allreduce(reducedRank.data(), reduced.data(), reducedRank.size(), MPI_DOUBLE, MPI_SUM, Ippl::getComm());
         
           // Find median of reduced weights
-          int median = FindMedian(reduced);
+          int median = findMedian(reduced);
           
-          /**PRINT**/
-          /*
-          if (Ippl::Comm->rank() == 0) {
-             double total = 0.0;
-             // std::ofstream myfile;
-             // myfile.open ("run" + std::to_string(loopstep) + ".txt");
-             // myfile << domains[it] << "\n";
-             // myfile << median << "\n";
-             for (unsigned int i = 0; i < reduced.size(); i++){
-                total += reduced[i];
-                std::cout << "reduced[" << i << "]: " << reduced[i] << std::endl;
-                // myfile << reduced[i] << "\n";
-             }
-             std::cout << "Total number of particles: " << total << std::endl;
-             // myfile.close();
-             // std::cout << "STEP: " << loopstep << std::endl;
-             // loopstep++;
-          }
-          */
           // Cut domains and procs
-          CutDomain(domains, procs, it, cutAxis, median);
-
-          /***PRINT***/
-          /*
-          if (Ippl::Comm->rank() == 0) {
-          std::cout << "New domains:" << std::endl;
-          for (unsigned int i = 0; i < domains.size(); i++) {
-             std::cout << domains[i] << std::endl; // << " (proc:" << procs[i] << ")" << std::endl;
-          }}
-          */
+          cutDomain(domains, procs, it, cutAxis, median);
 
           // Update max procs
           maxprocs = 0;
@@ -100,7 +76,7 @@ namespace ippl {
              } 
           }
                
-          // Clear arrays' allocated space
+          // Clear all arrays
           reduced.clear();
           reducedRank.clear();
        }
@@ -108,22 +84,32 @@ namespace ippl {
        /***PRINT***/
        if (Ippl::Comm->rank() == 0) {
        std::ofstream myfile;
-       myfile.open ("domains" + std::to_string(step) + ".txt");
-       // std::cout << "New domains: " << std::endl;
+       std::ofstream finalDoms;
+       myfile.open("domains" + std::to_string(step) + ".txt");
+       finalDoms.open("newDomains.txt");
+       finalDoms << "New domains: " << std::endl;
        for (unsigned int i = 0; i < domains.size(); i++) {
-          // std::cout << domains[i] << std::endl;
+          finalDoms << domains[i] << std::endl;
           myfile << domains[i][0].first() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
                  << domains[i][0].first() << " " << domains[i][1].last() << " " << domains[i][2].first() << " "
                  << domains[i][0].last() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
                  << domains[i][0].first() << " " << domains[i][1].first() << " " << domains[i][2].last()
                  << "\n";
-       }}
-       
+       }
+       myfile.close();
+       finalDoms.close(); 
+       }
+
        // Update FieldLayout with new domains 
        if (domains.empty())
           return false;
        else {
-          FL.updateLayout(domains);
+          // Update FieldLayout with new indices
+          fl.updateLayout(domains);
+          
+          // Update local field with new layout
+          bf_m.updateLayout(fl);
+
           return true;
        }
     }
@@ -131,7 +117,7 @@ namespace ippl {
     
     template < class T, unsigned Dim, class M>
     int
-    OrthogonalRecursiveBisection<T,Dim,M>::FindCutAxis(NDIndex<Dim>& domain) {
+    OrthogonalRecursiveBisection<T,Dim,M>::findCutAxis(NDIndex<Dim>& domain) {
        int cutAxis = 0;  
        unsigned int maxLength = 0;
        
@@ -142,7 +128,7 @@ namespace ippl {
              maxLength = domain[d].length();
              cutAxis = d;
           }
-      }
+       }
 
        return cutAxis;
     } 
@@ -150,15 +136,15 @@ namespace ippl {
     
     template < class T, unsigned Dim, class M>
     void
-    OrthogonalRecursiveBisection<T,Dim,M>::PerformReduction(Field<T,Dim>& BF, std::vector<T>& rankWeights, unsigned int cutAxis, NDIndex<Dim>& dom) {
+    OrthogonalRecursiveBisection<T,Dim,M>::performReduction(std::vector<T>& rankWeights, unsigned int cutAxis, NDIndex<Dim>& dom) {
        // test if domains touch
-       NDIndex<Dim> lDom = BF.getOwned();
+       NDIndex<Dim> lDom = bf_m.getOwned();
        if (lDom[cutAxis].first() > dom[cutAxis].last() || lDom[cutAxis].last() < dom[cutAxis].first())
           return;
       
        // Get Field's local domain's size and weights
-       int nghost = BF.getNghost();
-       const view_type& data = BF.getView();
+       int nghost = bf_m.getNghost();
+       const view_type& data = bf_m.getView();
        int cutAxisFirst = std::max(lDom[cutAxis].first(), dom[cutAxis].first()) - lDom[cutAxis].first() + nghost;
        int cutAxisLast = std::min(lDom[cutAxis].last(), dom[cutAxis].last()) - lDom[cutAxis].first() + nghost;
        // Where to write in the reduced array
@@ -178,19 +164,6 @@ namespace ippl {
        if (sup1 < inf1 || sup2 < inf2)  // Processor is not involved in reduction
           return;
 
-       /***PRINT***/
-       /*
-       std::cout << "Domain to reduce: " << dom << " along " << cutAxis << std::endl;
-       std::cout << "Local domain (owned): " << lDom << std::endl;
-       std::cout << "Reduction sizes: (" << cutAxisFirst << ", " << cutAxisLast << ")" << std::endl;
-       std::cout << "Array start: " << arrayStart << std::endl;
-       */
-       /*
-       std::cout << "(inf1, sup1): (" << inf1 << ", " << sup1 << ")" << std::endl;
-       std::cout << "(inf2, sup2): (" << inf2 << ", " << sup2 << ")" << std::endl;
-       std::cout << "Data's extents (0,1,2): (" << data.extent(0) << "," << data.extent(1) << "," << data.extent(2) << ")" << std::endl;
-       */
- 
        // The +3 comes from make_pair(0,N) <-> 0,..,N-1 and there are 2 ghost layers
        sup1 += 3; sup2 += 3;
  
@@ -225,54 +198,55 @@ namespace ippl {
           
           rankWeights[arrayStart] = tempRes; arrayStart++;
        }
-
-       /***PRINT***/
-       /*
-       T sum = T(0);
-       std::cout << "rank " << Ippl::Comm->rank() << ": [";
-       for (unsigned int i = 0; i < rankWeights.size(); i++) {
-          std::cout << rankWeights[i];
-          std::cout << (i+1 < rankWeights.size() ? ", " : "]");
-          sum += rankWeights[i];
-       }
-       std::cout << " -> total: " << sum << std::endl;
-       */  
     }
   
 
     // Potential problem: if there are zeros between weights, then the cut will be made most left, could be better?
+    // Important problem: w.size() < 4 should never happen...
     template < class T, unsigned Dim, class M>
     int
-    OrthogonalRecursiveBisection<T,Dim,M>::FindMedian(std::vector<T>& V) {
+    OrthogonalRecursiveBisection<T,Dim,M>::findMedian(std::vector<T>& w) {
+       // static_assert(w.size() >= 4, "Bisection cannot be performed!");
+       
+       // Special case when array must be cut in half in order to not have planes
+       if (w.size() == 4)
+          return 1;
+
        // Get total sum of array
        T tot = T(0);
-       for (unsigned int i = 0; i < V.size(); i++)
-          tot += V[i];
+       for (unsigned int i = 0; i < w.size(); i++)
+          tot += w[i];
        
        // Find position of median as half of total in array
        T half = tot / T(2);
        T curr = T(0);
-       for (unsigned int i = 0; i < V.size(); i++) {
-          curr += V[i];
-          if (curr >= half) { 
-             T previous = curr - V[i];
-             if ((curr + previous) < tot && V[i] != 0.0) // (curr - half < half - previous)
-                return i;
-             else
-                return (i >= 1) ? (i-1) : 0;
+       for (unsigned int i = 0; i < w.size()-1; i++) {
+          curr += w[i];
+          if (curr >= half) {
+             // If all particles are in the first plane, cut at 1 so to have size 2
+             if (i == 0)
+                return 1; 
+             T previous = curr - w[i];
+             // curr - half < half - previous
+             if ((curr + previous) <= tot && curr != half) {    // if true then take current i, otherwise i-1
+                if (i == w.size() - 2)
+                   return (i-1);
+                else
+                   return i;
+             } else {
+                return (i > 1) ? (i-1) : 1;
+             }
           }
-       } 
-       return 0;
+       }
+       // If all particles are in the last plane, cut two indices before the end so to have size 2
+       return w.size()-3;
     }
 
 
     template < class T, unsigned Dim, class M>
     void
-    OrthogonalRecursiveBisection<T,Dim,M>::CutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median) {
-       // Cut field layout's domain in half at median along cutAxis
-       /*if (Ippl::Comm->rank() == 0) {
-          std::cout << "Cutting " << domains[it] << " along " << cutAxis << " at first+median (" << domains[it][cutAxis].first() << "+" << median << ")" << std::endl;
-       }*/
+    OrthogonalRecursiveBisection<T,Dim,M>::cutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median) {
+       // Cut domains[it] in half at median along cutAxis
        NDIndex<Dim> leftDom, rightDom;
        domains[it].split(leftDom, rightDom, cutAxis, median + domains[it][cutAxis].first()); 
        domains[it] = leftDom;
@@ -287,11 +261,13 @@ namespace ippl {
 
     template < class T, unsigned Dim, class M>
     void 
-    OrthogonalRecursiveBisection<T,Dim,M>::scatterR(Field<T, Dim, M>& f, const ParticleAttrib<Vector<T, Dim>>& pr) {
+    OrthogonalRecursiveBisection<T,Dim,M>::scatterR(const ParticleAttrib<Vector<T, Dim>>& r) {
 
-        typename Field<T, Dim, M>::view_type view = f.getView();
+        bf_m = 0.0;
 
-        const M& mesh = f.get_mesh();
+        typename Field<T, Dim, M>::view_type view = bf_m.getView();
+
+        const M& mesh = bf_m.get_mesh();
 
         using vector_type = typename M::vector_type;
 
@@ -299,17 +275,17 @@ namespace ippl {
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx = 1.0 / dx;
 
-        const FieldLayout<Dim>& layout = f.getLayout(); 
+        const FieldLayout<Dim>& layout = bf_m.getLayout(); 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
-        const int nghost = f.getNghost();
+        const int nghost = bf_m.getNghost();
 
         Kokkos::parallel_for(
             "ParticleAttrib::scatterR",
-            pr.getView().extent(0),
+            r.getView().extent(0),
             KOKKOS_LAMBDA(const size_t idx)
             {
                 // find nearest grid point
-                vector_type l = (pr(idx) - origin) * invdx + 0.5;
+                vector_type l = (r(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index = l;
                 Vector<double, Dim> whi = l - index;
                 Vector<double, Dim> wlo = 1.0 - whi;
@@ -331,7 +307,7 @@ namespace ippl {
             }
         );
             
-        f.accumulateHalo();
+        bf_m.accumulateHalo();
     }
 
 }  // namespace

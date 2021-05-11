@@ -2,6 +2,8 @@
 #define IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
 
 /*
+ * Class ORB for Domain Decomposition
+ *
   @file OrthogonalRecursiveBisection.h
 */
 
@@ -16,24 +18,34 @@ namespace ippl {
     template<class T, unsigned Dim, class M>
     class OrthogonalRecursiveBisection {
     public:
-        using view_type_t = typename detail::ViewType<NDIndex<Dim>, 1>::view_type;
         using view_type = typename detail::ViewType<T, Dim>::view_type;
-        using host_mirror_type = typename view_type_t::host_mirror_type;
+
+        // Weight for reduction
+        Field<T,Dim> bf_m;
+
+    public:
+
+        /*!
+          @param FieldLayout<Dim>& fl
+          @param UniformCartesian<T,Dim>& mesh
+
+          Initialize member field with mesh and field layout
+        */    
+        void initialize(FieldLayout<Dim>& fl, UniformCartesian<T,Dim>& mesh);
+
 
         /*!
           @param const ParticleAttrib<Vector<T,Dim>>& R particle positions
-          @param Field<T,Dim,M>& BF particle density
-          @param FieldLayout<Dim>& FL
+          @param FieldLayout<Dim>& fl
   
           1. Performs scatter operation of particle positions in field
           2. Updates field layout by calling repartition on field
         */
-        bool BinaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, Field<T,Dim,M>& BF, FieldLayout<Dim>& FL, int step); 
+        bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl, int step); 
 
 
         /*!
-          @param FieldLayout<Dim>& FL
-          @param Field<T, Dim>& BF
+          @param FieldLayout<Dim>& fl
 
           Performs recursive binary repartition on field layout using a field of weights.
           - Start with whole domain
@@ -42,7 +54,7 @@ namespace ippl {
           - Find median of reduced weights
           - Divide field at median
         */
-        bool CalcBinaryRepartition(FieldLayout<Dim>& FL, Field<T, Dim>& BF, int step);
+        bool calcBinaryRepartition(FieldLayout<Dim>& fl, int step);
 
 
         /*!
@@ -50,11 +62,10 @@ namespace ippl {
   
           Find cutting axis as the longest axis of the field layout.
         */
-         int FindCutAxis(NDIndex<Dim>& domain); 
+         int findCutAxis(NDIndex<Dim>& domain); 
 
 
         /*!
-          @param Field<T, Dim>& BF field of weights
           @param std::vector<T>& res result of reduction
           @param NDIndex<Dim>& dom domain to reduce
           @param int cutAxis
@@ -62,15 +73,15 @@ namespace ippl {
           Performs reduction on field BF in all dimension except that determined by cutAxis,
           store result in res.  
         */
-        void PerformReduction(Field<T,Dim>& BF, std::vector<T>& res, unsigned int cutAxis, NDIndex<Dim>& dom); 
+        void performReduction(std::vector<T>& res, unsigned int cutAxis, NDIndex<Dim>& dom); 
  
 
         /*!
-          @param std::vector<T>& V
+          @param std::vector<T>& w
  
-          Find median of array V
+          Find median of array w
         */
-        int FindMedian(std::vector<T>& V);
+        int findMedian(std::vector<T>& w);
 
 
         /*!
@@ -82,16 +93,15 @@ namespace ippl {
 
           Cut field layout along the cut axis at the median
         */
-        void CutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median);
+        void cutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median);
  
         
         /*!
-          @param Field<T,Dim,M>& f
-          @param const ParticleAttrib<Vector<T,Dim>>& pr particle positions
+          @param const ParticleAttrib<Vector<T,Dim>>& r particle positions
 
           Scattering of particle positions in field using a CIC method
         */
-        void scatterR(Field<T,Dim,M>& f, const ParticleAttrib<Vector<T,Dim>>& pr);
+        void scatterR(const ParticleAttrib<Vector<T,Dim>>& r);
 
     }; // class
 
