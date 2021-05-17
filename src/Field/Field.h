@@ -64,7 +64,6 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION
         Mesh_t& get_mesh() const { return *mesh_m; }
 
-        typename M::type getMeshVolume() const;
         T getVolumeIntegral() const;
         T getVolumeAverage() const;
 

@@ -52,8 +52,8 @@ public:
 
     const vector_type& getMeshSpacing() const;
 
-    T getCellVolume() const;
-    T getMeshVolume() const;
+    virtual T getCellVolume() const override;
+    virtual T getMeshVolume() const override;
     
     void updateCellVolume_m();
 
