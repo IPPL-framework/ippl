@@ -1,11 +1,35 @@
+//
+// Class ORB for Domain Decomposition
+//
+// Simple domain decomposition using an Orthogonal Recursive Bisection,
+// domain is divided recursively so as to even weights on each side of the cut,
+// works with 2^n processors only. 
+//
+// Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
+
 #ifndef IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
 #define IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
 
-/*
- * Class ORB for Domain Decomposition
- *
-  @file OrthogonalRecursiveBisection.h
-*/
+#include "Particle/ParticleSpatialLayout.h"
+#include "Particle/ParticleAttrib.h"
+#include "Index/NDIndex.h"
+#include "Index/Index.h"
+#include "FieldLayout/FieldLayout.h"
+#include "Region/NDRegion.h"
+#include <mpi.h>
+#include <fstream>
 
 namespace ippl {
 
@@ -37,32 +61,19 @@ namespace ippl {
         /*!
           @param const ParticleAttrib<Vector<T,Dim>>& R particle positions
           @param FieldLayout<Dim>& fl
-  
-          1. Performs scatter operation of particle positions in field
-          2. Updates field layout by calling repartition on field
+ 
+          - Performs scatter operation of particle positions in field (weights)
+          - Repartition FieldLayout's global domain
         */
         bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl, int step); 
 
 
         /*!
-          @param FieldLayout<Dim>& fl
-
-          Performs recursive binary repartition on field layout using a field of weights.
-          - Start with whole domain
-          - Find cut axis as the longest axis
-          - Perform reduction on all dimensions perp. to the cut axis
-          - Find median of reduced weights
-          - Divide field at median
-        */
-        bool calcBinaryRepartition(FieldLayout<Dim>& fl, int step);
-
-
-        /*!
-          @param NDIndex<Dim>& domain
+          @param NDIndex<Dim>& dom domain to reduce
   
           Find cutting axis as the longest axis of the field layout.
         */
-         int findCutAxis(NDIndex<Dim>& domain); 
+         int findCutAxis(NDIndex<Dim>& dom); 
 
 
         /*!
@@ -70,7 +81,7 @@ namespace ippl {
           @param NDIndex<Dim>& dom domain to reduce
           @param int cutAxis
 
-          Performs reduction on field BF in all dimension except that determined by cutAxis,
+          Performs reduction on local field in all dimension except that determined by cutAxis,
           store result in res.  
         */
         void performReduction(std::vector<T>& res, unsigned int cutAxis, NDIndex<Dim>& dom); 
@@ -79,7 +90,8 @@ namespace ippl {
         /*!
           @param std::vector<T>& w
  
-          Find median of array w
+          Find median of array w, 
+          does not return indices that would lead to domains of size 1 
         */
         int findMedian(std::vector<T>& w);
 
@@ -91,7 +103,8 @@ namespace ippl {
           @param int cutAxis
           @param int median
 
-          Cut field layout along the cut axis at the median
+          Split the domain given by the iterator along the cut axis at the median,
+          the corresponding index will be cut between median and median+1
         */
         void cutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median);
  
