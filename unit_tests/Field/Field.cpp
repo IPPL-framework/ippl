@@ -25,6 +25,7 @@ class FieldTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
     typedef ippl::Field<double, dim> field_type;
+    typedef ippl::UniformCartesian<double, dim> mesh_type;
 
     FieldTest()
     : nPoints(8)
@@ -45,12 +46,13 @@ public:
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};
         ippl::Vector<double, dim> origin = {0, 0, 0};
-        ippl::UniformCartesian<double, dim> mesh(owned, hx, origin);
+        mesh = std::make_shared<mesh_type>(owned, hx, origin);
 
-        field = std::make_unique<field_type>(mesh, layout);
+        field = std::make_unique<field_type>(*mesh, layout);
     }
 
     std::unique_ptr<field_type> field;
+    std::shared_ptr<mesh_type> mesh;
     size_t nPoints;
 };
 
@@ -124,15 +126,42 @@ TEST_F(FieldTest, VolumeIntegral) {
 
     Kokkos::parallel_for("assign field", policy,
         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-            double x = (i + 0.5) * dx;
-            double y = (j + 0.5) * dx;
-            double z = (k + 0.5) * dx;
+            double x = (i - 0.5) * dx;
+            double y = (j - 0.5) * dx;
+            double z = (k - 0.5) * dx;
 
             view(i, j, k) = sin(2 * pi * x) * sin(2 * pi * y) * sin(2 * pi * z);
         }
     );
 
     ASSERT_NEAR(field->getVolumeIntegral(), 0., 1e-15);
+}
+
+TEST_F(FieldTest, VolumeIntegral2) {
+    const double dx = 1. / nPoints;
+    auto view = field->getView();
+    auto policy = field->getRangePolicy();
+    const double pi = acos(-1.0);
+
+    // Note that the domain for the field is [0,1]^3. If it were [-1,1]^3, this integral
+    // would evaluate to zero
+    Kokkos::parallel_for("assign field", policy,
+        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+            double x = (i - 0.5) * dx;
+            double y = (j - 0.5) * dx;
+            double z = (k - 0.5) * dx;
+
+            view(i, j, k) = pow(pi, 2) *  (cos(sin(pi * z)) * sin(pi * z) * sin(sin(pi * x)) * sin(sin(pi * y))
+                + (cos(sin(pi * y)) * sin(pi * y) * sin(sin(pi * x)) + (cos(sin(pi * x)) * sin(pi * x)
+                + (pow(cos(pi *  x), 2)  + pow(cos(pi * y), 2)  +pow(cos(pi * z), 2)) * sin(sin(pi * x)))
+                * sin(sin(pi * y))) * sin(sin(pi * z)));
+        }
+    );
+
+    // Large tolerance is due to low mesh density. For 512^3 points, the error
+    // is on the order of 1e-5
+    // Note: on [-1,1]^3, the integral evaluates correctly to 0 (within 1e-16)
+    ASSERT_NEAR(field->getVolumeIntegral(), 6.0954, 0.2);
 }
 
 
