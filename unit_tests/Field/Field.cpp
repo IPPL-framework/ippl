@@ -36,9 +36,9 @@ public:
         ippl::Index I(nPoints);
         ippl::NDIndex<dim> owned(I, I, I);
 
-        ippl::e_dim_tag allParallel[dim];
+        ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++)
-            allParallel[d] = ippl::PARALLEL;
+            allParallel[d] = ippl::SERIAL;
 
         ippl::FieldLayout<dim> layout(owned, allParallel);
 
@@ -72,7 +72,7 @@ TEST_F(FieldTest, Norm1) {
 
     *field = val;
 
-    double norm1 = ippl::norm1(*field);
+    double norm1 = ippl::norm(*field, 1);
 
     ASSERT_DOUBLE_EQ(-val * std::pow(nPoints, dim), norm1);
 }
@@ -83,7 +83,7 @@ TEST_F(FieldTest, Norm2) {
 
     *field = val;
 
-    double norm2 = ippl::norm2(*field);
+    double norm2 = ippl::norm(*field);
 
     ASSERT_DOUBLE_EQ(std::sqrt(val * val * std::pow(nPoints, dim)), norm2);
 }
@@ -93,7 +93,7 @@ TEST_F(FieldTest, NormInf) {
     const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
 
     auto view = field->getView();
-    auto policy = field->getRangePolicy(0);
+    auto policy = field->getRangePolicy();
 
     Kokkos::parallel_for("Assign field",
                          policy,
@@ -109,7 +109,7 @@ TEST_F(FieldTest, NormInf) {
     });
 
 
-    double normInf = ippl::normInf(*field);
+    double normInf = ippl::norm(*field, 0);
 
     double val = -1.0 + 3 * nPoints;
 
