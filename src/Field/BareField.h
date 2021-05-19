@@ -183,6 +183,12 @@ namespace ippl {
             return Kokkos::create_mirror(dview_m);
         }
 
+        /*!
+         * Generate the 3D range policy for iterating over the field,
+         * excluding ghost layers
+         * @param nghost Number of ghost layers to include in the range policy (default 0)
+         * @return Range policy for iterating over the field and nghost of the ghost layers
+         */
         policy_type getRangePolicy(const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
             const size_t shift = nghost_m - nghost;
