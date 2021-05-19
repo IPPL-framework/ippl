@@ -55,4 +55,15 @@ namespace ippl {
             bc_m[face] = std::make_shared<NoBcFace<T, Dim>>(face);
         }
     }
+
+    template<class T, unsigned Dim, class M, class C>
+    T Field<T,Dim,M,C>::getVolumeIntegral() const {
+        typename M::value_type dV = mesh_m->getCellVolume();
+        return this->sum() * dV;
+    }
+
+    template<class T, unsigned Dim, class M, class C>
+    T Field<T,Dim,M,C>::getVolumeAverage() const {
+        return getVolumeIntegral() / mesh_m->getMeshVolume();
+    }
 }
