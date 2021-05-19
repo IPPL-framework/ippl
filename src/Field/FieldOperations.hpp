@@ -1,6 +1,6 @@
 //
 // File FieldOperations
-//   Differential operators for fields
+//   Differential operators, norms, and a scalar product for fields
 //
 // Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
@@ -17,6 +17,74 @@
 //
 
 namespace ippl {
+    /*!
+     * Computes the inner product of two fields
+     * @param f1 first field
+     * @param f2 second field
+     * @return Result of f1^T f2
+     */
+    template <typename T, unsigned Dim>
+    T innerProduct(const Field<T, Dim>& f1, const Field<T, Dim>& f2) {
+        T sum = 0;
+        auto view1 = f1.getView();
+        auto view2 = f2.getView();
+        Kokkos::parallel_reduce("Field::innerProduct(Field&, Field&)", f1.getRangePolicy(),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
+                val += view1(i, j, k) * view2(i, j, k);
+            },
+            Kokkos::Sum<T>(sum)
+        );
+        T globalSum = 0;
+        MPI_Datatype type = get_mpi_datatype<T>(sum);
+        MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
+        return globalSum;
+    }
+
+    /*!
+     * Computes the Lp-norm of a field
+     * @param field field
+     * @param p desired norm (default 2)
+     * @return The desired norm of the field
+     */
+    template<typename T, unsigned Dim, class M, class C>
+    T norm(const Field<T, Dim, M, C>& field, int p = 2) {
+        T local = 0;
+        auto view = field.getView();
+        switch (p) {
+        case 0:
+        {
+            Kokkos::parallel_reduce("Field::norm(0)", field.getRangePolicy(),
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
+                    T myVal = std::abs(view(i, j, k));
+                    if (myVal > val)
+                        val = myVal;
+                },
+                Kokkos::Max<T>(local)
+            );
+            T globalMax = 0;
+            MPI_Datatype type = get_mpi_datatype<T>(local);
+            MPI_Allreduce(&local, &globalMax, 1, type, MPI_MAX, Ippl::getComm());
+            return globalMax;
+        }
+        case 2:
+            return std::sqrt(innerProduct(field, field));
+        default:
+        {
+            Kokkos::parallel_reduce("Field::norm(int) general", field.getRangePolicy(),
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& val) {
+                    val += std::pow(std::abs(view(i, j, k)), p);
+                },
+                Kokkos::Sum<T>(local)
+            );
+            T globalSum = 0;
+            MPI_Datatype type = get_mpi_datatype<T>(local);
+            MPI_Allreduce(&local, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
+            return std::pow(globalSum, 1.0 / p);
+        }
+        }
+    }
+
+
     /*!
      * User interface of gradient in three dimensions.
      * @param u field
