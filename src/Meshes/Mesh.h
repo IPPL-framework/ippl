@@ -28,7 +28,7 @@ namespace ippl {
     class Mesh {
 
     public:
-        typedef T type;
+        typedef T value_type;
         enum { Dimension = Dim };
 
         typedef Vector<T, Dim> vector_type;
@@ -45,7 +45,16 @@ namespace ippl {
 
         const vector_type& getGridsize() const;
 
+        /*!
+         * Query the cell volume of the grid
+         * @return The volume of a single mesh cell
+         */
         virtual T getCellVolume() const = 0;
+
+        /*!
+         * Query the volume of the represented domain
+         * @return Total volume of the mesh
+         */
         virtual T getMeshVolume() const = 0;
 
         T getGridsize(size_t dim) const;
