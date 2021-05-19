@@ -64,6 +64,18 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION
         Mesh_t& get_mesh() const { return *mesh_m; }
 
+        /*!
+         * Use the midpoint rule to calculate the field's volume integral
+         * @return Integral of the field over its domain
+         */
+        T getVolumeIntegral() const;
+
+        /*!
+         * Use the midpoint rule to calculate the field's volume average
+         * @return Integral of the field divided by the mesh volume
+         */
+        T getVolumeAverage() const;
+
         BConds_t& getFieldBC() { return bc_m; }
         // Assignment from constants and other arrays.
         using BareField<T, Dim>::operator=;

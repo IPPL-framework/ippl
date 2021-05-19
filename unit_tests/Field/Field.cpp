@@ -25,6 +25,7 @@ class FieldTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
     typedef ippl::Field<double, dim> field_type;
+    typedef ippl::UniformCartesian<double, dim> mesh_type;
 
     FieldTest()
     : nPoints(8)
@@ -45,12 +46,13 @@ public:
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};
         ippl::Vector<double, dim> origin = {0, 0, 0};
-        ippl::UniformCartesian<double, dim> mesh(owned, hx, origin);
+        mesh = std::make_shared<mesh_type>(owned, hx, origin);
 
-        field = std::make_unique<field_type>(mesh, layout);
+        field = std::make_unique<field_type>(*mesh, layout);
     }
 
     std::unique_ptr<field_type> field;
+    std::shared_ptr<mesh_type> mesh;
     size_t nPoints;
 };
 
@@ -185,7 +187,31 @@ TEST_F(FieldTest, NormInf) {
     ASSERT_DOUBLE_EQ(val, normInf);
 }
 
+TEST_F(FieldTest, VolumeIntegral) {
+    const double dx = 1. / nPoints;
+    auto view = field->getView();
+    auto policy = field->getRangePolicy();
+    const double pi = acos(-1.0);
 
+    Kokkos::parallel_for("assign field", policy,
+        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+            double x = (i - 0.5) * dx;
+            double y = (j - 0.5) * dx;
+            double z = (k - 0.5) * dx;
+
+            view(i, j, k) = sin(2 * pi * x) * sin(2 * pi * y) * sin(2 * pi * z);
+        }
+    );
+
+    ASSERT_NEAR(field->getVolumeIntegral(), 0., 1e-15);
+}
+
+TEST_F(FieldTest, VolumeIntegral2) {
+    *field = 1.;
+    double integral = field->getVolumeIntegral();
+    double volume = field->get_mesh().getMeshVolume();
+    ASSERT_DOUBLE_EQ(integral, volume);
+}
 
 
 int main(int argc, char *argv[]) {
