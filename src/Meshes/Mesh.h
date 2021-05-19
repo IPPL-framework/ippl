@@ -45,6 +45,9 @@ namespace ippl {
 
         const vector_type& getGridsize() const;
 
+        virtual T getCellVolume() const = 0;
+        virtual T getMeshVolume() const = 0;
+
         T getGridsize(size_t dim) const;
 
     protected:

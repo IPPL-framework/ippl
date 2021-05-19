@@ -198,10 +198,10 @@ namespace ippl {
          */
         void write(std::ostream& out = std::cout) const;
 
-        T sum(int nghost = 0);
-        T max(int nghost = 0);
-        T min(int nghost = 0);
-        T prod(int nghost = 0);
+        T sum(int nghost = 0) const;
+        T max(int nghost = 0) const;
+        T min(int nghost = 0) const;
+        T prod(int nghost = 0) const;
 
 
     private:
