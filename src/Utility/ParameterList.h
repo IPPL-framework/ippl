@@ -131,6 +131,9 @@ namespace ippl {
             params_m[key] = value;
         }
 
+// Disable parameter list printing for Cuda builds until
+// the lambda issue is resolved
+#ifndef KOKKOS_ENABLE_CUDA
         /*!
          * Print this parameter list.
          */
@@ -160,6 +163,7 @@ namespace ippl {
 
             return os;
         }
+#endif
 
     private:
         std::map<std::string, variant_t> params_m;
