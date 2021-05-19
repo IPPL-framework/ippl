@@ -74,7 +74,7 @@ namespace ippl {
          * @returns the value of a parameter
          */
         template <typename T>
-        T get(const std::string& key) {
+        T get(const std::string& key) const {
 #if __cplusplus > 201703L
             if (!params_m.contains(key)) {
 #else
@@ -83,7 +83,7 @@ namespace ippl {
                 throw IpplException("ParameterList::get()",
                                     "Parameter '" + key + "' not contained.");
             }
-            return std::get<T>(params_m[key]);
+            return std::get<T>(params_m.at(key));
         }
 
         /*!
@@ -131,6 +131,9 @@ namespace ippl {
             params_m[key] = value;
         }
 
+// Disable parameter list printing for Cuda builds until
+// the lambda issue is resolved
+#ifndef KOKKOS_ENABLE_CUDA
         /*!
          * Print this parameter list.
          */
@@ -160,6 +163,7 @@ namespace ippl {
 
             return os;
         }
+#endif
 
     private:
         std::map<std::string, variant_t> params_m;
