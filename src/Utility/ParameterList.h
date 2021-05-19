@@ -74,7 +74,7 @@ namespace ippl {
          * @returns the value of a parameter
          */
         template <typename T>
-        T get(const std::string& key) {
+        T get(const std::string& key) const {
 #if __cplusplus > 201703L
             if (!params_m.contains(key)) {
 #else
@@ -83,7 +83,7 @@ namespace ippl {
                 throw IpplException("ParameterList::get()",
                                     "Parameter '" + key + "' not contained.");
             }
-            return std::get<T>(params_m[key]);
+            return std::get<T>(params_m.at(key));
         }
 
         /*!
