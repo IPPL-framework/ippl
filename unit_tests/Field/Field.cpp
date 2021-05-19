@@ -93,11 +93,7 @@ TEST_F(FieldTest, NormInf) {
     const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
 
     auto view = field->getView();
-    const int shift = field->getNghost();
-    auto policy = Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-        {shift, shift, shift},
-        {view.extent(0) - shift, view.extent(1) - shift, view.extent(2) - shift}
-    );
+    auto policy = field->getRangePolicy();
 
     Kokkos::parallel_for("Assign field",
                          policy,

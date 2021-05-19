@@ -62,6 +62,7 @@ namespace ippl {
         //! View type storing the data
         using view_type = typename detail::ViewType<T, Dim>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
+        using policy_type = typename detail::RangePolicy<Dim>::policy_type;
 
 
         /*! A default constructor, which should be used only if the user calls the
@@ -180,6 +181,15 @@ namespace ippl {
 
         HostMirror getHostMirror() {
             return Kokkos::create_mirror(dview_m);
+        }
+
+        policy_type getRangePolicy(const int nghost = 0) const {
+            PAssert_LE(nghost, nghost_m);
+            const size_t shift = nghost_m - nghost;
+            return policy_type({shift, shift, shift},
+                               {dview_m.extent(0) - shift,
+                                dview_m.extent(1) - shift,
+                                dview_m.extent(2) - shift});
         }
 
         /*!
