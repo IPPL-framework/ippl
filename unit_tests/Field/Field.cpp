@@ -138,30 +138,10 @@ TEST_F(FieldTest, VolumeIntegral) {
 }
 
 TEST_F(FieldTest, VolumeIntegral2) {
-    const double dx = 1. / nPoints;
-    auto view = field->getView();
-    auto policy = field->getRangePolicy();
-    const double pi = acos(-1.0);
-
-    // Note that the domain for the field is [0,1]^3. If it were [-1,1]^3, this integral
-    // would evaluate to zero
-    Kokkos::parallel_for("assign field", policy,
-        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-            double x = (i - 0.5) * dx;
-            double y = (j - 0.5) * dx;
-            double z = (k - 0.5) * dx;
-
-            view(i, j, k) = pow(pi, 2) *  (cos(sin(pi * z)) * sin(pi * z) * sin(sin(pi * x)) * sin(sin(pi * y))
-                + (cos(sin(pi * y)) * sin(pi * y) * sin(sin(pi * x)) + (cos(sin(pi * x)) * sin(pi * x)
-                + (pow(cos(pi *  x), 2)  + pow(cos(pi * y), 2)  +pow(cos(pi * z), 2)) * sin(sin(pi * x)))
-                * sin(sin(pi * y))) * sin(sin(pi * z)));
-        }
-    );
-
-    // Large tolerance is due to low mesh density. For 512^3 points, the error
-    // is on the order of 1e-5
-    // Note: on [-1,1]^3, the integral evaluates correctly to 0 (within 1e-16)
-    ASSERT_NEAR(field->getVolumeIntegral(), 6.0954, 0.2);
+    *field = 1.;
+    double integral = field->getVolumeIntegral();
+    double volume = field->get_mesh().getMeshVolume();
+    ASSERT_DOUBLE_EQ(integral, volume);
 }
 
 
