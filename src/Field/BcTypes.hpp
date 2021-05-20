@@ -265,13 +265,13 @@ namespace ippl {
                     //upper face
                     offset = -domain[d].length();
                     offsetRecv = nghost;
-                    matchtag = tag - 1;
+                    matchtag = Ippl::Comm->preceding_tag(BC_PARALLEL_PERIODIC_TAG);
                 }
                 else {
                     //lower face
                     offset = domain[d].length();
                     offsetRecv = -nghost;
-                    matchtag = tag + 1;
+                    matchtag = Ippl::Comm->following_tag(BC_PARALLEL_PERIODIC_TAG);
                 }
                 
                 std::vector<MPI_Request> requests(0);
