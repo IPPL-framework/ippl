@@ -223,6 +223,36 @@ public:
          m << "Rel. error in charge conservation = " << std::fabs((Q_m-Q_grid)/Q_m) << endl;
          IpplTimings::stopTimer(sumTimer);                                                    
     }
+
+     void writePerRank() {
+        double lq = 0.0, lqm = 0.0;
+        Field_t::view_type viewRho = this->EFDMag_m.getView();
+        ParticleAttrib<double>::view_type viewqm = this->qm.getView();
+        int nghost = this->EFDMag_m.getNghost();
+
+        using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;       
+        Kokkos::parallel_reduce("Particle Charge", mdrange_t({nghost,nghost,nghost},{viewRho.extent(0)-nghost,viewRho.extent(1)-nghost,viewRho.extent(2)-nghost})
+                                               , KOKKOS_LAMBDA(const int i, const int j, const int k, double& val){
+           val += viewRho(i, j, k);
+        }, lq);
+        Kokkos::parallel_reduce("Particle QM", viewqm.extent(0)
+                                               , KOKKOS_LAMBDA(const int i, double& val){
+           val += viewqm(i);
+        }, lqm);
+
+        double lQ = lq / this->EFDMag_m.sum();
+
+        std::ofstream fcharge;
+        fcharge.open("charge.txt", std::ios_base::app);
+        fcharge << std::to_string(step) << " " << Ippl::Comm->rank() << " " << lQ << "\n";
+        fcharge.close();
+
+        std::ofstream fqm;
+        fqm.open("qm.txt", std::ios_base::app);
+        fqm << std::to_string(step) << " " << Ippl::Comm->rank() << " " << lqm << "\n";
+        fqm.close();
+
+     }
      
      void initFields() {
          static IpplTimings::TimerRef initFieldsTimer = IpplTimings::getTimer("initFields");           
@@ -429,26 +459,6 @@ public:
         Kokkos::deep_copy(this->R.getView(), R_host);
      }
 
-     void writeMassPerRank() {
-        double lq = 0.0;
-        Field_t::view_type view = this->EFDMag_m.getView();
-        int nghost = this->EFDMag_m.getNghost();
-
-        using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;       
-        Kokkos::parallel_reduce("Particle Mass", mdrange_t({nghost,nghost,nghost},{view.extent(0)-nghost,view.extent(1)-nghost,view.extent(2)-nghost})
-                                               , KOKKOS_LAMBDA(const int i, const int j, const int k, double& val){
-           val += view(i, j, k);
-        }, lq);
-
-        double lM = lq / this->qm.sum();
-
-        std::ofstream file;
-        file.open("mass.txt", std::ios_base::app);
-        file << std::to_string(step) << " " << Ippl::Comm->rank() << " " << lM << "\n";
-        file.close();
-
-     }
-
 
 private:
     void setBCAllPeriodic() {
@@ -596,7 +606,7 @@ int main(int argc, char *argv[]) {
     msg << "scatter done" << endl;
 
     // Mass conservation
-    P->writeMassPerRank(); 
+    P->writePerRank(); 
  
     static IpplTimings::TimerRef particleBalancing = IpplTimings::getTimer("particleBalancing");           
     IpplTimings::startTimer(particleBalancing);                                                    
@@ -605,7 +615,7 @@ int main(int argc, char *argv[]) {
     msg << "Balancing finished" << endl;
     
     // Mass conservation
-    P->writeMassPerRank(); 
+    P->writePerRank(); 
     
     P->scatterCIC(totalP, 0);
     msg << "scatter done" << endl;
@@ -627,8 +637,8 @@ int main(int argc, char *argv[]) {
            P->repartition(FL, meshField); 
            IpplTimings::stopTimer(particleBalancing);                                                    
            
-           // Mass conservation
-           P->writeMassPerRank(); 
+           // Conservations
+           P->writePerRank(); 
         }
         
         static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");           
