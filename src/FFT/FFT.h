@@ -152,11 +152,11 @@ namespace ippl {
         /**
            setup performs the initialization necessary.
         */
-        void setup(const std::array<int, Dim>& low,
-                   const std::array<int, Dim>& high,
+        void setup(const std::array<long long, Dim>& low,
+                   const std::array<long long, Dim>& high,
                    const FFTParams& params);
 
-        std::shared_ptr<heffte::fft3d<heffteBackend>> heffte_m;
+        std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
     };
 
 
@@ -197,14 +197,14 @@ namespace ippl {
            setup performs the initialization necessary after the transform
            directions have been specified.
         */
-        void setup(const std::array<int, Dim>& lowInput,
-                   const std::array<int, Dim>& highInput,
-                   const std::array<int, Dim>& lowOutput,
-                   const std::array<int, Dim>& highOutput,
+        void setup(const std::array<long long, Dim>& lowInput,
+                   const std::array<long long, Dim>& highInput,
+                   const std::array<long long, Dim>& lowOutput,
+                   const std::array<long long, Dim>& highOutput,
                    const FFTParams& params);
 
 
-        std::shared_ptr<heffte::fft3d_r2c<heffteBackend>> heffte_m;
+        std::shared_ptr<heffte::fft3d_r2c<heffteBackend, long long>> heffte_m;
 
     };
 
