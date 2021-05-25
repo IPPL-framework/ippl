@@ -82,14 +82,14 @@ namespace ippl {
         void recv(int src, int tag, Buffer& buffer);
 
         template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer, archive_type& ar, int msize);
+        void recv(int src, int dest, int tag, Buffer& buffer, archive_type& ar, int msize);
 
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&);
+        void isend(int dest, int src, int tag, Buffer& buffer, archive_type&, MPI_Request&);
 
 
         /*!
@@ -135,22 +135,31 @@ namespace ippl {
     }
 
     template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, int msize)
+    void Communicate::recv(int src, int dest, int tag, Buffer& buffer, archive_type& ar, int msize)
     {
-        MPI_Status status;
+        MPI_Status status1, status2;
+        MPI_Probe(src, tag, *this, &status1);
+
+        int msize1 = 0;
+        MPI_Get_count(&status1, MPI_BYTE, &msize1);
+
+        std::cout << "Rank " << dest << " receives " << msize1 
+                  << " bytes from rank  " << src << std::endl;
         MPI_Recv(ar.getBuffer(), msize,
-                MPI_BYTE, src, tag, *this, &status);
+                MPI_BYTE, src, tag, *this, &status2);
 
         buffer.deserialize(ar);
     }
 
 
     template <class Buffer>
-    void Communicate::isend(int dest, int tag, Buffer& buffer,
+    void Communicate::isend(int dest, int src, int tag, Buffer& buffer,
                             archive_type& ar, MPI_Request& request)
     {
         buffer.serialize(ar);
 
+        std::cout << "Rank " << src << " sends " << ar.getSize() 
+                  << " bytes to rank  " << dest << std::endl;
         MPI_Isend(ar.getBuffer(), ar.getSize(),
                   MPI_BYTE, dest, tag, *this, &request);
     }

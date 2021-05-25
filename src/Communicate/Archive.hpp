@@ -35,6 +35,7 @@ namespace ippl {
         void Archive<Properties...>::operator<<(const Kokkos::View<T*>& view) {
             readpos_m = 0;
             size_t size = sizeof(T);
+            //std::cout << "Write position " << writepos_m << std::endl;
             Kokkos::parallel_for(
                 "Archive::serialize()", view.extent(0),
                 KOKKOS_CLASS_LAMBDA(const size_t i) {
@@ -52,6 +53,7 @@ namespace ippl {
             readpos_m = 0;
             size_t size = sizeof(T);
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+            //std::cout << "Write position " << writepos_m << std::endl;
             Kokkos::parallel_for(
                 "Archive::serialize()",
                 mdrange_t({0, 0}, {(long int)view.extent(0), Dim}),

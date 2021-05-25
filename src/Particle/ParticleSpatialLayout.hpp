@@ -49,6 +49,7 @@ namespace ippl {
     void ParticleSpatialLayout<T, Dim, Mesh>::update(
         ///*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata)
         BufferType& pdata, BufferType& buffer)
+        //BufferType& pdata)
     {
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("ParticleBC");
         IpplTimings::startTimer(ParticleBCTimer);
@@ -142,7 +143,7 @@ namespace ippl {
 
                 pdata.pack(buffer, hash);
 
-                Ippl::Comm->isend(rank, tag, buffer, *sendar_m[rank],
+                Ippl::Comm->isend(rank, Ippl::Comm->rank(), tag, buffer, *sendar_m[rank],
                                   requests.back());
             }
         }
@@ -161,7 +162,7 @@ namespace ippl {
                 std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nRecvs[rank]
                           << " from rank  " << rank << std::endl;
 
-                Ippl::Comm->recv(rank, tag, buffer, *recvar_m[rank],  44 * nRecvs[rank]);
+                Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, buffer, *sendar_m[rank],  44 * nRecvs[rank]);
 
                 std::cout << "Rank " << Ippl::Comm->rank() << " receive done." << std::endl;
 

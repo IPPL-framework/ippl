@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
     bunch_type bunchBuffer(pl);
     bunchBuffer.create(100000);
 
-    int nsteps = 5;
+    int nsteps = 300;
 
     for (int nt=0; nt < nsteps; ++nt) {
 
@@ -197,6 +197,7 @@ int main(int argc, char *argv[]) {
         IpplTimings::startTimer(UpdateTimer);
         //bunch.update();
         pl.update(bunch, bunchBuffer);
+        //pl.update(bunch);
         IpplTimings::stopTimer(UpdateTimer);
         msg << "Update: " << nt+1 << endl;
         //Kokkos::resize(R_host, bunch.R.size());

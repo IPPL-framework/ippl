@@ -89,7 +89,8 @@ namespace ippl {
             /*!
              * @returns the size of the buffer
              */
-            size_type getSize() const {
+            //size_type getSize() const {
+            size_type getSize() {
                 return writepos_m; /// sizeof(char);
             }
 
