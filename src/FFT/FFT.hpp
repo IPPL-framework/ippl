@@ -97,7 +97,7 @@ namespace ippl {
          heffteOptions.use_pencils = params.getPencils();
          heffteOptions.use_reorder = params.getReorder();
 
-         heffte_m = std::make_shared<heffte::fft3d<heffteBackend>>
+         heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>
                     (inbox, outbox, Ippl::getComm(), heffteOptions);
 
     }
@@ -266,7 +266,7 @@ namespace ippl {
          heffteOptions.use_pencils = params.getPencils();
          heffteOptions.use_reorder = params.getReorder();
 
-         heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend>>
+         heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>
                     (inbox, outbox, params.getRCDirection(), Ippl::getComm(),
                      heffteOptions);
 
