@@ -145,6 +145,7 @@ namespace ippl {
 
                 Ippl::Comm->isend(rank, Ippl::Comm->rank(), tag, buffer, *sendar_m[rank],
                                   requests.back());
+                sendar_m[rank]->resetWritePos();
             }
         }
         IpplTimings::stopTimer(step3Timer);
@@ -162,7 +163,9 @@ namespace ippl {
                 std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nRecvs[rank]
                           << " from rank  " << rank << std::endl;
 
-                Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, buffer, *sendar_m[rank],  44 * nRecvs[rank]);
+                Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, buffer, *recvar_m[rank],  44 * nRecvs[rank]);
+                
+                recvar_m[rank]->resetReadPos();
 
                 std::cout << "Rank " << Ippl::Comm->rank() << " receive done." << std::endl;
 

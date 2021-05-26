@@ -89,9 +89,15 @@ namespace ippl {
             /*!
              * @returns the size of the buffer
              */
-            //size_type getSize() const {
-            size_type getSize() {
+            size_type getSize() const {
                 return writepos_m; /// sizeof(char);
+            }
+            
+            void resetWritePos() {
+                writepos_m = 0;
+            }
+            void resetReadPos() {
+                readpos_m = 0;
             }
 
             ~Archive() = default;
