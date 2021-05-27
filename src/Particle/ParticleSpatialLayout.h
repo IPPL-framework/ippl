@@ -61,10 +61,10 @@ namespace ippl {
 
         ~ParticleSpatialLayout() = default;
 
-        //template <class BufferType>
-        //void update(/*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata);
         template <class BufferType>
-        void update(BufferType& pdata, BufferType& buffer);
+        void update(/*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata);
+        //template <class BufferType>
+        //void update(BufferType& pdata, BufferType& buffer);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
 

@@ -48,8 +48,8 @@ namespace ippl {
     template <class BufferType>
     void ParticleSpatialLayout<T, Dim, Mesh>::update(
         ///*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata)
-        BufferType& pdata, BufferType& buffer)
-        //BufferType& pdata)
+        //BufferType& pdata, BufferType& buffer)
+        BufferType& pdata)
     {
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("ParticleBC");
         IpplTimings::startTimer(ParticleBCTimer);
@@ -138,8 +138,8 @@ namespace ippl {
                 std::cout << "Rank " << Ippl::Comm->rank() << " sends " << nSends[rank]
                           << " to rank  " << rank << std::endl;
 
-                //BufferType buffer(pdata.getLayout());
-                //buffer.create(nSends[rank]);
+                BufferType buffer(pdata.getLayout());
+                buffer.create(nSends[rank]);
 
                 pdata.pack(buffer, hash);
 
@@ -157,19 +157,20 @@ namespace ippl {
         // 3rd step
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
-                //BufferType buffer(pdata.getLayout());
-                //buffer.create(nRecvs[rank]);
+                BufferType buffer(pdata.getLayout());
+                buffer.create(nRecvs[rank]);
 
                 std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nRecvs[rank]
                           << " from rank  " << rank << std::endl;
 
-                Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, buffer, *recvar_m[rank],  44 * nRecvs[rank]);
+                //Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, buffer, *recvar_m[rank],  44 * nRecvs[rank]);
+                Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, buffer, *recvar_m[rank]);
                 
                 recvar_m[rank]->resetReadPos();
 
                 std::cout << "Rank " << Ippl::Comm->rank() << " receive done." << std::endl;
 
-                pdata.unpack(buffer, nRecvs[rank]);
+                pdata.unpack(buffer);
 
                 std::cout << "Rank " << Ippl::Comm->rank() << " unpack done." << std::endl;
             }

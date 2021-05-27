@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     bunch.setParticleBC(bcs);
 
     int nRanks = Ippl::Comm->size();
-    unsigned int nParticles = 64000;//std::pow(32, 3);
+    unsigned int nParticles = 640000;//std::pow(32, 3);
     unsigned int nParLocal = nParticles/nRanks;
     unsigned int nParQuad = nParLocal/8;
 
@@ -193,8 +193,8 @@ int main(int argc, char *argv[]) {
 
 
     //std::cout << layout << std::endl;
-    bunch_type bunchBuffer(pl);
-    bunchBuffer.create(100000);
+    //bunch_type bunchBuffer(pl);
+    //bunchBuffer.create(100000);
 
     int nsteps = 300;
 
@@ -204,8 +204,8 @@ int main(int argc, char *argv[]) {
         static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("Update");
         IpplTimings::startTimer(UpdateTimer);
         //bunch.update();
-        pl.update(bunch, bunchBuffer);
-        //pl.update(bunch);
+        //pl.update(bunch, bunchBuffer);
+        pl.update(bunch);
         IpplTimings::stopTimer(UpdateTimer);
         msg << "Update: " << nt+1 << endl;
         //Kokkos::resize(R_host, bunch.R.size());

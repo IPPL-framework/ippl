@@ -82,7 +82,7 @@ namespace ippl {
         void recv(int src, int tag, Buffer& buffer);
 
         template <class Buffer>
-        void recv(int src, int dest, int tag, Buffer& buffer, archive_type& ar, int msize);
+        void recv(int src, int dest, int tag, Buffer& buffer, archive_type& ar);
 
 
         /*!
@@ -135,7 +135,7 @@ namespace ippl {
     }
 
     template <class Buffer>
-    void Communicate::recv(int src, int dest, int tag, Buffer& buffer, archive_type& ar, int msize)
+    void Communicate::recv(int src, int dest, int tag, Buffer& buffer, archive_type& ar)
     {
         MPI_Status status1;
         MPI_Probe(src, tag, *this, &status1);
@@ -143,7 +143,7 @@ namespace ippl {
         int msize1 = 0;
         MPI_Get_count(&status1, MPI_BYTE, &msize1);
 
-        std::cout << "Rank " << dest << " receives " << msize
+        std::cout << "Rank " << dest << " receives " << msize1
                   << " bytes from rank  " << src << std::endl;
         //MPI_Status status2;
         MPI_Recv(ar.getBuffer(), msize1,

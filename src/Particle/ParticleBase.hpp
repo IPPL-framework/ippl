@@ -257,11 +257,11 @@ namespace ippl {
 
     template <class PLayout, class... Properties>
     template <class Buffer>
-    void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer, int nrecvs)
+    void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer)
     {
         using size_type = typename attribute_container_t::size_type;
         for (size_type j = 0; j < attributes_m.size(); ++j) {
-            attributes_m[j]->unpack(buffer.getAttribute(j), nrecvs);
+            attributes_m[j]->unpack(buffer.getAttribute(j));
         }
     }
 }
