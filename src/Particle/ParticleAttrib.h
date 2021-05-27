@@ -56,7 +56,7 @@ namespace ippl {
 
         void pack(void*, const Kokkos::View<int*>&) const override;
 
-        void unpack(void*) override;
+        void unpack(void*, int) override;
 
         void serialize(detail::Archive<Properties...>& ar) override {
             ar << dview_m;

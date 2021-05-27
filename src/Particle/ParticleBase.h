@@ -268,7 +268,7 @@ namespace ippl {
          * @param buffer received
          */
         template <class Buffer>
-        void unpack(Buffer& buffer);
+        void unpack(Buffer& buffer, int nrecvs);
 
     private:
         //! particle layout

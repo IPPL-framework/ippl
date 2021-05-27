@@ -45,7 +45,7 @@ namespace ippl {
 
             virtual void pack(void*, const Kokkos::View<int*>&) const = 0;
 
-            virtual void unpack(void*) = 0;
+            virtual void unpack(void*, int) = 0;
 
             virtual void serialize(Archive<Properties...>& ar) = 0;
 

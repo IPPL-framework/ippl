@@ -169,7 +169,7 @@ namespace ippl {
 
                 std::cout << "Rank " << Ippl::Comm->rank() << " receive done." << std::endl;
 
-                pdata.unpack(buffer);
+                pdata.unpack(buffer, nRecvs[rank]);
 
                 std::cout << "Rank " << Ippl::Comm->rank() << " unpack done." << std::endl;
             }

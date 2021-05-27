@@ -73,7 +73,9 @@ int main(int argc, char *argv[]) {
     bunch.setParticleBC(bcs);
 
     int nRanks = Ippl::Comm->size();
-    unsigned int nParticles = 6400000;//std::pow(32, 3);
+    unsigned int nParticles = 64000;//std::pow(32, 3);
+    unsigned int nParLocal = nParticles/nRanks;
+    unsigned int nParQuad = nParLocal/8;
 
     if (nParticles % nRanks > 0) {
         if (Ippl::Comm->rank() == 0) {
@@ -82,6 +84,12 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
+    if (nRanks != 8) {
+        if (Ippl::Comm->rank() == 0) {
+            std::cerr << " This test only works for 8 GPUs! " << std::endl;
+        }
+        return 0;
+    }
     bunch.create(nParticles / nRanks);
 
 #ifdef KOKKOS_ENABLE_CUDA
@@ -96,37 +104,37 @@ int main(int argc, char *argv[]) {
     std::uniform_real_distribution<double> unif1(0.6, 0.9);
 
     typename bunch_type::particle_position_type::HostMirror R_host = bunch.R.getHostMirror();
-    for (size_t i = 0; i < 100000; ++i) {
+    for (size_t i = 0; i < nParQuad; ++i) {
         ippl::Vector<double, dim> r = {unif0(eng), unif0(eng), unif0(eng)};
         R_host(i) = r;
     }
-    for (size_t i = 100000; i < 200000; ++i) {
+    for (size_t i = nParQuad; i < 2*nParQuad; ++i) {
         ippl::Vector<double, dim> r = {unif0(eng), unif0(eng), unif1(eng)};
         R_host(i) = r;
     }
-    for (size_t i = 200000; i < 300000; ++i) {
+    for (size_t i = 2*nParQuad; i < 3*nParQuad; ++i) {
         ippl::Vector<double, dim> r = {unif0(eng), unif1(eng), unif0(eng)};
         R_host(i) = r;
     }
-    for (size_t i = 300000; i < 400000; ++i) {
+    for (size_t i = 3*nParQuad; i < 4*nParQuad; ++i) {
         ippl::Vector<double, dim> r = {unif0(eng), unif1(eng), unif1(eng)};
         R_host(i) = r;
     }
 
 //////////////////right half of the domain///////////////////////////////////
-    for (size_t i = 400000; i < 500000; ++i) {
+    for (size_t i = 4*nParQuad; i < 5*nParQuad; ++i) {
         ippl::Vector<double, dim> r = {unif1(eng), unif0(eng), unif0(eng)};
         R_host(i) = r;
     }
-    for (size_t i = 500000; i < 600000; ++i) {
+    for (size_t i = 5*nParQuad; i < 6*nParQuad; ++i) {
         ippl::Vector<double, dim> r = {unif1(eng), unif0(eng), unif1(eng)};
         R_host(i) = r;
     }
-    for (size_t i = 600000; i < 700000; ++i) {
+    for (size_t i = 6*nParQuad; i < 7*nParQuad; ++i) {
         ippl::Vector<double, dim> r = {unif1(eng), unif1(eng), unif0(eng)};
         R_host(i) = r;
     }
-    for (size_t i = 700000; i < 800000; ++i) {
+    for (size_t i = 7*nParQuad; i < 8*nParQuad; ++i) {
         ippl::Vector<double, dim> r = {unif1(eng), unif1(eng), unif1(eng)};
         R_host(i) = r;
     }
