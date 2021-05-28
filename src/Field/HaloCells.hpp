@@ -72,8 +72,8 @@ namespace ippl {
 
             // send
             std::vector<MPI_Request> requests(0);
-            using archive_type = Communicate::archive_type;
-            std::vector<std::unique_ptr<archive_type>> archives(0);
+            //using archive_type = Communicate::archive_type;
+            //std::vector<std::unique_ptr<archive_type>> archives(0);
 
             int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
 
@@ -93,15 +93,18 @@ namespace ippl {
                     }
 
 
-                    archives.push_back(std::make_unique<archive_type>());
+                    //archives.push_back(std::make_unique<archive_type>());
                     requests.resize(requests.size() + 1);
 
 
                     FieldBufferData<T> fd;
                     pack(range, view, fd);
 
-                    Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
+                    //Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
+                    //                  requests.back());
+                    Ippl::Comm->isend(rank, Ippl::Comm->rank(), tag, fd, *(layout->sendFacear_m[face][i]),
                                       requests.back());
+                    layout->sendFacear_m[face][i]->resetWritePos();
 
                 }
             }
@@ -129,7 +132,11 @@ namespace ippl {
                                    (range.hi[1] - range.lo[1]) *
                                    (range.hi[2] - range.lo[2]));
 
-                    Ippl::Comm->recv(rank, tag, fd);
+                    //Ippl::Comm->recv(rank, tag, fd);
+                    Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, fd, *(layout->recvFacear_m[face][i]));
+
+                    layout->recvFacear_m[face][i]->resetReadPos();
+
 
                     unpack<Op>(range, view, fd);
                 }
@@ -137,7 +144,7 @@ namespace ippl {
 
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-                archives.clear();
+                //archives.clear();
             }
         }
 
@@ -157,8 +164,8 @@ namespace ippl {
 
             // send
             std::vector<MPI_Request> requests(0);
-            using archive_type = Communicate::archive_type;
-            std::vector<std::unique_ptr<archive_type>> archives(0);
+            //using archive_type = Communicate::archive_type;
+            //std::vector<std::unique_ptr<archive_type>> archives(0);
 
             int tag = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
 
@@ -177,15 +184,18 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    archives.push_back(std::make_unique<archive_type>());
+                    //archives.push_back(std::make_unique<archive_type>());
                     requests.resize(requests.size() + 1);
 
 
                     FieldBufferData<T> fd;
                     pack(range, view, fd);
 
-                    Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
+                    //Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
+                    //                  requests.back());
+                    Ippl::Comm->isend(rank, Ippl::Comm->rank(), tag, fd, *(layout->sendEdgear_m[edge][i]),
                                       requests.back());
+                    layout->sendEdgear_m[edge][i]->resetWritePos();
 
                 }
             }
@@ -213,7 +223,10 @@ namespace ippl {
                                    (range.hi[1] - range.lo[1]) *
                                    (range.hi[2] - range.lo[2]));
 
-                    Ippl::Comm->recv(rank, tag, fd);
+                    //Ippl::Comm->recv(rank, tag, fd);
+                    Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, fd, *(layout->recvEdgear_m[edge][i]));
+
+                    layout->recvEdgear_m[edge][i]->resetReadPos();
 
                     unpack<Op>(range, view, fd);
                 }
@@ -221,7 +234,7 @@ namespace ippl {
 
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-                archives.clear();
+                //archives.clear();
             }
         }
 
@@ -241,8 +254,8 @@ namespace ippl {
 
             // send
             std::vector<MPI_Request> requests(0);
-            using archive_type = Communicate::archive_type;
-            std::vector<std::unique_ptr<archive_type>> archives(0);
+            //using archive_type = Communicate::archive_type;
+            //std::vector<std::unique_ptr<archive_type>> archives(0);
 
             int tag = Ippl::Comm->next_tag(HALO_VERTEX_TAG, HALO_TAG_CYCLE);
 
@@ -264,15 +277,18 @@ namespace ippl {
                                       lDomains[myRank], nghost);
                 }
 
-                archives.push_back(std::make_unique<archive_type>());
+                //archives.push_back(std::make_unique<archive_type>());
                 requests.resize(requests.size() + 1);
 
 
                 FieldBufferData<T> fd;
                 pack(range, view, fd);
 
-                Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
-                                    requests.back());
+                //Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
+                //                    requests.back());
+                Ippl::Comm->isend(rank, Ippl::Comm->rank(), tag, fd, *(layout->sendVertexar_m[vertex]),
+                                      requests.back());
+                layout->sendVertexar_m[vertex]->resetWritePos();
             }
 
             // receive
@@ -301,14 +317,17 @@ namespace ippl {
                                (range.hi[1] - range.lo[1]) *
                                (range.hi[2] - range.lo[2]));
 
-                Ippl::Comm->recv(rank, tag, fd);
+                //Ippl::Comm->recv(rank, tag, fd);
+                Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, fd, *(layout->recvVertexar_m[vertex]));
+
+                layout->recvVertexar_m[vertex]->resetReadPos();
 
                 unpack<Op>(range, view, fd);
             }
 
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-                archives.clear();
+                //archives.clear();
             }
         }
 

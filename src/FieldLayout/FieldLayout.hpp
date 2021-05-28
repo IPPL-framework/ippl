@@ -104,6 +104,24 @@ namespace ippl {
 
         findNeighbors();
 
+        
+        for (size_t face = 0; face < faceNeighbors_m.size(); ++face) {
+            for (size_t i = 0; i < faceNeighbors_m[face].size(); ++i) {
+                sendFacear_m[face].push_back(std::make_shared<archive_type>(5e6));
+                recvFacear_m[face].push_back(std::make_shared<archive_type>(5e6));
+            }
+        }
+        for (size_t edge = 0; edge < edgeNeighbors_m.size(); ++edge) {
+            for (size_t i = 0; i < edgeNeighbors_m[edge].size(); ++i) {
+                sendEdgear_m[edge].push_back(std::make_shared<archive_type>(5e3));
+                recvEdgear_m[edge].push_back(std::make_shared<archive_type>(5e3));
+            }
+        }
+        for (size_t vertex = 0; vertex < vertexNeighbors_m.size(); ++vertex) {
+                sendVertexar_m[vertex] = std::make_shared<archive_type>(50);
+                recvVertexar_m[vertex] = std::make_shared<archive_type>(50);
+        }
+
         Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
 
         calcWidths();
