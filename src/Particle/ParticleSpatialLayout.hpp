@@ -38,8 +38,10 @@ namespace ippl {
     : rlayout_m(fl, mesh)
     {
         for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-            sendar_m[rank] = std::make_shared<archive_type>(1e7);
-            recvar_m[rank] = std::make_shared<archive_type>(1e7);
+            //sendar_m[rank] = std::make_shared<archive_type>(1e7);
+            //recvar_m[rank] = std::make_shared<archive_type>(1e7);
+            sendar_m.push_back(std::make_shared<archive_type>(1e7));
+            recvar_m.push_back(std::make_shared<archive_type>(1e7));
         }
     }
 
@@ -220,7 +222,8 @@ namespace ippl {
             "ParticleSpatialLayout::locateParticles()",
             mdrange_type({0, 0},
                          {ranks.extent(0), Regions.extent(0)}),
-            KOKKOS_CLASS_LAMBDA(const size_t i, const size_type j) {
+            //KOKKOS_CLASS_LAMBDA(const size_t i, const size_type j) {
+            KOKKOS_LAMBDA(const size_t i, const size_type j) {
                 bool x_bool = false;
                 bool y_bool = false;
                 bool z_bool = false;
@@ -278,7 +281,9 @@ namespace ippl {
         Kokkos::parallel_reduce(
             "ParticleSpatialLayout::numberOfSends()",
             ranks.extent(0),
-            KOKKOS_CLASS_LAMBDA(const size_t i,
+            //KOKKOS_CLASS_LAMBDA(const size_t i,
+            //                    size_t& num)
+            KOKKOS_LAMBDA(const size_t i,
                                 size_t& num)
             {
                 num += size_t(rank == ranks(i));

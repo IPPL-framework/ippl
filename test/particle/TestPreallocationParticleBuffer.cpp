@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     bunch.setParticleBC(bcs);
 
     int nRanks = Ippl::Comm->size();
-    unsigned int nParticles = 640000;//std::pow(32, 3);
+    unsigned int nParticles = 6400000;//std::pow(32, 3);
     unsigned int nParLocal = nParticles/nRanks;
     unsigned int nParQuad = nParLocal/8;
 

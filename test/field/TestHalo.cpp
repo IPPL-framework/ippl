@@ -130,7 +130,8 @@ int main(int argc, char *argv[]) {
 
         static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
         IpplTimings::startTimer(fillHaloTimer);
-        field.fillHalo();
+        //field.fillHalo();
+        field.accumulateHalo();
         IpplTimings::stopTimer(fillHaloTimer);
         msg << "Update: " << nt+1 << endl;
     }
@@ -141,15 +142,15 @@ int main(int argc, char *argv[]) {
 //     field.fillLocalHalo(10.0);
 //
 
-    //for (int rank = 0; rank < nRanks; ++rank) {
-    //    if (rank == Ippl::Comm->rank()) {
-    //        std::ofstream out("field_" + std::to_string(rank) + ".dat", std::ios::out);
-    //        std::cout << field.getOwned().grow(1) << std::endl;
-    //        field.write(out);
-    //        out.close();
-    //    }
-    //    Ippl::Comm->barrier();
-    //}
+    for (int rank = 0; rank < nRanks; ++rank) {
+        if (rank == Ippl::Comm->rank()) {
+            std::ofstream out("field_" + std::to_string(rank) + ".dat", std::ios::out);
+            std::cout << field.getOwned().grow(1) << std::endl;
+            field.write(out);
+            out.close();
+        }
+        Ippl::Comm->barrier();
+    }
 
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
