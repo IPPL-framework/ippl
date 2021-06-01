@@ -57,8 +57,8 @@ namespace ippl {
          * 1D FFTs we just have to make the length in other
          * dimensions to be 1.
          */
-        std::array<int, 3> low;
-        std::array<int, 3> high;
+        std::array<long long, Dim> low;
+        std::array<long long, Dim> high;
 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
 
@@ -66,12 +66,12 @@ namespace ippl {
         high.fill(0);
 
         /**
-         * Static cast to int is necessary, as heffte::box3d requires it
+         * Static cast to long long is necessary, as heffte::box3d requires it
          * like that.
          */
         for(size_t d = 0; d < Dim; ++d) {
-            low[d] = static_cast<int>(lDom[d].first());
-            high[d] = static_cast<int>(lDom[d].length() + lDom[d].first() - 1);
+            low[d] = static_cast<long long>(lDom[d].first());
+            high[d] = static_cast<long long>(lDom[d].length() + lDom[d].first() - 1);
         }
 
         setup(low, high, params);
@@ -83,8 +83,8 @@ namespace ippl {
     */
     template <size_t Dim, class T>
     void
-    FFT<CCTransform,Dim,T>::setup(const std::array<int, Dim>& low,
-                                  const std::array<int, Dim>& high,
+    FFT<CCTransform,Dim,T>::setup(const std::array<long long, Dim>& low,
+                                  const std::array<long long, Dim>& high,
                                   const FFTParams& params)
     {
 
@@ -97,7 +97,7 @@ namespace ippl {
          heffteOptions.use_pencils = params.getPencils();
          heffteOptions.use_reorder = params.getReorder();
 
-         heffte_m = std::make_shared<heffte::fft3d<heffteBackend>>
+         heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>
                     (inbox, outbox, Ippl::getComm(), heffteOptions);
 
     }
@@ -213,10 +213,10 @@ namespace ippl {
          * 1D FFTs we just have to make the length in other
          * dimensions to be 1.
          */
-        std::array<int, 3> lowInput;
-        std::array<int, 3> highInput;
-        std::array<int, 3> lowOutput;
-        std::array<int, 3> highOutput;
+        std::array<long long, Dim> lowInput;
+        std::array<long long, Dim> highInput;
+        std::array<long long, Dim> lowOutput;
+        std::array<long long, Dim> highOutput;
 
         const NDIndex<Dim>& lDomInput = layoutInput.getLocalNDIndex();
         const NDIndex<Dim>& lDomOutput = layoutOutput.getLocalNDIndex();
@@ -227,16 +227,16 @@ namespace ippl {
         highOutput.fill(0);
 
         /**
-         * Static cast to int is necessary, as heffte::box3d requires it
+         * Static cast to long long is necessary, as heffte::box3d requires it
          * like that.
          */
         for(size_t d = 0; d < Dim; ++d) {
-            lowInput[d] = static_cast<int>(lDomInput[d].first());
-            highInput[d] = static_cast<int>(lDomInput[d].length() +
+            lowInput[d] = static_cast<long long>(lDomInput[d].first());
+            highInput[d] = static_cast<long long>(lDomInput[d].length() +
                            lDomInput[d].first() - 1);
 
-            lowOutput[d] = static_cast<int>(lDomOutput[d].first());
-            highOutput[d] = static_cast<int>(lDomOutput[d].length() +
+            lowOutput[d] = static_cast<long long>(lDomOutput[d].first());
+            highOutput[d] = static_cast<long long>(lDomOutput[d].length() +
                             lDomOutput[d].first() - 1);
         }
 
@@ -250,10 +250,10 @@ namespace ippl {
     */
     template <size_t Dim, class T>
     void
-    FFT<RCTransform,Dim,T>::setup(const std::array<int, Dim>& lowInput,
-                                  const std::array<int, Dim>& highInput,
-                                  const std::array<int, Dim>& lowOutput,
-                                  const std::array<int, Dim>& highOutput,
+    FFT<RCTransform,Dim,T>::setup(const std::array<long long, Dim>& lowInput,
+                                  const std::array<long long, Dim>& highInput,
+                                  const std::array<long long, Dim>& lowOutput,
+                                  const std::array<long long, Dim>& highOutput,
                                   const FFTParams& params)
     {
 
@@ -266,7 +266,7 @@ namespace ippl {
          heffteOptions.use_pencils = params.getPencils();
          heffteOptions.use_reorder = params.getReorder();
 
-         heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend>>
+         heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>
                     (inbox, outbox, params.getRCDirection(), Ippl::getComm(),
                      heffteOptions);
 
