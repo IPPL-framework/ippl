@@ -65,7 +65,7 @@ namespace ippl {
           - Performs scatter operation of particle positions in field (weights)
           - Repartition FieldLayout's global domain
         */
-        bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl, int step); 
+        bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl, int step = 1); 
 
 
         /*!
@@ -84,7 +84,7 @@ namespace ippl {
           Performs reduction on local field in all dimension except that determined by cutAxis,
           store result in res.  
         */
-        void performReduction(std::vector<T>& res, unsigned int cutAxis, NDIndex<Dim>& dom); 
+        void perpReduction(std::vector<T>& res, unsigned int cutAxis, NDIndex<Dim>& dom); 
  
 
         /*!
@@ -115,6 +115,7 @@ namespace ippl {
           Scattering of particle positions in field using a CIC method
         */
         void scatterR(const ParticleAttrib<Vector<T,Dim>>& r);
+        void scatterRngp(const ParticleAttrib<Vector<T,Dim>>& r);
 
     }; // class
 

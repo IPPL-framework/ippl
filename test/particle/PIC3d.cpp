@@ -129,13 +129,19 @@ public:
 
     void updateLayout(FieldLayout_t& fl, Mesh_t& mesh) {
         // Update local fields
+        static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");           
+        IpplTimings::startTimer(tupdateLayout);                                                   
         this->EFD_m.updateLayout(fl);
         this->EFDMag_m.updateLayout(fl);
         
         // Update layout with new FieldLayout
         PLayout& layout = this->getLayout();
         layout.updateLayout(fl, mesh);
+        IpplTimings::stopTimer(tupdateLayout);                                                   
+        static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");           
+        IpplTimings::startTimer(tupdatePLayout);                                                   
         layout.update(*this);
+        IpplTimings::stopTimer(tupdatePLayout);                                                   
     }
 
     void initializeORB(FieldLayout_t& fl, Mesh_t& mesh) {
@@ -155,17 +161,24 @@ public:
         this->updateLayout(fl, mesh);
     }
 
-    bool balance(unsigned int totalP) {
+    bool balance(unsigned int totalP, int timestep = 1) {
        int local = 0;
        std::vector<int> res(Ippl::Comm->size());
-       double threshold = 0.00;   
+       double threshold = 0.18; 
        double equalPart = (double) totalP / Ippl::Comm->size();
-       double diff = std::abs((double)this->getLocalNum() - equalPart) / equalPart;
-       
-       if (diff > threshold)
+       double dev = std::abs((double)this->getLocalNum() - equalPart) / equalPart;
+       // std::cout << "equalPart: " << equalPart << std::endl;
+       // std::cout << "local num: " << this->getLocalNum() << std::endl;
+       if (dev > threshold)
           local = 1;
-
+       // std::cout << "diff: " << diff << std::endl;
        MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm()); 
+  
+       /***PRINT***/
+       std::ofstream file;
+       file.open("imbalance.txt", std::ios_base::app);
+       file << std::to_string(timestep) << " " << Ippl::Comm->rank() << " " << dev << "\n";
+       file.close();
 
        for (unsigned int i = 0; i < res.size(); i++) {
           if (res[i] == 1)
@@ -427,12 +440,12 @@ public:
  
            Vector_t length = {1.0, 1.0, 1.0}; 
  
-           mu[0] = 0.6;
-           sd[0] = 0.2;
-           mu[1] = 0.5;
-           sd[1] = 0.2;
-           mu[2] = 0.3;
-           sd[2] = 0.1;
+           mu[0] = 0.5;
+           sd[0] = 0.75;
+           mu[1] = 0.6;
+           sd[1] = 0.3;
+           mu[2] = 0.2;
+           sd[2] = 0.2;
            
            std::uniform_real_distribution<double> dist_uniform(0.0, 1.0);
 
@@ -545,8 +558,8 @@ int main(int argc, char *argv[]) {
     double localParticles = P->getLocalNum();
     MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
     msg << "Total particles: " << totalParticles << endl;
-    // P->initPositions(FL, hr, nloc, 2);
-    
+    P->initPositions(FL, hr, nloc, 2);
+    /*
     std::mt19937_64 eng[Dim];
     for (unsigned i = 0; i < Dim; ++i) {
         eng[i].seed(42 + i * Dim);
@@ -573,7 +586,7 @@ int main(int argc, char *argv[]) {
     }
 
     Kokkos::deep_copy(P->R.getView(), R_host); 
-    
+    */
     P->qm = P->Q_m/totalP;
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);                                                    
@@ -606,16 +619,16 @@ int main(int argc, char *argv[]) {
     msg << "scatter done" << endl;
 
     // Mass conservation
-    P->writePerRank(); 
- 
-    static IpplTimings::TimerRef particleBalancing = IpplTimings::getTimer("particleBalancing");           
-    IpplTimings::startTimer(particleBalancing);                                                    
+    // P->writePerRank(); 
+    
+    static IpplTimings::TimerRef domainDecomposition0 = IpplTimings::getTimer("domainDecomp0");           
+    IpplTimings::startTimer(domainDecomposition0);                                                    
     P->repartition(FL, meshField);
-    IpplTimings::stopTimer(particleBalancing);                                                    
+    IpplTimings::stopTimer(domainDecomposition0);                                                    
     msg << "Balancing finished" << endl;
     
     // Mass conservation
-    P->writePerRank(); 
+    // P->writePerRank(); 
     
     P->scatterCIC(totalP, 0);
     msg << "scatter done" << endl;
@@ -624,23 +637,28 @@ int main(int argc, char *argv[]) {
     msg << "P->initField() done " << endl;
 
     // Moving particles one grid cell
-    double dr = rmax[0] / mesh.getGridsize(0);
+    std::random_device rd;  
+    std::mt19937 gen(rd()); 
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+
+    double dr = 0.0;
     P->P = 1.0;
  
     msg << "Starting iterations ..." << endl;
     bool loadImbalance = false;
+    // static IpplTimings::TimerRef domainDecomposition1 = IpplTimings::getTimer("domainDecomp1");           
     for (unsigned int it=0; it<nt; it++) {
         // Domain Decomposition
         if (loadImbalance) {
            msg << "Starting repartition" << endl;
-           IpplTimings::startTimer(particleBalancing);                                                    
+           IpplTimings::startTimer(domainDecomposition0);
            P->repartition(FL, meshField); 
-           IpplTimings::stopTimer(particleBalancing);                                                    
-           
+           IpplTimings::stopTimer(domainDecomposition0);
            // Conservations
-           P->writePerRank(); 
+           // P->writePerRank(); 
         }
-        
+       
+        dr = dis(gen) * rmax[0] / mesh.getGridsize(0); 
         static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");           
         IpplTimings::startTimer(RTimer);                                                    
         P->R = P->R + dr * P->P;
@@ -662,18 +680,18 @@ int main(int argc, char *argv[]) {
         // IpplTimings::startTimer(PTimer);                                                    
         // P->P = P->P + dt * P->qm * P->E;
         // IpplTimings::stopTimer(PTimer);                                                    
-
+           
         msg << "Finished iteration " << it << endl;
 
         // P->gatherStatistics(totalP);
         // Load balancing
-        loadImbalance = P->balance(totalP);
+        loadImbalance = P->balance(totalP, it);
     }
     
     msg << "Particle test PIC3d: End." << endl;
     IpplTimings::stopTimer(mainTimer);                                                    
     IpplTimings::print();
-    IpplTimings::print(std::string("timing.dat"));
+    IpplTimings::print(std::string("timing" + std::to_string(Ippl::Comm->size()) + "r_" + std::to_string(nr[0]) + "c.dat"));
 
     return 0;
 }

@@ -1,8 +1,8 @@
 //
-// Unit test PICTest
-//   Test scatter and gather particle-in-cell operations.
+// Unit test ORB
+//   Test volume and charge conservation in PIC operations.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
+// Copyright (c) 2021, AMAS, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
 // This file is part of IPPL.
@@ -22,7 +22,7 @@
 
 #include <random>
 
-class PICTest : public ::testing::Test {
+class ORBTest : public ::testing::Test {
 
 public:
     static constexpr size_t dim = 3;
@@ -30,6 +30,7 @@ public:
     typedef ippl::FieldLayout<dim> flayout_type;
     typedef ippl::UniformCartesian<double, dim> mesh_type;
     typedef ippl::ParticleSpatialLayout<double, dim> playout_type;
+    typedef ippl::OrthogonalRecursiveBisection<double, dim, mesh_type> ORB;
 
     template<class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout>
@@ -49,13 +50,18 @@ public:
             PLayout& layout = this->getLayout();
             layout.update(*this);
         }
+
+        void updateLayout(flayout_type fl, mesh_type mesh) {
+            PLayout& layout = this->getLayout();
+            layout.updateLayout(fl, mesh);
+        }
     };
 
 
     typedef Bunch<playout_type> bunch_type;
 
 
-    PICTest()
+    ORBTest()
     : nParticles(std::pow(256,3))
     , nPoints(512)
     {
@@ -108,8 +114,20 @@ public:
         }
 
         Kokkos::deep_copy(bunch->R.getView(), R_host);
+
+        orb.initialize(layout_m, mesh_m);
     }
 
+
+    void repartition() {
+        orb.binaryRepartition(bunch->R, layout_m);
+        field->updateLayout(layout_m);
+        bunch->updateLayout(layout_m, mesh_m);
+    }
+
+    ippl::NDIndex<dim> getDomain() {
+        return layout_m.getDomain();
+    }
 
     std::unique_ptr<field_type> field;
     std::unique_ptr<bunch_type> bunch;
@@ -120,9 +138,25 @@ private:
     flayout_type layout_m;
     mesh_type mesh_m;
     playout_type pl_m;
+    ORB orb;
 };
 
-TEST_F(PICTest, Scatter) {
+TEST_F(ORBTest, Volume) {
+ 
+    ippl::NDIndex<dim> dom = getDomain();
+
+    repartition();
+
+    bunch->update();
+
+    ippl::NDIndex<dim> ndom = getDomain();   
+
+    ASSERT_DOUBLE_EQ(dom[0].length() * dom[1].length() * dom[2].length(), ndom[0].length() * ndom[1].length() * ndom[2].length());
+
+}
+
+
+TEST_F(ORBTest, Charge) {
 
     *field = 0.0;
 
@@ -134,26 +168,15 @@ TEST_F(PICTest, Scatter) {
 
     scatter(bunch->Q, *field, bunch->R);
 
+    repartition();
+
+    bunch->update();
+
     double totalcharge = field->sum();
 
     ASSERT_DOUBLE_EQ(nParticles * charge, totalcharge);
 
 }
-
-TEST_F(PICTest, Gather) {
-
-    *field = 1.0;
-
-    bunch->Q = 0.0;
-
-    bunch->update();
-    
-    gather(bunch->Q, *field, bunch->R);
-
-    ASSERT_DOUBLE_EQ(nParticles, bunch->Q.sum());
-
-}
-
 
 int main(int argc, char *argv[]) {
     Ippl ippl(argc,argv);

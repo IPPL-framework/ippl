@@ -22,6 +22,15 @@ target_link_libraries (
     ${Boost_LIBRARIES}
 )
 
+add_executable (ORB ORB.cpp)
+target_link_libraries (
+    ORB
+    ippl
+    ${MPI_CXX_LIBRARIES}
+    ${GTEST_BOTH_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

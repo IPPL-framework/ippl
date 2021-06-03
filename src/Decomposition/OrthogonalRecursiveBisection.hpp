@@ -1,3 +1,4 @@
+#include "Utility/IpplTimings.h"
 namespace ippl {
 
     template <class T, unsigned Dim, class M>
@@ -9,8 +10,20 @@ namespace ippl {
     template <class T, unsigned Dim, class M>
     bool 
     OrthogonalRecursiveBisection<T,Dim,M>::binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl, int step) {
+       // Timings
+       static IpplTimings::TimerRef tbasicOp = IpplTimings::getTimer("basicOperations");           
+       static IpplTimings::TimerRef tperpReduction = IpplTimings::getTimer("perpReduction");           
+       static IpplTimings::TimerRef tallReduce = IpplTimings::getTimer("allReduce");           
+       static IpplTimings::TimerRef tscatter = IpplTimings::getTimer("scatterR");           
+
        // Scattering of particle positions in field
+       IpplTimings::startTimer(tscatter);
        scatterR(R);
+       IpplTimings::stopTimer(tscatter);
+
+       IpplTimings::startTimer(tbasicOp);
+       step++;
+       step--;
 
        // Get number of ranks
        int nprocs = Ippl::Comm->size();
@@ -25,24 +38,43 @@ namespace ippl {
        // Start recursive repartition loop 
        int it = 0;
        int maxprocs = nprocs; 
+       IpplTimings::stopTimer(tbasicOp);
+       
        while (maxprocs > 1) {
           // Find cut axis
+          IpplTimings::startTimer(tbasicOp);                                                    
           int cutAxis = findCutAxis(domains[it]);
+          IpplTimings::stopTimer(tbasicOp);                                                    
          
           // Reserve space
+          IpplTimings::startTimer(tperpReduction);                                                    
           reduced.resize(domains[it][cutAxis].length());
           reducedRank.resize(domains[it][cutAxis].length());
 
           // Peform reduction with field of weights and communicate to the other ranks
-          performReduction(reducedRank, cutAxis, domains[it]); 
+          perpReduction(reducedRank, cutAxis, domains[it]); 
+          IpplTimings::stopTimer(tperpReduction);                                                    
 
           // Communicate to all the reduced weights
+          IpplTimings::startTimer(tallReduce);                                                    
           MPI_Allreduce(reducedRank.data(), reduced.data(), reducedRank.size(), MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+          // MPI_Reduce(reducedRank.data(), reduced.data(), reducedRank.size(), MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+          IpplTimings::stopTimer(tallReduce);                                                    
         
           // Find median of reduced weights
-          int median = findMedian(reduced);
-          
+          IpplTimings::startTimer(tbasicOp);
+          int median = 1;
+          //if (Ippl::Comm->rank() == 0)
+             median = findMedian(reduced);
+          IpplTimings::stopTimer(tbasicOp);
+
+          //IpplTimings::startTimer(tallReduce);                                                    
+          // MPI_Barrier(); Ippl::Comm->barrier();
+          //MPI_Bcast(&median, 1, MPI_INT, 0, Ippl::getComm());
+          //IpplTimings::stopTimer(tallReduce);                                                    
+ 
           // Cut domains and procs
+          IpplTimings::startTimer(tbasicOp);
           cutDomain(domains, procs, it, cutAxis, median);
 
           // Update max procs
@@ -53,14 +85,17 @@ namespace ippl {
                 it = i;
              } 
           }
+          IpplTimings::stopTimer(tbasicOp);                                                    
                
           // Clear all arrays
+          IpplTimings::startTimer(tperpReduction);                                                    
           reduced.clear();
           reducedRank.clear();
+          IpplTimings::stopTimer(tperpReduction);                                                    
        }
 
        /***PRINT***/
-       /*if (Ippl::Comm->rank() == 0) {
+       if (Ippl::Comm->rank() == 0) {
        std::ofstream myfile;
        std::ofstream finalDoms;
        myfile.open("domains" + std::to_string(step) + ".txt");
@@ -76,9 +111,10 @@ namespace ippl {
        }
        myfile.close();
        finalDoms.close(); 
-       }*/
+       }
 
        // Check that no plane was obtained in the repartition
+       IpplTimings::startTimer(tbasicOp);                                                    
        for (unsigned int i = 0; i < domains.size(); i++) {
           if (domains[i][0].length() == 1 || 
               domains[i][1].length() == 1 ||
@@ -90,6 +126,7 @@ namespace ippl {
          
        // Update local field with new layout
        bf_m.updateLayout(fl);
+       IpplTimings::stopTimer(tbasicOp);                                                    
 
        /***PRINT***/
        NDIndex<Dim> gDom = fl.getDomain();
@@ -100,7 +137,7 @@ namespace ippl {
        volumefile.open("volumes.txt", std::ios_base::app);
        volumefile << std::to_string(step) << " " << Ippl::Comm->rank() << " " << volume << "\n";
        volumefile.close();
-
+       
        return true;
     }
 
@@ -126,7 +163,7 @@ namespace ippl {
     
     template < class T, unsigned Dim, class M>
     void
-    OrthogonalRecursiveBisection<T,Dim,M>::performReduction(std::vector<T>& rankWeights, unsigned int cutAxis, NDIndex<Dim>& dom) {
+    OrthogonalRecursiveBisection<T,Dim,M>::perpReduction(std::vector<T>& rankWeights, unsigned int cutAxis, NDIndex<Dim>& dom) {
        // Check if domains overlap, if not no need for reduction
        NDIndex<Dim> lDom = bf_m.getOwned();
        if (lDom[cutAxis].first() > dom[cutAxis].last() || lDom[cutAxis].last() < dom[cutAxis].first())
@@ -293,5 +330,54 @@ namespace ippl {
             
         bf_m.accumulateHalo();
     }
+    
+    template < class T, unsigned Dim, class M>
+    void 
+    OrthogonalRecursiveBisection<T,Dim,M>::scatterRngp(const ParticleAttrib<Vector<T, Dim>>& r) {
+        using vector_type = typename M::vector_type;
 
+        // Reset local field
+        bf_m = 0.0;
+        // Get local data
+        typename Field<T, Dim, M>::view_type view = bf_m.getView();
+        const M& mesh = bf_m.get_mesh();
+        const FieldLayout<Dim>& layout = bf_m.getLayout(); 
+        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
+        const int nghost = bf_m.getNghost();
+ 
+        // Get spacings
+        const vector_type& dx = mesh.getMeshSpacing();
+        const vector_type& origin = mesh.getOrigin();
+        const vector_type invdx = 1.0 / dx;
+ 
+        // see screen
+        /*
+        vector_type t = (r(0) - origin) * invdx + 0.5;
+        std::cout << "First ngp: " << t << std::endl;
+        Vector<int,Dim> tindex = t;
+        std::cout << "Index: " << tindex << std::endl;
+        Vector<int,Dim> twhi = t - tindex;
+        Vector<int,Dim> twho = 1.0 - twhi;
+        std::cout << "twhi: " << twhi << std::endl;
+        std::cout << "twho: " << twho << std::endl;
+        std::cout << "r.extent(0): " << r.getView().extent(0) << std::endl;
+        */
+
+        Kokkos::parallel_for(
+            "ParticleAttrib::scatterRngp", r.getView().extent(0), KOKKOS_LAMBDA(const size_t idx) {
+                // Find nearest grid point
+                vector_type l = (r(idx) - origin) * invdx + 0.5;
+                Vector<int, Dim> index = l;
+
+                const size_t i = index[0] - lDom[0].first() + nghost;
+                const size_t j = index[1] - lDom[1].first() + nghost;
+                const size_t k = index[2] - lDom[2].first() + nghost;
+
+                // Scatter
+                Kokkos::atomic_add(&view(i, j, k), 1.0);
+            }
+        );
+            
+        // bf_m.accumulateHalo();
+    }
 }  // namespace
