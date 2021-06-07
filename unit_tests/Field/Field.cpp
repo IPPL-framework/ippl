@@ -39,7 +39,7 @@ public:
 
         ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++)
-            allParallel[d] = ippl::SERIAL;
+            allParallel[d] = ippl::PARALLEL;
 
         ippl::FieldLayout<dim> layout(owned, allParallel);
 
@@ -127,14 +127,15 @@ TEST_F(FieldTest, ScalarMultiplication) {
     *field = *field * 10;
 
     auto view = field->getView();
-    const int nghost = field->getNghost();
-    for (size_t i = nghost; i < nPoints - nghost; ++i) {
-        for (size_t j = nghost; j < nPoints - nghost; ++j) {
-            for (size_t k = nghost; k < nPoints - nghost; ++k) {
-                ASSERT_DOUBLE_EQ(view(i,j,k), 10.);
-            }
-        }
-    }
+    auto policy = field->getRangePolicy();
+    Kokkos::parallel_for("Test scalar multiplication",
+                         policy,
+                         KOKKOS_LAMBDA(const size_t i,
+                                       const size_t j,
+                                       const size_t k)
+    {
+            ASSERT_DOUBLE_EQ(view(i,j,k), 10.);
+    });
 }
 
 
