@@ -70,22 +70,24 @@ TEST_F(FieldTest, Sum) {
 
 TEST_F(FieldTest, Min) {
     const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
+    const int shift = field->getNghost();
 
     auto view = field->getView();
-    auto policy = field->getRangePolicy(0);
+    auto mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
 
-    Kokkos::parallel_for("Assign field",
-                         policy,
-                         KOKKOS_LAMBDA(const int i,
-                                       const int j,
-                                       const int k)
-    {
-        const size_t ig = i + lDom[0].first();
-        const size_t jg = j + lDom[1].first();
-        const size_t kg = k + lDom[2].first();
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                const size_t ig = i + lDom[0].first();
+                const size_t jg = j + lDom[1].first();
+                const size_t kg = k + lDom[2].first();
 
-        view(i, j, k) = -1.0 + (ig + jg + kg);
-    });
+                mirror(i, j, k) = -1.0 + (ig + jg + kg);
+            }
+        }
+    }
+    Kokkos::deep_copy(view, mirror);
 
     double min = field->min();
     // minimum value -1 + nghost + nghost + nghost
@@ -94,22 +96,24 @@ TEST_F(FieldTest, Min) {
 
 TEST_F(FieldTest, Max) {
     const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
+    const int shift = field->getNghost();
 
     auto view = field->getView();
-    auto policy = field->getRangePolicy(0);
+    auto mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
 
-    Kokkos::parallel_for("Assign field",
-                         policy,
-                         KOKKOS_LAMBDA(const int i,
-                                       const int j,
-                                       const int k)
-    {
-        const size_t ig = i + lDom[0].first();
-        const size_t jg = j + lDom[1].first();
-        const size_t kg = k + lDom[2].first();
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                const size_t ig = i + lDom[0].first();
+                const size_t jg = j + lDom[1].first();
+                const size_t kg = k + lDom[2].first();
 
-        view(i, j, k) = -1.0 + (ig + jg + kg);
-    });
+                mirror(i, j, k) = -1.0 + (ig + jg + kg);
+            }
+        }
+    }
+    Kokkos::deep_copy(view, mirror);
 
     double max = field->max();
     double expected = -1. + nPoints * 3;
@@ -126,16 +130,19 @@ TEST_F(FieldTest, ScalarMultiplication) {
     *field = 1.;
     *field = *field * 10;
 
+    const int shift = field->getNghost();
+
     auto view = field->getView();
-    auto policy = field->getRangePolicy();
-    Kokkos::parallel_for("Test scalar multiplication",
-                         policy,
-                         KOKKOS_LAMBDA(const size_t i,
-                                       const size_t j,
-                                       const size_t k)
-    {
-            ASSERT_DOUBLE_EQ(view(i,j,k), 10.);
-    });
+    auto mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
+
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                ASSERT_DOUBLE_EQ(mirror(i,j,k), 10.);
+            }
+        }
+    }
 }
 
 
@@ -161,24 +168,25 @@ TEST_F(FieldTest, Norm2) {
 }
 
 TEST_F(FieldTest, NormInf) {
-
     const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
+    const int shift = field->getNghost();
 
     auto view = field->getView();
-    auto policy = field->getRangePolicy();
+    auto mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
 
-    Kokkos::parallel_for("Assign field",
-                         policy,
-                         KOKKOS_LAMBDA(const int i,
-                                       const int j,
-                                       const int k)
-    {
-        const size_t ig = i + lDom[0].first();
-        const size_t jg = j + lDom[1].first();
-        const size_t kg = k + lDom[2].first();
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                const size_t ig = i + lDom[0].first();
+                const size_t jg = j + lDom[1].first();
+                const size_t kg = k + lDom[2].first();
 
-        view(i, j, k) = -1.0 + (ig + jg + kg);
-    });
+                mirror(i, j, k) = -1.0 + (ig + jg + kg);
+            }
+        }
+    }
+    Kokkos::deep_copy(view, mirror);
 
 
     double normInf = ippl::norm(*field, 0);
@@ -189,20 +197,30 @@ TEST_F(FieldTest, NormInf) {
 }
 
 TEST_F(FieldTest, VolumeIntegral) {
+    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
+    const int shift = field->getNghost();
+
     const double dx = 1. / nPoints;
     auto view = field->getView();
-    auto policy = field->getRangePolicy();
+    auto mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
     const double pi = acos(-1.0);
 
-    Kokkos::parallel_for("assign field", policy,
-        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-            double x = (i - 0.5) * dx;
-            double y = (j - 0.5) * dx;
-            double z = (k - 0.5) * dx;
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                const size_t ig = i + lDom[0].first() - shift;
+                const size_t jg = j + lDom[1].first() - shift;
+                const size_t kg = k + lDom[2].first() - shift;
+                double x = (ig + 0.5) * dx;
+                double y = (jg + 0.5) * dx;
+                double z = (kg + 0.5) * dx;
 
-            view(i, j, k) = sin(2 * pi * x) * sin(2 * pi * y) * sin(2 * pi * z);
+                mirror(i, j, k) = sin(2 * pi * x) * sin(2 * pi * y) * sin(2 * pi * z);
+            }
         }
-    );
+    }
+    Kokkos::deep_copy(view, mirror);
 
     ASSERT_NEAR(field->getVolumeIntegral(), 0., 1e-15);
 }
