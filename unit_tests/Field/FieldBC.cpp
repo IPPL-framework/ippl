@@ -41,9 +41,9 @@ public:
 
         ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++)
-            allParallel[d] = ippl::SERIAL;
+            allParallel[d] = ippl::PARALLEL;
 
-        ippl::FieldLayout<dim> layout(owned, allParallel);
+        layout = ippl::FieldLayout<dim>(owned, allParallel);
 
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};
@@ -63,24 +63,24 @@ public:
             size_t d = face / 2;
             switch (d) {
                 case 0:
-                    for(int j=0; j < N; ++j) {
-                        for(int k=0; k < N; ++k) {
+                    for(int j=1; j < N - 1; ++j) {
+                        for(int k=1; k < N - 1; ++k) {
                             EXPECT_DOUBLE_EQ(expected, HostF(0,j,k));
                             EXPECT_DOUBLE_EQ(expected, HostF(N-1,j,k));
                         }
                      }
                     break;
                 case 1:
-                    for(int i=0; i < N; ++i) {
-                        for(int k=0; k < N; ++k) {
+                    for(int i=1; i < N - 1; ++i) {
+                        for(int k=1; k < N - 1; ++k) {
                             EXPECT_DOUBLE_EQ(expected, HostF(i,0,k));
                             EXPECT_DOUBLE_EQ(expected, HostF(i,N-1,k));
                         }
                      }
                     break;
                 case 2:
-                    for(int i=0; i < N; ++i) {
-                        for(int j=0; j < N; ++j) {
+                    for(int i=1; i < N - 1; ++i) {
+                        for(int j=1; j < N - 1; ++j) {
                             EXPECT_DOUBLE_EQ(expected, HostF(i,j,0));
                             EXPECT_DOUBLE_EQ(expected, HostF(i,j,N-1));
                         }
@@ -92,6 +92,8 @@ public:
             }
         }
     }
+
+    ippl::FieldLayout<dim> layout;
     std::unique_ptr<field_type> field;
     bc_type bcField;
     typename field_type::view_type::host_mirror_type HostF;
