@@ -37,11 +37,11 @@ public:
         ippl::Index I(nPoints);
         ippl::NDIndex<dim> owned(I, I, I);
 
-        ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
+        ippl::e_dim_tag domDec[dim];    // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++)
-            allParallel[d] = ippl::PARALLEL;
+            domDec[d] = ippl::PARALLEL;
 
-        ippl::FieldLayout<dim> layout(owned, allParallel);
+        ippl::FieldLayout<dim> layout(owned, domDec);
 
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};
