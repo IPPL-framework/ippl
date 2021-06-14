@@ -260,19 +260,23 @@ public:
          MPI_Reduce(&local_particles, &Total_particles, 1, 
                        MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
 
+         double rel_error = std::fabs((Q_m-Q_grid)/Q_m);
+         m << "Rel. error in charge conservation = " << rel_error << endl;
+
          if(Ippl::Comm->rank() == 0) {
-             if(Total_particles != totalP) {
+             if((Total_particles != totalP) || (rel_error > 1e-15)) {
                  std::cout << "Total particles in the sim. " << totalP 
                            << " " << "after update: " 
                            << Total_particles << std::endl;
                  std::cout << "Total particles not matched in iteration: " 
                            << iteration << std::endl;
+                 std::cout << "Rel. error in charge conservation: " 
+                           << rel_error << std::endl;
                  exit(1);
              }
          }
 
 
-         m << "Rel. error in charge conservation = " << std::fabs((Q_m-Q_grid)/Q_m) << endl;
 
          rho_m = rho_m / (hrField[0] * hrField[1] * hrField[2]);
 

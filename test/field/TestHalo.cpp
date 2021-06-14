@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     constexpr unsigned int dim = 3;
 
 //     std::array<int, dim> pt = {8, 7, 13};
-    std::array<int, dim> pt = {512, 512, 512};
+    std::array<int, dim> pt = {32, 32, 32};
     ippl::Index I(pt[0]);
     ippl::Index J(pt[1]);
     ippl::Index K(pt[2]);
@@ -130,10 +130,22 @@ int main(int argc, char *argv[]) {
 
         static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
         IpplTimings::startTimer(fillHaloTimer);
-        //field.fillHalo();
         field.accumulateHalo();
+        Ippl::Comm->barrier();
+        field.fillHalo();
+        Ippl::Comm->barrier();
         IpplTimings::stopTimer(fillHaloTimer);
         msg << "Update: " << nt+1 << endl;
+        //for (int rank = 0; rank < nRanks; ++rank) {
+        //    if (rank == Ippl::Comm->rank()) {
+        //        std::ofstream out("field_" + std::to_string(rank) + ".dat", std::ios::out|std::ios::app);
+        //        out << "Update: " << nt+1 << std::endl; 
+        //        //std::cout << field.getOwned().grow(1) << std::endl;
+        //        field.write(out);
+        //        out.close();
+        //    }
+        //    Ippl::Comm->barrier();
+        //}
     }
 //    field.accumulateHalo();
 //

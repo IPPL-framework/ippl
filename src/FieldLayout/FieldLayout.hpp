@@ -118,8 +118,8 @@ namespace ippl {
             }
         }
         for (size_t vertex = 0; vertex < vertexNeighbors_m.size(); ++vertex) {
-                sendVertexar_m[vertex] = std::make_shared<archive_type>(50);
-                recvVertexar_m[vertex] = std::make_shared<archive_type>(50);
+                sendVertexar_m[vertex] = std::make_shared<archive_type>(5e1);
+                recvVertexar_m[vertex] = std::make_shared<archive_type>(5e1);
         }
 
         Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);

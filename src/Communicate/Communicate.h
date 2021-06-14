@@ -82,14 +82,14 @@ namespace ippl {
         void recv(int src, int tag, Buffer& buffer);
 
         template <class Buffer>
-        void recv(int src, int dest, int tag, Buffer& buffer, archive_type& ar);
+        void recv(int src, int tag, Buffer& buffer, archive_type& ar);
 
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void isend(int dest, int src, int tag, Buffer& buffer, archive_type&, MPI_Request&);
+        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&);
 
 
         /*!
@@ -135,32 +135,26 @@ namespace ippl {
     }
 
     template <class Buffer>
-    void Communicate::recv(int src, int dest, int tag, Buffer& buffer, archive_type& ar)
+    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar)
     {
-        MPI_Status status1;
-        MPI_Probe(src, tag, *this, &status1);
+        MPI_Status status;
+        MPI_Probe(src, tag, *this, &status);
 
-        int msize1 = 0;
-        MPI_Get_count(&status1, MPI_BYTE, &msize1);
+        int msize = 0;
+        MPI_Get_count(&status, MPI_BYTE, &msize);
 
-        std::cout << "Rank " << dest << " receives " << msize1
-                  << " bytes from rank  " << src << std::endl;
-        //MPI_Status status2;
-        MPI_Recv(ar.getBuffer(), msize1,
-                MPI_BYTE, src, tag, *this, &status1);
+        MPI_Recv(ar.getBuffer(), msize,
+                MPI_BYTE, src, tag, *this, &status);
 
         buffer.deserialize(ar);
     }
 
 
     template <class Buffer>
-    void Communicate::isend(int dest, int src, int tag, Buffer& buffer,
+    void Communicate::isend(int dest, int tag, Buffer& buffer,
                             archive_type& ar, MPI_Request& request)
     {
         buffer.serialize(ar);
-
-        std::cout << "Rank " << src << " sends " << ar.getSize() 
-                  << " bytes to rank  " << dest << std::endl;
         MPI_Isend(ar.getBuffer(), ar.getSize(),
                   MPI_BYTE, dest, tag, *this, &request);
     }

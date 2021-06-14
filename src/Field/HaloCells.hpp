@@ -100,9 +100,7 @@ namespace ippl {
                     FieldBufferData<T> fd;
                     pack(range, view, fd);
 
-                    //Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
-                    //                  requests.back());
-                    Ippl::Comm->isend(rank, Ippl::Comm->rank(), tag, fd, *(layout->sendFacear_m[face][i]),
+                    Ippl::Comm->isend(rank, tag, fd, *(layout->sendFacear_m[face][i]),
                                       requests.back());
                     layout->sendFacear_m[face][i]->resetWritePos();
 
@@ -133,8 +131,8 @@ namespace ippl {
                                    (range.hi[2] - range.lo[2]));
 
                     //Ippl::Comm->recv(rank, tag, fd);
-                    Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, fd, *(layout->recvFacear_m[face][i]));
-
+                    
+                    Ippl::Comm->recv(rank, tag, fd, *(layout->recvFacear_m[face][i]));
                     layout->recvFacear_m[face][i]->resetReadPos();
 
 
@@ -191,9 +189,7 @@ namespace ippl {
                     FieldBufferData<T> fd;
                     pack(range, view, fd);
 
-                    //Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
-                    //                  requests.back());
-                    Ippl::Comm->isend(rank, Ippl::Comm->rank(), tag, fd, *(layout->sendEdgear_m[edge][i]),
+                    Ippl::Comm->isend(rank, tag, fd, *(layout->sendEdgear_m[edge][i]),
                                       requests.back());
                     layout->sendEdgear_m[edge][i]->resetWritePos();
 
@@ -223,10 +219,10 @@ namespace ippl {
                                    (range.hi[1] - range.lo[1]) *
                                    (range.hi[2] - range.lo[2]));
 
-                    //Ippl::Comm->recv(rank, tag, fd);
-                    Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, fd, *(layout->recvEdgear_m[edge][i]));
-
+                    
+                    Ippl::Comm->recv(rank, tag, fd, *(layout->recvEdgear_m[edge][i]));
                     layout->recvEdgear_m[edge][i]->resetReadPos();
+
 
                     unpack<Op>(range, view, fd);
                 }
@@ -284,10 +280,8 @@ namespace ippl {
                 FieldBufferData<T> fd;
                 pack(range, view, fd);
 
-                //Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
-                //                    requests.back());
-                Ippl::Comm->isend(rank, Ippl::Comm->rank(), tag, fd, *(layout->sendVertexar_m[vertex]),
-                                      requests.back());
+                Ippl::Comm->isend(rank, tag, fd, *(layout->sendVertexar_m[vertex]),
+                                requests.back());
                 layout->sendVertexar_m[vertex]->resetWritePos();
             }
 
@@ -317,9 +311,7 @@ namespace ippl {
                                (range.hi[1] - range.lo[1]) *
                                (range.hi[2] - range.lo[2]));
 
-                //Ippl::Comm->recv(rank, tag, fd);
-                Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, fd, *(layout->recvVertexar_m[vertex]));
-
+                Ippl::Comm->recv(rank, tag, fd, *(layout->recvVertexar_m[vertex]));
                 layout->recvVertexar_m[vertex]->resetReadPos();
 
                 unpack<Op>(range, view, fd);

@@ -12,6 +12,7 @@ struct Bunch : public ippl::ParticleBase<PLayout>
     {
         this->addAttribute(expectedRank);
         this->addAttribute(Q);
+        this->addAttribute(E);
     }
 
     ~Bunch(){ }
@@ -20,11 +21,12 @@ struct Bunch : public ippl::ParticleBase<PLayout>
     typedef ippl::ParticleAttrib<double> charge_type;
     rank_type expectedRank;
     charge_type Q;
+    typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
 
-    //void update() {
-    //    PLayout& layout = this->getLayout();
-    //    layout.update(*this);
-    //}
+    void update() {
+        PLayout& layout = this->getLayout();
+        layout.update(*this);
+    }
 };
 
 int main(int argc, char *argv[]) {
@@ -55,7 +57,22 @@ int main(int argc, char *argv[]) {
     typedef ippl::UniformCartesian<double, 3> Mesh_t;
     Mesh_t mesh(owned, hx, origin);
 
+    typedef ippl::Vector<double, dim>  Vector_t;
     playout_type pl(layout, mesh);
+    Vector_t originField = {0-hx[0], 0-hx[1], 0-hx[2]};
+    double dxField = (1.0 + hx[0] - originField[0]) / pt;
+    double dyField = (1.0 + hx[1] - originField[1]) / pt;
+    double dzField = (1.0 + hx[2] - originField[2]) / pt;
+
+    Vector_t hxField = {dxField, dyField, dzField};
+    Mesh_t meshField(owned, hxField, originField);
+
+    typedef ippl::Field<double, dim> field_type;
+    typedef ippl::Field<ippl::Vector<double, dim>, dim> vector_field_type;
+    field_type field(meshField, layout);
+    vector_field_type fieldE(meshField, layout);
+
+    field = Ippl::Comm->rank();
 
     bunch_type bunch(pl);
 
@@ -73,7 +90,7 @@ int main(int argc, char *argv[]) {
     bunch.setParticleBC(bcs);
 
     int nRanks = Ippl::Comm->size();
-    unsigned int nParticles = 6400000;//std::pow(32, 3);
+    unsigned int nParticles = 655360;//6400000;//std::pow(32, 3);
     unsigned int nParLocal = nParticles/nRanks;
     unsigned int nParQuad = nParLocal/8;
 
@@ -203,9 +220,39 @@ int main(int argc, char *argv[]) {
         Kokkos::deep_copy(bunch.R.getView(), R_host);
         static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("Update");
         IpplTimings::startTimer(UpdateTimer);
-        //bunch.update();
+        bunch.update();
         //pl.update(bunch, bunchBuffer);
-        pl.update(bunch);
+        //pl.update(bunch);
+        //field.accumulateHalo();
+        //field.fillHalo();
+        field = 0.0;
+        scatter(bunch.Q, field, bunch.R);
+        double Q_grid = field.sum();
+        double Q_m = bunch.Q.sum();
+        
+        unsigned int Total_particles = 0;
+        unsigned int local_particles = bunch.getLocalNum();
+
+        MPI_Reduce(&local_particles, &Total_particles, 1, 
+                       MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
+
+        double rel_error = std::fabs((Q_m-Q_grid)/Q_m);
+         m << "Rel. error in charge conservation = " << rel_error << endl;
+
+         if(Ippl::Comm->rank() == 0) {
+             if((Total_particles != nParticles) || (rel_error > 1e-15)) {
+                 std::cout << "Total particles in the sim. " << nParticles 
+                           << " " << "after update: " 
+                           << Total_particles << std::endl;
+                 std::cout << "Total particles not matched in iteration: " 
+                           << nt+1 << std::endl;
+                 std::cout << "Rel. error in charge conservation: " 
+                           << rel_error << std::endl;
+                 exit(1);
+             }
+         }
+        fieldE = 1.0;
+        gather(bunch.E, fieldE, bunch.R);
         IpplTimings::stopTimer(UpdateTimer);
         msg << "Update: " << nt+1 << endl;
         //Kokkos::resize(R_host, bunch.R.size());
@@ -215,6 +262,14 @@ int main(int argc, char *argv[]) {
     }
 
 
+    //for (int rank = 0; rank < nRanks; ++rank) {
+    //    if (rank == Ippl::Comm->rank()) {
+    //        std::ofstream out("field_" + std::to_string(rank) + ".dat", std::ios::out);
+    //        field.write(out);
+    //        out.close();
+    //    }
+    //    Ippl::Comm->barrier();
+    //}
 
     //Kokkos::resize(ID_host, bunch.ID.size());
     //Kokkos::deep_copy(ID_host, bunch.ID.getView());

@@ -44,9 +44,26 @@ namespace ippl {
                                 size);
             });
             writepos_m += size * view.size();
+            Kokkos::fence();
         }
 
 
+        template <class... Properties>
+        template <typename T>
+        void Archive<Properties...>::serializeField(const Kokkos::View<T*>& view) {
+            //readpos_m = 0;
+            size_t size = sizeof(T);
+            //std::cout << "Write position " << writepos_m << std::endl;
+            Kokkos::resize(buffer_m, buffer_m.size() + size * view.size());
+            Kokkos::parallel_for(
+                "Archive::serialize()", view.extent(0),
+                KOKKOS_CLASS_LAMBDA(const size_t i) {
+                    std::memcpy(buffer_m.data() + i * size + writepos_m,
+                                view.data() + i,
+                                size);
+            });
+            writepos_m += size * view.size();
+        }
         template <class... Properties>
         template <typename T, unsigned Dim>
         void Archive<Properties...>::operator<<(const Kokkos::View<Vector<T, Dim>*>& view) {
@@ -63,6 +80,7 @@ namespace ippl {
                                 size);
                 });
             writepos_m += Dim * size * view.size();
+            Kokkos::fence();
         }
 
 
@@ -79,6 +97,7 @@ namespace ippl {
                                 size);
             });
             readpos_m += size * view.size();
+            Kokkos::fence();
         }
 
 
@@ -97,6 +116,7 @@ namespace ippl {
                                 size);
             });
             readpos_m += Dim * size * view.size();
+            Kokkos::fence();
         }
     }
 }

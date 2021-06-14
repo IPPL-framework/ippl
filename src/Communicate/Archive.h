@@ -46,6 +46,8 @@ namespace ippl {
             void operator<<(const Kokkos::View<T*>& view);
 
 
+            template <typename T>
+            void serializeField(const Kokkos::View<T*>& view);
             /*!
              * Serialize vector attributes
              *
