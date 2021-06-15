@@ -61,6 +61,22 @@ namespace ippl {
             typedef Kokkos::View<T***, Properties...> view_type;
         };
 
+        /*!
+         * Multidimensional range policies.
+         */
+        template <unsigned Dim>
+        struct RangePolicy {
+            typedef Kokkos::MDRangePolicy<Kokkos::Rank<Dim>> policy_type;
+        };
+
+        /*!
+         * Specialized range policy for one dimension.
+         */
+        template <>
+        struct RangePolicy<1> {
+            typedef Kokkos::RangePolicy<> policy_type;
+        };
+
 
         /*!
          * Empty function for general write.

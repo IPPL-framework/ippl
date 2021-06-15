@@ -26,14 +26,9 @@ namespace ippl {
     template <typename T, unsigned Dim>
     T innerProduct(const Field<T, Dim>& f1, const Field<T, Dim>& f2) {
         T sum = 0;
-        const int shift = f1.getNghost();
         auto view1 = f1.getView();
         auto view2 = f2.getView();
-        Kokkos::parallel_reduce("Field::innerProduct(Field&, Field&)",
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>({shift, shift, shift}, {
-                view1.extent(0) - shift,
-                view1.extent(1) - shift,
-                view1.extent(2) - shift}),
+        Kokkos::parallel_reduce("Field::innerProduct(Field&, Field&)", f1.getRangePolicy(),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
                 val += view1(i, j, k) * view2(i, j, k);
             },
@@ -54,16 +49,11 @@ namespace ippl {
     template<typename T, unsigned Dim, class M, class C>
     T norm(const Field<T, Dim, M, C>& field, int p = 2) {
         T local = 0;
-        const int shift = field.getNghost();
         auto view = field.getView();
         switch (p) {
         case 0:
         {
-            Kokkos::parallel_reduce("Field::norm(0)",
-                Kokkos::MDRangePolicy<Kokkos::Rank<3>>({shift, shift, shift}, {
-                    view.extent(0) - shift,
-                    view.extent(1) - shift,
-                    view.extent(2) - shift}),
+            Kokkos::parallel_reduce("Field::norm(0)", field.getRangePolicy(),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
                     T myVal = std::abs(view(i, j, k));
                     if (myVal > val)
@@ -80,11 +70,7 @@ namespace ippl {
             return std::sqrt(innerProduct(field, field));
         default:
         {
-            Kokkos::parallel_reduce("Field::norm(int) general",
-                Kokkos::MDRangePolicy<Kokkos::Rank<3>>({shift, shift, shift}, {
-                    view.extent(0) - shift,
-                    view.extent(1) - shift,
-                    view.extent(2) - shift}),
+            Kokkos::parallel_reduce("Field::norm(int) general", field.getRangePolicy(),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& val) {
                     val += std::pow(std::abs(view(i, j, k)), p);
                 },

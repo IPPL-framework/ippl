@@ -164,14 +164,12 @@ public:
     bool balance(unsigned int totalP, int timestep = 1) {
        int local = 0;
        std::vector<int> res(Ippl::Comm->size());
-       double threshold = 0.18; 
+       double threshold = 0.0; 
        double equalPart = (double) totalP / Ippl::Comm->size();
-       double dev = std::abs((double)this->getLocalNum() - equalPart) / equalPart;
-       // std::cout << "equalPart: " << equalPart << std::endl;
-       // std::cout << "local num: " << this->getLocalNum() << std::endl;
+       double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
+       std::cout << "deviation: " << dev << std::endl;
        if (dev > threshold)
           local = 1;
-       // std::cout << "diff: " << diff << std::endl;
        MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm()); 
   
        /***PRINT***/
@@ -492,6 +490,10 @@ int main(int argc, char *argv[]) {
         std::atoi(argv[2]),
         std::atoi(argv[3])
     };
+
+    // Each rank must have a minimal volume of 8
+    if (nr[0]*nr[1]*nr[2] < 8 * Ippl::Comm->size())
+       msg << "!!! Ranks have not enough volume for proper working !!! (Minimal volume per rank: 8)" << endl;
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");           
     IpplTimings::startTimer(mainTimer);                                                    

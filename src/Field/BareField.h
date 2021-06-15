@@ -62,6 +62,7 @@ namespace ippl {
         //! View type storing the data
         using view_type = typename detail::ViewType<T, Dim>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
+        using policy_type = typename detail::RangePolicy<Dim>::policy_type;
 
 
         /*! A default constructor, which should be used only if the user calls the
@@ -186,15 +187,30 @@ namespace ippl {
         }
 
         /*!
+         * Generate the 3D range policy for iterating over the field,
+         * excluding ghost layers
+         * @param nghost Number of ghost layers to include in the range policy (default 0)
+         * @return Range policy for iterating over the field and nghost of the ghost layers
+         */
+        policy_type getRangePolicy(const int nghost = 0) const {
+            PAssert_LE(nghost, nghost_m);
+            const size_t shift = nghost_m - nghost;
+            return policy_type({shift, shift, shift},
+                               {dview_m.extent(0) - shift,
+                                dview_m.extent(1) - shift,
+                                dview_m.extent(2) - shift});
+        }
+
+        /*!
          * Print the BareField.
          * @param out stream
          */
         void write(std::ostream& out = std::cout) const;
 
-        T sum(int nghost = 0);
-        T max(int nghost = 0);
-        T min(int nghost = 0);
-        T prod(int nghost = 0);
+        T sum(int nghost = 0) const;
+        T max(int nghost = 0) const;
+        T min(int nghost = 0) const;
+        T prod(int nghost = 0) const;
 
 
     private:

@@ -40,6 +40,7 @@ namespace ippl {
        int maxprocs = nprocs; 
        IpplTimings::stopTimer(tbasicOp);
        
+       int loopstep = 1; // just for debugging
        while (maxprocs > 1) {
           // Find cut axis
           IpplTimings::startTimer(tbasicOp);                                                    
@@ -58,21 +59,14 @@ namespace ippl {
           // Communicate to all the reduced weights
           IpplTimings::startTimer(tallReduce);                                                    
           MPI_Allreduce(reducedRank.data(), reduced.data(), reducedRank.size(), MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-          // MPI_Reduce(reducedRank.data(), reduced.data(), reducedRank.size(), MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
           IpplTimings::stopTimer(tallReduce);                                                    
         
           // Find median of reduced weights
           IpplTimings::startTimer(tbasicOp);
           int median = 1;
-          //if (Ippl::Comm->rank() == 0)
-             median = findMedian(reduced);
+          median = findMedian(reduced);
           IpplTimings::stopTimer(tbasicOp);
 
-          //IpplTimings::startTimer(tallReduce);                                                    
-          // MPI_Barrier(); Ippl::Comm->barrier();
-          //MPI_Bcast(&median, 1, MPI_INT, 0, Ippl::getComm());
-          //IpplTimings::stopTimer(tallReduce);                                                    
- 
           // Cut domains and procs
           IpplTimings::startTimer(tbasicOp);
           cutDomain(domains, procs, it, cutAxis, median);
@@ -128,16 +122,6 @@ namespace ippl {
        bf_m.updateLayout(fl);
        IpplTimings::stopTimer(tbasicOp);                                                    
 
-       /***PRINT***/
-       NDIndex<Dim> gDom = fl.getDomain();
-       NDIndex<Dim> lDom = bf_m.getOwned();
-       double lVolume = (double)(gDom[0].length() * gDom[1].length() * gDom[2].length());
-       double volume = (double)(lDom[0].length()*lDom[1].length()*lDom[2].length())/ lVolume;
-       std::ofstream volumefile;
-       volumefile.open("volumes.txt", std::ios_base::app);
-       volumefile << std::to_string(step) << " " << Ippl::Comm->rank() << " " << volume << "\n";
-       volumefile.close();
-       
        return true;
     }
 
@@ -190,6 +174,16 @@ namespace ippl {
           return;
        // The +1 is for Kokkos loop
        sup1++; sup2++;
+
+     
+       /***PRINT***/
+       std::cout << "Domain to reduce: " << dom << " along " << cutAxis << std::endl;
+       std::cout << "Local domain (owned): " << lDom << std::endl;
+       std::cout << "Reduction sizes: (" << cutAxisFirst << ", " << cutAxisLast << ")" << std::endl;
+       std::cout << "Array start: " << arrayStart << std::endl;
+       std::cout << "(inf1, sup1): (" << inf1 << ", " << sup1 << ")" << std::endl;
+       std::cout << "(inf2, sup2): (" << inf2 << ", " << sup2 << ")" << std::endl;
+       std::cout << "Data's extents (0,1,2): (" << data.extent(0) << "," << data.extent(1) << "," << data.extent(2) << ")" << std::endl;
  
        // Iterate along cutAxis
        using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;       

@@ -43,6 +43,31 @@ public:
         return (found.base + found.current);
     }
 
+    // determine the tag immediately preceding the current one
+    // for a given base tag. If the base tag doesn't exist, it will be
+    // created and the largest possible tag within the cycle will
+    // be returned.
+    int preceding_tag(int t, int s = DEF_CYCLE_SIZE)
+    {
+        const TagInfo& found = create_base_tag(t, s);
+        if (found.current == 0)
+        {
+            return (found.base + found.cycleSize - 1);
+        }
+        return (found.base + found.current - 1);
+    }
+
+    // determine the tag immediately following the current one
+    // for a given base tag. If the base tag doesn't exist, it will be
+    // created and the second smallest possible tag within the cycle will
+    // be returned
+    int following_tag(int t, int s = DEF_CYCLE_SIZE)
+    {
+        const TagInfo& found = create_base_tag(t, s);
+        const int following = (found.current + 1) % found.cycleSize;
+        return (found.base + following);
+    }
+
     // just return the `current' tag that is to be generated from the
     // given base tag, without incrementing the cycle counter.
     int current_tag(int t, int s = DEF_CYCLE_SIZE)

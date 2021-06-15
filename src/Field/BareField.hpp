@@ -155,7 +155,7 @@ namespace ippl {
 
     #define DefineReduction(fun, name, op, MPI_Op)                                                           \
     template <typename T, unsigned Dim>                                                                      \
-    T BareField<T, Dim>::name(int nghost) {                                                                  \
+    T BareField<T, Dim>::name(int nghost) const {                                                            \
         PAssert_LE(nghost, nghost_m);                                                                        \
         T temp = 0.0;                                                                                        \
         const size_t shift = nghost_m - nghost;                                                              \

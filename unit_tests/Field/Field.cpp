@@ -1,6 +1,6 @@
 //
 // Unit test FieldTest
-//   Test the functionality of the class Field.
+//   Test the functionality of the classes Field and BareField.
 //
 // Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
@@ -25,9 +25,10 @@ class FieldTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
     typedef ippl::Field<double, dim> field_type;
+    typedef ippl::UniformCartesian<double, dim> mesh_type;
 
     FieldTest()
-    : nPoints(100)
+    : nPoints(8)
     {
         setup();
     }
@@ -36,27 +37,28 @@ public:
         ippl::Index I(nPoints);
         ippl::NDIndex<dim> owned(I, I, I);
 
-        ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
+        ippl::e_dim_tag domDec[dim];    // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++)
-            allParallel[d] = ippl::SERIAL;
+            domDec[d] = ippl::PARALLEL;
 
-        ippl::FieldLayout<dim> layout(owned, allParallel);
+        ippl::FieldLayout<dim> layout(owned, domDec);
 
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};
         ippl::Vector<double, dim> origin = {0, 0, 0};
-        ippl::UniformCartesian<double, dim> mesh(owned, hx, origin);
+        mesh = std::make_shared<mesh_type>(owned, hx, origin);
 
-        field = std::make_unique<field_type>(mesh, layout);
+        field = std::make_unique<field_type>(*mesh, layout);
     }
 
     std::unique_ptr<field_type> field;
+    std::shared_ptr<mesh_type> mesh;
     size_t nPoints;
 };
 
 
 
-TEST_F(FieldTest, FieldSum) {
+TEST_F(FieldTest, Sum) {
     double val = 1.0;
 
     *field = val;
@@ -66,7 +68,169 @@ TEST_F(FieldTest, FieldSum) {
     ASSERT_DOUBLE_EQ(val * std::pow(nPoints, dim), sum);
 }
 
+TEST_F(FieldTest, Min) {
+    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
+    const int shift = field->getNghost();
 
+    auto view = field->getView();
+    auto mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
+
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                const size_t ig = i + lDom[0].first();
+                const size_t jg = j + lDom[1].first();
+                const size_t kg = k + lDom[2].first();
+
+                mirror(i, j, k) = -1.0 + (ig + jg + kg);
+            }
+        }
+    }
+    Kokkos::deep_copy(view, mirror);
+
+    double min = field->min();
+    // minimum value -1 + nghost + nghost + nghost
+    ASSERT_DOUBLE_EQ(min, 2.);
+}
+
+TEST_F(FieldTest, Max) {
+    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
+    const int shift = field->getNghost();
+
+    auto view = field->getView();
+    auto mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
+
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                const size_t ig = i + lDom[0].first();
+                const size_t jg = j + lDom[1].first();
+                const size_t kg = k + lDom[2].first();
+
+                mirror(i, j, k) = -1.0 + (ig + jg + kg);
+            }
+        }
+    }
+    Kokkos::deep_copy(view, mirror);
+
+    double max = field->max();
+    double expected = -1. + nPoints * 3;
+    ASSERT_DOUBLE_EQ(max, expected);
+}
+
+TEST_F(FieldTest, Prod) {
+    *field = 2.;
+    double val = field->prod();
+    ASSERT_DOUBLE_EQ(val, pow(2, nPoints * nPoints * nPoints));
+}
+
+TEST_F(FieldTest, ScalarMultiplication) {
+    *field = 1.;
+    *field = *field * 10;
+
+    const int shift = field->getNghost();
+
+    auto view = field->getView();
+    auto mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
+
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                ASSERT_DOUBLE_EQ(mirror(i,j,k), 10.);
+            }
+        }
+    }
+}
+
+
+TEST_F(FieldTest, Norm1) {
+    double val = -1.5;
+
+    *field = val;
+
+    double norm1 = ippl::norm(*field, 1);
+
+    ASSERT_DOUBLE_EQ(-val * std::pow(nPoints, dim), norm1);
+}
+
+
+TEST_F(FieldTest, Norm2) {
+    double val = 1.5;
+
+    *field = val;
+
+    double norm2 = ippl::norm(*field);
+
+    ASSERT_DOUBLE_EQ(std::sqrt(val * val * std::pow(nPoints, dim)), norm2);
+}
+
+TEST_F(FieldTest, NormInf) {
+    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
+    const int shift = field->getNghost();
+
+    auto view = field->getView();
+    auto mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
+
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                const size_t ig = i + lDom[0].first();
+                const size_t jg = j + lDom[1].first();
+                const size_t kg = k + lDom[2].first();
+
+                mirror(i, j, k) = -1.0 + (ig + jg + kg);
+            }
+        }
+    }
+    Kokkos::deep_copy(view, mirror);
+
+
+    double normInf = ippl::norm(*field, 0);
+
+    double val = -1.0 + 3 * nPoints;
+
+    ASSERT_DOUBLE_EQ(val, normInf);
+}
+
+TEST_F(FieldTest, VolumeIntegral) {
+    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
+    const int shift = field->getNghost();
+
+    const double dx = 1. / nPoints;
+    auto view = field->getView();
+    auto mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
+    const double pi = acos(-1.0);
+
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                const size_t ig = i + lDom[0].first() - shift;
+                const size_t jg = j + lDom[1].first() - shift;
+                const size_t kg = k + lDom[2].first() - shift;
+                double x = (ig + 0.5) * dx;
+                double y = (jg + 0.5) * dx;
+                double z = (kg + 0.5) * dx;
+
+                mirror(i, j, k) = sin(2 * pi * x) * sin(2 * pi * y) * sin(2 * pi * z);
+            }
+        }
+    }
+    Kokkos::deep_copy(view, mirror);
+
+    ASSERT_NEAR(field->getVolumeIntegral(), 0., 1e-15);
+}
+
+TEST_F(FieldTest, VolumeIntegral2) {
+    *field = 1.;
+    double integral = field->getVolumeIntegral();
+    double volume = field->get_mesh().getMeshVolume();
+    ASSERT_DOUBLE_EQ(integral, volume);
+}
 
 
 int main(int argc, char *argv[]) {
