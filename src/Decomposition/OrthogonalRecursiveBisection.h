@@ -65,7 +65,7 @@ namespace ippl {
           - Performs scatter operation of particle positions in field (weights)
           - Repartition FieldLayout's global domain
         */
-        bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl, int step = 1); 
+        bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl); 
 
 
         /*!

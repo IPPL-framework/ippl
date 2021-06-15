@@ -148,11 +148,10 @@ public:
         orb.initialize(fl, mesh);
     }
 
-    int step = 0;  // temporary: for output
     void repartition(FieldLayout_t& fl, Mesh_t& mesh) {
         // Repartition the domains
-        bool res = orb.binaryRepartition(this->R, fl, step);
-        step++;
+        bool res = orb.binaryRepartition(this->R, fl);
+        
         if (res != true) {
            std::cout << "Could not repartition!" << std::endl;
            return;
@@ -161,23 +160,23 @@ public:
         this->updateLayout(fl, mesh);
     }
 
-    bool balance(unsigned int totalP, int timestep = 1) {
+    bool balance(unsigned int totalP){//, int timestep = 1) {
        int local = 0;
        std::vector<int> res(Ippl::Comm->size());
        double threshold = 0.0; 
        double equalPart = (double) totalP / Ippl::Comm->size();
        double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
-       std::cout << "deviation: " << dev << std::endl;
        if (dev > threshold)
           local = 1;
        MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm()); 
   
        /***PRINT***/
+       /*
        std::ofstream file;
        file.open("imbalance.txt", std::ios_base::app);
        file << std::to_string(timestep) << " " << Ippl::Comm->rank() << " " << dev << "\n";
        file.close();
-
+       */
        for (unsigned int i = 0; i < res.size(); i++) {
           if (res[i] == 1)
              return true;
@@ -253,6 +252,8 @@ public:
 
         double lQ = lq / this->EFDMag_m.sum();
 
+        /***PRINT***/
+        /*
         std::ofstream fcharge;
         fcharge.open("charge.txt", std::ios_base::app);
         fcharge << std::to_string(step) << " " << Ippl::Comm->rank() << " " << lQ << "\n";
@@ -262,7 +263,7 @@ public:
         fqm.open("qm.txt", std::ios_base::app);
         fqm << std::to_string(step) << " " << Ippl::Comm->rank() << " " << lqm << "\n";
         fqm.close();
-
+        */
      }
      
      void initFields() {
@@ -687,7 +688,7 @@ int main(int argc, char *argv[]) {
 
         // P->gatherStatistics(totalP);
         // Load balancing
-        loadImbalance = P->balance(totalP, it);
+        loadImbalance = P->balance(totalP);//, it);
     }
     
     msg << "Particle test PIC3d: End." << endl;

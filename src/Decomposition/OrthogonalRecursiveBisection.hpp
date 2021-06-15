@@ -9,7 +9,7 @@ namespace ippl {
 
     template <class T, unsigned Dim, class M>
     bool 
-    OrthogonalRecursiveBisection<T,Dim,M>::binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl, int step) {
+    OrthogonalRecursiveBisection<T,Dim,M>::binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl) {
        // Timings
        static IpplTimings::TimerRef tbasicOp = IpplTimings::getTimer("basicOperations");           
        static IpplTimings::TimerRef tperpReduction = IpplTimings::getTimer("perpReduction");           
@@ -22,8 +22,6 @@ namespace ippl {
        IpplTimings::stopTimer(tscatter);
 
        IpplTimings::startTimer(tbasicOp);
-       step++;
-       step--;
 
        // Get number of ranks
        int nprocs = Ippl::Comm->size();
@@ -40,7 +38,6 @@ namespace ippl {
        int maxprocs = nprocs; 
        IpplTimings::stopTimer(tbasicOp);
        
-       int loopstep = 1; // just for debugging
        while (maxprocs > 1) {
           // Find cut axis
           IpplTimings::startTimer(tbasicOp);                                                    
@@ -89,6 +86,7 @@ namespace ippl {
        }
 
        /***PRINT***/
+       /*
        if (Ippl::Comm->rank() == 0) {
        std::ofstream myfile;
        std::ofstream finalDoms;
@@ -105,7 +103,7 @@ namespace ippl {
        }
        myfile.close();
        finalDoms.close(); 
-       }
+       }*/
 
        // Check that no plane was obtained in the repartition
        IpplTimings::startTimer(tbasicOp);                                                    
@@ -175,16 +173,6 @@ namespace ippl {
        // The +1 is for Kokkos loop
        sup1++; sup2++;
 
-     
-       /***PRINT***/
-       std::cout << "Domain to reduce: " << dom << " along " << cutAxis << std::endl;
-       std::cout << "Local domain (owned): " << lDom << std::endl;
-       std::cout << "Reduction sizes: (" << cutAxisFirst << ", " << cutAxisLast << ")" << std::endl;
-       std::cout << "Array start: " << arrayStart << std::endl;
-       std::cout << "(inf1, sup1): (" << inf1 << ", " << sup1 << ")" << std::endl;
-       std::cout << "(inf2, sup2): (" << inf2 << ", " << sup2 << ")" << std::endl;
-       std::cout << "Data's extents (0,1,2): (" << data.extent(0) << "," << data.extent(1) << "," << data.extent(2) << ")" << std::endl;
- 
        // Iterate along cutAxis
        using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;       
        for (int i = cutAxisFirst; i <= cutAxisLast; i++) {  
@@ -344,19 +332,6 @@ namespace ippl {
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx = 1.0 / dx;
  
-        // see screen
-        /*
-        vector_type t = (r(0) - origin) * invdx + 0.5;
-        std::cout << "First ngp: " << t << std::endl;
-        Vector<int,Dim> tindex = t;
-        std::cout << "Index: " << tindex << std::endl;
-        Vector<int,Dim> twhi = t - tindex;
-        Vector<int,Dim> twho = 1.0 - twhi;
-        std::cout << "twhi: " << twhi << std::endl;
-        std::cout << "twho: " << twho << std::endl;
-        std::cout << "r.extent(0): " << r.getView().extent(0) << std::endl;
-        */
-
         Kokkos::parallel_for(
             "ParticleAttrib::scatterRngp", r.getView().extent(0), KOKKOS_LAMBDA(const size_t idx) {
                 // Find nearest grid point
