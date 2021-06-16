@@ -51,7 +51,7 @@ namespace ippl {
         void deleteAllBuffers();
 
         ~Communicate() {
-            deleteAllBuffers();
+            // deleteAllBuffers();
         }
 
         [[deprecated]]

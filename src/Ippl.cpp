@@ -152,6 +152,7 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
 /////////////////////////////////////////////////////////////////////
 // Destructor: need to delete comm library if this is the last IpplInfo
 Ippl::~Ippl() {
+    Comm->deleteAllBuffers();
     Kokkos::finalize();
 }
 
