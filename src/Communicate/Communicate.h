@@ -19,6 +19,7 @@
 #define IPPL_COMMUNICATE_H
 
 #include <boost/mpi/communicator.hpp>
+#include <map>
 
 #include "Communicate/Archive.h"
 #include "Communicate/Tags.h"
@@ -39,13 +40,35 @@ namespace ippl {
 
         // Attention: only works with default spaces
         using archive_type = detail::Archive<>;
+        using buffer_type = std::shared_ptr<archive_type>;
 
         Communicate();
 
         Communicate(const MPI_Comm& comm = MPI_COMM_WORLD);
 
+        ~Communicate() {
+            deleteAllBuffers();
+        }
 
-        ~Communicate() = default;
+        buffer_type getBuffer(int id, size_t size) {
+            #if __cplusplus > 201703L
+            if (buffers.contains(id)) {
+            #else
+            if (buffers.find(id) != buffers.end()) {
+            #endif
+                return buffers[id];
+            }
+            buffers[id] = std::make_shared<archive_type>(size);
+            return buffers[id];
+        }
+
+        void deleteBuffer(int id) {
+            buffers.erase(id);
+        }
+
+        void deleteAllBuffers() {
+            buffers.clear();
+        }
 
 
         [[deprecated]]
@@ -98,6 +121,8 @@ namespace ippl {
         template <class Buffer>
         void irecv(int src, int tag, Buffer& buffer);
 
+    private:
+        std::map<int, buffer_type> buffers;
     };
 
 
