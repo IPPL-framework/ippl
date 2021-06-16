@@ -26,7 +26,11 @@ namespace ippl {
             #else
             if (buffers.find(id) != buffers.end()) {
             #endif
-                return buffers[id];
+                buffer_type buf = buffers[id];
+                if (buf->getBufferSize() < size) {
+                    buf->resizeBuffer(size);
+                }
+                return buf;
             }
             buffers[id] = std::make_shared<archive_type>(size);
             return buffers[id];

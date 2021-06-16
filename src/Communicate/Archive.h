@@ -100,6 +100,14 @@ namespace ippl {
             size_type getSize() const {
                 return writepos_m;
             }
+
+            size_type getBufferSize() const {
+                return buffer_m.size();
+            }
+
+            void resizeBuffer(int size) {
+                Kokkos::resize(buffer_m, size);
+            }
             
             void resetWritePos() {
                 writepos_m = 0;
