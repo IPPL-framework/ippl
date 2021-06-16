@@ -46,30 +46,13 @@ namespace ippl {
 
         Communicate(const MPI_Comm& comm = MPI_COMM_WORLD);
 
+        buffer_type getBuffer(int id, size_t size);
+        void deleteBuffer(int id);
+        void deleteAllBuffers();
+
         ~Communicate() {
             deleteAllBuffers();
         }
-
-        buffer_type getBuffer(int id, size_t size) {
-            #if __cplusplus > 201703L
-            if (buffers.contains(id)) {
-            #else
-            if (buffers.find(id) != buffers.end()) {
-            #endif
-                return buffers[id];
-            }
-            buffers[id] = std::make_shared<archive_type>(size);
-            return buffers[id];
-        }
-
-        void deleteBuffer(int id) {
-            buffers.erase(id);
-        }
-
-        void deleteAllBuffers() {
-            buffers.clear();
-        }
-
 
         [[deprecated]]
         int myNode() const noexcept {
@@ -184,6 +167,5 @@ namespace ippl {
                   MPI_BYTE, dest, tag, *this, &request);
     }
 }
-
 
 #endif
