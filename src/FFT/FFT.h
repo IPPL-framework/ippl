@@ -155,7 +155,7 @@ namespace ippl {
                    const std::array<long long, Dim>& high,
                    const FFTParams& params);
 
-        std::shared_ptr<heffte::fft3d<heffteBackend>> heffte_m;
+        std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
 
     };
@@ -207,7 +207,7 @@ namespace ippl {
                    const FFTParams& params);
 
 
-        std::shared_ptr<heffte::fft3d_r2c<heffteBackend>> heffte_m;
+        std::shared_ptr<heffte::fft3d_r2c<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
 
     };

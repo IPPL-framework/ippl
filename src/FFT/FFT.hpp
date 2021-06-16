@@ -223,10 +223,10 @@ namespace ippl {
          * 1D FFTs we just have to make the length in other
          * dimensions to be 1.
          */
-        std::array<int, 3> lowInput;
-        std::array<int, 3> highInput;
-        std::array<int, 3> lowOutput;
-        std::array<int, 3> highOutput;
+        std::array<long long, 3> lowInput;
+        std::array<long long, 3> highInput;
+        std::array<long long, 3> lowOutput;
+        std::array<long long, 3> highOutput;
 
         const NDIndex<Dim>& lDomInput = layoutInput.getLocalNDIndex();
         const NDIndex<Dim>& lDomOutput = layoutOutput.getLocalNDIndex();
