@@ -20,7 +20,11 @@
 
 namespace ippl {
 
-        Communicate::buffer_type Communicate::getBuffer(int id, size_t size) {
+        void Communicate::setDefaultOverallocation(float factor) {
+            defaultOveralloc = factor;
+        }
+
+        Communicate::buffer_type Communicate::getBuffer(int id, size_t size, float overallocation) {
             #if __cplusplus > 201703L
             if (buffers.contains(id)) {
             #else
@@ -32,7 +36,7 @@ namespace ippl {
                 }
                 return buf;
             }
-            buffers[id] = std::make_shared<archive_type>(size);
+            buffers[id] = std::make_shared<archive_type>(size * std::max(overallocation, defaultOveralloc));
             return buffers[id];
         }
 
