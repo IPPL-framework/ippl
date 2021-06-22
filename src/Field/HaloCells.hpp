@@ -15,8 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
+
 #include <memory>
 #include <vector>
+
+#include "Communicate/Communicate.h"
 
 namespace ippl {
     namespace detail {
@@ -76,7 +79,7 @@ namespace ippl {
 
             int myRank = Ippl::Comm->rank();
 
-            // send
+            using buffer_type = Communicate::buffer_type;
             std::vector<MPI_Request> requests(0);
 
             int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
@@ -99,16 +102,14 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-
-
                     int nsends;
                     //FieldBufferData<T> fd;
                     pack(range, view, fd_m, nsends);
 
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_SEND + i, nsends * sizeof(T));
 
-                    Ippl::Comm->isend(rank, tag, fd_m, *(layout->sendFacear_m[face][i]), requests.back(), nsends);
-                    layout->sendFacear_m[face][i]->resetWritePos();
-
+                    Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
+                    buf->resetWritePos();
                 }
             }
 
@@ -140,10 +141,10 @@ namespace ippl {
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
-                    
-                    Ippl::Comm->recv(rank, tag, fd_m, *(layout->recvFacear_m[face][i]), nrecvs);
-                    layout->recvFacear_m[face][i]->resetReadPos();
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_RECV + i, nrecvs * sizeof(T));
 
+                    Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs);
+                    buf->resetReadPos();
 
                     unpack<Op>(range, view, fd_m);
                 }
@@ -169,7 +170,7 @@ namespace ippl {
 
             int myRank = Ippl::Comm->rank();
 
-            // send
+            using buffer_type = Communicate::buffer_type;
             std::vector<MPI_Request> requests(0);
 
             int tag = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
@@ -196,9 +197,10 @@ namespace ippl {
                     int nsends;
                     pack(range, view, fd_m, nsends);
 
-                    Ippl::Comm->isend(rank, tag, fd_m, *(layout->sendEdgear_m[edge][i]), requests.back(), nsends);
-                    layout->sendEdgear_m[edge][i]->resetWritePos();
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_SEND + i, nsends * sizeof(T));
 
+                    Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
+                    buf->resetWritePos();
                 }
             }
 
@@ -230,9 +232,10 @@ namespace ippl {
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
                     
-                    Ippl::Comm->recv(rank, tag, fd_m, *(layout->recvEdgear_m[edge][i]), nrecvs);
-                    layout->recvEdgear_m[edge][i]->resetReadPos();
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_RECV + i, nrecvs * sizeof(T));
 
+                    Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs);
+                    buf->resetReadPos();
 
                     unpack<Op>(range, view, fd_m);
                 }
@@ -258,7 +261,7 @@ namespace ippl {
 
             int myRank = Ippl::Comm->rank();
 
-            // send
+            using buffer_type = Communicate::buffer_type;
             std::vector<MPI_Request> requests(0);
 
             int tag = Ippl::Comm->next_tag(HALO_VERTEX_TAG, HALO_TAG_CYCLE);
@@ -288,8 +291,10 @@ namespace ippl {
                 int nsends;
                 pack(range, view, fd_m, nsends);
 
-                Ippl::Comm->isend(rank, tag, fd_m, *(layout->sendVertexar_m[vertex]), requests.back(), nsends);
-                layout->sendVertexar_m[vertex]->resetWritePos();
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_SEND + vertex, nsends * sizeof(T));
+
+                Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
+                buf->resetWritePos();
             }
             Ippl::Comm->barrier();
 
@@ -323,8 +328,10 @@ namespace ippl {
                              (range.hi[1] - range.lo[1]) *
                              (range.hi[2] - range.lo[2]));
                 
-                Ippl::Comm->recv(rank, tag, fd_m, *(layout->recvVertexar_m[vertex]), nrecvs);
-                layout->recvVertexar_m[vertex]->resetReadPos();
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_RECV + vertex, nrecvs * sizeof(T));
+
+                Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs);
+                buf->resetReadPos();
 
                 unpack<Op>(range, view, fd_m);
             }

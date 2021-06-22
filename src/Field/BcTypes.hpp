@@ -274,9 +274,8 @@ namespace ippl {
                     matchtag = Ippl::Comm->following_tag(BC_PARALLEL_PERIODIC_TAG);
                 }
                 
+                using buffer_type = Communicate::buffer_type;
                 std::vector<MPI_Request> requests(0);
-                using archive_type = Communicate::archive_type;
-                std::vector<std::unique_ptr<archive_type>> archives(0);
                 
                 using HaloCells_t = detail::HaloCells<T, Dim>;
                 using range_t = typename HaloCells_t::bound_type;
@@ -304,15 +303,17 @@ namespace ippl {
                     }
                     
                     rangeNeighbors.push_back(range);    
-                    archives.push_back(std::make_unique<archive_type>());
                     requests.resize(requests.size() + 1);
 
                     detail::FieldBufferData<T> fdSend;
                         
                     halo.pack(range, view, fdSend);
 
-                    Ippl::Comm->isend(rank, tag, fdSend, *(archives.back()),
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_SEND + i, fdSend.buffer.size() * sizeof(T));
+
+                    Ippl::Comm->isend(rank, tag, fdSend, *buf,
                                       requests.back());
+                    buf->resetWritePos();
                 }
                 
                 for (size_t i = 0; i < faceNeighbors_m[face].size(); ++i) {
@@ -331,7 +332,9 @@ namespace ippl {
                                    (range.hi[1] - range.lo[1]) *
                                    (range.hi[2] - range.lo[2]));
 
-                    Ippl::Comm->recv(rank, matchtag, fdRecv);
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_RECV + i, fdRecv.buffer.size() * sizeof(T));
+                    Ippl::Comm->recv(rank, matchtag, fdRecv, *buf);
+                    buf->resetReadPos();
 
 
                     using assign_t = typename HaloCells_t::assign;
@@ -340,7 +343,6 @@ namespace ippl {
                 if (requests.size() > 0) {
                     MPI_Waitall(requests.size(), requests.data(), 
                                 MPI_STATUSES_IGNORE);
-                    archives.clear();
                 }
             }
             //For all other processors do nothing
