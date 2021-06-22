@@ -33,11 +33,13 @@ namespace ippl {
         struct FieldBufferData {
             using view_type = typename detail::ViewType<T, 1>::view_type;
 
-            void serialize(Archive<>& ar) {
+            void serialize(Archive<>& ar, int nsends) {
+                nsends *= 1;
                 ar << buffer;
             }
 
-            void deserialize(Archive<>& ar) {
+            void deserialize(Archive<>& ar, int nrecvs) {
+                nrecvs *= 1;
                 ar >> buffer;
             }
 

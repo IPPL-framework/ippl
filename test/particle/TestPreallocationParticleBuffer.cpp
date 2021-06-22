@@ -23,10 +23,10 @@ struct Bunch : public ippl::ParticleBase<PLayout>
     charge_type Q;
     typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
 
-    void update() {
-        PLayout& layout = this->getLayout();
-        layout.update(*this);
-    }
+    //void update() {
+    //    PLayout& layout = this->getLayout();
+    //    layout.update(*this);
+    //}
 };
 
 int main(int argc, char *argv[]) {
@@ -210,8 +210,8 @@ int main(int argc, char *argv[]) {
 
 
     //std::cout << layout << std::endl;
-    //bunch_type bunchBuffer(pl);
-    //bunchBuffer.create(100000);
+    bunch_type bunchBuffer(pl);
+    bunchBuffer.create(100000);
 
     int nsteps = 300;
 
@@ -220,8 +220,8 @@ int main(int argc, char *argv[]) {
         Kokkos::deep_copy(bunch.R.getView(), R_host);
         static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("Update");
         IpplTimings::startTimer(UpdateTimer);
-        bunch.update();
-        //pl.update(bunch, bunchBuffer);
+        //bunch.update();
+        pl.update(bunch, bunchBuffer);
         //pl.update(bunch);
         //field.accumulateHalo();
         //field.fillHalo();

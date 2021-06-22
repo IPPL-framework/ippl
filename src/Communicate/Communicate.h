@@ -82,14 +82,14 @@ namespace ippl {
         void recv(int src, int tag, Buffer& buffer);
 
         template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer, archive_type& ar);
+        void recv(int src, int tag, Buffer& buffer, archive_type& ar, int nrecvs);
 
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&);
+        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&, int nsends);
 
 
         /*!
@@ -135,7 +135,7 @@ namespace ippl {
     }
 
     template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar)
+    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, int nrecvs)
     {
         MPI_Status status;
         MPI_Probe(src, tag, *this, &status);
@@ -146,15 +146,15 @@ namespace ippl {
         MPI_Recv(ar.getBuffer(), msize,
                 MPI_BYTE, src, tag, *this, &status);
 
-        buffer.deserialize(ar);
+        buffer.deserialize(ar, nrecvs);
     }
 
 
     template <class Buffer>
     void Communicate::isend(int dest, int tag, Buffer& buffer,
-                            archive_type& ar, MPI_Request& request)
+                            archive_type& ar, MPI_Request& request, int nsends)
     {
-        buffer.serialize(ar);
+        buffer.serialize(ar, nsends);
         MPI_Isend(ar.getBuffer(), ar.getSize(),
                   MPI_BYTE, dest, tag, *this, &request);
     }

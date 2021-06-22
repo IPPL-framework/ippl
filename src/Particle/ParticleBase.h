@@ -232,14 +232,14 @@ namespace ippl {
          * Serialize to do MPI calls.
          * @param ar archive
          */
-        void serialize(detail::Archive<Properties...>& ar);
+        void serialize(detail::Archive<Properties...>& ar, int nsends);
 
 
         /*!
          * Deserialize to do MPI calls.
          * @param ar archive
          */
-        void deserialize(detail::Archive<Properties...>& ar);
+        void deserialize(detail::Archive<Properties...>& ar, int nrecvs);
 
 
         /*!
@@ -268,7 +268,7 @@ namespace ippl {
          * @param buffer received
          */
         template <class Buffer>
-        void unpack(Buffer& buffer);
+        void unpack(Buffer& buffer, int nrecvs);
 
     private:
         //! particle layout

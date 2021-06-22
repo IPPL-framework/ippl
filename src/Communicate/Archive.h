@@ -45,6 +45,8 @@ namespace ippl {
             template <typename T>
             void operator<<(const Kokkos::View<T*>& view);
 
+            template <typename T>
+            void serializeParticle(const Kokkos::View<T*>& view, int nsends);
 
             template <typename T>
             void serializeField(const Kokkos::View<T*>& view);
@@ -59,6 +61,8 @@ namespace ippl {
             template <typename T, unsigned Dim>
             void operator<<(const Kokkos::View<Vector<T, Dim>*>& view);
 
+            template <typename T, unsigned Dim>
+            void serializeParticle(const Kokkos::View<Vector<T, Dim>*>& view, int nsends);
 
             /*!
              * Deserialize.
@@ -67,6 +71,8 @@ namespace ippl {
             template <typename T>
             void operator>>(Kokkos::View<T*>& view);
 
+            template <typename T>
+            void deserializeParticle(Kokkos::View<T*>& view, int nrecvs);
 
             /*!
              * Deserialize vector attributes
@@ -79,6 +85,8 @@ namespace ippl {
             template <typename T, unsigned Dim>
             void operator>>(Kokkos::View<Vector<T, Dim>*>& view);
 
+            template <typename T, unsigned Dim>
+            void deserializeParticle(Kokkos::View<Vector<T, Dim>*>& view, int nrecvs);
 
             /*!
              * @returns a pointer to the data of the buffer

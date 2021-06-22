@@ -210,15 +210,17 @@ public:
             decomp_m[i]=decomp[i];
     }
 
+    ~ChargedParticles(){ }
+
     void setupBCs() {
         setBCAllPeriodic();
     }
 
-    void update() {
-        
-        PLayout& layout = this->getLayout();
-        layout.update(*this);
-    }
+    //void update() {
+    //    
+    //    PLayout& layout = this->getLayout();
+    //    layout.update(*this);
+    //}
 
 
     void gatherStatistics(unsigned int totalP, int iteration) {
@@ -568,9 +570,14 @@ int main(int argc, char *argv[]){
     P->E_m.initialize(meshField, FL);
     P->rho_m.initialize(meshField, FL);
 
+
+
+    bunch_type bunchBuffer(PL);
+    bunchBuffer.create(1.5e6);
     //static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("Update");           
     //IpplTimings::startTimer(UpdateTimer);                                               
-    P->update();
+    //P->update();
+    PL.update(*P, bunchBuffer);
     //IpplTimings::stopTimer(UpdateTimer);                                                    
 
     msg << "particles created and initial conditions assigned " << endl;
@@ -633,7 +640,8 @@ int main(int argc, char *argv[]){
 
         //Since the particles have moved spatially update them to correct processors 
         //IpplTimings::startTimer(UpdateTimer);
-        P->update();
+        //P->update();
+        PL.update(*P, bunchBuffer);
         //IpplTimings::stopTimer(UpdateTimer);                                                    
         
         //scatter the charge onto the underlying grid

@@ -45,11 +45,11 @@ namespace ippl {
 
             virtual void pack(void*, const Kokkos::View<int*>&) const = 0;
 
-            virtual void unpack(void*) = 0;
+            virtual void unpack(void*, int) = 0;
 
-            virtual void serialize(Archive<Properties...>& ar) = 0;
+            virtual void serialize(Archive<Properties...>& ar, int nsends) = 0;
 
-            virtual void deserialize(Archive<Properties...>& ar) = 0;
+            virtual void deserialize(Archive<Properties...>& ar, int nrecvs) = 0;
 
             virtual ~ParticleAttribBase() = default;
         };

@@ -217,19 +217,19 @@ namespace ippl {
 
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::serialize(detail::Archive<Properties...>& ar) {
+    void ParticleBase<PLayout, Properties...>::serialize(detail::Archive<Properties...>& ar, int nsends) {
         using size_type = typename attribute_container_t::size_type;
         for (size_type i = 0; i < attributes_m.size(); ++i) {
-            attributes_m[i]->serialize(ar);
+            attributes_m[i]->serialize(ar, nsends);
         }
     }
 
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::deserialize(detail::Archive<Properties...>& ar) {
+    void ParticleBase<PLayout, Properties...>::deserialize(detail::Archive<Properties...>& ar, int nrecvs) {
         using size_type = typename attribute_container_t::size_type;
         for (size_type i = 0; i < attributes_m.size(); ++i) {
-            attributes_m[i]->deserialize(ar);
+            attributes_m[i]->deserialize(ar, nrecvs);
         }
     }
 
@@ -257,11 +257,11 @@ namespace ippl {
 
     template <class PLayout, class... Properties>
     template <class Buffer>
-    void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer)
+    void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer, int nrecvs)
     {
         using size_type = typename attribute_container_t::size_type;
         for (size_type j = 0; j < attributes_m.size(); ++j) {
-            attributes_m[j]->unpack(buffer.getAttribute(j));
+            attributes_m[j]->unpack(buffer.getAttribute(j), nrecvs);
         }
     }
 }

@@ -56,14 +56,16 @@ namespace ippl {
 
         void pack(void*, const Kokkos::View<int*>&) const override;
 
-        void unpack(void*) override;
+        void unpack(void*, int) override;
 
-        void serialize(detail::Archive<Properties...>& ar) override {
-            ar << dview_m;
+        void serialize(detail::Archive<Properties...>& ar, int nsends) override {
+            //ar << dview_m;
+            ar.serializeParticle(dview_m, nsends);
         }
 
-        void deserialize(detail::Archive<Properties...>& ar) override {
-            ar >> dview_m;
+        void deserialize(detail::Archive<Properties...>& ar, int nrecvs) override {
+            //ar >> dview_m;
+            ar.deserializeParticle(dview_m, nrecvs);
         }
 
         virtual ~ParticleAttrib() = default;
