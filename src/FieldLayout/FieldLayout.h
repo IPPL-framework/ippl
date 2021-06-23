@@ -50,7 +50,6 @@ namespace ippl {
         using face_neighbor_type = std::array<std::vector<int>, 2 * Dim>;
         using edge_neighbor_type = std::array<std::vector<int>, Dim * (1 << (Dim - 1))>;
         using vertex_neighbor_type = std::array<int, 2 << (Dim - 1)>;
-        using archive_type = Communicate::archive_type;
 
 
         /*!
@@ -121,10 +120,6 @@ namespace ippl {
         void findNeighbors(int nghost = 1);
 
         void write(std::ostream& = std::cout) const;
-        
-        std::array<std::vector<std::shared_ptr<archive_type>>, 2 * Dim> sendFacear_m, recvFacear_m;
-        std::array<std::vector<std::shared_ptr<archive_type>>, Dim * (1 << (Dim - 1))> sendEdgear_m, recvEdgear_m;
-        std::array<std::shared_ptr<archive_type>, 2 << (Dim - 1)> sendVertexar_m, recvVertexar_m;
 
     private:
         /*!
