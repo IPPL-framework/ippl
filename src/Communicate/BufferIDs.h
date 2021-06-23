@@ -33,4 +33,8 @@
 #define IPPL_HALO_VERTEX_SEND 7000
 #define IPPL_HALO_VERTEX_RECV 8000
 
+// Particle spatial layout
+#define IPPL_PARTICLE_SEND 9000
+#define IPPL_PARTICLE_RECV 10000
+
 #endif

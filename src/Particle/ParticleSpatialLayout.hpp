@@ -36,12 +36,7 @@ namespace ippl {
         FieldLayout<Dim>& fl,
         Mesh& mesh)
     : rlayout_m(fl, mesh)
-    {
-        for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-            sendar_m.push_back(std::make_shared<archive_type>(7e8));
-            recvar_m.push_back(std::make_shared<archive_type>(7e8));
-        }
-    }
+    {}
 
 
     template <typename T, unsigned Dim, class Mesh>
@@ -126,8 +121,10 @@ namespace ippl {
         // send
         std::vector<MPI_Request> requests(0);
 
+        using buffer_type = Communicate::buffer_type;
         int tag = Ippl::Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
 
+        int sends = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nSends[rank] > 0) {
                 hash_type hash("hash", nSends[rank]);
@@ -140,9 +137,13 @@ namespace ippl {
 
                 pdata.pack(buffer, hash);
 
-                Ippl::Comm->isend(rank, tag, buffer, *sendar_m[rank],
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, buffer.size());
+
+                Ippl::Comm->isend(rank, tag, buffer, *buf,
                                   requests.back(), nSends[rank]);
-                sendar_m[rank]->resetWritePos();
+                buf->resetWritePos();
+
+                ++sends;
             }
         }
         IpplTimings::stopTimer(step3Timer);
@@ -151,16 +152,20 @@ namespace ippl {
         static IpplTimings::TimerRef step4Timer = IpplTimings::getTimer("ParticleRecv");
         IpplTimings::startTimer(step4Timer);
         // 3rd step
+        int recvs = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
                 //BufferType buffer(pdata.getLayout());
                 //buffer.create(nRecvs[rank]);
 
-                Ippl::Comm->recv(rank, tag, buffer, *recvar_m[rank], nRecvs[rank]);
-                
-                recvar_m[rank]->resetReadPos();
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, buffer.size());
+
+                Ippl::Comm->recv(rank, tag, buffer, *buf, nRecvs[rank]);
+                buf->resetReadPos();
 
                 pdata.unpack(buffer, nRecvs[rank]);
+
+                ++recvs;
             }
 
         }
