@@ -241,6 +241,12 @@ namespace ippl {
          */
         void deserialize(detail::Archive<Properties...>& ar, int nrecvs);
 
+        /*!
+         * Determine the space occupied by the particle data
+         * @return Total memory occupied by the particle attributes
+         */
+        size_t size() const;
+
 
         /*!
          * Redistribute particles among MPI ranks.

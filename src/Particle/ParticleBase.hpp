@@ -233,6 +233,15 @@ namespace ippl {
         }
     }
 
+    template <class PLayout, class... Properties>
+    size_t ParticleBase<PLayout, Properties...>::size() const {
+        size_t total = 0;
+        using size_type = typename attribute_container_t::size_type;
+        for (size_type i = 0; i < attributes_m.size(); ++i) {
+            total += attributes_m[i]->totalSize();
+        }
+        return total;
+    }
 
     template <class PLayout, class... Properties>
 //     template <class BufferType>

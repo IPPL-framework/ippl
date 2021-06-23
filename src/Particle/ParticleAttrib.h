@@ -72,6 +72,10 @@ namespace ippl {
             return dview_m.extent(0);
         }
 
+        size_t totalSize() const {
+            return size() * sizeof(value_type);
+        }
+
         void resize(size_t n) {
             Kokkos::resize(dview_m, n);
         }
