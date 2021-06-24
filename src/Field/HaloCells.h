@@ -34,11 +34,11 @@ namespace ippl {
             using view_type = typename detail::ViewType<T, 1>::view_type;
 
             void serialize(Archive<>& ar, int nsends) {
-                ar.serializeParticle(buffer, nsends);
+                ar.serialize(buffer, nsends);
             }
 
             void deserialize(Archive<>& ar, int nrecvs) {
-                ar.deserializeParticle(buffer, nrecvs);
+                ar.deserialize(buffer, nrecvs);
             }
 
             view_type buffer;
@@ -212,7 +212,6 @@ namespace ippl {
             auto makeSubview(const view_type& view,
                              const bound_type& intersect);
 
-            //FieldBufferData<T> fds_m, fdr_m, eds_m, edr_m, vds_m, vdr_m;
             FieldBufferData<T> fd_m;
 
         };

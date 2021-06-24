@@ -33,9 +33,7 @@ namespace ippl {
         template <class... Properties>
         template <typename T>
         void Archive<Properties...>::operator<<(const Kokkos::View<T*>& view) {
-            //readpos_m = 0;
             size_t size = sizeof(T);
-            //std::cout << "Write position " << writepos_m << std::endl;
             Kokkos::parallel_for(
                 "Archive::serialize()", view.extent(0),
                 KOKKOS_CLASS_LAMBDA(const size_t i) {
@@ -49,10 +47,8 @@ namespace ippl {
 
         template <class... Properties>
         template <typename T>
-        void Archive<Properties...>::serializeParticle(const Kokkos::View<T*>& view, int nsends) {
-            //readpos_m = 0;
+        void Archive<Properties...>::serialize(const Kokkos::View<T*>& view, int nsends) {
             size_t size = sizeof(T);
-            //std::cout << "Write position " << writepos_m << std::endl;
             Kokkos::parallel_for(
                 "Archive::serialize()", nsends,
                 KOKKOS_CLASS_LAMBDA(const size_t i) {
@@ -60,34 +56,15 @@ namespace ippl {
                                 view.data() + i,
                                 size);
             });
-            //writepos_m += size * view.size();
             writepos_m += size * nsends;
             Kokkos::fence();
         }
 
         template <class... Properties>
-        template <typename T>
-        void Archive<Properties...>::serializeField(const Kokkos::View<T*>& view) {
-            //readpos_m = 0;
-            size_t size = sizeof(T);
-            //std::cout << "Write position " << writepos_m << std::endl;
-            Kokkos::resize(buffer_m, buffer_m.size() + size * view.size());
-            Kokkos::parallel_for(
-                "Archive::serialize()", view.extent(0),
-                KOKKOS_CLASS_LAMBDA(const size_t i) {
-                    std::memcpy(buffer_m.data() + i * size + writepos_m,
-                                view.data() + i,
-                                size);
-            });
-            writepos_m += size * view.size();
-        }
-        template <class... Properties>
         template <typename T, unsigned Dim>
         void Archive<Properties...>::operator<<(const Kokkos::View<Vector<T, Dim>*>& view) {
-            //readpos_m = 0;
             size_t size = sizeof(T);
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-            //std::cout << "Write position " << writepos_m << std::endl;
             Kokkos::parallel_for(
                 "Archive::serialize()",
                 mdrange_t({0, 0}, {(long int)view.extent(0), Dim}),
@@ -102,11 +79,9 @@ namespace ippl {
 
         template <class... Properties>
         template <typename T, unsigned Dim>
-        void Archive<Properties...>::serializeParticle(const Kokkos::View<Vector<T, Dim>*>& view, int nsends) {
-            //readpos_m = 0;
+        void Archive<Properties...>::serialize(const Kokkos::View<Vector<T, Dim>*>& view, int nsends) {
             size_t size = sizeof(T);
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-            //std::cout << "Write position " << writepos_m << std::endl;
             Kokkos::parallel_for(
                 "Archive::serialize()",
                 mdrange_t({0, 0}, {(long int)nsends, Dim}),
@@ -115,7 +90,6 @@ namespace ippl {
                                 &(*(view.data() + i))[d],
                                 size);
                 });
-            //writepos_m += Dim * size * view.size();
             writepos_m += Dim * size * nsends;
             Kokkos::fence();
         }
@@ -123,7 +97,6 @@ namespace ippl {
         template <class... Properties>
         template <typename T>
         void Archive<Properties...>::operator>>(Kokkos::View<T*>& view) {
-            //writepos_m = 0;
             size_t size = sizeof(T);
             Kokkos::parallel_for(
                 "Archive::deserialize()", view.extent(0),
@@ -138,8 +111,7 @@ namespace ippl {
 
         template <class... Properties>
         template <typename T>
-        void Archive<Properties...>::deserializeParticle(Kokkos::View<T*>& view, int nrecvs) {
-            //writepos_m = 0;
+        void Archive<Properties...>::deserialize(Kokkos::View<T*>& view, int nrecvs) {
             size_t size = sizeof(T);
             Kokkos::parallel_for(
                 "Archive::deserialize()", nrecvs,
@@ -148,7 +120,6 @@ namespace ippl {
                                 buffer_m.data() + i * size + readpos_m,
                                 size);
             });
-            //readpos_m += size * view.size();
             readpos_m += size * nrecvs;
             Kokkos::fence();
         }
@@ -156,7 +127,6 @@ namespace ippl {
         template <class... Properties>
         template <typename T, unsigned Dim>
         void Archive<Properties...>::operator>>(Kokkos::View<Vector<T, Dim>*>& view) {
-            //writepos_m = 0;
             size_t size = sizeof(T);
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
@@ -172,8 +142,7 @@ namespace ippl {
         }
         template <class... Properties>
         template <typename T, unsigned Dim>
-        void Archive<Properties...>::deserializeParticle(Kokkos::View<Vector<T, Dim>*>& view, int nrecvs) {
-            //writepos_m = 0;
+        void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*>& view, int nrecvs) {
             size_t size = sizeof(T);
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
@@ -184,7 +153,6 @@ namespace ippl {
                                 buffer_m.data() + (Dim * i + d) * size + readpos_m,
                                 size);
             });
-            //readpos_m += Dim * size * view.size();
             readpos_m += Dim * size * nrecvs;
             Kokkos::fence();
         }

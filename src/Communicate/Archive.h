@@ -46,10 +46,8 @@ namespace ippl {
             void operator<<(const Kokkos::View<T*>& view);
 
             template <typename T>
-            void serializeParticle(const Kokkos::View<T*>& view, int nsends);
+            void serialize(const Kokkos::View<T*>& view, int nsends);
 
-            template <typename T>
-            void serializeField(const Kokkos::View<T*>& view);
             /*!
              * Serialize vector attributes
              *
@@ -62,7 +60,7 @@ namespace ippl {
             void operator<<(const Kokkos::View<Vector<T, Dim>*>& view);
 
             template <typename T, unsigned Dim>
-            void serializeParticle(const Kokkos::View<Vector<T, Dim>*>& view, int nsends);
+            void serialize(const Kokkos::View<Vector<T, Dim>*>& view, int nsends);
 
             /*!
              * Deserialize.
@@ -72,7 +70,7 @@ namespace ippl {
             void operator>>(Kokkos::View<T*>& view);
 
             template <typename T>
-            void deserializeParticle(Kokkos::View<T*>& view, int nrecvs);
+            void deserialize(Kokkos::View<T*>& view, int nrecvs);
 
             /*!
              * Deserialize vector attributes
@@ -86,7 +84,7 @@ namespace ippl {
             void operator>>(Kokkos::View<Vector<T, Dim>*>& view);
 
             template <typename T, unsigned Dim>
-            void deserializeParticle(Kokkos::View<Vector<T, Dim>*>& view, int nrecvs);
+            void deserialize(Kokkos::View<Vector<T, Dim>*>& view, int nrecvs);
 
             /*!
              * @returns a pointer to the data of the buffer
@@ -100,7 +98,7 @@ namespace ippl {
              * @returns the size of the buffer
              */
             size_type getSize() const {
-                return writepos_m; /// sizeof(char);
+                return writepos_m;
             }
             
             void resetWritePos() {

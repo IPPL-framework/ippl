@@ -78,8 +78,6 @@ namespace ippl {
 
             // send
             std::vector<MPI_Request> requests(0);
-            //using archive_type = Communicate::archive_type;
-            //std::vector<std::unique_ptr<archive_type>> archives(0);
 
             int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
 
@@ -99,7 +97,6 @@ namespace ippl {
                     }
 
 
-                    //archives.push_back(std::make_unique<archive_type>());
                     requests.resize(requests.size() + 1);
 
 
@@ -108,10 +105,6 @@ namespace ippl {
                     //FieldBufferData<T> fd;
                     pack(range, view, fd_m, nsends);
 
-                    //std::cout << "Rank " << Ippl::Comm->rank() << "sends " << nsends
-                    //          << "face points to rank " << rank << std::endl;
-
-                    //std::cout << "Buffer size: " << fds_m.buffer.size() << std::endl;
 
                     Ippl::Comm->isend(rank, tag, fd_m, *(layout->sendFacear_m[face][i]), requests.back(), nsends);
                     layout->sendFacear_m[face][i]->resetWritePos();
@@ -147,11 +140,6 @@ namespace ippl {
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
-                    //Ippl::Comm->recv(rank, tag, fd);
-                    //std::cout << "Rank " << Ippl::Comm->rank() << "receives " << nrecvs
-                    //          << "face points from rank " << rank << std::endl;
-
-                    //std::cout << "Buffer size: " << fdr_m.buffer.size() << std::endl;
                     
                     Ippl::Comm->recv(rank, tag, fd_m, *(layout->recvFacear_m[face][i]), nrecvs);
                     layout->recvFacear_m[face][i]->resetReadPos();
@@ -163,7 +151,6 @@ namespace ippl {
 
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-                //archives.clear();
             }
             Ippl::Comm->barrier();
         }
@@ -184,8 +171,6 @@ namespace ippl {
 
             // send
             std::vector<MPI_Request> requests(0);
-            //using archive_type = Communicate::archive_type;
-            //std::vector<std::unique_ptr<archive_type>> archives(0);
 
             int tag = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
 
@@ -204,17 +189,12 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    //archives.push_back(std::make_unique<archive_type>());
                     requests.resize(requests.size() + 1);
 
 
                     //FieldBufferData<T> fd;
                     int nsends;
                     pack(range, view, fd_m, nsends);
-                    //std::cout << "Rank " << Ippl::Comm->rank() << "sends " << nsends
-                    //          << "edge points to rank " << rank << std::endl;
-
-                    //std::cout << "Buffer size: " << eds_m.buffer.size() << std::endl;
 
                     Ippl::Comm->isend(rank, tag, fd_m, *(layout->sendEdgear_m[edge][i]), requests.back(), nsends);
                     layout->sendEdgear_m[edge][i]->resetWritePos();
@@ -249,10 +229,6 @@ namespace ippl {
                     int nrecvs = (int)((range.hi[0] - range.lo[0]) *
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
-                    //std::cout << "Rank " << Ippl::Comm->rank() << "receives " << nrecvs
-                    //          << "edge points from rank " << rank << std::endl;
-
-                    //std::cout << "Buffer size: " << edr_m.buffer.size() << std::endl;
                     
                     Ippl::Comm->recv(rank, tag, fd_m, *(layout->recvEdgear_m[edge][i]), nrecvs);
                     layout->recvEdgear_m[edge][i]->resetReadPos();
@@ -264,7 +240,6 @@ namespace ippl {
 
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-                //archives.clear();
             }
             Ippl::Comm->barrier();
         }
@@ -285,8 +260,6 @@ namespace ippl {
 
             // send
             std::vector<MPI_Request> requests(0);
-            //using archive_type = Communicate::archive_type;
-            //std::vector<std::unique_ptr<archive_type>> archives(0);
 
             int tag = Ippl::Comm->next_tag(HALO_VERTEX_TAG, HALO_TAG_CYCLE);
 
@@ -308,17 +281,12 @@ namespace ippl {
                                       lDomains[myRank], nghost);
                 }
 
-                //archives.push_back(std::make_unique<archive_type>());
                 requests.resize(requests.size() + 1);
 
 
                 //FieldBufferData<T> fd;
                 int nsends;
                 pack(range, view, fd_m, nsends);
-                //std::cout << "Rank " << Ippl::Comm->rank() << "sends " << nsends
-                //              << "vertex points to rank " << rank << std::endl;
-
-                //std::cout << "Buffer size: " << vds_m.buffer.size() << std::endl;
 
                 Ippl::Comm->isend(rank, tag, fd_m, *(layout->sendVertexar_m[vertex]), requests.back(), nsends);
                 layout->sendVertexar_m[vertex]->resetWritePos();
@@ -354,10 +322,7 @@ namespace ippl {
                 int nrecvs = (int)((range.hi[0] - range.lo[0]) *
                              (range.hi[1] - range.lo[1]) *
                              (range.hi[2] - range.lo[2]));
-                //std::cout << "Rank " << Ippl::Comm->rank() << "receives " << nrecvs
-                //          << "vertex points from rank " << rank << std::endl;
-
-                //std::cout << "Buffer size: " << vdr_m.buffer.size() << std::endl;
+                
                 Ippl::Comm->recv(rank, tag, fd_m, *(layout->recvVertexar_m[vertex]), nrecvs);
                 layout->recvVertexar_m[vertex]->resetReadPos();
 
@@ -366,7 +331,6 @@ namespace ippl {
 
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-                //archives.clear();
             }
             Ippl::Comm->barrier();
         }

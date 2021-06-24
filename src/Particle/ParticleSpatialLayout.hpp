@@ -137,9 +137,6 @@ namespace ippl {
 
                 requests.resize(requests.size() + 1);
 
-                //std::cout << "Rank " << Ippl::Comm->rank() << " sends " << nSends[rank]
-                //          << " to rank  " << rank << std::endl;
-
                 //BufferType buffer(pdata.getLayout());
                 //buffer.create(nSends[rank]);
 
@@ -152,7 +149,6 @@ namespace ippl {
         }
         IpplTimings::stopTimer(step3Timer);
 
-        //Ippl::Comm->barrier();
 
         static IpplTimings::TimerRef step4Timer = IpplTimings::getTimer("ParticleRecv");
         IpplTimings::startTimer(step4Timer);
@@ -162,30 +158,20 @@ namespace ippl {
                 //BufferType buffer(pdata.getLayout());
                 //buffer.create(nRecvs[rank]);
 
-                //std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nRecvs[rank]
-                //          << " from rank  " << rank << std::endl;
-
-                //Ippl::Comm->recv(rank, Ippl::Comm->rank(), tag, buffer, *recvar_m[rank],  44 * nRecvs[rank]);
                 Ippl::Comm->recv(rank, tag, buffer, *recvar_m[rank], nRecvs[rank]);
                 
                 recvar_m[rank]->resetReadPos();
 
-                //std::cout << "Rank " << Ippl::Comm->rank() << " receive done." << std::endl;
-
                 pdata.unpack(buffer, nRecvs[rank]);
 
-                //std::cout << "Rank " << Ippl::Comm->rank() << " unpack done." << std::endl;
-            }
         }
 
-        //std::cout << "Rank " << Ippl::Comm->rank() << " sending and receiving done." << std::endl;
 
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
         IpplTimings::stopTimer(step4Timer);
 
-        //Ippl::Comm->barrier();
         static IpplTimings::TimerRef step5Timer = IpplTimings::getTimer("ParticleDestroy");
         IpplTimings::startTimer(step5Timer);
         // create space for received particles

@@ -59,13 +59,11 @@ namespace ippl {
         void unpack(void*, int) override;
 
         void serialize(detail::Archive<Properties...>& ar, int nsends) override {
-            //ar << dview_m;
-            ar.serializeParticle(dview_m, nsends);
+            ar.serialize(dview_m, nsends);
         }
 
         void deserialize(detail::Archive<Properties...>& ar, int nrecvs) override {
-            //ar >> dview_m;
-            ar.deserializeParticle(dview_m, nrecvs);
+            ar.deserialize(dview_m, nrecvs);
         }
 
         virtual ~ParticleAttrib() = default;

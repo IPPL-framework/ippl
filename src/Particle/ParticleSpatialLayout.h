@@ -74,8 +74,6 @@ namespace ippl {
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
 
-        //std::shared_ptr<archive_type> sendar_m[8];
-        //std::shared_ptr<archive_type> recvar_m[8];
         std::vector<std::shared_ptr<archive_type>> sendar_m;
         std::vector<std::shared_ptr<archive_type>> recvar_m;
 
