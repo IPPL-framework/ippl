@@ -84,6 +84,7 @@ namespace ippl {
 
             int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
 
+            const int groupCount = neighbors.size();
             for (size_t face = 0; face < neighbors.size(); ++face) {
                 for (size_t i = 0; i < neighbors[face].size(); ++i) {
 
@@ -106,7 +107,7 @@ namespace ippl {
                     //FieldBufferData<T> fd;
                     pack(range, view, fd_m, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_SEND + i, nsends * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_SEND + i * groupCount + face, nsends * sizeof(T));
 
                     Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
@@ -141,7 +142,7 @@ namespace ippl {
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_RECV + i, nrecvs * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_RECV + i * groupCount + face, nrecvs * sizeof(T));
 
                     Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs);
                     buf->resetReadPos();
@@ -175,6 +176,7 @@ namespace ippl {
 
             int tag = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
 
+            const int groupCount = neighbors.size();
             for (size_t edge = 0; edge < neighbors.size(); ++edge) {
                 for (size_t i = 0; i < neighbors[edge].size(); ++i) {
 
@@ -197,7 +199,7 @@ namespace ippl {
                     int nsends;
                     pack(range, view, fd_m, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_SEND + i, nsends * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_SEND + i * groupCount + edge, nsends * sizeof(T));
 
                     Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
@@ -232,7 +234,7 @@ namespace ippl {
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
                     
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_RECV + i, nrecvs * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_RECV + i * groupCount + edge, nrecvs * sizeof(T));
 
                     Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs);
                     buf->resetReadPos();
