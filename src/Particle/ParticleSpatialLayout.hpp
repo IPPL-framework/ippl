@@ -38,8 +38,6 @@ namespace ippl {
     : rlayout_m(fl, mesh)
     {
         for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-            //sendar_m[rank] = std::make_shared<archive_type>(1e7);
-            //recvar_m[rank] = std::make_shared<archive_type>(1e7);
             sendar_m.push_back(std::make_shared<archive_type>(7e8));
             recvar_m.push_back(std::make_shared<archive_type>(7e8));
         }
@@ -163,6 +161,7 @@ namespace ippl {
                 recvar_m[rank]->resetReadPos();
 
                 pdata.unpack(buffer, nRecvs[rank]);
+            }
 
         }
 
