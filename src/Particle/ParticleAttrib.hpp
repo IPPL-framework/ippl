@@ -74,6 +74,7 @@ namespace ippl {
             KOKKOS_CLASS_LAMBDA(const size_t i) {
                 view(i) = dview_m(hash(i));
         });
+        Kokkos::fence();
     }
 
 
@@ -93,6 +94,7 @@ namespace ippl {
             KOKKOS_CLASS_LAMBDA(const size_t i) {
                 dview_m(size + i) = view(i);
         });
+        Kokkos::fence();
     }
 
     template<typename T, class... Properties>

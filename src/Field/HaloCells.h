@@ -34,13 +34,11 @@ namespace ippl {
             using view_type = typename detail::ViewType<T, 1>::view_type;
 
             void serialize(Archive<>& ar, int nsends) {
-                nsends *= 1;
-                ar << buffer;
+                ar.serializeParticle(buffer, nsends);
             }
 
             void deserialize(Archive<>& ar, int nrecvs) {
-                nrecvs *= 1;
-                ar >> buffer;
+                ar.deserializeParticle(buffer, nrecvs);
             }
 
             view_type buffer;
@@ -74,6 +72,8 @@ namespace ippl {
 
             HaloCells();
 
+            void initializeBuffers();
+
 
             /*!
              * Send halo data to internal cells. This operation uses
@@ -104,7 +104,8 @@ namespace ippl {
              */
             void pack(const bound_type& range,
                       const view_type& view,
-                      FieldBufferData<T>& fd);
+                      FieldBufferData<T>& fd,
+                      int& nsends);
 
             /*!
              * Unpack the received field data and assign it.
@@ -210,6 +211,9 @@ namespace ippl {
              */
             auto makeSubview(const view_type& view,
                              const bound_type& intersect);
+
+            //FieldBufferData<T> fds_m, fdr_m, eds_m, edr_m, vds_m, vdr_m;
+            FieldBufferData<T> fd_m;
 
         };
     }

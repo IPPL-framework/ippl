@@ -24,8 +24,14 @@ namespace ippl {
         HaloCells<T, Dim>::HaloCells()
         {
             static_assert(Dim == 3, "Dimension must be 3!");
+            //Kokkos::resize(fd_m.buffer, 512*512*3);
         }
 
+        template <typename T, unsigned Dim>
+        void HaloCells<T, Dim>::initializeBuffers()
+        {
+            Kokkos::resize(fd_m.buffer, 512*512*3);
+        }
 
         template <typename T, unsigned Dim>
         void HaloCells<T, Dim>::accumulateHalo(view_type& view,
@@ -97,17 +103,23 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
 
-                    FieldBufferData<T> fd;
-                    pack(range, view, fd);
 
-                    int nsends = 100;//(int)fd.buffer.size();
+                    int nsends;
+                    //FieldBufferData<T> fd;
+                    pack(range, view, fd_m, nsends);
 
-                    Ippl::Comm->isend(rank, tag, fd, *(layout->sendFacear_m[face][i]), requests.back(), nsends);
+                    //std::cout << "Rank " << Ippl::Comm->rank() << "sends " << nsends
+                    //          << "face points to rank " << rank << std::endl;
+
+                    //std::cout << "Buffer size: " << fds_m.buffer.size() << std::endl;
+
+                    Ippl::Comm->isend(rank, tag, fd_m, *(layout->sendFacear_m[face][i]), requests.back(), nsends);
                     layout->sendFacear_m[face][i]->resetWritePos();
 
                 }
             }
 
+            Ippl::Comm->barrier();
             // receive
             for (size_t face = 0; face < neighbors.size(); ++face) {
                 for (size_t i = 0; i < neighbors[face].size(); ++i) {
@@ -124,20 +136,28 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    FieldBufferData<T> fd;
+                    //FieldBufferData<T> fd;
 
-                    Kokkos::resize(fd.buffer,
-                                   (range.hi[0] - range.lo[0]) *
-                                   (range.hi[1] - range.lo[1]) *
-                                   (range.hi[2] - range.lo[2]));
+                    //Kokkos::resize(fd.buffer,
+                    //               (range.hi[0] - range.lo[0]) *
+                    //               (range.hi[1] - range.lo[1]) *
+                    //               (range.hi[2] - range.lo[2]));
+
+                    int nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                                 (range.hi[1] - range.lo[1]) *
+                                 (range.hi[2] - range.lo[2]));
 
                     //Ippl::Comm->recv(rank, tag, fd);
+                    //std::cout << "Rank " << Ippl::Comm->rank() << "receives " << nrecvs
+                    //          << "face points from rank " << rank << std::endl;
+
+                    //std::cout << "Buffer size: " << fdr_m.buffer.size() << std::endl;
                     
-                    Ippl::Comm->recv(rank, tag, fd, *(layout->recvFacear_m[face][i]),100);
+                    Ippl::Comm->recv(rank, tag, fd_m, *(layout->recvFacear_m[face][i]), nrecvs);
                     layout->recvFacear_m[face][i]->resetReadPos();
 
 
-                    unpack<Op>(range, view, fd);
+                    unpack<Op>(range, view, fd_m);
                 }
             }
 
@@ -145,6 +165,7 @@ namespace ippl {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                 //archives.clear();
             }
+            Ippl::Comm->barrier();
         }
 
 
@@ -187,15 +208,21 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
 
-                    FieldBufferData<T> fd;
-                    pack(range, view, fd);
+                    //FieldBufferData<T> fd;
+                    int nsends;
+                    pack(range, view, fd_m, nsends);
+                    //std::cout << "Rank " << Ippl::Comm->rank() << "sends " << nsends
+                    //          << "edge points to rank " << rank << std::endl;
 
-                    Ippl::Comm->isend(rank, tag, fd, *(layout->sendEdgear_m[edge][i]), requests.back(), 100);
+                    //std::cout << "Buffer size: " << eds_m.buffer.size() << std::endl;
+
+                    Ippl::Comm->isend(rank, tag, fd_m, *(layout->sendEdgear_m[edge][i]), requests.back(), nsends);
                     layout->sendEdgear_m[edge][i]->resetWritePos();
 
                 }
             }
 
+            Ippl::Comm->barrier();
             // receive
             for (size_t edge = 0; edge < neighbors.size(); ++edge) {
                 for (size_t i = 0; i < neighbors[edge].size(); ++i) {
@@ -212,19 +239,26 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    FieldBufferData<T> fd;
+                    //FieldBufferData<T> fd;
 
-                    Kokkos::resize(fd.buffer,
-                                   (range.hi[0] - range.lo[0]) *
-                                   (range.hi[1] - range.lo[1]) *
-                                   (range.hi[2] - range.lo[2]));
+                    //Kokkos::resize(fd.buffer,
+                    //               (range.hi[0] - range.lo[0]) *
+                    //               (range.hi[1] - range.lo[1]) *
+                    //               (range.hi[2] - range.lo[2]));
 
+                    int nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                                 (range.hi[1] - range.lo[1]) *
+                                 (range.hi[2] - range.lo[2]));
+                    //std::cout << "Rank " << Ippl::Comm->rank() << "receives " << nrecvs
+                    //          << "edge points from rank " << rank << std::endl;
+
+                    //std::cout << "Buffer size: " << edr_m.buffer.size() << std::endl;
                     
-                    Ippl::Comm->recv(rank, tag, fd, *(layout->recvEdgear_m[edge][i]), 100);
+                    Ippl::Comm->recv(rank, tag, fd_m, *(layout->recvEdgear_m[edge][i]), nrecvs);
                     layout->recvEdgear_m[edge][i]->resetReadPos();
 
 
-                    unpack<Op>(range, view, fd);
+                    unpack<Op>(range, view, fd_m);
                 }
             }
 
@@ -232,6 +266,7 @@ namespace ippl {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                 //archives.clear();
             }
+            Ippl::Comm->barrier();
         }
 
 
@@ -277,12 +312,18 @@ namespace ippl {
                 requests.resize(requests.size() + 1);
 
 
-                FieldBufferData<T> fd;
-                pack(range, view, fd);
+                //FieldBufferData<T> fd;
+                int nsends;
+                pack(range, view, fd_m, nsends);
+                //std::cout << "Rank " << Ippl::Comm->rank() << "sends " << nsends
+                //              << "vertex points to rank " << rank << std::endl;
 
-                Ippl::Comm->isend(rank, tag, fd, *(layout->sendVertexar_m[vertex]), requests.back(), 100);
+                //std::cout << "Buffer size: " << vds_m.buffer.size() << std::endl;
+
+                Ippl::Comm->isend(rank, tag, fd_m, *(layout->sendVertexar_m[vertex]), requests.back(), nsends);
                 layout->sendVertexar_m[vertex]->resetWritePos();
             }
+            Ippl::Comm->barrier();
 
             // receive
             for (size_t vertex = 0; vertex < neighbors.size(); ++vertex) {
@@ -303,36 +344,46 @@ namespace ippl {
                                       lDomains[myRank], nghost);
                 }
 
-                FieldBufferData<T> fd;
+                //FieldBufferData<T> fd;
 
-                Kokkos::resize(fd.buffer,
-                               (range.hi[0] - range.lo[0]) *
-                               (range.hi[1] - range.lo[1]) *
-                               (range.hi[2] - range.lo[2]));
+                //Kokkos::resize(fd.buffer,
+                //               (range.hi[0] - range.lo[0]) *
+                //               (range.hi[1] - range.lo[1]) *
+                //               (range.hi[2] - range.lo[2]));
 
-                Ippl::Comm->recv(rank, tag, fd, *(layout->recvVertexar_m[vertex]), 100);
+                int nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                             (range.hi[1] - range.lo[1]) *
+                             (range.hi[2] - range.lo[2]));
+                //std::cout << "Rank " << Ippl::Comm->rank() << "receives " << nrecvs
+                //          << "vertex points from rank " << rank << std::endl;
+
+                //std::cout << "Buffer size: " << vdr_m.buffer.size() << std::endl;
+                Ippl::Comm->recv(rank, tag, fd_m, *(layout->recvVertexar_m[vertex]), nrecvs);
                 layout->recvVertexar_m[vertex]->resetReadPos();
 
-                unpack<Op>(range, view, fd);
+                unpack<Op>(range, view, fd_m);
             }
 
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                 //archives.clear();
             }
+            Ippl::Comm->barrier();
         }
 
 
         template <typename T, unsigned Dim>
         void HaloCells<T, Dim>::pack(const bound_type& range,
                                      const view_type& view,
-                                     FieldBufferData<T>& fd)
+                                     FieldBufferData<T>& fd,
+                                     int& nsends)
         {
             auto subview = makeSubview(view, range);
 
             auto& buffer = fd.buffer;
 
-            Kokkos::resize(buffer, subview.extent(0) * subview.extent(1) * subview.extent(2));
+            //Kokkos::resize(buffer, subview.extent(0) * subview.extent(1) * subview.extent(2));
+            nsends = (int)(subview.extent(0) * subview.extent(1) * subview.extent(2));
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(
@@ -349,6 +400,7 @@ namespace ippl {
                     buffer(l) = subview(i, j, k);
                 }
             );
+            Kokkos::fence();
         }
 
 
@@ -380,6 +432,7 @@ namespace ippl {
                     op(subview(i, j, k), buffer(l));
                 }
             );
+            Kokkos::fence();
         }
 
 

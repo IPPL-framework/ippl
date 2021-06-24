@@ -60,7 +60,8 @@ namespace ippl {
                                 view.data() + i,
                                 size);
             });
-            writepos_m += size * view.size();
+            //writepos_m += size * view.size();
+            writepos_m += size * nsends;
             Kokkos::fence();
         }
 
@@ -114,7 +115,8 @@ namespace ippl {
                                 &(*(view.data() + i))[d],
                                 size);
                 });
-            writepos_m += Dim * size * view.size();
+            //writepos_m += Dim * size * view.size();
+            writepos_m += Dim * size * nsends;
             Kokkos::fence();
         }
 
@@ -146,7 +148,8 @@ namespace ippl {
                                 buffer_m.data() + i * size + readpos_m,
                                 size);
             });
-            readpos_m += size * view.size();
+            //readpos_m += size * view.size();
+            readpos_m += size * nrecvs;
             Kokkos::fence();
         }
 
@@ -181,7 +184,8 @@ namespace ippl {
                                 buffer_m.data() + (Dim * i + d) * size + readpos_m,
                                 size);
             });
-            readpos_m += Dim * size * view.size();
+            //readpos_m += Dim * size * view.size();
+            readpos_m += Dim * size * nrecvs;
             Kokkos::fence();
         }
     }
