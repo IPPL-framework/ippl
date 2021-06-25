@@ -117,11 +117,7 @@ public:
         setBCAllPeriodic();
     }
 
-    void update() {
-        PLayout& layout = this->getLayout();
-        layout.update(*this);
-    }
-
+    ~ChargedParticles() {}
 
     void gatherStatistics(unsigned int totalP, int iteration) {
         
@@ -309,6 +305,8 @@ int main(int argc, char *argv[]){
     Inform msg(argv[0]);
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
+    Ippl::Comm->setDefaultOverallocation(3.f);
+
 
     ippl::Vector<int,Dim> nr = {
         std::atoi(argv[1]),
@@ -403,9 +401,12 @@ int main(int argc, char *argv[]){
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);                                                    
 
+    bunch_type bunchBuffer(PL);
+    bunchBuffer.create(1.5e6);
+
     static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
     IpplTimings::startTimer(UpdateTimer);                                               
-    P->update();
+    PL.update(*P, bunchBuffer);
     IpplTimings::stopTimer(UpdateTimer);                                                    
 
     msg << "particles created and initial conditions assigned " << endl;
@@ -433,7 +434,7 @@ int main(int argc, char *argv[]){
 
 
         IpplTimings::startTimer(UpdateTimer);
-        P->update();
+        PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(UpdateTimer);                                                    
         
         //scatter the charge onto the underlying grid
