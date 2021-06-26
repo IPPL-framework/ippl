@@ -136,8 +136,9 @@ namespace ippl {
                 //buffer.create(nSends[rank]);
 
                 pdata.pack(buffer, hash);
+                size_t bufSize = pdata.packedSize(nSends[rank]);
 
-                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, buffer.size());
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
 
                 Ippl::Comm->isend(rank, tag, buffer, *buf,
                                   requests.back(), nSends[rank]);
@@ -158,7 +159,8 @@ namespace ippl {
                 //BufferType buffer(pdata.getLayout());
                 //buffer.create(nRecvs[rank]);
 
-                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, buffer.size());
+                size_t bufSize = pdata.packedSize(nRecvs[rank]);
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
 
                 Ippl::Comm->recv(rank, tag, buffer, *buf, nRecvs[rank]);
                 buf->resetReadPos();

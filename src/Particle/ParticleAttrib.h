@@ -76,6 +76,10 @@ namespace ippl {
             return size() * sizeof(value_type);
         }
 
+        size_t packedSize(const int count) const {
+            return count * sizeof(value_type);
+        }
+
         void resize(size_t n) {
             Kokkos::resize(dview_m, n);
         }

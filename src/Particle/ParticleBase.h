@@ -247,6 +247,13 @@ namespace ippl {
          */
         size_t size() const;
 
+        /*!
+         * Determine the total space necessary to store a certain number of particles
+         * @param count particle number
+         * @return Total size of a buffer packed with the given number of particles
+         */
+        size_t packedSize(const int count) const;
+
 
         /*!
          * Redistribute particles among MPI ranks.
