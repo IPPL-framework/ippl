@@ -162,7 +162,7 @@ namespace ippl {
                 size_t bufSize = pdata.packedSize(nRecvs[rank]);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
 
-                Ippl::Comm->recv(rank, tag, buffer, *buf, nRecvs[rank]);
+                Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
                 buf->resetReadPos();
 
                 pdata.unpack(buffer, nRecvs[rank]);

@@ -144,7 +144,7 @@ namespace ippl {
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_RECV + i * groupCount + face, nrecvs * sizeof(T));
 
-                    Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs);
+                    Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, fd_m);
@@ -236,7 +236,7 @@ namespace ippl {
                     
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_RECV + i * groupCount + edge, nrecvs * sizeof(T));
 
-                    Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs);
+                    Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, fd_m);
@@ -332,7 +332,7 @@ namespace ippl {
                 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_RECV + vertex, nrecvs * sizeof(T));
 
-                Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs);
+                Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
                 buf->resetReadPos();
 
                 unpack<Op>(range, view, fd_m);

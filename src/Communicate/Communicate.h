@@ -90,6 +90,9 @@ namespace ippl {
         void recv(int src, int tag, Buffer& buffer);
 
         template <class Buffer>
+        void recv(int src, int tag, Buffer& buffer, archive_type& ar, size_t msize, int nrecvs);
+
+        template <class Buffer>
         void recv(int src, int tag, Buffer& buffer, archive_type& ar, int nrecvs);
 
 
@@ -143,6 +146,16 @@ namespace ippl {
                 MPI_BYTE, src, tag, *this, &status);
 
         buffer.deserialize(ar);
+    }
+
+    template <class Buffer>
+    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, size_t msize, int nrecvs)
+    {
+        MPI_Status status;
+        MPI_Recv(ar.getBuffer(), msize,
+                MPI_BYTE, src, tag, *this, &status);
+
+        buffer.deserialize(ar, nrecvs);
     }
 
     template <class Buffer>
