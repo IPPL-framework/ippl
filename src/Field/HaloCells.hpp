@@ -355,8 +355,11 @@ namespace ippl {
 
             auto& buffer = fd.buffer;
 
-            //Kokkos::resize(buffer, subview.extent(0) * subview.extent(1) * subview.extent(2));
-            nsends = (int)(subview.extent(0) * subview.extent(1) * subview.extent(2));
+            size_t size = subview.size();
+            nsends = (int)size;
+            if (buffer.size() < size) {
+                Kokkos::resize(buffer, size);
+            }
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(

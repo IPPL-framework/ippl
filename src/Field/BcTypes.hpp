@@ -307,12 +307,13 @@ namespace ippl {
 
                     detail::FieldBufferData<T> fdSend;
                         
-                    halo.pack(range, view, fdSend);
+                    int nSends;
+                    halo.pack(range, view, fdSend, nSends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_SEND + i, fdSend.buffer.size() * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_SEND + i, nSends * sizeof(T));
 
                     Ippl::Comm->isend(rank, tag, fdSend, *buf,
-                                      requests.back());
+                                      requests.back(), nSends);
                     buf->resetWritePos();
                 }
                 
@@ -332,8 +333,9 @@ namespace ippl {
                                    (range.hi[1] - range.lo[1]) *
                                    (range.hi[2] - range.lo[2]));
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_RECV + i, fdRecv.buffer.size() * sizeof(T));
-                    Ippl::Comm->recv(rank, matchtag, fdRecv, *buf);
+                    size_t bufSize = fdRecv.buffer.size() * sizeof(T);
+                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_RECV + i, bufSize);
+                    Ippl::Comm->recv(rank, matchtag, fdRecv, *buf, bufSize, fdRecv.buffer.size());
                     buf->resetReadPos();
 
 
