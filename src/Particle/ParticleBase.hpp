@@ -200,7 +200,8 @@ namespace ippl {
                                }, Kokkos::Max<size_t>(maxDeleteIndex));
 
         // Find the indices of the valid particles in the invalid region
-        Kokkos::parallel_scan("Second scan in ParticleBase::sort()", Kokkos::RangePolicy(localNum_m - destroyNum, localNum_m),
+        Kokkos::parallel_scan("Second scan in ParticleBase::sort()", 
+                              Kokkos::RangePolicy(localNum_m - destroyNum, localNum_m),
                               KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
                               {
                                   if (final && !invalid(i)) locKeepIndex(idx) = i;
