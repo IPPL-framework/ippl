@@ -165,16 +165,27 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::sort(const Kokkos::View<bool*>& invalid, const int destroyNum) {
+    void ParticleBase<PLayout, Properties...>::sort(const Kokkos::View<bool*>& invalid, const size_t destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
-        Kokkos::View<int*> deleteIndex("deleteIndex", destroyNum), keepIndex("keepIndex", destroyNum);
+        // Resize buffers, if necessary
+        if (deleteIndex.size() < destroyNum) {
+            Kokkos::resize(deleteIndex, destroyNum * 2);
+            Kokkos::resize(keepIndex, destroyNum * 2);
+        }
+
+        // Zero out index buffer
+        Kokkos::deep_copy(deleteIndex, 0);
+
+        auto locDeleteIndex = deleteIndex;
+        auto locKeepIndex = keepIndex;
+
         // Find the indices of the invalid particles in the valid region
         Kokkos::parallel_scan("Scan in ParticleBase::sort()",
                               localNum_m - destroyNum,
                               KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
                               {
-                                  if (final && invalid(i)) deleteIndex(idx) = i;
+                                  if (final && invalid(i)) locDeleteIndex(idx) = i;
                                   if (invalid(i)) idx += 1;
                               });
         Kokkos::fence();
@@ -184,14 +195,14 @@ namespace ippl {
         Kokkos::parallel_reduce("Reduce in ParticleBase::sort()", destroyNum,
                                KOKKOS_LAMBDA(const size_t i, size_t& maxIdx)
                                {
-                                   if (deleteIndex(i) && i > maxIdx) maxIdx = i;
+                                   if (locDeleteIndex(i) && i > maxIdx) maxIdx = i;
                                }, Kokkos::Max<size_t>(maxDeleteIndex));
 
         // Find the indices of the valid particles in the invalid region
         Kokkos::parallel_scan("Second scan in ParticleBase::sort()", Kokkos::RangePolicy(localNum_m - destroyNum, localNum_m),
                               KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
                               {
-                                  if (final && !invalid(i)) keepIndex(idx) = i;
+                                  if (final && !invalid(i)) locKeepIndex(idx) = i;
                                   if (!invalid(i)) idx += 1;
                               });
 

@@ -230,7 +230,7 @@ namespace ippl {
          * @param invalid View marking which indices are invalid
          * @param destroyNum Total number of invalid particles
          */
-        void sort(const Kokkos::View<bool*>& invalid, const int destroyNum);
+        void sort(const Kokkos::View<bool*>& invalid, const size_t destroyNum);
 
         /*!
          * Serialize to do MPI calls.
@@ -303,6 +303,10 @@ namespace ippl {
 
         //! number of MPI ranks
         index_type numNodes_m;
+
+        //! buffers for particle partitioning
+        hash_type deleteIndex;
+        hash_type keepIndex;
     };
 }
 
