@@ -62,13 +62,13 @@ namespace ippl {
 
         /* particle MPI exchange:
          *   1. figure out which particles need to go where
-         *   2. fill send buffer
-         *   3. send / receive particles
-         *   4. delete invalidated particles
+         *   2. fill send buffer and send particles
+         *   3. delete invalidated particles
+         *   4. receive particles
          */
 
-        static IpplTimings::TimerRef step1Timer = IpplTimings::getTimer("locateParticles");
-        IpplTimings::startTimer(step1Timer);
+        static IpplTimings::TimerRef locateTimer = IpplTimings::getTimer("locateParticles");
+        IpplTimings::startTimer(locateTimer);
         size_t localnum = pdata.getLocalNum();
 
         // 1st step
@@ -84,15 +84,13 @@ namespace ippl {
         bool_type invalid("invalid", localnum);
 
         locateParticles(pdata, ranks, invalid);
-        IpplTimings::stopTimer(step1Timer);
+        IpplTimings::stopTimer(locateTimer);
 
-        /*
-         * 2nd step
-         */
+        // 2nd step
 
         // figure out how many receives
-        static IpplTimings::TimerRef step2Timer = IpplTimings::getTimer("SendPreprocess");
-        IpplTimings::startTimer(step2Timer);
+        static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("SendPreprocess");
+        IpplTimings::startTimer(preprocTimer);
         MPI_Win win;
         std::vector<int> nRecvs(nRanks, 0);
         MPI_Win_create(nRecvs.data(), nRanks*sizeof(int), sizeof(int),
@@ -112,10 +110,10 @@ namespace ippl {
                     1, MPI_INT, win);
         }
         MPI_Win_fence(0, win);
-        IpplTimings::stopTimer(step2Timer);
+        IpplTimings::stopTimer(preprocTimer);
 
-        static IpplTimings::TimerRef step3Timer = IpplTimings::getTimer("ParticleSend");
-        IpplTimings::startTimer(step3Timer);
+        static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("ParticleSend");
+        IpplTimings::startTimer(sendTimer);
         // send
         std::vector<MPI_Request> requests(0);
 
@@ -145,8 +143,12 @@ namespace ippl {
                 ++sends;
             }
         }
-        IpplTimings::stopTimer(step3Timer);
+        IpplTimings::stopTimer(sendTimer);
 
+        // 3rd step
+        static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("ParticleDestroy");
+        IpplTimings::startTimer(destroyTimer);
+        
         size_t invalidCount = 0;
         Kokkos::parallel_reduce(
             "set/count invalid",
@@ -159,15 +161,14 @@ namespace ippl {
             }, invalidCount);
         Kokkos::fence();
 
-        static IpplTimings::TimerRef step5Timer = IpplTimings::getTimer("ParticleDestroy");
-        IpplTimings::startTimer(step5Timer);
         pdata.sort(invalid, invalidCount);
         Kokkos::fence();
-        IpplTimings::stopTimer(step5Timer);
+        
+        IpplTimings::stopTimer(destroyTimer);
 
-        static IpplTimings::TimerRef step4Timer = IpplTimings::getTimer("ParticleRecv");
-        IpplTimings::startTimer(step4Timer);
-        // 3rd step
+        static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("ParticleRecv");
+        IpplTimings::startTimer(recvTimer);
+        // 4th step
         int recvs = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
@@ -186,12 +187,13 @@ namespace ippl {
             }
 
         }
+        IpplTimings::stopTimer(recvTimer);
 
-
+        IpplTimings::startTimer(sendTimer);
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
-        IpplTimings::stopTimer(step4Timer);
+        IpplTimings::stopTimer(sendTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }
