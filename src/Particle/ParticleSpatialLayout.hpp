@@ -157,8 +157,11 @@ namespace ippl {
             });
         Kokkos::fence();
 
+        static IpplTimings::TimerRef step5Timer = IpplTimings::getTimer("ParticleDestroy");
+        IpplTimings::startTimer(step5Timer);
         pdata.sort(invalid);
         Kokkos::fence();
+        IpplTimings::stopTimer(step5Timer);
 
         static IpplTimings::TimerRef step4Timer = IpplTimings::getTimer("ParticleRecv");
         IpplTimings::startTimer(step4Timer);
@@ -188,16 +191,10 @@ namespace ippl {
         }
         IpplTimings::stopTimer(step4Timer);
 
-        static IpplTimings::TimerRef step5Timer = IpplTimings::getTimer("ParticleDestroy");
-        IpplTimings::startTimer(step5Timer);
-        // create space for received particles
+        // update particle count
         int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
         pdata.setLocalNum(pdata.getLocalNum() + nTotalRecvs);
 
-
-        // 4th step
-        //pdata.destroy();
-        IpplTimings::stopTimer(step5Timer);
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }
 
