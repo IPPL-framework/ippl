@@ -63,6 +63,18 @@ namespace ippl {
         particleCount = localNum;
     }
 
+    template<typename T, class... Properties>
+    void ParticleAttrib<T, Properties...>::sort(const Kokkos::View<int*>& deleteIndex, const Kokkos::View<int*>& keepIndex, size_t maxDeleteIndex, size_t destroyNum) {
+        Kokkos::parallel_for("ParticleAttrib::sort()",
+                             maxDeleteIndex,
+                             KOKKOS_CLASS_LAMBDA(const size_t i)
+                             {
+                                 T tmp = dview_m(deleteIndex(i));
+                                 dview_m(deleteIndex(i)) = dview_m(keepIndex(i));
+                                 dview_m(keepIndex(i)) = tmp;
+                             });
+        particleCount -= destroyNum;
+    }
 
     template<typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::pack(void* buffer,
@@ -189,7 +201,7 @@ namespace ippl {
                 Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
             }
         );
-        IpplTimings::stopTimer(scatterTimer);                                               
+        IpplTimings::stopTimer(scatterTimer);
             
         static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("AccumulateHalo");           
         IpplTimings::startTimer(accumulateHaloTimer);                                               

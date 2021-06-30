@@ -56,8 +56,6 @@ namespace ippl {
         int nRanks = Ippl::Comm->size();
 
         if (nRanks < 2) {
-            // delete invalidated particles
-            pdata.destroy();
             return;
         }
 
@@ -149,6 +147,18 @@ namespace ippl {
         }
         IpplTimings::stopTimer(step3Timer);
 
+        Kokkos::parallel_for(
+            "set invalid",
+            localnum,
+            KOKKOS_LAMBDA(const size_t i) {
+                if (invalid(i)) {
+                    pdata.ID(i) = -1;
+                }
+            });
+        Kokkos::fence();
+
+        pdata.sort(invalid);
+        Kokkos::fence();
 
         static IpplTimings::TimerRef step4Timer = IpplTimings::getTimer("ParticleRecv");
         IpplTimings::startTimer(step4Timer);
@@ -182,19 +192,11 @@ namespace ippl {
         IpplTimings::startTimer(step5Timer);
         // create space for received particles
         int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
-        pdata.setLocalNum(localnum + nTotalRecvs);
+        pdata.setLocalNum(pdata.getLocalNum() + nTotalRecvs);
 
-        Kokkos::parallel_for(
-            "set invalid",
-            localnum,
-            KOKKOS_LAMBDA(const size_t i) {
-                if (invalid(i)) {
-                    pdata.ID(i) = -1;
-                }
-            });
 
         // 4th step
-        pdata.destroy();
+        //pdata.destroy();
         IpplTimings::stopTimer(step5Timer);
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }

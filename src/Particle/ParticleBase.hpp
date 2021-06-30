@@ -222,6 +222,62 @@ namespace ippl {
         }
     }
 
+    template <class PLayout, class... Properties>
+    void ParticleBase<PLayout, Properties...>::sort(const Kokkos::View<bool*>& invalid) {
+        /* count the number of particles with ID == -1 and fill
+         * a boolean view
+         */
+        size_t destroyNum = 0;
+        auto locID = ID;
+        Kokkos::parallel_reduce("Reduce in ParticleBase::sort()",
+                                localNum_m,
+                                KOKKOS_LAMBDA(const size_t i,
+                                                    size_t& nInvalid)
+                                {
+                                    nInvalid += size_t(locID(i) < 0);
+                                }, destroyNum);
+
+        Kokkos::fence();
+        PAssert(destroyNum <= localNum_m);
+
+
+        Kokkos::View<int*> deleteIndex("deleteIndex", destroyNum), keepIndex("keepIndex", destroyNum);
+        Kokkos::parallel_scan("Scan in ParticleBase::sort()",
+                              localNum_m - destroyNum,
+                              KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
+                              {
+                                  if (final && invalid(i)) {
+                                      deleteIndex(idx) = i;
+                                  }
+
+                                  if (invalid(i)) {
+                                      idx += 1;
+                                  }
+                              });
+        Kokkos::fence();
+        size_t maxDeleteIndex = 0;
+        Kokkos::parallel_reduce("Reduce in ParticleBase::sort()", destroyNum,
+                               KOKKOS_LAMBDA(const size_t i, size_t& maxIdx)
+                               {
+                                   if (deleteIndex(i) && i > maxIdx) maxIdx = i;
+                               }, Kokkos::Max<size_t>(maxDeleteIndex));
+        Kokkos::parallel_scan("Second scan in ParticleBase::sort()", Kokkos::RangePolicy(localNum_m - destroyNum, localNum_m),
+                              KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
+                              {
+                                  if (final && !invalid(i)) keepIndex(idx) = i;
+                                  if (!invalid(i)) idx += 1;
+                              });
+
+        Kokkos::fence();
+
+        localNum_m -= destroyNum;
+
+        for (attribute_iterator it = attributes_m.begin();
+             it != attributes_m.end(); ++it)
+        {
+            (*it)->sort(deleteIndex, keepIndex, maxDeleteIndex + 1, destroyNum);
+        }
+    }
 
     template <class PLayout, class... Properties>
     void ParticleBase<PLayout, Properties...>::serialize(detail::Archive<Properties...>& ar, int nsends) {

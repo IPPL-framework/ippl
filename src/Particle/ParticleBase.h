@@ -230,6 +230,7 @@ namespace ippl {
          */
         void destroy();
 
+        void sort(const Kokkos::View<bool*>&);
 
         /*!
          * Serialize to do MPI calls.

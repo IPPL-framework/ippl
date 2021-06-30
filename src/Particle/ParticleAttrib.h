@@ -54,6 +54,8 @@ namespace ippl {
 
         void destroy(boolean_view_type, Kokkos::View<int*> cc, size_t, size_t) override;
 
+        void sort(const Kokkos::View<int*>&, const Kokkos::View<int*>&, size_t, size_t) override;
+
         void pack(void*, const Kokkos::View<int*>&) const override;
 
         void unpack(void*, int) override;
