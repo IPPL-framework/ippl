@@ -20,11 +20,11 @@
 
 namespace ippl {
 
-        void Communicate::setDefaultOverallocation(float factor) {
+        void Communicate::setDefaultOverallocation(int factor) {
             defaultOveralloc = factor;
         }
 
-        Communicate::buffer_type Communicate::getBuffer(int id, size_t size, float overallocation) {
+        Communicate::buffer_type Communicate::getBuffer(int id, size_t size, int overallocation) {
             #if __cplusplus > 201703L
             if (buffers.contains(id)) {
             #else
