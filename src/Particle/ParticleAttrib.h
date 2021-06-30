@@ -52,7 +52,7 @@ namespace ippl {
         // New items are appended to the end of the array.
         void create(size_t) override;
 
-        void destroy(boolean_view_type, Kokkos::View<int*> cc, size_t) override;
+        void destroy(boolean_view_type, Kokkos::View<int*> cc, size_t, size_t) override;
 
         void pack(void*, const Kokkos::View<int*>&) const override;
 
@@ -68,6 +68,10 @@ namespace ippl {
 
         virtual ~ParticleAttrib() = default;
        
+        size_t getParticleCount() const {
+            return particleCount;
+        }
+
         size_t size() const {
             return dview_m.extent(0);
         }
@@ -82,12 +86,13 @@ namespace ippl {
 
         void resize(size_t n) {
             Kokkos::resize(dview_m, n);
+            Kokkos::resize(temp, n);
         }
 
         void print() {
             HostMirror hview = Kokkos::create_mirror_view(dview_m);
             Kokkos::deep_copy(hview, dview_m);
-            for (size_t i = 0; i < this->size(); ++i) {
+            for (size_t i = 0; i < particleCount; ++i) {
                 std::cout << hview(i) << std::endl;
             }
         }
@@ -150,7 +155,10 @@ namespace ippl {
         T prod();
 
     private:
+        size_t particleCount = 0;
+
         view_type dview_m;
+        view_type temp;
     };
 }
 

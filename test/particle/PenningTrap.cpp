@@ -347,7 +347,7 @@ public:
         
         double Energy = 0.0;
 
-        Kokkos::parallel_reduce("Particle Energy", Pview.extent(0),
+        Kokkos::parallel_reduce("Particle Energy", this->getLocalNum(),
                                 KOKKOS_LAMBDA(const int i, double& valL){
                                     double myVal = dot(Pview(i), Pview(i)).apply();
                                     valL += myVal;
@@ -620,7 +620,7 @@ int main(int argc, char *argv[]){
         auto Pview = P->P.getView();
         auto Eview = P->E.getView();
         double V0 = 30*rmax[2];
-        Kokkos::parallel_for("Kick1", Rview.extent(0),
+        Kokkos::parallel_for("Kick1", P->getLocalNum(),
                               KOKKOS_LAMBDA(const size_t j){
         
         double Eext_x = -(Rview(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));
@@ -662,7 +662,7 @@ int main(int argc, char *argv[]){
         auto R2view = P->R.getView();
         auto P2view = P->P.getView();
         auto E2view = P->E.getView();
-        Kokkos::parallel_for("Kick2", R2view.extent(0),
+        Kokkos::parallel_for("Kick2", P->getLocalNum(),
                               KOKKOS_LAMBDA(const size_t j){
         
         double Eext_x = -(R2view(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));

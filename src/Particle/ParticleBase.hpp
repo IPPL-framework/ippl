@@ -167,12 +167,15 @@ namespace ippl {
 
     template <class PLayout, class... Properties>
     void ParticleBase<PLayout, Properties...>::destroy() {
+        if (invalidIndex.size() < localNum_m) {
+            Kokkos::resize(invalidIndex, localNum_m * 2);
+            Kokkos::resize(newIndex, localNum_m * 2);
+        }
 
         /* count the number of particles with ID == -1 and fill
          * a boolean view
          */
         size_t destroyNum = 0;
-        Kokkos::View<bool*> invalidIndex("", localNum_m);
         Kokkos::parallel_reduce("Reduce in ParticleBase::destroy()",
                                 localNum_m,
                                 KOKKOS_CLASS_LAMBDA(const size_t i,
@@ -182,6 +185,7 @@ namespace ippl {
                                     invalidIndex(i) = (ID(i) < 0);
                                 }, destroyNum);
 
+        Kokkos::fence();
         PAssert(destroyNum <= localNum_m);
 
         if (destroyNum == 0) {
@@ -191,27 +195,30 @@ namespace ippl {
         /* Compute the prefix sum and store the new
          * particle indices in newIndex.
          */
-        Kokkos::View<int*> newIndex("newIndex", localNum_m);
+        auto viewnewIndex = newIndex;
+        auto viewinvalidIndex = invalidIndex;
         Kokkos::parallel_scan("Scan in ParticleBase::destroy()",
                               localNum_m,
+                              //KOKKOS_CLASS_LAMBDA(const size_t i, int& idx, const bool final)
                               KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
                               {
                                   if (final) {
-                                      newIndex(i) = idx;
+                                      viewnewIndex(i) = idx;
                                   }
 
-                                  if (!invalidIndex(i)) {
+                                  if (!viewinvalidIndex(i)) {
                                       idx += 1;
                                   }
                               });
+        Kokkos::fence();
 
         localNum_m -= destroyNum;
 
-        // delete the invalide attribut indices
+        // delete the invalid attribute indices
         for (attribute_iterator it = attributes_m.begin();
              it != attributes_m.end(); ++it)
         {
-            (*it)->destroy(invalidIndex, newIndex, localNum_m);
+            (*it)->destroy(invalidIndex, newIndex, localNum_m, destroyNum);
         }
     }
 
