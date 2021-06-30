@@ -228,8 +228,9 @@ namespace ippl {
          * Partition the particles into a valid region and an invalid region,
          * effectively deleting the invalid particles
          * @param invalid View marking which indices are invalid
+         * @param destroyNum Total number of invalid particles
          */
-        void sort(const Kokkos::View<bool*>& invalid);
+        void sort(const Kokkos::View<bool*>& invalid, const int destroyNum);
 
         /*!
          * Serialize to do MPI calls.

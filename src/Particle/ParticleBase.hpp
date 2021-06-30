@@ -165,23 +165,8 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::sort(const Kokkos::View<bool*>& invalid) {
-        /* count the number of particles with ID == -1 and fill
-         * a boolean view
-         */
-        size_t destroyNum = 0;
-        auto locID = ID;
-        Kokkos::parallel_reduce("Reduce in ParticleBase::sort()",
-                                localNum_m,
-                                KOKKOS_LAMBDA(const size_t i,
-                                                    size_t& nInvalid)
-                                {
-                                    nInvalid += size_t(locID(i) < 0);
-                                }, destroyNum);
-
-        Kokkos::fence();
+    void ParticleBase<PLayout, Properties...>::sort(const Kokkos::View<bool*>& invalid, const int destroyNum) {
         PAssert(destroyNum <= localNum_m);
-
 
         Kokkos::View<int*> deleteIndex("deleteIndex", destroyNum), keepIndex("keepIndex", destroyNum);
         // Find the indices of the invalid particles in the valid region

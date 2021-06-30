@@ -147,19 +147,21 @@ namespace ippl {
         }
         IpplTimings::stopTimer(step3Timer);
 
-        Kokkos::parallel_for(
-            "set invalid",
+        size_t invalidCount = 0;
+        Kokkos::parallel_reduce(
+            "set/count invalid",
             localnum,
-            KOKKOS_LAMBDA(const size_t i) {
+            KOKKOS_LAMBDA(const size_t i, size_t& nInvalid) {
                 if (invalid(i)) {
                     pdata.ID(i) = -1;
+                    nInvalid += 1;
                 }
-            });
+            }, invalidCount);
         Kokkos::fence();
 
         static IpplTimings::TimerRef step5Timer = IpplTimings::getTimer("ParticleDestroy");
         IpplTimings::startTimer(step5Timer);
-        pdata.sort(invalid);
+        pdata.sort(invalid, invalidCount);
         Kokkos::fence();
         IpplTimings::stopTimer(step5Timer);
 
