@@ -52,9 +52,16 @@ namespace ippl {
         // New items are appended to the end of the array.
         void create(size_t) override;
 
-        void destroy(boolean_view_type, Kokkos::View<int*> cc, size_t, size_t) override;
-
-        void sort(const Kokkos::View<int*>&, const Kokkos::View<int*>&, size_t, size_t) override;
+        /*!
+         * Partition the particles into a valid region and an invalid region
+         * @param deleteIndex List of indices of particles to be deleted
+         * @param keepIndex List of indices of valid particles in the invalid region
+         * @param maxDeleteIndex Number of invalid particles in the invalid region
+         * @param destroyNum Total number of particles to be deleted
+         */
+        void sort(const Kokkos::View<int*>& deleteIndex,
+                  const Kokkos::View<int*>& keepIndex,
+                  size_t maxDeleteIndex, size_t destroyNum) override;
 
         void pack(void*, const Kokkos::View<int*>&) const override;
 
@@ -88,7 +95,6 @@ namespace ippl {
 
         void resize(size_t n) {
             Kokkos::resize(dview_m, n);
-            Kokkos::resize(temp, n);
         }
 
         void print() {
@@ -160,7 +166,6 @@ namespace ippl {
         size_t particleCount = 0;
 
         view_type dview_m;
-        view_type temp;
     };
 }
 

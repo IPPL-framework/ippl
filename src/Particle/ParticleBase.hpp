@@ -164,64 +164,6 @@ namespace ippl {
         create(nLocal);
     }
 
-
-    template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::destroy() {
-        if (invalidIndex.size() < localNum_m) {
-            Kokkos::resize(invalidIndex, localNum_m * 2);
-            Kokkos::resize(newIndex, localNum_m * 2);
-        }
-
-        /* count the number of particles with ID == -1 and fill
-         * a boolean view
-         */
-        size_t destroyNum = 0;
-        Kokkos::parallel_reduce("Reduce in ParticleBase::destroy()",
-                                localNum_m,
-                                KOKKOS_CLASS_LAMBDA(const size_t i,
-                                                    size_t& nInvalid)
-                                {
-                                    nInvalid += size_t(ID(i) < 0);
-                                    invalidIndex(i) = (ID(i) < 0);
-                                }, destroyNum);
-
-        Kokkos::fence();
-        PAssert(destroyNum <= localNum_m);
-
-        if (destroyNum == 0) {
-            return;
-        }
-
-        /* Compute the prefix sum and store the new
-         * particle indices in newIndex.
-         */
-        auto viewnewIndex = newIndex;
-        auto viewinvalidIndex = invalidIndex;
-        Kokkos::parallel_scan("Scan in ParticleBase::destroy()",
-                              localNum_m,
-                              //KOKKOS_CLASS_LAMBDA(const size_t i, int& idx, const bool final)
-                              KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
-                              {
-                                  if (final) {
-                                      viewnewIndex(i) = idx;
-                                  }
-
-                                  if (!viewinvalidIndex(i)) {
-                                      idx += 1;
-                                  }
-                              });
-        Kokkos::fence();
-
-        localNum_m -= destroyNum;
-
-        // delete the invalid attribute indices
-        for (attribute_iterator it = attributes_m.begin();
-             it != attributes_m.end(); ++it)
-        {
-            (*it)->destroy(invalidIndex, newIndex, localNum_m, destroyNum);
-        }
-    }
-
     template <class PLayout, class... Properties>
     void ParticleBase<PLayout, Properties...>::sort(const Kokkos::View<bool*>& invalid) {
         /* count the number of particles with ID == -1 and fill
@@ -242,25 +184,25 @@ namespace ippl {
 
 
         Kokkos::View<int*> deleteIndex("deleteIndex", destroyNum), keepIndex("keepIndex", destroyNum);
+        // Find the indices of the invalid particles in the valid region
         Kokkos::parallel_scan("Scan in ParticleBase::sort()",
                               localNum_m - destroyNum,
                               KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
                               {
-                                  if (final && invalid(i)) {
-                                      deleteIndex(idx) = i;
-                                  }
-
-                                  if (invalid(i)) {
-                                      idx += 1;
-                                  }
+                                  if (final && invalid(i)) deleteIndex(idx) = i;
+                                  if (invalid(i)) idx += 1;
                               });
         Kokkos::fence();
+
+        // Determine the total number of invalid particles in the valid region
         size_t maxDeleteIndex = 0;
         Kokkos::parallel_reduce("Reduce in ParticleBase::sort()", destroyNum,
                                KOKKOS_LAMBDA(const size_t i, size_t& maxIdx)
                                {
                                    if (deleteIndex(i) && i > maxIdx) maxIdx = i;
                                }, Kokkos::Max<size_t>(maxDeleteIndex));
+
+        // Find the indices of the valid particles in the invalid region
         Kokkos::parallel_scan("Second scan in ParticleBase::sort()", Kokkos::RangePolicy(localNum_m - destroyNum, localNum_m),
                               KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
                               {
@@ -272,6 +214,7 @@ namespace ippl {
 
         localNum_m -= destroyNum;
 
+        // Partition the attributes into valid and invalid regions
         for (attribute_iterator it = attributes_m.begin();
              it != attributes_m.end(); ++it)
         {

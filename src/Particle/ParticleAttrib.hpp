@@ -41,30 +41,12 @@ namespace ippl {
         }
     }
 
-
     template<typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::destroy(boolean_view_type invalidIndex,
-                                                   Kokkos::View<int*> newIndex, size_t localNum, size_t destroyNum) {
-        Kokkos::parallel_for("ParticleAttrib::destroy() copy to temp",
-                             localNum + destroyNum,
-                             KOKKOS_CLASS_LAMBDA(const size_t i)
-                             {
-                                 if ( !invalidIndex(i) ) {
-                                    temp(newIndex(i)) = dview_m(i);
-                                 }
-                             });
-        Kokkos::fence();
-        Kokkos::parallel_for("ParticleAttrib::destroy() copy from temp", localNum,
-                             KOKKOS_CLASS_LAMBDA(const size_t i)
-                             {
-                                 dview_m(i) = temp(i);
-                             });
-        Kokkos::fence();
-        particleCount = localNum;
-    }
-
-    template<typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::sort(const Kokkos::View<int*>& deleteIndex, const Kokkos::View<int*>& keepIndex, size_t maxDeleteIndex, size_t destroyNum) {
+    void ParticleAttrib<T, Properties...>::sort(const Kokkos::View<int*>& deleteIndex,
+                                                const Kokkos::View<int*>& keepIndex,
+                                                size_t maxDeleteIndex, size_t destroyNum) {
+        // Swap all invalid particles in the valid region with valid
+        // particles in the invalid region
         Kokkos::parallel_for("ParticleAttrib::sort()",
                              maxDeleteIndex,
                              KOKKOS_CLASS_LAMBDA(const size_t i)
