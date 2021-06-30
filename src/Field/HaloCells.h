@@ -72,9 +72,6 @@ namespace ippl {
 
             HaloCells();
 
-            void initializeBuffers();
-
-
             /*!
              * Send halo data to internal cells. This operation uses
              * assign_plus functor to assign the data.

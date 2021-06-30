@@ -113,6 +113,11 @@ namespace ippl {
         template <typename T>
         void Archive<Properties...>::deserialize(Kokkos::View<T*>& view, int nrecvs) {
             size_t size = sizeof(T);
+
+            if(nrecvs > (int)view.extent(0)) {
+                Kokkos::resize(view, nrecvs);
+            }
+
             Kokkos::parallel_for(
                 "Archive::deserialize()", nrecvs,
                 KOKKOS_CLASS_LAMBDA(const size_t i) {
@@ -144,6 +149,9 @@ namespace ippl {
         template <typename T, unsigned Dim>
         void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*>& view, int nrecvs) {
             size_t size = sizeof(T);
+            if(nrecvs > (int)view.extent(0)) {
+                Kokkos::resize(view, nrecvs);
+            }
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
                 "Archive::deserialize()",

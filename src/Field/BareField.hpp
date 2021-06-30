@@ -72,7 +72,6 @@ namespace ippl {
                          owned_m[1].length() + 2 * nghost_m,
                          owned_m[2].length() + 2 * nghost_m);
         }
-        halo_m.initializeBuffers();
     }
 
 

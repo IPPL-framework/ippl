@@ -27,13 +27,6 @@ namespace ippl {
         HaloCells<T, Dim>::HaloCells()
         {
             static_assert(Dim == 3, "Dimension must be 3!");
-            //Kokkos::resize(fd_m.buffer, 512*512*3);
-        }
-
-        template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::initializeBuffers()
-        {
-            Kokkos::resize(fd_m.buffer, 512*512*3);
         }
 
         template <typename T, unsigned Dim>
@@ -142,6 +135,9 @@ namespace ippl {
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
+                    if(nrecvs > (int)fd_m.buffer.extent(0)) {
+                        Kokkos::resize(fd_m.buffer, nrecvs);
+                    }
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_RECV + i * groupCount + face, nrecvs * sizeof(T));
 
                     Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
@@ -234,6 +230,9 @@ namespace ippl {
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
                     
+                    if(nrecvs > (int)fd_m.buffer.extent(0)) {
+                        Kokkos::resize(fd_m.buffer, nrecvs);
+                    }
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_RECV + i * groupCount + edge, nrecvs * sizeof(T));
 
                     Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
@@ -329,6 +328,10 @@ namespace ippl {
                 int nrecvs = (int)((range.hi[0] - range.lo[0]) *
                              (range.hi[1] - range.lo[1]) *
                              (range.hi[2] - range.lo[2]));
+
+                if(nrecvs > (int)fd_m.buffer.extent(0)) {
+                    Kokkos::resize(fd_m.buffer, nrecvs);
+                }
                 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_RECV + vertex, nrecvs * sizeof(T));
 
@@ -359,6 +362,10 @@ namespace ippl {
             nsends = (int)size;
             if (buffer.size() < size) {
                 Kokkos::resize(buffer, size);
+            }
+
+            if(nsends > (int)buffer.extent(0)) {
+               Kokkos::resize(buffer, nsends); 
             }
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
