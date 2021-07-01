@@ -296,10 +296,10 @@ namespace ippl {
 
                     range_t range;
 
-                    for (size_t i = 0; i < Dim; ++i) {
-                        range.lo[i] = overlap[i].first() - nd[i].first() 
+                    for (size_t j = 0; j < Dim; ++j) {
+                        range.lo[j] = overlap[j].first() - nd[j].first()
                                       + nghost;
-                        range.hi[i] = overlap[i].last()  - nd[i].first() 
+                        range.hi[j] = overlap[j].last()  - nd[j].first()
                                       + nghost + 1;
                     }
                     
