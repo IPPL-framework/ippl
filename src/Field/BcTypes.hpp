@@ -192,6 +192,7 @@ namespace ippl {
             faceNeighbors_m[i].clear();
        }
 
+       int maxNeighbors = 0;
        if(lDomains[myRank][d].length() < domain[d].length()) {
             //Only along this dimension we need communication.
 
@@ -220,6 +221,7 @@ namespace ippl {
                 gnd[d] = gnd[d] + offset;
                 
                 //Now, we are ready to intersect
+                int neighbors = 0;
                 for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
                     if (rank == myRank) {
                         continue;
@@ -227,10 +229,13 @@ namespace ippl {
                    
                     if (gnd.touches(lDomains[rank])) {
                         faceNeighbors_m[face].push_back(rank);
+                        ++neighbors;
                     }
                 }
+                if (neighbors > maxNeighbors) maxNeighbors = neighbors;
             }
        }
+       if ((size_t)maxNeighbors > fdSends.size()) fdSends.resize(maxNeighbors);
     }
 
     template<typename T, unsigned Dim, class Mesh, class Cell>
@@ -304,15 +309,13 @@ namespace ippl {
                     
                     rangeNeighbors.push_back(range);    
                     requests.resize(requests.size() + 1);
-
-                    detail::FieldBufferData<T> fdSend;
                         
                     int nSends;
-                    halo.pack(range, view, fdSend, nSends);
+                    halo.pack(range, view, fdSends[i], nSends);
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_SEND + i, nSends * sizeof(T));
 
-                    Ippl::Comm->isend(rank, tag, fdSend, *buf,
+                    Ippl::Comm->isend(rank, tag, fdSends[i], *buf,
                                       requests.back(), nSends);
                     buf->resetWritePos();
                 }
@@ -326,18 +329,17 @@ namespace ippl {
                     range.lo[d] = range.lo[d] + offsetRecv;
                     range.hi[d] = range.hi[d] + offsetRecv;
                         
-                    detail::FieldBufferData<T> fdRecv;
-                        
-                    Kokkos::resize(fdRecv.buffer,
-                                   (range.hi[0] - range.lo[0]) *
-                                   (range.hi[1] - range.lo[1]) *
-                                   (range.hi[2] - range.lo[2]));
+                    size_t nRecvs = (range.hi[0] - range.lo[0]) *
+                                    (range.hi[1] - range.lo[1]) *
+                                    (range.hi[2] - range.lo[2]);
+                    if (fdRecv.buffer.size() < nRecvs) {
+                        Kokkos::resize(fdRecv.buffer, nRecvs * 2);
+                    }
 
-                    size_t bufSize = fdRecv.buffer.size() * sizeof(T);
+                    size_t bufSize = nRecvs * sizeof(T);
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_RECV + i, bufSize);
-                    Ippl::Comm->recv(rank, matchtag, fdRecv, *buf, bufSize, fdRecv.buffer.size());
+                    Ippl::Comm->recv(rank, matchtag, fdRecv, *buf, bufSize, nRecvs);
                     buf->resetReadPos();
-
 
                     using assign_t = typename HaloCells_t::assign;
                     halo.template unpack<assign_t>(range, view, fdRecv);

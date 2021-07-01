@@ -191,7 +191,9 @@ namespace ippl {
 
     private:
         face_neighbor_type faceNeighbors_m;
-        
+
+        std::vector<detail::FieldBufferData<T>> fdSends;
+        detail::FieldBufferData<T> fdRecv;
     };
 }
 
