@@ -441,7 +441,7 @@ int main(int argc, char *argv[]){
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");           
     IpplTimings::startTimer(mainTimer);                                                    
-    const unsigned long long int totalP = std::atoi(argv[4]);
+    const unsigned long long int totalP = std::atol(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
     
     msg << "Penning Trap "
