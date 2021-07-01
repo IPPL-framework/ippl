@@ -3,13 +3,15 @@ namespace ippl {
 
     template <class T, unsigned Dim, class M>
     void
-    OrthogonalRecursiveBisection<T,Dim,M>::initialize(FieldLayout<Dim>& fl, UniformCartesian<T,Dim>& mesh) {
+    OrthogonalRecursiveBisection<T,Dim,M>::initialize(FieldLayout<Dim>& fl, 
+                                                      UniformCartesian<T,Dim>& mesh) {
        bf_m.initialize(mesh, fl);
     }
 
     template <class T, unsigned Dim, class M>
     bool 
-    OrthogonalRecursiveBisection<T,Dim,M>::binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl) {
+    OrthogonalRecursiveBisection<T,Dim,M>::binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, 
+                                                             FieldLayout<Dim>& fl) {
        // Timings
        static IpplTimings::TimerRef tbasicOp = IpplTimings::getTimer("basicOperations");           
        static IpplTimings::TimerRef tperpReduction = IpplTimings::getTimer("perpReduction");           
@@ -50,16 +52,18 @@ namespace ippl {
           reducedRank.resize(domains[it][cutAxis].length());
 
           // Peform reduction with field of weights and communicate to the other ranks
-          perpReduction(reducedRank, cutAxis, domains[it]); 
+          perpendicularReduction(reducedRank, cutAxis, domains[it]); 
           IpplTimings::stopTimer(tperpReduction);                                                    
 
           // Communicate to all the reduced weights
           IpplTimings::startTimer(tallReduce);                                                    
-          MPI_Allreduce(reducedRank.data(), reduced.data(), reducedRank.size(), MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+          MPI_Allreduce(reducedRank.data(), reduced.data(), reducedRank.size(), 
+                                            MPI_DOUBLE, MPI_SUM, Ippl::getComm());
           IpplTimings::stopTimer(tallReduce);                                                    
         
           // Find median of reduced weights
           IpplTimings::startTimer(tbasicOp);
+          // Initialize median to some value (1 is lower bound value)
           int median = 1;
           median = findMedian(reduced);
           IpplTimings::stopTimer(tbasicOp);
@@ -84,26 +88,6 @@ namespace ippl {
           reducedRank.clear();
           IpplTimings::stopTimer(tperpReduction);                                                    
        }
-
-       /***PRINT***/
-       /*
-       if (Ippl::Comm->rank() == 0) {
-       std::ofstream myfile;
-       std::ofstream finalDoms;
-       myfile.open("domains" + std::to_string(step) + ".txt");
-       finalDoms.open("newDomains.txt");
-       finalDoms << "New domains: " << std::endl;
-       for (unsigned int i = 0; i < domains.size(); i++) {
-          finalDoms << domains[i] << std::endl;
-          myfile << domains[i][0].first() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
-                 << domains[i][0].first() << " " << domains[i][1].last() << " " << domains[i][2].first() << " "
-                 << domains[i][0].last() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
-                 << domains[i][0].first() << " " << domains[i][1].first() << " " << domains[i][2].last()
-                 << "\n";
-       }
-       myfile.close();
-       finalDoms.close(); 
-       }*/
 
        // Check that no plane was obtained in the repartition
        IpplTimings::startTimer(tbasicOp);                                                    
@@ -145,29 +129,39 @@ namespace ippl {
     
     template < class T, unsigned Dim, class M>
     void
-    OrthogonalRecursiveBisection<T,Dim,M>::perpReduction(std::vector<T>& rankWeights, unsigned int cutAxis, NDIndex<Dim>& dom) {
+    OrthogonalRecursiveBisection<T,Dim,M>::perpendicularReduction(
+                                                         std::vector<T>& rankWeights, 
+                                                         unsigned int cutAxis, 
+                                                         NDIndex<Dim>& dom) {
        // Check if domains overlap, if not no need for reduction
        NDIndex<Dim> lDom = bf_m.getOwned();
-       if (lDom[cutAxis].first() > dom[cutAxis].last() || lDom[cutAxis].last() < dom[cutAxis].first())
+       if (lDom[cutAxis].first() > dom[cutAxis].last() || 
+           lDom[cutAxis].last() < dom[cutAxis].first())
           return;
        // Get field's local weights
        int nghost = bf_m.getNghost();
-       const view_type& data = bf_m.getView();
+       const view_type data = bf_m.getView();
        // Determine the iteration bounds of the reduction
-       int cutAxisFirst = std::max(lDom[cutAxis].first(), dom[cutAxis].first()) - lDom[cutAxis].first() + nghost;
-       int cutAxisLast = std::min(lDom[cutAxis].last(), dom[cutAxis].last()) - lDom[cutAxis].first() + nghost;
+       int cutAxisFirst = std::max(lDom[cutAxis].first(), dom[cutAxis].first())
+                                               - lDom[cutAxis].first() + nghost;
+       int cutAxisLast = std::min(lDom[cutAxis].last(), dom[cutAxis].last())
+                                            - lDom[cutAxis].first() + nghost;
        // Set iterator for where to write in the reduced array
        unsigned int arrayStart = 0;
        if (dom[cutAxis].first() < lDom[cutAxis].first()) 
           arrayStart = lDom[cutAxis].first() - dom[cutAxis].first();
        // Face of domain has two directions: 1 and 2 
-       int perpAxis1 = (cutAxis+1) % 3;
-       int perpAxis2 = (cutAxis+2) % 3;
+       int perpAxis1 = (cutAxis+1) % Dim;
+       int perpAxis2 = (cutAxis+2) % Dim;
        // inf and sup bounds must be within the domain to reduce, if not no need to reduce
-       int inf1 = std::max(lDom[perpAxis1].first(), dom[perpAxis1].first()) - lDom[perpAxis1].first() + nghost;
-       int inf2 = std::max(lDom[perpAxis2].first(), dom[perpAxis2].first()) - lDom[perpAxis2].first() + nghost;
-       int sup1 = std::min(lDom[perpAxis1].last(), dom[perpAxis1].last()) - lDom[perpAxis1].first() + nghost;
-       int sup2 = std::min(lDom[perpAxis2].last(), dom[perpAxis2].last()) - lDom[perpAxis2].first() + nghost;
+       int inf1 = std::max(lDom[perpAxis1].first(), dom[perpAxis1].first())
+                                         - lDom[perpAxis1].first() + nghost;
+       int inf2 = std::max(lDom[perpAxis2].first(), dom[perpAxis2].first())
+                                         - lDom[perpAxis2].first() + nghost;
+       int sup1 = std::min(lDom[perpAxis1].last(), dom[perpAxis1].last()) 
+                                       - lDom[perpAxis1].first() + nghost;
+       int sup2 = std::min(lDom[perpAxis2].last(), dom[perpAxis2].last()) 
+                                       - lDom[perpAxis2].first() + nghost;
        if (sup1 < inf1 || sup2 < inf2)  
           return;
        // The +1 is for Kokkos loop
@@ -181,20 +175,23 @@ namespace ippl {
           switch (cutAxis) {
             default:
             case 0:
-             Kokkos::parallel_reduce("ORB weight reduction (0)", mdrange_t({inf1, inf2},{sup1, sup2}),
-                                                         KOKKOS_LAMBDA (const int j, const int k, T& weight) {
+             Kokkos::parallel_reduce("ORB weight reduction (0)", 
+                                     mdrange_t({inf1, inf2},{sup1, sup2}),
+                                     KOKKOS_LAMBDA(const int j, const int k, T& weight) {
                 weight += data(i,j,k);
              }, tempRes);
              break;
             case 1:
-             Kokkos::parallel_reduce("ORB weight reduction (1)", mdrange_t({inf2, inf1},{sup2, sup1}),
-                                                         KOKKOS_LAMBDA (const int j, const int k, T& weight) {
+             Kokkos::parallel_reduce("ORB weight reduction (1)", 
+                                     mdrange_t({inf2, inf1},{sup2, sup1}),
+                                     KOKKOS_LAMBDA(const int j, const int k, T& weight) {
                 weight += data(j,i,k);
              }, tempRes); 
              break;
             case 2:
-             Kokkos::parallel_reduce("ORB weight reduction (2)", mdrange_t({inf1, inf2},{sup1, sup2}),
-                                                         KOKKOS_LAMBDA (const int j, const int k, T& weight) {
+             Kokkos::parallel_reduce("ORB weight reduction (2)", 
+                                     mdrange_t({inf1, inf2},{sup1, sup2}),
+                                     KOKKOS_LAMBDA(const int j, const int k, T& weight) {
                 weight += data(j,k,i);
              }, tempRes);
              break;
@@ -208,8 +205,6 @@ namespace ippl {
     }
   
 
-    // Potential problem: if there are zeros between weights, then the cut will be made most left, could be better?
-    // Important problem: w.size() < 4 should never happen...
     template < class T, unsigned Dim, class M>
     int
     OrthogonalRecursiveBisection<T,Dim,M>::findMedian(std::vector<T>& w) {
@@ -218,13 +213,12 @@ namespace ippl {
           return 1;
 
        // Get total sum of array
-       T tot = T(0);
-       for (unsigned int i = 0; i < w.size(); i++)
-          tot += w[i];
+       T tot = std::accumulate(w.begin(), w.end(), T(0));
        
        // Find position of median as half of total in array
-       T half = tot / T(2);
+       T half = 0.5 * tot;
        T curr = T(0);
+       // Do not need to iterate to full extent since it must not give planes
        for (unsigned int i = 0; i < w.size()-1; i++) {
           curr += w[i];
           if (curr >= half) {
@@ -250,7 +244,8 @@ namespace ippl {
 
     template < class T, unsigned Dim, class M>
     void
-    OrthogonalRecursiveBisection<T,Dim,M>::cutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median) {
+    OrthogonalRecursiveBisection<T,Dim,M>::cutDomain(std::vector<NDIndex<Dim>>& domains, 
+                                           std::vector<int>& procs, int it, int cutAxis, int median) {
        // Cut domains[it] in half at median along cutAxis
        NDIndex<Dim> leftDom, rightDom;
        domains[it].split(leftDom, rightDom, cutAxis, median + domains[it][cutAxis].first()); 
@@ -313,40 +308,4 @@ namespace ippl {
         bf_m.accumulateHalo();
     }
     
-    template < class T, unsigned Dim, class M>
-    void 
-    OrthogonalRecursiveBisection<T,Dim,M>::scatterRngp(const ParticleAttrib<Vector<T, Dim>>& r) {
-        using vector_type = typename M::vector_type;
-
-        // Reset local field
-        bf_m = 0.0;
-        // Get local data
-        typename Field<T, Dim, M>::view_type view = bf_m.getView();
-        const M& mesh = bf_m.get_mesh();
-        const FieldLayout<Dim>& layout = bf_m.getLayout(); 
-        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
-        const int nghost = bf_m.getNghost();
- 
-        // Get spacings
-        const vector_type& dx = mesh.getMeshSpacing();
-        const vector_type& origin = mesh.getOrigin();
-        const vector_type invdx = 1.0 / dx;
- 
-        Kokkos::parallel_for(
-            "ParticleAttrib::scatterRngp", r.getView().extent(0), KOKKOS_LAMBDA(const size_t idx) {
-                // Find nearest grid point
-                vector_type l = (r(idx) - origin) * invdx + 0.5;
-                Vector<int, Dim> index = l;
-
-                const size_t i = index[0] - lDom[0].first() + nghost;
-                const size_t j = index[1] - lDom[1].first() + nghost;
-                const size_t k = index[2] - lDom[2].first() + nghost;
-
-                // Scatter
-                Kokkos::atomic_add(&view(i, j, k), 1.0);
-            }
-        );
-            
-        // bf_m.accumulateHalo();
-    }
 }  // namespace

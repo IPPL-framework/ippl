@@ -84,11 +84,11 @@ namespace ippl {
         }
 
         bool operator==(const FieldLayout<Dim>& x) const {
-            for (unsigned int i = 0; i < Dim; i++) {
-               if (!(hLocalDomains_m(Ippl::Comm->rank())[i] == x.getLocalNDIndex()[i]))
-                  return false;
+            bool result = true;
+            for (unsigned int i = 0; i < Dim; ++i) {
+                result &= (hLocalDomains_m(Ippl::Comm->rank())[i] == x.getLocalNDIndex()[i]);
             }
-            return true;
+            return result;
         }
 
         // for the requested dimension, report if the distribution is

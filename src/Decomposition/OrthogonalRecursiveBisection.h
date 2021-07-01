@@ -1,11 +1,12 @@
 //
-// Class ORB for Domain Decomposition
+// Class OrthogonalRecursiveBisection for Domain Decomposition
 //
 // Simple domain decomposition using an Orthogonal Recursive Bisection,
 // domain is divided recursively so as to even weights on each side of the cut,
 // works with 2^n processors only. 
 //
-// Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
+// Copyright (c) 2021, Michael Ligotino, ETH, Zurich; 
+// Paul Scherrer Institut, Villigen; Switzerland
 // All rights reserved
 //
 // This file is part of IPPL.
@@ -28,16 +29,15 @@
 #include "Index/Index.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Region/NDRegion.h"
-#include <mpi.h>
 #include <fstream>
 
 namespace ippl {
 
     /*
-      @class OrthogonalRecursiveBisection
-      @tparam T
-      @tparam Dim dimension
-      @tparam M mesh
+     * @class OrthogonalRecursiveBisection
+     * @tparam T
+     * @tparam Dim dimension
+     * @tparam M mesh
     */
     template<class T, unsigned Dim, class M>
     class OrthogonalRecursiveBisection {
@@ -47,75 +47,68 @@ namespace ippl {
         // Weight for reduction
         Field<T,Dim> bf_m;
 
-    public:
-
         /*!
-          @param FieldLayout<Dim>& fl
-          @param UniformCartesian<T,Dim>& mesh
-
-          Initialize member field with mesh and field layout
+         * Initialize member field with mesh and field layout
+         * @param fl FieldLayout
+         * @param mesh Mesh
         */    
         void initialize(FieldLayout<Dim>& fl, UniformCartesian<T,Dim>& mesh);
 
 
         /*!
-          @param const ParticleAttrib<Vector<T,Dim>>& R particle positions
-          @param FieldLayout<Dim>& fl
- 
-          - Performs scatter operation of particle positions in field (weights)
-          - Repartition FieldLayout's global domain
+         * Performs scatter operation of particle positions in field (weights) and
+         * repartitions FieldLayout's global domain
+         * @param R Weights to scatter
+         * @param fl FieldLayout
         */
-        bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, FieldLayout<Dim>& fl); 
+        bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, 
+                               FieldLayout<Dim>& fl); 
 
 
         /*!
-          @param NDIndex<Dim>& dom domain to reduce
-  
-          Find cutting axis as the longest axis of the field layout.
+         * Find cutting axis as the longest axis of the field layout.
+         * @param dom Domain to reduce
         */
          int findCutAxis(NDIndex<Dim>& dom); 
 
 
         /*!
-          @param std::vector<T>& res result of reduction
-          @param NDIndex<Dim>& dom domain to reduce
-          @param int cutAxis
-
-          Performs reduction on local field in all dimension except that determined by cutAxis,
-          store result in res.  
+         * Performs reduction on local field in all dimension except that determined 
+         * by cutAxis, stores result in res
+         * @param res Array giving the result of reduction
+         * @param dom Domain to reduce
+         * @param cutAxis Index of cut axis
         */
-        void perpReduction(std::vector<T>& res, unsigned int cutAxis, NDIndex<Dim>& dom); 
+        void perpendicularReduction(std::vector<T>& res, unsigned int cutAxis, 
+                                                         NDIndex<Dim>& dom); 
  
 
         /*!
-          @param std::vector<T>& w
- 
-          Find median of array w, 
-          does not return indices that would lead to domains of size 1 
+         * Find median of array  
+         * @param w Array of real numbers
         */
         int findMedian(std::vector<T>& w);
 
 
         /*!
-          @param std::vector<NDIndex<Dim>>& domains
-          @param std::vector<int>& procs
-          @param int it iterator
-          @param int cutAxis
-          @param int median
+         * Splits the domain given by the iterator along the cut axis at the median,
+         * the corresponding index will be cut between median and median+1
+         * @param domains Set of subdomains which will be cut
+         * @param procs Set of ranks count associated to each subdomain
+         * @param it Iterator
+         * @param cutAxis Index of cut axis
+         * @param median Median
 
-          Split the domain given by the iterator along the cut axis at the median,
-          the corresponding index will be cut between median and median+1
         */
-        void cutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis, int median);
+        void cutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, 
+						           int it, int cutAxis, int median);
  
         
         /*!
-          @param const ParticleAttrib<Vector<T,Dim>>& r particle positions
-
-          Scattering of particle positions in field using a CIC method
+         * Scattering of particle positions in field using a CIC method
+         * @param r Weights
         */
         void scatterR(const ParticleAttrib<Vector<T,Dim>>& r);
-        void scatterRngp(const ParticleAttrib<Vector<T,Dim>>& r);
 
     }; // class
 

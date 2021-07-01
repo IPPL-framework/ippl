@@ -661,7 +661,7 @@ int main(int argc, char *argv[]) {
            // P->writePerRank(); 
         }
        
-        dr = dis(gen) * rmax[0] / mesh.getGridsize(0); 
+        dr = dis(gen) * hr[0];
         static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");           
         IpplTimings::startTimer(RTimer);                                                    
         P->R = P->R + dr * P->P;

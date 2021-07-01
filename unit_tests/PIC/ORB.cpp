@@ -1,8 +1,9 @@
 //
-// Unit test ORB
+// Unit tests ORB for class OrthogonalRecursiveBisection
 //   Test volume and charge conservation in PIC operations.
 //
-// Copyright (c) 2021, AMAS, Paul Scherrer Institut, Villigen PSI, Switzerland
+// Copyright (c) 2021, Michael Ligotino, ETH, Zurich; 
+// Paul Scherrer Institut, Villigen; Switzerland
 // All rights reserved
 //
 // This file is part of IPPL.
@@ -151,7 +152,8 @@ TEST_F(ORBTest, Volume) {
 
     ippl::NDIndex<dim> ndom = getDomain();   
 
-    ASSERT_DOUBLE_EQ(dom[0].length() * dom[1].length() * dom[2].length(), ndom[0].length() * ndom[1].length() * ndom[2].length());
+    ASSERT_DOUBLE_EQ(dom[0].length() * dom[1].length() * dom[2].length(), 
+                     ndom[0].length() * ndom[1].length() * ndom[2].length());
 
 }
 
