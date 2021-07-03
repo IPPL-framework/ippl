@@ -41,7 +41,7 @@ namespace ippl {
 
             virtual void create(size_t) = 0;
 
-            virtual void sort(const Kokkos::View<int*>&, const Kokkos::View<int*>&, size_t, size_t) = 0;
+            virtual void sort(const Kokkos::View<int*>&, const Kokkos::View<int*>&, size_t) = 0;
             virtual size_t packedSize(const int) const = 0;
 
             virtual void pack(void*, const Kokkos::View<int*>&) const = 0;
@@ -56,6 +56,12 @@ namespace ippl {
             virtual size_t totalSize() const = 0;
 
             virtual ~ParticleAttribBase() = default;
+
+            void setParticleCount(size_t& num) { localNum_m = &num; }
+            size_t getParticleCount() const { return *localNum_m; }
+
+        protected:
+            const size_t* localNum_m;
         };
     }
 }

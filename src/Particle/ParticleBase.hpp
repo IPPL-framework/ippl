@@ -97,6 +97,7 @@ namespace ippl {
     void ParticleBase<PLayout, Properties...>::addAttribute(detail::ParticleAttribBase<Properties...>& pa)
     {
         attributes_m.push_back(&pa);
+        pa.setParticleCount(localNum_m);
     }
 
     template <class PLayout, class... Properties>
@@ -214,7 +215,7 @@ namespace ippl {
         for (attribute_iterator it = attributes_m.begin();
              it != attributes_m.end(); ++it)
         {
-            (*it)->sort(deleteIndex, keepIndex, maxDeleteIndex + 1, destroyNum);
+            (*it)->sort(deleteIndex, keepIndex, maxDeleteIndex + 1);
         }
     }
 
@@ -284,5 +285,6 @@ namespace ippl {
         for (size_type j = 0; j < attributes_m.size(); ++j) {
             attributes_m[j]->unpack(buffer.getAttribute(j), nrecvs);
         }
+        localNum_m += nrecvs;
     }
 }

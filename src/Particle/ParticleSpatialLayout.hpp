@@ -193,10 +193,6 @@ namespace ippl {
         }
         IpplTimings::stopTimer(step4Timer);
 
-        // update particle count
-        int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
-        pdata.setLocalNum(pdata.getLocalNum() + nTotalRecvs);
-
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }
 

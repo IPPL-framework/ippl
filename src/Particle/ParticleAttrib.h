@@ -57,11 +57,10 @@ namespace ippl {
          * @param deleteIndex List of indices of particles to be deleted
          * @param keepIndex List of indices of valid particles in the invalid region
          * @param maxDeleteIndex Number of invalid particles in the invalid region
-         * @param destroyNum Total number of particles to be deleted
          */
         void sort(const Kokkos::View<int*>& deleteIndex,
                   const Kokkos::View<int*>& keepIndex,
-                  size_t maxDeleteIndex, size_t destroyNum) override;
+                  size_t maxDeleteIndex) override;
 
         void pack(void*, const Kokkos::View<int*>&) const override;
 
@@ -77,10 +76,6 @@ namespace ippl {
 
         virtual ~ParticleAttrib() = default;
        
-        size_t getParticleCount() const {
-            return particleCount;
-        }
-
         size_t size() const {
             return dview_m.extent(0);
         }
@@ -100,7 +95,7 @@ namespace ippl {
         void print() {
             HostMirror hview = Kokkos::create_mirror_view(dview_m);
             Kokkos::deep_copy(hview, dview_m);
-            for (size_t i = 0; i < particleCount; ++i) {
+            for (size_t i = 0; i < *(this->localNum_m); ++i) {
                 std::cout << hview(i) << std::endl;
             }
         }
@@ -163,8 +158,6 @@ namespace ippl {
         T prod();
 
     private:
-        size_t particleCount = 0;
-
         view_type dview_m;
     };
 }
