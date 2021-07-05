@@ -170,16 +170,16 @@ namespace ippl {
         PAssert(destroyNum <= localNum_m);
 
         // Resize buffers, if necessary
-        if (deleteIndex.size() < destroyNum) {
-            Kokkos::resize(deleteIndex, destroyNum * 2);
-            Kokkos::resize(keepIndex, destroyNum * 2);
+        if (deleteIndex_m.size() < destroyNum) {
+            Kokkos::resize(deleteIndex_m, destroyNum * 2);
+            Kokkos::resize(keepIndex_m, destroyNum * 2);
         }
 
         // Zero out index buffer
-        Kokkos::deep_copy(deleteIndex, 0);
+        Kokkos::deep_copy(deleteIndex_m, 0);
 
-        auto locDeleteIndex = deleteIndex;
-        auto locKeepIndex = keepIndex;
+        auto locDeleteIndex = deleteIndex_m;
+        auto locKeepIndex = keepIndex_m;
 
         // Find the indices of the invalid particles in the valid region
         Kokkos::parallel_scan("Scan in ParticleBase::sort()",
@@ -215,7 +215,7 @@ namespace ippl {
         for (attribute_iterator it = attributes_m.begin();
              it != attributes_m.end(); ++it)
         {
-            (*it)->sort(deleteIndex, keepIndex, maxDeleteIndex + 1);
+            (*it)->sort(deleteIndex_m, keepIndex_m, maxDeleteIndex + 1);
         }
     }
 

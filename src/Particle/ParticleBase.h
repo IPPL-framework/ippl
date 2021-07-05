@@ -298,8 +298,8 @@ namespace ippl {
         index_type numNodes_m;
 
         //! buffers for particle partitioning
-        hash_type deleteIndex;
-        hash_type keepIndex;
+        hash_type deleteIndex_m;
+        hash_type keepIndex_m;
     };
 }
 
