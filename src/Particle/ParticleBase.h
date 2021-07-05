@@ -147,13 +147,6 @@ namespace ippl {
         size_t getLocalNum() const { return localNum_m; }
 
         /*!
-         * Set the processor local number of particles
-         * @param nLocal number of particles
-         */
-        void setLocalNum(size_t nLocal) { localNum_m = nLocal; }
-
-
-        /*!
          * @returns particle layout
          */
         Layout_t& getLayout() { return *layout_m; }
