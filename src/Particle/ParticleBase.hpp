@@ -175,8 +175,8 @@ namespace ippl {
             Kokkos::resize(keepIndex_m, destroyNum * 2);
         }
 
-        // Zero out index buffer
-        Kokkos::deep_copy(deleteIndex_m, 0);
+        // Reset index buffer
+        Kokkos::deep_copy(deleteIndex_m, -1);
 
         auto locDeleteIndex = deleteIndex_m;
         auto locKeepIndex = keepIndex_m;
@@ -196,7 +196,7 @@ namespace ippl {
         Kokkos::parallel_reduce("Reduce in ParticleBase::sort()", destroyNum,
                                KOKKOS_LAMBDA(const size_t i, size_t& maxIdx)
                                {
-                                   if (locDeleteIndex(i) && i > maxIdx) maxIdx = i;
+                                   if (locDeleteIndex(i) >= 0 && i > maxIdx) maxIdx = i;
                                }, Kokkos::Max<size_t>(maxDeleteIndex));
 
         // Find the indices of the valid particles in the invalid region
