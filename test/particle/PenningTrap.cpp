@@ -491,13 +491,13 @@ int main(int argc, char *argv[]){
 
     int rest = (int) (totalP - nloc * Ippl::Comm->size());
     
-    //if ( Ippl::Comm->rank() < rest )
-    //    ++nloc;
+    if ( Ippl::Comm->rank() < rest )
+        ++nloc;
 
-    if ( rest > 0 ) {
-        msg << "Total particles are not an exact multiple of ranks" << endl;
-        exit(1);
-    }
+    //if ( rest > 0 ) {
+    //    msg << "Total particles are not an exact multiple of ranks" << endl;
+    //    exit(1);
+    //}
 
 
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
