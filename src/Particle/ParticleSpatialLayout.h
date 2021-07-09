@@ -32,6 +32,8 @@
 #include "Particle/ParticleLayout.h"
 #include "Particle/ParticleBase.h"
 
+#include "Types/IpplTypes.h"
+
 #include "Region/RegionLayout.h"
 
 namespace ippl {
@@ -51,6 +53,9 @@ namespace ippl {
         using locate_type = typename detail::ViewType<int, 1>::view_type;
         using bool_type = typename detail::ViewType<bool, 1>::view_type;
         using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
+
+        using size_type = detail::size_type;
+        using count_type = detail::count_type;
 
     public:
         // constructor: this one also takes a Mesh

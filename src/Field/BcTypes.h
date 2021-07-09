@@ -31,6 +31,7 @@
 
 #include "Index/NDIndex.h"
 #include "Types/ViewTypes.h"
+#include "Types/IpplTypes.h"
 #include "Communicate/Archive.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"

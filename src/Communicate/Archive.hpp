@@ -23,7 +23,7 @@ namespace ippl {
     namespace detail {
 
         template <class... Properties>
-        Archive<Properties...>::Archive(int size)
+        Archive<Properties...>::Archive(size_type size)
         : writepos_m(0)
         , readpos_m(0)
         , buffer_m("buffer", size)
@@ -47,7 +47,7 @@ namespace ippl {
 
         template <class... Properties>
         template <typename T>
-        void Archive<Properties...>::serialize(const Kokkos::View<T*>& view, int nsends) {
+        void Archive<Properties...>::serialize(const Kokkos::View<T*>& view, count_type nsends) {
             size_t size = sizeof(T);
             Kokkos::parallel_for(
                 "Archive::serialize()", nsends,
@@ -79,7 +79,7 @@ namespace ippl {
 
         template <class... Properties>
         template <typename T, unsigned Dim>
-        void Archive<Properties...>::serialize(const Kokkos::View<Vector<T, Dim>*>& view, int nsends) {
+        void Archive<Properties...>::serialize(const Kokkos::View<Vector<T, Dim>*>& view, count_type nsends) {
             size_t size = sizeof(T);
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
@@ -111,10 +111,10 @@ namespace ippl {
 
         template <class... Properties>
         template <typename T>
-        void Archive<Properties...>::deserialize(Kokkos::View<T*>& view, int nrecvs) {
+        void Archive<Properties...>::deserialize(Kokkos::View<T*>& view, count_type nrecvs) {
             size_t size = sizeof(T);
 
-            if(nrecvs > (int)view.extent(0)) {
+            if(nrecvs > view.extent(0)) {
                 Kokkos::resize(view, nrecvs);
             }
 
@@ -147,9 +147,9 @@ namespace ippl {
         }
         template <class... Properties>
         template <typename T, unsigned Dim>
-        void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*>& view, int nrecvs) {
+        void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*>& view, count_type nrecvs) {
             size_t size = sizeof(T);
-            if(nrecvs > (int)view.extent(0)) {
+            if(nrecvs > view.extent(0)) {
                 Kokkos::resize(view, nrecvs);
             }
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;

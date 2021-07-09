@@ -43,6 +43,9 @@ namespace ippl {
         using archive_type = detail::Archive<>;
         using buffer_type = std::shared_ptr<archive_type>;
 
+        using size_type = detail::size_type;
+        using count_type = detail::count_type;
+
         Communicate();
 
         Communicate(const MPI_Comm& comm = MPI_COMM_WORLD);
@@ -50,13 +53,9 @@ namespace ippl {
         int getDefaultOverallocation() const { return defaultOveralloc; }
         void setDefaultOverallocation(int factor);
 
-        buffer_type getBuffer(int id, size_t size, int overallocation = 1);
+        buffer_type getBuffer(int id, size_type size, int overallocation = 1);
         void deleteBuffer(int id);
         void deleteAllBuffers();
-
-        ~Communicate() {
-            // deleteAllBuffers();
-        }
 
         [[deprecated]]
         int myNode() const noexcept {
@@ -92,17 +91,17 @@ namespace ippl {
         void recv(int src, int tag, Buffer& buffer);
 
         template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer, archive_type& ar, size_t msize, int nrecvs);
+        void recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, count_type nrecvs);
 
         template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer, archive_type& ar, int nrecvs);
+        void recv(int src, int tag, Buffer& buffer, archive_type& ar, count_type nrecvs);
 
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&, int nsends);
+        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&, count_type nsends);
 
 
         /*!
@@ -151,7 +150,7 @@ namespace ippl {
     }
 
     template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, size_t msize, int nrecvs)
+    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, count_type nrecvs)
     {
         MPI_Status status;
         MPI_Recv(ar.getBuffer(), msize,
@@ -161,7 +160,7 @@ namespace ippl {
     }
 
     template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, int nrecvs)
+    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, count_type nrecvs)
     {
         MPI_Status status;
         MPI_Probe(src, tag, *this, &status);
@@ -178,7 +177,7 @@ namespace ippl {
 
     template <class Buffer>
     void Communicate::isend(int dest, int tag, Buffer& buffer,
-                            archive_type& ar, MPI_Request& request, int nsends)
+                            archive_type& ar, MPI_Request& request, count_type nsends)
     {
         buffer.serialize(ar, nsends);
         MPI_Isend(ar.getBuffer(), ar.getSize(),

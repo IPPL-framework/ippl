@@ -24,7 +24,7 @@ namespace ippl {
             defaultOveralloc = factor;
         }
 
-        Communicate::buffer_type Communicate::getBuffer(int id, size_t size, int overallocation) {
+        Communicate::buffer_type Communicate::getBuffer(int id, size_type size, int overallocation) {
             #if __cplusplus > 201703L
             if (buffers.contains(id)) {
             #else

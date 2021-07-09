@@ -28,6 +28,7 @@
 #define IPPL_PARTICLE_ATTRIB_BASE_H
 
 #include "Types/ViewTypes.h"
+#include "Types/IpplTypes.h"
 
 #include "Communicate/Archive.h"
 
@@ -39,29 +40,29 @@ namespace ippl {
         public:
             typedef typename ViewType<bool, 1, Properties...>::view_type boolean_view_type;
 
-            virtual void create(size_t) = 0;
+            virtual void create(count_type) = 0;
 
-            virtual void sort(const Kokkos::View<int*>&, const Kokkos::View<int*>&, size_t) = 0;
-            virtual size_t packedSize(const int) const = 0;
+            virtual void sort(const Kokkos::View<int*>&, const Kokkos::View<int*>&, count_type) = 0;
+            virtual count_type packedSize(const count_type) const = 0;
 
             virtual void pack(void*, const Kokkos::View<int*>&) const = 0;
 
-            virtual void unpack(void*, int) = 0;
+            virtual void unpack(void*, count_type) = 0;
 
-            virtual void serialize(Archive<Properties...>& ar, int nsends) = 0;
+            virtual void serialize(Archive<Properties...>& ar, count_type nsends) = 0;
 
-            virtual void deserialize(Archive<Properties...>& ar, int nrecvs) = 0;
+            virtual void deserialize(Archive<Properties...>& ar, count_type nrecvs) = 0;
 
-            virtual size_t size() const = 0;
-            virtual size_t totalSize() const = 0;
+            virtual size_type size() const = 0;
+            virtual size_type totalSize() const = 0;
 
             virtual ~ParticleAttribBase() = default;
 
-            void setParticleCount(size_t& num) { localNum_m = &num; }
-            size_t getParticleCount() const { return *localNum_m; }
+            void setParticleCount(count_type& num) { localNum_m = &num; }
+            count_type getParticleCount() const { return *localNum_m; }
 
         protected:
-            const size_t* localNum_m;
+            const count_type* localNum_m;
         };
     }
 }

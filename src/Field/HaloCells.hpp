@@ -96,8 +96,7 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-                    int nsends;
-                    //FieldBufferData<T> fd;
+                    count_type nsends;
                     pack(range, view, fd_m, nsends);
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_SEND + i * groupCount + face, nsends * sizeof(T));
@@ -124,18 +123,11 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    //FieldBufferData<T> fd;
-
-                    //Kokkos::resize(fd.buffer,
-                    //               (range.hi[0] - range.lo[0]) *
-                    //               (range.hi[1] - range.lo[1]) *
-                    //               (range.hi[2] - range.lo[2]));
-
-                    int nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                    count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
-                    if(nrecvs > (int)fd_m.buffer.extent(0)) {
+                    if(nrecvs > fd_m.buffer.extent(0)) {
                         Kokkos::resize(fd_m.buffer, nrecvs);
                     }
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_RECV + i * groupCount + face, nrecvs * sizeof(T));
@@ -190,9 +182,7 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-
-                    //FieldBufferData<T> fd;
-                    int nsends;
+                    count_type nsends;
                     pack(range, view, fd_m, nsends);
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_SEND + i * groupCount + edge, nsends * sizeof(T));
@@ -219,20 +209,14 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    //FieldBufferData<T> fd;
-
-                    //Kokkos::resize(fd.buffer,
-                    //               (range.hi[0] - range.lo[0]) *
-                    //               (range.hi[1] - range.lo[1]) *
-                    //               (range.hi[2] - range.lo[2]));
-
-                    int nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                    count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
                     
-                    if(nrecvs > (int)fd_m.buffer.extent(0)) {
+                    if(nrecvs > fd_m.buffer.extent(0)) {
                         Kokkos::resize(fd_m.buffer, nrecvs);
                     }
+
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_RECV + i * groupCount + edge, nrecvs * sizeof(T));
 
                     Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
@@ -287,9 +271,7 @@ namespace ippl {
 
                 requests.resize(requests.size() + 1);
 
-
-                //FieldBufferData<T> fd;
-                int nsends;
+                count_type nsends;
                 pack(range, view, fd_m, nsends);
 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_SEND + vertex, nsends * sizeof(T));
@@ -318,18 +300,11 @@ namespace ippl {
                                       lDomains[myRank], nghost);
                 }
 
-                //FieldBufferData<T> fd;
-
-                //Kokkos::resize(fd.buffer,
-                //               (range.hi[0] - range.lo[0]) *
-                //               (range.hi[1] - range.lo[1]) *
-                //               (range.hi[2] - range.lo[2]));
-
-                int nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
                              (range.hi[1] - range.lo[1]) *
                              (range.hi[2] - range.lo[2]));
 
-                if(nrecvs > (int)fd_m.buffer.extent(0)) {
+                if(nrecvs > fd_m.buffer.extent(0)) {
                     Kokkos::resize(fd_m.buffer, nrecvs);
                 }
                 
@@ -352,20 +327,16 @@ namespace ippl {
         void HaloCells<T, Dim>::pack(const bound_type& range,
                                      const view_type& view,
                                      FieldBufferData<T>& fd,
-                                     int& nsends)
+                                     count_type& nsends)
         {
             auto subview = makeSubview(view, range);
 
             auto& buffer = fd.buffer;
 
             size_t size = subview.size();
-            nsends = (int)size;
+            nsends = size;
             if (buffer.size() < size) {
                 Kokkos::resize(buffer, size);
-            }
-
-            if(nsends > (int)buffer.extent(0)) {
-               Kokkos::resize(buffer, nsends); 
             }
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;

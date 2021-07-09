@@ -74,7 +74,7 @@
 #define IPPL_PARTICLE_BASE_H
 
 #include "Particle/ParticleLayout.h"
-
+#include "Types/IpplTypes.h"
 
 #include <vector>
 
@@ -99,6 +99,9 @@ namespace ippl {
         using attribute_iterator    = typename attribute_container_t::iterator;
         using bc_container_type     = typename PLayout::bc_container_type;
         using hash_type             = typename detail::ViewType<int, 1, Properties...>::view_type;
+
+        using size_type = detail::size_type;
+        using count_type = detail::count_type;
 
     public:
         //! view of particle positions
@@ -144,7 +147,7 @@ namespace ippl {
         /*!
          * @returns processor local number of particles
          */
-        size_t getLocalNum() const { return localNum_m; }
+        count_type getLocalNum() const { return localNum_m; }
 
         /*!
          * @returns particle layout
@@ -203,7 +206,7 @@ namespace ippl {
          * Create nLocal processor local particles
          * @param nLocal number of local particles to be created
          */
-        void create(size_t nLocal);
+        void create(count_type nLocal);
 
         /*!
          * Create a new particle with a given ID
@@ -215,7 +218,7 @@ namespace ippl {
          * Create nTotal particles globally, equally distributed among all processors
          * @param nTotal number of total particles to be created
          */
-        void globalCreate(size_t nTotal);
+        void globalCreate(count_type nTotal);
 
         /*!
          * Partition the particles into a valid region and an invalid region,
@@ -223,33 +226,33 @@ namespace ippl {
          * @param invalid View marking which indices are invalid
          * @param destroyNum Total number of invalid particles
          */
-        void sort(const Kokkos::View<bool*>& invalid, const size_t destroyNum);
+        void sort(const Kokkos::View<bool*>& invalid, const count_type destroyNum);
 
         /*!
          * Serialize to do MPI calls.
          * @param ar archive
          */
-        void serialize(detail::Archive<Properties...>& ar, int nsends);
+        void serialize(detail::Archive<Properties...>& ar, count_type nsends);
 
 
         /*!
          * Deserialize to do MPI calls.
          * @param ar archive
          */
-        void deserialize(detail::Archive<Properties...>& ar, int nrecvs);
+        void deserialize(detail::Archive<Properties...>& ar, count_type nrecvs);
 
         /*!
          * Determine the space occupied by the particle data
          * @return Total memory occupied by the particle attributes
          */
-        size_t size() const;
+        size_type size() const;
 
         /*!
          * Determine the total space necessary to store a certain number of particles
          * @param count particle number
          * @return Total size of a buffer packed with the given number of particles
          */
-        size_t packedSize(const int count) const;
+        size_type packedSize(const count_type count) const;
 
 
         /*!
@@ -278,7 +281,7 @@ namespace ippl {
          * @param buffer received
          */
         template <class Buffer>
-        void unpack(Buffer& buffer, int nrecvs);
+        void unpack(Buffer& buffer, count_type nrecvs);
 
     private:
         //! particle layout
@@ -286,7 +289,7 @@ namespace ippl {
         Layout_t* layout_m;
 
         //! processor local number of particles
-        size_t localNum_m;
+        count_type localNum_m;
 
         //! all attributes
         attribute_container_t attributes_m;

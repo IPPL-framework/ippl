@@ -69,7 +69,7 @@ namespace ippl {
 
         static IpplTimings::TimerRef locateTimer = IpplTimings::getTimer("locateParticles");
         IpplTimings::startTimer(locateTimer);
-        size_t localnum = pdata.getLocalNum();
+        count_type localnum = pdata.getLocalNum();
 
         // 1st step
 
@@ -92,11 +92,11 @@ namespace ippl {
         static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("SendPreprocess");
         IpplTimings::startTimer(preprocTimer);
         MPI_Win win;
-        std::vector<int> nRecvs(nRanks, 0);
-        MPI_Win_create(nRecvs.data(), nRanks*sizeof(int), sizeof(int),
+        std::vector<count_type> nRecvs(nRanks, 0);
+        MPI_Win_create(nRecvs.data(), nRanks*sizeof(count_type), sizeof(count_type),
                        MPI_INFO_NULL, *Ippl::Comm, &win);
 
-        std::vector<int> nSends(nRanks, 0);
+        std::vector<count_type> nSends(nRanks, 0);
 
         MPI_Win_fence(0, win);
 
@@ -106,8 +106,8 @@ namespace ippl {
                 continue;
             }
             nSends[rank] = numberOfSends(rank, ranks);
-            MPI_Put(nSends.data() + rank, 1, MPI_INT, rank, Ippl::Comm->rank(),
-                    1, MPI_INT, win);
+            MPI_Put(nSends.data() + rank, 1, MPI_LONG_LONG_INT, rank, Ippl::Comm->rank(),
+                    1, MPI_LONG_LONG_INT, win);
         }
         MPI_Win_fence(0, win);
         IpplTimings::stopTimer(preprocTimer);
@@ -128,11 +128,8 @@ namespace ippl {
 
                 requests.resize(requests.size() + 1);
 
-                //BufferType buffer(pdata.getLayout());
-                //buffer.create(nSends[rank]);
-
                 pdata.pack(buffer, hash);
-                size_t bufSize = pdata.packedSize(nSends[rank]);
+                size_type bufSize = pdata.packedSize(nSends[rank]);
 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
 
@@ -149,11 +146,11 @@ namespace ippl {
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("ParticleDestroy");
         IpplTimings::startTimer(destroyTimer);
         
-        size_t invalidCount = 0;
+        count_type invalidCount = 0;
         Kokkos::parallel_reduce(
             "set/count invalid",
             localnum,
-            KOKKOS_LAMBDA(const size_t i, size_t& nInvalid) {
+            KOKKOS_LAMBDA(const size_t i, count_type& nInvalid) {
                 if (invalid(i)) {
                     pdata.ID(i) = -1;
                     nInvalid += 1;
@@ -172,10 +169,7 @@ namespace ippl {
         int recvs = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
-                //BufferType buffer(pdata.getLayout());
-                //buffer.create(nRecvs[rank]);
-
-                size_t bufSize = pdata.packedSize(nRecvs[rank]);
+                size_type bufSize = pdata.packedSize(nRecvs[rank]);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
 
                 Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);

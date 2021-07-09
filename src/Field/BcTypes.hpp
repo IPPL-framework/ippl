@@ -310,7 +310,7 @@ namespace ippl {
                     rangeNeighbors.push_back(range);    
                     requests.resize(requests.size() + 1);
                         
-                    int nSends;
+                    detail::count_type nSends;
                     halo.pack(range, view, fdSends[i], nSends);
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_SEND + i, nSends * sizeof(T));
@@ -329,14 +329,14 @@ namespace ippl {
                     range.lo[d] = range.lo[d] + offsetRecv;
                     range.hi[d] = range.hi[d] + offsetRecv;
                         
-                    size_t nRecvs = (range.hi[0] - range.lo[0]) *
+                    detail::count_type nRecvs = (range.hi[0] - range.lo[0]) *
                                     (range.hi[1] - range.lo[1]) *
                                     (range.hi[2] - range.lo[2]);
                     if (fdRecv.buffer.size() < nRecvs) {
                         Kokkos::resize(fdRecv.buffer, nRecvs * 2);
                     }
 
-                    size_t bufSize = nRecvs * sizeof(T);
+                    detail::size_type bufSize = nRecvs * sizeof(T);
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_RECV + i, bufSize);
                     Ippl::Comm->recv(rank, matchtag, fdRecv, *buf, bufSize, nRecvs);
                     buf->resetReadPos();

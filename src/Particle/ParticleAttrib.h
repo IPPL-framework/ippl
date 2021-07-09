@@ -48,9 +48,12 @@ namespace ippl {
         using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
 
+        using size_type = detail::size_type;
+        using count_type = detail::count_type;
+
         // Create storage for M particle attributes.  The storage is uninitialized.
         // New items are appended to the end of the array.
-        void create(size_t) override;
+        void create(count_type) override;
 
         /*!
          * Partition the particles into a valid region and an invalid region
@@ -60,42 +63,42 @@ namespace ippl {
          */
         void sort(const Kokkos::View<int*>& deleteIndex,
                   const Kokkos::View<int*>& keepIndex,
-                  size_t invalidCount) override;
+                  count_type invalidCount) override;
 
         void pack(void*, const Kokkos::View<int*>&) const override;
 
-        void unpack(void*, int) override;
+        void unpack(void*, count_type) override;
 
-        void serialize(detail::Archive<Properties...>& ar, int nsends) override {
+        void serialize(detail::Archive<Properties...>& ar, count_type nsends) override {
             ar.serialize(dview_m, nsends);
         }
 
-        void deserialize(detail::Archive<Properties...>& ar, int nrecvs) override {
+        void deserialize(detail::Archive<Properties...>& ar, count_type nrecvs) override {
             ar.deserialize(dview_m, nrecvs);
         }
 
         virtual ~ParticleAttrib() = default;
        
-        size_t size() const {
+        size_type size() const {
             return dview_m.extent(0);
         }
 
-        size_t totalSize() const {
+        size_type totalSize() const {
             return size() * sizeof(value_type);
         }
 
-        size_t packedSize(const int count) const {
+        size_type packedSize(const count_type count) const {
             return count * sizeof(value_type);
         }
 
-        void resize(size_t n) {
+        void resize(size_type n) {
             Kokkos::resize(dview_m, n);
         }
 
         void print() {
             HostMirror hview = Kokkos::create_mirror_view(dview_m);
             Kokkos::deep_copy(hview, dview_m);
-            for (size_t i = 0; i < *(this->localNum_m); ++i) {
+            for (count_type i = 0; i < *(this->localNum_m); ++i) {
                 std::cout << hview(i) << std::endl;
             }
         }

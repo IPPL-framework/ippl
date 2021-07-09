@@ -147,15 +147,16 @@ namespace ippl {
 
 
     private:
+        using size_type = detail::size_type;
 
         /**
            setup performs the initialization necessary.
         */
-        void setup(const std::array<long long, Dim>& low,
-                   const std::array<long long, Dim>& high,
+        void setup(const std::array<size_type, Dim>& low,
+                   const std::array<size_type, Dim>& high,
                    const FFTParams& params);
 
-        std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
+        std::shared_ptr<heffte::fft3d<heffteBackend, size_type>> heffte_m;
         workspace_t workspace_m;
 
     };
@@ -195,19 +196,20 @@ namespace ippl {
 
 
     private:
+        using size_type = detail::size_type;
 
         /**
            setup performs the initialization necessary after the transform
            directions have been specified.
         */
-        void setup(const std::array<long long, Dim>& lowInput,
-                   const std::array<long long, Dim>& highInput,
-                   const std::array<long long, Dim>& lowOutput,
-                   const std::array<long long, Dim>& highOutput,
+        void setup(const std::array<size_type, Dim>& lowInput,
+                   const std::array<size_type, Dim>& highInput,
+                   const std::array<size_type, Dim>& lowOutput,
+                   const std::array<size_type, Dim>& highOutput,
                    const FFTParams& params);
 
 
-        std::shared_ptr<heffte::fft3d_r2c<heffteBackend, long long>> heffte_m;
+        std::shared_ptr<heffte::fft3d_r2c<heffteBackend, size_type>> heffte_m;
         workspace_t workspace_m;
 
     };

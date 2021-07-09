@@ -18,6 +18,7 @@
 #ifndef IPPL_ARCHIVE_H
 #define IPPL_ARCHIVE_H
 
+#include "Types/IpplTypes.h"
 #include "Types/ViewTypes.h"
 #include "Types/Vector.h"
 
@@ -34,9 +35,8 @@ namespace ippl {
         public:
             using buffer_type = typename ViewType<char, 1, Properties...>::view_type;
             using pointer_type = typename buffer_type::pointer_type;
-            using size_type = typename buffer_type::size_type;
 
-            Archive(int size = 0);
+            Archive(size_type size = 0);
 
             /*!
              * Serialize.
@@ -46,7 +46,7 @@ namespace ippl {
             void operator<<(const Kokkos::View<T*>& view);
 
             template <typename T>
-            void serialize(const Kokkos::View<T*>& view, int nsends);
+            void serialize(const Kokkos::View<T*>& view, count_type nsends);
 
             /*!
              * Serialize vector attributes
@@ -60,7 +60,7 @@ namespace ippl {
             void operator<<(const Kokkos::View<Vector<T, Dim>*>& view);
 
             template <typename T, unsigned Dim>
-            void serialize(const Kokkos::View<Vector<T, Dim>*>& view, int nsends);
+            void serialize(const Kokkos::View<Vector<T, Dim>*>& view, count_type nsends);
 
             /*!
              * Deserialize.
@@ -70,7 +70,7 @@ namespace ippl {
             void operator>>(Kokkos::View<T*>& view);
 
             template <typename T>
-            void deserialize(Kokkos::View<T*>& view, int nrecvs);
+            void deserialize(Kokkos::View<T*>& view, count_type nrecvs);
 
             /*!
              * Deserialize vector attributes
@@ -84,7 +84,7 @@ namespace ippl {
             void operator>>(Kokkos::View<Vector<T, Dim>*>& view);
 
             template <typename T, unsigned Dim>
-            void deserialize(Kokkos::View<Vector<T, Dim>*>& view, int nrecvs);
+            void deserialize(Kokkos::View<Vector<T, Dim>*>& view, count_type nrecvs);
 
             /*!
              * @returns a pointer to the data of the buffer
@@ -105,7 +105,7 @@ namespace ippl {
                 return buffer_m.size();
             }
 
-            void resizeBuffer(int size) {
+            void resizeBuffer(size_type size) {
                 Kokkos::resize(buffer_m, size);
             }
             
@@ -120,9 +120,9 @@ namespace ippl {
 
         private:
             //! write position for serialization
-            size_t writepos_m;
+            size_type writepos_m;
             //! read position for deserialization
-            size_t readpos_m;
+            size_type readpos_m;
             //! serialized data
             buffer_type buffer_m;
         };

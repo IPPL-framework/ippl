@@ -20,6 +20,7 @@
 
 #include "Index/NDIndex.h"
 #include "Types/ViewTypes.h"
+#include "Types/IpplTypes.h"
 #include "Communicate/Archive.h"
 #include "FieldLayout/FieldLayout.h"
 #include <array>
@@ -33,17 +34,16 @@ namespace ippl {
         struct FieldBufferData {
             using view_type = typename detail::ViewType<T, 1>::view_type;
 
-            void serialize(Archive<>& ar, int nsends) {
+            void serialize(Archive<>& ar, count_type nsends) {
                 ar.serialize(buffer, nsends);
             }
 
-            void deserialize(Archive<>& ar, int nrecvs) {
+            void deserialize(Archive<>& ar, count_type nrecvs) {
                 ar.deserialize(buffer, nrecvs);
             }
 
             view_type buffer;
         };
-
 
         /*!
          * This class provides the functionality to do field halo exchange.
@@ -63,7 +63,6 @@ namespace ippl {
                 // upper bounds (ordering x, y, z)
                 std::array<long, Dim> hi;
             };
-
 
             enum SendOrder {
                 HALO_TO_INTERNAL,
@@ -92,7 +91,6 @@ namespace ippl {
              */
             void fillHalo(view_type&, const Layout_t* layout, int nghost);
 
-
             /*!
              * Pack the field data to be sent into a contiguous array.
              * @param range the bounds of the subdomain to be sent
@@ -102,7 +100,7 @@ namespace ippl {
             void pack(const bound_type& range,
                       const view_type& view,
                       FieldBufferData<T>& fd,
-                      int& nsends);
+                      count_type& nsends);
 
             /*!
              * Unpack the received field data and assign it.
@@ -116,7 +114,6 @@ namespace ippl {
                         const view_type& view,
                         FieldBufferData<T>& fd);
 
-
             /*!
              * Operator for the unpack function.
              * This operator is used in case of INTERNAL_TO_HALO.
@@ -128,7 +125,6 @@ namespace ippl {
                 }
             };
 
-
             /*!
              * Operator for the unpack function.
              * This operator is used in case of HALO_TO_INTERNAL.
@@ -139,6 +135,7 @@ namespace ippl {
                     lhs += rhs;
                 }
             };
+
             /*!
              * Obtain the bounds to send / receive. The second domain, i.e.,
              * nd2, is grown by nghost cells in each dimension in order to
