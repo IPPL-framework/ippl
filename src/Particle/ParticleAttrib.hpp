@@ -34,9 +34,10 @@ namespace ippl {
 
     template<typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::create(size_t n) {
-        size_t current = this->size();
-        if (current < *(this->localNum_m) + n) {
-            this->resize((*(this->localNum_m) + n) * 2);
+        size_t required = *(this->localNum_m) + n;
+        if (this->size() < required) {
+            int overalloc = Ippl::Comm->getDefaultOverallocation();
+            this->resize(required * overalloc);
         }
     }
 
@@ -84,8 +85,10 @@ namespace ippl {
         this_type* buffer_p = static_cast<this_type*>(buffer);
         auto& view = buffer_p->dview_m;
         auto size = dview_m.extent(0);
-        if(size < *(this->localNum_m) + (size_t)nrecvs) {
-            this->resize((*(this->localNum_m) + nrecvs) * 2);
+        size_t required = *(this->localNum_m) + (size_t)nrecvs;
+        if(size < required) {
+            int overalloc = Ippl::Comm->getDefaultOverallocation();
+            this->resize(required * overalloc);
         }
 
         size_t count = *(this->localNum_m);

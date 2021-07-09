@@ -47,7 +47,9 @@ namespace ippl {
 
         Communicate(const MPI_Comm& comm = MPI_COMM_WORLD);
 
+        int getDefaultOverallocation() const { return defaultOveralloc; }
         void setDefaultOverallocation(int factor);
+
         buffer_type getBuffer(int id, size_t size, int overallocation = 1);
         void deleteBuffer(int id);
         void deleteAllBuffers();
