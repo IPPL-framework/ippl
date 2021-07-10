@@ -241,7 +241,9 @@ namespace ippl {
     template <class PLayout, class... Properties>
     detail::size_type ParticleBase<PLayout, Properties...>::size() const {
         size_type total = 0;
-        for (typename attribute_container_t::size_type i = 0; i < attributes_m.size(); ++i) {
+        // Vector size type
+        using vsize_t = typename attribute_container_t::size_type;
+        for (vsize_t i = 0; i < attributes_m.size(); ++i) {
             total += attributes_m[i]->totalSize();
         }
         return total;
@@ -250,7 +252,9 @@ namespace ippl {
     template <class PLayout, class... Properties>
     detail::size_type ParticleBase<PLayout, Properties...>::packedSize(const count_type count) const {
         size_type total = 0;
-        for (typename attribute_container_t::size_type i = 0; i < attributes_m.size(); ++i) {
+        // Vector size type
+        using vsize_t = typename attribute_container_t::size_type;
+        for (vsize_t i = 0; i < attributes_m.size(); ++i) {
             total += attributes_m[i]->packedSize(count);
         }
         return total;
@@ -270,8 +274,9 @@ namespace ippl {
     void ParticleBase<PLayout, Properties...>::pack(Buffer& buffer,
                                                     const hash_type& hash)
     {
-        using size_type = typename attribute_container_t::size_type;
-        for (size_type j = 0; j < attributes_m.size(); ++j) {
+        // Vector size type
+        using vsize_t = typename attribute_container_t::size_type;
+        for (vsize_t j = 0; j < attributes_m.size(); ++j) {
             attributes_m[j]->pack(buffer.getAttribute(j), hash);
         }
     }
@@ -281,8 +286,9 @@ namespace ippl {
     template <class Buffer>
     void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer, count_type nrecvs)
     {
-        using size_type = typename attribute_container_t::size_type;
-        for (size_type j = 0; j < attributes_m.size(); ++j) {
+        // Vector size type
+        using vsize_t = typename attribute_container_t::size_type;
+        for (vsize_t j = 0; j < attributes_m.size(); ++j) {
             attributes_m[j]->unpack(buffer.getAttribute(j), nrecvs);
         }
         localNum_m += nrecvs;

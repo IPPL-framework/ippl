@@ -201,15 +201,14 @@ namespace ippl {
     {
         auto& positions = pdata.R.getView();
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
-        using size_type = typename RegionLayout_t::view_type::size_type;
+        using view_size_t = typename RegionLayout_t::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
         int myRank = Ippl::Comm->rank();
         Kokkos::parallel_for(
             "ParticleSpatialLayout::locateParticles()",
             mdrange_type({0, 0},
                          {ranks.extent(0), Regions.extent(0)}),
-            //KOKKOS_CLASS_LAMBDA(const size_t i, const size_type j) {
-            KOKKOS_LAMBDA(const size_t i, const size_type j) {
+            KOKKOS_LAMBDA(const size_t i, const view_size_t j) {
                 bool x_bool = false;
                 bool y_bool = false;
                 bool z_bool = false;
