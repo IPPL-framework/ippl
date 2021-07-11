@@ -49,6 +49,7 @@ namespace ippl {
         template <typename T>
         void Archive<Properties...>::serialize(const Kokkos::View<T*>& view, count_type nsends) {
             size_t size = sizeof(T);
+            
             Kokkos::parallel_for(
                 "Archive::serialize()", nsends,
                 KOKKOS_CLASS_LAMBDA(const size_t i) {
@@ -56,8 +57,20 @@ namespace ippl {
                                 view.data() + i,
                                 size);
             });
-            writepos_m += size * nsends;
             Kokkos::fence();
+            writepos_m += size * nsends;
+            //if(Ippl::Comm->rank() == 3) {
+            //    auto viewL = buffer_m;
+            //    double sumG = 0.0;
+            //    Kokkos::parallel_reduce(
+            //        "serialize reduce",
+            //        nsends*size,
+            //        KOKKOS_LAMBDA(const size_t i, double& sumL) {
+            //            sumL += viewL(i);
+            //    }, sumG);
+            //    Kokkos::fence();
+            //    std::cout << "Rank has value from serialize " << sumG << std::endl;
+            //}
         }
 
         template <class... Properties>
@@ -90,8 +103,8 @@ namespace ippl {
                                 &(*(view.data() + i))[d],
                                 size);
                 });
-            writepos_m += Dim * size * nsends;
             Kokkos::fence();
+            writepos_m += Dim * size * nsends;
         }
 
         template <class... Properties>
@@ -117,7 +130,6 @@ namespace ippl {
             if(nrecvs > view.extent(0)) {
                 Kokkos::resize(view, nrecvs);
             }
-
             Kokkos::parallel_for(
                 "Archive::deserialize()", nrecvs,
                 KOKKOS_CLASS_LAMBDA(const size_t i) {
@@ -125,8 +137,20 @@ namespace ippl {
                                 buffer_m.data() + i * size + readpos_m,
                                 size);
             });
-            readpos_m += size * nrecvs;
             Kokkos::fence();
+            readpos_m += size * nrecvs;
+            //if(Ippl::Comm->rank() == 12) {
+            //    auto viewL = buffer_m;
+            //    double sumG = 0.0;
+            //    Kokkos::parallel_reduce(
+            //        "de-serialize reduce",
+            //        nrecvs*size,
+            //        KOKKOS_LAMBDA(const size_t i, double& sumL) {
+            //            sumL += viewL(i);
+            //    }, sumG);
+            //    Kokkos::fence();
+            //    std::cout << "Rank has value from de-serialize " << sumG << std::endl;
+            //}
         }
 
         template <class... Properties>
@@ -161,8 +185,8 @@ namespace ippl {
                                 buffer_m.data() + (Dim * i + d) * size + readpos_m,
                                 size);
             });
-            readpos_m += Dim * size * nrecvs;
             Kokkos::fence();
+            readpos_m += Dim * size * nrecvs;
         }
     }
 }

@@ -133,6 +133,15 @@ namespace ippl {
 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
 
+                 //std::cout << "Rank " << Ippl::Comm->rank() << " sends " << nSends[rank]
+                 //        << " particles to " << rank << std::endl;
+                 //std::cout << "Rank " << Ippl::Comm->rank() << " sends " << bufSize
+                 //        << " size to " << rank << std::endl;
+
+                if(bufSize > 2147483647) {
+                    std::cout << "Exceeds MPI send size" << std::endl;
+                }
+
                 Ippl::Comm->isend(rank, tag, buffer, *buf,
                                   requests.back(), nSends[rank]);
                 buf->resetWritePos();
@@ -141,6 +150,7 @@ namespace ippl {
             }
         }
         IpplTimings::stopTimer(sendTimer);
+        Ippl::Comm->barrier();
 
         // 3rd step
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("ParticleDestroy");
@@ -171,7 +181,9 @@ namespace ippl {
             if (nRecvs[rank] > 0) {
                 size_type bufSize = pdata.packedSize(nRecvs[rank]);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
-
+                
+                //std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nRecvs[rank]
+                //         << " particles from " << rank << std::endl;
                 Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
                 buf->resetReadPos();
 
@@ -181,12 +193,17 @@ namespace ippl {
             }
 
         }
+        Ippl::Comm->barrier();
         IpplTimings::stopTimer(recvTimer);
 
         IpplTimings::startTimer(sendTimer);
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
+        //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << pdata.getLocalNum()
+        // << " particles" << std::endl;
+        std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << std::setprecision(16) << pdata.q.sum() << std::endl;
+        Ippl::Comm->barrier();
         IpplTimings::stopTimer(sendTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
