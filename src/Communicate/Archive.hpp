@@ -128,7 +128,7 @@ namespace ippl {
             size_t size = sizeof(T);
 
             if(nrecvs > view.extent(0)) {
-                Kokkos::resize(view, nrecvs);
+                Kokkos::resize(view, nrecvs * 1);
             }
             Kokkos::parallel_for(
                 "Archive::deserialize()", nrecvs,
@@ -174,7 +174,7 @@ namespace ippl {
         void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*>& view, count_type nrecvs) {
             size_t size = sizeof(T);
             if(nrecvs > view.extent(0)) {
-                Kokkos::resize(view, nrecvs);
+                Kokkos::resize(view, nrecvs * 1);
             }
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(

@@ -66,7 +66,7 @@ namespace ippl {
         auto& view = buffer_p->dview_m;
         auto size = hash.extent(0);
         if(size > view.extent(0)) {
-            Kokkos::resize(view, size);
+            Kokkos::resize(view, 1 * size);
         }
 
         Kokkos::parallel_for(
