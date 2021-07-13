@@ -140,6 +140,7 @@ namespace ippl {
 
                 if(bufSize > 2147483647) {
                     std::cout << "Exceeds MPI send size" << std::endl;
+                    exit(1);
                 }
 
                 Ippl::Comm->isend(rank, tag, buffer, *buf,
@@ -150,7 +151,7 @@ namespace ippl {
             }
         }
         IpplTimings::stopTimer(sendTimer);
-        Ippl::Comm->barrier();
+        //Ippl::Comm->barrier();
 
         // 3rd step
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("ParticleDestroy");
@@ -182,6 +183,10 @@ namespace ippl {
                 size_type bufSize = pdata.packedSize(nRecvs[rank]);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
                 
+                if(bufSize > 2147483647) {
+                    std::cout << "Exceeds MPI recv size" << std::endl;
+                    exit(1)
+                }
                 //std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nRecvs[rank]
                 //         << " particles from " << rank << std::endl;
                 Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
@@ -193,7 +198,7 @@ namespace ippl {
             }
 
         }
-        Ippl::Comm->barrier();
+        //Ippl::Comm->barrier();
         IpplTimings::stopTimer(recvTimer);
 
         IpplTimings::startTimer(sendTimer);
@@ -202,8 +207,8 @@ namespace ippl {
         }
         //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << pdata.getLocalNum()
         // << " particles" << std::endl;
-        std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << std::setprecision(16) << pdata.q.sum() << std::endl;
-        Ippl::Comm->barrier();
+        //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << std::setprecision(16) << pdata.q.sum() << std::endl;
+        //Ippl::Comm->barrier();
         IpplTimings::stopTimer(sendTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);

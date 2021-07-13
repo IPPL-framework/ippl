@@ -66,7 +66,8 @@ namespace ippl {
         auto& view = buffer_p->dview_m;
         auto size = hash.extent(0);
         if(size > view.extent(0)) {
-            Kokkos::resize(view, 1 * size);
+            int overalloc = Ippl::Comm->getDefaultOverallocation();
+            Kokkos::resize(view, size * overalloc);
         }
 
         Kokkos::parallel_for(
@@ -77,19 +78,19 @@ namespace ippl {
         });
         Kokkos::fence();
         
-        if constexpr(std::is_scalar<T>::value) {
-             auto viewL = buffer_p->dview_m;
-             T sumG = 0;
-             Kokkos::parallel_reduce(
-                 "ParticleAttrib::pack() reduce",
-                 size,
-                 KOKKOS_LAMBDA(const size_t i, T& sumL) {
-                     sumL += viewL(i);
-             }, sumG);
-             Kokkos::fence();
-             std::cout << "Rank " << Ippl::Comm->rank() << "has sending value " << sumG << std::endl;
+        //if constexpr(std::is_scalar<T>::value) {
+        //     auto viewL = buffer_p->dview_m;
+        //     T sumG = 0;
+        //     Kokkos::parallel_reduce(
+        //         "ParticleAttrib::pack() reduce",
+        //         size,
+        //         KOKKOS_LAMBDA(const size_t i, T& sumL) {
+        //             sumL += viewL(i);
+        //     }, sumG);
+        //     Kokkos::fence();
+        //     std::cout << "Rank " << Ippl::Comm->rank() << "has sending value " << sumG << std::endl;
 
-         }
+        // }
 
     
     }
@@ -115,19 +116,19 @@ namespace ippl {
                 dview_m(count + i) = view(i);
         });
         Kokkos::fence();
-        if constexpr(std::is_scalar<T>::value) {
-             auto viewL = buffer_p->dview_m;
-             T sumG = 0;
-             Kokkos::parallel_reduce(
-                 "ParticleAttrib::unpack() reduce",
-                 nrecvs,
-                 KOKKOS_LAMBDA(const size_t i, T& sumL) {
-                     sumL += viewL(i);
-             }, sumG);
-             Kokkos::fence();
-             std::cout << "Rank " << Ippl::Comm->rank() << "has receiving value " << sumG << std::endl;
+        //if constexpr(std::is_scalar<T>::value) {
+        //     auto viewL = buffer_p->dview_m;
+        //     T sumG = 0;
+        //     Kokkos::parallel_reduce(
+        //         "ParticleAttrib::unpack() reduce",
+        //         nrecvs,
+        //         KOKKOS_LAMBDA(const size_t i, T& sumL) {
+        //             sumL += viewL(i);
+        //     }, sumG);
+        //     Kokkos::fence();
+        //     std::cout << "Rank " << Ippl::Comm->rank() << "has receiving value " << sumG << std::endl;
 
-         } 
+        // } 
     
     }
 

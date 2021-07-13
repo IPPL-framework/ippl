@@ -36,9 +36,7 @@ namespace ippl {
                 }
                 return buf;
             }
-            //overallocation *= 1;
             buffers[id] = std::make_shared<archive_type>(size * std::max(overallocation, defaultOveralloc));
-            //buffers[id] = std::make_shared<archive_type>(size * 4);
             return buffers[id];
         }
 
