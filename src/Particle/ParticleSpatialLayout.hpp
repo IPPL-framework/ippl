@@ -185,7 +185,7 @@ namespace ippl {
                 
                 if(bufSize > 2147483647) {
                     std::cout << "Exceeds MPI recv size" << std::endl;
-                    exit(1)
+                    exit(1);
                 }
                 //std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nRecvs[rank]
                 //         << " particles from " << rank << std::endl;
