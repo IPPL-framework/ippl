@@ -88,8 +88,8 @@ namespace ippl {
                                   const FFTParams& params)
     {
 
-         heffte::box3d inbox = {low, high};
-         heffte::box3d outbox = {low, high};
+         heffte::box3d<int> inbox = {low, high};
+         heffte::box3d<int> outbox = {low, high};
 
          heffte::plan_options heffteOptions =
              heffte::default_options<heffteBackend>();
@@ -267,8 +267,8 @@ namespace ippl {
                                   const FFTParams& params)
     {
 
-         heffte::box3d inbox = {lowInput, highInput};
-         heffte::box3d outbox = {lowOutput, highOutput};
+         heffte::box3d<int> inbox = {lowInput, highInput};
+         heffte::box3d<int> outbox = {lowOutput, highOutput};
 
          heffte::plan_options heffteOptions =
              heffte::default_options<heffteBackend>();
