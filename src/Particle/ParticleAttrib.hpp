@@ -45,15 +45,13 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::sort(const Kokkos::View<int*>& deleteIndex,
                                                 const Kokkos::View<int*>& keepIndex,
                                                 count_type invalidCount) {
-        // Swap all invalid particles in the valid region with valid
+        // Replace all invalid particles in the valid region with valid
         // particles in the invalid region
         Kokkos::parallel_for("ParticleAttrib::sort()",
                              invalidCount,
                              KOKKOS_CLASS_LAMBDA(const size_t i)
                              {
-                                 T tmp = dview_m(deleteIndex(i));
                                  dview_m(deleteIndex(i)) = dview_m(keepIndex(i));
-                                 dview_m(keepIndex(i)) = tmp;
                              });
     }
 

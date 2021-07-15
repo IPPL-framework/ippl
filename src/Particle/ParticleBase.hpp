@@ -169,6 +169,16 @@ namespace ippl {
     void ParticleBase<PLayout, Properties...>::sort(const Kokkos::View<bool*>& invalid, const count_type destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
+        // If there aren't any particles to delete, do nothing
+        if (destroyNum == 0) return;
+
+        // If we're deleting all the particles, there's no point in sorting
+        // anything because the valid region will be empty
+        if (destroyNum == localNum_m) {
+            localNum_m = 0;
+            return;
+        }
+
         // Resize buffers, if necessary
         if (deleteIndex_m.size() < destroyNum) {
             int overalloc = Ippl::Comm->getDefaultOverallocation();
