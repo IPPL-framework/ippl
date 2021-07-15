@@ -107,8 +107,10 @@ namespace ippl {
         /*!
          * \warning Only works with default spaces!
          */
-        template <class Buffer>
-        void irecv(int src, int tag, Buffer& buffer);
+        //template <class Buffer>
+        //void irecv(int src, int tag, Buffer& buffer);
+
+        void irecv(int src, int tag, archive_type&, MPI_Request&, size_type msize);
 
     private:
         std::map<int, buffer_type> buffers;
@@ -153,10 +155,23 @@ namespace ippl {
     void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, count_type nrecvs)
     {
         MPI_Status status;
+        //if(this->rank() == 0) {
+        //    std::cout << "Rank " << this->rank() << " before receive details " 
+        //              << " msize: " << msize
+        //              << " src: " << src
+        //              << " tag: " << tag
+        //              << " buffer size: " << ar.getBufferSize() << std::endl;
+        //}
         MPI_Recv(ar.getBuffer(), msize,
                 MPI_BYTE, src, tag, *this, &status);
 
+        //if(this->rank() == 0) {
+        //    std::cout << "Rank " << this->rank() << " MPI receive from rank " << src << "completed " << std::endl;
+        //}
         buffer.deserialize(ar, nrecvs);
+        //if(this->rank() == 0) {
+        //    std::cout << "Rank " << this->rank() << " deserialize completed " << std::endl;
+        //}
     }
 
     template <class Buffer>
@@ -182,6 +197,12 @@ namespace ippl {
         buffer.serialize(ar, nsends);
         MPI_Isend(ar.getBuffer(), ar.getSize(),
                   MPI_BYTE, dest, tag, *this, &request);
+        //if(dest == 0) {
+        //    std::cout << "Rank " << this->rank() << " send details " 
+        //              << " msize: " << ar.getSize()
+        //              << " src: " << this->rank()
+        //              << " tag: " << tag << std::endl;
+        //}
     }
 }
 
