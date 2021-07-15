@@ -192,7 +192,6 @@ namespace ippl {
             faceNeighbors_m[i].clear();
        }
 
-       int maxNeighbors = 0;
        if(lDomains[myRank][d].length() < domain[d].length()) {
             //Only along this dimension we need communication.
 
@@ -221,7 +220,6 @@ namespace ippl {
                 gnd[d] = gnd[d] + offset;
                 
                 //Now, we are ready to intersect
-                int neighbors = 0;
                 for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
                     if (rank == myRank) {
                         continue;
@@ -229,13 +227,10 @@ namespace ippl {
                    
                     if (gnd.touches(lDomains[rank])) {
                         faceNeighbors_m[face].push_back(rank);
-                        ++neighbors;
                     }
                 }
-                if (neighbors > maxNeighbors) maxNeighbors = neighbors;
             }
        }
-       if ((size_t)maxNeighbors > fdSends.size()) fdSends.resize(maxNeighbors);
     }
 
     template<typename T, unsigned Dim, class Mesh, class Cell>
@@ -311,11 +306,11 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
                         
                     detail::count_type nSends;
-                    halo.pack(range, view, fdSends[i], nSends);
+                    halo.pack(range, view, fdSend, nSends);
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_SEND + i, nSends * sizeof(T));
 
-                    Ippl::Comm->isend(rank, tag, fdSends[i], *buf,
+                    Ippl::Comm->isend(rank, tag, fdSend, *buf,
                                       requests.back(), nSends);
                     buf->resetWritePos();
                 }
