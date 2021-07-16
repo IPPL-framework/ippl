@@ -590,7 +590,7 @@ int main(int argc, char *argv[]){
 
     P->time_m = 0.0;
     
-    P->scatterCIC(totalP, 0, hrField);
+    //P->scatterCIC(totalP, 0, hrField);
     
    
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");           
@@ -598,7 +598,7 @@ int main(int argc, char *argv[]){
     P->solver_mp->solve();
     IpplTimings::stopTimer(SolveTimer);
 
-    P->gatherCIC();
+    //P->gatherCIC();
 
 
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");           
@@ -648,7 +648,7 @@ int main(int argc, char *argv[]){
         //IpplTimings::stopTimer(UpdateTimer);                                                    
         
         //scatter the charge onto the underlying grid
-        P->scatterCIC(totalP, it+1, hrField);
+        //P->scatterCIC(totalP, it+1, hrField);
         
         //Field solve
         IpplTimings::startTimer(SolveTimer);                                               
@@ -656,7 +656,7 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(SolveTimer);                                               
         
         // gather E field
-        P->gatherCIC();
+        //P->gatherCIC();
 
         //kick
         IpplTimings::startTimer(PTimer);
