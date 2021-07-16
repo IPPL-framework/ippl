@@ -133,10 +133,10 @@ namespace ippl {
 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
 
-                if(rank == 0) {
-                    std::cout << "Rank " << Ippl::Comm->rank() << " sends " << nSends[rank]
-                         << " particles to " << rank << std::endl;
-                }
+                //if(rank == 0) {
+                //    std::cout << "Rank " << Ippl::Comm->rank() << " sends " << nSends[rank]
+                //         << " particles to " << rank << std::endl;
+                //}
                  //std::cout << "Rank " << Ippl::Comm->rank() << " sends " << bufSize
                  //        << " size to " << rank << std::endl;
 
@@ -153,7 +153,7 @@ namespace ippl {
             }
         }
         IpplTimings::stopTimer(sendTimer);
-        Ippl::Comm->barrier();
+        //Ippl::Comm->barrier();
         //std::cout << "Rank " << Ippl::Comm->rank() << " send completed " << std::endl;
 
         // 3rd step
@@ -176,23 +176,23 @@ namespace ippl {
         Kokkos::fence();
         
         IpplTimings::stopTimer(destroyTimer);
-        Ippl::Comm->barrier();
-        int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
+        //Ippl::Comm->barrier();
+        //int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
         //std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nTotalRecvs << " particles in total " << std::endl;
-        Ippl::Comm->barrier();
+        //Ippl::Comm->barrier();
         static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("ParticleRecv");
         IpplTimings::startTimer(recvTimer);
         // 4th step
         int recvs = 0;
-        std::vector<buffer_type> receivedArchives(0);
+        //std::vector<buffer_type> receivedArchives(0);
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
                 size_type bufSize = pdata.packedSize(nRecvs[rank]);
-                if(Ippl::Comm->rank() == 0) {
-                    std::cout << "Rank 0 buffer size" << bufSize << std::endl;
-                }
-                //buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
-                receivedArchives.push_back(Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize));
+                //if(Ippl::Comm->rank() == 0) {
+                //    std::cout << "Rank 0 buffer size" << bufSize << std::endl;
+                //}
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
+                //receivedArchives.push_back(Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize));
                 
                 if(bufSize > 2147483647) {
                     std::cout << "Exceeds MPI recv size" << std::endl;
@@ -200,13 +200,13 @@ namespace ippl {
                 }
                 //std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nRecvs[rank]
                 //         << " particles from " << rank << std::endl;
-                //Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
-                requests.resize(requests.size() + 1);
-                Ippl::Comm->irecv(rank, tag, *(receivedArchives.back()), requests.back(), bufSize);
-                //buf->resetReadPos();
-                receivedArchives.back()->resetReadPos();
+                Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
+                //requests.resize(requests.size() + 1);
+                //Ippl::Comm->irecv(rank, tag, *(receivedArchives.back()), requests.back(), bufSize);
+                buf->resetReadPos();
+                //receivedArchives.back()->resetReadPos();
 
-                //pdata.unpack(buffer, nRecvs[rank]);
+                pdata.unpack(buffer, nRecvs[rank]);
                 //if(Ippl::Comm->rank() == 0) {
                 //    std::cout << "Rank 0 unpack completed " << std::endl;
                 //}
@@ -220,26 +220,26 @@ namespace ippl {
 
         IpplTimings::startTimer(sendTimer);
         
-        if(Ippl::Comm->rank() == 0) {
-            std::cout << "Rank 0 before waitall" << std::endl;
-        }
+        //if(Ippl::Comm->rank() == 0) {
+        //    std::cout << "Rank 0 before waitall" << std::endl;
+        //}
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-            if(Ippl::Comm->rank() == 0) {
-                std::cout << "Rank 0 after waitall" << std::endl;
-            }
-            int recvs = 0;
-            for (int rank = 0; rank < nRanks; ++rank) {
-                if (nRecvs[rank] > 0) {
-                    buffer.deserialize(*receivedArchives[recvs], nRecvs[rank]);
-                    pdata.unpack(buffer, nRecvs[rank]);
+            //if(Ippl::Comm->rank() == 0) {
+            //    std::cout << "Rank 0 after waitall" << std::endl;
+            //}
+            //int recvs = 0;
+            //for (int rank = 0; rank < nRanks; ++rank) {
+            //    if (nRecvs[rank] > 0) {
+            //        buffer.deserialize(*receivedArchives[recvs], nRecvs[rank]);
+            //        pdata.unpack(buffer, nRecvs[rank]);
 
-                    ++recvs;
-                }
-            }
-            receivedArchives.clear();
+            //        ++recvs;
+            //    }
+            //}
+            //receivedArchives.clear();
         }
-        std::cout << "Rank " << Ippl::Comm->rank() << " receive completed " << std::endl;
+        //std::cout << "Rank " << Ippl::Comm->rank() << " receive completed " << std::endl;
         //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << pdata.getLocalNum()
         // << " particles" << std::endl;
         //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << std::setprecision(16) << pdata.q.sum() << std::endl;

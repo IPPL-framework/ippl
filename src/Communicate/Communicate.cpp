@@ -30,18 +30,18 @@ namespace ippl {
     void Communicate::irecv(int src, int tag,
                             archive_type& ar, MPI_Request& request, size_type msize)
     {
-        if(this->rank() == 0) {
-            std::cout << "Rank " << this->rank() << " before receive details " 
-                      << " msize: " << msize
-                      << " src: " << src
-                      << " tag: " << tag
-                      << " buffer size: " << ar.getBufferSize() << std::endl;
-        }
+        //if(this->rank() == 0) {
+        //    std::cout << "Rank " << this->rank() << " before receive details " 
+        //              << " msize: " << msize
+        //              << " src: " << src
+        //              << " tag: " << tag
+        //              << " buffer size: " << ar.getBufferSize() << std::endl;
+        //}
         MPI_Irecv(ar.getBuffer(), msize,
                 MPI_BYTE, src, tag, *this, &request);
-        if(this->rank() == 0) {
-            std::cout << "Rank " << this->rank() << " MPI receive from rank " << src << "completed " << std::endl;
-        }
+        //if(this->rank() == 0) {
+        //    std::cout << "Rank " << this->rank() << " MPI receive from rank " << src << "completed " << std::endl;
+        //}
     }
 
 }
