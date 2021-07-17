@@ -155,23 +155,10 @@ namespace ippl {
     void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, count_type nrecvs)
     {
         MPI_Status status;
-        //if(this->rank() == 0) {
-        //    std::cout << "Rank " << this->rank() << " before receive details " 
-        //              << " msize: " << msize
-        //              << " src: " << src
-        //              << " tag: " << tag
-        //              << " buffer size: " << ar.getBufferSize() << std::endl;
-        //}
         MPI_Recv(ar.getBuffer(), msize,
                 MPI_BYTE, src, tag, *this, &status);
 
-        //if(this->rank() == 0) {
-        //    std::cout << "Rank " << this->rank() << " MPI receive from rank " << src << "completed " << std::endl;
-        //}
         buffer.deserialize(ar, nrecvs);
-        //if(this->rank() == 0) {
-        //    std::cout << "Rank " << this->rank() << " deserialize completed " << std::endl;
-        //}
     }
 
     template <class Buffer>
@@ -195,28 +182,8 @@ namespace ippl {
                             archive_type& ar, MPI_Request& request, count_type nsends)
     {
         buffer.serialize(ar, nsends);
-        ar.resetWritePos();
-        if(dest == 0) {
-            buffer.deserialize(ar, nsends);
-            ar.resetReadPos();
-            std::cout << "Rank " << this->rank() << " send details " << std::endl; 
-            std::cout << " nsends: " << nsends << std::endl;
-            std::cout << "particle ID: " << buffer.ID(0) << std::endl;
-            std::cout << "particle charge: " << buffer.q(0) << std::endl;
-            std::cout << "particle ID: " << buffer.R(0) << std::endl;
-            std::cout << "particle momentum: " << buffer.P(0) << std::endl;
-            std::cout << "particle E field: " << buffer.E(0) << std::endl;
-        }
-
-        buffer.serialize(ar, nsends);
         MPI_Isend(ar.getBuffer(), ar.getSize(),
                   MPI_BYTE, dest, tag, *this, &request);
-        //if(dest == 0) {
-        //    std::cout << "Rank " << this->rank() << " send details " 
-        //              << " msize: " << ar.getSize()
-        //              << " src: " << this->rank()
-        //              << " tag: " << tag << std::endl;
-        //}
     }
 }
 
