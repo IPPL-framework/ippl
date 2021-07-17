@@ -216,13 +216,6 @@ public:
         setBCAllPeriodic();
     }
 
-    //void update() {
-    //    
-    //    PLayout& layout = this->getLayout();
-    //    layout.update(*this);
-    //}
-
-
     void gatherStatistics(unsigned int totalP, int iteration) {
         
         std::cout << "Rank " << Ippl::Comm->rank() << " has " 
@@ -232,11 +225,7 @@ public:
     
     void gatherCIC() {
 
-        //static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather"); 
-        //IpplTimings::startTimer(gatherTimer);                                                    
         gather(this->E, E_m, this->R);
-        //IpplTimings::stopTimer(gatherTimer);
-
     }
 
     void scatterCIC(unsigned int totalP, int iteration, Vector_t& hrField) {
@@ -244,13 +233,8 @@ public:
          
          Inform m("scatter ");
          
-         //m << "Total particles = " << Total_particles << endl;
-        
-        //static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
-         //IpplTimings::startTimer(scatterTimer);                                                    
          rho_m = 0.0;
          scatter(q, rho_m, this->R);
-         //IpplTimings::stopTimer(scatterTimer);                                                    
          
          static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check");           
          IpplTimings::startTimer(sumTimer);                                                    
@@ -425,7 +409,6 @@ private:
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
-    //Inform msg(argv[0]);
     Inform msg("PenningTrap");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
@@ -493,12 +476,6 @@ int main(int argc, char *argv[]){
     
     if ( Ippl::Comm->rank() < rest )
         ++nloc;
-
-    //if ( rest > 0 ) {
-    //    msg << "Total particles are not an exact multiple of ranks" << endl;
-    //    exit(1);
-    //}
-
 
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
     IpplTimings::startTimer(particleCreation);                                                    
@@ -575,13 +552,8 @@ int main(int argc, char *argv[]){
 
 
     bunch_type bunchBuffer(PL);
-    //bunchBuffer.create(1.5e6);
     bunchBuffer.create(100);
-    //static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("Update");           
-    //IpplTimings::startTimer(UpdateTimer);                                               
-    //P->update();
     PL.update(*P, bunchBuffer);
-    //IpplTimings::stopTimer(UpdateTimer);                                                    
 
     msg << "particles created and initial conditions assigned " << endl;
 
@@ -590,7 +562,7 @@ int main(int argc, char *argv[]){
 
     P->time_m = 0.0;
     
-    //P->scatterCIC(totalP, 0, hrField);
+    P->scatterCIC(totalP, 0, hrField);
     
    
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");           
@@ -598,7 +570,7 @@ int main(int argc, char *argv[]){
     P->solver_mp->solve();
     IpplTimings::stopTimer(SolveTimer);
 
-    //P->gatherCIC();
+    P->gatherCIC();
 
 
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");           
@@ -642,13 +614,10 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(RTimer);                                                    
 
         //Since the particles have moved spatially update them to correct processors 
-        //IpplTimings::startTimer(UpdateTimer);
-        //P->update();
         PL.update(*P, bunchBuffer);
-        //IpplTimings::stopTimer(UpdateTimer);                                                    
         
         //scatter the charge onto the underlying grid
-        //P->scatterCIC(totalP, it+1, hrField);
+        P->scatterCIC(totalP, it+1, hrField);
         
         //Field solve
         IpplTimings::startTimer(SolveTimer);                                               
@@ -656,7 +625,7 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(SolveTimer);                                               
         
         // gather E field
-        //P->gatherCIC();
+        P->gatherCIC();
 
         //kick
         IpplTimings::startTimer(PTimer);
