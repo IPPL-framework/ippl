@@ -218,7 +218,7 @@ namespace ippl {
         IpplTimings::stopTimer(recvTimer);
         //Ippl::Comm->barrier();
 
-        std::cout << "Rank " << Ippl::Comm->rank() << " receive completed " << std::endl;
+        //std::cout << "Rank " << Ippl::Comm->rank() << " receive completed " << std::endl;
         IpplTimings::startTimer(sendTimer);
         
         //if(Ippl::Comm->rank() == 0) {
@@ -240,7 +240,7 @@ namespace ippl {
             //}
             //receivedArchives.clear();
         }
-        std::cout << "Rank " << Ippl::Comm->rank() << " send waitall completed " << std::endl;
+        //std::cout << "Rank " << Ippl::Comm->rank() << " send waitall completed " << std::endl;
         //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << pdata.getLocalNum()
         // << " particles" << std::endl;
         //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << std::setprecision(16) << pdata.q.sum() << std::endl;

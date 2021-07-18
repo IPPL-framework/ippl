@@ -194,19 +194,29 @@ namespace ippl {
     void Communicate::isend(int dest, int tag, Buffer& buffer,
                             archive_type& ar, MPI_Request& request, count_type nsends)
     {
-        buffer.serialize(ar, nsends);
-        ar.resetWritePos();
-        if(dest == 0) {
-            buffer.deserialize(ar, nsends);
-            ar.resetReadPos();
-            std::cout << "Rank " << this->rank() << " send details " << std::endl; 
-            std::cout << " nsends: " << nsends << std::endl;
-            std::cout << "particle ID: " << buffer.ID(0) << std::endl;
-            std::cout << "particle charge: " << buffer.q(0) << std::endl;
-            std::cout << "particle ID: " << buffer.R(0) << std::endl;
-            std::cout << "particle momentum: " << buffer.P(0) << std::endl;
-            std::cout << "particle E field: " << buffer.E(0) << std::endl;
-        }
+        //buffer.serialize(ar, nsends);
+        ////ar.resetWritePos();
+        //if(dest == 0) {
+        //    buffer.deserialize(ar, nsends);
+        //    ar.resetReadPos();
+        //    typename Buffer::particle_position_type::HostMirror R_host = buffer.R.getHostMirror();
+        //    typename Buffer::particle_position_type::HostMirror P_host = buffer.P.getHostMirror();
+        //    typename Buffer::particle_position_type::HostMirror E_host = buffer.E.getHostMirror();
+        //    typename Buffer::particle_index_type::HostMirror ID_host = buffer.ID.getHostMirror();
+        //    typename Buffer::particle_charge_type::HostMirror q_host = buffer.q.getHostMirror();
+        //    Kokkos::deep_copy(R_host, buffer.R.getView());
+        //    Kokkos::deep_copy(P_host, buffer.P.getView());
+        //    Kokkos::deep_copy(E_host, buffer.E.getView());
+        //    Kokkos::deep_copy(ID_host, buffer.ID.getView());
+        //    Kokkos::deep_copy(q_host, buffer.q.getView());
+        //    std::cout << "Rank " << this->rank() << " send details " << std::endl; 
+        //    std::cout << " nsends: " << nsends << std::endl;
+        //    std::cout << "particle ID: " << ID_host(0) << std::endl;
+        //    std::cout << "particle charge: " << q_host(0) << std::endl;
+        //    std::cout << "particle R: " << R_host(0) << std::endl;
+        //    std::cout << "particle momentum: " << P_host(0) << std::endl;
+        //    std::cout << "particle E field: " << E_host(0) << std::endl;
+        //}
 
         buffer.serialize(ar, nsends);
         MPI_Isend(ar.getBuffer(), ar.getSize(),

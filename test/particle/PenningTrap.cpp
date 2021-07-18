@@ -429,7 +429,7 @@ int main(int argc, char *argv[]){
     Inform msg("PenningTrap");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(1);
+    Ippl::Comm->setDefaultOverallocation(2);
 
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -577,11 +577,11 @@ int main(int argc, char *argv[]){
     bunch_type bunchBuffer(PL);
     //bunchBuffer.create(1.5e6);
     bunchBuffer.create(100);
-    //static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("Update");           
-    //IpplTimings::startTimer(UpdateTimer);                                               
+    static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("FirstUpdate");           
+    IpplTimings::startTimer(FirstUpdateTimer);                                               
     //P->update();
     PL.update(*P, bunchBuffer);
-    //IpplTimings::stopTimer(UpdateTimer);                                                    
+    IpplTimings::stopTimer(FirstUpdateTimer);                                                    
 
     msg << "particles created and initial conditions assigned " << endl;
 
@@ -590,7 +590,7 @@ int main(int argc, char *argv[]){
 
     P->time_m = 0.0;
     
-    //P->scatterCIC(totalP, 0, hrField);
+    P->scatterCIC(totalP, 0, hrField);
     
    
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");           
@@ -598,7 +598,7 @@ int main(int argc, char *argv[]){
     P->solver_mp->solve();
     IpplTimings::stopTimer(SolveTimer);
 
-    //P->gatherCIC();
+    P->gatherCIC();
 
 
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");           
@@ -648,7 +648,7 @@ int main(int argc, char *argv[]){
         //IpplTimings::stopTimer(UpdateTimer);                                                    
         
         //scatter the charge onto the underlying grid
-        //P->scatterCIC(totalP, it+1, hrField);
+        P->scatterCIC(totalP, it+1, hrField);
         
         //Field solve
         IpplTimings::startTimer(SolveTimer);                                               
@@ -656,7 +656,7 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(SolveTimer);                                               
         
         // gather E field
-        //P->gatherCIC();
+        P->gatherCIC();
 
         //kick
         IpplTimings::startTimer(PTimer);
