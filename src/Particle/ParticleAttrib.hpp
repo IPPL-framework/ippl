@@ -36,8 +36,8 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::create(count_type n) {
         size_type required = *(this->localNum_m) + n;
         if (this->size() < required) {
-            int overalloc = Ippl::Comm->getDefaultOverallocation();
-            this->resize(required * overalloc);
+            //int overalloc = Ippl::Comm->getDefaultOverallocation();
+            this->resize(required * 2);
         }
     }
 
@@ -102,8 +102,8 @@ namespace ippl {
         auto size = dview_m.extent(0);
         size_type required = *(this->localNum_m) + nrecvs;
         if(size < required) {
-            int overalloc = Ippl::Comm->getDefaultOverallocation();
-            this->resize(required * overalloc);
+            //int overalloc = Ippl::Comm->getDefaultOverallocation();
+            this->resize(required * 2);
         }
 
         count_type count = *(this->localNum_m);
