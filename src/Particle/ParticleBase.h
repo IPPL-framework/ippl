@@ -149,6 +149,9 @@ namespace ippl {
          * @returns processor local number of particles
          */
         count_type getLocalNum() const { return localNum_m; }
+        
+        
+        void setLocalNum(count_type size) { localNum_m = size; }
 
         /*!
          * @returns particle layout

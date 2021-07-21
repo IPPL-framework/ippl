@@ -266,7 +266,7 @@ public:
          m << "Rel. error in charge conservation = " << rel_error << endl;
 
          if(Ippl::Comm->rank() == 0) {
-             if((Total_particles != totalP) || (rel_error > 1e-12)) {
+             if((Total_particles != totalP) || (rel_error > 1e-10)) {
                  std::cout << "Total particles in the sim. " << totalP 
                            << " " << "after update: " 
                            << Total_particles << std::endl;
@@ -429,7 +429,7 @@ int main(int argc, char *argv[]){
     Inform msg("PenningTrap");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(2);
+    Ippl::Comm->setDefaultOverallocation(1);
 
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -485,6 +485,8 @@ int main(int argc, char *argv[]){
     double Bext = 5.0;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
+    std::string dist;
+    dist = argv[7];
 
     P->nr_m = nr;
     unsigned long long int nloc = totalP / Ippl::Comm->size();
@@ -502,15 +504,9 @@ int main(int argc, char *argv[]){
 
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
     IpplTimings::startTimer(particleCreation);                                                    
-    P->create(nloc);
+    //P->create(nloc);
 
     Vector_t length = rmax - rmin;
-    
-    std::mt19937_64 eng[4*Dim];
-    for (unsigned i = 0; i < 4*Dim; ++i) {
-        eng[i].seed(42 + i * Dim);
-        eng[i].discard( nloc * Ippl::Comm->rank());
-    }
     
     std::vector<double> mu(2*Dim);
     std::vector<double> sd(2*Dim);
@@ -525,39 +521,151 @@ int main(int argc, char *argv[]){
     sd[0] = 0.15*length[0];
     sd[1] = 0.05*length[1];
     sd[2] = 0.20*length[2];
-    
-    std::uniform_real_distribution<double> dist_uniform(0.0, 1.0);
 
-    typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
-    typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
+    unsigned int Total_particles = 0;
+    if(dist == "uniform") {
 
-    double sum_coord=0.0;
-    for (unsigned long long int i = 0; i< nloc; i++) {
-        for (unsigned istate = 0; istate < 2*Dim; ++istate) {
-            double u1 = dist_uniform(eng[istate*2]);
-            double u2 = dist_uniform(eng[istate*2+1]);
-            states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) * 
-                             std::cos(2.0 * pi * u2)) + mu[istate]; 
-        }    
-        for (unsigned d = 0; d<Dim; d++) {
-            R_host(i)[d] =  std::fabs(std::fmod(states[d],length[d]));
-            sum_coord += R_host(i)[d];
-            P_host(i)[d] = states[Dim + d];
+        std::function<double(double& x,
+                             double& y,
+                             double& z)> func;
+        
+        func = [&](double& x,
+                   double& y,
+                   double& z)
+        {
+            double val_conf =  std::pow((x - mu[0])/sd[0], 2) +
+                               std::pow((y - mu[1])/sd[1], 2) +
+                               std::pow((z - mu[2])/sd[2], 2);
+            
+            return std::exp(-0.5 * val_conf);
+        };
+        
+        const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+        std::vector<double> Rmin(Dim), Rmax(Dim);
+        for (unsigned d = 0; d <Dim; ++d) {
+            Rmin[d] = origin[d] + lDom[d].first() * hr[d];
+            Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
         }
-    }
-    ///Just to check are we getting the same particle distribution for 
-    //different no. of processors
-    double global_sum_coord = 0.0;
-    MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
-               MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        std::uniform_real_distribution<double> dist_uniform(0.0, 1.0);
+        std::uniform_real_distribution<double> distribution_x(Rmin[0], Rmax[0]);
+        std::uniform_real_distribution<double> distribution_y(Rmin[1], Rmax[1]);
+        std::uniform_real_distribution<double> distribution_z(Rmin[2], Rmax[2]);
+        //std::uniform_real_distribution<double> distribution_x(rmin[0], rmax[0]);
+        //std::uniform_real_distribution<double> distribution_y(rmin[1], rmax[1]);
+        //std::uniform_real_distribution<double> distribution_z(rmin[2], rmax[2]);
+        
+        std::mt19937_64 eng[3*Dim];
+        for (unsigned i = 0; i < 3*Dim; ++i) {
+            eng[i].seed(42 + i * Dim);
+            eng[i].discard( nloc * Ippl::Comm->rank());
+        }
+        
 
-    if(Ippl::Comm->rank() == 0) {
-        std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
-    }
+        double sum_f = 0.0;
+        std::size_t ip = 0;
+        double sum_coord=0.0;
+        P->create(nloc);
+        typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
+        typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
+        typename bunch_type::particle_charge_type::HostMirror q_host = P->q.getHostMirror();
+        for (unsigned long long int i = 0; i< nloc; i++) {
 
-    Kokkos::deep_copy(P->R.getView(), R_host);
-    Kokkos::deep_copy(P->P.getView(), P_host);
-    P->q = P->Q_m/totalP;
+            states[0] = distribution_x(eng[0]);
+            states[1] = distribution_y(eng[1]);
+            states[2] = distribution_z(eng[2]);
+            
+            for (unsigned istate = 0; istate < Dim; ++istate) {
+                double u1 = dist_uniform(eng[istate*2 + Dim]);
+                double u2 = dist_uniform(eng[istate*2+1 + Dim]);
+                states[istate + Dim] = fabs(sd[istate + Dim] * (std::sqrt(-2.0 * std::log(u1)) * 
+                                 std::cos(2.0 * pi * u2)) + mu[istate + Dim]); 
+            }
+
+            double f = func(states[0], states[1], states[2]);
+            f = f * states[3] * states[4] * states[5];
+
+            //if( f > 1e-9 ) {
+                for (unsigned d = 0; d<Dim; d++) {
+                    R_host(ip)[d] =  states[d];
+                    P_host(ip)[d] =  states[Dim + d];
+                    sum_coord += R_host(ip)[d];
+                }
+                sum_f += f; 
+                q_host(ip) = f;                    
+                ++ip;
+            //}
+        }
+        double Total_sum = 0.0;
+        MPI_Allreduce(&sum_f, &Total_sum, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        double global_sum_coord = 0.0;
+        MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
+                   MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+
+        if(Ippl::Comm->rank() == 0) {
+            std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
+        }
+        //P->setLocalNum(ip);
+        Kokkos::deep_copy(P->R.getView(), R_host);
+        Kokkos::deep_copy(P->P.getView(), P_host);
+        Kokkos::deep_copy(P->q.getView(), q_host);
+
+        P->q = P->q * (P->Q_m/Total_sum);
+
+
+        
+        unsigned int local_particles = P->getLocalNum();
+        MPI_Reduce(&local_particles, &Total_particles, 1, 
+                   MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
+        msg << "#particles: " << Total_particles << endl;
+        double PPC = Total_particles/((double)(nr[0] * nr[1] * nr[2]));
+        msg << "#PPC: " << PPC << endl;
+
+    }
+    else if(dist == "Gaussian") {
+    
+        P->create(nloc);
+        std::mt19937_64 eng[4*Dim];
+        for (unsigned i = 0; i < 4*Dim; ++i) {
+            eng[i].seed(42 + i * Dim);
+            eng[i].discard( nloc * Ippl::Comm->rank());
+        }
+        
+        
+        std::uniform_real_distribution<double> dist_uniform(0.0, 1.0);
+
+        typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
+        typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
+
+        double sum_coord=0.0;
+        for (unsigned long long int i = 0; i< nloc; i++) {
+            for (unsigned istate = 0; istate < 2*Dim; ++istate) {
+                double u1 = dist_uniform(eng[istate*2]);
+                double u2 = dist_uniform(eng[istate*2+1]);
+                states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) * 
+                                 std::cos(2.0 * pi * u2)) + mu[istate]; 
+            }    
+            for (unsigned d = 0; d<Dim; d++) {
+                R_host(i)[d] =  std::fabs(std::fmod(states[d],length[d]));
+                sum_coord += R_host(i)[d];
+                P_host(i)[d] = states[Dim + d];
+            }
+        }
+        ///Just to check are we getting the same particle distribution for 
+        //different no. of processors
+        double global_sum_coord = 0.0;
+        MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
+                   MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+
+        if(Ippl::Comm->rank() == 0) {
+            std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
+        }
+
+        Kokkos::deep_copy(P->R.getView(), R_host);
+        Kokkos::deep_copy(P->P.getView(), P_host);
+        P->q = P->Q_m/totalP;
+
+        Total_particles = totalP;
+    }
     IpplTimings::stopTimer(particleCreation);                                                    
 
 
@@ -583,6 +691,11 @@ int main(int argc, char *argv[]){
     PL.update(*P, bunchBuffer);
     IpplTimings::stopTimer(FirstUpdateTimer);                                                    
 
+
+
+    Ippl::Comm->barrier();
+    std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step 0 " << P->getLocalNum() << std::endl;
+    Ippl::Comm->barrier();
     msg << "particles created and initial conditions assigned " << endl;
 
     P->stype_m = argv[6];
@@ -590,7 +703,7 @@ int main(int argc, char *argv[]){
 
     P->time_m = 0.0;
     
-    P->scatterCIC(totalP, 0, hrField);
+    P->scatterCIC(Total_particles, 0, hrField);
     
    
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");           
@@ -646,9 +759,13 @@ int main(int argc, char *argv[]){
         //P->update();
         PL.update(*P, bunchBuffer);
         //IpplTimings::stopTimer(UpdateTimer);                                                    
+
+        Ippl::Comm->barrier();
+        std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step " << it+1 << " " << P->getLocalNum() << std::endl;
+        Ippl::Comm->barrier();
         
         //scatter the charge onto the underlying grid
-        P->scatterCIC(totalP, it+1, hrField);
+        P->scatterCIC(Total_particles, it+1, hrField);
         
         //Field solve
         IpplTimings::startTimer(SolveTimer);                                               
