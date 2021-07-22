@@ -200,6 +200,12 @@ namespace ippl {
                 const size_t j = index[1] - lDom[1].first() + nghost;
                 const size_t k = index[2] - lDom[2].first() + nghost;
 
+                if (i < 1 || j < 1 || k < 1 ||
+                    i >= view.extent(0) || j >= view.extent(1) || k >= view.extent(2)) {
+                    std::cout << Ippl::Comm->rank() << ": " << idx << "; " << i << "," << j << "," << k
+                                << " for position " << pp(idx) << std::endl;
+                }
+
 
                 // scatter
                 const value_type& val = dview_m(idx);

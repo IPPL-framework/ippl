@@ -266,7 +266,8 @@ public:
          m << "Rel. error in charge conservation = " << rel_error << endl;
 
          if(Ippl::Comm->rank() == 0) {
-             if((Total_particles != totalP) || (rel_error > 1e-10)) {
+             //if((Total_particles != totalP) || (rel_error > 1e-10)) {
+             if((Total_particles != totalP)) {
                  std::cout << "Total particles in the sim. " << totalP 
                            << " " << "after update: " 
                            << Total_particles << std::endl;
@@ -669,17 +670,19 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(particleCreation);                                                    
 
 
-    Vector_t originField = {rmin[0]-hr[0], rmin[1]-hr[1], rmin[2]-hr[2]};
-    double dxField = (rmax[0] + hr[0] - originField[0]) / nr[0];
-    double dyField = (rmax[1] + hr[1] - originField[1]) / nr[1];
-    double dzField = (rmax[2] + hr[2] - originField[2]) / nr[2];
+    //Vector_t originField = {rmin[0]-hr[0], rmin[1]-hr[1], rmin[2]-hr[2]};
+    //double dxField = (rmax[0] + hr[0] - originField[0]) / nr[0];
+    //double dyField = (rmax[1] + hr[1] - originField[1]) / nr[1];
+    //double dzField = (rmax[2] + hr[2] - originField[2]) / nr[2];
 
-    Vector_t hrField = {dxField, dyField, dzField};
-    Mesh_t meshField(domain, hrField, originField);
+    //Vector_t hrField = {dxField, dyField, dzField};
+    //Mesh_t meshField(domain, hrField, originField);
 
-    P->E_m.initialize(meshField, FL);
-    P->rho_m.initialize(meshField, FL);
+    //P->E_m.initialize(meshField, FL);
+    //P->rho_m.initialize(meshField, FL);
 
+    P->E_m.initialize(mesh, FL);
+    P->rho_m.initialize(mesh, FL);
 
 
     bunch_type bunchBuffer(PL);
@@ -694,8 +697,8 @@ int main(int argc, char *argv[]){
 
 
     Ippl::Comm->barrier();
-    std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step 0 " << P->getLocalNum() << std::endl;
-    Ippl::Comm->barrier();
+    //std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step 0 " << P->getLocalNum() << std::endl;
+    //Ippl::Comm->barrier();
     msg << "particles created and initial conditions assigned " << endl;
 
     P->stype_m = argv[6];
@@ -703,15 +706,18 @@ int main(int argc, char *argv[]){
 
     P->time_m = 0.0;
     
-    P->scatterCIC(Total_particles, 0, hrField);
+    P->scatterCIC(Total_particles, 0, hr);
+    Ippl::Comm->barrier();
     
    
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");           
     IpplTimings::startTimer(SolveTimer);                                               
     P->solver_mp->solve();
     IpplTimings::stopTimer(SolveTimer);
+    Ippl::Comm->barrier();
 
     P->gatherCIC();
+    Ippl::Comm->barrier();
 
 
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");           
@@ -752,6 +758,7 @@ int main(int argc, char *argv[]){
         static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionPush");           
         IpplTimings::startTimer(RTimer);                                                    
         P->R = P->R + dt * P->P;
+        Ippl::Comm->barrier();
         IpplTimings::stopTimer(RTimer);                                                    
 
         //Since the particles have moved spatially update them to correct processors 
@@ -761,19 +768,22 @@ int main(int argc, char *argv[]){
         //IpplTimings::stopTimer(UpdateTimer);                                                    
 
         Ippl::Comm->barrier();
-        std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step " << it+1 << " " << P->getLocalNum() << std::endl;
-        Ippl::Comm->barrier();
+        //std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step " << it+1 << " " << P->getLocalNum() << std::endl;
+        //Ippl::Comm->barrier();
         
         //scatter the charge onto the underlying grid
-        P->scatterCIC(Total_particles, it+1, hrField);
+        P->scatterCIC(Total_particles, it+1, hr);
+        Ippl::Comm->barrier();
         
         //Field solve
         IpplTimings::startTimer(SolveTimer);                                               
         P->solver_mp->solve();
         IpplTimings::stopTimer(SolveTimer);                                               
+        Ippl::Comm->barrier();
         
         // gather E field
         P->gatherCIC();
+        Ippl::Comm->barrier();
 
         //kick
         IpplTimings::startTimer(PTimer);
@@ -793,6 +803,7 @@ int main(int argc, char *argv[]){
         
         });
         IpplTimings::stopTimer(PTimer);                                                    
+        Ippl::Comm->barrier();
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);                                               
