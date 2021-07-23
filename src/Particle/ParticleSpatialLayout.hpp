@@ -101,6 +101,8 @@ namespace ippl {
 
                        (positions(i)[2] >= region[2].min()) &&
                        (positions(i)[2] <= region[2].max()));
+
+                    valid *= (positions(i)[0] >= 0.0) && (positions(i)[1] >= 0.0) && (positions(i)[2] >= 0.0);
                 }, Kokkos::Prod<int>(allValid));
             Kokkos::fence();
             if (!allValid) {
