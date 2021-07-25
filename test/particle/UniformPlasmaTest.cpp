@@ -1,7 +1,7 @@
 // Penning Trap
 //
 //   Usage:
-//     srun ./PenningTrap 128 128 128 10000 300 FFT --info 10
+//     srun ./UniformPlasmaTest 128 128 128 10000 300 FFT --info 10
 //
 // Copyright (c) 2020, Sriramkrishnan Muralikrishnan, 
 // Paul Scherrer Institut, Villigen PSI, Switzerland
