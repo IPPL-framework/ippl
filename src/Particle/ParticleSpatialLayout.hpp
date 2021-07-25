@@ -87,30 +87,30 @@ namespace ippl {
         IpplTimings::stopTimer(locateTimer);
 
    
-        {
-            int allValid = 1;
-            auto& positions = pdata.R.getView();
-            auto& region = rlayout_m.getdLocalRegions()(Ippl::Comm->rank());
-            Kokkos::parallel_reduce("verify particle positions", pdata.getLocalNum(),
-                KOKKOS_LAMBDA(const size_t i, int& valid) {
-                    valid *= invalid(i) || ((positions(i)[0] >= region[0].min()) &&
-                       (positions(i)[0] <= region[0].max()) &&
+        //{
+        //    int allValid = 1;
+        //    auto& positions = pdata.R.getView();
+        //    auto& region = rlayout_m.getdLocalRegions()(Ippl::Comm->rank());
+        //    Kokkos::parallel_reduce("verify particle positions", pdata.getLocalNum(),
+        //        KOKKOS_LAMBDA(const size_t i, int& valid) {
+        //            valid *= invalid(i) || ((positions(i)[0] >= region[0].min()) &&
+        //               (positions(i)[0] <= region[0].max()) &&
 
-                       (positions(i)[1] >= region[1].min()) &&
-                       (positions(i)[1] <= region[1].max()) &&
+        //               (positions(i)[1] >= region[1].min()) &&
+        //               (positions(i)[1] <= region[1].max()) &&
 
-                       (positions(i)[2] >= region[2].min()) &&
-                       (positions(i)[2] <= region[2].max()));
+        //               (positions(i)[2] >= region[2].min()) &&
+        //               (positions(i)[2] <= region[2].max()));
 
-                    valid *= (positions(i)[0] >= 0.0) && (positions(i)[1] >= 0.0) && (positions(i)[2] >= 0.0);
-                }, Kokkos::Prod<int>(allValid));
-            Kokkos::fence();
-            if (!allValid) {
-                std::cout << "Located particles invalid on rank after locate Particle " << Ippl::Comm->rank() << std::endl;
-            } //else {
-            //    std::cout << "Locating OK on rank locate Particle" << Ippl::Comm->rank() << std::endl;
-            //}
-        }
+        //            valid *= (positions(i)[0] >= 0.0) && (positions(i)[1] >= 0.0) && (positions(i)[2] >= 0.0);
+        //        }, Kokkos::Prod<int>(allValid));
+        //    Kokkos::fence();
+        //    if (!allValid) {
+        //        std::cout << "Located particles invalid on rank after locate Particle " << Ippl::Comm->rank() << std::endl;
+        //    } //else {
+        //    //    std::cout << "Locating OK on rank locate Particle" << Ippl::Comm->rank() << std::endl;
+        //    //}
+        //}
         
 
 
@@ -272,30 +272,30 @@ namespace ippl {
         //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << pdata.getLocalNum()
         // << " particles" << std::endl;
         //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << std::setprecision(16) << pdata.q.sum() << std::endl;
-        Ippl::Comm->barrier();
-        {
-            int allValid = 1;
-            auto& positions = pdata.R.getView();
-            auto& region = rlayout_m.getdLocalRegions()(Ippl::Comm->rank());
-            Kokkos::parallel_reduce("verify particle positions", pdata.getLocalNum(),
-                KOKKOS_LAMBDA(const size_t i, int& valid) {
-                    valid *= ((positions(i)[0] >= region[0].min()) &&
-                       (positions(i)[0] <= region[0].max()) &&
+        //Ippl::Comm->barrier();
+        //{
+        //    int allValid = 1;
+        //    auto& positions = pdata.R.getView();
+        //    auto& region = rlayout_m.getdLocalRegions()(Ippl::Comm->rank());
+        //    Kokkos::parallel_reduce("verify particle positions", pdata.getLocalNum(),
+        //        KOKKOS_LAMBDA(const size_t i, int& valid) {
+        //            valid *= ((positions(i)[0] >= region[0].min()) &&
+        //               (positions(i)[0] <= region[0].max()) &&
 
-                       (positions(i)[1] >= region[1].min()) &&
-                       (positions(i)[1] <= region[1].max()) &&
+        //               (positions(i)[1] >= region[1].min()) &&
+        //               (positions(i)[1] <= region[1].max()) &&
 
-                       (positions(i)[2] >= region[2].min()) &&
-                       (positions(i)[2] <= region[2].max()));
-                }, Kokkos::Prod<int>(allValid));
-            Kokkos::fence();
-            if (!allValid) {
-                std::cout << "Located particles invalid on rank after receive " << Ippl::Comm->rank() << std::endl;
-                //abort();
-            } //else {
-            //    std::cout << "Locating OK on rank receive" << Ippl::Comm->rank() << std::endl;
-            //}
-        }
+        //               (positions(i)[2] >= region[2].min()) &&
+        //               (positions(i)[2] <= region[2].max()));
+        //        }, Kokkos::Prod<int>(allValid));
+        //    Kokkos::fence();
+        //    if (!allValid) {
+        //        std::cout << "Located particles invalid on rank after receive " << Ippl::Comm->rank() << std::endl;
+        //        //abort();
+        //    } //else {
+        //    //    std::cout << "Locating OK on rank receive" << Ippl::Comm->rank() << std::endl;
+        //    //}
+        //}
         IpplTimings::stopTimer(sendTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);

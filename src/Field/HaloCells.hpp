@@ -106,7 +106,7 @@ namespace ippl {
                 }
             }
 
-            Ippl::Comm->barrier();
+            //Ippl::Comm->barrier();
             // receive
             for (size_t face = 0; face < neighbors.size(); ++face) {
                 for (size_t i = 0; i < neighbors[face].size(); ++i) {
@@ -142,7 +142,7 @@ namespace ippl {
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
             }
-            Ippl::Comm->barrier();
+            //Ippl::Comm->barrier();
         }
 
 
@@ -192,7 +192,7 @@ namespace ippl {
                 }
             }
 
-            Ippl::Comm->barrier();
+            //Ippl::Comm->barrier();
             // receive
             for (size_t edge = 0; edge < neighbors.size(); ++edge) {
                 for (size_t i = 0; i < neighbors[edge].size(); ++i) {
@@ -229,7 +229,7 @@ namespace ippl {
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
             }
-            Ippl::Comm->barrier();
+            //Ippl::Comm->barrier();
         }
 
 
@@ -279,7 +279,7 @@ namespace ippl {
                 Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
                 buf->resetWritePos();
             }
-            Ippl::Comm->barrier();
+            //Ippl::Comm->barrier();
 
             // receive
             for (size_t vertex = 0; vertex < neighbors.size(); ++vertex) {
@@ -319,7 +319,7 @@ namespace ippl {
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
             }
-            Ippl::Comm->barrier();
+            //Ippl::Comm->barrier();
         }
 
 
