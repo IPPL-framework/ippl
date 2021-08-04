@@ -37,7 +37,8 @@ namespace ippl {
         size_type required = *(this->localNum_m) + n;
         if (this->size() < required) {
             int overalloc = Ippl::Comm->getDefaultOverallocation();
-            this->resize(required * overalloc);
+            //this->resize(required * overalloc);
+            this->realloc(required * overalloc);
         }
     }
 
@@ -63,9 +64,9 @@ namespace ippl {
         this_type* buffer_p = static_cast<this_type*>(buffer);
         auto& view = buffer_p->dview_m;
         auto size = hash.extent(0);
-        if(size > view.extent(0)) {
+        if(view.extent(0) < size) {
             int overalloc = Ippl::Comm->getDefaultOverallocation();
-            Kokkos::resize(view, size * overalloc);
+            Kokkos::realloc(view, size * overalloc);
         }
 
         Kokkos::parallel_for(

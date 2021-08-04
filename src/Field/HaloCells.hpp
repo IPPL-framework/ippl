@@ -128,7 +128,7 @@ namespace ippl {
                                  (range.hi[2] - range.lo[2]));
 
                     if(nrecvs > fd_m.buffer.extent(0)) {
-                        Kokkos::resize(fd_m.buffer, nrecvs);
+                        Kokkos::realloc(fd_m.buffer, nrecvs);
                     }
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_RECV + i * groupCount + face, nrecvs * sizeof(T));
 
@@ -214,7 +214,7 @@ namespace ippl {
                                  (range.hi[2] - range.lo[2]));
                     
                     if(nrecvs > fd_m.buffer.extent(0)) {
-                        Kokkos::resize(fd_m.buffer, nrecvs);
+                        Kokkos::realloc(fd_m.buffer, nrecvs);
                     }
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_RECV + i * groupCount + edge, nrecvs * sizeof(T));
@@ -305,7 +305,7 @@ namespace ippl {
                              (range.hi[2] - range.lo[2]));
 
                 if(nrecvs > fd_m.buffer.extent(0)) {
-                    Kokkos::resize(fd_m.buffer, nrecvs);
+                    Kokkos::realloc(fd_m.buffer, nrecvs);
                 }
                 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_RECV + vertex, nrecvs * sizeof(T));
@@ -336,7 +336,7 @@ namespace ippl {
             size_t size = subview.size();
             nsends = size;
             if (buffer.size() < size) {
-                Kokkos::resize(buffer, size);
+                Kokkos::realloc(buffer, size);
             }
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;

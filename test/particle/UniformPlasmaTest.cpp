@@ -362,7 +362,7 @@ public:
         
         ippl::FFTParams fftParams;
 
-        fftParams.setAllToAll( false );
+        fftParams.setAllToAll( true );
         fftParams.setPencils( true );
         fftParams.setReorder( false );
         fftParams.setRCDirection( 0 );
@@ -481,7 +481,7 @@ int main(int argc, char *argv[]){
     const uint64_t totalP = std::atoll(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
     
-    msg << "Penning Trap "
+    msg << "Uniform Plasma Test"
         << endl
         << "nt " << nt << " Np= "
         << totalP << " grid = " << nr
@@ -622,6 +622,7 @@ int main(int argc, char *argv[]){
         IpplTimings::startTimer(PTimer);                                                    
         P->P = P->P - 0.5 * dt * P->E * 0.0;
         IpplTimings::stopTimer(PTimer);
+        Ippl::Comm->barrier();
 
 
         static IpplTimings::TimerRef temp = IpplTimings::getTimer("RandomMove");           
@@ -631,12 +632,14 @@ int main(int argc, char *argv[]){
                              P->P.getView(), rand_pool64, -hr, hr));
         Kokkos::fence();
         IpplTimings::stopTimer(temp);                                                    
+        Ippl::Comm->barrier();
         
         //drift
         static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionPush");           
         IpplTimings::startTimer(RTimer);                                                    
         P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);                                                    
+        Ippl::Comm->barrier();
 
         //Since the particles have moved spatially update them to correct processors 
         //IpplTimings::startTimer(UpdateTimer);
@@ -645,23 +648,27 @@ int main(int argc, char *argv[]){
         //IpplTimings::stopTimer(UpdateTimer);                                                    
 
         //std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step " << it+1 << " " << P->getLocalNum() << std::endl;
-        //Ippl::Comm->barrier();
+        Ippl::Comm->barrier();
         
         //scatter the charge onto the underlying grid
         P->scatterCIC(totalP, it+1, hr);
+        Ippl::Comm->barrier();
         
         //Field solve
         IpplTimings::startTimer(SolveTimer);                                               
         P->solver_mp->solve();
         IpplTimings::stopTimer(SolveTimer);                                               
+        Ippl::Comm->barrier();
         
         // gather E field
         P->gatherCIC();
+        Ippl::Comm->barrier();
 
         //kick
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E * 0.0;
         IpplTimings::stopTimer(PTimer);                                                    
+        Ippl::Comm->barrier();
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);                                               

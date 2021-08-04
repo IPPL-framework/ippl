@@ -32,7 +32,11 @@ namespace ippl {
             #endif
                 buffer_type buf = buffers[id];
                 if (buf->getBufferSize() < size) {
-                    buf->resizeBuffer(size);
+                    buf->reallocBuffer(size);
+                }
+                if(this->rank() == 6) {
+                    std::cout << "Buffer size: " << buf->getBufferSize() << std::endl; 
+                    std::cout << "Requested size: " << size << std::endl; 
                 }
                 return buf;
             }

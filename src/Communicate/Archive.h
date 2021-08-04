@@ -108,6 +108,10 @@ namespace ippl {
             void resizeBuffer(size_type size) {
                 Kokkos::resize(buffer_m, size);
             }
+
+            void reallocBuffer(size_type size) {
+                Kokkos::realloc(buffer_m, size);
+            }
             
             void resetWritePos() {
                 writepos_m = 0;

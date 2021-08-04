@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     constexpr unsigned int dim = 3;
 
 //     std::array<int, dim> pt = {8, 7, 13};
-    std::array<int, dim> pt = {32, 32, 32};
+    std::array<int, dim> pt = {2048, 2048, 2048};
     ippl::Index I(pt[0]);
     ippl::Index J(pt[1]);
     ippl::Index K(pt[2]);
@@ -154,15 +154,15 @@ int main(int argc, char *argv[]) {
 //     field.fillLocalHalo(10.0);
 //
 
-    for (int rank = 0; rank < nRanks; ++rank) {
-        if (rank == Ippl::Comm->rank()) {
-            std::ofstream out("field_" + std::to_string(rank) + ".dat", std::ios::out);
-            std::cout << field.getOwned().grow(1) << std::endl;
-            field.write(out);
-            out.close();
-        }
-        Ippl::Comm->barrier();
-    }
+    //for (int rank = 0; rank < nRanks; ++rank) {
+    //    if (rank == Ippl::Comm->rank()) {
+    //        std::ofstream out("field_" + std::to_string(rank) + ".dat", std::ios::out);
+    //        std::cout << field.getOwned().grow(1) << std::endl;
+    //        field.write(out);
+    //        out.close();
+    //    }
+    //    Ippl::Comm->barrier();
+    //}
 
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();

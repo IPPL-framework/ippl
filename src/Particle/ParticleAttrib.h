@@ -95,6 +95,9 @@ namespace ippl {
             Kokkos::resize(dview_m, n);
         }
 
+        void realloc(size_type n) {
+            Kokkos::realloc(dview_m, n);
+        }
         void print() {
             HostMirror hview = Kokkos::create_mirror_view(dview_m);
             Kokkos::deep_copy(hview, dview_m);

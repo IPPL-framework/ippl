@@ -86,34 +86,6 @@ namespace ippl {
         locateParticles(pdata, ranks, invalid);
         IpplTimings::stopTimer(locateTimer);
 
-   
-        //{
-        //    int allValid = 1;
-        //    auto& positions = pdata.R.getView();
-        //    auto& region = rlayout_m.getdLocalRegions()(Ippl::Comm->rank());
-        //    Kokkos::parallel_reduce("verify particle positions", pdata.getLocalNum(),
-        //        KOKKOS_LAMBDA(const size_t i, int& valid) {
-        //            valid *= invalid(i) || ((positions(i)[0] >= region[0].min()) &&
-        //               (positions(i)[0] <= region[0].max()) &&
-
-        //               (positions(i)[1] >= region[1].min()) &&
-        //               (positions(i)[1] <= region[1].max()) &&
-
-        //               (positions(i)[2] >= region[2].min()) &&
-        //               (positions(i)[2] <= region[2].max()));
-
-        //            valid *= (positions(i)[0] >= 0.0) && (positions(i)[1] >= 0.0) && (positions(i)[2] >= 0.0);
-        //        }, Kokkos::Prod<int>(allValid));
-        //    Kokkos::fence();
-        //    if (!allValid) {
-        //        std::cout << "Located particles invalid on rank after locate Particle " << Ippl::Comm->rank() << std::endl;
-        //    } //else {
-        //    //    std::cout << "Locating OK on rank locate Particle" << Ippl::Comm->rank() << std::endl;
-        //    //}
-        //}
-        
-
-
         // 2nd step
 
         // figure out how many receives
@@ -146,6 +118,7 @@ namespace ippl {
         std::vector<MPI_Request> requests(0);
 
         using buffer_type = Communicate::buffer_type;
+
         int tag = Ippl::Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
 
         int sends = 0;
@@ -161,12 +134,13 @@ namespace ippl {
 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
 
-                //if(rank == 0) {
-                //    std::cout << "Rank " << Ippl::Comm->rank() << " sends " << nSends[rank]
-                //         << " particles to " << rank << std::endl;
-                //}
+                if(Ippl::Comm->rank() == 6) {
+                    std::cout << "Rank " << Ippl::Comm->rank() << " sends " << nSends[rank]
+                         << " particles to " << rank << std::endl;
+                }
                  //std::cout << "Rank " << Ippl::Comm->rank() << " sends " << bufSize
                  //        << " size to " << rank << std::endl;
+                //}
 
                 if(bufSize > 2147483647) {
                     std::cout << "Exceeds MPI send size" << std::endl;
@@ -181,7 +155,7 @@ namespace ippl {
             }
         }
         IpplTimings::stopTimer(sendTimer);
-        //Ippl::Comm->barrier();
+        Ippl::Comm->barrier();
         //std::cout << "Rank " << Ippl::Comm->rank() << " send completed " << std::endl;
 
         // 3rd step
@@ -212,15 +186,10 @@ namespace ippl {
         IpplTimings::startTimer(recvTimer);
         // 4th step
         int recvs = 0;
-        //std::vector<buffer_type> receivedArchives(0);
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
                 size_type bufSize = pdata.packedSize(nRecvs[rank]);
-                //if(Ippl::Comm->rank() == 0) {
-                //    std::cout << "Rank 0 buffer size" << bufSize << std::endl;
-                //}
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
-                //receivedArchives.push_back(Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize));
                 
                 if(bufSize > 2147483647) {
                     std::cout << "Exceeds MPI recv size" << std::endl;
@@ -229,15 +198,11 @@ namespace ippl {
                 //std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nRecvs[rank]
                 //         << " particles from " << rank << std::endl;
                 Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
-                //requests.resize(requests.size() + 1);
-                //Ippl::Comm->irecv(rank, tag, *(receivedArchives.back()), requests.back(), bufSize);
                 buf->resetReadPos();
-                //receivedArchives.back()->resetReadPos();
+                //std::cout << "Rank " << Ippl::Comm->rank() << " MPI receive completed from rank " << rank << std::endl;
 
                 pdata.unpack(buffer, nRecvs[rank]);
-                //if(Ippl::Comm->rank() == 0) {
-                //    std::cout << "Rank 0 unpack completed " << std::endl;
-                //}
+                //std::cout << "Rank " << Ippl::Comm->rank() << " unpack completed from rank " << rank << std::endl;
 
                 ++recvs;
             }
@@ -249,53 +214,14 @@ namespace ippl {
         //std::cout << "Rank " << Ippl::Comm->rank() << " receive completed " << std::endl;
         IpplTimings::startTimer(sendTimer);
         
-        //if(Ippl::Comm->rank() == 0) {
-        //    std::cout << "Rank 0 before waitall" << std::endl;
-        //}
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-            //if(Ippl::Comm->rank() == 0) {
-            //    std::cout << "Rank 0 after waitall" << std::endl;
-            //}
-            //int recvs = 0;
-            //for (int rank = 0; rank < nRanks; ++rank) {
-            //    if (nRecvs[rank] > 0) {
-            //        buffer.deserialize(*receivedArchives[recvs], nRecvs[rank]);
-            //        pdata.unpack(buffer, nRecvs[rank]);
-
-            //        ++recvs;
-            //    }
-            //}
-            //receivedArchives.clear();
         }
         //std::cout << "Rank " << Ippl::Comm->rank() << " send waitall completed " << std::endl;
         //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << pdata.getLocalNum()
         // << " particles" << std::endl;
         //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << std::setprecision(16) << pdata.q.sum() << std::endl;
         //Ippl::Comm->barrier();
-        //{
-        //    int allValid = 1;
-        //    auto& positions = pdata.R.getView();
-        //    auto& region = rlayout_m.getdLocalRegions()(Ippl::Comm->rank());
-        //    Kokkos::parallel_reduce("verify particle positions", pdata.getLocalNum(),
-        //        KOKKOS_LAMBDA(const size_t i, int& valid) {
-        //            valid *= ((positions(i)[0] >= region[0].min()) &&
-        //               (positions(i)[0] <= region[0].max()) &&
-
-        //               (positions(i)[1] >= region[1].min()) &&
-        //               (positions(i)[1] <= region[1].max()) &&
-
-        //               (positions(i)[2] >= region[2].min()) &&
-        //               (positions(i)[2] <= region[2].max()));
-        //        }, Kokkos::Prod<int>(allValid));
-        //    Kokkos::fence();
-        //    if (!allValid) {
-        //        std::cout << "Located particles invalid on rank after receive " << Ippl::Comm->rank() << std::endl;
-        //        //abort();
-        //    } //else {
-        //    //    std::cout << "Locating OK on rank receive" << Ippl::Comm->rank() << std::endl;
-        //    //}
-        //}
         IpplTimings::stopTimer(sendTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
@@ -363,6 +289,7 @@ namespace ippl {
                     idx += 1;
                 }
             });
+        Kokkos::fence();
     }
 
 
@@ -382,6 +309,7 @@ namespace ippl {
             {
                 num += size_t(rank == ranks(i));
             }, nSends);
+        Kokkos::fence();
         return nSends;
     }
 }

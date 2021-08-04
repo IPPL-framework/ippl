@@ -182,8 +182,8 @@ namespace ippl {
         // Resize buffers, if necessary
         if (deleteIndex_m.size() < destroyNum) {
             int overalloc = Ippl::Comm->getDefaultOverallocation();
-            Kokkos::resize(deleteIndex_m, destroyNum * overalloc);
-            Kokkos::resize(keepIndex_m, destroyNum * overalloc);
+            Kokkos::realloc(deleteIndex_m, destroyNum * overalloc);
+            Kokkos::realloc(keepIndex_m, destroyNum * overalloc);
         }
 
         // Reset index buffer

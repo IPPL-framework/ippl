@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 
     //std::cout << layout << std::endl;
     bunch_type bunchBuffer(pl);
-    bunchBuffer.create(100000);
+    bunchBuffer.create(100);
 
     int nsteps = 300;
 
@@ -225,34 +225,34 @@ int main(int argc, char *argv[]) {
         //pl.update(bunch);
         //field.accumulateHalo();
         //field.fillHalo();
-        field = 0.0;
-        scatter(bunch.Q, field, bunch.R);
-        double Q_grid = field.sum();
-        double Q_m = bunch.Q.sum();
-        
-        unsigned int Total_particles = 0;
-        unsigned int local_particles = bunch.getLocalNum();
+        //field = 0.0;
+        //scatter(bunch.Q, field, bunch.R);
+        //double Q_grid = field.sum();
+        //double Q_m = bunch.Q.sum();
+        //
+        //unsigned int Total_particles = 0;
+        //unsigned int local_particles = bunch.getLocalNum();
 
-        MPI_Reduce(&local_particles, &Total_particles, 1, 
-                       MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
+        //MPI_Reduce(&local_particles, &Total_particles, 1, 
+        //               MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
 
-        double rel_error = std::fabs((Q_m-Q_grid)/Q_m);
-         m << "Rel. error in charge conservation = " << rel_error << endl;
+        //double rel_error = std::fabs((Q_m-Q_grid)/Q_m);
+        // m << "Rel. error in charge conservation = " << rel_error << endl;
 
-         if(Ippl::Comm->rank() == 0) {
-             if((Total_particles != nParticles) || (rel_error > 1e-15)) {
-                 std::cout << "Total particles in the sim. " << nParticles 
-                           << " " << "after update: " 
-                           << Total_particles << std::endl;
-                 std::cout << "Total particles not matched in iteration: " 
-                           << nt+1 << std::endl;
-                 std::cout << "Rel. error in charge conservation: " 
-                           << rel_error << std::endl;
-                 exit(1);
-             }
-         }
-        fieldE = 1.0;
-        gather(bunch.E, fieldE, bunch.R);
+        // if(Ippl::Comm->rank() == 0) {
+        //     if((Total_particles != nParticles) || (rel_error > 1e-15)) {
+        //         std::cout << "Total particles in the sim. " << nParticles 
+        //                   << " " << "after update: " 
+        //                   << Total_particles << std::endl;
+        //         std::cout << "Total particles not matched in iteration: " 
+        //                   << nt+1 << std::endl;
+        //         std::cout << "Rel. error in charge conservation: " 
+        //                   << rel_error << std::endl;
+        //         exit(1);
+        //     }
+        // }
+        //fieldE = 1.0;
+        //gather(bunch.E, fieldE, bunch.R);
         IpplTimings::stopTimer(UpdateTimer);
         msg << "Update: " << nt+1 << endl;
         //Kokkos::resize(R_host, bunch.R.size());

@@ -42,6 +42,7 @@ namespace ippl {
         // Attention: only works with default spaces
         using archive_type = detail::Archive<>;
         using buffer_type = std::shared_ptr<archive_type>;
+        //using buffer_type = archive_type;
 
         using size_type = detail::size_type;
         using count_type = detail::count_type;
@@ -218,15 +219,18 @@ namespace ippl {
         //    std::cout << "particle E field: " << E_host(0) << std::endl;
         //}
 
+
+
         buffer.serialize(ar, nsends);
+        if(this->rank() == 6) {
+            std::cout << "Rank " << this->rank() << " send details " 
+                      << " msize: " << ar.getSize()
+                      //<< " buffer size: " << ar.getBuffer()->getBufferSize()
+                      << " dest: " << dest
+                      << " tag: " << tag << std::endl;
+        }
         MPI_Isend(ar.getBuffer(), ar.getSize(),
                   MPI_BYTE, dest, tag, *this, &request);
-        //if(dest == 0) {
-        //    std::cout << "Rank " << this->rank() << " send details " 
-        //              << " msize: " << ar.getSize()
-        //              << " src: " << this->rank()
-        //              << " tag: " << tag << std::endl;
-        //}
     }
 }
 
