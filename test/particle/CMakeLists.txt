@@ -35,12 +35,6 @@ target_link_libraries (PenningTrap ${IPPL_LIBS})
 add_executable (UniformPlasmaTest UniformPlasmaTest.cpp)
 target_link_libraries (UniformPlasmaTest ${IPPL_LIBS})
 
-add_executable (serialize03 serialize03.cpp)
-target_link_libraries (serialize03 ${IPPL_LIBS})
-
-add_executable (serialize04 serialize04.cpp)
-target_link_libraries (serialize04 ${IPPL_LIBS})
-
 add_executable (TestParticleBConds TestParticleBConds.cpp)
 target_link_libraries (TestParticleBConds ${IPPL_LIBS})
 

@@ -466,7 +466,7 @@ int main(int argc, char *argv[]){
     Inform msg("PenningTrap");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(2);
+    Ippl::Comm->setDefaultOverallocation(1);
 
 
     auto start = std::chrono::high_resolution_clock::now();
