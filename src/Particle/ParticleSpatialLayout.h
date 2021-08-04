@@ -66,8 +66,6 @@ namespace ippl {
         ~ParticleSpatialLayout() = default;
         //~ParticleSpatialLayout() {}
 
-        //template <class BufferType>
-        //void update(/*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata);
         template <class BufferType>
         void update(BufferType& pdata, BufferType& buffer);
 

@@ -77,20 +77,6 @@ namespace ippl {
         });
         Kokkos::fence();
         
-        //if constexpr(std::is_scalar<T>::value) {
-        //     auto viewL = buffer_p->dview_m;
-        //     T sumG = 0;
-        //     Kokkos::parallel_reduce(
-        //         "ParticleAttrib::pack() reduce",
-        //         size,
-        //         KOKKOS_LAMBDA(const size_t i, T& sumL) {
-        //             sumL += viewL(i);
-        //     }, sumG);
-        //     Kokkos::fence();
-        //     std::cout << "Rank " << Ippl::Comm->rank() << "has sending value " << sumG << std::endl;
-
-        // }
-
     
     }
 
@@ -115,19 +101,6 @@ namespace ippl {
                 dview_m(count + i) = view(i);
         });
         Kokkos::fence();
-        //if constexpr(std::is_scalar<T>::value) {
-        //     auto viewL = buffer_p->dview_m;
-        //     T sumG = 0;
-        //     Kokkos::parallel_reduce(
-        //         "ParticleAttrib::unpack() reduce",
-        //         nrecvs,
-        //         KOKKOS_LAMBDA(const size_t i, T& sumL) {
-        //             sumL += viewL(i);
-        //     }, sumG);
-        //     Kokkos::fence();
-        //     std::cout << "Rank " << Ippl::Comm->rank() << "has receiving value " << sumG << std::endl;
-
-        // } 
     
     }
 
@@ -200,12 +173,6 @@ namespace ippl {
                 const size_t i = index[0] - lDom[0].first() + nghost;
                 const size_t j = index[1] - lDom[1].first() + nghost;
                 const size_t k = index[2] - lDom[2].first() + nghost;
-
-                //if (i < 1 || j < 1 || k < 1 ||
-                //    i >= view.extent(0) || j >= view.extent(1) || k >= view.extent(2)) {
-                //    std::cout << Ippl::Comm->rank() << ": " << idx << "; " << i << "," << j << "," << k
-                //                << " for position " << pp(idx) << std::endl;
-                //}
 
 
                 // scatter

@@ -34,10 +34,6 @@ namespace ippl {
                 if (buf->getBufferSize() < size) {
                     buf->reallocBuffer(size);
                 }
-                if(this->rank() == 6) {
-                    std::cout << "Buffer size: " << buf->getBufferSize() << std::endl; 
-                    std::cout << "Requested size: " << size << std::endl; 
-                }
                 return buf;
             }
             buffers[id] = std::make_shared<archive_type>(size * std::max(overallocation, defaultOveralloc));

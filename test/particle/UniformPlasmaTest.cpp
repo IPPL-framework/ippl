@@ -1,4 +1,4 @@
-// Penning Trap
+// Uniform Plasma Test
 //
 //   Usage:
 //     srun ./UniformPlasmaTest 128 128 128 10000 300 FFT --info 10
@@ -76,7 +76,7 @@ void dumpVTK(VField_t& E, int nx, int ny, int nz, int iteration,
     // and start with header
     vtkout.open(fname.str().c_str(), std::ios::out);
     vtkout << "# vtk DataFile Version 2.0" << std::endl;
-    vtkout << "PenningTrap" << std::endl;
+    vtkout << "UniformPlasmaTest" << std::endl;
     vtkout << "ASCII" << std::endl;
     vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
     vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << std::endl;
@@ -121,7 +121,7 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration,
     // and start with header
     vtkout.open(fname.str().c_str(), std::ios::out);
     vtkout << "# vtk DataFile Version 2.0" << std::endl;
-    vtkout << "PenningTrap" << std::endl;
+    vtkout << "UniformPlasmaTest" << std::endl;
     vtkout << "ASCII" << std::endl;
     vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
     vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << std::endl;
@@ -463,7 +463,7 @@ private:
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     //Inform msg(argv[0]);
-    Inform msg("PenningTrap");
+    Inform msg("UniformPlasmaTest");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
     Ippl::Comm->setDefaultOverallocation(1);
@@ -556,18 +556,6 @@ int main(int argc, char *argv[]){
 
         
     IpplTimings::stopTimer(particleCreation);                                                    
-
-
-    //Vector_t originField = {rmin[0]-hr[0], rmin[1]-hr[1], rmin[2]-hr[2]};
-    //double dxField = (rmax[0] + hr[0] - originField[0]) / nr[0];
-    //double dyField = (rmax[1] + hr[1] - originField[1]) / nr[1];
-    //double dzField = (rmax[2] + hr[2] - originField[2]) / nr[2];
-
-    //Vector_t hrField = {dxField, dyField, dzField};
-    //Mesh_t meshField(domain, hrField, originField);
-
-    //P->E_m.initialize(meshField, FL);
-    //P->rho_m.initialize(meshField, FL);
 
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
@@ -677,7 +665,7 @@ int main(int argc, char *argv[]){
         msg << "Finished iteration: " << it << " time: " << P->time_m << endl;
     }
     
-    msg << "Penning Trap: End." << endl;
+    msg << "Uniform Plasma Test: End." << endl;
     IpplTimings::stopTimer(mainTimer);                                                    
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));

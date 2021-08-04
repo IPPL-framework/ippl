@@ -42,9 +42,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh>
     template <class BufferType>
     void ParticleSpatialLayout<T, Dim, Mesh>::update(
-        ///*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata)
         BufferType& pdata, BufferType& buffer)
-        //BufferType& pdata)
     {
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("ParticleBC");
         IpplTimings::startTimer(ParticleBCTimer);
@@ -134,13 +132,6 @@ namespace ippl {
 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
 
-                if(Ippl::Comm->rank() == 6) {
-                    std::cout << "Rank " << Ippl::Comm->rank() << " sends " << nSends[rank]
-                         << " particles to " << rank << std::endl;
-                }
-                 //std::cout << "Rank " << Ippl::Comm->rank() << " sends " << bufSize
-                 //        << " size to " << rank << std::endl;
-                //}
 
                 if(bufSize > 2147483647) {
                     std::cout << "Exceeds MPI send size" << std::endl;
@@ -156,7 +147,6 @@ namespace ippl {
         }
         IpplTimings::stopTimer(sendTimer);
         Ippl::Comm->barrier();
-        //std::cout << "Rank " << Ippl::Comm->rank() << " send completed " << std::endl;
 
         // 3rd step
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("ParticleDestroy");
@@ -178,10 +168,6 @@ namespace ippl {
         Kokkos::fence();
         
         IpplTimings::stopTimer(destroyTimer);
-        //Ippl::Comm->barrier();
-        //int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
-        //std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nTotalRecvs << " particles in total " << std::endl;
-        //Ippl::Comm->barrier();
         static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("ParticleRecv");
         IpplTimings::startTimer(recvTimer);
         // 4th step
@@ -195,33 +181,22 @@ namespace ippl {
                     std::cout << "Exceeds MPI recv size" << std::endl;
                     exit(1);
                 }
-                //std::cout << "Rank " << Ippl::Comm->rank() << " receives " << nRecvs[rank]
-                //         << " particles from " << rank << std::endl;
                 Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
                 buf->resetReadPos();
-                //std::cout << "Rank " << Ippl::Comm->rank() << " MPI receive completed from rank " << rank << std::endl;
 
                 pdata.unpack(buffer, nRecvs[rank]);
-                //std::cout << "Rank " << Ippl::Comm->rank() << " unpack completed from rank " << rank << std::endl;
 
                 ++recvs;
             }
 
         }
         IpplTimings::stopTimer(recvTimer);
-        //Ippl::Comm->barrier();
 
-        //std::cout << "Rank " << Ippl::Comm->rank() << " receive completed " << std::endl;
         IpplTimings::startTimer(sendTimer);
         
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
-        //std::cout << "Rank " << Ippl::Comm->rank() << " send waitall completed " << std::endl;
-        //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << pdata.getLocalNum()
-        // << " particles" << std::endl;
-        //std::cout << "End of particle update: Rank " << Ippl::Comm->rank() << " has " << std::setprecision(16) << pdata.q.sum() << std::endl;
-        //Ippl::Comm->barrier();
         IpplTimings::stopTimer(sendTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
