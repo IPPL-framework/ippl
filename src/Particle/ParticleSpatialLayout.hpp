@@ -146,7 +146,6 @@ namespace ippl {
             }
         }
         IpplTimings::stopTimer(sendTimer);
-        Ippl::Comm->barrier();
 
         // 3rd step
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("ParticleDestroy");

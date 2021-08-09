@@ -511,7 +511,7 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 1.0;//0.05;//size of timestep
+    const double dt = 1.0;
 
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp);
@@ -573,7 +573,6 @@ int main(int argc, char *argv[]){
 
 
     //std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step 0 " << P->getLocalNum() << std::endl;
-    //Ippl::Comm->barrier();
     msg << "particles created and initial conditions assigned " << endl;
 
     P->stype_m = argv[6];
@@ -610,7 +609,6 @@ int main(int argc, char *argv[]){
         IpplTimings::startTimer(PTimer);                                                    
         P->P = P->P - 0.5 * dt * P->E * 0.0;
         IpplTimings::stopTimer(PTimer);
-        Ippl::Comm->barrier();
 
 
         static IpplTimings::TimerRef temp = IpplTimings::getTimer("RandomMove");           
@@ -620,14 +618,12 @@ int main(int argc, char *argv[]){
                              P->P.getView(), rand_pool64, -hr, hr));
         Kokkos::fence();
         IpplTimings::stopTimer(temp);                                                    
-        Ippl::Comm->barrier();
         
         //drift
         static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionPush");           
         IpplTimings::startTimer(RTimer);                                                    
         P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);                                                    
-        Ippl::Comm->barrier();
 
         //Since the particles have moved spatially update them to correct processors 
         //IpplTimings::startTimer(UpdateTimer);
@@ -636,27 +632,22 @@ int main(int argc, char *argv[]){
         //IpplTimings::stopTimer(UpdateTimer);                                                    
 
         //std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step " << it+1 << " " << P->getLocalNum() << std::endl;
-        Ippl::Comm->barrier();
         
         //scatter the charge onto the underlying grid
         P->scatterCIC(totalP, it+1, hr);
-        Ippl::Comm->barrier();
         
         //Field solve
         IpplTimings::startTimer(SolveTimer);                                               
         P->solver_mp->solve();
         IpplTimings::stopTimer(SolveTimer);                                               
-        Ippl::Comm->barrier();
         
         // gather E field
         P->gatherCIC();
-        Ippl::Comm->barrier();
 
         //kick
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E * 0.0;
         IpplTimings::stopTimer(PTimer);                                                    
-        Ippl::Comm->barrier();
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);                                               
