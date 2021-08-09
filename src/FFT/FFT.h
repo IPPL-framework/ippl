@@ -89,7 +89,7 @@ namespace ippl {
             using complexType = std::complex<float>;
         };
         template <>
-        struct HeffteBackendType<float> {
+        struct HeffteBackendType<double> {
             using backend = heffte::backend::mkl;
             using complexType = std::complex<double>;
         };
