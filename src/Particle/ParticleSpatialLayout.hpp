@@ -218,22 +218,14 @@ namespace ippl {
             mdrange_type({0, 0},
                          {ranks.extent(0), Regions.extent(0)}),
             KOKKOS_LAMBDA(const size_t i, const view_size_t j) {
-                bool x_bool = false;
-                bool y_bool = false;
-                bool z_bool = false;
-                if((positions(i)[0] >= Regions(j)[0].min()) &&
-                   (positions(i)[0] <= Regions(j)[0].max())) {
-                    x_bool = true;
-                }
-                if((positions(i)[1] >= Regions(j)[1].min()) &&
-                   (positions(i)[1] <= Regions(j)[1].max())) {
-                    y_bool = true;
-                }
-                if((positions(i)[2] >= Regions(j)[2].min()) &&
-                   (positions(i)[2] <= Regions(j)[2].max())) {
-                    z_bool = true;
-                }
-                if(x_bool && y_bool && z_bool){
+                bool xyz_bool = false;
+                xyz_bool = ((positions(i)[0] >= Regions(j)[0].min()) &&
+                            (positions(i)[0] <= Regions(j)[0].max()) &&
+                            (positions(i)[1] >= Regions(j)[1].min()) &&
+                            (positions(i)[1] <= Regions(j)[1].max()) &&
+                            (positions(i)[2] >= Regions(j)[2].min()) &&
+                            (positions(i)[2] <= Regions(j)[2].max()));
+                if(xyz_bool){
                     ranks(i) = j;
                     invalid(i) = (myRank != ranks(i));
                 }
