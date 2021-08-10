@@ -29,7 +29,7 @@ struct Bunch : public ippl::ParticleBase<PLayout>
 int main(int argc, char *argv[]) {
     Ippl ippl(argc, argv);
 
-    Ippl::Comm->setDefaultOverallocation(2);
+    Ippl::Comm->setDefaultOverallocation(1);
 
     typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
     typedef Bunch<playout_type> bunch_type;
