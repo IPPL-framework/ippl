@@ -267,12 +267,7 @@ public:
     }
     
     void gatherCIC() {
-
-        //static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather"); 
-        //IpplTimings::startTimer(gatherTimer);                                                    
         gather(this->E, E_m, this->R);
-        //IpplTimings::stopTimer(gatherTimer);
-
     }
 
     void scatterCIC(uint64_t totalP, int iteration, Vector_t& hrField) {
@@ -477,7 +472,17 @@ int main(int argc, char *argv[]){
     };
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");           
+    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
+    static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("initialisation");           
+    static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");           
+    static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("kick");           
+    static IpplTimings::TimerRef temp = IpplTimings::getTimer("randomMove");
+    static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("drift");
+    static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update"); 
+    static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
+    
     IpplTimings::startTimer(mainTimer);                                                    
+
     const uint64_t totalP = std::atoll(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
     
@@ -516,11 +521,9 @@ int main(int argc, char *argv[]){
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp);
     PLayout_t PL(FL, mesh);
-
-
+    
     double Q = -1562.5;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
-
 
     P->nr_m = nr;
     uint64_t nloc = totalP / Ippl::Comm->size();
@@ -530,13 +533,6 @@ int main(int argc, char *argv[]){
     if ( Ippl::Comm->rank() < rest )
         ++nloc;
 
-    //if ( rest > 0 ) {
-    //    msg << "Total particles are not an exact multiple of ranks" << endl;
-    //    exit(1);
-    //}
-
-
-    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
     IpplTimings::startTimer(particleCreation);                                                    
     P->create(nloc);
 
@@ -552,50 +548,35 @@ int main(int argc, char *argv[]){
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
                          P->R.getView(), rand_pool64, Rmin, Rmax));
     Kokkos::fence();
-    P->q = P->Q_m/totalP;
-
-        
+    P->q = P->Q_m/totalP;        
     IpplTimings::stopTimer(particleCreation);                                                    
 
+
+    IpplTimings::startTimer(FirstUpdateTimer);                                               
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
 
-
     bunch_type bunchBuffer(PL);
-    //bunchBuffer.create(1.5e6);
     bunchBuffer.create(100);
-    static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("FirstUpdate");           
-    IpplTimings::startTimer(FirstUpdateTimer);                                               
-    //P->update();
-    PL.update(*P, bunchBuffer);
-    IpplTimings::stopTimer(FirstUpdateTimer);                                                    
 
+    PL.update(*P, bunchBuffer);     //P->update();
 
-
-    //std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step 0 " << P->getLocalNum() << std::endl;
     msg << "particles created and initial conditions assigned " << endl;
 
     P->stype_m = argv[6];
     P->initSolver();
-
     P->time_m = 0.0;
     
     P->scatterCIC(totalP, 0, hr);
-    
-   
-    static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");           
-    IpplTimings::startTimer(SolveTimer);                                               
-    P->solver_mp->solve();
-    IpplTimings::stopTimer(SolveTimer);
 
+    P->solver_mp->solve();
+    
     P->gatherCIC();
 
-
-    static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");           
-    IpplTimings::startTimer(dumpDataTimer);                                               
     P->dumpData();
-    IpplTimings::stopTimer(dumpDataTimer);                                               
 
+    IpplTimings::stopTimer(FirstUpdateTimer);                                                    
+    
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
@@ -605,13 +586,11 @@ int main(int argc, char *argv[]){
         // all the particles hence eliminating the need to store mass as 
         // an attribute
         // kick
-        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityPush");           
+
         IpplTimings::startTimer(PTimer);                                                    
         P->P = P->P - 0.5 * dt * P->E * 0.0;
         IpplTimings::stopTimer(PTimer);
 
-
-        static IpplTimings::TimerRef temp = IpplTimings::getTimer("RandomMove");           
         IpplTimings::startTimer(temp);                                                    
         Kokkos::parallel_for(P->getLocalNum(),
                              generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
@@ -620,16 +599,15 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(temp);                                                    
         
         //drift
-        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionPush");           
         IpplTimings::startTimer(RTimer);                                                    
         P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);                                                    
 
         //Since the particles have moved spatially update them to correct processors 
-        //IpplTimings::startTimer(UpdateTimer);
-        //P->update();
-        PL.update(*P, bunchBuffer);
-        //IpplTimings::stopTimer(UpdateTimer);                                                    
+	IpplTimings::startTimer(updateTimer);
+        
+        PL.update(*P, bunchBuffer);  //P->update();
+        IpplTimings::stopTimer(updateTimer);                                                    
 
         //std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step " << it+1 << " " << P->getLocalNum() << std::endl;
         
