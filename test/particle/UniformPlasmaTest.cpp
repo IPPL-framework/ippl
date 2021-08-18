@@ -170,7 +170,6 @@ struct generate_random {
     typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
     // Draw samples numbers from the pool as double in the range [start, end)
-    //for (unsigned d = 0; d < Dim; d++)
       vals(i)[0] = rand_gen.drand(start[0], end[0]);
       vals(i)[1] = rand_gen.drand(start[1], end[1]);
       vals(i)[2] = rand_gen.drand(start[2], end[2]);
@@ -275,13 +274,9 @@ public:
          
          Inform m("scatter ");
          
-         //m << "Total particles = " << Total_particles << endl;
         
-        //static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
-         //IpplTimings::startTimer(scatterTimer);                                                    
          rho_m = 0.0;
          scatter(q, rho_m, this->R);
-         //IpplTimings::stopTimer(scatterTimer);                                                    
          
          static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check");           
          IpplTimings::startTimer(sumTimer);                                                    
@@ -357,7 +352,7 @@ public:
         
         ippl::FFTParams fftParams;
 
-        fftParams.setAllToAll( true );
+        fftParams.setAllToAll( false );
         fftParams.setPencils( true );
         fftParams.setReorder( false );
         fftParams.setRCDirection( 0 );
@@ -559,7 +554,9 @@ int main(int argc, char *argv[]){
     bunch_type bunchBuffer(PL);
     bunchBuffer.create(100);
 
+	IpplTimings::startTimer(updateTimer);
     PL.update(*P, bunchBuffer);     //P->update();
+    IpplTimings::stopTimer(updateTimer);                                                    
 
     msg << "particles created and initial conditions assigned " << endl;
 
@@ -569,11 +566,15 @@ int main(int argc, char *argv[]){
     
     P->scatterCIC(totalP, 0, hr);
 
+    IpplTimings::startTimer(SolveTimer);                                               
     P->solver_mp->solve();
+    IpplTimings::stopTimer(SolveTimer);                                               
     
     P->gatherCIC();
 
+    IpplTimings::startTimer(dumpDataTimer);                                               
     P->dumpData();
+    IpplTimings::stopTimer(dumpDataTimer);                                               
 
     IpplTimings::stopTimer(FirstUpdateTimer);                                                    
     
@@ -604,12 +605,10 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(RTimer);                                                    
 
         //Since the particles have moved spatially update them to correct processors 
-	IpplTimings::startTimer(updateTimer);
-        
+	    IpplTimings::startTimer(updateTimer);
         PL.update(*P, bunchBuffer);  //P->update();
         IpplTimings::stopTimer(updateTimer);                                                    
 
-        //std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step " << it+1 << " " << P->getLocalNum() << std::endl;
         
         //scatter the charge onto the underlying grid
         P->scatterCIC(totalP, it+1, hr);

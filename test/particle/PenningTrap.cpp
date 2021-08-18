@@ -232,10 +232,7 @@ public:
     
     void gatherCIC() {
 
-        //static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather"); 
-        //IpplTimings::startTimer(gatherTimer);                                                    
         gather(this->E, E_m, this->R);
-        //IpplTimings::stopTimer(gatherTimer);
 
     }
 
@@ -244,13 +241,8 @@ public:
          
          Inform m("scatter ");
          
-         //m << "Total particles = " << Total_particles << endl;
-        
-        //static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");           
-         //IpplTimings::startTimer(scatterTimer);                                                    
          rho_m = 0.0;
          scatter(q, rho_m, this->R);
-         //IpplTimings::stopTimer(scatterTimer);                                                    
          
          static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check");           
          IpplTimings::startTimer(sumTimer);                                                    
@@ -551,9 +543,6 @@ int main(int argc, char *argv[]){
         std::uniform_real_distribution<double> distribution_x(Rmin[0], Rmax[0]);
         std::uniform_real_distribution<double> distribution_y(Rmin[1], Rmax[1]);
         std::uniform_real_distribution<double> distribution_z(Rmin[2], Rmax[2]);
-        //std::uniform_real_distribution<double> distribution_x(rmin[0], rmax[0]);
-        //std::uniform_real_distribution<double> distribution_y(rmin[1], rmax[1]);
-        //std::uniform_real_distribution<double> distribution_z(rmin[2], rmax[2]);
         
         std::mt19937_64 eng[3*Dim];
         for (unsigned i = 0; i < 3*Dim; ++i) {
@@ -686,7 +675,6 @@ int main(int argc, char *argv[]){
 
 
     bunch_type bunchBuffer(PL);
-    //bunchBuffer.create(1.5e6);
     bunchBuffer.create(100);
     static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("FirstUpdate");           
     IpplTimings::startTimer(FirstUpdateTimer);                                               
@@ -694,11 +682,6 @@ int main(int argc, char *argv[]){
     PL.update(*P, bunchBuffer);
     IpplTimings::stopTimer(FirstUpdateTimer);                                                    
 
-
-
-    Ippl::Comm->barrier();
-    //std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step 0 " << P->getLocalNum() << std::endl;
-    //Ippl::Comm->barrier();
     msg << "particles created and initial conditions assigned " << endl;
 
     P->stype_m = argv[6];
@@ -707,17 +690,14 @@ int main(int argc, char *argv[]){
     P->time_m = 0.0;
     
     P->scatterCIC(Total_particles, 0, hr);
-    Ippl::Comm->barrier();
     
    
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");           
     IpplTimings::startTimer(SolveTimer);                                               
     P->solver_mp->solve();
     IpplTimings::stopTimer(SolveTimer);
-    Ippl::Comm->barrier();
 
     P->gatherCIC();
-    Ippl::Comm->barrier();
 
 
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");           
@@ -762,28 +742,19 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(RTimer);                                                    
 
         //Since the particles have moved spatially update them to correct processors 
-        //IpplTimings::startTimer(UpdateTimer);
-        //P->update();
         PL.update(*P, bunchBuffer);
-        //IpplTimings::stopTimer(UpdateTimer);                                                    
 
-        Ippl::Comm->barrier();
-        //std::cout << "Local number of particles for rank: "<< Ippl::Comm->rank() << " in time step " << it+1 << " " << P->getLocalNum() << std::endl;
-        //Ippl::Comm->barrier();
         
         //scatter the charge onto the underlying grid
         P->scatterCIC(Total_particles, it+1, hr);
-        Ippl::Comm->barrier();
         
         //Field solve
         IpplTimings::startTimer(SolveTimer);                                               
         P->solver_mp->solve();
         IpplTimings::stopTimer(SolveTimer);                                               
-        Ippl::Comm->barrier();
         
         // gather E field
         P->gatherCIC();
-        Ippl::Comm->barrier();
 
         //kick
         IpplTimings::startTimer(PTimer);
@@ -803,7 +774,6 @@ int main(int argc, char *argv[]){
         
         });
         IpplTimings::stopTimer(PTimer);                                                    
-        Ippl::Comm->barrier();
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);                                               
