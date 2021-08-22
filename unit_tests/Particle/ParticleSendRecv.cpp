@@ -83,9 +83,9 @@ public:
 
         mesh_m = mesh_type(owned, hx, origin);
 
-        pl_m = playout_type(layout_m, mesh_m);
+        pl = playout_type(layout_m, mesh_m);
         
-        bunch = std::make_unique<bunch_type>(pl_m);
+        bunch = std::make_unique<bunch_type>(pl);
         
         using BC = ippl::BC;
 
@@ -120,7 +120,7 @@ public:
 
         Kokkos::deep_copy(bunch->R.getView(), R_host);
         bunch->Q = 1.0;
-        RegionLayout_t RLayout = pl_m.getRegionLayout();
+        RegionLayout_t RLayout = pl.getRegionLayout();
 
         auto& positions = bunch->R.getView();
         typename RegionLayout_t::view_type Regions = RLayout.getdLocalRegions();
@@ -157,18 +157,20 @@ public:
     std::unique_ptr<bunch_type> bunch;
     unsigned int nParticles;
     size_t nPoints;
+    playout_type pl;
 
 private:
     flayout_type layout_m;
     mesh_type mesh_m;
-    playout_type pl_m;
 };
 
 
 
 TEST_F(ParticleSendRecv, SendAndRecieve) {
 
-    bunch->update();
+    bunch_type bunchBuffer(pl);
+    pl.update(*bunch, bunchBuffer);
+    //bunch->update();
     ER_t::view_type::host_mirror_type ER_host = bunch->expectedRank.getHostMirror();
     Kokkos::resize(ER_host, bunch->expectedRank.size());
     Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());

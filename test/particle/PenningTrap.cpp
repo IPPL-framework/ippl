@@ -675,7 +675,6 @@ int main(int argc, char *argv[]){
 
 
     bunch_type bunchBuffer(PL);
-    bunchBuffer.create(100);
     static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("FirstUpdate");           
     IpplTimings::startTimer(FirstUpdateTimer);                                               
     //P->update();

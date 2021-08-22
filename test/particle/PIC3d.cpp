@@ -402,7 +402,6 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(particleCreation);                                                    
 
     bunch_type bunchBuffer(PL);
-    bunchBuffer.create(1.5e6);
 
     static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
     IpplTimings::startTimer(UpdateTimer);                                               

@@ -26,6 +26,13 @@ int main(int argc, char *argv[]) {
     bunch_type bunch(pl);
 
 
+    int nRanks = Ippl::Comm->size();
+    if (nRanks > 1) {
+        if (Ippl::Comm->rank() == 0) {
+            std::cerr << " This test only works for 1 MPI rank! " << std::endl;
+        }
+        return 0;
+    }
     int n = 10;
 
     bunch.create(n);

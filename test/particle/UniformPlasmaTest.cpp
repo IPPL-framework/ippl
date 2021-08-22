@@ -552,7 +552,6 @@ int main(int argc, char *argv[]){
     P->rho_m.initialize(mesh, FL);
 
     bunch_type bunchBuffer(PL);
-    bunchBuffer.create(100);
 
 	IpplTimings::startTimer(updateTimer);
     PL.update(*P, bunchBuffer);     //P->update();

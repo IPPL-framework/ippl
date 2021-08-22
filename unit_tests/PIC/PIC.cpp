@@ -45,10 +45,10 @@ public:
         typedef ippl::ParticleAttrib<double> charge_container_type;
         charge_container_type Q;
         
-        void update() {
-            PLayout& layout = this->getLayout();
-            layout.update(*this);
-        }
+        //void update() {
+        //    PLayout& layout = this->getLayout();
+        //    layout.update(*this);
+        //}
     };
 
 
@@ -80,9 +80,9 @@ public:
 
         field = std::make_unique<field_type>(mesh_m, layout_m);
 
-        pl_m = playout_type(layout_m, mesh_m);
+        pl = playout_type(layout_m, mesh_m);
         
-        bunch = std::make_unique<bunch_type>(pl_m);
+        bunch = std::make_unique<bunch_type>(pl);
         
         int nRanks = Ippl::Comm->size();
         if (nParticles % nRanks > 0) {
@@ -116,11 +116,11 @@ public:
     std::unique_ptr<bunch_type> bunch;
     size_t nParticles;
     size_t nPoints;
+    playout_type pl;
 
 private:
     flayout_type layout_m;
     mesh_type mesh_m;
-    playout_type pl_m;
 };
 
 
@@ -133,7 +133,9 @@ TEST_F(PICTest, Scatter) {
 
     bunch->Q = charge;
 
-    bunch->update();
+    bunch_type bunchBuffer(pl);
+    pl.update(*bunch, bunchBuffer);
+    //bunch->update();
 
     scatter(bunch->Q, *field, bunch->R);
 

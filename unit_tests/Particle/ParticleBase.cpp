@@ -51,30 +51,7 @@ TEST_F(ParticleBaseTest, Create) {
     EXPECT_EQ(nParticles, localnum);
 }
 
-
-TEST_F(ParticleBaseTest, Destroy) {
-    size_t nParticles = 1000;
-    size_t nDestroy   = 500;
-
-    pbase->create(nParticles);
-
-    using HostMirror = typename bunch_type::particle_index_type::HostMirror;
-    HostMirror ID_host = pbase->ID.getHostMirror();
-
-    Kokkos::deep_copy(ID_host, pbase->ID.getView());
-
-    for (size_t i = 0; i < nDestroy; ++i) {
-        ID_host(i) = -1;
-    }
-
-    Kokkos::deep_copy(pbase->ID.getView(), ID_host);
-
-    pbase->destroy();
-
-    size_t localnum = pbase->getLocalNum();
-
-    EXPECT_EQ(nParticles - nDestroy, localnum);
-}
+/*A test for sort needs to be added*/
 
 
 TEST_F(ParticleBaseTest, AddAttribute) {

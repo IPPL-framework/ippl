@@ -101,10 +101,10 @@ public:
         setBCAllPeriodic();
     }
 
-    void update() {
-        PLayout& layout = this->getLayout();
-        layout.update(*this);
-    }
+    //void update() {
+    //    PLayout& layout = this->getLayout();
+    //    layout.update(*this);
+    //}
 
     void gatherStatistics(unsigned int totalP, int iteration) {
 
@@ -271,9 +271,10 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(particleCreation);                                                    
     P->E = 0.0;
 
+    bunch_type bunchBuffer(PL);
     static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
     IpplTimings::startTimer(UpdateTimer);                                               
-    P->update();
+    PL.update(*P, bunchBuffer);
     IpplTimings::stopTimer(UpdateTimer);                                                    
 
 
@@ -325,7 +326,7 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(RTimer);                                                    
         
         IpplTimings::startTimer(UpdateTimer);
-        P->update();
+        PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(UpdateTimer);                                                    
 
 

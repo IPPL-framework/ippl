@@ -9,17 +9,17 @@ struct Bunch : public ippl::ParticleBase<PLayout>
     Bunch(PLayout& playout)
     : ippl::ParticleBase<PLayout>(playout)
     {
-        //this->addAttribute(expectedRank);
-        //this->addAttribute(Q);
+        this->addAttribute(expectedRank);
+        this->addAttribute(Q);
     }
 
     ~Bunch(){ }
 
-//    typedef ippl::ParticleAttrib<int> rank_type;
-//    typedef ippl::ParticleAttrib<double> charge_type;
-//    rank_type expectedRank;
-//    charge_type Q;
-//
+    typedef ippl::ParticleAttrib<int> rank_type;
+    typedef ippl::ParticleAttrib<double> charge_type;
+    rank_type expectedRank;
+    charge_type Q;
+
     //void update() {
     //    PLayout& layout = this->getLayout();
     //    layout.update(*this);
@@ -101,51 +101,51 @@ int main(int argc, char *argv[]) {
     Ippl::Comm->barrier();
     Kokkos::deep_copy(bunch.R.getView(), R_host);
 
-    //typedef ippl::detail::RegionLayout<double, 3, Mesh_t> RegionLayout_t;
-    //RegionLayout_t RLayout = pl.getRegionLayout();
+    typedef ippl::detail::RegionLayout<double, 3, Mesh_t> RegionLayout_t;
+    RegionLayout_t RLayout = pl.getRegionLayout();
 
 
-    //auto& positions = bunch.R.getView();
-    //typename RegionLayout_t::view_type Regions = RLayout.getdLocalRegions();
-    //using size_type = typename RegionLayout_t::view_type::size_type;
-    //using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-    //typedef ippl::ParticleAttrib<int> ER_t;
-    //ER_t::view_type ER = bunch.expectedRank.getView();
+    auto& positions = bunch.R.getView();
+    typename RegionLayout_t::view_type Regions = RLayout.getdLocalRegions();
+    using size_type = typename RegionLayout_t::view_type::size_type;
+    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+    typedef ippl::ParticleAttrib<int> ER_t;
+    ER_t::view_type ER = bunch.expectedRank.getView();
 
-    //Kokkos::parallel_for("Expected Rank",
-    //        mdrange_type({0, 0},
-    //                     {ER.extent(0), Regions.extent(0)}), 
-    //        KOKKOS_LAMBDA(const size_t i, const size_type j) {
-    //            bool x_bool = false;
-    //            bool y_bool = false;
-    //            bool z_bool = false;
-    //            if((positions(i)[0] >= Regions(j)[0].min()) &&
-    //               (positions(i)[0] <= Regions(j)[0].max())) {
-    //                x_bool = true;    
-    //            }
-    //            if((positions(i)[1] >= Regions(j)[1].min()) &&
-    //               (positions(i)[1] <= Regions(j)[1].max())) {
-    //                y_bool = true;    
-    //            }
-    //            if((positions(i)[2] >= Regions(j)[2].min()) &&
-    //               (positions(i)[2] <= Regions(j)[2].max())) {
-    //                z_bool = true;    
-    //            }
-    //            if(x_bool && y_bool && z_bool){
-    //                ER(i) = j;
-    //            }
-    //    });
-    //Kokkos::fence();
+    Kokkos::parallel_for("Expected Rank",
+            mdrange_type({0, 0},
+                         {ER.extent(0), Regions.extent(0)}), 
+            KOKKOS_LAMBDA(const size_t i, const size_type j) {
+                bool x_bool = false;
+                bool y_bool = false;
+                bool z_bool = false;
+                if((positions(i)[0] >= Regions(j)[0].min()) &&
+                   (positions(i)[0] <= Regions(j)[0].max())) {
+                    x_bool = true;    
+                }
+                if((positions(i)[1] >= Regions(j)[1].min()) &&
+                   (positions(i)[1] <= Regions(j)[1].max())) {
+                    y_bool = true;    
+                }
+                if((positions(i)[2] >= Regions(j)[2].min()) &&
+                   (positions(i)[2] <= Regions(j)[2].max())) {
+                    z_bool = true;    
+                }
+                if(x_bool && y_bool && z_bool){
+                    ER(i) = j;
+                }
+        });
+    Kokkos::fence();
 
-    //typename bunch_type::particle_index_type::HostMirror ID_host = bunch.ID.getHostMirror();
-    //Kokkos::deep_copy(ID_host, bunch.ID.getView());
+    typename bunch_type::particle_index_type::HostMirror ID_host = bunch.ID.getHostMirror();
+    Kokkos::deep_copy(ID_host, bunch.ID.getView());
 
-    //ER_t::view_type::host_mirror_type ER_host = bunch.expectedRank.getHostMirror();
-    //Kokkos::deep_copy(ER_host, bunch.expectedRank.getView());
-    //typedef ippl::ParticleAttrib<double> Q_t;
-    //Q_t::view_type::host_mirror_type Q_host = bunch.Q.getHostMirror();
+    ER_t::view_type::host_mirror_type ER_host = bunch.expectedRank.getHostMirror();
+    Kokkos::deep_copy(ER_host, bunch.expectedRank.getView());
+    typedef ippl::ParticleAttrib<double> Q_t;
+    Q_t::view_type::host_mirror_type Q_host = bunch.Q.getHostMirror();
 
-    //Kokkos::deep_copy(Q_host, bunch.Q.getView());
+    Kokkos::deep_copy(Q_host, bunch.Q.getView());
     if (Ippl::Comm->rank() == 0) {
         std::cout << "Before update:" << std::endl;
     }
@@ -153,36 +153,35 @@ int main(int argc, char *argv[]) {
 
     std::cout << layout << std::endl;
     bunch_type bunchBuffer(pl);
-    bunchBuffer.create(100);
 
     //bunch.update();
     pl.update(bunch, bunchBuffer);
 
     Ippl::Comm->barrier();
 
-    //Kokkos::resize(R_host, bunch.R.size());
-    //Kokkos::deep_copy(R_host, bunch.R.getView());
+    Kokkos::resize(R_host, bunch.R.size());
+    Kokkos::deep_copy(R_host, bunch.R.getView());
 
-    //Kokkos::resize(ID_host, bunch.ID.size());
-    //Kokkos::deep_copy(ID_host, bunch.ID.getView());
-    //
-    //Kokkos::resize(Q_host, bunch.Q.size());
-    //Kokkos::deep_copy(Q_host, bunch.Q.getView());
-    //
-    //Kokkos::resize(ER_host, bunch.expectedRank.size());
-    //Kokkos::deep_copy(ER_host, bunch.expectedRank.getView());
+    Kokkos::resize(ID_host, bunch.ID.size());
+    Kokkos::deep_copy(ID_host, bunch.ID.getView());
+    
+    Kokkos::resize(Q_host, bunch.Q.size());
+    Kokkos::deep_copy(Q_host, bunch.Q.getView());
+    
+    Kokkos::resize(ER_host, bunch.expectedRank.size());
+    Kokkos::deep_copy(ER_host, bunch.expectedRank.getView());
 
     if (Ippl::Comm->rank() == 0) {
         std::cout << "After update:" << std::endl;
     }
 
-    //for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
-    //    if(Ippl::Comm->rank() != ER_host(i)) {
-    //        std::cout << "Particle with ID: " << ID_host(i) << " "  
-    //                  << "has wrong rank!" << std::endl;
-    //        }
-    //    }
-    //Ippl::Comm->barrier();
+    for (size_t i = 0; i < bunch.getLocalNum(); ++i) {
+        if(Ippl::Comm->rank() != ER_host(i)) {
+            std::cout << "Particle with ID: " << ID_host(i) << " "  
+                      << "has wrong rank!" << std::endl;
+            }
+        }
+    Ippl::Comm->barrier();
 
     unsigned int Total_particles = 0;
     unsigned int local_particles = bunch.getLocalNum();
