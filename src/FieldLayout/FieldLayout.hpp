@@ -45,10 +45,10 @@ namespace ippl {
 
 
     template <unsigned Dim>
-    FieldLayout<Dim>::FieldLayout(const NDIndex<Dim>& domain, e_dim_tag* p)
+    FieldLayout<Dim>::FieldLayout(const NDIndex<Dim>& domain, e_dim_tag* p, bool isAllPeriodic)
     : FieldLayout()
     {
-        initialize(domain, p);
+        initialize(domain, p, isAllPeriodic);
     }
 
 
@@ -59,11 +59,13 @@ namespace ippl {
     template <unsigned Dim>
     void
     FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain,
-                                 e_dim_tag* userflags)
+                                 e_dim_tag* userflags, bool isAllPeriodic)
     {
         int nRanks = Ippl::Comm->size();
 
         gDomain_m = domain;
+
+        isAllPeriodic_m = isAllPeriodic;
 
         if (nRanks < 2) {
             Kokkos::resize(dLocalDomains_m, nRanks);
@@ -154,6 +156,44 @@ namespace ippl {
         return vertexNeighbors_m;
     }
 
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::face_neighbor_range_type&
+    FieldLayout<Dim>::getFaceNeighborsSendRange() const {
+        return faceNeighborsSendRange_m;
+    }
+
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::edge_neighbor_range_type&
+    FieldLayout<Dim>::getEdgeNeighborsSendRange() const {
+        return edgeNeighborsSendRange_m;
+    }
+
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::vertex_neighbor_range_type&
+    FieldLayout<Dim>::getVertexNeighborsSendRange() const {
+        return vertexNeighborsSendRange_m;
+    }
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::face_neighbor_range_type&
+    FieldLayout<Dim>::getFaceNeighborsRecvRange() const {
+        return faceNeighborsRecvRange_m;
+    }
+
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::edge_neighbor_range_type&
+    FieldLayout<Dim>::getEdgeNeighborsRecvRange() const {
+        return edgeNeighborsRecvRange_m;
+    }
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::vertex_neighbor_range_type&
+    FieldLayout<Dim>::getVertexNeighborsRecvRange() const {
+        return vertexNeighborsRecvRange_m;
+    }
 
     template <unsigned Dim>
     void FieldLayout<Dim>::write(std::ostream& out) const
@@ -229,6 +269,14 @@ namespace ippl {
                  */
                 auto intersect = gnd.intersect(hLocalDomains_m[rank]);
 
+                
+                bound_type rangeSend, rangeRecv;
+                rangeSend = getBounds(nd, hLocalDomains_m[rank], 
+                                      nd, nghost);
+                
+                rangeRecv = getBounds(hLocalDomains_m[rank], nd, 
+                                      nd, nghost);
+                
                 /* check how many dimension have length > 1.
                  * Vertices are scalars --> all dimensions have length 1
                  * Edges are vectors --> 1 dimension has length > 1
@@ -244,13 +292,13 @@ namespace ippl {
                 switch (nDim) {
 
                 case 0:
-                    addVertex(gnd, intersect, rank);
+                    addVertex(gnd, intersect, rank, rangeSend, rangeRecv);
                     break;
                 case 1:
-                    addEdge(gnd, intersect, rank);
+                    addEdge(gnd, intersect, rank, rangeSend, rangeRecv);
                     break;
                 case 2:
-                    addFace(gnd, intersect, rank);
+                    addFace(gnd, intersect, rank, rangeSend, rangeRecv);
                     break;
                 default:
                     throw IpplException(
@@ -258,14 +306,107 @@ namespace ippl {
                         "Failed to identify grid point. Neither a face, edge or vertex grid point.");
                 }
             }
+
+            if(isAllPeriodic_m) {
+
+                for (unsigned int d0 = 0; d0 < Dim; ++d0) {
+
+                    if(nd[d0].length() == gDomain_m[d0].length())
+                        continue;
+                    
+                    findNeighborsAllPeriodicBC(d0, gnd, nd, 
+                                               hLocalDomains_m[rank], 
+                                               nghost, rank); 
+                    
+                    for (unsigned int d1 = d0 + 1; d1 < Dim; ++d1) {
+                        
+                        findNeighborsAllPeriodicBC(d0, gnd, nd, 
+                                                   hLocalDomains_m[rank], 
+                                                   nghost, rank); 
+
+                        for (unsigned int d2 = d1 + 1; d2 < Dim; ++d2) {
+                            
+                            findNeighborsAllPeriodicBC(d0, gnd, nd, 
+                                                       hLocalDomains_m[rank], 
+                                                       nghost, rank); 
+                        
+                        }
+                    }
+                }
+            }
         }
     }
+    
+    template <unsigned Dim>
+    void FieldLayout<Dim>::findNeighborsAllPeriodicBC(unsigned int d0, 
+                                                      NDIndex_t& gnd, 
+                                                      NDIndex_t& nd, 
+                                                      NDIndex_t& ndNeighbor, 
+                                                      int nghost, 
+                                                      int rank) {
+        
+        
+        int offsetd0;
+        if(nd[d0].max() == gDomain_m[d0].max())
+            offsetd0 = -gDomain_m[d0].length();
+        else if(nd[d0].min() == gDomain_m[d0].min())
+            offsetd0 = gDomain_m[d0].length();
+        else
+            return;
+
+        gnd[d0] = gnd[d0] + offsetd0; 
+        nd[d0] = nd[d0] + offsetd0; 
+        if (gnd.touches(ndNeighbor)) {
+
+            auto intersect = gnd.intersect(ndNeighbor);
+            ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
+
+            bound_type rangeSend, rangeRecv;
+            rangeSend = getBounds(nd, ndNeighbor, 
+                                  nd, nghost);
+                
+            rangeRecv = getBounds(ndNeighbor, nd, 
+                                  nd, nghost);
+                
+            int nDim = 0;
+            for (unsigned int d = 0; d < Dim; ++d) {
+                const Index& index = intersect[d];
+                nDim += (index.length() > 1) ? 1 : 0;
+            }
+
+            switch (nDim) {
+
+            case 0:
+                addVertex(gnd, intersect, rank, rangeSend, rangeRecv);
+                break;
+            case 1:
+                addEdge(gnd, intersect, rank, rangeSend, rangeRecv);
+                break;
+            case 2:
+                addFace(gnd, intersect, rank, rangeSend, rangeRecv);
+                break;
+            default:
+                throw IpplException(
+                      "FieldLayout::findNeighborsAllPeriodicBC()",
+                      "Failed to identify grid point. Neither a face, edge or vertex grid point.");
+            }
+
+            ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
+        }
+
+        gnd[d0] = gnd[d0] - offsetd0; 
+        nd[d0] = nd[d0] - offsetd0; 
+    }
+
+
 
 
     template <unsigned Dim>
     void FieldLayout<Dim>::addVertex(const NDIndex_t& grown,
                                      const NDIndex_t& intersect,
-                                     int rank)
+                                     int rank,
+                                     const bound_type& rangeSend,
+                                     const bound_type& rangeRecv)
     {
         /* The following routine computes the correct index
          * of the vertex.
@@ -292,13 +433,18 @@ namespace ippl {
         PAssert(index < vertexNeighbors_m.size());
 
         vertexNeighbors_m[index] = rank;
+        vertexNeighborsSendRange_m[index] = rangeSend;
+        vertexNeighborsRecvRange_m[index] = rangeSend;
+        
     }
 
 
     template <unsigned Dim>
     void FieldLayout<Dim>::addEdge(const NDIndex_t& grown,
                                    const NDIndex_t& intersect,
-                                   int rank)
+                                   int rank,
+                                   const bound_type& rangeSend,
+                                   const bound_type& rangeRecv)
     {
         int nEdgesPerDim = (1 << (Dim - 1));
 
@@ -322,13 +468,17 @@ namespace ippl {
         PAssert(index < edgeNeighbors_m.size());
 
         edgeNeighbors_m[index].push_back(rank);
+        edgeNeighborsSendRange_m[index].push_back(rangeSend);
+        edgeNeighborsRecvRange_m[index].push_back(rangeRecv);
     }
 
 
     template <unsigned Dim>
     void FieldLayout<Dim>::addFace(const NDIndex_t& grown,
                                    const NDIndex_t& intersect,
-                                   int rank)
+                                   int rank,
+                                   const bound_type& rangeSend,
+                                   const bound_type& rangeRecv)
     {
         for (unsigned int d = 0; d < Dim; ++d) {
             const Index& index = intersect[d];
@@ -353,8 +503,35 @@ namespace ippl {
                  * z high --> 5
                  */
                 faceNeighbors_m[inc + 2 * d].push_back(rank);
+                faceNeighborsSendRange_m[inc + 2 * d].push_back(rangeSend);
+                faceNeighborsRecvRange_m[inc + 2 * d].push_back(rangeRecv);
                 break;
             }
         }
     }
+    
+    template <unsigned Dim>
+    typename FieldLayout<Dim>::bound_type
+    FieldLayout<Dim>::getBounds(const NDIndex_t& nd1,
+                                const NDIndex_t& nd2,
+                                const NDIndex_t& offset,
+                                int nghost)
+    {
+        NDIndex<Dim> gnd = nd2.grow(nghost);
+
+        NDIndex<Dim> overlap = gnd.intersect(nd1);
+
+        bound_type intersect;
+
+        /* Obtain the intersection bounds with local ranges of the view.
+         * Add "+1" to the upper bound since Kokkos loops always to "< extent".
+         */
+        for (size_t i = 0; i < Dim; ++i) {
+            intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/ + nghost;
+            intersect.hi[i] = overlap[i].last()  - offset[i].first() /*offset*/ + nghost + 1;
+        }
+
+        return intersect;
+    }
+
 }

@@ -56,13 +56,14 @@ namespace ippl {
         public:
             using view_type = typename detail::ViewType<T, Dim>::view_type;
             using Layout_t  = FieldLayout<Dim>;
+            using bound_type = typename Layout_t::bound_type;
 
-            struct bound_type {
-                // lower bounds (ordering: x, y, z)
-                std::array<long, Dim> lo;
-                // upper bounds (ordering x, y, z)
-                std::array<long, Dim> hi;
-            };
+            //struct bound_type {
+            //    // lower bounds (ordering: x, y, z)
+            //    std::array<long, Dim> lo;
+            //    // upper bounds (ordering x, y, z)
+            //    std::array<long, Dim> hi;
+            //};
 
             enum SendOrder {
                 HALO_TO_INTERNAL,
@@ -145,10 +146,10 @@ namespace ippl {
              * @param offset to map global to local grid point
              * @param nghost number of ghost cells per dimension
              */
-            bound_type getBounds(const NDIndex<Dim>& nd1,
-                                 const NDIndex<Dim>& nd2,
-                                 const NDIndex<Dim>& offset,
-                                 int nghost);
+            //bound_type getBounds(const NDIndex<Dim>& nd1,
+            //                     const NDIndex<Dim>& nd2,
+            //                     const NDIndex<Dim>& offset,
+            //                     int nghost);
 
         private:
 

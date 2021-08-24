@@ -68,6 +68,9 @@ namespace ippl {
              */
             using neighbor_type = typename Layout_t::face_neighbor_type;
             const neighbor_type& neighbors = layout->getFaceNeighbors();
+            using neighbor_range_type = typename Layout_t::face_neighbor_range_type;
+            const neighbor_range_type& neighborsSendRange = layout->getFaceNeighborsSendRange();
+            const neighbor_range_type& neighborsRecvRange = layout->getFaceNeighborsRecvRange();
             const auto& lDomains = layout->getHostLocalDomains();
 
             int myRank = Ippl::Comm->rank();
@@ -86,11 +89,13 @@ namespace ippl {
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
                         // owned domain increased by nghost cells
-                        range = getBounds(lDomains[myRank], lDomains[rank], 
-                                          lDomains[myRank], nghost);
+                        //range = getBounds(lDomains[myRank], lDomains[rank], 
+                        //                  lDomains[myRank], nghost);
+                        range = neighborsSendRange[face][i];
                     } else {
-                        range = getBounds(lDomains[rank], lDomains[myRank], 
-                                          lDomains[myRank], nghost);
+                        //range = getBounds(lDomains[rank], lDomains[myRank], 
+                        //                  lDomains[myRank], nghost);
+                        range = neighborsRecvRange[face][i];
                     }
 
 
@@ -115,11 +120,13 @@ namespace ippl {
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
                         // remote domain increased by nghost cells
-                        range = getBounds(lDomains[rank], lDomains[myRank], 
-                                          lDomains[myRank], nghost);
+                        //range = getBounds(lDomains[rank], lDomains[myRank], 
+                        //                  lDomains[myRank], nghost);
+                        range = neighborsRecvRange[face][i];
                     } else {
-                        range = getBounds(lDomains[myRank], lDomains[rank], 
-                                          lDomains[myRank], nghost);
+                        //range = getBounds(lDomains[myRank], lDomains[rank], 
+                        //                  lDomains[myRank], nghost);
+                        range = neighborsSendRange[face][i];
                     }
 
                     count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
@@ -153,6 +160,9 @@ namespace ippl {
         {
             using neighbor_type = typename Layout_t::edge_neighbor_type;
             const neighbor_type& neighbors = layout->getEdgeNeighbors();
+            using neighbor_range_type = typename Layout_t::edge_neighbor_range_type;
+            const neighbor_range_type& neighborsSendRange = layout->getEdgeNeighborsSendRange();
+            const neighbor_range_type& neighborsRecvRange = layout->getEdgeNeighborsRecvRange();
             const auto& lDomains = layout->getHostLocalDomains();
 
             int myRank = Ippl::Comm->rank();
@@ -171,11 +181,13 @@ namespace ippl {
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
                         // owned domain increased by nghost cells
-                        range = getBounds(lDomains[myRank], lDomains[rank], 
-                                          lDomains[myRank], nghost);
+                        //range = getBounds(lDomains[myRank], lDomains[rank], 
+                        //                  lDomains[myRank], nghost);
+                        range = neighborsSendRange[edge][i];
                     } else {
-                        range = getBounds(lDomains[rank], lDomains[myRank], 
-                                          lDomains[myRank], nghost);
+                        //range = getBounds(lDomains[rank], lDomains[myRank], 
+                        //                  lDomains[myRank], nghost);
+                        range = neighborsRecvRange[edge][i];
                     }
 
                     requests.resize(requests.size() + 1);
@@ -199,11 +211,13 @@ namespace ippl {
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
                         // remote domain increased by nghost cells
-                        range = getBounds(lDomains[rank], lDomains[myRank], 
-                                          lDomains[myRank], nghost);
+                        //range = getBounds(lDomains[rank], lDomains[myRank], 
+                        //                  lDomains[myRank], nghost);
+                        range = neighborsRecvRange[edge][i];
                     } else {
-                        range = getBounds(lDomains[myRank], lDomains[rank], 
-                                          lDomains[myRank], nghost);
+                        //range = getBounds(lDomains[myRank], lDomains[rank], 
+                        //                  lDomains[myRank], nghost);
+                        range = neighborsSendRange[edge][i];
                     }
 
                     count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
@@ -238,6 +252,9 @@ namespace ippl {
         {
             using neighbor_type = typename Layout_t::vertex_neighbor_type;
             const neighbor_type& neighbors = layout->getVertexNeighbors();
+            using neighbor_range_type = typename Layout_t::vertex_neighbor_range_type;
+            const neighbor_range_type& neighborsSendRange = layout->getVertexNeighborsSendRange();
+            const neighbor_range_type& neighborsRecvRange = layout->getVertexNeighborsRecvRange();
             const auto& lDomains = layout->getHostLocalDomains();
 
             int myRank = Ippl::Comm->rank();
@@ -258,11 +275,13 @@ namespace ippl {
                 bound_type range;
                 if (order == INTERNAL_TO_HALO) {
                     // owned domain increased by nghost cells
-                    range = getBounds(lDomains[myRank], lDomains[rank], 
-                                      lDomains[myRank], nghost);
+                    //range = getBounds(lDomains[myRank], lDomains[rank], 
+                    //                  lDomains[myRank], nghost);
+                    range = neighborsSendRange[vertex];
                 } else {
-                    range = getBounds(lDomains[rank], lDomains[myRank], 
-                                      lDomains[myRank], nghost);
+                    //range = getBounds(lDomains[rank], lDomains[myRank], 
+                    //                  lDomains[myRank], nghost);
+                    range = neighborsRecvRange[vertex];
                 }
 
                 requests.resize(requests.size() + 1);
@@ -288,11 +307,13 @@ namespace ippl {
                 bound_type range;
                 if (order == INTERNAL_TO_HALO) {
                     // remote domain increased by nghost cells
-                    range = getBounds(lDomains[rank], lDomains[myRank], 
-                                      lDomains[myRank], nghost);
+                    //range = getBounds(lDomains[rank], lDomains[myRank], 
+                    //                  lDomains[myRank], nghost);
+                    range = neighborsRecvRange[vertex];
                 } else {
-                    range = getBounds(lDomains[myRank], lDomains[rank], 
-                                      lDomains[myRank], nghost);
+                    //range = getBounds(lDomains[myRank], lDomains[rank], 
+                    //                  lDomains[myRank], nghost);
+                    range = neighborsSendRange[vertex];
                 }
 
                 count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
@@ -384,29 +405,29 @@ namespace ippl {
         }
 
 
-        template <typename T, unsigned Dim>
-        typename HaloCells<T, Dim>::bound_type
-        HaloCells<T, Dim>::getBounds(const NDIndex<Dim>& nd1,
-                                     const NDIndex<Dim>& nd2,
-                                     const NDIndex<Dim>& offset,
-                                     int nghost)
-        {
-            NDIndex<Dim> gnd = nd2.grow(nghost);
+        //template <typename T, unsigned Dim>
+        //typename HaloCells<T, Dim>::bound_type
+        //HaloCells<T, Dim>::getBounds(const NDIndex<Dim>& nd1,
+        //                             const NDIndex<Dim>& nd2,
+        //                             const NDIndex<Dim>& offset,
+        //                             int nghost)
+        //{
+        //    NDIndex<Dim> gnd = nd2.grow(nghost);
 
-            NDIndex<Dim> overlap = gnd.intersect(nd1);
+        //    NDIndex<Dim> overlap = gnd.intersect(nd1);
 
-            bound_type intersect;
+        //    bound_type intersect;
 
-            /* Obtain the intersection bounds with local ranges of the view.
-             * Add "+1" to the upper bound since Kokkos loops always to "< extent".
-             */
-            for (size_t i = 0; i < Dim; ++i) {
-                intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/ + nghost;
-                intersect.hi[i] = overlap[i].last()  - offset[i].first() /*offset*/ + nghost + 1;
-            }
+        //    /* Obtain the intersection bounds with local ranges of the view.
+        //     * Add "+1" to the upper bound since Kokkos loops always to "< extent".
+        //     */
+        //    for (size_t i = 0; i < Dim; ++i) {
+        //        intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/ + nghost;
+        //        intersect.hi[i] = overlap[i].last()  - offset[i].first() /*offset*/ + nghost + 1;
+        //    }
 
-            return intersect;
-        }
+        //    return intersect;
+        //}
 
 
         template <typename T, unsigned Dim>
