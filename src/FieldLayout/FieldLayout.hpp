@@ -434,7 +434,7 @@ namespace ippl {
 
         vertexNeighbors_m[index] = rank;
         vertexNeighborsSendRange_m[index] = rangeSend;
-        vertexNeighborsRecvRange_m[index] = rangeSend;
+        vertexNeighborsRecvRange_m[index] = rangeRecv;
         
     }
 
