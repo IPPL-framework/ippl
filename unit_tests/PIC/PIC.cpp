@@ -135,7 +135,6 @@ TEST_F(PICTest, Scatter) {
 
     bunch_type bunchBuffer(pl);
     pl.update(*bunch, bunchBuffer);
-    //bunch->update();
 
     scatter(bunch->Q, *field, bunch->R);
 
@@ -151,7 +150,8 @@ TEST_F(PICTest, Gather) {
 
     bunch->Q = 0.0;
 
-    bunch->update();
+    bunch_type bunchBuffer(pl);
+    pl.update(*bunch, bunchBuffer);
     
     gather(bunch->Q, *field, bunch->R);
 
