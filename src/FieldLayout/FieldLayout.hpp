@@ -320,13 +320,13 @@ namespace ippl {
                     
                     for (unsigned int d1 = d0 + 1; d1 < Dim; ++d1) {
                         
-                        findNeighborsAllPeriodicBC(d0, gnd, nd, 
+                        findNeighborsAllPeriodicBC(d1, gnd, nd, 
                                                    hLocalDomains_m[rank], 
                                                    nghost, rank); 
 
                         for (unsigned int d2 = d1 + 1; d2 < Dim; ++d2) {
                             
-                            findNeighborsAllPeriodicBC(d0, gnd, nd, 
+                            findNeighborsAllPeriodicBC(d2, gnd, nd, 
                                                        hLocalDomains_m[rank], 
                                                        nghost, rank); 
                         

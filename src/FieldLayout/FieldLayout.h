@@ -60,9 +60,9 @@ namespace ippl {
         };
         
         
-        using face_neighbor_range_type = std::array<std::vector<int>, 2 * Dim>;
-        using edge_neighbor_range_type = std::array<std::vector<int>, Dim * (1 << (Dim - 1))>;
-        using vertex_neighbor_range_type = std::array<int, 2 << (Dim - 1)>;
+        using face_neighbor_range_type = std::array<std::vector<bound_type>, 2 * Dim>;
+        using edge_neighbor_range_type = std::array<std::vector<bound_type>, Dim * (1 << (Dim - 1))>;
+        using vertex_neighbor_range_type = std::array<bound_type, 2 << (Dim - 1)>;
 
 
         /*!
