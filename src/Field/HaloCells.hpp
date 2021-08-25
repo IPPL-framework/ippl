@@ -71,9 +71,11 @@ namespace ippl {
             using neighbor_range_type = typename Layout_t::face_neighbor_range_type;
             const neighbor_range_type& neighborsSendRange = layout->getFaceNeighborsSendRange();
             const neighbor_range_type& neighborsRecvRange = layout->getFaceNeighborsRecvRange();
-            const auto& lDomains = layout->getHostLocalDomains();
+            //const auto& lDomains = layout->getHostLocalDomains();
 
-            int myRank = Ippl::Comm->rank();
+            nghost *= 1;
+
+            //int myRank = Ippl::Comm->rank();
 
             using buffer_type = Communicate::buffer_type;
             std::vector<MPI_Request> requests(0);
@@ -163,9 +165,10 @@ namespace ippl {
             using neighbor_range_type = typename Layout_t::edge_neighbor_range_type;
             const neighbor_range_type& neighborsSendRange = layout->getEdgeNeighborsSendRange();
             const neighbor_range_type& neighborsRecvRange = layout->getEdgeNeighborsRecvRange();
-            const auto& lDomains = layout->getHostLocalDomains();
+            //const auto& lDomains = layout->getHostLocalDomains();
 
-            int myRank = Ippl::Comm->rank();
+            nghost *= 1;
+            //int myRank = Ippl::Comm->rank();
 
             using buffer_type = Communicate::buffer_type;
             std::vector<MPI_Request> requests(0);
@@ -255,9 +258,10 @@ namespace ippl {
             using neighbor_range_type = typename Layout_t::vertex_neighbor_range_type;
             const neighbor_range_type& neighborsSendRange = layout->getVertexNeighborsSendRange();
             const neighbor_range_type& neighborsRecvRange = layout->getVertexNeighborsRecvRange();
-            const auto& lDomains = layout->getHostLocalDomains();
+            //const auto& lDomains = layout->getHostLocalDomains();
 
-            int myRank = Ippl::Comm->rank();
+            nghost *= 1;
+            //int myRank = Ippl::Comm->rank();
 
             using buffer_type = Communicate::buffer_type;
             std::vector<MPI_Request> requests(0);

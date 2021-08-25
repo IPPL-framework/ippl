@@ -514,7 +514,7 @@ int main(int argc, char *argv[]){
     const double dt = 1.0;
 
     Mesh_t mesh(domain, hr, origin);
-    FieldLayout_t FL(domain, decomp);
+    FieldLayout_t FL(domain, decomp, true);
     PLayout_t PL(FL, mesh);
     
     double Q = -1562.5;

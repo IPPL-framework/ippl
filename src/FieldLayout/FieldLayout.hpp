@@ -263,48 +263,13 @@ namespace ippl {
                 continue;
             }
 
-            if (gnd.touches(hLocalDomains_m[rank])) {
-                /* my grown domain touches another
-                 * --> it is a neighbor
-                 */
-                auto intersect = gnd.intersect(hLocalDomains_m[rank]);
+            auto& ndNeighbor = hLocalDomains_m[rank];
+            //For inter-processor neighbors
+            if (gnd.touches(ndNeighbor)) {
 
-                
-                bound_type rangeSend, rangeRecv;
-                rangeSend = getBounds(nd, hLocalDomains_m[rank], 
-                                      nd, nghost);
-                
-                rangeRecv = getBounds(hLocalDomains_m[rank], nd, 
-                                      nd, nghost);
-                
-                /* check how many dimension have length > 1.
-                 * Vertices are scalars --> all dimensions have length 1
-                 * Edges are vectors --> 1 dimension has length > 1
-                 * Faces are matrices --> 2 dimensions have length > 1
-                 */
-                int nDim = 0;
-                for (unsigned int d = 0; d < Dim; ++d) {
-                    const Index& index = intersect[d];
-                    nDim += (index.length() > 1) ? 1 : 0;
-                }
+                auto intersect = gnd.intersect(ndNeighbor);
+                addNeighbors(gnd, nd, ndNeighbor, intersect, nghost, rank);
 
-
-                switch (nDim) {
-
-                case 0:
-                    addVertex(gnd, intersect, rank, rangeSend, rangeRecv);
-                    break;
-                case 1:
-                    addEdge(gnd, intersect, rank, rangeSend, rangeRecv);
-                    break;
-                case 2:
-                    addFace(gnd, intersect, rank, rangeSend, rangeRecv);
-                    break;
-                default:
-                    throw IpplException(
-                        "FieldLayout::findNeighbors()",
-                        "Failed to identify grid point. Neither a face, edge or vertex grid point.");
-                }
             }
 
             if(isAllPeriodic_m) {
@@ -313,54 +278,82 @@ namespace ippl {
 
                     if(nd[d0].length() == gDomain_m[d0].length())
                         continue;
-                    
-                    findNeighborsAllPeriodicBC(d0, gnd, nd, 
-                                               hLocalDomains_m[rank], 
-                                               nghost, rank); 
+                     
+                    int offsetd0;
+                    if(nd[d0].max() == gDomain_m[d0].max())
+                        offsetd0 = -gDomain_m[d0].length();
+                    else if(nd[d0].min() == gDomain_m[d0].min())
+                        offsetd0 = gDomain_m[d0].length();
+                    else
+                        continue;
+
+                    gnd[d0] = gnd[d0] + offsetd0; 
+                    if (gnd.touches(ndNeighbor)) {
+                        auto intersect = gnd.intersect(ndNeighbor);
+                        ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
+                        addNeighbors(gnd, nd, ndNeighbor, intersect, nghost, rank);
+                        ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
+                    }
                     
                     for (unsigned int d1 = d0 + 1; d1 < Dim; ++d1) {
-                        
-                        findNeighborsAllPeriodicBC(d1, gnd, nd, 
-                                                   hLocalDomains_m[rank], 
-                                                   nghost, rank); 
 
+                        int offsetd1;
+                        if(nd[d1].max() == gDomain_m[d1].max())
+                            offsetd1 = -gDomain_m[d1].length();
+                        else if(nd[d1].min() == gDomain_m[d1].min())
+                            offsetd1 = gDomain_m[d1].length();
+                        else
+                            continue;
+
+                        gnd[d1] = gnd[d1] + offsetd1; 
+                        if (gnd.touches(ndNeighbor)) {
+                            auto intersect = gnd.intersect(ndNeighbor);
+                            ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
+                            ndNeighbor[d1] = ndNeighbor[d1] - offsetd1;
+                            addNeighbors(gnd, nd, ndNeighbor, intersect, nghost, rank);
+                            ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
+                            ndNeighbor[d1] = ndNeighbor[d1] + offsetd1;
+                        }
+                        
                         for (unsigned int d2 = d1 + 1; d2 < Dim; ++d2) {
                             
-                            findNeighborsAllPeriodicBC(d2, gnd, nd, 
-                                                       hLocalDomains_m[rank], 
-                                                       nghost, rank); 
-                        
+                            int offsetd2;
+                            if(nd[d2].max() == gDomain_m[d2].max())
+                                offsetd2 = -gDomain_m[d2].length();
+                            else if(nd[d2].min() == gDomain_m[d2].min())
+                                offsetd2 = gDomain_m[d2].length();
+                            else
+                                continue;
+
+                            gnd[d2] = gnd[d2] + offsetd2; 
+                            if (gnd.touches(ndNeighbor)) {
+                                auto intersect = gnd.intersect(ndNeighbor);
+                                ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
+                                ndNeighbor[d1] = ndNeighbor[d1] - offsetd1;
+                                ndNeighbor[d2] = ndNeighbor[d2] - offsetd2;
+                                addNeighbors(gnd, nd, ndNeighbor, intersect, nghost, rank);
+                                ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
+                                ndNeighbor[d1] = ndNeighbor[d1] + offsetd1;
+                                ndNeighbor[d2] = ndNeighbor[d2] + offsetd2;
+                            }
+                            gnd[d2] = gnd[d2] - offsetd2; 
                         }
+                        gnd[d1] = gnd[d1] - offsetd1; 
                     }
+                    gnd[d0] = gnd[d0] - offsetd0; 
                 }
             }
         }
     }
     
     template <unsigned Dim>
-    void FieldLayout<Dim>::findNeighborsAllPeriodicBC(unsigned int d0, 
-                                                      NDIndex_t& gnd, 
-                                                      NDIndex_t& nd, 
-                                                      NDIndex_t& ndNeighbor, 
-                                                      int nghost, 
-                                                      int rank) {
+    void FieldLayout<Dim>::addNeighbors(NDIndex_t& gnd, 
+                                        NDIndex_t& nd, 
+                                        NDIndex_t& ndNeighbor,
+                                        NDIndex_t& intersect,
+                                        int nghost, 
+                                        int rank) {
         
-        
-        int offsetd0;
-        if(nd[d0].max() == gDomain_m[d0].max())
-            offsetd0 = -gDomain_m[d0].length();
-        else if(nd[d0].min() == gDomain_m[d0].min())
-            offsetd0 = gDomain_m[d0].length();
-        else
-            return;
-
-        gnd[d0] = gnd[d0] + offsetd0; 
-        nd[d0] = nd[d0] + offsetd0; 
-        if (gnd.touches(ndNeighbor)) {
-
-            auto intersect = gnd.intersect(ndNeighbor);
-            ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
-
             bound_type rangeSend, rangeRecv;
             rangeSend = getBounds(nd, ndNeighbor, 
                                   nd, nghost);
@@ -387,15 +380,10 @@ namespace ippl {
                 break;
             default:
                 throw IpplException(
-                      "FieldLayout::findNeighborsAllPeriodicBC()",
+                      "FieldLayout::addNeighbors()",
                       "Failed to identify grid point. Neither a face, edge or vertex grid point.");
             }
 
-            ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
-        }
-
-        gnd[d0] = gnd[d0] - offsetd0; 
-        nd[d0] = nd[d0] - offsetd0; 
     }
 
 

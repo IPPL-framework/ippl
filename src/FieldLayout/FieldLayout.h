@@ -144,12 +144,12 @@ namespace ippl {
 
         void findNeighbors(int nghost = 1);
 
-        void findNeighborsAllPeriodicBC(unsigned int d0, 
-                                        NDIndex_t& gnd, 
-                                        NDIndex_t& nd, 
-                                        NDIndex_t& ndNeighbor, 
-                                        int nghost, 
-                                        int rank);
+        void addNeighbors(NDIndex_t& gnd, 
+                          NDIndex_t& nd, 
+                          NDIndex_t& ndNeighbor, 
+                          NDIndex_t& intersect, 
+                          int nghost, 
+                          int rank);
 
         void write(std::ostream& = std::cout) const;
 

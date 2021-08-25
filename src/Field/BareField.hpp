@@ -89,7 +89,7 @@ namespace ippl {
         }
         if(layout_m->isAllPeriodic_m) {
 
-            const int nghost = field.getNghost();
+            const int nghost = nghost_m;
             int myRank = Ippl::Comm->rank();
             const auto& lDomains = layout_m->getHostLocalDomains();
             const auto& domain = layout_m->getDomain(); 
@@ -172,7 +172,7 @@ namespace ippl {
             halo_m.accumulateHalo(dview_m, layout_m, nghost_m);
         }
         if(layout_m->isAllPeriodic_m) {
-            const int nghost = field.getNghost();
+            const int nghost = nghost_m;
             int myRank = Ippl::Comm->rank();
             const auto& lDomains = layout_m->getHostLocalDomains();
             const auto& domain = layout_m->getDomain(); 
