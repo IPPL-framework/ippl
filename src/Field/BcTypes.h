@@ -192,9 +192,7 @@ namespace ippl {
 
     private:
         face_neighbor_type faceNeighbors_m;
-
-        detail::FieldBufferData<T> fdSend;
-        detail::FieldBufferData<T> fdRecv;
+        detail::FieldBufferData<T> fd_m;
     };
 }
 
