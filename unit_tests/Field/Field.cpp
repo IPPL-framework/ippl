@@ -26,6 +26,7 @@ public:
     static constexpr size_t dim = 3;
     typedef ippl::Field<double, dim> field_type;
     typedef ippl::UniformCartesian<double, dim> mesh_type;
+    typedef ippl::FieldLayout<dim> layout_type;
 
     FieldTest()
     : nPoints(8)
@@ -41,18 +42,19 @@ public:
         for (unsigned int d = 0; d < dim; d++)
             domDec[d] = ippl::PARALLEL;
 
-        ippl::FieldLayout<dim> layout(owned, domDec);
+        layout = std::make_shared<layout_type>(owned, domDec);
 
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};
         ippl::Vector<double, dim> origin = {0, 0, 0};
         mesh = std::make_shared<mesh_type>(owned, hx, origin);
 
-        field = std::make_unique<field_type>(*mesh, layout);
+        field = std::make_unique<field_type>(*mesh, *layout);
     }
 
     std::unique_ptr<field_type> field;
     std::shared_ptr<mesh_type> mesh;
+    std::shared_ptr<layout_type> layout;
     size_t nPoints;
 };
 
@@ -141,6 +143,28 @@ TEST_F(FieldTest, VolumeIntegral2) {
     double integral = field->getVolumeIntegral();
     double volume = field->get_mesh().getMeshVolume();
     ASSERT_DOUBLE_EQ(integral, volume);
+}
+
+TEST_F(FieldTest, Grad) {
+    *field = 1.;
+
+    ippl::Field<ippl::Vector<double, dim>, dim> vfield(*mesh, *layout);
+    vfield = grad(*field);
+
+    const int shift = vfield.getNghost();
+    auto view = vfield.getView();
+    auto mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
+
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                for (size_t d = 0; d < dim; ++d) {
+                    ASSERT_DOUBLE_EQ(mirror(i, j, k)[d], 0.);
+                }
+            }
+        }
+    }
 }
 
 

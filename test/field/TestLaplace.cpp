@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     // all parallel layout, standard domain, normal axis order
     ippl::FieldLayout<dim> layout(owned,decomp);
 
-    //Unit box 
+    //Unit box
     double dx = 2.0 / double(pt);
     ippl::Vector<double, 3> hx = {dx, dx, dx};
     ippl::Vector<double, 3> origin = {-1.0, -1.0, -1.0};
@@ -46,8 +46,8 @@ int main(int argc, char *argv[]) {
 
     typename Field_t::view_type& view = field.getView();
     typename Field_t::view_type& view_exact = Lap_exact.getView();
-    typedef ippl::BConds<double, dim> bc_type; 
-    typedef ippl::BConds<Vector_t, dim> vbc_type; 
+    typedef ippl::BConds<double, dim> bc_type;
+    typedef ippl::BConds<Vector_t, dim> vbc_type;
 
     bc_type bcField;
     vbc_type vbcField;
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
         bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
         vbcField[i] = std::make_shared<ippl::PeriodicFace<Vector_t, dim>>(i);
     }
-    ////Lower Y face 
+    ////Lower Y face
     //bcField[2] = std::make_shared<ippl::NoBcFace<double, dim>>(2);
     //vbcField[2] = std::make_shared<ippl::NoBcFace<Vector_t, dim>>(2);
     ////Higher Y face
@@ -78,13 +78,13 @@ int main(int argc, char *argv[]) {
     const int nghost = field.getNghost();
     using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-    Kokkos::parallel_for("Assign field", 
+    Kokkos::parallel_for("Assign field",
                           mdrange_type({nghost, nghost, nghost},
                                        {view.extent(0) - nghost,
                                         view.extent(1) - nghost,
                                         view.extent(2) - nghost}),
-                          KOKKOS_LAMBDA(const int i, 
-                                        const int j, 
+                          KOKKOS_LAMBDA(const int i,
+                                        const int j,
                                         const int k)
                           {
                             //local to global index conversion
@@ -124,20 +124,9 @@ int main(int argc, char *argv[]) {
     double error = sqrt(Lap.sum());
     error = error/sqrt(Lap_exact.sum());
 
-    //int nRanks = Ippl::Comm->size();
-    //for (int rank = 0; rank < nRanks; ++rank) {
-        //if (rank == Ippl::Comm->rank()) {
-        //    std::ofstream out("LaplacePeriodicBCSerial_" + 
-        //                      std::to_string(rank) + 
-        //                      ".dat", std::ios::out);
-        //    Lap.write(out);
-        //    out.close();
-        //}
-        //Ippl::Comm->barrier();
-        if (Ippl::Comm->rank() == 0) {
-            std::cout << "Error: " << error << std::endl;
-        }
-    //}
+    if (Ippl::Comm->rank() == 0) {
+        std::cout << "Error: " << error << std::endl;
+    }
 
 
     return 0;
