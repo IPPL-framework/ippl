@@ -2,8 +2,9 @@
 //
 //   Usage:
 //     srun ./PenningTrap 128 128 128 10000 300 FFT Gaussian --info 10
+//     srun ./PenningTrap 128 128 128 10000 300 FFT Uniform --info 10
 //
-// Copyright (c) 2020, Sriramkrishnan Muralikrishnan, 
+// Copyright (c) 2021, Sriramkrishnan Muralikrishnan, 
 // Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -216,12 +217,6 @@ public:
         setBCAllPeriodic();
     }
 
-    //void update() {
-    //    
-    //    PLayout& layout = this->getLayout();
-    //    layout.update(*this);
-    //}
-
 
     void gatherStatistics(unsigned int totalP, int iteration) {
         
@@ -258,8 +253,8 @@ public:
          m << "Rel. error in charge conservation = " << rel_error << endl;
 
          if(Ippl::Comm->rank() == 0) {
-             //if((Total_particles != totalP) || (rel_error > 1e-10)) {
-             if((Total_particles != totalP)) {
+             if((Total_particles != totalP) || (rel_error > 1e-10)) {
+             //if((Total_particles != totalP)) {
                  std::cout << "Total particles in the sim. " << totalP 
                            << " " << "after update: " 
                            << Total_particles << std::endl;
@@ -270,8 +265,6 @@ public:
                  exit(1);
              }
          }
-
-
 
          rho_m = rho_m / (hrField[0] * hrField[1] * hrField[2]);
 
@@ -422,7 +415,7 @@ int main(int argc, char *argv[]){
     Inform msg("PenningTrap");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(1);
+    Ippl::Comm->setDefaultOverallocation(2);
 
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -470,7 +463,7 @@ int main(int argc, char *argv[]){
     const double dt = 0.05;//size of timestep
 
     Mesh_t mesh(domain, hr, origin);
-    FieldLayout_t FL(domain, decomp);
+    FieldLayout_t FL(domain, decomp, true);
     PLayout_t PL(FL, mesh);
 
 
@@ -497,7 +490,6 @@ int main(int argc, char *argv[]){
 
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
     IpplTimings::startTimer(particleCreation);                                                    
-    //P->create(nloc);
 
     Vector_t length = rmax - rmin;
     
@@ -516,7 +508,7 @@ int main(int argc, char *argv[]){
     sd[2] = 0.20*length[2];
 
     unsigned int Total_particles = 0;
-    if(dist == "uniform") {
+    if(dist == "Uniform") {
 
         std::function<double(double& x,
                              double& y,
@@ -658,18 +650,7 @@ int main(int argc, char *argv[]){
     }
     IpplTimings::stopTimer(particleCreation);                                                    
 
-
-    //Vector_t originField = {rmin[0]-hr[0], rmin[1]-hr[1], rmin[2]-hr[2]};
-    //double dxField = (rmax[0] + hr[0] - originField[0]) / nr[0];
-    //double dyField = (rmax[1] + hr[1] - originField[1]) / nr[1];
-    //double dzField = (rmax[2] + hr[2] - originField[2]) / nr[2];
-
-    //Vector_t hrField = {dxField, dyField, dzField};
-    //Mesh_t meshField(domain, hrField, originField);
-
-    //P->E_m.initialize(meshField, FL);
-    //P->rho_m.initialize(meshField, FL);
-
+    
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
 
@@ -677,7 +658,6 @@ int main(int argc, char *argv[]){
     bunch_type bunchBuffer(PL);
     static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("FirstUpdate");           
     IpplTimings::startTimer(FirstUpdateTimer);                                               
-    //P->update();
     PL.update(*P, bunchBuffer);
     IpplTimings::stopTimer(FirstUpdateTimer);                                                    
 

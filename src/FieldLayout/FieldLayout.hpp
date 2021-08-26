@@ -294,7 +294,9 @@ namespace ippl {
                         addNeighbors(gnd, nd, ndNeighbor, intersect, nghost, rank);
                         ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
                     }
-                    
+                   
+                    //The following loop is to find the periodic edge neighbors of
+                    //the domain in the physical boundary
                     for (unsigned int d1 = d0 + 1; d1 < Dim; ++d1) {
 
                         int offsetd1;
@@ -315,6 +317,8 @@ namespace ippl {
                             ndNeighbor[d1] = ndNeighbor[d1] + offsetd1;
                         }
                         
+                        //The following loop is to find the vertex neighbors of
+                        //the domain in the physical boundary
                         for (unsigned int d2 = d1 + 1; d2 < Dim; ++d2) {
                             
                             int offsetd2;
