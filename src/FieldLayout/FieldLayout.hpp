@@ -276,8 +276,11 @@ namespace ippl {
 
                 for (unsigned int d0 = 0; d0 < Dim; ++d0) {
 
-                    if(nd[d0].length() == gDomain_m[d0].length())
-                        continue;
+                    if((nd[d0].length() == gDomain_m[d0].length()) ||
+                        (requestedLayout_m[d0] == SERIAL)) {
+                        throw IpplException("FieldLayout::findNeighbors",
+                        "Currently all periodic BCs work only for all PARALLEL decompositions");
+                    }
                      
                     int offsetd0;
                     if(nd[d0].max() == gDomain_m[d0].max())
