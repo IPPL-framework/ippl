@@ -62,12 +62,13 @@ TEST_F(ParticleBaseTest, CreateAndDestroy) {
     // (i.e. mark as invalid then sort)
     typedef typename ippl::detail::ViewType<bool, 1>::view_type bool_type;
     bool_type invalid("invalid", nParticles);
+    auto mirror2 = Kokkos::create_mirror(invalid);
     for (size_t i = 0; i < 500; ++i) {
-        invalid[2 * i] = false;
-        invalid[2 * i + 1] = true;
+        mirror2(2 * i) = false;
+        mirror2(2 * i + 1) = true;
     }
+    Kokkos::deep_copy(invalid, mirror2);
     pbase->sort(invalid, 500);
-    Kokkos::fence();
 
     // Verify remaining indices
     Kokkos::deep_copy(mirror, pbase->ID.getView());
