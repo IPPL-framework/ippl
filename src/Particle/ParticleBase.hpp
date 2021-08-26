@@ -6,9 +6,8 @@
 //   The user must define a class derived from ParticleBase which describes
 //   what specific data attributes the particle has (e.g., mass or charge).
 //   Each attribute is an instance of a ParticleAttribute<T> class; ParticleBase
-//   keeps a list of pointers to these attributes, and performs global
-//   operations on them such as update, particle creation and destruction,
-//   and inter-processor particle migration.
+//   keeps a list of pointers to these attributes, and performs particle creation
+//   and destruction.
 //
 //   ParticleBase is templated on the ParticleLayout mechanism for the particles.
 //   This template parameter should be a class derived from ParticleLayout.
@@ -48,14 +47,6 @@
 //
 //   This example defines a user class with 3D position and two extra
 //   attributes: a radius rad (double), and a velocity vel (a 3D Vector).
-//
-//   After each 'time step' in a calculation, which is defined as a period
-//   in which the particle positions may change enough to affect the global
-//   layout, the user must call the 'update' routine, which will move
-//   particles between processors, etc.  After the Nth call to update, a
-//   load balancing routine will be called instead.  The user may set the
-//   frequency of load balancing (N), or may supply a function to
-//   determine if load balancing should be done or not.
 //
 // Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
@@ -269,15 +260,6 @@ namespace ippl {
         }
         return total;
     }
-
-    template <class PLayout, class... Properties>
-//     template <class BufferType>
-    void ParticleBase<PLayout, Properties...>::update()
-    {
-        PAssert(layout_m != nullptr);
-//         layout_m->update<BufferType>(*this);
-    }
-
 
     template <class PLayout, class... Properties>
     template <class Buffer>
