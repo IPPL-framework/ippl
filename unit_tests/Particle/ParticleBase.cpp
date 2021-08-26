@@ -41,18 +41,44 @@ public:
 
 
 
-TEST_F(ParticleBaseTest, Create) {
+TEST_F(ParticleBaseTest, CreateAndDestroy) {
     size_t nParticles = 1000;
 
+    // Create 1000 particles
     pbase->create(nParticles);
 
     size_t localnum = pbase->getLocalNum();
 
     EXPECT_EQ(nParticles, localnum);
+
+    // Check that the right IDs are present
+    auto mirror = pbase->ID.getHostMirror();
+    Kokkos::deep_copy(mirror, pbase->ID.getView());
+    for (size_t i = 0; i < mirror.extent(0); ++i) {
+        EXPECT_EQ(mirror[i], i);
+    }
+
+    // Delete all the particles with odd indices
+    // (i.e. mark as invalid then sort)
+    typedef typename ippl::detail::ViewType<bool, 1>::view_type bool_type;
+    bool_type invalid("invalid", nParticles);
+    for (size_t i = 0; i < 500; ++i) {
+        invalid[2 * i] = false;
+        invalid[2 * i + 1] = true;
+    }
+    pbase->sort(invalid, 500);
+    Kokkos::fence();
+
+    // Verify remaining indices
+    Kokkos::deep_copy(mirror, pbase->ID.getView());
+    for (size_t i = 0; i < 500; ++i) {
+        // The even indices contain the original particles
+        // The particles with odd indices are deleted and replaced
+        // with particles with even indices (in ascending order w.r.t. index)
+        int index = i % 2 == 0 ? i : 500 + (i - 1);
+        EXPECT_EQ(mirror[i], index);
+    }
 }
-
-/*A test for sort needs to be added*/
-
 
 TEST_F(ParticleBaseTest, AddAttribute) {
 
