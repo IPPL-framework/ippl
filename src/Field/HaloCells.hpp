@@ -75,7 +75,7 @@ namespace ippl {
             using buffer_type = Communicate::buffer_type;
             std::vector<MPI_Request> requests(0);
 
-            std::array<int, 6> face_tag;
+            std::array<int, 2 * Dim> face_tag;
             const int groupCount = neighbors.size();
             for (size_t face = 0; face < neighbors.size(); ++face) {
                 face_tag[face] = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
@@ -89,7 +89,6 @@ namespace ippl {
                     } else {
                         range = neighborsRecvRange[face][i];
                     }
-
 
                     requests.resize(requests.size() + 1);
 
@@ -157,7 +156,7 @@ namespace ippl {
             std::vector<MPI_Request> requests(0);
 
 
-            std::array<int, 12> edge_tag;
+            std::array<int, Dim * (1 << (Dim - 1))> edge_tag;
             const int groupCount = neighbors.size();
             for (size_t edge = 0; edge < neighbors.size(); ++edge) {
                 edge_tag[edge] = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
@@ -238,7 +237,7 @@ namespace ippl {
             std::vector<MPI_Request> requests(0);
 
 
-            std::array<int, 8> vertex_tag;
+            std::array<int, 2 << (Dim - 1)> vertex_tag;
             for (size_t vertex = 0; vertex < neighbors.size(); ++vertex) {
                 vertex_tag[vertex] = Ippl::Comm->next_tag(HALO_VERTEX_TAG, HALO_TAG_CYCLE);
                 if (neighbors[vertex] < 0) {

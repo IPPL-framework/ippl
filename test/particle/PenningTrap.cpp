@@ -311,7 +311,11 @@ public:
         
         ippl::FFTParams fftParams;
 
+#ifdef Heffte_ENABLE_CUDA
         fftParams.setAllToAll( false );
+#else
+        fftParams.setAllToAll( true );
+#endif
         fftParams.setPencils( true );
         fftParams.setReorder( false );
         fftParams.setRCDirection( 0 );

@@ -54,14 +54,12 @@ namespace ippl {
         using match_edge_type = std::array<int, Dim * (1 << (Dim - 1))>;
         using match_vertex_type = std::array<int, 2 << (Dim - 1)>;
         
-        
         struct bound_type {
             // lower bounds (ordering: x, y, z)
             std::array<long, Dim> lo;
             // upper bounds (ordering x, y, z)
             std::array<long, Dim> hi;
         };
-        
         
         using face_neighbor_range_type = std::array<std::vector<bound_type>, 2 * Dim>;
         using edge_neighbor_range_type = std::array<std::vector<bound_type>, Dim * (1 << (Dim - 1))>;
@@ -163,8 +161,6 @@ namespace ippl {
         void write(std::ostream& = std::cout) const;
 
         bool isAllPeriodic_m;
-
-
 
     private:
         /*!

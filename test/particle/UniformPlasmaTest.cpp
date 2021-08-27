@@ -1,7 +1,7 @@
 // Uniform Plasma Test
 //
 //   Usage:
-//     srun ./UniformPlasmaTest 128 128 128 10000 300 FFT --info 10
+//     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT --info 10
 //
 // Copyright (c) 2020, Sriramkrishnan Muralikrishnan, 
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -352,7 +352,12 @@ public:
         
         ippl::FFTParams fftParams;
 
+#ifdef Heffte_ENABLE_CUDA
+        fftParams.setAllToAll( false );
+#else
         fftParams.setAllToAll( true );
+#endif
+
         fftParams.setPencils( true );
         fftParams.setReorder( false );
         fftParams.setRCDirection( 0 );

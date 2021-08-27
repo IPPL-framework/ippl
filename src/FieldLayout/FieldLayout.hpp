@@ -306,14 +306,6 @@ namespace ippl {
                         "Currently all periodic BCs work only for all PARALLEL decompositions");
                     }
                      
-                    //int offsetd0;
-                    //if(nd[d0].max() == gDomain_m[d0].max())
-                    //    offsetd0 = -gDomain_m[d0].length();
-                    //else if(nd[d0].min() == gDomain_m[d0].min())
-                    //    offsetd0 = gDomain_m[d0].length();
-                    //else
-                    //    continue;
-                    
                     offsetd0 = getPeriodicOffset(nd, d0);
                     if(offsetd0 == 0)
                         continue;
@@ -329,14 +321,6 @@ namespace ippl {
                     //The following loop is to find the periodic edge neighbors of
                     //the domain in the physical boundary
                     for (unsigned int d1 = d0 + 1; d1 < Dim; ++d1) {
-
-                        //int offsetd1;
-                        //if(nd[d1].max() == gDomain_m[d1].max())
-                        //    offsetd1 = -gDomain_m[d1].length();
-                        //else if(nd[d1].min() == gDomain_m[d1].min())
-                        //    offsetd1 = gDomain_m[d1].length();
-                        //else
-                        //    continue;
 
                         offsetd1 = getPeriodicOffset(nd, d1);
                         if(offsetd1 == 0)
@@ -356,14 +340,6 @@ namespace ippl {
                         //the domain in the physical boundary
                         for (unsigned int d2 = d1 + 1; d2 < Dim; ++d2) {
                             
-                            //int offsetd2;
-                            //if(nd[d2].max() == gDomain_m[d2].max())
-                            //    offsetd2 = -gDomain_m[d2].length();
-                            //else if(nd[d2].min() == gDomain_m[d2].min())
-                            //    offsetd2 = gDomain_m[d2].length();
-                            //else
-                            //    continue;
-
                             offsetd2 = getPeriodicOffset(nd, d2);
                             if(offsetd2 == 0)
                                 continue;
