@@ -37,7 +37,6 @@ namespace ippl {
         size_type required = *(this->localNum_m) + n;
         if (this->size() < required) {
             int overalloc = Ippl::Comm->getDefaultOverallocation();
-            //this->resize(required * overalloc);
             this->realloc(required * overalloc);
         }
     }

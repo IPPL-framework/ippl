@@ -1,5 +1,5 @@
 //
-// Class Ippl
+// Class Archive
 //   Class to (de-)serialize in MPI communication.
 //
 // Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
