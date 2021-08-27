@@ -68,7 +68,8 @@ namespace ippl {
             using neighbor_range_type = typename Layout_t::face_neighbor_range_type;
             const neighbor_range_type& neighborsSendRange = layout->getFaceNeighborsSendRange();
             const neighbor_range_type& neighborsRecvRange = layout->getFaceNeighborsRecvRange();
-
+            using match_face_type = typename Layout_t::match_face_type;
+            const match_face_type& matchface = layout->getMatchFace();
 
 
             using buffer_type = Communicate::buffer_type;
@@ -124,7 +125,7 @@ namespace ippl {
                     }
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_RECV + i * groupCount + face, nrecvs * sizeof(T));
 
-                    Ippl::Comm->recv(rank, face_tag[matchface_m[face]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                    Ippl::Comm->recv(rank, face_tag[matchface[face]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, fd_m);
@@ -148,6 +149,8 @@ namespace ippl {
             using neighbor_range_type = typename Layout_t::edge_neighbor_range_type;
             const neighbor_range_type& neighborsSendRange = layout->getEdgeNeighborsSendRange();
             const neighbor_range_type& neighborsRecvRange = layout->getEdgeNeighborsRecvRange();
+            using match_edge_type = typename Layout_t::match_edge_type;
+            const match_edge_type& matchedge = layout->getMatchEdge();
 
 
             using buffer_type = Communicate::buffer_type;
@@ -204,7 +207,7 @@ namespace ippl {
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_RECV + i * groupCount + edge, nrecvs * sizeof(T));
 
-                    Ippl::Comm->recv(rank, edge_tag[matchedge_m[edge]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                    Ippl::Comm->recv(rank, edge_tag[matchedge[edge]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, fd_m);
@@ -228,6 +231,8 @@ namespace ippl {
             using neighbor_range_type = typename Layout_t::vertex_neighbor_range_type;
             const neighbor_range_type& neighborsSendRange = layout->getVertexNeighborsSendRange();
             const neighbor_range_type& neighborsRecvRange = layout->getVertexNeighborsRecvRange();
+            using match_vertex_type = typename Layout_t::match_vertex_type;
+            const match_vertex_type& matchvertex = layout->getMatchVertex();
 
             using buffer_type = Communicate::buffer_type;
             std::vector<MPI_Request> requests(0);
@@ -287,7 +292,7 @@ namespace ippl {
                 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_RECV + vertex, nrecvs * sizeof(T));
 
-                Ippl::Comm->recv(rank, vertex_tag[matchvertex_m[vertex]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                Ippl::Comm->recv(rank, vertex_tag[matchvertex[vertex]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
                 buf->resetReadPos();
 
                 unpack<Op>(range, view, fd_m);

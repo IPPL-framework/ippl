@@ -196,6 +196,24 @@ namespace ippl {
     }
 
     template <unsigned Dim>
+    const typename FieldLayout<Dim>::match_face_type&
+    FieldLayout<Dim>::getMatchFace() const {
+        return matchface_m;
+    }
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::match_edge_type&
+    FieldLayout<Dim>::getMatchEdge() const {
+        return matchedge_m;
+    }
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::match_vertex_type&
+    FieldLayout<Dim>::getMatchVertex() const {
+        return matchvertex_m;
+    }
+
+    template <unsigned Dim>
     void FieldLayout<Dim>::write(std::ostream& out) const
     {
         if (Ippl::Comm->rank() > 0) {
@@ -274,20 +292,24 @@ namespace ippl {
 
             if(isAllPeriodic_m) {
 
+                int offsetd0, offsetd1, offsetd2;
                 for (unsigned int d0 = 0; d0 < Dim; ++d0) {
 
-                    if((nd[d0].length() == gDomain_m[d0].length()) ||
-                        (requestedLayout_m[d0] == SERIAL)) {
+                    if(nd[d0].length() == gDomain_m[d0].length()) {
                         throw IpplException("FieldLayout::findNeighbors",
                         "Currently all periodic BCs work only for all PARALLEL decompositions");
                     }
                      
-                    int offsetd0;
-                    if(nd[d0].max() == gDomain_m[d0].max())
-                        offsetd0 = -gDomain_m[d0].length();
-                    else if(nd[d0].min() == gDomain_m[d0].min())
-                        offsetd0 = gDomain_m[d0].length();
-                    else
+                    //int offsetd0;
+                    //if(nd[d0].max() == gDomain_m[d0].max())
+                    //    offsetd0 = -gDomain_m[d0].length();
+                    //else if(nd[d0].min() == gDomain_m[d0].min())
+                    //    offsetd0 = gDomain_m[d0].length();
+                    //else
+                    //    continue;
+                    
+                    offsetd0 = getPeriodicOffset(nd, d0);
+                    if(offsetd0 == 0)
                         continue;
 
                     gnd[d0] = gnd[d0] + offsetd0; 
@@ -302,14 +324,18 @@ namespace ippl {
                     //the domain in the physical boundary
                     for (unsigned int d1 = d0 + 1; d1 < Dim; ++d1) {
 
-                        int offsetd1;
-                        if(nd[d1].max() == gDomain_m[d1].max())
-                            offsetd1 = -gDomain_m[d1].length();
-                        else if(nd[d1].min() == gDomain_m[d1].min())
-                            offsetd1 = gDomain_m[d1].length();
-                        else
-                            continue;
+                        //int offsetd1;
+                        //if(nd[d1].max() == gDomain_m[d1].max())
+                        //    offsetd1 = -gDomain_m[d1].length();
+                        //else if(nd[d1].min() == gDomain_m[d1].min())
+                        //    offsetd1 = gDomain_m[d1].length();
+                        //else
+                        //    continue;
 
+                        offsetd1 = getPeriodicOffset(nd, d1);
+                        if(offsetd1 == 0)
+                            continue;
+                        
                         gnd[d1] = gnd[d1] + offsetd1; 
                         if (gnd.touches(ndNeighbor)) {
                             auto intersect = gnd.intersect(ndNeighbor);
@@ -324,14 +350,18 @@ namespace ippl {
                         //the domain in the physical boundary
                         for (unsigned int d2 = d1 + 1; d2 < Dim; ++d2) {
                             
-                            int offsetd2;
-                            if(nd[d2].max() == gDomain_m[d2].max())
-                                offsetd2 = -gDomain_m[d2].length();
-                            else if(nd[d2].min() == gDomain_m[d2].min())
-                                offsetd2 = gDomain_m[d2].length();
-                            else
-                                continue;
+                            //int offsetd2;
+                            //if(nd[d2].max() == gDomain_m[d2].max())
+                            //    offsetd2 = -gDomain_m[d2].length();
+                            //else if(nd[d2].min() == gDomain_m[d2].min())
+                            //    offsetd2 = gDomain_m[d2].length();
+                            //else
+                            //    continue;
 
+                            offsetd2 = getPeriodicOffset(nd, d2);
+                            if(offsetd2 == 0)
+                                continue;
+                            
                             gnd[d2] = gnd[d2] + offsetd2; 
                             if (gnd.touches(ndNeighbor)) {
                                 auto intersect = gnd.intersect(ndNeighbor);
@@ -527,6 +557,20 @@ namespace ippl {
         }
 
         return intersect;
+    }
+    
+    template <unsigned Dim>
+    int FieldLayout<Dim>::getPeriodicOffset(const NDIndex_t& nd,
+                                            const unsigned int d)
+    {
+        
+        int offset=0;
+        if(nd[d].max() == gDomain_m[d].max())
+            offset = -gDomain_m[d].length();
+        else if(nd[d].min() == gDomain_m[d].min())
+            offset = gDomain_m[d].length();
+        
+        return offset;
     }
 
 }

@@ -180,9 +180,9 @@ namespace ippl {
 
             FieldBufferData<T> fd_m;
 
-            std::array<int, 6> matchface_m = { 1, 0, 3, 2, 5, 4 };
-            std::array<int, 12> matchedge_m = { 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8 };
-            std::array<int, 8> matchvertex_m = { 7, 6, 5, 4, 3, 2, 1, 0 };
+            //std::array<int, 6> matchface_m = { 1, 0, 3, 2, 5, 4 };
+            //std::array<int, 12> matchedge_m = { 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8 };
+            //std::array<int, 8> matchvertex_m = { 7, 6, 5, 4, 3, 2, 1, 0 };
 
         };
     }
