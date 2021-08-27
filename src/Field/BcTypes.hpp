@@ -306,11 +306,11 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
                         
                     detail::count_type nSends;
-                    halo.pack(range, view, fdSend, nSends);
+                    halo.pack(range, view, fd_m, nSends);
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_SEND + i, nSends * sizeof(T));
 
-                    Ippl::Comm->isend(rank, tag, fdSend, *buf,
+                    Ippl::Comm->isend(rank, tag, fd_m, *buf,
                                       requests.back(), nSends);
                     buf->resetWritePos();
                 }
@@ -327,17 +327,17 @@ namespace ippl {
                     detail::count_type nRecvs = (range.hi[0] - range.lo[0]) *
                                     (range.hi[1] - range.lo[1]) *
                                     (range.hi[2] - range.lo[2]);
-                    if (fdRecv.buffer.size() < nRecvs) {
-                        Kokkos::resize(fdRecv.buffer, nRecvs * 2);
+                    if (fd_m.buffer.size() < nRecvs) {
+                        Kokkos::resize(fd_m.buffer, nRecvs * 2);
                     }
 
                     detail::size_type bufSize = nRecvs * sizeof(T);
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_RECV + i, bufSize);
-                    Ippl::Comm->recv(rank, matchtag, fdRecv, *buf, bufSize, nRecvs);
+                    Ippl::Comm->recv(rank, matchtag, fd_m, *buf, bufSize, nRecvs);
                     buf->resetReadPos();
 
                     using assign_t = typename HaloCells_t::assign;
-                    halo.template unpack<assign_t>(range, view, fdRecv);
+                    halo.template unpack<assign_t>(range, view, fd_m);
                 }
                 if (requests.size() > 0) {
                     MPI_Waitall(requests.size(), requests.data(), 

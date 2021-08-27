@@ -58,13 +58,6 @@ namespace ippl {
             using Layout_t  = FieldLayout<Dim>;
             using bound_type = typename Layout_t::bound_type;
 
-            //struct bound_type {
-            //    // lower bounds (ordering: x, y, z)
-            //    std::array<long, Dim> lo;
-            //    // upper bounds (ordering x, y, z)
-            //    std::array<long, Dim> hi;
-            //};
-
             enum SendOrder {
                 HALO_TO_INTERNAL,
                 INTERNAL_TO_HALO
@@ -77,20 +70,17 @@ namespace ippl {
              * assign_plus functor to assign the data.
              * @param view the original field data
              * @param layout the field layout storing the domain decomposition
-             * @param nghost the number of ghost cells
              */
             void accumulateHalo(view_type& view,
-                                const Layout_t* layout,
-                                int nghost);
+                                const Layout_t* layout);
 
             /*!
              * Send interal data to halo cells. This operation uses
              * assign functor to assign the data.
              * @param view the original field data
              * @param layout the field layout storing the domain decomposition
-             * @param nghost the number of ghost cells
              */
-            void fillHalo(view_type&, const Layout_t* layout, int nghost);
+            void fillHalo(view_type&, const Layout_t* layout);
 
             /*!
              * Pack the field data to be sent into a contiguous array.
@@ -137,19 +127,6 @@ namespace ippl {
                 }
             };
 
-            /*!
-             * Obtain the bounds to send / receive. The second domain, i.e.,
-             * nd2, is grown by nghost cells in each dimension in order to
-             * figure out the intersecting cells.
-             * @param nd1 either remote or owned domain
-             * @param nd2 either remote or owned domain
-             * @param offset to map global to local grid point
-             * @param nghost number of ghost cells per dimension
-             */
-            //bound_type getBounds(const NDIndex<Dim>& nd1,
-            //                     const NDIndex<Dim>& nd2,
-            //                     const NDIndex<Dim>& offset,
-            //                     int nghost);
 
         private:
 
@@ -157,7 +134,6 @@ namespace ippl {
              * Exchange the data of faces.
              * @param view is the original field data
              * @param layout the field layout storing the domain decomposition
-             * @param nghost the number of ghost cells
              * @param order the data send orientation
              * @tparam Op the data assigment operator of the
              * unpack function call
@@ -165,14 +141,12 @@ namespace ippl {
             template <class Op>
             void exchangeFaces(view_type& view,
                                const Layout_t* layout,
-                               int nghost,
                                SendOrder order);
 
             /*!
              * Exchange the data of edges.
              * @param view is the original field data
              * @param layout the field layout storing the domain decomposition
-             * @param nghost the number of ghost cells
              * @param order the data send orientation
              * @tparam Op the data assigment operator of the
              * unpack function call
@@ -180,14 +154,12 @@ namespace ippl {
             template <class Op>
             void exchangeEdges(view_type& view,
                                const Layout_t* layout,
-                               int nghost,
                                SendOrder order);
 
             /*!
              * Exchange the data of vertices.
              * @param view is the original field data
              * @param layout the field layout storing the domain decomposition
-             * @param nghost the number of ghost cells
              * @param order the data send orientation
              * @tparam Op the data assigment operator of the
              * unpack function call
@@ -195,7 +167,6 @@ namespace ippl {
             template <class Op>
             void exchangeVertices(view_type& view,
                                   const Layout_t* layout,
-                                  int nghost,
                                   SendOrder order);
 
             /*!
@@ -208,6 +179,10 @@ namespace ippl {
                              const bound_type& intersect);
 
             FieldBufferData<T> fd_m;
+
+            //std::array<int, 6> matchface_m = { 1, 0, 3, 2, 5, 4 };
+            //std::array<int, 12> matchedge_m = { 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8 };
+            //std::array<int, 8> matchvertex_m = { 7, 6, 5, 4, 3, 2, 1, 0 };
 
         };
     }

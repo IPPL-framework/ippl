@@ -31,27 +31,25 @@ namespace ippl {
 
         template <typename T, unsigned Dim>
         void HaloCells<T, Dim>::accumulateHalo(view_type& view,
-                                               const Layout_t* layout,
-                                               int nghost)
+                                               const Layout_t* layout)
         {
-            exchangeFaces<plus_assign>(view, layout, nghost, HALO_TO_INTERNAL);
+            exchangeFaces<plus_assign>(view, layout, HALO_TO_INTERNAL);
 
-            exchangeEdges<plus_assign>(view, layout, nghost, HALO_TO_INTERNAL);
+            exchangeEdges<plus_assign>(view, layout, HALO_TO_INTERNAL);
 
-            exchangeVertices<plus_assign>(view, layout, nghost, HALO_TO_INTERNAL);
+            exchangeVertices<plus_assign>(view, layout, HALO_TO_INTERNAL);
         }
 
 
         template <typename T, unsigned Dim>
         void HaloCells<T, Dim>::fillHalo(view_type& view,
-                                         const Layout_t* layout,
-                                         int nghost)
+                                         const Layout_t* layout)
         {
-            exchangeFaces<assign>(view, layout, nghost, INTERNAL_TO_HALO);
+            exchangeFaces<assign>(view, layout, INTERNAL_TO_HALO);
 
-            exchangeEdges<assign>(view, layout, nghost, INTERNAL_TO_HALO);
+            exchangeEdges<assign>(view, layout, INTERNAL_TO_HALO);
 
-            exchangeVertices<assign>(view, layout, nghost, INTERNAL_TO_HALO);
+            exchangeVertices<assign>(view, layout, INTERNAL_TO_HALO);
         }
 
 
@@ -59,7 +57,6 @@ namespace ippl {
         template <class Op>
         void HaloCells<T, Dim>::exchangeFaces(view_type& view,
                                               const Layout_t* layout,
-                                              int nghost,
                                               SendOrder order)
         {
             /* The neighbor list has length 2 * Dim. Each index
@@ -71,32 +68,25 @@ namespace ippl {
             using neighbor_range_type = typename Layout_t::face_neighbor_range_type;
             const neighbor_range_type& neighborsSendRange = layout->getFaceNeighborsSendRange();
             const neighbor_range_type& neighborsRecvRange = layout->getFaceNeighborsRecvRange();
-            //const auto& lDomains = layout->getHostLocalDomains();
+            using match_face_type = typename Layout_t::match_face_type;
+            const match_face_type& matchface = layout->getMatchFace();
 
-            nghost *= 1;
-
-            //int myRank = Ippl::Comm->rank();
 
             using buffer_type = Communicate::buffer_type;
             std::vector<MPI_Request> requests(0);
 
-            int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
-
+            std::array<int, 6> face_tag;
             const int groupCount = neighbors.size();
             for (size_t face = 0; face < neighbors.size(); ++face) {
+                face_tag[face] = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
                 for (size_t i = 0; i < neighbors[face].size(); ++i) {
 
                     int rank = neighbors[face][i];
 
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
-                        // owned domain increased by nghost cells
-                        //range = getBounds(lDomains[myRank], lDomains[rank], 
-                        //                  lDomains[myRank], nghost);
                         range = neighborsSendRange[face][i];
                     } else {
-                        //range = getBounds(lDomains[rank], lDomains[myRank], 
-                        //                  lDomains[myRank], nghost);
                         range = neighborsRecvRange[face][i];
                     }
 
@@ -108,7 +98,7 @@ namespace ippl {
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_SEND + i * groupCount + face, nsends * sizeof(T));
 
-                    Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
+                    Ippl::Comm->isend(rank, face_tag[face], fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
                 }
             }
@@ -121,13 +111,8 @@ namespace ippl {
 
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
-                        // remote domain increased by nghost cells
-                        //range = getBounds(lDomains[rank], lDomains[myRank], 
-                        //                  lDomains[myRank], nghost);
                         range = neighborsRecvRange[face][i];
                     } else {
-                        //range = getBounds(lDomains[myRank], lDomains[rank], 
-                        //                  lDomains[myRank], nghost);
                         range = neighborsSendRange[face][i];
                     }
 
@@ -140,7 +125,7 @@ namespace ippl {
                     }
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_RECV + i * groupCount + face, nrecvs * sizeof(T));
 
-                    Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                    Ippl::Comm->recv(rank, face_tag[matchface[face]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, fd_m);
@@ -157,7 +142,6 @@ namespace ippl {
         template <class Op>
         void HaloCells<T, Dim>::exchangeEdges(view_type& view,
                                               const Layout_t* layout,
-                                              int nghost,
                                               SendOrder order)
         {
             using neighbor_type = typename Layout_t::edge_neighbor_type;
@@ -165,31 +149,26 @@ namespace ippl {
             using neighbor_range_type = typename Layout_t::edge_neighbor_range_type;
             const neighbor_range_type& neighborsSendRange = layout->getEdgeNeighborsSendRange();
             const neighbor_range_type& neighborsRecvRange = layout->getEdgeNeighborsRecvRange();
-            //const auto& lDomains = layout->getHostLocalDomains();
+            using match_edge_type = typename Layout_t::match_edge_type;
+            const match_edge_type& matchedge = layout->getMatchEdge();
 
-            nghost *= 1;
-            //int myRank = Ippl::Comm->rank();
 
             using buffer_type = Communicate::buffer_type;
             std::vector<MPI_Request> requests(0);
 
-            int tag = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
 
+            std::array<int, 12> edge_tag;
             const int groupCount = neighbors.size();
             for (size_t edge = 0; edge < neighbors.size(); ++edge) {
+                edge_tag[edge] = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
                 for (size_t i = 0; i < neighbors[edge].size(); ++i) {
 
                     int rank = neighbors[edge][i];
 
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
-                        // owned domain increased by nghost cells
-                        //range = getBounds(lDomains[myRank], lDomains[rank], 
-                        //                  lDomains[myRank], nghost);
                         range = neighborsSendRange[edge][i];
                     } else {
-                        //range = getBounds(lDomains[rank], lDomains[myRank], 
-                        //                  lDomains[myRank], nghost);
                         range = neighborsRecvRange[edge][i];
                     }
 
@@ -200,7 +179,7 @@ namespace ippl {
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_SEND + i * groupCount + edge, nsends * sizeof(T));
 
-                    Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
+                    Ippl::Comm->isend(rank, edge_tag[edge], fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
                 }
             }
@@ -213,13 +192,8 @@ namespace ippl {
 
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
-                        // remote domain increased by nghost cells
-                        //range = getBounds(lDomains[rank], lDomains[myRank], 
-                        //                  lDomains[myRank], nghost);
                         range = neighborsRecvRange[edge][i];
                     } else {
-                        //range = getBounds(lDomains[myRank], lDomains[rank], 
-                        //                  lDomains[myRank], nghost);
                         range = neighborsSendRange[edge][i];
                     }
 
@@ -233,7 +207,7 @@ namespace ippl {
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_RECV + i * groupCount + edge, nrecvs * sizeof(T));
 
-                    Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                    Ippl::Comm->recv(rank, edge_tag[matchedge[edge]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, fd_m);
@@ -250,7 +224,6 @@ namespace ippl {
         template <class Op>
         void HaloCells<T, Dim>::exchangeVertices(view_type& view,
                                                  const Layout_t* layout,
-                                                 int nghost,
                                                  SendOrder order)
         {
             using neighbor_type = typename Layout_t::vertex_neighbor_type;
@@ -258,17 +231,16 @@ namespace ippl {
             using neighbor_range_type = typename Layout_t::vertex_neighbor_range_type;
             const neighbor_range_type& neighborsSendRange = layout->getVertexNeighborsSendRange();
             const neighbor_range_type& neighborsRecvRange = layout->getVertexNeighborsRecvRange();
-            //const auto& lDomains = layout->getHostLocalDomains();
-
-            nghost *= 1;
-            //int myRank = Ippl::Comm->rank();
+            using match_vertex_type = typename Layout_t::match_vertex_type;
+            const match_vertex_type& matchvertex = layout->getMatchVertex();
 
             using buffer_type = Communicate::buffer_type;
             std::vector<MPI_Request> requests(0);
 
-            int tag = Ippl::Comm->next_tag(HALO_VERTEX_TAG, HALO_TAG_CYCLE);
 
+            std::array<int, 8> vertex_tag;
             for (size_t vertex = 0; vertex < neighbors.size(); ++vertex) {
+                vertex_tag[vertex] = Ippl::Comm->next_tag(HALO_VERTEX_TAG, HALO_TAG_CYCLE);
                 if (neighbors[vertex] < 0) {
                     // we are on a mesh / physical boundary
                     continue;
@@ -278,13 +250,8 @@ namespace ippl {
 
                 bound_type range;
                 if (order == INTERNAL_TO_HALO) {
-                    // owned domain increased by nghost cells
-                    //range = getBounds(lDomains[myRank], lDomains[rank], 
-                    //                  lDomains[myRank], nghost);
                     range = neighborsSendRange[vertex];
                 } else {
-                    //range = getBounds(lDomains[rank], lDomains[myRank], 
-                    //                  lDomains[myRank], nghost);
                     range = neighborsRecvRange[vertex];
                 }
 
@@ -295,7 +262,7 @@ namespace ippl {
 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_SEND + vertex, nsends * sizeof(T));
 
-                Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
+                Ippl::Comm->isend(rank, vertex_tag[vertex], fd_m, *buf, requests.back(), nsends);
                 buf->resetWritePos();
             }
 
@@ -310,13 +277,8 @@ namespace ippl {
 
                 bound_type range;
                 if (order == INTERNAL_TO_HALO) {
-                    // remote domain increased by nghost cells
-                    //range = getBounds(lDomains[rank], lDomains[myRank], 
-                    //                  lDomains[myRank], nghost);
                     range = neighborsRecvRange[vertex];
                 } else {
-                    //range = getBounds(lDomains[myRank], lDomains[rank], 
-                    //                  lDomains[myRank], nghost);
                     range = neighborsSendRange[vertex];
                 }
 
@@ -330,7 +292,7 @@ namespace ippl {
                 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_RECV + vertex, nrecvs * sizeof(T));
 
-                Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                Ippl::Comm->recv(rank, vertex_tag[matchvertex[vertex]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
                 buf->resetReadPos();
 
                 unpack<Op>(range, view, fd_m);
@@ -407,31 +369,6 @@ namespace ippl {
             );
             Kokkos::fence();
         }
-
-
-        //template <typename T, unsigned Dim>
-        //typename HaloCells<T, Dim>::bound_type
-        //HaloCells<T, Dim>::getBounds(const NDIndex<Dim>& nd1,
-        //                             const NDIndex<Dim>& nd2,
-        //                             const NDIndex<Dim>& offset,
-        //                             int nghost)
-        //{
-        //    NDIndex<Dim> gnd = nd2.grow(nghost);
-
-        //    NDIndex<Dim> overlap = gnd.intersect(nd1);
-
-        //    bound_type intersect;
-
-        //    /* Obtain the intersection bounds with local ranges of the view.
-        //     * Add "+1" to the upper bound since Kokkos loops always to "< extent".
-        //     */
-        //    for (size_t i = 0; i < Dim; ++i) {
-        //        intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/ + nghost;
-        //        intersect.hi[i] = overlap[i].last()  - offset[i].first() /*offset*/ + nghost + 1;
-        //    }
-
-        //    return intersect;
-        //}
 
 
         template <typename T, unsigned Dim>
