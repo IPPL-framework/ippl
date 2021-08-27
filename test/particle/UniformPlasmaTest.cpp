@@ -352,7 +352,7 @@ public:
         
         ippl::FFTParams fftParams;
 
-        fftParams.setAllToAll( false );
+        fftParams.setAllToAll( true );
         fftParams.setPencils( true );
         fftParams.setReorder( false );
         fftParams.setRCDirection( 0 );

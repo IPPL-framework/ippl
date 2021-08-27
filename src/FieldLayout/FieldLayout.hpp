@@ -25,6 +25,7 @@
 #include "Partition/Partitioner.h"
 
 #include "Utility/IpplException.h"
+#include "Utility/IpplTimings.h"
 
 
 #include <cstdlib>
@@ -257,6 +258,8 @@ namespace ippl {
         // grow the box by nghost cells in each dimension
         auto gnd = nd.grow(nghost);
 
+        static IpplTimings::TimerRef findInternalNeighborsTimer = IpplTimings::getTimer("findInternal");
+        static IpplTimings::TimerRef findPeriodicNeighborsTimer = IpplTimings::getTimer("findPeriodic");
         for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
             if (rank == myRank) {
                 // do not compare with my domain
@@ -264,6 +267,7 @@ namespace ippl {
             }
 
             auto& ndNeighbor = hLocalDomains_m[rank];
+            IpplTimings::startTimer(findInternalNeighborsTimer);
             //For inter-processor neighbors
             if (gnd.touches(ndNeighbor)) {
 
@@ -271,7 +275,9 @@ namespace ippl {
                 addNeighbors(gnd, nd, ndNeighbor, intersect, nghost, rank);
 
             }
+            IpplTimings::stopTimer(findInternalNeighborsTimer);
 
+            IpplTimings::startTimer(findPeriodicNeighborsTimer);
             if(isAllPeriodic_m) {
 
                 for (unsigned int d0 = 0; d0 < Dim; ++d0) {
@@ -343,6 +349,7 @@ namespace ippl {
                     gnd[d0] = gnd[d0] - offsetd0; 
                 }
             }
+            IpplTimings::stopTimer(findPeriodicNeighborsTimer);
         }
     }
     
