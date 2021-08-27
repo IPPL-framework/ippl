@@ -328,7 +328,8 @@ namespace ippl {
                                     (range.hi[1] - range.lo[1]) *
                                     (range.hi[2] - range.lo[2]);
                     if (fd_m.buffer.size() < nRecvs) {
-                        Kokkos::resize(fd_m.buffer, nRecvs * 2);
+                        int overalloc = Ippl::Comm->getDefaultOverallocation();
+                        Kokkos::realloc(fd_m.buffer, nRecvs * overalloc);
                     }
 
                     detail::size_type bufSize = nRecvs * sizeof(T);
