@@ -275,25 +275,7 @@ public:
 
          rho_m = rho_m / (hrField[0] * hrField[1] * hrField[2]);
 
-         const int nghostRho = rho_m.getNghost();
-         auto Rhoview = rho_m.getView();
-         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
-         double temp = 0.0;                                                                                        
-         Kokkos::parallel_reduce("Rho reduce",                                                                       
-                                mdrange_type({nghostRho, nghostRho, nghostRho},                 
-                                             {Rhoview.extent(0) - nghostRho,            
-                                              Rhoview.extent(1) - nghostRho,            
-                                              Rhoview.extent(2) - nghostRho}),          
-                                KOKKOS_LAMBDA(const size_t i, const size_t j,                           
-                                              const size_t k, double& valL) 
-                                {                                
-                                    double myVal = pow(Rhoview(i, j, k), 2);                                              
-                                    valL += myVal;                                                                      
-                                }, Kokkos::Sum<double>(temp));                                                     
-         double globaltemp = 0.0;                                                                                  
-         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());                                 
-         rhoNorm_m = sqrt(globaltemp);
+         rhoNorm_m = norm(rho_m);
          IpplTimings::stopTimer(sumTimer);
          
          //dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
