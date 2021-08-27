@@ -275,7 +275,7 @@ namespace ippl {
                 }
                 
                 using buffer_type = Communicate::buffer_type;
-                std::vector<MPI_Request> requests(0);
+                std::vector<MPI_Request> requests(faceNeighbors_m[face].size());
                 
                 using HaloCells_t = detail::HaloCells<T, Dim>;
                 using range_t = typename HaloCells_t::bound_type;
@@ -303,7 +303,6 @@ namespace ippl {
                     }
                     
                     rangeNeighbors.push_back(range);    
-                    requests.resize(requests.size() + 1);
                         
                     detail::count_type nSends;
                     halo.pack(range, view, fd_m, nSends);
@@ -311,7 +310,7 @@ namespace ippl {
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_SEND + i, nSends * sizeof(T));
 
                     Ippl::Comm->isend(rank, tag, fd_m, *buf,
-                                      requests.back(), nSends);
+                                      requests[i], nSends);
                     buf->resetWritePos();
                 }
                 

@@ -72,12 +72,18 @@ namespace ippl {
 
             int myRank = Ippl::Comm->rank();
 
+            size_t totalRequests = 0;
+            for (auto& neighbor : neighbors) {
+                totalRequests += neighbor.size();
+            }
+
             using buffer_type = Communicate::buffer_type;
-            std::vector<MPI_Request> requests(0);
+            std::vector<MPI_Request> requests(totalRequests);
 
             int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
 
             const int groupCount = neighbors.size();
+            size_t requestIndex = 0;
             for (size_t face = 0; face < neighbors.size(); ++face) {
                 for (size_t i = 0; i < neighbors[face].size(); ++i) {
 
@@ -93,15 +99,12 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-
-                    requests.resize(requests.size() + 1);
-
                     count_type nsends;
                     pack(range, view, fd_m, nsends);
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_SEND + i * groupCount + face, nsends * sizeof(T));
 
-                    Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
+                    Ippl::Comm->isend(rank, tag, fd_m, *buf, requests[requestIndex++], nsends);
                     buf->resetWritePos();
                 }
             }
@@ -138,8 +141,8 @@ namespace ippl {
                 }
             }
 
-            if (requests.size() > 0) {
-                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+            if (totalRequests > 0) {
+                MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
         }
 
@@ -157,12 +160,18 @@ namespace ippl {
 
             int myRank = Ippl::Comm->rank();
 
+            size_t totalRequests = 0;
+            for (auto& neighbor : neighbors) {
+                totalRequests += neighbor.size();
+            }
+
             using buffer_type = Communicate::buffer_type;
-            std::vector<MPI_Request> requests(0);
+            std::vector<MPI_Request> requests(totalRequests);
 
             int tag = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
 
             const int groupCount = neighbors.size();
+            size_t requestIndex = 0;
             for (size_t edge = 0; edge < neighbors.size(); ++edge) {
                 for (size_t i = 0; i < neighbors[edge].size(); ++i) {
 
@@ -178,14 +187,12 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    requests.resize(requests.size() + 1);
-
                     count_type nsends;
                     pack(range, view, fd_m, nsends);
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_SEND + i * groupCount + edge, nsends * sizeof(T));
 
-                    Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
+                    Ippl::Comm->isend(rank, tag, fd_m, *buf, requests[requestIndex++], nsends);
                     buf->resetWritePos();
                 }
             }
@@ -223,8 +230,8 @@ namespace ippl {
                 }
             }
 
-            if (requests.size() > 0) {
-                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+            if (totalRequests > 0) {
+                MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
         }
 
@@ -243,10 +250,11 @@ namespace ippl {
             int myRank = Ippl::Comm->rank();
 
             using buffer_type = Communicate::buffer_type;
-            std::vector<MPI_Request> requests(0);
+            std::vector<MPI_Request> requests(neighbors.size());
 
             int tag = Ippl::Comm->next_tag(HALO_VERTEX_TAG, HALO_TAG_CYCLE);
 
+            size_t requestIndex = 0;
             for (size_t vertex = 0; vertex < neighbors.size(); ++vertex) {
                 if (neighbors[vertex] < 0) {
                     // we are on a mesh / physical boundary
@@ -265,14 +273,12 @@ namespace ippl {
                                       lDomains[myRank], nghost);
                 }
 
-                requests.resize(requests.size() + 1);
-
                 count_type nsends;
                 pack(range, view, fd_m, nsends);
 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_SEND + vertex, nsends * sizeof(T));
 
-                Ippl::Comm->isend(rank, tag, fd_m, *buf, requests.back(), nsends);
+                Ippl::Comm->isend(rank, tag, fd_m, *buf, requests[requestIndex++], nsends);
                 buf->resetWritePos();
             }
 
@@ -311,8 +317,8 @@ namespace ippl {
                 unpack<Op>(range, view, fd_m);
             }
 
-            if (requests.size() > 0) {
-                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+            if (requestIndex > 0) {
+                MPI_Waitall(requestIndex, requests.data(), MPI_STATUSES_IGNORE);
             }
         }
 
