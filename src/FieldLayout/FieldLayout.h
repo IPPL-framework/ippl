@@ -191,7 +191,7 @@ namespace ippl {
                              const NDIndex_t& offset,
                              int nghost);
 
-        int getPeriodicOffset(const NDIndex_t& nd, const unsigned int d);
+        int getPeriodicOffset(const NDIndex_t& nd, const unsigned int d, const int k);
 
 
     private:

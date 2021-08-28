@@ -300,66 +300,74 @@ namespace ippl {
 
                 int offsetd0, offsetd1, offsetd2;
                 for (unsigned int d0 = 0; d0 < Dim; ++d0) {
+                    //The k loop is for checking whether our local
+                    //domain touches both min. and max. extents of the 
+                    //global domain as this can happen in 1D, 2D decompositions
+                    //and also in less no. of cores (like <=4)
+                    for (int k0 = 0; k0 < 2; ++k0) {
 
-                    if(nd[d0].length() == gDomain_m[d0].length()) {
-                        throw IpplException("FieldLayout::findNeighbors",
-                        "Currently all periodic BCs work only for all PARALLEL decompositions");
-                    }
-                     
-                    offsetd0 = getPeriodicOffset(nd, d0);
-                    if(offsetd0 == 0)
-                        continue;
-
-                    gnd[d0] = gnd[d0] + offsetd0; 
-                    if (gnd.touches(ndNeighbor)) {
-                        auto intersect = gnd.intersect(ndNeighbor);
-                        ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
-                        addNeighbors(gnd, nd, ndNeighbor, intersect, nghost, rank);
-                        ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
-                    }
-                   
-                    //The following loop is to find the periodic edge neighbors of
-                    //the domain in the physical boundary
-                    for (unsigned int d1 = d0 + 1; d1 < Dim; ++d1) {
-
-                        offsetd1 = getPeriodicOffset(nd, d1);
-                        if(offsetd1 == 0)
+                        offsetd0 = getPeriodicOffset(nd, d0, k0);
+                        if(offsetd0 == 0)
                             continue;
-                        
-                        gnd[d1] = gnd[d1] + offsetd1; 
+
+                        gnd[d0] = gnd[d0] + offsetd0; 
                         if (gnd.touches(ndNeighbor)) {
                             auto intersect = gnd.intersect(ndNeighbor);
                             ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
-                            ndNeighbor[d1] = ndNeighbor[d1] - offsetd1;
-                            addNeighbors(gnd, nd, ndNeighbor, intersect, nghost, rank);
+                            addNeighbors(gnd, nd, ndNeighbor, intersect, 
+                                         nghost, rank);
                             ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
-                            ndNeighbor[d1] = ndNeighbor[d1] + offsetd1;
                         }
-                        
-                        //The following loop is to find the vertex neighbors of
+                   
+                        //The following loop is to find the periodic edge neighbors of
                         //the domain in the physical boundary
-                        for (unsigned int d2 = d1 + 1; d2 < Dim; ++d2) {
+                        for (unsigned int d1 = d0 + 1; d1 < Dim; ++d1) {
+                            for (int k1 = 0; k1 < 2; ++k1) {
+                        
+                                offsetd1 = getPeriodicOffset(nd, d1, k1);
+                                if(offsetd1 == 0)
+                                    continue;
+                                
+                                gnd[d1] = gnd[d1] + offsetd1; 
+                                if (gnd.touches(ndNeighbor)) {
+                                    auto intersect = gnd.intersect(ndNeighbor);
+                                    ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
+                                    ndNeighbor[d1] = ndNeighbor[d1] - offsetd1;
+                                    addNeighbors(gnd, nd, ndNeighbor, intersect, 
+                                                 nghost, rank);
+                                    ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
+                                    ndNeighbor[d1] = ndNeighbor[d1] + offsetd1;
+                                }
+                        
+                                //The following loop is to find the vertex neighbors of
+                                //the domain in the physical boundary
+                                for (unsigned int d2 = d1 + 1; d2 < Dim; ++d2) {
+                                    for (int k2 = 0; k2 < 2; ++k2) {
                             
-                            offsetd2 = getPeriodicOffset(nd, d2);
-                            if(offsetd2 == 0)
-                                continue;
-                            
-                            gnd[d2] = gnd[d2] + offsetd2; 
-                            if (gnd.touches(ndNeighbor)) {
-                                auto intersect = gnd.intersect(ndNeighbor);
-                                ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
-                                ndNeighbor[d1] = ndNeighbor[d1] - offsetd1;
-                                ndNeighbor[d2] = ndNeighbor[d2] - offsetd2;
-                                addNeighbors(gnd, nd, ndNeighbor, intersect, nghost, rank);
-                                ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
-                                ndNeighbor[d1] = ndNeighbor[d1] + offsetd1;
-                                ndNeighbor[d2] = ndNeighbor[d2] + offsetd2;
+                                        offsetd2 = getPeriodicOffset(nd, d2, k2);
+                                        if(offsetd2 == 0)
+                                            continue;
+                                        
+                                        gnd[d2] = gnd[d2] + offsetd2; 
+                                        if (gnd.touches(ndNeighbor)) {
+                                            auto intersect = gnd.intersect(ndNeighbor);
+                                            ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
+                                            ndNeighbor[d1] = ndNeighbor[d1] - offsetd1;
+                                            ndNeighbor[d2] = ndNeighbor[d2] - offsetd2;
+                                            addNeighbors(gnd, nd, ndNeighbor, intersect, 
+                                                         nghost, rank);
+                                            ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
+                                            ndNeighbor[d1] = ndNeighbor[d1] + offsetd1;
+                                            ndNeighbor[d2] = ndNeighbor[d2] + offsetd2;
+                                        }
+                                        gnd[d2] = gnd[d2] - offsetd2; 
+                                    }
+                                }
+                                gnd[d1] = gnd[d1] - offsetd1;
                             }
-                            gnd[d2] = gnd[d2] - offsetd2; 
                         }
-                        gnd[d1] = gnd[d1] - offsetd1; 
+                        gnd[d0] = gnd[d0] - offsetd0;
                     }
-                    gnd[d0] = gnd[d0] - offsetd0; 
                 }
             }
             IpplTimings::stopTimer(findPeriodicNeighborsTimer);
@@ -544,14 +552,25 @@ namespace ippl {
     
     template <unsigned Dim>
     int FieldLayout<Dim>::getPeriodicOffset(const NDIndex_t& nd,
-                                            const unsigned int d)
+                                            const unsigned int d,
+                                            const int k)
     {
-        
         int offset=0;
-        if(nd[d].max() == gDomain_m[d].max())
-            offset = -gDomain_m[d].length();
-        else if(nd[d].min() == gDomain_m[d].min())
-            offset = gDomain_m[d].length();
+        switch(k) {
+            case 0:
+                if(nd[d].max() == gDomain_m[d].max())
+                    offset = -gDomain_m[d].length();
+
+                break;
+            case 1:
+                if(nd[d].min() == gDomain_m[d].min())
+                    offset = gDomain_m[d].length();
+
+                break;
+            default:
+                throw IpplException("FieldLayout:getPeriodicOffset",
+                                    "k  has to be either 0 or 1");
+        }
         
         return offset;
     }
