@@ -42,6 +42,8 @@ namespace ippl {
                                 size);
             });
             writepos_m += size * view.size();
+            // Wait for the serialization kernel to complete
+            // to avoid race conditions with the data in the buffer
             Kokkos::fence();
         }
 
@@ -84,7 +86,7 @@ namespace ippl {
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
                 "Archive::serialize()",
-                mdrange_t({0, 0}, {(long int)nsends, Dim}),
+                mdrange_t({0, 0}, {nsends, Dim}),
                 KOKKOS_CLASS_LAMBDA(const size_t i, const size_t d) {
                     std::memcpy(buffer_m.data() + (Dim * i + d) * size + writepos_m,
                                 &(*(view.data() + i))[d],
@@ -123,6 +125,8 @@ namespace ippl {
                                 buffer_m.data() + i * size + readpos_m,
                                 size);
             });
+            // Wait for deserialization kernel to complete
+            // (as with serialization kernels)
             Kokkos::fence();
             readpos_m += size * nrecvs;
         }
@@ -153,7 +157,7 @@ namespace ippl {
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
             Kokkos::parallel_for(
                 "Archive::deserialize()",
-                mdrange_t({0, 0}, {(long int)nrecvs, Dim}),
+                mdrange_t({0, 0}, {nrecvs, Dim}),
                 KOKKOS_CLASS_LAMBDA(const size_t i, const size_t d) {
                     std::memcpy(&(*(view.data() + i))[d],
                                 buffer_m.data() + (Dim * i + d) * size + readpos_m,
