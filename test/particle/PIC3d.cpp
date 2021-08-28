@@ -154,18 +154,22 @@ public:
          MPI_Reduce(&local_particles, &Total_particles, 1, 
                        MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
 
+         double rel_error = std::fabs((Q_m-Q_grid)/Q_m);
+         m << "Rel. error in charge conservation = " << rel_error << endl;
+         
          if(Ippl::Comm->rank() == 0) {
-             if(Total_particles != totalP) {
+             if((Total_particles != totalP) || (rel_error > 1e-10)) {
                  std::cout << "Total particles in the sim. " << totalP 
                            << " " << "after update: " 
                            << Total_particles << std::endl;
                  std::cout << "Total particles not matched in iteration: " 
                            << iteration << std::endl;
+                 std::cout << "Rel. error in charge conservation: " 
+                           << rel_error << std::endl;
                  exit(1);
              }
          }
          
-         m << "Rel. error in charge conservation = " << std::fabs((Q_m-Q_grid)/Q_m) << endl;
          IpplTimings::stopTimer(sumTimer);                                                    
     }
      
@@ -351,8 +355,9 @@ int main(int argc, char *argv[]){
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
     const double dt = 0.5 * dx; // size of timestep
 
+    const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
-    FieldLayout_t FL(domain, decomp);
+    FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t PL(FL, mesh);
 
 

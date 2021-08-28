@@ -292,8 +292,7 @@ public:
          m << "Rel. error in charge conservation = " << rel_error << endl;
 
          if(Ippl::Comm->rank() == 0) {
-             //if((Total_particles != totalP) || (rel_error > 1e-10)) {
-             if((Total_particles != totalP)) {
+             if((Total_particles != totalP) || (rel_error > 1e-10)) {
                  std::cout << "Total particles in the sim. " << totalP 
                            << " " << "after update: " 
                            << Total_particles << std::endl;
@@ -520,8 +519,9 @@ int main(int argc, char *argv[]){
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
     const double dt = 1.0;
 
+    const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
-    FieldLayout_t FL(domain, decomp, true);
+    FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t PL(FL, mesh);
     
     double Q = -1562.5;
