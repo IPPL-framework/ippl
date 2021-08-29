@@ -51,11 +51,39 @@ namespace ippl {
 
         Communicate(const MPI_Comm& comm = MPI_COMM_WORLD);
 
+        /**
+         * Query the current default overallocation factor
+         * @return Factor by which new buffers are overallocated by default
+         */
         int getDefaultOverallocation() const { return defaultOveralloc; }
+
+        /**
+         * Set the default overallocation factor
+         * @param factor New overallocation factor for new buffers
+         */
         void setDefaultOverallocation(int factor);
 
+        /**
+         * Obtain a buffer of at least the requested size that is associated
+         * with the given ID, overallocating memory for the buffer if it's new
+         * @param id The numerical ID with which the buffer is associated (allows buffer reuse)
+         * @param size The minimum size of the buffer
+         * @param overallocation The factor by which memory for the buffer should be overallocated
+         *                       (default 1); only used if the buffer with the given ID has not been
+         *                       allocated before
+         * @return A shared pointer to the buffer with the requested properties
+         */
         buffer_type getBuffer(int id, size_type size, int overallocation = 1);
+
+        /**
+         * Deletes a buffer
+         * @param id Buffer ID
+         */
         void deleteBuffer(int id);
+
+        /**
+         * Deletes all buffers created by the buffer factory
+         */
         void deleteAllBuffers();
 
         [[deprecated]]

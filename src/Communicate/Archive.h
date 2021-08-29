@@ -2,6 +2,13 @@
 // Class Archive
 //   Class to (de-)serialize in MPI communication.
 //
+//   When data is exchanged between MPI ranks, it is stored in one dimensional
+//   arrays. These have the type detail::Archive, which are wrappers around
+//   one dimensional Kokkos views of type char. The data is then transferred using
+//   MPI send/recv calls. Note that the archive type differs from other buffers in
+//   that they have type char and thus contain raw bytes, unlike other typed buffers
+//   such as detail::FieldBufferData used by HaloCells.
+//
 // Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //

@@ -1,3 +1,4 @@
+// Tests the Laplacian on a scalar field
 #include "Ippl.h"
 
 #include <iostream>

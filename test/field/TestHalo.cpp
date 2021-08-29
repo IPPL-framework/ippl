@@ -1,3 +1,5 @@
+// Tests the halo cell update functions to verify that the
+// correct data is copied to halo cells of neighboring MPI ranks
 #include "Ippl.h"
 
 #include <iostream>
