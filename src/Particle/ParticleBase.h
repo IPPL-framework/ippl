@@ -92,7 +92,6 @@ namespace ippl {
         using index_type             = typename PLayout::index_type;
         using particle_position_type = typename PLayout::particle_position_type ;
         using particle_index_type    = ParticleAttrib<index_type>;
-        using particle_charge_type    = ParticleAttrib<double>;
 
         using Layout_t              = PLayout;
         using attribute_type        = typename detail::ParticleAttribBase<Properties...>;

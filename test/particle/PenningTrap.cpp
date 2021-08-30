@@ -553,7 +553,7 @@ int main(int argc, char *argv[]){
         P->create(nloc);
         typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
         typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
-        typename bunch_type::particle_charge_type::HostMirror q_host = P->q.getHostMirror();
+        typename ParticleAttrib<double>::HostMirror q_host = P->q.getHostMirror();
         for (unsigned long long int i = 0; i< nloc; i++) {
 
             states[0] = distribution_x(eng[0]);
