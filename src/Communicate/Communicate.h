@@ -24,7 +24,6 @@
 #include "Communicate/Archive.h"
 #include "Communicate/Tags.h"
 #include "Communicate/TagMaker.h"
-#include "Communicate/BufferIDs.h"
 
 namespace ippl {
     /*!

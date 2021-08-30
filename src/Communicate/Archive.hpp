@@ -46,23 +46,6 @@ namespace ippl {
 
         template <class... Properties>
         template <typename T, unsigned Dim>
-        void Archive<Properties...>::operator<<(const Kokkos::View<Vector<T, Dim>*>& view) {
-            size_t size = sizeof(T);
-            using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-            Kokkos::parallel_for(
-                "Archive::serialize()",
-                mdrange_t({0, 0}, {(long int)view.extent(0), Dim}),
-                KOKKOS_CLASS_LAMBDA(const size_t i, const size_t d) {
-                    std::memcpy(buffer_m.data() + (Dim * i + d) * size + writepos_m,
-                                &(*(view.data() + i))[d],
-                                size);
-                });
-            writepos_m += Dim * size * view.size();
-            Kokkos::fence();
-        }
-
-        template <class... Properties>
-        template <typename T, unsigned Dim>
         void Archive<Properties...>::serialize(const Kokkos::View<Vector<T, Dim>*>& view, count_type nsends) {
             size_t size = sizeof(T);
             using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
