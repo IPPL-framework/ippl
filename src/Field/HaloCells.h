@@ -206,7 +206,7 @@ namespace ippl {
             auto makeSubview(const view_type& view,
                              const bound_type& intersect);
 
-            FieldBufferData<T> fd_m;
+            FieldBufferData<T> haloData_m;
 
         };
     }

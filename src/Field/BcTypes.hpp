@@ -305,11 +305,11 @@ namespace ippl {
                     rangeNeighbors.push_back(range);    
                         
                     detail::count_type nSends;
-                    halo.pack(range, view, fd_m, nSends);
+                    halo.pack(range, view, haloData_m, nSends);
 
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_SEND + i, nSends * sizeof(T));
 
-                    Ippl::Comm->isend(rank, tag, fd_m, *buf,
+                    Ippl::Comm->isend(rank, tag, haloData_m, *buf,
                                       requests[i], nSends);
                     buf->resetWritePos();
                 }
@@ -329,11 +329,11 @@ namespace ippl {
 
                     detail::size_type bufSize = nRecvs * sizeof(T);
                     buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_RECV + i, bufSize);
-                    Ippl::Comm->recv(rank, matchtag, fd_m, *buf, bufSize, nRecvs);
+                    Ippl::Comm->recv(rank, matchtag, haloData_m, *buf, bufSize, nRecvs);
                     buf->resetReadPos();
 
                     using assign_t = typename HaloCells_t::assign;
-                    halo.template unpack<assign_t>(range, view, fd_m);
+                    halo.template unpack<assign_t>(range, view, haloData_m);
                 }
                 if (requests.size() > 0) {
                     MPI_Waitall(requests.size(), requests.data(), 
