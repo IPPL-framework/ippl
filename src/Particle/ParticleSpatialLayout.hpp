@@ -108,7 +108,7 @@ namespace ippl {
 
         for (int rank = 0; rank < nRanks; ++rank) {
             if (rank == Ippl::Comm->rank()) {
-                // we do not need to send to ourself
+                // we do not need to send to ourselves
                 continue;
             }
             nSends[rank] = numberOfSends(rank, ranks);
@@ -276,8 +276,6 @@ namespace ippl {
         Kokkos::parallel_reduce(
             "ParticleSpatialLayout::numberOfSends()",
             ranks.extent(0),
-            //KOKKOS_CLASS_LAMBDA(const size_t i,
-            //                    size_t& num)
             KOKKOS_LAMBDA(const size_t i,
                                 size_t& num)
             {
