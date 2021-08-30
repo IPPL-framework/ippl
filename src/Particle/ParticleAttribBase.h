@@ -54,7 +54,6 @@ namespace ippl {
             virtual void deserialize(Archive<Properties...>& ar, count_type nrecvs) = 0;
 
             virtual size_type size() const = 0;
-            virtual size_type totalSize() const = 0;
 
             virtual ~ParticleAttribBase() = default;
 

@@ -240,17 +240,6 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    detail::size_type ParticleBase<PLayout, Properties...>::size() const {
-        size_type total = 0;
-        // Vector size type
-        using vsize_t = typename attribute_container_t::size_type;
-        for (vsize_t i = 0; i < attributes_m.size(); ++i) {
-            total += attributes_m[i]->totalSize();
-        }
-        return total;
-    }
-
-    template <class PLayout, class... Properties>
     detail::size_type ParticleBase<PLayout, Properties...>::packedSize(const count_type count) const {
         size_type total = 0;
         // Vector size type

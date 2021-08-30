@@ -236,12 +236,6 @@ namespace ippl {
         void deserialize(detail::Archive<Properties...>& ar, count_type nrecvs);
 
         /*!
-         * Determine the space occupied by the particle data
-         * @return Total memory occupied by the particle attributes
-         */
-        size_type size() const;
-
-        /*!
          * Determine the total space necessary to store a certain number of particles
          * @param count particle number
          * @return Total size of a buffer packed with the given number of particles

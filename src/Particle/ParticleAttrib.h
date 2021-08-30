@@ -83,10 +83,6 @@ namespace ippl {
             return dview_m.extent(0);
         }
 
-        size_type totalSize() const {
-            return size() * sizeof(value_type);
-        }
-
         size_type packedSize(const count_type count) const {
             return count * sizeof(value_type);
         }
