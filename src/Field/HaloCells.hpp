@@ -102,9 +102,12 @@ namespace ippl {
                     count_type nsends;
                     pack(range, view, fd_m, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_SEND + i * groupCount + face, nsends * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer(
+                        IPPL_HALO_FACE_SEND + i * groupCount + face,
+                        nsends * sizeof(T));
 
-                    Ippl::Comm->isend(rank, tag, fd_m, *buf, requests[requestIndex++], nsends);
+                    Ippl::Comm->isend(rank, tag, fd_m, *buf,
+                        requests[requestIndex++], nsends);
                     buf->resetWritePos();
                 }
             }
@@ -129,9 +132,12 @@ namespace ippl {
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_RECV + i * groupCount + face, nrecvs * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer(
+                        IPPL_HALO_FACE_RECV + i * groupCount + face,
+                        nrecvs * sizeof(T));
 
-                    Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                    Ippl::Comm->recv(rank, tag, fd_m, *buf,
+                        nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, fd_m);
@@ -187,9 +193,12 @@ namespace ippl {
                     count_type nsends;
                     pack(range, view, fd_m, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_SEND + i * groupCount + edge, nsends * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer(
+                        IPPL_HALO_EDGE_SEND + i * groupCount + edge,
+                        nsends * sizeof(T));
 
-                    Ippl::Comm->isend(rank, tag, fd_m, *buf, requests[requestIndex++], nsends);
+                    Ippl::Comm->isend(rank, tag, fd_m, *buf,
+                        requests[requestIndex++], nsends);
                     buf->resetWritePos();
                 }
             }
@@ -214,9 +223,12 @@ namespace ippl {
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_RECV + i * groupCount + edge, nrecvs * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer(
+                        IPPL_HALO_EDGE_RECV + i * groupCount + edge,
+                        nrecvs * sizeof(T));
 
-                    Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                    Ippl::Comm->recv(rank, tag, fd_m, *buf,
+                        nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, fd_m);
@@ -269,9 +281,12 @@ namespace ippl {
                 count_type nsends;
                 pack(range, view, fd_m, nsends);
 
-                buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_SEND + vertex, nsends * sizeof(T));
+                buffer_type buf = Ippl::Comm->getBuffer(
+                    IPPL_HALO_VERTEX_SEND + vertex,
+                    nsends * sizeof(T));
 
-                Ippl::Comm->isend(rank, tag, fd_m, *buf, requests[requestIndex++], nsends);
+                Ippl::Comm->isend(rank, tag, fd_m, *buf,
+                    requests[requestIndex++], nsends);
                 buf->resetWritePos();
             }
 
@@ -298,9 +313,12 @@ namespace ippl {
                              (range.hi[1] - range.lo[1]) *
                              (range.hi[2] - range.lo[2]));
                 
-                buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_RECV + vertex, nrecvs * sizeof(T));
+                buffer_type buf = Ippl::Comm->getBuffer(
+                    IPPL_HALO_VERTEX_RECV + vertex,
+                    nrecvs * sizeof(T));
 
-                Ippl::Comm->recv(rank, tag, fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                Ippl::Comm->recv(rank, tag, fd_m, *buf,
+                    nrecvs * sizeof(T), nrecvs);
                 buf->resetReadPos();
 
                 unpack<Op>(range, view, fd_m);
@@ -340,7 +358,8 @@ namespace ippl {
                                     const size_t j,
                                     const size_t k)
                 {
-                    int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
+                    int l = i + j * subview.extent(0)
+                            + k * subview.extent(0) * subview.extent(1);
                     buffer(l) = subview(i, j, k);
                 }
             );
@@ -372,7 +391,8 @@ namespace ippl {
                                     const size_t j,
                                     const size_t k)
                 {
-                    int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
+                    int l = i + j * subview.extent(0)
+                            + k * subview.extent(0) * subview.extent(1);
                     op(subview(i, j, k), buffer(l));
                 }
             );
@@ -397,8 +417,10 @@ namespace ippl {
              * Add "+1" to the upper bound since Kokkos loops always to "< extent".
              */
             for (size_t i = 0; i < Dim; ++i) {
-                intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/ + nghost;
-                intersect.hi[i] = overlap[i].last()  - offset[i].first() /*offset*/ + nghost + 1;
+                intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/
+                                    + nghost;
+                intersect.hi[i] = overlap[i].last()  - offset[i].first() /*offset*/
+                                    + nghost + 1;
             }
 
             return intersect;

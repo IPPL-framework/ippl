@@ -29,24 +29,6 @@ namespace ippl {
         , buffer_m("buffer", size)
         { }
 
-
-        template <class... Properties>
-        template <typename T>
-        void Archive<Properties...>::operator<<(const Kokkos::View<T*>& view) {
-            size_t size = sizeof(T);
-            Kokkos::parallel_for(
-                "Archive::serialize()", view.extent(0),
-                KOKKOS_CLASS_LAMBDA(const size_t i) {
-                    std::memcpy(buffer_m.data() + i * size + writepos_m,
-                                view.data() + i,
-                                size);
-            });
-            writepos_m += size * view.size();
-            // Wait for the serialization kernel to complete
-            // to avoid race conditions with the data in the buffer
-            Kokkos::fence();
-        }
-
         template <class... Properties>
         template <typename T>
         void Archive<Properties...>::serialize(const Kokkos::View<T*>& view, count_type nsends) {
@@ -98,21 +80,6 @@ namespace ippl {
 
         template <class... Properties>
         template <typename T>
-        void Archive<Properties...>::operator>>(Kokkos::View<T*>& view) {
-            size_t size = sizeof(T);
-            Kokkos::parallel_for(
-                "Archive::deserialize()", view.extent(0),
-                KOKKOS_CLASS_LAMBDA(const size_t i) {
-                    std::memcpy(view.data() + i,
-                                buffer_m.data() + i * size + readpos_m,
-                                size);
-            });
-            readpos_m += size * view.size();
-            Kokkos::fence();
-        }
-
-        template <class... Properties>
-        template <typename T>
         void Archive<Properties...>::deserialize(Kokkos::View<T*>& view, count_type nrecvs) {
             size_t size = sizeof(T);
             if(nrecvs > view.extent(0)) {
@@ -131,22 +98,6 @@ namespace ippl {
             readpos_m += size * nrecvs;
         }
 
-        template <class... Properties>
-        template <typename T, unsigned Dim>
-        void Archive<Properties...>::operator>>(Kokkos::View<Vector<T, Dim>*>& view) {
-            size_t size = sizeof(T);
-            using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-            Kokkos::parallel_for(
-                "Archive::deserialize()",
-                mdrange_t({0, 0}, {(long int)view.extent(0), Dim}),
-                KOKKOS_CLASS_LAMBDA(const size_t i, const size_t d) {
-                    std::memcpy(&(*(view.data() + i))[d],
-                                buffer_m.data() + (Dim * i + d) * size + readpos_m,
-                                size);
-            });
-            readpos_m += Dim * size * view.size();
-            Kokkos::fence();
-        }
         template <class... Properties>
         template <typename T, unsigned Dim>
         void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*>& view, count_type nrecvs) {

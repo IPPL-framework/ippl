@@ -58,11 +58,11 @@ namespace ippl {
 
             virtual ~ParticleAttribBase() = default;
 
-            void setParticleCount(count_type& num) { localNum_m = &num; }
-            count_type getParticleCount() const { return *localNum_m; }
+            void setParticleCount(count_type& num) { localNum_mp = &num; }
+            count_type getParticleCount() const { return *localNum_mp; }
 
         protected:
-            const count_type* localNum_m;
+            const count_type* localNum_mp;
         };
     }
 }

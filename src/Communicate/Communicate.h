@@ -55,7 +55,7 @@ namespace ippl {
          * Query the current default overallocation factor
          * @return Factor by which new buffers are overallocated by default
          */
-        int getDefaultOverallocation() const { return defaultOveralloc; }
+        int getDefaultOverallocation() const { return defaultOveralloc_m; }
 
         /**
          * Set the default overallocation factor
@@ -110,21 +110,7 @@ namespace ippl {
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void send(int dest, int tag, Buffer& buffer);
-
-
-        /*!
-         * \warning Only works with default spaces!
-         */
-        template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer);
-
-        template <class Buffer>
         void recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, count_type nrecvs);
-
-        template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer, archive_type& ar, count_type nrecvs);
-
 
         /*!
          * \warning Only works with default spaces!
@@ -132,51 +118,15 @@ namespace ippl {
         template <class Buffer>
         void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&, count_type nsends);
 
-
         /*!
          * \warning Only works with default spaces!
          */
-
         void irecv(int src, int tag, archive_type&, MPI_Request&, size_type msize);
 
     private:
-        std::map<int, buffer_type> buffers;
-        int defaultOveralloc = 1;
+        std::map<int, buffer_type> buffers_m;
+        int defaultOveralloc_m = 1;
     };
-
-
-    template <class Buffer>
-    void Communicate::send(int dest, int tag, Buffer& buffer)
-    {
-        // Attention: only works with default spaces
-        archive_type ar;
-
-        buffer.serialize(ar);
-
-        MPI_Send(ar.getBuffer(), ar.getSize(),
-                 MPI_BYTE, dest, tag, *this);
-    }
-
-
-    template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer)
-    {
-        MPI_Status status;
-
-        MPI_Probe(src, tag, *this, &status);
-
-        int msize = 0;
-        MPI_Get_count(&status, MPI_BYTE, &msize);
-
-        // Attention: only works with default spaces
-        archive_type ar(msize);
-
-
-        MPI_Recv(ar.getBuffer(), ar.getSize(),
-                MPI_BYTE, src, tag, *this, &status);
-
-        buffer.deserialize(ar);
-    }
 
     template <class Buffer>
     void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, count_type nrecvs)
@@ -187,22 +137,6 @@ namespace ippl {
 
         buffer.deserialize(ar, nrecvs);
     }
-
-    template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, count_type nrecvs)
-    {
-        MPI_Status status;
-        MPI_Probe(src, tag, *this, &status);
-
-        int msize = 0;
-        MPI_Get_count(&status, MPI_BYTE, &msize);
-
-        MPI_Recv(ar.getBuffer(), msize,
-                MPI_BYTE, src, tag, *this, &status);
-
-        buffer.deserialize(ar, nrecvs);
-    }
-
 
     template <class Buffer>
     void Communicate::isend(int dest, int tag, Buffer& buffer,

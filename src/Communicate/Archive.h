@@ -50,9 +50,6 @@ namespace ippl {
              * @param view to take data from.
              */
             template <typename T>
-            void operator<<(const Kokkos::View<T*>& view);
-
-            template <typename T>
             void serialize(const Kokkos::View<T*>& view, count_type nsends);
 
             /*!
@@ -64,18 +61,12 @@ namespace ippl {
              * @param view to take data from.
              */
             template <typename T, unsigned Dim>
-            void operator<<(const Kokkos::View<Vector<T, Dim>*>& view);
-
-            template <typename T, unsigned Dim>
             void serialize(const Kokkos::View<Vector<T, Dim>*>& view, count_type nsends);
 
             /*!
              * Deserialize.
              * @param view to put data to
              */
-            template <typename T>
-            void operator>>(Kokkos::View<T*>& view);
-
             template <typename T>
             void deserialize(Kokkos::View<T*>& view, count_type nrecvs);
 
@@ -87,9 +78,6 @@ namespace ippl {
              *
              * @param view to put data to
              */
-            template <typename T, unsigned Dim>
-            void operator>>(Kokkos::View<Vector<T, Dim>*>& view);
-
             template <typename T, unsigned Dim>
             void deserialize(Kokkos::View<Vector<T, Dim>*>& view, count_type nrecvs);
 

@@ -102,7 +102,7 @@ namespace ippl {
         void print() {
             HostMirror hview = Kokkos::create_mirror_view(dview_m);
             Kokkos::deep_copy(hview, dview_m);
-            for (count_type i = 0; i < *(this->localNum_m); ++i) {
+            for (count_type i = 0; i < *(this->localNum_mp); ++i) {
                 std::cout << hview(i) << std::endl;
             }
         }

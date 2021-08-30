@@ -356,20 +356,13 @@ namespace ippl {
       
        if ( direction == 1 )
        {
-           
-           //static IpplTimings::TimerRef ForwardTimer = IpplTimings::getTimer("ForwardFFT");           
-           //IpplTimings::startTimer(ForwardTimer);                                               
            heffte_m->forward( tempFieldf.data(), tempFieldg.data(), workspace_m.data(),
                               heffte::scale::full );
-           //IpplTimings::stopTimer(ForwardTimer);                                               
        }
        else if ( direction == -1 )
        {
-           //static IpplTimings::TimerRef InverseTimer = IpplTimings::getTimer("InverseFFT");           
-           //IpplTimings::startTimer(InverseTimer);                                               
            heffte_m->backward( tempFieldg.data(), tempFieldf.data(), workspace_m.data(),
                                heffte::scale::none );
-           //IpplTimings::stopTimer(InverseTimer);                                               
        }
        else
        {
