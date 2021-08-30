@@ -215,12 +215,13 @@ namespace ippl {
         void globalCreate(count_type nTotal);
 
         /*!
-         * Partition the particles into a valid region and an invalid region,
+         * Particle deletion Function. Partition the particles into a valid region
+         * and an invalid region,
          * effectively deleting the invalid particles
          * @param invalid View marking which indices are invalid
          * @param destroyNum Total number of invalid particles
          */
-        void sort(const Kokkos::View<bool*>& invalid, const count_type destroyNum);
+        void destroy(const Kokkos::View<bool*>& invalid, const count_type destroyNum);
 
         /*!
          * Serialize to do MPI calls.

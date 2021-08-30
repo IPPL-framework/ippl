@@ -171,7 +171,7 @@ namespace ippl {
             }, invalidCount);
         Kokkos::fence();
 
-        pdata.sort(invalid, invalidCount);
+        pdata.destroy(invalid, invalidCount);
         Kokkos::fence();
         
         IpplTimings::stopTimer(destroyTimer);

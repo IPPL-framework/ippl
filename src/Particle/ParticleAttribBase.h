@@ -42,7 +42,7 @@ namespace ippl {
 
             virtual void create(count_type) = 0;
 
-            virtual void sort(const Kokkos::View<int*>&, const Kokkos::View<int*>&, count_type) = 0;
+            virtual void destroy(const Kokkos::View<int*>&, const Kokkos::View<int*>&, count_type) = 0;
             virtual count_type packedSize(const count_type) const = 0;
 
             virtual void pack(void*, const Kokkos::View<int*>&) const = 0;

@@ -157,14 +157,15 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::sort(const Kokkos::View<bool*>& invalid, const count_type destroyNum) {
+    void ParticleBase<PLayout, Properties...>::destroy(const Kokkos::View<bool*>& invalid, const count_type destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
         // If there aren't any particles to delete, do nothing
         if (destroyNum == 0) return;
 
-        // If we're deleting all the particles, there's no point in sorting
-        // anything because the valid region will be empty
+        // If we're deleting all the particles, there's no point in doing
+        // anything because the valid region will be empty; we only need to
+        // update the particle count
         if (destroyNum == localNum_m) {
             localNum_m = 0;
             return;
@@ -184,7 +185,7 @@ namespace ippl {
         auto locKeepIndex = keepIndex_m;
 
         // Find the indices of the invalid particles in the valid region
-        Kokkos::parallel_scan("Scan in ParticleBase::sort()",
+        Kokkos::parallel_scan("Scan in ParticleBase::destroy()",
                               localNum_m - destroyNum,
                               KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
                               {
@@ -195,14 +196,14 @@ namespace ippl {
 
         // Determine the total number of invalid particles in the valid region
         size_type maxDeleteIndex = 0;
-        Kokkos::parallel_reduce("Reduce in ParticleBase::sort()", destroyNum,
+        Kokkos::parallel_reduce("Reduce in ParticleBase::destroy()", destroyNum,
                                KOKKOS_LAMBDA(const size_t i, size_t& maxIdx)
                                {
                                    if (locDeleteIndex(i) >= 0 && i > maxIdx) maxIdx = i;
                                }, Kokkos::Max<size_type>(maxDeleteIndex));
 
         // Find the indices of the valid particles in the invalid region
-        Kokkos::parallel_scan("Second scan in ParticleBase::sort()", 
+        Kokkos::parallel_scan("Second scan in ParticleBase::destroy()",
                               Kokkos::RangePolicy(localNum_m - destroyNum, localNum_m),
                               KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
                               {
@@ -218,7 +219,7 @@ namespace ippl {
         for (attribute_iterator it = attributes_m.begin();
              it != attributes_m.end(); ++it)
         {
-            (*it)->sort(deleteIndex_m, keepIndex_m, maxDeleteIndex + 1);
+            (*it)->destroy(deleteIndex_m, keepIndex_m, maxDeleteIndex + 1);
         }
     }
 

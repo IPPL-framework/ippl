@@ -56,12 +56,13 @@ namespace ippl {
         void create(count_type) override;
 
         /*!
-         * Partition the particles into a valid region and an invalid region
+         * Particle deletion function. Partition the particles into a valid region
+         * and an invalid region.
          * @param deleteIndex List of indices of invalid particles in the valid region
          * @param keepIndex List of indices of valid particles in the invalid region
          * @param invalidCount Number of invalid particles in the valid region
          */
-        void sort(const Kokkos::View<int*>& deleteIndex,
+        void destroy(const Kokkos::View<int*>& deleteIndex,
                   const Kokkos::View<int*>& keepIndex,
                   count_type invalidCount) override;
 

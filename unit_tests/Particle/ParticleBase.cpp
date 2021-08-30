@@ -63,7 +63,7 @@ TEST_F(ParticleBaseTest, CreateAndDestroy) {
     }
 
     // Delete all the particles with odd indices
-    // (i.e. mark as invalid then sort)
+    // (i.e. mark as invalid)
     typedef typename ippl::detail::ViewType<bool, 1>::view_type bool_type;
     bool_type invalid("invalid", nParticles);
     auto mirror2 = Kokkos::create_mirror(invalid);
@@ -72,7 +72,7 @@ TEST_F(ParticleBaseTest, CreateAndDestroy) {
         mirror2(2 * i + 1) = true;
     }
     Kokkos::deep_copy(invalid, mirror2);
-    pbase->sort(invalid, 500);
+    pbase->destroy(invalid, 500);
 
     // Verify remaining indices
     Kokkos::deep_copy(mirror, pbase->ID.getView());

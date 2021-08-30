@@ -42,12 +42,12 @@ namespace ippl {
     }
 
     template<typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::sort(const Kokkos::View<int*>& deleteIndex,
+    void ParticleAttrib<T, Properties...>::destroy(const Kokkos::View<int*>& deleteIndex,
                                                 const Kokkos::View<int*>& keepIndex,
                                                 count_type invalidCount) {
         // Replace all invalid particles in the valid region with valid
         // particles in the invalid region
-        Kokkos::parallel_for("ParticleAttrib::sort()",
+        Kokkos::parallel_for("ParticleAttrib::destroy()",
                              invalidCount,
                              KOKKOS_CLASS_LAMBDA(const size_t i)
                              {
