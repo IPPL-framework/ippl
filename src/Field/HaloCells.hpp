@@ -82,7 +82,7 @@ namespace ippl {
 
             int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
 
-            const int groupCount = neighbors.size();
+            const size_t groupCount = neighbors.size();
             size_t requestIndex = 0;
             for (size_t face = 0; face < neighbors.size(); ++face) {
                 for (size_t i = 0; i < neighbors[face].size(); ++i) {
@@ -173,7 +173,7 @@ namespace ippl {
 
             int tag = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
 
-            const int groupCount = neighbors.size();
+            const size_t groupCount = neighbors.size();
             size_t requestIndex = 0;
             for (size_t edge = 0; edge < neighbors.size(); ++edge) {
                 for (size_t i = 0; i < neighbors[edge].size(); ++i) {
