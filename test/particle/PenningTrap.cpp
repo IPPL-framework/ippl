@@ -3,7 +3,7 @@
 //   Usage:
 //     srun ./PenningTrap 128 128 128 10000 300 FFT Gaussian --info 10
 //
-// Copyright (c) 2020, Sriramkrishnan Muralikrishnan, 
+// Copyright (c) 2020, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -188,11 +188,11 @@ public:
         this->addAttribute(P);
         this->addAttribute(E);
     }
-    
+
     ChargedParticles(PLayout& pl,
-                     Vector_t hr, 
-                     Vector_t rmin, 
-                     Vector_t rmax, 
+                     Vector_t hr,
+                     Vector_t rmin,
+                     Vector_t rmax,
                      ippl::e_dim_tag decomp[Dim],
                      double Q)
     : ippl::ParticleBase<PLayout>(pl)
@@ -216,20 +216,13 @@ public:
         setBCAllPeriodic();
     }
 
-    //void update() {
-    //    
-    //    PLayout& layout = this->getLayout();
-    //    layout.update(*this);
-    //}
-
-
     void gatherStatistics(unsigned int totalP, int iteration) {
-        
-        std::cout << "Rank " << Ippl::Comm->rank() << " has " 
-                  << (double)this->getLocalNum()/totalP*100.0 
+
+        std::cout << "Rank " << Ippl::Comm->rank() << " has "
+                  << (double)this->getLocalNum()/totalP*100.0
                   << "percent of the total particles " << std::endl;
     }
-    
+
     void gatherCIC() {
 
         gather(this->E, E_m, this->R);
@@ -237,21 +230,21 @@ public:
     }
 
     void scatterCIC(unsigned int totalP, int iteration, Vector_t& hrField) {
-         
-         
+
+
          Inform m("scatter ");
-         
+
          rho_m = 0.0;
          scatter(q, rho_m, this->R);
-         
-         static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check");           
-         IpplTimings::startTimer(sumTimer);                                                    
+
+         static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check");
+         IpplTimings::startTimer(sumTimer);
          double Q_grid = rho_m.sum();
-        
+
          unsigned int Total_particles = 0;
          unsigned int local_particles = this->getLocalNum();
 
-         MPI_Reduce(&local_particles, &Total_particles, 1, 
+         MPI_Reduce(&local_particles, &Total_particles, 1,
                        MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
 
          double rel_error = std::fabs((Q_m-Q_grid)/Q_m);
@@ -260,12 +253,12 @@ public:
          if(Ippl::Comm->rank() == 0) {
              //if((Total_particles != totalP) || (rel_error > 1e-10)) {
              if((Total_particles != totalP)) {
-                 std::cout << "Total particles in the sim. " << totalP 
-                           << " " << "after update: " 
+                 std::cout << "Total particles in the sim. " << totalP
+                           << " " << "after update: "
                            << Total_particles << std::endl;
-                 std::cout << "Total particles not matched in iteration: " 
+                 std::cout << "Total particles not matched in iteration: "
                            << iteration << std::endl;
-                 std::cout << "Rel. error in charge conservation: " 
+                 std::cout << "Rel. error in charge conservation: "
                            << rel_error << std::endl;
                  exit(1);
              }
@@ -277,13 +270,13 @@ public:
 
          rhoNorm_m = norm(rho_m);
          IpplTimings::stopTimer(sumTimer);
-         
+
          //dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
 
          //rho = rho_e - rho_i
          rho_m = rho_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
     }
-    
+
     void initSolver() {
 
         Inform m("solver ");
@@ -297,7 +290,7 @@ public:
     void initFFTSolver() {
         ippl::SolverParams sp;
         sp.add<int>("output_type",1);
-        
+
         ippl::FFTParams fftParams;
 
         fftParams.setAllToAll( false );
@@ -308,18 +301,18 @@ public:
         solver_mp = std::make_shared<Solver_t>(fftParams);
 
         solver_mp->setParameters(sp);
-        
+
         solver_mp->setRhs(&rho_m);
-        
+
         solver_mp->setLhs(&E_m);
     }
 
 
 
      void dumpData() {
-        
+
         auto Pview = P.getView();
-        
+
         double Energy = 0.0;
 
         Kokkos::parallel_reduce("Particle Energy", this->getLocalNum(),
@@ -330,8 +323,8 @@ public:
 
         Energy *= 0.5;
         double gEnergy = 0.0;
-        
-        MPI_Reduce(&Energy, &gEnergy, 1, 
+
+        MPI_Reduce(&Energy, &gEnergy, 1,
                     MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
 
@@ -342,20 +335,20 @@ public:
 
         for (unsigned d=0; d<Dim; ++d) {
 
-        double temp = 0.0;                                                                                        
-        Kokkos::parallel_reduce("Vector E reduce",                                                                       
-                                mdrange_type({nghostE, nghostE, nghostE},                 
-                                             {Eview.extent(0) - nghostE,            
-                                              Eview.extent(1) - nghostE,            
-                                              Eview.extent(2) - nghostE}),          
-                                KOKKOS_LAMBDA(const size_t i, const size_t j,                           
-                                              const size_t k, double& valL) 
-                                {                                
-                                    double myVal = pow(Eview(i, j, k)[d], 2);                                              
-                                    valL += myVal;                                                                      
-                                }, Kokkos::Sum<double>(temp));                                                     
-            double globaltemp = 0.0;                                                                                  
-            MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());                                 
+        double temp = 0.0;
+        Kokkos::parallel_reduce("Vector E reduce",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = pow(Eview(i, j, k)[d], 2);
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+            double globaltemp = 0.0;
+            MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
             normE[d] = sqrt(globaltemp);
         }
 
@@ -385,7 +378,7 @@ public:
 
             csvout.close();
         }
-        
+
         Ippl::Comm->barrier();
 
      }
@@ -400,7 +393,6 @@ private:
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
-    //Inform msg(argv[0]);
     Inform msg("PenningTrap");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
@@ -414,11 +406,11 @@ int main(int argc, char *argv[]){
         std::atoi(argv[3])
     };
 
-    static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");           
-    IpplTimings::startTimer(mainTimer);                                                    
+    static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
+    IpplTimings::startTimer(mainTimer);
     const unsigned long long int totalP = std::atol(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
-    
+
     msg << "Penning Trap "
         << endl
         << "nt " << nt << " Np= "
@@ -434,7 +426,7 @@ int main(int argc, char *argv[]){
     for (unsigned i = 0; i< Dim; i++) {
         domain[i] = ippl::Index(nr[i]);
     }
-    
+
     ippl::e_dim_tag decomp[Dim];
     for (unsigned d = 0; d < Dim; ++d) {
         decomp[d] = ippl::PARALLEL;
@@ -455,7 +447,6 @@ int main(int argc, char *argv[]){
     FieldLayout_t FL(domain, decomp);
     PLayout_t PL(FL, mesh);
 
-
     double Q = -1562.5;
     double Bext = 5.0;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
@@ -467,26 +458,19 @@ int main(int argc, char *argv[]){
     unsigned long long int nloc = totalP / Ippl::Comm->size();
 
     int rest = (int) (totalP - nloc * Ippl::Comm->size());
-    
+
     if ( Ippl::Comm->rank() < rest )
         ++nloc;
 
-    //if ( rest > 0 ) {
-    //    msg << "Total particles are not an exact multiple of ranks" << endl;
-    //    exit(1);
-    //}
-
-
-    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");           
-    IpplTimings::startTimer(particleCreation);                                                    
-    //P->create(nloc);
+    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+    IpplTimings::startTimer(particleCreation);
 
     Vector_t length = rmax - rmin;
-    
+
     std::vector<double> mu(2*Dim);
     std::vector<double> sd(2*Dim);
     std::vector<double> states(2*Dim);
-   
+
 
     for (unsigned d = 0; d<Dim; d++) {
         mu[d] = length[d]/2;
@@ -503,7 +487,7 @@ int main(int argc, char *argv[]){
         std::function<double(double& x,
                              double& y,
                              double& z)> func;
-        
+
         func = [&](double& x,
                    double& y,
                    double& z)
@@ -511,10 +495,10 @@ int main(int argc, char *argv[]){
             double val_conf =  std::pow((x - mu[0])/sd[0], 2) +
                                std::pow((y - mu[1])/sd[1], 2) +
                                std::pow((z - mu[2])/sd[2], 2);
-            
+
             return std::exp(-0.5 * val_conf);
         };
-        
+
         const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
         std::vector<double> Rmin(Dim), Rmax(Dim);
         for (unsigned d = 0; d <Dim; ++d) {
@@ -525,13 +509,13 @@ int main(int argc, char *argv[]){
         std::uniform_real_distribution<double> distribution_x(Rmin[0], Rmax[0]);
         std::uniform_real_distribution<double> distribution_y(Rmin[1], Rmax[1]);
         std::uniform_real_distribution<double> distribution_z(Rmin[2], Rmax[2]);
-        
+
         std::mt19937_64 eng[3*Dim];
         for (unsigned i = 0; i < 3*Dim; ++i) {
             eng[i].seed(42 + i * Dim);
             eng[i].discard( nloc * Ippl::Comm->rank());
         }
-        
+
 
         double sum_f = 0.0;
         std::size_t ip = 0;
@@ -545,12 +529,12 @@ int main(int argc, char *argv[]){
             states[0] = distribution_x(eng[0]);
             states[1] = distribution_y(eng[1]);
             states[2] = distribution_z(eng[2]);
-            
+
             for (unsigned istate = 0; istate < Dim; ++istate) {
                 double u1 = dist_uniform(eng[istate*2 + Dim]);
                 double u2 = dist_uniform(eng[istate*2+1 + Dim]);
-                states[istate + Dim] = fabs(sd[istate + Dim] * (std::sqrt(-2.0 * std::log(u1)) * 
-                                 std::cos(2.0 * pi * u2)) + mu[istate + Dim]); 
+                states[istate + Dim] = fabs(sd[istate + Dim] * (std::sqrt(-2.0 * std::log(u1)) *
+                                 std::cos(2.0 * pi * u2)) + mu[istate + Dim]);
             }
 
             double f = func(states[0], states[1], states[2]);
@@ -562,15 +546,15 @@ int main(int argc, char *argv[]){
                     P_host(ip)[d] =  states[Dim + d];
                     sum_coord += R_host(ip)[d];
                 }
-                sum_f += f; 
-                q_host(ip) = f;                    
+                sum_f += f;
+                q_host(ip) = f;
                 ++ip;
             //}
         }
         double Total_sum = 0.0;
         MPI_Allreduce(&sum_f, &Total_sum, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
         double global_sum_coord = 0.0;
-        MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
+        MPI_Reduce(&sum_coord, &global_sum_coord, 1,
                    MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
         if(Ippl::Comm->rank() == 0) {
@@ -583,10 +567,8 @@ int main(int argc, char *argv[]){
 
         P->q = P->q * (P->Q_m/Total_sum);
 
-
-        
         unsigned int local_particles = P->getLocalNum();
-        MPI_Reduce(&local_particles, &Total_particles, 1, 
+        MPI_Reduce(&local_particles, &Total_particles, 1,
                    MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
         msg << "#particles: " << Total_particles << endl;
         double PPC = Total_particles/((double)(nr[0] * nr[1] * nr[2]));
@@ -594,15 +576,15 @@ int main(int argc, char *argv[]){
 
     }
     else if(dist == "Gaussian") {
-    
+
         P->create(nloc);
         std::mt19937_64 eng[4*Dim];
         for (unsigned i = 0; i < 4*Dim; ++i) {
             eng[i].seed(42 + i * Dim);
             eng[i].discard( nloc * Ippl::Comm->rank());
         }
-        
-        
+
+
         std::uniform_real_distribution<double> dist_uniform(0.0, 1.0);
 
         typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
@@ -613,19 +595,19 @@ int main(int argc, char *argv[]){
             for (unsigned istate = 0; istate < 2*Dim; ++istate) {
                 double u1 = dist_uniform(eng[istate*2]);
                 double u2 = dist_uniform(eng[istate*2+1]);
-                states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) * 
-                                 std::cos(2.0 * pi * u2)) + mu[istate]; 
-            }    
+                states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) *
+                                 std::cos(2.0 * pi * u2)) + mu[istate];
+            }
             for (unsigned d = 0; d<Dim; d++) {
                 R_host(i)[d] =  std::fabs(std::fmod(states[d],length[d]));
                 sum_coord += R_host(i)[d];
                 P_host(i)[d] = states[Dim + d];
             }
         }
-        ///Just to check are we getting the same particle distribution for 
+        ///Just to check are we getting the same particle distribution for
         //different no. of processors
         double global_sum_coord = 0.0;
-        MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
+        MPI_Reduce(&sum_coord, &global_sum_coord, 1,
                    MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
         if(Ippl::Comm->rank() == 0) {
@@ -638,30 +620,17 @@ int main(int argc, char *argv[]){
 
         Total_particles = totalP;
     }
-    IpplTimings::stopTimer(particleCreation);                                                    
-
-
-    //Vector_t originField = {rmin[0]-hr[0], rmin[1]-hr[1], rmin[2]-hr[2]};
-    //double dxField = (rmax[0] + hr[0] - originField[0]) / nr[0];
-    //double dyField = (rmax[1] + hr[1] - originField[1]) / nr[1];
-    //double dzField = (rmax[2] + hr[2] - originField[2]) / nr[2];
-
-    //Vector_t hrField = {dxField, dyField, dzField};
-    //Mesh_t meshField(domain, hrField, originField);
-
-    //P->E_m.initialize(meshField, FL);
-    //P->rho_m.initialize(meshField, FL);
+    IpplTimings::stopTimer(particleCreation);
 
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
 
-
     bunch_type bunchBuffer(PL);
-    static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("FirstUpdate");           
-    IpplTimings::startTimer(FirstUpdateTimer);                                               
+    static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("FirstUpdate");
+    IpplTimings::startTimer(FirstUpdateTimer);
     //P->update();
     PL.update(*P, bunchBuffer);
-    IpplTimings::stopTimer(FirstUpdateTimer);                                                    
+    IpplTimings::stopTimer(FirstUpdateTimer);
 
     msg << "particles created and initial conditions assigned " << endl;
 
@@ -669,71 +638,66 @@ int main(int argc, char *argv[]){
     P->initSolver();
 
     P->time_m = 0.0;
-    
+
     P->scatterCIC(Total_particles, 0, hr);
-    
-   
-    static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");           
-    IpplTimings::startTimer(SolveTimer);                                               
+
+    static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");
+    IpplTimings::startTimer(SolveTimer);
     P->solver_mp->solve();
     IpplTimings::stopTimer(SolveTimer);
 
     P->gatherCIC();
 
-
-    static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");           
-    IpplTimings::startTimer(dumpDataTimer);                                               
+    static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
+    IpplTimings::startTimer(dumpDataTimer);
     P->dumpData();
-    IpplTimings::stopTimer(dumpDataTimer);                                               
+    IpplTimings::stopTimer(dumpDataTimer);
 
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
-   
+
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
-        // Here, we assume a constant charge-to-mass ratio of -1 for 
-        // all the particles hence eliminating the need to store mass as 
+        // Here, we assume a constant charge-to-mass ratio of -1 for
+        // all the particles hence eliminating the need to store mass as
         // an attribute
         // kick
-        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityPush");           
-        IpplTimings::startTimer(PTimer);                                                    
+        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityPush");
+        IpplTimings::startTimer(PTimer);
         auto Rview = P->R.getView();
         auto Pview = P->P.getView();
         auto Eview = P->E.getView();
         double V0 = 30*rmax[2];
         Kokkos::parallel_for("Kick1", P->getLocalNum(),
                               KOKKOS_LAMBDA(const size_t j){
-        
-        double Eext_x = -(Rview(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));
-        double Eext_y = -(Rview(j)[1] - (rmax[1]/2)) * (V0/(2*pow(rmax[2],2)));
-        double Eext_z =  (Rview(j)[2] - (rmax[2]/2)) * (V0/(pow(rmax[2],2)));
-        
-        Pview(j)[0] -= 0.5 * dt * ((Eview(j)[0] + Eext_x) + Pview(j)[1] * Bext);
-        Pview(j)[1] -= 0.5 * dt * ((Eview(j)[1] + Eext_y) - Pview(j)[0] * Bext);
-        Pview(j)[2] -= 0.5 * dt *  (Eview(j)[2] + Eext_z);
-        
+            double Eext_x = -(Rview(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));
+            double Eext_y = -(Rview(j)[1] - (rmax[1]/2)) * (V0/(2*pow(rmax[2],2)));
+            double Eext_z =  (Rview(j)[2] - (rmax[2]/2)) * (V0/(pow(rmax[2],2)));
+
+            Pview(j)[0] -= 0.5 * dt * ((Eview(j)[0] + Eext_x) + Pview(j)[1] * Bext);
+            Pview(j)[1] -= 0.5 * dt * ((Eview(j)[1] + Eext_y) - Pview(j)[0] * Bext);
+            Pview(j)[2] -= 0.5 * dt *  (Eview(j)[2] + Eext_z);
         });
-        IpplTimings::stopTimer(PTimer);                                                    
-        
+        IpplTimings::stopTimer(PTimer);
+
         //drift
-        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionPush");           
-        IpplTimings::startTimer(RTimer);                                                    
+        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionPush");
+        IpplTimings::startTimer(RTimer);
         P->R = P->R + dt * P->P;
         Ippl::Comm->barrier();
-        IpplTimings::stopTimer(RTimer);                                                    
+        IpplTimings::stopTimer(RTimer);
 
-        //Since the particles have moved spatially update them to correct processors 
+        //Since the particles have moved spatially update them to correct processors
         PL.update(*P, bunchBuffer);
 
-        
         //scatter the charge onto the underlying grid
         P->scatterCIC(Total_particles, it+1, hr);
-        
+
         //Field solve
-        IpplTimings::startTimer(SolveTimer);                                               
+        IpplTimings::startTimer(SolveTimer);
         P->solver_mp->solve();
-        IpplTimings::stopTimer(SolveTimer);                                               
-        
+        IpplTimings::stopTimer(SolveTimer);
+
         // gather E field
         P->gatherCIC();
 
@@ -744,27 +708,25 @@ int main(int argc, char *argv[]){
         auto E2view = P->E.getView();
         Kokkos::parallel_for("Kick2", P->getLocalNum(),
                               KOKKOS_LAMBDA(const size_t j){
-        
-        double Eext_x = -(R2view(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));
-        double Eext_y = -(R2view(j)[1] - (rmax[1]/2)) * (V0/(2*pow(rmax[2],2)));
-        double Eext_z =  (R2view(j)[2] - (rmax[2]/2)) * (V0/(pow(rmax[2],2)));
-        
-        P2view(j)[0] -= 0.5 * dt * ((E2view(j)[0] + Eext_x) + P2view(j)[1] * Bext);
-        P2view(j)[1] -= 0.5 * dt * ((E2view(j)[1] + Eext_y) - P2view(j)[0] * Bext);
-        P2view(j)[2] -= 0.5 * dt *  (E2view(j)[2] + Eext_z);
-        
+            double Eext_x = -(R2view(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));
+            double Eext_y = -(R2view(j)[1] - (rmax[1]/2)) * (V0/(2*pow(rmax[2],2)));
+            double Eext_z =  (R2view(j)[2] - (rmax[2]/2)) * (V0/(pow(rmax[2],2)));
+
+            P2view(j)[0] -= 0.5 * dt * ((E2view(j)[0] + Eext_x) + P2view(j)[1] * Bext);
+            P2view(j)[1] -= 0.5 * dt * ((E2view(j)[1] + Eext_y) - P2view(j)[0] * Bext);
+            P2view(j)[2] -= 0.5 * dt *  (E2view(j)[2] + Eext_z);
         });
-        IpplTimings::stopTimer(PTimer);                                                    
+        IpplTimings::stopTimer(PTimer);
 
         P->time_m += dt;
-        IpplTimings::startTimer(dumpDataTimer);                                               
+        IpplTimings::startTimer(dumpDataTimer);
         P->dumpData();
-        IpplTimings::stopTimer(dumpDataTimer);                                               
+        IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished iteration: " << it << " time: " << P->time_m << endl;
     }
-    
+
     msg << "Penning Trap: End." << endl;
-    IpplTimings::stopTimer(mainTimer);                                                    
+    IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
     auto end = std::chrono::high_resolution_clock::now();
