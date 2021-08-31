@@ -102,7 +102,7 @@ namespace ippl {
 
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::create(count_type nLocal)
+    void ParticleBase<PLayout, Properties...>::create(size_type nLocal)
     {
         PAssert(layout_m != nullptr);
 
@@ -140,16 +140,16 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::globalCreate(count_type nTotal)
+    void ParticleBase<PLayout, Properties...>::globalCreate(size_type nTotal)
     {
         PAssert(layout_m != nullptr);
 
         // Compute the number of particles local to each processor
-        count_type nLocal = nTotal / numNodes_m;
+        size_type nLocal = nTotal / numNodes_m;
 
         const size_t rank = Ippl::Comm->myNode();
 
-        count_type rest = nTotal - nLocal * rank;
+        size_type rest = nTotal - nLocal * rank;
         if (rank < rest)
             ++nLocal;
 
@@ -157,7 +157,7 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::destroy(const Kokkos::View<bool*>& invalid, const count_type destroyNum) {
+    void ParticleBase<PLayout, Properties...>::destroy(const Kokkos::View<bool*>& invalid, const size_type destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
         // If there aren't any particles to delete, do nothing
@@ -224,7 +224,7 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::serialize(detail::Archive<Properties...>& ar, count_type nsends) {
+    void ParticleBase<PLayout, Properties...>::serialize(detail::Archive<Properties...>& ar, size_type nsends) {
         using size_type = typename attribute_container_t::size_type;
         for (size_type i = 0; i < attributes_m.size(); ++i) {
             attributes_m[i]->serialize(ar, nsends);
@@ -233,7 +233,7 @@ namespace ippl {
 
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::deserialize(detail::Archive<Properties...>& ar, count_type nrecvs) {
+    void ParticleBase<PLayout, Properties...>::deserialize(detail::Archive<Properties...>& ar, size_type nrecvs) {
         using size_type = typename attribute_container_t::size_type;
         for (size_type i = 0; i < attributes_m.size(); ++i) {
             attributes_m[i]->deserialize(ar, nrecvs);
@@ -241,7 +241,7 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    detail::size_type ParticleBase<PLayout, Properties...>::packedSize(const count_type count) const {
+    detail::size_type ParticleBase<PLayout, Properties...>::packedSize(const size_type count) const {
         size_type total = 0;
         // Vector size type
         using vsize_t = typename attribute_container_t::size_type;
@@ -266,7 +266,7 @@ namespace ippl {
 
     template <class PLayout, class... Properties>
     template <class Buffer>
-    void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer, count_type nrecvs)
+    void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer, size_type nrecvs)
     {
         // Vector size type
         using vsize_t = typename attribute_container_t::size_type;

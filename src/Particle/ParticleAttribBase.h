@@ -40,28 +40,28 @@ namespace ippl {
         public:
             typedef typename ViewType<bool, 1, Properties...>::view_type boolean_view_type;
 
-            virtual void create(count_type) = 0;
+            virtual void create(size_type) = 0;
 
-            virtual void destroy(const Kokkos::View<int*>&, const Kokkos::View<int*>&, count_type) = 0;
-            virtual count_type packedSize(const count_type) const = 0;
+            virtual void destroy(const Kokkos::View<int*>&, const Kokkos::View<int*>&, size_type) = 0;
+            virtual size_type packedSize(const size_type) const = 0;
 
             virtual void pack(void*, const Kokkos::View<int*>&) const = 0;
 
-            virtual void unpack(void*, count_type) = 0;
+            virtual void unpack(void*, size_type) = 0;
 
-            virtual void serialize(Archive<Properties...>& ar, count_type nsends) = 0;
+            virtual void serialize(Archive<Properties...>& ar, size_type nsends) = 0;
 
-            virtual void deserialize(Archive<Properties...>& ar, count_type nrecvs) = 0;
+            virtual void deserialize(Archive<Properties...>& ar, size_type nrecvs) = 0;
 
             virtual size_type size() const = 0;
 
             virtual ~ParticleAttribBase() = default;
 
-            void setParticleCount(count_type& num) { localNum_mp = &num; }
-            count_type getParticleCount() const { return *localNum_mp; }
+            void setParticleCount(size_type& num) { localNum_mp = &num; }
+            size_type getParticleCount() const { return *localNum_mp; }
 
         protected:
-            const count_type* localNum_mp;
+            const size_type* localNum_mp;
         };
     }
 }

@@ -99,7 +99,7 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    count_type nsends;
+                    size_type nsends;
                     pack(range, view, haloData_m, nsends);
 
                     buffer_type buf = Ippl::Comm->getBuffer<T>(
@@ -128,7 +128,7 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                    size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
@@ -190,7 +190,7 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    count_type nsends;
+                    size_type nsends;
                     pack(range, view, haloData_m, nsends);
 
                     buffer_type buf = Ippl::Comm->getBuffer<T>(
@@ -219,7 +219,7 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                    size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
@@ -278,7 +278,7 @@ namespace ippl {
                                       lDomains[myRank], nghost);
                 }
 
-                count_type nsends;
+                size_type nsends;
                 pack(range, view, haloData_m, nsends);
 
                 buffer_type buf = Ippl::Comm->getBuffer<T>(
@@ -309,7 +309,7 @@ namespace ippl {
                                       lDomains[myRank], nghost);
                 }
 
-                count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
                              (range.hi[1] - range.lo[1]) *
                              (range.hi[2] - range.lo[2]));
                 
@@ -334,7 +334,7 @@ namespace ippl {
         void HaloCells<T, Dim>::pack(const bound_type& range,
                                      const view_type& view,
                                      FieldBufferData<T>& fd,
-                                     count_type& nsends)
+                                     size_type& nsends)
         {
             auto subview = makeSubview(view, range);
 

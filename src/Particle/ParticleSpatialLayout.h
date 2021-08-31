@@ -63,7 +63,6 @@ namespace ippl {
         using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
 
         using size_type = detail::size_type;
-        using count_type = detail::count_type;
 
     public:
         // constructor: this one also takes a Mesh

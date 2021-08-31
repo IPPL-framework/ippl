@@ -75,7 +75,7 @@ namespace ippl {
 
         static IpplTimings::TimerRef locateTimer = IpplTimings::getTimer("locateParticles");
         IpplTimings::startTimer(locateTimer);
-        count_type localnum = pdata.getLocalNum();
+        size_type localnum = pdata.getLocalNum();
 
         // 1st step
 
@@ -98,11 +98,11 @@ namespace ippl {
         static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("SendPreprocess");
         IpplTimings::startTimer(preprocTimer);
         MPI_Win win;
-        std::vector<count_type> nRecvs(nRanks, 0);
-        MPI_Win_create(nRecvs.data(), nRanks*sizeof(count_type), sizeof(count_type),
+        std::vector<size_type> nRecvs(nRanks, 0);
+        MPI_Win_create(nRecvs.data(), nRanks*sizeof(size_type), sizeof(size_type),
                        MPI_INFO_NULL, *Ippl::Comm, &win);
 
-        std::vector<count_type> nSends(nRanks, 0);
+        std::vector<size_type> nSends(nRanks, 0);
 
         MPI_Win_fence(0, win);
 
@@ -153,11 +153,11 @@ namespace ippl {
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("ParticleDestroy");
         IpplTimings::startTimer(destroyTimer);
 
-        count_type invalidCount = 0;
+        size_type invalidCount = 0;
         Kokkos::parallel_reduce(
             "set/count invalid",
             localnum,
-            KOKKOS_LAMBDA(const size_t i, count_type& nInvalid) {
+            KOKKOS_LAMBDA(const size_t i, size_type& nInvalid) {
                 if (invalid(i)) {
                     pdata.ID(i) = -1;
                     nInvalid += 1;

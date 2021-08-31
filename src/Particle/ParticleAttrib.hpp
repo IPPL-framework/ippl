@@ -33,7 +33,7 @@
 namespace ippl {
 
     template<typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::create(count_type n) {
+    void ParticleAttrib<T, Properties...>::create(size_type n) {
         size_type required = *(this->localNum_mp) + n;
         if (this->size() < required) {
             int overalloc = Ippl::Comm->getDefaultOverallocation();
@@ -44,7 +44,7 @@ namespace ippl {
     template<typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::destroy(const Kokkos::View<int*>& deleteIndex,
                                                 const Kokkos::View<int*>& keepIndex,
-                                                count_type invalidCount) {
+                                                size_type invalidCount) {
         // Replace all invalid particles in the valid region with valid
         // particles in the invalid region
         Kokkos::parallel_for("ParticleAttrib::destroy()",
@@ -81,7 +81,7 @@ namespace ippl {
 
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::unpack(void* buffer, count_type nrecvs) {
+    void ParticleAttrib<T, Properties...>::unpack(void* buffer, size_type nrecvs) {
         using this_type = ParticleAttrib<T, Properties...>;
         this_type* buffer_p = static_cast<this_type*>(buffer);
         auto& view = buffer_p->dview_m;
@@ -92,7 +92,7 @@ namespace ippl {
             this->resize(required * overalloc);
         }
 
-        count_type count = *(this->localNum_mp);
+        size_type count = *(this->localNum_mp);
         Kokkos::parallel_for(
             "ParticleAttrib::unpack()",
             nrecvs,

@@ -47,7 +47,6 @@ namespace ippl {
         using buffer_type = std::shared_ptr<archive_type>;
 
         using size_type = detail::size_type;
-        using count_type = detail::count_type;
 
         Communicate();
 
@@ -121,14 +120,14 @@ namespace ippl {
          */
         template <class Buffer>
         void recv(int src, int tag, Buffer& buffer, archive_type& ar,
-                  size_type msize, count_type nrecvs);
+                  size_type msize, size_type nrecvs);
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
         void isend(int dest, int tag, Buffer& buffer, archive_type&,
-                   MPI_Request&, count_type nsends);
+                   MPI_Request&, size_type nsends);
 
         /*!
          * \warning Only works with default spaces!
@@ -142,7 +141,7 @@ namespace ippl {
 
     template <class Buffer>
     void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar,
-                           size_type msize, count_type nrecvs)
+                           size_type msize, size_type nrecvs)
     {
         // Temporary fix. MPI communication seems to have problems when the
         // count argument exceeds the range of int, so large messages should
@@ -160,7 +159,7 @@ namespace ippl {
 
     template <class Buffer>
     void Communicate::isend(int dest, int tag, Buffer& buffer,
-                            archive_type& ar, MPI_Request& request, count_type nsends)
+                            archive_type& ar, MPI_Request& request, size_type nsends)
     {
         if (ar.getSize() > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;

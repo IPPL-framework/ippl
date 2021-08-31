@@ -304,7 +304,7 @@ namespace ippl {
                     
                     rangeNeighbors.push_back(range);    
                         
-                    detail::count_type nSends;
+                    detail::size_type nSends;
                     halo.pack(range, view, haloData_m, nSends);
 
                     buffer_type buf = Ippl::Comm->getBuffer<T>(IPPL_PERIODIC_BC_SEND + i, nSends);
@@ -323,7 +323,7 @@ namespace ippl {
                     range.lo[d] = range.lo[d] + offsetRecv;
                     range.hi[d] = range.hi[d] + offsetRecv;
                         
-                    detail::count_type nRecvs = (range.hi[0] - range.lo[0]) *
+                    detail::size_type nRecvs = (range.hi[0] - range.lo[0]) *
                                     (range.hi[1] - range.lo[1]) *
                                     (range.hi[2] - range.lo[2]);
 

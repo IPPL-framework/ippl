@@ -92,7 +92,6 @@ namespace ippl {
         using hash_type             = typename detail::ViewType<int, 1, Properties...>::view_type;
 
         using size_type = detail::size_type;
-        using count_type = detail::count_type;
 
     public:
         //! view of particle positions
@@ -138,10 +137,10 @@ namespace ippl {
         /*!
          * @returns processor local number of particles
          */
-        count_type getLocalNum() const { return localNum_m; }
+        size_type getLocalNum() const { return localNum_m; }
         
         
-        void setLocalNum(count_type size) { localNum_m = size; }
+        void setLocalNum(size_type size) { localNum_m = size; }
 
         /*!
          * @returns particle layout
@@ -200,7 +199,7 @@ namespace ippl {
          * Create nLocal processor local particles
          * @param nLocal number of local particles to be created
          */
-        void create(count_type nLocal);
+        void create(size_type nLocal);
 
         /*!
          * Create a new particle with a given ID
@@ -212,7 +211,7 @@ namespace ippl {
          * Create nTotal particles globally, equally distributed among all processors
          * @param nTotal number of total particles to be created
          */
-        void globalCreate(count_type nTotal);
+        void globalCreate(size_type nTotal);
 
         /*!
          * Particle deletion Function. Partition the particles into a valid region
@@ -221,27 +220,27 @@ namespace ippl {
          * @param invalid View marking which indices are invalid
          * @param destroyNum Total number of invalid particles
          */
-        void destroy(const Kokkos::View<bool*>& invalid, const count_type destroyNum);
+        void destroy(const Kokkos::View<bool*>& invalid, const size_type destroyNum);
 
         /*!
          * Serialize to do MPI calls.
          * @param ar archive
          */
-        void serialize(detail::Archive<Properties...>& ar, count_type nsends);
+        void serialize(detail::Archive<Properties...>& ar, size_type nsends);
 
 
         /*!
          * Deserialize to do MPI calls.
          * @param ar archive
          */
-        void deserialize(detail::Archive<Properties...>& ar, count_type nrecvs);
+        void deserialize(detail::Archive<Properties...>& ar, size_type nrecvs);
 
         /*!
          * Determine the total space necessary to store a certain number of particles
          * @param count particle number
          * @return Total size of a buffer packed with the given number of particles
          */
-        size_type packedSize(const count_type count) const;
+        size_type packedSize(const size_type count) const;
 
 //     protected:
 
@@ -260,7 +259,7 @@ namespace ippl {
          * @param buffer received
          */
         template <class Buffer>
-        void unpack(Buffer& buffer, count_type nrecvs);
+        void unpack(Buffer& buffer, size_type nrecvs);
 
     private:
         //! particle layout
@@ -268,7 +267,7 @@ namespace ippl {
         Layout_t* layout_m;
 
         //! processor local number of particles
-        count_type localNum_m;
+        size_type localNum_m;
 
         //! all attributes
         attribute_container_t attributes_m;
