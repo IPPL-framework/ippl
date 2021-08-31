@@ -102,9 +102,9 @@ namespace ippl {
                     count_type nsends;
                     pack(range, view, haloData_m, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer(
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
                         IPPL_HALO_FACE_SEND + i * groupCount + face,
-                        nsends * sizeof(T));
+                        nsends);
 
                     Ippl::Comm->isend(rank, tag, haloData_m, *buf,
                         requests[requestIndex++], nsends);
@@ -132,9 +132,9 @@ namespace ippl {
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
-                    buffer_type buf = Ippl::Comm->getBuffer(
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
                         IPPL_HALO_FACE_RECV + i * groupCount + face,
-                        nrecvs * sizeof(T));
+                        nrecvs);
 
                     Ippl::Comm->recv(rank, tag, haloData_m, *buf,
                         nrecvs * sizeof(T), nrecvs);
@@ -193,9 +193,9 @@ namespace ippl {
                     count_type nsends;
                     pack(range, view, haloData_m, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer(
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
                         IPPL_HALO_EDGE_SEND + i * groupCount + edge,
-                        nsends * sizeof(T));
+                        nsends);
 
                     Ippl::Comm->isend(rank, tag, haloData_m, *buf,
                         requests[requestIndex++], nsends);
@@ -223,9 +223,9 @@ namespace ippl {
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
-                    buffer_type buf = Ippl::Comm->getBuffer(
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
                         IPPL_HALO_EDGE_RECV + i * groupCount + edge,
-                        nrecvs * sizeof(T));
+                        nrecvs);
 
                     Ippl::Comm->recv(rank, tag, haloData_m, *buf,
                         nrecvs * sizeof(T), nrecvs);
@@ -281,9 +281,9 @@ namespace ippl {
                 count_type nsends;
                 pack(range, view, haloData_m, nsends);
 
-                buffer_type buf = Ippl::Comm->getBuffer(
+                buffer_type buf = Ippl::Comm->getBuffer<T>(
                     IPPL_HALO_VERTEX_SEND + vertex,
-                    nsends * sizeof(T));
+                    nsends);
 
                 Ippl::Comm->isend(rank, tag, haloData_m, *buf,
                     requests[requestIndex++], nsends);
@@ -313,9 +313,9 @@ namespace ippl {
                              (range.hi[1] - range.lo[1]) *
                              (range.hi[2] - range.lo[2]));
                 
-                buffer_type buf = Ippl::Comm->getBuffer(
+                buffer_type buf = Ippl::Comm->getBuffer<T>(
                     IPPL_HALO_VERTEX_RECV + vertex,
-                    nrecvs * sizeof(T));
+                    nrecvs);
 
                 Ippl::Comm->recv(rank, tag, haloData_m, *buf,
                     nrecvs * sizeof(T), nrecvs);

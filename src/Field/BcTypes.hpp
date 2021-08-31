@@ -307,7 +307,7 @@ namespace ippl {
                     detail::count_type nSends;
                     halo.pack(range, view, haloData_m, nSends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_SEND + i, nSends * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(IPPL_PERIODIC_BC_SEND + i, nSends);
 
                     Ippl::Comm->isend(rank, tag, haloData_m, *buf,
                                       requests[i], nSends);
@@ -327,9 +327,8 @@ namespace ippl {
                                     (range.hi[1] - range.lo[1]) *
                                     (range.hi[2] - range.lo[2]);
 
-                    detail::size_type bufSize = nRecvs * sizeof(T);
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PERIODIC_BC_RECV + i, bufSize);
-                    Ippl::Comm->recv(rank, matchtag, haloData_m, *buf, bufSize, nRecvs);
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(IPPL_PERIODIC_BC_RECV + i, nRecvs);
+                    Ippl::Comm->recv(rank, matchtag, haloData_m, *buf, nRecvs * sizeof(T), nRecvs);
                     buf->resetReadPos();
 
                     using assign_t = typename HaloCells_t::assign;

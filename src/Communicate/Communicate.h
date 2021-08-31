@@ -68,13 +68,21 @@ namespace ippl {
         /**
          * Obtain a buffer of at least the requested size that is associated
          * with the given ID, overallocating memory for the buffer if it's new
+         * @tparam T The datatype to be stored in the buffer; in particular, the size
+         *           is scaled by the size of the data type (default char for when
+         *           the size is already in bytes)
          * @param id The numerical ID with which the buffer is associated (allows buffer reuse)
-         * @param size The minimum size of the buffer
-         * @param overallocation The factor by which memory for the buffer should be overallocated
-         *                       (default 1); only used if the buffer with the given ID has not been
-         *                       allocated before
+         * @param size The minimum size of the buffer, measured in number of elements
+         *             of the provided datatype (if the size is in bytes, the default
+         *             type char should be used)
+         * @param overallocation The factor by which memory for the buffer should be
+         *                       overallocated; only used if the buffer with the given
+         *                       ID has not been allocated before; by default, the larger
+         *                       value between 1 and the defaultOveralloc_m member
+         *                       is used
          * @return A shared pointer to the buffer with the requested properties
          */
+        template <typename T = char>
         buffer_type getBuffer(int id, size_type size, int overallocation = 1);
 
         /**
@@ -163,5 +171,7 @@ namespace ippl {
                   MPI_BYTE, dest, tag, *this, &request);
     }
 }
+
+#include "Communicate/Buffers.hpp"
 
 #endif

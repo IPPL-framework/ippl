@@ -1,5 +1,5 @@
 //
-// Buffers.cpp
+// Buffers.hpp
 //   Interface for globally accessible buffer factory for communication
 //
 //   Data sent between MPI ranks has to be stored in a buffer for sending and receiving.
@@ -33,20 +33,26 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "Communicate.h"
-
 namespace ippl {
 
-        void Communicate::setDefaultOverallocation(int factor) {
-            defaultOveralloc_m = factor;
-        }
-
-        void Communicate::deleteBuffer(int id) {
-            buffers_m.erase(id);
-        }
-
-        void Communicate::deleteAllBuffers() {
-            buffers_m.clear();
+        template <typename T = char>
+        Communicate::buffer_type Communicate::getBuffer(int id,
+                            size_type size, int overallocation) {
+            size *= sizeof(T);
+            #if __cplusplus > 201703L
+            if (buffers_m.contains(id)) {
+            #else
+            if (buffers_m.find(id) != buffers_m.end()) {
+            #endif
+                buffer_type buf = buffers_m[id];
+                if (buf->getBufferSize() < size) {
+                    buf->reallocBuffer(size);
+                }
+                return buf;
+            }
+            buffers_m[id] = std::make_shared<archive_type>(size *
+                std::max(overallocation, defaultOveralloc_m));
+            return buffers_m[id];
         }
 
 }
