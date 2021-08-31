@@ -21,6 +21,10 @@
 #include <boost/mpi/communicator.hpp>
 #include <map>
 
+// For message size check; see below
+#include <climits>
+#include <cstdlib>
+
 #include "Communicate/Archive.h"
 #include "Communicate/Tags.h"
 #include "Communicate/TagMaker.h"
@@ -41,7 +45,6 @@ namespace ippl {
         // Attention: only works with default spaces
         using archive_type = detail::Archive<>;
         using buffer_type = std::shared_ptr<archive_type>;
-        //using buffer_type = archive_type;
 
         using size_type = detail::size_type;
         using count_type = detail::count_type;
@@ -109,13 +112,15 @@ namespace ippl {
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, count_type nrecvs);
+        void recv(int src, int tag, Buffer& buffer, archive_type& ar,
+                  size_type msize, count_type nrecvs);
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&, count_type nsends);
+        void isend(int dest, int tag, Buffer& buffer, archive_type&,
+                   MPI_Request&, count_type nsends);
 
         /*!
          * \warning Only works with default spaces!
@@ -128,8 +133,16 @@ namespace ippl {
     };
 
     template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, count_type nrecvs)
+    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar,
+                           size_type msize, count_type nrecvs)
     {
+        // Temporary fix. MPI communication seems to have problems when the
+        // count argument exceeds the range of int, so large messages should
+        // be split into smaller messages
+        if (msize > INT_MAX) {
+            std::cerr << "Message size exceeds range of int" << std::endl;
+            std::abort();
+        }
         MPI_Status status;
         MPI_Recv(ar.getBuffer(), msize,
                 MPI_BYTE, src, tag, *this, &status);
@@ -141,7 +154,10 @@ namespace ippl {
     void Communicate::isend(int dest, int tag, Buffer& buffer,
                             archive_type& ar, MPI_Request& request, count_type nsends)
     {
-
+        if (ar.getSize() > INT_MAX) {
+            std::cerr << "Message size exceeds range of int" << std::endl;
+            std::abort();
+        }
         buffer.serialize(ar, nsends);
         MPI_Isend(ar.getBuffer(), ar.getSize(),
                   MPI_BYTE, dest, tag, *this, &request);

@@ -140,12 +140,6 @@ namespace ippl {
 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
 
-
-                if(bufSize > 2147483647) {
-                    std::cout << "Exceeds MPI send size" << std::endl;
-                    exit(1);
-                }
-
                 Ippl::Comm->isend(rank, tag, buffer, *buf,
                                   requests.back(), nSends[rank]);
                 buf->resetWritePos();
@@ -158,7 +152,7 @@ namespace ippl {
         // 3rd step
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("ParticleDestroy");
         IpplTimings::startTimer(destroyTimer);
-        
+
         count_type invalidCount = 0;
         Kokkos::parallel_reduce(
             "set/count invalid",
@@ -173,7 +167,7 @@ namespace ippl {
 
         pdata.destroy(invalid, invalidCount);
         Kokkos::fence();
-        
+
         IpplTimings::stopTimer(destroyTimer);
         static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("ParticleRecv");
         IpplTimings::startTimer(recvTimer);
@@ -183,11 +177,7 @@ namespace ippl {
             if (nRecvs[rank] > 0) {
                 size_type bufSize = pdata.packedSize(nRecvs[rank]);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
-                
-                if(bufSize > 2147483647) {
-                    std::cout << "Exceeds MPI recv size" << std::endl;
-                    exit(1);
-                }
+
                 Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
                 buf->resetReadPos();
 
@@ -200,7 +190,7 @@ namespace ippl {
         IpplTimings::stopTimer(recvTimer);
 
         IpplTimings::startTimer(sendTimer);
-        
+
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
