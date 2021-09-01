@@ -1,3 +1,4 @@
+// Tests the application of various kinds of boundary conditions on fields
 #include "Ippl.h"
 
 #include <iostream>
@@ -52,7 +53,7 @@ int main(int argc, char *argv[]) {
     //std::cout << bcField << std::endl;
     std::cout << layout << std::endl;
 
-    field_type field(mesh, layout, 2);
+    field_type field(mesh, layout, 1);
 
     field = 1.0;
 
@@ -74,9 +75,9 @@ int main(int argc, char *argv[]) {
         const size_t ig = i + lDom[0].first() - nghost;
         //const size_t jg = j + lDom[1].first() - nghost;
         //const size_t kg = k + lDom[2].first() - nghost;
-        double x = origin[0] + (ig + 0.5) * hx[0];
-        //double y = origin[1] + (jg + 0.5) * hx[1];
-        //double z = origin[2] + (kg + 0.5) * hx[2];
+        double x = (ig + 0.5) * hx[0] + origin[0];
+        //double y = (jg + 0.5) * hx[1];
+        //double z = (kg + 0.5) * hx[2];
 
         //view(i, j, k) = 3.0*pow(x,1) + 4.0*pow(y,1) + 5.0*pow(z,1);
         //view(i, j, k) = sin(pi * x) * cos(pi * y) * exp(z);

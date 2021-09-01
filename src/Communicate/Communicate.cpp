@@ -26,4 +26,16 @@ namespace ippl {
     Communicate::Communicate(const MPI_Comm& comm)
     : boost::mpi::communicator(comm, kind_type::comm_duplicate)
     {}
+
+    void Communicate::irecv(int src, int tag,
+                            archive_type& ar, MPI_Request& request, size_type msize)
+    {
+        if (msize > INT_MAX) {
+            std::cerr << "Message size exceeds range of int" << std::endl;
+            std::abort();
+        }
+        MPI_Irecv(ar.getBuffer(), msize,
+                MPI_BYTE, src, tag, *this, &request);
+    }
+
 }

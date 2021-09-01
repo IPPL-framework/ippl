@@ -16,10 +16,6 @@ struct Bunch : public ippl::ParticleBase<PLayout>
     typedef ippl::ParticleAttrib<double> charge_container_type;
     charge_container_type Q;
 
-    void update() {
-        PLayout& layout = this->getLayout();
-        layout.update(*this);
-    }
 };
 
 int main(int argc, char *argv[]) {
@@ -93,13 +89,12 @@ int main(int argc, char *argv[]) {
 
     bunch.Q = 1.0;
 
-    bunch.update();
+    bunch_type bunchBuffer(pl);
+    pl.update(bunch, bunchBuffer);
     
     field = 0.0;
 
     scatter(bunch.Q, field, bunch.R);
-
-    //field.write();
 
     // Check charge conservation
     try {

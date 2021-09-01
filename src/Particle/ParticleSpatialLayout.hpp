@@ -11,6 +11,14 @@
 //   in which case a grid is selected based on an even distribution of
 //   particles among processors.
 //
+//   After each 'time step' in a calculation, which is defined as a period
+//   in which the particle positions may change enough to affect the global
+//   layout, the user must call the 'update' routine, which will move
+//   particles between processors, etc.  After the Nth call to update, a
+//   load balancing routine will be called instead.  The user may set the
+//   frequency of load balancing (N), or may supply a function to
+//   determine if load balancing should be done or not.
+//
 // Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -27,6 +35,7 @@
 #include <vector>
 #include <numeric>
 #include <memory>
+#include "Utility/IpplTimings.h"
 
 namespace ippl {
 
@@ -35,33 +44,38 @@ namespace ippl {
         FieldLayout<Dim>& fl,
         Mesh& mesh)
     : rlayout_m(fl, mesh)
-    { }
+    {}
 
 
     template <typename T, unsigned Dim, class Mesh>
     template <class BufferType>
     void ParticleSpatialLayout<T, Dim, Mesh>::update(
-        /*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata)
+        BufferType& pdata, BufferType& buffer)
     {
+        static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("ParticleBC");
+        IpplTimings::startTimer(ParticleBCTimer);
         this->applyBC(pdata.R, rlayout_m.getDomain());
+        IpplTimings::stopTimer(ParticleBCTimer);
 
+        static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("ParticleUpdate");
+        IpplTimings::startTimer(ParticleUpdateTimer);
         int nRanks = Ippl::Comm->size();
 
         if (nRanks < 2) {
-            // delete invalidated particles
-            pdata.destroy();
             return;
         }
 
 
         /* particle MPI exchange:
          *   1. figure out which particles need to go where
-         *   2. fill send buffer
-         *   3. send / receive particles
-         *   4. delete invalidated particles
+         *   2. fill send buffer and send particles
+         *   3. delete invalidated particles
+         *   4. receive particles
          */
 
-        size_t localnum = pdata.getLocalNum();
+        static IpplTimings::TimerRef locateTimer = IpplTimings::getTimer("locateParticles");
+        IpplTimings::startTimer(locateTimer);
+        size_type localnum = pdata.getLocalNum();
 
         // 1st step
 
@@ -76,89 +90,113 @@ namespace ippl {
         bool_type invalid("invalid", localnum);
 
         locateParticles(pdata, ranks, invalid);
+        IpplTimings::stopTimer(locateTimer);
 
-        /*
-         * 2nd step
-         */
+        // 2nd step
 
         // figure out how many receives
+        static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("SendPreprocess");
+        IpplTimings::startTimer(preprocTimer);
         MPI_Win win;
-        std::vector<int> nRecvs(nRanks, 0);
-        MPI_Win_create(nRecvs.data(), nRanks*sizeof(int), sizeof(int),
+        std::vector<size_type> nRecvs(nRanks, 0);
+        MPI_Win_create(nRecvs.data(), nRanks*sizeof(size_type), sizeof(size_type),
                        MPI_INFO_NULL, *Ippl::Comm, &win);
 
-        std::vector<int> nSends(nRanks, 0);
+        std::vector<size_type> nSends(nRanks, 0);
 
         MPI_Win_fence(0, win);
 
         for (int rank = 0; rank < nRanks; ++rank) {
             if (rank == Ippl::Comm->rank()) {
-                // we do not need to send to ourself
+                // we do not need to send to ourselves
                 continue;
             }
             nSends[rank] = numberOfSends(rank, ranks);
-            MPI_Put(nSends.data() + rank, 1, MPI_INT, rank, Ippl::Comm->rank(),
-                    1, MPI_INT, win);
+            MPI_Put(nSends.data() + rank, 1, MPI_LONG_LONG_INT, rank, Ippl::Comm->rank(),
+                    1, MPI_LONG_LONG_INT, win);
         }
         MPI_Win_fence(0, win);
+        IpplTimings::stopTimer(preprocTimer);
 
+        static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("ParticleSend");
+        IpplTimings::startTimer(sendTimer);
         // send
         std::vector<MPI_Request> requests(0);
-        using archive_type = Communicate::archive_type;
-        std::vector<std::unique_ptr<archive_type>> archives(0);
+
+        using buffer_type = Communicate::buffer_type;
 
         int tag = Ippl::Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
 
+        int sends = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nSends[rank] > 0) {
                 hash_type hash("hash", nSends[rank]);
                 fillHash(rank, ranks, hash);
 
-                archives.push_back(std::make_unique<archive_type>());
                 requests.resize(requests.size() + 1);
 
-                BufferType buffer(pdata.getLayout());
-                buffer.create(nSends[rank]);
-
                 pdata.pack(buffer, hash);
+                size_type bufSize = pdata.packedSize(nSends[rank]);
 
-                Ippl::Comm->isend(rank, tag, buffer, *(archives.back()),
-                                  requests.back());
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
+
+                Ippl::Comm->isend(rank, tag, buffer, *buf,
+                                  requests.back(), nSends[rank]);
+                buf->resetWritePos();
+
+                ++sends;
             }
         }
+        IpplTimings::stopTimer(sendTimer);
 
         // 3rd step
+        static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("ParticleDestroy");
+        IpplTimings::startTimer(destroyTimer);
+
+        size_type invalidCount = 0;
+        Kokkos::parallel_reduce(
+            "set/count invalid",
+            localnum,
+            KOKKOS_LAMBDA(const size_t i, size_type& nInvalid) {
+                if (invalid(i)) {
+                    pdata.ID(i) = -1;
+                    nInvalid += 1;
+                }
+            }, invalidCount);
+        Kokkos::fence();
+
+        pdata.destroy(invalid, invalidCount);
+        Kokkos::fence();
+
+        IpplTimings::stopTimer(destroyTimer);
+        static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("ParticleRecv");
+        IpplTimings::startTimer(recvTimer);
+        // 4th step
+        int recvs = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
-                BufferType buffer(pdata.getLayout());
-                buffer.create(nRecvs[rank]);
+                size_type bufSize = pdata.packedSize(nRecvs[rank]);
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
 
-                Ippl::Comm->recv(rank, tag, buffer);
+                Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
+                buf->resetReadPos();
 
-                pdata.unpack(buffer);
+                pdata.unpack(buffer, nRecvs[rank]);
+
+                ++recvs;
             }
+
         }
+        IpplTimings::stopTimer(recvTimer);
+
+        IpplTimings::startTimer(sendTimer);
 
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-            archives.clear();
         }
+        IpplTimings::stopTimer(sendTimer);
 
-        // create space for received particles
-        int nTotalRecvs = std::accumulate(nRecvs.begin(), nRecvs.end(), 0);
-        pdata.setLocalNum(localnum + nTotalRecvs);
-
-        Kokkos::parallel_for(
-            "set invalid",
-            localnum,
-            KOKKOS_LAMBDA(const size_t i) {
-                if (invalid(i)) {
-                    pdata.ID(i) = -1;
-                }
-            });
-
-        // 4th step
-        pdata.destroy();
+        IpplTimings::stopTimer(ParticleUpdateTimer);
     }
 
 
@@ -170,30 +208,22 @@ namespace ippl {
     {
         auto& positions = pdata.R.getView();
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
-        using size_type = typename RegionLayout_t::view_type::size_type;
+        using view_size_t = typename RegionLayout_t::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
         int myRank = Ippl::Comm->rank();
         Kokkos::parallel_for(
             "ParticleSpatialLayout::locateParticles()",
             mdrange_type({0, 0},
-                         {ranks.extent(0), Regions.extent(0)}), 
-            KOKKOS_CLASS_LAMBDA(const size_t i, const size_type j) {
-                bool x_bool = false;
-                bool y_bool = false;
-                bool z_bool = false;
-                if((positions(i)[0] >= Regions(j)[0].min()) &&
-                   (positions(i)[0] <= Regions(j)[0].max())) {
-                    x_bool = true;    
-                }
-                if((positions(i)[1] >= Regions(j)[1].min()) &&
-                   (positions(i)[1] <= Regions(j)[1].max())) {
-                    y_bool = true;    
-                }
-                if((positions(i)[2] >= Regions(j)[2].min()) &&
-                   (positions(i)[2] <= Regions(j)[2].max())) {
-                    z_bool = true;    
-                }
-                if(x_bool && y_bool && z_bool){
+                         {ranks.extent(0), Regions.extent(0)}),
+            KOKKOS_LAMBDA(const size_t i, const view_size_t j) {
+                bool xyz_bool = false;
+                xyz_bool = ((positions(i)[0] >= Regions(j)[0].min()) &&
+                            (positions(i)[0] <= Regions(j)[0].max()) &&
+                            (positions(i)[1] >= Regions(j)[1].min()) &&
+                            (positions(i)[1] <= Regions(j)[1].max()) &&
+                            (positions(i)[2] >= Regions(j)[2].min()) &&
+                            (positions(i)[2] <= Regions(j)[2].max()));
+                if(xyz_bool){
                     ranks(i) = j;
                     invalid(i) = (myRank != ranks(i));
                 }
@@ -223,6 +253,7 @@ namespace ippl {
                     idx += 1;
                 }
             });
+        Kokkos::fence();
     }
 
 
@@ -235,11 +266,12 @@ namespace ippl {
         Kokkos::parallel_reduce(
             "ParticleSpatialLayout::numberOfSends()",
             ranks.extent(0),
-            KOKKOS_CLASS_LAMBDA(const size_t i,
+            KOKKOS_LAMBDA(const size_t i,
                                 size_t& num)
             {
                 num += size_t(rank == ranks(i));
             }, nSends);
+        Kokkos::fence();
         return nSends;
     }
 }

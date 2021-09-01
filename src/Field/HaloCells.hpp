@@ -15,8 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
+
 #include <memory>
 #include <vector>
+
+#include "Communicate/Communicate.h"
 
 namespace ippl {
     namespace detail {
@@ -25,7 +28,6 @@ namespace ippl {
         {
             static_assert(Dim == 3, "Dimension must be 3!");
         }
-
 
         template <typename T, unsigned Dim>
         void HaloCells<T, Dim>::accumulateHalo(view_type& view,
@@ -70,13 +72,18 @@ namespace ippl {
 
             int myRank = Ippl::Comm->rank();
 
-            // send
-            std::vector<MPI_Request> requests(0);
-            using archive_type = Communicate::archive_type;
-            std::vector<std::unique_ptr<archive_type>> archives(0);
+            size_t totalRequests = 0;
+            for (auto& neighbor : neighbors) {
+                totalRequests += neighbor.size();
+            }
+
+            using buffer_type = Communicate::buffer_type;
+            std::vector<MPI_Request> requests(totalRequests);
 
             int tag = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
 
+            const size_t groupCount = neighbors.size();
+            size_t requestIndex = 0;
             for (size_t face = 0; face < neighbors.size(); ++face) {
                 for (size_t i = 0; i < neighbors[face].size(); ++i) {
 
@@ -92,17 +99,16 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
+                    size_type nsends;
+                    pack(range, view, haloData_m, nsends);
 
-                    archives.push_back(std::make_unique<archive_type>());
-                    requests.resize(requests.size() + 1);
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
+                        IPPL_HALO_FACE_SEND + i * groupCount + face,
+                        nsends);
 
-
-                    FieldBufferData<T> fd;
-                    pack(range, view, fd);
-
-                    Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
-                                      requests.back());
-
+                    Ippl::Comm->isend(rank, tag, haloData_m, *buf,
+                        requests[requestIndex++], nsends);
+                    buf->resetWritePos();
                 }
             }
 
@@ -122,22 +128,24 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    FieldBufferData<T> fd;
+                    size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                                 (range.hi[1] - range.lo[1]) *
+                                 (range.hi[2] - range.lo[2]));
 
-                    Kokkos::resize(fd.buffer,
-                                   (range.hi[0] - range.lo[0]) *
-                                   (range.hi[1] - range.lo[1]) *
-                                   (range.hi[2] - range.lo[2]));
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
+                        IPPL_HALO_FACE_RECV + i * groupCount + face,
+                        nrecvs);
 
-                    Ippl::Comm->recv(rank, tag, fd);
+                    Ippl::Comm->recv(rank, tag, haloData_m, *buf,
+                        nrecvs * sizeof(T), nrecvs);
+                    buf->resetReadPos();
 
-                    unpack<Op>(range, view, fd);
+                    unpack<Op>(range, view, haloData_m);
                 }
             }
 
-            if (requests.size() > 0) {
-                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-                archives.clear();
+            if (totalRequests > 0) {
+                MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
         }
 
@@ -155,13 +163,18 @@ namespace ippl {
 
             int myRank = Ippl::Comm->rank();
 
-            // send
-            std::vector<MPI_Request> requests(0);
-            using archive_type = Communicate::archive_type;
-            std::vector<std::unique_ptr<archive_type>> archives(0);
+            size_t totalRequests = 0;
+            for (auto& neighbor : neighbors) {
+                totalRequests += neighbor.size();
+            }
+
+            using buffer_type = Communicate::buffer_type;
+            std::vector<MPI_Request> requests(totalRequests);
 
             int tag = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
 
+            const size_t groupCount = neighbors.size();
+            size_t requestIndex = 0;
             for (size_t edge = 0; edge < neighbors.size(); ++edge) {
                 for (size_t i = 0; i < neighbors[edge].size(); ++i) {
 
@@ -177,16 +190,16 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    archives.push_back(std::make_unique<archive_type>());
-                    requests.resize(requests.size() + 1);
+                    size_type nsends;
+                    pack(range, view, haloData_m, nsends);
 
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
+                        IPPL_HALO_EDGE_SEND + i * groupCount + edge,
+                        nsends);
 
-                    FieldBufferData<T> fd;
-                    pack(range, view, fd);
-
-                    Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
-                                      requests.back());
-
+                    Ippl::Comm->isend(rank, tag, haloData_m, *buf,
+                        requests[requestIndex++], nsends);
+                    buf->resetWritePos();
                 }
             }
 
@@ -206,22 +219,24 @@ namespace ippl {
                                           lDomains[myRank], nghost);
                     }
 
-                    FieldBufferData<T> fd;
+                    size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                                 (range.hi[1] - range.lo[1]) *
+                                 (range.hi[2] - range.lo[2]));
 
-                    Kokkos::resize(fd.buffer,
-                                   (range.hi[0] - range.lo[0]) *
-                                   (range.hi[1] - range.lo[1]) *
-                                   (range.hi[2] - range.lo[2]));
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
+                        IPPL_HALO_EDGE_RECV + i * groupCount + edge,
+                        nrecvs);
 
-                    Ippl::Comm->recv(rank, tag, fd);
+                    Ippl::Comm->recv(rank, tag, haloData_m, *buf,
+                        nrecvs * sizeof(T), nrecvs);
+                    buf->resetReadPos();
 
-                    unpack<Op>(range, view, fd);
+                    unpack<Op>(range, view, haloData_m);
                 }
             }
 
-            if (requests.size() > 0) {
-                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-                archives.clear();
+            if (totalRequests > 0) {
+                MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
         }
 
@@ -239,13 +254,12 @@ namespace ippl {
 
             int myRank = Ippl::Comm->rank();
 
-            // send
-            std::vector<MPI_Request> requests(0);
-            using archive_type = Communicate::archive_type;
-            std::vector<std::unique_ptr<archive_type>> archives(0);
+            using buffer_type = Communicate::buffer_type;
+            std::vector<MPI_Request> requests(neighbors.size());
 
             int tag = Ippl::Comm->next_tag(HALO_VERTEX_TAG, HALO_TAG_CYCLE);
 
+            size_t requestIndex = 0;
             for (size_t vertex = 0; vertex < neighbors.size(); ++vertex) {
                 if (neighbors[vertex] < 0) {
                     // we are on a mesh / physical boundary
@@ -264,15 +278,16 @@ namespace ippl {
                                       lDomains[myRank], nghost);
                 }
 
-                archives.push_back(std::make_unique<archive_type>());
-                requests.resize(requests.size() + 1);
+                size_type nsends;
+                pack(range, view, haloData_m, nsends);
 
+                buffer_type buf = Ippl::Comm->getBuffer<T>(
+                    IPPL_HALO_VERTEX_SEND + vertex,
+                    nsends);
 
-                FieldBufferData<T> fd;
-                pack(range, view, fd);
-
-                Ippl::Comm->isend(rank, tag, fd, *(archives.back()),
-                                    requests.back());
+                Ippl::Comm->isend(rank, tag, haloData_m, *buf,
+                    requests[requestIndex++], nsends);
+                buf->resetWritePos();
             }
 
             // receive
@@ -294,21 +309,23 @@ namespace ippl {
                                       lDomains[myRank], nghost);
                 }
 
-                FieldBufferData<T> fd;
+                size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                             (range.hi[1] - range.lo[1]) *
+                             (range.hi[2] - range.lo[2]));
+                
+                buffer_type buf = Ippl::Comm->getBuffer<T>(
+                    IPPL_HALO_VERTEX_RECV + vertex,
+                    nrecvs);
 
-                Kokkos::resize(fd.buffer,
-                               (range.hi[0] - range.lo[0]) *
-                               (range.hi[1] - range.lo[1]) *
-                               (range.hi[2] - range.lo[2]));
+                Ippl::Comm->recv(rank, tag, haloData_m, *buf,
+                    nrecvs * sizeof(T), nrecvs);
+                buf->resetReadPos();
 
-                Ippl::Comm->recv(rank, tag, fd);
-
-                unpack<Op>(range, view, fd);
+                unpack<Op>(range, view, haloData_m);
             }
 
-            if (requests.size() > 0) {
-                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-                archives.clear();
+            if (requestIndex > 0) {
+                MPI_Waitall(requestIndex, requests.data(), MPI_STATUSES_IGNORE);
             }
         }
 
@@ -316,13 +333,19 @@ namespace ippl {
         template <typename T, unsigned Dim>
         void HaloCells<T, Dim>::pack(const bound_type& range,
                                      const view_type& view,
-                                     FieldBufferData<T>& fd)
+                                     FieldBufferData<T>& fd,
+                                     size_type& nsends)
         {
             auto subview = makeSubview(view, range);
 
             auto& buffer = fd.buffer;
 
-            Kokkos::resize(buffer, subview.extent(0) * subview.extent(1) * subview.extent(2));
+            size_t size = subview.size();
+            nsends = size;
+            if (buffer.size() < size) {
+                int overalloc = Ippl::Comm->getDefaultOverallocation();
+                Kokkos::realloc(buffer, size * overalloc);
+            }
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(
@@ -335,10 +358,12 @@ namespace ippl {
                                     const size_t j,
                                     const size_t k)
                 {
-                    int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
+                    int l = i + j * subview.extent(0)
+                            + k * subview.extent(0) * subview.extent(1);
                     buffer(l) = subview(i, j, k);
                 }
             );
+            Kokkos::fence();
         }
 
 
@@ -366,10 +391,12 @@ namespace ippl {
                                     const size_t j,
                                     const size_t k)
                 {
-                    int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
+                    int l = i + j * subview.extent(0)
+                            + k * subview.extent(0) * subview.extent(1);
                     op(subview(i, j, k), buffer(l));
                 }
             );
+            Kokkos::fence();
         }
 
 
@@ -390,8 +417,10 @@ namespace ippl {
              * Add "+1" to the upper bound since Kokkos loops always to "< extent".
              */
             for (size_t i = 0; i < Dim; ++i) {
-                intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/ + nghost;
-                intersect.hi[i] = overlap[i].last()  - offset[i].first() /*offset*/ + nghost + 1;
+                intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/
+                                    + nghost;
+                intersect.hi[i] = overlap[i].last()  - offset[i].first() /*offset*/
+                                    + nghost + 1;
             }
 
             return intersect;

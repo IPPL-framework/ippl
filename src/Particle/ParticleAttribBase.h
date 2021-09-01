@@ -28,6 +28,7 @@
 #define IPPL_PARTICLE_ATTRIB_BASE_H
 
 #include "Types/ViewTypes.h"
+#include "Types/IpplTypes.h"
 
 #include "Communicate/Archive.h"
 
@@ -39,19 +40,28 @@ namespace ippl {
         public:
             typedef typename ViewType<bool, 1, Properties...>::view_type boolean_view_type;
 
-            virtual void create(size_t) = 0;
+            virtual void create(size_type) = 0;
 
-            virtual void destroy(boolean_view_type, Kokkos::View<int*>, size_t) = 0;
+            virtual void destroy(const Kokkos::View<int*>&, const Kokkos::View<int*>&, size_type) = 0;
+            virtual size_type packedSize(const size_type) const = 0;
 
             virtual void pack(void*, const Kokkos::View<int*>&) const = 0;
 
-            virtual void unpack(void*) = 0;
+            virtual void unpack(void*, size_type) = 0;
 
-            virtual void serialize(Archive<Properties...>& ar) = 0;
+            virtual void serialize(Archive<Properties...>& ar, size_type nsends) = 0;
 
-            virtual void deserialize(Archive<Properties...>& ar) = 0;
+            virtual void deserialize(Archive<Properties...>& ar, size_type nrecvs) = 0;
+
+            virtual size_type size() const = 0;
 
             virtual ~ParticleAttribBase() = default;
+
+            void setParticleCount(size_type& num) { localNum_mp = &num; }
+            size_type getParticleCount() const { return *localNum_mp; }
+
+        protected:
+            const size_type* localNum_mp;
         };
     }
 }

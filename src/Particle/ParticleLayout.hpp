@@ -62,17 +62,17 @@ namespace ippl {
                 switch (bcs_m[face]) {
                     case BC::PERIODIC:
                         Kokkos::parallel_for("Periodic BC",
-                                             R.getView().extent(0),
+                                             R.getParticleCount(),
                                              PeriodicBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::REFLECTIVE:
                         Kokkos::parallel_for("Reflective BC",
-                                             R.getView().extent(0),
+                                             R.getParticleCount(),
                                              ReflectiveBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::SINK:
                         Kokkos::parallel_for("Sink BC",
-                                             R.getView().extent(0),
+                                             R.getParticleCount(),
                                              SinkBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::NO:

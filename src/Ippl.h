@@ -24,6 +24,7 @@
 
 #include "Communicate/Communicate.h"
 #include "Utility/Inform.h"
+#include "Types/IpplTypes.h"
 
 class Ippl;
 std::ostream& operator<<(std::ostream&, const Ippl&);
