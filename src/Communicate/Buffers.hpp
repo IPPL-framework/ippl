@@ -35,7 +35,7 @@
 
 namespace ippl {
 
-        template <typename T = char>
+        template <typename T>
         Communicate::buffer_type Communicate::getBuffer(int id,
                             size_type size, int overallocation) {
             size *= sizeof(T);
