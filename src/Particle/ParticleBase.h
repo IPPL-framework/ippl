@@ -6,9 +6,8 @@
 //   The user must define a class derived from ParticleBase which describes
 //   what specific data attributes the particle has (e.g., mass or charge).
 //   Each attribute is an instance of a ParticleAttribute<T> class; ParticleBase
-//   keeps a list of pointers to these attributes, and performs global
-//   operations on them such as update, particle creation and destruction,
-//   and inter-processor particle migration.
+//   keeps a list of pointers to these attributes, and performs particle creation
+//   and destruction.
 //
 //   ParticleBase is templated on the ParticleLayout mechanism for the particles.
 //   This template parameter should be a class derived from ParticleLayout.
@@ -49,14 +48,6 @@
 //   This example defines a user class with 3D position and two extra
 //   attributes: a radius rad (double), and a velocity vel (a 3D Vector).
 //
-//   After each 'time step' in a calculation, which is defined as a period
-//   in which the particle positions may change enough to affect the global
-//   layout, the user must call the 'update' routine, which will move
-//   particles between processors, etc.  After the Nth call to update, a
-//   load balancing routine will be called instead.  The user may set the
-//   frequency of load balancing (N), or may supply a function to
-//   determine if load balancing should be done or not.
-//
 // Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -74,7 +65,7 @@
 #define IPPL_PARTICLE_BASE_H
 
 #include "Particle/ParticleLayout.h"
-
+#include "Types/IpplTypes.h"
 
 #include <vector>
 
@@ -100,12 +91,17 @@ namespace ippl {
         using bc_container_type     = typename PLayout::bc_container_type;
         using hash_type             = typename detail::ViewType<int, 1, Properties...>::view_type;
 
+        using size_type = detail::size_type;
+
     public:
         //! view of particle positions
         particle_position_type R;
 
         //! view of particle IDs
         particle_index_type ID;
+
+        typename attribute_type::boolean_view_type invalidIndex;
+        hash_type newIndex;
 
         /*!
          * If this constructor is used, the user must call 'initialize' with
@@ -141,14 +137,10 @@ namespace ippl {
         /*!
          * @returns processor local number of particles
          */
-        size_t getLocalNum() const { return localNum_m; }
-
-        /*!
-         * Set the processor local number of particles
-         * @param nLocal number of particles
-         */
-        void setLocalNum(size_t nLocal) { localNum_m = nLocal; }
-
+        size_type getLocalNum() const { return localNum_m; }
+        
+        
+        void setLocalNum(size_type size) { localNum_m = size; }
 
         /*!
          * @returns particle layout
@@ -207,7 +199,7 @@ namespace ippl {
          * Create nLocal processor local particles
          * @param nLocal number of local particles to be created
          */
-        void create(size_t nLocal);
+        void create(size_type nLocal);
 
         /*!
          * Create a new particle with a given ID
@@ -219,37 +211,36 @@ namespace ippl {
          * Create nTotal particles globally, equally distributed among all processors
          * @param nTotal number of total particles to be created
          */
-        void globalCreate(size_t nTotal);
+        void globalCreate(size_type nTotal);
 
         /*!
-         * Delete particles.
-         * @param
+         * Particle deletion Function. Partition the particles into a valid region
+         * and an invalid region,
+         * effectively deleting the invalid particles
+         * @param invalid View marking which indices are invalid
+         * @param destroyNum Total number of invalid particles
          */
-        void destroy();
-
+        void destroy(const Kokkos::View<bool*>& invalid, const size_type destroyNum);
 
         /*!
          * Serialize to do MPI calls.
          * @param ar archive
          */
-        void serialize(detail::Archive<Properties...>& ar);
+        void serialize(detail::Archive<Properties...>& ar, size_type nsends);
 
 
         /*!
          * Deserialize to do MPI calls.
          * @param ar archive
          */
-        void deserialize(detail::Archive<Properties...>& ar);
-
+        void deserialize(detail::Archive<Properties...>& ar, size_type nrecvs);
 
         /*!
-         * Redistribute particles among MPI ranks.
-         * This function calls the underlying particle layout
-         * routine.
+         * Determine the total space necessary to store a certain number of particles
+         * @param count particle number
+         * @return Total size of a buffer packed with the given number of particles
          */
-//         template <class BufferType>
-        void update();
-
+        size_type packedSize(const size_type count) const;
 
 //     protected:
 
@@ -268,7 +259,7 @@ namespace ippl {
          * @param buffer received
          */
         template <class Buffer>
-        void unpack(Buffer& buffer);
+        void unpack(Buffer& buffer, size_type nrecvs);
 
     private:
         //! particle layout
@@ -276,7 +267,7 @@ namespace ippl {
         Layout_t* layout_m;
 
         //! processor local number of particles
-        size_t localNum_m;
+        size_type localNum_m;
 
         //! all attributes
         attribute_container_t attributes_m;
@@ -286,6 +277,10 @@ namespace ippl {
 
         //! number of MPI ranks
         index_type numNodes_m;
+
+        //! buffers for particle partitioning
+        hash_type deleteIndex_m;
+        hash_type keepIndex_m;
     };
 }
 

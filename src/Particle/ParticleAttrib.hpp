@@ -28,32 +28,32 @@
 //
 #include "Ippl.h"
 #include "Communicate/DataTypes.h"
+#include "Utility/IpplTimings.h"
 
 namespace ippl {
 
     template<typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::create(size_t n) {
-        size_t current = this->size();
-        this->resize(current + n);
+    void ParticleAttrib<T, Properties...>::create(size_type n) {
+        size_type required = *(this->localNum_mp) + n;
+        if (this->size() < required) {
+            int overalloc = Ippl::Comm->getDefaultOverallocation();
+            this->realloc(required * overalloc);
+        }
     }
-
 
     template<typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::destroy(boolean_view_type invalidIndex,
-                                                   Kokkos::View<int*> newIndex, size_t n) {
-        Kokkos::View<T*> temp("temp", n);
+    void ParticleAttrib<T, Properties...>::destroy(const Kokkos::View<int*>& deleteIndex,
+                                                const Kokkos::View<int*>& keepIndex,
+                                                size_type invalidCount) {
+        // Replace all invalid particles in the valid region with valid
+        // particles in the invalid region
         Kokkos::parallel_for("ParticleAttrib::destroy()",
-                             dview_m.extent(0),
+                             invalidCount,
                              KOKKOS_CLASS_LAMBDA(const size_t i)
                              {
-                                 if ( !invalidIndex(i) ) {
-                                    temp(newIndex(i)) = dview_m(i);
-                                 }
+                                 dview_m(deleteIndex(i)) = dview_m(keepIndex(i));
                              });
-        this->resize(n);
-        Kokkos::deep_copy(dview_m, temp);
     }
-
 
     template<typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::pack(void* buffer,
@@ -63,7 +63,10 @@ namespace ippl {
         this_type* buffer_p = static_cast<this_type*>(buffer);
         auto& view = buffer_p->dview_m;
         auto size = hash.extent(0);
-        Kokkos::resize(view, size);
+        if(view.extent(0) < size) {
+            int overalloc = Ippl::Comm->getDefaultOverallocation();
+            Kokkos::realloc(view, size * overalloc);
+        }
 
         Kokkos::parallel_for(
             "ParticleAttrib::pack()",
@@ -71,23 +74,33 @@ namespace ippl {
             KOKKOS_CLASS_LAMBDA(const size_t i) {
                 view(i) = dview_m(hash(i));
         });
+        Kokkos::fence();
+        
+    
     }
 
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::unpack(void* buffer) {
+    void ParticleAttrib<T, Properties...>::unpack(void* buffer, size_type nrecvs) {
         using this_type = ParticleAttrib<T, Properties...>;
         this_type* buffer_p = static_cast<this_type*>(buffer);
         auto& view = buffer_p->dview_m;
         auto size = dview_m.extent(0);
-        Kokkos::resize(dview_m, size + view.size());
+        size_type required = *(this->localNum_mp) + nrecvs;
+        if(size < required) {
+            int overalloc = Ippl::Comm->getDefaultOverallocation();
+            this->resize(required * overalloc);
+        }
 
+        size_type count = *(this->localNum_mp);
         Kokkos::parallel_for(
             "ParticleAttrib::unpack()",
-            view.extent(0),
+            nrecvs,
             KOKKOS_CLASS_LAMBDA(const size_t i) {
-                dview_m(size + i) = view(i);
+                dview_m(count + i) = view(i);
         });
+        Kokkos::fence();
+    
     }
 
     template<typename T, class... Properties>
@@ -96,7 +109,7 @@ namespace ippl {
     ParticleAttrib<T, Properties...>::operator=(T x)
     {
         Kokkos::parallel_for("ParticleAttrib::operator=()",
-                             dview_m.extent(0),
+                             *(this->localNum_mp),
                              KOKKOS_CLASS_LAMBDA(const size_t i) {
                                  dview_m(i) = x;
                             });
@@ -114,7 +127,7 @@ namespace ippl {
         capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
 
         Kokkos::parallel_for("ParticleAttrib::operator=()",
-                             dview_m.extent(0),
+                             *(this->localNum_mp),
                              KOKKOS_CLASS_LAMBDA(const size_t i) {
                                  dview_m(i) = expr_(i);
                             });
@@ -128,6 +141,8 @@ namespace ippl {
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
     const
     {
+        static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("Scatter");           
+        IpplTimings::startTimer(scatterTimer);                                               
         typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
@@ -145,7 +160,7 @@ namespace ippl {
 
         Kokkos::parallel_for(
             "ParticleAttrib::scatter",
-            dview_m.extent(0),
+            *(this->localNum_mp),
             KOKKOS_CLASS_LAMBDA(const size_t idx)
             {
                 // find nearest grid point
@@ -171,8 +186,12 @@ namespace ippl {
                 Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
             }
         );
+        IpplTimings::stopTimer(scatterTimer);
             
+        static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("AccumulateHalo");           
+        IpplTimings::startTimer(accumulateHaloTimer);                                               
         f.accumulateHalo();
+        IpplTimings::stopTimer(accumulateHaloTimer);                                               
     }
 
 
@@ -182,8 +201,13 @@ namespace ippl {
                                                   const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
 
+        static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("FillHalo");           
+        IpplTimings::startTimer(fillHaloTimer);                                               
         f.fillHalo();
+        IpplTimings::stopTimer(fillHaloTimer);                                               
 
+        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("Gather");           
+        IpplTimings::startTimer(gatherTimer);                                               
         const typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
@@ -201,7 +225,7 @@ namespace ippl {
 
         Kokkos::parallel_for(
             "ParticleAttrib::gather",
-            size(),
+            *(this->localNum_mp),
             KOKKOS_CLASS_LAMBDA(const size_t idx)
             {
                 // find nearest grid point
@@ -214,7 +238,7 @@ namespace ippl {
                 const size_t j = index[1] - lDom[1].first() + nghost;
                 const size_t k = index[2] - lDom[2].first() + nghost;
 
-                // scatter
+                // gather
                 value_type& val = dview_m(idx);
                 val = wlo[0] * wlo[1] * wlo[2] * view(i-1, j-1, k-1)
                     + wlo[0] * wlo[1] * whi[2] * view(i-1, j-1, k  )
@@ -226,6 +250,7 @@ namespace ippl {
                     + whi[0] * whi[1] * whi[2] * view(i,   j,   k  );
             }
         );
+        IpplTimings::stopTimer(gatherTimer);                                               
     }
 
 
@@ -257,7 +282,7 @@ namespace ippl {
     template<typename T, class... Properties>                                                                \
     T ParticleAttrib<T, Properties...>::name() {                                                             \
         T temp = 0.0;                                                                                        \
-        Kokkos::parallel_reduce("fun", dview_m.extent(0),                                                    \
+        Kokkos::parallel_reduce("fun", *(this->localNum_mp),                                                  \
                                KOKKOS_CLASS_LAMBDA(const size_t i, T& valL) {                                \
                                     T myVal = dview_m(i);                                                    \
                                     op;                                                                      \

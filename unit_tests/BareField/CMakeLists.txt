@@ -13,28 +13,11 @@ link_directories (
     ${Kokkos_DIR}/..
 )
 
-add_executable (ParticleBase ParticleBase.cpp)
+add_executable (BareField BareField.cpp)
 target_link_libraries (
-    ParticleBase
+    BareField
     ippl
-    ${MPI_CXX_LIBRARIES}
-    ${GTEST_BOTH_LIBRARIES}
-    ${Boost_LIBRARIES}
-)
-
-add_executable (ParticleBC ParticleBC.cpp)
-target_link_libraries (
-    ParticleBC
-    ippl
-    ${MPI_CXX_LIBRARIES}
-    ${GTEST_BOTH_LIBRARIES}
-    ${Boost_LIBRARIES}
-)
-
-add_executable (ParticleSendRecv ParticleSendRecv.cpp)
-target_link_libraries (
-    ParticleSendRecv
-    ippl
+    pthread
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
     ${Boost_LIBRARIES}

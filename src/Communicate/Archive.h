@@ -1,6 +1,13 @@
 //
-// Class Ippl
+// Class Archive
 //   Class to (de-)serialize in MPI communication.
+//
+//   When data is exchanged between MPI ranks, it is stored in one dimensional
+//   arrays. These have the type detail::Archive, which are wrappers around
+//   one dimensional Kokkos views of type char. The data is then transferred using
+//   MPI send/recv calls. Note that the archive type differs from other buffers in
+//   that they have type char and thus contain raw bytes, unlike other typed buffers
+//   such as detail::FieldBufferData used by HaloCells.
 //
 // Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
@@ -18,6 +25,7 @@
 #ifndef IPPL_ARCHIVE_H
 #define IPPL_ARCHIVE_H
 
+#include "Types/IpplTypes.h"
 #include "Types/ViewTypes.h"
 #include "Types/Vector.h"
 
@@ -34,17 +42,15 @@ namespace ippl {
         public:
             using buffer_type = typename ViewType<char, 1, Properties...>::view_type;
             using pointer_type = typename buffer_type::pointer_type;
-            using size_type = typename buffer_type::size_type;
 
-            Archive(int size = 0);
+            Archive(size_type size = 0);
 
             /*!
              * Serialize.
              * @param view to take data from.
              */
             template <typename T>
-            void operator<<(const Kokkos::View<T*>& view);
-
+            void serialize(const Kokkos::View<T*>& view, size_type nsends);
 
             /*!
              * Serialize vector attributes
@@ -55,16 +61,14 @@ namespace ippl {
              * @param view to take data from.
              */
             template <typename T, unsigned Dim>
-            void operator<<(const Kokkos::View<Vector<T, Dim>*>& view);
-
+            void serialize(const Kokkos::View<Vector<T, Dim>*>& view, size_type nsends);
 
             /*!
              * Deserialize.
              * @param view to put data to
              */
             template <typename T>
-            void operator>>(Kokkos::View<T*>& view);
-
+            void deserialize(Kokkos::View<T*>& view, size_type nrecvs);
 
             /*!
              * Deserialize vector attributes
@@ -75,8 +79,7 @@ namespace ippl {
              * @param view to put data to
              */
             template <typename T, unsigned Dim>
-            void operator>>(Kokkos::View<Vector<T, Dim>*>& view);
-
+            void deserialize(Kokkos::View<Vector<T, Dim>*>& view, size_type nrecvs);
 
             /*!
              * @returns a pointer to the data of the buffer
@@ -90,16 +93,35 @@ namespace ippl {
              * @returns the size of the buffer
              */
             size_type getSize() const {
+                return writepos_m;
+            }
+
+            size_type getBufferSize() const {
                 return buffer_m.size();
+            }
+
+            void resizeBuffer(size_type size) {
+                Kokkos::resize(buffer_m, size);
+            }
+
+            void reallocBuffer(size_type size) {
+                Kokkos::realloc(buffer_m, size);
+            }
+            
+            void resetWritePos() {
+                writepos_m = 0;
+            }
+            void resetReadPos() {
+                readpos_m = 0;
             }
 
             ~Archive() = default;
 
         private:
             //! write position for serialization
-            size_t writepos_m;
+            size_type writepos_m;
             //! read position for deserialization
-            size_t readpos_m;
+            size_type readpos_m;
             //! serialized data
             buffer_type buffer_m;
         };

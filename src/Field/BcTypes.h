@@ -31,6 +31,7 @@
 
 #include "Index/NDIndex.h"
 #include "Types/ViewTypes.h"
+#include "Types/IpplTypes.h"
 #include "Communicate/Archive.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
@@ -191,7 +192,7 @@ namespace ippl {
 
     private:
         face_neighbor_type faceNeighbors_m;
-        
+        detail::FieldBufferData<T> haloData_m;
     };
 }
 

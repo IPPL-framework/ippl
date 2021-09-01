@@ -274,9 +274,8 @@ namespace ippl {
                     matchtag = Ippl::Comm->following_tag(BC_PARALLEL_PERIODIC_TAG);
                 }
                 
-                std::vector<MPI_Request> requests(0);
-                using archive_type = Communicate::archive_type;
-                std::vector<std::unique_ptr<archive_type>> archives(0);
+                using buffer_type = Communicate::buffer_type;
+                std::vector<MPI_Request> requests(faceNeighbors_m[face].size());
                 
                 using HaloCells_t = detail::HaloCells<T, Dim>;
                 using range_t = typename HaloCells_t::bound_type;
@@ -304,15 +303,15 @@ namespace ippl {
                     }
                     
                     rangeNeighbors.push_back(range);    
-                    archives.push_back(std::make_unique<archive_type>());
-                    requests.resize(requests.size() + 1);
-
-                    detail::FieldBufferData<T> fdSend;
                         
-                    halo.pack(range, view, fdSend);
+                    detail::size_type nSends;
+                    halo.pack(range, view, haloData_m, nSends);
 
-                    Ippl::Comm->isend(rank, tag, fdSend, *(archives.back()),
-                                      requests.back());
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(IPPL_PERIODIC_BC_SEND + i, nSends);
+
+                    Ippl::Comm->isend(rank, tag, haloData_m, *buf,
+                                      requests[i], nSends);
+                    buf->resetWritePos();
                 }
                 
                 for (size_t i = 0; i < faceNeighbors_m[face].size(); ++i) {
@@ -324,23 +323,20 @@ namespace ippl {
                     range.lo[d] = range.lo[d] + offsetRecv;
                     range.hi[d] = range.hi[d] + offsetRecv;
                         
-                    detail::FieldBufferData<T> fdRecv;
-                        
-                    Kokkos::resize(fdRecv.buffer,
-                                   (range.hi[0] - range.lo[0]) *
-                                   (range.hi[1] - range.lo[1]) *
-                                   (range.hi[2] - range.lo[2]));
+                    detail::size_type nRecvs = (range.hi[0] - range.lo[0]) *
+                                    (range.hi[1] - range.lo[1]) *
+                                    (range.hi[2] - range.lo[2]);
 
-                    Ippl::Comm->recv(rank, matchtag, fdRecv);
-
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(IPPL_PERIODIC_BC_RECV + i, nRecvs);
+                    Ippl::Comm->recv(rank, matchtag, haloData_m, *buf, nRecvs * sizeof(T), nRecvs);
+                    buf->resetReadPos();
 
                     using assign_t = typename HaloCells_t::assign;
-                    halo.template unpack<assign_t>(range, view, fdRecv);
+                    halo.template unpack<assign_t>(range, view, haloData_m);
                 }
                 if (requests.size() > 0) {
                     MPI_Waitall(requests.size(), requests.data(), 
                                 MPI_STATUSES_IGNORE);
-                    archives.clear();
                 }
             }
             //For all other processors do nothing

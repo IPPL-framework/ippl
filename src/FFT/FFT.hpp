@@ -7,9 +7,8 @@
 //   floating-point precision type of the Field (float or double).
 //   Currently, we use heffte for taking the transforms and the class FFT
 //   serves as an interface between IPPL and heffte. In making this interface,
-//   we have utilized ideas from Cabana library
-//   https://github.com/ECP-copa/Cabana especially for the temporary
-//   field with layout right for passing into heffte.
+//   we have referred Cabana library.
+//   https://github.com/ECP-copa/Cabana.
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -32,6 +31,7 @@
 #include "FFT/FFT.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Field/BareField.h"
+#include "Utility/IpplTimings.h"
 
 
 namespace ippl {
@@ -66,7 +66,7 @@ namespace ippl {
         high.fill(0);
 
         /**
-         * Static cast to long long is necessary, as heffte::box3d requires it
+         * Static cast to detail::long long (uint64_t) is necessary, as heffte::box3d requires it
          * like that.
          */
         for(size_t d = 0; d < Dim; ++d) {
@@ -88,8 +88,8 @@ namespace ippl {
                                   const FFTParams& params)
     {
 
-         heffte::box3d inbox = {low, high};
-         heffte::box3d outbox = {low, high};
+         heffte::box3d<long long> inbox  = {low, high};
+         heffte::box3d<long long> outbox = {low, high};
 
          heffte::plan_options heffteOptions =
              heffte::default_options<heffteBackend>();
@@ -99,6 +99,9 @@ namespace ippl {
 
          heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>
                     (inbox, outbox, Ippl::getComm(), heffteOptions);
+
+         //heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+         workspace_m = workspace_t(heffte_m->size_workspace());
 
     }
 
@@ -114,11 +117,14 @@ namespace ippl {
        const int nghost = f.getNghost();
 
        /**
-        *This copy to a temporary Kokkos view is needed because heffte accepts
-        *input and output data in layout left by default, whereas
-        *default Kokkos views can be layout left or right depending on whether
-        *the device is gpu or cpu. Also the data types which heFFTe accepts are
-        * different from Kokkos.
+        *This copy to a temporary Kokkos view is needed because of following
+        *reasons:
+        *1) heffte wants the input and output fields without ghost layers
+        *2) heffte's data types are different than Kokkos::complex
+        *3) heffte accepts data in layout left (by default) eventhough this
+        *can be changed during heffte box creation
+        *Points 2 and 3 are slightly less of a concern and the main one is 
+        *point 1.
        */
        Kokkos::View<heffteComplex_t***,Kokkos::LayoutLeft>
            tempField("tempField", fview.extent(0) - 2*nghost,
@@ -149,14 +155,18 @@ namespace ippl {
                                       fview(i, j, k).imag());
 #endif
                             });
+
+
+
+
        if ( direction == 1 )
        {
-           heffte_m->forward(tempField.data(), tempField.data(),
+           heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
                              heffte::scale::full);
        }
        else if ( direction == -1 )
        {
-           heffte_m->backward(tempField.data(), tempField.data(),
+           heffte_m->backward(tempField.data(), tempField.data(), workspace_m.data(),
                               heffte::scale::none);
        }
        else
@@ -213,10 +223,10 @@ namespace ippl {
          * 1D FFTs we just have to make the length in other
          * dimensions to be 1.
          */
-        std::array<long long, Dim> lowInput;
-        std::array<long long, Dim> highInput;
-        std::array<long long, Dim> lowOutput;
-        std::array<long long, Dim> highOutput;
+        std::array<long long, 3> lowInput;
+        std::array<long long, 3> highInput;
+        std::array<long long, 3> lowOutput;
+        std::array<long long, 3> highOutput;
 
         const NDIndex<Dim>& lDomInput = layoutInput.getLocalNDIndex();
         const NDIndex<Dim>& lDomOutput = layoutOutput.getLocalNDIndex();
@@ -227,7 +237,7 @@ namespace ippl {
         highOutput.fill(0);
 
         /**
-         * Static cast to long long is necessary, as heffte::box3d requires it
+         * Static cast to detail::long long (uint64_t) is necessary, as heffte::box3d requires it
          * like that.
          */
         for(size_t d = 0; d < Dim; ++d) {
@@ -239,7 +249,6 @@ namespace ippl {
             highOutput[d] = static_cast<long long>(lDomOutput[d].length() +
                             lDomOutput[d].first() - 1);
         }
-
 
         setup(lowInput, highInput, lowOutput, highOutput, params);
     }
@@ -257,8 +266,8 @@ namespace ippl {
                                   const FFTParams& params)
     {
 
-         heffte::box3d inbox = {lowInput, highInput};
-         heffte::box3d outbox = {lowOutput, highOutput};
+         heffte::box3d<long long> inbox  = {lowInput, highInput};
+         heffte::box3d<long long> outbox = {lowOutput, highOutput};
 
          heffte::plan_options heffteOptions =
              heffte::default_options<heffteBackend>();
@@ -269,6 +278,9 @@ namespace ippl {
          heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>
                     (inbox, outbox, params.getRCDirection(), Ippl::getComm(),
                      heffteOptions);
+        
+         //heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+         workspace_m = workspace_t(heffte_m->size_workspace());
 
     }
 
@@ -285,18 +297,21 @@ namespace ippl {
        const int nghostg = g.getNghost();
 
        /**
-        *This copy to a temporary Kokkos view is needed because heffte accepts
-        *input and output data in layout left by default, whereas
-        *default Kokkos views can be layout left or right depending on whether
-        *the device is gpu or cpu. Also the data types which heFFTe accepts are
-        * different from Kokkos.
+        *This copy to a temporary Kokkos view is needed because of following
+        *reasons:
+        *1) heffte wants the input and output fields without ghost layers
+        *2) heffte's data types are different than Kokkos::complex
+        *3) heffte accepts data in layout left (by default) eventhough this
+        *can be changed during heffte box creation
+        *Points 2 and 3 are slightly less of a concern and the main one is 
+        *point 1.
        */
-       Kokkos::View<T***,Kokkos::LayoutLeft>
+       Kokkos::View<T***, Kokkos::LayoutLeft>
            tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
                                     fview.extent(1) - 2*nghostf,
                                     fview.extent(2) - 2*nghostf);
 
-       Kokkos::View<heffteComplex_t***,Kokkos::LayoutLeft>
+       Kokkos::View<heffteComplex_t***, Kokkos::LayoutLeft>
            tempFieldg("tempFieldg", gview.extent(0) - 2*nghostg,
                                     gview.extent(1) - 2*nghostg,
                                     gview.extent(2) - 2*nghostg);
@@ -337,14 +352,16 @@ namespace ippl {
                                       gview(i, j, k).imag());
 #endif
                             });
+
+      
        if ( direction == 1 )
        {
-           heffte_m->forward( tempFieldf.data(), tempFieldg.data(),
+           heffte_m->forward( tempFieldf.data(), tempFieldg.data(), workspace_m.data(),
                               heffte::scale::full );
        }
        else if ( direction == -1 )
        {
-           heffte_m->backward( tempFieldg.data(), tempFieldf.data(),
+           heffte_m->backward( tempFieldg.data(), tempFieldf.data(), workspace_m.data(),
                                heffte::scale::none );
        }
        else
@@ -352,6 +369,7 @@ namespace ippl {
            throw std::logic_error(
                 "Only 1:forward and -1:backward are allowed as directions");
        }
+
 
        Kokkos::parallel_for("copy to Kokkos f field FFT",
                             mdrange_type({nghostf, nghostf, nghostf},

@@ -11,6 +11,14 @@
 //   in which case a grid is selected based on an even distribution of
 //   particles among processors.
 //
+//   After each 'time step' in a calculation, which is defined as a period
+//   in which the particle positions may change enough to affect the global
+//   layout, the user must call the 'update' routine, which will move
+//   particles between processors, etc.  After the Nth call to update, a
+//   load balancing routine will be called instead.  The user may set the
+//   frequency of load balancing (N), or may supply a function to
+//   determine if load balancing should be done or not.
+//
 // Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -32,6 +40,8 @@
 #include "Particle/ParticleLayout.h"
 #include "Particle/ParticleBase.h"
 
+#include "Types/IpplTypes.h"
+
 #include "Region/RegionLayout.h"
 
 namespace ippl {
@@ -52,6 +62,8 @@ namespace ippl {
         using bool_type = typename detail::ViewType<bool, 1>::view_type;
         using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
 
+        using size_type = detail::size_type;
+
     public:
         // constructor: this one also takes a Mesh
         ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&);
@@ -59,9 +71,10 @@ namespace ippl {
         ParticleSpatialLayout() : detail::ParticleLayout<T, Dim>() { }
 
         ~ParticleSpatialLayout() = default;
+        //~ParticleSpatialLayout() {}
 
         template <class BufferType>
-        void update(/*ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>*/BufferType& pdata);
+        void update(BufferType& pdata, BufferType& buffer);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
 
