@@ -11,6 +11,8 @@ struct Bunch : public ippl::ParticleBase<PLayout>
         this->addAttribute(Q);
     }
 
+    ~Bunch() {}
+
     typedef ippl::ParticleAttrib<double> charge_container_type;
     charge_container_type Q;
 };
