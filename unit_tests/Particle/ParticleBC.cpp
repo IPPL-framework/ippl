@@ -70,8 +70,7 @@ public:
 
 
 TEST_F(ParticleBCTest, UpperPeriodicBC) {
-    
-    double shift = 0.1;
+    double shift = 0.05;
     setup(len + shift);
 
     bunch->setParticleBC(ippl::BC::PERIODIC);
@@ -83,8 +82,7 @@ TEST_F(ParticleBCTest, UpperPeriodicBC) {
 
 
 TEST_F(ParticleBCTest, UpperNoBC) {
-
-    double shift = 0.1;
+    double shift = 0.05;
     setup(len + shift);
 
     bunch->setParticleBC(ippl::BC::NO);
@@ -98,8 +96,7 @@ TEST_F(ParticleBCTest, UpperNoBC) {
 
 
 TEST_F(ParticleBCTest, UpperReflectiveBC) {
-
-    double shift = 0.1;
+    double shift = 0.05;
     setup(len + shift);
 
     bunch->setParticleBC(ippl::BC::REFLECTIVE);
@@ -111,8 +108,8 @@ TEST_F(ParticleBCTest, UpperReflectiveBC) {
 
 
 TEST_F(ParticleBCTest, UpperSinkBC) {
-
-    setup(len + 0.1);
+    double shift = 0.05;
+    setup(len + shift);
 
     bunch->setParticleBC(ippl::BC::SINK);
 
@@ -123,34 +120,31 @@ TEST_F(ParticleBCTest, UpperSinkBC) {
 
 
 TEST_F(ParticleBCTest, LowerPeriodicBC) {
-
-    double shift = 0.1;
+    double shift = 0.05;
     setup(-shift);
 
     bunch->setParticleBC(ippl::BC::PERIODIC);
 
     bunch->getLayout().applyBC(bunch->R, nr);
 
-    checkResult({shift, shift, shift});
+    checkResult({len - shift, len - shift, len - shift});
 }
 
 
 TEST_F(ParticleBCTest, LowerNoBC) {
-
-    double shift = -0.1;
-    setup(shift);
+    double shift = 0.05;
+    setup(-shift);
 
     bunch->setParticleBC(ippl::BC::NO);
 
     bunch->getLayout().applyBC(bunch->R, nr);
 
-    checkResult({shift, shift, shift});
+    checkResult({-shift, -shift, -shift});
 }
 
 
 TEST_F(ParticleBCTest, LowerReflectiveBC) {
-
-    double shift = 0.1;
+    double shift = 0.05;
     setup(-shift);
 
     bunch->setParticleBC(ippl::BC::REFLECTIVE);
@@ -162,8 +156,8 @@ TEST_F(ParticleBCTest, LowerReflectiveBC) {
 
 
 TEST_F(ParticleBCTest, LowerSinkBC) {
-
-    setup(-0.1);
+    double shift = 0.05;
+    setup(-shift);
 
     bunch->setParticleBC(ippl::BC::SINK);
 
