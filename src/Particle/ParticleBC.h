@@ -34,13 +34,21 @@ namespace ippl {
         struct ParticleBC {
             using value_type = typename ViewType::value_type::value_type;
 
+            //! Kokkos view containing the field data
             ViewType view_m;
+            //! The dimension along which this boundary condition
+            //  is applied
+            size_t dim_m;
+            //! Minimum and maximum coordinates of the domain along the given dimension
             double minval_m;
             double maxval_m;
-            size_t dim_m;
+            //! Whether the boundary conditions are being applied for an upper
+            //  face (i.e. with greater coordinate values)
             bool isUpper_m;
 
+            //! The length of the domain along the given dimension
             double extent_m;
+            //! The coordinate of the midpoint of the domain along the given dimension
             double middle_m;
 
             KOKKOS_INLINE_FUNCTION
