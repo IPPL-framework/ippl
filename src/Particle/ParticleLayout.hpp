@@ -61,6 +61,12 @@ namespace ippl {
                 bool isUpper = face & 1;
                 switch (bcs_m[face]) {
                     case BC::PERIODIC:
+                        // Periodic faces come in pairs and the application of
+                        // BCs checks both sides, so there is no reason to
+                        // apply periodic conditions twice
+                        if (isUpper)
+                            break;
+
                         Kokkos::parallel_for("Periodic BC",
                                              R.getParticleCount(),
                                              PeriodicBC(R.getView(), nr, d, isUpper));
