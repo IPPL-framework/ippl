@@ -66,17 +66,25 @@ namespace ippl {
             using neighbor_type = typename Layout_t::face_neighbor_type;
             const neighbor_type& neighbors = layout->getFaceNeighbors();
             using neighbor_range_type = typename Layout_t::face_neighbor_range_type;
-            const neighbor_range_type& neighborsSendRange = layout->getFaceNeighborsSendRange();
-            const neighbor_range_type& neighborsRecvRange = layout->getFaceNeighborsRecvRange();
+            const neighbor_range_type& neighborsSendRange = 
+                layout->getFaceNeighborsSendRange();
+            const neighbor_range_type& neighborsRecvRange = 
+                layout->getFaceNeighborsRecvRange();
             using match_face_type = typename Layout_t::match_face_type;
             const match_face_type& matchface = layout->getMatchFace();
 
 
+            size_t totalRequests = 0;
+            for (auto& neighbor : neighbors) {
+                totalRequests += neighbor.size();
+            }
+
             using buffer_type = Communicate::buffer_type;
-            std::vector<MPI_Request> requests(0);
+            std::vector<MPI_Request> requests(totalRequests);
 
             std::array<int, 2 * Dim> face_tag;
-            const int groupCount = neighbors.size();
+            const size_t groupCount = neighbors.size();
+            size_t requestIndex = 0;
             for (size_t face = 0; face < neighbors.size(); ++face) {
                 face_tag[face] = Ippl::Comm->next_tag(HALO_FACE_TAG, HALO_TAG_CYCLE);
                 for (size_t i = 0; i < neighbors[face].size(); ++i) {
@@ -90,14 +98,15 @@ namespace ippl {
                         range = neighborsRecvRange[face][i];
                     }
 
-                    requests.resize(requests.size() + 1);
+                    size_type nsends;
+                    pack(range, view, haloData_m, nsends);
 
-                    count_type nsends;
-                    pack(range, view, fd_m, nsends);
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
+                        IPPL_HALO_FACE_SEND + i * groupCount + face,
+                        nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_SEND + i * groupCount + face, nsends * sizeof(T));
-
-                    Ippl::Comm->isend(rank, face_tag[face], fd_m, *buf, requests.back(), nsends);
+                    Ippl::Comm->isend(rank, face_tag[face], haloData_m, *buf,
+                        requests[requestIndex++], nsends);
                     buf->resetWritePos();
                 }
             }
@@ -115,24 +124,24 @@ namespace ippl {
                         range = neighborsSendRange[face][i];
                     }
 
-                    count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                    size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
 
-                    if(nrecvs > fd_m.buffer.extent(0)) {
-                        Kokkos::realloc(fd_m.buffer, nrecvs);
-                    }
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_FACE_RECV + i * groupCount + face, nrecvs * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
+                        IPPL_HALO_FACE_RECV + i * groupCount + face,
+                        nrecvs);
 
-                    Ippl::Comm->recv(rank, face_tag[matchface[face]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                    Ippl::Comm->recv(rank, face_tag[matchface[face]], haloData_m, 
+                            *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Op>(range, view, fd_m);
+                    unpack<Op>(range, view, haloData_m);
                 }
             }
 
-            if (requests.size() > 0) {
-                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+            if (totalRequests > 0) {
+                MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
         }
 
@@ -146,18 +155,26 @@ namespace ippl {
             using neighbor_type = typename Layout_t::edge_neighbor_type;
             const neighbor_type& neighbors = layout->getEdgeNeighbors();
             using neighbor_range_type = typename Layout_t::edge_neighbor_range_type;
-            const neighbor_range_type& neighborsSendRange = layout->getEdgeNeighborsSendRange();
-            const neighbor_range_type& neighborsRecvRange = layout->getEdgeNeighborsRecvRange();
+            const neighbor_range_type& neighborsSendRange = 
+                layout->getEdgeNeighborsSendRange();
+            const neighbor_range_type& neighborsRecvRange = 
+                layout->getEdgeNeighborsRecvRange();
             using match_edge_type = typename Layout_t::match_edge_type;
             const match_edge_type& matchedge = layout->getMatchEdge();
 
 
+            size_t totalRequests = 0;
+            for (auto& neighbor : neighbors) {
+                totalRequests += neighbor.size();
+            }
+
             using buffer_type = Communicate::buffer_type;
-            std::vector<MPI_Request> requests(0);
+            std::vector<MPI_Request> requests(totalRequests);
 
 
             std::array<int, Dim * (1 << (Dim - 1))> edge_tag;
-            const int groupCount = neighbors.size();
+            const size_t groupCount = neighbors.size();
+            size_t requestIndex = 0;
             for (size_t edge = 0; edge < neighbors.size(); ++edge) {
                 edge_tag[edge] = Ippl::Comm->next_tag(HALO_EDGE_TAG, HALO_TAG_CYCLE);
                 for (size_t i = 0; i < neighbors[edge].size(); ++i) {
@@ -171,14 +188,15 @@ namespace ippl {
                         range = neighborsRecvRange[edge][i];
                     }
 
-                    requests.resize(requests.size() + 1);
+                    size_type nsends;
+                    pack(range, view, haloData_m, nsends);
 
-                    count_type nsends;
-                    pack(range, view, fd_m, nsends);
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
+                        IPPL_HALO_EDGE_SEND + i * groupCount + edge,
+                        nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_SEND + i * groupCount + edge, nsends * sizeof(T));
-
-                    Ippl::Comm->isend(rank, edge_tag[edge], fd_m, *buf, requests.back(), nsends);
+                    Ippl::Comm->isend(rank, edge_tag[edge], haloData_m, *buf, 
+                            requests[requestIndex++], nsends);
                     buf->resetWritePos();
                 }
             }
@@ -196,25 +214,24 @@ namespace ippl {
                         range = neighborsSendRange[edge][i];
                     }
 
-                    count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                    size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
                                  (range.hi[1] - range.lo[1]) *
                                  (range.hi[2] - range.lo[2]));
-                    
-                    if(nrecvs > fd_m.buffer.extent(0)) {
-                        Kokkos::realloc(fd_m.buffer, nrecvs);
-                    }
 
-                    buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_EDGE_RECV + i * groupCount + edge, nrecvs * sizeof(T));
+                    buffer_type buf = Ippl::Comm->getBuffer<T>(
+                        IPPL_HALO_EDGE_RECV + i * groupCount + edge,
+                        nrecvs);
 
-                    Ippl::Comm->recv(rank, edge_tag[matchedge[edge]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                    Ippl::Comm->recv(rank, edge_tag[matchedge[edge]], haloData_m, 
+                            *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Op>(range, view, fd_m);
+                    unpack<Op>(range, view, haloData_m);
                 }
             }
 
-            if (requests.size() > 0) {
-                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+            if (totalRequests > 0) {
+                MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
         }
 
@@ -228,20 +245,23 @@ namespace ippl {
             using neighbor_type = typename Layout_t::vertex_neighbor_type;
             const neighbor_type& neighbors = layout->getVertexNeighbors();
             using neighbor_range_type = typename Layout_t::vertex_neighbor_range_type;
-            const neighbor_range_type& neighborsSendRange = layout->getVertexNeighborsSendRange();
-            const neighbor_range_type& neighborsRecvRange = layout->getVertexNeighborsRecvRange();
+            const neighbor_range_type& neighborsSendRange = 
+                layout->getVertexNeighborsSendRange();
+            const neighbor_range_type& neighborsRecvRange = 
+                layout->getVertexNeighborsRecvRange();
             using match_vertex_type = typename Layout_t::match_vertex_type;
             const match_vertex_type& matchvertex = layout->getMatchVertex();
 
             using buffer_type = Communicate::buffer_type;
-            std::vector<MPI_Request> requests(0);
+            std::vector<MPI_Request> requests(neighbors.size());
 
 
             std::array<int, 2 << (Dim - 1)> vertex_tag;
+            size_t requestIndex = 0;
             for (size_t vertex = 0; vertex < neighbors.size(); ++vertex) {
                 vertex_tag[vertex] = Ippl::Comm->next_tag(HALO_VERTEX_TAG, HALO_TAG_CYCLE);
                 if (neighbors[vertex] < 0) {
-                    // we are on a mesh / physical boundary
+                    // we are on a non-periodic mesh / physical boundary
                     continue;
                 }
 
@@ -254,21 +274,23 @@ namespace ippl {
                     range = neighborsRecvRange[vertex];
                 }
 
-                requests.resize(requests.size() + 1);
+                size_type nsends;
+                pack(range, view, haloData_m, nsends);
 
-                count_type nsends;
-                pack(range, view, fd_m, nsends);
+                buffer_type buf = Ippl::Comm->getBuffer<T>(
+                    IPPL_HALO_VERTEX_SEND + vertex,
+                    nsends);
 
-                buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_SEND + vertex, nsends * sizeof(T));
 
-                Ippl::Comm->isend(rank, vertex_tag[vertex], fd_m, *buf, requests.back(), nsends);
+                Ippl::Comm->isend(rank, vertex_tag[vertex], haloData_m, *buf, 
+                        requests[requestIndex++], nsends);
                 buf->resetWritePos();
             }
 
             // receive
             for (size_t vertex = 0; vertex < neighbors.size(); ++vertex) {
                 if (neighbors[vertex] < 0) {
-                    // we are on a mesh / physical boundary
+                    // we are on a non-periodic mesh / physical boundary
                     continue;
                 }
 
@@ -281,24 +303,23 @@ namespace ippl {
                     range = neighborsSendRange[vertex];
                 }
 
-                count_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
+                size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
                              (range.hi[1] - range.lo[1]) *
                              (range.hi[2] - range.lo[2]));
-
-                if(nrecvs > fd_m.buffer.extent(0)) {
-                    Kokkos::realloc(fd_m.buffer, nrecvs);
-                }
                 
-                buffer_type buf = Ippl::Comm->getBuffer(IPPL_HALO_VERTEX_RECV + vertex, nrecvs * sizeof(T));
+                buffer_type buf = Ippl::Comm->getBuffer<T>(
+                    IPPL_HALO_VERTEX_RECV + vertex,
+                    nrecvs);
 
-                Ippl::Comm->recv(rank, vertex_tag[matchvertex[vertex]], fd_m, *buf, nrecvs * sizeof(T), nrecvs);
+                Ippl::Comm->recv(rank, vertex_tag[matchvertex[vertex]], 
+                        haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                 buf->resetReadPos();
 
-                unpack<Op>(range, view, fd_m);
+                unpack<Op>(range, view, haloData_m);
             }
 
-            if (requests.size() > 0) {
-                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+            if (requestIndex > 0) {
+                MPI_Waitall(requestIndex, requests.data(), MPI_STATUSES_IGNORE);
             }
         }
 
@@ -307,7 +328,7 @@ namespace ippl {
         void HaloCells<T, Dim>::pack(const bound_type& range,
                                      const view_type& view,
                                      FieldBufferData<T>& fd,
-                                     count_type& nsends)
+                                     size_type& nsends)
         {
             auto subview = makeSubview(view, range);
 
@@ -316,7 +337,8 @@ namespace ippl {
             size_t size = subview.size();
             nsends = size;
             if (buffer.size() < size) {
-                Kokkos::realloc(buffer, size);
+                int overalloc = Ippl::Comm->getDefaultOverallocation();
+                Kokkos::realloc(buffer, size * overalloc);
             }
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
@@ -330,7 +352,8 @@ namespace ippl {
                                     const size_t j,
                                     const size_t k)
                 {
-                    int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
+                    int l = i + j * subview.extent(0)
+                            + k * subview.extent(0) * subview.extent(1);
                     buffer(l) = subview(i, j, k);
                 }
             );
@@ -362,7 +385,8 @@ namespace ippl {
                                     const size_t j,
                                     const size_t k)
                 {
-                    int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
+                    int l = i + j * subview.extent(0)
+                            + k * subview.extent(0) * subview.extent(1);
                     op(subview(i, j, k), buffer(l));
                 }
             );

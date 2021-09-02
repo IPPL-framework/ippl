@@ -192,8 +192,7 @@ namespace ippl {
 
     private:
         face_neighbor_type faceNeighbors_m;
-
-        detail::FieldBufferData<T> fd_m;
+        detail::FieldBufferData<T> haloData_m;
     };
 }
 

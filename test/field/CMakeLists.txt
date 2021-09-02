@@ -14,33 +14,9 @@ link_directories (
 set (IPPL_LIBS ippl)
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
-add_executable (TestField TestField.cpp)
+add_executable (TestLaplace TestLaplace.cpp)
 target_link_libraries (
-    TestField
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
-)
-
-add_executable (TestField2 TestField2.cpp)
-target_link_libraries (
-    TestField2
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
-)
-
-add_executable (TestField3 TestField3.cpp)
-target_link_libraries (
-    TestField3
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
-)
-
-add_executable (TestFieldReductions TestFieldReductions.cpp)
-target_link_libraries (
-    TestFieldReductions
+    TestLaplace
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
     ${Boost_LIBRARIES}

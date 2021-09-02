@@ -34,11 +34,11 @@ namespace ippl {
         struct FieldBufferData {
             using view_type = typename detail::ViewType<T, 1>::view_type;
 
-            void serialize(Archive<>& ar, count_type nsends) {
+            void serialize(Archive<>& ar, size_type nsends) {
                 ar.serialize(buffer, nsends);
             }
 
-            void deserialize(Archive<>& ar, count_type nrecvs) {
+            void deserialize(Archive<>& ar, size_type nrecvs) {
                 ar.deserialize(buffer, nrecvs);
             }
 
@@ -91,7 +91,7 @@ namespace ippl {
             void pack(const bound_type& range,
                       const view_type& view,
                       FieldBufferData<T>& fd,
-                      count_type& nsends);
+                      size_type& nsends);
 
             /*!
              * Unpack the received field data and assign it.
@@ -178,7 +178,7 @@ namespace ippl {
             auto makeSubview(const view_type& view,
                              const bound_type& intersect);
 
-            FieldBufferData<T> fd_m;
+            FieldBufferData<T> haloData_m;
 
         };
     }

@@ -24,7 +24,6 @@
 namespace ippl {
     namespace detail {
         typedef uint64_t size_type;
-        typedef uint64_t count_type;
     }
 }
 

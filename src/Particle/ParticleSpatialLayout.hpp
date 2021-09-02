@@ -11,6 +11,14 @@
 //   in which case a grid is selected based on an even distribution of
 //   particles among processors.
 //
+//   After each 'time step' in a calculation, which is defined as a period
+//   in which the particle positions may change enough to affect the global
+//   layout, the user must call the 'update' routine, which will move
+//   particles between processors, etc.  After the Nth call to update, a
+//   load balancing routine will be called instead.  The user may set the
+//   frequency of load balancing (N), or may supply a function to
+//   determine if load balancing should be done or not.
+//
 // Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -67,7 +75,7 @@ namespace ippl {
 
         static IpplTimings::TimerRef locateTimer = IpplTimings::getTimer("locateParticles");
         IpplTimings::startTimer(locateTimer);
-        count_type localnum = pdata.getLocalNum();
+        size_type localnum = pdata.getLocalNum();
 
         // 1st step
 
@@ -90,17 +98,17 @@ namespace ippl {
         static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("SendPreprocess");
         IpplTimings::startTimer(preprocTimer);
         MPI_Win win;
-        std::vector<count_type> nRecvs(nRanks, 0);
-        MPI_Win_create(nRecvs.data(), nRanks*sizeof(count_type), sizeof(count_type),
+        std::vector<size_type> nRecvs(nRanks, 0);
+        MPI_Win_create(nRecvs.data(), nRanks*sizeof(size_type), sizeof(size_type),
                        MPI_INFO_NULL, *Ippl::Comm, &win);
 
-        std::vector<count_type> nSends(nRanks, 0);
+        std::vector<size_type> nSends(nRanks, 0);
 
         MPI_Win_fence(0, win);
 
         for (int rank = 0; rank < nRanks; ++rank) {
             if (rank == Ippl::Comm->rank()) {
-                // we do not need to send to ourself
+                // we do not need to send to ourselves
                 continue;
             }
             nSends[rank] = numberOfSends(rank, ranks);
@@ -132,12 +140,6 @@ namespace ippl {
 
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
 
-
-                if(bufSize > 2147483647) {
-                    std::cout << "Exceeds MPI send size" << std::endl;
-                    exit(1);
-                }
-
                 Ippl::Comm->isend(rank, tag, buffer, *buf,
                                   requests.back(), nSends[rank]);
                 buf->resetWritePos();
@@ -150,12 +152,12 @@ namespace ippl {
         // 3rd step
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("ParticleDestroy");
         IpplTimings::startTimer(destroyTimer);
-        
-        count_type invalidCount = 0;
+
+        size_type invalidCount = 0;
         Kokkos::parallel_reduce(
             "set/count invalid",
             localnum,
-            KOKKOS_LAMBDA(const size_t i, count_type& nInvalid) {
+            KOKKOS_LAMBDA(const size_t i, size_type& nInvalid) {
                 if (invalid(i)) {
                     pdata.ID(i) = -1;
                     nInvalid += 1;
@@ -163,9 +165,9 @@ namespace ippl {
             }, invalidCount);
         Kokkos::fence();
 
-        pdata.sort(invalid, invalidCount);
+        pdata.destroy(invalid, invalidCount);
         Kokkos::fence();
-        
+
         IpplTimings::stopTimer(destroyTimer);
         static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("ParticleRecv");
         IpplTimings::startTimer(recvTimer);
@@ -175,11 +177,7 @@ namespace ippl {
             if (nRecvs[rank] > 0) {
                 size_type bufSize = pdata.packedSize(nRecvs[rank]);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
-                
-                if(bufSize > 2147483647) {
-                    std::cout << "Exceeds MPI recv size" << std::endl;
-                    exit(1);
-                }
+
                 Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
                 buf->resetReadPos();
 
@@ -192,7 +190,7 @@ namespace ippl {
         IpplTimings::stopTimer(recvTimer);
 
         IpplTimings::startTimer(sendTimer);
-        
+
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
@@ -268,8 +266,6 @@ namespace ippl {
         Kokkos::parallel_reduce(
             "ParticleSpatialLayout::numberOfSends()",
             ranks.extent(0),
-            //KOKKOS_CLASS_LAMBDA(const size_t i,
-            //                    size_t& num)
             KOKKOS_LAMBDA(const size_t i,
                                 size_t& num)
             {

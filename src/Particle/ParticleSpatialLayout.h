@@ -11,6 +11,14 @@
 //   in which case a grid is selected based on an even distribution of
 //   particles among processors.
 //
+//   After each 'time step' in a calculation, which is defined as a period
+//   in which the particle positions may change enough to affect the global
+//   layout, the user must call the 'update' routine, which will move
+//   particles between processors, etc.  After the Nth call to update, a
+//   load balancing routine will be called instead.  The user may set the
+//   frequency of load balancing (N), or may supply a function to
+//   determine if load balancing should be done or not.
+//
 // Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -55,7 +63,6 @@ namespace ippl {
         using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
 
         using size_type = detail::size_type;
-        using count_type = detail::count_type;
 
     public:
         // constructor: this one also takes a Mesh

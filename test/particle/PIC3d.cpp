@@ -309,7 +309,7 @@ int main(int argc, char *argv[]){
     Inform msg(argv[0]);
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(3.f);
+    Ippl::Comm->setDefaultOverallocation(3);
 
 
     ippl::Vector<int,Dim> nr = {

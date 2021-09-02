@@ -21,10 +21,13 @@
 #include <boost/mpi/communicator.hpp>
 #include <map>
 
+// For message size check; see below
+#include <climits>
+#include <cstdlib>
+
 #include "Communicate/Archive.h"
 #include "Communicate/Tags.h"
 #include "Communicate/TagMaker.h"
-#include "Communicate/BufferIDs.h"
 
 namespace ippl {
     /*!
@@ -42,20 +45,54 @@ namespace ippl {
         // Attention: only works with default spaces
         using archive_type = detail::Archive<>;
         using buffer_type = std::shared_ptr<archive_type>;
-        //using buffer_type = archive_type;
 
         using size_type = detail::size_type;
-        using count_type = detail::count_type;
 
         Communicate();
 
         Communicate(const MPI_Comm& comm = MPI_COMM_WORLD);
 
-        int getDefaultOverallocation() const { return defaultOveralloc; }
+        /**
+         * Query the current default overallocation factor
+         * @return Factor by which new buffers are overallocated by default
+         */
+        int getDefaultOverallocation() const { return defaultOveralloc_m; }
+
+        /**
+         * Set the default overallocation factor
+         * @param factor New overallocation factor for new buffers
+         */
         void setDefaultOverallocation(int factor);
 
+        /**
+         * Obtain a buffer of at least the requested size that is associated
+         * with the given ID, overallocating memory for the buffer if it's new
+         * @tparam T The datatype to be stored in the buffer; in particular, the size
+         *           is scaled by the size of the data type (default char for when
+         *           the size is already in bytes)
+         * @param id The numerical ID with which the buffer is associated (allows buffer reuse)
+         * @param size The minimum size of the buffer, measured in number of elements
+         *             of the provided datatype (if the size is in bytes, the default
+         *             type char should be used)
+         * @param overallocation The factor by which memory for the buffer should be
+         *                       overallocated; only used if the buffer with the given
+         *                       ID has not been allocated before; by default, the larger
+         *                       value between 1 and the defaultOveralloc_m member
+         *                       is used
+         * @return A shared pointer to the buffer with the requested properties
+         */
+        template <typename T = char>
         buffer_type getBuffer(int id, size_type size, int overallocation = 1);
+
+        /**
+         * Deletes a buffer
+         * @param id Buffer ID
+         */
         void deleteBuffer(int id);
+
+        /**
+         * Deletes all buffers created by the buffer factory
+         */
         void deleteAllBuffers();
 
         [[deprecated]]
@@ -82,109 +119,58 @@ namespace ippl {
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void send(int dest, int tag, Buffer& buffer);
-
-
-        /*!
-         * \warning Only works with default spaces!
-         */
-        template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer);
-
-        template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, count_type nrecvs);
-
-        template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer, archive_type& ar, count_type nrecvs);
-
+        void recv(int src, int tag, Buffer& buffer, archive_type& ar,
+                  size_type msize, size_type nrecvs);
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&, count_type nsends);
-
+        void isend(int dest, int tag, Buffer& buffer, archive_type&,
+                   MPI_Request&, size_type nsends);
 
         /*!
          * \warning Only works with default spaces!
          */
-
         void irecv(int src, int tag, archive_type&, MPI_Request&, size_type msize);
 
     private:
-        std::map<int, buffer_type> buffers;
-        int defaultOveralloc = 1;
+        std::map<int, buffer_type> buffers_m;
+        int defaultOveralloc_m = 1;
     };
 
-
     template <class Buffer>
-    void Communicate::send(int dest, int tag, Buffer& buffer)
+    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar,
+                           size_type msize, size_type nrecvs)
     {
-        // Attention: only works with default spaces
-        archive_type ar;
-
-        buffer.serialize(ar);
-
-        MPI_Send(ar.getBuffer(), ar.getSize(),
-                 MPI_BYTE, dest, tag, *this);
-    }
-
-
-    template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer)
-    {
-        MPI_Status status;
-
-        MPI_Probe(src, tag, *this, &status);
-
-        int msize = 0;
-        MPI_Get_count(&status, MPI_BYTE, &msize);
-
-        // Attention: only works with default spaces
-        archive_type ar(msize);
-
-
-        MPI_Recv(ar.getBuffer(), ar.getSize(),
-                MPI_BYTE, src, tag, *this, &status);
-
-        buffer.deserialize(ar);
-    }
-
-    template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, count_type nrecvs)
-    {
+        // Temporary fix. MPI communication seems to have problems when the
+        // count argument exceeds the range of int, so large messages should
+        // be split into smaller messages
+        if (msize > INT_MAX) {
+            std::cerr << "Message size exceeds range of int" << std::endl;
+            std::abort();
+        }
         MPI_Status status;
         MPI_Recv(ar.getBuffer(), msize,
                 MPI_BYTE, src, tag, *this, &status);
 
         buffer.deserialize(ar, nrecvs);
     }
-
-    template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, count_type nrecvs)
-    {
-        MPI_Status status;
-        MPI_Probe(src, tag, *this, &status);
-
-        int msize = 0;
-        MPI_Get_count(&status, MPI_BYTE, &msize);
-
-        MPI_Recv(ar.getBuffer(), msize,
-                MPI_BYTE, src, tag, *this, &status);
-
-        buffer.deserialize(ar, nrecvs);
-    }
-
 
     template <class Buffer>
     void Communicate::isend(int dest, int tag, Buffer& buffer,
-                            archive_type& ar, MPI_Request& request, count_type nsends)
+                            archive_type& ar, MPI_Request& request, size_type nsends)
     {
-
+        if (ar.getSize() > INT_MAX) {
+            std::cerr << "Message size exceeds range of int" << std::endl;
+            std::abort();
+        }
         buffer.serialize(ar, nsends);
         MPI_Isend(ar.getBuffer(), ar.getSize(),
                   MPI_BYTE, dest, tag, *this, &request);
     }
 }
+
+#include "Communicate/Buffers.hpp"
 
 #endif

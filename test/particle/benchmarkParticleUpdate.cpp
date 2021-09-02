@@ -101,11 +101,6 @@ public:
         setBCAllPeriodic();
     }
 
-    //void update() {
-    //    PLayout& layout = this->getLayout();
-    //    layout.update(*this);
-    //}
-
     void gatherStatistics(unsigned int totalP, int iteration) {
 
         unsigned int Total_particles = 0;

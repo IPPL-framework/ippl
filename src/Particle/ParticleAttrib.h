@@ -49,31 +49,31 @@ namespace ippl {
         using HostMirror = typename view_type::host_mirror_type;
 
         using size_type = detail::size_type;
-        using count_type = detail::count_type;
 
         // Create storage for M particle attributes.  The storage is uninitialized.
         // New items are appended to the end of the array.
-        void create(count_type) override;
+        void create(size_type) override;
 
         /*!
-         * Partition the particles into a valid region and an invalid region
+         * Particle deletion function. Partition the particles into a valid region
+         * and an invalid region.
          * @param deleteIndex List of indices of invalid particles in the valid region
          * @param keepIndex List of indices of valid particles in the invalid region
          * @param invalidCount Number of invalid particles in the valid region
          */
-        void sort(const Kokkos::View<int*>& deleteIndex,
+        void destroy(const Kokkos::View<int*>& deleteIndex,
                   const Kokkos::View<int*>& keepIndex,
-                  count_type invalidCount) override;
+                  size_type invalidCount) override;
 
         void pack(void*, const Kokkos::View<int*>&) const override;
 
-        void unpack(void*, count_type) override;
+        void unpack(void*, size_type) override;
 
-        void serialize(detail::Archive<Properties...>& ar, count_type nsends) override {
+        void serialize(detail::Archive<Properties...>& ar, size_type nsends) override {
             ar.serialize(dview_m, nsends);
         }
 
-        void deserialize(detail::Archive<Properties...>& ar, count_type nrecvs) override {
+        void deserialize(detail::Archive<Properties...>& ar, size_type nrecvs) override {
             ar.deserialize(dview_m, nrecvs);
         }
 
@@ -83,11 +83,7 @@ namespace ippl {
             return dview_m.extent(0);
         }
 
-        size_type totalSize() const {
-            return size() * sizeof(value_type);
-        }
-
-        size_type packedSize(const count_type count) const {
+        size_type packedSize(const size_type count) const {
             return count * sizeof(value_type);
         }
 
@@ -98,10 +94,11 @@ namespace ippl {
         void realloc(size_type n) {
             Kokkos::realloc(dview_m, n);
         }
+
         void print() {
             HostMirror hview = Kokkos::create_mirror_view(dview_m);
             Kokkos::deep_copy(hview, dview_m);
-            for (count_type i = 0; i < *(this->localNum_m); ++i) {
+            for (size_type i = 0; i < *(this->localNum_mp); ++i) {
                 std::cout << hview(i) << std::endl;
             }
         }
