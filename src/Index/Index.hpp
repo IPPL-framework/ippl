@@ -229,6 +229,18 @@ namespace ippl {
         return true;
     }
 
+    KOKKOS_INLINE_FUNCTION
+    bool Index::split(Index& l, Index& r, int i) const {
+        PAssert_EQ(stride_m, 1);
+        PAssert_GT(length_m, 1);
+        int first = first_m;
+        int length = length_m;
+        if (i >= (first + length))
+           return false;
+        l = Index(first, i);
+        r = Index(i+1,first+length-1);
+        return true;
+    }
 
     KOKKOS_INLINE_FUNCTION
     bool Index::split(Index& l, Index& r, double a) const {

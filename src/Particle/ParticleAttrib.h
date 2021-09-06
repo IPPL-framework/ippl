@@ -148,8 +148,7 @@ namespace ippl {
         void
         scatter(Field<T, Dim, M, C>& f,
                 const ParticleAttrib<Vector<P2, Dim>, Properties... >& pp) const;
-
-
+        
         template <unsigned Dim, class M, class C, typename P2>
         void
         gather(Field<T, Dim, M, C>& f,

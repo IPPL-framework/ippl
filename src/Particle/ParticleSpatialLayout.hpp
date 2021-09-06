@@ -45,7 +45,12 @@ namespace ippl {
         Mesh& mesh)
     : rlayout_m(fl, mesh)
     {}
-
+ 
+    template <typename T, unsigned Dim, class Mesh>
+    void
+    ParticleSpatialLayout<T, Dim, Mesh>::updateLayout(FieldLayout<Dim>& fl, Mesh& mesh) {
+        rlayout_m.changeDomain(fl, mesh); 
+    }
 
     template <typename T, unsigned Dim, class Mesh>
     template <class BufferType>
@@ -64,7 +69,6 @@ namespace ippl {
         if (nRanks < 2) {
             return;
         }
-
 
         /* particle MPI exchange:
          *   1. figure out which particles need to go where

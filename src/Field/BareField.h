@@ -102,6 +102,8 @@ namespace ippl {
          */
         void initialize(Layout_t& l, int nghost = 1);
 
+        // ML
+        void updateLayout(Layout_t&, int nghost = 1);
 
         /*!
          * Local field size.
@@ -175,6 +177,7 @@ namespace ippl {
         view_type& getView() {
             return dview_m;
         }
+
 
         const view_type& getView() const {
             return dview_m;
