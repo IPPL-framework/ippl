@@ -22,6 +22,7 @@
 
 #include "Expression/IpplExpressions.h"
 #include "Types/ViewTypes.h"
+#include "Types/IpplTypes.h"
 
 #include "FieldLayout/FieldLayout.h"
 
@@ -109,7 +110,7 @@ namespace ippl {
          * @param d the dimension
          * @returns the number of grid points in the given dimension.
          */
-        int size(unsigned d) const { return owned_m[d].length(); }
+        detail::size_type size(unsigned d) const { return owned_m[d].length(); }
 
 
         /*!

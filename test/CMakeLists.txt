@@ -15,7 +15,6 @@ endmacro()
 #endforeach()
 
 add_subdirectory (kokkos)
-add_subdirectory (barefield)
 add_subdirectory (vector)
 add_subdirectory (field)
 if (ENABLE_FFT)

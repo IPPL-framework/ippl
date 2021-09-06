@@ -1,5 +1,5 @@
 //
-// Class Ippl
+// Class Archive
 //   Class to (de-)serialize in MPI communication.
 //
 // Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -23,76 +23,94 @@ namespace ippl {
     namespace detail {
 
         template <class... Properties>
-        Archive<Properties...>::Archive(int size)
+        Archive<Properties...>::Archive(size_type size)
         : writepos_m(0)
         , readpos_m(0)
         , buffer_m("buffer", size)
         { }
 
-
         template <class... Properties>
         template <typename T>
-        void Archive<Properties...>::operator<<(const Kokkos::View<T*>& view) {
+        void Archive<Properties...>::serialize(const Kokkos::View<T*>& view,
+                                               size_type nsends) {
             size_t size = sizeof(T);
-            Kokkos::resize(buffer_m, buffer_m.size() + size * view.size());
             Kokkos::parallel_for(
-                "Archive::serialize()", view.extent(0),
-                KOKKOS_CLASS_LAMBDA(const size_t i) {
+                "Archive::serialize()", nsends,
+                KOKKOS_CLASS_LAMBDA(const size_type i) {
                     std::memcpy(buffer_m.data() + i * size + writepos_m,
                                 view.data() + i,
                                 size);
             });
-            writepos_m += size * view.size();
+            Kokkos::fence();
+            writepos_m += size * nsends;
         }
-
 
         template <class... Properties>
         template <typename T, unsigned Dim>
-        void Archive<Properties...>::operator<<(const Kokkos::View<Vector<T, Dim>*>& view) {
+        void Archive<Properties...>::serialize(const Kokkos::View<Vector<T, Dim>*>& view,
+                                               size_type nsends) {
             size_t size = sizeof(T);
-            Kokkos::resize(buffer_m, buffer_m.size() + Dim * size * view.size());
-            using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+            // Default index type for range policies is int64,
+            // so we have to explicitly specify size_type (uint64)
+            using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>,
+                                    Kokkos::IndexType<size_type>>;
             Kokkos::parallel_for(
                 "Archive::serialize()",
-                mdrange_t({0, 0}, {(long int)view.extent(0), Dim}),
-                KOKKOS_CLASS_LAMBDA(const size_t i, const size_t d) {
+                // The constructor for Kokkos range policies always
+                // expects int64 regardless of index type provided
+                // by template parameters, so the typecast is necessary
+                // to avoid compiler warnings
+                mdrange_t({0, 0}, {(long int)nsends, Dim}),
+                KOKKOS_CLASS_LAMBDA(const size_type i, const size_t d) {
                     std::memcpy(buffer_m.data() + (Dim * i + d) * size + writepos_m,
                                 &(*(view.data() + i))[d],
                                 size);
                 });
-            writepos_m += Dim * size * view.size();
+            Kokkos::fence();
+            writepos_m += Dim * size * nsends;
         }
-
 
         template <class... Properties>
         template <typename T>
-        void Archive<Properties...>::operator>>(Kokkos::View<T*>& view) {
+        void Archive<Properties...>::deserialize(Kokkos::View<T*>& view,
+                                                 size_type nrecvs) {
             size_t size = sizeof(T);
+            if(nrecvs > view.extent(0)) {
+                Kokkos::realloc(view, nrecvs);
+            }
             Kokkos::parallel_for(
-                "Archive::deserialize()", view.extent(0),
-                KOKKOS_CLASS_LAMBDA(const size_t i) {
+                "Archive::deserialize()", nrecvs,
+                KOKKOS_CLASS_LAMBDA(const size_type i) {
                     std::memcpy(view.data() + i,
                                 buffer_m.data() + i * size + readpos_m,
                                 size);
             });
-            readpos_m += size * view.size();
+            // Wait for deserialization kernel to complete
+            // (as with serialization kernels)
+            Kokkos::fence();
+            readpos_m += size * nrecvs;
         }
-
 
         template <class... Properties>
         template <typename T, unsigned Dim>
-        void Archive<Properties...>::operator>>(Kokkos::View<Vector<T, Dim>*>& view) {
+        void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*>& view,
+                                                 size_type nrecvs) {
             size_t size = sizeof(T);
-            using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+            if(nrecvs > view.extent(0)) {
+                Kokkos::realloc(view, nrecvs);
+            }
+            using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>,
+                                    Kokkos::IndexType<size_type>>;
             Kokkos::parallel_for(
                 "Archive::deserialize()",
-                mdrange_t({0, 0}, {(long int)view.extent(0), Dim}),
-                KOKKOS_CLASS_LAMBDA(const size_t i, const size_t d) {
+                mdrange_t({0, 0}, {(long int)nrecvs, Dim}),
+                KOKKOS_CLASS_LAMBDA(const size_type i, const size_t d) {
                     std::memcpy(&(*(view.data() + i))[d],
                                 buffer_m.data() + (Dim * i + d) * size + readpos_m,
                                 size);
             });
-            readpos_m += Dim * size * view.size();
+            Kokkos::fence();
+            readpos_m += Dim * size * nrecvs;
         }
     }
 }

@@ -122,12 +122,8 @@ public:
         setBCAllPeriodic();
     }
 
-    void update() {
-        PLayout& layout = this->getLayout();
-        layout.update(*this);
-    }
 
-    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh) {
+    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");           
         IpplTimings::startTimer(tupdateLayout);                                                   
@@ -140,7 +136,7 @@ public:
         IpplTimings::stopTimer(tupdateLayout);                                                   
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");           
         IpplTimings::startTimer(tupdatePLayout);                                                   
-        layout.update(*this);
+        layout.update(*this, buffer);
         IpplTimings::stopTimer(tupdatePLayout);                                                   
     }
 
@@ -148,7 +144,9 @@ public:
         orb.initialize(fl, mesh);
     }
 
-    void repartition(FieldLayout_t& fl, Mesh_t& mesh) {
+    ~ChargedParticles() {}
+
+    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl);
         
@@ -157,7 +155,7 @@ public:
            return;
         } 
         // Update
-        this->updateLayout(fl, mesh);
+        this->updateLayout(fl, mesh, buffer);
     }
 
     bool balance(unsigned int totalP){//, int timestep = 1) {
@@ -485,7 +483,9 @@ int main(int argc, char *argv[]) {
     Ippl ippl(argc, argv);
     Inform msg(argv[0]);
     Inform msg2all(argv[0],INFORM_ALL_NODES);
-    
+
+    Ippl::Comm->setDefaultOverallocation(3);
+
     ippl::Vector<int,Dim> nr = {
         std::atoi(argv[1]),
         std::atoi(argv[2]),
@@ -593,10 +593,12 @@ int main(int argc, char *argv[]) {
     P->qm = P->Q_m/totalP;
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);                                                    
-    
+
+    bunch_type bunchBuffer(PL);
+
     static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");           
     IpplTimings::startTimer(UpdateTimer);                                               
-    P->update();
+    PL.update(*P, bunchBuffer);
     IpplTimings::stopTimer(UpdateTimer);                                                    
 
     
@@ -626,7 +628,7 @@ int main(int argc, char *argv[]) {
     
     static IpplTimings::TimerRef domainDecomposition0 = IpplTimings::getTimer("domainDecomp0");           
     IpplTimings::startTimer(domainDecomposition0);                                                    
-    P->repartition(FL, meshField);
+    P->repartition(FL, meshField, bunchBuffer);
     IpplTimings::stopTimer(domainDecomposition0);                                                    
     msg << "Balancing finished" << endl;
     
@@ -655,7 +657,7 @@ int main(int argc, char *argv[]) {
         if (loadImbalance) {
            msg << "Starting repartition" << endl;
            IpplTimings::startTimer(domainDecomposition0);
-           P->repartition(FL, meshField); 
+           P->repartition(FL, meshField, bunchBuffer); 
            IpplTimings::stopTimer(domainDecomposition0);
            // Conservations
            // P->writePerRank(); 
@@ -668,9 +670,9 @@ int main(int argc, char *argv[]) {
         IpplTimings::stopTimer(RTimer);                                                    
 
         IpplTimings::startTimer(UpdateTimer);
-        P->update();
-        IpplTimings::stopTimer(UpdateTimer);
-
+        PL.update(*P, bunchBuffer);
+        IpplTimings::stopTimer(UpdateTimer);                                                    
+        
         //scatter the charge onto the underlying grid
         msg << "Starting scatterCIC" << endl;
         P->scatterCIC(totalP, it+1);

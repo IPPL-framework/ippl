@@ -7,9 +7,8 @@
 //   floating-point precision type of the Field (float or double).
 //   Currently, we use heffte for taking the transforms and the class FFT
 //   serves as an interface between IPPL and heffte. In making this interface,
-//   we have utilized ideas from Cabana library
-//   https://github.com/ECP-copa/Cabana especially for the temporary
-//   field with layout right for passing into heffte.
+//   we have referred Cabana library
+//   https://github.com/ECP-copa/Cabana.
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -90,7 +89,7 @@ namespace ippl {
             using complexType = std::complex<float>;
         };
         template <>
-        struct HeffteBackendType<float> {
+        struct HeffteBackendType<double> {
             using backend = heffte::backend::mkl;
             using complexType = std::complex<double>;
         };
@@ -131,7 +130,7 @@ namespace ippl {
 
         using heffteBackend = typename detail::HeffteBackendType<T>::backend;
         using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
-
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<heffteComplex_t>;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
@@ -148,6 +147,7 @@ namespace ippl {
 
 
     private:
+        //using long long = detail::long long;
 
         /**
            setup performs the initialization necessary.
@@ -157,6 +157,8 @@ namespace ippl {
                    const FFTParams& params);
 
         std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
+        workspace_t workspace_m;
+
     };
 
 
@@ -169,13 +171,15 @@ namespace ippl {
     public:
 
         typedef FieldLayout<Dim> Layout_t;
-        typedef Kokkos::complex<T> Complex_t;
         typedef Field<T,Dim> RealField_t;
-        typedef Field<Complex_t,Dim> ComplexField_t;
 
         using heffteBackend = typename detail::HeffteBackendType<T>::backend;
         using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
+        using workspace_t = typename heffte::fft3d_r2c<heffteBackend>::template buffer_container<heffteComplex_t>;
 
+        typedef Kokkos::complex<T> Complex_t;
+        //typedef heffteComplex_t Complex_t;
+        typedef Field<Complex_t,Dim> ComplexField_t;
 
         /** Create a new FFT object with the layout for the input and output Fields
          * and parameters for heffte.
@@ -192,6 +196,7 @@ namespace ippl {
 
 
     private:
+        //using long long = detail::long long;
 
         /**
            setup performs the initialization necessary after the transform
@@ -205,6 +210,7 @@ namespace ippl {
 
 
         std::shared_ptr<heffte::fft3d_r2c<heffteBackend, long long>> heffte_m;
+        workspace_t workspace_m;
 
     };
 
