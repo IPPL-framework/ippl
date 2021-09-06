@@ -93,6 +93,11 @@ namespace ippl {
 
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
+                        /*We store only the sending and receiving ranges
+                         * of INTERNAL_TO_HALO and use the fact that the
+                         * sending range of HALO_TO_INTERNAL is the receiving
+                         * range of INTERNAL_TO_HALO and vice versa
+                         */
                         range = neighborsSendRange[face][i];
                     } else {
                         range = neighborsRecvRange[face][i];
