@@ -567,34 +567,7 @@ int main(int argc, char *argv[]) {
     MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
     msg << "Total particles: " << totalParticles << endl;
     P->initPositions(FL, hr, nloc, 2);
-    /*
-    std::mt19937_64 eng[Dim];
-    for (unsigned i = 0; i < Dim; ++i) {
-        eng[i].seed(42 + i * Dim);
-        eng[i].discard( nloc * Ippl::Comm->rank());
-    }
-   
-    std::uniform_real_distribution<double> unif(rmin[0], rmax[0]);
 
-    typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
-
-    double sum_coord=0.0;
-    for (unsigned long int i = 0; i< nloc; i++) {
-        for (int d = 0; d<3; d++) {
-            R_host(i)[d] =  unif(eng[d]);
-            sum_coord += R_host(i)[d];
-        }
-    }
-    double global_sum_coord = 0.0;
-    MPI_Reduce(&sum_coord, &global_sum_coord, 1, 
-               MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-
-    if(Ippl::Comm->rank() == 0) {
-        std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
-    }
-
-    Kokkos::deep_copy(P->R.getView(), R_host); 
-    */
     P->qm = P->Q_m/totalP;
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);                                                    
@@ -606,25 +579,12 @@ int main(int argc, char *argv[]) {
     PL.update(*P, bunchBuffer);
     IpplTimings::stopTimer(UpdateTimer);                                                    
 
-    
-    Vector_t originField = {rmin[0]-hr[0], rmin[1]-hr[1], rmin[2]-hr[2]};
-    double dxField = (rmax[0] + hr[0] - originField[0]) / nr[0];
-    double dyField = (rmax[1] + hr[1] - originField[1]) / nr[1];
-    double dzField = (rmax[2] + hr[2] - originField[2]) / nr[2];
- 
-    Vector_t hrField = {dxField, dyField, dzField};
-    Mesh_t meshField(domain, hrField, originField);
- 
     msg << "particles created and initial conditions assigned " << endl;
     
-    P->EFD_m.initialize(meshField, FL);
-    P->EFDMag_m.initialize(meshField, FL);
-    P->initializeORB(FL, meshField);
-    /*
     P->EFD_m.initialize(mesh, FL);
     P->EFDMag_m.initialize(mesh, FL);
-    P->BF_m.initialize(mesh, FL);
-    */
+    P->initializeORB(FL, mesh);
+
     P->scatterCIC(totalP, 0);
     msg << "scatter done" << endl;
 
@@ -633,7 +593,7 @@ int main(int argc, char *argv[]) {
     
     static IpplTimings::TimerRef domainDecomposition0 = IpplTimings::getTimer("domainDecomp0");           
     IpplTimings::startTimer(domainDecomposition0);                                                    
-    P->repartition(FL, meshField, bunchBuffer);
+    P->repartition(FL, mesh, bunchBuffer);
     IpplTimings::stopTimer(domainDecomposition0);                                                    
     msg << "Balancing finished" << endl;
     
@@ -662,7 +622,7 @@ int main(int argc, char *argv[]) {
         if (loadImbalance) {
            msg << "Starting repartition" << endl;
            IpplTimings::startTimer(domainDecomposition0);
-           P->repartition(FL, meshField, bunchBuffer); 
+           P->repartition(FL, mesh, bunchBuffer);
            IpplTimings::stopTimer(domainDecomposition0);
            // Conservations
            // P->writePerRank(); 
