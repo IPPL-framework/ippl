@@ -60,9 +60,9 @@ namespace ippl {
                        const unsigned& dim, 
                        const bool& isUpper)
             : view_m(view)
+            , dim_m(dim)
             , minval_m(nr[dim].min())
             , maxval_m(nr[dim].max())
-            , dim_m(dim)
             , isUpper_m(isUpper)
             {
                 extent_m = nr[dim].length();
