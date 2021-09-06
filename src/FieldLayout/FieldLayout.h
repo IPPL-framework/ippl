@@ -74,13 +74,21 @@ namespace ippl {
 
         // Return the domain.
         const NDIndex<Dim>& getDomain() const { return gDomain_m; }
-
+ 
         // Compare FieldLayouts to see if they represent the same domain; if
         // dimensionalities are different, the NDIndex operator==() will return
         // false:
         template <unsigned Dim2>
         bool operator==(const FieldLayout<Dim2>& x) const {
             return gDomain_m == x.getDomain();
+        }
+
+        bool operator==(const FieldLayout<Dim>& x) const {
+            bool result = true;
+            for (unsigned int i = 0; i < Dim; ++i) {
+                result &= (hLocalDomains_m(Ippl::Comm->rank())[i] == x.getLocalNDIndex()[i]);
+            }
+            return result;
         }
 
         // for the requested dimension, report if the distribution is
@@ -120,6 +128,8 @@ namespace ippl {
         void findNeighbors(int nghost = 1);
 
         void write(std::ostream& = std::cout) const;
+        
+        void updateLayout(const std::vector<NDIndex_t>& domains); 
 
     private:
         /*!

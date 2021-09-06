@@ -82,6 +82,10 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION
         bool contains(const NDIndex<Dim>& a) const;
 
+        // Split on dimension d with at position i
+        KOKKOS_INLINE_FUNCTION
+        bool split(NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d, int i) const;
+
         // Split on dimension d with the given ratio 0<a<1.
         KOKKOS_INLINE_FUNCTION
         bool split(NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d, double a) const;

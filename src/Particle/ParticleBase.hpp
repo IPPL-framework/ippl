@@ -231,7 +231,6 @@ namespace ippl {
         }
     }
 
-
     template <class PLayout, class... Properties>
     void ParticleBase<PLayout, Properties...>::deserialize(detail::Archive<Properties...>& ar, size_type nrecvs) {
         using size_type = typename attribute_container_t::size_type;
@@ -262,7 +261,6 @@ namespace ippl {
             attributes_m[j]->pack(buffer.getAttribute(j), hash);
         }
     }
-
 
     template <class PLayout, class... Properties>
     template <class Buffer>

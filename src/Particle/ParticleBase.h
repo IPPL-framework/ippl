@@ -151,8 +151,7 @@ namespace ippl {
          * @returns particle layout
          */
         const Layout_t& getLayout() const { return *layout_m; }
-
-
+ 
         /*!
          * Set all boundary conditions
          * @param bc the boundary conditions

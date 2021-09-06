@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
+//
+
 namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim, class M, class C>
@@ -66,4 +68,11 @@ namespace ippl {
     T Field<T,Dim,M,C>::getVolumeAverage() const {
         return getVolumeIntegral() / mesh_m->getMeshVolume();
     }
+
+    template<class T, unsigned Dim, class M, class C>
+    void Field<T,Dim,M,C>::updateLayout(Layout_t& l, int nghost) {
+        BareField<T,Dim>::updateLayout(l, nghost);
+    }
+
 }
+
