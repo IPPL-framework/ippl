@@ -45,9 +45,9 @@ int main(int argc, char *argv[]) {
 
     field_type field(mesh, layout);
 
-     field = Ippl::Comm->rank();
-     int myRank = Ippl::Comm->rank();
-     int nRanks = Ippl::Comm->size();
+    field = Ippl::Comm->rank();
+    int myRank = Ippl::Comm->rank();
+    int nRanks = Ippl::Comm->size();
 
     
     for (int rank = 0; rank < nRanks; ++rank) {
