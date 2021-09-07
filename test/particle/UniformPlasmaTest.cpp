@@ -275,7 +275,7 @@ public:
          m << "Rel. error in charge conservation = " << rel_error << endl;
 
          if(Ippl::Comm->rank() == 0) {
-             if((Total_particles != totalP) || (rel_error > 1e-10)) {
+             if(Total_particles != totalP || rel_error > 1e-10) {
                  std::cout << "Total particles in the sim. " << totalP 
                            << " " << "after update: " 
                            << Total_particles << std::endl;
@@ -460,8 +460,6 @@ int main(int argc, char *argv[]){
     for (unsigned d = 0; d < Dim; ++d) {
         decomp[d] = ippl::PARALLEL;
     }
-
-    //decomp[2] = ippl::SERIAL;
 
     // create mesh and layout objects for this problem domain
     Vector_t rmin(0.0);

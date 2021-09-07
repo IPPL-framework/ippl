@@ -74,8 +74,9 @@ namespace ippl {
             
             void write(std::ostream& = std::cout) const;
 
+            void changeDomain(const FieldLayout<Dim>&, const Mesh& mesh); // previously private...
+
         private:
-            void changeDomain(const FieldLayout<Dim>&, const Mesh& mesh);
             NDRegion_t convertNDIndex(const NDIndex<Dim>&, const Mesh& mesh) const;
             void fillRegions(const FieldLayout<Dim>&, const Mesh& mesh);
 

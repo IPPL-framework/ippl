@@ -137,6 +137,15 @@ namespace ippl {
         return cont;
     }
 
+    template<unsigned Dim>
+    KOKKOS_INLINE_FUNCTION
+    bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d, int i) const {
+        if ( &l != this )
+            l = *this;
+        if ( &r != this )
+            r = *this;
+        return indices_m[d].split(l[d],r[d],i);
+    }
 
     template<unsigned Dim>
     KOKKOS_INLINE_FUNCTION
