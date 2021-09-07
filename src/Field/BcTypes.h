@@ -39,6 +39,21 @@
 namespace ippl {
     template<typename T, unsigned Dim, class Mesh, class Cell> class Field;
 
+    /*
+     * Enum type to identify different kinds of
+     * field boundary conditions. Since ZeroFace is
+     * a special case of ConstantFace, both will match
+     * a bitwise AND with CONSTANT_F
+     * (to avoid conflict with particle BC enum, add _F)
+     */
+    enum FieldBC {
+        PERIODIC_F    = 0b0000,
+        CONSTANT_F    = 0b0001,
+        ZERO_F        = 0b0011,
+        EXTRAPOLATE_F = 0b0100,
+        NO_F          = 0b1000,
+    };
+
     namespace detail {
         template<typename T, unsigned Dim, class Mesh, class Cell> class BCondBase;
 
@@ -60,8 +75,9 @@ namespace ippl {
             // The components default to setting all components.
             BCondBase(unsigned int face);
 
-
             virtual ~BCondBase() = default;
+
+            virtual FieldBC getBCType() const { return NO_F; }
 
             virtual void findBCNeighbors(Field<T, Dim, Mesh, Cell>& field) = 0;
             virtual void apply(Field<T, Dim, Mesh, Cell>& field) = 0;
@@ -108,6 +124,8 @@ namespace ippl {
 
         virtual ~ExtrapolateFace() = default;
 
+        virtual FieldBC getBCType() const { return EXTRAPOLATE_F; }
+
         virtual void findBCNeighbors(Field_t& /*field*/) {}
         virtual void apply(Field_t& field);
 
@@ -151,6 +169,8 @@ namespace ippl {
         : ExtrapolateFace<T, Dim, Mesh, Cell>(face, constant, 0)
         {}
 
+        virtual FieldBC getBCType() const { return CONSTANT_F; }
+
         virtual void write(std::ostream& out) const;
     };
 
@@ -165,6 +185,8 @@ namespace ippl {
         ZeroFace(unsigned face)
         : ConstantFace<T, Dim, Mesh, Cell>(face, 0.0)
         {}
+
+        virtual FieldBC getBCType() const { return ZERO_F; }
 
         virtual void write(std::ostream& out) const;
     };
@@ -184,6 +206,8 @@ namespace ippl {
         PeriodicFace(unsigned face)
         : detail::BCondBase<T, Dim, Mesh, Cell>(face)
         { }
+
+        virtual FieldBC getBCType() const { return PERIODIC_F; }
 
         virtual void findBCNeighbors(Field_t& field);
         virtual void apply(Field_t& field);
