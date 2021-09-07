@@ -50,6 +50,20 @@ namespace ippl {
         using face_neighbor_type = std::array<std::vector<int>, 2 * Dim>;
         using edge_neighbor_type = std::array<std::vector<int>, Dim * (1 << (Dim - 1))>;
         using vertex_neighbor_type = std::array<int, 2 << (Dim - 1)>;
+        using match_face_type = std::array<int, 2 * Dim>;
+        using match_edge_type = std::array<int, Dim * (1 << (Dim - 1))>;
+        using match_vertex_type = std::array<int, 2 << (Dim - 1)>;
+        
+        struct bound_type {
+            // lower bounds (ordering: x, y, z)
+            std::array<long, Dim> lo;
+            // upper bounds (ordering x, y, z)
+            std::array<long, Dim> hi;
+        };
+        
+        using face_neighbor_range_type = std::array<std::vector<bound_type>, 2 * Dim>;
+        using edge_neighbor_range_type = std::array<std::vector<bound_type>, Dim * (1 << (Dim - 1))>;
+        using vertex_neighbor_range_type = std::array<bound_type, 2 << (Dim - 1)>;
 
 
         /*!
@@ -58,7 +72,7 @@ namespace ippl {
          */
         FieldLayout();
 
-        FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p=0);
+        FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p=0, bool isAllPeriodic=false);
 
         // Destructor: Everything deletes itself automatically ... the base
         // class destructors inform all the FieldLayoutUser's we're going away.
@@ -69,7 +83,7 @@ namespace ippl {
         // otherwise these are only called internally by the various non-default
         // FieldLayout constructors:
 
-        void initialize(const NDIndex<Dim>& domain, e_dim_tag *p=0);
+        void initialize(const NDIndex<Dim>& domain, e_dim_tag *p=0, bool isAllPeriodic=false);
 
 
         // Return the domain.
@@ -124,12 +138,39 @@ namespace ippl {
         const edge_neighbor_type& getEdgeNeighbors() const;
 
         const vertex_neighbor_type& getVertexNeighbors() const;
+        
+        const face_neighbor_range_type& getFaceNeighborsSendRange() const;
+
+        const edge_neighbor_range_type& getEdgeNeighborsSendRange() const;
+
+        const vertex_neighbor_range_type& getVertexNeighborsSendRange() const;
+
+        const face_neighbor_range_type& getFaceNeighborsRecvRange() const;
+
+        const edge_neighbor_range_type& getEdgeNeighborsRecvRange() const;
+
+        const vertex_neighbor_range_type& getVertexNeighborsRecvRange() const;
+
+        const match_face_type& getMatchFace() const;
+        
+        const match_edge_type& getMatchEdge() const;
+        
+        const match_vertex_type& getMatchVertex() const;
 
         void findNeighbors(int nghost = 1);
+
+        void addNeighbors(NDIndex_t& gnd, 
+                          NDIndex_t& nd, 
+                          NDIndex_t& ndNeighbor, 
+                          NDIndex_t& intersect, 
+                          int nghost, 
+                          int rank);
 
         void write(std::ostream& = std::cout) const;
         
         void updateLayout(const std::vector<NDIndex_t>& domains); 
+
+        bool isAllPeriodic_m;
 
     private:
         /*!
@@ -137,9 +178,31 @@ namespace ippl {
          * @param inersect the intersection between grown and the remote domain
          * @param rank the rank of the remote domain
          */
-        void addVertex(const NDIndex_t& grown, const NDIndex_t& intersect, int rank);
-        void addEdge(const NDIndex_t& grown, const NDIndex_t& intersect, int rank);
-        void addFace(const NDIndex_t& grown, const NDIndex_t& intersect, int rank);
+        void addVertex(const NDIndex_t& grown, const NDIndex_t& intersect, int rank, 
+                       const bound_type& rangeSend, const bound_type& rangeRecv);
+        
+        void addEdge(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
+                     const bound_type& rangeSend, const bound_type& rangeRecv);
+
+        void addFace(const NDIndex_t& grown, const NDIndex_t& intersect, int rank, 
+                     const bound_type& rangeSend, const bound_type& rangeRecv);
+
+        /*!
+         * Obtain the bounds to send / receive. The second domain, i.e.,
+         * nd2, is grown by nghost cells in each dimension in order to
+         * figure out the intersecting cells.
+         * @param nd1 either remote or owned domain
+         * @param nd2 either remote or owned domain
+         * @param offset to map global to local grid point
+         * @param nghost number of ghost cells per dimension
+         */
+        bound_type getBounds(const NDIndex_t& nd1,
+                             const NDIndex_t& nd2,
+                             const NDIndex_t& offset,
+                             int nghost);
+
+        int getPeriodicOffset(const NDIndex_t& nd, const unsigned int d, const int k);
+
 
     private:
         //! Global domain
@@ -164,6 +227,8 @@ namespace ippl {
          */
         face_neighbor_type faceNeighbors_m;
 
+        match_face_type matchface_m = { 1, 0, 3, 2, 5, 4 };
+
         /*!
          * Neighboring ranks that store the edge values.
          * [(x low,  y low,  z low),  (x high, y low,  z low)]  --> edge 0
@@ -182,10 +247,13 @@ namespace ippl {
          * [(x high, y high, z low),  (x high, y high, z high)] --> edge 11
          */
         edge_neighbor_type edgeNeighbors_m;
+        
+        match_edge_type matchedge_m = { 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8 };
 
         /*!
          * Neighboring ranks that have the vertex value (corner cell). The value
-         * is negative, i.e. -1, if the vertex is on a mesh boundary.
+         * is negative, i.e. -1, if the vertex is on a mesh boundary if it is 
+         * non-periodic.
          * x low,  y low,  z low  --> vertex index 0
          * x high, y low,  z low  --> vertex index 1
          * x low,  y high, z low  --> vertex index 2
@@ -197,9 +265,15 @@ namespace ippl {
          */
         vertex_neighbor_type vertexNeighbors_m;
 
+        match_vertex_type matchvertex_m = { 7, 6, 5, 4, 3, 2, 1, 0 };
 
 
         void calcWidths();
+
+        face_neighbor_range_type faceNeighborsSendRange_m, faceNeighborsRecvRange_m;
+        edge_neighbor_range_type edgeNeighborsSendRange_m, edgeNeighborsRecvRange_m;
+        vertex_neighbor_range_type vertexNeighborsSendRange_m, vertexNeighborsRecvRange_m;
+
     };
 
 

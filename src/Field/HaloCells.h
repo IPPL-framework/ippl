@@ -45,6 +45,7 @@ namespace ippl {
             view_type buffer;
         };
 
+
         /*!
          * This class provides the functionality to do field halo exchange.
          * @file HaloCells.h
@@ -56,13 +57,7 @@ namespace ippl {
         public:
             using view_type = typename detail::ViewType<T, Dim>::view_type;
             using Layout_t  = FieldLayout<Dim>;
-
-            struct bound_type {
-                // lower bounds (ordering: x, y, z)
-                std::array<long, Dim> lo;
-                // upper bounds (ordering x, y, z)
-                std::array<long, Dim> hi;
-            };
+            using bound_type = typename Layout_t::bound_type;
 
             enum SendOrder {
                 HALO_TO_INTERNAL,
@@ -76,20 +71,17 @@ namespace ippl {
              * assign_plus functor to assign the data.
              * @param view the original field data
              * @param layout the field layout storing the domain decomposition
-             * @param nghost the number of ghost cells
              */
             void accumulateHalo(view_type& view,
-                                const Layout_t* layout,
-                                int nghost);
+                                const Layout_t* layout);
 
             /*!
              * Send interal data to halo cells. This operation uses
              * assign functor to assign the data.
              * @param view the original field data
              * @param layout the field layout storing the domain decomposition
-             * @param nghost the number of ghost cells
              */
-            void fillHalo(view_type&, const Layout_t* layout, int nghost);
+            void fillHalo(view_type&, const Layout_t* layout);
 
             /*!
              * Pack the field data to be sent into a contiguous array.
@@ -129,7 +121,7 @@ namespace ippl {
              * Operator for the unpack function.
              * This operator is used in case of HALO_TO_INTERNAL.
              */
-            struct plus_assign {
+            struct lhs_plus_assign {
                 KOKKOS_INLINE_FUNCTION
                 void operator()(T& lhs, const T& rhs) const {
                     lhs += rhs;
@@ -137,18 +129,27 @@ namespace ippl {
             };
 
             /*!
-             * Obtain the bounds to send / receive. The second domain, i.e.,
-             * nd2, is grown by nghost cells in each dimension in order to
-             * figure out the intersecting cells.
-             * @param nd1 either remote or owned domain
-             * @param nd2 either remote or owned domain
-             * @param offset to map global to local grid point
-             * @param nghost number of ghost cells per dimension
+             * This operator is used in case of HALO_TO_INTERNAL for
+             * all periodic BCs application in BareField.
              */
-            bound_type getBounds(const NDIndex<Dim>& nd1,
-                                 const NDIndex<Dim>& nd2,
-                                 const NDIndex<Dim>& offset,
-                                 int nghost);
+            struct rhs_plus_assign {
+                KOKKOS_INLINE_FUNCTION
+                void operator()(const T& lhs, T& rhs) const {
+                    rhs += lhs;
+                }
+            };
+
+            /*!
+             * Apply all periodic boundary conditions for the 
+             * serial dimensions. Used in case of both fillHalo
+             * and accumulateHalo with the help of operator as
+             * template parameter.
+             */
+            template <typename Op>
+            void applyPeriodicSerialDim(view_type& view,
+                                        const Layout_t* layout,
+                                        const int nghost);
+
 
         private:
 
@@ -156,7 +157,6 @@ namespace ippl {
              * Exchange the data of faces.
              * @param view is the original field data
              * @param layout the field layout storing the domain decomposition
-             * @param nghost the number of ghost cells
              * @param order the data send orientation
              * @tparam Op the data assigment operator of the
              * unpack function call
@@ -164,14 +164,12 @@ namespace ippl {
             template <class Op>
             void exchangeFaces(view_type& view,
                                const Layout_t* layout,
-                               int nghost,
                                SendOrder order);
 
             /*!
              * Exchange the data of edges.
              * @param view is the original field data
              * @param layout the field layout storing the domain decomposition
-             * @param nghost the number of ghost cells
              * @param order the data send orientation
              * @tparam Op the data assigment operator of the
              * unpack function call
@@ -179,14 +177,12 @@ namespace ippl {
             template <class Op>
             void exchangeEdges(view_type& view,
                                const Layout_t* layout,
-                               int nghost,
                                SendOrder order);
 
             /*!
              * Exchange the data of vertices.
              * @param view is the original field data
              * @param layout the field layout storing the domain decomposition
-             * @param nghost the number of ghost cells
              * @param order the data send orientation
              * @tparam Op the data assigment operator of the
              * unpack function call
@@ -194,7 +190,6 @@ namespace ippl {
             template <class Op>
             void exchangeVertices(view_type& view,
                                   const Layout_t* layout,
-                                  int nghost,
                                   SendOrder order);
 
             /*!

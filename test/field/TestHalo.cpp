@@ -10,7 +10,7 @@
 int main(int argc, char *argv[]) {
 
     Ippl ippl(argc,argv);
-    Inform msg("PreallocationHalo");
+    Inform msg("TestHalo");
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     IpplTimings::startTimer(mainTimer);
@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     constexpr unsigned int dim = 3;
 
 //     std::array<int, dim> pt = {8, 7, 13};
-    std::array<int, dim> pt = {2048, 2048, 2048};
+    std::array<int, dim> pt = {4, 4, 4};
     ippl::Index I(pt[0]);
     ippl::Index J(pt[1]);
     ippl::Index K(pt[2]);
@@ -46,8 +46,8 @@ int main(int argc, char *argv[]) {
     field_type field(mesh, layout);
 
     field = Ippl::Comm->rank();
-     int myRank = Ippl::Comm->rank();
-     int nRanks = Ippl::Comm->size();
+    int myRank = Ippl::Comm->rank();
+    int nRanks = Ippl::Comm->size();
 
     
     for (int rank = 0; rank < nRanks; ++rank) {
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
 
     for (int rank = 0; rank < nRanks; ++rank) {
         if (rank == Ippl::Comm->rank()) {
-            std::ofstream out("field_" + std::to_string(rank) + ".dat", std::ios::out);
+            std::ofstream out("field_nRanks_" + std::to_string(nRanks) + "_rank_" + std::to_string(rank) + ".dat", std::ios::out);
             field.write(out);
             out.close();
         }
