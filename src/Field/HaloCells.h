@@ -45,6 +45,7 @@ namespace ippl {
             view_type buffer;
         };
 
+
         /*!
          * This class provides the functionality to do field halo exchange.
          * @file HaloCells.h
@@ -120,12 +121,34 @@ namespace ippl {
              * Operator for the unpack function.
              * This operator is used in case of HALO_TO_INTERNAL.
              */
-            struct plus_assign {
+            struct lhs_plus_assign {
                 KOKKOS_INLINE_FUNCTION
                 void operator()(T& lhs, const T& rhs) const {
                     lhs += rhs;
                 }
             };
+
+            /*!
+             * This operator is used in case of HALO_TO_INTERNAL for
+             * all periodic BCs application in BareField.
+             */
+            struct rhs_plus_assign {
+                KOKKOS_INLINE_FUNCTION
+                void operator()(const T& lhs, T& rhs) const {
+                    rhs += lhs;
+                }
+            };
+
+            /*!
+             * Apply all periodic boundary conditions for the 
+             * serial dimensions. Used in case of both fillHalo
+             * and accumulateHalo with the help of operator as
+             * template parameter.
+             */
+            template <typename Op>
+            void applyPeriodicSerialDim(view_type& view,
+                                        const Layout_t* layout,
+                                        const int nghost);
 
 
         private:

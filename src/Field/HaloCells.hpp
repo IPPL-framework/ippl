@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "Utility/IpplException.h"
 #include "Communicate/Communicate.h"
 
 namespace ippl {
@@ -33,11 +34,11 @@ namespace ippl {
         void HaloCells<T, Dim>::accumulateHalo(view_type& view,
                                                const Layout_t* layout)
         {
-            exchangeFaces<plus_assign>(view, layout, HALO_TO_INTERNAL);
+            exchangeFaces<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
 
-            exchangeEdges<plus_assign>(view, layout, HALO_TO_INTERNAL);
+            exchangeEdges<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
 
-            exchangeVertices<plus_assign>(view, layout, HALO_TO_INTERNAL);
+            exchangeVertices<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
         }
 
 
@@ -409,6 +410,91 @@ namespace ippl {
                                    make_pair(intersect.lo[0], intersect.hi[0]),
                                    make_pair(intersect.lo[1], intersect.hi[1]),
                                    make_pair(intersect.lo[2], intersect.hi[2]));
+        }
+
+        template <typename T, unsigned Dim>
+        template <typename Op>
+        void HaloCells<T, Dim>::applyPeriodicSerialDim(view_type& view,
+                                                       const Layout_t* layout,
+                                                       const int nghost)
+        {
+            int myRank = Ippl::Comm->rank();
+            const auto& lDomains = layout->getHostLocalDomains();
+            const auto& domain = layout->getDomain(); 
+            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
+            std::array<long, Dim> ext;
+
+            for (size_t i = 0; i < Dim; ++i) {
+                ext[i] = view.extent(i);
+            }
+            
+            Op op;
+            
+            for(unsigned d=0; d<Dim; ++d) {
+
+                if(lDomains[myRank][d].length() == domain[d].length()) {
+                    int N = view.extent(d)-1;
+
+                    switch (d) {
+                    case 0:
+                        Kokkos::parallel_for("applyPeriodicSerialDim X", 
+                                            mdrange_type({0, 0, 0},
+                                                       {(long)nghost,
+                                                        ext[1],
+                                                        ext[2]}),
+                                            KOKKOS_LAMBDA(const int i,
+                                                          const size_t j, 
+                                                          const size_t k)
+                        {
+                            //The ghosts are filled starting from the inside of 
+                            //the domain proceeding outwards for both lower and 
+                            //upper faces. The extra brackets and explicit mention 
+                            //of 0 is for better readability of the code
+                        
+                            op(view(0+(nghost-1)-i, j, k), view(N-nghost-i, j, k)); 
+                            op(view(N-(nghost-1)+i, j, k), view(0+nghost+i, j, k)); 
+                        });
+                        Kokkos::fence();
+                        break;
+                    case 1:
+                        Kokkos::parallel_for("applyPeriodicSerialDim Y", 
+                                            mdrange_type({0, 0, 0},
+                                                        {ext[0],
+                                                        (long)nghost,
+                                                        ext[2]}),
+                                            KOKKOS_LAMBDA(const size_t i, 
+                                                          const int j,
+                                                          const size_t k)
+                        {
+                            op(view(i, 0+(nghost-1)-j, k), view(i, N-nghost-j, k)); 
+                            op(view(i, N-(nghost-1)+j, k), view(i, 0+nghost+j, k)); 
+                        });
+                        Kokkos::fence();
+                        break;
+                    case 2:
+                        Kokkos::parallel_for("applyPeriodicSerialDim Z", 
+                                            mdrange_type({0, 0, 0},
+                                                       {ext[0],
+                                                        ext[1],
+                                                        (long)nghost}),
+                                            KOKKOS_LAMBDA(const size_t i, 
+                                                          const size_t j, 
+                                                          const int k)
+                        {
+                            op(view(i, j, 0+(nghost-1)-k), view(i, j, N-nghost-k)); 
+                            op(view(i, j, N-(nghost-1)+k), view(i, j, 0+nghost+k)); 
+                        });
+                        Kokkos::fence();
+                        break;
+                    default:
+                        throw IpplException("applyPeriodicSerialDim", "face number wrong");
+
+                    }
+
+                }
+
+            }
+
         }
     }
 }
