@@ -43,15 +43,15 @@ namespace ippl {
      * Enum type to identify different kinds of
      * field boundary conditions. Since ZeroFace is
      * a special case of ConstantFace, both will match
-     * a bitwise AND with CONSTANT_F
-     * (to avoid conflict with particle BC enum, add _F)
+     * a bitwise AND with CONSTANT_FACE
+     * (to avoid conflict with particle BC enum, add _FACE)
      */
     enum FieldBC {
-        PERIODIC_F    = 0b0000,
-        CONSTANT_F    = 0b0001,
-        ZERO_F        = 0b0011,
-        EXTRAPOLATE_F = 0b0100,
-        NO_F          = 0b1000,
+        PERIODIC_FACE    = 0b0000,
+        CONSTANT_FACE    = 0b0001,
+        ZERO_FACE        = 0b0011,
+        EXTRAPOLATE_FACE = 0b0100,
+        NO_FACE          = 0b1000,
     };
 
     namespace detail {
@@ -77,7 +77,7 @@ namespace ippl {
 
             virtual ~BCondBase() = default;
 
-            virtual FieldBC getBCType() const { return NO_F; }
+            virtual FieldBC getBCType() const { return NO_FACE; }
 
             virtual void findBCNeighbors(Field<T, Dim, Mesh, Cell>& field) = 0;
             virtual void apply(Field<T, Dim, Mesh, Cell>& field) = 0;
@@ -124,7 +124,7 @@ namespace ippl {
 
         virtual ~ExtrapolateFace() = default;
 
-        virtual FieldBC getBCType() const { return EXTRAPOLATE_F; }
+        virtual FieldBC getBCType() const { return EXTRAPOLATE_FACE; }
 
         virtual void findBCNeighbors(Field_t& /*field*/) {}
         virtual void apply(Field_t& field);
@@ -169,7 +169,7 @@ namespace ippl {
         : ExtrapolateFace<T, Dim, Mesh, Cell>(face, constant, 0)
         {}
 
-        virtual FieldBC getBCType() const { return CONSTANT_F; }
+        virtual FieldBC getBCType() const { return CONSTANT_FACE; }
 
         virtual void write(std::ostream& out) const;
     };
@@ -186,7 +186,7 @@ namespace ippl {
         : ConstantFace<T, Dim, Mesh, Cell>(face, 0.0)
         {}
 
-        virtual FieldBC getBCType() const { return ZERO_F; }
+        virtual FieldBC getBCType() const { return ZERO_FACE; }
 
         virtual void write(std::ostream& out) const;
     };
@@ -207,7 +207,7 @@ namespace ippl {
         : detail::BCondBase<T, Dim, Mesh, Cell>(face)
         { }
 
-        virtual FieldBC getBCType() const { return PERIODIC_F; }
+        virtual FieldBC getBCType() const { return PERIODIC_FACE; }
 
         virtual void findBCNeighbors(Field_t& field);
         virtual void apply(Field_t& field);
