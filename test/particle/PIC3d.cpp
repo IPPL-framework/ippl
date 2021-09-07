@@ -159,27 +159,27 @@ public:
     }
 
     bool balance(unsigned int totalP){//, int timestep = 1) {
-       int local = 0;
-       std::vector<int> res(Ippl::Comm->size());
-       double threshold = 0.0;
-       double equalPart = (double) totalP / Ippl::Comm->size();
-       double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
-       if (dev > threshold)
-          local = 1;
-       MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
+        int local = 0;
+        std::vector<int> res(Ippl::Comm->size());
+        double threshold = 0.0;
+        double equalPart = (double) totalP / Ippl::Comm->size();
+        double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
+        if (dev > threshold)
+            local = 1;
+        MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
 
-       /***PRINT***/
-       /*
-       std::ofstream file;
-       file.open("imbalance.txt", std::ios_base::app);
-       file << std::to_string(timestep) << " " << Ippl::Comm->rank() << " " << dev << "\n";
-       file.close();
-       */
-       for (unsigned int i = 0; i < res.size(); i++) {
-          if (res[i] == 1)
-             return true;
-       }
-       return false;
+        /***PRINT***/
+        /*
+        std::ofstream file;
+        file.open("imbalance.txt", std::ios_base::app);
+        file << std::to_string(timestep) << " " << Ippl::Comm->rank() << " " << dev << "\n";
+        file.close();
+        */
+        for (unsigned int i = 0; i < res.size(); i++) {
+            if (res[i] == 1)
+                return true;
+        }
+        return false;
     }
 
     void gatherStatistics(unsigned int totalP) {
