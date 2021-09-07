@@ -413,6 +413,15 @@ public:
            engN[i].discard(nloc * Ippl::Comm->rank());
         }
 
+        auto dom = fl.getDomain();
+        unsigned int gridpoints = dom[0].length() * dom[1].length() * dom[2].length();
+        if (tag == 0 && nloc * Ippl::Comm->size() != gridpoints) {
+            if (Ippl::Comm->rank() == 0) {
+                std::cerr << "Particle count must match gridpoint count to use gridpoint locations. Switching to uniform distribution." << std::endl;
+            }
+            tag = 2;
+        }
+
         if (tag == 0) {
            m << "Positions are set on grid points" << endl;
            int N = fl.getDomain()[0].length();   // this only works for boxes
@@ -422,7 +431,7 @@ public:
            // Loops over particles
            Kokkos::parallel_for("initPositions", mdrange_type({0,0,0},{N/size,N,N}),
                                                  KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-              const size_t ig = j + lDom[0].first(); // index i doesn't sweep through the required size
+              const size_t ig = i + lDom[0].first(); // index i doesn't sweep through the required size
               const size_t jg = j + lDom[1].first();
               const size_t kg = k + lDom[2].first();
 
