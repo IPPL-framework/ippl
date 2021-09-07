@@ -75,7 +75,7 @@ public:
         for (unsigned int d = 0; d < dim; d++)
             allParallel[d] = ippl::PARALLEL;
 
-        layout_m = flayout_type (owned, allParallel);
+        layout_m = flayout_type(owned, allParallel, true);
 
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};
@@ -103,14 +103,12 @@ public:
         std::mt19937_64 eng;
         eng.seed(42);
         eng.discard(nloc * Ippl::Comm->rank());
-        // Original configuration h/2 - 1 - h/2
-        // Particles moved slightly inwards (see above comment)
-        std::uniform_real_distribution<double> unif(hx[0] / 1.5, 1 - (hx[0] / 1.5));
+        std::uniform_real_distribution<double> unif(0, 1);
 
         typename bunch_type::particle_position_type::HostMirror R_host = bunch->R.getHostMirror();
         for(size_t i = 0; i < nloc; ++i) {
             for (int d = 0; d < 3; d++) {
-                R_host(i)[d] =  unif(eng);
+                R_host(i)[d] = unif(eng);
             }
         }
 
@@ -120,11 +118,10 @@ public:
     }
 
 
-    void repartition(bunch_type& buffer) {
+    void repartition() {
         orb.binaryRepartition(bunch->R, layout_m);
         field->updateLayout(layout_m);
         bunch->updateLayout(layout_m, mesh_m);
-        buffer.updateLayout(layout_m, mesh_m);
     }
 
     ippl::NDIndex<dim> getDomain() {
@@ -148,7 +145,7 @@ TEST_F(ORBTest, Volume) {
 
     pl_m.update(*bunch, buffer);
 
-    repartition(buffer);
+    repartition();
 
     pl_m.update(*bunch, buffer);
 
@@ -170,7 +167,7 @@ TEST_F(ORBTest, Charge) {
 
     pl_m.update(*bunch, buffer);
 
-    repartition(buffer);
+    repartition();
 
     pl_m.update(*bunch, buffer);
 
