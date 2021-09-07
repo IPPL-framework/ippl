@@ -1,7 +1,7 @@
 // Uniform Plasma Test
 //
 //   Usage:
-//     srun ./UniformPlasmaTest 128 128 128 10000 300 FFT --info 10
+//     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT --info 10
 //
 // Copyright (c) 2020, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -275,10 +275,9 @@ public:
          m << "Rel. error in charge conservation = " << rel_error << endl;
 
          if(Ippl::Comm->rank() == 0) {
-             //if((Total_particles != totalP) || (rel_error > 1e-10)) {
-             if((Total_particles != totalP)) {
-                 std::cout << "Total particles in the sim. " << totalP
-                           << " " << "after update: "
+             if(Total_particles != totalP || rel_error > 1e-10) {
+                 std::cout << "Total particles in the sim. " << totalP 
+                           << " " << "after update: " 
                            << Total_particles << std::endl;
                  std::cout << "Total particles not matched in iteration: "
                            << iteration << std::endl;
@@ -290,25 +289,7 @@ public:
 
          rho_m = rho_m / (hrField[0] * hrField[1] * hrField[2]);
 
-         const int nghostRho = rho_m.getNghost();
-         auto Rhoview = rho_m.getView();
-         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
-         double temp = 0.0;
-         Kokkos::parallel_reduce("Rho reduce",
-                                mdrange_type({nghostRho, nghostRho, nghostRho},
-                                             {Rhoview.extent(0) - nghostRho,
-                                              Rhoview.extent(1) - nghostRho,
-                                              Rhoview.extent(2) - nghostRho}),
-                                KOKKOS_LAMBDA(const size_t i, const size_t j,
-                                              const size_t k, double& valL)
-                                {
-                                    double myVal = pow(Rhoview(i, j, k), 2);
-                                    valL += myVal;
-                                }, Kokkos::Sum<double>(temp));
-         double globaltemp = 0.0;
-         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-         rhoNorm_m = sqrt(globaltemp);
+         rhoNorm_m = norm(rho_m);
          IpplTimings::stopTimer(sumTimer);
 
          //dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
@@ -331,7 +312,12 @@ public:
 
         ippl::FFTParams fftParams;
 
+#ifdef Heffte_ENABLE_CUDA
         fftParams.setAllToAll( false );
+#else
+        fftParams.setAllToAll( true );
+#endif
+
         fftParams.setPencils( true );
         fftParams.setReorder( false );
         fftParams.setRCDirection( 0 );
@@ -486,8 +472,9 @@ int main(int argc, char *argv[]){
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
     const double dt = 1.0;
 
+    const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
-    FieldLayout_t FL(domain, decomp);
+    FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t PL(FL, mesh);
 
     double Q = -1562.5;
