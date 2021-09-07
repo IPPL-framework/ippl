@@ -479,8 +479,6 @@ int main(int argc, char *argv[]){
         decomp[d] = ippl::PARALLEL;
     }
 
-    //decomp[2] = ippl::SERIAL;
-
     // create mesh and layout objects for this problem domain
     Vector_t rmin(0.0);
     Vector_t rmax(20.0);
