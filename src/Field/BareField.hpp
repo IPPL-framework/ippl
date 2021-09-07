@@ -124,7 +124,7 @@ namespace ippl {
                             dview_m(N-(nghost-1)+i, j, k) = dview_m(0+nghost+i, j, k); 
                         });
                         Kokkos::fence();
-                    break;
+                        break;
                     case 1:
                         Kokkos::parallel_for("Assign periodic field BC Y in fillHalo", 
                                             mdrange_type({0, 0, 0},
@@ -139,7 +139,7 @@ namespace ippl {
                             dview_m(i, N-(nghost-1)+j, k) = dview_m(i, 0+nghost+j, k); 
                         });
                         Kokkos::fence();
-                    break;
+                        break;
                     case 2:
                         Kokkos::parallel_for("Assign periodic field BC Z in fillHalo", 
                                             mdrange_type({0, 0, 0},
@@ -154,7 +154,7 @@ namespace ippl {
                             dview_m(i, j, N-(nghost-1)+k) = dview_m(i, j, 0+nghost+k); 
                         });
                         Kokkos::fence();
-                    break;
+                        break;
                     default:
                         throw IpplException("fillHalo::periodicBC apply", "face number wrong");
 
@@ -206,7 +206,7 @@ namespace ippl {
                              dview_m(0+nghost+i, j, k) += dview_m(N-(nghost-1)+i, j, k); 
                         });
                         Kokkos::fence();
-                    break;
+                        break;
                     case 1:
                         Kokkos::parallel_for("Accumulate periodic field BC Y in accumulateHalo", 
                                             mdrange_type({0, 0, 0},
@@ -221,7 +221,7 @@ namespace ippl {
                             dview_m(i, 0+nghost+j, k) += dview_m(i, N-(nghost-1)+j, k); 
                         });
                         Kokkos::fence();
-                    break;
+                        break;
                     case 2:
                         Kokkos::parallel_for("Accumulate periodic field BC Z in accumulateHalo", 
                                             mdrange_type({0, 0, 0},
@@ -236,7 +236,7 @@ namespace ippl {
                             dview_m(i, j, 0+nghost+k) += dview_m(i, j, N-(nghost-1)+k); 
                         });
                         Kokkos::fence();
-                    break;
+                        break;
                     default:
                         throw IpplException("accumulateHalo::periodicBC apply", "face number wrong");
 
