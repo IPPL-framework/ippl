@@ -1,7 +1,7 @@
 // Uniform Plasma Test
 //
 //   Usage:
-//     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT --info 10
+//     srun ./LandauDamping 128 128 128 10000 10 FFT --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
