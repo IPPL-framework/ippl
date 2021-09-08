@@ -184,9 +184,11 @@ public:
 
     void gatherStatistics(unsigned int totalP) {
 
+        Ippl::Comm->barrier();
         std::cout << "Rank " << Ippl::Comm->rank() << " has "
                   << (double)this->getLocalNum()/totalP*100.0
                   << " percent of the total particles " << std::endl;
+        Ippl::Comm->barrier();
     }
 
     void gatherCIC() {
@@ -227,6 +229,8 @@ public:
                            << Total_particles << std::endl;
                  std::cout << "Total particles not matched in iteration: "
                            << iteration << std::endl;
+                 std::cout << "Q grid: "
+                           << Q_grid << "Q particles: " << Q_m << std::endl;
                  std::cout << "Rel. error in charge conservation: " 
                            << rel_error << std::endl;
                  exit(1);
@@ -494,7 +498,7 @@ private:
 
 int main(int argc, char *argv[]) {
     Ippl ippl(argc, argv);
-    Inform msg(argv[0]);
+    Inform msg("PIC3d");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
     Ippl::Comm->setDefaultOverallocation(3);
@@ -575,7 +579,7 @@ int main(int argc, char *argv[]) {
     double localParticles = P->getLocalNum();
     MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
     msg << "Total particles: " << totalParticles << endl;
-    P->initPositions(FL, hr, nloc, 2);
+    P->initPositions(FL, hr, nloc, 1);
 
     P->qm = P->Q_m/totalP;
     P->P = 0.0;
@@ -599,7 +603,9 @@ int main(int argc, char *argv[]) {
 
     static IpplTimings::TimerRef domainDecomposition0 = IpplTimings::getTimer("domainDecomp0");
     IpplTimings::startTimer(domainDecomposition0);
-    P->repartition(FL, mesh, bunchBuffer);
+    if (P->balance(totalP)) {
+        P->repartition(FL, mesh, bunchBuffer);
+    }
     IpplTimings::stopTimer(domainDecomposition0);
     msg << "Balancing finished" << endl;
 
@@ -657,7 +663,7 @@ int main(int argc, char *argv[]) {
 
         msg << "Finished iteration " << it << endl;
 
-        // P->gatherStatistics(totalP);
+        P->gatherStatistics(totalP);
     }
 
     msg << "Particle test PIC3d: End." << endl;
