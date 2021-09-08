@@ -253,12 +253,13 @@ public:
         }
         // Update
         this->updateLayout(fl, mesh, buffer);
+        this->solver_mp->setRhs(&rho_m);
     }
 
     bool balance(size_type totalP){
         int local = 0;
         std::vector<int> res(Ippl::Comm->size());
-        double threshold = 0.0;
+        double threshold = 0.01;
         double equalPart = (double) totalP / Ippl::Comm->size();
         double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
         if (dev > threshold)
@@ -280,10 +281,12 @@ public:
     }
     
     void gatherStatistics(size_type totalP) {
-
+        auto prec = std::cout.precision();
         std::cout << "Rank " << Ippl::Comm->rank() << " has "
-                  << (double)this->getLocalNum()/totalP*100.0
-                  << "percent of the total particles " << std::endl;
+                  << std::setprecision(4)
+                  << (double)this->getLocalNum() / totalP * 100.0
+                  << "% of the total particles " << std::endl
+                  << std::setprecision(prec);
     }
 
     void gatherCIC() {
@@ -460,7 +463,7 @@ int main(int argc, char *argv[]){
     Inform msg("PenningTrap");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(1);
+    Ippl::Comm->setDefaultOverallocation(2);
 
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -698,6 +701,8 @@ int main(int argc, char *argv[]){
     PL.update(*P, bunchBuffer);
     IpplTimings::stopTimer(FirstUpdateTimer);
 
+    P->stype_m = argv[6];
+    P->initSolver();
 
     static IpplTimings::TimerRef domainDecomposition0 = IpplTimings::getTimer("domainDecomp0");
     if (P->balance(Total_particles)) {
@@ -708,9 +713,6 @@ int main(int argc, char *argv[]){
     }
 
     msg << "particles created and initial conditions assigned " << endl;
-
-    P->stype_m = argv[6];
-    P->initSolver();
 
     P->time_m = 0.0;
 
