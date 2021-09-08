@@ -39,6 +39,7 @@ typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
 typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t> ORB;
 
+using size_type = ippl::detail::size_type;
 
 template<typename T, unsigned Dim>
 using Vector = ippl::Vector<T, Dim>;
@@ -254,7 +255,7 @@ public:
         this->updateLayout(fl, mesh, buffer);
     }
 
-    bool balance(unsigned int totalP){
+    bool balance(size_type totalP){
         int local = 0;
         std::vector<int> res(Ippl::Comm->size());
         double threshold = 0.0;
@@ -278,7 +279,7 @@ public:
         return false;
     }
     
-    void gatherStatistics(unsigned int totalP) {
+    void gatherStatistics(size_type totalP) {
 
         std::cout << "Rank " << Ippl::Comm->rank() << " has "
                   << (double)this->getLocalNum()/totalP*100.0
@@ -291,7 +292,7 @@ public:
 
     }
 
-    void scatterCIC(unsigned int totalP, int iteration, Vector_t& hrField) {
+    void scatterCIC(size_type totalP, int iteration, Vector_t& hrField) {
 
 
          Inform m("scatter ");
@@ -303,11 +304,11 @@ public:
          IpplTimings::startTimer(sumTimer);
          double Q_grid = rho_m.sum();
 
-         unsigned int Total_particles = 0;
-         unsigned int local_particles = this->getLocalNum();
+         size_type Total_particles = 0;
+         size_type local_particles = this->getLocalNum();
 
          MPI_Reduce(&local_particles, &Total_particles, 1,
-                       MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
+                       MPI_UNSIGNED_LONG, MPI_SUM, 0, Ippl::getComm());
 
          double rel_error = std::fabs((Q_m-Q_grid)/Q_m);
          m << "Rel. error in charge conservation = " << rel_error << endl;
@@ -471,7 +472,7 @@ int main(int argc, char *argv[]){
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     IpplTimings::startTimer(mainTimer);
-    const unsigned long long int totalP = std::atol(argv[4]);
+    const size_type totalP = std::atol(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
 
     msg << "Penning Trap "
@@ -545,7 +546,7 @@ int main(int argc, char *argv[]){
     sd[1] = 0.05*length[1];
     sd[2] = 0.20*length[2];
 
-    unsigned int Total_particles = 0;
+    size_type Total_particles = 0;
     if(dist == "Uniform") {
 
         std::function<double(double& x,
@@ -631,9 +632,9 @@ int main(int argc, char *argv[]){
 
         P->q = P->q * (P->Q_m/Total_sum);
 
-        unsigned int local_particles = P->getLocalNum();
+        size_type local_particles = P->getLocalNum();
         MPI_Reduce(&local_particles, &Total_particles, 1,
-                   MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
+                   MPI_UNSIGNED_LONG, MPI_SUM, 0, Ippl::getComm());
         msg << "#particles: " << Total_particles << endl;
         double PPC = Total_particles/((double)(nr[0] * nr[1] * nr[2]));
         msg << "#PPC: " << PPC << endl;
