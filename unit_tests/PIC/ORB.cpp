@@ -46,11 +46,6 @@ public:
         
         typedef ippl::ParticleAttrib<double> charge_container_type;
         charge_container_type Q;
-        
-        void update() {
-            PLayout& layout = this->getLayout();
-            layout.update(*this);
-        }
 
         void updateLayout(flayout_type fl, mesh_type mesh) {
             PLayout& layout = this->getLayout();
@@ -58,13 +53,12 @@ public:
         }
     };
 
-
     typedef Bunch<playout_type> bunch_type;
 
-
     ORBTest()
-    : nParticles(std::pow(256,3))
-    , nPoints(512)
+    // Original configuration 256^3 particles, 512^3 grid.
+    : nParticles(17000000)
+    , nPoints(256)
     {
         setup();
     }
@@ -77,7 +71,8 @@ public:
         for (unsigned int d = 0; d < dim; d++)
             allParallel[d] = ippl::PARALLEL;
 
-        layout_m = flayout_type (owned, allParallel);
+        const bool isAllPeriodic = true;
+        layout_m = flayout_type(owned, allParallel, isAllPeriodic);
 
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};
@@ -104,13 +99,13 @@ public:
         
         std::mt19937_64 eng;
         eng.seed(42);
-        eng.discard( nloc * Ippl::Comm->rank());
-        std::uniform_real_distribution<double> unif(hx[0]/2, 1-(hx[0]/2));
+        eng.discard(nloc * Ippl::Comm->rank());
+        std::uniform_real_distribution<double> unif(0, 1);
 
         typename bunch_type::particle_position_type::HostMirror R_host = bunch->R.getHostMirror();
         for(size_t i = 0; i < nloc; ++i) {
-            for (int d = 0; d<3; d++) {
-                R_host(i)[d] =  unif(eng);
+            for (int d = 0; d < 3; d++) {
+                R_host(i)[d] = unif(eng);
             }
         }
 
@@ -135,7 +130,6 @@ public:
     size_t nParticles;
     size_t nPoints;
 
-private:
     flayout_type layout_m;
     mesh_type mesh_m;
     playout_type pl_m;
@@ -143,12 +137,14 @@ private:
 };
 
 TEST_F(ORBTest, Volume) {
- 
     ippl::NDIndex<dim> dom = getDomain();
+    bunch_type buffer(pl_m);
+
+    pl_m.update(*bunch, buffer);
 
     repartition();
 
-    bunch->update();
+    pl_m.update(*bunch, buffer);
 
     ippl::NDIndex<dim> ndom = getDomain();   
 
@@ -159,25 +155,24 @@ TEST_F(ORBTest, Volume) {
 
 
 TEST_F(ORBTest, Charge) {
-
     *field = 0.0;
+    bunch_type buffer(pl_m);
 
     double charge = 0.5;
 
     bunch->Q = charge;
 
-    bunch->update();
-
-    scatter(bunch->Q, *field, bunch->R);
+    pl_m.update(*bunch, buffer);
 
     repartition();
 
-    bunch->update();
+    pl_m.update(*bunch, buffer);
 
-    double totalcharge = field->sum();
+    scatter(bunch->Q, *field, bunch->R);
 
-    ASSERT_DOUBLE_EQ(nParticles * charge, totalcharge);
+    double totalCharge = field->sum();
 
+    ASSERT_NEAR((nParticles * charge - totalCharge) / totalCharge, 0., 1e-13);
 }
 
 int main(int argc, char *argv[]) {
