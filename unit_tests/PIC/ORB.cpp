@@ -71,8 +71,8 @@ public:
         for (unsigned int d = 0; d < dim; d++)
             allParallel[d] = ippl::PARALLEL;
 
-        const bool allPeriodic = true;
-        layout_m = flayout_type(owned, allParallel, allPeriodic);
+        const bool isAllPeriodic = true;
+        layout_m = flayout_type(owned, allParallel, isAllPeriodic);
 
         double dx = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx = {dx, dx, dx};
