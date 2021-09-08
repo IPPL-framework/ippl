@@ -57,10 +57,6 @@ public:
 
     ORBTest()
     // Original configuration 256^3 particles, 512^3 grid.
-    // On CPUs (both Merlin and Gwendolen) this configuration results
-    // in a charge conservation error (one part in 10^8) for
-    // unclear reasons. Using this configuration for now, which
-    // works with no problems
     : nParticles(17000000)
     , nPoints(256)
     {
@@ -174,9 +170,9 @@ TEST_F(ORBTest, Charge) {
 
     scatter(bunch->Q, *field, bunch->R);
 
-    double totalcharge = field->sum();
+    double totalCharge = field->sum();
 
-    ASSERT_DOUBLE_EQ(nParticles * charge, totalcharge);
+    ASSERT_NEAR((nParticles * charge - totalCharge) / totalCharge, 0., 1e-13);
 }
 
 int main(int argc, char *argv[]) {
