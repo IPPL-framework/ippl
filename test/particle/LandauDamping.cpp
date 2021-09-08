@@ -414,7 +414,7 @@ private:
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
-    Inform msg("UniformPlasmaTest");
+    Inform msg("LandauDamping");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
     Ippl::Comm->setDefaultOverallocation(2);
@@ -441,7 +441,7 @@ int main(int argc, char *argv[]){
     const uint64_t totalP = std::atoll(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
 
-    msg << "Uniform Plasma Test"
+    msg << "Landau damping"
         << endl
         << "nt " << nt << " Np= "
         << totalP << " grid = " << nr
@@ -461,25 +461,27 @@ int main(int argc, char *argv[]){
         decomp[d] = ippl::PARALLEL;
     }
 
-    //decomp[2] = ippl::SERIAL;
 
     // create mesh and layout objects for this problem domain
+    double kx = 0.5;
+    double ky = 0.5;
+    double kz = 0.5;
     Vector_t rmin(0.0);
-    Vector_t rmax(20.0);
+    Vector_t rmax = {2 * pi / kx, 2 * pi / ky, 2 * pi / kz} ;
     double dx = rmax[0] / nr[0];
     double dy = rmax[1] / nr[1];
     double dz = rmax[2] / nr[2];
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 1.0;
+    const double dt = 0.5*dx;
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t PL(FL, mesh);
 
-    double Q = -1562.5;
+    double Q = -rmax[0] * rmax[1] * rmax[2];
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
     P->nr_m = nr;
