@@ -44,16 +44,10 @@ public:
         
         typedef ippl::ParticleAttrib<double> charge_container_type;
         charge_container_type Q;
-        
-        //void update() {
-        //    PLayout& layout = this->getLayout();
-        //    layout.update(*this);
-        //}
     };
 
 
     typedef Bunch<playout_type> bunch_type;
-
 
     PICTest()
     : nParticles(std::pow(256,3))
@@ -98,11 +92,11 @@ public:
         std::mt19937_64 eng;
         eng.seed(42);
         eng.discard( nloc * Ippl::Comm->rank());
-        std::uniform_real_distribution<double> unif(hx[0]/2, 1-(hx[0]/2));
+        std::uniform_real_distribution<double> unif(hx[0] / 2, 1 - (hx[0] / 2));
 
         typename bunch_type::particle_position_type::HostMirror R_host = bunch->R.getHostMirror();
         for(size_t i = 0; i < nloc; ++i) {
-            for (int d = 0; d<3; d++) {
+            for (int d = 0; d < 3; d++) {
                 R_host(i)[d] =  unif(eng);
             }
         }

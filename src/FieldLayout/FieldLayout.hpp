@@ -268,16 +268,19 @@ namespace ippl {
     template <unsigned Dim>
     void FieldLayout<Dim>::findNeighbors(int nghost) {
 
-        /* just to be safe, we reset the neighbor list
-         * (at the moment this is unnecessary, but as soon as
-         * we have a repartitioner we need this call).
+        /* We need to reset the neighbor list
+         * and its ranges because of the repartitioner.
          */
         for (size_t i = 0; i < faceNeighbors_m.size(); ++i) {
             faceNeighbors_m[i].clear();
+            faceNeighborsSendRange_m[i].clear();
+            faceNeighborsRecvRange_m[i].clear();
         }
 
         for (size_t i = 0; i < edgeNeighbors_m.size(); ++i) {
             edgeNeighbors_m[i].clear();
+            edgeNeighborsSendRange_m[i].clear();
+            edgeNeighborsRecvRange_m[i].clear();
         }
 
         vertexNeighbors_m.fill(-1);

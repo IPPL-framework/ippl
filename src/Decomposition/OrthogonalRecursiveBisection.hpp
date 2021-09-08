@@ -280,7 +280,7 @@ namespace ippl {
 
         Kokkos::parallel_for(
             "ParticleAttrib::scatterR",
-            r.getView().extent(0),
+            r.getParticleCount(),
             KOKKOS_LAMBDA(const size_t idx)
             {
                 // Find nearest grid point
