@@ -37,7 +37,9 @@ constexpr unsigned Dim = 3;
 typedef ippl::ParticleSpatialLayout<double,Dim>   PLayout_t;
 typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
+typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t> ORB;
 
+using size_type = ippl::detail::size_type;
 
 template<typename T, unsigned Dim>
 using Vector = ippl::Vector<T, Dim>;
@@ -152,6 +154,9 @@ public:
     VField_t E_m;
     Field_t rho_m;
 
+    // ORB
+    ORB orb;
+    
     Vector<int, Dim> nr_m;
 
     ippl::e_dim_tag decomp_m[Dim];
@@ -217,11 +222,71 @@ public:
         setBCAllPeriodic();
     }
 
-    void gatherStatistics(unsigned int totalP, int iteration) {
+    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
+        // Update local fields
+        static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
+        IpplTimings::startTimer(tupdateLayout);
+        this->E_m.updateLayout(fl);
+        this->rho_m.updateLayout(fl);
 
+        // Update layout with new FieldLayout
+        PLayout& layout = this->getLayout();
+        layout.updateLayout(fl, mesh);
+        IpplTimings::stopTimer(tupdateLayout);
+        static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
+        IpplTimings::startTimer(tupdatePLayout);
+        layout.update(*this, buffer);
+        IpplTimings::stopTimer(tupdatePLayout);
+    }
+
+    void initializeORB(FieldLayout_t& fl, Mesh_t& mesh) {
+        orb.initialize(fl, mesh);
+    }
+
+    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
+        // Repartition the domains
+        bool res = orb.binaryRepartition(this->R, fl);
+
+        if (res != true) {
+           std::cout << "Could not repartition!" << std::endl;
+           return;
+        }
+        // Update
+        this->updateLayout(fl, mesh, buffer);
+        this->solver_mp->setRhs(&rho_m);
+    }
+
+    bool balance(size_type totalP){
+        int local = 0;
+        std::vector<int> res(Ippl::Comm->size());
+        double threshold = 0.01;
+        double equalPart = (double) totalP / Ippl::Comm->size();
+        double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
+        if (dev > threshold)
+            local = 1;
+        MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
+
+        /***PRINT***/
+        /*
+        std::ofstream file;
+        file.open("imbalance.txt", std::ios_base::app);
+        file << std::to_string(timestep) << " " << Ippl::Comm->rank() << " " << dev << "\n";
+        file.close();
+        */
+        for (unsigned int i = 0; i < res.size(); i++) {
+            if (res[i] == 1)
+                return true;
+        }
+        return false;
+    }
+    
+    void gatherStatistics(size_type totalP) {
+        auto prec = std::cout.precision();
         std::cout << "Rank " << Ippl::Comm->rank() << " has "
-                  << (double)this->getLocalNum()/totalP*100.0
-                  << "percent of the total particles " << std::endl;
+                  << std::setprecision(4)
+                  << (double)this->getLocalNum() / totalP * 100.0
+                  << "% of the total particles " << std::endl
+                  << std::setprecision(prec);
     }
 
     void gatherCIC() {
@@ -230,7 +295,7 @@ public:
 
     }
 
-    void scatterCIC(unsigned int totalP, int iteration, Vector_t& hrField) {
+    void scatterCIC(size_type totalP, int iteration, Vector_t& hrField) {
 
 
          Inform m("scatter ");
@@ -242,11 +307,11 @@ public:
          IpplTimings::startTimer(sumTimer);
          double Q_grid = rho_m.sum();
 
-         unsigned int Total_particles = 0;
-         unsigned int local_particles = this->getLocalNum();
+         size_type Total_particles = 0;
+         size_type local_particles = this->getLocalNum();
 
          MPI_Reduce(&local_particles, &Total_particles, 1,
-                       MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
+                       MPI_UNSIGNED_LONG, MPI_SUM, 0, Ippl::getComm());
 
          double rel_error = std::fabs((Q_m-Q_grid)/Q_m);
          m << "Rel. error in charge conservation = " << rel_error << endl;
@@ -410,7 +475,7 @@ int main(int argc, char *argv[]){
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     IpplTimings::startTimer(mainTimer);
-    const unsigned long long int totalP = std::atol(argv[4]);
+    const size_type totalP = std::atol(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
 
     msg << "Penning Trap "
@@ -484,7 +549,7 @@ int main(int argc, char *argv[]){
     sd[1] = 0.05*length[1];
     sd[2] = 0.20*length[2];
 
-    unsigned int Total_particles = 0;
+    size_type Total_particles = 0;
     if(dist == "Uniform") {
 
         std::function<double(double& x,
@@ -570,9 +635,9 @@ int main(int argc, char *argv[]){
 
         P->q = P->q * (P->Q_m/Total_sum);
 
-        unsigned int local_particles = P->getLocalNum();
+        size_type local_particles = P->getLocalNum();
         MPI_Reduce(&local_particles, &Total_particles, 1,
-                   MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
+                   MPI_UNSIGNED_LONG, MPI_SUM, 0, Ippl::getComm());
         msg << "#particles: " << Total_particles << endl;
         double PPC = Total_particles/((double)(nr[0] * nr[1] * nr[2]));
         msg << "#PPC: " << PPC << endl;
@@ -628,6 +693,7 @@ int main(int argc, char *argv[]){
     
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
+    P->initializeORB(FL, mesh);
 
     bunch_type bunchBuffer(PL);
     static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("FirstUpdate");           
@@ -635,10 +701,18 @@ int main(int argc, char *argv[]){
     PL.update(*P, bunchBuffer);
     IpplTimings::stopTimer(FirstUpdateTimer);
 
-    msg << "particles created and initial conditions assigned " << endl;
-
     P->stype_m = argv[6];
     P->initSolver();
+
+    static IpplTimings::TimerRef domainDecomposition0 = IpplTimings::getTimer("domainDecomp0");
+    if (P->balance(Total_particles)) {
+        msg << "Starting first repartition" << endl;
+        IpplTimings::startTimer(domainDecomposition0);
+        P->repartition(FL, mesh, bunchBuffer);
+        IpplTimings::stopTimer(domainDecomposition0);
+    }
+
+    msg << "particles created and initial conditions assigned " << endl;
 
     P->time_m = 0.0;
 
@@ -693,6 +767,14 @@ int main(int argc, char *argv[]){
         //Since the particles have moved spatially update them to correct processors
         PL.update(*P, bunchBuffer);
 
+        // Domain Decomposition
+        if (P->balance(Total_particles)) {
+           msg << "Starting repartition" << endl;
+           IpplTimings::startTimer(domainDecomposition0);
+           P->repartition(FL, mesh, bunchBuffer);
+           IpplTimings::stopTimer(domainDecomposition0);
+        }
+        
         //scatter the charge onto the underlying grid
         P->scatterCIC(Total_particles, it+1, hr);
 
@@ -726,6 +808,7 @@ int main(int argc, char *argv[]){
         P->dumpData();
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished iteration: " << it << " time: " << P->time_m << endl;
+        P->gatherStatistics(Total_particles);
     }
 
     msg << "Penning Trap: End." << endl;

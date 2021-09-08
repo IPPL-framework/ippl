@@ -3,9 +3,9 @@
 //
 // Simple domain decomposition using an Orthogonal Recursive Bisection,
 // domain is divided recursively so as to even weights on each side of the cut,
-// works with 2^n processors only. 
+// works with 2^n processors only.
 //
-// Copyright (c) 2021, Michael Ligotino, ETH, Zurich; 
+// Copyright (c) 2021, Michael Ligotino, ETH, Zurich;
 // Paul Scherrer Institut, Villigen; Switzerland
 // All rights reserved
 //
@@ -29,16 +29,14 @@
 #include "Index/Index.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Region/NDRegion.h"
-#include <fstream>
 
 namespace ippl {
-
     /*
      * @class OrthogonalRecursiveBisection
      * @tparam T
      * @tparam Dim dimension
      * @tparam M mesh
-    */
+     */
     template<class T, unsigned Dim, class M>
     class OrthogonalRecursiveBisection {
     public:
@@ -51,44 +49,39 @@ namespace ippl {
          * Initialize member field with mesh and field layout
          * @param fl FieldLayout
          * @param mesh Mesh
-        */    
+         */
         void initialize(FieldLayout<Dim>& fl, UniformCartesian<T,Dim>& mesh);
-
 
         /*!
          * Performs scatter operation of particle positions in field (weights) and
          * repartitions FieldLayout's global domain
          * @param R Weights to scatter
          * @param fl FieldLayout
-        */
-        bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, 
-                               FieldLayout<Dim>& fl); 
-
+         */
+        bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R,
+                               FieldLayout<Dim>& fl);
 
         /*!
          * Find cutting axis as the longest axis of the field layout.
          * @param dom Domain to reduce
-        */
-         int findCutAxis(NDIndex<Dim>& dom); 
-
+         */
+        int findCutAxis(NDIndex<Dim>& dom);
 
         /*!
-         * Performs reduction on local field in all dimension except that determined 
+         * Performs reduction on local field in all dimension except that determined
          * by cutAxis, stores result in res
          * @param res Array giving the result of reduction
          * @param dom Domain to reduce
          * @param cutAxis Index of cut axis
-        */
-        void perpendicularReduction(std::vector<T>& res, unsigned int cutAxis, 
-                                                         NDIndex<Dim>& dom); 
- 
+         */
+        void perpendicularReduction(std::vector<T>& res, unsigned int cutAxis,
+                                                         NDIndex<Dim>& dom);
 
         /*!
-         * Find median of array  
+         * Find median of array
          * @param w Array of real numbers
-        */
+         */
         int findMedian(std::vector<T>& w);
-
 
         /*!
          * Splits the domain given by the iterator along the cut axis at the median,
@@ -98,16 +91,14 @@ namespace ippl {
          * @param it Iterator
          * @param cutAxis Index of cut axis
          * @param median Median
-
-        */
-        void cutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, 
+         */
+        void cutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs,
 						           int it, int cutAxis, int median);
- 
-        
+
         /*!
          * Scattering of particle positions in field using a CIC method
          * @param r Weights
-        */
+         */
         void scatterR(const ParticleAttrib<Vector<T,Dim>>& r);
 
     }; // class
