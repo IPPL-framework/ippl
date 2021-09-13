@@ -164,6 +164,10 @@ namespace ippl {
         detail::write<T>(dview_m, out);
     }
 
+    template <typename T, unsigned Dim>
+    void BareField<T,Dim>::write(Inform& inf) const {
+        write(inf.getDestination());
+    }
 
     #define DefineReduction(fun, name, op, MPI_Op)                                                           \
     template <typename T, unsigned Dim>                                                                      \

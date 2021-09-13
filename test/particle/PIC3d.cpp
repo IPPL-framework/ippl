@@ -26,7 +26,6 @@
 //
 #include "Ippl.h"
 #include <string>
-#include <fstream>
 #include <vector>
 #include <iostream>
 #include <set>
@@ -168,13 +167,6 @@ public:
             local = 1;
         MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
 
-        /***PRINT***/
-        /*
-        std::ofstream file;
-        file.open("imbalance.txt", std::ios_base::app);
-        file << std::to_string(timestep) << " " << Ippl::Comm->rank() << " " << dev << "\n";
-        file.close();
-        */
         for (unsigned int i = 0; i < res.size(); i++) {
             if (res[i] == 1)
                 return true;
@@ -257,19 +249,6 @@ public:
         }, lqm);
 
         double lQ = lq / this->EFDMag_m.sum();
-
-        /***PRINT***/
-        /*
-        std::ofstream fcharge;
-        fcharge.open("charge.txt", std::ios_base::app);
-        fcharge << std::to_string(step) << " " << Ippl::Comm->rank() << " " << lQ << "\n";
-        fcharge.close();
-
-        std::ofstream fqm;
-        fqm.open("qm.txt", std::ios_base::app);
-        fqm << std::to_string(step) << " " << Ippl::Comm->rank() << " " << lqm << "\n";
-        fqm.close();
-        */
      }
 
      void initFields() {
@@ -359,7 +338,7 @@ public:
      }
 
 
-     void dumpParticleData(int iteration) {
+     void dumpData(int iteration) {
 
         ParticleAttrib<Vector_t>::view_type& view = P.getView();
 
@@ -377,20 +356,12 @@ public:
         MPI_Reduce(&Energy, &gEnergy, 1,
                     MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
-        if(Ippl::Comm->rank() == 0) {
-            std::ofstream csvout;
-            csvout.precision(10);
-            csvout.setf(std::ios::scientific, std::ios::floatfield);
+        Inform csvout(NULL, "data/energy.csv", Inform::APPEND);
+        csvout.precision(10);
+        csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-            std::stringstream fname;
-            fname << "data/energy.csv";
-            csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
-
-            csvout << iteration << " "
-                   << gEnergy << std::endl;
-
-            csvout.close();
-        }
+        csvout << iteration << " "
+               << gEnergy << endl;
 
         Ippl::Comm->barrier();
 
@@ -660,6 +631,8 @@ int main(int argc, char *argv[]) {
         // IpplTimings::startTimer(PTimer);
         // P->P = P->P + dt * P->qm * P->E;
         // IpplTimings::stopTimer(PTimer);
+
+        P->dumpData(it);
 
         msg << "Finished iteration " << it << endl;
 

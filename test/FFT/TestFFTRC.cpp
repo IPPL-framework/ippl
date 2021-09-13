@@ -3,7 +3,6 @@
 #include <iostream>
 #include <typeinfo>
 #include <array>
-#include <fstream>
 #include <random>
 
 int main(int argc, char *argv[]) {
