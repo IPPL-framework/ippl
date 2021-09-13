@@ -5,7 +5,6 @@
 #include <iostream>
 #include <typeinfo>
 #include <array>
-#include <fstream>
 
 int main(int argc, char *argv[]) {
 
@@ -140,9 +139,9 @@ int main(int argc, char *argv[]) {
 
     for (int rank = 0; rank < nRanks; ++rank) {
         if (rank == Ippl::Comm->rank()) {
-            std::ofstream out("field_nRanks_" + std::to_string(nRanks) + "_rank_" + std::to_string(rank) + ".dat", std::ios::out);
+            std::string fname = "field_nRanks_" + std::to_string(nRanks) + "_rank_" + std::to_string(rank) + ".dat";
+            Inform out("Output", fname.c_str(), Inform::OVERWRITE, rank);
             field.write(out);
-            out.close();
         }
         Ippl::Comm->barrier();
     }

@@ -208,6 +208,12 @@ namespace ippl {
          */
         void write(std::ostream& out = std::cout) const;
 
+        /*!
+         * Print the BareField
+         * @param inf Inform object
+         */
+        void write(Inform& inf) const;
+
         T sum(int nghost = 0) const;
         T max(int nghost = 0) const;
         T min(int nghost = 0) const;
