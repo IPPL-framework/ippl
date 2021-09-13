@@ -30,7 +30,6 @@
 #include <vector>
 #include <iostream>
 #include <cfloat>
-#include <fstream>
 #include <iomanip>
 #include "Particle/BoxParticleCachingPolicy.h"
 #include "Particle/PairBuilder/HashPairBuilder.h"
@@ -344,18 +343,14 @@ public:
 
 
     void writeFields(unsigned idx) {
-
-
         INFOMSG("*** START DUMPING SCALAR FIELD ***" << endl);
 
         std::ostringstream istr;
         istr << idx;
-
-
-        std::ofstream fstr2;
-        fstr2.precision(9);
         std::string rho_fn = std::string("rhofield-" + std::string(istr.str()) + ".dat");
-        fstr2.open(rho_fn.c_str(), std::ios::out);
+
+        Inform fstr2(NULL, rho_fn.c_str(), Inform::OVERWRITE);
+        fstr2.precision(9);
 
         NDIndex<3> myidx = getFieldLayout().getLocalNDIndex();
         for (int x = myidx[0].first(); x <= myidx[0].last(); x++) {
@@ -365,13 +360,12 @@ public:
                 }
             }
         }
-        fstr2.close();
 
         INFOMSG("*** START DUMPING E FIELD ***" << endl);
-        std::ofstream fstr;
-        fstr.precision(9);
         std::string e_field = std::string("efield-" + std::string(istr.str()) + ".dat");
-        fstr.open(e_field.c_str(), std::ios::out);
+
+        Inform fstr(NULL, e_field.c_str(), Inform::OVERWRITE);
+        fstr.precision(9);
         NDIndex<3> myidxx = getFieldLayout().getLocalNDIndex();
         for (int x = myidxx[0].first(); x <= myidxx[0].last(); x++) {
             for (int y = myidxx[1].first(); y <= myidxx[1].last(); y++) {
@@ -380,7 +374,6 @@ public:
                 }
             }
         }
-        fstr.close();
         INFOMSG("*** FINISHED DUMPING E FIELD ***" << endl);
 
     }
