@@ -4,7 +4,6 @@
 #include <iostream>
 #include <typeinfo>
 #include <array>
-#include <fstream>
 
 int main(int argc, char *argv[]) {
 
@@ -33,7 +32,7 @@ int main(int argc, char *argv[]) {
 
     typedef ippl::Field<double, dim> field_type;
 
-    typedef ippl::BConds<double, dim> bc_type; 
+    typedef ippl::BConds<double, dim> bc_type;
 
     bc_type bcField;
 
@@ -41,7 +40,7 @@ int main(int argc, char *argv[]) {
     for (unsigned int i=0; i < 2; ++i) {
         bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
     }
-    ////Lower Y face 
+    ////Lower Y face
     bcField[2] = std::make_shared<ippl::NoBcFace<double, dim>>(2);
     ////Higher Y face
     bcField[3] = std::make_shared<ippl::ConstantFace<double, dim>>(3, 7.0);
@@ -62,13 +61,13 @@ int main(int argc, char *argv[]) {
     using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
     typename field_type::view_type& view = field.getView();
 
-    Kokkos::parallel_for("Assign field", 
+    Kokkos::parallel_for("Assign field",
                           mdrange_type({nghost, nghost, nghost},
                                        {view.extent(0) - nghost,
                                         view.extent(1) - nghost,
                                         view.extent(2) - nghost}),
-                          KOKKOS_LAMBDA(const int i, 
-                                        const int j, 
+                          KOKKOS_LAMBDA(const int i,
+                                        const int j,
                                         const int k)
     {
         //local to global index conversion
@@ -100,11 +99,11 @@ int main(int argc, char *argv[]) {
     int nRanks = Ippl::Comm->size();
     for (int rank = 0; rank < nRanks; ++rank) {
         if (rank == Ippl::Comm->rank()) {
-            std::ofstream out("field_AllBC_" + 
-                             std::to_string(rank) + 
-                             ".dat", std::ios::out);
+            std::string fname = "field_AllBC_" +
+                             std::to_string(rank) +
+                             ".dat";
+            Inform out("Output", fname.c_str(), Inform::OVERWRITE, rank);
             field.write(out);
-            out.close();
         }
         Ippl::Comm->barrier();
     }

@@ -28,7 +28,6 @@
 #include <vector>
 #include <iostream>
 #include <cfloat>
-#include <fstream>
 #include <iomanip>
 #include "Particle/BoxParticleCachingPolicy.h"
 #include "Particle/PairBuilder/HashPairBuilderPeriodic.h"
@@ -881,11 +880,9 @@ int main(int argc, char *argv[]){
 
                 if(Ippl::myNode()==0) {
                         std::cout << "master node prints: Q = " << total_charge << std::endl;
-                        std::ofstream ofs;
-                        ofs.open ("data/statistics.txt", std::ofstream::out | std::ofstream::app);
+                        Inform ofs(NULL, "data/statistics.txt", Inform::APPEND);
                         //mesh size , n particle, r_cut, alpha, smoothing eps, absolut_err, relative error, relative error in total E-field, absolut_V_err, relative V error, relative error in total V, deviation in sum(U) from solid sphere
                         ofs << nr[0] << "," << P->getTotalNum() << "," << interaction_radius << "," << eps << "," << alpha << "," << Error << "," << Relative_error << "," << fabs(Total_E-Total_E_exact)/Total_E_exact <<  "," << ErrorV << "," << Relative_V_error << "," << fabs(Total_V-Total_V_exact)/Total_V_exact << "," << std::abs(Potential_energy-U)/U << std::endl;
-                        ofs.close();
                 }
         }
 
