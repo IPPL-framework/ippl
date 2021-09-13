@@ -26,14 +26,10 @@
 
 template<typename FieldType, typename ParticleType>
 void dumpVTKVector( FieldType & f, const ParticleType & p,int iteration = 0, std::string label="EField") {
-        if(Ippl::myNode()==0) {
+    if(Ippl::myNode()==0) {
         NDIndex<3> lDom = f.getLayout().getLocalNDIndex();
         int nx =lDom[0].length() ; int ny = lDom[1].length(); int nz=lDom[2].length() ;
         double dx=p->hr_m[0]; double dy=p->hr_m[1]; double dz=p->hr_m[2];
-
-        std::ofstream vtkout;
-        vtkout.precision(15);
-        vtkout.setf(std::ios::scientific, std::ios::floatfield);
 
         std::string filename;
         filename = "data/";
@@ -44,33 +40,33 @@ void dumpVTKVector( FieldType & f, const ParticleType & p,int iteration = 0, std
         filename+= std::to_string(iteration);
         filename+=".vtk";
 
-        vtkout.open(filename.c_str(), std::ios::out);
-        vtkout << "# vtk DataFile Version 2.0" << std::endl;
-        vtkout << "toyfdtd" << std::endl;
-        vtkout << "ASCII" << std::endl;
-        vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-        vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << std::endl;
-        //vtkout << "ORIGIN 0 0 0" << std::endl;
-        //vtkout << "ORIGIN "<< p->extend_l[0]+.5*dx <<" " << p->extend_l[1]+.5*dy << " " << p->extend_l[2]+.5*dy << std::endl;
-        vtkout << "ORIGIN "<< p->extend_l[0]+.5*dx+lDom[0].first()*dx <<" " << p->extend_l[1]+.5*dy+lDom[1].first()*dy << " " << p->extend_l[2]+.5*dy+lDom[2].first()*dz << std::endl;
-        vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-        vtkout << "POINT_DATA " << nx*ny*nz << std::endl;
-        vtkout << "VECTORS Vector_Value float" << std::endl;
+        Inform vtkout(NULL, filename.c_str(), Inform::OVERWRITE);
+        vtkout.precision(15);
+        vtkout.setf(std::ios::scientific, std::ios::floatfield);
+
+        vtkout << "# vtk DataFile Version 2.0" << endl;
+        vtkout << "toyfdtd" << endl;
+        vtkout << "ASCII" << endl;
+        vtkout << "DATASET STRUCTURED_POINTS" << endl;
+        vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << endl;
+        //vtkout << "ORIGIN 0 0 0" << endl;
+        //vtkout << "ORIGIN "<< p->extend_l[0]+.5*dx <<" " << p->extend_l[1]+.5*dy << " " << p->extend_l[2]+.5*dy << endl;
+        vtkout << "ORIGIN "<< p->extend_l[0]+.5*dx+lDom[0].first()*dx <<" " << p->extend_l[1]+.5*dy+lDom[1].first()*dy << " " << p->extend_l[2]+.5*dy+lDom[2].first()*dz << endl;
+        vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
+        vtkout << "POINT_DATA " << nx*ny*nz << endl;
+        vtkout << "VECTORS Vector_Value float" << endl;
         for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
                 for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
                         for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
                                 Vektor<double, 3> tmp = f[x][y][z].get();
                                 vtkout << tmp(0) << "\t"
                                         << tmp(1) << "\t"
-                                        << tmp(2) << std::endl;
+                                        << tmp(2) << endl;
 
                         }
                 }
         }
-
-        // close the output file for this iteration:
-        vtkout.close();
-}
+    }
 }
 
 template<typename FieldType, typename ParticleType>
@@ -79,10 +75,6 @@ void dumpVTKScalar( FieldType & f, const ParticleType & p,int iteration = 0, std
         int nx =lDom[0].length() ; int ny = lDom[1].length(); int nz=lDom[2].length() ;
         double dx=p->hr_m[0]; double dy=p->hr_m[1]; double dz=p->hr_m[2];
 
-        std::ofstream vtkout;
-        vtkout.precision(10);
-        vtkout.setf(std::ios::scientific, std::ios::floatfield);
-
         std::string filename;
         filename = "data/";
         filename+= label;
@@ -92,49 +84,46 @@ void dumpVTKScalar( FieldType & f, const ParticleType & p,int iteration = 0, std
         filename+= std::to_string(iteration);
         filename+=".vtk";
 
-        vtkout.open(filename.c_str(), std::ios::out);
-        vtkout << "# vtk DataFile Version 2.0" << std::endl;
-        vtkout << "toyfdtd" << std::endl;
-        vtkout << "ASCII" << std::endl;
-        vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-        vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << std::endl;
-        //vtkout << "DIMENSIONS " << lDom[0].length()  << " " <<  lDom[1].length()  << " " <<  lDom[2].length()  << std::endl;
-        //vtkout << "ORIGIN 0 0 0" << std::endl;
-        vtkout << "ORIGIN "<< p->extend_l[0]+.5*dx+lDom[0].first()*dx <<" " << p->extend_l[1]+.5*dy+lDom[1].first()*dy << " " << p->extend_l[2]+.5*dy+lDom[2].first()*dz << std::endl;
-        //vtkout << "ORIGIN "<< p->rmin_m[0]<<" " << p->rmin_m[1] << " " << p->rmin_m[2] << std::endl;
-        vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-        vtkout << "POINT_DATA " << nx*ny*nz << std::endl;
-        vtkout << "SCALARS Scalar_Value float" << std::endl;
-        vtkout << "LOOKUP_TABLE default" << std::endl;
+        Inform vtkout(NULL, filename.c_str(), Inform::OVERWRITE);
+        vtkout.precision(10);
+        vtkout.setf(std::ios::scientific, std::ios::floatfield);
+
+        vtkout << "# vtk DataFile Version 2.0" << endl;
+        vtkout << "toyfdtd" << endl;
+        vtkout << "ASCII" << endl;
+        vtkout << "DATASET STRUCTURED_POINTS" << endl;
+        vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << endl;
+        //vtkout << "DIMENSIONS " << lDom[0].length()  << " " <<  lDom[1].length()  << " " <<  lDom[2].length()  << endl;
+        //vtkout << "ORIGIN 0 0 0" << endl;
+        vtkout << "ORIGIN "<< p->extend_l[0]+.5*dx+lDom[0].first()*dx <<" " << p->extend_l[1]+.5*dy+lDom[1].first()*dy << " " << p->extend_l[2]+.5*dy+lDom[2].first()*dz << endl;
+        //vtkout << "ORIGIN "<< p->rmin_m[0]<<" " << p->rmin_m[1] << " " << p->rmin_m[2] << endl;
+        vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
+        vtkout << "POINT_DATA " << nx*ny*nz << endl;
+        vtkout << "SCALARS Scalar_Value float" << endl;
+        vtkout << "LOOKUP_TABLE default" << endl;
         for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
                 for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
                         for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
                                 std::complex<double> tmp = f[x][y][z].get();
-                                vtkout << real(tmp) << std::endl;
+                                vtkout << real(tmp) << endl;
                         }
                 }
         }
-        // close the output file for this iteration:
-        vtkout.close();
 
         //Write the sum of the rho field to separate file
-        std::ofstream csvout;
-        csvout.precision(10);
-        csvout.setf(std::ios::scientific, std::ios::floatfield);
-
         std::stringstream fname;
         fname << "data/" << label << "Sum";
         fname << ".csv";
 
-        // open a new data file for this iteration
-        // and start with header
-        csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+        Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+        csvout.precision(10);
+        csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+        // start with header
         if (iteration==0){
-                csvout << "it,FieldSum" << std::endl;
+                csvout << "it,FieldSum" << endl;
         }
-        csvout << iteration << ", "<< sum(f) << std::endl;
-        // close the output file for this iteration:
-        csvout.close();
+        csvout << iteration << ", "<< sum(f) << endl;
 
 }
 
@@ -142,10 +131,6 @@ template<typename ParticleType>
 void dumpParticlesOPAL( const ParticleType & p, int iteration=0) {
 
   //    std::cout <<" Node " << std::to_string(Ippl::myNode()) << " has cached particles : " << p->getGhostNum() << std::endl;
-    std::ofstream csvout;
-    csvout.precision(10);
-    csvout.setf(std::ios::scientific, std::ios::floatfield);
-
     std::stringstream fname;
     fname << "data/dist";
     fname << std::setw(1) << Ippl::myNode();
@@ -153,18 +138,15 @@ void dumpParticlesOPAL( const ParticleType & p, int iteration=0) {
     fname << std::setw(4) << std::setfill('0') << iteration;
     fname << ".dat";
 
-    // open a new data file for this iteration
-    // and start with header
-    csvout.open(fname.str().c_str(), std::ios::out);
+    Inform csvout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+    csvout.precision(10);
+    csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-    csvout << p->getLocalNum() << std::endl;
+    csvout << p->getLocalNum() << endl;
 
     for (unsigned i=0; i<p->getLocalNum()+p->getGhostNum(); ++i) {
-        csvout << p->R[i][0] << "\t" << p->v[i][0] << "\t" << p->R[i][1] << "\t" << p->v[i][1]<< "\t" << p->R[i][2]<< "\t" << p->v[i][2] <<  std::endl;
+        csvout << p->R[i][0] << "\t" << p->v[i][0] << "\t" << p->R[i][1] << "\t" << p->v[i][1]<< "\t" << p->R[i][2]<< "\t" << p->v[i][2] << endl;
     }
-
-    // close the output file for this iteration:
-    csvout.close();
 }
 
 
@@ -174,10 +156,6 @@ template<typename ParticleType>
 void dumpParticlesCSV( const ParticleType & p, int iteration=0) {
 
   //	std::cout <<" Node " << std::to_string(Ippl::myNode()) << " has cached particles : " << p->getGhostNum() << std::endl;
-        std::ofstream csvout;
-        csvout.precision(10);
-        csvout.setf(std::ios::scientific, std::ios::floatfield);
-
         std::stringstream fname;
         fname << "data/charges_nod_";
         fname << std::setw(1) << Ippl::myNode();
@@ -187,18 +165,18 @@ void dumpParticlesCSV( const ParticleType & p, int iteration=0) {
 
         // open a new data file for this iteration
         // and start with header
-        csvout.open(fname.str().c_str(), std::ios::out);
-        csvout << "x coord, y coord, z coord, charge, EfieldMagnitude, ID, vx, vy, vz, f" << std::endl;
+        Inform csvout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+        csvout.precision(10);
+        csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+        csvout << "x coord, y coord, z coord, charge, EfieldMagnitude, ID, vx, vy, vz, f" << endl;
 
         for (unsigned i=0; i<p->getLocalNum()+p->getGhostNum(); ++i) {
                 double distributionf = p->v[i][2]*p->v[i][2]*exp(-(p->v[i][0]*p->v[i][0]+p->v[i][1]*p->v[i][1]+p->v[i][2]*p->v[i][2])/2.);
 
-                csvout << p->R[i][0] << "," << p->R[i][1] << "," << p->R[i][2] << "," << p->Q[i] << "," << sqrt(p->EF[i][0]*p->EF[i][0]+p->EF[i][1]*p->EF[i][1]+p->EF[i][2]*p->EF[i][2]) << "," << p->ID[i]<< "," << p->v[i][0]<< "," << p->v[i][1]<< "," << p->v[i][2] << "," << distributionf << std::endl;
+                csvout << p->R[i][0] << "," << p->R[i][1] << "," << p->R[i][2] << "," << p->Q[i] << "," << sqrt(p->EF[i][0]*p->EF[i][0]+p->EF[i][1]*p->EF[i][1]+p->EF[i][2]*p->EF[i][2]) << "," << p->ID[i]<< "," << p->v[i][0]<< "," << p->v[i][1]<< "," << p->v[i][2] << "," << distributionf << endl;
         }
-        csvout << std::endl;
-
-        // close the output file for this iteration:
-        csvout.close();
+        csvout << endl;
 }
 
 template<typename ParticleType>
@@ -207,10 +185,6 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
         if(Ippl::myNode()==0) {
 
           //		std::cout <<" Node " << std::to_string(Ippl::myNode()) << " has cached particles : " << p->getGhostNum() << std::endl;
-                std::ofstream csvout;
-                csvout.precision(15);
-                csvout.setf(std::ios::scientific, std::ios::floatfield);
-
                 std::stringstream fname;
                 fname << "data/charges_nod_";
                 fname << std::setw(1) << Ippl::myNode();
@@ -220,8 +194,11 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
 
                 // open a new data file for this iteration
                 // and start with header
-                csvout.open(fname.str().c_str(), std::ios::out);
-                csvout << "x coord, y coord, z coord, z_lab, z_dispersions,charge, EfieldMagnitude, ID, px, py, pz, pz_lab" << std::endl;
+                Inform csvout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+                csvout.precision(15);
+                csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+                csvout << "x coord, y coord, z coord, z_lab, z_dispersions,charge, EfieldMagnitude, ID, px, py, pz, pz_lab" << endl;
 
                 for (unsigned i=0; i<p->getTotalNum(); ++i) {
                         //for (unsigned i=0; i<p->getLocalNum(); ++i) {
@@ -230,13 +207,10 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
                         double zlab=1./p->gamma*p->R[i][2];
                         double pz_lab = p->gamma*p->p[i][2];
                         double pz0=p->beta0*p->gamma*p->m0;
-                        csvout << p->R[i][0] << "," << p->R[i][1] << "," << p->R[i][2] <<"," << zlab <<","<< zlab+p->R56*pz_lab/pz0 << "," << p->Q[i] << "," << sqrt(p->EF[i][0]*p->EF[i][0]+p->EF[i][1]*p->EF[i][1]+p->EF[i][2]*p->EF[i][2]) << "," << p->ID[i]<< "," << p->p[i][0]<< "," << p->p[i][1]<< "," << p->p[i][2] << ","<< pz_lab << std::endl;
+                        csvout << p->R[i][0] << "," << p->R[i][1] << "," << p->R[i][2] <<"," << zlab <<","<< zlab+p->R56*pz_lab/pz0 << "," << p->Q[i] << "," << sqrt(p->EF[i][0]*p->EF[i][0]+p->EF[i][1]*p->EF[i][1]+p->EF[i][2]*p->EF[i][2]) << "," << p->ID[i]<< "," << p->p[i][0]<< "," << p->p[i][1]<< "," << p->p[i][2] << ","<< pz_lab << endl;
                         //}
                 }
-                csvout << std::endl;
-
-                // close the output file for this iteration:
-                csvout.close();
+                csvout << endl;
                 }
                 }
 
@@ -245,10 +219,6 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
                         void writeBeamStatistics(const ParticleType & p,int iteration) {
         if(Ippl::myNode()==0) {
 
-                                std::ofstream csvout;
-                                csvout.precision(10);
-                                csvout.setf(std::ios::scientific, std::ios::floatfield);
-
                                 std::stringstream fname;
                                 fname << "data/BeamSTatistics_seedID_";
                                 fname << std::setw(2) << std::setfill('0') << p->seedID;
@@ -256,13 +226,14 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
 
                                 // open a new data file for this iteration
                                 // and start with header
-                                csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+                                Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+                                csvout.precision(10);
+                                csvout.setf(std::ios::scientific, std::ios::floatfield);
+
                                 if (iteration==0){
-                                        csvout << "it,rrmsX[microns], rrmsY[microns], rrmsZ[microns], prmsX[MeV/c],prmsY[MeV/c],prmsZ[MeV/c],rmeanX[microns],rmeanY[microns],rmeanZ[microns],pmeanX[MeV/c],pmeanY[MeV/c],pmeanZ[MeV/c],epsX[mm mrad],epsY[mm mrad],epsZ[mm mrad],epsnormX[mm mrad],epsnormY[mm mrad],epsnormZ[mm mrad],rprmsX[MeV*m/c],rprmsY[MeV*m/c],rprmsZ[MeV*m/c],eps6x6[mm^3 mrad^3],eps6x6Normalized[mm^3 mrad^3],epsnorm_no_corell[mm^3 mrad^3]" << std::endl;
+                                        csvout << "it,rrmsX[microns], rrmsY[microns], rrmsZ[microns], prmsX[MeV/c],prmsY[MeV/c],prmsZ[MeV/c],rmeanX[microns],rmeanY[microns],rmeanZ[microns],pmeanX[MeV/c],pmeanY[MeV/c],pmeanZ[MeV/c],epsX[mm mrad],epsY[mm mrad],epsZ[mm mrad],epsnormX[mm mrad],epsnormY[mm mrad],epsnormZ[mm mrad],rprmsX[MeV*m/c],rprmsY[MeV*m/c],rprmsZ[MeV*m/c],eps6x6[mm^3 mrad^3],eps6x6Normalized[mm^3 mrad^3],epsnorm_no_corell[mm^3 mrad^3]" << endl;
                                 }
-                                csvout << iteration << ", "<< p->rrms_m*1e6 <<","<< p->prms_m <<","<< p->rmean_m*1e6 <<","<< p->pmean_m <<"," << p->eps_m*1e6 <<","<< p->eps_norm_m*1e6 <<","<< p->rprms_m << "," << p->eps6x6_m*1e18 <<"," <<p->eps6x6_normalized_m*1e18<< "," << p->eps_norm_m[0]*1e6 * p->eps_norm_m[1]*1e6*p->eps_norm_m[2]*1e6<< std::endl;
-                                // close the output file for this iteration:
-                                csvout.close();
+                                csvout << iteration << ", "<< p->rrms_m*1e6 <<","<< p->prms_m <<","<< p->rmean_m*1e6 <<","<< p->pmean_m <<"," << p->eps_m*1e6 <<","<< p->eps_norm_m*1e6 <<","<< p->rprms_m << "," << p->eps6x6_m*1e18 <<"," <<p->eps6x6_normalized_m*1e18<< "," << p->eps_norm_m[0]*1e6 * p->eps_norm_m[1]*1e6*p->eps_norm_m[2]*1e6<< endl;
 }
                         }
 
@@ -271,23 +242,20 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
                         void writeBeamStatisticsVelocity(const ParticleType & p,int iteration) {
         if(Ippl::myNode()==0) {
 
-                                std::ofstream csvout;
-                                csvout.precision(10);
-                                csvout.setf(std::ios::scientific, std::ios::floatfield);
-
                                 std::stringstream fname;
                                 fname << "data/BeamStatistics";
                                 fname << ".csv";
 
                                 // open a new data file for this iteration
                                 // and start with header
-                                csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+                                Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+                                csvout.precision(10);
+                                csvout.setf(std::ios::scientific, std::ios::floatfield);
+
                                 if (iteration==0){
-                                        csvout << "it,rrmsX, rrmsY, rrmsZ, vrmsX,vrmsY,vrmsZ,rmeanX,rmeanY,rmeanZ,vmeanX,vmeanY,vmeanZ,epsX,epsY,epsZ,rvrmsX,rvrmsY,rvrmsZ" << std::endl;
+                                        csvout << "it,rrmsX, rrmsY, rrmsZ, vrmsX,vrmsY,vrmsZ,rmeanX,rmeanY,rmeanZ,vmeanX,vmeanY,vmeanZ,epsX,epsY,epsZ,rvrmsX,rvrmsY,rvrmsZ" << endl;
                                 }
-                                csvout << iteration << " "<< p->rrms_m <<" "<< p->vrms_m <<" "<< p->rmean_m <<" "<< p->vmean_m <<" " << p->eps_m <<" "<<  p->rvrms_m << std::endl;
-                                // close the output file for this iteration:
-                                csvout.close();
+                                csvout << iteration << " "<< p->rrms_m <<" "<< p->vrms_m <<" "<< p->rmean_m <<" "<< p->vmean_m <<" " << p->eps_m <<" "<<  p->rvrms_m << endl;
 }
                         }
 
@@ -295,35 +263,26 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
                 template<typename ParticleType>
                         void writezcoordCSV( const ParticleType & p) {
 
-                                std::ofstream csvout;
-                                csvout.precision(10);
-                                csvout.setf(std::ios::scientific, std::ios::floatfield);
-
                                 std::stringstream fname;
                                 fname << "data/zcoords";
                                 fname << ".csv";
 
                                 // open a new data file for this iteration
                                 // and start with header
-                                csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+                                Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+                                csvout.precision(10);
+                                csvout.setf(std::ios::scientific, std::ios::floatfield);
 
                                 for (unsigned i=0; i<p->getLocalNum(); ++i) {
                                         csvout << p->R[i][2];
                                         if (i!=p->getLocalNum()-1)
                                                 csvout << ",";
                                 }
-                                csvout << std::endl;
-
-                                // close the output file for this iteration:
-                                csvout.close();
+                                csvout << endl;
                         }
 
                 template<typename ParticleType>
                         void writeEzCSV( const ParticleType & p) {
-
-                                std::ofstream csvout;
-                                csvout.precision(10);
-                                csvout.setf(std::ios::scientific, std::ios::floatfield);
 
                                 std::stringstream fname;
                                 fname << "data/Ez";
@@ -331,70 +290,59 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
 
                                 // open a new data file for this iteration
                                 // and start with header
-                                csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+                                Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+                                csvout.precision(10);
+                                csvout.setf(std::ios::scientific, std::ios::floatfield);
 
                                 for (unsigned i=0; i<p->getLocalNum(); ++i) {
                                         csvout << p->EF[i][2];
                                         if (i!=p->getLocalNum()-1)
                                                 csvout << ",";
                                 }
-                                csvout << std::endl;
-
-                                // close the output file for this iteration:
-                                csvout.close();
+                                csvout << endl;
                         }
 
                 template<typename ParticleType>
                         void writeEnergy(const ParticleType & p,int iteration) {
                         if(Ippl::myNode()==0) {
-                                std::ofstream csvout;
-                                csvout.precision(10);
-                                csvout.setf(std::ios::scientific, std::ios::floatfield);
-
                                 std::stringstream fname;
                                 fname << "data/energy";
                                 fname << ".csv";
 
                                 // open a new data file for this iteration
                                 // and start with header
-                                csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+                                Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+                                csvout.precision(10);
+                                csvout.setf(std::ios::scientific, std::ios::floatfield);
+
                                 if (iteration==0){
-                                        //csvout << "it,Efield,Ekin,Epot,Etot,rhomax" << std::endl;
-                                        csvout << "it,Efield,Ekin,Etot,Epot" << std::endl;
+                                        //csvout << "it,Efield,Ekin,Epot,Etot,rhomax" << endl;
+                                        csvout << "it,Efield,Ekin,Etot,Epot" << endl;
                                 }
-                                csvout << iteration << ", "<< p->field_energy <<"," << p->kinetic_energy << "," <<  p->field_energy+p->kinetic_energy << "," << p->integral_phi_m << std::endl;
-                                // close the output file for this iteration:
-                                csvout.close();
+                                csvout << iteration << ", "<< p->field_energy <<"," << p->kinetic_energy << "," <<  p->field_energy+p->kinetic_energy << "," << p->integral_phi_m << endl;
                         }
                         }
         template<typename ParticleType>
                         void writeTemperature(const ParticleType & p,int iteration) {
                         if(Ippl::myNode()==0) {
-                                std::ofstream csvout;
-                                csvout.precision(10);
-                                csvout.setf(std::ios::scientific, std::ios::floatfield);
                                 std::stringstream fname;
                                 fname << "data/Temperature";
                                 fname << ".csv";
 
                                 // open a new data file for this iteration
                                 // and start with header
-                                csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+                                Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+                                csvout.precision(10);
+                                csvout.setf(std::ios::scientific, std::ios::floatfield);
                                 if (iteration==0){
-                                        csvout << "it,temp_x, temp_y, temp_z" << std::endl;
+                                        csvout << "it,temp_x, temp_y, temp_z" << endl;
                                 }
-                                csvout << iteration << ", "<< p->temperature[0] <<","<< p->temperature[1] <<","<< p->temperature[2] << std::endl;
-                                // close the output file for this iteration:
-                                csvout.close();
+                                csvout << iteration << ", "<< p->temperature[0] <<","<< p->temperature[1] <<","<< p->temperature[2] << endl;
 }
                         }
 
                 template<typename ParticleType>
                         void dumpConservedQuantities(const ParticleType & p,int iteration) {
-                                std::ofstream csvout;
-                                csvout.precision(10);
-                                csvout.setf(std::ios::scientific, std::ios::floatfield);
-
                                 std::stringstream fname;
                                 fname << "data/conservedQuantities_nod_";
                                 fname << std::setw(1) << Ippl::myNode();
@@ -402,22 +350,19 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
 
                                 // open a new data file for this iteration
                                 // and start with header
-                                csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+                                Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+                                csvout.precision(10);
+                                csvout.setf(std::ios::scientific, std::ios::floatfield);
+
                                 if (iteration==1){
-                                        csvout << "it,EfieldPart,EpotPart,Rhosum,EfieldSum,PhiSum" << std::endl;
+                                        csvout << "it,EfieldPart,EpotPart,Rhosum,EfieldSum,PhiSum" << endl;
                                 }
-                                csvout << iteration << ", "<< sum(dot(p->EF,p->EF)) << "," << sum(p->Phi) << "," << p->RhoSum << "," << sum(dot(p->eg_m,p->eg_m)) << ","<< sum(p->phi_m) << std::endl;
-                                // close the output file for this iteration:
-                                csvout.close();
+                                csvout << iteration << ", "<< sum(dot(p->EF,p->EF)) << "," << sum(p->Phi) << "," << p->RhoSum << "," << sum(dot(p->eg_m,p->eg_m)) << ","<< sum(p->phi_m) << endl;
                         }
 
 
                 template<typename ParticleType>
                         void writeEamplitude(const ParticleType & p,int iteration) {
-
-                                std::ofstream csvout;
-                                csvout.precision(10);
-                                csvout.setf(std::ios::scientific, std::ios::floatfield);
 
                                 std::stringstream fname;
                                 fname << "data/Eamplitude";
@@ -425,13 +370,14 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
 
                                 // open a new data file for this iteration
                                 // and start with header
-                                csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+                                Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+                                csvout.precision(10);
+                                csvout.setf(std::ios::scientific, std::ios::floatfield);
+
                                 if (iteration==0){
-                                        csvout << "it,max(|E|),max(|Ez|)" << std::endl;
+                                        csvout << "it,max(|E|),max(|Ez|)" << endl;
                                 }
-                                csvout << iteration << ", "<< p-> AmplitudeEfield <<"," <<  p-> AmplitudeEFz << std::endl;
-                                // close the output file for this iteration:
-                                csvout.close();
+                                csvout << iteration << ", "<< p-> AmplitudeEfield <<"," <<  p-> AmplitudeEFz << endl;
                         }
 
 
@@ -441,10 +387,6 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
 
                                 Vektor<double,3> dx = (p->extend_r-p->extend_l)/(p->Nx);
                                 Vektor<double,3> dv = 2.*p->Vmax/(p->Nv);
-                                std::ofstream csvout;
-                                csvout.precision(10);
-                                csvout.setf(std::ios::scientific, std::ios::floatfield);
-
                                 std::stringstream fname;
                                 fname << "data/f_mesh_";
                                 fname << std::setw(4) << std::setfill('0') << iteration;
@@ -452,35 +394,33 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
 
                                 // open a new data file for this iteration
                                 // and start with header
-                                csvout.open(fname.str().c_str(), std::ios::out);
-                                csvout << "z, vz, f" << std::endl;
+                                Inform csvout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+                                csvout.precision(10);
+                                csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+                                csvout << "z, vz, f" << endl;
                                 NDIndex<2> lDom = p->domain2d_m;
                                 for (int i=lDom[0].first(); i<=lDom[0].last(); i++) {
                                         for (int j=lDom[1].first(); j<=lDom[1].last(); j++) {
-                                                csvout << (i+0.5)*dx[2] << "," << (j+0.5)*dv[2]-p->Vmax[2] << "," << f[i][j].get() << std::endl;
+                                                csvout << (i+0.5)*dx[2] << "," << (j+0.5)*dv[2]-p->Vmax[2] << "," << f[i][j].get() << endl;
                                         }
                                 }
-                                // close the output file for this iteration:
-                                csvout.close();
 
                                 //Write the sum of the rho field to separate file
-                                std::ofstream out;
-                                out.precision(10);
-                                out.setf(std::ios::scientific, std::ios::floatfield);
-
                                 std::stringstream name;
                                 name << "data/fSum";
                                 name << ".csv";
 
                                 // open a new data file for this iteration
                                 // and start with header
-                                out.open(name.str().c_str(), std::ios::out | std::ofstream::app);
+                                Inform out(NULL, fname.str().c_str(), Inform::APPEND);
+                                out.precision(10);
+                                out.setf(std::ios::scientific, std::ios::floatfield);
+
                                 if (iteration==0){
-                                        out << "it,FieldSum" << std::endl;
+                                        out << "it,FieldSum" << endl;
                                 }
-                                out << iteration << ", "<< sum(f) << std::endl;
-                                // close the output file for this iteration:
-                                out.close();
+                                out << iteration << ", "<< sum(f) << endl;
 
                         }
 
