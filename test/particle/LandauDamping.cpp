@@ -142,8 +142,8 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration,
     vtkout.close();
 }
 
-template <typename T, class GeneratorPool, unsigned Dim>
-struct generate_random {
+template <typename T>
+struct Newton1D {
 
   using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
   // Output View for the random numbers
@@ -154,19 +154,63 @@ struct generate_random {
 
   T start, end;
 
+  double tol = 1e-12;
+  int max_iter = 20;
+
+
+  KOKKOS_FUNCTION
+  void solve(T& u, T& k, double alpha, T& x0, T& x) {
+
+      int iterations = 0;
+
+      while (iterations < max_iter && abs() 
+
+
+         
+          
+
+
+  }
+};
+
+
+template <typename T, class GeneratorPool>
+struct generate_random {
+
+  using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
+  // Output View for the random numbers
+  view_type x;
+
+  // The GeneratorPool
+  GeneratorPool rand_pool;
+
+  Newton1D solver;
+
+  double alpha;
+
+  T len, k, u, x0;
+
+  //T start, end;
+
   // Initialize all members
-  generate_random(view_type vals_, GeneratorPool rand_pool_, T start_, T end_)
-      : vals(vals_), rand_pool(rand_pool_), start(start_), end(end_) {}
+  generate_random(view_type x_, GeneratorPool rand_pool_, 
+                 T len_, double alpha_, T k_)
+      : x(x_), rand_pool(rand_pool_), 
+        len(len_), alpha(alpha_)
+        k(k_) {}
 
   KOKKOS_INLINE_FUNCTION
   void operator()(int i) const {
     // Get a random number state from the pool for the active thread
     typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-    // Draw samples numbers from the pool as double in the range [start, end)
-      vals(i)[0] = rand_gen.drand(start[0], end[0]);
-      vals(i)[1] = rand_gen.drand(start[1], end[1]);
-      vals(i)[2] = rand_gen.drand(start[2], end[2]);
+    u[0] = rand_gen.drand(0, 1);
+    u[1] = rand_gen.drand(0, 1);
+    u[2] = rand_gen.drand(0, 1);
+
+    x0 = (len * u) / (1 + alpha);
+
+    solver.solve(u, k, alpha, x0, x(i));  
 
     // Give the state back, which will allow another thread to acquire it
     rand_pool.free_state(rand_gen);
@@ -481,6 +525,7 @@ int main(int argc, char *argv[]){
     FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t PL(FL, mesh);
 
+    //Q = -\int\int f dx dv
     double Q = -rmax[0] * rmax[1] * rmax[2];
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
