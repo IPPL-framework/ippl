@@ -50,7 +50,7 @@ using ParticleAttrib = ippl::ParticleAttrib<T>;
 typedef Vector<double, Dim>  Vector_t;
 typedef Field<double, Dim>   Field_t;
 typedef Field<Vector_t, Dim> VField_t;
-typedef ippl::FFTPeriodicPoissonSolver<VField_t, Field_t,double,Dim> Solver_t;
+typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim> Solver_t;
 
 double pi = acos(-1.0);
 
@@ -298,8 +298,8 @@ public:
     }
 
     void initFFTSolver() {
-        ippl::SolverParams sp;
-        sp.add<int>("output_type",1);
+        ippl::ParameterList sp;
+        sp.add("output_type", Solver_t::GRAD);
 
         ippl::FFTParams fftParams;
 
@@ -315,11 +315,11 @@ public:
 
         solver_mp = std::make_shared<Solver_t>(fftParams);
 
-        solver_mp->setParameters(sp);
+        solver_mp->mergeParameters(sp);
 
-        solver_mp->setRhs(&rho_m);
+        solver_mp->setRhs(rho_m);
 
-        solver_mp->setLhs(&E_m);
+        solver_mp->setLhs(E_m);
     }
 
 
