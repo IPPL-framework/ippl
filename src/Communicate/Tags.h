@@ -120,9 +120,9 @@ namespace ippl {
 #define IPPL_PARTICLE_RECV 10000
 
 // FFT Poisson Solver
-#define IPPL_SOLVER_SEND 11000
-#define IPPL_SOLVER_RECV 12000
-#define IPPL_VICO_SEND   13000
-#define IPPL_VICO_RECV   14000
+#define IPPL_SOLVER_SEND 13000
+#define IPPL_SOLVER_RECV 14000
+#define IPPL_VICO_SEND   16000
+#define IPPL_VICO_RECV   17000
 
 #endif // TAGS_H
