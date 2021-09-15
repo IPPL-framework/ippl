@@ -158,12 +158,13 @@ namespace ippl {
         IpplTimings::startTimer(destroyTimer);
 
         size_type invalidCount = 0;
+        auto pIDs = pdata.ID.getView();
         Kokkos::parallel_reduce(
             "set/count invalid",
             localnum,
             KOKKOS_LAMBDA(const size_t i, size_type& nInvalid) {
                 if (invalid(i)) {
-                    pdata.ID(i) = -1;
+                    pIDs(i) = -1;
                     nInvalid += 1;
                 }
             }, invalidCount);

@@ -112,10 +112,13 @@ namespace ippl {
         }
 
         // set the unique ID value for these new particles
+        auto pIDs = ID.getView();
+        auto nextID = this->nextID_m;
+        auto numNodes = this->numNodes_m;
         Kokkos::parallel_for("ParticleBase<PLayout, Properties...>::create(size_t)",
                              Kokkos::RangePolicy(localNum_m, nLocal),
-                             KOKKOS_CLASS_LAMBDA(const std::int64_t i) {
-                                 ID(i) = this->nextID_m + this->numNodes_m * i;
+                             KOKKOS_LAMBDA(const std::int64_t i) {
+                                 pIDs(i) = nextID + numNodes * i;
                              });
         nextID_m += numNodes_m * (nLocal - localNum_m);
 
