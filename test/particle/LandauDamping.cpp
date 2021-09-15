@@ -145,36 +145,51 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration,
 template <typename T>
 struct Newton1D {
 
-  using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
-  // Output View for the random numbers
-  view_type vals;
-
-  // The GeneratorPool
-  GeneratorPool rand_pool;
-
-  T start, end;
-
   double tol = 1e-12;
   int max_iter = 20;
+  double pi = acos(-1.0);
+  
+  T k, alpha, u;
 
+  KOKKOS_INLINE_FUNCTION
+  Newton1D() {}
+
+  KOKKOS_INLINE_FUNCTION
+  Newton1D(T& k_, T& alpha_, T&u_) 
+       : k(k_), alpha(alpha_)
+         u(u_) {}
+
+  KOKKOS_INLINE_FUNCTION
+  ~Newton1D() {}
+
+  KOKKOS_INLINE_FUNCTION
+  T f(T& x) {
+      T F;
+      F = (x  + (alpha  * (sin(k * x) / k))) 
+          - ((2 * pi / k) * u);
+      return F;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  T fprime(T& x) {
+      T Fprime;
+      Fprime = 1  + (alpha  * cos(k * x));
+      return Fprime;
+  }
 
   KOKKOS_FUNCTION
-  void solve(T& u, T& k, double alpha, T& x0, T& x) {
-
+  void solve(T& xp, T& x) {
       int iterations = 0;
-
-      while (iterations < max_iter && abs() 
-
-
-         
-          
-
-
+      while (iterations < max_iter && abs(f(xp)) > tol) {
+          x = xp - (f(xp)/fprime(xp));
+          xp = x;
+          iterations += 1;
+      }
   }
 };
 
 
-template <typename T, class GeneratorPool>
+template <typename T, class GeneratorPool, unsigned Dim>
 struct generate_random {
 
   using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
@@ -188,9 +203,7 @@ struct generate_random {
 
   double alpha;
 
-  T len, k, u, x0;
-
-  //T start, end;
+  T len, k, u, xp;
 
   // Initialize all members
   generate_random(view_type x_, GeneratorPool rand_pool_, 
@@ -204,13 +217,12 @@ struct generate_random {
     // Get a random number state from the pool for the active thread
     typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-    u[0] = rand_gen.drand(0, 1);
-    u[1] = rand_gen.drand(0, 1);
-    u[2] = rand_gen.drand(0, 1);
-
-    x0 = (len * u) / (1 + alpha);
-
-    solver.solve(u, k, alpha, x0, x(i));  
+    for (unsigned d = 0; d <Dim; ++d) {
+        u[d] = rand_gen.drand(0, 1);
+        xp[d] = (len[d] * u[d]) / (1 + alpha);
+        solver Newton1D(k[d], alpha, u[d]);
+        solver.solve(xp[d], x(i)[d]);  
+    }
 
     // Give the state back, which will allow another thread to acquire it
     rand_pool.free_state(rand_gen);
@@ -507,11 +519,10 @@ int main(int argc, char *argv[]){
 
 
     // create mesh and layout objects for this problem domain
-    double kx = 0.5;
-    double ky = 0.5;
-    double kz = 0.5;
+    Vector_t k = {0.5, 0.5, 0,5};
+    double alpha = 0.05;
     Vector_t rmin(0.0);
-    Vector_t rmax = {2 * pi / kx, 2 * pi / ky, 2 * pi / kz} ;
+    Vector_t rmax = 2 * pi / k ;
     double dx = rmax[0] / nr[0];
     double dy = rmax[1] / nr[1];
     double dz = rmax[2] / nr[2];
@@ -550,7 +561,7 @@ int main(int argc, char *argv[]){
     Kokkos::Random_XorShift64_Pool<> rand_pool64((uint64_t)(42 + 100*Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), rand_pool64, Rmin, Rmax));
+                         P->R.getView(), rand_pool64, rmax, alpha, k));
     Kokkos::fence();
     P->q = P->Q_m/totalP;
     IpplTimings::stopTimer(particleCreation);
@@ -596,15 +607,8 @@ int main(int argc, char *argv[]){
         // kick
 
         IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E * 0.0;
+        P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
-
-        IpplTimings::startTimer(temp);
-        Kokkos::parallel_for(P->getLocalNum(),
-                             generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                             P->P.getView(), rand_pool64, -hr, hr));
-        Kokkos::fence();
-        IpplTimings::stopTimer(temp);
 
         //drift
         IpplTimings::startTimer(RTimer);
@@ -629,7 +633,7 @@ int main(int argc, char *argv[]){
 
         //kick
         IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E * 0.0;
+        P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
 
         P->time_m += dt;
