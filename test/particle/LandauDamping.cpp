@@ -51,7 +51,7 @@ using ParticleAttrib = ippl::ParticleAttrib<T>;
 typedef Vector<double, Dim>  Vector_t;
 typedef Field<double, Dim>   Field_t;
 typedef Field<Vector_t, Dim> VField_t;
-typedef ippl::FFTPeriodicPoissonSolver<VField_t, Field_t,double,Dim> Solver_t;
+typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim> Solver_t;
 
 double pi = acos(-1.0);
 
@@ -155,15 +155,15 @@ struct Newton1D {
   Newton1D() {}
 
   KOKKOS_INLINE_FUNCTION
-  Newton1D(T& k_, T& alpha_, T&u_) 
-       : k(k_), alpha(alpha_)
+  Newton1D(T k_, T alpha_, T u_) 
+       : k(k_), alpha(alpha_),
          u(u_) {}
 
   KOKKOS_INLINE_FUNCTION
   ~Newton1D() {}
 
   KOKKOS_INLINE_FUNCTION
-  T f(T& x) {
+  T f(T x) {
       T F;
       F = (x  + (alpha  * (sin(k * x) / k))) 
           - ((2 * pi / k) * u);
@@ -171,14 +171,14 @@ struct Newton1D {
   }
 
   KOKKOS_INLINE_FUNCTION
-  T fprime(T& x) {
+  T fprime(T x) {
       T Fprime;
       Fprime = 1  + (alpha  * cos(k * x));
       return Fprime;
   }
 
   KOKKOS_FUNCTION
-  void solve(T& xp, T& x) {
+  void solve(T xp, T x) {
       int iterations = 0;
       while (iterations < max_iter && abs(f(xp)) > tol) {
           x = xp - (f(xp)/fprime(xp));
@@ -193,23 +193,26 @@ template <typename T, class GeneratorPool, unsigned Dim>
 struct generate_random {
 
   using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
+  using value_type  = typename T::value_type;
+  //using Nsolver_t = typename Newton1D<value_type>;
   // Output View for the random numbers
-  view_type x;
+  view_type x, v;
 
   // The GeneratorPool
   GeneratorPool rand_pool;
 
-  Newton1D solver;
+  //Nsolver_t solver;
+  //Newton1D<value_type> solver;
 
-  double alpha;
+  value_type alpha;
 
-  T len, k, u, xp;
+  T len, k;
 
   // Initialize all members
-  generate_random(view_type x_, GeneratorPool rand_pool_, 
-                 T len_, double alpha_, T k_)
-      : x(x_), rand_pool(rand_pool_), 
-        len(len_), alpha(alpha_)
+  generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
+                 T len_, value_type alpha_, T k_)
+      : x(x_), v(v_), rand_pool(rand_pool_), 
+        len(len_), alpha(alpha_),
         k(k_) {}
 
   KOKKOS_INLINE_FUNCTION
@@ -217,11 +220,13 @@ struct generate_random {
     // Get a random number state from the pool for the active thread
     typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-    for (unsigned d = 0; d <Dim; ++d) {
-        u[d] = rand_gen.drand(0, 1);
-        xp[d] = (len[d] * u[d]) / (1 + alpha);
-        solver Newton1D(k[d], alpha, u[d]);
-        solver.solve(xp[d], x(i)[d]);  
+    value_type u, xp;
+    for (unsigned d = 0; d < Dim; ++d) {
+        u = rand_gen.drand(0, 1);
+        xp = (len[d] * u) / (1 + alpha);
+        Newton1D<value_type> solver(k[d], alpha, u);
+        solver.solve(xp, x(i)[d]);
+        v(i)[d] = rand_gen.normal(0.0, 1.0);
     }
 
     // Give the state back, which will allow another thread to acquire it
@@ -229,6 +234,33 @@ struct generate_random {
   }
 };
 
+//template <typename T, class GeneratorPool, unsigned Dim>
+//struct generate_random_vel {
+//
+//  using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
+//  // Output View for the random numbers
+//  view_type vals;
+//
+//  // The GeneratorPool
+//  GeneratorPool rand_pool;
+//
+//  // Initialize all members
+//  generate_random(view_type vals_, GeneratorPool rand_pool_)
+//      : vals(vals_), rand_pool(rand_pool_) {}
+//
+//  KOKKOS_INLINE_FUNCTION
+//  void operator()(int i) const {
+//    // Get a random number state from the pool for the active thread
+//    typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+//
+//    for (unsigned d = 0; d <Dim; ++d) {
+//      vals(i)[d] = rand_gen.normal(0.0, 1.0);
+//    }
+//
+//    // Give the state back, which will allow another thread to acquire it
+//    rand_pool.free_state(rand_gen);
+//  }
+//};
 
 template<class PLayout>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
@@ -363,8 +395,9 @@ public:
     }
 
     void initFFTSolver() {
-        ippl::SolverParams sp;
-        sp.add<int>("output_type",1);
+        ippl::ParameterList sp;
+
+        sp.add("output_type", Solver_t::GRAD);
 
         ippl::FFTParams fftParams;
 
@@ -373,18 +406,17 @@ public:
 #else
         fftParams.setAllToAll( true );
 #endif
-
         fftParams.setPencils( true );
         fftParams.setReorder( false );
         fftParams.setRCDirection( 0 );
 
         solver_mp = std::make_shared<Solver_t>(fftParams);
 
-        solver_mp->setParameters(sp);
+        solver_mp->mergeParameters(sp);
+        
+        solver_mp->setRhs(rho_m);
 
-        solver_mp->setRhs(&rho_m);
-
-        solver_mp->setLhs(&E_m);
+        solver_mp->setLhs(E_m);
     }
 
 
@@ -409,27 +441,39 @@ public:
 
         const int nghostE = E_m.getNghost();
         auto Eview = E_m.getView();
-        Vector_t normE;
+        double fieldEnergy, ExAmp;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-        for (unsigned d=0; d<Dim; ++d) {
-            double temp = 0.0;
-            Kokkos::parallel_reduce("Vector E reduce",
-                                    mdrange_type({nghostE, nghostE, nghostE},
-                                                 {Eview.extent(0) - nghostE,
-                                                  Eview.extent(1) - nghostE,
-                                                  Eview.extent(2) - nghostE}),
-                                    KOKKOS_LAMBDA(const size_t i, const size_t j,
-                                                  const size_t k, double& valL)
-                                    {
-                                        double myVal = pow(Eview(i, j, k)[d], 2);
-                                        valL += myVal;
-                                    }, Kokkos::Sum<double>(temp));
-                double globaltemp = 0.0;
-                MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-                normE[d] = sqrt(globaltemp);
-        }
+        double temp = 0.0;
+        Kokkos::parallel_reduce("Ex inner product",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = pow(Eview(i, j, k)[0], 2);
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+        double globaltemp = 0.0;
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        fieldEnergy = 0.5 * globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
 
+        double tempMax = 0.0;
+        Kokkos::parallel_reduce("Ex max norm",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = abs(Eview(i, j, k)[0]);
+                                    if(myVal > valL) valL = myVal;
+                                }, Kokkos::Max<double>(tempMax));
+        ExAmp = 0.0;
+        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 
 
         if(Ippl::Comm->rank() == 0) {
@@ -444,15 +488,13 @@ public:
             csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
 
             if(time_m == 0.0) {
-                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2" << std::endl;
+                csvout << "time, Kinetic energy, Ex_field_energy, Ex_max_norm" << std::endl;
             }
 
             csvout << time_m << " "
                    << gEnergy << " "
-                   << rhoNorm_m << " "
-                   << normE[0] << " "
-                   << normE[1] << " "
-                   << normE[2] << std::endl;
+                   << fieldEnergy << " "
+                   << ExAmp << std::endl;
 
             csvout.close();
         }
@@ -561,7 +603,7 @@ int main(int argc, char *argv[]){
     Kokkos::Random_XorShift64_Pool<> rand_pool64((uint64_t)(42 + 100*Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), rand_pool64, rmax, alpha, k));
+                         P->R.getView(), P->P.getView(), rand_pool64, rmax, alpha, k));
     Kokkos::fence();
     P->q = P->Q_m/totalP;
     IpplTimings::stopTimer(particleCreation);
