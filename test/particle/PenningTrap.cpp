@@ -20,7 +20,6 @@
 //
 #include "Ippl.h"
 #include <string>
-#include <fstream>
 #include <vector>
 #include <iostream>
 #include <set>
@@ -63,42 +62,38 @@ void dumpVTK(VField_t& E, int nx, int ny, int nz, int iteration,
 
     typename VField_t::view_type::host_mirror_type host_view = E.getHostMirror();
 
-    Kokkos::deep_copy(host_view, E.getView());
-    std::ofstream vtkout;
-    vtkout.precision(10);
-    vtkout.setf(std::ios::scientific, std::ios::floatfield);
-
     std::stringstream fname;
     fname << "data/ef_";
     fname << std::setw(4) << std::setfill('0') << iteration;
     fname << ".vtk";
 
-    // open a new data file for this iteration
-    // and start with header
-    vtkout.open(fname.str().c_str(), std::ios::out);
-    vtkout << "# vtk DataFile Version 2.0" << std::endl;
-    vtkout << "PenningTrap" << std::endl;
-    vtkout << "ASCII" << std::endl;
-    vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << std::endl;
-    vtkout << "ORIGIN "     << -2*dx  << " " << -2*dy  << " "  << -2*dz << std::endl;
-    vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << std::endl;
+    Kokkos::deep_copy(host_view, E.getView());
 
-    vtkout << "VECTORS E-Field float" << std::endl;
+    Inform vtkout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+    vtkout.precision(10);
+    vtkout.setf(std::ios::scientific, std::ios::floatfield);
+
+    // start with header
+    vtkout << "# vtk DataFile Version 2.0" << endl;
+    vtkout << "PenningTrap" << endl;
+    vtkout << "ASCII" << endl;
+    vtkout << "DATASET STRUCTURED_POINTS" << endl;
+    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << endl;
+    vtkout << "ORIGIN "     << -2*dx  << " " << -2*dy  << " "  << -2*dz << endl;
+    vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
+    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << endl;
+
+    vtkout << "VECTORS E-Field float" << endl;
     for (int z=0; z<nz+2; z++) {
         for (int y=0; y<ny+2; y++) {
             for (int x=0; x<nx+2; x++) {
 
                 vtkout << host_view(x,y,z)[0] << "\t"
                        << host_view(x,y,z)[1] << "\t"
-                       << host_view(x,y,z)[2] << std::endl;
+                       << host_view(x,y,z)[2] << endl;
             }
         }
     }
-
-    // close the output file for this iteration:
-    vtkout.close();
 }
 
 
@@ -106,44 +101,40 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration,
              double dx, double dy, double dz) {
 
     typename Field_t::view_type::host_mirror_type host_view = rho.getHostMirror();
-    Kokkos::deep_copy(host_view, rho.getView());
-    std::ofstream vtkout;
-    vtkout.precision(10);
-    vtkout.setf(std::ios::scientific, std::ios::floatfield);
 
     std::stringstream fname;
     fname << "data/scalar_";
     fname << std::setw(4) << std::setfill('0') << iteration;
     fname << ".vtk";
 
+    Kokkos::deep_copy(host_view, rho.getView());
+
+    Inform vtkout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+    vtkout.precision(10);
+    vtkout.setf(std::ios::scientific, std::ios::floatfield);
+
     //double vol = dx*dy*dz;
 
-    // open a new data file for this iteration
-    // and start with header
-    vtkout.open(fname.str().c_str(), std::ios::out);
-    vtkout << "# vtk DataFile Version 2.0" << std::endl;
-    vtkout << "PenningTrap" << std::endl;
-    vtkout << "ASCII" << std::endl;
-    vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << std::endl;
-    vtkout << "ORIGIN " << -2*dx << " " << -2*dy << " " << -2*dz << std::endl;
-    vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << std::endl;
+    // start with header
+    vtkout << "# vtk DataFile Version 2.0" << endl;
+    vtkout << "PenningTrap" << endl;
+    vtkout << "ASCII" << endl;
+    vtkout << "DATASET STRUCTURED_POINTS" << endl;
+    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << endl;
+    vtkout << "ORIGIN " << -2*dx << " " << -2*dy << " " << -2*dz << endl;
+    vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
+    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << endl;
 
-    vtkout << "SCALARS Rho float" << std::endl;
-    vtkout << "LOOKUP_TABLE default" << std::endl;
+    vtkout << "SCALARS Rho float" << endl;
+    vtkout << "LOOKUP_TABLE default" << endl;
     for (int z=0; z<nz+2; z++) {
         for (int y=0; y<ny+2; y++) {
             for (int x=0; x<nx+2; x++) {
 
-                vtkout << host_view(x,y,z) << std::endl;
+                vtkout << host_view(x,y,z) << endl;
             }
         }
     }
-
-
-    // close the output file for this iteration:
-    vtkout.close();
 }
 
 
@@ -266,13 +257,6 @@ public:
             local = 1;
         MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
 
-        /***PRINT***/
-        /*
-        std::ofstream file;
-        file.open("imbalance.txt", std::ios_base::app);
-        file << std::to_string(timestep) << " " << Ippl::Comm->rank() << " " << dev << "\n";
-        file.close();
-        */
         for (unsigned int i = 0; i < res.size(); i++) {
             if (res[i] == 1)
                 return true;
@@ -421,21 +405,18 @@ public:
             normE[d] = sqrt(globaltemp);
         }
 
-
-
-        if(Ippl::Comm->rank() == 0) {
-            std::ofstream csvout;
-            csvout.precision(10);
-            csvout.setf(std::ios::scientific, std::ios::floatfield);
-
+        if (Ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/ParticleField_";
             fname << Ippl::Comm->size();
             fname << ".csv";
-            csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if(time_m == 0.0) {
-                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2" << std::endl;
+                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2" << endl;
             }
 
             csvout << time_m << " "
@@ -443,13 +424,10 @@ public:
                    << rhoNorm_m << " "
                    << normE[0] << " "
                    << normE[1] << " "
-                   << normE[2] << std::endl;
-
-            csvout.close();
+                   << normE[2] << endl;
         }
 
         Ippl::Comm->barrier();
-
      }
 
 private:

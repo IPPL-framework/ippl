@@ -17,7 +17,6 @@
 //
 #include "Ippl.h"
 #include <string>
-#include <fstream>
 #include <vector>
 #include <iostream>
 #include <set>
@@ -130,18 +129,13 @@ public:
      Vector_t getRMax() { return rmax_m;}
      Vector_t getHr() { return hr_m;}
 
-     void dumpParticleData(int iteration) {
+     void dumpData(int iteration) {
+        double Energy = 0.0;
         
         ParticleAttrib<Vector_t>::view_type& view = P.getView();
-        std::ofstream csvout;
+        Inform csvout(NULL, "data/energy.csv", Inform::APPEND);
         csvout.precision(10);
         csvout.setf(std::ios::scientific, std::ios::floatfield);
-
-        std::stringstream fname;
-        fname << "data/energy.csv";
-        double Energy = 0.0;
-
-        csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
 
         Kokkos::parallel_reduce("Particle Energy", view.extent(0),
                                 KOKKOS_LAMBDA(const int i, double& valL){
@@ -151,10 +145,7 @@ public:
 
         Energy *= 0.5;
         csvout << iteration << " "
-               << Energy << std::endl;
-
-        csvout.close();
-
+               << Energy << endl;
      }
 
 private:
@@ -332,6 +323,8 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(PTimer);                                                    
         msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin()
             << P->getRMax() << P->getHr() << endl;
+
+        P->dumpData(it);
     }
     
     msg << "Particle update test: End." << endl;
