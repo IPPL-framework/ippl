@@ -418,6 +418,66 @@ public:
         Ippl::Comm->barrier();
      }
 
+     void dumpLandau() {
+
+        const int nghostE = E_m.getNghost();
+        auto Eview = E_m.getView();
+        double fieldEnergy, ExAmp;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+        double temp = 0.0;
+        Kokkos::parallel_reduce("Ex inner product",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = pow(Eview(i, j, k)[0], 2);
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+        double globaltemp = 0.0;
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        fieldEnergy = 0.5 * globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
+
+        double tempMax = 0.0;
+        Kokkos::parallel_reduce("Ex max norm",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = abs(Eview(i, j, k)[0]);
+                                    if(myVal > valL) valL = myVal;
+                                }, Kokkos::Max<double>(tempMax));
+        ExAmp = 0.0;
+        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+
+        if (Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/ParticleField_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(time_m == 0.0) {
+                csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+            }
+
+            csvout << time_m << " "
+                   << fieldEnergy << " "
+                   << ExAmp << endl;
+        }
+
+        Ippl::Comm->barrier();
+     }
+
 private:
     void setBCAllPeriodic() {
 
