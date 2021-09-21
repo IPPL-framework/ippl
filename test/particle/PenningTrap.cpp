@@ -96,7 +96,7 @@ int main(int argc, char *argv[]){
     dist = argv[7];
 
     P->nr_m = nr;
-    unsigned long long int nloc = totalP / Ippl::Comm->size();
+    size_type nloc = totalP / Ippl::Comm->size();
 
     int rest = (int) (totalP - nloc * Ippl::Comm->size());
 
@@ -159,13 +159,13 @@ int main(int argc, char *argv[]){
 
 
         double sum_f = 0.0;
-        std::size_t ip = 0;
+        size_type ip = 0;
         double sum_coord=0.0;
         P->create(nloc);
         typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
         typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
         typename ParticleAttrib<double>::HostMirror q_host = P->q.getHostMirror();
-        for (unsigned long long int i = 0; i< nloc; i++) {
+        for (size_type i = 0; i< nloc; i++) {
 
             states[0] = distribution_x(eng[0]);
             states[1] = distribution_y(eng[1]);
@@ -232,7 +232,7 @@ int main(int argc, char *argv[]){
         typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
 
         double sum_coord=0.0;
-        for (unsigned long long int i = 0; i< nloc; i++) {
+        for (size_type i = 0; i< nloc; i++) {
             for (unsigned istate = 0; istate < 2*Dim; ++istate) {
                 double u1 = dist_uniform(eng[istate*2]);
                 double u2 = dist_uniform(eng[istate*2+1]);

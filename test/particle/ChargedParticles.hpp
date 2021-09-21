@@ -72,7 +72,7 @@ void dumpVTK(VField_t& E, int nx, int ny, int nz, int iteration,
     vtkout << "ASCII" << endl;
     vtkout << "DATASET STRUCTURED_POINTS" << endl;
     vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << endl;
-    vtkout << "ORIGIN "     << -2*dx  << " " << -2*dy  << " "  << -2*dz << endl;
+    vtkout << "ORIGIN "     << -dx  << " " << -dy  << " "  << -dz << endl;
     vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
     vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << endl;
 
@@ -113,7 +113,7 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration,
     vtkout << "ASCII" << endl;
     vtkout << "DATASET STRUCTURED_POINTS" << endl;
     vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << endl;
-    vtkout << "ORIGIN " << -2*dx << " " << -2*dy << " " << -2*dz << endl;
+    vtkout << "ORIGIN " << -dx << " " << -dy << " " << -dz << endl;
     vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
     vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << endl;
 
@@ -456,23 +456,44 @@ public:
         ExAmp = 0.0;
         MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 
+        //typename ParticleAttrib<Vector_t>::HostMirror R_host = this->R.getHostMirror();
+        //typename ParticleAttrib<Vector_t>::HostMirror P_host = this->P.getHostMirror();
+        //Kokkos::deep_copy(R_host, this->R.getView());
+        //Kokkos::deep_copy(P_host, P.getView());
+
         if (Ippl::Comm->rank() == 0) {
             std::stringstream fname;
-            fname << "data/ParticleField_";
+            fname << "data/FieldLandau_";
             fname << Ippl::Comm->size();
             fname << ".csv";
+
+            //std::stringstream pname;
+            //pname << "data/ParticleIC.csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
+            //Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE);
+            //pcsvout.precision(10);
+            //pcsvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if(time_m == 0.0) {
                 csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+                //pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
             }
 
             csvout << time_m << " "
                    << fieldEnergy << " "
                    << ExAmp << endl;
+
+            //for (size_type i = 0; i< this->getLocalNum(); i++) {
+            //    pcsvout << R_host(i)[0] << " "
+            //            << R_host(i)[1] << " "
+            //            << R_host(i)[2] << " "
+            //            << P_host(i)[0] << " "
+            //            << P_host(i)[1] << " "
+            //            << P_host(i)[2] << endl;
+            //}
         }
 
         Ippl::Comm->barrier();

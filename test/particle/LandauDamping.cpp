@@ -43,15 +43,23 @@ struct Newton1D {
   Newton1D() {}
 
   KOKKOS_INLINE_FUNCTION
-  Newton1D(T k_, T alpha_, T u_) 
-       : k(k_), alpha(alpha_),
-         u(u_) {}
+  Newton1D(const T& k_, const T& alpha_, 
+           const T& u_) 
+  : k(k_), alpha(alpha_), u(u_) {}
+  //KOKKOS_INLINE_FUNCTION
+  //void initialize(const T& k_, 
+  //                const T& alpha_, 
+  //                const T& u_) {
+  //    k = k_;
+  //    alpha = alpha_;
+  //    u = u_;
+  //}
 
   KOKKOS_INLINE_FUNCTION
   ~Newton1D() {}
 
   KOKKOS_INLINE_FUNCTION
-  T f(T x) {
+  T f(T& x) {
       T F;
       F = (x  + (alpha  * (sin(k * x) / k))) 
           - ((2 * pi / k) * u);
@@ -59,18 +67,17 @@ struct Newton1D {
   }
 
   KOKKOS_INLINE_FUNCTION
-  T fprime(T x) {
+  T fprime(T& x) {
       T Fprime;
       Fprime = 1  + (alpha  * cos(k * x));
       return Fprime;
   }
 
   KOKKOS_FUNCTION
-  void solve(T xp, T x) {
+  void solve(T& x) {
       int iterations = 0;
-      while (iterations < max_iter && abs(f(xp)) > tol) {
-          x = xp - (f(xp)/fprime(xp));
-          xp = x;
+      while (iterations < max_iter && abs(f(x)) > tol) {
+          x = x - (f(x)/fprime(x));
           iterations += 1;
       }
   }
@@ -82,14 +89,12 @@ struct generate_random {
 
   using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
   using value_type  = typename T::value_type;
-  //using Nsolver_t = typename Newton1D<value_type>;
   // Output View for the random numbers
   view_type x, v;
 
   // The GeneratorPool
   GeneratorPool rand_pool;
 
-  //Nsolver_t solver;
   //Newton1D<value_type> solver;
 
   value_type alpha;
@@ -98,7 +103,7 @@ struct generate_random {
 
   // Initialize all members
   generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
-                 T len_, value_type alpha_, T k_)
+                 T& len_, value_type& alpha_, T& k_)
       : x(x_), v(v_), rand_pool(rand_pool_), 
         len(len_), alpha(alpha_),
         k(k_) {}
@@ -108,12 +113,13 @@ struct generate_random {
     // Get a random number state from the pool for the active thread
     typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-    value_type u, xp;
+    value_type u;
     for (unsigned d = 0; d < Dim; ++d) {
         u = rand_gen.drand(0, 1);
-        xp = (len[d] * u) / (1 + alpha);
+        x(i)[d] = (len[d] * u) / (1 + alpha);
         Newton1D<value_type> solver(k[d], alpha, u);
-        solver.solve(xp, x(i)[d]);
+        //solver.initialize(k[d], alpha, u);
+        solver.solve(x(i)[d]);
         v(i)[d] = rand_gen.normal(0.0, 1.0);
     }
 
@@ -179,7 +185,7 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(mainTimer);
 
-    const uint64_t totalP = std::atoll(argv[4]);
+    const size_type totalP = std::atoll(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
 
     msg << "Landau damping"
@@ -204,10 +210,10 @@ int main(int argc, char *argv[]){
 
 
     // create mesh and layout objects for this problem domain
-    Vector_t k = {0.5, 0.5, 0,5};
+    Vector_t kw = {0.5, 0.5, 0.5};
     double alpha = 0.05;
     Vector_t rmin(0.0);
-    Vector_t rmax = 2 * pi / k ;
+    Vector_t rmax = 2 * pi / kw ;
     double dx = rmax[0] / nr[0];
     double dy = rmax[1] / nr[1];
     double dz = rmax[2] / nr[2];
@@ -226,7 +232,7 @@ int main(int argc, char *argv[]){
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
     P->nr_m = nr;
-    uint64_t nloc = totalP / Ippl::Comm->size();
+    size_type nloc = totalP / Ippl::Comm->size();
 
     int rest = (int) (totalP - nloc * Ippl::Comm->size());
 
@@ -243,10 +249,10 @@ int main(int argc, char *argv[]){
         Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
     }
 
-    Kokkos::Random_XorShift64_Pool<> rand_pool64((uint64_t)(42 + 100*Ippl::Comm->rank()));
+    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), P->P.getView(), rand_pool64, rmax, alpha, k));
+                         P->R.getView(), P->P.getView(), rand_pool64, rmax, alpha, kw));
     Kokkos::fence();
     P->q = P->Q_m/totalP;
     IpplTimings::stopTimer(particleCreation);
@@ -328,7 +334,7 @@ int main(int argc, char *argv[]){
         msg << "Finished iteration: " << it << " time: " << P->time_m << endl;
     }
 
-    msg << "Uniform Plasma Test: End." << endl;
+    msg << "LandauDamping: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
