@@ -61,8 +61,7 @@ struct Newton1D {
   KOKKOS_INLINE_FUNCTION
   T f(T& x) {
       T F;
-      F = (x  + (alpha  * (sin(k * x) / k))) 
-          - ((2 * pi / k) * u);
+      F = x  + (alpha  * (sin(k * x) / k)) - u;
       return F;
   }
 
@@ -99,14 +98,13 @@ struct generate_random {
 
   value_type alpha;
 
-  T len, k;
+  T k, start, end;
 
   // Initialize all members
   generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
-                 T& len_, value_type& alpha_, T& k_)
+                  value_type& alpha_, T& k_, T& start_, T& end_)
       : x(x_), v(v_), rand_pool(rand_pool_), 
-        len(len_), alpha(alpha_),
-        k(k_) {}
+        alpha(alpha_), k(k_), start(start_), end(end_) {}
 
   KOKKOS_INLINE_FUNCTION
   void operator()(int i) const {
@@ -115,8 +113,14 @@ struct generate_random {
 
     value_type u;
     for (unsigned d = 0; d < Dim; ++d) {
-        u = rand_gen.drand(0, 1);
-        x(i)[d] = (len[d] * u) / (1 + alpha);
+        
+        value_type fac0 = start[d] + 
+                      ((alpha / k[d]) * sin(k[d] * start[d]));
+        value_type fac1 = end[d] + 
+                      ((alpha / k[d]) * sin(k[d] * end[d]));
+
+        u = rand_gen.drand(fac0, fac1);
+        x(i)[d] = u / (1 + alpha);
         Newton1D<value_type> solver(k[d], alpha, u);
         //solver.initialize(k[d], alpha, u);
         solver.solve(x(i)[d]);
@@ -127,6 +131,12 @@ struct generate_random {
     rand_pool.free_state(rand_gen);
   }
 };
+
+double CDF(double& x, double& alpha, double& k) {
+   double cdf = x + (alpha / k) * sin(k * x);
+   return cdf;
+}
+
 
 //template <typename T, class GeneratorPool, unsigned Dim>
 //struct generate_random_vel {
@@ -162,7 +172,7 @@ const char* TestName = "LandauDamping";
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     Inform msg("LandauDamping");
-    Inform msg2all(argv[0],INFORM_ALL_NODES);
+    Inform msg2all("LandauDamping",INFORM_ALL_NODES);
 
     Ippl::Comm->setDefaultOverallocation(2);
 
@@ -211,7 +221,7 @@ int main(int argc, char *argv[]){
 
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
-    double alpha = 0.05;
+    double alpha = 0.5;//0.05;
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
     double dx = rmax[0] / nr[0];
@@ -232,28 +242,37 @@ int main(int argc, char *argv[]){
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
     P->nr_m = nr;
-    size_type nloc = totalP / Ippl::Comm->size();
 
-    int rest = (int) (totalP - nloc * Ippl::Comm->size());
+    IpplTimings::startTimer(particleCreation);
+
+    const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+    Vector_t Rmin, Rmax, Nr;
+    for (unsigned d = 0; d <Dim; ++d) {
+        Rmin[d] = origin[d] + lDom[d].first() * hr[d];
+        Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
+        Nr[d] = CDF(Rmax[d], alpha, kw[d]) - CDF(Rmin[d], alpha, kw[d]);  
+    }
+
+    double factor = (Nr[0] * Nr[1] * Nr[2]) / (rmax[0] * rmax[1] * rmax[2]);
+    size_type nloc = (size_type)(totalP * factor);
+    size_type Total_particles = 0;
+
+    MPI_Allreduce(&nloc, &Total_particles, 1,
+                MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+
+    int rest = (int) (totalP - Total_particles);
 
     if ( Ippl::Comm->rank() < rest )
         ++nloc;
 
-    IpplTimings::startTimer(particleCreation);
     P->create(nloc);
-
-    const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-    Vector_t Rmin, Rmax;
-    for (unsigned d = 0; d <Dim; ++d) {
-        Rmin[d] = origin[d] + lDom[d].first() * hr[d];
-        Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
-    }
-
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), P->P.getView(), rand_pool64, rmax, alpha, kw));
+                         P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, Rmin, Rmax));
     Kokkos::fence();
+    Ippl::Comm->barrier();
+    //P->dumpLandau();
     P->q = P->Q_m/totalP;
     IpplTimings::stopTimer(particleCreation);
 
