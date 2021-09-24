@@ -1,4 +1,4 @@
-// Uniform Plasma Test
+// Landau Damping Test
 //
 //   Usage:
 //     srun ./LandauDamping 128 128 128 10000 10 FFT --info 10
@@ -115,9 +115,9 @@ struct generate_random {
     for (unsigned d = 0; d < Dim; ++d) {
         
         value_type fac0 = start[d] + 
-                      ((alpha / k[d]) * sin(k[d] * start[d]));
+                          ((alpha / k[d]) * sin(k[d] * start[d]));
         value_type fac1 = end[d] + 
-                      ((alpha / k[d]) * sin(k[d] * end[d]));
+                          ((alpha / k[d]) * sin(k[d] * end[d]));
 
         u = rand_gen.drand(fac0, fac1);
         x(i)[d] = u / (1 + alpha);
@@ -136,35 +136,6 @@ double CDF(double& x, double& alpha, double& k) {
    double cdf = x + (alpha / k) * sin(k * x);
    return cdf;
 }
-
-
-//template <typename T, class GeneratorPool, unsigned Dim>
-//struct generate_random_vel {
-//
-//  using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
-//  // Output View for the random numbers
-//  view_type vals;
-//
-//  // The GeneratorPool
-//  GeneratorPool rand_pool;
-//
-//  // Initialize all members
-//  generate_random(view_type vals_, GeneratorPool rand_pool_)
-//      : vals(vals_), rand_pool(rand_pool_) {}
-//
-//  KOKKOS_INLINE_FUNCTION
-//  void operator()(int i) const {
-//    // Get a random number state from the pool for the active thread
-//    typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
-//
-//    for (unsigned d = 0; d <Dim; ++d) {
-//      vals(i)[d] = rand_gen.normal(0.0, 1.0);
-//    }
-//
-//    // Give the state back, which will allow another thread to acquire it
-//    rand_pool.free_state(rand_gen);
-//  }
-//};
 
 
 const char* TestName = "LandauDamping";
@@ -272,7 +243,6 @@ int main(int argc, char *argv[]){
                          P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, Rmin, Rmax));
     Kokkos::fence();
     Ippl::Comm->barrier();
-    //P->dumpLandau();
     P->q = P->Q_m/totalP;
     IpplTimings::stopTimer(particleCreation);
 
@@ -327,7 +297,7 @@ int main(int argc, char *argv[]){
 
         //Since the particles have moved spatially update them to correct processors
 	    IpplTimings::startTimer(updateTimer);
-        PL.update(*P, bunchBuffer);  //P->update();
+        PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
 
         //scatter the charge onto the underlying grid
