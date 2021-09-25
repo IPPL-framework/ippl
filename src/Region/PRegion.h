@@ -57,7 +57,7 @@ namespace ippl {
         KOKKOS_FUNCTION
         PRegion(T a, T b);
 
-        KOKKOS_FUNCTION
+        KOKKOS_DEFAULTED_FUNCTION
         ~PRegion() = default;
    
         KOKKOS_FUNCTION

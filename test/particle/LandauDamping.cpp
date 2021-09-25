@@ -192,7 +192,7 @@ int main(int argc, char *argv[]){
 
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
-    double alpha = 0.5;//0.05;
+    double alpha = 0.05;//0.05;
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
     double dx = rmax[0] / nr[0];
