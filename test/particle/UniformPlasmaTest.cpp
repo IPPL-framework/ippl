@@ -59,9 +59,6 @@ struct generate_random {
     for (unsigned d = 0; d < Dim; ++d) {
       vals(i)[d] = rand_gen.drand(start[d], end[d]);
     }
-      //vals(i)[0] = rand_gen.drand(start[0], end[0]);
-      //vals(i)[1] = rand_gen.drand(start[1], end[1]);
-      //vals(i)[2] = rand_gen.drand(start[2], end[2]);
 
     // Give the state back, which will allow another thread to acquire it
     rand_pool.free_state(rand_gen);
