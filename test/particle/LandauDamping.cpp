@@ -159,10 +159,10 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("initialisation");
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
     static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("kick");
-    static IpplTimings::TimerRef temp = IpplTimings::getTimer("randomMove");
     static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("drift");
     static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
+    static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
 
     IpplTimings::startTimer(mainTimer);
 
@@ -189,10 +189,9 @@ int main(int argc, char *argv[]){
         decomp[d] = ippl::PARALLEL;
     }
 
-
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
-    double alpha = 0.05;//0.05;
+    double alpha = 0.05;
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
     double dx = rmax[0] / nr[0];
@@ -249,6 +248,7 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(FirstUpdateTimer);
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
+    P->initializeORB(FL, mesh);
 
     bunch_type bunchBuffer(PL);
 
@@ -261,6 +261,15 @@ int main(int argc, char *argv[]){
     P->stype_m = argv[6];
     P->initSolver();
     P->time_m = 0.0;
+    P->loadbalancethreshold_m = std::atof(argv[7]);
+
+    unsigned int nstep = 0;
+    if (P->balance(totalP, nstep)) {
+        msg << "Starting first repartition" << endl;
+        IpplTimings::startTimer(domainDecomposition);
+        P->repartition(FL, mesh, bunchBuffer);
+        IpplTimings::stopTimer(domainDecomposition);
+    }
 
     P->scatterCIC(totalP, 0, hr);
 
@@ -278,6 +287,7 @@ int main(int argc, char *argv[]){
 
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
+    P->gatherStatistics(totalP);
     for (unsigned int it=0; it<nt; it++) {
 
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
@@ -300,6 +310,15 @@ int main(int argc, char *argv[]){
         PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
 
+        // Domain Decomposition
+        if (P->balance(totalP, it+1)) {
+           msg << "Starting repartition" << endl;
+           IpplTimings::startTimer(domainDecomposition);
+           P->repartition(FL, mesh, bunchBuffer);
+           IpplTimings::stopTimer(domainDecomposition);
+        }
+
+
         //scatter the charge onto the underlying grid
         P->scatterCIC(totalP, it+1, hr);
 
@@ -320,7 +339,8 @@ int main(int argc, char *argv[]){
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpLandau();
         IpplTimings::stopTimer(dumpDataTimer);
-        msg << "Finished iteration: " << it << " time: " << P->time_m << endl;
+        msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
+        P->gatherStatistics(totalP);
     }
 
     msg << "LandauDamping: End." << endl;

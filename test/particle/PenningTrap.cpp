@@ -274,20 +274,23 @@ int main(int argc, char *argv[]){
     PL.update(*P, bunchBuffer);
     IpplTimings::stopTimer(FirstUpdateTimer);
 
-    P->stype_m = argv[6];
-    P->initSolver();
-
-    static IpplTimings::TimerRef domainDecomposition0 = IpplTimings::getTimer("domainDecomp0");
-    if (P->balance(Total_particles)) {
-        msg << "Starting first repartition" << endl;
-        IpplTimings::startTimer(domainDecomposition0);
-        P->repartition(FL, mesh, bunchBuffer);
-        IpplTimings::stopTimer(domainDecomposition0);
-    }
-
     msg << "particles created and initial conditions assigned " << endl;
 
+    P->stype_m = argv[6];
+    P->initSolver();
     P->time_m = 0.0;
+    P->loadbalancethreshold_m = std::atof(argv[8]);
+
+    static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
+    unsigned int nstep = 0;
+    if (P->balance(Total_particles, nstep)) {
+        msg << "Starting first repartition" << endl;
+        IpplTimings::startTimer(domainDecomposition);
+        P->repartition(FL, mesh, bunchBuffer);
+        IpplTimings::stopTimer(domainDecomposition);
+    }
+
+
 
     P->scatterCIC(Total_particles, 0, hr);
 
@@ -341,11 +344,11 @@ int main(int argc, char *argv[]){
         PL.update(*P, bunchBuffer);
 
         // Domain Decomposition
-        if (P->balance(Total_particles)) {
+        if (P->balance(Total_particles, it+1)) {
            msg << "Starting repartition" << endl;
-           IpplTimings::startTimer(domainDecomposition0);
+           IpplTimings::startTimer(domainDecomposition);
            P->repartition(FL, mesh, bunchBuffer);
-           IpplTimings::stopTimer(domainDecomposition0);
+           IpplTimings::stopTimer(domainDecomposition);
         }
         
         //scatter the charge onto the underlying grid
@@ -380,7 +383,7 @@ int main(int argc, char *argv[]){
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpData();
         IpplTimings::stopTimer(dumpDataTimer);
-        msg << "Finished iteration: " << it << " time: " << P->time_m << endl;
+        msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
         P->gatherStatistics(Total_particles);
     }
 

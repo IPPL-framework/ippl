@@ -156,6 +156,10 @@ public:
 
     double rhoNorm_m;
 
+    unsigned int loadbalancefreq_m;
+    
+    double loadbalancethreshold_m;
+
 
 public:
     ParticleAttrib<double>     q; // charge
@@ -237,30 +241,38 @@ public:
         this->solver_mp->setRhs(rho_m);
     }
 
-    bool balance(size_type totalP){
-        int local = 0;
-        std::vector<int> res(Ippl::Comm->size());
-        double threshold = 0.01;
-        double equalPart = (double) totalP / Ippl::Comm->size();
-        double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
-        if (dev > threshold)
-            local = 1;
-        MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
-
-        for (unsigned int i = 0; i < res.size(); i++) {
-            if (res[i] == 1)
+    bool balance(size_type totalP, const unsigned int nstep){
+        if(strcmp(TestName,"UniformPlasmaTest") == 0) {
+            if(nstep % loadbalancefreq_m == 0)
                 return true;
+
+            return false;
         }
-        return false;
+        else {
+            int local = 0;
+            std::vector<int> res(Ippl::Comm->size());
+            //double threshold = 0.01;
+            double equalPart = (double) totalP / Ippl::Comm->size();
+            double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
+            if (dev > loadbalancethreshold_m)
+                local = 1;
+            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
+
+            for (unsigned int i = 0; i < res.size(); i++) {
+                if (res[i] == 1)
+                    return true;
+            }
+            return false;
+        }
     }
 
     void gatherStatistics(size_type totalP) {
         auto prec = std::cout.precision();
         std::cout << "Rank " << Ippl::Comm->rank() << " has "
-                  << std::setprecision(4)
-                  << (double)this->getLocalNum() / totalP * 100.0
-                  << "% of the total particles " << std::endl
-                  << std::setprecision(prec);
+              << std::setprecision(4)
+              << (double)this->getLocalNum() / totalP * 100.0
+              << "% of the total particles " << std::endl
+              << std::setprecision(prec);
     }
 
     void gatherCIC() {
@@ -269,7 +281,7 @@ public:
 
     }
 
-    void scatterCIC(size_type totalP, int iteration, Vector_t& hrField) {
+    void scatterCIC(size_type totalP, unsigned int iteration, Vector_t& hrField) {
 
 
          Inform m("scatter ");
@@ -292,13 +304,13 @@ public:
 
          if(Ippl::Comm->rank() == 0) {
              if(Total_particles != totalP || rel_error > 1e-10) {
-                 std::cout << "Total particles in the sim. " << totalP
-                           << " " << "after update: "
-                           << Total_particles << std::endl;
-                 std::cout << "Total particles not matched in iteration: "
-                           << iteration << std::endl;
-                 std::cout << "Rel. error in charge conservation: "
-                           << rel_error << std::endl;
+                 m << "Total particles in the sim. " << totalP
+                   << " " << "after update: "
+                   << Total_particles << endl;
+                 m << "Total particles not matched in iteration: "
+                   << iteration << endl;
+                 m << "Rel. error in charge conservation: "
+                   << rel_error << endl;
                  exit(1);
              }
          }
