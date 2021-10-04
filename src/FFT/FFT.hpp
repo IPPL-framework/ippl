@@ -231,6 +231,7 @@ namespace ippl {
         const NDIndex<Dim>& lDomInput = layoutInput.getLocalNDIndex();
         const NDIndex<Dim>& lDomOutput = layoutOutput.getLocalNDIndex();
 
+
         lowInput.fill(0);
         highInput.fill(0);
         lowOutput.fill(0);

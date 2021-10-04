@@ -203,7 +203,7 @@ int main(int argc, char *argv[]){
 
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
-    P->gatherStatistics(totalP);
+    //P->gatherStatistics(totalP);
     for (unsigned int it=0; it<nt; it++) {
 
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
@@ -264,7 +264,7 @@ int main(int argc, char *argv[]){
         P->dumpData();
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
-        P->gatherStatistics(totalP);
+        //P->gatherStatistics(totalP);
     }
 
     msg << "Uniform Plasma Test: End." << endl;

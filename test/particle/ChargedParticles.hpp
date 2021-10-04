@@ -251,7 +251,6 @@ public:
         else {
             int local = 0;
             std::vector<int> res(Ippl::Comm->size());
-            //double threshold = 0.01;
             double equalPart = (double) totalP / Ippl::Comm->size();
             double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
             if (dev > loadbalancethreshold_m)
@@ -267,12 +266,42 @@ public:
     }
 
     void gatherStatistics(size_type totalP) {
-        auto prec = std::cout.precision();
-        std::cout << "Rank " << Ippl::Comm->rank() << " has "
-              << std::setprecision(4)
-              << (double)this->getLocalNum() / totalP * 100.0
-              << "% of the total particles " << std::endl
-              << std::setprecision(prec);
+        //auto prec = std::cout.precision();
+        //std::cout << "Rank " << Ippl::Comm->rank() << " has "
+        //      << std::setprecision(4)
+        //      << (double)this->getLocalNum() / totalP * 100.0
+        //      << "% of the total particles " << std::endl
+        //      << std::setprecision(prec);
+        std::vector<double> imb(Ippl::Comm->size());
+        double equalPart = (double) totalP / Ippl::Comm->size();
+        double dev = (std::abs((double)this->getLocalNum() - equalPart) 
+                     / totalP) * 100.0;
+        MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0, 
+                   Ippl::getComm());
+    
+        if (Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/LoadBalance_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(5);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(time_m == 0.0) {
+                csvout << "time, rank, imbalance percentage" << endl;
+            }
+
+            for(int r=0; r < Ippl::Comm->size(); ++r) { 
+                csvout << time_m << " "
+                       << r << " "
+                       << imb[r] << endl;
+            }
+        }
+
+        Ippl::Comm->barrier();
+    
     }
 
     void gatherCIC() {

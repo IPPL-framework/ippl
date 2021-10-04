@@ -191,7 +191,7 @@ int main(int argc, char *argv[]){
 
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
-    double alpha = 0.05;
+    double alpha = 0.5;
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
     double dx = rmax[0] / nr[0];
@@ -281,13 +281,13 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpLandau();
+    P->gatherStatistics(totalP);
     IpplTimings::stopTimer(dumpDataTimer);
 
     IpplTimings::stopTimer(FirstUpdateTimer);
 
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
-    P->gatherStatistics(totalP);
     for (unsigned int it=0; it<nt; it++) {
 
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
@@ -338,9 +338,9 @@ int main(int argc, char *argv[]){
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpLandau();
+        P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
-        P->gatherStatistics(totalP);
     }
 
     msg << "LandauDamping: End." << endl;
