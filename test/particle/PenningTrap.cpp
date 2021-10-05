@@ -1,8 +1,8 @@
 // Penning Trap
 //
 //   Usage:
-//     srun ./PenningTrap 128 128 128 10000 300 FFT Gaussian --info 10
-//     srun ./PenningTrap 128 128 128 10000 300 FFT Uniform --info 10
+//     srun ./PenningTrap 128 128 128 10000 300 FFT Gaussian 1.0 --info 10
+//     srun ./PenningTrap 128 128 128 10000 300 FFT Uniform 1.0 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan, 
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]){
     Inform msg("PenningTrap");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(2);
+    Ippl::Comm->setDefaultOverallocation(1.75);
 
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -304,6 +304,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpData();
+    P->gatherStatistics(Total_particles);
     IpplTimings::stopTimer(dumpDataTimer);
 
     // begin main timestep loop
@@ -382,6 +383,7 @@ int main(int argc, char *argv[]){
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpData();
+        P->gatherStatistics(Total_particles);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
         P->gatherStatistics(Total_particles);

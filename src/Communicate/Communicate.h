@@ -56,13 +56,13 @@ namespace ippl {
          * Query the current default overallocation factor
          * @return Factor by which new buffers are overallocated by default
          */
-        int getDefaultOverallocation() const { return defaultOveralloc_m; }
+        double getDefaultOverallocation() const { return defaultOveralloc_m; }
 
         /**
          * Set the default overallocation factor
          * @param factor New overallocation factor for new buffers
          */
-        void setDefaultOverallocation(int factor);
+        void setDefaultOverallocation(double factor);
 
         /**
          * Obtain a buffer of at least the requested size that is associated
@@ -82,7 +82,7 @@ namespace ippl {
          * @return A shared pointer to the buffer with the requested properties
          */
         template <typename T = char>
-        buffer_type getBuffer(int id, size_type size, int overallocation = 1);
+        buffer_type getBuffer(int id, size_type size, double overallocation = 1.0);
 
         /**
          * Deletes a buffer
@@ -136,7 +136,7 @@ namespace ippl {
 
     private:
         std::map<int, buffer_type> buffers_m;
-        int defaultOveralloc_m = 1;
+        double defaultOveralloc_m = 1.0;
     };
 
     template <class Buffer>

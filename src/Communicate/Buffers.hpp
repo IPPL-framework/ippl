@@ -37,7 +37,7 @@ namespace ippl {
 
         template <typename T>
         Communicate::buffer_type Communicate::getBuffer(int id,
-                            size_type size, int overallocation) {
+                            size_type size, double overallocation) {
             size *= sizeof(T);
             #if __cplusplus > 201703L
             if (buffers_m.contains(id)) {
@@ -50,8 +50,8 @@ namespace ippl {
                 }
                 return buf;
             }
-            buffers_m[id] = std::make_shared<archive_type>(size *
-                std::max(overallocation, defaultOveralloc_m));
+            buffers_m[id] = std::make_shared<archive_type>((size_type)(size *
+                std::max(overallocation, defaultOveralloc_m)));
             return buffers_m[id];
         }
 
