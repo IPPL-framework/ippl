@@ -472,7 +472,7 @@ int main(int argc, char *argv[]) {
     Inform msg("PIC3d");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(3);
+    Ippl::Comm->setDefaultOverallocation(3.0);
 
     ippl::Vector<int,Dim> nr = {
         std::atoi(argv[1]),

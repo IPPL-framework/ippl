@@ -27,7 +27,56 @@
 #include <chrono>
 
 #include <random>
+#include <cmath>
 #include "Utility/IpplTimings.h"
+
+template <typename T, class GeneratorPool, unsigned Dim>
+struct generate_random {
+
+  using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
+  using value_type  = typename T::value_type;
+  // Output View for the random numbers
+  view_type x, v;
+
+  // The GeneratorPool
+  GeneratorPool rand_pool;
+
+  T mu, sd, startU1, endU1, startU2, endU2;
+
+  double pi = acos(-1.0);
+
+  // Initialize all members
+  generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
+                  T& mu_, T& sd_, T& startU1_, T& endU1_, T& startU2_, 
+                  T& endU2_)
+      : x(x_), v(v_), rand_pool(rand_pool_), 
+        mu(mu_), sd(sd_), startU1(startU1_), endU1(endU1_),
+        startU2(startU2_), endU2(endU2_) {}
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(int i) const {
+    // Get a random number state from the pool for the active thread
+    typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+
+    value_type u1, u2;
+    for (unsigned d = 0; d < Dim; ++d) {
+        
+        u1 = rand_gen.drand(startU1[d], endU1[d]);
+        u2 = rand_gen.drand(startU2[d], endU2[d]);
+        x(i)[d] = sd[d] * (std::sqrt(-2.0 * std::log(u1)) *
+                           std::cos(2.0 * pi * u2)) + mu[d];
+        v(i)[d] = rand_gen.normal(0.0, 1.0);
+    }
+
+    // Give the state back, which will allow another thread to acquire it
+    rand_pool.free_state(rand_gen);
+  }
+};
+
+double CDF(double& x, double& mu, double& sd) {
+   double cdf = 0.5 * std::erf((x - mu)/(sd * std::sqrt(2)));
+   return cdf;
+}
 
 const char* TestName = "PenningTrap";
 
@@ -36,7 +85,7 @@ int main(int argc, char *argv[]){
     Inform msg("PenningTrap");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(1.75);
+    Ippl::Comm->setDefaultOverallocation(2.0);
 
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -81,7 +130,7 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.05;//size of timestep
+    const double dt = 0.95*dx;//size of timestep
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
@@ -92,16 +141,7 @@ int main(int argc, char *argv[]){
     double Bext = 5.0;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
-    std::string dist;
-    dist = argv[7];
-
     P->nr_m = nr;
-    size_type nloc = totalP / Ippl::Comm->size();
-
-    int rest = (int) (totalP - nloc * Ippl::Comm->size());
-
-    if ( Ippl::Comm->rank() < rest )
-        ++nloc;
 
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
     IpplTimings::startTimer(particleCreation);
@@ -122,145 +162,82 @@ int main(int argc, char *argv[]){
     sd[1] = 0.05*length[1];
     sd[2] = 0.20*length[2];
 
+    const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+    Vector_t Rmin, Rmax, Nr, Dr, startU1, endU1, startU2, endU2;
+    for (unsigned d = 0; d <Dim; ++d) {
+        Rmin[d] = origin[d] + lDom[d].first() * hr[d];
+        Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
+        Nr[d] = CDF(Rmax[d], mu[d], sd[d]) - CDF(Rmin[d], mu[d], sd[d]);  
+        Dr[d] = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
+        startU1[d] = 0.01;
+        endU1[d] = 0.99;
+        start[d] = (1.0 / 2 * pi) * std::acos(-std::pow(Rmin[d],2)/
+                    (2 * std::log(startU1[d]))); 
+        end[d] = (1.0 / 2 * pi) * std::acos(-std::pow(Rmax[d],2)/
+                    (2 * std::log(endU1[d]))); 
+    }
+
+    double factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
+    size_type nloc = (size_type)(totalP * factor);
     size_type Total_particles = 0;
-    if(dist == "Uniform") {
 
-        std::function<double(double& x,
-                             double& y,
-                             double& z)> func;
+    MPI_Allreduce(&nloc, &Total_particles, 1,
+                MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
 
-        func = [&](double& x,
-                   double& y,
-                   double& z)
-        {
-            double val_conf =  std::pow((x - mu[0])/sd[0], 2) +
-                               std::pow((y - mu[1])/sd[1], 2) +
-                               std::pow((z - mu[2])/sd[2], 2);
+    int rest = (int) (totalP - Total_particles);
 
-            return std::exp(-0.5 * val_conf);
-        };
+    if ( Ippl::Comm->rank() < rest )
+        ++nloc;
 
-        const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-        std::vector<double> Rmin(Dim), Rmax(Dim);
-        for (unsigned d = 0; d <Dim; ++d) {
-            Rmin[d] = origin[d] + lDom[d].first() * hr[d];
-            Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
-        }
-        std::uniform_real_distribution<double> dist_uniform(0.0, 1.0);
-        std::uniform_real_distribution<double> distribution_x(Rmin[0], Rmax[0]);
-        std::uniform_real_distribution<double> distribution_y(Rmin[1], Rmax[1]);
-        std::uniform_real_distribution<double> distribution_z(Rmin[2], Rmax[2]);
-
-        std::mt19937_64 eng[3*Dim];
-        for (unsigned i = 0; i < 3*Dim; ++i) {
-            eng[i].seed(42 + i * Dim);
-            eng[i].discard( nloc * Ippl::Comm->rank());
-        }
+    P->create(nloc);
+    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
+    Kokkos::parallel_for(nloc,
+                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                         P->R.getView(), P->P.getView(), rand_pool64, mu, sd, startU1, endU1, 
+                         startU2, endU2));
+    Kokkos::fence();
+    Ippl::Comm->barrier();
+    //std::mt19937_64 eng[4*Dim];
+    //for (unsigned i = 0; i < 4*Dim; ++i) {
+    //    eng[i].seed(42 + i * Dim);
+    //    eng[i].discard( nloc * Ippl::Comm->rank());
+    //}
 
 
-        double sum_f = 0.0;
-        size_type ip = 0;
-        double sum_coord=0.0;
-        P->create(nloc);
-        typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
-        typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
-        typename ParticleAttrib<double>::HostMirror q_host = P->q.getHostMirror();
-        for (size_type i = 0; i< nloc; i++) {
+    //std::uniform_real_distribution<double> dist_uniform(0.0, 1.0);
 
-            states[0] = distribution_x(eng[0]);
-            states[1] = distribution_y(eng[1]);
-            states[2] = distribution_z(eng[2]);
+    //typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
+    //typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
 
-            for (unsigned istate = 0; istate < Dim; ++istate) {
-                double u1 = dist_uniform(eng[istate*2 + Dim]);
-                double u2 = dist_uniform(eng[istate*2+1 + Dim]);
-                states[istate + Dim] = fabs(sd[istate + Dim] * (std::sqrt(-2.0 * std::log(u1)) *
-                                 std::cos(2.0 * pi * u2)) + mu[istate + Dim]);
-            }
+    //double sum_coord=0.0;
+    //for (size_type i = 0; i< nloc; i++) {
+    //    for (unsigned istate = 0; istate < 2*Dim; ++istate) {
+    //        double u1 = dist_uniform(eng[istate*2]);
+    //        double u2 = dist_uniform(eng[istate*2+1]);
+    //        states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) *
+    //                         std::cos(2.0 * pi * u2)) + mu[istate];
+    //    }
+    //    for (unsigned d = 0; d<Dim; d++) {
+    //        R_host(i)[d] =  std::fabs(std::fmod(states[d],length[d]));
+    //        sum_coord += R_host(i)[d];
+    //        P_host(i)[d] = states[Dim + d];
+    //    }
+    //}
+    /////Just to check are we getting the same particle distribution for
+    ////different no. of processors
+    //double global_sum_coord = 0.0;
+    //MPI_Reduce(&sum_coord, &global_sum_coord, 1,
+    //           MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
-            double f = func(states[0], states[1], states[2]);
-            f = f * states[3] * states[4] * states[5];
+    //if(Ippl::Comm->rank() == 0) {
+    //    std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
+    //}
 
-            //if( f > 1e-9 ) {
-                for (unsigned d = 0; d<Dim; d++) {
-                    R_host(ip)[d] =  states[d];
-                    P_host(ip)[d] =  states[Dim + d];
-                    sum_coord += R_host(ip)[d];
-                }
-                sum_f += f;
-                q_host(ip) = f;
-                ++ip;
-            //}
-        }
-        double Total_sum = 0.0;
-        MPI_Allreduce(&sum_f, &Total_sum, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-        double global_sum_coord = 0.0;
-        MPI_Reduce(&sum_coord, &global_sum_coord, 1,
-                   MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+    //Kokkos::deep_copy(P->R.getView(), R_host);
+    //Kokkos::deep_copy(P->P.getView(), P_host);
 
-        if(Ippl::Comm->rank() == 0) {
-            std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
-        }
-        //P->setLocalNum(ip);
-        Kokkos::deep_copy(P->R.getView(), R_host);
-        Kokkos::deep_copy(P->P.getView(), P_host);
-        Kokkos::deep_copy(P->q.getView(), q_host);
+    P->q = P->Q_m/totalP;
 
-        P->q = P->q * (P->Q_m/Total_sum);
-
-        size_type local_particles = P->getLocalNum();
-        MPI_Reduce(&local_particles, &Total_particles, 1,
-                   MPI_UNSIGNED_LONG, MPI_SUM, 0, Ippl::getComm());
-        msg << "#particles: " << Total_particles << endl;
-        double PPC = Total_particles/((double)(nr[0] * nr[1] * nr[2]));
-        msg << "#PPC: " << PPC << endl;
-
-    }
-    else if(dist == "Gaussian") {
-
-        P->create(nloc);
-        std::mt19937_64 eng[4*Dim];
-        for (unsigned i = 0; i < 4*Dim; ++i) {
-            eng[i].seed(42 + i * Dim);
-            eng[i].discard( nloc * Ippl::Comm->rank());
-        }
-
-
-        std::uniform_real_distribution<double> dist_uniform(0.0, 1.0);
-
-        typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
-        typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
-
-        double sum_coord=0.0;
-        for (size_type i = 0; i< nloc; i++) {
-            for (unsigned istate = 0; istate < 2*Dim; ++istate) {
-                double u1 = dist_uniform(eng[istate*2]);
-                double u2 = dist_uniform(eng[istate*2+1]);
-                states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) *
-                                 std::cos(2.0 * pi * u2)) + mu[istate];
-            }
-            for (unsigned d = 0; d<Dim; d++) {
-                R_host(i)[d] =  std::fabs(std::fmod(states[d],length[d]));
-                sum_coord += R_host(i)[d];
-                P_host(i)[d] = states[Dim + d];
-            }
-        }
-        ///Just to check are we getting the same particle distribution for
-        //different no. of processors
-        double global_sum_coord = 0.0;
-        MPI_Reduce(&sum_coord, &global_sum_coord, 1,
-                   MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-
-        if(Ippl::Comm->rank() == 0) {
-            std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
-        }
-
-        Kokkos::deep_copy(P->R.getView(), R_host);
-        Kokkos::deep_copy(P->P.getView(), P_host);
-        P->q = P->Q_m/totalP;
-
-        Total_particles = totalP;
-    }
     IpplTimings::stopTimer(particleCreation);                                                    
     
     
@@ -283,16 +260,14 @@ int main(int argc, char *argv[]){
 
     static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
     unsigned int nstep = 0;
-    if (P->balance(Total_particles, nstep)) {
+    if (P->balance(totalP, nstep)) {
         msg << "Starting first repartition" << endl;
         IpplTimings::startTimer(domainDecomposition);
         P->repartition(FL, mesh, bunchBuffer);
         IpplTimings::stopTimer(domainDecomposition);
     }
 
-
-
-    P->scatterCIC(Total_particles, 0, hr);
+    P->scatterCIC(totalP, 0, hr);
 
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");
     IpplTimings::startTimer(SolveTimer);
@@ -304,7 +279,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpData();
-    P->gatherStatistics(Total_particles);
+    P->gatherStatistics(totalP);
     IpplTimings::stopTimer(dumpDataTimer);
 
     // begin main timestep loop
@@ -345,7 +320,7 @@ int main(int argc, char *argv[]){
         PL.update(*P, bunchBuffer);
 
         // Domain Decomposition
-        if (P->balance(Total_particles, it+1)) {
+        if (P->balance(totalP, it+1)) {
            msg << "Starting repartition" << endl;
            IpplTimings::startTimer(domainDecomposition);
            P->repartition(FL, mesh, bunchBuffer);
@@ -353,7 +328,7 @@ int main(int argc, char *argv[]){
         }
         
         //scatter the charge onto the underlying grid
-        P->scatterCIC(Total_particles, it+1, hr);
+        P->scatterCIC(totalP, it+1, hr);
 
         //Field solve
         IpplTimings::startTimer(SolveTimer);
@@ -383,10 +358,9 @@ int main(int argc, char *argv[]){
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpData();
-        P->gatherStatistics(Total_particles);
+        P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
-        P->gatherStatistics(Total_particles);
     }
 
     msg << "Penning Trap: End." << endl;

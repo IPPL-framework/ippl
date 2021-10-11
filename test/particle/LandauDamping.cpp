@@ -145,7 +145,7 @@ int main(int argc, char *argv[]){
     Inform msg("LandauDamping");
     Inform msg2all("LandauDamping",INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(2);
+    Ippl::Comm->setDefaultOverallocation(1.0);
 
     auto start = std::chrono::high_resolution_clock::now();
     ippl::Vector<int,Dim> nr = {

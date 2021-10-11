@@ -457,6 +457,27 @@ public:
         }
 
         Ippl::Comm->barrier();
+        typename ParticleAttrib<Vector_t>::HostMirror R_host = this->R.getHostMirror();
+        typename ParticleAttrib<Vector_t>::HostMirror P_host = this->P.getHostMirror();
+        Kokkos::deep_copy(R_host, this->R.getView());
+        Kokkos::deep_copy(P_host, P.getView());
+        std::stringstream pname;
+        pname << "data/ParticleIC_";
+        pname << Ippl::Comm->rank();
+        pname << ".csv";
+        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+        pcsvout.precision(10);
+        pcsvout.setf(std::ios::scientific, std::ios::floatfield);
+        pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
+        for (size_type i = 0; i< this->getLocalNum(); i++) {
+            pcsvout << R_host(i)[0] << " "
+                    << R_host(i)[1] << " "
+                    << R_host(i)[2] << " "
+                    << P_host(i)[0] << " "
+                    << P_host(i)[1] << " "
+                    << P_host(i)[2] << endl;
+        }
+        Ippl::Comm->barrier();
      }
 
      void dumpLandau() {

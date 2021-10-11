@@ -70,7 +70,7 @@ int main(int argc, char *argv[]){
     Inform msg("UniformPlasmaTest");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(2);
+    Ippl::Comm->setDefaultOverallocation(2.0);
 
     auto start = std::chrono::high_resolution_clock::now();
     ippl::Vector<int,Dim> nr = {
@@ -179,13 +179,13 @@ int main(int argc, char *argv[]){
     P->time_m = 0.0;
     P->loadbalancefreq_m = std::atoi(argv[7]);
 
-    unsigned int nstep = 0;
-    if (P->balance(totalP, nstep)) {
-        msg << "Starting first repartition" << endl;
-        IpplTimings::startTimer(domainDecomposition);
-        P->repartition(FL, mesh, bunchBuffer);
-        IpplTimings::stopTimer(domainDecomposition);
-    }
+    //unsigned int nstep = 0;
+    //if (P->balance(totalP, nstep)) {
+    //    msg << "Starting first repartition" << endl;
+    //    IpplTimings::startTimer(domainDecomposition);
+    //    P->repartition(FL, mesh, bunchBuffer);
+    //    IpplTimings::stopTimer(domainDecomposition);
+    //}
     
     P->scatterCIC(totalP, 0, hr);
 
@@ -197,6 +197,7 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpData();
+    P->gatherStatistics(totalP);
     IpplTimings::stopTimer(dumpDataTimer);
 
     IpplTimings::stopTimer(FirstUpdateTimer);
@@ -213,7 +214,7 @@ int main(int argc, char *argv[]){
         // kick
 
         IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E * 0.0;
+        P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
 
         IpplTimings::startTimer(temp);
@@ -256,15 +257,15 @@ int main(int argc, char *argv[]){
 
         //kick
         IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E * 0.0;
+        P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpData();
+        P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
-        //P->gatherStatistics(totalP);
     }
 
     msg << "Uniform Plasma Test: End." << endl;
