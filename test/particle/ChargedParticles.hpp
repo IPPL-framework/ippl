@@ -393,91 +393,91 @@ public:
 
      void dumpData() {
 
-        //auto Pview = P.getView();
+        auto Pview = P.getView();
 
-        //double Energy = 0.0;
+        double Energy = 0.0;
 
-        //Kokkos::parallel_reduce("Particle Energy", this->getLocalNum(),
-        //                        KOKKOS_LAMBDA(const int i, double& valL){
-        //                            double myVal = dot(Pview(i), Pview(i)).apply();
-        //                            valL += myVal;
-        //                        }, Kokkos::Sum<double>(Energy));
+        Kokkos::parallel_reduce("Particle Energy", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const int i, double& valL){
+                                    double myVal = dot(Pview(i), Pview(i)).apply();
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(Energy));
 
-        //Energy *= 0.5;
-        //double gEnergy = 0.0;
+        Energy *= 0.5;
+        double gEnergy = 0.0;
 
-        //MPI_Reduce(&Energy, &gEnergy, 1,
-        //            MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&Energy, &gEnergy, 1,
+                    MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
 
-        //const int nghostE = E_m.getNghost();
-        //auto Eview = E_m.getView();
-        //Vector_t normE;
-        //using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        const int nghostE = E_m.getNghost();
+        auto Eview = E_m.getView();
+        Vector_t normE;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-        //for (unsigned d=0; d<Dim; ++d) {
+        for (unsigned d=0; d<Dim; ++d) {
 
-        //double temp = 0.0;
-        //Kokkos::parallel_reduce("Vector E reduce",
-        //                        mdrange_type({nghostE, nghostE, nghostE},
-        //                                     {Eview.extent(0) - nghostE,
-        //                                      Eview.extent(1) - nghostE,
-        //                                      Eview.extent(2) - nghostE}),
-        //                        KOKKOS_LAMBDA(const size_t i, const size_t j,
-        //                                      const size_t k, double& valL)
-        //                        {
-        //                            double myVal = pow(Eview(i, j, k)[d], 2);
-        //                            valL += myVal;
-        //                        }, Kokkos::Sum<double>(temp));
-        //    double globaltemp = 0.0;
-        //    MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        //    normE[d] = sqrt(globaltemp);
-        //}
-
-        //if (Ippl::Comm->rank() == 0) {
-        //    std::stringstream fname;
-        //    fname << "data/ParticleField_";
-        //    fname << Ippl::Comm->size();
-        //    fname << ".csv";
-
-        //    Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-        //    csvout.precision(10);
-        //    csvout.setf(std::ios::scientific, std::ios::floatfield);
-
-        //    if(time_m == 0.0) {
-        //        csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2" << endl;
-        //    }
-
-        //    csvout << time_m << " "
-        //           << gEnergy << " "
-        //           << rhoNorm_m << " "
-        //           << normE[0] << " "
-        //           << normE[1] << " "
-        //           << normE[2] << endl;
-        //}
-
-        //Ippl::Comm->barrier();
-        typename ParticleAttrib<Vector_t>::HostMirror R_host = this->R.getHostMirror();
-        typename ParticleAttrib<Vector_t>::HostMirror P_host = this->P.getHostMirror();
-        Kokkos::deep_copy(R_host, this->R.getView());
-        Kokkos::deep_copy(P_host, P.getView());
-        std::stringstream pname;
-        pname << "data/ParticleIC_";
-        pname << Ippl::Comm->rank();
-        pname << ".csv";
-        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
-        pcsvout.precision(10);
-        pcsvout.setf(std::ios::scientific, std::ios::floatfield);
-        pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
-        for (size_type i = 0; i< this->getLocalNum(); i++) {
-            pcsvout << R_host(i)[0] << " "
-                    << R_host(i)[1] << " "
-                    << R_host(i)[2] << " "
-                    << P_host(i)[0] << " "
-                    << P_host(i)[1] << " "
-                    << P_host(i)[2] << endl;
+        double temp = 0.0;
+        Kokkos::parallel_reduce("Vector E reduce",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = pow(Eview(i, j, k)[d], 2);
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+            double globaltemp = 0.0;
+            MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+            normE[d] = sqrt(globaltemp);
         }
+
+        if (Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/ParticleField_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(time_m == 0.0) {
+                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2" << endl;
+            }
+
+            csvout << time_m << " "
+                   << gEnergy << " "
+                   << rhoNorm_m << " "
+                   << normE[0] << " "
+                   << normE[1] << " "
+                   << normE[2] << endl;
+        }
+
         Ippl::Comm->barrier();
+        //typename ParticleAttrib<Vector_t>::HostMirror R_host = this->R.getHostMirror();
+        //typename ParticleAttrib<Vector_t>::HostMirror P_host = this->P.getHostMirror();
+        //Kokkos::deep_copy(R_host, this->R.getView());
+        //Kokkos::deep_copy(P_host, P.getView());
+        //std::stringstream pname;
+        //pname << "data/ParticleIC_";
+        //pname << Ippl::Comm->rank();
+        //pname << ".csv";
+        //Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+        //pcsvout.precision(10);
+        //pcsvout.setf(std::ios::scientific, std::ios::floatfield);
+        //pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
+        //for (size_type i = 0; i< this->getLocalNum(); i++) {
+        //    pcsvout << R_host(i)[0] << " "
+        //            << R_host(i)[1] << " "
+        //            << R_host(i)[2] << " "
+        //            << P_host(i)[0] << " "
+        //            << P_host(i)[1] << " "
+        //            << P_host(i)[2] << endl;
+        //}
+        //Ippl::Comm->barrier();
      }
 
      void dumpLandau() {

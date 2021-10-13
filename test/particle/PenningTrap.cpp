@@ -87,7 +87,7 @@ int main(int argc, char *argv[]){
     Inform msg("PenningTrap");
     Inform msg2all("PenningTrap",INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(2.0);
+    Ippl::Comm->setDefaultOverallocation(1.0);
 
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -122,8 +122,6 @@ int main(int argc, char *argv[]){
     for (unsigned d = 0; d < Dim; ++d) {
         decomp[d] = ippl::PARALLEL;
     }
-        decomp[1] = ippl::SERIAL;
-        decomp[2] = ippl::SERIAL;
 
     // create mesh and layout objects for this problem domain
     Vector_t rmin(0.0);
@@ -244,7 +242,6 @@ int main(int argc, char *argv[]){
 
     P->q = P->Q_m/totalP;
 
-    P->dumpData();
     IpplTimings::stopTimer(particleCreation);                                                    
     
     
@@ -289,6 +286,7 @@ int main(int argc, char *argv[]){
     P->gatherStatistics(totalP);
     IpplTimings::stopTimer(dumpDataTimer);
 
+    static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
@@ -324,7 +322,9 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(RTimer);
 
         //Since the particles have moved spatially update them to correct processors
+	    IpplTimings::startTimer(updateTimer);
         PL.update(*P, bunchBuffer);
+        IpplTimings::stopTimer(updateTimer);
 
         // Domain Decomposition
         if (P->balance(totalP, it+1)) {
