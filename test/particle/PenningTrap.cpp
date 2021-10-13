@@ -26,6 +26,7 @@
 #include <set>
 #include <chrono>
 
+#include<Kokkos_Random.hpp>
 #include <random>
 #include <cmath>
 #include "Utility/IpplTimings.h"
@@ -34,37 +35,38 @@ template <typename T, class GeneratorPool, unsigned Dim>
 struct generate_random {
 
   using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
-  using value_type  = typename T::value_type;
+  //using value_type  = typename T::value_type;
   // Output View for the random numbers
   view_type x, v;
 
   // The GeneratorPool
   GeneratorPool rand_pool;
 
-  T mu, sd, startU1, endU1, startU2, endU2;
+  //T mu, sd, startU1, endU1, startU2, endU2, length;
+  T mu, sd, length;
 
-  double pi = acos(-1.0);
+  //double pi = acos(-1.0);
 
   // Initialize all members
-  generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
-                  T& mu_, T& sd_, T& startU1_, T& endU1_, T& startU2_, 
-                  T& endU2_)
+  generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_,
+                  T& mu_, T& sd_, T&length_)
       : x(x_), v(v_), rand_pool(rand_pool_), 
-        mu(mu_), sd(sd_), startU1(startU1_), endU1(endU1_),
-        startU2(startU2_), endU2(endU2_) {}
+        mu(mu_), sd(sd_), length(length_) {}
 
   KOKKOS_INLINE_FUNCTION
   void operator()(int i) const {
     // Get a random number state from the pool for the active thread
     typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-    value_type u1, u2;
+    //value_type u1, u2;
     for (unsigned d = 0; d < Dim; ++d) {
         
-        u1 = rand_gen.drand(startU1[d], endU1[d]);
-        u2 = rand_gen.drand(startU2[d], endU2[d]);
-        x(i)[d] = sd[d] * (std::sqrt(-2.0 * std::log(u1)) *
-                           std::cos(2.0 * pi * u2)) + mu[d];
+        //u1 = rand_gen.drand(startU1[d], endU1[d]);
+        //u2 = rand_gen.drand(startU2[d], endU2[d]);
+        //x(i)[d] = sd[d] * (std::sqrt(-2.0 * std::log(u1)) *
+        //                   std::cos(2.0 * pi * u2)) + mu[d];
+        x(i)[d] = rand_gen.normal(mu[d], sd[d]);
+        x(i)[d] = std::fabs(std::fmod(x(i)[d], length[d]));
         v(i)[d] = rand_gen.normal(0.0, 1.0);
     }
 
@@ -83,7 +85,7 @@ const char* TestName = "PenningTrap";
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     Inform msg("PenningTrap");
-    Inform msg2all(argv[0],INFORM_ALL_NODES);
+    Inform msg2all("PenningTrap",INFORM_ALL_NODES);
 
     Ippl::Comm->setDefaultOverallocation(2.0);
 
@@ -120,6 +122,8 @@ int main(int argc, char *argv[]){
     for (unsigned d = 0; d < Dim; ++d) {
         decomp[d] = ippl::PARALLEL;
     }
+        decomp[1] = ippl::SERIAL;
+        decomp[2] = ippl::SERIAL;
 
     // create mesh and layout objects for this problem domain
     Vector_t rmin(0.0);
@@ -148,53 +152,55 @@ int main(int argc, char *argv[]){
 
     Vector_t length = rmax - rmin;
 
-    std::vector<double> mu(2*Dim);
-    std::vector<double> sd(2*Dim);
-    std::vector<double> states(2*Dim);
-
+    Vector_t mu, sd;
 
     for (unsigned d = 0; d<Dim; d++) {
         mu[d] = length[d]/2;
-        mu[Dim + d] = 0.0;
-        sd[Dim + d] = 1.0;
     }
     sd[0] = 0.15*length[0];
     sd[1] = 0.05*length[1];
     sd[2] = 0.20*length[2];
 
-    const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-    Vector_t Rmin, Rmax, Nr, Dr, startU1, endU1, startU2, endU2;
-    for (unsigned d = 0; d <Dim; ++d) {
-        Rmin[d] = origin[d] + lDom[d].first() * hr[d];
-        Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
-        Nr[d] = CDF(Rmax[d], mu[d], sd[d]) - CDF(Rmin[d], mu[d], sd[d]);  
-        Dr[d] = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
-        startU1[d] = 0.01;
-        endU1[d] = 0.99;
-        start[d] = (1.0 / 2 * pi) * std::acos(-std::pow(Rmin[d],2)/
-                    (2 * std::log(startU1[d]))); 
-        end[d] = (1.0 / 2 * pi) * std::acos(-std::pow(Rmax[d],2)/
-                    (2 * std::log(endU1[d]))); 
-    }
+    //const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+    //Vector_t Rmin, Rmax, Nr, Dr, startU1, endU1, startU2, endU2;
+    //for (unsigned d = 0; d <Dim; ++d) {
+    //    Rmin[d] = origin[d] + lDom[d].first() * hr[d];
+    //    Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
+    //    Nr[d] = CDF(Rmax[d], mu[d], sd[d]) - CDF(Rmin[d], mu[d], sd[d]);  
+    //    Dr[d] = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
+    //    startU2[d] = 0.0;
+    //    endU2[d] = 1.0;
+    //    startU1[d] = std::exp(-0.5 * std::pow((Rmin[d] - mu[d])/sd[d],2)); 
+    //    endU1[d] =  std::exp(-0.5 * std::pow((Rmax[d] - mu[d])/sd[d],2));
+    //}
 
-    double factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
+    //msg2all << "Rank: " << Ippl::Comm->rank() << "Rmin: " << Rmin << endl;
+    //msg2all << "Rank: " << Ippl::Comm->rank() << "Rmax: " << Rmax << endl;
+    //msg2all << "Rank: " << Ippl::Comm->rank() << "start U1: " << startU1 << endl;
+    //msg2all << "Rank: " << Ippl::Comm->rank() << "end U1: " << endU1 << endl;
+
+    double factor = 1.0 / Ippl::Comm->size();//(Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
     size_type nloc = (size_type)(totalP * factor);
-    size_type Total_particles = 0;
+    //size_type Total_particles = 0;
 
-    MPI_Allreduce(&nloc, &Total_particles, 1,
-                MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+    //MPI_Allreduce(&nloc, &Total_particles, 1,
+    //            MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
 
-    int rest = (int) (totalP - Total_particles);
+    //int rest = (int) (totalP - Total_particles);
+    int rest = (int) (totalP - nloc * Ippl::Comm->size());
 
     if ( Ippl::Comm->rank() < rest )
         ++nloc;
 
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
+    //Kokkos::parallel_for(nloc,
+    //                     generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+    //                     P->R.getView(), P->P.getView(), rand_pool64, mu, sd, startU1, endU1, 
+    //                     startU2, endU2, length));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), P->P.getView(), rand_pool64, mu, sd, startU1, endU1, 
-                         startU2, endU2));
+                         P->R.getView(), P->P.getView(), rand_pool64, mu, sd, length));
     Kokkos::fence();
     Ippl::Comm->barrier();
     //std::mt19937_64 eng[4*Dim];
@@ -238,6 +244,7 @@ int main(int argc, char *argv[]){
 
     P->q = P->Q_m/totalP;
 
+    P->dumpData();
     IpplTimings::stopTimer(particleCreation);                                                    
     
     
@@ -256,7 +263,7 @@ int main(int argc, char *argv[]){
     P->stype_m = argv[6];
     P->initSolver();
     P->time_m = 0.0;
-    P->loadbalancethreshold_m = std::atof(argv[8]);
+    P->loadbalancethreshold_m = std::atof(argv[7]);
 
     static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
     unsigned int nstep = 0;
