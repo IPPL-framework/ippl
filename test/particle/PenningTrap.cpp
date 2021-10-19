@@ -35,7 +35,7 @@ struct Newton1D {
 
   double tol = 1e-12;
   int max_iter = 20;
-  double pi = acos(-1.0);
+  double pi = std::acos(-1.0);
   
   T mu, sigma, u;
 
@@ -69,7 +69,7 @@ struct Newton1D {
   KOKKOS_FUNCTION
   void solve(T& x) {
       int iterations = 0;
-      while ((iterations < max_iter) && (abs(f(x)) > tol)) {
+      while ((iterations < max_iter) && (std::abs(f(x)) > tol)) {
           x = x - (f(x)/fprime(x));
           iterations += 1;
       }
@@ -90,7 +90,7 @@ struct generate_random {
 
   T mu, sigma, minU, maxU;
 
-  double pi = acos(-1.0);
+  double pi = std::acos(-1.0);
 
   // Initialize all members
   generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_,
