@@ -107,7 +107,7 @@ struct generate_random {
         alpha(alpha_), k(k_), start(start_), end(end_) {}
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i) const {
+  void operator()(const size_t i) const {
     // Get a random number state from the pool for the active thread
     typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 

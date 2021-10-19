@@ -111,9 +111,6 @@ namespace ippl {
             (*it)->create(nLocal);
         }
 
-        auto pID = ID.getView(); 
-        //auto nextID = this->nextID_m; 
-        //auto numNodes = this->numNodes_m; 
         // set the unique ID value for these new particles
         auto pIDs = ID.getView();
         auto nextID = this->nextID_m;
