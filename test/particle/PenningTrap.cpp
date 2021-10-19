@@ -1,8 +1,7 @@
 // Penning Trap
 //
 //   Usage:
-//     srun ./PenningTrap 128 128 128 10000 300 FFT Gaussian 1.0 --info 10
-//     srun ./PenningTrap 128 128 128 10000 300 FFT Uniform 1.0 --info 10
+//     srun ./PenningTrap 128 128 128 10000 300 FFT 1.0 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan, 
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -296,7 +295,6 @@ int main(int argc, char *argv[]){
     //Kokkos::deep_copy(P->R.getView(), R_host);
     //Kokkos::deep_copy(P->P.getView(), P_host);
 
-    P->dumpData();
     P->q = P->Q_m/totalP;
     IpplTimings::stopTimer(particleCreation);                                                    
     
@@ -319,28 +317,28 @@ int main(int argc, char *argv[]){
     P->loadbalancethreshold_m = std::atof(argv[7]);
 
     static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
-    //unsigned int nstep = 0;
-    //if (P->balance(totalP, nstep)) {
-    //    msg << "Starting first repartition" << endl;
-    //    IpplTimings::startTimer(domainDecomposition);
-    //    P->repartition(FL, mesh, bunchBuffer);
-    //    IpplTimings::stopTimer(domainDecomposition);
-    //}
+    unsigned int nstep = 0;
+    if (P->balance(totalP, nstep)) {
+        msg << "Starting first repartition" << endl;
+        IpplTimings::startTimer(domainDecomposition);
+        P->repartition(FL, mesh, bunchBuffer);
+        IpplTimings::stopTimer(domainDecomposition);
+    }
 
     P->scatterCIC(totalP, 0, hr);
 
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");
-    //IpplTimings::startTimer(SolveTimer);
-    //P->solver_mp->solve();
-    //IpplTimings::stopTimer(SolveTimer);
+    IpplTimings::startTimer(SolveTimer);
+    P->solver_mp->solve();
+    IpplTimings::stopTimer(SolveTimer);
 
-    //P->gatherCIC();
+    P->gatherCIC();
 
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
-    //IpplTimings::startTimer(dumpDataTimer);
-    //P->dumpData();
-    //P->gatherStatistics(totalP);
-    //IpplTimings::stopTimer(dumpDataTimer);
+    IpplTimings::startTimer(dumpDataTimer);
+    P->dumpData();
+    P->gatherStatistics(totalP);
+    IpplTimings::stopTimer(dumpDataTimer);
 
     static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
     // begin main timestep loop
