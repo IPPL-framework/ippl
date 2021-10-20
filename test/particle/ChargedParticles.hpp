@@ -169,7 +169,7 @@ public:
 
     /*
       This constructor is mandatory for all derived classes from
-      ParticleBase as the update function invokes this
+      ParticleBase as the bunch buffer uses this
     */
     ChargedParticles(PLayout& pl)
     : ippl::ParticleBase<PLayout>(pl)
@@ -207,7 +207,8 @@ public:
         setBCAllPeriodic();
     }
 
-    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
+    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer,
+                      bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -220,7 +221,9 @@ public:
         IpplTimings::stopTimer(tupdateLayout);
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
         IpplTimings::startTimer(tupdatePLayout);
-        layout.update(*this, buffer);
+        if(!isFirstRepartition) {
+            layout.update(*this, buffer);
+        }
         IpplTimings::stopTimer(tupdatePLayout);
     }
 
@@ -228,7 +231,8 @@ public:
         orb.initialize(fl, mesh);
     }
 
-    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
+    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer, 
+                     bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl);
 
@@ -237,7 +241,7 @@ public:
            return;
         }
         // Update
-        this->updateLayout(fl, mesh, buffer);
+        this->updateLayout(fl, mesh, buffer, isFirstRepartition);
         this->solver_mp->setRhs(rho_m);
     }
 
@@ -266,12 +270,6 @@ public:
     }
 
     void gatherStatistics(size_type totalP) {
-        //auto prec = std::cout.precision();
-        //std::cout << "Rank " << Ippl::Comm->rank() << " has "
-        //      << std::setprecision(4)
-        //      << (double)this->getLocalNum() / totalP * 100.0
-        //      << "% of the total particles " << std::endl
-        //      << std::setprecision(prec);
         std::vector<double> imb(Ippl::Comm->size());
         double equalPart = (double) totalP / Ippl::Comm->size();
         double dev = (std::abs((double)this->getLocalNum() - equalPart) 
@@ -333,14 +331,13 @@ public:
 
          if(Ippl::Comm->rank() == 0) {
              if(Total_particles != totalP || rel_error > 1e-10) {
+                 m << "Time step: " << iteration << endl;
                  m << "Total particles in the sim. " << totalP
                    << " " << "after update: "
                    << Total_particles << endl;
-                 m << "Total particles not matched in iteration: "
-                   << iteration << endl;
                  m << "Rel. error in charge conservation: "
                    << rel_error << endl;
-                 exit(1);
+                 std::abort();
              }
          }
 
@@ -426,12 +423,12 @@ public:
                                 KOKKOS_LAMBDA(const size_t i, const size_t j,
                                               const size_t k, double& valL)
                                 {
-                                    double myVal = pow(Eview(i, j, k)[d], 2);
+                                    double myVal = std::pow(Eview(i, j, k)[d], 2);
                                     valL += myVal;
                                 }, Kokkos::Sum<double>(temp));
             double globaltemp = 0.0;
             MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-            normE[d] = sqrt(globaltemp);
+            normE[d] = std::sqrt(globaltemp);
         }
 
         if (Ippl::Comm->rank() == 0) {
@@ -496,7 +493,7 @@ public:
                                 KOKKOS_LAMBDA(const size_t i, const size_t j,
                                               const size_t k, double& valL)
                                 {
-                                    double myVal = pow(Eview(i, j, k)[0], 2);
+                                    double myVal = std::pow(Eview(i, j, k)[0], 2);
                                     valL += myVal;
                                 }, Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;

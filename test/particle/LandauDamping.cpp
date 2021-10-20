@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <cmath>
 #include <set>
 #include <chrono>
 
@@ -35,7 +36,7 @@ struct Newton1D {
 
   double tol = 1e-12;
   int max_iter = 20;
-  double pi = acos(-1.0);
+  double pi = std::acos(-1.0);
   
   T k, alpha, u;
 
@@ -61,21 +62,21 @@ struct Newton1D {
   KOKKOS_INLINE_FUNCTION
   T f(T& x) {
       T F;
-      F = x  + (alpha  * (sin(k * x) / k)) - u;
+      F = x  + (alpha  * (std::sin(k * x) / k)) - u;
       return F;
   }
 
   KOKKOS_INLINE_FUNCTION
   T fprime(T& x) {
       T Fprime;
-      Fprime = 1  + (alpha  * cos(k * x));
+      Fprime = 1  + (alpha  * std::cos(k * x));
       return Fprime;
   }
 
   KOKKOS_FUNCTION
   void solve(T& x) {
       int iterations = 0;
-      while (iterations < max_iter && abs(f(x)) > tol) {
+      while (iterations < max_iter && std::fabs(f(x)) > tol) {
           x = x - (f(x)/fprime(x));
           iterations += 1;
       }
@@ -115,9 +116,9 @@ struct generate_random {
     for (unsigned d = 0; d < Dim; ++d) {
         
         value_type fac0 = start[d] + 
-                          ((alpha / k[d]) * sin(k[d] * start[d]));
+                          ((alpha / k[d]) * std::sin(k[d] * start[d]));
         value_type fac1 = end[d] + 
-                          ((alpha / k[d]) * sin(k[d] * end[d]));
+                          ((alpha / k[d]) * std::sin(k[d] * end[d]));
 
         u = rand_gen.drand(fac0, fac1);
         x(i)[d] = u / (1 + alpha);
@@ -133,7 +134,7 @@ struct generate_random {
 };
 
 double CDF(double& x, double& alpha, double& k) {
-   double cdf = x + (alpha / k) * sin(k * x);
+   double cdf = x + (alpha / k) * std::sin(k * x);
    return cdf;
 }
 

@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <cmath>
 #include <set>
 #include <chrono>
 
@@ -68,7 +69,7 @@ struct Newton1D {
   KOKKOS_FUNCTION
   void solve(T& x) {
       int iterations = 0;
-      while ((iterations < max_iter) && (std::abs(f(x)) > tol)) {
+      while ((iterations < max_iter) && (std::fabs(f(x)) > tol)) {
           x = x - (f(x)/fprime(x));
           iterations += 1;
       }
@@ -130,8 +131,12 @@ int main(int argc, char *argv[]){
     Inform msg("PenningTrap");
     Inform msg2all("PenningTrap",INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(1.0);
+    if(argc != 9) {
+        std::cerr << "Command line arguments need to be 8" << std::endl;
+        std::abort();
+    }
 
+    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
     auto start = std::chrono::high_resolution_clock::now();
     ippl::Vector<int,Dim> nr = {
@@ -175,7 +180,7 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.95*dx;//size of timestep
+    const double dt = 0.5*dx;//size of timestep
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
@@ -189,7 +194,12 @@ int main(int argc, char *argv[]){
     P->nr_m = nr;
 
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
-    IpplTimings::startTimer(particleCreation);
+    static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
+    static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
+    static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");
+    static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
+    static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityPush");
+    static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionPush");
 
     Vector_t length = rmax - rmin;
 
@@ -202,6 +212,7 @@ int main(int argc, char *argv[]){
     sd[1] = 0.05*length[1];
     sd[2] = 0.20*length[2];
 
+    IpplTimings::startTimer(particleCreation);
     const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
     Vector_t Rmin, Rmax, Nr, Dr, minU, maxU;
     for (unsigned d = 0; d <Dim; ++d) {
@@ -233,81 +244,16 @@ int main(int argc, char *argv[]){
 
     Kokkos::fence();
     Ippl::Comm->barrier();
-    //std::mt19937_64 eng[4*Dim];
-    //for (unsigned i = 0; i < 4*Dim; ++i) {
-    //    eng[i].seed(42 + i * Dim);
-    //    eng[i].discard( nloc * Ippl::Comm->rank());
-    //}
-
-
-    ////std::uniform_real_distribution<double> dist_uniform(0.0, 1.0);
-
-    //using uni_random_gen_t = std::uniform_real_distribution<double>;
-    //std::array<uni_random_gen_t, 2*Dim> dist_uniform;
-
-    //for (unsigned d = 0; d < Dim; ++d) {
-    //    dis_uniform[d*2] = uni_random_gen_t(Rmin[d], Rmax[d]);
-    //    dis_uniform[d*2+1] = uni_random_gen_t(0.0, );
-    //}
-    //                                                                
-
-    //typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
-    //typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
-
-    ////double sum_coord=0.0;
-    //size_type npart = 0;
-    ////for (size_type i = 0; i< nloc; i++) {
-    //while(1) {
-
-    //    if(npart == nloc)
-    //        break;
-
-    //    for (unsigned istate = 0; istate < 2*Dim; ++istate) {
-    //        double u1 = dist_uniform(eng[istate*2]);
-    //        double u2 = dist_uniform(eng[istate*2+1]);
-    //        states[istate] = sd[istate] * (std::sqrt(-2.0 * std::log(u1)) *
-    //                         std::cos(2.0 * pi * u2)) + mu[istate];
-    //    }
-    //    bool isInside = true;
-    //    for (unsigned d = 0; d < Dim; ++d) {
-    //        isInside = isInside && ((states[d] >= Rmin[d]) 
-    //                    && (states[d] < Rmax[d]));
-    //    }
-    //    if(isInside) {
-    //        for (unsigned d = 0; d<Dim; d++) {
-    //            R_host(npart)[d] =  std::fabs(std::fmod(states[d],length[d]));
-    //            //sum_coord += R_host(i)[d];
-    //            P_host(npart)[d] = states[Dim + d];
-    //        }
-    //        npart += 1;
-    //    }
-    //}
-    ///Just to check are we getting the same particle distribution for
-    //different no. of processors
-    //double global_sum_coord = 0.0;
-    //MPI_Reduce(&sum_coord, &global_sum_coord, 1,
-    //           MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-
-    //if(Ippl::Comm->rank() == 0) {
-    //    std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
-    //}
-
-    //Kokkos::deep_copy(P->R.getView(), R_host);
-    //Kokkos::deep_copy(P->P.getView(), P_host);
-
-    P->q = P->Q_m/totalP;
     IpplTimings::stopTimer(particleCreation);                                                    
-    
     
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
     P->initializeORB(FL, mesh);
 
     bunch_type bunchBuffer(PL);
-    static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("FirstUpdate");           
-    IpplTimings::startTimer(FirstUpdateTimer);                                               
+	IpplTimings::startTimer(updateTimer);
     PL.update(*P, bunchBuffer);
-    IpplTimings::stopTimer(FirstUpdateTimer);
+	IpplTimings::stopTimer(updateTimer);
 
     msg << "particles created and initial conditions assigned " << endl;
 
@@ -316,31 +262,97 @@ int main(int argc, char *argv[]){
     P->time_m = 0.0;
     P->loadbalancethreshold_m = std::atof(argv[7]);
 
-    static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
     unsigned int nstep = 0;
+    bool isFirstRepartition;
+    
     if (P->balance(totalP, nstep)) {
         msg << "Starting first repartition" << endl;
         IpplTimings::startTimer(domainDecomposition);
-        P->repartition(FL, mesh, bunchBuffer);
+        isFirstRepartition = true;
+        P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+        IpplTimings::startTimer(particleCreation);
+        
+        //Compute again the min and max. extents based on the changed field layout
+        for (unsigned d = 0; d <Dim; ++d) {
+            Rmin[d] = origin[d] + lDom[d].first() * hr[d];
+            Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
+            Nr[d] = CDF(Rmax[d], mu[d], sd[d]) - CDF(Rmin[d], mu[d], sd[d]);  
+            Dr[d] = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
+            minU[d] = CDF(Rmin[d], mu[d], sd[d]);
+            maxU[d]   = CDF(Rmax[d], mu[d], sd[d]);
+        }
+        factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
+        size_type nlocNew = (size_type)(factor * totalP);
+        size_type TotalParticlesNew = 0;
+
+        MPI_Allreduce(&nlocNew, &TotalParticlesNew, 1,
+                    MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+
+        int restNew = (int) (totalP - TotalParticlesNew);
+
+        if ( Ippl::Comm->rank() < restNew )
+            ++nlocNew;
+
+        if(nlocNew > nloc) {
+            //In this case we need to create extra particles
+            P->create(nlocNew-nloc);
+        }
+        else if(nlocNew < nloc) {
+            
+            //In this case we need to destroy extra particles
+            size_type invalidCount = nloc - nlocNew;
+            
+            using bool_type = ippl::detail::ViewType<bool, 1>::view_type;
+
+            bool_type invalid("invalid", nloc);
+
+            Kokkos::parallel_for(
+            "set valid after repartition",
+            nlocNew,
+            KOKKOS_LAMBDA(const size_t i) {
+                invalid(i) = false;
+            });
+            Kokkos::fence();
+
+            auto pIDs = P->ID.getView();
+            Kokkos::parallel_for(
+            "set invalid after repartition",
+            Kokkos::RangePolicy(nlocNew, nloc),
+            KOKKOS_LAMBDA(const size_t i) {
+                invalid(i) = true;
+                pIDs(i) = -1;
+            });
+            Kokkos::fence();
+            
+            P->destroy(invalid, invalidCount);
+        }
+        Ippl::Comm->barrier();
+        
+        Kokkos::parallel_for(nlocNew,
+                             generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                             P->R.getView(), P->P.getView(), rand_pool64, mu, sd, minU, maxU));
+
+        Kokkos::fence();
+        Ippl::Comm->barrier();
+        IpplTimings::stopTimer(particleCreation);
         IpplTimings::stopTimer(domainDecomposition);
     }
 
+    P->q = P->Q_m/totalP;
+    isFirstRepartition = false;
     P->scatterCIC(totalP, 0, hr);
 
-    static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");
     IpplTimings::startTimer(SolveTimer);
     P->solver_mp->solve();
     IpplTimings::stopTimer(SolveTimer);
 
     P->gatherCIC();
 
-    static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpData();
     P->gatherStatistics(totalP);
     IpplTimings::stopTimer(dumpDataTimer);
 
-    static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
@@ -350,7 +362,6 @@ int main(int argc, char *argv[]){
         // all the particles hence eliminating the need to store mass as
         // an attribute
         // kick
-        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityPush");
         IpplTimings::startTimer(PTimer);
         auto Rview = P->R.getView();
         auto Pview = P->P.getView();
@@ -358,9 +369,9 @@ int main(int argc, char *argv[]){
         double V0 = 30*rmax[2];
         Kokkos::parallel_for("Kick1", P->getLocalNum(),
                               KOKKOS_LAMBDA(const size_t j){
-            double Eext_x = -(Rview(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));
-            double Eext_y = -(Rview(j)[1] - (rmax[1]/2)) * (V0/(2*pow(rmax[2],2)));
-            double Eext_z =  (Rview(j)[2] - (rmax[2]/2)) * (V0/(pow(rmax[2],2)));
+            double Eext_x = -(Rview(j)[0] - (rmax[0]/2)) * (V0/(2*std::pow(rmax[2],2)));
+            double Eext_y = -(Rview(j)[1] - (rmax[1]/2)) * (V0/(2*std::pow(rmax[2],2)));
+            double Eext_z =  (Rview(j)[2] - (rmax[2]/2)) * (V0/(std::pow(rmax[2],2)));
 
             Pview(j)[0] -= 0.5 * dt * ((Eview(j)[0] + Eext_x) + Pview(j)[1] * Bext);
             Pview(j)[1] -= 0.5 * dt * ((Eview(j)[1] + Eext_y) - Pview(j)[0] * Bext);
@@ -369,10 +380,8 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(PTimer);
 
         //drift
-        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionPush");
         IpplTimings::startTimer(RTimer);
         P->R = P->R + dt * P->P;
-        Ippl::Comm->barrier();
         IpplTimings::stopTimer(RTimer);
 
         //Since the particles have moved spatially update them to correct processors
@@ -384,7 +393,7 @@ int main(int argc, char *argv[]){
         if (P->balance(totalP, it+1)) {
            msg << "Starting repartition" << endl;
            IpplTimings::startTimer(domainDecomposition);
-           P->repartition(FL, mesh, bunchBuffer);
+           P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
            IpplTimings::stopTimer(domainDecomposition);
         }
         
@@ -406,9 +415,9 @@ int main(int argc, char *argv[]){
         auto E2view = P->E.getView();
         Kokkos::parallel_for("Kick2", P->getLocalNum(),
                               KOKKOS_LAMBDA(const size_t j){
-            double Eext_x = -(R2view(j)[0] - (rmax[0]/2)) * (V0/(2*pow(rmax[2],2)));
-            double Eext_y = -(R2view(j)[1] - (rmax[1]/2)) * (V0/(2*pow(rmax[2],2)));
-            double Eext_z =  (R2view(j)[2] - (rmax[2]/2)) * (V0/(pow(rmax[2],2)));
+            double Eext_x = -(R2view(j)[0] - (rmax[0]/2)) * (V0/(2*std::pow(rmax[2],2)));
+            double Eext_y = -(R2view(j)[1] - (rmax[1]/2)) * (V0/(2*std::pow(rmax[2],2)));
+            double Eext_z =  (R2view(j)[2] - (rmax[2]/2)) * (V0/(std::pow(rmax[2],2)));
 
             P2view(j)[0] -= 0.5 * dt * ((E2view(j)[0] + Eext_x) + P2view(j)[1] * Bext);
             P2view(j)[1] -= 0.5 * dt * ((E2view(j)[1] + Eext_y) - P2view(j)[0] * Bext);
