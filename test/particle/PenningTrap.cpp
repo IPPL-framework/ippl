@@ -118,7 +118,7 @@ struct generate_random {
   }
 };
 
-double CDF(double& x, double& mu, double& sigma) {
+double CDF(const double& x, double& mu, double& sigma) {
    double cdf = 0.5 * (1.0 + std::erf((x - mu)/(sigma * std::sqrt(2))));
    return cdf;
 }
@@ -131,10 +131,6 @@ int main(int argc, char *argv[]){
     Inform msg("PenningTrap");
     Inform msg2all("PenningTrap",INFORM_ALL_NODES);
 
-    if(argc != 9) {
-        std::cerr << "Command line arguments need to be 8" << std::endl;
-        std::abort();
-    }
 
     Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
@@ -213,15 +209,18 @@ int main(int argc, char *argv[]){
     sd[2] = 0.20*length[2];
 
     IpplTimings::startTimer(particleCreation);
-    const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-    Vector_t Rmin, Rmax, Nr, Dr, minU, maxU;
+
+    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
+    const RegionLayout_t& RLayout = PL.getRegionLayout();
+    const typename RegionLayout_t::host_mirror_type& Regions = RLayout.gethLocalRegions();
+    Vector_t Nr, Dr, minU, maxU;
+    int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d <Dim; ++d) {
-        Rmin[d] = origin[d] + lDom[d].first() * hr[d];
-        Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
-        Nr[d] = CDF(Rmax[d], mu[d], sd[d]) - CDF(Rmin[d], mu[d], sd[d]);  
+        Nr[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d]) - 
+                CDF(Regions(myRank)[d].min(), mu[d], sd[d]);  
         Dr[d] = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
-        minU[d] = CDF(Rmin[d], mu[d], sd[d]);
-        maxU[d]   = CDF(Rmax[d], mu[d], sd[d]);
+        minU[d] = CDF(Regions(myRank)[d].min(), mu[d], sd[d]);
+        maxU[d]   = CDF(Regions(myRank)[d].max(), mu[d], sd[d]);
     }
 
     double factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
@@ -251,9 +250,10 @@ int main(int argc, char *argv[]){
     P->initializeORB(FL, mesh);
 
     bunch_type bunchBuffer(PL);
-	IpplTimings::startTimer(updateTimer);
-    PL.update(*P, bunchBuffer);
-	IpplTimings::stopTimer(updateTimer);
+    //The following update is not needed as the particles are all generated locally
+	//IpplTimings::startTimer(updateTimer);
+    //PL.update(*P, bunchBuffer);
+	//IpplTimings::stopTimer(updateTimer);
 
     msg << "particles created and initial conditions assigned " << endl;
 
@@ -272,14 +272,13 @@ int main(int argc, char *argv[]){
         P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
         IpplTimings::startTimer(particleCreation);
         
-        //Compute again the min and max. extents based on the changed field layout
+        //Compute again the min and max. extents based on the changed region layout
         for (unsigned d = 0; d <Dim; ++d) {
-            Rmin[d] = origin[d] + lDom[d].first() * hr[d];
-            Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
-            Nr[d] = CDF(Rmax[d], mu[d], sd[d]) - CDF(Rmin[d], mu[d], sd[d]);  
+            Nr[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d]) - 
+                    CDF(Regions(myRank)[d].min(), mu[d], sd[d]);  
             Dr[d] = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
-            minU[d] = CDF(Rmin[d], mu[d], sd[d]);
-            maxU[d]   = CDF(Rmax[d], mu[d], sd[d]);
+            minU[d] = CDF(Regions(myRank)[d].min(), mu[d], sd[d]);
+            maxU[d]   = CDF(Regions(myRank)[d].max(), mu[d], sd[d]);
         }
         factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
         size_type nlocNew = (size_type)(factor * totalP);
@@ -293,18 +292,18 @@ int main(int argc, char *argv[]){
         if ( Ippl::Comm->rank() < restNew )
             ++nlocNew;
 
-        if(nlocNew > nloc) {
+        if(nlocNew > P->getLocalNum()) {
             //In this case we need to create extra particles
-            P->create(nlocNew-nloc);
+            P->create(nlocNew - P->getLocalNum());
         }
-        else if(nlocNew < nloc) {
+        else if(nlocNew < P->getLocalNum()) {
             
             //In this case we need to destroy extra particles
-            size_type invalidCount = nloc - nlocNew;
+            size_type invalidCount = P->getLocalNum() - nlocNew;
             
             using bool_type = ippl::detail::ViewType<bool, 1>::view_type;
 
-            bool_type invalid("invalid", nloc);
+            bool_type invalid("invalid", P->getLocalNum());
 
             Kokkos::parallel_for(
             "set valid after repartition",
@@ -317,7 +316,7 @@ int main(int argc, char *argv[]){
             auto pIDs = P->ID.getView();
             Kokkos::parallel_for(
             "set invalid after repartition",
-            Kokkos::RangePolicy(nlocNew, nloc),
+            Kokkos::RangePolicy(nlocNew, P->getLocalNum()),
             KOKKOS_LAMBDA(const size_t i) {
                 invalid(i) = true;
                 pIDs(i) = -1;
@@ -340,6 +339,10 @@ int main(int argc, char *argv[]){
 
     P->q = P->Q_m/totalP;
     isFirstRepartition = false;
+    //The following update is not needed as the particles are all generated locally
+	//IpplTimings::startTimer(updateTimer);
+    //PL.update(*P, bunchBuffer);
+	//IpplTimings::stopTimer(updateTimer);
     P->scatterCIC(totalP, 0, hr);
 
     IpplTimings::startTimer(SolveTimer);

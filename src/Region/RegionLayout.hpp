@@ -141,6 +141,14 @@ namespace ippl {
             return dLocalRegions_m;
         }
 
+
+        template <typename T, unsigned Dim, class Mesh>
+        const typename RegionLayout<T, Dim, Mesh>::host_mirror_type& 
+        RegionLayout<T, Dim, Mesh>::gethLocalRegions() const
+        {
+            return hLocalRegions_m;
+        }
+
         template <typename T, unsigned Dim, class Mesh>
         std::ostream& operator<<(std::ostream& out, const RegionLayout<T, Dim, Mesh>& rl)
         {

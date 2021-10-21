@@ -71,7 +71,9 @@ namespace ippl {
             const NDRegion_t& getDomain() const { return region_m; }
 
             const view_type& getdLocalRegions() const;
-            
+
+            const host_mirror_type& gethLocalRegions() const;
+
             void write(std::ostream& = std::cout) const;
 
             void changeDomain(const FieldLayout<Dim>&, const Mesh& mesh); // previously private...
