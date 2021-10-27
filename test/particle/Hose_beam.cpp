@@ -584,7 +584,6 @@ public:
 
 };
 
-
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     
@@ -632,11 +631,12 @@ int main(int argc, char *argv[]){
     double gammaz = 1.0;
     // compute vz = beta*c
     //double vz = c * std::sqrt(gammaz * gammaz - 1.0) / gammaz;
-    double vz = 1000; // m/s
+    //double vz = 1000; // m/s
+    double vz = 0.0;
 
     // create particle mesh, field layout, and particle layout
     Vector_t rmin(0.0);
-    Vector_t rmax = {1.08e-2, 1.08e-2, 6e-3}; // small box for testing
+    Vector_t rmax = {1.1, 1.1, 1.1}; // small box for testing 1.08e-2 6e-3
     double dx = rmax[0] / nr[0];
     double dy = rmax[1] / nr[1];
     double dz = rmax[2] / nr[2];
@@ -657,8 +657,8 @@ int main(int argc, char *argv[]){
     std::unique_ptr<bunch_type> P;
 
     // set the total charge (two species) and the external B-field
-    double Q_b = (-4.0e-3); // C - electron beam
-    double Bext = 0.00332; // T
+    double Q_b = (-4.0e-3); // C - electron beam -4e-3
+    double Bext = Q_b * 8.987e9; // T 0.00332
 
     // set the elementary charge
     double q_e = 1.602176634e-19; // C
@@ -694,7 +694,7 @@ int main(int argc, char *argv[]){
     std::vector<double> states(2*Dim);   
     double u1,u2;
     
-    std::uniform_real_distribution<double> dist_uniform_beam (hr[2] + rmin[2], hr[2] + (5e-3));
+    //std::uniform_real_distribution<double> dist_uniform_beam (hr[2] + rmin[2], hr[2] + (5e-3));
     std::uniform_real_distribution<double> dist_uniform_norm (0.0, 1.0);
 
     // get positions (R) and momenta (P)
@@ -708,6 +708,15 @@ int main(int argc, char *argv[]){
     // electron beam
     for (unsigned long long int i = 0; i < nloc; i++) {
 
+        // spherical uniform distribution
+        phi = dist_uniform_norm(eng[0]) * 2.0 * pi;
+        theta = dist_uniform_norm(eng[1]) * pi;
+
+        states[0] = (sin(phi) * cos(theta)) - 0.5;
+        states[1] = (sin(phi) * sin(theta)) - 0.5;
+        states[2] = cos(phi) - 0.5;
+
+        /*
         // gaussian in x,y
         u1 = dist_uniform_norm(eng[0]);
         u2 = dist_uniform_norm(eng[1]);
@@ -719,6 +728,7 @@ int main(int argc, char *argv[]){
         
         // z
         states[2] =  dist_uniform_beam(eng[4]);
+        */
 
         // gaussian in vx, vy; mu = 0, std = 1
         u1 = dist_uniform_norm(eng[6]);
