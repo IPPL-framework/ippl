@@ -1,18 +1,23 @@
-//////////////////////////////////////////////////////////////////////////////////
-//
-// HoseInstability.cpp
+// Hose Instability
 //
 // This program seeks to simulate the Hose Instability for a coasting beam 
 // (electrostatic case). The Poisson solver employed is an all open BCs 
 // FFT-based Poisson solver which employs the Hockney trick.
 //
-// Usage:
-//     srun ./TestHose 64 64 64 10000 300 Hockney 0 --info 10
+//   Usage:
+//     srun ./HoseInstability 64 64 64 10000 300 Hockney 0 --info 10
+//     srun ./HoseInstability 64 64 64 10000 300 Vico 0 --info 10
 //
-// FFT parameters used: Pencils, point2point, no reordering
+// This file is part of IPPL.
 //
-//////////////////////////////////////////////////////////////////////////////////
-
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #include "Ippl.h"
 #include <string>
 #include <fstream>
