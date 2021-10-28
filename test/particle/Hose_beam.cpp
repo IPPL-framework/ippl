@@ -21,23 +21,6 @@
 #include "Utility/IpplTimings.h"
 #include "Solver/FFTPoissonSolver.h"
 
-KOKKOS_INLINE_FUNCTION
-double source(double x, double y, double z) {
-    
-    double Q = 0.6*0.6;
-    double pi = acos(-1.0);
-
-    double R = 0.3;
-
-    double mu = 0.5;
-    double r = sqrt((x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu));
-
-    if (r > R)
-        return 0.0;
-    else
-        return 0.75 * Q / (pi * pow(R, 3));
-}
-
 // dimension of our positions
 constexpr unsigned Dim = 3;
 
@@ -58,10 +41,10 @@ using ParticleAttrib = ippl::ParticleAttrib<T>;
 typedef Vector<double, Dim>  Vector_t;
 typedef Field<double, Dim>   Field_t;
 typedef Field<Vector_t, Dim> VField_t;
-typedef ippl::FFTPoissonSolver<Dim> Solver_t;
+typedef ippl::FFTPoissonSolver<ippl::Vector<double,3>, double, Dim> Solver_t;
 
 // some useful constants
-double pi = acos(-1.0);
+//double pi = acos(-1.0);
 double c = 299792458;
 
 // function that allows to create a vtk file for Paraview to visualize rho
@@ -198,22 +181,10 @@ public:
         fftParams.setReorder( false );
         fftParams.setRCDirection( 0 );
    
-        if (stype_m == "Hockney") {
-            solver_mp = std::make_shared<Solver_t>(E_m, rho_m, fftParams, false);
-        } else if (stype_m == "Vico") {
-            solver_mp = std::make_shared<Solver_t>(E_m, rho_m, fftParams, true);
-        } else {
-            m << "No solver algorithm matches the argument" << endl;   
-        }
+        solver_mp = std::make_shared<Solver_t>(E_m, rho_m, fftParams, stype_m);
 
-        solver_mp->gradEfield();
+        solver_mp->setGradFD();
     }
-
-    /*void update() {
-        
-        PLayout& layout = this->getLayout();
-        layout.update(*this);
-    }*/
 
     void gatherCIC() {
 
@@ -306,79 +277,14 @@ public:
          //rho_m = rho_m / gammaz;
          //m << "lorentz done done" << endl;
 
-         //////////// write scattered initial rho to a csv file ///////////////////////
-         /*if (print) {
-             std::ofstream csvout;
-             csvout.precision(16);
-             csvout.setf(std::ios::scientific, std::ios::floatfield);
-
-             std::stringstream fname;
-             fname << "data/rho_init";
-             fname << ".m";
-             csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
-
-             typename Field_t::view_type::host_mirror_type host_view = rho_m.getHostMirror();
-             Kokkos::deep_copy(host_view, rho_m.getView());
-
-             int matIndex = 1;
-
-             for (int z=1; z<nr_m[2]+1; z++) {
-                 csvout << "rho(:,:," << matIndex << ") = [";
-                 for (int x=1; x<nr_m[0]+1; x++) {
-                     for (int y=1; y<nr_m[1]+1; y++) {
-                         csvout << host_view(x,y,z) << " ";
-                     }
-                     csvout << ";" << std::endl;
-                 }
-                 csvout << "];" << std::endl;
-                 ++matIndex;
-             }
-
-             csvout.close();
-             print = false;
-         }*/
-         //////////////////////////////////////////////////////////////////////////////
-
          solver_mp->solve();
 
-         /*//////////// test ////////////////////////////////////////////////////////////
-         m << "Potential, average = " << std::setprecision(16) << rho_m.sum()/(nr_m[0]*nr_m[1]*nr_m[2]) << endl;
-         m << "Potential, max = " << std::setprecision(16) << rho_m.max() << endl;
-
-         const int nghostE = E_m.getNghost();
-         auto Eview = E_m.getView();
-         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
-         auto viewEx = Ex.getView();
-         auto viewEy = Ey.getView();
-         auto viewEz = Ez.getView();
-
-         Kokkos::parallel_for("Vector E reduce",                                                                       
-                         mdrange_type({nghostE, nghostE, nghostE},                 
-                                      {Eview.extent(0) - nghostE,            
-                                       Eview.extent(1) - nghostE,            
-                                       Eview.extent(2) - nghostE}),          
-                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {                                
-                                           viewEx(i,j,k) = Eview(i, j, k)[0];                                             
-                                           viewEy(i,j,k) = Eview(i, j, k)[1];                                             
-                                           viewEz(i,j,k) = Eview(i, j, k)[2];                                             
-                         });
-
-         m << "Ex, max = "  << std::setprecision(16)  << Ex.max() << endl;
-         m << "Ey, max = "  << std::setprecision(16)  << Ey.max() << endl;
-         m << "Ez, max = "  << std::setprecision(16)  << Ez.max() << endl;
-         //////////////////////////////////////////////////////////////////////////////
-         */
          // transform back mesh spacing
          //(rho_m.get_mesh()).setMeshSpacing(hr_m);
 
          double ke = 8.988e9; // coupling constant         
          rho_m = rho_m * ke;
          E_m = E_m * ke;
-
-         //double epsilon0 = 8.8541878128e-12; // vacuum permittivity
-         //rho_m = rho_m / epsilon0;
-         //E_m = E_m / epsilon0;
     }
 
     void dumpData(unsigned int totalP) { 
@@ -631,12 +537,11 @@ int main(int argc, char *argv[]){
     double gammaz = 1.0;
     // compute vz = beta*c
     //double vz = c * std::sqrt(gammaz * gammaz - 1.0) / gammaz;
-    //double vz = 1000; // m/s
-    double vz = 0.0;
+    double vz = 1000; // m/s
 
     // create particle mesh, field layout, and particle layout
     Vector_t rmin(0.0);
-    Vector_t rmax = {1.1, 1.1, 1.1}; // small box for testing 1.08e-2 6e-3
+    Vector_t rmax = {1.08e-2, 1.08e-2, 6.0e-3}; // small box for testing
     double dx = rmax[0] / nr[0];
     double dy = rmax[1] / nr[1];
     double dz = rmax[2] / nr[2];
@@ -658,7 +563,7 @@ int main(int argc, char *argv[]){
 
     // set the total charge (two species) and the external B-field
     double Q_b = (-4.0e-3); // C - electron beam -4e-3
-    double Bext = Q_b * 8.987e9; // T 0.00332
+    double Bext = Q_b * 8.987e9/pow(0.4e-2, 2); // T 0.00332
 
     // set the elementary charge
     double q_e = 1.602176634e-19; // C
@@ -709,12 +614,13 @@ int main(int argc, char *argv[]){
     for (unsigned long long int i = 0; i < nloc; i++) {
 
         // spherical uniform distribution
-        phi = dist_uniform_norm(eng[0]) * 2.0 * pi;
-        theta = dist_uniform_norm(eng[1]) * pi;
+        double phi = dist_uniform_norm(eng[0]) * 2.0 * pi;
+        double theta = dist_uniform_norm(eng[1]) * pi;
+        double r = dist_uniform_norm(eng[1]) * 0.4e-2;
 
-        states[0] = (sin(phi) * cos(theta)) - 0.5;
-        states[1] = (sin(phi) * sin(theta)) - 0.5;
-        states[2] = cos(phi) - 0.5;
+        states[0] = (r * sin(phi) * cos(theta)) - 0.5*length[0];
+        states[1] = (r * sin(phi) * sin(theta)) - 0.5*length[1];
+        states[2] = (r * cos(phi)) - 0.5*length[2];
 
         /*
         // gaussian in x,y
@@ -905,19 +811,6 @@ int main(int argc, char *argv[]){
                 V2view(j)[2] += q2(j) * 0.5 * dt * ((E2view(j)[2]) + (V2view(j)[0] * Bfield[1]) - (V2view(j)[1] * Bfield[0])) / (mass2(j) * gammaz);
                 
         });
-        /*
-        // test ///////////////////////////////////////////////////////////////
-        v2 = 0.0;
-        Kokkos::parallel_reduce("Particle Energy", Vview.extent(0),
-                                KOKKOS_LAMBDA(const int i, double& valL){
-                                    double myVal = dot(Vview(i), Vview(i)).apply();
-                                    valL += myVal;
-                                }, Kokkos::Sum<double>(v2));
-         
-        msg << " v squared total " << v2 << endl;
-
-        ////////////////////////////////////////////////////////////////////////
-        */
 
         // increment time
         P->time_m += dt;

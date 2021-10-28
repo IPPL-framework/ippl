@@ -45,10 +45,9 @@ using ParticleAttrib = ippl::ParticleAttrib<T>;
 typedef Vector<double, Dim>  Vector_t;
 typedef Field<double, Dim>   Field_t;
 typedef Field<Vector_t, Dim> VField_t;
-typedef ippl::FFTPoissonSolver<Dim> Solver_t;
+typedef ippl::FFTPoissonSolver<ippl::Vector<double,3>, double, Dim> Solver_t;
 
 // some useful constants
-double pi = acos(-1.0);
 double c = 299792458;
 
 // function that allows to create a vtk file for Paraview to visualize rho
@@ -190,22 +189,10 @@ public:
         fftParams.setReorder( false );
         fftParams.setRCDirection( 0 );
    
-        if (stype_m == "Hockney") {
-            solver_mp = std::make_shared<Solver_t>(E_m, rho_m, fftParams, false, true);
-        } else if (stype_m == "Vico") {
-            solver_mp = std::make_shared<Solver_t>(E_m, rho_m, fftParams, true, true);
-        } else {
-            m << "No solver algorithm matches the argument" << endl;   
-        }
+        solver_mp = std::make_shared<Solver_t>(E_m, rho_m, fftParams, stype_m);
 
-        solver_mp->gradEfield();
+        solver_mp->setGradFD();
     }
-
-    /*void update() {
-        
-        PLayout& layout = this->getLayout();
-        layout.update(*this);
-    }*/
 
     void gatherCIC() {
 
@@ -282,7 +269,7 @@ public:
          temp_field = rho_m;
 
          // charge density in real units 
-         //rho_m = rho_m / (hr_m[0] * hr_m[1] * hr_m[2]);
+         rho_m = rho_m / (hr_m[0] * hr_m[1] * hr_m[2]);
 
          if (vtk == true)
              dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], iteration, hr_m[0], hr_m[1], hr_m[2]);
@@ -431,7 +418,7 @@ public:
         temp = 0.0;
         Kokkos::parallel_reduce("Particle positions", Rview.extent(0),
                                 KOKKOS_LAMBDA(const int i, double& valL){
-                                    if ((idView(i) == -1.0)) { //  && (Rview(i)[2] > (23.96 + 50.0 - 0.5)) && (Rview[i][2] < (23.96 + 50.0 + 0.5))) {
+                                    if ((idView(i) == -1.0)) { 
                                         double myVal = Rview(i)[1] - center_y;
                                         valL += myVal;
                                     }
@@ -515,7 +502,9 @@ public:
             csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
 
             if(time_m == 0.0) {
-                csvout << "time E_kin E_pot Ex_norm Ey_norm Ez_norm Bx_norm By_norm Bz_norm Ion_centroid_x Ion_centroid_y Beam_centroid_x Beam_centroid_y Rms_x Rms_y Rms_z Rms_px Rms_py Rms_pz x y z" << std::endl;
+                csvout << "time E_kin E_pot Ex_norm Ey_norm Ez_norm Bx_norm By_norm Bz_norm "
+                       << "Ion_centroid_x Ion_centroid_y Beam_centroid_x Beam_centroid_y "
+                       << "Rms_x Rms_y Rms_z Rms_px Rms_py Rms_pz x y z" << std::endl;
             }
 
             csvout << time_m << " "
@@ -846,9 +835,12 @@ int main(int argc, char *argv[]){
                 Vector_t Bfield = Bview(j);
                 Bfield[2] = Bfield[2] + Bext;
 
-                Vview(j)[0] += q(j) * 0.5 * dt * ((Eview(j)[0]) + (Vview(j)[1] * Bfield[2]) - (Vview(j)[2] * Bfield[1])) / (mass(j) * gamma(j));
-                Vview(j)[1] += q(j) * 0.5 * dt * ((Eview(j)[1]) + (Vview(j)[2] * Bfield[0]) - (Vview(j)[0] * Bfield[2])) / (mass(j) * gamma(j));
-                Vview(j)[2] += q(j) * 0.5 * dt * ((Eview(j)[2]) + (Vview(j)[0] * Bfield[1]) - (Vview(j)[1] * Bfield[0])) / (mass(j) * gamma(j));
+                Vview(j)[0] += q(j) * 0.5 * dt * ((Eview(j)[0]) + (Vview(j)[1] * Bfield[2]) 
+                                        - (Vview(j)[2] * Bfield[1])) / (mass(j) * gamma(j));
+                Vview(j)[1] += q(j) * 0.5 * dt * ((Eview(j)[1]) + (Vview(j)[2] * Bfield[0])
+                                        - (Vview(j)[0] * Bfield[2])) / (mass(j) * gamma(j));
+                Vview(j)[2] += q(j) * 0.5 * dt * ((Eview(j)[2]) + (Vview(j)[0] * Bfield[1])
+                                        - (Vview(j)[1] * Bfield[0])) / (mass(j) * gamma(j));
                 
         });
 
@@ -880,9 +872,12 @@ int main(int argc, char *argv[]){
                 Vector_t Bfield = B2view(j);
                 Bfield[2] = Bfield[2] + Bext;
 
-                V2view(j)[0] += q2(j) * 0.5 * dt * ((E2view(j)[0]) + (V2view(j)[1] * Bfield[2]) - (V2view(j)[2] * Bfield[1])) / (mass2(j) * gamma2(j));
-                V2view(j)[1] += q2(j) * 0.5 * dt * ((E2view(j)[1]) + (V2view(j)[2] * Bfield[0]) - (V2view(j)[0] * Bfield[2])) / (mass2(j) * gamma2(j));
-                V2view(j)[2] += q2(j) * 0.5 * dt * ((E2view(j)[2]) + (V2view(j)[0] * Bfield[1]) - (V2view(j)[1] * Bfield[0])) / (mass2(j) * gamma2(j));
+                V2view(j)[0] += q2(j) * 0.5 * dt * ((E2view(j)[0]) + (V2view(j)[1] * Bfield[2]) 
+                                         - (V2view(j)[2] * Bfield[1])) / (mass2(j) * gamma2(j));
+                V2view(j)[1] += q2(j) * 0.5 * dt * ((E2view(j)[1]) + (V2view(j)[2] * Bfield[0])
+                                         - (V2view(j)[0] * Bfield[2])) / (mass2(j) * gamma2(j));
+                V2view(j)[2] += q2(j) * 0.5 * dt * ((E2view(j)[2]) + (V2view(j)[0] * Bfield[1])
+                                         - (V2view(j)[1] * Bfield[0])) / (mass2(j) * gamma2(j));
                 
         });
 

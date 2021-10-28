@@ -32,6 +32,9 @@ target_link_libraries (UniformPlasmaTest ${IPPL_LIBS})
 add_executable (benchmarkParticleUpdate benchmarkParticleUpdate.cpp)
 target_link_libraries (benchmarkParticleUpdate ${IPPL_LIBS})
 
+add_executable (HoseInstability HoseInstability.cpp)
+target_link_libraries (HoseInstability ${IPPL_LIBS})
+
 add_executable (Hose_beam Hose_beam.cpp)
 target_link_libraries (Hose_beam ${IPPL_LIBS})
 
