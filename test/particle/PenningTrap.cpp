@@ -125,12 +125,12 @@ double CDF(const double& x, double& mu, double& sigma) {
 
 
 KOKKOS_FUNCTION
-Vector_t PDF(const Vector_t& xvec, const Vector_t&mu, 
+double PDF(const Vector_t& xvec, const Vector_t&mu, 
              const Vector_t& sigma, const unsigned Dim) {
-    Vector_t pdf = 1.0;
+    double pdf = 1.0;
 
     for (unsigned d = 0; d < Dim; ++d) {
-        pdf[d] *= (1.0/ (sd[0] * std::sqrt(2 * M_PI))) * 
+        pdf *= (1.0/ (sigma[d] * std::sqrt(2 * M_PI))) * 
                   std::exp(-0.5 * std::pow((xvec[d] - mu[d])/sigma[d],2));
     }
     return pdf;
@@ -189,7 +189,8 @@ int main(int argc, char *argv[]){
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
     double dxFinest = rmax[0] / 1024;  
-    const double dt = 0.5 * dxFinest;//size of timestep
+    //const double dt = 0.5 * dxFinest;//size of timestep
+    const double dt = 0.5*dx;//size of timestep
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
@@ -231,17 +232,16 @@ int main(int argc, char *argv[]){
     //PL.update(*P, bunchBuffer);
 	//IpplTimings::stopTimer(updateTimer);
 
-    msg << "particles created and initial conditions assigned " << endl;
 
     P->stype_m = argv[6];
     P->initSolver();
     P->time_m = 0.0;
     P->loadbalancethreshold_m = std::atof(argv[7]);
 
-    unsigned int nstep = 0;
+    //unsigned int nstep = 0;
     bool isFirstRepartition;
     
-    if (P->balance(totalP, nstep)) {
+    if (P->loadbalancethreshold_m != 1.0) {
         msg << "Starting first repartition" << endl;
         IpplTimings::startTimer(domainDecomposition);
         isFirstRepartition = true;
@@ -269,7 +269,7 @@ int main(int argc, char *argv[]){
 
                                 Vector_t xvec = {x, y, z};
 
-                                rhoview(i, j, k) = PDF(xvec, mu, sd);
+                                rhoview(i, j, k) = PDF(xvec, mu, sd, Dim);
                                     
                               });
        
@@ -343,6 +343,7 @@ int main(int argc, char *argv[]){
     }
 
     
+    msg << "Domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
 
     typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
@@ -381,6 +382,7 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(particleCreation);                                                    
     
     P->q = P->Q_m/totalP;
+    msg << "particles created and initial conditions assigned " << endl;
     isFirstRepartition = false;
     //The following update is not needed as the particles are all generated locally
 	//IpplTimings::startTimer(updateTimer);

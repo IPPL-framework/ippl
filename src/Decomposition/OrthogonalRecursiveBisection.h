@@ -50,7 +50,8 @@ namespace ippl {
          * @param fl FieldLayout
          * @param mesh Mesh
          */
-        void initialize(FieldLayout<Dim>& fl, UniformCartesian<T,Dim>& mesh);
+        void initialize(FieldLayout<Dim>& fl, UniformCartesian<T,Dim>& mesh,
+                        const Field<T,Dim>& rho);
 
         /*!
          * Performs scatter operation of particle positions in field (weights) and
