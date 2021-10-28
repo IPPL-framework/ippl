@@ -228,13 +228,13 @@ public:
     }
 
     void initializeORB(FieldLayout_t& fl, Mesh_t& mesh) {
-        orb.initialize(fl, mesh);
+        orb.initialize(fl, mesh, rho_m);
     }
 
     void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer, 
                      bool& isFirstRepartition) {
         // Repartition the domains
-        bool res = orb.binaryRepartition(this->R, fl);
+        bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
 
         if (res != true) {
            std::cout << "Could not repartition!" << std::endl;

@@ -4,14 +4,19 @@ namespace ippl {
     template <class T, unsigned Dim, class M>
     void
     OrthogonalRecursiveBisection<T,Dim,M>::initialize(FieldLayout<Dim>& fl, 
-                                                      UniformCartesian<T,Dim>& mesh) {
+                                                      UniformCartesian<T,Dim>& mesh,
+                                                      const Field<T,Dim>& rho) {
        bf_m.initialize(mesh, fl);
+       //dummy operation as deep copy of fields is 
+       //not implemented yet
+       bf_m = rho * 1;
     }
 
     template <class T, unsigned Dim, class M>
     bool 
     OrthogonalRecursiveBisection<T,Dim,M>::binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, 
-                                                             FieldLayout<Dim>& fl) {
+                                                             FieldLayout<Dim>& fl,
+                                                             const bool& isFirstRepartition) {
        // Timings
        static IpplTimings::TimerRef tbasicOp = IpplTimings::getTimer("basicOperations");           
        static IpplTimings::TimerRef tperpReduction = IpplTimings::getTimer("perpReduction");           
@@ -20,7 +25,9 @@ namespace ippl {
 
        // Scattering of particle positions in field
        IpplTimings::startTimer(tscatter);
-       scatterR(R);
+       if(!isFirstRepartition) {
+          scatterR(R);
+       }
        IpplTimings::stopTimer(tscatter);
 
        IpplTimings::startTimer(tbasicOp);

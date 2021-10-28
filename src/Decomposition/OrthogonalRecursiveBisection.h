@@ -59,7 +59,8 @@ namespace ippl {
          * @param fl FieldLayout
          */
         bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R,
-                               FieldLayout<Dim>& fl);
+                               FieldLayout<Dim>& fl,
+                               const bool& isFirstRepartition);
 
         /*!
          * Find cutting axis as the longest axis of the field layout.

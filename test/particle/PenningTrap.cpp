@@ -124,6 +124,18 @@ double CDF(const double& x, double& mu, double& sigma) {
 }
 
 
+KOKKOS_FUNCTION
+Vector_t PDF(const Vector_t& xvec, const Vector_t&mu, 
+             const Vector_t& sigma, const unsigned Dim) {
+    Vector_t pdf = 1.0;
+
+    for (unsigned d = 0; d < Dim; ++d) {
+        pdf[d] *= (1.0/ (sd[0] * std::sqrt(2 * M_PI))) * 
+                  std::exp(-0.5 * std::pow((xvec[d] - mu[d])/sigma[d],2));
+    }
+    return pdf;
+}
+
 const char* TestName = "PenningTrap";
 
 int main(int argc, char *argv[]){
@@ -176,7 +188,8 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.5*dx;//size of timestep
+    double dxFinest = rmax[0] / 1024;  
+    const double dt = 0.5 * dxFinest;//size of timestep
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
@@ -208,6 +221,128 @@ int main(int argc, char *argv[]){
     sd[1] = 0.05*length[1];
     sd[2] = 0.20*length[2];
 
+    
+    P->E_m.initialize(mesh, FL);
+    P->rho_m.initialize(mesh, FL);
+
+    bunch_type bunchBuffer(PL);
+    //The following update is not needed as the particles are all generated locally
+	//IpplTimings::startTimer(updateTimer);
+    //PL.update(*P, bunchBuffer);
+	//IpplTimings::stopTimer(updateTimer);
+
+    msg << "particles created and initial conditions assigned " << endl;
+
+    P->stype_m = argv[6];
+    P->initSolver();
+    P->time_m = 0.0;
+    P->loadbalancethreshold_m = std::atof(argv[7]);
+
+    unsigned int nstep = 0;
+    bool isFirstRepartition;
+    
+    if (P->balance(totalP, nstep)) {
+        msg << "Starting first repartition" << endl;
+        IpplTimings::startTimer(domainDecomposition);
+        isFirstRepartition = true;
+        const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+        const int nghost = P->rho_m.getNghost();
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        auto rhoview = P->rho_m.getView();
+
+        Kokkos::parallel_for("Assign initial rho based on PDF",
+                              mdrange_type({nghost, nghost, nghost},
+                                           {rhoview.extent(0) - nghost,
+                                            rhoview.extent(1) - nghost,
+                                            rhoview.extent(2) - nghost}),
+                              KOKKOS_LAMBDA(const int i,
+                                            const int j,
+                                            const int k)
+                              {
+                                //local to global index conversion
+                                const size_t ig = i + lDom[0].first() - nghost;
+                                const size_t jg = j + lDom[1].first() - nghost;
+                                const size_t kg = k + lDom[2].first() - nghost;
+                                double x = (ig + 0.5) * hr[0] + origin[0];
+                                double y = (jg + 0.5) * hr[1] + origin[1];
+                                double z = (kg + 0.5) * hr[2] + origin[2];
+
+                                Vector_t xvec = {x, y, z};
+
+                                rhoview(i, j, k) = PDF(xvec, mu, sd);
+                                    
+                              });
+       
+        P->initializeORB(FL, mesh);
+        P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+        //IpplTimings::startTimer(particleCreation);
+        
+        //Compute again the min and max. extents based on the changed region layout
+        //for (unsigned d = 0; d <Dim; ++d) {
+        //    Nr[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d]) - 
+        //            CDF(Regions(myRank)[d].min(), mu[d], sd[d]);  
+        //    Dr[d] = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
+        //    minU[d] = CDF(Regions(myRank)[d].min(), mu[d], sd[d]);
+        //    maxU[d]   = CDF(Regions(myRank)[d].max(), mu[d], sd[d]);
+        //}
+        //factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
+        //size_type nlocNew = (size_type)(factor * totalP);
+        //size_type TotalParticlesNew = 0;
+
+        //MPI_Allreduce(&nlocNew, &TotalParticlesNew, 1,
+        //            MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+
+        //int restNew = (int) (totalP - TotalParticlesNew);
+
+        //if ( Ippl::Comm->rank() < restNew )
+        //    ++nlocNew;
+
+        //if(nlocNew > P->getLocalNum()) {
+        //    //In this case we need to create extra particles
+        //    P->create(nlocNew - P->getLocalNum());
+        //}
+        //else if(nlocNew < P->getLocalNum()) {
+        //    
+        //    //In this case we need to destroy extra particles
+        //    size_type invalidCount = P->getLocalNum() - nlocNew;
+        //    
+        //    using bool_type = ippl::detail::ViewType<bool, 1>::view_type;
+
+        //    bool_type invalid("invalid", P->getLocalNum());
+
+        //    Kokkos::parallel_for(
+        //    "set valid after repartition",
+        //    nlocNew,
+        //    KOKKOS_LAMBDA(const size_t i) {
+        //        invalid(i) = false;
+        //    });
+        //    Kokkos::fence();
+
+        //    auto pIDs = P->ID.getView();
+        //    Kokkos::parallel_for(
+        //    "set invalid after repartition",
+        //    Kokkos::RangePolicy(nlocNew, P->getLocalNum()),
+        //    KOKKOS_LAMBDA(const size_t i) {
+        //        invalid(i) = true;
+        //        pIDs(i) = -1;
+        //    });
+        //    Kokkos::fence();
+        //    
+        //    P->destroy(invalid, invalidCount);
+        //}
+        //Ippl::Comm->barrier();
+        //
+        //Kokkos::parallel_for(nlocNew,
+        //                     generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+        //                     P->R.getView(), P->P.getView(), rand_pool64, mu, sd, minU, maxU));
+
+        //Kokkos::fence();
+        //Ippl::Comm->barrier();
+        //IpplTimings::stopTimer(particleCreation);
+        IpplTimings::stopTimer(domainDecomposition);
+    }
+
+    
     IpplTimings::startTimer(particleCreation);
 
     typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
@@ -245,98 +380,6 @@ int main(int argc, char *argv[]){
     Ippl::Comm->barrier();
     IpplTimings::stopTimer(particleCreation);                                                    
     
-    P->E_m.initialize(mesh, FL);
-    P->rho_m.initialize(mesh, FL);
-    P->initializeORB(FL, mesh);
-
-    bunch_type bunchBuffer(PL);
-    //The following update is not needed as the particles are all generated locally
-	//IpplTimings::startTimer(updateTimer);
-    //PL.update(*P, bunchBuffer);
-	//IpplTimings::stopTimer(updateTimer);
-
-    msg << "particles created and initial conditions assigned " << endl;
-
-    P->stype_m = argv[6];
-    P->initSolver();
-    P->time_m = 0.0;
-    P->loadbalancethreshold_m = std::atof(argv[7]);
-
-    unsigned int nstep = 0;
-    bool isFirstRepartition;
-    
-    if (P->balance(totalP, nstep)) {
-        msg << "Starting first repartition" << endl;
-        IpplTimings::startTimer(domainDecomposition);
-        isFirstRepartition = true;
-        P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
-        IpplTimings::startTimer(particleCreation);
-        
-        //Compute again the min and max. extents based on the changed region layout
-        for (unsigned d = 0; d <Dim; ++d) {
-            Nr[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d]) - 
-                    CDF(Regions(myRank)[d].min(), mu[d], sd[d]);  
-            Dr[d] = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
-            minU[d] = CDF(Regions(myRank)[d].min(), mu[d], sd[d]);
-            maxU[d]   = CDF(Regions(myRank)[d].max(), mu[d], sd[d]);
-        }
-        factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
-        size_type nlocNew = (size_type)(factor * totalP);
-        size_type TotalParticlesNew = 0;
-
-        MPI_Allreduce(&nlocNew, &TotalParticlesNew, 1,
-                    MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
-
-        int restNew = (int) (totalP - TotalParticlesNew);
-
-        if ( Ippl::Comm->rank() < restNew )
-            ++nlocNew;
-
-        if(nlocNew > P->getLocalNum()) {
-            //In this case we need to create extra particles
-            P->create(nlocNew - P->getLocalNum());
-        }
-        else if(nlocNew < P->getLocalNum()) {
-            
-            //In this case we need to destroy extra particles
-            size_type invalidCount = P->getLocalNum() - nlocNew;
-            
-            using bool_type = ippl::detail::ViewType<bool, 1>::view_type;
-
-            bool_type invalid("invalid", P->getLocalNum());
-
-            Kokkos::parallel_for(
-            "set valid after repartition",
-            nlocNew,
-            KOKKOS_LAMBDA(const size_t i) {
-                invalid(i) = false;
-            });
-            Kokkos::fence();
-
-            auto pIDs = P->ID.getView();
-            Kokkos::parallel_for(
-            "set invalid after repartition",
-            Kokkos::RangePolicy(nlocNew, P->getLocalNum()),
-            KOKKOS_LAMBDA(const size_t i) {
-                invalid(i) = true;
-                pIDs(i) = -1;
-            });
-            Kokkos::fence();
-            
-            P->destroy(invalid, invalidCount);
-        }
-        Ippl::Comm->barrier();
-        
-        Kokkos::parallel_for(nlocNew,
-                             generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                             P->R.getView(), P->P.getView(), rand_pool64, mu, sd, minU, maxU));
-
-        Kokkos::fence();
-        Ippl::Comm->barrier();
-        IpplTimings::stopTimer(particleCreation);
-        IpplTimings::stopTimer(domainDecomposition);
-    }
-
     P->q = P->Q_m/totalP;
     isFirstRepartition = false;
     //The following update is not needed as the particles are all generated locally
