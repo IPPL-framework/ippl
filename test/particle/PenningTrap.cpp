@@ -128,9 +128,10 @@ KOKKOS_FUNCTION
 double PDF(const Vector_t& xvec, const Vector_t&mu, 
              const Vector_t& sigma, const unsigned Dim) {
     double pdf = 1.0;
+    double pi = std::acos(-1.0);
 
     for (unsigned d = 0; d < Dim; ++d) {
-        pdf *= (1.0/ (sigma[d] * std::sqrt(2 * M_PI))) * 
+        pdf *= (1.0/ (sigma[d] * std::sqrt(2 * pi))) * 
                   std::exp(-0.5 * std::pow((xvec[d] - mu[d])/sigma[d],2));
     }
     return pdf;
@@ -189,8 +190,8 @@ int main(int argc, char *argv[]){
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
     double dxFinest = rmax[0] / 1024;  
-    //const double dt = 0.5 * dxFinest;//size of timestep
-    const double dt = 0.5*dx;//size of timestep
+    const double dt = 0.5 * dxFinest;//size of timestep
+    //const double dt = 0.5*dx;//size of timestep
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
@@ -222,6 +223,45 @@ int main(int argc, char *argv[]){
     sd[1] = 0.05*length[1];
     sd[2] = 0.20*length[2];
 
+
+    //IpplTimings::startTimer(particleCreation);
+
+    //typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
+    //const RegionLayout_t& RLayout = PL.getRegionLayout();
+    //const typename RegionLayout_t::host_mirror_type& Regions = RLayout.gethLocalRegions();
+    //Vector_t Nr, Dr, minU, maxU;
+    //int myRank = Ippl::Comm->rank();
+    //for (unsigned d = 0; d <Dim; ++d) {
+    //    Nr[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d]) - 
+    //            CDF(Regions(myRank)[d].min(), mu[d], sd[d]);  
+    //    Dr[d] = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
+    //    minU[d] = CDF(Regions(myRank)[d].min(), mu[d], sd[d]);
+    //    maxU[d]   = CDF(Regions(myRank)[d].max(), mu[d], sd[d]);
+    //}
+
+    //double factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
+    //size_type nloc = (size_type)(factor * totalP);
+    //size_type Total_particles = 0;
+
+    //MPI_Allreduce(&nloc, &Total_particles, 1,
+    //            MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+
+    //int rest = (int) (totalP - Total_particles);
+
+    //if ( Ippl::Comm->rank() < rest )
+    //    ++nloc;
+
+    //P->create(nloc);
+    //Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
+    //Kokkos::parallel_for(nloc,
+    //                     generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+    //                     P->R.getView(), P->P.getView(), rand_pool64, mu, sd, minU, maxU));
+
+    //Kokkos::fence();
+    //Ippl::Comm->barrier();
+    //IpplTimings::stopTimer(particleCreation);                                                    
+    
+    
     
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
@@ -276,8 +316,8 @@ int main(int argc, char *argv[]){
         P->initializeORB(FL, mesh);
         P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
         //IpplTimings::startTimer(particleCreation);
-        
-        //Compute again the min and max. extents based on the changed region layout
+        //
+        ////Compute again the min and max. extents based on the changed region layout
         //for (unsigned d = 0; d <Dim; ++d) {
         //    Nr[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d]) - 
         //            CDF(Regions(myRank)[d].min(), mu[d], sd[d]);  

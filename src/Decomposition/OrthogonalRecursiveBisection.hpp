@@ -28,6 +28,10 @@ namespace ippl {
        if(!isFirstRepartition) {
           scatterR(R);
        }
+
+       //std::cout << "Norm bf_m:" << norm(bf_m) << std::endl;
+
+       //std::cout << "scatter R step done rank:" << Ippl::Comm->rank() << std::endl;
        IpplTimings::stopTimer(tscatter);
 
        IpplTimings::startTimer(tbasicOp);
@@ -61,12 +65,14 @@ namespace ippl {
           // Peform reduction with field of weights and communicate to the other ranks
           perpendicularReduction(reducedRank, cutAxis, domains[it]); 
           IpplTimings::stopTimer(tperpReduction);                                                    
+          //std::cout << "perpendicular reduction done rank:" << Ippl::Comm->rank() << std::endl;
 
           // Communicate to all the reduced weights
           IpplTimings::startTimer(tallReduce);                                                    
           MPI_Allreduce(reducedRank.data(), reduced.data(), reducedRank.size(), 
                                             MPI_DOUBLE, MPI_SUM, Ippl::getComm());
           IpplTimings::stopTimer(tallReduce);                                                    
+          //std::cout << "All reduce done rank:" << Ippl::Comm->rank() << std::endl;
         
           // Find median of reduced weights
           IpplTimings::startTimer(tbasicOp);
@@ -74,10 +80,12 @@ namespace ippl {
           int median = 1;
           median = findMedian(reduced);
           IpplTimings::stopTimer(tbasicOp);
+          //std::cout << "Median found rank:" << Ippl::Comm->rank() << std::endl;
 
           // Cut domains and procs
           IpplTimings::startTimer(tbasicOp);
           cutDomain(domains, procs, it, cutAxis, median);
+          //std::cout << "Domain cut rank:" << Ippl::Comm->rank() << std::endl;
 
           // Update max procs
           maxprocs = 0;
@@ -93,9 +101,11 @@ namespace ippl {
           IpplTimings::startTimer(tperpReduction);                                                    
           reduced.clear();
           reducedRank.clear();
-          IpplTimings::stopTimer(tperpReduction);                                                    
+          IpplTimings::stopTimer(tperpReduction);
+          //Ippl::Comm->barrier();
        }
 
+       //std::cout << "Before plane check:" << Ippl::Comm->rank() << std::endl;
        // Check that no plane was obtained in the repartition
        IpplTimings::startTimer(tbasicOp);                                                    
        for (unsigned int i = 0; i < domains.size(); i++) {
@@ -103,7 +113,10 @@ namespace ippl {
               domains[i][1].length() == 1 ||
               domains[i][2].length() == 1)
              return false;
-       } 
+       }
+
+       //std::cout << "Decomp done rank:" << Ippl::Comm->rank() << std::endl;
+
        // Update FieldLayout with new indices
        fl.updateLayout(domains);
          
