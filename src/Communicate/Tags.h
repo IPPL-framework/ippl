@@ -125,4 +125,8 @@ namespace ippl {
 #define IPPL_VICO_SEND   16000
 #define IPPL_VICO_RECV   17000
 
+#define OPEN_SOLVER_TAG 18000
+#define VICO_SOLVER_TAG 70000
+#define VICO_TAG_CYCLE  1000
+
 #endif // TAGS_H
