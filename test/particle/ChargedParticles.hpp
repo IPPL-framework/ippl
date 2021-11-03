@@ -390,48 +390,47 @@ public:
 
      void dumpData() {
 
-        //auto Pview = P.getView();
+        auto Pview = P.getView();
 
-        //double Energy = 0.0;
+        double Energy = 0.0;
 
-        //Kokkos::parallel_reduce("Particle Energy", this->getLocalNum(),
-        //                        KOKKOS_LAMBDA(const int i, double& valL){
-        //                            double myVal = dot(Pview(i), Pview(i)).apply();
-        //                            valL += myVal;
-        //                        }, Kokkos::Sum<double>(Energy));
+        Kokkos::parallel_reduce("Particle Energy", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const int i, double& valL){
+                                    double myVal = dot(Pview(i), Pview(i)).apply();
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(Energy));
 
-        //Energy *= 0.5;
-        //double gEnergy = 0.0;
+        Energy *= 0.5;
+        double gEnergy = 0.0;
 
-        //MPI_Reduce(&Energy, &gEnergy, 1,
-        //            MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&Energy, &gEnergy, 1,
+                    MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
 
-        //const int nghostE = E_m.getNghost();
-        //auto Eview = E_m.getView();
-        //Vector_t normE;
-        //using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        const int nghostE = E_m.getNghost();
+        auto Eview = E_m.getView();
+        Vector_t normE;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-        //for (unsigned d=0; d<Dim; ++d) {
+        for (unsigned d=0; d<Dim; ++d) {
 
-        //double temp = 0.0;
-        //Kokkos::parallel_reduce("Vector E reduce",
-        //                        mdrange_type({nghostE, nghostE, nghostE},
-        //                                     {Eview.extent(0) - nghostE,
-        //                                      Eview.extent(1) - nghostE,
-        //                                      Eview.extent(2) - nghostE}),
-        //                        KOKKOS_LAMBDA(const size_t i, const size_t j,
-        //                                      const size_t k, double& valL)
-        //                        {
-        //                            double myVal = std::pow(Eview(i, j, k)[d], 2);
-        //                            valL += myVal;
-        //                        }, Kokkos::Sum<double>(temp));
-        //    double globaltemp = 0.0;
-        //    MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        //    normE[d] = std::sqrt(globaltemp);
-        //}
+        double temp = 0.0;
+        Kokkos::parallel_reduce("Vector E reduce",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = std::pow(Eview(i, j, k)[d], 2);
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+            double globaltemp = 0.0;
+            MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+            normE[d] = std::sqrt(globaltemp);
+        }
 
-         rhoNorm_m = norm(rho_m);
         if (Ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/ParticleField_";
@@ -447,12 +446,11 @@ public:
             }
 
             csvout << time_m << " "
-                   //<< gEnergy << " "
-                   //<< rhoNorm_m << " "
-                   << rhoNorm_m << endl;
-                   //<< normE[0] << " "
-                   //<< normE[1] << " "
-                   //<< normE[2] << endl;
+                   << gEnergy << " "
+                   << rhoNorm_m << " "
+                   << normE[0] << " "
+                   << normE[1] << " "
+                   << normE[2] << endl;
         }
 
         Ippl::Comm->barrier();

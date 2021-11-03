@@ -1,7 +1,7 @@
 // Landau Damping Test
 //
 //   Usage:
-//     srun ./LandauDamping 128 128 128 10000 10 FFT --info 10
+//     srun ./LandauDamping 128 128 128 10000 10 FFT 1.0 1.0 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -99,13 +99,13 @@ struct generate_random {
 
   value_type alpha;
 
-  T k, start, end;
+  T k, minU, maxU;
 
   // Initialize all members
   generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
-                  value_type& alpha_, T& k_, T& start_, T& end_)
+                  value_type& alpha_, T& k_, T& minU_, T& maxU_)
       : x(x_), v(v_), rand_pool(rand_pool_), 
-        alpha(alpha_), k(k_), start(start_), end(end_) {}
+        alpha(alpha_), k(k_), minU(minU_), maxU(maxU_) {}
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const size_t i) const {
@@ -115,12 +115,8 @@ struct generate_random {
     value_type u;
     for (unsigned d = 0; d < Dim; ++d) {
         
-        value_type fac0 = start[d] + 
-                          ((alpha / k[d]) * std::sin(k[d] * start[d]));
-        value_type fac1 = end[d] + 
-                          ((alpha / k[d]) * std::sin(k[d] * end[d]));
 
-        u = rand_gen.drand(fac0, fac1);
+        u = rand_gen.drand(minU[d], maxU[d]);
         x(i)[d] = u / (1 + alpha);
         Newton1D<value_type> solver(k[d], alpha, u);
         //solver.initialize(k[d], alpha, u);
@@ -138,6 +134,16 @@ double CDF(double& x, double& alpha, double& k) {
    return cdf;
 }
 
+KOKKOS_FUNCTION
+double PDF(const Vector_t& xvec, const double& alpha, 
+             const Vector_t& kw, const unsigned Dim) {
+    double pdf = 1.0;
+
+    for (unsigned d = 0; d < Dim; ++d) {
+        pdf *= (1.0 + alpha * std::cos(kw[d] * xvec[d]));
+    }
+    return pdf;
+}
 
 const char* TestName = "LandauDamping";
 
@@ -146,7 +152,7 @@ int main(int argc, char *argv[]){
     Inform msg("LandauDamping");
     Inform msg2all("LandauDamping",INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(1.0);
+    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
     auto start = std::chrono::high_resolution_clock::now();
     ippl::Vector<int,Dim> nr = {
@@ -192,7 +198,7 @@ int main(int argc, char *argv[]){
 
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
-    double alpha = 0.05;
+    double alpha = 0.5;
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
     double dx = rmax[0] / nr[0];
@@ -216,16 +222,75 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(particleCreation);
 
-    const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-    Vector_t Rmin, Rmax, Nr;
+    P->E_m.initialize(mesh, FL);
+    P->rho_m.initialize(mesh, FL);
+
+    bunch_type bunchBuffer(PL);
+
+    P->stype_m = argv[6];
+    P->initSolver();
+    P->time_m = 0.0;
+    P->loadbalancethreshold_m = std::atof(argv[7]);
+
+    bool isFirstRepartition;
+
+    if (P->loadbalancethreshold_m != 1.0) {
+        msg << "Starting first repartition" << endl;
+        IpplTimings::startTimer(domainDecomposition);
+        isFirstRepartition = true;
+        const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+        const int nghost = P->rho_m.getNghost();
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        auto rhoview = P->rho_m.getView();
+
+        Kokkos::parallel_for("Assign initial rho based on PDF",
+                              mdrange_type({nghost, nghost, nghost},
+                                           {rhoview.extent(0) - nghost,
+                                            rhoview.extent(1) - nghost,
+                                            rhoview.extent(2) - nghost}),
+                              KOKKOS_LAMBDA(const int i,
+                                            const int j,
+                                            const int k)
+                              {
+                                //local to global index conversion
+                                const size_t ig = i + lDom[0].first() - nghost;
+                                const size_t jg = j + lDom[1].first() - nghost;
+                                const size_t kg = k + lDom[2].first() - nghost;
+                                double x = (ig + 0.5) * hr[0] + origin[0];
+                                double y = (jg + 0.5) * hr[1] + origin[1];
+                                double z = (kg + 0.5) * hr[2] + origin[2];
+
+                                Vector_t xvec = {x, y, z};
+
+                                rhoview(i, j, k) = PDF(xvec, alpha, kw, Dim);
+                                    
+                              });
+
+        Kokkos::fence();
+       
+        P->initializeORB(FL, mesh);
+        P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+        IpplTimings::stopTimer(domainDecomposition);
+    }
+    
+    msg << "First domain decomposition done" << endl;
+    IpplTimings::startTimer(particleCreation);
+
+    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
+    const RegionLayout_t& RLayout = PL.getRegionLayout();
+    const typename RegionLayout_t::host_mirror_type& Regions = RLayout.gethLocalRegions();
+    Vector_t Nr, Dr, minU, maxU;
+    int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d <Dim; ++d) {
-        Rmin[d] = origin[d] + lDom[d].first() * hr[d];
-        Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
-        Nr[d] = CDF(Rmax[d], alpha, kw[d]) - CDF(Rmin[d], alpha, kw[d]);  
+        Nr[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d]) - 
+                CDF(Regions(myRank)[d].min(), alpha, kw[d]);  
+        Dr[d] = CDF(rmax[d], alpha, kw[d]) - CDF(rmin[d], alpha, kw[d]);
+        minU[d] = CDF(Regions(myRank)[d].min(), alpha, kw[d]);
+        maxU[d]   = CDF(Regions(myRank)[d].max(), alpha, kw[d]);
     }
 
-    double factor = (Nr[0] * Nr[1] * Nr[2]) / (rmax[0] * rmax[1] * rmax[2]);
-    size_type nloc = (size_type)(totalP * factor);
+    double factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
+    size_type nloc = (size_type)(factor * totalP);
     size_type Total_particles = 0;
 
     MPI_Allreduce(&nloc, &Total_particles, 1,
@@ -240,37 +305,19 @@ int main(int argc, char *argv[]){
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, Rmin, Rmax));
+                         P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+
     Kokkos::fence();
     Ippl::Comm->barrier();
+    IpplTimings::stopTimer(particleCreation);                                                    
+    
     P->q = P->Q_m/totalP;
-    IpplTimings::stopTimer(particleCreation);
-
-    IpplTimings::startTimer(FirstUpdateTimer);
-    P->E_m.initialize(mesh, FL);
-    P->rho_m.initialize(mesh, FL);
-    P->initializeORB(FL, mesh);
-
-    bunch_type bunchBuffer(PL);
-
-	IpplTimings::startTimer(updateTimer);
-    PL.update(*P, bunchBuffer);
-    IpplTimings::stopTimer(updateTimer);
-
     msg << "particles created and initial conditions assigned " << endl;
-
-    P->stype_m = argv[6];
-    P->initSolver();
-    P->time_m = 0.0;
-    P->loadbalancethreshold_m = std::atof(argv[7]);
-
-    unsigned int nstep = 0;
-    if (P->balance(totalP, nstep)) {
-        msg << "Starting first repartition" << endl;
-        IpplTimings::startTimer(domainDecomposition);
-        P->repartition(FL, mesh, bunchBuffer);
-        IpplTimings::stopTimer(domainDecomposition);
-    }
+    isFirstRepartition = false;
+    //The following update is not needed as the particles are all generated locally
+	//IpplTimings::startTimer(updateTimer);
+    //PL.update(*P, bunchBuffer);
+	//IpplTimings::stopTimer(updateTimer);
 
     P->scatterCIC(totalP, 0, hr);
 
@@ -284,8 +331,6 @@ int main(int argc, char *argv[]){
     P->dumpLandau();
     P->gatherStatistics(totalP);
     IpplTimings::stopTimer(dumpDataTimer);
-
-    IpplTimings::stopTimer(FirstUpdateTimer);
 
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
@@ -315,7 +360,7 @@ int main(int argc, char *argv[]){
         if (P->balance(totalP, it+1)) {
            msg << "Starting repartition" << endl;
            IpplTimings::startTimer(domainDecomposition);
-           P->repartition(FL, mesh, bunchBuffer);
+           P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
            IpplTimings::stopTimer(domainDecomposition);
         }
 
