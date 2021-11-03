@@ -118,7 +118,7 @@ struct generate_random {
   }
 };
 
-double CDF(const double& x, double& mu, double& sigma) {
+double CDF(const double& x, const double& mu, const double& sigma) {
    double cdf = 0.5 * (1.0 + std::erf((x - mu)/(sigma * std::sqrt(2))));
    return cdf;
 }

@@ -129,7 +129,7 @@ struct generate_random {
   }
 };
 
-double CDF(double& x, double& alpha, double& k) {
+double CDF(const double& x, const double& alpha, const double& k) {
    double cdf = x + (alpha / k) * std::sin(k * x);
    return cdf;
 }
@@ -195,6 +195,8 @@ int main(int argc, char *argv[]){
     for (unsigned d = 0; d < Dim; ++d) {
         decomp[d] = ippl::PARALLEL;
     }
+        decomp[1] = ippl::SERIAL;
+        decomp[2] = ippl::SERIAL;
 
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
