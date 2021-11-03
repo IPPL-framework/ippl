@@ -195,12 +195,10 @@ int main(int argc, char *argv[]){
     for (unsigned d = 0; d < Dim; ++d) {
         decomp[d] = ippl::PARALLEL;
     }
-        decomp[1] = ippl::SERIAL;
-        decomp[2] = ippl::SERIAL;
 
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
-    double alpha = 0.5;
+    double alpha = 0.05;
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
     double dx = rmax[0] / nr[0];
