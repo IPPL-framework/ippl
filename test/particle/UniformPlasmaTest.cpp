@@ -1,7 +1,18 @@
 // Uniform Plasma Test
-//
 //   Usage:
-//     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT --info 10
+//     srun ./UniformPlasmaTest <nx> <ny> <nz> <Np> <Nt> <stype> <lbfreq> <ovfactor> --info 10
+//     nx       = No. cell-centered points in the x-direction
+//     ny       = No. cell-centered points in the y-direction
+//     nz       = No. cell-centered points in the z-direction
+//     Np       = Total no. of macro-particles in the simulation
+//     Nt       = Number of time steps
+//     stype    = Field solver type e.g., FFT
+//     lbfreq   = Load balancing frequency i.e., Number of time steps after which particle
+//                load balancing should happen
+//     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
+//                values are 1.0, 2.0. Value 1.0 means no over-allocation.
+//     Example:
+//     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT 10 1.0 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -70,7 +81,7 @@ int main(int argc, char *argv[]){
     Inform msg("UniformPlasmaTest");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(2.0);
+    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
     auto start = std::chrono::high_resolution_clock::now();
     ippl::Vector<int,Dim> nr = {
@@ -164,7 +175,6 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(FirstUpdateTimer);
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
-    P->initializeORB(FL, mesh);
 
     bunch_type bunchBuffer(PL);
 
@@ -178,16 +188,11 @@ int main(int argc, char *argv[]){
     P->initSolver();
     P->time_m = 0.0;
     P->loadbalancefreq_m = std::atoi(argv[7]);
+   
 
-    //unsigned int nstep = 0;
-    //if (P->balance(totalP, nstep)) {
-    //    msg << "Starting first repartition" << endl;
-    //    IpplTimings::startTimer(domainDecomposition);
-    //    P->repartition(FL, mesh, bunchBuffer);
-    //    IpplTimings::stopTimer(domainDecomposition);
-    //}
-    
     P->scatterCIC(totalP, 0, hr);
+    P->initializeORB(FL, mesh);
+    bool isFirstRepartition = false;
 
     IpplTimings::startTimer(SolveTimer);
     P->solver_mp->solve();
@@ -212,7 +217,6 @@ int main(int argc, char *argv[]){
         // all the particles hence eliminating the need to store mass as
         // an attribute
         // kick
-
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
@@ -240,7 +244,7 @@ int main(int argc, char *argv[]){
         if (P->balance(totalP, it+1)) {
            msg << "Starting repartition" << endl;
            IpplTimings::startTimer(domainDecomposition);
-           P->repartition(FL, mesh, bunchBuffer);
+           P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
            IpplTimings::stopTimer(domainDecomposition);
         }
 
