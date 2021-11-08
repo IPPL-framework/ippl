@@ -23,6 +23,11 @@ namespace ippl {
        static IpplTimings::TimerRef tscatter = IpplTimings::getTimer("scatterR");           
 
        // Scattering of particle positions in field
+       // In case of first repartition we know the density from the
+       // analytical expression and we use that for load balancing
+       // and create particles. Note the particles are created only
+       // after the first repartition and hence we cannot call scatter
+       // before it.
        IpplTimings::startTimer(tscatter);
        if(!isFirstRepartition) {
           scatterR(R);

@@ -49,6 +49,7 @@ namespace ippl {
          * Initialize member field with mesh and field layout
          * @param fl FieldLayout
          * @param mesh Mesh
+         * @param rho Density field
          */
         void initialize(FieldLayout<Dim>& fl, UniformCartesian<T,Dim>& mesh,
                         const Field<T,Dim>& rho);
@@ -58,6 +59,7 @@ namespace ippl {
          * repartitions FieldLayout's global domain
          * @param R Weights to scatter
          * @param fl FieldLayout
+         * @param isFirstRepartition boolean which tells whether to scatter or not
          */
         bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R,
                                FieldLayout<Dim>& fl,
