@@ -244,11 +244,8 @@ public:
     }
 
     bool balance(size_type totalP, const unsigned int nstep){
-        if(strcmp(TestName,"UniformPlasmaTest") == 0) {
-            if(nstep % loadbalancefreq_m == 0)
-                return true;
-
-            return false;
+        if(std::strcmp(TestName,"UniformPlasmaTest") == 0) {
+            return (nstep % loadbalancefreq_m == 0);
         }
         else {
             int local = 0;
