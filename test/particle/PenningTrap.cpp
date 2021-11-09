@@ -229,7 +229,7 @@ int main(int argc, char *argv[]){
     Vector_t mu, sd;
 
     for (unsigned d = 0; d<Dim; d++) {
-        mu[d] = length[d]/2;
+        mu[d] = 0.5 * length[d];
     }
     sd[0] = 0.15*length[0];
     sd[1] = 0.05*length[1];
@@ -361,9 +361,9 @@ int main(int argc, char *argv[]){
         double V0 = 30*rmax[2];
         Kokkos::parallel_for("Kick1", P->getLocalNum(),
                               KOKKOS_LAMBDA(const size_t j){
-            double Eext_x = -(Rview(j)[0] - (rmax[0]/2)) * (V0/(2*std::pow(rmax[2],2)));
-            double Eext_y = -(Rview(j)[1] - (rmax[1]/2)) * (V0/(2*std::pow(rmax[2],2)));
-            double Eext_z =  (Rview(j)[2] - (rmax[2]/2)) * (V0/(std::pow(rmax[2],2)));
+            double Eext_x = -(Rview(j)[0] - 0.5*rmax[0]) * (V0/(2*std::pow(rmax[2],2)));
+            double Eext_y = -(Rview(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
+            double Eext_z =  (Rview(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
 
             Pview(j)[0] -= 0.5 * dt * ((Eview(j)[0] + Eext_x) + Pview(j)[1] * Bext);
             Pview(j)[1] -= 0.5 * dt * ((Eview(j)[1] + Eext_y) - Pview(j)[0] * Bext);
@@ -407,9 +407,9 @@ int main(int argc, char *argv[]){
         auto E2view = P->E.getView();
         Kokkos::parallel_for("Kick2", P->getLocalNum(),
                               KOKKOS_LAMBDA(const size_t j){
-            double Eext_x = -(R2view(j)[0] - (rmax[0]/2)) * (V0/(2*std::pow(rmax[2],2)));
-            double Eext_y = -(R2view(j)[1] - (rmax[1]/2)) * (V0/(2*std::pow(rmax[2],2)));
-            double Eext_z =  (R2view(j)[2] - (rmax[2]/2)) * (V0/(std::pow(rmax[2],2)));
+            double Eext_x = -(R2view(j)[0] - 0.5*rmax[0]) * (V0/(2*std::pow(rmax[2],2)));
+            double Eext_y = -(R2view(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
+            double Eext_z =  (R2view(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
 
             P2view(j)[0] -= 0.5 * dt * ((E2view(j)[0] + Eext_x) + P2view(j)[1] * Bext);
             P2view(j)[1] -= 0.5 * dt * ((E2view(j)[1] + Eext_y) - P2view(j)[0] * Bext);
