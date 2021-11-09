@@ -293,7 +293,7 @@ int main(int argc, char *argv[]){
 
     typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
     const RegionLayout_t& RLayout = PL.getRegionLayout();
-    const typename RegionLayout_t::host_mirror_type& Regions = RLayout.gethLocalRegions();
+    const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
     Vector_t Nr, Dr, minU, maxU;
     int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d <Dim; ++d) {
