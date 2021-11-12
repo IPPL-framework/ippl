@@ -7,7 +7,7 @@ namespace ippl {
                                                       UniformCartesian<T,Dim>& mesh,
                                                       const Field<T,Dim>& rho) {
        bf_m.initialize(mesh, fl);
-       Kokkos::deep_copy(bf_m.getView(), rho.getView());
+       bf_m = rho;
 
     }
 
