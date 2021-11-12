@@ -202,7 +202,8 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    double dxFinest = rmax[0] / 2048;  
+    unsigned int nrMax = 2048;// Max grid size in our studies
+    double dxFinest = rmax[0] / nrMax;  
     const double dt = 0.5 * dxFinest;//size of timestep
 
     const bool isAllPeriodic=true;
