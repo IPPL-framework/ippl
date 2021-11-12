@@ -4,14 +4,18 @@ namespace ippl {
     template <class T, unsigned Dim, class M>
     void
     OrthogonalRecursiveBisection<T,Dim,M>::initialize(FieldLayout<Dim>& fl, 
-                                                      UniformCartesian<T,Dim>& mesh) {
+                                                      UniformCartesian<T,Dim>& mesh,
+                                                      const Field<T,Dim>& rho) {
        bf_m.initialize(mesh, fl);
+       bf_m = rho;
+
     }
 
     template <class T, unsigned Dim, class M>
     bool 
     OrthogonalRecursiveBisection<T,Dim,M>::binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, 
-                                                             FieldLayout<Dim>& fl) {
+                                                             FieldLayout<Dim>& fl,
+                                                             const bool& isFirstRepartition) {
        // Timings
        static IpplTimings::TimerRef tbasicOp = IpplTimings::getTimer("basicOperations");           
        static IpplTimings::TimerRef tperpReduction = IpplTimings::getTimer("perpReduction");           
@@ -19,8 +23,16 @@ namespace ippl {
        static IpplTimings::TimerRef tscatter = IpplTimings::getTimer("scatterR");           
 
        // Scattering of particle positions in field
+       // In case of first repartition we know the density from the
+       // analytical expression and we use that for load balancing
+       // and create particles. Note the particles are created only
+       // after the first repartition and hence we cannot call scatter
+       // before it.
        IpplTimings::startTimer(tscatter);
-       scatterR(R);
+       if(!isFirstRepartition) {
+          scatterR(R);
+       }
+
        IpplTimings::stopTimer(tscatter);
 
        IpplTimings::startTimer(tbasicOp);
@@ -36,20 +48,23 @@ namespace ippl {
        std::vector<T> reduced, reducedRank;
  
        // Start recursive repartition loop 
-       int it = 0;
+       unsigned int it = 0;
        int maxprocs = nprocs; 
        IpplTimings::stopTimer(tbasicOp);
-       
+
        while (maxprocs > 1) {
           // Find cut axis
           IpplTimings::startTimer(tbasicOp);                                                    
           int cutAxis = findCutAxis(domains[it]);
           IpplTimings::stopTimer(tbasicOp);                                                    
-         
+          
           // Reserve space
           IpplTimings::startTimer(tperpReduction);                                                    
           reduced.resize(domains[it][cutAxis].length());
           reducedRank.resize(domains[it][cutAxis].length());
+
+          std::fill(reducedRank.begin(), reducedRank.end(), 0.0);
+          std::fill(reduced.begin(), reduced.end(), 0.0);
 
           // Peform reduction with field of weights and communicate to the other ranks
           perpendicularReduction(reducedRank, cutAxis, domains[it]); 
@@ -86,7 +101,7 @@ namespace ippl {
           IpplTimings::startTimer(tperpReduction);                                                    
           reduced.clear();
           reducedRank.clear();
-          IpplTimings::stopTimer(tperpReduction);                                                    
+          IpplTimings::stopTimer(tperpReduction);
        }
 
        // Check that no plane was obtained in the repartition
@@ -96,7 +111,8 @@ namespace ippl {
               domains[i][1].length() == 1 ||
               domains[i][2].length() == 1)
              return false;
-       } 
+       }
+
        // Update FieldLayout with new indices
        fl.updateLayout(domains);
          

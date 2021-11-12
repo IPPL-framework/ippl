@@ -44,7 +44,7 @@ typedef Field<double, Dim>   Field_t;
 typedef Field<Vector_t, Dim> VField_t;
 typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim> Solver_t;
 
-const double pi = acos(-1.0);
+const double pi = std::acos(-1.0);
 
 // Test programs have to define this variable for VTK dump purposes
 extern const char* TestName;
@@ -72,7 +72,7 @@ void dumpVTK(VField_t& E, int nx, int ny, int nz, int iteration,
     vtkout << "ASCII" << endl;
     vtkout << "DATASET STRUCTURED_POINTS" << endl;
     vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << endl;
-    vtkout << "ORIGIN "     << -2*dx  << " " << -2*dy  << " "  << -2*dz << endl;
+    vtkout << "ORIGIN "     << -dx  << " " << -dy  << " "  << -dz << endl;
     vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
     vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << endl;
 
@@ -105,15 +105,13 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration,
     vtkout.precision(10);
     vtkout.setf(std::ios::scientific, std::ios::floatfield);
 
-    //double vol = dx*dy*dz;
-
     // start with header
     vtkout << "# vtk DataFile Version 2.0" << endl;
     vtkout << TestName << endl;
     vtkout << "ASCII" << endl;
     vtkout << "DATASET STRUCTURED_POINTS" << endl;
     vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << endl;
-    vtkout << "ORIGIN " << -2*dx << " " << -2*dy << " " << -2*dz << endl;
+    vtkout << "ORIGIN " << -dx << " " << -dy << " " << -dz << endl;
     vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
     vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << endl;
 
@@ -156,6 +154,10 @@ public:
 
     double rhoNorm_m;
 
+    unsigned int loadbalancefreq_m;
+    
+    double loadbalancethreshold_m;
+
 
 public:
     ParticleAttrib<double>     q; // charge
@@ -165,7 +167,7 @@ public:
 
     /*
       This constructor is mandatory for all derived classes from
-      ParticleBase as the update function invokes this
+      ParticleBase as the bunch buffer uses this
     */
     ChargedParticles(PLayout& pl)
     : ippl::ParticleBase<PLayout>(pl)
@@ -203,7 +205,8 @@ public:
         setBCAllPeriodic();
     }
 
-    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
+    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer,
+                      bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -216,51 +219,82 @@ public:
         IpplTimings::stopTimer(tupdateLayout);
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
         IpplTimings::startTimer(tupdatePLayout);
-        layout.update(*this, buffer);
+        if(!isFirstRepartition) {
+            layout.update(*this, buffer);
+        }
         IpplTimings::stopTimer(tupdatePLayout);
     }
 
     void initializeORB(FieldLayout_t& fl, Mesh_t& mesh) {
-        orb.initialize(fl, mesh);
+        orb.initialize(fl, mesh, rho_m);
     }
 
-    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
+    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer, 
+                     bool& isFirstRepartition) {
         // Repartition the domains
-        bool res = orb.binaryRepartition(this->R, fl);
+        bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
 
         if (res != true) {
            std::cout << "Could not repartition!" << std::endl;
            return;
         }
         // Update
-        this->updateLayout(fl, mesh, buffer);
+        this->updateLayout(fl, mesh, buffer, isFirstRepartition);
         this->solver_mp->setRhs(rho_m);
     }
 
-    bool balance(size_type totalP){
-        int local = 0;
-        std::vector<int> res(Ippl::Comm->size());
-        double threshold = 0.01;
-        double equalPart = (double) totalP / Ippl::Comm->size();
-        double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
-        if (dev > threshold)
-            local = 1;
-        MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
-
-        for (unsigned int i = 0; i < res.size(); i++) {
-            if (res[i] == 1)
-                return true;
+    bool balance(size_type totalP, const unsigned int nstep){
+        if(std::strcmp(TestName,"UniformPlasmaTest") == 0) {
+            return (nstep % loadbalancefreq_m == 0);
         }
-        return false;
+        else {
+            int local = 0;
+            std::vector<int> res(Ippl::Comm->size());
+            double equalPart = (double) totalP / Ippl::Comm->size();
+            double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
+            if (dev > loadbalancethreshold_m)
+                local = 1;
+            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
+
+            for (unsigned int i = 0; i < res.size(); i++) {
+                if (res[i] == 1)
+                    return true;
+            }
+            return false;
+        }
     }
 
     void gatherStatistics(size_type totalP) {
-        auto prec = std::cout.precision();
-        std::cout << "Rank " << Ippl::Comm->rank() << " has "
-                  << std::setprecision(4)
-                  << (double)this->getLocalNum() / totalP * 100.0
-                  << "% of the total particles " << std::endl
-                  << std::setprecision(prec);
+        std::vector<double> imb(Ippl::Comm->size());
+        double equalPart = (double) totalP / Ippl::Comm->size();
+        double dev = (std::abs((double)this->getLocalNum() - equalPart) 
+                     / totalP) * 100.0;
+        MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0, 
+                   Ippl::getComm());
+    
+        if (Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/LoadBalance_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(5);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(time_m == 0.0) {
+                csvout << "time, rank, imbalance percentage" << endl;
+            }
+
+            for(int r=0; r < Ippl::Comm->size(); ++r) { 
+                csvout << time_m << " "
+                       << r << " "
+                       << imb[r] << endl;
+            }
+        }
+
+        Ippl::Comm->barrier();
+    
     }
 
     void gatherCIC() {
@@ -269,7 +303,7 @@ public:
 
     }
 
-    void scatterCIC(size_type totalP, int iteration, Vector_t& hrField) {
+    void scatterCIC(size_type totalP, unsigned int iteration, Vector_t& hrField) {
 
 
          Inform m("scatter ");
@@ -292,14 +326,13 @@ public:
 
          if(Ippl::Comm->rank() == 0) {
              if(Total_particles != totalP || rel_error > 1e-10) {
-                 std::cout << "Total particles in the sim. " << totalP
-                           << " " << "after update: "
-                           << Total_particles << std::endl;
-                 std::cout << "Total particles not matched in iteration: "
-                           << iteration << std::endl;
-                 std::cout << "Rel. error in charge conservation: "
-                           << rel_error << std::endl;
-                 exit(1);
+                 m << "Time step: " << iteration << endl;
+                 m << "Total particles in the sim. " << totalP
+                   << " " << "after update: "
+                   << Total_particles << endl;
+                 m << "Rel. error in charge conservation: "
+                   << rel_error << endl;
+                 std::abort();
              }
          }
 
@@ -385,12 +418,12 @@ public:
                                 KOKKOS_LAMBDA(const size_t i, const size_t j,
                                               const size_t k, double& valL)
                                 {
-                                    double myVal = pow(Eview(i, j, k)[d], 2);
+                                    double myVal = std::pow(Eview(i, j, k)[d], 2);
                                     valL += myVal;
                                 }, Kokkos::Sum<double>(temp));
             double globaltemp = 0.0;
             MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-            normE[d] = sqrt(globaltemp);
+            normE[d] = std::sqrt(globaltemp);
         }
 
         if (Ippl::Comm->rank() == 0) {
@@ -415,6 +448,94 @@ public:
                    << normE[2] << endl;
         }
 
+        Ippl::Comm->barrier();
+     }
+
+     void dumpLandau() {
+
+        const int nghostE = E_m.getNghost();
+        auto Eview = E_m.getView();
+        double fieldEnergy, ExAmp;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+        double temp = 0.0;
+        Kokkos::parallel_reduce("Ex inner product",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = std::pow(Eview(i, j, k)[0], 2);
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+        double globaltemp = 0.0;
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        fieldEnergy = globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
+
+        double tempMax = 0.0;
+        Kokkos::parallel_reduce("Ex max norm",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = abs(Eview(i, j, k)[0]);
+                                    if(myVal > valL) valL = myVal;
+                                }, Kokkos::Max<double>(tempMax));
+        ExAmp = 0.0;
+        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+
+
+        if (Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/FieldLandau_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
+
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(time_m == 0.0) {
+                csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+            }
+
+            csvout << time_m << " "
+                   << fieldEnergy << " "
+                   << ExAmp << endl;
+
+        }
+        
+        Ippl::Comm->barrier();
+     }
+
+     void dumpParticleData() {
+
+        typename ParticleAttrib<Vector_t>::HostMirror R_host = this->R.getHostMirror();
+        typename ParticleAttrib<Vector_t>::HostMirror P_host = this->P.getHostMirror();
+        Kokkos::deep_copy(R_host, this->R.getView());
+        Kokkos::deep_copy(P_host, P.getView());
+        std::stringstream pname;
+        pname << "data/ParticleIC_";
+        pname << Ippl::Comm->rank();
+        pname << ".csv";
+        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+        pcsvout.precision(10);
+        pcsvout.setf(std::ios::scientific, std::ios::floatfield);
+        pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
+        for (size_type i = 0; i< this->getLocalNum(); i++) {
+            pcsvout << R_host(i)[0] << " "
+                    << R_host(i)[1] << " "
+                    << R_host(i)[2] << " "
+                    << P_host(i)[0] << " "
+                    << P_host(i)[1] << " "
+                    << P_host(i)[2] << endl;
+        }
         Ippl::Comm->barrier();
      }
 

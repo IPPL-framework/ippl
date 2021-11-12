@@ -172,6 +172,7 @@ namespace ippl {
 
         bool isAllPeriodic_m;
 
+
     private:
         /*!
          * @param grown the grown domain of myRank

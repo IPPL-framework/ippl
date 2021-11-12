@@ -37,7 +37,7 @@
 
 namespace ippl {
 
-        void Communicate::setDefaultOverallocation(int factor) {
+        void Communicate::setDefaultOverallocation(double factor) {
             defaultOveralloc_m = factor;
         }
 
