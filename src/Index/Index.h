@@ -176,7 +176,7 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION
         Index(int f, int l, int s);
 
-        KOKKOS_INLINE_FUNCTION
+        KOKKOS_DEFAULTED_FUNCTION
         ~Index() = default;
 
         /*!

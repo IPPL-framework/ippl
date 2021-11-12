@@ -1,6 +1,6 @@
-// Penning Trap
+// Landau Damping Test
 //   Usage:
-//     srun ./PenningTrap <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
+//     srun ./LandauDamping <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
 //     ny       = No. cell-centered points in the y-direction
 //     nz       = No. cell-centered points in the z-direction
@@ -14,9 +14,9 @@
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./PenningTrap 128 128 128 10000 300 FFT 0.01 1.0 --info 10
+//     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 2.0 --info 10
 //
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan, 
+// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -30,8 +30,8 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "ChargedParticles.hpp"
 
+#include "ChargedParticles.hpp"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -40,6 +40,7 @@
 #include <chrono>
 
 #include<Kokkos_Random.hpp>
+
 #include <random>
 #include "Utility/IpplTimings.h"
 
@@ -50,15 +51,15 @@ struct Newton1D {
   int max_iter = 20;
   double pi = std::acos(-1.0);
   
-  T mu, sigma, u;
+  T k, alpha, u;
 
   KOKKOS_INLINE_FUNCTION
   Newton1D() {}
 
   KOKKOS_INLINE_FUNCTION
-  Newton1D(const T& mu_, const T& sigma_, 
+  Newton1D(const T& k_, const T& alpha_, 
            const T& u_) 
-  : mu(mu_), sigma(sigma_), u(u_) {}
+  : k(k_), alpha(alpha_), u(u_) {}
 
   KOKKOS_INLINE_FUNCTION
   ~Newton1D() {}
@@ -66,23 +67,21 @@ struct Newton1D {
   KOKKOS_INLINE_FUNCTION
   T f(T& x) {
       T F;
-      F = std::erf((x - mu)/(sigma * std::sqrt(2.0))) 
-          - 2 * u + 1;
+      F = x  + (alpha  * (std::sin(k * x) / k)) - u;
       return F;
   }
 
   KOKKOS_INLINE_FUNCTION
   T fprime(T& x) {
       T Fprime;
-      Fprime = (1 / sigma) * std::sqrt(2 / pi) * 
-               std::exp(-0.5 * (std::pow(((x - mu) / sigma),2)));
+      Fprime = 1  + (alpha  * std::cos(k * x));
       return Fprime;
   }
 
   KOKKOS_FUNCTION
   void solve(T& x) {
       int iterations = 0;
-      while ((iterations < max_iter) && (std::fabs(f(x)) > tol)) {
+      while (iterations < max_iter && std::fabs(f(x)) > tol) {
           x = x - (f(x)/fprime(x));
           iterations += 1;
       }
@@ -101,15 +100,15 @@ struct generate_random {
   // The GeneratorPool
   GeneratorPool rand_pool;
 
-  T mu, sigma, minU, maxU;
+  value_type alpha;
 
-  double pi = std::acos(-1.0);
+  T k, minU, maxU;
 
   // Initialize all members
-  generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_,
-                  T& mu_, T& sigma_, T& minU_, T& maxU_)
+  generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
+                  value_type& alpha_, T& k_, T& minU_, T& maxU_)
       : x(x_), v(v_), rand_pool(rand_pool_), 
-        mu(mu_), sigma(sigma_), minU(minU_), maxU(maxU_) {}
+        alpha(alpha_), k(k_), minU(minU_), maxU(maxU_) {}
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const size_t i) const {
@@ -118,10 +117,10 @@ struct generate_random {
 
     value_type u;
     for (unsigned d = 0; d < Dim; ++d) {
+
         u = rand_gen.drand(minU[d], maxU[d]);
-        x(i)[d] = (std::sqrt(pi / 2) * (2 * u - 1)) * 
-                  sigma[d] + mu[d];
-        Newton1D<value_type> solver(mu[d], sigma[d], u);
+        x(i)[d] = u / (1 + alpha);
+        Newton1D<value_type> solver(k[d], alpha, u);
         solver.solve(x(i)[d]);
         v(i)[d] = rand_gen.normal(0.0, 1.0);
     }
@@ -131,32 +130,28 @@ struct generate_random {
   }
 };
 
-double CDF(const double& x, const double& mu, const double& sigma) {
-   double cdf = 0.5 * (1.0 + std::erf((x - mu)/(sigma * std::sqrt(2))));
+double CDF(const double& x, const double& alpha, const double& k) {
+   double cdf = x + (alpha / k) * std::sin(k * x);
    return cdf;
 }
 
-
 KOKKOS_FUNCTION
-double PDF(const Vector_t& xvec, const Vector_t&mu, 
-             const Vector_t& sigma, const unsigned Dim) {
+double PDF(const Vector_t& xvec, const double& alpha, 
+             const Vector_t& kw, const unsigned Dim) {
     double pdf = 1.0;
-    double pi = std::acos(-1.0);
 
     for (unsigned d = 0; d < Dim; ++d) {
-        pdf *= (1.0/ (sigma[d] * std::sqrt(2 * pi))) * 
-                  std::exp(-0.5 * std::pow((xvec[d] - mu[d])/sigma[d],2));
+        pdf *= (1.0 + alpha * std::cos(kw[d] * xvec[d]));
     }
     return pdf;
 }
 
-const char* TestName = "PenningTrap";
+const char* TestName = "LandauDamping";
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
-    Inform msg("PenningTrap");
-    Inform msg2all("PenningTrap",INFORM_ALL_NODES);
-
+    Inform msg("LandauDamping");
+    Inform msg2all("LandauDamping",INFORM_ALL_NODES);
 
     Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
@@ -168,16 +163,24 @@ int main(int argc, char *argv[]){
     };
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
+    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+    static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
+    static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("kick");
+    static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("drift");
+    static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
+    static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
+    static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
+
     IpplTimings::startTimer(mainTimer);
-    size_type totalP = std::atol(argv[4]);
+
+    const size_type totalP = std::atoll(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
 
-    msg << "Penning Trap "
+    msg << "Landau damping"
         << endl
         << "nt " << nt << " Np= "
         << totalP << " grid = " << nr
         << endl;
-
 
     using bunch_type = ChargedParticles<PLayout_t>;
 
@@ -194,53 +197,35 @@ int main(int argc, char *argv[]){
     }
 
     // create mesh and layout objects for this problem domain
+    Vector_t kw = {0.5, 0.5, 0.5};
+    double alpha = 0.5;
     Vector_t rmin(0.0);
-    Vector_t rmax(20.0);
+    Vector_t rmax = 2 * pi / kw ;
     double dx = rmax[0] / nr[0];
     double dy = rmax[1] / nr[1];
     double dz = rmax[2] / nr[2];
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    unsigned int nrMax = 2048;// Max grid size in our studies
-    double dxFinest = rmax[0] / nrMax;  
-    const double dt = 0.5 * dxFinest;//size of timestep
+    const double dt = 0.5*dx;
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t PL(FL, mesh);
 
-    double Q = -1562.5;
-    double Bext = 5.0;
+    //Q = -\int\int f dx dv
+    double Q = -rmax[0] * rmax[1] * rmax[2];
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
     P->nr_m = nr;
 
-    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
-    static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
-    static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
-    static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("Solve");
-    static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
-    static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityPush");
-    static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionPush");
-
-    Vector_t length = rmax - rmin;
-
-    Vector_t mu, sd;
-
-    for (unsigned d = 0; d<Dim; d++) {
-        mu[d] = 0.5 * length[d];
-    }
-    sd[0] = 0.15*length[0];
-    sd[1] = 0.05*length[1];
-    sd[2] = 0.20*length[2];
+    IpplTimings::startTimer(particleCreation);
 
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
 
     bunch_type bunchBuffer(PL);
-
 
     P->stype_m = argv[6];
     P->initSolver();
@@ -248,7 +233,7 @@ int main(int argc, char *argv[]){
     P->loadbalancethreshold_m = std::atof(argv[7]);
 
     bool isFirstRepartition;
-    
+
     if (P->loadbalancethreshold_m != 1.0) {
         msg << "Starting first repartition" << endl;
         IpplTimings::startTimer(domainDecomposition);
@@ -277,7 +262,7 @@ int main(int argc, char *argv[]){
 
                                 Vector_t xvec = {x, y, z};
 
-                                rhoview(i, j, k) = PDF(xvec, mu, sd, Dim);
+                                rhoview(i, j, k) = PDF(xvec, alpha, kw, Dim);
                                     
                               });
 
@@ -287,7 +272,6 @@ int main(int argc, char *argv[]){
         P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
         IpplTimings::stopTimer(domainDecomposition);
     }
-
     
     msg << "First domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
@@ -298,11 +282,11 @@ int main(int argc, char *argv[]){
     Vector_t Nr, Dr, minU, maxU;
     int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d <Dim; ++d) {
-        Nr[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d]) - 
-                CDF(Regions(myRank)[d].min(), mu[d], sd[d]);  
-        Dr[d] = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
-        minU[d] = CDF(Regions(myRank)[d].min(), mu[d], sd[d]);
-        maxU[d]   = CDF(Regions(myRank)[d].max(), mu[d], sd[d]);
+        Nr[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d]) - 
+                CDF(Regions(myRank)[d].min(), alpha, kw[d]);  
+        Dr[d] = CDF(rmax[d], alpha, kw[d]) - CDF(rmin[d], alpha, kw[d]);
+        minU[d] = CDF(Regions(myRank)[d].min(), alpha, kw[d]);
+        maxU[d]   = CDF(Regions(myRank)[d].max(), alpha, kw[d]);
     }
 
     double factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
@@ -321,7 +305,7 @@ int main(int argc, char *argv[]){
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), P->P.getView(), rand_pool64, mu, sd, minU, maxU));
+                         P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
     Kokkos::fence();
     Ippl::Comm->barrier();
@@ -332,7 +316,7 @@ int main(int argc, char *argv[]){
     isFirstRepartition = false;
     //The update after the particle creation is not needed as the 
     //particles are generated locally
-    
+
     P->scatterCIC(totalP, 0, hr);
 
     IpplTimings::startTimer(SolveTimer);
@@ -342,7 +326,7 @@ int main(int argc, char *argv[]){
     P->gatherCIC();
 
     IpplTimings::startTimer(dumpDataTimer);
-    P->dumpData();
+    P->dumpLandau();
     P->gatherStatistics(totalP);
     IpplTimings::stopTimer(dumpDataTimer);
 
@@ -355,21 +339,9 @@ int main(int argc, char *argv[]){
         // all the particles hence eliminating the need to store mass as
         // an attribute
         // kick
-        IpplTimings::startTimer(PTimer);
-        auto Rview = P->R.getView();
-        auto Pview = P->P.getView();
-        auto Eview = P->E.getView();
-        double V0 = 30*rmax[2];
-        Kokkos::parallel_for("Kick1", P->getLocalNum(),
-                              KOKKOS_LAMBDA(const size_t j){
-            double Eext_x = -(Rview(j)[0] - 0.5*rmax[0]) * (V0/(2*std::pow(rmax[2],2)));
-            double Eext_y = -(Rview(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
-            double Eext_z =  (Rview(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
 
-            Pview(j)[0] -= 0.5 * dt * ((Eview(j)[0] + Eext_x) + Pview(j)[1] * Bext);
-            Pview(j)[1] -= 0.5 * dt * ((Eview(j)[1] + Eext_y) - Pview(j)[0] * Bext);
-            Pview(j)[2] -= 0.5 * dt *  (Eview(j)[2] + Eext_z);
-        });
+        IpplTimings::startTimer(PTimer);
+        P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
 
         //drift
@@ -389,7 +361,8 @@ int main(int argc, char *argv[]){
            P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
            IpplTimings::stopTimer(domainDecomposition);
         }
-        
+
+
         //scatter the charge onto the underlying grid
         P->scatterCIC(totalP, it+1, hr);
 
@@ -403,30 +376,18 @@ int main(int argc, char *argv[]){
 
         //kick
         IpplTimings::startTimer(PTimer);
-        auto R2view = P->R.getView();
-        auto P2view = P->P.getView();
-        auto E2view = P->E.getView();
-        Kokkos::parallel_for("Kick2", P->getLocalNum(),
-                              KOKKOS_LAMBDA(const size_t j){
-            double Eext_x = -(R2view(j)[0] - 0.5*rmax[0]) * (V0/(2*std::pow(rmax[2],2)));
-            double Eext_y = -(R2view(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
-            double Eext_z =  (R2view(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
-
-            P2view(j)[0] -= 0.5 * dt * ((E2view(j)[0] + Eext_x) + P2view(j)[1] * Bext);
-            P2view(j)[1] -= 0.5 * dt * ((E2view(j)[1] + Eext_y) - P2view(j)[0] * Bext);
-            P2view(j)[2] -= 0.5 * dt *  (E2view(j)[2] + Eext_z);
-        });
+        P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpData();
+        P->dumpLandau();
         P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
     }
 
-    msg << "Penning Trap: End." << endl;
+    msg << "LandauDamping: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));

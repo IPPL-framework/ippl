@@ -101,7 +101,8 @@ namespace ippl {
                     (inbox, outbox, Ippl::getComm(), heffteOptions);
 
          //heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
-         workspace_m = workspace_t(heffte_m->size_workspace());
+         if(workspace_m.size() < heffte_m->size_workspace())
+            workspace_m = workspace_t(heffte_m->size_workspace());
 
     }
 
@@ -231,6 +232,7 @@ namespace ippl {
         const NDIndex<Dim>& lDomInput = layoutInput.getLocalNDIndex();
         const NDIndex<Dim>& lDomOutput = layoutOutput.getLocalNDIndex();
 
+
         lowInput.fill(0);
         highInput.fill(0);
         lowOutput.fill(0);
@@ -280,7 +282,8 @@ namespace ippl {
                      heffteOptions);
         
          //heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
-         workspace_m = workspace_t(heffte_m->size_workspace());
+         if(workspace_m.size() < heffte_m->size_workspace())
+            workspace_m = workspace_t(heffte_m->size_workspace());
 
     }
 

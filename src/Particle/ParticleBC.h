@@ -51,7 +51,7 @@ namespace ippl {
             //! The coordinate of the midpoint of the domain along the given dimension
             double middle_m;
 
-            KOKKOS_INLINE_FUNCTION
+            KOKKOS_DEFAULTED_FUNCTION
             ParticleBC() = default;
 
             KOKKOS_INLINE_FUNCTION
@@ -69,7 +69,7 @@ namespace ippl {
                 middle_m = (minval_m + maxval_m) / 2;
             }
 
-            KOKKOS_INLINE_FUNCTION
+            KOKKOS_DEFAULTED_FUNCTION
             ~ParticleBC() = default;
         };
 
@@ -80,7 +80,7 @@ namespace ippl {
             using ParticleBC<T, Dim, ViewType>::extent_m;
             using ParticleBC<T, Dim, ViewType>::middle_m;
 
-            KOKKOS_INLINE_FUNCTION
+            KOKKOS_DEFAULTED_FUNCTION
             PeriodicBC() = default;
 
             KOKKOS_INLINE_FUNCTION
@@ -97,7 +97,7 @@ namespace ippl {
                 value = value - extent_m * (int)((value - middle_m) * 2 / extent_m);
             }
 
-            KOKKOS_INLINE_FUNCTION
+            KOKKOS_DEFAULTED_FUNCTION
             ~PeriodicBC() = default;
         };
 
@@ -109,7 +109,7 @@ namespace ippl {
             using ParticleBC<T, Dim, ViewType>::minval_m;
             using ParticleBC<T, Dim, ViewType>::isUpper_m;
 
-            KOKKOS_INLINE_FUNCTION
+            KOKKOS_DEFAULTED_FUNCTION
             ReflectiveBC() = default;
 
             KOKKOS_INLINE_FUNCTION
@@ -131,7 +131,7 @@ namespace ippl {
                          );
             }
 
-            KOKKOS_INLINE_FUNCTION
+            KOKKOS_DEFAULTED_FUNCTION
             ~ReflectiveBC() = default;
         };
 
@@ -143,7 +143,7 @@ namespace ippl {
             using ParticleBC<T, Dim, ViewType>::minval_m;
             using ParticleBC<T, Dim, ViewType>::isUpper_m;
 
-            KOKKOS_INLINE_FUNCTION
+            KOKKOS_DEFAULTED_FUNCTION
             SinkBC() = default;
 
             KOKKOS_INLINE_FUNCTION
@@ -163,7 +163,7 @@ namespace ippl {
                          (tooLow && !isUpper_m) * (minval_m - value);
             }
 
-            KOKKOS_INLINE_FUNCTION
+            KOKKOS_DEFAULTED_FUNCTION
             ~SinkBC() = default;
         };
 

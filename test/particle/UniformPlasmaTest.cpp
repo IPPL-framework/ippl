@@ -1,9 +1,20 @@
 // Uniform Plasma Test
-//
 //   Usage:
-//     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT --info 10
+//     srun ./UniformPlasmaTest <nx> <ny> <nz> <Np> <Nt> <stype> <lbfreq> <ovfactor> --info 10
+//     nx       = No. cell-centered points in the x-direction
+//     ny       = No. cell-centered points in the y-direction
+//     nz       = No. cell-centered points in the z-direction
+//     Np       = Total no. of macro-particles in the simulation
+//     Nt       = Number of time steps
+//     stype    = Field solver type e.g., FFT
+//     lbfreq   = Load balancing frequency i.e., Number of time steps after which particle
+//                load balancing should happen
+//     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
+//                values are 1.0, 2.0. Value 1.0 means no over-allocation.
+//     Example:
+//     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT 10 1.0 --info 10
 //
-// Copyright (c) 2020, Sriramkrishnan Muralikrishnan,
+// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -45,18 +56,20 @@ struct generate_random {
   T start, end;
 
   // Initialize all members
-  generate_random(view_type vals_, GeneratorPool rand_pool_, T start_, T end_)
-      : vals(vals_), rand_pool(rand_pool_), start(start_), end(end_) {}
+  generate_random(view_type vals_, GeneratorPool rand_pool_, 
+                  T start_, T end_)
+      : vals(vals_), rand_pool(rand_pool_), 
+        start(start_), end(end_) {}
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i) const {
+  void operator()(const size_t i) const {
     // Get a random number state from the pool for the active thread
     typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
     // Draw samples numbers from the pool as double in the range [start, end)
-      vals(i)[0] = rand_gen.drand(start[0], end[0]);
-      vals(i)[1] = rand_gen.drand(start[1], end[1]);
-      vals(i)[2] = rand_gen.drand(start[2], end[2]);
+    for (unsigned d = 0; d < Dim; ++d) {
+      vals(i)[d] = rand_gen.drand(start[d], end[d]);
+    }
 
     // Give the state back, which will allow another thread to acquire it
     rand_pool.free_state(rand_gen);
@@ -68,7 +81,7 @@ int main(int argc, char *argv[]){
     Inform msg("UniformPlasmaTest");
     Inform msg2all(argv[0],INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(2);
+    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
     auto start = std::chrono::high_resolution_clock::now();
     ippl::Vector<int,Dim> nr = {
@@ -86,10 +99,11 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("drift");
     static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
+    static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
 
     IpplTimings::startTimer(mainTimer);
 
-    const uint64_t totalP = std::atoll(argv[4]);
+    const size_type totalP = std::atoll(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
 
     msg << "Uniform Plasma Test"
@@ -132,7 +146,7 @@ int main(int argc, char *argv[]){
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
     P->nr_m = nr;
-    uint64_t nloc = totalP / Ippl::Comm->size();
+    size_type nloc = totalP / Ippl::Comm->size();
 
     int rest = (int) (totalP - nloc * Ippl::Comm->size());
 
@@ -149,12 +163,13 @@ int main(int argc, char *argv[]){
         Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
     }
 
-    Kokkos::Random_XorShift64_Pool<> rand_pool64((uint64_t)(42 + 100*Ippl::Comm->rank()));
+    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
                          P->R.getView(), rand_pool64, Rmin, Rmax));
     Kokkos::fence();
     P->q = P->Q_m/totalP;
+    P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);
 
     IpplTimings::startTimer(FirstUpdateTimer);
@@ -172,8 +187,12 @@ int main(int argc, char *argv[]){
     P->stype_m = argv[6];
     P->initSolver();
     P->time_m = 0.0;
+    P->loadbalancefreq_m = std::atoi(argv[7]);
+   
 
     P->scatterCIC(totalP, 0, hr);
+    P->initializeORB(FL, mesh);
+    bool isFirstRepartition = false;
 
     IpplTimings::startTimer(SolveTimer);
     P->solver_mp->solve();
@@ -183,12 +202,14 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpData();
+    P->gatherStatistics(totalP);
     IpplTimings::stopTimer(dumpDataTimer);
 
     IpplTimings::stopTimer(FirstUpdateTimer);
 
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
+    //P->gatherStatistics(totalP);
     for (unsigned int it=0; it<nt; it++) {
 
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
@@ -196,14 +217,14 @@ int main(int argc, char *argv[]){
         // all the particles hence eliminating the need to store mass as
         // an attribute
         // kick
-
         IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E * 0.0;
+        P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
 
         IpplTimings::startTimer(temp);
         Kokkos::parallel_for(P->getLocalNum(),
-                             generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                             generate_random<Vector_t, 
+                             Kokkos::Random_XorShift64_Pool<>, Dim>(
                              P->P.getView(), rand_pool64, -hr, hr));
         Kokkos::fence();
         IpplTimings::stopTimer(temp);
@@ -215,8 +236,17 @@ int main(int argc, char *argv[]){
 
         //Since the particles have moved spatially update them to correct processors
 	    IpplTimings::startTimer(updateTimer);
-        PL.update(*P, bunchBuffer);  //P->update();
+        PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
+
+
+        // Domain Decomposition
+        if (P->balance(totalP, it+1)) {
+           msg << "Starting repartition" << endl;
+           IpplTimings::startTimer(domainDecomposition);
+           P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+           IpplTimings::stopTimer(domainDecomposition);
+        }
 
         //scatter the charge onto the underlying grid
         P->scatterCIC(totalP, it+1, hr);
@@ -231,14 +261,15 @@ int main(int argc, char *argv[]){
 
         //kick
         IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E * 0.0;
+        P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpData();
+        P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
-        msg << "Finished iteration: " << it << " time: " << P->time_m << endl;
+        msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
     }
 
     msg << "Uniform Plasma Test: End." << endl;

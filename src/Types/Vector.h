@@ -46,7 +46,7 @@ namespace ippl {
         KOKKOS_FUNCTION
         Vector(const detail::Expression<E, N>& expr);
 
-        KOKKOS_FUNCTION
+        KOKKOS_DEFAULTED_FUNCTION
         Vector(const Vector<T, Dim>& v) = default;
 
         KOKKOS_FUNCTION

@@ -120,7 +120,8 @@ namespace ippl {
                              KOKKOS_LAMBDA(const std::int64_t i) {
                                  pIDs(i) = nextID + numNodes * i;
                              });
-        nextID_m += numNodes_m * (nLocal - localNum_m);
+        //nextID_m += numNodes_m * (nLocal - localNum_m);
+        nextID_m += numNodes_m * nLocal;
 
         // remember that we're creating these new particles
         localNum_m += nLocal;

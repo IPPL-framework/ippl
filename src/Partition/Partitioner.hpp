@@ -74,6 +74,7 @@ namespace ippl {
                         d = 0;
                 }
 
+
             } else {
                 vtot = 1; // count the number of nSplits to make sure that it worked
                         // nSplits is not a power of 2 so we need to do some fancy splitting

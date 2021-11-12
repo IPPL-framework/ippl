@@ -135,10 +135,18 @@ namespace ippl {
         }
 
         template <typename T, unsigned Dim, class Mesh>
-        const typename RegionLayout<T, Dim, Mesh>::view_type& 
+        const typename RegionLayout<T, Dim, Mesh>::view_type 
         RegionLayout<T, Dim, Mesh>::getdLocalRegions() const
         {
             return dLocalRegions_m;
+        }
+
+
+        template <typename T, unsigned Dim, class Mesh>
+        const typename RegionLayout<T, Dim, Mesh>::host_mirror_type 
+        RegionLayout<T, Dim, Mesh>::gethLocalRegions() const
+        {
+            return hLocalRegions_m;
         }
 
         template <typename T, unsigned Dim, class Mesh>
