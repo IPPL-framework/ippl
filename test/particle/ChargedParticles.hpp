@@ -538,6 +538,24 @@ public:
         }
         Ippl::Comm->barrier();
      }
+     
+     void dumpLocalDomains(const FieldLayout_t& fl, const unsigned int step) {
+
+        if (Ippl::Comm->rank() == 0) {
+            const typename FieldLayout_t::host_mirror_type domains = fl.getHostLocalDomains();
+            std::ofstream myfile;
+            myfile.open("data/domains" + std::to_string(step) + ".txt");
+            for (unsigned int i = 0; i < domains.size(); ++i) {
+                myfile << domains[i][0].first() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
+                       << domains[i][0].first() << " " << domains[i][1].last() << " " << domains[i][2].first() << " "
+                       << domains[i][0].last() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
+                       << domains[i][0].first() << " " << domains[i][1].first() << " " << domains[i][2].last()
+                       << "\n";
+            }
+            myfile.close();
+        }
+        Ippl::Comm->barrier();
+     }
 
 private:
     void setBCAllPeriodic() {
