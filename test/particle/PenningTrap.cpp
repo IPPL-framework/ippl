@@ -202,8 +202,8 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    unsigned int nrMax = 2048;// Max grid size in our studies
-    double dxFinest = rmax[0] / nrMax;  
+    //unsigned int nrMax = 2048;// Max grid size in our studies
+    double dxFinest = rmax[0] / nr[0];  
     const double dt = 0.5 * dxFinest;//size of timestep
 
     const bool isAllPeriodic=true;
@@ -347,11 +347,16 @@ int main(int argc, char *argv[]){
     P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
 
+    double alpha = -0.5 * dt;
+    double DrInv = 1.0 / (1 + (std::pow((alpha * Bext), 2))); 
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
 
-        // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
+        // Staggered Leap frog or Boris algorithm as per 
+        // https://www.sciencedirect.com/science/article/pii/S2590055219300526
+        // eqns 4(a)-4(c). Not we don't use the Boris trick here and do
+        // the analytical matrix inversion which is not complex in this case.
         // Here, we assume a constant charge-to-mass ratio of -1 for
         // all the particles hence eliminating the need to store mass as
         // an attribute
@@ -367,9 +372,13 @@ int main(int argc, char *argv[]){
             double Eext_y = -(Rview(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
             double Eext_z =  (Rview(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
 
-            Pview(j)[0] -= 0.5 * dt * ((Eview(j)[0] + Eext_x) + Pview(j)[1] * Bext);
-            Pview(j)[1] -= 0.5 * dt * ((Eview(j)[1] + Eext_y) - Pview(j)[0] * Bext);
-            Pview(j)[2] -= 0.5 * dt *  (Eview(j)[2] + Eext_z);
+            Eview(j)[0] += Eext_x;
+            Eview(j)[1] += Eext_y;
+            Eview(j)[2] += Eext_z;
+            
+            Pview(j)[0] += alpha * (Eview(j)[0]  + Pview(j)[1] * Bext);
+            Pview(j)[1] += alpha * (Eview(j)[1]  - Pview(j)[0] * Bext);
+            Pview(j)[2] += alpha * Eview(j)[2];
         });
         IpplTimings::stopTimer(PTimer);
 
@@ -416,9 +425,14 @@ int main(int argc, char *argv[]){
             double Eext_y = -(R2view(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
             double Eext_z =  (R2view(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
 
-            P2view(j)[0] -= 0.5 * dt * ((E2view(j)[0] + Eext_x) + P2view(j)[1] * Bext);
-            P2view(j)[1] -= 0.5 * dt * ((E2view(j)[1] + Eext_y) - P2view(j)[0] * Bext);
-            P2view(j)[2] -= 0.5 * dt *  (E2view(j)[2] + Eext_z);
+            E2view(j)[0] += Eext_x;
+            E2view(j)[1] += Eext_y;
+            E2view(j)[2] += Eext_z;
+            P2view(j)[0]  = DrInv * ( P2view(j)[0] + alpha * (E2view(j)[0] 
+                            + P2view(j)[1] * Bext + alpha * Bext * E2view(j)[1]) );
+            P2view(j)[1]  = DrInv * ( P2view(j)[1] + alpha * (E2view(j)[1] 
+                            - P2view(j)[0] * Bext - alpha * Bext * E2view(j)[0]) );
+            P2view(j)[2] += alpha * E2view(j)[2];
         });
         IpplTimings::stopTimer(PTimer);
 
