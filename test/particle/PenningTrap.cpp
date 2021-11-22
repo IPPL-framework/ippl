@@ -202,8 +202,8 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    //unsigned int nrMax = 2048;// Max grid size in our studies
-    double dxFinest = rmax[0] / nr[0];  
+    unsigned int nrMax = 2048;// Max grid size in our studies
+    double dxFinest = rmax[0] / nrMax;  
     const double dt = 0.5 * dxFinest;//size of timestep
 
     const bool isAllPeriodic=true;
@@ -344,7 +344,7 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpData();
     P->gatherStatistics(totalP);
-    P->dumpLocalDomains(FL, 0);
+    //P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
 
     double alpha = -0.5 * dt;
@@ -398,9 +398,9 @@ int main(int argc, char *argv[]){
            IpplTimings::startTimer(domainDecomposition);
            P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
            IpplTimings::stopTimer(domainDecomposition);
-           IpplTimings::startTimer(dumpDataTimer);
-           P->dumpLocalDomains(FL, it+1);
-           IpplTimings::stopTimer(dumpDataTimer);
+           //IpplTimings::startTimer(dumpDataTimer);
+           //P->dumpLocalDomains(FL, it+1);
+           //IpplTimings::stopTimer(dumpDataTimer);
         }
         
         //scatter the charge onto the underlying grid
