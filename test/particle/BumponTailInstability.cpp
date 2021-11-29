@@ -258,7 +258,7 @@ int main(int argc, char *argv[]){
     double alpha = 5.0;
     double epsilon = 0.1;
     double gamma = 4.5/std::sqrt(2.0);
-    double delta = 0.01;
+    double delta = 0.5;
 
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
@@ -276,8 +276,7 @@ int main(int argc, char *argv[]){
     PLayout_t PL(FL, mesh);
 
     //Q = -\int\int f dx dv
-    double Q = -rmax[0] * rmax[1] * rmax[2] * (1.0 + epsilon * 
-               ((1 / std::pow(alpha, 3)) - 1.0));
+    double Q = -rmax[0] * rmax[1] * rmax[2];
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
 
     P->nr_m = nr;
@@ -351,8 +350,7 @@ int main(int argc, char *argv[]){
     }
 
     double factorConf = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
-    double factorVelBulk = (1.0 - epsilon) / (1.0 + epsilon * 
-                           ((1 / std::pow(alpha, 3)) - 1.0));
+    double factorVelBulk = 1.0 - epsilon;
     double factorVelBeam = 1.0 - factorVelBulk;
     size_type nlocBulk = (size_type)(factorConf * factorVelBulk * totalP);
     size_type nlocBeam = (size_type)(factorConf * factorVelBeam * totalP);
