@@ -220,8 +220,6 @@ int main(int argc, char *argv[]){
 
     P->nr_m = nr;
 
-    IpplTimings::startTimer(particleCreation);
-
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
 
@@ -328,7 +326,7 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpLandau();
     P->gatherStatistics(totalP);
-    P->dumpLocalDomains(FL, 0);
+    //P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
 
     // begin main timestep loop
@@ -361,9 +359,9 @@ int main(int argc, char *argv[]){
            IpplTimings::startTimer(domainDecomposition);
            P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
            IpplTimings::stopTimer(domainDecomposition);
-           IpplTimings::startTimer(dumpDataTimer);
-           P->dumpLocalDomains(FL, it+1);
-           IpplTimings::stopTimer(dumpDataTimer);
+           //IpplTimings::startTimer(dumpDataTimer);
+           //P->dumpLocalDomains(FL, it+1);
+           //IpplTimings::stopTimer(dumpDataTimer);
         }
 
 

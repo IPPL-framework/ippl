@@ -32,6 +32,9 @@ target_link_libraries (UniformPlasmaTest ${IPPL_LIBS})
 add_executable (LandauDamping LandauDamping.cpp)
 target_link_libraries (LandauDamping ${IPPL_LIBS})
 
+add_executable (BumponTailInstability BumponTailInstability.cpp)
+target_link_libraries (BumponTailInstability ${IPPL_LIBS})
+
 add_executable (benchmarkParticleUpdate benchmarkParticleUpdate.cpp)
 target_link_libraries (benchmarkParticleUpdate ${IPPL_LIBS})
 
