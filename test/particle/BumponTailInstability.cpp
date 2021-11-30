@@ -89,54 +89,10 @@ struct Newton1D {
 };
 
 
-//template <typename T, class GeneratorPool, unsigned Dim>
-//struct generate_random_bulk {
-//
-//  using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
-//  using value_type  = typename T::value_type;
-//  // Output View for the random numbers
-//  view_type x, v;
-//
-//  // The GeneratorPool
-//  GeneratorPool rand_pool;
-//
-//  value_type delta;
-//
-//  T k, minU, maxU;
-//
-//  // Initialize all members
-//  generate_random_bulk(view_type x_, view_type v_, GeneratorPool rand_pool_, 
-//                  value_type& delta_, T& k_, T& minU_, T& maxU_)
-//      : x(x_), v(v_), rand_pool(rand_pool_), 
-//        delta(delta_), k(k_), minU(minU_), maxU(maxU_) {}
-//
-//  KOKKOS_INLINE_FUNCTION
-//  void operator()(const size_t i) const {
-//    // Get a random number state from the pool for the active thread
-//    typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
-//
-//    for (unsigned d = 0; d < Dim-1; ++d) {
-//        
-//        x(i)[d] = rand_gen.drand(minU[d], maxU[d]); 
-//        v(i)[d] = rand_gen.normal(0.0, 1.0/std::sqrt(2.0));
-//    }
-//    
-//    v(i)[Dim] = rand_gen.normal(0.0, 1.0/std::sqrt(2.0));
-//    value_type u = rand_gen.drand(minU[Dim], maxU[Dim]);
-//    x(i)[Dim] = u / (1 + delta);
-//    Newton1D<value_type> solver(k[Dim], delta, u);
-//    solver.solve(x(i)[Dim]);
-//
-//    // Give the state back, which will allow another thread to acquire it
-//    rand_pool.free_state(rand_gen);
-//  }
-//};
-
 template <typename T, class GeneratorPool, unsigned Dim>
 struct generate_random {
 
   using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
-  //using size_type = typename ippl::detail::size_type;
   using value_type  = typename T::value_type;
   // Output View for the random numbers
   view_type x, v;
@@ -162,12 +118,16 @@ struct generate_random {
     // Get a random number state from the pool for the active thread
     typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-    //size_t ibeam = i + nlocBulk;
     bool isBeam = (i >= nlocBulk);
+    
     value_type sigma = (value_type)(((!isBeam) * (1.0/std::sqrt(2.0))) + 
                        (isBeam * (1.0/(std::sqrt(2.0) * alpha))));
-    
     value_type muZ = (value_type)(isBeam * gamma);
+    
+    // Parameters for two stream instability as in 
+    //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
+    //value_type sigma = 0.1;
+    //value_type muZ = (value_type)(((!isBeam) * gamma) - (isBeam * gamma));
     
     for (unsigned d = 0; d < Dim-1; ++d) {
         
@@ -253,7 +213,14 @@ int main(int argc, char *argv[]){
         decomp[d] = ippl::PARALLEL;
     }
 
-    // create mesh and layout objects for this problem domain
+    // Parameters for two stream instability as in 
+    //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
+    //Vector_t kw = {0.5, 0.5, 0.5};
+    //double alpha = 1.0;
+    //double epsilon = 0.5;
+    //double gamma = pi / 2.0;
+    //double delta = 0.01;
+    
     Vector_t kw = {0.265, 0.265, 0.265};
     double alpha = 2.0;
     double epsilon = 0.1;
@@ -268,7 +235,7 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.05;//0.5*dx;
+    const double dt = 0.5*dx;
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
@@ -367,9 +334,6 @@ int main(int argc, char *argv[]){
 
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
-    //Kokkos::parallel_for(nlocBulk,
-    //                     generate_random_bulk<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-    //                     P->R.getView(), P->P.getView(), rand_pool64, delta, kw, minU, maxU));
 
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
