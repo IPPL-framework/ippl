@@ -255,10 +255,10 @@ int main(int argc, char *argv[]){
 
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.265, 0.265, 0.265};
-    double alpha = 5.0;
+    double alpha = 2.0;
     double epsilon = 0.1;
     double gamma = 4.5/std::sqrt(2.0);
-    double delta = 0.5;
+    double delta = 0.01;
 
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
@@ -380,7 +380,7 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(particleCreation);                                                    
     
     P->q = P->Q_m/totalP;
-    P->dumpParticleData();
+    //P->dumpParticleData();
     msg << "particles created and initial conditions assigned " << endl;
     isFirstRepartition = false;
     //The update after the particle creation is not needed as the 
