@@ -220,8 +220,7 @@ int main(int argc, char *argv[]){
 
     P->nr_m = nr;
 
-    IpplTimings::startTimer(particleCreation);
-
+    
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
 
