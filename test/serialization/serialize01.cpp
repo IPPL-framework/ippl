@@ -73,6 +73,7 @@ public:
         addAttribute(id_m);
     };
 
+    ~BunchBase() {}
 
     void addAttribute(Kokkos::View<double*>& pa) {
         attrib_m.push_back(&pa);
@@ -171,6 +172,7 @@ public:
         addAttribute(charge_m);
     };
 
+    ~BunchDerived() {}
     void update() {
         BunchBase::update<BunchDerived>();
     }
