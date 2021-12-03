@@ -161,7 +161,7 @@ public:
     bool balance(unsigned int totalP){//, int timestep = 1) {
         int local = 0;
         std::vector<int> res(Ippl::Comm->size());
-        double threshold = 0.0;
+        double threshold = 1.0;
         double equalPart = (double) totalP / Ippl::Comm->size();
         double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
         if (dev > threshold)
@@ -551,7 +551,7 @@ int main(int argc, char *argv[]) {
     double localParticles = P->getLocalNum();
     MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
     msg << "Total particles: " << totalParticles << endl;
-    P->initPositions(FL, hr, nloc, 1);
+    P->initPositions(FL, hr, nloc, 2);
 
     P->qm = P->Q_m/totalP;
     P->P = 0.0;
