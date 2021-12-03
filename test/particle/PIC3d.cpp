@@ -551,7 +551,7 @@ int main(int argc, char *argv[]) {
     double localParticles = P->getLocalNum();
     MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
     msg << "Total particles: " << totalParticles << endl;
-    P->initPositions(FL, hr, nloc, 1);
+    P->initPositions(FL, hr, nloc, 2);
 
     P->qm = P->Q_m/totalP;
     P->P = 0.0;
