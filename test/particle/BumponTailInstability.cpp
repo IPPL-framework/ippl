@@ -221,11 +221,17 @@ int main(int argc, char *argv[]){
     //double gamma = pi / 2.0;
     //double delta = 0.01;
     
-    Vector_t kw = {0.265, 0.265, 0.265};
-    double alpha = 2.0;
+    //Vector_t kw = {0.265, 0.265, 0.265};
+    //double alpha = 2.0;
+    //double epsilon = 0.1;
+    //double gamma = 4.5/std::sqrt(2.0);
+    //double delta = 0.01;
+    
+    Vector_t kw = {0.21, 0.21, 0.21};
+    double alpha = 1.0;
     double epsilon = 0.1;
-    double gamma = 4.5/std::sqrt(2.0);
-    double delta = 0.01;
+    double gamma = 4.0;
+    double delta = 0.001;
 
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
@@ -235,7 +241,7 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.5*dx;
+    const double dt = 0.05;//0.5*dx;
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
