@@ -161,7 +161,7 @@ public:
     bool balance(unsigned int totalP){//, int timestep = 1) {
         int local = 0;
         std::vector<int> res(Ippl::Comm->size());
-        double threshold = 0.0;
+        double threshold = 1.0;
         double equalPart = (double) totalP / Ippl::Comm->size();
         double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
         if (dev > threshold)
