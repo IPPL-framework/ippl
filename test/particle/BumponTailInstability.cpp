@@ -15,6 +15,9 @@
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
 //     srun ./BumponTailInstability 128 128 128 10000 10 FFT 0.01 2.0 --info 10
+//     Change the TestName to TwoStreamInstability or BumponTailInstability 
+//     in order to simulate the Two stream instability or bump on tail instability
+//     cases
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -100,17 +103,18 @@ struct generate_random {
   // The GeneratorPool
   GeneratorPool rand_pool;
 
-  value_type delta, alpha, gamma;
+  value_type delta, sigma, muBulk, muBeam;
   size_type nlocBulk; 
 
   T k, minU, maxU;
 
   // Initialize all members
   generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
-                  value_type& delta_, T& k_, value_type& alpha_, 
-                  value_type& gamma_, size_type& nlocBulk_, T& minU_, T& maxU_)
+                  value_type& delta_, T& k_, value_type& sigma_, 
+                  value_type& muBulk_, value_type& muBeam_, 
+                  size_type& nlocBulk_, T& minU_, T& maxU_)
       : x(x_), v(v_), rand_pool(rand_pool_), 
-        delta(delta_), alpha(alpha_), gamma(gamma_),
+        delta(delta_), sigma(sigma_), muBulk(muBulk_), muBeam(muBeam_),
         nlocBulk(nlocBulk_), k(k_), minU(minU_), maxU(maxU_) {}
 
   KOKKOS_INLINE_FUNCTION
@@ -120,14 +124,7 @@ struct generate_random {
 
     bool isBeam = (i >= nlocBulk);
     
-    //value_type sigma = (value_type)(((!isBeam) * (1.0/std::sqrt(2.0))) + 
-    //                   (isBeam * (1.0/(std::sqrt(2.0) * alpha))));
-    //value_type muZ = (value_type)(isBeam * gamma);
-    
-    // Parameters for two stream instability as in 
-    //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
-    value_type sigma = 0.1;
-    value_type muZ = (value_type)(((!isBeam) * gamma) - (isBeam * gamma));
+    value_type muZ = (value_type)(((!isBeam) * muBulk) + (isBeam * muBeam));
     
     for (unsigned d = 0; d < Dim-1; ++d) {
         
@@ -164,11 +161,12 @@ double PDF(const Vector_t& xvec, const double& delta,
 }
 
 const char* TestName = "BumponTailInstability";
+//const char* TestName = "TwoStreamInstability";
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
-    Inform msg("BumponTailInstability");
-    Inform msg2all("BumponTailInstability",INFORM_ALL_NODES);
+    Inform msg(TestName);
+    Inform msg2all(TestName,INFORM_ALL_NODES);
 
     Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
@@ -193,7 +191,7 @@ int main(int argc, char *argv[]){
     const size_type totalP = std::atoll(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
 
-    msg << "Bump on Tail Instability"
+    msg << TestName
         << endl
         << "nt " << nt << " Np= "
         << totalP << " grid = " << nr
@@ -213,25 +211,37 @@ int main(int argc, char *argv[]){
         decomp[d] = ippl::PARALLEL;
     }
 
-    // Parameters for two stream instability as in 
-    //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
-    Vector_t kw = {0.5, 0.5, 0.5};
-    double alpha = 1.0;
-    double epsilon = 0.5;
-    double gamma = pi / 2.0;
-    double delta = 0.01;
+    Vector_t kw;
+    double sigma, muBulk, muBeam, epsilon, delta;
     
-    //Vector_t kw = {0.265, 0.265, 0.265};
-    //double alpha = 2.0;
-    //double epsilon = 0.1;
-    //double gamma = 4.5/std::sqrt(2.0);
-    //double delta = 0.01;
-    
-    //Vector_t kw = {0.21, 0.21, 0.21};
-    //double alpha = 1.0;
-    //double epsilon = 0.1;
-    //double gamma = 4.0;
-    //double delta = 0.01;
+   
+    if(std::strcmp(TestName,"TwoStreamInstability") == 0) {
+        // Parameters for two stream instability as in 
+        //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
+        kw = {0.5, 0.5, 0.5};
+        sigma = 0.1;
+        epsilon = 0.5;
+        muBulk = -pi / 2.0;
+        muBeam = pi / 2.0;
+        delta = 0.01;
+    }
+    else if(std::strcmp(TestName,"BumponTailInstability") == 0) {
+        kw = {0.21, 0.21, 0.21};
+        sigma = 1.0 / std::sqrt(2.0);
+        epsilon = 0.1;
+        muBulk = 0.0;
+        muBeam = 4.0;
+        delta = 0.01;
+    }
+    else {
+        //Default value is two stream instability
+        kw = {0.5, 0.5, 0.5};
+        sigma = 0.1;
+        epsilon = 0.5;
+        muBulk = -pi / 2.0;
+        muBeam = pi / 2.0;
+        delta = 0.01;
+    }
 
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
@@ -343,8 +353,8 @@ int main(int argc, char *argv[]){
 
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), P->P.getView(), rand_pool64, delta, kw, alpha, gamma, 
-                         nlocBulk, minU, maxU));
+                         P->R.getView(), P->P.getView(), rand_pool64, delta, kw, sigma, muBulk, 
+                         muBeam, nlocBulk, minU, maxU));
     Kokkos::fence();
     Ippl::Comm->barrier();
     IpplTimings::stopTimer(particleCreation);                                                    
@@ -430,7 +440,7 @@ int main(int argc, char *argv[]){
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
     }
 
-    msg << "BumponTailInstability: End." << endl;
+    msg << TestName << ": End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
