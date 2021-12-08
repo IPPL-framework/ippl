@@ -483,7 +483,7 @@ public:
                                 KOKKOS_LAMBDA(const size_t i, const size_t j,
                                               const size_t k, double& valL)
                                 {
-                                    double myVal = abs(Eview(i, j, k)[0]);
+                                    double myVal = std::fabs(Eview(i, j, k)[0]);
                                     if(myVal > valL) valL = myVal;
                                 }, Kokkos::Max<double>(tempMax));
         ExAmp = 0.0;
@@ -546,7 +546,7 @@ public:
                                 KOKKOS_LAMBDA(const size_t i, const size_t j,
                                               const size_t k, double& valL)
                                 {
-                                    double myVal = abs(Eview(i, j, k)[2]);
+                                    double myVal = std::fabs(Eview(i, j, k)[2]);
                                     if(myVal > valL) valL = myVal;
                                 }, Kokkos::Max<double>(tempMax));
         EzAmp = 0.0;

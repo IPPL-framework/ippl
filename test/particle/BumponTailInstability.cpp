@@ -1,4 +1,4 @@
-// Bump on Tail Instability Test
+// Bump on Tail Instability/Two-stream Instability Test
 //   Usage:
 //     srun ./BumponTailInstability <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
@@ -110,8 +110,8 @@ struct generate_random {
                   value_type& delta_, T& k_, value_type& alpha_, 
                   value_type& gamma_, size_type& nlocBulk_, T& minU_, T& maxU_)
       : x(x_), v(v_), rand_pool(rand_pool_), 
-        delta(delta_), k(k_), alpha(alpha_), gamma(gamma_),
-        nlocBulk(nlocBulk_), minU(minU_), maxU(maxU_) {}
+        delta(delta_), alpha(alpha_), gamma(gamma_),
+        nlocBulk(nlocBulk_), k(k_), minU(minU_), maxU(maxU_) {}
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const size_t i) const {
@@ -120,14 +120,14 @@ struct generate_random {
 
     bool isBeam = (i >= nlocBulk);
     
-    value_type sigma = (value_type)(((!isBeam) * (1.0/std::sqrt(2.0))) + 
-                       (isBeam * (1.0/(std::sqrt(2.0) * alpha))));
-    value_type muZ = (value_type)(isBeam * gamma);
+    //value_type sigma = (value_type)(((!isBeam) * (1.0/std::sqrt(2.0))) + 
+    //                   (isBeam * (1.0/(std::sqrt(2.0) * alpha))));
+    //value_type muZ = (value_type)(isBeam * gamma);
     
     // Parameters for two stream instability as in 
     //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
-    //value_type sigma = 0.1;
-    //value_type muZ = (value_type)(((!isBeam) * gamma) - (isBeam * gamma));
+    value_type sigma = 0.1;
+    value_type muZ = (value_type)(((!isBeam) * gamma) - (isBeam * gamma));
     
     for (unsigned d = 0; d < Dim-1; ++d) {
         
@@ -215,11 +215,11 @@ int main(int argc, char *argv[]){
 
     // Parameters for two stream instability as in 
     //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
-    //Vector_t kw = {0.5, 0.5, 0.5};
-    //double alpha = 1.0;
-    //double epsilon = 0.5;
-    //double gamma = pi / 2.0;
-    //double delta = 0.01;
+    Vector_t kw = {0.5, 0.5, 0.5};
+    double alpha = 1.0;
+    double epsilon = 0.5;
+    double gamma = pi / 2.0;
+    double delta = 0.01;
     
     //Vector_t kw = {0.265, 0.265, 0.265};
     //double alpha = 2.0;
@@ -227,11 +227,11 @@ int main(int argc, char *argv[]){
     //double gamma = 4.5/std::sqrt(2.0);
     //double delta = 0.01;
     
-    Vector_t kw = {0.21, 0.21, 0.21};
-    double alpha = 1.0;
-    double epsilon = 0.1;
-    double gamma = 4.0;
-    double delta = 0.001;
+    //Vector_t kw = {0.21, 0.21, 0.21};
+    //double alpha = 1.0;
+    //double epsilon = 0.1;
+    //double gamma = 4.0;
+    //double delta = 0.01;
 
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
