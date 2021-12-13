@@ -111,12 +111,14 @@ public:
 
         Kokkos::deep_copy(bunch->R.getView(), R_host);
 
-        orb.initialize(layout_m, mesh_m);
+        orb.initialize(layout_m, mesh_m, *field);
     }
 
 
     void repartition() {
-        orb.binaryRepartition(bunch->R, layout_m);
+        bool fromAnalyticDensity = false;
+        orb.binaryRepartition(bunch->R, layout_m, 
+                              fromAnalyticDensity);
         field->updateLayout(layout_m);
         bunch->updateLayout(layout_m, mesh_m);
     }
@@ -155,7 +157,6 @@ TEST_F(ORBTest, Volume) {
 
 
 TEST_F(ORBTest, Charge) {
-    *field = 0.0;
     bunch_type buffer(pl_m);
 
     double charge = 0.5;
@@ -168,6 +169,7 @@ TEST_F(ORBTest, Charge) {
 
     pl_m.update(*bunch, buffer);
 
+    *field = 0.0;
     scatter(bunch->Q, *field, bunch->R);
 
     double totalCharge = field->sum();
