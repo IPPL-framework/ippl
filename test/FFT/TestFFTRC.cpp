@@ -1,4 +1,5 @@
 #include "Ippl.h"
+#include "Utility/ParameterList.h"
 
 #include <iostream>
 #include <typeinfo>
@@ -11,7 +12,7 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    std::array<int, dim> pt = {4, 4, 4};
+    std::array<int, dim> pt = {64, 64, 64};
     ippl::Index Iinput(pt[0]);
     ippl::Index Jinput(pt[1]);
     ippl::Index Kinput(pt[2]);
@@ -37,26 +38,26 @@ int main(int argc, char *argv[]) {
 
     field_type_real fieldInput(meshInput, layoutInput);
 
-    ippl::FFTParams fftParams;
-
-    fftParams.setAllToAll( true );
-    fftParams.setPencils( true );
-    fftParams.setReorder( true );
-    fftParams.setRCDirection( 0 );
+    ippl::ParameterList fftParams;
+    fftParams.add<bool>("use_pencils", true);  
+    fftParams.add<bool>("use_reorder", false);  
+    fftParams.add<bool>("use_gpu_aware", true);  
+    fftParams.add<int>("comm", ippl::a2av);  
+    fftParams.add<int>("r2c_direction", 0);  
 
     ippl::NDIndex<dim> ownedOutput;
 
-    if(fftParams.getRCDirection() == 0) {
+    if(fftParams.get<int>("r2c_direction") == 0) {
         ownedOutput[0] = ippl::Index(pt[0]/2 + 1);
         ownedOutput[1] = ippl::Index(pt[1]);
         ownedOutput[2] = ippl::Index(pt[2]);
     }
-    else if(fftParams.getRCDirection() == 1) {
+    else if(fftParams.get<int>("r2c_direction") == 1) {
         ownedOutput[0] = ippl::Index(pt[0]);
         ownedOutput[1] = ippl::Index(pt[1]/2 + 1);
         ownedOutput[2] = ippl::Index(pt[2]);
     }
-    else if(fftParams.getRCDirection() == 2) {
+    else if(fftParams.get<int>("r2c_direction") == 2) {
         ownedOutput[0] = ippl::Index(pt[0]);
         ownedOutput[1] = ippl::Index(pt[1]);
         ownedOutput[2] = ippl::Index(pt[2]/2 + 1);

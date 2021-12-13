@@ -48,7 +48,7 @@ namespace ippl {
     template <size_t Dim, class T>
     FFT<CCTransform,Dim,T>::FFT(
         const Layout_t& layout,
-        const FFTParams& params)
+        const ParameterList& params)
     {
 
 
@@ -85,7 +85,7 @@ namespace ippl {
     void
     FFT<CCTransform,Dim,T>::setup(const std::array<long long, Dim>& low,
                                   const std::array<long long, Dim>& high,
-                                  const FFTParams& params)
+                                  const ParameterList& params)
     {
 
          heffte::box3d<long long> inbox  = {low, high};
@@ -93,9 +93,33 @@ namespace ippl {
 
          heffte::plan_options heffteOptions =
              heffte::default_options<heffteBackend>();
-         heffteOptions.use_alltoall = params.getAllToAll();
-         heffteOptions.use_pencils = params.getPencils();
-         heffteOptions.use_reorder = params.getReorder();
+         //heffteOptions.use_alltoall = params.getAllToAll();
+         //heffteOptions.use_pencils = params.getPencils();
+         //heffteOptions.use_reorder = params.getReorder();
+
+
+         heffteOptions.use_pencils = params.template get<bool>("use_pencils");
+         heffteOptions.use_reorder = params.template get<bool>("use_reorder");
+         heffteOptions.use_gpu_aware = params.template get<bool>("use_gpu_aware");
+
+         switch (params.template get<int>("comm")) {
+         
+            case a2a:
+                heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
+                break;
+            case a2av:
+                heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
+                break;
+            case p2p:
+                heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+                break;
+            case p2p_pl:
+                heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
+                break;
+            default:
+                throw IpplException("FFT::setup",
+                                    "Unrecognized heffte communication type");
+         }
 
          heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>
                     (inbox, outbox, Ippl::getComm(), heffteOptions);
@@ -216,7 +240,7 @@ namespace ippl {
     FFT<RCTransform,Dim,T>::FFT(
         const Layout_t& layoutInput,
         const Layout_t& layoutOutput,
-        const FFTParams& params)
+        const ParameterList& params)
     {
 
         /**
@@ -265,7 +289,7 @@ namespace ippl {
                                   const std::array<long long, Dim>& highInput,
                                   const std::array<long long, Dim>& lowOutput,
                                   const std::array<long long, Dim>& highOutput,
-                                  const FFTParams& params)
+                                  const ParameterList& params)
     {
 
          heffte::box3d<long long> inbox  = {lowInput, highInput};
@@ -273,12 +297,39 @@ namespace ippl {
 
          heffte::plan_options heffteOptions =
              heffte::default_options<heffteBackend>();
-         heffteOptions.use_alltoall = params.getAllToAll();
-         heffteOptions.use_pencils = params.getPencils();
-         heffteOptions.use_reorder = params.getReorder();
+         //heffteOptions.use_alltoall = params.getAllToAll();
+         //heffteOptions.use_pencils = params.getPencils();
+         //heffteOptions.use_reorder = params.getReorder();
 
+         heffteOptions.use_pencils = params.template get<bool>("use_pencils");
+         heffteOptions.use_reorder = params.template get<bool>("use_reorder");
+         heffteOptions.use_gpu_aware = params.template get<bool>("use_gpu_aware");
+
+
+         switch (params.template get<int>("comm")) {
+         
+            case a2a:
+                heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
+                break;
+            case a2av:
+                heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
+                break;
+            case p2p:
+                heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+                break;
+            case p2p_pl:
+                heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
+                break;
+            default:
+                throw IpplException("FFT::setup",
+                                    "Unrecognized heffte communication type");
+         }
+
+         //heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>
+         //           (inbox, outbox, params.getRCDirection(), Ippl::getComm(),
+         //            heffteOptions);
          heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>
-                    (inbox, outbox, params.getRCDirection(), Ippl::getComm(),
+                    (inbox, outbox, params.template get<int>("r2c_direction"), Ippl::getComm(),
                      heffteOptions);
         
          //heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());

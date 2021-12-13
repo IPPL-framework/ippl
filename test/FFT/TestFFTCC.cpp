@@ -1,4 +1,5 @@
 #include "Ippl.h"
+#include "Utility/ParameterList.h"
 
 #include <iostream>
 #include <typeinfo>
@@ -36,11 +37,12 @@ int main(int argc, char *argv[]) {
 
     field_type field(mesh, layout);
 
-    ippl::FFTParams fftParams;
+    ippl::ParameterList fftParams;
 
-    fftParams.setAllToAll( true );
-    fftParams.setPencils( true );
-    fftParams.setReorder( true );
+    fftParams.add<bool>("use_pencils", true);  
+    fftParams.add<bool>("use_reorder", false);  
+    fftParams.add<bool>("use_gpu_aware", true);  
+    fftParams.add<int>("comm", ippl::p2p_pl);  
 
     typedef ippl::FFT<ippl::CCTransform, 3, double> FFT_type;
 

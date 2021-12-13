@@ -36,6 +36,8 @@
 
 #include "FieldLayout/FieldLayout.h"
 #include "Field/Field.h"
+#include "Utility/ParameterList.h"
+#include "Utility/IpplException.h"
 
 namespace ippl {
 
@@ -48,22 +50,28 @@ namespace ippl {
     */
     class RCTransform {};
 
-
-    class FFTParams {
-        bool alltoall = true;
-        bool pencils = true;
-        bool reorder = true;
-        int  rcdirection = 0;
-        public:
-            void setAllToAll( bool value ) { alltoall = value; }
-            void setPencils( bool value ) { pencils = value; }
-            void setReorder( bool value ) { reorder = value; }
-            void setRCDirection( int value ) { rcdirection = value; }
-            bool getAllToAll() const { return alltoall; }
-            bool getPencils() const { return pencils; }
-            bool getReorder() const { return reorder; }
-            int  getRCDirection() const { return rcdirection; }
+    enum FFTComm {
+        a2av = 0,
+        a2a = 1,
+        p2p = 2,
+        p2p_pl = 3
     };
+
+    //class FFTParams {
+    //    bool alltoall = true;
+    //    bool pencils = true;
+    //    bool reorder = true;
+    //    int  rcdirection = 0;
+    //    public:
+    //        void setAllToAll( bool value ) { alltoall = value; }
+    //        void setPencils( bool value ) { pencils = value; }
+    //        void setReorder( bool value ) { reorder = value; }
+    //        void setRCDirection( int value ) { rcdirection = value; }
+    //        bool getAllToAll() const { return alltoall; }
+    //        bool getPencils() const { return pencils; }
+    //        bool getReorder() const { return reorder; }
+    //        int  getRCDirection() const { return rcdirection; }
+    //};
 
     namespace detail {
 
@@ -135,7 +143,7 @@ namespace ippl {
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
         */
-        FFT(const Layout_t& layout, const FFTParams& params);
+        FFT(const Layout_t& layout, const ParameterList& params);
 
         // Destructor
         ~FFT() = default;
@@ -154,7 +162,7 @@ namespace ippl {
         */
         void setup(const std::array<long long, Dim>& low,
                    const std::array<long long, Dim>& high,
-                   const FFTParams& params);
+                   const ParameterList& params);
 
         std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
@@ -184,7 +192,7 @@ namespace ippl {
         /** Create a new FFT object with the layout for the input and output Fields
          * and parameters for heffte.
         */
-        FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const FFTParams& params);
+        FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const ParameterList& params);
 
 
         ~FFT() = default;
@@ -206,7 +214,7 @@ namespace ippl {
                    const std::array<long long, Dim>& highInput,
                    const std::array<long long, Dim>& lowOutput,
                    const std::array<long long, Dim>& highOutput,
-                   const FFTParams& params);
+                   const ParameterList& params);
 
 
         std::shared_ptr<heffte::fft3d_r2c<heffteBackend, long long>> heffte_m;
