@@ -160,8 +160,8 @@ double PDF(const Vector_t& xvec, const double& delta,
     return pdf;
 }
 
-const char* TestName = "BumponTailInstability";
-//const char* TestName = "TwoStreamInstability";
+//const char* TestName = "BumponTailInstability";
+const char* TestName = "TwoStreamInstability";
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
@@ -251,7 +251,7 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.05;//0.5*dx;
+    const double dt = 0.5*dx;//0.05
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
