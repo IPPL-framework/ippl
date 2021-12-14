@@ -67,8 +67,6 @@ namespace ippl {
 
     namespace detail {
 
-        bool backendFound = false;
-
         template <class T>
         struct HeffteBackendType {};
 
@@ -87,7 +85,6 @@ namespace ippl {
             using backendSine = heffte::backend::fftw_sin;
             using backendCos = heffte::backend::fftw_cos;
         };
-        backendFound = true;
 #endif
 #ifdef Heffte_ENABLE_MKL
         template <>
@@ -104,7 +101,6 @@ namespace ippl {
             using backendSine = heffte::backend::mkl_sin;
             using backendCos = heffte::backend::mkl_cos;
         };
-        backendFound = true;
 #endif
 #ifdef Heffte_ENABLE_CUDA
 #ifdef KOKKOS_ENABLE_CUDA
@@ -122,32 +118,30 @@ namespace ippl {
             using backendSine = heffte::backend::cufft_sin;
             using backendCos = heffte::backend::cufft_cos;
         };
-        backendFound = true;
 #endif
 #endif
 
 #ifndef KOKKOS_ENABLE_CUDA
+#if !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no 
          * vendor specific or optimized backend is found
         */
-        if(!backendFound) {
-            template <>
-            struct HeffteBackendType<float> {
-                using backend = heffte::backend::stock;
-                using complexType = std::complex<float>;
-            };
-            template <>
-            struct HeffteBackendType<double> {
-                using backend = heffte::backend::stock;
-                using complexType = std::complex<double>;
-            };
-            struct HeffteBackendTypeRR {
-                using backendSine = heffte::backend::stock_sin;
-                using backendCos = heffte::backend::stock_cos;
-            };
-            backendFound = true;
-        }
+        template <>
+        struct HeffteBackendType<float> {
+            using backend = heffte::backend::stock;
+            using complexType = std::complex<float>;
+        };
+        template <>
+        struct HeffteBackendType<double> {
+            using backend = heffte::backend::stock;
+            using complexType = std::complex<double>;
+        };
+        struct HeffteBackendTypeRR {
+            using backendSine = heffte::backend::stock_sin;
+            using backendCos = heffte::backend::stock_cos;
+        };
+#endif
 #endif
     }
 
@@ -266,7 +260,7 @@ namespace ippl {
         typedef FieldLayout<Dim> Layout_t;
         typedef Field<T,Dim> Field_t;
 
-        using heffteBackend = typename detail::HeffteBackendTypeRR<T>::backendSine;
+        using heffteBackend = typename detail::HeffteBackendTypeRR::backendSine;
         using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
@@ -306,7 +300,7 @@ namespace ippl {
         typedef FieldLayout<Dim> Layout_t;
         typedef Field<T,Dim> Field_t;
 
-        using heffteBackend = typename detail::HeffteBackendTypeRR<T>::backendCos;
+        using heffteBackend = typename detail::HeffteBackendTypeRR::backendCos;
         using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
