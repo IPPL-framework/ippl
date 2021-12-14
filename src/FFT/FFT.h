@@ -49,6 +49,14 @@ namespace ippl {
        Tag classes for RC type of Fourier transforms
     */
     class RCTransform {};
+    /**
+       Tag classes for Sine transforms
+    */
+    class SineTransform {};
+    /**
+       Tag classes for Cosine transforms
+    */
+    class CosTransform {};
 
     enum FFTComm {
         a2av = 0,
@@ -58,6 +66,8 @@ namespace ippl {
     };
 
     namespace detail {
+
+        bool backendFound = false;
 
         template <class T>
         struct HeffteBackendType {};
@@ -73,6 +83,11 @@ namespace ippl {
             using backend = heffte::backend::fftw;
             using complexType = std::complex<double>;
         };
+        struct HeffteBackendTypeRR {
+            using backendSine = heffte::backend::fftw_sin;
+            using backendCos = heffte::backend::fftw_cos;
+        };
+        backendFound = true;
 #endif
 #ifdef Heffte_ENABLE_MKL
         template <>
@@ -85,6 +100,11 @@ namespace ippl {
             using backend = heffte::backend::mkl;
             using complexType = std::complex<double>;
         };
+        struct HeffteBackendTypeRR {
+            using backendSine = heffte::backend::mkl_sin;
+            using backendCos = heffte::backend::mkl_cos;
+        };
+        backendFound = true;
 #endif
 #ifdef Heffte_ENABLE_CUDA
 #ifdef KOKKOS_ENABLE_CUDA
@@ -98,7 +118,36 @@ namespace ippl {
             using backend = heffte::backend::cufft;
             using complexType = cufftComplex;
         };
+        struct HeffteBackendTypeRR {
+            using backendSine = heffte::backend::cufft_sin;
+            using backendCos = heffte::backend::cufft_cos;
+        };
+        backendFound = true;
 #endif
+#endif
+
+#ifndef KOKKOS_ENABLE_CUDA
+        /**
+         * Use heFFTe's inbuilt 1D fft computation on CPUs if no 
+         * vendor specific or optimized backend is found
+        */
+        if(!backendFound) {
+            template <>
+            struct HeffteBackendType<float> {
+                using backend = heffte::backend::stock;
+                using complexType = std::complex<float>;
+            };
+            template <>
+            struct HeffteBackendType<double> {
+                using backend = heffte::backend::stock;
+                using complexType = std::complex<double>;
+            };
+            struct HeffteBackendTypeRR {
+                using backendSine = heffte::backend::stock_sin;
+                using backendCos = heffte::backend::stock_cos;
+            };
+            backendFound = true;
+        }
 #endif
     }
 
@@ -205,6 +254,88 @@ namespace ippl {
         workspace_t workspace_m;
 
     };
+
+    /**
+       Sine transform class
+    */
+    template <size_t Dim, class T>
+    class FFT<SineTransform,Dim,T> {
+
+    public:
+
+        typedef FieldLayout<Dim> Layout_t;
+        typedef Field<T,Dim> Field_t;
+
+        using heffteBackend = typename detail::HeffteBackendTypeRR<T>::backendSine;
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+
+        /** Create a new FFT object with the layout for the input Field and
+         * parameters for heffte.
+        */
+        FFT(const Layout_t& layout, const ParameterList& params);
+
+        // Destructor
+        ~FFT() = default;
+
+        /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
+            transform. The output is over-written in the input.
+        */
+        void transform(int direction, Field_t& f);
+
+
+    private:
+        /**
+           setup performs the initialization necessary.
+        */
+        void setup(const std::array<long long, Dim>& low,
+                   const std::array<long long, Dim>& high,
+                   const ParameterList& params);
+
+        std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
+        workspace_t workspace_m;
+
+    };
+    /**
+       Cosine transform class
+    */
+    template <size_t Dim, class T>
+    class FFT<CosTransform,Dim,T> {
+
+    public:
+
+        typedef FieldLayout<Dim> Layout_t;
+        typedef Field<T,Dim> Field_t;
+
+        using heffteBackend = typename detail::HeffteBackendTypeRR<T>::backendCos;
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+
+        /** Create a new FFT object with the layout for the input Field and
+         * parameters for heffte.
+        */
+        FFT(const Layout_t& layout, const ParameterList& params);
+
+        // Destructor
+        ~FFT() = default;
+
+        /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
+            transform. The output is over-written in the input.
+        */
+        void transform(int direction, Field_t& f);
+
+
+    private:
+        /**
+           setup performs the initialization necessary.
+        */
+        void setup(const std::array<long long, Dim>& low,
+                   const std::array<long long, Dim>& high,
+                   const ParameterList& params);
+
+        std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
+        workspace_t workspace_m;
+
+    };
+
 
 }
 #include "FFT/FFT.hpp"
