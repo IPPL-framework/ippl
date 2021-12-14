@@ -97,12 +97,11 @@ namespace ippl {
          //heffteOptions.use_pencils = params.getPencils();
          //heffteOptions.use_reorder = params.getReorder();
 
+         heffteOptions.use_pencils = params.get<bool>("use_pencils");
+         heffteOptions.use_reorder = params.get<bool>("use_reorder");
+         heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
 
-         heffteOptions.use_pencils = params.template get<bool>("use_pencils");
-         heffteOptions.use_reorder = params.template get<bool>("use_reorder");
-         heffteOptions.use_gpu_aware = params.template get<bool>("use_gpu_aware");
-
-         switch (params.template get<int>("comm")) {
+         switch (params.get<int>("comm")) {
          
             case a2a:
                 heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
@@ -301,12 +300,12 @@ namespace ippl {
          //heffteOptions.use_pencils = params.getPencils();
          //heffteOptions.use_reorder = params.getReorder();
 
-         heffteOptions.use_pencils = params.template get<bool>("use_pencils");
-         heffteOptions.use_reorder = params.template get<bool>("use_reorder");
-         heffteOptions.use_gpu_aware = params.template get<bool>("use_gpu_aware");
+         heffteOptions.use_pencils = params.get<bool>("use_pencils");
+         heffteOptions.use_reorder = params.get<bool>("use_reorder");
+         heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
 
 
-         switch (params.template get<int>("comm")) {
+         switch (params.get<int>("comm")) {
          
             case a2a:
                 heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
@@ -329,7 +328,7 @@ namespace ippl {
          //           (inbox, outbox, params.getRCDirection(), Ippl::getComm(),
          //            heffteOptions);
          heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>
-                    (inbox, outbox, params.template get<int>("r2c_direction"), Ippl::getComm(),
+                    (inbox, outbox, params.get<int>("r2c_direction"), Ippl::getComm(),
                      heffteOptions);
         
          //heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
