@@ -122,9 +122,9 @@ namespace ippl {
 
         const NDIndex_t& getLocalNDIndex(int rank = Ippl::Comm->rank()) const;
 
-        const host_mirror_type& getHostLocalDomains() const;
+        const host_mirror_type getHostLocalDomains() const;
 
-        const view_type& getDeviceLocalDomains() const;
+        const view_type getDeviceLocalDomains() const;
 
         const face_neighbor_type& getFaceNeighbors() const;
 
