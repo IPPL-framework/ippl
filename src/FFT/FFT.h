@@ -57,22 +57,6 @@ namespace ippl {
         p2p_pl = 3
     };
 
-    //class FFTParams {
-    //    bool alltoall = true;
-    //    bool pencils = true;
-    //    bool reorder = true;
-    //    int  rcdirection = 0;
-    //    public:
-    //        void setAllToAll( bool value ) { alltoall = value; }
-    //        void setPencils( bool value ) { pencils = value; }
-    //        void setReorder( bool value ) { reorder = value; }
-    //        void setRCDirection( int value ) { rcdirection = value; }
-    //        bool getAllToAll() const { return alltoall; }
-    //        bool getPencils() const { return pencils; }
-    //        bool getReorder() const { return reorder; }
-    //        int  getRCDirection() const { return rcdirection; }
-    //};
-
     namespace detail {
 
         template <class T>

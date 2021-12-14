@@ -93,9 +93,6 @@ namespace ippl {
 
          heffte::plan_options heffteOptions =
              heffte::default_options<heffteBackend>();
-         //heffteOptions.use_alltoall = params.getAllToAll();
-         //heffteOptions.use_pencils = params.getPencils();
-         //heffteOptions.use_reorder = params.getReorder();
 
          heffteOptions.use_pencils = params.get<bool>("use_pencils");
          heffteOptions.use_reorder = params.get<bool>("use_reorder");
@@ -294,16 +291,12 @@ namespace ippl {
          heffte::box3d<long long> inbox  = {lowInput, highInput};
          heffte::box3d<long long> outbox = {lowOutput, highOutput};
 
-         heffte::plan_options heffteOptions =
+         heffte::plan_options heffteOptions = 
              heffte::default_options<heffteBackend>();
-         //heffteOptions.use_alltoall = params.getAllToAll();
-         //heffteOptions.use_pencils = params.getPencils();
-         //heffteOptions.use_reorder = params.getReorder();
-
+        
          heffteOptions.use_pencils = params.get<bool>("use_pencils");
          heffteOptions.use_reorder = params.get<bool>("use_reorder");
          heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
-
 
          switch (params.get<int>("comm")) {
          
@@ -324,9 +317,6 @@ namespace ippl {
                                     "Unrecognized heffte communication type");
          }
 
-         //heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>
-         //           (inbox, outbox, params.getRCDirection(), Ippl::getComm(),
-         //            heffteOptions);
          heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>
                     (inbox, outbox, params.get<int>("r2c_direction"), Ippl::getComm(),
                      heffteOptions);
