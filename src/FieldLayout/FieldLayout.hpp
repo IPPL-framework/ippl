@@ -137,7 +137,7 @@ namespace ippl {
 
 
     template <unsigned Dim>
-    const typename FieldLayout<Dim>::host_mirror_type&
+    const typename FieldLayout<Dim>::host_mirror_type
     FieldLayout<Dim>::getHostLocalDomains() const
     {
         return hLocalDomains_m;
@@ -145,7 +145,7 @@ namespace ippl {
 
 
     template <unsigned Dim>
-    const typename FieldLayout<Dim>::view_type&
+    const typename FieldLayout<Dim>::view_type
     FieldLayout<Dim>::getDeviceLocalDomains() const
     {
         return dLocalDomains_m;

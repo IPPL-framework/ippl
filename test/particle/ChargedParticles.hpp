@@ -483,7 +483,7 @@ public:
                                 KOKKOS_LAMBDA(const size_t i, const size_t j,
                                               const size_t k, double& valL)
                                 {
-                                    double myVal = abs(Eview(i, j, k)[0]);
+                                    double myVal = std::fabs(Eview(i, j, k)[0]);
                                     if(myVal > valL) valL = myVal;
                                 }, Kokkos::Max<double>(tempMax));
         ExAmp = 0.0;
@@ -513,6 +513,69 @@ public:
         
         Ippl::Comm->barrier();
      }
+     
+     void dumpBumponTail() {
+
+        const int nghostE = E_m.getNghost();
+        auto Eview = E_m.getView();
+        double fieldEnergy, EzAmp;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+        double temp = 0.0;
+        Kokkos::parallel_reduce("Ex inner product",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = std::pow(Eview(i, j, k)[2], 2);
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+        double globaltemp = 0.0;
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        fieldEnergy = globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
+
+        double tempMax = 0.0;
+        Kokkos::parallel_reduce("Ex max norm",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = std::fabs(Eview(i, j, k)[2]);
+                                    if(myVal > valL) valL = myVal;
+                                }, Kokkos::Max<double>(tempMax));
+        EzAmp = 0.0;
+        MPI_Reduce(&tempMax, &EzAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+
+
+        if (Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/FieldBumponTail_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
+
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(time_m == 0.0) {
+                csvout << "time, Ez_field_energy, Ez_max_norm" << endl;
+            }
+
+            csvout << time_m << " "
+                   << fieldEnergy << " "
+                   << EzAmp << endl;
+
+        }
+        
+        Ippl::Comm->barrier();
+     }
 
      void dumpParticleData() {
 
@@ -535,6 +598,24 @@ public:
                     << P_host(i)[0] << " "
                     << P_host(i)[1] << " "
                     << P_host(i)[2] << endl;
+        }
+        Ippl::Comm->barrier();
+     }
+     
+     void dumpLocalDomains(const FieldLayout_t& fl, const unsigned int step) {
+
+        if (Ippl::Comm->rank() == 0) {
+            const typename FieldLayout_t::host_mirror_type domains = fl.getHostLocalDomains();
+            std::ofstream myfile;
+            myfile.open("data/domains" + std::to_string(step) + ".txt");
+            for (unsigned int i = 0; i < domains.size(); ++i) {
+                myfile << domains[i][0].first() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
+                       << domains[i][0].first() << " " << domains[i][1].last() << " " << domains[i][2].first() << " "
+                       << domains[i][0].last() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
+                       << domains[i][0].first() << " " << domains[i][1].first() << " " << domains[i][2].last()
+                       << "\n";
+            }
+            myfile.close();
         }
         Ippl::Comm->barrier();
      }

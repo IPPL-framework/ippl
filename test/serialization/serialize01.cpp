@@ -26,7 +26,7 @@ public:
         Kokkos::resize(buffer_m, buffer_m.size() + s * val.size());
         Kokkos::parallel_for("serialize", 10,
                              KOKKOS_CLASS_LAMBDA(const int i) {
-                                 memcpy(buffer_m.data() + i*s + writepos, val.data() + i, s);
+                             std::memcpy(buffer_m.data() + i*s + writepos, val.data() + i, s);
                              });
         writepos += s * val.size();
     }
@@ -36,7 +36,7 @@ public:
         int s = sizeof(T);
         Kokkos::parallel_for("deserialize", 10,
                              KOKKOS_CLASS_LAMBDA(const int i) {
-                                 memcpy(val.data() + i, buffer_m.data() + i*s + readpos, s);
+                             std::memcpy(val.data() + i, buffer_m.data() + i*s + readpos, s);
                              });
         readpos += s * val.size();
     }
@@ -49,7 +49,7 @@ public:
         return buffer_m.size();
     }
 
-    ~Archive() { }
+    ~Archive() = default;
 
 private:
     size_t writepos;
@@ -105,7 +105,7 @@ public:
                 auto& this_view = this->getView(j);
 
                 Kokkos::parallel_for("assign",
-                                     Kokkos::RangePolicy(5, 15), KOKKOS_CLASS_LAMBDA(const size_t i) {
+                                     Kokkos::RangePolicy(5, 15), KOKKOS_LAMBDA(const size_t i) {
                     bview(i-5) = this_view(i);
                 });
             }
@@ -129,7 +129,7 @@ public:
                 Kokkos::resize(this_view, n);
 
                 Kokkos::parallel_for("assign",
-                                     n, KOKKOS_CLASS_LAMBDA(const size_t i) {
+                                     n, KOKKOS_LAMBDA(const size_t i) {
                     this_view(i) = bview(i);
                 });
             }
@@ -233,10 +233,13 @@ int main(int argc, char *argv[]) {
 
         if (rank == 0) {
 
+            auto idView = bunch.id_m;
+            auto massView = bunch.mass_m;
+            auto chargeView = bunch.charge_m;
             Kokkos::parallel_for("assign", 20, KOKKOS_LAMBDA(const size_t i) {
-                bunch.id_m(i) = i;
-                bunch.mass_m(i) = i + 0.5;
-                bunch.charge_m(i) = 0.25;
+                idView(i) = i;
+                massView(i) = i + 0.5;
+                chargeView(i) = 0.25;
             });
         }
 
