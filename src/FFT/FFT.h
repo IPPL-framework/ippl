@@ -36,6 +36,8 @@
 
 #include "FieldLayout/FieldLayout.h"
 #include "Field/Field.h"
+#include "Utility/ParameterList.h"
+#include "Utility/IpplException.h"
 
 namespace ippl {
 
@@ -47,22 +49,20 @@ namespace ippl {
        Tag classes for RC type of Fourier transforms
     */
     class RCTransform {};
+    /**
+       Tag classes for Sine transforms
+    */
+    class SineTransform {};
+    /**
+       Tag classes for Cosine transforms
+    */
+    class CosTransform {};
 
-
-    class FFTParams {
-        bool alltoall = true;
-        bool pencils = true;
-        bool reorder = true;
-        int  rcdirection = 0;
-        public:
-            void setAllToAll( bool value ) { alltoall = value; }
-            void setPencils( bool value ) { pencils = value; }
-            void setReorder( bool value ) { reorder = value; }
-            void setRCDirection( int value ) { rcdirection = value; }
-            bool getAllToAll() const { return alltoall; }
-            bool getPencils() const { return pencils; }
-            bool getReorder() const { return reorder; }
-            int  getRCDirection() const { return rcdirection; }
+    enum FFTComm {
+        a2av = 0,
+        a2a = 1,
+        p2p = 2,
+        p2p_pl = 3
     };
 
     namespace detail {
@@ -81,6 +81,10 @@ namespace ippl {
             using backend = heffte::backend::fftw;
             using complexType = std::complex<double>;
         };
+        struct HeffteBackendTypeRR {
+            using backendSine = heffte::backend::fftw_sin;
+            using backendCos = heffte::backend::fftw_cos;
+        };
 #endif
 #ifdef Heffte_ENABLE_MKL
         template <>
@@ -92,6 +96,10 @@ namespace ippl {
         struct HeffteBackendType<double> {
             using backend = heffte::backend::mkl;
             using complexType = std::complex<double>;
+        };
+        struct HeffteBackendTypeRR {
+            using backendSine = heffte::backend::mkl_sin;
+            using backendCos = heffte::backend::mkl_cos;
         };
 #endif
 #ifdef Heffte_ENABLE_CUDA
@@ -105,6 +113,33 @@ namespace ippl {
         struct HeffteBackendType<float> {
             using backend = heffte::backend::cufft;
             using complexType = cufftComplex;
+        };
+        struct HeffteBackendTypeRR {
+            using backendSine = heffte::backend::cufft_sin;
+            using backendCos = heffte::backend::cufft_cos;
+        };
+#endif
+#endif
+
+#ifndef KOKKOS_ENABLE_CUDA
+#if !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
+        /**
+         * Use heFFTe's inbuilt 1D fft computation on CPUs if no 
+         * vendor specific or optimized backend is found
+        */
+        template <>
+        struct HeffteBackendType<float> {
+            using backend = heffte::backend::stock;
+            using complexType = std::complex<float>;
+        };
+        template <>
+        struct HeffteBackendType<double> {
+            using backend = heffte::backend::stock;
+            using complexType = std::complex<double>;
+        };
+        struct HeffteBackendTypeRR {
+            using backendSine = heffte::backend::stock_sin;
+            using backendCos = heffte::backend::stock_cos;
         };
 #endif
 #endif
@@ -135,7 +170,7 @@ namespace ippl {
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
         */
-        FFT(const Layout_t& layout, const FFTParams& params);
+        FFT(const Layout_t& layout, const ParameterList& params);
 
         // Destructor
         ~FFT() = default;
@@ -154,7 +189,7 @@ namespace ippl {
         */
         void setup(const std::array<long long, Dim>& low,
                    const std::array<long long, Dim>& high,
-                   const FFTParams& params);
+                   const ParameterList& params);
 
         std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
@@ -184,7 +219,7 @@ namespace ippl {
         /** Create a new FFT object with the layout for the input and output Fields
          * and parameters for heffte.
         */
-        FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const FFTParams& params);
+        FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const ParameterList& params);
 
 
         ~FFT() = default;
@@ -206,13 +241,95 @@ namespace ippl {
                    const std::array<long long, Dim>& highInput,
                    const std::array<long long, Dim>& lowOutput,
                    const std::array<long long, Dim>& highOutput,
-                   const FFTParams& params);
+                   const ParameterList& params);
 
 
         std::shared_ptr<heffte::fft3d_r2c<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
 
     };
+
+    /**
+       Sine transform class
+    */
+    template <size_t Dim, class T>
+    class FFT<SineTransform,Dim,T> {
+
+    public:
+
+        typedef FieldLayout<Dim> Layout_t;
+        typedef Field<T,Dim> Field_t;
+
+        using heffteBackend = typename detail::HeffteBackendTypeRR::backendSine;
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+
+        /** Create a new FFT object with the layout for the input Field and
+         * parameters for heffte.
+        */
+        FFT(const Layout_t& layout, const ParameterList& params);
+
+        // Destructor
+        ~FFT() = default;
+
+        /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
+            transform. The output is over-written in the input.
+        */
+        void transform(int direction, Field_t& f);
+
+
+    private:
+        /**
+           setup performs the initialization necessary.
+        */
+        void setup(const std::array<long long, Dim>& low,
+                   const std::array<long long, Dim>& high,
+                   const ParameterList& params);
+
+        std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
+        workspace_t workspace_m;
+
+    };
+    /**
+       Cosine transform class
+    */
+    template <size_t Dim, class T>
+    class FFT<CosTransform,Dim,T> {
+
+    public:
+
+        typedef FieldLayout<Dim> Layout_t;
+        typedef Field<T,Dim> Field_t;
+
+        using heffteBackend = typename detail::HeffteBackendTypeRR::backendCos;
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+
+        /** Create a new FFT object with the layout for the input Field and
+         * parameters for heffte.
+        */
+        FFT(const Layout_t& layout, const ParameterList& params);
+
+        // Destructor
+        ~FFT() = default;
+
+        /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
+            transform. The output is over-written in the input.
+        */
+        void transform(int direction, Field_t& f);
+
+
+    private:
+        /**
+           setup performs the initialization necessary.
+        */
+        void setup(const std::array<long long, Dim>& low,
+                   const std::array<long long, Dim>& high,
+                   const ParameterList& params);
+
+        std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
+        workspace_t workspace_m;
+
+    };
+
 
 }
 #include "FFT/FFT.hpp"
