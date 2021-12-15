@@ -39,10 +39,7 @@ int main(int argc, char *argv[]) {
 
     ippl::ParameterList fftParams;
 
-    fftParams.add("use_pencils", true);  
-    fftParams.add("use_reorder", false);  
-    fftParams.add("use_gpu_aware", true);  
-    fftParams.add("comm", ippl::p2p_pl);  
+    fftParams.add("use_heffte_defaults", true);  
     
     typedef ippl::FFT<ippl::CCTransform, 3, double> FFT_type;
 

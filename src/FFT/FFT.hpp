@@ -94,27 +94,31 @@ namespace ippl {
          heffte::plan_options heffteOptions =
              heffte::default_options<heffteBackend>();
 
-         heffteOptions.use_pencils = params.get<bool>("use_pencils");
-         heffteOptions.use_reorder = params.get<bool>("use_reorder");
-         heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
+         if(!params.get<bool>("use_heffte_defaults")) {
+            heffteOptions.use_pencils = params.get<bool>("use_pencils");
+            heffteOptions.use_reorder = params.get<bool>("use_reorder");
+#ifdef Heffte_ENABLE_GPU
+            heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
+#endif
 
-         switch (params.get<int>("comm")) {
-         
-            case a2a:
-                heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
-                break;
-            case a2av:
-                heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
-                break;
-            case p2p:
-                heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
-                break;
-            case p2p_pl:
-                heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
-                break;
-            default:
-                throw IpplException("FFT::setup",
-                                    "Unrecognized heffte communication type");
+            switch (params.get<int>("comm")) {
+            
+               case a2a:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
+                   break;
+               case a2av:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
+                   break;
+               case p2p:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+                   break;
+               case p2p_pl:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
+                   break;
+               default:
+                   throw IpplException("FFT::setup",
+                                       "Unrecognized heffte communication type");
+            }
          }
 
          heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>
@@ -294,27 +298,31 @@ namespace ippl {
          heffte::plan_options heffteOptions = 
              heffte::default_options<heffteBackend>();
         
-         heffteOptions.use_pencils = params.get<bool>("use_pencils");
-         heffteOptions.use_reorder = params.get<bool>("use_reorder");
-         heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
+         if(!params.get<bool>("use_heffte_defaults")) {
+            heffteOptions.use_pencils = params.get<bool>("use_pencils");
+            heffteOptions.use_reorder = params.get<bool>("use_reorder");
+#ifdef Heffte_ENABLE_GPU
+            heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
+#endif
 
-         switch (params.get<int>("comm")) {
-         
-            case a2a:
-                heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
-                break;
-            case a2av:
-                heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
-                break;
-            case p2p:
-                heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
-                break;
-            case p2p_pl:
-                heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
-                break;
-            default:
-                throw IpplException("FFT::setup",
-                                    "Unrecognized heffte communication type");
+            switch (params.get<int>("comm")) {
+            
+               case a2a:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
+                   break;
+               case a2av:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
+                   break;
+               case p2p:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+                   break;
+               case p2p_pl:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
+                   break;
+               default:
+                   throw IpplException("FFT::setup",
+                                       "Unrecognized heffte communication type");
+            }
          }
 
          heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>
@@ -509,27 +517,30 @@ namespace ippl {
          heffte::plan_options heffteOptions =
              heffte::default_options<heffteBackend>();
 
-         heffteOptions.use_pencils = params.get<bool>("use_pencils");
-         heffteOptions.use_reorder = params.get<bool>("use_reorder");
-         heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
-
-         switch (params.get<int>("comm")) {
-         
-            case a2a:
-                heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
-                break;
-            case a2av:
-                heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
-                break;
-            case p2p:
-                heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
-                break;
-            case p2p_pl:
-                heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
-                break;
-            default:
-                throw IpplException("FFT::setup",
-                                    "Unrecognized heffte communication type");
+         if(!params.get<bool>("use_heffte_defaults")) {
+            heffteOptions.use_pencils = params.get<bool>("use_pencils");
+            heffteOptions.use_reorder = params.get<bool>("use_reorder");
+#ifdef Heffte_ENABLE_GPU
+            heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
+#endif
+            switch (params.get<int>("comm")) {
+            
+               case a2a:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
+                   break;
+               case a2av:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
+                   break;
+               case p2p:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+                   break;
+               case p2p_pl:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
+                   break;
+               default:
+                   throw IpplException("FFT::setup",
+                                       "Unrecognized heffte communication type");
+            }
          }
 
          heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>
@@ -670,27 +681,30 @@ namespace ippl {
          heffte::plan_options heffteOptions =
              heffte::default_options<heffteBackend>();
 
-         heffteOptions.use_pencils = params.get<bool>("use_pencils");
-         heffteOptions.use_reorder = params.get<bool>("use_reorder");
-         heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
-
-         switch (params.get<int>("comm")) {
-         
-            case a2a:
-                heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
-                break;
-            case a2av:
-                heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
-                break;
-            case p2p:
-                heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
-                break;
-            case p2p_pl:
-                heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
-                break;
-            default:
-                throw IpplException("FFT::setup",
-                                    "Unrecognized heffte communication type");
+         if(!params.get<bool>("use_heffte_defaults")) {
+            heffteOptions.use_pencils = params.get<bool>("use_pencils");
+            heffteOptions.use_reorder = params.get<bool>("use_reorder");
+#ifdef Heffte_ENABLE_GPU
+            heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
+#endif
+            switch (params.get<int>("comm")) {
+            
+               case a2a:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
+                   break;
+               case a2av:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
+                   break;
+               case p2p:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+                   break;
+               case p2p_pl:
+                   heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
+                   break;
+               default:
+                   throw IpplException("FFT::setup",
+                                       "Unrecognized heffte communication type");
+            }
          }
 
          heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>

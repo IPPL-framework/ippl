@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     field_type field(mesh, layout);
 
     ippl::ParameterList fftParams;
-
+    fftParams.add("use_heffte_defaults", false);
     fftParams.add("use_pencils", true);  
     fftParams.add("use_reorder", false);  
     fftParams.add("use_gpu_aware", true);  

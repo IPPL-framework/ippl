@@ -360,6 +360,7 @@ public:
     void initFFTSolver() {
         ippl::ParameterList sp;
         sp.add("output_type", Solver_t::GRAD);
+        sp.add("use_heffte_defaults", false);  
         sp.add("use_pencils", true);  
         sp.add("use_reorder", false);  
         sp.add("use_gpu_aware", true);  

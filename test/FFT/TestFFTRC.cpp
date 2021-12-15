@@ -39,10 +39,7 @@ int main(int argc, char *argv[]) {
     field_type_real fieldInput(meshInput, layoutInput);
 
     ippl::ParameterList fftParams;
-    fftParams.add("use_pencils", true);  
-    fftParams.add("use_reorder", false);  
-    fftParams.add("use_gpu_aware", true);  
-    fftParams.add("comm", ippl::a2av);  
+    fftParams.add("use_heffte_defaults", true);  
     fftParams.add("r2c_direction", 0);  
 
     ippl::NDIndex<dim> ownedOutput;
