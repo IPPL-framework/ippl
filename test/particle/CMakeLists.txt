@@ -4,16 +4,16 @@ message (STATUS "Adding particle tests found in ${_relPath}")
 include_directories (
     ${CMAKE_SOURCE_DIR}/src
     ${CLASSIC_SOURCE_DIR}
-    #${H5Hut_INCLUDE_DIR}
-    #${HDF5_INCLUDE_DIR}
+    ${H5Hut_INCLUDE_DIR}
+    ${HDF5_INCLUDE_DIR}
 )
 
 link_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src
     ${Boost_LIBRARY_DIRS}
-    #${H5Hut_LIBRARY_DIR}
-    #${HDF5_LIBRARY_DIR}
+    ${H5Hut_LIBRARY_DIR}
+    ${HDF5_LIBRARY_DIR}
 )
 
 set (IPPL_LIBS ippl)
@@ -27,15 +27,15 @@ target_link_libraries (
     boost_timer
 )
 
-#add_executable (CacheTest CacheTest.cpp)
-#target_link_libraries (
-#    CacheTest
-#    ${IPPL_LIBS}
-#    ${H5Hut_LIBRARY}
-#    ${HDF5_LIBRARIES}
-#    ${MPI_CXX_LIBRARIES}
-#    boost_timer
-#)
+add_executable (CacheTest CacheTest.cpp)
+target_link_libraries (
+    CacheTest
+    ${IPPL_LIBS}
+    ${H5Hut_LIBRARY}
+    ${HDF5_LIBRARIES}
+    ${MPI_CXX_LIBRARIES}
+    boost_timer
+)
 
 #add_executable (p3m3dHeating p3m3dHeating.cpp)
 #target_link_libraries (
@@ -55,21 +55,21 @@ target_link_libraries (
     boost_timer
 )
 
-#add_executable (p3m3dTwoStreamParallel p3m3dTwoStreamParallel.cpp)
-#target_link_libraries (
-#    p3m3dTwoStreamParallel
-#    ${IPPL_LIBS}
-#    ${MPI_CXX_LIBRARIES}
-#    boost_timer
-#)
+add_executable (p3m3dTwoStreamParallel p3m3dTwoStreamParallel.cpp)
+target_link_libraries (
+    p3m3dTwoStreamParallel
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    boost_timer
+)
 
-#add_executable (p3m3dRegressionTests p3m3dRegressionTests.cpp)
-#target_link_libraries (
-#    p3m3dRegressionTests
-#    ${IPPL_LIBS}
-#    ${MPI_CXX_LIBRARIES}
-#    boost_timer
-#)
+add_executable (p3m3dRegressionTests p3m3dRegressionTests.cpp)
+target_link_libraries (
+    p3m3dRegressionTests
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    boost_timer
+)
 
 #add_executable (p3m3dMicrobunching p3m3dMicrobunching.cpp)
 #target_link_libraries (
