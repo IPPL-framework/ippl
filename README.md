@@ -5,12 +5,16 @@ version 1.0 of the library which is MPI parallelized and work with only CPUs.
 
 
 ## Compile
-In order to compile IPPL follow the subsequent steps. Load the same set of modules 
-as in the version 2.0 of this library (please see install page).
+In order to compile IPPL follow the subsequent steps. Load the following
+modules.
+
+module use unstable
+module use /afs/psi.ch/project/amas/modulefiles
+module load OPAL/toolchain/2021.1_slurm
 
 ```bash
 cd $BUILD_DIR
-CC=mpicc CXX=mpicxx cmake $SRC_DIR
+CC=mpicc CXX=mpicxx cmake -DENABLE_IPPLTESTS=ON $SRC_DIR
 make -j 4
 ```
 where `$BUILD_DIR` is the build directory and `$SRC_DIR` points to the
