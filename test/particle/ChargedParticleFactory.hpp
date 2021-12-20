@@ -648,7 +648,7 @@ void createParticleDistributionHeating(Particles & P, Vektor<double,3> /*extend_
 
         //the momenta are normally distributed with std deviation sigma_px
 
-        std::default_random_engine generator(0);
+        std::default_random_engine generator(42);
         std::normal_distribution<double> normdistribution(0,1.0);
         auto normal = std::bind(normdistribution, generator);
         std::uniform_real_distribution<double> unidistribution(0,1);
