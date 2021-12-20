@@ -38,7 +38,8 @@
 #include "Particle/PairBuilder/PairConditions.h"
 #include "Utility/PAssert.h"
 #include "Utility/IpplException.h"
-#include "math.h"
+//#include "math.h"
+#include<cmath>
 
 #include <random>
 
@@ -95,11 +96,11 @@ struct SpecializedGreensFunction<3> {
                     elem[2]=Index(k,k);
                     r = real(sqrt(grn.localElement(elem)));
                     if(elem==elem0) {
-                        //grn.localElement(elem) = ke*std::complex<double>(2*alpha/sqrt(M_PI)) ;
+                        //grn.localElement(elem) = ke*std::complex<double>(2*alpha/std::sqrt(M_PI)) ;
                         grn.localElement(elem) = 0 ;
                     }
                     else
-                        grn.localElement(elem) = ke*std::complex<double>(erf(alpha*r)/(r+eps));
+                        grn.localElement(elem) = ke*std::complex<double>(std::erf(alpha*r)/(r+eps));
                 }
             }
         }
@@ -220,7 +221,7 @@ public:
         avg_vel[1]=avg_vel[1]/N;
         avg_vel[2]=avg_vel[2]/N;
 
-        m << "avg_vel[0]= " << avg_vel[0] << " avg_vel[1]= " << avg_vel[1] << " avg_vel[2]= " << avg_vel[2] <<  endl;
+        m << "avg_vel[0]= " << avg_vel[0] << " avg_vel[1]= " << avg_vel[1] << " avg_vel[2]= " << avg_vel[2] <<  endl;
 
         for(unsigned long k = 0; k < this->getLocalNum(); ++k) {
           for(unsigned i = 0; i < Dim; i++) {
@@ -309,7 +310,7 @@ public:
         for(unsigned int i = 0 ; i < Dim; i++) {
             rrms_m(i) = sqrt(rsqsum(i) / N);
             vrms_m(i) = sqrt(vsqsum(i) / N);
-            eps_m(i)  =  std::sqrt(std::max(eps2(i), zero));
+            eps_m(i)  = sqrt(std::max(eps2(i), zero));
             double tmp = rrms_m(i) * vrms_m(i);
             fac(i) = (tmp == 0) ? zero : 1.0 / tmp;
         }
@@ -576,16 +577,16 @@ struct ApplyField {
         for (unsigned d = 0; d<Dim; ++d)
             sqr += diff[d]*diff[d];
 
-        //compute r with softening parameter, unsoftened r is obtained by sqrt(sqr)
+        //compute r with softening parameter, unsoftened r is obtained by std::sqrt(sqr)
         if(sqr!=0) {
             double r = std::sqrt(sqr+eps*eps);
             //for order two transition
             if (P.Q[i]!=0 && P.Q[j]!=0) {
                 //compute potential energy
-                double phi =ke*(1.-erf(a*sqrt(sqr)))/r;
+                double phi =ke*(1.-std::erf(a*std::sqrt(sqr)))/r;
 
                 //compute force
-                Vector_t Fij = ke*C*(diff/sqrt(sqr))*((2.*a*exp(-a*a*sqr))/(sqrt(M_PI)*r)+(1.-erf(a*sqrt(sqr)))/(r*r));
+                Vector_t Fij = ke*C*(diff/std::sqrt(sqr))*((2.*a*std::exp(-a*a*sqr))/(std::sqrt(M_PI)*r)+(1.-std::erf(a*std::sqrt(sqr)))/(r*r));
 
                 //Actual Force is F_ij multiplied by Qi*Qj
                 //The electrical field on particle i is E=F/q_i and hence:
@@ -655,7 +656,7 @@ int main(int argc, char *argv[]){
 
         NDIndex<Dim> domain;
         for (unsigned i=0; i<Dim; i++)
-            domain[i] = domain[i] = Index(nr[i]+1);
+            domain[i] = Index(nr[i]+1);
 
         for (unsigned d=0; d < Dim; ++d)
             decomp[d] = PARALLEL;
@@ -679,7 +680,7 @@ int main(int argc, char *argv[]){
 
         //COmpute and write temperature
         P->compute_temperature();
-        writeTemperature(P,0);
+        //writeTemperature(P,0);
         /////////////////////////////////////////////////////////////////////////////////////////////
 
         /////// Print mesh informations ////////////////////////////////////////////////////////////
@@ -696,6 +697,7 @@ int main(int argc, char *argv[]){
 
         msg<<"number of particles = " << P->getTotalNum() << endl;
         msg<<"Total charge Q      = " << P->total_charge << endl;
+        msg<<"time step dt =" << dt << endl;
 
         ////////////////////////////////////////////////////////////////////////////////////////////
         //std::string fname;
@@ -729,15 +731,15 @@ int main(int argc, char *argv[]){
         IpplTimings::TimerRef particleTimer = IpplTimings::getTimer("ParticleTimer");
 
         for (int it=0; it<iterations; it++) {
-          /*
+          
             P->calcMoments();
             P->computeBeamStatistics();
             writeBeamStatisticsVelocity(P,it);
 
-            P->calc_kinetic_energy();
-            P->calc_field_energy();
-            writeEnergy(P,it);
-          */
+            //P->calc_kinetic_energy();
+            //P->calc_field_energy();
+            //writeEnergy(P,it);
+          
             // advance the particle positions
             // basic leapfrogging timestep scheme.  velocities are offset
             // by half a timestep from the positions.
@@ -780,7 +782,7 @@ int main(int argc, char *argv[]){
                  writeEnergy(P,printid);
                  */
                 P->compute_temperature();
-                writeTemperature(P,it+1);
+                //writeTemperature(P,it+1);
 
                 //dumpH5partVelocity(P,printid++);
             }
