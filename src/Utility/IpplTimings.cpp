@@ -46,16 +46,13 @@
 Timing* IpplTimings::instance = new Timing();
 std::stack<Timing*> IpplTimings::stashedInstance;
 
-//////////////////////////////////////////////////////////////////////
-// default constructor
+
 Timing::Timing():
     TimerList(),
     TimerMap()
 { }
 
 
-//////////////////////////////////////////////////////////////////////
-// destructor
 Timing::~Timing() {
     for (TimerMap_t::iterator it = TimerMap.begin(); it != TimerMap.end(); ++ it) {
         it->second = 0;
@@ -66,7 +63,6 @@ Timing::~Timing() {
 }
 
 
-//////////////////////////////////////////////////////////////////////
 // create a timer, or get one that already exists
 Timing::TimerRef Timing::getTimer(const char *nm) {
     std::string s(nm);
@@ -85,7 +81,6 @@ Timing::TimerRef Timing::getTimer(const char *nm) {
 }
 
 
-//////////////////////////////////////////////////////////////////////
 // start a timer
 void Timing::startTimer(TimerRef t) {
     if (t >= TimerList.size())
@@ -94,7 +89,6 @@ void Timing::startTimer(TimerRef t) {
 }
 
 
-//////////////////////////////////////////////////////////////////////
 // stop a timer, and accumulate it's values
 void Timing::stopTimer(TimerRef t) {
     if (t >= TimerList.size())
@@ -103,7 +97,6 @@ void Timing::stopTimer(TimerRef t) {
 }
 
 
-//////////////////////////////////////////////////////////////////////
 // clear a timer, by turning it off and throwing away its time
 void Timing::clearTimer(TimerRef t) {
     if (t >= TimerList.size())
@@ -112,7 +105,6 @@ void Timing::clearTimer(TimerRef t) {
 }
 
 
-//////////////////////////////////////////////////////////////////////
 // print out the timing results
 void Timing::print() {
     if (TimerList.size() < 1)
@@ -121,10 +113,10 @@ void Timing::print() {
     // report the average time for each timer
     Inform msg("Timings");
     msg << level1
-        << "-----------------------------------------------------------------";
+        << "---------------------------------------------";
     msg << "\n";
     msg << "     Timing results for " << Ippl::Comm->getNodes() << " nodes:" << "\n";
-    msg << "-----------------------------------------------------------------";
+    msg << "---------------------------------------------";
     msg << "\n";
 
     {
@@ -160,11 +152,11 @@ void Timing::print() {
             << " Wall min = " << std::setw(10) << wallmin << "\n"
             << "\n";
     }
-    msg << "-----------------------------------------------------------------";
+    msg << "---------------------------------------------";
     msg << endl;
 }
 
-//////////////////////////////////////////////////////////////////////
+
 // save the timing results into a file
 void Timing::print(const std::string &fn, const std::map<std::string, unsigned int> &problemSize) {
 
@@ -188,7 +180,7 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
 
     *msg << std::setw(27) << "num Nodes"
          << std::setw(11) << "Wall tot\n"
-         << std::string().assign(47,'=')
+         << std::string().assign(37,'=')
          << "\n";
     {
         TimerInfo *tptr = TimerList[0].get();
@@ -210,7 +202,7 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
          << std::setw(10) << "Wall max"
          << std::setw(10) << "Wall min"
          << std::setw(11) << "Wall avg\n"
-         << std::string().assign(87,'=')
+         << std::string().assign(57,'=')
          << "\n";
     for (unsigned int i=0; i < TimerList.size(); ++i) {
         TimerInfo *tptr = TimerList[i].get();
