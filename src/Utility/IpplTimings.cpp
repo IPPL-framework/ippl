@@ -139,9 +139,6 @@ void Timing::print() {
             << "\n";
     }
 
-    auto begin = ++ TimerList.begin();
-    auto end = TimerList.end();
-
     for (unsigned int i=1; i < TimerList.size(); ++i) {
         TimerInfo *tptr = TimerList[i].get();
         double wallmax = 0.0, wallmin = 0.0;
@@ -207,9 +204,6 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
               << " " << std::setw(9) << std::setprecision(4) << walltotal
               << "\n";
     }
-
-    auto begin = ++ TimerList.begin();
-    auto end = TimerList.end();
 
     *msg << "\n"
          << std::setw(27) << "num Nodes"

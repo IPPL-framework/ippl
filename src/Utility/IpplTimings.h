@@ -72,9 +72,6 @@ public:
             t.clear();
             t.start();
         }
-        else {
-            throw std::runtime_error("Timer '" + name + "' already running");
-        }
     }
 
     void stop() {
@@ -82,9 +79,6 @@ public:
             t.stop();
             running = false;
             wallTime += t.elapsed();
-        }
-        else {
-            throw std::runtime_error("Timer '" + name + "' already idling");
         }
     }
 
