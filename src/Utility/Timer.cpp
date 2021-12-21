@@ -3,7 +3,7 @@
 //   This class is used in IpplTimings.
 //
 // Copyright (c) 2019, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-//               2020, Matthias Frey, University of St Andrews, St Andrews, UK
+//               2021, Matthias Frey, University of St Andrews, St Andrews, UK
 // All rights reserved
 //
 // Implemented as part of the PhD thesis
