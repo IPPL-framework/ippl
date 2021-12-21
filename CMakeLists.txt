@@ -62,19 +62,6 @@ if (ENABLE_FFT)
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
 
-set (BOOSTROOT $ENV{BOOST_DIR})
-if (USE_STATIC_LIBRARIES)
-    set (Boost_USE_STATIC_LIBS ON)
-endif ()
-set (Boost_USE_MULTITHREADED OFF)
-set (Boost_USE_STATIC_RUNTIME OFF)
-find_package (Boost 1.66.0
-    REQUIRED COMPONENTS mpi filesystem iostreams regex serialization timer chrono system program_options)
-message (STATUS "Found Boost include dir: ${Boost_INCLUDE_DIR}")
-message (STATUS "Found Boost library dir: ${Boost_LIBRARY_DIRS}")
-message (STATUS "Found Boost libraries: ${Boost_LIBRARIES}")
-include_directories (SYSTEM ${Boost_INCLUDE_DIRS})
-
 add_subdirectory (src)
 
 option (ENABLE_IPPLTESTS "IPPL Tests" OFF)
