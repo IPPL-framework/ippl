@@ -56,7 +56,7 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
     Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
     Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
 
-    Comm = std::make_unique<ippl::Communicate>(mpicomm);
+    Comm = std::make_unique<ippl::Communicate>(argc, argv, mpicomm);
 
     try {
         namespace po = boost::program_options;

@@ -18,16 +18,21 @@
 #include "Communicate.h"
 
 namespace ippl {
-    Communicate::Communicate()
-    : Communicate(MPI_COMM_WORLD)
+    Communicate::Communicate(int& argc, char**& argv)
+    : Communicate(argc, argv, MPI_COMM_WORLD)
     {}
 
 
-    Communicate::Communicate(const MPI_Comm& comm)
+    Communicate::Communicate(int& argc, char**& argv, const MPI_Comm& comm)
     {
+        MPI_Init(&argc, &argv);
         MPI_Comm_dup(comm, &comm_m);
         MPI_Comm_rank(comm_m, &rank_m);
         MPI_Comm_size(comm_m, &size_m);
+    }
+
+    Communicate::~Communicate() {
+        MPI_Finalize();
     }
 
     void Communicate::irecv(int src, int tag,
@@ -40,5 +45,4 @@ namespace ippl {
         MPI_Irecv(ar.getBuffer(), msize,
                 MPI_BYTE, src, tag, comm_m, &request);
     }
-
 }

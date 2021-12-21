@@ -44,9 +44,11 @@ namespace ippl {
 
         using size_type = detail::size_type;
 
-        Communicate();
+        Communicate(int& argc, char**& argv);
 
-        Communicate(const MPI_Comm& comm = MPI_COMM_WORLD);
+        Communicate(int& argc, char**& argv, const MPI_Comm& comm = MPI_COMM_WORLD);
+
+        ~Communicate();
 
         /**
          * Query the current default overallocation factor
