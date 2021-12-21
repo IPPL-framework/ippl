@@ -45,11 +45,11 @@ namespace ippl {
         Mesh& mesh)
     : rlayout_m(fl, mesh)
     {}
- 
+
     template <typename T, unsigned Dim, class Mesh>
     void
     ParticleSpatialLayout<T, Dim, Mesh>::updateLayout(FieldLayout<Dim>& fl, Mesh& mesh) {
-        rlayout_m.changeDomain(fl, mesh); 
+        rlayout_m.changeDomain(fl, mesh);
     }
 
     template <typename T, unsigned Dim, class Mesh>
@@ -104,7 +104,7 @@ namespace ippl {
         MPI_Win win;
         std::vector<size_type> nRecvs(nRanks, 0);
         MPI_Win_create(nRecvs.data(), nRanks*sizeof(size_type), sizeof(size_type),
-                       MPI_INFO_NULL, *Ippl::Comm, &win);
+                       MPI_INFO_NULL, Ippl::getComm(), &win);
 
         std::vector<size_type> nSends(nRanks, 0);
 

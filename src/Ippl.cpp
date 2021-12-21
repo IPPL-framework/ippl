@@ -48,7 +48,6 @@ std::ostream& operator<<(std::ostream& o, const Ippl&) {
 
 
 Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
-: boost::mpi::environment(argc, argv)
 {
     Kokkos::initialize(argc, argv);
 

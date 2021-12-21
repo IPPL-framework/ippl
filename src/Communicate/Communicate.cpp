@@ -24,8 +24,11 @@ namespace ippl {
 
 
     Communicate::Communicate(const MPI_Comm& comm)
-    : boost::mpi::communicator(comm, kind_type::comm_duplicate)
-    {}
+    {
+        MPI_Comm_dup(comm, &comm_m);
+        MPI_Comm_rank(comm_m, &rank_m);
+        MPI_Comm_size(comm_m, &size_m);
+    }
 
     void Communicate::irecv(int src, int tag,
                             archive_type& ar, MPI_Request& request, size_type msize)
@@ -35,7 +38,7 @@ namespace ippl {
             std::abort();
         }
         MPI_Irecv(ar.getBuffer(), msize,
-                MPI_BYTE, src, tag, *this, &request);
+                MPI_BYTE, src, tag, comm_m, &request);
     }
 
 }

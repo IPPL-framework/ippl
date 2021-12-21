@@ -1,6 +1,5 @@
 //
 // Class Communicate
-//   Communicator class using Boost.MPI
 //
 // Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
@@ -18,7 +17,7 @@
 #ifndef IPPL_COMMUNICATE_H
 #define IPPL_COMMUNICATE_H
 
-#include <boost/mpi/communicator.hpp>
+#include <mpi.h>
 #include <map>
 
 // For message size check; see below
@@ -35,13 +34,10 @@ namespace ippl {
      *
      * \remark Calling the plain *this pointer returns the MPI communicator, e.g. MPI_COMM_WORLD.
      */
-    class Communicate : public boost::mpi::communicator
-                      , public TagMaker
+    class Communicate : public TagMaker
     {
 
     public:
-        using kind_type = boost::mpi::comm_create_kind;
-
         // Attention: only works with default spaces
         using archive_type = detail::Archive<>;
         using buffer_type = std::shared_ptr<archive_type>;
@@ -97,12 +93,12 @@ namespace ippl {
 
         [[deprecated]]
         int myNode() const noexcept {
-            return this->rank();
+            return rank_m;
         }
 
         [[deprecated]]
         int getNodes() const noexcept {
-            return this->size();
+            return size_m;
         }
 
 
@@ -111,9 +107,14 @@ namespace ippl {
             return "MPI";
         }
 
+        int size() const noexcept {
+            return size_m;
+        }
 
-        using boost::mpi::communicator::send;
-        using boost::mpi::communicator::recv;
+        int rank() const noexcept {
+            return rank_m;
+        }
+
 
         /*!
          * \warning Only works with default spaces!
@@ -134,10 +135,24 @@ namespace ippl {
          */
         void irecv(int src, int tag, archive_type&, MPI_Request&, size_type msize);
 
+
+        MPI_Comm* getCommunicator() noexcept {
+            return &comm_m;
+        }
+
+        void barrier() noexcept {
+            MPI_Barrier(comm_m);
+        }
+
     private:
         std::map<int, buffer_type> buffers_m;
         double defaultOveralloc_m = 1.0;
+
+        MPI_Comm comm_m;
+        int size_m;
+        int rank_m;
     };
+
 
     template <class Buffer>
     void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar,
@@ -152,7 +167,7 @@ namespace ippl {
         }
         MPI_Status status;
         MPI_Recv(ar.getBuffer(), msize,
-                MPI_BYTE, src, tag, *this, &status);
+                MPI_BYTE, src, tag, comm_m, &status);
 
         buffer.deserialize(ar, nrecvs);
     }
@@ -167,7 +182,7 @@ namespace ippl {
         }
         buffer.serialize(ar, nsends);
         MPI_Isend(ar.getBuffer(), ar.getSize(),
-                  MPI_BYTE, dest, tag, *this, &request);
+                  MPI_BYTE, dest, tag, comm_m, &request);
     }
 }
 
