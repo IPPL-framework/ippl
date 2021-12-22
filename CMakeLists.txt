@@ -84,6 +84,10 @@ endif ()
 
 option (ENABLE_ALPINE, "Alpine" OFF)
 if (ENABLE_ALPINE)
+    if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/Solver/CMakeLists.txt")
+        message (FATAL ERROR "Cannot enable Alpine since Solver not available!")
+    endif ()
+    message (STATUS "Enabling Alpine")
     add_subdirectory (alpine)
 endif ()
 
