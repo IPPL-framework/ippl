@@ -82,6 +82,11 @@ if (ENABLE_IPPLTESTS)
     add_subdirectory (test)
 endif ()
 
+option (ENABLE_ALPINE, "Alpine" OFF)
+if (ENABLE_ALPINE)
+    add_subdirectory (alpine)
+endif ()
+
 option (BUILD_UNIT_TESTS "Unit tests" OFF)
 if (BUILD_UNIT_TESTS)
     find_package (GTest REQUIRED HINT $ENV{GTEST_PREFIX})
