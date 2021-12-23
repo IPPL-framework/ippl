@@ -26,7 +26,6 @@ namespace ippl {
     Communicate::Communicate(int& argc, char**& argv, const MPI_Comm& comm)
     {
         MPI_Init(&argc, &argv);
-        MPI_Comm_dup(comm, &comm_m);
         MPI_Comm_rank(comm_m, &rank_m);
         MPI_Comm_size(comm_m, &size_m);
     }
