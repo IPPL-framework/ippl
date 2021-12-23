@@ -1,0 +1,24 @@
+set (_SRCS
+    )
+
+set (_HDRS
+    SolverAlgorithm.h
+    ElectrostaticsCG.h
+    Electrostatics.h
+    PCG.h
+    Solver.h
+    FFTPoissonSolver.h
+    FFTPoissonSolver.hpp
+    FFTPeriodicPoissonSolver.h
+)
+
+include_DIRECTORIES (
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
+add_ippl_sources (${_SRCS})
+add_ippl_headers (${_HDRS})
+
+add_subdirectory(test)
+
+install (FILES ${_HDRS} DESTINATION include/Solver)
