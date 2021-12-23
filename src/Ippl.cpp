@@ -46,13 +46,12 @@ std::ostream& operator<<(std::ostream& o, const Ippl&) {
 
 
 Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
-: boost::mpi::environment(argc, argv)
 {
     Info = std::make_unique<Inform>("Ippl");
     Warn = std::make_unique<Inform>("Warning", std::cerr);
     Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
 
-    Comm = std::make_unique<ippl::Communicate>(mpicomm);
+    Comm = std::make_unique<ippl::Communicate>(argc, argv, mpicomm);
 
     try {
         int infoLevel = 0;
