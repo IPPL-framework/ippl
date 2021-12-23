@@ -20,8 +20,6 @@
 
 #include <iostream>
 
-#include <boost/mpi/environment.hpp>
-
 #include "Communicate/Communicate.h"
 #include "Utility/Inform.h"
 #include "Types/IpplTypes.h"
@@ -29,7 +27,7 @@
 class Ippl;
 std::ostream& operator<<(std::ostream&, const Ippl&);
 
-class Ippl : public boost::mpi::environment {
+class Ippl {
 
 public:
     // an enumeration used to indicate whether to KEEP command-line arguments
@@ -60,7 +58,7 @@ public:
     // Destructor.
     ~Ippl();
 
-    static MPI_Comm getComm() {return *Ippl::Comm;}
+    static MPI_Comm getComm() {return *Ippl::Comm->getCommunicator();}
 
     // Kill the communication and throw runtime error exception.
     static void abort(const char * = 0);
