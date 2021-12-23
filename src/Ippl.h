@@ -44,7 +44,6 @@ public:
     static std::unique_ptr<Inform> Info;
     static std::unique_ptr<Inform> Warn;
     static std::unique_ptr<Inform> Error;
-    static std::unique_ptr<Inform> Debug;
 
     // Constructor 1: specify the argc, argv values from the cmd line.
     // The second argument controls whether the IPPL-specific command line
@@ -69,6 +68,10 @@ public:
     static void fence();
 
     static void deleteGlobals();
+
+private:
+    bool checkOption(const char* arg, const char* lstr, const char* sstr);
+    int getIntOption(const char* arg);
 };
 
 // macros used to print out messages to the console or a directed file

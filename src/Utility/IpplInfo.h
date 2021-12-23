@@ -36,7 +36,6 @@
  *   Inform *Info ............ used to print out informative messages
  *   Inform *Warn ............ used to print out warning messages
  *   Inform *Error ........... used to print out error messages
- *   Inform *Debug ........... used to print out debugging messages
  *
  * Note that you should use the following macros to access the Inform objects,
  * so that these messages may be left out at compile time:
