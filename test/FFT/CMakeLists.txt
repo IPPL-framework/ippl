@@ -29,6 +29,21 @@ target_link_libraries (
     ${MPI_CXX_LIBRARIES}
     ${Boost_LIBRARIES}
 )
+
+add_executable (TestSine TestSine.cpp)
+target_link_libraries (
+    TestSine
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
+add_executable (TestCos TestCos.cpp)
+target_link_libraries (
+    TestCos
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

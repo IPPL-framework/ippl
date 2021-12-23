@@ -249,7 +249,7 @@ int main(int argc, char *argv[]){
 
     bool isFirstRepartition;
     
-    if (P->loadbalancethreshold_m != 1.0) {
+    if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
         msg << "Starting first repartition" << endl;
         IpplTimings::startTimer(domainDecomposition);
         isFirstRepartition = true;
@@ -355,7 +355,7 @@ int main(int argc, char *argv[]){
 
         // Staggered Leap frog or Boris algorithm as per 
         // https://www.sciencedirect.com/science/article/pii/S2590055219300526
-        // eqns 4(a)-4(c). Not we don't use the Boris trick here and do
+        // eqns 4(a)-4(c). Note we don't use the Boris trick here and do
         // the analytical matrix inversion which is not complex in this case.
         // Here, we assume a constant charge-to-mass ratio of -1 for
         // all the particles hence eliminating the need to store mass as
