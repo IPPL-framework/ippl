@@ -1,9 +1,9 @@
 //
 // Class Timer
 //   This class is used in IpplTimings.
-//   https://www.boost.org/doc/libs/1_70_0/libs/timer/doc/cpu_timers.html
 //
 // Copyright (c) 2019, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
+//               2021, Matthias Frey, University of St Andrews, St Andrews, UK
 // All rights reserved
 //
 // Implemented as part of the PhD thesis
@@ -19,31 +19,28 @@
 // You should have received a copy of the GNU General Public License
 // along with OPAL. If not, see <https://www.gnu.org/licenses/>.
 //
-#ifndef TIMER_H
-#define TIMER_H
+#ifndef IPPL_TIMER_H
+#define IPPL_TIMER_H
 
-#include <boost/timer/timer.hpp>
+#include <chrono>
 
 class Timer
 {
 public:
-    
+    using timer_type = std::chrono::time_point<std::chrono::high_resolution_clock>;
+    using duration_type = std::chrono::duration<double>;
+
     Timer();
-    
+
     void clear();               // Set all accumulated times to 0
     void start();               // Start timer
     void stop();                // Stop timer
-    
-    double clock_time();        // Report clock time accumulated in seconds
-    double user_time();         // Report user time accumlated in seconds
-    double system_time();       // Report system time accumulated in seconds
-    double cpu_time();          // Report total cpu_time which is just user_time + system_time
-    
+
+    double elapsed();         // Report clock time accumulated in seconds
+
 private:
-    double wall_m;
-    double user_m;
-    double sys_m;
-    boost::timer::cpu_timer timer_m;
+    double elapsed_m;
+    timer_type start_m, stop_m;
 };
 
 #endif

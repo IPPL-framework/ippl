@@ -1,41 +1,42 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- *
- *
- * Visit http://people.web.psi.ch/adelmann/ for more details
- *
- ***************************************************************************/
-
+//
+// Class IpplTimings
+//   IpplTimings - a simple singleton class which lets the user create and
+//   timers that can be printed out at the end of the program.
+//
+//   General usage
+//    1) create a timer:
+//       IpplTimings::TimerRef val = IpplTimings::getTimer("timer name");
+//    This will either create a new one, or return a ref to an existing one
+//
+//    2) start a timer:
+//       IpplTimings::startTimer(val);
+//    This will start the referenced timer running.  If it is already running,
+//    it will not change anything.
+//
+//    3) stop a timer:
+//       IpplTimings::stopTimer(val);
+//    This will stop the timer, assuming it was running, and add in the
+//    time to the accumulating time for that timer.
+//
+//    4) print out the results:
+//       IpplTimings::print();
+//
+// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #ifndef IPPL_TIMINGS_H
 #define IPPL_TIMINGS_H
 
-/*************************************************************************
- * IpplTimings - a simple singleton class which lets the user create and
- *   timers that can be printed out at the end of the program.
- *
- * General usage
- *  1) create a timer:
- *     IpplTimings::TimerRef val = IpplTimings::getTimer("timer name");
- *  This will either create a new one, or return a ref to an existing one
- *
- *  2) start a timer:
- *     IpplTimings::startTimer(val);
- *  This will start the referenced timer running.  If it is already running,
- *  it will not change anything.
- *
- *  3) stop a timer:
- *     IpplTimings::stopTimer(val);
- *  This will stop the timer, assuming it was running, and add in the
- *  time to the accumulating time for that timer.
- *
- *  4) print out the results:
- *     IpplTimings::print();
- *
- *************************************************************************/
-
-// include files
 #include "Utility/Timer.h"
 #include "Utility/my_auto_ptr.h"
 #include "Utility/PAssert.h"
@@ -46,9 +47,7 @@
 #include <limits>
 #include <stack>
 
-#ifdef TIMERDEBUG
 #include <exception>
-#endif
 
 // a simple class used to store timer values
 class IpplTimerInfo
@@ -58,7 +57,7 @@ public:
     typedef unsigned int TimerRef;
 
     // constructor
-    IpplTimerInfo() : name(""), cpuTime(0.0), wallTime(0.0), indx(std::numeric_limits<TimerRef>::max()) {
+    IpplTimerInfo() : name(""), wallTime(0.0), indx(std::numeric_limits<TimerRef>::max()) {
         clear();
     }
 
@@ -73,25 +72,14 @@ public:
             t.clear();
             t.start();
         }
-#ifdef TIMERDEBUG
-        else {
-            throw std::runtime_error("Timer '" + name + "' already running");
-        }
-#endif
     }
 
     void stop() {
         if (running) {
             t.stop();
             running = false;
-            cpuTime += t.cpu_time();
-            wallTime += t.clock_time();
+            wallTime += t.elapsed();
         }
-#ifdef TIMERDEBUG
-        else {
-            throw std::runtime_error("Timer '" + name + "' already idling");
-        }
-#endif
     }
 
     void clear() {
@@ -107,7 +95,6 @@ public:
     std::string name;
 
     // the accumulated time
-    double cpuTime;
     double wallTime;
 
     // is the timer turned on right now?
@@ -235,14 +222,3 @@ private:
 };
 
 #endif
-
-/***************************************************************************
- * $RCSfile: IpplTimings.h,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:33 $
- ***************************************************************************/
-
-/***************************************************************************
- * $RCSfile: addheaderfooter,v $   $Author: adelmann $
- * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:17 $
- * IPPL_VERSION_ID: $Id: addheaderfooter,v 1.1.1.1 2003/01/23 07:40:17 adelmann Exp $
- ***************************************************************************/
