@@ -232,7 +232,7 @@ int main(int argc, char *argv[]){
 
     bool isFirstRepartition;
 
-    if (P->loadbalancethreshold_m != 1.0) {
+    if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
         msg << "Starting first repartition" << endl;
         IpplTimings::startTimer(domainDecomposition);
         isFirstRepartition = true;

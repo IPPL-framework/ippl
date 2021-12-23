@@ -360,19 +360,14 @@ public:
     void initFFTSolver() {
         ippl::ParameterList sp;
         sp.add("output_type", Solver_t::GRAD);
+        sp.add("use_heffte_defaults", false);  
+        sp.add("use_pencils", true);  
+        sp.add("use_reorder", false);  
+        sp.add("use_gpu_aware", true);  
+        sp.add("comm", ippl::p2p_pl);  
+        sp.add("r2c_direction", 0);  
 
-        ippl::FFTParams fftParams;
-
-#ifdef Heffte_ENABLE_CUDA
-        fftParams.setAllToAll( false );
-#else
-        fftParams.setAllToAll( true );
-#endif
-        fftParams.setPencils( true );
-        fftParams.setReorder( false );
-        fftParams.setRCDirection( 0 );
-
-        solver_mp = std::make_shared<Solver_t>(fftParams);
+        solver_mp = std::make_shared<Solver_t>();
 
         solver_mp->mergeParameters(sp);
 
