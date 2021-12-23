@@ -7,10 +7,15 @@ set (_HDRS
     Electrostatics.h
     PCG.h
     Solver.h
-    FFTPoissonSolver.h
-    FFTPoissonSolver.hpp
-    FFTPeriodicPoissonSolver.h
 )
+
+if (ENABLE_FFT)
+    list (APPEND _HDRS
+                 FFTPoissonSolver.h
+                 FFTPoissonSolver.hpp
+                 FFTPeriodicPoissonSolver.h
+    )
+endif ()
 
 include_DIRECTORIES (
     ${CMAKE_CURRENT_SOURCE_DIR}

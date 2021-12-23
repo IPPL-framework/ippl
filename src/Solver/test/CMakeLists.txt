@@ -26,40 +26,42 @@ target_link_libraries (
     ${MPI_CXX_LIBRARIES}
 )
 
-add_executable (TestGaussian_convergence TestGaussian_convergence.cpp)
-target_link_libraries (
-    TestGaussian_convergence
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
+if (ENABLE_FFT)
+    add_executable (TestGaussian_convergence TestGaussian_convergence.cpp)
+    target_link_libraries (
+        TestGaussian_convergence
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
 
-add_executable (TestSphere TestSphere.cpp)
-target_link_libraries (
-    TestSphere
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
+    add_executable (TestSphere TestSphere.cpp)
+    target_link_libraries (
+        TestSphere
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
 
-add_executable (Budiardja_plot Budiardja_plot.cpp)
-target_link_libraries (
-    Budiardja_plot
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
+    add_executable (Budiardja_plot Budiardja_plot.cpp)
+    target_link_libraries (
+        Budiardja_plot
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
 
-add_executable (TestGaussian TestGaussian.cpp)
-target_link_libraries (
-    TestGaussian
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
+    add_executable (TestGaussian TestGaussian.cpp)
+    target_link_libraries (
+        TestGaussian
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
 
-add_executable (TestFFTPeriodicPoissonSolver TestFFTPeriodicPoissonSolver.cpp)
-target_link_libraries (
-    TestFFTPeriodicPoissonSolver
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
+    add_executable (TestFFTPeriodicPoissonSolver TestFFTPeriodicPoissonSolver.cpp)
+    target_link_libraries (
+        TestFFTPeriodicPoissonSolver
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
+endif ()
 
 # vi: set et ts=4 sw=4 sts=4:
 
