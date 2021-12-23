@@ -1,16 +1,43 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- *
- ***************************************************************************/
-
+//
+// Class IpplTimings
+//   IpplTimings - a simple singleton class which lets the user create and
+//   timers that can be printed out at the end of the program.
+//
+//   General usage
+//    1) create a timer:
+//       IpplTimings::TimerRef val = IpplTimings::getTimer("timer name");
+//    This will either create a new one, or return a ref to an existing one
+//
+//    2) start a timer:
+//       IpplTimings::startTimer(val);
+//    This will start the referenced timer running.  If it is already running,
+//    it will not change anything.
+//
+//    3) stop a timer:
+//       IpplTimings::stopTimer(val);
+//    This will stop the timer, assuming it was running, and add in the
+//    time to the accumulating time for that timer.
+//
+//    4) print out the results:
+//       IpplTimings::print();
+//
+// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 #include "Utility/IpplTimings.h"
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
 #include "Ippl.h"
-
-#include <boost/algorithm/string/predicate.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -19,16 +46,13 @@
 Timing* IpplTimings::instance = new Timing();
 std::stack<Timing*> IpplTimings::stashedInstance;
 
-//////////////////////////////////////////////////////////////////////
-// default constructor
+
 Timing::Timing():
     TimerList(),
     TimerMap()
 { }
 
 
-//////////////////////////////////////////////////////////////////////
-// destructor
 Timing::~Timing() {
     for (TimerMap_t::iterator it = TimerMap.begin(); it != TimerMap.end(); ++ it) {
         it->second = 0;
@@ -39,7 +63,6 @@ Timing::~Timing() {
 }
 
 
-//////////////////////////////////////////////////////////////////////
 // create a timer, or get one that already exists
 Timing::TimerRef Timing::getTimer(const char *nm) {
     std::string s(nm);
@@ -58,7 +81,6 @@ Timing::TimerRef Timing::getTimer(const char *nm) {
 }
 
 
-//////////////////////////////////////////////////////////////////////
 // start a timer
 void Timing::startTimer(TimerRef t) {
     if (t >= TimerList.size())
@@ -67,7 +89,6 @@ void Timing::startTimer(TimerRef t) {
 }
 
 
-//////////////////////////////////////////////////////////////////////
 // stop a timer, and accumulate it's values
 void Timing::stopTimer(TimerRef t) {
     if (t >= TimerList.size())
@@ -76,7 +97,6 @@ void Timing::stopTimer(TimerRef t) {
 }
 
 
-//////////////////////////////////////////////////////////////////////
 // clear a timer, by turning it off and throwing away its time
 void Timing::clearTimer(TimerRef t) {
     if (t >= TimerList.size())
@@ -85,7 +105,6 @@ void Timing::clearTimer(TimerRef t) {
 }
 
 
-//////////////////////////////////////////////////////////////////////
 // print out the timing results
 void Timing::print() {
     if (TimerList.size() < 1)
@@ -94,69 +113,50 @@ void Timing::print() {
     // report the average time for each timer
     Inform msg("Timings");
     msg << level1
-        << "-----------------------------------------------------------------";
+        << "---------------------------------------------";
     msg << "\n";
     msg << "     Timing results for " << Ippl::Comm->getNodes() << " nodes:" << "\n";
-    msg << "-----------------------------------------------------------------";
+    msg << "---------------------------------------------";
     msg << "\n";
 
     {
         TimerInfo *tptr = TimerList[0].get();
-        double walltotal = 0.0, cputotal = 0.0;
-        MPI_Reduce(&tptr->wallTime, &walltotal, 1, 
-                      MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->cpuTime, &cputotal, 1, 
-                      MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        double walltotal = 0.0;
+        MPI_Reduce(&tptr->wallTime, &walltotal, 1,
+                   MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
         msg << tptr->name.substr(0,lengthName)
             << std::string().assign(20 - lengthName,'.')
-            << " Wall tot = " << std::setw(10) << walltotal << ","
-            << " CPU tot = " << std::setw(10) << cputotal << "\n"
+            << " Wall tot = " << std::setw(10) << walltotal << "\n"
             << "\n";
     }
 
-    auto begin = ++ TimerList.begin();
-    auto end = TimerList.end();
-    std::sort(begin, end, [](const my_auto_ptr<TimerInfo>& a, const my_auto_ptr<TimerInfo>& b)
-              {
-                  return boost::ilexicographical_compare(a->name, b->name);
-              });
-
     for (unsigned int i=1; i < TimerList.size(); ++i) {
         TimerInfo *tptr = TimerList[i].get();
-        double wallmax = 0.0, cpumax = 0.0, wallmin = 0.0, cpumin = 0.0;
-        double wallavg = 0.0, cpuavg = 0.0;
-        MPI_Reduce(&tptr->wallTime, &wallmax, 1, 
+        double wallmax = 0.0, wallmin = 0.0;
+        double wallavg = 0.0;
+        MPI_Reduce(&tptr->wallTime, &wallmax, 1,
                       MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->cpuTime, &cpumax, 1, 
-                      MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->wallTime, &wallmin, 1, 
+        MPI_Reduce(&tptr->wallTime, &wallmin, 1,
                       MPI_DOUBLE, MPI_MIN, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->cpuTime, &cpumin, 1, 
-                      MPI_DOUBLE, MPI_MIN, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->wallTime, &wallavg, 1, 
-                      MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->cpuTime, &cpuavg, 1, 
+        MPI_Reduce(&tptr->wallTime, &wallavg, 1,
                       MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
 
         msg << tptr->name.substr(0,lengthName)
             << std::string().assign(20 - lengthName, '.')
-            << " Wall max = " << std::setw(10) << wallmax << ","
-            << " CPU max = " << std::setw(10) << cpumax << "\n"
+            << " Wall max = " << std::setw(10) << wallmax << "\n"
             << std::string().assign(20,' ')
-            << " Wall avg = " << std::setw(10) << wallavg / Ippl::Comm->getNodes() << ","
-            << " CPU avg = " << std::setw(10) << cpuavg / Ippl::Comm->getNodes() << "\n"
+            << " Wall avg = " << std::setw(10) << wallavg / Ippl::Comm->getNodes() << "\n"
             << std::string().assign(20,' ')
-            << " Wall min = " << std::setw(10) << wallmin << ","
-            << " CPU min = " << std::setw(10) << cpumin << "\n"
+            << " Wall min = " << std::setw(10) << wallmin << "\n"
             << "\n";
     }
-    msg << "-----------------------------------------------------------------";
+    msg << "---------------------------------------------";
     msg << endl;
 }
 
-//////////////////////////////////////////////////////////////////////
+
 // save the timing results into a file
 void Timing::print(const std::string &fn, const std::map<std::string, unsigned int> &problemSize) {
 
@@ -169,16 +169,6 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
     timer_stream = new std::ofstream;
     timer_stream->open( fn.c_str(), std::ios::out );
     msg = new Inform( 0, *timer_stream, 0 );
-    // report the average time for each timer
-    // Inform msg("Timings");
-    /*
-     *msg << "---------------------------------------------------------------------------";
-     *msg << "\n";
-     *msg << "     Timing results for " << Ippl::Comm->getNodes() << " nodes:" << "\n";
-     *msg << "---------------------------------------------------------------------------";
-     *msg << " name nodes (cputot cpumax) (walltot wallmax) cpumin wallmin cpuav wallav  ";
-     *msg << "\n";
-     */
 
     if (problemSize.size() > 0) {
         *msg << "Problem size:\n";
@@ -189,60 +179,40 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
     }
 
     *msg << std::setw(27) << "num Nodes"
-         << std::setw(10) << "CPU tot"
          << std::setw(11) << "Wall tot\n"
-         << std::string().assign(47,'=')
+         << std::string().assign(37,'=')
          << "\n";
     {
         TimerInfo *tptr = TimerList[0].get();
-        double walltotal = 0.0, cputotal = 0.0;
-        MPI_Reduce(&tptr->wallTime, &walltotal, 1, 
-                      MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->cpuTime, &cputotal, 1, 
-                      MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        double walltotal = 0.0;
+        MPI_Reduce(&tptr->wallTime, &walltotal, 1,
+                   MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
         *msg << tptr->name.substr(0,lengthName);
         for (int j=lengthName; j < 20; ++j) {
             *msg << ".";
         }
         *msg  << " " << std::setw(6)  << Ippl::Comm->getNodes()
-              << " " << std::setw(9) << std::setprecision(4) << cputotal
               << " " << std::setw(9) << std::setprecision(4) << walltotal
               << "\n";
     }
 
-    auto begin = ++ TimerList.begin();
-    auto end = TimerList.end();
-    std::sort(begin, end, [](const my_auto_ptr<TimerInfo>& a, const my_auto_ptr<TimerInfo>& b)
-              {
-                  return boost::ilexicographical_compare(a->name, b->name);
-              });
-
     *msg << "\n"
          << std::setw(27) << "num Nodes"
-         << std::setw(10) << "CPU max"
          << std::setw(10) << "Wall max"
-         << std::setw(10) << "CPU min"
          << std::setw(10) << "Wall min"
-         << std::setw(10) << "CPU avg"
          << std::setw(11) << "Wall avg\n"
-         << std::string().assign(87,'=')
+         << std::string().assign(57,'=')
          << "\n";
     for (unsigned int i=0; i < TimerList.size(); ++i) {
         TimerInfo *tptr = TimerList[i].get();
-        double wallmax = 0.0, cpumax = 0.0, wallmin = 0.0, cpumin = 0.0;
-        double wallavg = 0.0, cpuavg = 0.0;
-        MPI_Reduce(&tptr->wallTime, &wallmax, 1, 
+        double wallmax = 0.0, wallmin = 0.0;
+        double wallavg = 0.0;
+        MPI_Reduce(&tptr->wallTime, &wallmax, 1,
                       MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->cpuTime, &cpumax, 1, 
-                      MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->wallTime, &wallmin, 1, 
+        MPI_Reduce(&tptr->wallTime, &wallmin, 1,
                       MPI_DOUBLE, MPI_MIN, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->cpuTime, &cpumin, 1, 
-                      MPI_DOUBLE, MPI_MIN, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->wallTime, &wallavg, 1, 
-                      MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->cpuTime, &cpuavg, 1, 
+        MPI_Reduce(&tptr->wallTime, &wallavg, 1,
                       MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
         *msg << tptr->name.substr(0,lengthName);
@@ -250,11 +220,8 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
             *msg << ".";
         }
         *msg << " " << std::setw(6) << Ippl::Comm->getNodes()
-             << " " << std::setw(9) << std::setprecision(4) << cpumax
              << " " << std::setw(9) << std::setprecision(4) << wallmax
-             << " " << std::setw(9) << std::setprecision(4) << cpumin
              << " " << std::setw(9) << std::setprecision(4) << wallmin
-             << " " << std::setw(9) << std::setprecision(4) << cpuavg / Ippl::Comm->getNodes()
              << " " << std::setw(9) << std::setprecision(4) << wallavg / Ippl::Comm->getNodes()
              << endl;
     }
