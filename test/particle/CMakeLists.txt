@@ -23,18 +23,6 @@ target_link_libraries (TestGather ${IPPL_LIBS})
 add_executable (PIC3d PIC3d.cpp)
 target_link_libraries (PIC3d ${IPPL_LIBS})
 
-add_executable (PenningTrap PenningTrap.cpp)
-target_link_libraries (PenningTrap ${IPPL_LIBS})
-
-add_executable (UniformPlasmaTest UniformPlasmaTest.cpp)
-target_link_libraries (UniformPlasmaTest ${IPPL_LIBS})
-
-add_executable (LandauDamping LandauDamping.cpp)
-target_link_libraries (LandauDamping ${IPPL_LIBS})
-
-add_executable (BumponTailInstability BumponTailInstability.cpp)
-target_link_libraries (BumponTailInstability ${IPPL_LIBS})
-
 add_executable (benchmarkParticleUpdate benchmarkParticleUpdate.cpp)
 target_link_libraries (benchmarkParticleUpdate ${IPPL_LIBS})
 
