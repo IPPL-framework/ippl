@@ -192,7 +192,7 @@ int main(int argc, char *argv[]){
 
     P->scatterCIC(totalP, 0, hr);
     P->initializeORB(FL, mesh);
-    bool isFirstRepartition = false;
+    bool fromAnalyticDensity = false;
 
     IpplTimings::startTimer(SolveTimer);
     P->solver_mp->solve();
@@ -244,7 +244,7 @@ int main(int argc, char *argv[]){
         if (P->balance(totalP, it+1)) {
            msg << "Starting repartition" << endl;
            IpplTimings::startTimer(domainDecomposition);
-           P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+           P->repartition(FL, mesh, bunchBuffer, fromAnalyticDensity);
            IpplTimings::stopTimer(domainDecomposition);
         }
 
