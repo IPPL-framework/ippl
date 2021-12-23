@@ -14,6 +14,7 @@ if (ENABLE_FFT)
                  FFTPoissonSolver.h
                  FFTPoissonSolver.hpp
                  FFTPeriodicPoissonSolver.h
+                 FFTPeriodicPoissonSolver.hpp
     )
 endif ()
 
