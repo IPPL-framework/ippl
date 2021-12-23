@@ -62,6 +62,8 @@ if (ENABLE_FFT)
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
 
+option (ENABLE_SOLVERS "Enable IPPL solvers" OFF)
+
 add_subdirectory (src)
 
 option (ENABLE_IPPLTESTS "IPPL Tests" OFF)
@@ -71,8 +73,11 @@ endif ()
 
 option (ENABLE_ALPINE, "Alpine" OFF)
 if (ENABLE_ALPINE)
-    if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/Solver/CMakeLists.txt")
-        message (FATAL_ERROR "Cannot enable Alpine since Solver not available!")
+    if (NOT ENABLE_SOLVERS)
+        message (FATAL_ERROR "Cannot enable Alpine since Solver not enabled (-DENABLE_SOLVERS=ON)!")
+    endif ()
+    if (NOT ENABLE_FFT)
+        message (FATAL_ERROR "Cannot enable Alpine since FFT not enabled (-DENABLE_FFT=ON)!")
     endif ()
     message (STATUS "Enabling Alpine")
     add_subdirectory (alpine)
