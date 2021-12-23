@@ -30,23 +30,19 @@
 // printVersion: print out a version summary.  If the argument is true,
 // print out a detailed listing, otherwise a summary.
 void IpplInfo::printVersion(void) {
-    INFOMSG("IPPL Framework version " << version() << endl);
-    INFOMSG("Last build date: " << compileDate() << " by user ");
-    INFOMSG(compileUser() << endl);
-    INFOMSG("Built for machine: " << compileMachine() << endl);
+    std::cout << "IPPL Framework version " << version() << std::endl;
+    std::cout << "Last build date: " << compileDate() << " by user ";
+    std::cout << compileUser() << std::endl;
+    std::cout << "Built for machine: " << compileMachine() << std::endl;
 }
 
 
 void IpplInfo::printHelp(char** argv) {
-    INFOMSG("Usage: " << argv[0] << " [<option> <option> ...]\n");
-    INFOMSG("       The possible values for <option> are:\n");
-    INFOMSG("   --summary           : Print IPPL lib summary at start.\n");
-    INFOMSG("   --time              : Show total time used in execution.\n");
-    INFOMSG("   --notime            : Do not show timing info (default).\n");
-    INFOMSG("   --info <n>          : Set info message level.  0 = off.\n");
-    INFOMSG("   --warn <n>          : Set warning message level.  0 = off.\n");
-    INFOMSG("   --error <n>         : Set error message level.  0 = off.\n");
-    INFOMSG("   --debug <n>         : Set debug message level.  0 = off.\n");
+    std::cout << "Usage: " << argv[0] << " [<option> <option> ...]\n";
+    std::cout << "The possible values for <option> are:\n";
+    std::cout << "   --info <n>          : Set info message level.  0 = off.\n";
+    std::cout << "   --help              : Print IPPL help message\n";
+    std::cout << "   --kokkos-help       : Print Kokkos help message\n";
 }
 
 /////////////////////////////////////////////////////////////////////

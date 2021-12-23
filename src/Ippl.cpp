@@ -17,23 +17,21 @@
 //
 #include "Ippl.h"
 #include "Utility/IpplInfo.h"
+#include <cstring>
+#include <cstdlib>
 
 #include <Kokkos_Core.hpp>
-
-#include <boost/program_options.hpp>
 
 // public static members of IpplInfo, initialized to default values
 std::unique_ptr<ippl::Communicate>  Ippl::Comm = 0;
 std::unique_ptr<Inform> Ippl::Info = 0;
 std::unique_ptr<Inform> Ippl::Warn = 0;
 std::unique_ptr<Inform> Ippl::Error = 0;
-std::unique_ptr<Inform> Ippl::Debug = 0;
 
 void Ippl::deleteGlobals() {
     Info.reset();
     Warn.reset();
     Error.reset();
-    Debug.reset();
 }
 
 // print out current state to the given output stream
@@ -48,104 +46,77 @@ std::ostream& operator<<(std::ostream& o, const Ippl&) {
 
 
 Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
-: boost::mpi::environment(argc, argv)
 {
-    Kokkos::initialize(argc, argv);
-
     Info = std::make_unique<Inform>("Ippl");
     Warn = std::make_unique<Inform>("Warning", std::cerr);
     Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
-    Debug = std::make_unique<Inform>("**DEBUG**", std::cerr, INFORM_ALL_NODES);
 
-    Comm = std::make_unique<ippl::Communicate>(mpicomm);
+    Comm = std::make_unique<ippl::Communicate>(argc, argv, mpicomm);
 
     try {
-        namespace po = boost::program_options;
-
-        /*
-         * supported options
-         */
-        po::options_description desc("Ippl options");
-
         int infoLevel = 0;
-        int warnLevel = 0;
-        int errorLevel = 0;
-        int debugLevel = 0;
+        int nargs = 0;
+        while (nargs < argc) {
 
-        desc.add_options()
-            ("ippl-help,h", "print Ippl help")
-            ("ippl-version", "print Ippl version")
-            ("summary", "print summary of Ippl library")
+            if (checkOption(argv[nargs], "--help", "-h")) {
+                if (Comm->myNode() == 0) {
+                    IpplInfo::printHelp(argv);
+                }
+                std::exit(0);
+            } else if (checkOption(argv[nargs], "--info", "-i")) {
+                ++nargs;
+                if (nargs >= argc) {
+                    throw std::runtime_error("Missing info level value!");
+                }
+                infoLevel = getIntOption(argv[nargs]);
+            } else if (checkOption(argv[nargs], "--version", "-v")) {
+                IpplInfo::printVersion();
+                std::string options = IpplInfo::compileOptions();
+                std::string header("Compile-time options: ");
+                while (options.length() > 58) {
+                    std::string line = options.substr(0, 58);
+                    size_t n = line.find_last_of(' ');
+                    INFOMSG(header << line.substr(0, n) << "\n");
 
-            ("info",
-                po::value<int>(&infoLevel)->default_value(infoLevel),
-                "set info message level")
-
-            ("warn",
-                po::value<int>(&warnLevel)->default_value(warnLevel),
-                "set warning message level")
-
-            ("error",
-                po::value<int>(&errorLevel)->default_value(errorLevel),
-                "set error message level")
-
-            ("debug",
-                po::value<int>(&debugLevel)->default_value(debugLevel),
-                "set debug message level")
-        ;
-
-        po::variables_map vm;
-        po::store(po::parse_command_line(argc, argv, desc), vm);
-        po::notify(vm);
-
-        if (vm.count("ippl-help")) {
-            INFOMSG(desc << endl);
-            std::exit(0);
-        }
-
-        if (vm.count("ippl-version")) {
-            IpplInfo::printVersion();
-            std::string options = IpplInfo::compileOptions();
-            std::string header("Compile-time options: ");
-            while (options.length() > 58) {
-                std::string line = options.substr(0, 58);
-                size_t n = line.find_last_of(' ');
-                INFOMSG(header << line.substr(0, n) << "\n");
-
-                header = std::string(22, ' ');
-                options = options.substr(n + 1);
+                    header = std::string(22, ' ');
+                    options = options.substr(n + 1);
+                }
+                INFOMSG(header << options << endl);
+                std::exit(0);
+            } else if (nargs > 0 && std::strstr(argv[nargs], "--kokkos") == nullptr) {
+                throw std::runtime_error(std::string("Unknown option '") + argv[nargs] + "'.");
             }
-            INFOMSG(header << options << endl);
-            std::exit(0);
+            ++nargs;
         }
 
+        Info->setOutputLevel(infoLevel);
+        Error->setOutputLevel(0);
+        Warn->setOutputLevel(0);
 
-        if (vm.count("summary")) {
-            INFOMSG(*this << endl);
-            std::exit(0);
+    } catch(const std::exception& e) {
+        if (Comm->myNode() == 0) {
+            std::cerr << e.what() << std::endl;
         }
-
-        if (vm.count("info")) {
-            Info->setOutputLevel(infoLevel);
-        }
-
-        if (vm.count("warn")) {
-            Warn->setOutputLevel(warnLevel);
-        }
-
-        if (vm.count("error")) {
-            Error->setOutputLevel(errorLevel);
-        }
-
-        if (vm.count("debug")) {
-            Debug->setOutputLevel(debugLevel);
-        }
-
-    } catch(const std::exception&) {
-        /* do nothing here since a user might have passed Kokkos
-         * arguments
-         */
+        std::exit(0);
     }
+
+    Kokkos::initialize(argc, argv);
+}
+
+
+bool Ippl::checkOption(const char* arg, const char* lstr, const char* sstr) {
+    return (std::strcmp(arg, lstr) == 0) || (std::strcmp(arg, sstr) == 0);
+}
+
+int Ippl::getIntOption(const char* arg) {
+    std::string sarg = arg;
+
+    // 21. Dec. 2021
+    // https://stackoverflow.com/questions/8888748/how-to-check-if-given-c-string-or-char-contains-only-digits
+    if (!std::all_of(sarg.begin(), sarg.end(), ::isdigit)) {
+        throw std::runtime_error("Missing integer command line argument!");
+    }
+    return std::atoi(arg);
 }
 
 
