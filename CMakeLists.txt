@@ -79,7 +79,7 @@ if (ENABLE_ALPINE)
     if (NOT ENABLE_FFT)
         message (FATAL_ERROR "Cannot enable Alpine since FFT not enabled (-DENABLE_FFT=ON)!")
     endif ()
-    message (STATUS "Enabling Alpine")
+    message (STATUS "Enable Alpine")
     add_subdirectory (alpine)
 endif ()
 
