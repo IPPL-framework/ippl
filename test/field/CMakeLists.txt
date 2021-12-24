@@ -7,7 +7,6 @@ include_directories (
 
 link_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Boost_LIBRARY_DIRS}
     ${Kokkos_DIR}/..
 )
 
@@ -19,7 +18,6 @@ target_link_libraries (
     TestLaplace
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
 )
 
 add_executable (TestFieldBC TestFieldBC.cpp)
@@ -27,7 +25,6 @@ target_link_libraries (
     TestFieldBC
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
 )
 
 add_executable (TestHalo TestHalo.cpp)
@@ -35,7 +32,6 @@ target_link_libraries (
     TestHalo
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
 )
 
 # vi: set et ts=4 sw=4 sts=4:
