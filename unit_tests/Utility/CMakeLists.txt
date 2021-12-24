@@ -9,7 +9,6 @@ include_directories (
 link_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${GTEST_LIBRARY_DIRS}
-    ${Boost_LIBRARY_DIRS}
     ${Kokkos_DIR}/..
 )
 
@@ -19,7 +18,6 @@ target_link_libraries (
     ippl
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
-    ${Boost_LIBRARIES}
 )
 
 # vi: set et ts=4 sw=4 sts=4:
