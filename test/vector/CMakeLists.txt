@@ -7,7 +7,6 @@ include_directories (
 
 link_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Boost_LIBRARY_DIRS}
     ${Kokkos_DIR}/..
 )
 
@@ -19,7 +18,6 @@ target_link_libraries (
     TestVector
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
 )
 
 add_executable (TestVector2 TestVector2.cpp)
@@ -27,7 +25,6 @@ target_link_libraries (
     TestVector2
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
 )
 
 add_executable (TestVector3 TestVector3.cpp)
@@ -35,7 +32,6 @@ target_link_libraries (
     TestVector3
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
 )
 
 # vi: set et ts=4 sw=4 sts=4:

@@ -1,6 +1,5 @@
 //
 // Class Communicate
-//   Communicator class using Boost.MPI
 //
 // Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved

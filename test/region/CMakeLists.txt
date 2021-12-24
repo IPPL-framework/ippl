@@ -7,7 +7,6 @@ include_directories (
 
 link_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Boost_LIBRARY_DIRS}
     ${Kokkos_DIR}/..
 )
 
@@ -19,7 +18,6 @@ target_link_libraries (
     TestPRegion
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
 )
 
 add_executable (TestNDRegion TestNDRegion.cpp)
@@ -27,14 +25,13 @@ target_link_libraries (
     TestNDRegion
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARIES}
 )
 
 
-# vi: set et ts=4 sw=4 sts=4:                                                                                                                                                                                                                
-# Local Variables:                                                                                                                                                                                                                           
-# mode: cmake                                                                                                                                                                                                                                
-# cmake-tab-width: 4                                                                                                                                                                                                                          
-# indent-tabs-mode: nil                                                                                                                                                                                                                       
-# require-final-newline: nil                                                                                                                                                                                                                  
+# vi: set et ts=4 sw=4 sts=4:
+# Local Variables:
+# mode: cmake
+# cmake-tab-width: 4
+# indent-tabs-mode: nil
+# require-final-newline: nil
 # End:

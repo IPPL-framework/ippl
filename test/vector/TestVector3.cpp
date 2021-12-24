@@ -5,8 +5,6 @@
 
 #include <typeinfo>
 
-#include <boost/core/demangle.hpp>
-
 #include <chrono>
 
 
@@ -104,9 +102,6 @@ int main() {
     typedef Vector<double, dim> vector_type;
 
     vector_type x(1.0), y(2.0), z(0.0);
-
-    const char* name = typeid(x + y + x + x).name();
-    std::cout << boost::core::demangle( name ) << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
 
