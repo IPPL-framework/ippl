@@ -2,8 +2,6 @@
 
 #include <typeinfo>
 
-#include <boost/core/demangle.hpp>
-
 int main(int argc, char *argv[]) {
 
     Ippl ippl(argc,argv);
@@ -18,11 +16,6 @@ int main(int argc, char *argv[]) {
 
 			     region += 1.0;
 			 });
-
-    //    const char* name = typeid(a * x * y * a).name();
-
-    //std::cout << z << std::endl;
-    //std::cout << boost::core::demangle( name ) << std::endl;
 
     return 0;
 }

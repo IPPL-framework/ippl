@@ -7,11 +7,10 @@ include_directories (
 
 link_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Boost_LIBRARY_DIRS}
     ${Kokkos_DIR}/..
 )
 
-set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
+set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
 add_executable (TestScatter TestScatter.cpp)
