@@ -16,8 +16,6 @@ int main(int argc, char *argv[]) {
 
     z = a * x * y * a;
 
-    const char* name = typeid(a * x * y * a).name();
-
     std::cout << z << std::endl;
 
     return 0;
