@@ -83,9 +83,10 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
                 }
                 INFOMSG(header << options << endl);
                 std::exit(0);
-            } else if (nargs > 0 && std::strstr(argv[nargs], "--kokkos") == nullptr) {
-                throw std::runtime_error(std::string("Unknown option '") + argv[nargs] + "'.");
-            }
+            } 
+            //else if (nargs > 0 && std::strstr(argv[nargs], "--kokkos") == nullptr) {
+            //    throw std::runtime_error(std::string("Unknown option '") + argv[nargs] + "'.");
+            //}
             ++nargs;
         }
 
