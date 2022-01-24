@@ -19,6 +19,7 @@
 #include "Utility/IpplInfo.h"
 #include <cstring>
 #include <cstdlib>
+#include <list>
 
 #include <Kokkos_Core.hpp>
 
@@ -53,7 +54,9 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
 
     Comm = std::make_unique<ippl::Communicate>(argc, argv, mpicomm);
 
+
     try {
+        std::list<std::string> notparsed;
         int infoLevel = 0;
         int nargs = 0;
         while (nargs < argc) {
@@ -84,7 +87,7 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
                 INFOMSG(header << options << endl);
                 std::exit(0);
             } else if (nargs > 0 && std::strstr(argv[nargs], "--kokkos") == nullptr) {
-                throw std::runtime_error(std::string("Unknown option '") + argv[nargs] + "'.");
+                notparsed.push_back(argv[nargs]);
             }
             ++nargs;
         }
@@ -92,6 +95,12 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
         Info->setOutputLevel(infoLevel);
         Error->setOutputLevel(0);
         Warn->setOutputLevel(0);
+
+        if (infoLevel > 0 && Comm->myNode() == 0) {
+            for (auto& l : notparsed) {
+                std::cout << "Warning: Option '" << l << "' is not parsed by Ippl." << std::endl;
+            }
+        }
 
     } catch(const std::exception& e) {
         if (Comm->myNode() == 0) {
