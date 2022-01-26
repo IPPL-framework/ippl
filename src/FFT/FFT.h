@@ -39,6 +39,13 @@
 #include "Utility/ParameterList.h"
 #include "Utility/IpplException.h"
 
+namespace heffte {
+
+    template<> struct is_ccomplex<Kokkos::complex<float>> : std::true_type{};
+    
+    template<> struct is_zcomplex<Kokkos::complex<double>> : std::true_type{};
+}
+
 namespace ippl {
 
     /**
@@ -105,14 +112,14 @@ namespace ippl {
 #ifdef Heffte_ENABLE_CUDA
 #ifdef KOKKOS_ENABLE_CUDA
         template <>
-        struct HeffteBackendType<double> {
-            using backend = heffte::backend::cufft;
-            using complexType = cufftDoubleComplex;
-        };
-        template <>
         struct HeffteBackendType<float> {
             using backend = heffte::backend::cufft;
-            using complexType = cufftComplex;
+            using complexType = Kokkos::complex<float>;
+        };
+        template <>
+        struct HeffteBackendType<double> {
+            using backend = heffte::backend::cufft;
+            using complexType = Kokkos::complex<double>;
         };
         struct HeffteBackendTypeRR {
             using backendSine = heffte::backend::cufft_sin;
