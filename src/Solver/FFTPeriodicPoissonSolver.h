@@ -60,7 +60,7 @@ namespace ippl {
 
         //~FFTPeriodicPoissonSolver() {}
 
-        void setRhs(rhs_type& rhs);
+        void setRhs(rhs_type& rhs) override;
 
         void solve() override;
 
