@@ -249,7 +249,6 @@ public:
            val += viewqm(i);
         }, lqm);
 
-        //double lQ = lq / this->EFDMag_m.sum();
      }
 
      void initFields() {

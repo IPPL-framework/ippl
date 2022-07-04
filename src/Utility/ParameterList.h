@@ -131,6 +131,7 @@ namespace ippl {
             params_m[key] = value;
         }
 
+// The following commented portion has compiler errors with Intel and Clang
 // Disable parameter list printing for Cuda builds until
 // the lambda issue is resolved
 //#ifndef KOKKOS_ENABLE_CUDA
