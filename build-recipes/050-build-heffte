@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+# IPPL Toolchain Build recipe for heFFTe
+#
+# https://bitbucket.org/icl
+#
+
+P=gcc
+V=${OTB_COMPILER_VERSION:-10.3.0}
+
+trap "otb_exit" EXIT
+
+if [[ -n "${OTB_TOOLSET}" ]] &&  [[ "${OTB_TOOLSET}" != "gcc" ]]; then
+        echo "TOOLSET is set to '${OTB_TOOLSET}' - skipping compilation of gcc" 1>&2
+        exit 0
+fi
+
+P=heffte
+V_MAJOR=2
+V_MINOR=2
+V=${V_MAJOR}.${V_MINOR}.0
+backend=fftw
+
+FNAME="$P-$V.tar.gz"
+DOWNLOAD_URL="https://bitbucket.org/icl/$P/get/v$V.tar.gz"
+SRC_FILE="${OTB_DOWNLOAD_DIR}/${FNAME}"
+
+echo ${DOWNLOADS_DIR}
+
+# download
+test -r "${SRC_FILE}" || \
+    curl -L --output "$_" "${DOWNLOAD_URL}" || exit ${OTB_ERR_DOWNLOAD}
+
+hdir=`tar -tzf ${SRC_FILE} | head -1`
+
+# unpack
+mkdir -v -p "${OTB_SRC_DIR}/$P" && cd "$_"  || exit ${OTB_ERR_SYSTEM}
+
+tar xvf "${SRC_FILE}" || exit ${OTB_ERR_UNTAR}
+
+mkdir -v -p "${OTB_SRC_DIR}/$P/build_$backend" && cd "$_"  || exit ${OTB_ERR_SYSTEM}
+
+CUFFT=OFF
+FFTW=OFF
+MKL=OFF
+
+# OS dependent args
+declare -a args=()
+if [[ $(uname -s) == Darwin ]]; then
+	sysroot=$(xcrun --show-sdk-path)
+	args+=( "--with-sysroot=${sysroot}" )
+fi
+
+
+if [[ "$backend" == "cufft" ]]; then
+    CUFFT=ON
+elif [[ "$backend" == "fftw" ]]; then
+    FFTW=ON
+elif [[ "$backend" == "mkl" ]]; then
+    MKL=ON
+else
+    echo "Wrong backend."
+fi
+
+# configure
+mkdir -p "${OTB_SRC_DIR}/$P/$P-$V/build_$backend" && cd "$_"
+cmake \
+    -DCMAKE_INSTALL_PREFIX=${OTB_PREFIX} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=ON \
+    -DHeffte_ENABLE_FFTW="${FFTW}" \
+    -DFFTW_ROOT="${FFTW_DIR}" \
+    -DHeffte_ENABLE_CUDA="${CUFFT}" \
+    -DCUDA_TOOLKIT_ROOT_DIR="${CUDA_DIR}" \
+    -DHeffte_ENABLE_MKL="${MKL}" \
+    -DMKL_ROOT="${MKL_DIR}" \
+    /Users/adelmann/IPPL/tmp/src/heffte/$hdir
+#    ${OTB_SRC_DIR}/$P/$P-$V
+
+# compile & install
+make -j 10 || exit ${OTB_ERR_MAKE}
+make install || exit ${OTB_ERR_INSTALL}
+
+# Local Variables:
+# mode: shell-script-mode
+# sh-basic-offset: 8
+# End:

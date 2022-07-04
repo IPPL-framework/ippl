@@ -1,0 +1,78 @@
+#!/bin/bash
+#
+# OPAL Toolchain Build recipe for the GNU Compiler Collection (GCC)
+#
+# https://gcc.gnu.org
+#
+P=gcc
+V=${OTB_COMPILER_VERSION:-10.3.0}
+
+trap "otb_exit" EXIT
+
+if [[ -n "${OTB_TOOLSET}" ]] &&  [[ "${OTB_TOOLSET}" != "gcc" ]]; then
+        echo "TOOLSET is set to '${OTB_TOOLSET}' - skipping compilation of gcc" 1>&2
+        exit 0
+fi
+
+FNAME="$P-$V.tar.gz"
+DOWNLOAD_URL="https://ftp.gnu.org/gnu/$P/$P-$V/${FNAME}"
+SRC_FILE="${OTB_DOWNLOAD_DIR}/${FNAME}"
+
+# download
+test -r "${SRC_FILE}" || \
+    curl -L --output "$_" "${DOWNLOAD_URL}" || exit ${OTB_ERR_DOWNLOAD}
+
+# GCC on Linux tries to create the directory $OTB_PREFIX/lib64.
+# So 'make install' fails, if this is a sym-link.
+if [[ $(uname -s) == Linux ]]; then
+        if [[ -e ${OTB_PREFIX}/lib64 ]]; then 
+	        rm -v "${OTB_PREFIX}/lib64" || exit ${OTB_ERR_SYSTEM}
+        fi
+fi
+
+# unpack
+mkdir -v -p "${OTB_SRC_DIR}/$P" && cd "$_"  || exit ${OTB_ERR_SYSTEM}
+tar xvf "${SRC_FILE}" || exit ${OTB_ERR_UNTAR}
+
+# configure
+mkdir -v -p "${OTB_SRC_DIR}/$P/build" && cd "$_"  || exit ${OTB_ERR_SYSTEM}
+
+# OS dependent args
+declare -a args=()
+if [[ $(uname -s) == Darwin ]]; then
+	sysroot=$(xcrun --show-sdk-path)
+	args+=( "--with-sysroot=${sysroot}" )
+fi
+
+"${OTB_SRC_DIR}/$P/$P-$V/configure" \
+        --prefix="${OTB_PREFIX}" \
+        --enable-languages=c,c++,objc,obj-c++,lto,fortran \
+        --enable-lto \
+        --disable-multilib \
+        --with-build-config=bootstrap-debug \
+        --with-gmp="${OTB_PREFIX}" \
+        --with-mpfr="${OTB_PREFIX}" \
+        --with-mpc="${OTB_PREFIX}" \
+	"${args[@]}" \
+	|| exit ${OTB_ERR_CONFIGURE}
+
+# compile & install
+make -j 3 || exit ${OTB_ERR_MAKE}
+make install || exit ${OTB_ERR_INSTALL}
+
+# make this version of the C compiler available via 'cc'
+ln -v -f "${OTB_PREFIX}/bin/gcc" "${OTB_PREFIX}/bin/cc"
+
+# move files from "${OTB_PREFIX}/lib64" to "${OTB_PREFIX}/lib"
+# and recreate sym-link
+shopt -s nullglob
+if [[ $(uname -s) == Linux ]]; then
+        mv -v  "${OTB_PREFIX}/lib64/"*  "${OTB_PREFIX}/lib" || exit ${OTB_ERR_POST_INSTALL}
+        rmdir -v "${OTB_PREFIX}/lib64" || exit ${OTB_ERR_POST_INSTALL}
+        ( cd "${OTB_PREFIX}" && ln -vfs lib lib64 || exit ${OTB_ERR_SETUP};)
+fi
+
+# Local Variables:
+# mode: shell-script-mode
+# sh-basic-offset: 8
+# End:

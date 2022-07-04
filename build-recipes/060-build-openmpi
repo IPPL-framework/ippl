@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# OPAL Toolchain Build recipe for Open MPI
+#
+# https://www.open-mpi.org
+#
+P=openmpi
+V=${OTB_MPI_VERSION:-4.0.5}
+
+trap "otb_exit" EXIT
+
+if [[ -n "${OTB_MPI}" ]] && [[ "${OTB_MPI}" != "openmpi" ]]; then
+        echo "MPI implementation is set to '${OTB_MPI}' - skipping compilation of openmpi" 1>&2
+	exit 0
+fi
+
+FNAME="$P-$V.tar.gz"
+DOWNLOAD_URL="http://www.open-mpi.org/software/ompi/v${V%.*}/downloads/${FNAME}"
+SRC_FILE="${OTB_DOWNLOAD_DIR}/${FNAME}"
+
+case ${OTB_TOOLSET} in
+	gcc )
+		export CC='gcc'
+		export CXX='g++'
+		export FC='gfortran'
+		;;
+	clang )
+		export CC='clang'
+		export CXX='clang++'
+		,,
+esac
+
+# Download
+test -r "${SRC_FILE}" || \
+    curl -L --output "$_" "${DOWNLOAD_URL}" || exit ${OTB_ERR_DOWNLOAD}
+
+# Unpack
+mkdir -p "${OTB_SRC_DIR}/$P" && cd "$_" || exit ${OTB_ERR_SYSTEM}
+tar xvf "${SRC_FILE}" || exit ${OTB_ERR_UNTAR}
+
+# Configure
+unset OPAL_PREFIX
+mkdir -p "${OTB_SRC_DIR}/$P/build" && cd "$_" || exit ${OTB_ERR_SYSTEM}
+"${OTB_SRC_DIR}/$P/$P-$V/configure" \
+                --prefix="${OTB_PREFIX}" \
+                --enable-mpi-cxx \
+                --enable-mpi-cxx-seek \
+                --enable-orterun-prefix-by-default \
+                --enable-shared \
+                --with-sge=yes \
+                --with-slurm=yes || exit ${OTB_ERR_CONFIGURE}
+
+# Compile and install
+make -j ${NJOBS} || exit ${OTB_ERR_MAKE}
+make install || exit ${OTB_ERR_INSTALL}
+
+# Local Variables:
+# mode: shell-script-mode
+# sh-basic-offset: 8
+# End:
+

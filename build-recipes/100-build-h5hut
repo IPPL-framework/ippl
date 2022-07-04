@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# OPAL Toolchain Build recipe for the HDF5 utility toolkit.
+#
+# https://gitlab.psi.ch/H5hut/src
+#
+P=H5hut
+V=${H5HUT_VERSION:-2.0.0rc6}
+
+trap "otb_exit" EXIT
+
+FNAME="$P-$V.tar.gz"
+DOWNLOAD_URL="http://amas.web.psi.ch/Downloads/$P/${FNAME}"
+SRC_FILE="${OTB_DOWNLOAD_DIR}/${FNAME}"
+
+# download
+test -r "${SRC_FILE}" || \
+    curl -L --output "$_" "${DOWNLOAD_URL}" || exit ${OTB_ERR_DOWNLOAD}
+
+# unpack
+mkdir -p "${OTB_SRC_DIR}/$P" && cd "$_" || exit ${OTB_ERR_SYSTEM}
+tar xvf "${SRC_FILE}" || exit ${OTB_ERR_UNTAR}
+cd "${OTB_SRC_DIR}/$P/$P-$V" || exit ${OTB_ERR_SYSTEM}
+./autogen.sh || exit ${OTB_ERR_CONFIGURE}
+
+# configure
+mkdir -p "${OTB_SRC_DIR}/$P/build" && cd "$_"
+CC=mpicc CXX=mpicxx "${OTB_SRC_DIR}/$P/$P-$V/configure" \
+        --prefix="${OTB_PREFIX}" \
+        --enable-shared \
+        --enable-parallel \
+        --with-pic || exit ${OTB_ERR_CONFIGURE}
+
+# compile and install
+make -j ${NJOBS} || exit ${OTB_ERR_MAKE}
+make install || exit ${OTB_ERR_INSTALL}
+
+# Local Variables:
+# mode: shell-script-mode
+# sh-basic-offset: 8
+# End:
+

@@ -1,0 +1,11 @@
+= The IPPL Tool-chain Builder
+:toc:
+:numbered:
+
+== Introduction
+
+The IPPL Tool-chain Builder (OTB) is a collection of recipes to build all
+required software to compile _IPPL_.
+
+The documentation how to setup and run the recipes will follow soon on
+the IPPL Wicki.

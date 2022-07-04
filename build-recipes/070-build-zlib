@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# OPAL Toolchain Build recipe for zlib.
+#
+# http://zlib.net
+#
+P=zlib
+V=${ZLIB_VERSION:-1.2.12}
+
+trap "otb_exit" EXIT
+
+FNAME="$P-$V.tar.gz"
+DOWNLOAD_URL="https://zlib.net/${FNAME}"
+SRC_FILE="${OTB_DOWNLOAD_DIR}/${FNAME}"
+
+# download
+test -r "${SRC_FILE}" || curl -L --output "$_" "${DOWNLOAD_URL}" || exit ${OTB_ERR_DOWNLOAD}
+
+# unpack
+mkdir -p "${OTB_SRC_DIR}/$P" && cd "$_" || exit ${OTB_ERR_SYSTEM}
+tar xvf "${SRC_FILE}" || exit ${OTB_ERR_UNTAR}
+
+# configure
+mkdir -p "${OTB_SRC_DIR}/$P/build" && cd "$_" || exit ${OTB_ERR_SYSTEM}
+"${OTB_SRC_DIR}/$P/$P-$V/configure" \
+        --prefix="${OTB_PREFIX}" || exit ${OTB_ERR_CONFIGURE}
+
+# compile & install
+make -j ${NJOBS} || exit ${OTB_ERR_MAKE}
+make install || exit ${OTB_ERR_INSTALL}
+
+# Local Variables:
+# mode: shell-script-mode
+# sh-basic-offset: 8
+# End:
