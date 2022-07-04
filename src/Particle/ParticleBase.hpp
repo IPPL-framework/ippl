@@ -116,7 +116,7 @@ namespace ippl {
         auto nextID = this->nextID_m;
         auto numNodes = this->numNodes_m;
         Kokkos::parallel_for("ParticleBase<PLayout, Properties...>::create(size_t)",
-                             Kokkos::RangePolicy(localNum_m, nLocal),
+                             Kokkos::RangePolicy<size_type>(localNum_m, nLocal),
                              KOKKOS_LAMBDA(const std::int64_t i) {
                                  pIDs(i) = nextID + numNodes * i;
                              });
@@ -208,7 +208,7 @@ namespace ippl {
 
         // Find the indices of the valid particles in the invalid region
         Kokkos::parallel_scan("Second scan in ParticleBase::destroy()",
-                              Kokkos::RangePolicy(localNum_m - destroyNum, localNum_m),
+                              Kokkos::RangePolicy<size_type>(localNum_m - destroyNum, localNum_m),
                               KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
                               {
                                   if (final && !invalid(i)) locKeepIndex(idx) = i;
