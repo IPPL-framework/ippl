@@ -23,7 +23,7 @@
 
 namespace ippl {
     namespace detail {
-        typedef uint64_t size_type;
+        typedef std::size_t size_type;
     }
 }
 
