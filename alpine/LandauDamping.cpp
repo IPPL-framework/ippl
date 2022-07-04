@@ -168,6 +168,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("kick");
     static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("drift");
     static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
+    static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
     static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
 
@@ -314,6 +315,11 @@ int main(int argc, char *argv[]){
     isFirstRepartition = false;
     //The update after the particle creation is not needed as the 
     //particles are generated locally
+
+    IpplTimings::startTimer(DummySolveTimer);
+    P->rho_m = 0.0;
+    P->solver_mp->solve();
+    IpplTimings::stopTimer(DummySolveTimer);
 
     P->scatterCIC(totalP, 0, hr);
 

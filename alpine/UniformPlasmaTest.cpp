@@ -92,12 +92,12 @@ int main(int argc, char *argv[]){
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
-    static IpplTimings::TimerRef FirstUpdateTimer = IpplTimings::getTimer("initialisation");
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
     static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("kick");
     static IpplTimings::TimerRef temp = IpplTimings::getTimer("randomMove");
     static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("drift");
     static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
+    static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
     static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
 
@@ -172,7 +172,6 @@ int main(int argc, char *argv[]){
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);
 
-    IpplTimings::startTimer(FirstUpdateTimer);
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
 
@@ -188,7 +187,12 @@ int main(int argc, char *argv[]){
     P->initSolver();
     P->time_m = 0.0;
     P->loadbalancefreq_m = std::atoi(argv[7]);
-   
+  
+    IpplTimings::startTimer(DummySolveTimer);
+    P->rho_m = 0.0;
+    P->solver_mp->solve();
+    IpplTimings::stopTimer(DummySolveTimer);
+
 
     P->scatterCIC(totalP, 0, hr);
     P->initializeORB(FL, mesh);
@@ -205,7 +209,6 @@ int main(int argc, char *argv[]){
     P->gatherStatistics(totalP);
     IpplTimings::stopTimer(dumpDataTimer);
 
-    IpplTimings::stopTimer(FirstUpdateTimer);
 
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;

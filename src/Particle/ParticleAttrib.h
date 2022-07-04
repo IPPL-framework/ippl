@@ -79,11 +79,11 @@ namespace ippl {
 
         virtual ~ParticleAttrib() = default;
        
-        size_type size() const {
+        size_type size() const override {
             return dview_m.extent(0);
         }
 
-        size_type packedSize(const size_type count) const {
+        size_type packedSize(const size_type count) const override {
             return count * sizeof(value_type);
         }
 

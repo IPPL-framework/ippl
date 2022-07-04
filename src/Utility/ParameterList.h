@@ -131,39 +131,40 @@ namespace ippl {
             params_m[key] = value;
         }
 
+// The following commented portion has compiler errors with Intel and Clang
 // Disable parameter list printing for Cuda builds until
 // the lambda issue is resolved
-#ifndef KOKKOS_ENABLE_CUDA
-        /*!
-         * Print this parameter list.
-         */
-        friend
-        std::ostream& operator<<(std::ostream& os, const ParameterList& sp) {
-            static int indent = -4;
-
-            indent += 4;
-            if (indent > 0) {
-                os << '\n';
-            }
-            for (const auto& [key, value] : sp.params_m) {
-                std::visit([&](auto&& arg){
-                    // 21 March 2021
-                    // https://stackoverflow.com/questions/15884284/c-printing-spaces-or-tabs-given-a-user-input-integer
-                    os << std::string(indent, ' ')
-                       << std::left << std::setw(20) << key
-                       << " " << arg;
-                }, value);
-                // 21 March 2021
-                // https://stackoverflow.com/questions/289715/last-key-in-a-stdmap
-                if (key != std::prev(sp.params_m.end())->first) {
-                    os << '\n';
-                }
-            }
-            indent -= 4;
-
-            return os;
-        }
-#endif
+//#ifndef KOKKOS_ENABLE_CUDA
+//        /*!
+//         * Print this parameter list.
+//         */
+//        friend
+//        std::ostream& operator<<(std::ostream& os, const ParameterList& sp) {
+//            static int indent = -4;
+//
+//            indent += 4;
+//            if (indent > 0) {
+//                os << '\n';
+//            }
+//            for (const auto& [key, value] : sp.params_m) {
+//                std::visit([&](auto&& arg){
+//                    // 21 March 2021
+//                    // https://stackoverflow.com/questions/15884284/c-printing-spaces-or-tabs-given-a-user-input-integer
+//                    os << std::string(indent, ' ')
+//                       << std::left << std::setw(20) << key
+//                       << " " << arg;
+//                }, value);
+//                // 21 March 2021
+//                // https://stackoverflow.com/questions/289715/last-key-in-a-stdmap
+//                if (key != std::prev(sp.params_m.end())->first) {
+//                    os << '\n';
+//                }
+//            }
+//            indent -= 4;
+//
+//            return os;
+//        }
+//#endif
 
     private:
         std::map<std::string, variant_t> params_m;
