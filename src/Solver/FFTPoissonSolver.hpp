@@ -148,6 +148,8 @@ namespace ippl {
               alg_m(alg), 
               mesh4_m(nullptr), 
               layout4_m(nullptr), 
+              mesh2n1_m(nullptr),
+              layout2n1_m(nullptr),
               isGradFD_m(false)
 	    { 
             std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
@@ -178,6 +180,8 @@ namespace ippl {
               alg_m(alg),
               mesh4_m(nullptr), 
               layout4_m(nullptr), 
+              mesh2n1_m(nullptr),
+              layout2n1_m(nullptr),
               isGradFD_m(false)
         {
             
@@ -313,15 +317,28 @@ namespace ippl {
                     domain4_m[i] = Index(4 * nr_m[i]);
                 }
 
+                // 2N+1 domain for DCT
+                for (unsigned int i=0; i< Dim; ++i) {
+                    domain2n1_m[i] = Index(2*nr_m[i] + 1);
+                }
+
                 // 4N grid
                 mesh4_m = std::unique_ptr<M>(new M(domain4_m, hr_m, origin));
                 layout4_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain4_m, decomp));
  
+                // 2N+1 grid
+                mesh2n1_m = std::unique_ptr<M>(new M(domain2n1_m, hr_m, origin));
+                layout2n1_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain2n1_m, decomp));
+
                 // initialize fields
                 grnL_m.initialize(*mesh4_m, *layout4_m);
+                grn2n1_m.initialize(*mesh2n1_m, *layout2n1_m); // 2N+1 grnL
 
                 // create a Complex-to-Complex FFT object to transform for layout4
                 fft4n_m = std::make_unique<FFT<CCTransform, Dim, double>>(*layout4_m, this->params_m);
+
+                // create real to real FFT object for 2N+1 grid
+                fft2n1_m = std::make_unique<FFT<CosTransform, Dim, double>>(*layout2n1_m, this->params_m);
                     
                 IpplTimings::stopTimer(initialize_vico);
             }
