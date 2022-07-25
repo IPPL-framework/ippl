@@ -142,6 +142,13 @@ namespace ippl {
 
         NDIndex<Dim> domain4_m;
 
+        // improved Vico - discrete cosine transform
+        Field_t grn2n1_m;
+        std::unique_ptr<FFT<CosTransform, Dim, double>> fft2n1_m;
+        std::unique_ptr<M> mesh2n1_m;
+        std::unique_ptr<FieldLayout_t> layout2n1_m;
+        NDIndex<Dim> domain2n1_m;
+
         // bool indicating whether we want gradient of solution to calculate E field
         bool isGradFD_m;
 
