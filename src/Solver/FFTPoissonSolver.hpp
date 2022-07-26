@@ -418,6 +418,7 @@ namespace ippl {
 	    fft_m->transform(+1, rho2_mr, rho2tr_m);
             if (alg_m == "VICO") {
                 fft4n_m->transform(+1, grnL_m);
+                fft2n1_m->transform(+1, grn2n1_m);
             }
 
             IpplTimings::stopTimer(warmup);
@@ -425,6 +426,7 @@ namespace ippl {
             rho2_mr = 0.0;
             rho2tr_m = 0.0;
             grnL_m = 0.0;
+            grn2n1_m = 0.0;
 
 	    // call greensFunction and we will get the transformed G in the class attribute
 	    // this is done in initialization so that we already have the precomputed fct
