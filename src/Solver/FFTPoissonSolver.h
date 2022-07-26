@@ -29,16 +29,14 @@ namespace ippl {
     template <typename Tlhs, typename Trhs, unsigned Dim,
               class M=UniformCartesian<double, Dim>,
               class C=typename M::DefaultCentering>
-	class FFTPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, M, C> { 
+    class FFTPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, M, C> { 
+        public:
+            // types for LHS and RHS
+            using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
+            using rhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
 
-	public:
-           
-        // types for LHS and RHS
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
-
-        // type of output
-        using Base = Electrostatics<Tlhs, Trhs, Dim, M, C>;
+            // type of output
+            using Base = Electrostatics<Tlhs, Trhs, Dim, M, C>;
 
 	    // define a type for a 3 dimensional field (e.g. charge density field)
 	    // define a type of Field with integers to be used for the helper Green's function
@@ -48,144 +46,142 @@ namespace ippl {
 	    typedef Field<Kokkos::complex<Trhs>, Dim, M> CxField_t;
 	    typedef Vector<Trhs, Dim> Vector_t;
 
-	    // define type for field layout
-	    typedef FieldLayout<Dim> FieldLayout_t;
+            // define type for field layout
+            typedef FieldLayout<Dim> FieldLayout_t;
 
-	    // define a type for the 3 dimensional real to complex Fourier transform  
-	    typedef FFT<RCTransform, Dim, Trhs> FFT_t;
+            // define a type for the 3 dimensional real to complex Fourier transform  
+            typedef FFT<RCTransform, Dim, Trhs> FFT_t;
 
-        // type for communication buffers
-        using buffer_type = Communicate::buffer_type;
+            // type for communication buffers
+            using buffer_type = Communicate::buffer_type;
 
-	    // constructor and destructor
-	    FFTPoissonSolver(rhs_type& rhs, ParameterList& fftparams, std::string alg);
-	    FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams, std::string alg, 
+            // constructor and destructor
+            FFTPoissonSolver(rhs_type& rhs, ParameterList& fftparams, std::string alg);
+            FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams, std::string alg,
                              int sol = Base::SOL_AND_GRAD);
-	    ~FFTPoissonSolver();
+            ~FFTPoissonSolver();
 
-        // allows user to set gradient of phi = Efield instead of spectral
-        // calculation of Efield (which uses FFTs)
-        void setGradFD();
+            // allows user to set gradient of phi = Efield instead of spectral
+            // calculation of Efield (which uses FFTs)
+            void setGradFD();
 
-	    // solve the Poisson equation using FFT; 
-	    // more specifically, compute the scalar potential given a density field rho using 
-	    void solve() override;
+            // solve the Poisson equation using FFT; 
+            // more specifically, compute the scalar potential given a density field rho using 
+            void solve() override;
 	    
-	    // compute standard Green's function 
-	    void greensFunction();
+            // compute standard Green's function 
+            void greensFunction();
 
-	    // function called in the constructor to initialize the fields
-	    void initializeFields();
+            // function called in the constructor to initialize the fields
+            void initializeFields();
 
-        // communication used for multi-rank Vico-Greengard's Green's function
-        void communicateVico(Vector<int,Dim> size, typename CxField_t::view_type view_g,
-                             const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
-                             typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
-                             const int nghost);
+            // communication used for multi-rank Vico-Greengard's Green's function
+            void communicateVico(Vector<int,Dim> size, typename CxField_t::view_type view_g,
+                                 const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
+                                 typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
+                                 const int nghost);
             
-	private:
-	    // create a field to use as temporary storage
-	    // references to it can be created to make the code where it is used readable
-	    Field_t storage_field;
+        private:
+            // create a field to use as temporary storage
+            // references to it can be created to make the code where it is used readable
+            Field_t storage_field;
 
-	    Field_t& rho2_mr = storage_field; // the charge-density field with mesh doubled in each dimension
-	    Field_t& grn_mr  = storage_field; // the Green's function
+            Field_t& rho2_mr = storage_field; // the charge-density field with mesh doubled in each dimension
+            Field_t& grn_mr  = storage_field; // the Green's function
 
-	    // rho2tr_m is the Fourier transformed charge-density field
-	    // domain3_m and mesh3_m are used
-	    CxField_t rho2tr_m;
+            // rho2tr_m is the Fourier transformed charge-density field
+            // domain3_m and mesh3_m are used
+            CxField_t rho2tr_m;
 
-	    // grntr_m is the Fourier transformed Green's function
-	    // domain3_m and mesh3_m are used
-	    CxField_t grntr_m;         
+            // grntr_m is the Fourier transformed Green's function
+            // domain3_m and mesh3_m are used
+            CxField_t grntr_m;         
 
             // temp_m field for the E-field computation
-	    CxField_t temp_m;         
+            CxField_t temp_m;         
 
-	    // fields that facilitate the calculation in greensFunction()
-	    IField_t grnIField_m[Dim];
+            // fields that facilitate the calculation in greensFunction()
+            IField_t grnIField_m[Dim];
 
-	    // the FFT object
-	    std::unique_ptr<FFT_t> fft_m;
+            // the FFT object
+            std::unique_ptr<FFT_t> fft_m;
 
-	    // mesh and layout objects for rho_m (RHS)
-	    M* mesh_mp;
-	    FieldLayout_t* layout_mp;
+            // mesh and layout objects for rho_m (RHS)
+            M* mesh_mp;
+            FieldLayout_t* layout_mp;
 
-	    // mesh and layout objects for rho2_m
-	    std::unique_ptr<M> mesh2_m;
-	    std::unique_ptr<FieldLayout_t> layout2_m;
+            // mesh and layout objects for rho2_m
+            std::unique_ptr<M> mesh2_m;
+            std::unique_ptr<FieldLayout_t> layout2_m;
 
-	    // mesh and layout objects for the Fourier transformed Complex fields
-	    std::unique_ptr<M> meshComplex_m;
-	    std::unique_ptr<FieldLayout_t> layoutComplex_m;
+            // mesh and layout objects for the Fourier transformed Complex fields
+            std::unique_ptr<M> meshComplex_m;
+            std::unique_ptr<FieldLayout_t> layoutComplex_m;
 	    
-	    // domains for the various fields
-	    NDIndex<Dim> domain_m;           // original domain, gridsize
-	    NDIndex<Dim> domain2_m;          // doubled gridsize (2*Nx,2*Ny,2*Nz)
-	    NDIndex<Dim> domainComplex_m;    // field for the complex values of the RC transformation
+            // domains for the various fields
+            NDIndex<Dim> domain_m;           // original domain, gridsize
+            NDIndex<Dim> domain2_m;          // doubled gridsize (2*Nx,2*Ny,2*Nz)
+            NDIndex<Dim> domainComplex_m;    // field for the complex values of the RC transformation
 
-	    // mesh spacing and mesh size
-	    Vector_t hr_m;
-	    Vector<int, Dim> nr_m;
+            // mesh spacing and mesh size
+            Vector_t hr_m;
+            Vector<int, Dim> nr_m;
 	    
-	    // string specifying algorithm: Hockney or Vico-Greengard
-	    std::string alg_m;
+            // string specifying algorithm: Hockney or Vico-Greengard
+            std::string alg_m;
 
-        // members for Vico-Greengard
-        CxField_t grnL_m;
+            // members for Vico-Greengard
+            CxField_t grnL_m;
 
-        std::unique_ptr<FFT<CCTransform, Dim, double>> fft4n_m;
+            std::unique_ptr<FFT<CCTransform, Dim, double>> fft4n_m;
 
-        std::unique_ptr<M> mesh4_m;
-        std::unique_ptr<FieldLayout_t> layout4_m;
+            std::unique_ptr<M> mesh4_m;
+            std::unique_ptr<FieldLayout_t> layout4_m;
 
-        NDIndex<Dim> domain4_m;
+            NDIndex<Dim> domain4_m;
 
-        // improved Vico - discrete cosine transform
-        Field_t grn2n1_m;
-        std::unique_ptr<FFT<CosTransform, Dim, double>> fft2n1_m;
-        std::unique_ptr<M> mesh2n1_m;
-        std::unique_ptr<FieldLayout_t> layout2n1_m;
-        NDIndex<Dim> domain2n1_m;
+            // improved Vico - discrete cosine transform
+            Field_t grn2n1_m;
+            std::unique_ptr<FFT<CosTransform, Dim, double>> fft2n1_m;
+            std::unique_ptr<M> mesh2n1_m;
+            std::unique_ptr<FieldLayout_t> layout2n1_m;
+            NDIndex<Dim> domain2n1_m;
 
-        // bool indicating whether we want gradient of solution to calculate E field
-        bool isGradFD_m;
+            // bool indicating whether we want gradient of solution to calculate E field
+            bool isGradFD_m;
 
-        // buffer for communication
-        detail::FieldBufferData<Trhs> fd_m;
+            // buffer for communication
+            detail::FieldBufferData<Trhs> fd_m;
 
-
-    protected:
+        protected:
         
-        virtual void setDefaultParameters() override {
-            using heffteBackend = typename FFT_t::heffteBackend;
-            heffte::plan_options opts = heffte::default_options<heffteBackend>();
-            this->params_m.add("use_pencils", opts.use_pencils);
-            this->params_m.add("use_reorder", opts.use_reorder);
-            this->params_m.add("use_gpu_aware", opts.use_gpu_aware);
-            this->params_m.add("r2c_direction", 0);
+            virtual void setDefaultParameters() override {
+                using heffteBackend = typename FFT_t::heffteBackend;
+                heffte::plan_options opts = heffte::default_options<heffteBackend>();
+                this->params_m.add("use_pencils", opts.use_pencils);
+                this->params_m.add("use_reorder", opts.use_reorder);
+                this->params_m.add("use_gpu_aware", opts.use_gpu_aware);
+                this->params_m.add("r2c_direction", 0);
             
-            switch (opts.algorithm) {
-                case heffte::reshape_algorithm::alltoall :
-                    this->params_m.add("comm", a2a);
-                    break;
-                case heffte::reshape_algorithm::alltoallv :
-                    this->params_m.add("comm", a2av);
-                    break;
-                case heffte::reshape_algorithm::p2p :
-                    this->params_m.add("comm", p2p);
-                    break;
-                case heffte::reshape_algorithm::p2p_plined :
-                    this->params_m.add("comm", p2p_pl);
-                    break;
-                default:
-                    throw IpplException("FFTPoissonSolver::setDefaultParameters",
+                switch (opts.algorithm) {
+                    case heffte::reshape_algorithm::alltoall :
+                        this->params_m.add("comm", a2a);
+                        break;
+                    case heffte::reshape_algorithm::alltoallv :
+                        this->params_m.add("comm", a2av);
+                        break;
+                    case heffte::reshape_algorithm::p2p :
+                        this->params_m.add("comm", p2p);
+                        break;
+                    case heffte::reshape_algorithm::p2p_plined :
+                        this->params_m.add("comm", p2p_pl);
+                        break;
+                    default:
+                        throw IpplException("FFTPoissonSolver::setDefaultParameters",
                                        "Unrecognized heffte communication type");
+                }
             }
-
-        }
-	};
+    };
 }
 
 #include "FFTPoissonSolver.hpp"
