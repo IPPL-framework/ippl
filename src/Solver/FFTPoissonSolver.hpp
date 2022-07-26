@@ -232,9 +232,9 @@ namespace ippl {
 	FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::initializeFields() {
  	    
             // first check if valid algorithm choice
-            if ((alg_m != "VICO") && (alg_m != "HOCKNEY")) {
+            if ((alg_m != "VICO") && (alg_m != "HOCKNEY") && (alg_m != "VICO_2.0")) {
                 throw IpplException("FFTPoissonSolver::initializeFields()",
-                "Currently only Hockney and Vico algorithms are supported for open BCs");
+                "Currently only Hockney and Vico + Vico_2.0 algorithms are supported for open BCs");
             }
 
 	    // get layout and mesh
@@ -317,32 +317,43 @@ namespace ippl {
                     domain4_m[i] = Index(4 * nr_m[i]);
                 }
 
+                // 4N grid
+                mesh4_m = std::unique_ptr<M>(new M(domain4_m, hr_m, origin));
+                layout4_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain4_m, decomp));
+ 
+                // initialize fields
+                grnL_m.initialize(*mesh4_m, *layout4_m);
+
+                // create a Complex-to-Complex FFT object to transform for layout4
+                fft4n_m = std::make_unique<FFT<CCTransform, Dim, double>>(*layout4_m, this->params_m);
+
+                IpplTimings::stopTimer(initialize_vico);
+            }
+
+            // if Vico 2.0, need 2N+1 mesh, layout, domain, and green's function field for precomputation
+            if (alg_m == "VICO_2.0") {
+
+                // start a timer
+                static IpplTimings::TimerRef initialize_vico = IpplTimings::getTimer("Initialize: extra Vico");
+                IpplTimings::startTimer(initialize_vico);
+
                 // 2N+1 domain for DCT
                 for (unsigned int i=0; i< Dim; ++i) {
                     domain2n1_m[i] = Index(2*nr_m[i] + 1);
                 }
 
-                // 4N grid
-                mesh4_m = std::unique_ptr<M>(new M(domain4_m, hr_m, origin));
-                layout4_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain4_m, decomp));
- 
                 // 2N+1 grid
                 mesh2n1_m = std::unique_ptr<M>(new M(domain2n1_m, hr_m, origin));
                 layout2n1_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain2n1_m, decomp));
 
                 // initialize fields
-                grnL_m.initialize(*mesh4_m, *layout4_m);
                 grn2n1_m.initialize(*mesh2n1_m, *layout2n1_m); // 2N+1 grnL
-
-                // create a Complex-to-Complex FFT object to transform for layout4
-                fft4n_m = std::make_unique<FFT<CCTransform, Dim, double>>(*layout4_m, this->params_m);
 
                 // create real to real FFT object for 2N+1 grid
                 fft2n1_m = std::make_unique<FFT<CosTransform, Dim, double>>(*layout2n1_m, this->params_m);
                     
                 IpplTimings::stopTimer(initialize_vico);
             }
-
 
             // these are fields that are used for calculating the Green's function for Hockney
 	    if (alg_m == "HOCKNEY") {
@@ -418,8 +429,10 @@ namespace ippl {
 	    fft_m->transform(+1, rho2_mr, rho2tr_m);
             if (alg_m == "VICO") {
                 fft4n_m->transform(+1, grnL_m);
-                fft2n1_m->transform(+1, grn2n1_m);
             }
+            if (alg_m == "VICO_2.0") {
+                fft2n1_m->transform(+1, grn2n1_m);
+	    }
 
             IpplTimings::stopTimer(warmup);
 
@@ -885,7 +898,7 @@ namespace ippl {
             
                 // define the origin of the 4N grid
                 Vector_t origin;
-            
+
                 for (unsigned int i = 0; i < Dim; ++i) {
                     origin[i] = -2*nr_m[i]*pi/l[i];
                 }
@@ -945,6 +958,7 @@ namespace ippl {
 
                 IpplTimings::stopTimer(fft4);
 
+
                 // Restrict transformed grnL_m to 2N domain after precomputation step
 
                 // get the field data first
@@ -960,7 +974,7 @@ namespace ippl {
                 int ranks = Ippl::Comm->size();
 
                 if (ranks > 1) {
-                    communicateVico(size, view_g, ldom_g, nghost_g, view, ldom, nghost);
+                    communicateVico(size, view_g, ldom_g, nghost_g, view, ldom, nghost, layout4_m);
                 } else {
 
                     // restrict the green's function to a (2N)^3 grid from the (4N)^3 grid
@@ -995,8 +1009,148 @@ namespace ippl {
                             view(i, p, q) = real(view_g(i,j+1,k+1));
                             view(s, p, q) = real(view_g(i+1,j+1,k+1));
                     });
+
                 }
                 IpplTimings::stopTimer(ifftshift);
+
+            } else if (alg_m == "VICO_2.0") {
+
+                Vector_t l(hr_m * nr_m);
+                Vector_t hs_m;
+                double L_sum (0.0);                
+
+                // compute length of the physical domain
+                // compute Fourier domain spacing
+                for (unsigned int i=0; i < Dim; ++i) {
+                    hs_m[i] = pi * 0.5 / l[i];
+                    L_sum = L_sum + l[i]*l[i];
+                }
+            
+                // define the origin of the 2N+1 grid
+                Vector_t origin;
+
+                for (unsigned int i = 0; i < Dim; ++i) {
+                    origin2n1[i] = 0.0;
+                }
+
+                // set mesh for the 2N+1 mesh
+                mesh2n1_m->setMeshSpacing(hs_m);
+            
+                // size of truncation window
+                L_sum = std::sqrt(L_sum);
+                L_sum = 1.1 * L_sum;
+
+                // initialize grn2n1_m 
+                Vector<int,Dim> size = nr_m;
+
+                // initialize grn2n1_m 
+                typename Field_t::view_type view_g2n1 = grn2n1_m.getView();
+	        const int nghost_g2n1 = grn2n1_m.getNghost();
+	        const auto& ldom_g2n1 = layout2n1_m->getLocalNDIndex();
+
+                Kokkos::parallel_for("Initialize 2N+1 Green's function ",
+                        mdrange_type({nghost_g2n1, nghost_g2n1, nghost_g2n1},
+                        {view_g.extent2n1(0)-nghost_g2n1, view_g2n1.extent(1)-nghost_g2n1, view_g2n1.extent(2)-nghost_g2n1}),
+                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                                  
+                        // go from local indices to global
+                        const int ig = i + ldom_g2n1[0].first() - nghost_g2n1;
+                        const int jg = j + ldom_g2n1[1].first() - nghost_g2n1;
+                        const int kg = k + ldom_g2n1[2].first() - nghost_g2n1;
+
+                        double s = (t*t) + (u*u) + (v*v);
+                        s = std::sqrt(s);
+
+                        view_g2n1(i,j,k) = -2*(std::sin(0.5*L_sum*s)/s)*(std::sin(0.5*L_sum*s)/s);
+                  
+                        // if (0,0,0), assign L^2/2 (analytical limit of sinc)
+                        if ((ig == 0 && jg == 0 && kg == 0)) {
+                            view_g2n1(i,j,k) = -L_sum * L_sum * 0.5;
+                        }
+
+		        // scaling of the 2N+1 Green's function for the DCT - all borders are scaled by sqrt(2)
+			if ((ig == 0) || (jg == 0) || (kg == 0) || (ig == 2*size[0]) || (jg == 2*size[1]) || (kg == 2*size[2])) {
+			    view_g2n1(i,j,k) = view_g2n1(i,j,k)/sqrt(2);
+			}
+	        });
+
+                // start a timer
+                static IpplTimings::TimerRef fft4 = IpplTimings::getTimer("FFT: Precomputation");
+                IpplTimings::startTimer(fft4);
+
+		// inverse DCT transform of 2N+1 green's function for the precomputation
+		fft2n1_m->transform(-1, grn2n1_m);
+
+                IpplTimings::stopTimer(fft4);
+
+                // rescale the 2N+1 Green's function after the DCT by sqrt(2)
+                Kokkos::parallel_for("Scale inversed 2N+1 Green's function",
+                        mdrange_type({nghost_g2n1, nghost_g2n1, nghost_g2n1},
+                        {view_g.extent2n1(0)-nghost_g2n1, view_g2n1.extent(1)-nghost_g2n1, view_g2n1.extent(2)-nghost_g2n1}),
+                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                                  
+                        // go from local indices to global
+                        const int ig = i + ldom_g2n1[0].first() - nghost_g2n1;
+                        const int jg = j + ldom_g2n1[1].first() - nghost_g2n1;
+                        const int kg = k + ldom_g2n1[2].first() - nghost_g2n1;
+
+		        // scaling of the 2N+1 Green's function for the DCT - all borders are scaled by sqrt(2)
+			if ((ig == 0) || (jg == 0) || (kg == 0)) {
+			    view_g2n1(i,j,k) = view_g2n1(i,j,k) * sqrt(2);
+			}
+	        });
+
+
+                // Restrict transformed grn2n1_m to 2N domain after precomputation step
+                
+                // get the field data first
+                typename Field_t::view_type view = grn_mr.getView();
+                const int nghost = grn_mr.getNghost();
+                const auto& ldom = layout2_m->getLocalNDIndex();
+
+                // start a timer
+                static IpplTimings::TimerRef ifftshift = IpplTimings::getTimer("Vico shift loop");
+                IpplTimings::startTimer(ifftshift);
+
+                // get number of ranks to see if need communication
+                int ranks = Ippl::Comm->size();
+
+                if (ranks > 1) {
+                    communicateVico(size, view_g2n1, ldom_g2n1, nghost_g2n1, view, ldom, nghost, layout2n1_m);
+                } else {
+                    // restrict the green's function to a (2N)^3 grid from the (2N+1)^3 grid
+                    Kokkos::parallel_for("Restrict domain of Green's function from 2N+1 to 2N",
+                            mdrange_type({nghost, nghost, nghost},
+                            {view.extent(0)-nghost-size[0], view.extent(1)-nghost-size[1], view.extent(2)-nghost-size[2]}),
+                        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+
+                            // go from local indices to global
+                            const int ig = i + ldom[0].first() - nghost;
+                            const int jg = j + ldom[1].first() - nghost;
+                            const int kg = k + ldom[2].first() - nghost;
+                                  
+                            const int ig2 = i + ldom_g2n1[0].first() - nghost_g2n1;
+                            const int jg2 = j + ldom_g2n1[1].first() - nghost_g2n1;
+                            const int kg2 = k + ldom_g2n1[2].first() - nghost_g2n1;
+
+                            if ((ig==ig2) && (jg==jg2) && (kg==kg2)) { 
+                                view(i,j,k) = real(view_g2n1(i,j,k));
+                            }
+                                  
+                            // Now fill the rest of the field
+                            const int s = 2*size[0] - ig - 1 - ldom_g2n1[0].first() + nghost_g2n1;
+                            const int p = 2*size[1] - jg - 1 - ldom_g2n1[1].first() + nghost_g2n1;
+                            const int q = 2*size[2] - kg - 1 - ldom_g2n1[2].first() + nghost_g2n1;
+                                  
+                            view(s, j, k) = real(view_g2n1(i+1,j,k));
+                            view(i, p, k) = real(view_g2n1(i,j+1,k));
+                            view(i, j, q) = real(view_g2n1(i,j,k+1));
+                            view(s, j, q) = real(view_g2n1(i+1,j,k+1));
+                            view(s, p, k) = real(view_g2n1(i+1,j+1,k));
+                            view(i, p, q) = real(view_g2n1(i,j+1,k+1));
+                            view(s, p, q) = real(view_g2n1(i+1,j+1,k+1));
+                    });
+                }
 
             } else {
                 // Hockney case
@@ -1050,10 +1204,10 @@ namespace ippl {
         FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::communicateVico(Vector<int,Dim> size,
         typename CxField_t::view_type view_g, const ippl::NDIndex<Dim> ldom_g,
         const int nghost_g, typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
-        const int nghost) {
+        const int nghost, const Layout_t& layout) {
 
             const auto& lDomains2 = layout2_m->getHostLocalDomains();
-            const auto& lDomains4 = layout4_m->getHostLocalDomains();
+            const auto& lDomains4 = layout->getHostLocalDomains();
 
             std::vector<MPI_Request> requests(0);
             int myRank = Ippl::Comm->rank();
