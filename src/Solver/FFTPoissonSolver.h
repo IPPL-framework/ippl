@@ -79,7 +79,12 @@ namespace ippl {
             void communicateVico(Vector<int,Dim> size, typename CxField_t::view_type view_g,
                                  const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
                                  typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
-                                 const int nghost);
+                                 const int nghost, FieldLayout_t& layout);
+            
+            void communicateVico(Vector<int,Dim> size, typename Field_t::view_type view_g,
+                                 const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
+                                 typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
+                                 const int nghost, FieldLayout_t& layout);
             
         private:
             // create a field to use as temporary storage
