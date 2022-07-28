@@ -223,8 +223,8 @@ int main(int argc, char *argv[]) {
     // define an FFTPoissonSolver object
     ippl::FFTPoissonSolver<ippl::Vector<double,3>, double, Dim> FFTsolver(fieldE, rho, fftParams, algorithm);
   
-    // iterate over 5 timesteps
-    for (int times = 0; times < 5; ++times) {
+    // iterate over 5 timesteps -- change back to 5 after done testing
+    for (int times = 0; times < 1; ++times) {
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

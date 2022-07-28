@@ -592,6 +592,9 @@ namespace ippl {
 	        greensFunction();
             }
 
+            std::cout << "WRITING GREEN'S FCT TRANSFORMED" << std::endl;
+            grntr_m.write();
+
 	    // multiply FFT(rho2)*FFT(green)
 	    // convolution becomes multiplication in FFT
 	    rho2tr_m = rho2tr_m * grntr_m;
