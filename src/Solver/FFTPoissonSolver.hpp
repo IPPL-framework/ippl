@@ -246,7 +246,7 @@ namespace ippl {
 
             // get origin
             Vector_t origin = mesh_mp->getOrigin();
-            double sum = origin[0] + origin[1] + origin[2];
+            double sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
 
             // origin should always be 0 for Green's function computation to work...
             if (sum != 0.0) {
