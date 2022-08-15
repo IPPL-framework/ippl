@@ -701,6 +701,10 @@ namespace ippl {
                     });
                 }
                 IpplTimings::stopTimer(dtos);
+
+                std::cout << "pot (potential phi)" << std::endl;
+                (*this->rhs_mp).write();
+
             }
 
             // if we want gradient of phi = Efield instead of doing grad in Fourier domain
@@ -949,7 +953,7 @@ namespace ippl {
                         }
 	        });
 
-                std::cout << "PRINT BEFORE TRANSFORM" << std::endl;
+                std::cout << "green (greens, before transform)" << std::endl;
                 grnL_m.write();
 
                 // start a timer
@@ -961,7 +965,7 @@ namespace ippl {
 
                 IpplTimings::stopTimer(fft4);
 
-                std::cout << "PRINT AFTER TRANSFORM" << std::endl;
+                std::cout << "T1 (inverse greens, after transform)" << std::endl;
                 grnL_m.write();
 
                 // Restrict transformed grnL_m to 2N domain after precomputation step
@@ -1017,6 +1021,10 @@ namespace ippl {
 
                 }
                 IpplTimings::stopTimer(ifftshift);
+
+                std::cout << "T (inverse green, restricted)" << std::endl;
+                grn_mr.write();
+
 
             } else if (alg_m == "VICO_2.0") {
 
@@ -1080,7 +1088,7 @@ namespace ippl {
 			}
 	        });
 
-                std::cout << "PRINT BEFORE TRANSFORM" << std::endl;
+                std::cout << "green (green, before scaling)" << std::endl;
                 grn2n1_m.write();
 
                 // rescale the 2N+1 Green's function after the DCT by sqrt(2)
@@ -1100,13 +1108,15 @@ namespace ippl {
 			}
 	        });
 
+                std::cout << "ScaledGreen (green, after scaling)" << std::endl;
+                grn2n1_m.write();
+
                 // start a timer
                 static IpplTimings::TimerRef fft4 = IpplTimings::getTimer("FFT: Precomputation");
                 IpplTimings::startTimer(fft4);
 
 		// inverse DCT transform of 2N+1 green's function for the precomputation
 		fft2n1_m->transform(-1, grn2n1_m);
-
                 grn2n1_m = grn2n1_m * (1.0/( std::sqrt(4*size[0]) * std::sqrt(4*size[1]) * std::sqrt(4*size[2]) ));
 
                 IpplTimings::stopTimer(fft4);
@@ -1128,7 +1138,7 @@ namespace ippl {
 			}
 	        });
 
-                std::cout << "PRINT AFTER TRANSFORM" << std::endl;
+                std::cout << "TDCT (inverse green, after scaling)" << std::endl;
                 grn2n1_m.write();
 
                 // Restrict transformed grn2n1_m to 2N domain after precomputation step
@@ -1181,6 +1191,10 @@ namespace ippl {
                             view(s, p, q) = view_g2n1(i+1,j+1,k+1);
                     });
                 }
+
+                std::cout << "T (inverse green, restricted)" << std::endl;
+                grn_mr.write();
+
 
             } else {
                 // Hockney case
