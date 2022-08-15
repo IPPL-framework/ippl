@@ -953,9 +953,6 @@ namespace ippl {
                         }
 	        });
 
-                std::cout << "green (greens, before transform)" << std::endl;
-                grnL_m.write();
-
                 // start a timer
                 static IpplTimings::TimerRef fft4 = IpplTimings::getTimer("FFT: Precomputation");
                 IpplTimings::startTimer(fft4);
@@ -964,9 +961,6 @@ namespace ippl {
                 fft4n_m->transform(-1, grnL_m);
 
                 IpplTimings::stopTimer(fft4);
-
-                std::cout << "T1 (inverse greens, after transform)" << std::endl;
-                grnL_m.write();
 
                 // Restrict transformed grnL_m to 2N domain after precomputation step
 
@@ -1021,9 +1015,6 @@ namespace ippl {
 
                 }
                 IpplTimings::stopTimer(ifftshift);
-
-                std::cout << "T (inverse green, restricted)" << std::endl;
-                grn_mr.write();
 
 
             } else if (alg_m == "VICO_2.0") {
@@ -1083,27 +1074,22 @@ namespace ippl {
                         }
 
 		        // scaling of the 2N+1 Green's function for the DCT - all borders are scaled by sqrt(2)
-			if ((ig == 0) || (jg == 0) || (kg == 0) || (ig == 2*size[0]) || (jg == 2*size[1]) || (kg == 2*size[2])) {
-			    view_g2n1(i,j,k) = view_g2n1(i,j,k)/std::sqrt(1.0);
+			if (ig == 0) {
+			    view_g2n1(i,j,k) = view_g2n1(i,j,k) / std::sqrt(2.0);
 			}
-	        });
-
-                std::cout << "green (green, before scaling)" << std::endl;
-                grn2n1_m.write();
-
-                // rescale the 2N+1 Green's function after the DCT by sqrt(2)
-                Kokkos::parallel_for("Scale inversed 2N+1 Green's function",
-                        mdrange_type({nghost_g2n1, nghost_g2n1, nghost_g2n1},
-                        {view_g2n1.extent(0)-nghost_g2n1, view_g2n1.extent(1)-nghost_g2n1, view_g2n1.extent(2)-nghost_g2n1}),
-                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                  
-                        // go from local indices to global
-                        const int ig = i + ldom_g2n1[0].first() - nghost_g2n1;
-                        const int jg = j + ldom_g2n1[1].first() - nghost_g2n1;
-                        const int kg = k + ldom_g2n1[2].first() - nghost_g2n1;
-
-		        // scaling of the 2N+1 Green's function for the DCT - all borders are scaled by sqrt(2)
-			if ((ig == 0) || (jg == 0) || (kg == 0)) {
+			if (jg == 0) {
+			    view_g2n1(i,j,k) = view_g2n1(i,j,k) / std::sqrt(2.0);
+			}
+			if (kg == 0) {
+			    view_g2n1(i,j,k) = view_g2n1(i,j,k) / std::sqrt(2.0);
+			}
+			if (ig == 2*size[0]) {
+			    view_g2n1(i,j,k) = view_g2n1(i,j,k) / std::sqrt(2.0);
+			}
+			if (jg == 2*size[1]) {
+			    view_g2n1(i,j,k) = view_g2n1(i,j,k) / std::sqrt(2.0);
+			}
+			if (kg == 2*size[2]) {
 			    view_g2n1(i,j,k) = view_g2n1(i,j,k) / std::sqrt(2.0);
 			}
 	        });
@@ -1117,11 +1103,12 @@ namespace ippl {
 
 		// inverse DCT transform of 2N+1 green's function for the precomputation
 		fft2n1_m->transform(-1, grn2n1_m);
-                grn2n1_m = grn2n1_m * (1.0/( std::sqrt(4*size[0]) * std::sqrt(4*size[1]) * std::sqrt(4*size[2]) ));
+                grn2n1_m = grn2n1_m * (1.0/(std::sqrt(4*size[0]) * std::sqrt(4*size[1]) * std::sqrt(4*size[2])));
 
                 IpplTimings::stopTimer(fft4);
 
                 // rescale the 2N+1 Green's function after the DCT by sqrt(2)
+                
                 Kokkos::parallel_for("Scale inversed 2N+1 Green's function",
                         mdrange_type({nghost_g2n1, nghost_g2n1, nghost_g2n1},
                         {view_g2n1.extent(0)-nghost_g2n1, view_g2n1.extent(1)-nghost_g2n1, view_g2n1.extent(2)-nghost_g2n1}),
@@ -1133,11 +1120,17 @@ namespace ippl {
                         const int kg = k + ldom_g2n1[2].first() - nghost_g2n1;
 
 		        // scaling of the 2N+1 Green's function for the DCT - all borders are scaled by sqrt(2)
-			if ((ig == 0) || (jg == 0) || (kg == 0)) {
+			if (ig == 0) {
+			    view_g2n1(i,j,k) = view_g2n1(i,j,k) * std::sqrt(2.0);
+			}
+			if (jg == 0) {
+			    view_g2n1(i,j,k) = view_g2n1(i,j,k) * std::sqrt(2.0);
+			}
+			if (kg == 0) {
 			    view_g2n1(i,j,k) = view_g2n1(i,j,k) * std::sqrt(2.0);
 			}
 	        });
-
+                
                 std::cout << "TDCT (inverse green, after scaling)" << std::endl;
                 grn2n1_m.write();
 
