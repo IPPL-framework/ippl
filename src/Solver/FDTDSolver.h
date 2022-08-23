@@ -66,6 +66,9 @@ namespace ippl {
             // mesh spacing and mesh size
             Vector_t hr_m;
             Vector<int, Dim> nr_m;
+            
+            // size of timestep
+            double dt;
 
             // scalar and vector potentials at n-1, n, n+1 times
             Field_t phiNm1_m;
