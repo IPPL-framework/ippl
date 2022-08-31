@@ -54,6 +54,9 @@ namespace ippl {
             // evaluates E and B fields using computed potentials
             void field_evaluation();
 
+            // initialization of FDTD solver
+            void initialize();
+
         private:
 
             // mesh and layout objects
@@ -69,6 +72,10 @@ namespace ippl {
             
             // size of timestep
             double dt;
+
+            // fields containing reference to charge and current
+            Field_t* rhoN_mp;
+            VField_t* JN_mp;
 
             // scalar and vector potentials at n-1, n, n+1 times
             Field_t phiNm1_m;
