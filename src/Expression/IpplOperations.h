@@ -385,12 +385,12 @@ namespace ippl {
              */
             KOKKOS_INLINE_FUNCTION
             auto operator()(size_t i, size_t j, size_t k) const {
-                return xvector_m * ((u_m[2](i, j+1, k) - u_m[2](i, j-1, k))/(2 * hvector_m[1]) -
-                                   (u_m[1](i, j, k+1) - u_m[1](i, j, k-1))/(2 * hvector_m[2])) +
-                       yvector_m * ((u_m[0](i, j, k+1) - u_m[0](i, j, k-1))/(2 * hvector_m[2]) -
-                                   (u_m[2](i+1, j, k) - u_m[2](i-1, j, k))/(2 * hvector_m[0])) +
-                       zvector_m * ((u_m[1](i+1, j, k) - u_m[1](i-1, j, k))/(2 * hvector_m[0]) -
-                                   (u_m[0](i, j+1, k) - u_m[0](i, j-1, k))/(2 * hvector_m[1]));
+                return xvector_m * ((u_m(i, j+1, k)[2] - u_m(i, j-1, k)[2])/(2 * hvector_m[1]) -
+                                   (u_m(i, j, k+1)[1] - u_m(i, j, k-1)[1])/(2 * hvector_m[2])) +
+                       yvector_m * ((u_m(i, j, k+1)[0] - u_m(i, j, k-1)[0])/(2 * hvector_m[2]) -
+                                   (u_m(i+1, j, k)[2] - u_m(i-1, j, k)[2])/(2 * hvector_m[0])) +
+                       zvector_m * ((u_m(i+1, j, k)[1] - u_m(i-1, j, k)[1])/(2 * hvector_m[0]) -
+                                   (u_m(i, j+1, k)[0] - u_m(i, j-1, k)[0])/(2 * hvector_m[1]));
             }
 
         private:
