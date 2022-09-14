@@ -112,9 +112,11 @@ namespace ippl {
         
         // magnetic field is the curl of the vector potential
         // we take the average of the potential at N and N+1
+        Bn_m = 0.5 * (curl(aN_m) + curl(aNp1_m));
 
         // electric field is the time derivative of the vector potential
         // minus the gradient of the scalar potential
+        En_m = -(aNp1_m - aN_m)/dt - grad(phiN_m);
     };
 
     template <typename Tfields, unsigned Dim, class M, class C>
@@ -122,9 +124,6 @@ namespace ippl {
         //
         //
     };
-
-
-
 }
 
 #endif
