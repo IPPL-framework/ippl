@@ -1,9 +1,25 @@
-// Tests the Laplacian on a scalar field
+// This program tests the Curl operator on a vector field.
+// The problem size can be given by the user (N^3), and a bool (0 or 1)
+// indicates whether the vector field is A=(xyz, xyz, xyz) or a Gaussian 
+// field in all three dimensions. 
+// Usage:
+//   srun ./TestCurl N 0 --info 10
+
 #include "Ippl.h"
 
 #include <iostream>
 #include <typeinfo>
 #include <array>
+
+KOKKOS_INLINE_FUNCTION
+double gaussian(double x, double y, double z, double sigma = 1.0, double mu = 0.5) {
+
+    double pi = std::acos(-1.0);
+    double prefactor = (1/std::sqrt(2*2*2*pi*pi*pi))*(1/(sigma*sigma*sigma));
+    double r2 = (x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu);
+
+    return -prefactor * exp(-r2/(2*sigma*sigma));
+}
 
 int main(int argc, char *argv[]) {
 
@@ -12,6 +28,7 @@ int main(int argc, char *argv[]) {
     constexpr unsigned int dim = 3;
 
     int pt = std::atoi(argv[1]);
+    bool gauss_fct = std::atoi(argv[2]);
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
 
@@ -60,13 +77,30 @@ int main(int argc, char *argv[]) {
                 double y = (jg + 0.5) * hx[1] + origin[1];
                 double z = (kg + 0.5) * hx[2] + origin[2];
 
-                view(i, j, k)[gd] = x*y*z;
-                if (gd == 0) {
-                    view_exact(i, j, k)[gd] = x*z - x*y;
-                } else if (gd == 1) {
-                    view_exact(i, j, k)[gd] = x*y - y*z;
+                if (gauss_fct) {
+                    view(i, j, k)[gd] = gaussian(x,y,z);
                 } else {
-                    view_exact(i, j, k)[gd] = y*z - x*z;
+                    view(i, j, k)[gd] = x*y*z;
+                }
+
+                if (gd == 0) {
+                    if (gauss_fct) {
+                        view_exact(i, j, k)[gd] = (z-y)*gaussian(x,y,z);
+                    } else {
+                        view_exact(i, j, k)[gd] = x*z - x*y;
+                    }
+                } else if (gd == 1) {
+                    if (gauss_fct) {
+                        view_exact(i, j, k)[gd] = (x-z)*gaussian(x,y,z);
+                    } else {
+                        view_exact(i, j, k)[gd] = x*y - y*z;
+                    }
+                } else {
+                    if (gauss_fct) {
+                        view_exact(i, j, k)[gd] = (y-x)*gaussian(x,y,z);
+                    } else {
+                        view_exact(i, j, k)[gd] = y*z - x*z;
+                    }
                 }
         });
     }
