@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    int pt = 8;
+    int pt = std::atoi(argv[1]);
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
 
@@ -22,10 +22,10 @@ int main(int argc, char *argv[]) {
     // all parallel layout, standard domain, normal axis order
     ippl::FieldLayout<dim> layout(owned,decomp);
 
-    // domain [-1,1]^3
-    double dx = 2.0 / double(pt);
+    // domain [0,1]^3
+    double dx = 1.0 / double(pt);
     ippl::Vector<double, 3> hx = {dx, dx, dx};
-    ippl::Vector<double, 3> origin = {-1.0, -1.0, -1.0};
+    ippl::Vector<double, 3> origin = {0.0, 0.0, 0.0};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
     typedef ippl::Vector<double, dim> Vector_t;
@@ -39,37 +39,22 @@ int main(int argc, char *argv[]) {
     typename Vfield_t::view_type& view_exact = exact.getView();
     typename Vfield_t::view_type& view_result = result.getView();
 
-    typedef ippl::BConds<double, dim> bc_type;
-    typedef ippl::BConds<Vector_t, dim> vbc_type;
-
-    bc_type bcField;
-    vbc_type vbcField;
-
-    //periodic BC
-    for (unsigned int i=0; i < 6; ++i) {
-        vbcField[i] = std::make_shared<ippl::PeriodicFace<Vector_t, dim>>(i);
-    }
-
-    vfield.setFieldBC(vbcField);
-    exact.setFieldBC(vbcField);
-    result.setFieldBC(vbcField);
-
     const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
     const int nghost = vfield.getNghost();
     using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
     for (unsigned int gd = 0; gd < dim; ++gd) {
         Kokkos::parallel_for("Assign field",
-                mdrange_type({nghost, nghost, nghost},
-                             {view.extent(0) - nghost,
-                              view.extent(1) - nghost,
-                              view.extent(2) - nghost}),
+                mdrange_type({0,0,0},
+                             {view.extent(0),
+                              view.extent(1),
+                              view.extent(2)}),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
 
                 //local to global index conversion
-                const size_t ig = i + lDom[0].first() - nghost;
-                const size_t jg = j + lDom[1].first() - nghost;
-                const size_t kg = k + lDom[2].first() - nghost;
+                const int ig = i + lDom[0].first() - nghost;
+                const int jg = j + lDom[1].first() - nghost;
+                const int kg = k + lDom[2].first() - nghost;
             
                 double x = (ig + 0.5) * hx[0] + origin[0];
                 double y = (jg + 0.5) * hx[1] + origin[1];
