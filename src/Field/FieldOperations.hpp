@@ -155,7 +155,7 @@ namespace ippl {
         typename M::vector_type xvector(0);
         xvector[0] = 1.0;
         typename M::vector_type yvector(0);
-            yvector[1] = 1.0;
+        yvector[1] = 1.0;
         typename M::vector_type zvector(0);
         zvector[2] = 1.0;
         typename M::vector_type hvector(0);
