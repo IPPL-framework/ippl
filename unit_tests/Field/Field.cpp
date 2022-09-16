@@ -167,6 +167,66 @@ TEST_F(FieldTest, Grad) {
     }
 }
 
+TEST_F(FieldTest, Curl) {
+
+    ippl::Field<ippl::Vector<double, dim>, dim> vfield(*mesh, *layout);
+    const int nghost = vfield.getNghost();
+    auto view_field = vfield.getView();
+    
+    auto lDom = this->layout->getLocalNDIndex();
+    ippl::Vector<double, dim> hx = this->mesh->getMeshSpacing();
+    ippl::Vector<double, dim> origin = this->mesh->getOrigin();   
+
+    auto mirror = Kokkos::create_mirror_view(view_field);
+    Kokkos::deep_copy(mirror, view_field);
+
+    for (unsigned int gd = 0; gd < dim; ++gd) {
+        
+        bool dim0 = (gd == 0);
+        bool dim1 = (gd == 1);
+        bool dim2 = (gd == 2);
+
+        for (size_t i = 0; i < view_field.extent(0); ++i) {
+            for (size_t j = 0; j < view_field.extent(1); ++j) {
+                for (size_t k = 0; k < view_field.extent(2); ++k) {
+
+                    //local to global index conversion
+                    const int ig = i + lDom[0].first() - nghost;
+                    const int jg = j + lDom[1].first() - nghost;
+                    const int kg = k + lDom[2].first() - nghost;
+            
+                    double x = (ig + 0.5) * hx[0] + origin[0];
+                    double y = (jg + 0.5) * hx[1] + origin[1];
+                    double z = (kg + 0.5) * hx[2] + origin[2];
+                
+                    mirror(i,j,k)[gd] = dim0 * (y*z) +
+                                        dim1 * (x*z) +
+                                        dim2 * (x*y);
+                }
+            }
+        }
+    }
+
+    Kokkos::deep_copy(view_field, mirror);
+
+    ippl::Field<ippl::Vector<double, dim>, dim> result(*mesh, *layout);
+    result = curl(vfield);
+
+    const int shift = result.getNghost();
+    auto view = result.getView();
+    mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
+
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                for (size_t d = 0; d < dim; ++d) {
+                    ASSERT_DOUBLE_EQ(mirror(i, j, k)[d], 0.);
+                }
+            }
+        }
+    }
+}
 
 int main(int argc, char *argv[]) {
     Ippl ippl(argc,argv);
