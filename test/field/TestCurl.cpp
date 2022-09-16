@@ -18,7 +18,7 @@ double gaussian(double x, double y, double z, double sigma = 1.0, double mu = 0.
     double prefactor = (1/std::sqrt(2*2*2*pi*pi*pi))*(1/(sigma*sigma*sigma));
     double r2 = (x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu);
 
-    return -prefactor * exp(-r2/(2*sigma*sigma));
+    return -prefactor * std::exp(-r2/(2*sigma*sigma));
 }
 
 int main(int argc, char *argv[]) {
