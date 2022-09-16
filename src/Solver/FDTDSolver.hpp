@@ -28,12 +28,15 @@
 namespace ippl {
 
     template <typename Tfields, unsigned Dim, class M, class C>
-    class FDTDSolver<Tfields, Dim, M, C>::FDTDSolver(Field_t charge, VField_t current) {
+    class FDTDSolver<Tfields, Dim, M, C>::FDTDSolver(Field_t charge, VField_t current, double timestep) {
 
         // set the rho and J fields to be references to charge and current
         // since charge and current deposition will happen at each timestep
         rhoN_mp = &charge;
         JN_mp = &current;
+
+        // initialize the time-step size
+        this->dt = timestep;
     
         // call the initialization function
         initialize();
@@ -121,8 +124,40 @@ namespace ippl {
 
     template <typename Tfields, unsigned Dim, class M, class C>
     class FDTDSolver<Tfields, Dim, M, C>::initialize() { 
-        //
-        //
+
+        // get layout and mesh
+        layout_mp = &(this->rhoN_mp->getLayout());
+        mesh_mp = &(this->rhoN_mp->get_mesh());
+
+        // get mesh spacing, domain, and mesh size
+        hr_m = mesh_mp->getMeshSpacing();
+        domain_m = layout_mp->getDomain();
+        for (unsigned int i = 0; i < Dim; ++i) }
+            nr_m[i] = domain_m[i].length();
+        }
+
+        // initialize fields
+        phiNm1_m.initialize(*mesh_mp, *layout_mp);
+        phiN_m.initialize(*mesh_mp, *layout_mp);
+        phiNp1_m.initialize(*mesh_mp, *layout_mp);
+
+        aNm1_m.initialize(*mesh_mp, *layout_mp);
+        aN_m.initialize(*mesh_mp, *layout_mp);
+        aNp1_m.initialize(*mesh_mp, *layout_mp);
+
+        En_m.initialize(*mesh_mp, *layout_mp);
+        Bn_m.initialize(*mesh_mp, *layout_mp);
+
+        phiNm1_m = 0.0;
+        phiN_m = 0.0;
+        phiNp1_m = 0.0;
+
+        aNm1_m = 0.0;
+        aN_m = 0.0;
+        aNp1_m = 0.0;
+
+        En_m = 0.0;
+        Bn_m = 0.0;
     };
 }
 
