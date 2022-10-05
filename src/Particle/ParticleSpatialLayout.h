@@ -62,6 +62,7 @@ namespace ippl {
         using bool_type = typename detail::ViewType<bool, 1>::view_type;
         using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
         using Mesh_t = UniformCartesian<double,Dim>;
+        using FieldLayout_t = FieldLayout<Dim>;
 
         using size_type = detail::size_type;
 
@@ -84,6 +85,9 @@ namespace ippl {
     protected:
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
+
+        //! The FieldLayout containing information on nearest neighbors
+        FieldLayout_t flayout_m;
          
     public:
         void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
