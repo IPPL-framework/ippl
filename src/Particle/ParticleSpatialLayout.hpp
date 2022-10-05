@@ -43,7 +43,7 @@ namespace ippl {
     ParticleSpatialLayout<T, Dim, Mesh>::ParticleSpatialLayout(
         FieldLayout<Dim>& fl,
         Mesh& mesh)
-    : rlayout_m(fl, mesh)
+    : rlayout_m(fl, mesh), flayout_m(fl)
     {}
 
     template <typename T, unsigned Dim, class Mesh>
