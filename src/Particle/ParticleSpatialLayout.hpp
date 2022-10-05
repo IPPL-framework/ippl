@@ -214,24 +214,55 @@ namespace ippl {
         auto& positions = pdata.R.getView();
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
         using view_size_t = typename RegionLayout_t::view_type::size_type;
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>; 
         int myRank = Ippl::Comm->rank();
+
+        using neighbor_type = typename FieldLayout_t::face_neighbor_type;
+        using neighbor_view = Kokkos::View<int**>;
+        const neighbor_type neighbors = flayout_m.getFaceNeighbors();
+        int nRanks = Ippl::Comm->size();
+
+        //ranks container
+        neighbor_view neighbor_ranks("Neighbor ranks", neighbors.size(), nRanks );
+
+        //boolean container of particles that travelled more than one cell
+        bool_type notfound("Not found", pdata.getLocalNum());
+
+        /* neighbors stores 2*Dim vectors containing the rank among which each neighbor is shared.
+         * We loop over it and store it in the neighbor_ranks container. */
+        for(size_t face=0, face < neighbors.size(), face++)
+            for (size_t i = 0; i < neighbors[face].size() ; ++i)
+                neighbor_ranks(face,i) = neighbors[face][i];
+
+
         Kokkos::parallel_for(
             "ParticleSpatialLayout::locateParticles()",
-            mdrange_type({0, 0},
-                         {ranks.extent(0), Regions.extent(0)}),
-            KOKKOS_LAMBDA(const size_t i, const view_size_t j) {
+            mdrange_type({0, 0, 0},
+                         {ranks.extent(0), neighbors_ranks.extent(0), neighbor_ranks.extent(1)}),
+            KOKKOS_LAMBDA(const size_t i, const size_t face, const size_t j) {
                 bool xyz_bool = false;
-                xyz_bool = ((positions(i)[0] >= Regions(j)[0].min()) &&
+
+                int rank = neighbor_ranks(face, j);
+
+                xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
+                            (positions(i)[0] <= Regions(rank)[0].max()) &&
+                            (positions(i)[1] >= Regions(rank)[1].min()) &&
+                            (positions(i)[1] <= Regions(rank)[1].max()) &&
+                            (positions(i)[2] >= Regions(rank)[2].min()) &&
+                            (positions(i)[2] <= Regions(rank)[2].max()));
+                
+                /*xyz_bool = ((positions(i)[0] >= Regions(j)[0].min()) &&
                             (positions(i)[0] <= Regions(j)[0].max()) &&
                             (positions(i)[1] >= Regions(j)[1].min()) &&
                             (positions(i)[1] <= Regions(j)[1].max()) &&
                             (positions(i)[2] >= Regions(j)[2].min()) &&
-                            (positions(i)[2] <= Regions(j)[2].max()));
+                            (positions(i)[2] <= Regions(j)[2].max()));*/
                 if(xyz_bool){
-                    ranks(i) = j;
+                    ranks(i) = rank;
                     invalid(i) = (myRank != ranks(i));
                 }
+
+                notfound = xyz_bool;
         });
         Kokkos::fence();
     }
