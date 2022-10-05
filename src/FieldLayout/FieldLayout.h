@@ -228,7 +228,22 @@ namespace ippl {
          */
         face_neighbor_type faceNeighbors_m;
 
-        match_face_type matchface_m = { 1, 0, 3, 2, 5, 4 };
+        /*!
+         * Matchface_m is a container of length 2*Dim. The index represents
+         * faces with the same ordering as above, and the value represents
+         * the corresponding matching face number from the neighbours.
+         *
+         * For Dim = 3, matchface_m represents the faces. 
+         * For Dim = 2, it represents the edges.
+         * For Dim = 1, it is the vertices.
+         */
+        if constexpr(Dim == 1) {
+            match_face_type matchface_m = { 1, 0 };
+        } else if constexpr(Dim == 2) {
+            match_face_type matchface_m = { 1, 0, 3, 2 };
+        } else if constexpr(Dim == 3) {
+            match_face_type matchface_m = { 1, 0, 3, 2, 5, 4 };
+        }
 
         /*!
          * Neighboring ranks that store the edge values.
@@ -249,7 +264,22 @@ namespace ippl {
          */
         edge_neighbor_type edgeNeighbors_m;
         
-        match_edge_type matchedge_m = { 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8 };
+        /*!
+         * Matchedge_m is a container of length Dim*(2**(Dim-1)). The index
+         * represents edges with the same ordering as above, and the values
+         * are the corresponding matching edge number from the neighbours.
+         *
+         * For Dim = 3, matchedge_m represents the edges. 
+         * For Dim = 2, it represents the vertices.
+         * For Dim = 1, it is redundant.
+         */
+        if constexpr(Dim == 1) {
+            match_edge_type matchedge_m = { 0 };
+        } else if constexpr(Dim == 2) {
+            match_edge_type matchedge_m = { 3, 2, 1, 0 };
+        } else if constexpr(Dim == 3) {
+            match_edge_type matchedge_m = { 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8 };
+        }
 
         /*!
          * Neighboring ranks that have the vertex value (corner cell). The value
@@ -266,8 +296,24 @@ namespace ippl {
          */
         vertex_neighbor_type vertexNeighbors_m;
 
-        match_vertex_type matchvertex_m = { 7, 6, 5, 4, 3, 2, 1, 0 };
-
+        /*!
+         * Matchvertex_m is a container of length 2*(2**(Dim-1)). The index
+         * represents vertices with the same ordering as above, and the values
+         * are the corresponding matching vertex number from the neighbour vertex.
+         * The neighbour vertex is the vertex which would exchange information to
+         * the neighboring rank if the computational cell is extended by 1 halo
+         * layer in all dimensions.
+         *
+         * For Dim = 3, matchvertex_m represents the vertices. 
+         * For Dim = 2 and Dim = 1, it is redundant.
+         */
+        if constexpr(Dim == 1) {
+            match_vertex_type matchvertex_m = { 1, 0 };
+        } else if constexpr(Dim == 2) {
+            match_vertex_type matchvertex_m = { 3, 2, 1, 0 };
+        } else if constexpr(Dim == 3) {
+            match_vertex_type matchvertex_m = { 7, 6, 5, 4, 3, 2, 1, 0 };
+        }
 
         void calcWidths();
 
