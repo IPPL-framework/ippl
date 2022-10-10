@@ -227,12 +227,12 @@ namespace ippl {
         Kokkos::parallel_for(
             "ParticleSpatialLayout::locateParticles()",
             mdrange_type({0, 0},
-                         {ranks.extent(0), neighbor.size()}),
+                         {ranks.extent(0), neighbors.size()}),
             KOKKOS_LAMBDA(const size_t i, const size_t face) {
                 bool xyz_bool = false;
 
                  for (size_t j = 0; j < neighbors[face].size() ; ++j){
-                        int rank = neighbor[face][j];
+                        int rank = neighbors[face][j];
 
                 xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
                             (positions(i)[0] <= Regions(rank)[0].max()) &&
