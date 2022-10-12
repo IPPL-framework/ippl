@@ -170,6 +170,7 @@ namespace ippl {
             }, invalidCount);
         Kokkos::fence();
 
+
         pdata.destroy(invalid, invalidCount);
         Kokkos::fence();
 
@@ -219,7 +220,6 @@ namespace ippl {
 
         using neighbor_type = typename FieldLayout_t::face_neighbor_type;
         const neighbor_type neighbors = flayout_m.getFaceNeighbors();
-        int nRanks = Ippl::Comm->size();
 
         //boolean container of particles that travelled more than one cell
         bool_type notfound("Not found", pdata.getLocalNum());
@@ -231,8 +231,23 @@ namespace ippl {
             KOKKOS_LAMBDA(const size_t i, const size_t face) {
                 bool xyz_bool = false;
 
+		//first check in our rank
+		xyz_bool = ((positions(i)[0] >= Regions(myRank)[0].min()) &&
+                            (positions(i)[0] <= Regions(myRank)[0].max()) &&
+                            (positions(i)[1] >= Regions(myRank)[1].min()) &&
+                            (positions(i)[1] <= Regions(myRank)[1].max()) &&
+                            (positions(i)[2] >= Regions(myRank)[2].min()) &&
+                            (positions(i)[2] <= Regions(myRank)[2].max()));
+
+		if(xyz_bool){
+			ranks(i) = myRank;
+			invalid(i) = false;
+		}
+		
+		else{
+
                  for (size_t j = 0; j < neighbors[face].size() ; ++j){
-                        int rank = neighbors[face][j];
+                        view_size_t rank = neighbors[face][j];
 
                 xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
                             (positions(i)[0] <= Regions(rank)[0].max()) &&
@@ -247,13 +262,17 @@ namespace ippl {
                             (positions(i)[1] <= Regions(j)[1].max()) &&
                             (positions(i)[2] >= Regions(j)[2].min()) &&
                             (positions(i)[2] <= Regions(j)[2].max()));*/
-                if(xyz_bool){
+              
+		 if(xyz_bool){
                     ranks(i) = rank;
-                    invalid(i) = (myRank != ranks(i));
+                    invalid(i) = true;
+		    break;	
                 }
-
-                notfound = xyz_bool;
+	 
                  }
+		
+
+		} notfound(i) = xyz_bool; //Following the meeting of 11/10, I am not sure whether i should keep this container.
         });
         Kokkos::fence();
     }
