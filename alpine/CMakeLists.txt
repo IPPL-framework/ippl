@@ -25,6 +25,9 @@ target_link_libraries (LandauDamping ${IPPL_LIBS})
 add_executable (BumponTailInstability BumponTailInstability.cpp)
 target_link_libraries (BumponTailInstability ${IPPL_LIBS})
 
+add_executable (Langevin Langevin.cpp)
+target_link_libraries (Langevin ${IPPL_LIBS})
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
