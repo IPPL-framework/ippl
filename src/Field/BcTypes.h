@@ -52,6 +52,7 @@ namespace ippl {
         ZERO_FACE        = 0b0011,
         EXTRAPOLATE_FACE = 0b0100,
         NO_FACE          = 0b1000,
+        ABC_FACE         = 0b1111; 
     };
 
     namespace detail {
@@ -217,6 +218,28 @@ namespace ippl {
     private:
         face_neighbor_type faceNeighbors_m;
         detail::FieldBufferData<T> haloData_m;
+    };
+
+    template<typename T,
+             unsigned Dim,
+             class Mesh = UniformCartesian<double, Dim>,
+             class Cell = typename Mesh::DefaultCentering>
+    class ABCFace : public detail::BCondBase<T, Dim, Mesh, Cell>
+    {
+    public:
+        using Field_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
+
+        ABCFace(unsigned face)
+        : detail::BCondBase<T, Dim, Mesh, Cell>(face)
+        { }
+
+        virtual FieldBC getBCType() const { return ABC_FACE; }
+
+        // apply the absorbing boundary conditions
+        // this should be called at each timestep, as the ABCs evolve with time
+        virtual void apply(Field_t& field_np1, Field_t& field_n, Field_t& field_nm1);
+
+        virtual void write(std::ostream& out) const;
     };
 }
 
