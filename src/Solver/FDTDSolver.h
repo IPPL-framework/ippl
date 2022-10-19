@@ -54,6 +54,10 @@ namespace ippl {
             // evaluates E and B fields using computed potentials
             void field_evaluation();
 
+            // get the electromagnetic fields
+            VField_t get_Efield() { return En_m; }
+            VField_t get_Bfield() { return Bn_m; }
+
             // initialization of FDTD solver
             void initialize();
 
