@@ -172,12 +172,15 @@ much the same.
     Since everything of this class except void setBCAllPeriodic()  function is public, we have full acces to the full internal
     representation of the class, and therefore not beeing able to write applications as a class variable should not
     pose a problem.
-
+ 	
+	problm seems to be ulmer used a typ Vektor<double, dim> which i dont kno what kind of type this is, but i dont hink i can use here
+	and th vecor-t avaiable has different syntax so i ave to figure thisone out first
 */
 //template?
 //PRE: beam radiues >= 0; NParticle ... 
 //POST: return the nuch_type paramter with particles initialize on a cold sphere
-void createParticleDistributionColdSphere(  bunch_type* P,
+template<typename bunch>
+void createParticleDistributionColdSphere(  bunch P,
                                             double beam_radius, 
                                             unsigned Nparticle,
                                             double qi//, 
@@ -191,16 +194,15 @@ void createParticleDistributionColdSphere(  bunch_type* P,
         std::uniform_real_distribution<double> unidistribution(0,1);
         auto uni = std::bind(unidistribution, generator);
         P->Q_m=0;
-        Vector_t source(0,0,0);
+        Vector_t source({0,0,0});
 
         if (P->singleInitNode()) {
                 P->create(Nparticle);
                 for (unsigned i = 0; i<Nparticle; ++i) {
                         Vector_t X(normal(),normal(),normal());
                         double U = uni();
-                        Vector_t pos = source + beam_radius*std::pow(U,1./3.)/std::sqrt(dot(X,X))*X;
-                        //how does this create a unfirm distribution??
-                        Vector_t mom(0,0,0);
+                        Vector_t pos = source + beam_radius*pow(U,1./3.)/sqrt(dot(X,X))*X;
+                        Vector_t mom({0,0,0});
 
                         P->Q_m += -qi;
                         P->q[i] = -qi;
@@ -210,7 +212,7 @@ void createParticleDistributionColdSphere(  bunch_type* P,
         }
         P->update();
 }
-{
+
 /* we need to adapt the apply constant focusing function from the p3m heating test.
  there it is defined as a class function for the chaged_particles class, if P is a Particles instacne
  the function can be called with a simple call like:
@@ -221,7 +223,7 @@ void createParticleDistributionColdSphere(  bunch_type* P,
     Attentio the two charged particles classes vary at some points
   
     the type which is worked with is 
-    bunch_type = ChargedParticles<PLayout_t>;   : public ippl::ParticleBase<PLayout>
+    ChargedParticles<PLayout_t>;   : public ippl::ParticleBase<PLayout>
     subclass of particle Base inside ippl/alpine/chargedPricles.hpp
 
     certain class object must be defined in function since they are missing in this 
@@ -238,19 +240,37 @@ void createParticleDistributionColdSphere(  bunch_type* P,
         // fabs just takes absolut
 
 */
-}
-    // PRE:
-    // POST:
-    void applyConstantFocusing( bunch_type* P,
+// Reduce equally-sized arrays across the machine, by sending to node
+// // 0 and broadcasting back the result.  The arguments are two begin,end
+// // iterators for the source of the data, an iterator pointing to
+// // where the summed data should go, and an operation to perform in
+// // the reduction ... this last should be from PETE, e.g., OpAdd, etc.
+// // template classes found in either ../Expression/Applicative.h or
+// // ../Expression/TypeComputations.h. The are simple classes  such as
+// // OpAnd(), OpMax(), OpAdd(), OpMultipply(), etc....
+
+//template <typename T, class Op>
+//void reduce(const T* input, T* output, int count, Op op, int root = 0);
+
+// PRE:
+// POST:
+template<typename bunch> //opaddasign doesnt work with templates??
+void applyConstantFocusing( //	std::unique_ptr<ChargedParticles<PLayout_t>> P,
+				bunch P,
                                 double f,
                                 double beam_radius
                                 ) {  
-        Inform m("computeAvgSpaceChargeForces ");
 
-        const double N =  static_cast<double>(P->getTotalNum());
-        unsigned DIM = 3; 
-        double locAvgEF[DIM];
-        double globSumEF[DIM];
+
+//      Inform m("computeAvgSpaceChargeForces ");
+//	m << "apply constant focusing"<< endl;
+
+        
+//=0000000000000000000000===========================
+	/*
+ 	 unsigned DIM = 3; 
+        double locAvgEF[DIM];//={};
+        double globSumEF[DIM];//={};
         Vector_t avgEF;
 
         for (unsigned i=0; i<P->getLocalNum(); ++i) {
@@ -259,22 +279,91 @@ void createParticleDistributionColdSphere(  bunch_type* P,
             locAvgEF[2]+=fabs(P->E[i](2));
         }
 
-        reduce(&(locAvgEF[0]), &(locAvgEF[0]) + DIM,
-               &(globSumEF[0]), OpAddAssign());
-
-        m << "globSumEF = " << globSumEF[0] << "\t" << globSumEF[1] << "\t" << globSumEF[2] << endl;
-
+       // reduce(&(locAvgEF[0]), &(locAvgEF[0]) + DIM, &(globSumEF[0]), OpAdd());
+	
+	reduce(&(locAvgEF[0]), &(globSumEF[0]), DIM, OpAdd());
+could just do this reduce with MPI ... 
+*
         avgEF[0]=globSumEF[0]/N;
         avgEF[1]=globSumEF[1]/N;
         avgEF[2]=globSumEF[2]/N;
 
-        m << "apply constant focusing"<< endl;
-
+		
+	//this is the old variant we should work with Kokkos and MPI
+	
         double focusingForce=sqrt(dot(avgEF,avgEF));
         for (unsigned i=0; i<P->getLocalNum(); ++i) {
             P->E[i]+=P->R[i]/beam_radius*f*focusingForce;
         }
-    }
+
+*/
+
+//==================================================
+/*????
+	if (Ippl::Comm->rank() == 0){
+		Vector_t avgEF;
+	}
+
+	for(unsigned d = 0; d<Dim; ++d){
+
+		double locEFtmp  = 0.0;
+		double globEFtmp = 0.0;
+		Kokkos::parallel_reduce("get local average E Field sum over all particles:", 
+					 P->getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& valL){
+                                   		double myVal = P->[i](d);
+                                    		valL += myVal;
+                                	 },                    			
+					 Kokkos::Sum<double>(locEFtmp)
+					);	
+		
+		MPI_Reduce(&locEFtmp, &globEFtmp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());	
+		
+		if (Ippl::Comm->rank() == 0){
+			avgEF[d] =  globEFtmp/N;
+		}
+	}
+*/
+
+//	if (Ippl::Comm->rank() == 0){
+//==================================================
+
+	
+        const double N =  static_cast<double>(P->getTotalNum());
+	Vector_t avgEF;
+	double locEFsum[Dim];// = {0.0, 0.0, 0.0};
+	double globEFsum[Dim];// = {0.0, 0.0, 0.0};
+
+	for(unsigned d = 0; d<Dim; ++d){
+		locEFsum[d]=0.0;
+		globEFsum[d]=0.0;
+		Kokkos::parallel_reduce("get local average E Field sum over all particles:", 
+					 P->getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& valL){
+                                   		double myVal = P->E[i](d);
+                                    		valL += myVal;
+                                	 },                    			
+					 Kokkos::Sum<double>(locEFsum[d])
+					);
+	}
+	
+	MPI_Allreduce(locEFsum, globEFsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
+	for(int d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N;
+       
+
+
+        double focusingForce=sqrt(dot(avgEF,avgEF));
+	Kokkos::parallel_for("Apply Constant Focusing",
+				P->getLocalNum(),
+				KOKKOS_LAMBDA(const int i){
+         				P->E[i]+=P->R[i]/beam_radius*f*focusingForce;
+				}	
+	);
+
+
+
+
+ }
 
 
 
