@@ -404,5 +404,7 @@ int main(int argc, char *argv[]){
     std::chrono::duration<double> time_chrono = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
 
+    Ippl::cleanAndFinalize();
+
     return 0;
 }

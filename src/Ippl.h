@@ -60,6 +60,8 @@ public:
 
     static MPI_Comm getComm() {return *Ippl::Comm->getCommunicator();}
 
+    static void cleanAndFinalize();
+
     // Kill the communication and throw runtime error exception.
     static void abort(const char * = 0);
 

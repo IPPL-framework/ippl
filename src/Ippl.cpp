@@ -132,6 +132,12 @@ int Ippl::getIntOption(const char* arg) {
 /////////////////////////////////////////////////////////////////////
 // Destructor: need to delete comm library if this is the last IpplInfo
 Ippl::~Ippl() {
+    //Comm->deleteAllBuffers();
+    //Kokkos::finalize();
+}
+
+
+void Ippl::cleanAndFinalize() {
     Comm->deleteAllBuffers();
     Kokkos::finalize();
 }
