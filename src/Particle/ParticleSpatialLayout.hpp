@@ -208,8 +208,8 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh>
     void ParticleSpatialLayout<T, Dim, Mesh>::locateParticles(
         const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
-        locate_type& ranks,
-        bool_type& invalid) const
+        locate_type ranks,
+        bool_type invalid) const
     {
         auto& positions = pdata.R.getView();
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
@@ -239,8 +239,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh>
     void ParticleSpatialLayout<T, Dim, Mesh>::fillHash(int rank,
-                                                       const locate_type& ranks,
-                                                       hash_type& hash)
+                                                       const locate_type ranks,
+                                                       hash_type hash)
     {
         /* Compute the prefix sum and fill the hash
          */
@@ -265,7 +265,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh>
     size_t ParticleSpatialLayout<T, Dim, Mesh>::numberOfSends(
         int rank,
-        const locate_type& ranks)
+        const locate_type ranks)
     {
         size_t nSends = 0;
         Kokkos::parallel_reduce(
