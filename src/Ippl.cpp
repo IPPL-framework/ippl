@@ -136,7 +136,6 @@ Ippl::~Ippl() {
     Kokkos::finalize();
 }
 
-
 void Ippl::abort(const char *msg) {
     // print out message, if one was provided
     if (msg != 0) {
