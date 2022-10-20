@@ -739,6 +739,7 @@ int main(int argc, char *argv[]){
         //COmpute and write temperature
         P->compute_temperature();
         writeTemperature(P,0);
+        dumpParticlesOPAL(P,0);
         for (int it=0; it<iterations; it++) {
           
           
