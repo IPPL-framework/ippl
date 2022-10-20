@@ -150,6 +150,7 @@ const char* TestName = "LandauDamping";
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
+    
     Inform msg("LandauDamping");
     Inform msg2all("LandauDamping",INFORM_ALL_NODES);
 
@@ -208,7 +209,7 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.5*dx;
+    const double dt = 0.05;//0.5*dx;
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
@@ -301,7 +302,6 @@ int main(int argc, char *argv[]){
         ++nloc;
 
     P->create(nloc);
-    {
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
@@ -309,7 +309,6 @@ int main(int argc, char *argv[]){
 
     Kokkos::fence();
     Ippl::Comm->barrier();
-    }
     IpplTimings::stopTimer(particleCreation);                                                    
     
     P->q = P->Q_m/totalP;
@@ -406,7 +405,6 @@ int main(int argc, char *argv[]){
     std::chrono::duration<double> time_chrono = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
 
-    Ippl::cleanAndFinalize();
 
     return 0;
 }
