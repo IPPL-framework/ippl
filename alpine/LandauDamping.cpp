@@ -301,6 +301,7 @@ int main(int argc, char *argv[]){
         ++nloc;
 
     P->create(nloc);
+    {
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
@@ -308,6 +309,7 @@ int main(int argc, char *argv[]){
 
     Kokkos::fence();
     Ippl::Comm->barrier();
+    }
     IpplTimings::stopTimer(particleCreation);                                                    
     
     P->q = P->Q_m/totalP;
