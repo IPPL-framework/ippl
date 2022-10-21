@@ -105,7 +105,7 @@ public:
                 auto& this_view = this->getView(j);
 
                 Kokkos::parallel_for("assign",
-                                     Kokkos::RangePolicy(5, 15), KOKKOS_LAMBDA(const size_t i) {
+                                     Kokkos::RangePolicy<size_t>(5, 15), KOKKOS_LAMBDA(const size_t i) {
                     bview(i-5) = this_view(i);
                 });
             }

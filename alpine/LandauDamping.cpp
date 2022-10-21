@@ -150,6 +150,7 @@ const char* TestName = "LandauDamping";
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
+    
     Inform msg("LandauDamping");
     Inform msg2all("LandauDamping",INFORM_ALL_NODES);
 
@@ -168,6 +169,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("kick");
     static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("drift");
     static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
+    static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
     static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
 
@@ -315,6 +317,11 @@ int main(int argc, char *argv[]){
     //The update after the particle creation is not needed as the 
     //particles are generated locally
 
+    IpplTimings::startTimer(DummySolveTimer);
+    P->rho_m = 0.0;
+    P->solver_mp->solve();
+    IpplTimings::stopTimer(DummySolveTimer);
+
     P->scatterCIC(totalP, 0, hr);
 
     IpplTimings::startTimer(SolveTimer);
@@ -397,6 +404,7 @@ int main(int argc, char *argv[]){
 
     std::chrono::duration<double> time_chrono = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
+
 
     return 0;
 }
