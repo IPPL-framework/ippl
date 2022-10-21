@@ -508,6 +508,110 @@ public:
         
         Ippl::Comm->barrier();
      }
+
+     void dumpLangevin() {
+
+        const int nghostE = E_m.getNghost();
+        auto Eview = E_m.getView();
+        double fieldEnergy, ExAmp;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+        double temp = 0.0;
+        Kokkos::parallel_reduce("Ex inner product",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = std::pow(Eview(i, j, k)[0], 2);
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+        double globaltemp = 0.0;
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        fieldEnergy = globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
+
+        double tempMax = 0.0;
+        Kokkos::parallel_reduce("Ex max norm",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = std::fabs(Eview(i, j, k)[0]);
+                                    if(myVal > valL) valL = myVal;
+                                }, Kokkos::Max<double>(tempMax));
+        ExAmp = 0.0;
+        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**/// TEMPERATURE CALCULATION
+/**/cant call compute_temperature();so i inline it here directly...
+/**/        const double N =  static_cast<double>(P->getTotalNum());
+/**/        double locVELsum[Dim]={0.0,0.0,0.0};
+/**/        double globVELsum[Dim];
+/**/        double avgVEL[Dim];
+/**/        double locT[Dim]={0.0,0.0,0.0};
+/**/        double globT[Dim];       
+/**/	    Vector_t temperature;
+/**/
+/**/        for(unsigned d = 0; d<Dim; ++d){
+/**/		    Kokkos::parallel_reduce("get local velocity sum", 
+/**/		    			 P->getLocalNum(), 
+/**/		    			 KOKKOS_LAMBDA(const int i, double& valL){
+/**/                                       		double myVal = P->v[i](d);
+/**/                                        	valL += myVal;
+/**/                                    	 },                    			
+/**/		    			 Kokkos::Sum<double>(locVELsum[d])
+/**/		    			);
+/**/	    }
+/**/    	MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
+/**/        for(int d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
+/**/        for(unsigned d = 0; d<Dim; ++d){
+/**/		    Kokkos::parallel_reduce("get local velocity sum", 
+/**/		    			 P->getLocalNum(), 
+/**/		    			 KOKKOS_LAMBDA(const int i, double& valL){
+/**/                                       		double myVal = (P->v[i](d)-avgVEL[d])*(P->v[i](d)-avgVEL[d]);
+/**/                                        	valL += myVal;
+/**/                                    	 },                    			
+/**/		    			 Kokkos::Sum<double>(locT[d])
+/**/		    			);
+/**/	    }
+/**/    	MPI_Reduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());	
+/**/        if (Ippl::Comm->rank() == 0) for(int d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
+/**/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        if (Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/FieldLangevin_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
+
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(time_m == 0.0) {
+                csvout  <<   "time" << std::setw(20) << 
+                            "Ex_field_energy" << std::setw(20)<< 
+                            "Ex_max_norm" << std::setw(20) << 
+                            "Temperature_xyz" << endl;
+            }
+
+            csvout  <<  time_m << std::setw(20) << 
+                        fieldEnergy << std::setw(20)<< 
+                        ExAmp << std::setw(20) << 
+                        temperature[0] << " "
+                        temperature[1] << " "
+                        temperature[2] << " "
+                        << endl;
+        }
+        
+        Ippl::Comm->barrier();
+     }
      
      void dumpBumponTail() {
 
