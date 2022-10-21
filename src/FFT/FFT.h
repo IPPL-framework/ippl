@@ -81,12 +81,10 @@ namespace ippl {
         template <>
         struct HeffteBackendType<float> {
             using backend = heffte::backend::fftw;
-            //using complexType = std::complex<float>;
         };
         template <>
         struct HeffteBackendType<double> {
             using backend = heffte::backend::fftw;
-            //using complexType = std::complex<double>;
         };
         struct HeffteBackendTypeRR {
             using backendSine = heffte::backend::fftw_sin;
@@ -97,12 +95,10 @@ namespace ippl {
         template <>
         struct HeffteBackendType<float> {
             using backend = heffte::backend::mkl;
-            //using complexType = std::complex<float>;
         };
         template <>
         struct HeffteBackendType<double> {
             using backend = heffte::backend::mkl;
-            //using complexType = std::complex<double>;
         };
         struct HeffteBackendTypeRR {
             using backendSine = heffte::backend::mkl_sin;
@@ -114,12 +110,10 @@ namespace ippl {
         template <>
         struct HeffteBackendType<float> {
             using backend = heffte::backend::cufft;
-            //using complexType = Kokkos::complex<float>;
         };
         template <>
         struct HeffteBackendType<double> {
             using backend = heffte::backend::cufft;
-            //using complexType = Kokkos::complex<double>;
         };
         struct HeffteBackendTypeRR {
             using backendSine = heffte::backend::cufft_sin;
@@ -137,12 +131,10 @@ namespace ippl {
         template <>
         struct HeffteBackendType<float> {
             using backend = heffte::backend::stock;
-            //using complexType = std::complex<float>;
         };
         template <>
         struct HeffteBackendType<double> {
             using backend = heffte::backend::stock;
-            //using complexType = std::complex<double>;
         };
         struct HeffteBackendTypeRR {
             using backendSine = heffte::backend::stock_sin;
@@ -171,7 +163,6 @@ namespace ippl {
         typedef Field<Complex_t,Dim> ComplexField_t;
 
         using heffteBackend = typename detail::HeffteBackendType<T>::backend;
-        //using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
         using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<Complex_t>;
 
         /** Create a new FFT object with the layout for the input Field and
@@ -217,7 +208,6 @@ namespace ippl {
 
         using heffteBackend = typename detail::HeffteBackendType<T>::backend;
         typedef Kokkos::complex<T> Complex_t;
-        //using heffteComplex_t = typename detail::HeffteBackendType<T>::complexType;
         using workspace_t = typename heffte::fft3d_r2c<heffteBackend>::template buffer_container<Complex_t>;
 
         typedef Field<Complex_t,Dim> ComplexField_t;
