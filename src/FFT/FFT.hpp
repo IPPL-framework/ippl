@@ -151,7 +151,7 @@ namespace ippl {
         *Points 2 and 3 are slightly less of a concern and the main one is 
         *point 1.
        */
-       Kokkos::View<heffteComplex_t***,Kokkos::LayoutLeft>
+       Kokkos::View<Complex_t***,Kokkos::LayoutLeft>
            tempField("tempField", fview.extent(0) - 2*nghost,
                                   fview.extent(1) - 2*nghost,
                                   fview.extent(2) - 2*nghost);
@@ -348,7 +348,7 @@ namespace ippl {
                                     fview.extent(1) - 2*nghostf,
                                     fview.extent(2) - 2*nghostf);
 
-       Kokkos::View<heffteComplex_t***, Kokkos::LayoutLeft>
+       Kokkos::View<Complex_t***, Kokkos::LayoutLeft>
            tempFieldg("tempFieldg", gview.extent(0) - 2*nghostg,
                                     gview.extent(1) - 2*nghostg,
                                     gview.extent(2) - 2*nghostg);

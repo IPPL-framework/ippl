@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
         typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, dim> Solver_t;
 
         ippl::ParameterList params;
-        params.add("output_type", Solver_t::GRAD);
+        params.add("output_type", Solver_t::SOL);
         params.add("use_heffte_defaults", false);  
         params.add("use_pencils", true);  
         //params.add("use_reorder", false);  
