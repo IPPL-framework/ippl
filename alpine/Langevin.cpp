@@ -1,11 +1,13 @@
 // Langevin Collision Operator Test
+// amnual needs to be adapted!!!???
 //   Usage:
-//     srun ./LandauDamping <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
+//     srun ./Langevin <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
 //     ny       = No. cell-centered points in the y-direction
 //     nz       = No. cell-centered points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
+//     L        = LBOX sidelength of box simulated
 //     stype    = Field solver type e.g., FFT
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
@@ -154,34 +156,11 @@ const char* TestName = "LangevinCollsion";
 
 //==============================   ==============================  ============================== 
 
-/*
-CANT USE VEKTOR CLASS HAVE TO USE OTHER VECTOR DEFINITION...
-
-for the initial distribution, we use the same functiona as the heating of the p3m method.
-ippl/test/p3m/ChargedParticleFactory.hpp
-except for slieght differences in the used particle class this function should work pretty 
-much the same. 
-
-
-        //are all part of abstractparticle base class
-        //singleInitNode: check if we are initialisation node
-        //create: initialize amount of particles
-        //update: must be called after particle creation or deltion
-
-        PROBLEMS:
-    Since everything of this class except void setBCAllPeriodic()  function is public, we have full acces to the full internal
-    representation of the class, and therefore not beeing able to write applications as a class variable should not
-    pose a problem.
- 	
-	problm seems to be ulmer used a typ Vektor<double, dim> which i dont kno what kind of type this is, but i dont hink i can use here
-	and th vecor-t avaiable has different syntax so i ave to figure thisone out first
-*/
-//template?
 //PRE: beam radiues >= 0; NParticle ... 
 //POST: return the nuch_type paramter with particles initialize on a cold sphere
 template<typename bunch>
 void createParticleDistributionColdSphere(  bunch P,
-                                            double beam_radius, 
+                                            double beamRadius, 
                                             unsigned Nparticle,
                                             double qi//, 
                                             // double mi
@@ -196,198 +175,102 @@ void createParticleDistributionColdSphere(  bunch P,
         P->Q_m=0;
         Vector_t source({0,0,0});
 
-        if (P->singleInitNode()) {
+        if (P->singleInitNode()) { //takes care s.t only one node creates particles
                 P->create(Nparticle);
                 for (unsigned i = 0; i<Nparticle; ++i) {
                         Vector_t X(normal(),normal(),normal());
                         double U = uni();
-                        Vector_t pos = source + beam_radius*pow(U,1./3.)/sqrt(dot(X,X))*X;
+                        Vector_t pos = source + beamRadius*pow(U,1./3.)/sqrt(dot(X,X))*X;
                         Vector_t mom({0,0,0});
 
-                        P->Q_m += -qi;
+                        // P->Q_m += -qi;
                         P->q[i] = -qi;
-                        P->P[i] = mom; // zero momentum intial condition
+                        P->P[i] = mom;  //zero momentum intial condition
                         P->R[i] = pos;  //positionattribute given in baseclass
                 }
+                // p->Q_m = Nparticle*(-qi); is already done in constructor
         }
         P->update();
 }
 
-/* we need to adapt the apply constant focusing function from the p3m heating test.
- there it is defined as a class function for the chaged_particles class, if P is a Particles instacne
- the function can be called with a simple call like:
-
-    
-    P->applyConstantFocusing(focusingForce,beam_radius);
-    
-    Attentio the two charged particles classes vary at some points
-  
-    the type which is worked with is 
-    ChargedParticles<PLayout_t>;   : public ippl::ParticleBase<PLayout>
-    subclass of particle Base inside ippl/alpine/chargedPricles.hpp
-
-    certain class object must be defined in function since they are missing in this 
-    version of the class
-
-    also to write the constant focusing, we need to know the avg space charged force. We therefore copy both functions
-    calculation and application of the avg space charge force and merge them in our one function.
-    To get the constant focusing
-
-        //for myself: following are all part of abstractparticle base class
-        //gettotalnum: returns amount of parrticles in the particles object
-
-        Is the attribut E is the same as as the attribute EF...
-        // fabs just takes absolut
-
-*/
-// Reduce equally-sized arrays across the machine, by sending to node
-// // 0 and broadcasting back the result.  The arguments are two begin,end
-// // iterators for the source of the data, an iterator pointing to
-// // where the summed data should go, and an operation to perform in
-// // the reduction ... this last should be from PETE, e.g., OpAdd, etc.
-// // template classes found in either ../Expression/Applicative.h or
-// // ../Expression/TypeComputations.h. The are simple classes  such as
-// // OpAnd(), OpMax(), OpAdd(), OpMultipply(), etc....
-
-//template <typename T, class Op>
-//void reduce(const T* input, T* output, int count, Op op, int root = 0);
-
 // PRE:
 // POST:
-template<typename bunch> //opaddasign doesnt work with templates??
-void applyConstantFocusing( //	std::unique_ptr<ChargedParticles<PLayout_t>> P,
-				bunch P,
+template<typename bunch>
+void applyConstantFocusing( 
+				                bunch P,
                                 double f,
-                                double beam_radius
+                                double beamRadius
                                 ) {  
+    //Inform m("computeAvgSpaceChargeForces ");
+    //	m << "apply constant focusing"<< endl;
 
-
-//      Inform m("computeAvgSpaceChargeForces ");
-//	m << "apply constant focusing"<< endl;
-
-        
-//=0000000000000000000000===========================
-	/*
- 	 unsigned DIM = 3; 
-        double locAvgEF[DIM];//={};
-        double globSumEF[DIM];//={};
-        Vector_t avgEF;
-
-        for (unsigned i=0; i<P->getLocalNum(); ++i) {
-            locAvgEF[0]+=fabs(P->E[i](0));
-            locAvgEF[1]+=fabs(P->E[i](1));
-            locAvgEF[2]+=fabs(P->E[i](2));
-        }
-
-       // reduce(&(locAvgEF[0]), &(locAvgEF[0]) + DIM, &(globSumEF[0]), OpAdd());
-	
-	reduce(&(locAvgEF[0]), &(globSumEF[0]), DIM, OpAdd());
-could just do this reduce with MPI ... 
-*
-        avgEF[0]=globSumEF[0]/N;
-        avgEF[1]=globSumEF[1]/N;
-        avgEF[2]=globSumEF[2]/N;
-
-		
-	//this is the old variant we should work with Kokkos and MPI
-	
-        double focusingForce=sqrt(dot(avgEF,avgEF));
-        for (unsigned i=0; i<P->getLocalNum(); ++i) {
-            P->E[i]+=P->R[i]/beam_radius*f*focusingForce;
-        }
-
-*/
-
-//==================================================
-/*????
-	if (Ippl::Comm->rank() == 0){
-		Vector_t avgEF;
-	}
-
-	for(unsigned d = 0; d<Dim; ++d){
-
-		double locEFtmp  = 0.0;
-		double globEFtmp = 0.0;
-		Kokkos::parallel_reduce("get local average E Field sum over all particles:", 
-					 P->getLocalNum(),
-					 KOKKOS_LAMBDA(const int i, double& valL){
-                                   		double myVal = P->[i](d);
-                                    		valL += myVal;
-                                	 },                    			
-					 Kokkos::Sum<double>(locEFtmp)
-					);	
-		
-		MPI_Reduce(&locEFtmp, &globEFtmp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());	
-		
-		if (Ippl::Comm->rank() == 0){
-			avgEF[d] =  globEFtmp/N;
-		}
-	}
-*/
-
-//	if (Ippl::Comm->rank() == 0){
-//==================================================
-
-	
-        const double N =  static_cast<double>(P->getTotalNum());
+    const double N =  static_cast<double>(P->getTotalNum());
 	Vector_t avgEF;
-	double locEFsum[Dim];// = {0.0, 0.0, 0.0};
-	double globEFsum[Dim];// = {0.0, 0.0, 0.0};
+	double locEFsum[Dim];
+	double globEFsum[Dim];
 
 	for(unsigned d = 0; d<Dim; ++d){
 		locEFsum[d]=0.0;
-		globEFsum[d]=0.0;
-		Kokkos::parallel_reduce("get local average E Field sum over all particles:", 
+		// globEFsum[d]=0.0;
+		Kokkos::parallel_reduce("get local EField sum", 
 					 P->getLocalNum(),
 					 KOKKOS_LAMBDA(const int i, double& valL){
                                    		double myVal = P->E[i](d);
-                                    		valL += myVal;
+                                    	valL += myVal;
                                 	 },                    			
 					 Kokkos::Sum<double>(locEFsum[d])
 					);
 	}
 	
 	MPI_Allreduce(locEFsum, globEFsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
-	for(int d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N;
-       
+	
+    for(int d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N;   
+    double focusingForce=sqrt(dot(avgEF,avgEF));
 
-
-        double focusingForce=sqrt(dot(avgEF,avgEF));
 	Kokkos::parallel_for("Apply Constant Focusing",
 				P->getLocalNum(),
 				KOKKOS_LAMBDA(const int i){
-         				P->E[i]+=P->R[i]/beam_radius*f*focusingForce;
+         				P->E[i]+=P->R[i]/beamRadius*f*focusingForce;
 				}	
 	);
-
-
-
-
  }
 
 
-
-
-
-
-
-
 //==============================   ==============================  ============================== 
-
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     Inform msg("Langevin");
     Inform msg2all("Langevin ",INFORM_ALL_NODES);
-
-    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
+    Ippl::Comm->setDefaultOverallocation(std::atof(argv[17]));
 
     auto start = std::chrono::high_resolution_clock::now();
+
     ippl::Vector<int,Dim> nr = {
         std::atoi(argv[1]),
         std::atoi(argv[2]),
         std::atoi(argv[3])
     };
+    const double beamRadius         = std::atof(argv[4]);
+    const double boxLentgh          = std::atof(argv[5]);
+    const size_type nP              = std::atoll(argv[6]);
+    const double interactionRadius  = std::atof(argv[7]);
+    const double alpha              = std::atof(argv[8]);
+    const double dt                 = std::atof(argv[9]);
+    const size_type nt              = std::atoll(argv[10]); // iterations
+    const double particleCharge     = std::atof(argv[11]);
+    const double particleMass       = std::atof(argv[12]);
+    const double focusForce         = std::atof(argv[13]);
+    const int printInterval         = std::atoi(argv[14]);
+    //16 -> solvertype = FFT...
+    //17 -> loadbalancethreshold
+    //18 -> default overallocation
+
+    // srun ./p3m3dHeating ${N} ${N} ${N} ${RBEAM} ${LBOX} 
+    // ${NPART} ${RCUT} ${ALPHA} 2.15623e-13 ${EPS} ${STEPS}
+    //  ${ME} ${QE} ${FOCUS} ${PRINTSTEP} 
+    // same but no epsilon + alpine last 3 inputs
+    
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
@@ -401,145 +284,146 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(mainTimer);
 
-    const size_type totalP = std::atoll(argv[4]);
-    const unsigned int nt     = std::atoi(argv[5]);
 
-    msg << "Landau damping"
-        << endl
-        << "nt " << nt << " Np= "
-        << totalP << " grid = " << nr
-        << endl;
+    msg << "Start test: LANGEVIN COLLISION OPERATOR" << endl
+        << "Total Timesteps = " << std::setw(20) << nt << endl
+        << "Total Particles = " << std::setw(20) << nP << endl
+        << "Griddimensions  = " << std::setw(20) << nr << endl
+        << "Beamradius      = " << std::setw(20) << beamRadius << endl
+        << "focusing force  = " << std::setw(20) << focusForce << endl;
+
+//MESH & DOMAIN_DECOMPOSITION
+//==============================   ==============================  ============================== 
 
     using bunch_type = ChargedParticles<PLayout_t>;
 
     std::unique_ptr<bunch_type>  P;
 
+    //initializing number of cells in mesh/domain
     ippl::NDIndex<Dim> domain;
     for (unsigned i = 0; i< Dim; i++) {
         domain[i] = ippl::Index(nr[i]);
     }
-
+    //initializinh boundary conditions
     ippl::e_dim_tag decomp[Dim];
     for (unsigned d = 0; d < Dim; ++d) {
         decomp[d] = ippl::PARALLEL;
     }
-
-    // create mesh and layout objects for this problem domain
-    Vector_t kw = {0.5, 0.5, 0.5};
-    double alpha = 0.05;
-    Vector_t rmin(0.0);
-    Vector_t rmax = 2 * pi / kw ;
-    double dx = rmax[0] / nr[0];
-    double dy = rmax[1] / nr[1];
-    double dz = rmax[2] / nr[2];
-
-    Vector_t hr = {dx, dy, dz};
-    Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.5*dx;
-
+    Vector_t kw = {0.5, 0.5, 0.5}; //irregularities sth inside the plasma
+    const double L = Lbox*0.5;
+    Vector_t box_boundaries_lower({-L, -L, -L});
+    Vector_t box_boundaries_upper({L, L, L});  
+    Vector_t origin({0.0, 0.0, 0.0});
+    Vector_t hr = {Lbox/nr[0], Lbox/nr[1], Lbox/nr[2]}; //spacing
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t PL(FL, mesh);
+    double Q = nP * pCharge;
+    P = std::make_unique<bunch_type>(PL,hr,
+                                        box_boundaries_lower,
+                                        box_boundaries_upper,
+                                        decomp,Q);
 
-    //Q = -\int\int f dx dv
-    double Q = -rmax[0] * rmax[1] * rmax[2];
-    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
+//nr gives amount off mesh cells(cell centered points)
+//grid_points = cells+1
+//hr gives spacing of cells
+//what about stability induced timestep constraints on the time step
+//dot have to recalculate avg forces -> isnt done in ulmers part
+//should i split up configuration yess split
+// input configuraion same as ulmer
+//epsiolon regularisation no need for me delete
+// temperatur forgotten or should i have found out myself; next step..
+// 16 16 16 10000 -> small -> login node nex
+//  find unit test for all my functio (redcution etc)
+// --> logic easy stuff...
+//  in charged particles
+// add dumplangevin class function same as dumplandau
+// but with time and temperatur...
 
-    P->nr_m = nr;
+//first push all mystuff..
+//master -> get new upstream for my branch etc.
+//
+// start comparing p3m 
+// rc=0 testrunning
+// look to std::out that same configurations are made
+// check if something is missing and 2 programs are really comparable..
 
-    P->E_m.initialize(mesh, FL);
-    P->rho_m.initialize(mesh, FL);
 
-    bunch_type bunchBuffer(PL);
+/**///////////////keeep mesh initialization as is this as is ///////////////////////////
+/**/    P->nr_m = nr;
+/**/
+/**/    P->E_m.initialize(mesh, FL);
+/**/    P->rho_m.initialize(mesh, FL);
+/**/
+/**/    bunch_type bunchBuffer(PL);
+/**/
+/**/    P->stype_m = argv[15];
+/**/    P->initSolver();
+/**/    P->time_m = 0.0;
+/**/    P->loadbalancethreshold_m = std::atof(argv[16]);
+/**/
+/**/    bool isFirstRepartition;
+/**/
+/**/    //INITIAL LOADBALANCING
+/**/    if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
+/**/        msg << "Starting first repartition" << endl;
+/**/        IpplTimings::startTimer(domainDecomposition);
+/**/        isFirstRepartition = true;
+/**/        const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+/**/        const int nghost = P->rho_m.getNghost();
+/**/        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+/**/        auto rhoview = P->rho_m.getView();
+/**/
+/**/        Kokkos::parallel_for("Assign initial rho based on PDF",
+/**/                              mdrange_type({nghost, nghost, nghost},
+/**/                                           {rhoview.extent(0) - nghost,
+/**/                                            rhoview.extent(1) - nghost,
+/**/                                            rhoview.extent(2) - nghost}),
+/**/                              KOKKOS_LAMBDA(const int i,
+/**/                                            const int j,
+/**/                                            const int k)
+/**/                              {
+/**/                                //local to global index conversion
+/**/                                const size_t ig = i + lDom[0].first() - nghost;
+/**/                                const size_t jg = j + lDom[1].first() - nghost;
+/**/                                const size_t kg = k + lDom[2].first() - nghost;
+/**/                                double x = (ig + 0.5) * hr[0] + origin[0];
+/**/                                double y = (jg + 0.5) * hr[1] + origin[1];
+/**/                                double z = (kg + 0.5) * hr[2] + origin[2];
+/**/
+/**/                                Vector_t xvec = {x, y, z};
+/**/
+/**/                                rhoview(i, j, k) = PDF(xvec, alpha, kw, Dim);
+/**/                                    
+/**/                              });
+/**/
+/**/        Kokkos::fence();
+/**/       
+/**/        P->initializeORB(FL, mesh);
+/**/        P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+/**/        IpplTimings::stopTimer(domainDecomposition);
+/**/    }
+/**/    
+/**/    isFirstRepartition = false;
+/**/    msg << "First domain decomposition done" << endl;
+/**/////////////////////////////////////////////////////////////////////////////
 
-    P->stype_m = argv[6];
-    P->initSolver();
-    P->time_m = 0.0;
-    P->loadbalancethreshold_m = std::atof(argv[7]);
-
-    bool isFirstRepartition;
-
-    if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
-        msg << "Starting first repartition" << endl;
-        IpplTimings::startTimer(domainDecomposition);
-        isFirstRepartition = true;
-        const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-        const int nghost = P->rho_m.getNghost();
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-        auto rhoview = P->rho_m.getView();
-
-        Kokkos::parallel_for("Assign initial rho based on PDF",
-                              mdrange_type({nghost, nghost, nghost},
-                                           {rhoview.extent(0) - nghost,
-                                            rhoview.extent(1) - nghost,
-                                            rhoview.extent(2) - nghost}),
-                              KOKKOS_LAMBDA(const int i,
-                                            const int j,
-                                            const int k)
-                              {
-                                //local to global index conversion
-                                const size_t ig = i + lDom[0].first() - nghost;
-                                const size_t jg = j + lDom[1].first() - nghost;
-                                const size_t kg = k + lDom[2].first() - nghost;
-                                double x = (ig + 0.5) * hr[0] + origin[0];
-                                double y = (jg + 0.5) * hr[1] + origin[1];
-                                double z = (kg + 0.5) * hr[2] + origin[2];
-
-                                Vector_t xvec = {x, y, z};
-
-                                rhoview(i, j, k) = PDF(xvec, alpha, kw, Dim);
-                                    
-                              });
-
-        Kokkos::fence();
-       
-        P->initializeORB(FL, mesh);
-        P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
-        IpplTimings::stopTimer(domainDecomposition);
-    }
+// MESH & DOMAIN_DECOMPOSITION
+//===========================================================  ============================== 
+//PARTICLE CREATION OLD deleted
+//================================================================     =============================
+//PARTICLE CREATION NEW
     
-    msg << "First domain decomposition done" << endl;
-    IpplTimings::startTimer(particleCreation);
-
-    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
-    const RegionLayout_t& RLayout = PL.getRegionLayout();
-    const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_t Nr, Dr, minU, maxU;
-    int myRank = Ippl::Comm->rank();
-    for (unsigned d = 0; d <Dim; ++d) {
-        Nr[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d]) - 
-                CDF(Regions(myRank)[d].min(), alpha, kw[d]);  
-        Dr[d] = CDF(rmax[d], alpha, kw[d]) - CDF(rmin[d], alpha, kw[d]);
-        minU[d] = CDF(Regions(myRank)[d].min(), alpha, kw[d]);
-        maxU[d]   = CDF(Regions(myRank)[d].max(), alpha, kw[d]);
-    }
-
-    double factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
-    size_type nloc = (size_type)(factor * totalP);
-    size_type Total_particles = 0;
-
-    MPI_Allreduce(&nloc, &Total_particles, 1,
-                MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
-
-    int rest = (int) (totalP - Total_particles);
-
-    if ( Ippl::Comm->rank() < rest )
-        ++nloc;
-
-    P->create(nloc);
-    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
-    Kokkos::parallel_for(nloc,
-                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
-
-    Kokkos::fence();
-    Ippl::Comm->barrier();
-    IpplTimings::stopTimer(particleCreation);                                                    
-    
-    P->q = P->Q_m/totalP;
+    createParticleDistributionColdSphere(P, beamRadius, nP, pCharge);    
+    // Kokkos::fence();    ????
+    // Ippl::Comm->barrier();
+    IpplTimings::stopTimer(particleCreation);    
     msg << "particles created and initial conditions assigned " << endl;
-    isFirstRepartition = false;
+
+//PARTICLE CREATION NEW
+//====================================================================================== 
+//TEST TIMERS
     //The update after the particle creation is not needed as the 
     //particles are generated locally
 
@@ -548,7 +432,7 @@ int main(int argc, char *argv[]){
     P->solver_mp->solve();
     IpplTimings::stopTimer(DummySolveTimer);
 
-    P->scatterCIC(totalP, 0, hr);
+    P->scatterCIC(nP, 0, hr);
 
     IpplTimings::startTimer(SolveTimer);
     P->solver_mp->solve();
@@ -558,12 +442,14 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpLandau();
-    P->gatherStatistics(totalP);
+    P->gatherStatistics(nP);
     //P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
 
-    // begin main timestep loop
-    msg << "Starting iterations ..." << endl;
+//TEST TIMERS
+//====================================================================================== 
+/* TIMELOOP*/msg << "Starting iterations ..." << endl;
+
     for (unsigned int it=0; it<nt; it++) {
 
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
@@ -587,7 +473,7 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(updateTimer);
 
         // Domain Decomposition
-        if (P->balance(totalP, it+1)) {
+        if (P->balance(nP, it+1)) {
            msg << "Starting repartition" << endl;
            IpplTimings::startTimer(domainDecomposition);
            P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
@@ -599,7 +485,7 @@ int main(int argc, char *argv[]){
 
 
         //scatter the charge onto the underlying grid
-        P->scatterCIC(totalP, it+1, hr);
+        P->scatterCIC(nP, it+1, hr);
 
         //Field solve
         IpplTimings::startTimer(SolveTimer);
@@ -609,6 +495,15 @@ int main(int argc, char *argv[]){
         // gather E field
         P->gatherCIC();
 
+    // =================MYSTUFF==================================================================
+        applyConstantFocusing(P, focusForce, beamRadius); //inline? 
+
+
+        //LANGEVIN COLLISIONS<-
+
+
+    // =================MYSTUFF==================================================================
+        
         //kick
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E;
@@ -617,12 +512,15 @@ int main(int argc, char *argv[]){
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpLandau();
-        P->gatherStatistics(totalP);
+        P->gatherStatistics(nP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
     }
 
-    msg << "LandauDamping: End." << endl;
+/* TIMELOOP*/
+//====================================================================================== 
+
+    msg << "Langevin: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
