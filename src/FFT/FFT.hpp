@@ -145,11 +145,8 @@ namespace ippl {
         *This copy to a temporary Kokkos view is needed because of following
         *reasons:
         *1) heffte wants the input and output fields without ghost layers
-        *2) heffte's data types are different than Kokkos::complex
-        *3) heffte accepts data in layout left (by default) eventhough this
+        *2) heffte accepts data in layout left (by default) eventhough this
         *can be changed during heffte box creation
-        *Points 2 and 3 are slightly less of a concern and the main one is 
-        *point 1.
        */
        Kokkos::View<Complex_t***,Kokkos::LayoutLeft>
            tempField("tempField", fview.extent(0) - 2*nghost,
@@ -337,11 +334,8 @@ namespace ippl {
         *This copy to a temporary Kokkos view is needed because of following
         *reasons:
         *1) heffte wants the input and output fields without ghost layers
-        *2) heffte's data types are different than Kokkos::complex
-        *3) heffte accepts data in layout left (by default) eventhough this
+        *2) heffte accepts data in layout left (by default) eventhough this
         *can be changed during heffte box creation
-        *Points 2 and 3 are slightly less of a concern and the main one is 
-        *point 1.
        */
        Kokkos::View<T***, Kokkos::LayoutLeft>
            tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
@@ -532,16 +526,13 @@ namespace ippl {
     {
        auto fview = f.getView();
        const int nghost = f.getNghost();
-
+       
        /**
         *This copy to a temporary Kokkos view is needed because of following
         *reasons:
         *1) heffte wants the input and output fields without ghost layers
-        *2) heffte's data types are different than Kokkos::complex
-        *3) heffte accepts data in layout left (by default) eventhough this
+        *2) heffte accepts data in layout left (by default) eventhough this
         *can be changed during heffte box creation
-        *Points 2 and 3 are slightly less of a concern and the main one is 
-        *point 1.
        */
        Kokkos::View<T***,Kokkos::LayoutLeft>
            tempField("tempField", fview.extent(0) - 2*nghost,
@@ -702,11 +693,8 @@ namespace ippl {
         *This copy to a temporary Kokkos view is needed because of following
         *reasons:
         *1) heffte wants the input and output fields without ghost layers
-        *2) heffte's data types are different than Kokkos::complex
-        *3) heffte accepts data in layout left (by default) eventhough this
+        *2) heffte accepts data in layout left (by default) eventhough this
         *can be changed during heffte box creation
-        *Points 2 and 3 are slightly less of a concern and the main one is 
-        *point 1.
        */
        Kokkos::View<T***,Kokkos::LayoutLeft>
            tempField("tempField", fview.extent(0) - 2*nghost,
