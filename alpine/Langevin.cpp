@@ -183,12 +183,10 @@ void createParticleDistributionColdSphere(  bunch P,
                         Vector_t pos = source + beamRadius*pow(U,1./3.)/sqrt(dot(X,X))*X;
                         Vector_t mom({0,0,0});
 
-                        // P->Q_m += -qi;
                         P->q[i] = -qi;
                         P->P[i] = mom;  //zero momentum intial condition
                         P->R[i] = pos;  //positionattribute given in baseclass
                 }
-                // p->Q_m = Nparticle*(-qi); is already done in constructor
         }
         P->update();
 }
@@ -207,11 +205,10 @@ void applyConstantFocusing(
     const double N =  static_cast<double>(P->getTotalNum());
 	Vector_t avgEF;
 	double locEFsum[Dim];
-	double globEFsum[Dim];
+	double globEFsum[Dim];//={0.0,0.0,0.0};
 
 	for(unsigned d = 0; d<Dim; ++d){
 		locEFsum[d]=0.0;
-		// globEFsum[d]=0.0;
 		Kokkos::parallel_reduce("get local EField sum", 
 					 P->getLocalNum(),
 					 KOKKOS_LAMBDA(const int i, double& valL){
@@ -221,7 +218,6 @@ void applyConstantFocusing(
 					 Kokkos::Sum<double>(locEFsum[d])
 					);
 	}
-	
 	MPI_Allreduce(locEFsum, globEFsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
 	
     for(int d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N;   
@@ -233,7 +229,67 @@ void applyConstantFocusing(
          				P->E[i]+=P->R[i]/beamRadius*f*focusingForce;
 				}	
 	);
- }
+}
+
+
+//If this is only need for the temperature printing into the file
+// it could be written directly into the dumplangevin function in the 
+// chargedParticles.hpp file
+// PRE
+// POST
+Vector_t compute_temperature(bunch P) {
+        Inform m("compute_temperature ");
+
+        const double N =  static_cast<double>(P->getTotalNum());
+
+        double locVELsum[Dim]={0.0,0.0,0.0};
+        double globVELsum[Dim];
+        double avgVEL[Dim];
+
+        double locT[Dim]={0.0,0.0,0.0};
+        double globT[Dim];       
+	    Vector_t temperature;
+
+        // GET AVERAGE VELOCITY GLOBALLY
+        for(unsigned d = 0; d<Dim; ++d){
+		    Kokkos::parallel_reduce("get local velocity sum", 
+		    			 P->getLocalNum(), 
+		    			 KOKKOS_LAMBDA(const int i, double& valL){
+                                       		double myVal = P->v[i](d);
+                                        	valL += myVal;
+                                    	 },                    			
+		    			 Kokkos::Sum<double>(locVELsum[d])
+		    			);
+	    }
+    	MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
+
+        for(int d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
+
+        // m << "avgVEL[0]= " << avgVEL[0] << " avgVEL[1]= " << avgVEL[1] << " avgVEL[2]= " << avgVEL[2] <<  endl;
+
+        for(unsigned d = 0; d<Dim; ++d){
+		    Kokkos::parallel_reduce("get local velocity sum", 
+		    			 P->getLocalNum(), 
+		    			 KOKKOS_LAMBDA(const int i, double& valL){
+                                       		double myVal = (P->v[i](d)-avgVEL[d])*(P->v[i](d)-avgVEL[d]);
+                                        	valL += myVal;
+                                    	 },                    			
+		    			 Kokkos::Sum<double>(locT[d])
+		    			);
+	    }
+    	MPI_Allreduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM,Ippl::getComm());	
+        // since we assume for our reduction that this function is called from 
+        // multiple nodes, each node, needs to have a return
+        // Allreduce shouldnt be slower than reduce, so its ok to give each
+        // node the correct return even if it might ot be necessary...
+        // we now can print from any node -> for nromal reduce, the other nodes could just return garbage
+        // but afterwards the temperature information would only be stored on the root.
+
+        for(int d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
+
+        return temperature;
+}
+
 
 
 //==============================   ==============================  ============================== 
@@ -262,9 +318,9 @@ int main(int argc, char *argv[]){
     const double particleMass       = std::atof(argv[12]);
     const double focusForce         = std::atof(argv[13]);
     const int printInterval         = std::atoi(argv[14]);
-    //16 -> solvertype = FFT...
-    //17 -> loadbalancethreshold
-    //18 -> default overallocation
+    //15 -> solvertype = FFT...
+    //16 -> loadbalancethreshold
+    //17 -> default overallocation
 
     // srun ./p3m3dHeating ${N} ${N} ${N} ${RBEAM} ${LBOX} 
     // ${NPART} ${RCUT} ${ALPHA} 2.15623e-13 ${EPS} ${STEPS}
