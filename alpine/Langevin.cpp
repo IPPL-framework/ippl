@@ -193,19 +193,53 @@ void createParticleDistributionColdSphere(  bunch P,
 
 // PRE:
 // POST:
+// template<typename bunch>
+// void getapplyConstantFocusing(    bunch P,
+//                                 double f,
+//                                 double beamRadius
+//                                 ) {  
+//     //Inform m("computeAvgSpaceChargeForces ");
+//     //	m << "apply constant focusing"<< endl;
+
+//     const double N =  static_cast<double>(P->getTotalNum());
+// 	Vector_t avgEF;
+// 	double locEFsum[Dim];
+// 	double globEFsum[Dim];//={0.0,0.0,0.0};
+
+// 	for(unsigned d = 0; d<Dim; ++d){
+// 		locEFsum[d]=0.0;
+// 		Kokkos::parallel_reduce("get local EField sum", 
+// 					 P->getLocalNum(),
+// 					 KOKKOS_LAMBDA(const int i, double& valL){
+//                                    		double myVal = P->E[i](d);
+//                                     	valL += myVal;
+//                                 	 },                    			
+// 					 Kokkos::Sum<double>(locEFsum[d])
+// 					);
+// 	}
+// 	MPI_Allreduce(locEFsum, globEFsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
+	
+//     for(int d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N;   
+//     double focusingForce=sqrt(dot(avgEF,avgEF));
+
+// 	Kokkos::parallel_for("Apply Constant Focusing",
+// 				P->getLocalNum(),
+// 				KOKKOS_LAMBDA(const int i){
+//          				P->E[i]+=P->R[i]/beamRadius*f*focusingForce;
+// 				}	
+// 	);
+// }
+
 template<typename bunch>
-void applyConstantFocusing( 
-				                bunch P,
-                                double f,
-                                double beamRadius
-                                ) {  
+Vector_t compAvgSCForce(    bunch P
+                        ) {  
     //Inform m("computeAvgSpaceChargeForces ");
     //	m << "apply constant focusing"<< endl;
 
     const double N =  static_cast<double>(P->getTotalNum());
 	Vector_t avgEF;
-	double locEFsum[Dim];
-	double globEFsum[Dim];//={0.0,0.0,0.0};
+	double locEFsum[Dim];//={0.0,0.0,0.0};
+	double globEFsum[Dim];
 
 	for(unsigned d = 0; d<Dim; ++d){
 		locEFsum[d]=0.0;
@@ -220,9 +254,18 @@ void applyConstantFocusing(
 	}
 	MPI_Allreduce(locEFsum, globEFsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
 	
-    for(int d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N;   
-    double focusingForce=sqrt(dot(avgEF,avgEF));
+    for(int d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N; 
 
+    return avgEF;
+}
+
+template<typename bunch>
+void applyConstantFocusing( bunch P,
+                            double f,
+                            double beamRadius,
+                            Vector_t avgEF
+                                ) {  
+    double focusingForce=sqrt(dot(avgEF,avgEF));
 	Kokkos::parallel_for("Apply Constant Focusing",
 				P->getLocalNum(),
 				KOKKOS_LAMBDA(const int i){
@@ -230,6 +273,8 @@ void applyConstantFocusing(
 				}	
 	);
 }
+
+
 
 
 //If this is only need for the temperature printing into the file
@@ -289,9 +334,6 @@ Vector_t compute_temperature(bunch P) {
 
         return temperature;
 }
-
-
-
 //==============================   ==============================  ============================== 
 
 int main(int argc, char *argv[]){
@@ -385,11 +427,12 @@ int main(int argc, char *argv[]){
 //grid_points = cells+1
 //hr gives spacing of cells
 //what about stability induced timestep constraints on the time step
-//dot have to recalculate avg forces -> isnt done in ulmers part
-//should i split up configuration yess split
-// input configuraion same as ulmer
-//epsiolon regularisation no need for me delete
-// temperatur forgotten or should i have found out myself; next step..
+
+
+//  split up avgspacecharge force. (should be constant and comparable to ulmer with/out recaluclation of avgEF)
+// input configuraion as close as possible to ulmers as ulmer
+// get rid of epsilon
+
 // 16 16 16 10000 -> small -> login node nex
 //  find unit test for all my functio (redcution etc)
 // --> logic easy stuff...
@@ -567,7 +610,7 @@ int main(int argc, char *argv[]){
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpLandau();
+        P->dumpLangevin(it);
         P->gatherStatistics(nP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;

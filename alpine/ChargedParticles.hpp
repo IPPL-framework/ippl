@@ -509,7 +509,7 @@ public:
         Ippl::Comm->barrier();
      }
 
-     void dumpLangevin() {
+     void dumpLangevin(unsigned int iteration) {
 
         const int nghostE = E_m.getNghost();
         auto Eview = E_m.getView();
@@ -547,8 +547,7 @@ public:
         ExAmp = 0.0;
         MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/**/// TEMPERATURE CALCULATION
-/**/cant call compute_temperature();so i inline it here directly...
+/**/// TEMPERATURE CALCULATION      cant call compute_temperature();so i inline it here directly...
 /**/        const double N =  static_cast<double>(P->getTotalNum());
 /**/        double locVELsum[Dim]={0.0,0.0,0.0};
 /**/        double globVELsum[Dim];
@@ -595,13 +594,15 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if(time_m == 0.0) {
-                csvout  <<   "time" << std::setw(20) << 
+                csvout  <<  "iteration" << std::setw(10) << 
+                            "time" << std::setw(20) << 
                             "Ex_field_energy" << std::setw(20)<< 
                             "Ex_max_norm" << std::setw(20) << 
                             "Temperature_xyz" << endl;
             }
 
-            csvout  <<  time_m << std::setw(20) << 
+            csvout  <<  iteration << std::setw(10) <<
+                        time_m << std::setw(20) << 
                         fieldEnergy << std::setw(20)<< 
                         ExAmp << std::setw(20) << 
                         temperature[0] << " "
