@@ -132,7 +132,13 @@ namespace ippl {
 
         isAllPeriodic_m = isAllPeriodic;
 
-        if (nRanks < 2) {
+        bool isAllSerial = true;
+        
+        for (unsigned d = 0; d < Dim; ++d) {
+            isAllSerial = isAllSerial && (requestedLayout_m[d] == SERIAL);
+        }
+
+        if ((nRanks < 2) || isAllSerial) {
             Kokkos::resize(dLocalDomains_m, nRanks);
             Kokkos::resize(hLocalDomains_m, nRanks);
             hLocalDomains_m(0) = domain;

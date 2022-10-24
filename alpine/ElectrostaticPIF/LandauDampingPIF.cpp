@@ -1,20 +1,13 @@
-// Landau Damping Test
+// Electrostatic Landau damping test with Particle-in-Fourier schemes
 //   Usage:
-//     srun ./LandauDamping <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
-//     nx       = No. cell-centered points in the x-direction
-//     ny       = No. cell-centered points in the y-direction
-//     nz       = No. cell-centered points in the z-direction
+//     srun ./LandauDampingPIF <nx> <ny> <nz> <Np> <Nt> --info 10
+//     nx       = No. of Fourier modes in the x-direction
+//     ny       = No. of Fourier modes in the y-direction
+//     nz       = No. of Fourier modes in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
-//     stype    = Field solver type e.g., FFT
-//     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
-//                percentage which can be tolerated and beyond which
-//                particle load balancing occurs. A value of 0.01 is good for many typical 
-//                simulations.
-//     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
-//                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 2.0 --info 10
+//     srun ./LandauDampingPIF 128 128 128 10000 10 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -31,7 +24,7 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "ChargedParticles.hpp"
+#include "ChargedParticlesPIF.hpp"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -146,17 +139,14 @@ double PDF(const Vector_t& xvec, const double& alpha,
     return pdf;
 }
 
-const char* TestName = "LandauDamping";
+const char* TestName = "LandauDampingPIF";
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     
-    Inform msg("LandauDamping");
-    Inform msg2all("LandauDamping",INFORM_ALL_NODES);
+    Inform msg("LandauDampingPIF");
+    Inform msg2all("LandauDampingPIF",INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
-
-    auto start = std::chrono::high_resolution_clock::now();
     ippl::Vector<int,Dim> nr = {
         std::atoi(argv[1]),
         std::atoi(argv[2]),
@@ -169,9 +159,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("kick");
     static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("drift");
     static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
-    static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
-    static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
 
     IpplTimings::startTimer(mainTimer);
 
@@ -181,10 +169,10 @@ int main(int argc, char *argv[]){
     msg << "Landau damping"
         << endl
         << "nt " << nt << " Np= "
-        << totalP << " grid = " << nr
+        << totalP << " Fourier modes = " << nr
         << endl;
 
-    using bunch_type = ChargedParticles<PLayout_t>;
+    using bunch_type = ChargedParticlesPIF<PLayout_t>;
 
     std::unique_ptr<bunch_type>  P;
 
@@ -195,7 +183,7 @@ int main(int argc, char *argv[]){
 
     ippl::e_dim_tag decomp[Dim];
     for (unsigned d = 0; d < Dim; ++d) {
-        decomp[d] = ippl::PARALLEL;
+        decomp[d] = ippl::SERIAL;
     }
 
     // create mesh and layout objects for this problem domain
@@ -227,69 +215,22 @@ int main(int argc, char *argv[]){
 
     bunch_type bunchBuffer(PL);
 
-    P->stype_m = argv[6];
     P->initSolver();
     P->time_m = 0.0;
-    P->loadbalancethreshold_m = std::atof(argv[7]);
 
-    bool isFirstRepartition;
-
-    if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
-        msg << "Starting first repartition" << endl;
-        IpplTimings::startTimer(domainDecomposition);
-        isFirstRepartition = true;
-        const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-        const int nghost = P->rho_m.getNghost();
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-        auto rhoview = P->rho_m.getView();
-
-        Kokkos::parallel_for("Assign initial rho based on PDF",
-                              mdrange_type({nghost, nghost, nghost},
-                                           {rhoview.extent(0) - nghost,
-                                            rhoview.extent(1) - nghost,
-                                            rhoview.extent(2) - nghost}),
-                              KOKKOS_LAMBDA(const int i,
-                                            const int j,
-                                            const int k)
-                              {
-                                //local to global index conversion
-                                const size_t ig = i + lDom[0].first() - nghost;
-                                const size_t jg = j + lDom[1].first() - nghost;
-                                const size_t kg = k + lDom[2].first() - nghost;
-                                double x = (ig + 0.5) * hr[0] + origin[0];
-                                double y = (jg + 0.5) * hr[1] + origin[1];
-                                double z = (kg + 0.5) * hr[2] + origin[2];
-
-                                Vector_t xvec = {x, y, z};
-
-                                rhoview(i, j, k) = PDF(xvec, alpha, kw, Dim);
-                                    
-                              });
-
-        Kokkos::fence();
-       
-        P->initializeORB(FL, mesh);
-        P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
-        IpplTimings::stopTimer(domainDecomposition);
-    }
-    
-    msg << "First domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
 
     typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
     const RegionLayout_t& RLayout = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_t Nr, Dr, minU, maxU;
+    Vector_t minU, maxU;
     int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d <Dim; ++d) {
-        Nr[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d]) - 
-                CDF(Regions(myRank)[d].min(), alpha, kw[d]);  
-        Dr[d] = CDF(rmax[d], alpha, kw[d]) - CDF(rmin[d], alpha, kw[d]);
         minU[d] = CDF(Regions(myRank)[d].min(), alpha, kw[d]);
         maxU[d]   = CDF(Regions(myRank)[d].max(), alpha, kw[d]);
     }
 
-    double factor = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
+    double factor = 1.0/Ippl::Comm->size();
     size_type nloc = (size_type)(factor * totalP);
     size_type Total_particles = 0;
 
@@ -313,14 +254,6 @@ int main(int argc, char *argv[]){
     
     P->q = P->Q_m/totalP;
     msg << "particles created and initial conditions assigned " << endl;
-    isFirstRepartition = false;
-    //The update after the particle creation is not needed as the 
-    //particles are generated locally
-
-    IpplTimings::startTimer(DummySolveTimer);
-    P->rho_m = 0.0;
-    P->solver_mp->solve();
-    IpplTimings::stopTimer(DummySolveTimer);
 
     P->scatterCIC(totalP, 0, hr);
 
@@ -332,7 +265,6 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpLandau();
-    P->gatherStatistics(totalP);
     //P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
 
@@ -360,17 +292,6 @@ int main(int argc, char *argv[]){
         PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
 
-        // Domain Decomposition
-        if (P->balance(totalP, it+1)) {
-           msg << "Starting repartition" << endl;
-           IpplTimings::startTimer(domainDecomposition);
-           P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
-           IpplTimings::stopTimer(domainDecomposition);
-           //IpplTimings::startTimer(dumpDataTimer);
-           //P->dumpLocalDomains(FL, it+1);
-           //IpplTimings::stopTimer(dumpDataTimer);
-        }
-
 
         //scatter the charge onto the underlying grid
         P->scatterCIC(totalP, it+1, hr);
@@ -391,7 +312,6 @@ int main(int argc, char *argv[]){
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpLandau();
-        P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
     }
@@ -400,11 +320,6 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
-    auto end = std::chrono::high_resolution_clock::now();
-
-    std::chrono::duration<double> time_chrono = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-    std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
-
 
     return 0;
 }
