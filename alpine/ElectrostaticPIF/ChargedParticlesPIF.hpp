@@ -1,4 +1,4 @@
-// ChargedParticles header file
+// ChargedParticlesPIF header file
 //   Defines a particle attribute for charged particles to be used in
 //   test programs
 //
@@ -128,7 +128,7 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration,
 }
 
 template<class PLayout>
-class ChargedParticles : public ippl::ParticleBase<PLayout> {
+class ChargedParticlesPIF : public ippl::ParticleBase<PLayout> {
 public:
     VField_t E_m;
     Field_t rho_m;
@@ -169,7 +169,7 @@ public:
       This constructor is mandatory for all derived classes from
       ParticleBase as the bunch buffer uses this
     */
-    ChargedParticles(PLayout& pl)
+    ChargedParticlesPIF(PLayout& pl)
     : ippl::ParticleBase<PLayout>(pl)
     {
         // register the particle attributes
@@ -178,7 +178,7 @@ public:
         this->addAttribute(E);
     }
 
-    ChargedParticles(PLayout& pl,
+    ChargedParticlesPIF(PLayout& pl,
                      Vector_t hr,
                      Vector_t rmin,
                      Vector_t rmax,
@@ -199,13 +199,13 @@ public:
             decomp_m[i]=decomp[i];
     }
 
-    ~ChargedParticles(){ }
+    ~ChargedParticlesPIF(){ }
 
     void setupBCs() {
         setBCAllPeriodic();
     }
 
-    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer,
+    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticlesPIF<PLayout>& buffer,
                       bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
@@ -229,7 +229,7 @@ public:
         orb.initialize(fl, mesh, rho_m);
     }
 
-    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer, 
+    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticlesPIF<PLayout>& buffer, 
                      bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
