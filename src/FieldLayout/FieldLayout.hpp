@@ -42,6 +42,54 @@ namespace ippl {
             requestedLayout_m[d] = PARALLEL;
             minWidth_m[d] = 0;
         }
+
+        // We initialize matchface_m, matchedge_m, and matchvertex_m
+
+        /*!
+         * Matchface_m is a container of length 2*Dim. The index represents
+         * faces with the same ordering as above, and the value represents
+         * the corresponding matching face number from the neighbours.
+         *
+         * For Dim = 3, matchface_m represents the faces. 
+         * For Dim = 2 and Dim = 1, the cells have no faces,
+         * so this array is useless.
+         */
+        if constexpr(Dim == 3) {
+            matchface_m = { 1, 0, 3, 2, 5, 4 };
+        }
+
+        /*!
+         * Matchedge_m is a container of length Dim*(2**(Dim-1)). The index
+         * represents edges with the same ordering as above, and the values
+         * are the corresponding matching edge number from the neighbours.
+         *
+         * For Dim = 3 and Dim = 2, marchedge_m represents the edges.
+         * For Dim = 1, it is useless, as there are no matching edges.
+         */
+        if constexpr(Dim == 2) {
+            matchedge_m = { 1, 0, 3, 2 };
+        } else if constexpr(Dim == 3) {
+            matchedge_m = { 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8 };
+        }
+
+        /*!
+         * Matchvertex_m is a container of length 2*(2**(Dim-1)). The index
+         * represents vertices with the same ordering as above, and the values
+         * are the corresponding matching vertex number from the neighbour vertex.
+         * The neighbour vertex is the vertex which would exchange information to
+         * the neighboring rank if the computational cell is extended by 1 halo
+         * layer in all dimensions.
+         *
+         * For all Dim, matchvertex_m represents the vertices. 
+         */
+        if constexpr(Dim == 1) {
+            matchvertex_m = { 1, 0 };
+        } else if constexpr(Dim == 2) {
+            matchvertex_m = { 3, 2, 1, 0 };
+        } else if constexpr(Dim == 3) {
+            matchvertex_m = { 7, 6, 5, 4, 3, 2, 1, 0 };
+        }
+
     }
 
 
@@ -77,6 +125,7 @@ namespace ippl {
     FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain,
                                  e_dim_tag* userflags, bool isAllPeriodic)
     {
+
         int nRanks = Ippl::Comm->size();
 
         gDomain_m = domain;

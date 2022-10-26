@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     bunch.setParticleBC(ippl::BC::PERIODIC);
     
     int nRanks = Ippl::Comm->size();
-    unsigned int nParticles = std::pow(256,3);
+    unsigned int nParticles = std::pow(2,3);
     
     if (nParticles % nRanks > 0) {
         if (Ippl::Comm->rank() == 0) {
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
 
     bunch_type bunchBuffer(pl);
     pl.update(bunch, bunchBuffer);
-    
+   
     field = 0.0;
 
     scatter(bunch.Q, field, bunch.R);
