@@ -509,7 +509,7 @@ public:
         Ippl::Comm->barrier();
      }
 
-     void dumpLangevin(unsigned int iteration) {
+     void dumpLangevin(unsigned int iteration, double mass, size_type N) {
 
         const int nghostE = E_m.getNghost();
         auto Eview = E_m.getView();
@@ -548,38 +548,38 @@ public:
         MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**/// TEMPERATURE CALCULATION      cant call compute_temperature();so i inline it here directly...
-/**/        const double N =  static_cast<double>(P->getTotalNum());
 /**/        double locVELsum[Dim]={0.0,0.0,0.0};
 /**/        double globVELsum[Dim];
 /**/        double avgVEL[Dim];
 /**/        double locT[Dim]={0.0,0.0,0.0};
 /**/        double globT[Dim];       
 /**/	    Vector_t temperature;
+/**/	    auto pPView = this->P.getView();
 /**/
 /**/        for(unsigned d = 0; d<Dim; ++d){
 /**/		    Kokkos::parallel_reduce("get local velocity sum", 
-/**/		    			 P->getLocalNum(), 
+/**/		    			 this->getLocalNum(), 
 /**/		    			 KOKKOS_LAMBDA(const int i, double& valL){
-/**/                                       		double myVal = P->v[i](d);
+/**/                                       		double myVal = pPView[i](d)/mass;
 /**/                                        	valL += myVal;
 /**/                                    	 },                    			
 /**/		    			 Kokkos::Sum<double>(locVELsum[d])
 /**/		    			);
 /**/	    }
 /**/    	MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
-/**/        for(int d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
+/**/        for(unsigned d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
 /**/        for(unsigned d = 0; d<Dim; ++d){
 /**/		    Kokkos::parallel_reduce("get local velocity sum", 
-/**/		    			 P->getLocalNum(), 
+/**/		    			 this->getLocalNum(), 
 /**/		    			 KOKKOS_LAMBDA(const int i, double& valL){
-/**/                                       		double myVal = (P->v[i](d)-avgVEL[d])*(P->v[i](d)-avgVEL[d]);
+/**/                                       		double myVal = (pPView[i](d)/mass-avgVEL[d])*(pPView[i](d)/mass-avgVEL[d]);
 /**/                                        	valL += myVal;
 /**/                                    	 },                    			
 /**/		    			 Kokkos::Sum<double>(locT[d])
 /**/		    			);
 /**/	    }
 /**/    	MPI_Reduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());	
-/**/        if (Ippl::Comm->rank() == 0) for(int d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
+/**/        if (Ippl::Comm->rank() == 0) for(unsigned d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
 /**/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         if (Ippl::Comm->rank() == 0) {
@@ -605,10 +605,10 @@ public:
                         time_m << std::setw(20) << 
                         fieldEnergy << std::setw(20)<< 
                         ExAmp << std::setw(20) << 
-                        temperature[0] << " "
-                        temperature[1] << " "
-                        temperature[2] << " "
-                        << endl;
+                        temperature[0] << " " <<
+                        temperature[1] << " " <<
+                        temperature[2] << " " <<
+                        endl;
         }
         
         Ippl::Comm->barrier();
