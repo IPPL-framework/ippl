@@ -145,13 +145,10 @@ namespace ippl {
         *This copy to a temporary Kokkos view is needed because of following
         *reasons:
         *1) heffte wants the input and output fields without ghost layers
-        *2) heffte's data types are different than Kokkos::complex
-        *3) heffte accepts data in layout left (by default) eventhough this
+        *2) heffte accepts data in layout left (by default) eventhough this
         *can be changed during heffte box creation
-        *Points 2 and 3 are slightly less of a concern and the main one is 
-        *point 1.
        */
-       Kokkos::View<heffteComplex_t***,Kokkos::LayoutLeft>
+       Kokkos::View<Complex_t***,Kokkos::LayoutLeft>
            tempField("tempField", fview.extent(0) - 2*nghost,
                                   fview.extent(1) - 2*nghost,
                                   fview.extent(2) - 2*nghost);
@@ -168,17 +165,10 @@ namespace ippl {
                                           const size_t j,
                                           const size_t k)
                             {
-#ifdef KOKKOS_ENABLE_CUDA
-                              tempField(i-nghost, j-nghost, k-nghost).x =
-                              fview(i, j, k).real();
-                              tempField(i-nghost, j-nghost, k-nghost).y =
-                              fview(i, j, k).imag();
-#else
-                              tempField(i-nghost, j-nghost, k-nghost).real(
+                                tempField(i-nghost, j-nghost, k-nghost).real(
                                       fview(i, j, k).real());
-                              tempField(i-nghost, j-nghost, k-nghost).imag(
+                                tempField(i-nghost, j-nghost, k-nghost).imag(
                                       fview(i, j, k).imag());
-#endif
                             });
 
 
@@ -211,17 +201,10 @@ namespace ippl {
                                           const size_t j,
                                           const size_t k)
                             {
-#ifdef KOKKOS_ENABLE_CUDA
-                              fview(i, j, k).real() =
-                              tempField(i-nghost, j-nghost, k-nghost).x;
-                              fview(i, j, k).imag() =
-                              tempField(i-nghost, j-nghost, k-nghost).y;
-#else
-                              fview(i, j, k).real() =
-                              tempField(i-nghost, j-nghost, k-nghost).real();
-                              fview(i, j, k).imag() =
-                              tempField(i-nghost, j-nghost, k-nghost).imag();
-#endif
+                                fview(i, j, k).real() =
+                                tempField(i-nghost, j-nghost, k-nghost).real();
+                                fview(i, j, k).imag() =
+                                tempField(i-nghost, j-nghost, k-nghost).imag();
                             });
 
     }
@@ -351,18 +334,15 @@ namespace ippl {
         *This copy to a temporary Kokkos view is needed because of following
         *reasons:
         *1) heffte wants the input and output fields without ghost layers
-        *2) heffte's data types are different than Kokkos::complex
-        *3) heffte accepts data in layout left (by default) eventhough this
+        *2) heffte accepts data in layout left (by default) eventhough this
         *can be changed during heffte box creation
-        *Points 2 and 3 are slightly less of a concern and the main one is 
-        *point 1.
        */
        Kokkos::View<T***, Kokkos::LayoutLeft>
            tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
                                     fview.extent(1) - 2*nghostf,
                                     fview.extent(2) - 2*nghostf);
 
-       Kokkos::View<heffteComplex_t***, Kokkos::LayoutLeft>
+       Kokkos::View<Complex_t***, Kokkos::LayoutLeft>
            tempFieldg("tempFieldg", gview.extent(0) - 2*nghostg,
                                     gview.extent(1) - 2*nghostg,
                                     gview.extent(2) - 2*nghostg);
@@ -391,17 +371,10 @@ namespace ippl {
                                           const size_t j,
                                           const size_t k)
                             {
-#ifdef KOKKOS_ENABLE_CUDA
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).x =
-                              gview(i, j, k).real();
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).y =
-                              gview(i, j, k).imag();
-#else
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).real(
+                                tempFieldg(i-nghostg, j-nghostg, k-nghostg).real(
                                       gview(i, j, k).real());
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).imag(
+                                tempFieldg(i-nghostg, j-nghostg, k-nghostg).imag(
                                       gview(i, j, k).imag());
-#endif
                             });
 
       
@@ -445,17 +418,10 @@ namespace ippl {
                                           const size_t j,
                                           const size_t k)
                             {
-#ifdef KOKKOS_ENABLE_CUDA
-                              gview(i, j, k).real() =
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).x;
-                              gview(i, j, k).imag() =
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).y;
-#else
-                              gview(i, j, k).real() =
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).real();
-                              gview(i, j, k).imag() =
-                              tempFieldg(i-nghostg, j-nghostg, k-nghostg).imag();
-#endif
+                                gview(i, j, k).real() =
+                                tempFieldg(i-nghostg, j-nghostg, k-nghostg).real();
+                                gview(i, j, k).imag() =
+                                tempFieldg(i-nghostg, j-nghostg, k-nghostg).imag();
                             });
 
     }
@@ -560,16 +526,13 @@ namespace ippl {
     {
        auto fview = f.getView();
        const int nghost = f.getNghost();
-
+       
        /**
         *This copy to a temporary Kokkos view is needed because of following
         *reasons:
         *1) heffte wants the input and output fields without ghost layers
-        *2) heffte's data types are different than Kokkos::complex
-        *3) heffte accepts data in layout left (by default) eventhough this
+        *2) heffte accepts data in layout left (by default) eventhough this
         *can be changed during heffte box creation
-        *Points 2 and 3 are slightly less of a concern and the main one is 
-        *point 1.
        */
        Kokkos::View<T***,Kokkos::LayoutLeft>
            tempField("tempField", fview.extent(0) - 2*nghost,
@@ -730,11 +693,8 @@ namespace ippl {
         *This copy to a temporary Kokkos view is needed because of following
         *reasons:
         *1) heffte wants the input and output fields without ghost layers
-        *2) heffte's data types are different than Kokkos::complex
-        *3) heffte accepts data in layout left (by default) eventhough this
+        *2) heffte accepts data in layout left (by default) eventhough this
         *can be changed during heffte box creation
-        *Points 2 and 3 are slightly less of a concern and the main one is 
-        *point 1.
        */
        Kokkos::View<T***,Kokkos::LayoutLeft>
            tempField("tempField", fview.extent(0) - 2*nghost,

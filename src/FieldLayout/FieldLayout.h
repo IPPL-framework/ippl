@@ -228,7 +228,7 @@ namespace ippl {
          */
         face_neighbor_type faceNeighbors_m;
 
-        match_face_type matchface_m = { 1, 0, 3, 2, 5, 4 };
+        match_face_type matchface_m;
 
         /*!
          * Neighboring ranks that store the edge values.
@@ -249,7 +249,7 @@ namespace ippl {
          */
         edge_neighbor_type edgeNeighbors_m;
         
-        match_edge_type matchedge_m = { 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8 };
+        match_edge_type matchedge_m;
 
         /*!
          * Neighboring ranks that have the vertex value (corner cell). The value
@@ -266,8 +266,7 @@ namespace ippl {
          */
         vertex_neighbor_type vertexNeighbors_m;
 
-        match_vertex_type matchvertex_m = { 7, 6, 5, 4, 3, 2, 1, 0 };
-
+        match_vertex_type matchvertex_m;
 
         void calcWidths();
 
