@@ -357,7 +357,7 @@ int main(int argc, char *argv[]){
     //16 -> loadbalancethreshold
     //17 -> default overallocation
  	
-    int rank;
+    int rank; // Ippl::myNode()==0
     MPI_Comm_rank(Ippl::getComm(),&rank);
    
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
@@ -465,15 +465,14 @@ int main(int argc, char *argv[]){
     	createParticleDistributionColdSphere(*P, beamRadius, nP, particleCharge);    
     
     
-        //P->update();
-        PL.update(*P, bunchBuffer);
-   	//PL.getTotalNum();
-       	//PL.singleInitNode();	
+    PL.update(*P, bunchBuffer);
     
     Kokkos::fence(); //??
     Ippl::Comm->barrier();  //??
     IpplTimings::stopTimer(particleCreation);    
     msg << "particles created and initial conditions assigned " << endl;
+
+    Vector_t avgEF(compAvgSCForce(*P, nP));
 
 // PARTICLE CREATION
 //====================================================================================== 
@@ -493,7 +492,7 @@ int main(int argc, char *argv[]){
     P->gatherCIC();
 
     IpplTimings::startTimer(dumpDataTimer);
-    P->dumpLandau();
+    P->dumpLangevin();
     P->gatherStatistics(nP);
     //P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
@@ -506,21 +505,17 @@ int main(int argc, char *argv[]){
     for (unsigned int it=0; it<nt; it++) {
 
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
-        // Here, we assume a constant charge-to-mass ratio of -1 for
-        // all the particles hence eliminating the need to store mass as
-        // an attribute
+        //  'kick-drift-kick' form;
         //TODO: work in charge and mass for other ratio than 1?
 
-
         // kick
-
         IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E;
+        P->P = P->P - 0.5 * dt * P->E * particleCharge;
         IpplTimings::stopTimer(PTimer);
 
         //drift
         IpplTimings::startTimer(RTimer);
-        P->R = P->R + dt * P->P;
+        P->R = P->R + dt * P->P / particleMass;
         IpplTimings::stopTimer(RTimer);
 
         //Since the particles have moved spatially update them to correct processors
@@ -553,16 +548,16 @@ int main(int argc, char *argv[]){
 
     // =================MYSTUFF==================================================================
         
-        Vector_t avgEF(compAvgSCForce(*P, nP));
+        //avgEF = compAvgSCForce(*P, nP);
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
 	
-	compute_temperature(*P, particleMass, nP);
-
         //LANGEVIN COLLISIONS<-
-	//error if variable not used..
+
+	    compute_temperature(*P, particleMass, nP);
+	
+    
+    //error if variable not used..
 	double tmp = interactionRadius;
-	tmp = particleMass;
-	tmp = printInterval;
 	tmp += 1;
 
 	// =================MYSTUFF==================================================================
@@ -573,10 +568,13 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(PTimer);
 
         P->time_m += dt;
-        IpplTimings::startTimer(dumpDataTimer);
-        P->dumpLangevin(it, particleMass, nP);
-        P->gatherStatistics(nP);
-        IpplTimings::stopTimer(dumpDataTimer);
+
+        if (it%printInterval==0){
+            IpplTimings::startTimer(dumpDataTimer);
+            P->dumpLangevin(it, particleMass, nP);
+            // P->gatherStatistics(nP);
+            IpplTimings::stopTimer(dumpDataTimer);
+        }
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
     }
 
