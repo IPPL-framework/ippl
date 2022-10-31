@@ -168,6 +168,7 @@ const char* TestName = "LangevinCollsion";
 
 //==============================   ==============================  ============================== 
 
+
 //PRE: beam radiues >= 0; NParticle ... 
 //POST: return the nuch_type paramter with particles initialize on a cold sphere
 template<typename bunch>
@@ -178,8 +179,11 @@ void createParticleDistributionColdSphere( 	bunch& P,
                                             // double mi
                                             ) {
     
-    Inform m("Initializing Cold Sphere");
+   	Inform m("Cold Sphere Initialization ");
 
+  	m << "creating Particles" << endl;
+        P.create(Nparticle);
+	
 	auto mydotpr = [](Vector_t a, Vector_t b)   {
 		return a(0)*b(0) + a(1)*b(1) + a(2)*b(2); 
 	};
@@ -188,31 +192,66 @@ void createParticleDistributionColdSphere( 	bunch& P,
         auto normal = std::bind(normdistribution, generator);
         std::uniform_real_distribution<double> unidistribution(0,1);
         auto uni = std::bind(unidistribution, generator);
-        P.Q_m=0;
         Vector_t source({0,0,0});
-	auto pRView = P.R.getView();
-        P.create(Nparticle);
-        
-//	bool vers1 = true;
-//	if(vers1){
-		for (unsigned i = 0; i<Nparticle; ++i) {
+
+   	     
+   	m << "start Initializing" << endl;
+	typename bunch::particle_position_type::HostMirror pRHost = P.R.getHostMirror();
+
+	for (unsigned i = 0; i<Nparticle; ++i) {
          		Vector_t X({normal(),normal(),normal()});
         		double U = uni();
          		Vector_t pos = source + beamRadius*pow(U,1./3.)/sqrt(mydotpr(X,X))*X;
-       	 		pRView[i] = pos;
-		}
-//        }
-//	else{
-//		Kokkos::parallel_for("Apply Constant Focusing",
-//				Nparticle,
-//				KOKKOS_LAMBDA(const int i){
-//					Vector_t X({normal(),normal(),normal()});
-//        				double U = uni();
-//         				Vector_t pos = source + beamRadius*pow(U,1./3.)/sqrt(mydotpr(X,X))*X;
-//       	 			pRView[i] = pos;
-//				}	
-//		);
-//	}
+       	 		pRHost(i) = pos; // () or [] seems to makeno difference ...
+	}
+	Vector_t mom({0,0,0});
+        P.q = -qi;
+        P.P = mom;  //zero momentum intial conditiov
+	m << "()"<< pRHost(0)(0) << pRHost(0)(1) << pRHost(0)(2) << endl;
+	m << "[]"<< pRHost[0](0) << pRHost[0](1) << pRHost[0](2) << endl;
+   	m << "finished Initializing" << endl;
+}
+//PRE: beam radiues >= 0; NParticle ... 
+//POST: return the nuch_type paramter with particles initialize on a cold sphere
+template<typename bunch>
+void CCcreateParticleDistributionColdSphere( 	bunch& P,
+						const double& beamRadius, 
+                                        	const unsigned& Nparticle,
+                                        	const double& qi//,
+                                            // double mi
+                                            ) {
+    
+    Inform m("Initializing Cold Sphere");
+	
+    	double tmp = beamRadius;
+	tmp += 1;
+
+//	auto mydotpr = [](Vector_t a, Vector_t b)   {
+//		return a(0)*b(0) + a(1)*b(1) + a(2)*b(2); 
+//	};
+//        std::default_random_engine generator(0);
+//        std::normal_distribution<double> normdistribution(0,1.0);
+//        auto normal = std::bind(normdistribution, generator);
+//        std::uniform_real_distribution<double> unidistribution(0,1);
+//        auto uni = std::bind(unidistribution, generator);
+       
+       	
+        Vector_t source({0,0,0});
+	auto pRMirror = P.R.getMirror();
+        P.create(Nparticle);
+       //implement multidimensional iterator for view .. 
+		Kokkos::parallel_for("Initializing paricles",
+				Nparticle,
+				KOKKOS_LAMBDA(const int i){
+				//	Vector_t X({normal(),normal(),normal()});
+        			//	double U = uni();
+         			//	Vector_t pos = source + beamRadius*pow(U,1./3.)/sqrt(mydotpr(X,X))*X;
+       		 		//	pRMirror[i] = pos;
+					pRMirror[i] = source;
+				}	
+		);
+	
+	
 	Vector_t mom({0,0,0});
         P.q = -qi;
         P.P = mom;  //zero momentum intial conditiov
@@ -220,29 +259,31 @@ void createParticleDistributionColdSphere( 	bunch& P,
 
 template<typename bunch>
 Vector_t compAvgSCForce(bunch& P, const size_type N ) {  
-    //Inform m("computeAvgSpaceChargeForces ");
-    //	m << "apply constant focusing"<< endl;
+    Inform m("computeAvgSpaceChargeForces ");
+    	m << "start Calculation" << endl;
 
 	Vector_t avgEF;
 	double locEFsum[Dim];//={0.0,0.0,0.0};
 	double globEFsum[Dim];
 	
-	auto pEView = P.E.getView();
+	//auto pEView = P.E.getView();
+	auto pEMirror = P.E.getHostMirror();
 	for(unsigned d = 0; d<Dim; ++d){
 		locEFsum[d]=0.0;
 		Kokkos::parallel_reduce("get local EField sum", 
 					 P.getLocalNum(),
 					 KOKKOS_LAMBDA(const int i, double& valL){
-                                   		double myVal =pEView[i](d);    //  P.E[i](d);
-                                    	valL += myVal;
+                                   		double myVal =pEMirror[i](d);    //  P.E[i](d);
+              		                      	valL += myVal;
                                 	 },                    			
 					 Kokkos::Sum<double>(locEFsum[d])
 					);
 	}
-	MPI_Allreduce(locEFsum, globEFsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
+	MPI_Allreduce(locEFsum, globEFsum, Dim , MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
 	
     for(unsigned d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N; 
 
+   m << "finished Calculation; Dim = "<< Dim  <<  endl;
     return avgEF;
 }
 
@@ -252,29 +293,26 @@ void applyConstantFocusing( bunch& P,
                             const double beamRadius,
                             const Vector_t avgEF
                                 ) {  
-
+	//Inform m("applyConstantFocusing");
+	//m << "start" << endl;
 	auto mydotpr = [](Vector_t a, Vector_t b)   {
 		return a(0)*b(0) + a(1)*b(1) + a(2)*b(2); 
 	};
 
-	auto pEView = P.E.getView();
-	auto pRView = P.R.getView();
+	auto pEMirror = P.E.getHostMirror();
+	auto pRMirror = P.R.getHostMirror();
+//	auto pEView = P.E.getView();
+//	auto pRView = P.R.getView();
 	double tmp = sqrt(mydotpr(avgEF, avgEF))*f/beamRadius;
-
-	//double tmp = dot(avgEF, avgEF); // doesnt work??
-	//tmp = sqrt(tmp);//*f/beamRadius;
-	//tmp *= f;
-	//tmp /= beamRadius;
 
 	Kokkos::parallel_for("Apply Constant Focusing",
 				P.getLocalNum(),
 				KOKKOS_LAMBDA(const int i){
-					//pEView[i](0) += pRView[i](0)*tmp;	
-					//pEView[i](1) += pRView[i](1)*tmp;
-					//pEView[i](2) += pRView[i](2)*tmp;
-					pEView[i] += pRView[i]*tmp;
+					pEMirror[i] += pRMirror[i]*tmp;
 				}	
 	);
+	//m << "finished" << endl;
+
 }
 
 
@@ -297,35 +335,36 @@ Vector_t compute_temperature(bunch& P, const double mass, const size_type N) {
         double globT[Dim];       
 	Vector_t temperature;
 	
-	auto pPView = P.P.getView();
+	auto pPMirror = P.P.getHostMirror();
+	//auto pPView = P.P.getView();
         // GET AVERAGE VELOCITY GLOBALLY
         for(unsigned d = 0; d<Dim; ++d){
 		    Kokkos::parallel_reduce("get local velocity sum", 
 		    			 P.getLocalNum(), 
 		    			 KOKKOS_LAMBDA(const int i, double& valL){
-                                       		double myVal = pPView[i](d)/mass;
+                                       		double myVal = pPMirror[i](d)/mass;
                                         	valL += myVal;
                                     	 },                    			
 		    			 Kokkos::Sum<double>(locVELsum[d])
 		    			);
 	    }
-    	MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
+    	MPI_Allreduce(locVELsum, globVELsum, Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
 
         for(unsigned d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
 
-        // m << "avgVEL[0]= " << avgVEL[0] << " avgVEL[1]= " << avgVEL[1] << " avgVEL[2]= " << avgVEL[2] <<  endl;
+        m << "avgVEL[0]= " << avgVEL[0] << " avgVEL[1]= " << avgVEL[1] << " avgVEL[2]= " << avgVEL[2] <<  endl;
 
         for(unsigned d = 0; d<Dim; ++d){
 		    Kokkos::parallel_reduce("get local velocity sum", 
 		    			 P.getLocalNum(), 
 		    			 KOKKOS_LAMBDA(const int i, double& valL){
-                                       		double myVal = (pPView[i](d)/mass-avgVEL[d])*(pPView[i](d)/mass-avgVEL[d]);
+                                       		double myVal = (pPMirror[i](d)/mass-avgVEL[d])*(pPMirror[i](d)/mass-avgVEL[d]);
                                         	valL += myVal;
                                     	 },                    			
 		    			 Kokkos::Sum<double>(locT[d])
 		    			);
 	    }
-    	MPI_Allreduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM,Ippl::getComm());	
+    	MPI_Allreduce(locT, globT, Dim, MPI_DOUBLE, MPI_SUM,Ippl::getComm());	
         // since we assume for our reduction that this function is called from 
         // multiple nodes, each node, needs to have a return
         // Allreduce shouldnt be slower than reduce, so its ok to give each
@@ -417,7 +456,7 @@ int main(int argc, char *argv[]){
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t PL(FL, mesh);
-    const double Q = nP * particleCharge;
+    const double Q = nP * (-particleCharge);
     
  
     	std::unique_ptr<bunch_type>  P;
@@ -487,10 +526,10 @@ int main(int argc, char *argv[]){
     Kokkos::fence(); //??
     Ippl::Comm->barrier();  //??
     
-    msg << "particles created" << endl;
+    msg << "Cold Sphere created" << endl;
     
     PL.update(*P, bunchBuffer);
-    msg << "updated"  << endl;
+    msg << "Layout updated"  << endl;
    
 
     IpplTimings::stopTimer(particleCreation);    
@@ -508,11 +547,12 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(DummySolveTimer);
 
     P->scatterCIC(nP, 0, hr);
+	msg << "scatter tested" << endl;
 
     IpplTimings::startTimer(SolveTimer);
     P->solver_mp->solve();
     IpplTimings::stopTimer(SolveTimer);
-
+	msg << "solve() tested" << endl;	
     P->gatherCIC();
 
     IpplTimings::startTimer(dumpDataTimer);
@@ -576,7 +616,7 @@ int main(int argc, char *argv[]){
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
 	
         //LANGEVIN COLLISIONS<-
-	// compute_temperature(*P, particleMass, nP);
+	//compute_temperature(*P, particleMass, nP);
 	
     
    	//error if variable not used..

@@ -554,13 +554,14 @@ public:
 /**/        double locT[Dim]={0.0,0.0,0.0};
 /**/        double globT[Dim];       
 /**/	    Vector_t temperature;
-/**/	    auto pPView = this->P.getView();
+/**/	   // auto pPView = this->P.getView();
+/**/	    auto pPMirror = this->P.getHostMirror();
 /**/
 /**/        for(unsigned d = 0; d<Dim; ++d){
 /**/		    Kokkos::parallel_reduce("get local velocity sum", 
 /**/		    			 this->getLocalNum(), 
 /**/		    			 KOKKOS_LAMBDA(const int i, double& valL){
-/**/                                       		double myVal = pPView[i](d)/mass;
+/**/                                       		double myVal = pPMirror[i](d)/mass;
 /**/                                        	valL += myVal;
 /**/                                    	 },                    			
 /**/		    			 Kokkos::Sum<double>(locVELsum[d])
@@ -572,7 +573,7 @@ public:
 /**/		    Kokkos::parallel_reduce("get local velocity sum", 
 /**/		    			 this->getLocalNum(), 
 /**/		    			 KOKKOS_LAMBDA(const int i, double& valL){
-/**/                                       		double myVal = (pPView[i](d)/mass-avgVEL[d])*(pPView[i](d)/mass-avgVEL[d]);
+/**/                                       		double myVal = (pPMirror[i](d)/mass-avgVEL[d])*(pPMirror[i](d)/mass-avgVEL[d]);
 /**/                                        	valL += myVal;
 /**/                                    	 },                    			
 /**/		    			 Kokkos::Sum<double>(locT[d])
@@ -594,20 +595,20 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if(time_m == 0.0) {
-                csvout  <<  "iteration" << std::setw(10) << 
-                            "time" << std::setw(20) << 
-                            "Ex_field_energy" << std::setw(20)<< 
-                            "Ex_max_norm" << std::setw(20) << 
-                            "Temperature_xyz" << endl;
+                csvout  <<  "iteration" 	<<" " <<  //std::setw(20) << 
+                            "time" 		<<" " <<  //std::setw(20) << 
+                            "Ex_field_energy" 	<<" " <<  // std::setw(20)<< 
+                            "Ex_max_norm" 	<<" " <<  // std::setw(20) << 
+                            "Temperature_xyz" 	<<" " <<  endl;
             }
 
-            csvout  <<  iteration << std::setw(10) <<
-                        time_m << std::setw(20) << 
-                        fieldEnergy << std::setw(20)<< 
-                        ExAmp << std::setw(20) << 
-                        temperature[0] << " " <<
-                        temperature[1] << " " <<
-                        temperature[2] << " " <<
+            csvout  <<  iteration 	<<" "<<	// std::setw(20) <<
+                        time_m 		<<" "<<	//std::setw(20) << 
+                        fieldEnergy	<<" "<<	// std::setw(20)<< 
+                        ExAmp		<<" "<<	//std::setw(20) << 
+                        temperature[0] 	<< " " <<
+                        temperature[1] 	<< " " <<
+                        temperature[2] 	<< " " <<
                         endl;
         }
         
