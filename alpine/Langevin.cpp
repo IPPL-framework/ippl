@@ -171,10 +171,10 @@ const char* TestName = "LangevinCollsion";
 //PRE: beam radiues >= 0; NParticle ... 
 //POST: return the nuch_type paramter with particles initialize on a cold sphere
 template<typename bunch>
-void createParticleDistributionColdSphere(  bunch& P,
-                                            double beamRadius, 
-                                            unsigned Nparticle,
-                                            double qi//,
+void createParticleDistributionColdSphere( 	bunch& P,
+						const double& beamRadius, 
+                                        	const unsigned& Nparticle,
+                                        	const double& qi//,
                                             // double mi
                                             ) {
     
@@ -191,25 +191,35 @@ void createParticleDistributionColdSphere(  bunch& P,
         P.Q_m=0;
         Vector_t source({0,0,0});
 	auto pRView = P.R.getView();
-     //   if (P.singleInitNode()) { //takes care s.t only one node creates particles
-                P.create(Nparticle);
-                for (unsigned i = 0; i<Nparticle; ++i) {
-                        Vector_t X({normal(),normal(),normal()});
-                        double U = uni();
-                        Vector_t pos = source + beamRadius*pow(U,1./3.)/sqrt(mydotpr(X,X))*X;
-			// this seems not to compile ... why ? giving values this way does not work...n
-                       // P.R[i] = pos;  //positionattribute given in baseclass
-		       pRView[i] = pos;
-
-                }
-       // }
+        P.create(Nparticle);
+        
+//	bool vers1 = true;
+//	if(vers1){
+		for (unsigned i = 0; i<Nparticle; ++i) {
+         		Vector_t X({normal(),normal(),normal()});
+        		double U = uni();
+         		Vector_t pos = source + beamRadius*pow(U,1./3.)/sqrt(mydotpr(X,X))*X;
+       	 		pRView[i] = pos;
+		}
+//        }
+//	else{
+//		Kokkos::parallel_for("Apply Constant Focusing",
+//				Nparticle,
+//				KOKKOS_LAMBDA(const int i){
+//					Vector_t X({normal(),normal(),normal()});
+//        				double U = uni();
+//         				Vector_t pos = source + beamRadius*pow(U,1./3.)/sqrt(mydotpr(X,X))*X;
+//       	 			pRView[i] = pos;
+//				}	
+//		);
+//	}
 	Vector_t mom({0,0,0});
         P.q = -qi;
         P.P = mom;  //zero momentum intial conditiov
 }
 
 template<typename bunch>
-Vector_t compAvgSCForce(bunch& P, size_type N ) {  
+Vector_t compAvgSCForce(bunch& P, const size_type N ) {  
     //Inform m("computeAvgSpaceChargeForces ");
     //	m << "apply constant focusing"<< endl;
 
@@ -238,9 +248,9 @@ Vector_t compAvgSCForce(bunch& P, size_type N ) {
 
 template<typename bunch>
 void applyConstantFocusing( bunch& P,
-                            double f,
-                            double beamRadius,
-                            Vector_t avgEF
+                            const double f,
+                            const double beamRadius,
+                            const Vector_t avgEF
                                 ) {  
 
 	auto mydotpr = [](Vector_t a, Vector_t b)   {
@@ -276,7 +286,7 @@ void applyConstantFocusing( bunch& P,
 // PRE
 // POST
 template<typename bunch>
-Vector_t compute_temperature(bunch& P, double mass, size_type N) {
+Vector_t compute_temperature(bunch& P, const double mass, const size_type N) {
         Inform m("compute_temperature ");
 
         double locVELsum[Dim]={0.0,0.0,0.0};
@@ -357,7 +367,7 @@ int main(int argc, char *argv[]){
     //16 -> loadbalancethreshold
     //17 -> default overallocation
  	
-    int rank; // Ippl::myNode()==0
+    int rank;
     MPI_Comm_rank(Ippl::getComm(),&rank);
    
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
@@ -383,8 +393,9 @@ int main(int argc, char *argv[]){
 //================================================================================== 
 // MESH & DOMAIN_DECOMPOSITION
 
-    using bunch_type = ChargedParticles<PLayout_t>;
-    std::unique_ptr<bunch_type>  P;
+   	 using bunch_type = ChargedParticles<PLayout_t>;
+
+
 
     //initializing number of cells in mesh/domain
     ippl::NDIndex<Dim> domain;
@@ -406,11 +417,15 @@ int main(int argc, char *argv[]){
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t PL(FL, mesh);
-    double Q = nP * particleCharge;
-    P = std::make_unique<bunch_type>(PL,hr,
-                                        box_boundaries_lower,
-                                        box_boundaries_upper,
-                                        decomp,Q);
+    const double Q = nP * particleCharge;
+    
+ 
+    	std::unique_ptr<bunch_type>  P;
+   	P = std::make_unique<bunch_type>(PL,hr,box_boundaries_lower, box_boundaries_upper,decomp,Q);
+    
+//	bunch_type *P;
+//   	P = new bunch_type(PL,hr, box_boundaries_lower, box_boundaries_upper, decomp,Q);
+    
     P->nr_m = nr;
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
@@ -461,14 +476,23 @@ int main(int argc, char *argv[]){
 // MESH & DOMAIN_DECOMPOSITION
 //=======================================================================================
 // PARTICLE CREATION
-  	if(rank == 0) 
-    	createParticleDistributionColdSphere(*P, beamRadius, nP, particleCharge);    
+
+
+    IpplTimings::startTimer(particleCreation); 
+
+    if(rank == 0) 
+	    createParticleDistributionColdSphere(*P, beamRadius, nP, particleCharge);    
     
-    
-    PL.update(*P, bunchBuffer);
-    
+
     Kokkos::fence(); //??
     Ippl::Comm->barrier();  //??
+    
+    msg << "particles created" << endl;
+    
+    PL.update(*P, bunchBuffer);
+    msg << "updated"  << endl;
+   
+
     IpplTimings::stopTimer(particleCreation);    
     msg << "particles created and initial conditions assigned " << endl;
 
@@ -492,7 +516,7 @@ int main(int argc, char *argv[]){
     P->gatherCIC();
 
     IpplTimings::startTimer(dumpDataTimer);
-    P->dumpLangevin();
+    P->dumpLangevin(0, particleMass, nP);;
     P->gatherStatistics(nP);
     //P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
@@ -552,11 +576,10 @@ int main(int argc, char *argv[]){
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
 	
         //LANGEVIN COLLISIONS<-
-
-	    compute_temperature(*P, particleMass, nP);
+	// compute_temperature(*P, particleMass, nP);
 	
     
-    //error if variable not used..
+   	//error if variable not used..
 	double tmp = interactionRadius;
 	tmp += 1;
 
@@ -571,7 +594,7 @@ int main(int argc, char *argv[]){
 
         if (it%printInterval==0){
             IpplTimings::startTimer(dumpDataTimer);
-            P->dumpLangevin(it, particleMass, nP);
+            P->dumpLangevin(it+1, particleMass, nP);
             // P->gatherStatistics(nP);
             IpplTimings::stopTimer(dumpDataTimer);
         }
