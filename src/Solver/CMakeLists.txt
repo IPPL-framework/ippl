@@ -7,6 +7,8 @@ set (_HDRS
     Electrostatics.h
     PCG.h
     Solver.h
+    FDTDSolver.h
+    FDTDSolver.hpp
 )
 
 if (ENABLE_FFT)

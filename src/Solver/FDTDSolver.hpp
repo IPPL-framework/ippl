@@ -16,9 +16,6 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
-#ifndef FDTD_SOLVER_H_
-#define FDTD_SOLVER_H_
-
 #include "FDTDSolver.h"
 #include "Field/Field.h"
 #include "FieldLayout/FieldLayout.h"
@@ -160,5 +157,3 @@ namespace ippl {
         Bn_m = 0.0;
     };
 }
-
-#endif

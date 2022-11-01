@@ -28,7 +28,7 @@ namespace ippl {
     template <typename Tfields, unsigned Dim,
               class M=UniformCartesian<double, Dim>,
               class C=typename M::DefaultCentering>
-    class FDTDSolver<Tfields, Dim, M, C> { 
+    class FDTDSolver { 
         public:
 
 	    // define a type for scalar field (e.g. charge density field)
@@ -45,7 +45,7 @@ namespace ippl {
             using buffer_type = Communicate::buffer_type;
 
             // constructor and destructor
-            FDTDSolver(Field_t charge, VField_t current);
+            FDTDSolver(Field_t charge, VField_t current, double timestep = 0.0);
             ~FDTDSolver();
 
             // finite differences time domain solver for potentials (A and phi)
@@ -91,7 +91,7 @@ namespace ippl {
 
             // E and B fields
             VField_t En_m;
-            Vfield_t Bn_m;
+            VField_t Bn_m;
 
             // buffer for communication
             detail::FieldBufferData<Tfields> fd_m;
