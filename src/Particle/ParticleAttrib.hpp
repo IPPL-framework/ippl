@@ -30,6 +30,7 @@
 #include "Communicate/DataTypes.h"
 #include "Utility/IpplTimings.h"
 
+
 namespace ippl {
 
     template<typename T, class... Properties>
@@ -196,6 +197,91 @@ namespace ippl {
 
 
     template<typename T, class... Properties>
+    template <unsigned Dim, class M, class C, class FT, class PT>
+    void ParticleAttrib<T, Properties...>::scatterPIF(Field<FT,Dim,M,C>& f,
+                                                   const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
+    const
+    {
+        static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("Scatter");           
+        IpplTimings::startTimer(scatterTimer);
+        
+        using view_type = typename Field<FT, Dim, M, C>::view_type;
+        using vector_type = typename M::vector_type;
+        using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
+        view_type fview = f.getView();
+        const int nghost = f.getNghost();
+        const FieldLayout<Dim>& layout = f.getLayout(); 
+        const M& mesh = f.get_mesh();
+        const vector_type& dx = mesh.getMeshSpacing();
+        const vector_type& origin = mesh.getOrigin();
+        const auto& domain = layout.getDomain();
+        vector_type length;
+
+        for (unsigned d=0; d < Dim; ++d) {
+            length[d] = origin[d] + dx[d] * domain[d].length();
+        }
+
+        typedef Kokkos::TeamPolicy<> team_policy;
+        typedef Kokkos::TeamPolicy<>::member_type member_type;
+
+        using view_type_temp = typename detail::ViewType<FT, 3>::view_type;
+
+        view_type_temp viewLocal("viewLocal",fview.extent(0),fview.extent(1),fview.extent(2));
+
+        double pi = std::acos(-1.0);
+        Kokkos::complex<double> imag = {0.0, 1.0};
+
+        size_t Np = *(this->localNum_mp);
+
+        size_t N = domain[0].length()*domain[1].length()*domain[2].length();
+
+        Kokkos::parallel_for("ParticleAttrib::scatterPIF compute",
+                team_policy(N, Kokkos::AUTO),
+                KOKKOS_CLASS_LAMBDA(const member_type& teamMember) {
+                const size_t flatIndex = teamMember.league_rank();
+                const int i = flatIndex % domain[0].length();
+                const int j = (int)(flatIndex / domain[0].length());
+                const int k = (int)(flatIndex / (domain[0].length() * domain[1].length()));
+
+                FT reducedValue = 0.0;
+                Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, Np),
+                [=](const size_t idx, FT& innerReduce)
+                {
+                    //This can be done with Ippl vectors but problem maybe the
+                    //complex numbers
+                    Kokkos::complex<double> fx = Kokkos::Experimental::cos((2*pi*i*pp(idx)[0])/length[0])
+                                                 -imag*Kokkos::Experimental::sin((2*pi*i*pp(idx)[0])/length[0]);
+                    Kokkos::complex<double> fy = Kokkos::Experimental::cos((2*pi*j*pp(idx)[1])/length[1])
+                                                 -imag*Kokkos::Experimental::sin((2*pi*j*pp(idx)[1])/length[1]);
+                    Kokkos::complex<double> fz = Kokkos::Experimental::cos((2*pi*k*pp(idx)[2])/length[2])
+                                                 -imag*Kokkos::Experimental::sin((2*pi*k*pp(idx)[2])/length[2]);
+
+                    const value_type& val = dview_m(idx);
+
+                    innerReduce += fx*fy*fz*val;
+                }, Kokkos::Sum<FT>(reducedValue));
+
+                if(teamMember.team_rank() == 0) {
+                    viewLocal(i+nghost,j+nghost,k+nghost) = reducedValue;
+                }
+
+                }
+        );
+
+        IpplTimings::stopTimer(scatterTimer);
+
+
+        static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
+        IpplTimings::startTimer(scatterAllReduceTimer);                                               
+        int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
+        MPI_Allreduce(viewLocal.data(), fview.data(), viewSize, 
+                      MPI_C_DOUBLE_COMPLEX, MPI_SUM, Ippl::getComm());  
+        IpplTimings::stopTimer(scatterAllReduceTimer);
+
+    }
+
+
+    template<typename T, class... Properties>
     template <unsigned Dim, class M, class C, typename P2>
     void ParticleAttrib<T, Properties...>::gather(Field<T, Dim, M, C>& f,
                                                   const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
@@ -268,6 +354,15 @@ namespace ippl {
     {
         attrib.scatter(f, pp);
     }
+
+    template<typename P1, unsigned Dim, class M, class C, typename P2, typename P3, class... Properties>
+    inline
+    void scatterPIF(const ParticleAttrib<P1, Properties...>& attrib, Field<P2, Dim, M, C>& f,
+                 const ParticleAttrib<Vector<P3, Dim>, Properties...>& pp)
+    {
+        attrib.scatterPIF(f, pp);
+    }
+
 
 
     template<typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>

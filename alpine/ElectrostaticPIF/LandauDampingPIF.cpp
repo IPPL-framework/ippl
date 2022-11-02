@@ -220,14 +220,14 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(particleCreation);
 
-    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
-    const RegionLayout_t& RLayout = PL.getRegionLayout();
-    const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
+    //typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
+    //const RegionLayout_t& RLayout = PL.getRegionLayout();
+    //const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
     Vector_t minU, maxU;
     int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d <Dim; ++d) {
-        minU[d] = CDF(Regions(myRank)[d].min(), alpha, kw[d]);
-        maxU[d]   = CDF(Regions(myRank)[d].max(), alpha, kw[d]);
+        minU[d] = rmin[d];//CDF(Regions(myRank)[d].min(), alpha, kw[d]);
+        maxU[d] = rmax[d];//CDF(Regions(myRank)[d].max(), alpha, kw[d]);
     }
 
     double factor = 1.0/Ippl::Comm->size();
@@ -255,66 +255,66 @@ int main(int argc, char *argv[]){
     P->q = P->Q_m/totalP;
     msg << "particles created and initial conditions assigned " << endl;
 
-    P->scatterCIC(totalP, 0, hr);
+    P->scatter();
 
-    IpplTimings::startTimer(SolveTimer);
-    P->solver_mp->solve();
-    IpplTimings::stopTimer(SolveTimer);
+    //IpplTimings::startTimer(SolveTimer);
+    //P->solver_mp->solve();
+    //IpplTimings::stopTimer(SolveTimer);
 
-    P->gatherCIC();
+    //P->gather();
 
-    IpplTimings::startTimer(dumpDataTimer);
-    P->dumpLandau();
-    //P->dumpLocalDomains(FL, 0);
-    IpplTimings::stopTimer(dumpDataTimer);
+    //IpplTimings::startTimer(dumpDataTimer);
+    //P->dumpLandau();
+    ////P->dumpLocalDomains(FL, 0);
+    //IpplTimings::stopTimer(dumpDataTimer);
 
-    // begin main timestep loop
-    msg << "Starting iterations ..." << endl;
-    for (unsigned int it=0; it<nt; it++) {
+    //// begin main timestep loop
+    //msg << "Starting iterations ..." << endl;
+    //for (unsigned int it=0; it<nt; it++) {
 
-        // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
-        // Here, we assume a constant charge-to-mass ratio of -1 for
-        // all the particles hence eliminating the need to store mass as
-        // an attribute
-        // kick
+    //    // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
+    //    // Here, we assume a constant charge-to-mass ratio of -1 for
+    //    // all the particles hence eliminating the need to store mass as
+    //    // an attribute
+    //    // kick
 
-        IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E;
-        IpplTimings::stopTimer(PTimer);
+    //    IpplTimings::startTimer(PTimer);
+    //    P->P = P->P - 0.5 * dt * P->E;
+    //    IpplTimings::stopTimer(PTimer);
 
-        //drift
-        IpplTimings::startTimer(RTimer);
-        P->R = P->R + dt * P->P;
-        IpplTimings::stopTimer(RTimer);
+    //    //drift
+    //    IpplTimings::startTimer(RTimer);
+    //    P->R = P->R + dt * P->P;
+    //    IpplTimings::stopTimer(RTimer);
 
-        //Since the particles have moved spatially update them to correct processors
-	    IpplTimings::startTimer(updateTimer);
-        PL.update(*P, bunchBuffer);
-        IpplTimings::stopTimer(updateTimer);
+    //    //Since the particles have moved spatially update them to correct processors
+	//    IpplTimings::startTimer(updateTimer);
+    //    PL.update(*P, bunchBuffer);
+    //    IpplTimings::stopTimer(updateTimer);
 
 
-        //scatter the charge onto the underlying grid
-        P->scatterCIC(totalP, it+1, hr);
+    //    //scatter the charge onto the underlying grid
+    //    P->scatter(totalP, it+1, hr);
 
-        //Field solve
-        IpplTimings::startTimer(SolveTimer);
-        P->solver_mp->solve();
-        IpplTimings::stopTimer(SolveTimer);
+    //    //Field solve
+    //    IpplTimings::startTimer(SolveTimer);
+    //    P->solver_mp->solve();
+    //    IpplTimings::stopTimer(SolveTimer);
 
-        // gather E field
-        P->gatherCIC();
+    //    // gather E field
+    //    P->gather();
 
-        //kick
-        IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E;
-        IpplTimings::stopTimer(PTimer);
+    //    //kick
+    //    IpplTimings::startTimer(PTimer);
+    //    P->P = P->P - 0.5 * dt * P->E;
+    //    IpplTimings::stopTimer(PTimer);
 
-        P->time_m += dt;
-        IpplTimings::startTimer(dumpDataTimer);
-        P->dumpLandau();
-        IpplTimings::stopTimer(dumpDataTimer);
-        msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
-    }
+    //    P->time_m += dt;
+    //    IpplTimings::startTimer(dumpDataTimer);
+    //    P->dumpLandau();
+    //    IpplTimings::stopTimer(dumpDataTimer);
+    //    msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
+    //}
 
     msg << "LandauDamping: End." << endl;
     IpplTimings::stopTimer(mainTimer);

@@ -32,6 +32,80 @@
 #include "Expression/IpplExpressions.h"
 #include "Particle/ParticleAttribBase.h"
 
+
+//namespace sample {  // namespace helps with name resolution in reduction identity
+//    template< typename T, int N0, int N1, int N2 >
+//    struct array_type {
+//    
+//        using view_type = typename ippl::detail::ViewType<T, 3>::view_type;
+//        view_type viewTemp{"viewLocal",N0,N1,N2};
+//        using mdrange_type3 = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+//
+//        //KOKKOS_INLINE_FUNCTION   // Default constructor - Initialize to 0's
+//        array_type() {
+//            Kokkos::deep_copy(viewTemp, 0.0);
+//            //Kokkos::parallel_for(
+//            //    "array_type default constructor",
+//            //    mdrange_type3({0, 0, 0},
+//            //                 {viewTemp.extent(0),
+//            //                  viewTemp.extent(1),
+//            //                  viewTemp.extent(2)}),
+//            //    KOKKOS_CLASS_LAMBDA(const size_t i,
+//            //                  const size_t j,
+//            //                  const size_t k)
+//            //    {
+//            //        viewTemp(i,j,k) = 0.0;
+//            //    });
+//        }
+//        //KOKKOS_INLINE_FUNCTION   // Copy Constructor
+//        array_type(const array_type & rhs) {
+//            auto rhsView = rhs.viewTemp;
+//            Kokkos::deep_copy(viewTemp, rhsView);
+//            //Kokkos::parallel_for(
+//            //    "array_type copy constructor",
+//            //    mdrange_type3({0, 0, 0},
+//            //                 {viewTemp.extent(0),
+//            //                  viewTemp.extent(1),
+//            //                  viewTemp.extent(2)}),
+//            //    KOKKOS_CLASS_LAMBDA(const size_t i,
+//            //                  const size_t j,
+//            //                  const size_t k)
+//            //    {
+//            //        viewTemp(i,j,k) = rhsView(i,j,k);
+//            //    });
+//        
+//        }
+//        KOKKOS_FUNCTION   // add operator
+//        array_type& operator+=(const array_type& src) {
+//            auto srcView = src.viewTemp;
+//            Kokkos::parallel_for(
+//                "array_type operator +=",
+//                mdrange_type3({0, 0, 0},
+//                             {viewTemp.extent(0),
+//                              viewTemp.extent(1),
+//                              viewTemp.extent(2)}),
+//                KOKKOS_CLASS_LAMBDA(const size_t i,
+//                              const size_t j,
+//                              const size_t k)
+//                {
+//                    viewTemp(i,j,k) += srcView(i,j,k);
+//                });
+//                
+//            return *this;
+//        }
+//    };
+//    typedef array_type<Kokkos::complex<double>,34,34,34> ValueType;
+//}
+//
+//namespace Kokkos { //reduction identity must be defined in Kokkos namespace
+//   template<>
+//   struct reduction_identity< sample::ValueType > {
+//      KOKKOS_FORCEINLINE_FUNCTION static sample::ValueType sum() {
+//         return sample::ValueType();
+//      }
+//   };
+//}
+
 namespace ippl {
 
     // ParticleAttrib class definition
@@ -127,7 +201,6 @@ namespace ippl {
         /*!
          * Assign the same value to the whole attribute.
          */
-	//KOKKOS_INLINE_FUNCTION
         ParticleAttrib<T, Properties...>& operator=(T x);
 
         /*!
@@ -138,17 +211,22 @@ namespace ippl {
          * @param expr is the expression
          */
         template <typename E, size_t N>
-	//KOKKOS_INLINE_FUNCTION
         ParticleAttrib<T, Properties...>& operator=(detail::Expression<E, N> const& expr);
 
 
-        //     // scatter the data from this attribute onto the given Field, using
-//     // the given Position attribute
+        // scatter the data from this attribute onto the given Field, using
+        // the given Position attribute
         template <unsigned Dim, class M, class C, typename P2>
         void
         scatter(Field<T, Dim, M, C>& f,
                 const ParticleAttrib<Vector<P2, Dim>, Properties... >& pp) const;
-        
+
+        template <unsigned Dim, class M, class C, typename P2, typename P3>
+        void
+        scatterPIF(Field<P2, Dim, M, C>& f,
+                const ParticleAttrib<Vector<P3, Dim>, Properties... >& pp) const;
+
+
         template <unsigned Dim, class M, class C, typename P2>
         void
         gather(Field<T, Dim, M, C>& f,
