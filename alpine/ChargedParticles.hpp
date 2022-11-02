@@ -556,10 +556,12 @@ public:
 /**/	    Vector_t temperature;
 /**/	   // auto pPView = this->P.getView();
 /**/	    auto pPMirror = this->P.getHostMirror();
+/**/   
+/**/	const size_t locNp = static_cast<size_t>(this->getLocalNum());
 /**/
 /**/        for(unsigned d = 0; d<Dim; ++d){
 /**/		    Kokkos::parallel_reduce("get local velocity sum", 
-/**/		    			 this->getLocalNum(), 
+/**/		    			 locNp, 
 /**/		    			 KOKKOS_LAMBDA(const int i, double& valL){
 /**/                                       		double myVal = pPMirror[i](d)/mass;
 /**/                                        	valL += myVal;
@@ -571,7 +573,7 @@ public:
 /**/        for(unsigned d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
 /**/        for(unsigned d = 0; d<Dim; ++d){
 /**/		    Kokkos::parallel_reduce("get local velocity sum", 
-/**/		    			 this->getLocalNum(), 
+/**/					 locNp,
 /**/		    			 KOKKOS_LAMBDA(const int i, double& valL){
 /**/                                       		double myVal = (pPMirror[i](d)/mass-avgVEL[d])*(pPMirror[i](d)/mass-avgVEL[d]);
 /**/                                        	valL += myVal;
@@ -582,6 +584,86 @@ public:
 /**/    	MPI_Reduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());	
 /**/        if (Ippl::Comm->rank() == 0) for(unsigned d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
 /**/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**/CALCULATING BEAM STATISTICS    &&    EMITTANCE
+/**/
+/**/
+/**/	double         part[2 * Dim];
+/**/    double loc_centroid[2 * Dim]={};
+/**/    double   loc_moment[2 * Dim][2 * Dim]={};
+/**/    double      moments[2 * Dim][2 * Dim]={};
+/**/        
+/**/	for(unsigned i = 0; i < 2 * Dim; i++) {
+/**/            loc_centroid[i] = 0.0;
+/**/            for(unsigned j = 0; j <= i; j++) {
+/**/                loc_moment[i][j] = 0.0;
+/**/                loc_moment[j][i] = 0.0;
+/**/            }
+/**/    }
+/**/	
+/**/	auto pRMirror = P.R.getHostMirror();
+/**/	auto pPMirror = P.P.getHostMirror();
+/**/
+/**/	Kokkos::parallel_for("write Emittance 1 for-loop",
+/**/			locNp,
+/**/			KOKKOS_LAMBDA(const int k){
+/**/            		part[1] = P.P[k](0);
+/**/            		part[3] = P.P[k](1);
+/**/            		part[5] = P.P[k](2);
+/**/            		part[0] = P.R[k](0);
+/**/            		part[2] = P.R[k](1);
+/**/            		part[4] = P.R[k](2);
+/**/			
+/**/            		for(unsigned i = 0; i < 2 * Dim; i++) {
+/**/            		    loc_centroid[i]   += part[i];
+/**/            		    for(unsigned j = 0; j <= i; j++) {
+/**/            		        loc_moment[i][j]   += part[i] * part[j];
+/**/            		    }
+/**/            		}
+/**/			}	
+/**/	);	
+/**/
+/**/    	for(unsigned i = 0; i < 2 * Dim; i++) {
+/**/    	    for(unsigned j = 0; j < i; j++) {
+/**/    	        loc_moment[j][i] = loc_moment[i][j];
+/**/    	    }
+/**/    	}
+/**/
+/**/    MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+/**/
+/**/    MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+/**/    
+/**/    const double zero = 0.0;
+/**/    Vector_t eps2, fac, rsqsum, vsqsum, rvsum;
+/**/	Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
+/**/
+/**/    	for(unsigned int i = 0 ; i < Dim; i++) {
+/**/    	    rmean(i) = centroid[2 * i] / N;
+/**/    	    vmean(i) = centroid[(2 * i) + 1] / N;
+/**/    	    rsqsum(i) = moment[2 * i][2 * i] - N * rmean(i) * rmean(i);
+/**/    	    vsqsum(i) = moment[(2 * i) + 1][(2 * i) + 1] - N * vmean(i) * vmean(i);
+/**/    	    if(vsqsum(i) < 0)
+/**/    	        vsqsum(i) = 0;
+/**/    	    rvsum(i) = moment[(2 * i)][(2 * i) + 1] - N * rmean_m(i) * vmean_m(i);
+/**/    	}
+/**/
+/**/    eps2 = (rsqsum * vsqsum - rvsum * rvsum) / (N * N);
+/**/    rvsum /= N;
+/**/
+/**/    	for(unsigned int i = 0 ; i < Dim; i++) {
+/**/   		     rrms(i) = sqrt(rsqsum(i) / N);
+/**/   		     vrms(i) = sqrt(vsqsum(i) / N);
+/**/   		     eps(i)  =  std::sqrt(std::max(eps2(i), zero));
+/**/   		     double tmp = rrms_m(i) * vrms_m(i);
+/**/   		     fac(i) = (tmp == 0) ? zero : 1.0 / tmp;
+/**/   		 }
+/**/    rvrms = rvsum * fac;
+/**/
+/////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
 
         if (Ippl::Comm->rank() == 0) {
             std::stringstream fname;
@@ -595,25 +677,37 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if(time_m == 0.0) {
-                csvout  <<  "iteration" 	<<" " <<  //std::setw(20) << 
-                            "time" 		<<" " <<  //std::setw(20) << 
-                            "Ex_field_energy" 	<<" " <<  // std::setw(20)<< 
-                            "Ex_max_norm" 	<<" " <<  // std::setw(20) << 
-                            "Temperature_xyz" 	<<" " <<  endl;
-            }
+                csvout  <<  "iteration" 	<<" "<< 
+                            "time" 		<<" "<< 
+                            "Ex_field_energy" 	<<" "<< 
+                            "Ex_max_norm" 	<<" "<< 
+                            "Tx Ty Tz "  	<<
+    			    "rrmsX rrmsY rrmsZ "<<
+			    "vrmsX vrmsY vrmsZ "<<
+			    "rmeanX rmeanY rmeanZ "<<
+			    "vmeanX vmeanY vmeanZ "<<
+			    "epsX epsY epsZ "<<
+			    "rvrmsX rvrmsY rvrmsZ" << endl;
+	    }
 
-            csvout  <<  iteration 	<<" "<<	// std::setw(20) <<
-                        time_m 		<<" "<<	//std::setw(20) << 
-                        fieldEnergy	<<" "<<	// std::setw(20)<< 
-                        ExAmp		<<" "<<	//std::setw(20) << 
-                        temperature[0] 	<< " " <<
-                        temperature[1] 	<< " " <<
-                        temperature[2] 	<< " " <<
-                        endl;
+
+            csvout  <<  iteration 	<<" "<<
+                        time_m 		<<" "<< 
+                        fieldEnergy	<<" "<< 
+                        ExAmp		<<" "<< 
+                        temperature 	<<" "<<
+    			rrms		<<" "<<
+			vrms		<<" "<<
+			rmean		<<" "<<
+			vmean		<<" "<<
+			eps		<<" "<<
+			rvrms		<< endl;
         }
         
         Ippl::Comm->barrier();
-     }
+ }
+
+//===================================================================================================
      
      void dumpBumponTail() {
 
