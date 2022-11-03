@@ -71,7 +71,7 @@ namespace ippl {
         default:
         {
             Kokkos::parallel_reduce("Field::norm(int) general", field.getRangePolicy(),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& val) {
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
                     val += std::pow(std::abs(view(i, j, k)), p);
                 },
                 Kokkos::Sum<T>(local)
