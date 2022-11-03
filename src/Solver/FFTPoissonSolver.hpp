@@ -130,6 +130,117 @@ void unpack(const ippl::NDIndex<3> intersect, const ippl::Field<ippl::Vector<dou
     Kokkos::fence();    
 }
 
+// packing and unpacking with float for single precision
+template <typename T>
+void pack(const ippl::NDIndex<3> intersect, Kokkos::View<T***>& view, 
+          ippl::detail::FieldBufferData<float>& fd, int nghost, const ippl::NDIndex<3> ldom,
+          ippl::Communicate::size_type& nsends) {
+
+    ippl::Field<float, 1>::view_type& buffer = fd.buffer;
+
+    size_t size = intersect.size();
+    nsends = size;
+    if (buffer.size() < size) {
+        int overalloc = Ippl::Comm->getDefaultOverallocation();
+        Kokkos::realloc(buffer, size * overalloc);
+    }
+
+    int first0 = intersect[0].first() + nghost - ldom[0].first();
+    int first1 = intersect[1].first() + nghost - ldom[1].first();
+    int first2 = intersect[2].first() + nghost - ldom[2].first();
+
+    int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
+    int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
+    int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
+
+    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+    //This type casting to long int is necessary as otherwise Kokkos complains for
+    //intel compilers
+    Kokkos::parallel_for("pack()", mdrange_type({first0, first1, first2},
+                                                {(long int)last0, 
+                                                 (long int)last1, 
+                                                 (long int)last2}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                const int ig = i - first0;
+                const int jg = j - first1;
+                const int kg = k - first2;
+                             
+                int l = ig + jg * intersect[0].length() + 
+                        kg * intersect[1].length() * intersect[0].length();
+
+                Kokkos::complex<float> val = view(i,j,k);
+
+                buffer(l) = Kokkos::real(val);
+    });
+    Kokkos::fence();
+}
+
+void unpack(const ippl::NDIndex<3> intersect, const ippl::Field<float,3>::view_type& view,
+            ippl::detail::FieldBufferData<float>& fd, int nghost, const ippl::NDIndex<3> ldom,
+            bool x=false, bool y=false, bool z=false) {
+
+    ippl::Field<float, 1>::view_type& buffer = fd.buffer;
+ 
+    int first0 = intersect[0].first() + nghost - ldom[0].first();
+    int first1 = intersect[1].first() + nghost - ldom[1].first();
+    int first2 = intersect[2].first() + nghost - ldom[2].first();
+
+    int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
+    int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
+    int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
+
+    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+    Kokkos::parallel_for("pack()", mdrange_type({first0, first1, first2},
+                                                {last0, last1, last2}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                             
+                int ig = i - first0;
+                int jg = j - first1;
+                int kg = k - first2;
+
+                ig = x * (intersect[0].length() - 2*ig - 1) + ig;
+                jg = y * (intersect[1].length() - 2*jg - 1) + jg;
+                kg = z * (intersect[2].length() - 2*kg - 1) + kg;
+                             
+                int l = ig + jg * intersect[0].length() + 
+                        kg * intersect[1].length() * intersect[0].length();
+
+                view(i,j,k) = buffer(l);
+    });
+    Kokkos::fence();    
+}
+
+
+void unpack(const ippl::NDIndex<3> intersect, const ippl::Field<ippl::Vector<float,3>,3>::view_type& view,
+            size_t dim, ippl::detail::FieldBufferData<float>& fd, int nghost, const ippl::NDIndex<3> ldom) {
+
+    ippl::Field<float, 1>::view_type& buffer = fd.buffer;
+
+    int first0 = intersect[0].first() + nghost - ldom[0].first();
+    int first1 = intersect[1].first() + nghost - ldom[1].first();
+    int first2 = intersect[2].first() + nghost - ldom[2].first();
+
+    int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
+    int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
+    int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
+
+    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+    Kokkos::parallel_for("pack()", mdrange_type({first0, first1, first2},
+                                                {last0, last1, last2}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                             
+                const int ig = i - first0;
+                const int jg = j - first1;
+                const int kg = k - first2;
+                             
+                int l = ig + jg * intersect[0].length() + kg * intersect[1].length() * intersect[0].length();
+                view(i,j,k)[dim] = buffer(l);
+    });
+    Kokkos::fence();    
+}
+
+
+
 namespace ippl {
 
         /////////////////////////////////////////////////////////////////////////
@@ -321,7 +432,7 @@ namespace ippl {
                 grnL_m.initialize(*mesh4_m, *layout4_m);
 
                 // create a Complex-to-Complex FFT object to transform for layout4
-                fft4n_m = std::make_unique<FFT<CCTransform, Dim, double>>(*layout4_m, this->params_m);
+                fft4n_m = std::make_unique<FFT<CCTransform, Dim, Trhs>>(*layout4_m, this->params_m);
                     
                 IpplTimings::stopTimer(initialize_vico);
             }

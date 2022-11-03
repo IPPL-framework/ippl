@@ -133,7 +133,7 @@ namespace ippl {
             // members for Vico-Greengard
             CxField_t grnL_m;
 
-            std::unique_ptr<FFT<CCTransform, Dim, double>> fft4n_m;
+            std::unique_ptr<FFT<CCTransform, Dim, Trhs>> fft4n_m;
 
             std::unique_ptr<M> mesh4_m;
             std::unique_ptr<FieldLayout_t> layout4_m;

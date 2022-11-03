@@ -9,41 +9,41 @@
 #include "FFTPoissonSolver.h"
 
 KOKKOS_INLINE_FUNCTION
-double gaussian(double x, double y, double z, double sigma = 0.05, double mu = 0.5) {
+float gaussian(float x, float y, float z, float sigma = 0.05, float mu = 0.5) {
 
-    double pi = std::acos(-1.0);
-    double prefactor = (1/std::sqrt(2*2*2*pi*pi*pi))*(1/(sigma*sigma*sigma));
-    double r2 = (x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu);
+    float pi = std::acos(-1.0);
+    float prefactor = (1/std::sqrt(2*2*2*pi*pi*pi))*(1/(sigma*sigma*sigma));
+    float r2 = (x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu);
 
     return -prefactor * exp(-r2/(2*sigma*sigma));
 }
 
 KOKKOS_INLINE_FUNCTION
-double exact_fct(double x, double y, double z, double sigma = 0.05, double mu = 0.5) {
+float exact_fct(float x, float y, float z, float sigma = 0.05, float mu = 0.5) {
 
-    double pi = std::acos(-1.0);
-    double r = std::sqrt((x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu));
+    float pi = std::acos(-1.0);
+    float r = std::sqrt((x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu));
 
     return (1/(4.0*pi*r)) * std::erf(r/(std::sqrt(2.0)*sigma));
 }
 
 KOKKOS_INLINE_FUNCTION
-ippl::Vector<double, 3> exact_E(double x, double y, double z, double sigma = 0.05, double mu = 0.5) {
+ippl::Vector<float, 3> exact_E(float x, float y, float z, float sigma = 0.05, float mu = 0.5) {
     
-    double pi = std::acos(-1.0);
-    double r = std::sqrt((x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu));
-    double factor = (1.0/(4.0*pi*r*r)) * ((1.0/r)*std::erf(r/(std::sqrt(2.0)*sigma)) 
+    float pi = std::acos(-1.0);
+    float r = std::sqrt((x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu));
+    float factor = (1.0/(4.0*pi*r*r)) * ((1.0/r)*std::erf(r/(std::sqrt(2.0)*sigma)) 
                                           - std::sqrt(2.0/pi)*(1.0/sigma)*exp(-r*r/(2*sigma*sigma)));
 
-    ippl::Vector<double, 3> Efield = {(x-mu), (y-mu), (z-mu)};
+    ippl::Vector<float, 3> Efield = {(x-mu), (y-mu), (z-mu)};
     return factor * Efield;
 }
 
 // Define vtk dump function for plotting the fields
-void dumpVTK(std::string path, ippl::Field<double,3>& rho, int nx, int ny, int nz, int iteration,
-             double dx, double dy, double dz) {
+void dumpVTK(std::string path, ippl::Field<float,3>& rho, int nx, int ny, int nz, int iteration,
+             float dx, float dy, float dz) {
     
-    typename ippl::Field<double,3>::view_type::host_mirror_type host_view = rho.getHostMirror();
+    typename ippl::Field<float,3>::view_type::host_mirror_type host_view = rho.getHostMirror();
     Kokkos::deep_copy(host_view, rho.getView());
     std::ofstream vtkout;
     vtkout.precision(10);
@@ -118,16 +118,16 @@ int main(int argc, char *argv[]) {
 	    decomp[d] = ippl::PARALLEL;
 
 	// unit box
-	double dx = 1.0/pt;
-	ippl::Vector<double, 3> hx = {dx, dx, dx};
-	ippl::Vector<double, 3> origin = {0.0, 0.0, 0.0};
+	float dx = 1.0/pt;
+	ippl::Vector<float, 3> hx = {dx, dx, dx};
+	ippl::Vector<float, 3> origin = {0.0, 0.0, 0.0};
 	ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
 	// all parallel layout, standard domain, normal axis order
 	ippl::FieldLayout<3> layout(owned, decomp);
 		
 	// define the R (rho) field
-	typedef ippl::Field<double, 3> field;
+	typedef ippl::Field<float, 3> field;
 	field rho;
 	rho.initialize(mesh, layout);
 
@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
         exact.initialize(mesh, layout);
 
         // define the Vector field E and the exact E field
-        typedef ippl::Field<ippl::Vector<double, 3>, 3> fieldV;
+        typedef ippl::Field<ippl::Vector<float, 3>, 3> fieldV;
         
         fieldV exactE, fieldE;
         exactE.initialize(mesh, layout);
@@ -159,9 +159,9 @@ int main(int argc, char *argv[]) {
 				 const int kg = k + ldom[2].first() - nghost;
 								
 				 // define the physical points (cell-centered)
-				 double x = (ig + 0.5) * hx[0] + origin[0];
-				 double y = (jg + 0.5) * hx[1] + origin[1];
-				 double z = (kg + 0.5) * hx[2] + origin[2];
+				 float x = (ig + 0.5) * hx[0] + origin[0];
+				 float y = (jg + 0.5) * hx[1] + origin[1];
+				 float z = (kg + 0.5) * hx[2] + origin[2];
 
 				 view_rho(i, j, k) = gaussian(x, y, z);
 
@@ -180,9 +180,9 @@ int main(int argc, char *argv[]) {
                                  const int jg = j + ldom[1].first() - nghost;
                                  const int kg = k + ldom[2].first() - nghost;
 
-                                 double x = (ig + 0.5) * hx[0] + origin[0];
-                                 double y = (jg + 0.5) * hx[1] + origin[1];
-                                 double z = (kg + 0.5) * hx[2] + origin[2];
+                                 float x = (ig + 0.5) * hx[0] + origin[0];
+                                 float y = (jg + 0.5) * hx[1] + origin[1];
+                                 float z = (kg + 0.5) * hx[2] + origin[2];
 
                                  view_exact(i, j, k) = exact_fct(x,y,z);
         });
@@ -200,9 +200,9 @@ int main(int argc, char *argv[]) {
                                  const int jg = j + ldom[1].first() - nghost;
                                  const int kg = k + ldom[2].first() - nghost;
                                  
-                                 double x = (ig + 0.5) * hx[0] + origin[0];
-                                 double y = (jg + 0.5) * hx[1] + origin[1];
-                                 double z = (kg + 0.5) * hx[2] + origin[2];
+                                 float x = (ig + 0.5) * hx[0] + origin[0];
+                                 float y = (jg + 0.5) * hx[1] + origin[1];
+                                 float z = (kg + 0.5) * hx[2] + origin[2];
                                  
                                  view_exactE(i, j, k)[0] = exact_E(x,y,z)[0];
                                  view_exactE(i, j, k)[1] = exact_E(x,y,z)[1];
@@ -217,49 +217,50 @@ int main(int argc, char *argv[]) {
     fftParams.add("use_pencils", true);  
     fftParams.add("use_gpu_aware", true);  
     fftParams.add("comm", ippl::a2av);  
-    fftParams.add("r2c_direction", 0);  
-	// define an FFTPoissonSolver object
-	ippl::FFTPoissonSolver<ippl::Vector<double,3>, double, 3> FFTsolver(fieldE, rho, fftParams, algorithm);
+    fftParams.add("r2c_direction", 0); 
+    
+    // define an FFTPoissonSolver object
+    ippl::FFTPoissonSolver<ippl::Vector<float,3>, float, 3> FFTsolver(fieldE, rho, fftParams, algorithm);
 	
-	// solve the Poisson equation -> rho contains the solution (phi) now
-	FFTsolver.solve();
+    // solve the Poisson equation -> rho contains the solution (phi) now
+    FFTsolver.solve();
 
-        // compute relative error norm for potential
-	rho = rho - exact;
-	double err = norm(rho)/norm(exact);
+    // compute relative error norm for potential
+    rho = rho - exact;
+    float err = norm(rho)/norm(exact);
         
-        // compute relative error norm for the E-field components
-        ippl::Vector<double,3> errE {0.0, 0.0, 0.0};
-        fieldE = fieldE - exactE;
-        auto view_fieldE = fieldE.getView();
+    // compute relative error norm for the E-field components
+    ippl::Vector<float,3> errE {0.0, 0.0, 0.0};
+    fieldE = fieldE - exactE;
+    auto view_fieldE = fieldE.getView();
 
-        for (size_t d=0; d<3; ++d) {
+    for (size_t d=0; d<3; ++d) {
 
-            double temp = 0.0;                                                                                        
+            float temp = 0.0;                                                                                        
             Kokkos::parallel_reduce("Vector errorNr reduce", 
             Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, {view_fieldE.extent(0)
                          - nghost, view_fieldE.extent(1) - nghost, view_fieldE.extent(2) - nghost}),          
-                    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {                                
-                        double myVal = pow(view_fieldE(i, j, k)[d], 2);                                              
+                    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, float& valL) {                                
+                        float myVal = pow(view_fieldE(i, j, k)[d], 2);                                              
                         valL += myVal;                                                                      
-            }, Kokkos::Sum<double>(temp));
+            }, Kokkos::Sum<float>(temp));
 
-            double globaltemp = 0.0;                                                                                  
+            float globaltemp = 0.0;                                                                                  
             MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());                                             
-            double errorNr = std::sqrt(globaltemp);                                                                                   
+            float errorNr = std::sqrt(globaltemp);                                                                                   
 
             temp = 0.0;                                                                                        
             Kokkos::parallel_reduce("Vector errorDr reduce",                                                                       
             Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, {view_exactE.extent(0)
                          - nghost, view_exactE.extent(1) - nghost, view_exactE.extent(2) - nghost}),          
-                    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {                                
-                        double myVal = pow(view_exactE(i, j, k)[d], 2);                                              
+                    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, float& valL) {                                
+                        float myVal = pow(view_exactE(i, j, k)[d], 2);                                              
                         valL += myVal;                                                                      
-            }, Kokkos::Sum<double>(temp));  
+            }, Kokkos::Sum<float>(temp));  
 
             globaltemp = 0.0;                                                                                  
             MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-            double errorDr = std::sqrt(globaltemp);
+            float errorDr = std::sqrt(globaltemp);
 
             errE[d] = errorNr/errorDr;
         } 
