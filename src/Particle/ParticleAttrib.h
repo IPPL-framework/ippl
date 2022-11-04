@@ -106,6 +106,15 @@
 //   };
 //}
 
+namespace Kokkos { //reduction identity must be defined in Kokkos namespace
+    template<>
+    struct reduction_identity< ippl::Vector<double, 3> > {
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<double, 3> sum() {
+            return ippl::Vector<double, 3>();
+        }
+    };
+}
+
 namespace ippl {
 
     // ParticleAttrib class definition
@@ -226,11 +235,15 @@ namespace ippl {
         scatterPIF(Field<P2, Dim, M, C>& f,
                 const ParticleAttrib<Vector<P3, Dim>, Properties... >& pp) const;
 
-
         template <unsigned Dim, class M, class C, typename P2>
         void
         gather(Field<T, Dim, M, C>& f,
                const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
+
+        template <unsigned Dim, class M, class C, typename P2, typename P3>
+        void
+        gatherPIF(Field<P2, Dim, M, C>& f,
+                const ParticleAttrib<Vector<P3, Dim>, Properties... >& pp) const;
 
         T sum();
         T max();

@@ -158,6 +158,8 @@ namespace ippl {
                             const double Len = rmax[d] - origin[d];
                             bool shift = (iVec[d] > (N[d]/2));
                             bool notMid = (iVec[d] != (N[d]/2));
+                            //For the noMid part see 
+                            //https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 1
                             kVec[d] = notMid * 2 * pi / Len * (iVec[d] - shift * N[d]);
                         }
 

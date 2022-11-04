@@ -17,7 +17,6 @@
 //
 
 #include "Ippl.h"
-#include "Solver/FFTPeriodicPoissonSolver.h"
 
 // dimension of our positions
 constexpr unsigned Dim = 3;
@@ -26,7 +25,6 @@ constexpr unsigned Dim = 3;
 typedef ippl::ParticleSpatialLayout<double,Dim>   PLayout_t;
 typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
-typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t> ORB;
 
 using size_type = ippl::detail::size_type;
 
@@ -40,104 +38,19 @@ template<typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
 
 typedef Vector<double, Dim>  Vector_t;
-typedef Vector<Kokkos::complex<double>, Dim>  CxVector_t;
 typedef Field<double, Dim>   Field_t;
 typedef Field<Kokkos::complex<double>, Dim>   CxField_t;
 typedef Field<Vector_t, Dim> VField_t;
-typedef Field<CxVector_t, Dim> CxVField_t;
-typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim> Solver_t;
 
 const double pi = std::acos(-1.0);
 
 // Test programs have to define this variable for VTK dump purposes
 extern const char* TestName;
 
-//void dumpVTK(VField_t& E, int nx, int ny, int nz, int iteration,
-//             double dx, double dy, double dz) {
-//
-//
-//    typename VField_t::view_type::host_mirror_type host_view = E.getHostMirror();
-//
-//    std::stringstream fname;
-//    fname << "data/ef_";
-//    fname << std::setw(4) << std::setfill('0') << iteration;
-//    fname << ".vtk";
-//
-//    Kokkos::deep_copy(host_view, E.getView());
-//
-//    Inform vtkout(NULL, fname.str().c_str(), Inform::OVERWRITE);
-//    vtkout.precision(10);
-//    vtkout.setf(std::ios::scientific, std::ios::floatfield);
-//
-//    // start with header
-//    vtkout << "# vtk DataFile Version 2.0" << endl;
-//    vtkout << TestName << endl;
-//    vtkout << "ASCII" << endl;
-//    vtkout << "DATASET STRUCTURED_POINTS" << endl;
-//    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << endl;
-//    vtkout << "ORIGIN "     << -dx  << " " << -dy  << " "  << -dz << endl;
-//    vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
-//    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << endl;
-//
-//    vtkout << "VECTORS E-Field float" << endl;
-//    for (int z=0; z<nz+2; z++) {
-//        for (int y=0; y<ny+2; y++) {
-//            for (int x=0; x<nx+2; x++) {
-//
-//                vtkout << host_view(x,y,z)[0] << "\t"
-//                       << host_view(x,y,z)[1] << "\t"
-//                       << host_view(x,y,z)[2] << endl;
-//            }
-//        }
-//    }
-//}
-//
-//void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration,
-//             double dx, double dy, double dz) {
-//
-//    typename Field_t::view_type::host_mirror_type host_view = rho.getHostMirror();
-//
-//    std::stringstream fname;
-//    fname << "data/scalar_";
-//    fname << std::setw(4) << std::setfill('0') << iteration;
-//    fname << ".vtk";
-//
-//    Kokkos::deep_copy(host_view, rho.getView());
-//
-//    Inform vtkout(NULL, fname.str().c_str(), Inform::OVERWRITE);
-//    vtkout.precision(10);
-//    vtkout.setf(std::ios::scientific, std::ios::floatfield);
-//
-//    // start with header
-//    vtkout << "# vtk DataFile Version 2.0" << endl;
-//    vtkout << TestName << endl;
-//    vtkout << "ASCII" << endl;
-//    vtkout << "DATASET STRUCTURED_POINTS" << endl;
-//    vtkout << "DIMENSIONS " << nx+3 << " " << ny+3 << " " << nz+3 << endl;
-//    vtkout << "ORIGIN " << -dx << " " << -dy << " " << -dz << endl;
-//    vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
-//    vtkout << "CELL_DATA " << (nx+2)*(ny+2)*(nz+2) << endl;
-//
-//    vtkout << "SCALARS Rho float" << endl;
-//    vtkout << "LOOKUP_TABLE default" << endl;
-//    for (int z=0; z<nz+2; z++) {
-//        for (int y=0; y<ny+2; y++) {
-//            for (int x=0; x<nx+2; x++) {
-//
-//                vtkout << host_view(x,y,z) << endl;
-//            }
-//        }
-//    }
-//}
-
 template<class PLayout>
 class ChargedParticlesPIF : public ippl::ParticleBase<PLayout> {
 public:
-    CxVField_t E_m;
     CxField_t rho_m;
-
-    // ORB
-    ORB orb;
 
     Vector<int, Dim> nr_m;
 
@@ -149,17 +62,9 @@ public:
 
     double Q_m;
 
-    std::string stype_m;
-
-    std::shared_ptr<Solver_t> solver_mp;
-
     double time_m;
 
     double rhoNorm_m;
-
-    unsigned int loadbalancefreq_m;
-    
-    double loadbalancethreshold_m;
 
 
 public:
@@ -208,101 +113,9 @@ public:
         setBCAllPeriodic();
     }
 
-    //void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticlesPIF<PLayout>& buffer,
-    //                  bool& isFirstRepartition) {
-    //    // Update local fields
-    //    static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
-    //    IpplTimings::startTimer(tupdateLayout);
-    //    this->E_m.updateLayout(fl);
-    //    this->rho_m.updateLayout(fl);
-
-    //    // Update layout with new FieldLayout
-    //    PLayout& layout = this->getLayout();
-    //    layout.updateLayout(fl, mesh);
-    //    IpplTimings::stopTimer(tupdateLayout);
-    //    static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
-    //    IpplTimings::startTimer(tupdatePLayout);
-    //    if(!isFirstRepartition) {
-    //        layout.update(*this, buffer);
-    //    }
-    //    IpplTimings::stopTimer(tupdatePLayout);
-    //}
-
-    //void initializeORB(FieldLayout_t& fl, Mesh_t& mesh) {
-    //    orb.initialize(fl, mesh, rho_m);
-    //}
-
-    //void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticlesPIF<PLayout>& buffer, 
-    //                 bool& isFirstRepartition) {
-    //    // Repartition the domains
-    //    bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
-
-    //    if (res != true) {
-    //       std::cout << "Could not repartition!" << std::endl;
-    //       return;
-    //    }
-    //    // Update
-    //    this->updateLayout(fl, mesh, buffer, isFirstRepartition);
-    //    this->solver_mp->setRhs(rho_m);
-    //}
-
-    //bool balance(size_type totalP, const unsigned int nstep){
-    //    if(std::strcmp(TestName,"UniformPlasmaTest") == 0) {
-    //        return (nstep % loadbalancefreq_m == 0);
-    //    }
-    //    else {
-    //        int local = 0;
-    //        std::vector<int> res(Ippl::Comm->size());
-    //        double equalPart = (double) totalP / Ippl::Comm->size();
-    //        double dev = std::abs((double)this->getLocalNum() - equalPart) / totalP;
-    //        if (dev > loadbalancethreshold_m)
-    //            local = 1;
-    //        MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
-
-    //        for (unsigned int i = 0; i < res.size(); i++) {
-    //            if (res[i] == 1)
-    //                return true;
-    //        }
-    //        return false;
-    //    }
-    //}
-
-    //void gatherStatistics(size_type totalP) {
-    //    std::vector<double> imb(Ippl::Comm->size());
-    //    double equalPart = (double) totalP / Ippl::Comm->size();
-    //    double dev = (std::abs((double)this->getLocalNum() - equalPart) 
-    //                 / totalP) * 100.0;
-    //    MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0, 
-    //               Ippl::getComm());
-    //
-    //    if (Ippl::Comm->rank() == 0) {
-    //        std::stringstream fname;
-    //        fname << "data/LoadBalance_";
-    //        fname << Ippl::Comm->size();
-    //        fname << ".csv";
-
-    //        Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-    //        csvout.precision(5);
-    //        csvout.setf(std::ios::scientific, std::ios::floatfield);
-
-    //        if(time_m == 0.0) {
-    //            csvout << "time, rank, imbalance percentage" << endl;
-    //        }
-
-    //        for(int r=0; r < Ippl::Comm->size(); ++r) { 
-    //            csvout << time_m << " "
-    //                   << r << " "
-    //                   << imb[r] << endl;
-    //        }
-    //    }
-
-    //    Ippl::Comm->barrier();
-    //
-    //}
-
     void gather() {
 
-        gatherPIF(this->E, E_m, this->R);
+        gatherPIF(this->E, rho_m, this->R);
 
     }
 
@@ -316,145 +129,60 @@ public:
 
     }
 
-    void initSolver() {
 
-        Inform m("solver ");
+     void dumpLandau(size_type totalP) {
+        
+        auto Eview = E.getView();
 
-    }
+        double fieldEnergy, ExAmp;
+        double temp = 0.0;
 
+        Kokkos::parallel_reduce("Ex energy", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const int i, double& valL){
+                                    double myVal = Eview(i)[0] * Eview(i)[0];
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
 
+        double globaltemp = 0.0;
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
+        fieldEnergy = globaltemp * volume / totalP ;
 
-     //void dumpData() {
-
-     //   auto Pview = P.getView();
-
-     //   double Energy = 0.0;
-
-     //   Kokkos::parallel_reduce("Particle Energy", this->getLocalNum(),
-     //                           KOKKOS_LAMBDA(const int i, double& valL){
-     //                               double myVal = dot(Pview(i), Pview(i)).apply();
-     //                               valL += myVal;
-     //                           }, Kokkos::Sum<double>(Energy));
-
-     //   Energy *= 0.5;
-     //   double gEnergy = 0.0;
-
-     //   MPI_Reduce(&Energy, &gEnergy, 1,
-     //               MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-
-
-     //   const int nghostE = E_m.getNghost();
-     //   auto Eview = E_m.getView();
-     //   Vector_t normE;
-     //   using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
-     //   for (unsigned d=0; d<Dim; ++d) {
-
-     //   double temp = 0.0;
-     //   Kokkos::parallel_reduce("Vector E reduce",
-     //                           mdrange_type({nghostE, nghostE, nghostE},
-     //                                        {Eview.extent(0) - nghostE,
-     //                                         Eview.extent(1) - nghostE,
-     //                                         Eview.extent(2) - nghostE}),
-     //                           KOKKOS_LAMBDA(const size_t i, const size_t j,
-     //                                         const size_t k, double& valL)
-     //                           {
-     //                               double myVal = std::pow(Eview(i, j, k)[d], 2);
-     //                               valL += myVal;
-     //                           }, Kokkos::Sum<double>(temp));
-     //       double globaltemp = 0.0;
-     //       MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-     //       normE[d] = std::sqrt(globaltemp);
-     //   }
-
-     //   if (Ippl::Comm->rank() == 0) {
-     //       std::stringstream fname;
-     //       fname << "data/ParticleField_";
-     //       fname << Ippl::Comm->size();
-     //       fname << ".csv";
-
-     //       Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-     //       csvout.precision(10);
-     //       csvout.setf(std::ios::scientific, std::ios::floatfield);
-
-     //       if(time_m == 0.0) {
-     //           csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2" << endl;
-     //       }
-
-     //       csvout << time_m << " "
-     //              << gEnergy << " "
-     //              << rhoNorm_m << " "
-     //              << normE[0] << " "
-     //              << normE[1] << " "
-     //              << normE[2] << endl;
-     //   }
-
-     //   Ippl::Comm->barrier();
-     //}
-
-     //void dumpLandau() {
-
-     //   const int nghostE = E_m.getNghost();
-     //   auto Eview = E_m.getView();
-     //   double fieldEnergy, ExAmp;
-     //   using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
-     //   double temp = 0.0;
-     //   Kokkos::parallel_reduce("Ex inner product",
-     //                           mdrange_type({nghostE, nghostE, nghostE},
-     //                                        {Eview.extent(0) - nghostE,
-     //                                         Eview.extent(1) - nghostE,
-     //                                         Eview.extent(2) - nghostE}),
-     //                           KOKKOS_LAMBDA(const size_t i, const size_t j,
-     //                                         const size_t k, double& valL)
-     //                           {
-     //                               double myVal = std::pow(Eview(i, j, k)[0], 2);
-     //                               valL += myVal;
-     //                           }, Kokkos::Sum<double>(temp));
-     //   double globaltemp = 0.0;
-     //   MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-     //   fieldEnergy = globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
-
-     //   double tempMax = 0.0;
-     //   Kokkos::parallel_reduce("Ex max norm",
-     //                           mdrange_type({nghostE, nghostE, nghostE},
-     //                                        {Eview.extent(0) - nghostE,
-     //                                         Eview.extent(1) - nghostE,
-     //                                         Eview.extent(2) - nghostE}),
-     //                           KOKKOS_LAMBDA(const size_t i, const size_t j,
-     //                                         const size_t k, double& valL)
-     //                           {
-     //                               double myVal = std::fabs(Eview(i, j, k)[0]);
-     //                               if(myVal > valL) valL = myVal;
-     //                           }, Kokkos::Max<double>(tempMax));
-     //   ExAmp = 0.0;
-     //   MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        double tempMax = 0.0;
+        Kokkos::parallel_reduce("Ex max norm", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const size_t i, double& valL)
+                                {
+                                    double myVal = std::fabs(Eview(i)[0]);
+                                    if(myVal > valL) valL = myVal;
+                                }, Kokkos::Max<double>(tempMax));
+        ExAmp = 0.0;
+        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 
 
-     //   if (Ippl::Comm->rank() == 0) {
-     //       std::stringstream fname;
-     //       fname << "data/FieldLandau_";
-     //       fname << Ippl::Comm->size();
-     //       fname << ".csv";
+        if (Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/FieldLandau_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
 
 
-     //       Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-     //       csvout.precision(10);
-     //       csvout.setf(std::ios::scientific, std::ios::floatfield);
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-     //       if(time_m == 0.0) {
-     //           csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
-     //       }
+            if(time_m == 0.0) {
+                csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+            }
 
-     //       csvout << time_m << " "
-     //              << fieldEnergy << " "
-     //              << ExAmp << endl;
+            csvout << time_m << " "
+                   << fieldEnergy << " "
+                   << ExAmp << endl;
 
-     //   }
-     //   
-     //   Ippl::Comm->barrier();
-     //}
-     //
+        }
+        
+        Ippl::Comm->barrier();
+     }
+     
      //void dumpBumponTail() {
 
      //   const int nghostE = E_m.getNghost();
@@ -539,24 +267,6 @@ public:
      //               << P_host(i)[0] << " "
      //               << P_host(i)[1] << " "
      //               << P_host(i)[2] << endl;
-     //   }
-     //   Ippl::Comm->barrier();
-     //}
-     //
-     //void dumpLocalDomains(const FieldLayout_t& fl, const unsigned int step) {
-
-     //   if (Ippl::Comm->rank() == 0) {
-     //       const typename FieldLayout_t::host_mirror_type domains = fl.getHostLocalDomains();
-     //       std::ofstream myfile;
-     //       myfile.open("data/domains" + std::to_string(step) + ".txt");
-     //       for (unsigned int i = 0; i < domains.size(); ++i) {
-     //           myfile << domains[i][0].first() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
-     //                  << domains[i][0].first() << " " << domains[i][1].last() << " " << domains[i][2].first() << " "
-     //                  << domains[i][0].last() << " " << domains[i][1].first() << " " << domains[i][2].first() << " "
-     //                  << domains[i][0].first() << " " << domains[i][1].first() << " " << domains[i][2].last()
-     //                  << "\n";
-     //       }
-     //       myfile.close();
      //   }
      //   Ippl::Comm->barrier();
      //}

@@ -213,16 +213,18 @@ namespace ippl {
         const FieldLayout<Dim>& layout = f.getLayout(); 
         const M& mesh = f.get_mesh();
         const vector_type& dx = mesh.getMeshSpacing();
-        const vector_type& origin = mesh.getOrigin();
         const auto& domain = layout.getDomain();
-        vector_type length;
+        vector_type Len;
+        Vector<int, Dim> N;
 
         for (unsigned d=0; d < Dim; ++d) {
-            length[d] = origin[d] + dx[d] * domain[d].length();
+            N[d] = domain[d].length();
+            Len[d] = dx[d] * N[d];
         }
-
+        
         typedef Kokkos::TeamPolicy<> team_policy;
         typedef Kokkos::TeamPolicy<>::member_type member_type;
+
 
         using view_type_temp = typename detail::ViewType<FT, 3>::view_type;
 
@@ -233,32 +235,31 @@ namespace ippl {
 
         size_t Np = *(this->localNum_mp);
 
-        size_t N = domain[0].length()*domain[1].length()*domain[2].length();
+        size_t flatN = N[0]*N[1]*N[2];
 
         Kokkos::parallel_for("ParticleAttrib::scatterPIF compute",
-                team_policy(N, Kokkos::AUTO),
+                team_policy(flatN, Kokkos::AUTO),
                 KOKKOS_CLASS_LAMBDA(const member_type& teamMember) {
                 const size_t flatIndex = teamMember.league_rank();
-                const int i = flatIndex % domain[0].length();
-                const int j = (int)(flatIndex / domain[0].length());
-                const int k = (int)(flatIndex / (domain[0].length() * domain[1].length()));
+                const int i = flatIndex % N[0];
+                const int j = (int)(flatIndex / N[0]);
+                const int k = (int)(flatIndex / (N[0] * N[1]));
 
                 FT reducedValue = 0.0;
                 Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, Np),
                 [=](const size_t idx, FT& innerReduce)
                 {
-                    //This can be done with Ippl vectors but problem maybe the
-                    //complex numbers
-                    Kokkos::complex<double> fx = Kokkos::Experimental::cos((2*pi*i*pp(idx)[0])/length[0])
-                                                 -imag*Kokkos::Experimental::sin((2*pi*i*pp(idx)[0])/length[0]);
-                    Kokkos::complex<double> fy = Kokkos::Experimental::cos((2*pi*j*pp(idx)[1])/length[1])
-                                                 -imag*Kokkos::Experimental::sin((2*pi*j*pp(idx)[1])/length[1]);
-                    Kokkos::complex<double> fz = Kokkos::Experimental::cos((2*pi*k*pp(idx)[2])/length[2])
-                                                 -imag*Kokkos::Experimental::sin((2*pi*k*pp(idx)[2])/length[2]);
-
+                    Vector<int, 3> iVec = {i, j, k};
+                    vector_type kVec;
+                    double arg=0.0;
+                    for(size_t d = 0; d < Dim; ++d) {
+                        bool shift = (iVec[d] > (N[d]/2));
+                        kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                        arg += kVec[d]*pp(idx)[d];
+                    }
                     const value_type& val = dview_m(idx);
 
-                    innerReduce += fx*fy*fz*val;
+                    innerReduce += (Kokkos::Experimental::cos(arg) - imag*Kokkos::Experimental::sin(arg))*val;
                 }, Kokkos::Sum<FT>(reducedValue));
 
                 if(teamMember.team_rank() == 0) {
@@ -339,6 +340,92 @@ namespace ippl {
         IpplTimings::stopTimer(gatherTimer);                                               
     }
 
+    template<typename T, class... Properties>
+    template <unsigned Dim, class M, class C, class FT, class PT>
+    void ParticleAttrib<T, Properties...>::gatherPIF(Field<FT,Dim,M,C>& f,
+                                                   const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
+    const
+    {
+        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("Gather");           
+        IpplTimings::startTimer(gatherTimer);
+        
+        using view_type = typename Field<FT, Dim, M, C>::view_type;
+        using vector_type = typename M::vector_type;
+        using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
+        view_type fview = f.getView();
+        const int nghost = f.getNghost();
+        const FieldLayout<Dim>& layout = f.getLayout(); 
+        const M& mesh = f.get_mesh();
+        const vector_type& dx = mesh.getMeshSpacing();
+        const auto& domain = layout.getDomain();
+        vector_type Len;
+        Vector<int, Dim> N;
+
+        for (unsigned d=0; d < Dim; ++d) {
+            N[d] = domain[d].length();
+            Len[d] = dx[d] * N[d];
+        }
+
+        typedef Kokkos::TeamPolicy<> team_policy;
+        typedef Kokkos::TeamPolicy<>::member_type member_type;
+
+        double pi = std::acos(-1.0);
+        Kokkos::complex<double> imag = {0.0, 1.0};
+
+        size_t Np = *(this->localNum_mp);
+
+        size_t flatN = N[0]*N[1]*N[2];
+
+        Kokkos::parallel_for("ParticleAttrib::gatherPIF",
+                team_policy(Np, Kokkos::AUTO),
+                KOKKOS_CLASS_LAMBDA(const member_type& teamMember) {
+                const size_t idx = teamMember.league_rank();
+
+                value_type reducedValue = 0.0;
+                Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, flatN),
+                [=](const size_t flatIndex, value_type& innerReduce)
+                {
+                    const int i = flatIndex % N[0];
+                    const int j = (int)(flatIndex / N[0]);
+                    const int k = (int)(flatIndex / (N[0] * N[1]));
+
+                    Vector<int, 3> iVec = {i, j, k};
+                    vector_type kVec;
+                    double Dr = 0.0, arg=0.0;
+                    for(size_t d = 0; d < Dim; ++d) {
+                        bool shift = (iVec[d] > (N[d]/2));
+                        bool notMid = (iVec[d] != (N[d]/2));
+                        //For the noMid part see 
+                        //https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 1
+                        kVec[d] = notMid * 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                        Dr += kVec[d] * kVec[d];
+                        arg += kVec[d]*pp(idx)[d];
+                    }
+
+                    FT Ek;
+                    value_type Ex;
+                    for(size_t d = 0; d < Dim; ++d) {
+                        Ek = -(imag * kVec[d] * fview(i+nghost,j+nghost,k+nghost) / Dr);
+                        //Inverse Fourier transform when the lhs is real
+                        Ex[d] = 2.0 * (Ek.real() * Kokkos::Experimental::cos(arg) 
+                                - Ek.imag() * Kokkos::Experimental::sin(arg));
+                    }
+                    
+                    innerReduce += Ex;
+                }, Kokkos::Sum<value_type>(reducedValue));
+
+                teamMember.team_barrier();
+
+                if(teamMember.team_rank() == 0) {
+                    dview_m(idx) = reducedValue;
+                }
+
+                }
+        );
+
+        IpplTimings::stopTimer(gatherTimer);
+
+    }
 
 
     /*
@@ -372,6 +459,15 @@ namespace ippl {
     {
         attrib.gather(f, pp);
     }
+
+    template<typename P1, unsigned Dim, class M, class C, typename P2, typename P3, class... Properties>
+    inline
+    void gatherPIF(const ParticleAttrib<P1, Properties...>& attrib, Field<P2, Dim, M, C>& f,
+                 const ParticleAttrib<Vector<P3, Dim>, Properties...>& pp)
+    {
+        attrib.gatherPIF(f, pp);
+    }
+
 
     #define DefineParticleReduction(fun, name, op, MPI_Op)                                                   \
     template<typename T, class... Properties>                                                                \
