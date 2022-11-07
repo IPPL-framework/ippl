@@ -211,51 +211,6 @@ void createParticleDistributionColdSphere( 	bunch& P,
 	//	m << "[]"<< pRHost[0](0) << pRHost[0](1) << pRHost[0](2) << endl;
    	m << "finished Initializing" << endl;
 }
-//PRE: beam radiues >= 0; NParticle ... 
-//POST: return the nuch_type paramter with particles initialize on a cold sphere
-//template<typename bunch>
-//void CCcreateParticleDistributionColdSphere( 	bunch& P,
-//						const double& beamRadius, 
-//                                        	const unsigned& Nparticle,
-//                                        	const double& qi//,
-//                                            // double mi
-//                                            ) {
-//    
-//    Inform m("Initializing Cold Sphere");
-//	
-//    	double tmp = beamRadius;
-//	tmp += 1;
-//
-////	auto mydotpr = [](Vector_t a, Vector_t b)   {
-////		return a(0)*b(0) + a(1)*b(1) + a(2)*b(2); 
-////	};
-////        std::default_random_engine generator(0);
-////        std::normal_distribution<double> normdistribution(0,1.0);
-////        auto normal = std::bind(normdistribution, generator);
-////        std::uniform_real_distribution<double> unidistribution(0,1);
-////        auto uni = std::bind(unidistribution, generator);
-//       
-//       	
-//        Vector_t source({0,0,0});
-//	auto pRMirror = P.R.getMirror();
-//        P.create(Nparticle);
-//       //implement multidimensional iterator for view .. 
-//		Kokkos::parallel_for("Initializing paricles",
-//				Nparticle,
-//				KOKKOS_LAMBDA(const int i){
-//				//	Vector_t X({normal(),normal(),normal()});
-//        			//	double U = uni();
-//         			//	Vector_t pos = source + beamRadius*pow(U,1./3.)/sqrt(mydotpr(X,X))*X;
-//       		 		//	pRMirror[i] = pos;
-//					pRMirror[i] = source;
-//				}	
-//		);
-//	
-//	
-//	Vector_t mom({0,0,0});
-//        P.q = -qi;
-//        P.P = mom;  //zero momentum intial conditiov
-//}
 
 template<typename bunch>
 Vector_t compAvgSCForce(bunch& P, const size_type N ) {  
@@ -362,12 +317,6 @@ Vector_t compute_temperature(const bunch& P, const double mass, const size_type 
 		   );
 	    }
     	MPI_Allreduce(locT, globT, Dim, MPI_DOUBLE, MPI_SUM,Ippl::getComm());	
-        // since we assume for our reduction that this function is called from 
-        // multiple nodes, each node, needs to have a return
-        // Allreduce shouldnt be slower than reduce, so its ok to give each
-        // node the correct return even if it might ot be necessary...
-        // we now can print from any node -> for nromal reduce, the other nodes could just return garbage
-        // but afterwards the temperature information would only be stored on the root.
 
         for(unsigned d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
 
@@ -397,40 +346,6 @@ void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const s
                 loc_moment[j][i] = 0.0;
             }
    	 }
-
-//		std::vector<double> loc_centroid ( {0, 0, 0, 0, 0, 0} );
-//
-//	    	std::vector<std::vector<double>> loc_moment =  {loc_centroid, 
-//		       						loc_centroid, 
-//		       						loc_centroid, 
-//		       						loc_centroid, 
-//		       						loc_centroid, 
-//		       						loc_centroid 
-//								};
-
-
-// GPUs cant access host memory!!!!!
-//	Kokkos::parallel_for("write Emittance 1 for-loop",
-//			locNp,
-//			KOKKOS_LAMBDA(const int k),					//double& cent_a,
-//					){ 
-//			double    part[2 * Dim];
-//            		part[1] = pPMirror[k](0);
-//            		part[3] = pPMirror[k](1);
-//            		part[5] = pPMirror[k](2);
-//            		part[0] = pRMirror[k](0);
-//            		part[2] = pRMirror[k](1);
-//            		part[4] = pRMirror[k](2);
-//			
-//            		for(unsigned i = 0; i < 2 * Dim; i++) {
-//            		    loc_centroid[i]   += part[i];
-//            		    for(unsigned j = 0; j <= i; j++) {
-//            		        loc_moment[i][j]   += part[i] * part[j];
-//            		    }
-//            		}
-//			}	
-//	);	
-
 
 	for(unsigned i = 0; i< 2*Dim; ++i){
 
@@ -468,8 +383,6 @@ void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const s
 					mom3 += part[i]*part[3];
 					mom4 += part[i]*part[4];
 					mom5 += part[i]*part[5];
-	            			    
-	            		
 				},
 				Kokkos::Sum<double>(loc_centroid[i]),
 				Kokkos::Sum<double>(loc_moment[i][0]),
@@ -478,60 +391,9 @@ void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const s
 				Kokkos::Sum<double>(loc_moment[i][3]),
 				Kokkos::Sum<double>(loc_moment[i][4]),
 				Kokkos::Sum<double>(loc_moment[i][5])
-
 		);	
-	
 	}
 	
-
-// error: incomplete type ‘Kokkos::reduction_identity<std::vector<double, std::allocator<double> > >
-//		Kokkos::parallel_reduce("write Emittance 1 redcution",
-//				locNp,
-//				KOKKOS_LAMBDA(	const int k,
-//						std::vector<double>& lcentroid,
-//    						std::vector<std::vector<double>>& lmoment
-//						){
-//							lcentroid = {0, 0, 0, 0, 0, 0};
-//							//resize(2*Dim);
-//							lmoment = {	lcentroid, 
-//		       							lcentroid, 
-//		       							lcentroid, 
-//		       							lcentroid, 
-//		       							lcentroid, 
-//		       							lcentroid 
-//								};
-//
-//
-//							double    part[2 * Dim];
-//				            		part[1] = pPMirror[k](0);
-//				            		part[3] = pPMirror[k](1);
-//				            		part[5] = pPMirror[k](2);
-//				            		part[0] = pRMirror[k](0);
-//				            		part[2] = pRMirror[k](1);
-//				            		part[4] = pRMirror[k](2);
-//							
-//					//double acentroid[6] = lcentroid.data();
-//				    	//double amoment[6][6]= lmoment.data();	 
-//					//for(unsigned i = 0; i < 2 * Dim; i++) {
-//					//    lcentroid[i] = 0.0;
-//					//    for(unsigned j = 0; j <= i; j++) {
-//					//       lamoment[i][j] = 0.0;
-//					//       lamoment[j][i] = 0.0;
-//					//    }
-//					//}   			    
-//				            		for(unsigned i = 0; i < 2 * Dim; i++) {
-//				            		    lcentroid[i]   += part[i];
-//				            		    for(unsigned j = 0; j <= i; j++) {
-//				            		        lmoment[i][j]   += part[i] * part[j];
-//				            		    }
-//				            		}
-//				},
-//				loc_centroid,
-//				loc_moment
-//		);	
-	
-	
-
     	for(unsigned i = 0; i < 2 * Dim; i++) {
     	    for(unsigned j = 0; j < i; j++) {
     	        loc_moment[j][i] = loc_moment[i][j];
@@ -567,7 +429,6 @@ void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const s
    		     fac(i) = (tmp == 0) ? zero : 1.0 / tmp;
    		 }
     rvrms = rvsum * fac;
-
 
    ////=====writeBeamStatisticsVelocity ======================
   //if(Ippl::myNode()==0) {

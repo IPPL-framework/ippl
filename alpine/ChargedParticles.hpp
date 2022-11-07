@@ -551,7 +551,7 @@ public:
         ExAmp = 0.0;
         MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/**/// TEMPERATURE CALCULATION      cant call compute_temperature();so i inline it here directly...
+/**/// TEMPERATURE CALCULATION      cant call compute_temperature();so insert it here directly...
 /**/        double locVELsum[Dim]={0.0,0.0,0.0};
 /**/        double globVELsum[Dim];
 /**/        double avgVEL[Dim];
@@ -690,16 +690,11 @@ public:
 /////////////////////////////////////////////////////////////////////////////////
 // ===== start PRINTING  =========
 
-
-
-
-
 	if (Ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/FieldLangevin_";
             fname << Ippl::Comm->size();
             fname << ".csv";
-
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
             csvout.precision(10);
@@ -718,7 +713,6 @@ public:
 			    "epsX epsY epsZ "<<
 			    "rvrmsX rvrmsY rvrmsZ" << endl;
 	    }
-
 
             csvout  <<  iteration 	<<" "<<
                         time_m 		<<" "<< 
