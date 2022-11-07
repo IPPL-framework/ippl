@@ -550,44 +550,48 @@ public:
                                 }, Kokkos::Max<double>(tempMax));
         ExAmp = 0.0;
         MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/**/// TEMPERATURE CALCULATION      cant call compute_temperature();so insert it here directly...
-/**/        double locVELsum[Dim]={0.0,0.0,0.0};
-/**/        double globVELsum[Dim];
-/**/        double avgVEL[Dim];
-/**/        double locT[Dim]={0.0,0.0,0.0};
-/**/        double globT[Dim];       
-/**/	    Vector_t temperature;
-/**/	   // auto pPView = this->P.getView();
-/**/	    auto pPMirror = this->P.getHostMirror();
-/**/   
-/**/	    const size_t locNp = static_cast<size_t>(this->getLocalNum());
-/**/
-/**/        for(unsigned d = 0; d<Dim; ++d){
-/**/		    Kokkos::parallel_reduce("get local velocity sum", 
-/**/		    			 locNp, 
-/**/		    			 KOKKOS_LAMBDA(const int i, double& valL){
-/**/                                       		double myVal = pPMirror[i](d)/mass;
-/**/                                        	valL += myVal;
-/**/                                    	 },                    			
-/**/		    			 Kokkos::Sum<double>(locVELsum[d])
-/**/		    			);
-/**/	    }
-/**/    	MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
-/**/        for(unsigned d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
-/**/        for(unsigned d = 0; d<Dim; ++d){
-/**/		    Kokkos::parallel_reduce("get local velocity sum", 
-/**/					 locNp,
-/**/		    			 KOKKOS_LAMBDA(const int i, double& valL){
-/**/                                       		double myVal = (pPMirror[i](d)/mass-avgVEL[d])*(pPMirror[i](d)/mass-avgVEL[d]);
-/**/                                        	valL += myVal;
-/**/                                    	 },                    			
-/**/		    			 Kokkos::Sum<double>(locT[d])
-/**/		    			);
-/**/	    }
-/**/    	MPI_Reduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());	
-/**/        if (Ippl::Comm->rank() == 0) for(unsigned d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
-/**///////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//=======start TEMPERATURE CALCULATION======  
+        double locVELsum[Dim]={0.0,0.0,0.0};
+        double globVELsum[Dim];
+        double avgVEL[Dim];
+        double locT[Dim]={0.0,0.0,0.0};
+        double globT[Dim];       
+	    Vector_t temperature;
+	   // auto pPView = this->P.getView();
+	    auto pPMirror = this->P.getHostMirror();
+   
+	    const size_t locNp = static_cast<size_t>(this->getLocalNum());
+
+        for(unsigned d = 0; d<Dim; ++d){
+		    Kokkos::parallel_reduce("get local velocity sum", 
+		    			 locNp, 
+		    			 KOKKOS_LAMBDA(const int i, double& valL){
+                                       		double myVal = pPMirror[i](d)/mass;
+                                        	valL += myVal;
+                                    	 },                    			
+		    			 Kokkos::Sum<double>(locVELsum[d])
+		    			);
+    	Kokkos::fence();
+	    }
+	   	MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
+        for(unsigned d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
+        for(unsigned d = 0; d<Dim; ++d){
+		    Kokkos::parallel_reduce("get local velocity sum", 
+					 locNp,
+		    			 KOKKOS_LAMBDA(const int i, double& valL){
+                                       		double myVal = (pPMirror[i](d)/mass-avgVEL[d])*(pPMirror[i](d)/mass-avgVEL[d]);
+                                        	valL += myVal;
+                                    	 },                    			
+		    			 Kokkos::Sum<double>(locT[d])
+		     			);
+    		Kokkos::fence();
+	    }
+    	MPI_Reduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());	
+        if (Ippl::Comm->rank() == 0) for(unsigned d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
+
+//======= end  TEMPERATURE CALCULATION    ======  
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 //====== start  CALCULATING BEAM STATISTICS    &&    EMITTANCE ======
 
 	auto pRMirror = this->R.getHostMirror();
@@ -650,6 +654,7 @@ public:
 				Kokkos::Sum<double>(loc_moment[i][4]),
 				Kokkos::Sum<double>(loc_moment[i][5])
 		);	
+	Kokkos::fence();
 	}
     	for(unsigned i = 0; i < 2 * Dim; i++) {
     	    for(unsigned j = 0; j < i; j++) {

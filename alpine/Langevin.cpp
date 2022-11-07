@@ -166,8 +166,8 @@ double PDF(const Vector_t& xvec, const double& alpha,
 const char* TestName = "LangevinCollsion";
 
 
-//==============================   ==============================  ============================== 
-
+//========================================================================================= 
+///////////////////////////////////////////////////////////////////////////////////////////
 
 //PRE: beam radiues >= 0; NParticle ... 
 //POST: return the nuch_type paramter with particles initialize on a cold sphere
@@ -211,7 +211,7 @@ void createParticleDistributionColdSphere( 	bunch& P,
 	//	m << "[]"<< pRHost[0](0) << pRHost[0](1) << pRHost[0](2) << endl;
    	m << "finished Initializing" << endl;
 }
-
+///////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename bunch>
 Vector_t compAvgSCForce(bunch& P, const size_type N ) {  
     Inform m("computeAvgSpaceChargeForces ");
@@ -234,6 +234,7 @@ Vector_t compAvgSCForce(bunch& P, const size_type N ) {
 					 Kokkos::Sum<double>(locEFsum[d])
 					);
 	}
+	Kokkos::fence();
 	MPI_Allreduce(locEFsum, globEFsum, Dim , MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
 	
     for(unsigned d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N; 
@@ -241,7 +242,7 @@ Vector_t compAvgSCForce(bunch& P, const size_type N ) {
    m << "finished Calculation; Dim = "<< Dim  <<  endl;
     return avgEF;
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename bunch>
 void applyConstantFocusing( bunch& P,
                             const double f,
@@ -266,12 +267,13 @@ void applyConstantFocusing( bunch& P,
 					pEMirror[i] += pRMirror[i]*tmp;
 				}	
 	);
+	Kokkos::fence();
 	//m << "finished" << endl;
 
 }
 
 
-
+/////////////////////////////////////////////////////////////////////////////////////////
 //Is directly integrated in dumpLandau and currently unused
 // PRE
 // POST
@@ -299,6 +301,7 @@ Vector_t compute_temperature(const bunch& P, const double mass, const size_type 
                                     	 },                    			
 		    			 Kokkos::Sum<double>(locVELsum[d])
 		    );
+		Kokkos::fence();
 	    }
     	MPI_Allreduce(locVELsum, globVELsum, Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
 
@@ -315,6 +318,7 @@ Vector_t compute_temperature(const bunch& P, const double mass, const size_type 
                                     	 },                    			
 		    			 Kokkos::Sum<double>(locT[d])
 		   );
+		Kokkos::fence();
 	    }
     	MPI_Allreduce(locT, globT, Dim, MPI_DOUBLE, MPI_SUM,Ippl::getComm());	
 
@@ -324,13 +328,14 @@ Vector_t compute_temperature(const bunch& P, const double mass, const size_type 
 }
 
 
-// is directly integratied into the dumpLandau function (particle Header)
+// directly integratied into the dumpLandau function (particle Header); this function is currently unused
+///////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename bunch>
 void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const size_t iteration){
 	//prep
 	const size_t locNp = P.getLocalNum();
 
-   //calculate Moments===========================================================
+   //calculate Moments================================
 	auto pPMirror = P.P.getHostMirror();
 	auto pRMirror = P.R.getHostMirror();
 	double     centroid[2 * Dim];
@@ -392,6 +397,7 @@ void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const s
 				Kokkos::Sum<double>(loc_moment[i][4]),
 				Kokkos::Sum<double>(loc_moment[i][5])
 		);	
+	   Kokkos::fence();
 	}
 	
     	for(unsigned i = 0; i < 2 * Dim; i++) {
@@ -452,15 +458,16 @@ void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const s
 }//function
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////
 //======================================================================================== 
-// MAIN				UNIQUE POINTERS CANT BE COPIED!!!!
+// MAIN	
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     Inform msg("Langevin");
+    msg << "main_1" << endl;
     Inform msg2all("Langevin ",INFORM_ALL_NODES);
     Ippl::Comm->setDefaultOverallocation(std::atof(argv[17]));
-
+    msg << "main_2" << endl;
     auto start = std::chrono::high_resolution_clock::now();
 
     ippl::Vector<int,Dim> nr = {
@@ -483,9 +490,13 @@ int main(int argc, char *argv[]){
     //16 -> loadbalancethreshold
     //17 -> default overallocation
  	
+
+    msg << "main_3" << endl;
+
     int rank;
     MPI_Comm_rank(Ippl::getComm(),&rank);
    
+    msg << "main_4" << endl;
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
@@ -648,7 +659,7 @@ int main(int argc, char *argv[]){
 
 //TEST TIMERS
 //====================================================================================== 
-// TIMELOOP
+// TIMELOOP START
 
     msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
@@ -695,20 +706,18 @@ int main(int argc, char *argv[]){
         // gather E field
         P->gatherCIC();
 
-    // =================MYSTUFF==================================================================
+// =================MYSTUFF==================================================================
         
         //avgEF = compAvgSCForce(*P, nP);
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
 	
         //LANGEVIN COLLISIONS<-
-	//compute_temperature(*P, particleMass, nP);
-	
     
    	//error if variable not used..
 	double tmp = interactionRadius;
 	tmp += 1;
 
-	// =================MYSTUFF==================================================================
+// =================MYSTUFF==================================================================
         
         //kick
         IpplTimings::startTimer(PTimer);
@@ -726,7 +735,7 @@ int main(int argc, char *argv[]){
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
     }
 
-// TIMELOOP
+// TIMELOOP END
 //====================================================================================== 
 
     msg << "Langevin: End." << endl;
