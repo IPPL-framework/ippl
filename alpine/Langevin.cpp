@@ -377,16 +377,18 @@ Vector_t compute_temperature(const bunch& P, const double mass, const size_type 
 
 // is directly integratied into the dumpLandau function (particle Header)
 template<typename bunch>
-writeBeamStatistics(const bunch& P, const size_t N){
+void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const size_t iteration){
 	//prep
-	const size_t locNpn = P.getLocalNum();
+	const size_t locNp = P.getLocalNum();
 
    //calculate Moments===========================================================
+	auto pPMirror = P.P.getHostMirror();
+	auto pRMirror = P.R.getHostMirror();
+	double     centroid[2 * Dim];
+	double       moment[2 * Dim][2 * Dim];//={};
 
-	double         part[2 * Dim];
-        double loc_centroid[2 * Dim]={};
-        double   loc_moment[2 * Dim][2 * Dim]={};
-        double      moments[2 * Dim][2 * Dim]={};
+	double loc_centroid[2 * Dim];//={};
+	double   loc_moment[2 * Dim][2 * Dim];//={};
         
 	for(unsigned i = 0; i < 2 * Dim; i++) {
             loc_centroid[i] = 0.0;
@@ -394,76 +396,182 @@ writeBeamStatistics(const bunch& P, const size_t N){
                 loc_moment[i][j] = 0.0;
                 loc_moment[j][i] = 0.0;
             }
-        }
-	
-	auto pRMirror = P.R.getHostMirror();
-	auto pPMirror = P.P.getHostMirror();
+   	 }
 
-        //double p0=m0*gamma*beta0;
-	Kokkos::parallel_for("write Emittance 1 for-loop",
+//		std::vector<double> loc_centroid ( {0, 0, 0, 0, 0, 0} );
+//
+//	    	std::vector<std::vector<double>> loc_moment =  {loc_centroid, 
+//		       						loc_centroid, 
+//		       						loc_centroid, 
+//		       						loc_centroid, 
+//		       						loc_centroid, 
+//		       						loc_centroid 
+//								};
+
+
+// GPUs cant access host memory!!!!!
+//	Kokkos::parallel_for("write Emittance 1 for-loop",
+//			locNp,
+//			KOKKOS_LAMBDA(const int k),					//double& cent_a,
+//					){ 
+//			double    part[2 * Dim];
+//            		part[1] = pPMirror[k](0);
+//            		part[3] = pPMirror[k](1);
+//            		part[5] = pPMirror[k](2);
+//            		part[0] = pRMirror[k](0);
+//            		part[2] = pRMirror[k](1);
+//            		part[4] = pRMirror[k](2);
+//			
+//            		for(unsigned i = 0; i < 2 * Dim; i++) {
+//            		    loc_centroid[i]   += part[i];
+//            		    for(unsigned j = 0; j <= i; j++) {
+//            		        loc_moment[i][j]   += part[i] * part[j];
+//            		    }
+//            		}
+//			}	
+//	);	
+
+
+	for(unsigned i = 0; i< 2*Dim; ++i){
+
+		Kokkos::parallel_reduce("write Emittance 1 redcution",
 				locNp,
-				KOKKOS_LAMBDA(const int k){
-							
-            				part[1] = P.P[k](0);
-            				part[3] = P.P[k](1);
-            				part[5] = P.P[k](2);
-            				part[0] = P.R[k](0);
-            				part[2] = P.R[k](1);
-            				part[4] = P.R[k](2);
-				
-            				for(unsigned i = 0; i < 2 * Dim; i++) {
-            				    loc_centroid[i]   += part[i];
-            				    for(unsigned j = 0; j <= i; j++) {
-            				        loc_moment[i][j]   += part[i] * part[j];
-            				    }
-            				}
-				}	
-	);	
+				KOKKOS_LAMBDA(const int k,
+						double& cent,
+						double& mom0,
+						double& mom1,
+						double& mom2,
+						double& mom3,
+						double& mom4,
+						double& mom5
+						){ 
+					double    part[2 * Dim];
+	            			part[1] = pPMirror[k](0);
+	            			part[3] = pPMirror[k](1);
+	            			part[5] = pPMirror[k](2);
+	            			part[0] = pRMirror[k](0);
+	            			part[2] = pRMirror[k](1);
+	            			part[4] = pRMirror[k](2);
+					
+					cent = loc_centroid[i];
+					mom0 = loc_moment[i][0];
+					mom1 = loc_moment[i][1];
+					mom2 = loc_moment[i][2];
+					mom3 = loc_moment[i][3];
+					mom4 = loc_moment[i][4];
+					mom5 = loc_moment[i][5];
+	            			
+					cent += part[i];
+					mom0 += part[i]*part[0];
+					mom1 += part[i]*part[1];
+					mom2 += part[i]*part[2];
+					mom3 += part[i]*part[3];
+					mom4 += part[i]*part[4];
+					mom5 += part[i]*part[5];
+	            			    
+	            		
+				},
+				Kokkos::Sum<double>(loc_centroid[i]),
+				Kokkos::Sum<double>(loc_moment[i][0]),
+				Kokkos::Sum<double>(loc_moment[i][1]),
+				Kokkos::Sum<double>(loc_moment[i][2]),
+				Kokkos::Sum<double>(loc_moment[i][3]),
+				Kokkos::Sum<double>(loc_moment[i][4]),
+				Kokkos::Sum<double>(loc_moment[i][5])
 
-        for(unsigned i = 0; i < 2 * Dim; i++) {
-            for(unsigned j = 0; j < i; j++) {
-                loc_moment[j][i] = loc_moment[i][j];
-            }
-        }
+		);	
+	
+	}
+	
 
-        MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+// error: incomplete type ‘Kokkos::reduction_identity<std::vector<double, std::allocator<double> > >
+//		Kokkos::parallel_reduce("write Emittance 1 redcution",
+//				locNp,
+//				KOKKOS_LAMBDA(	const int k,
+//						std::vector<double>& lcentroid,
+//    						std::vector<std::vector<double>>& lmoment
+//						){
+//							lcentroid = {0, 0, 0, 0, 0, 0};
+//							//resize(2*Dim);
+//							lmoment = {	lcentroid, 
+//		       							lcentroid, 
+//		       							lcentroid, 
+//		       							lcentroid, 
+//		       							lcentroid, 
+//		       							lcentroid 
+//								};
+//
+//
+//							double    part[2 * Dim];
+//				            		part[1] = pPMirror[k](0);
+//				            		part[3] = pPMirror[k](1);
+//				            		part[5] = pPMirror[k](2);
+//				            		part[0] = pRMirror[k](0);
+//				            		part[2] = pRMirror[k](1);
+//				            		part[4] = pRMirror[k](2);
+//							
+//					//double acentroid[6] = lcentroid.data();
+//				    	//double amoment[6][6]= lmoment.data();	 
+//					//for(unsigned i = 0; i < 2 * Dim; i++) {
+//					//    lcentroid[i] = 0.0;
+//					//    for(unsigned j = 0; j <= i; j++) {
+//					//       lamoment[i][j] = 0.0;
+//					//       lamoment[j][i] = 0.0;
+//					//    }
+//					//}   			    
+//				            		for(unsigned i = 0; i < 2 * Dim; i++) {
+//				            		    lcentroid[i]   += part[i];
+//				            		    for(unsigned j = 0; j <= i; j++) {
+//				            		        lmoment[i][j]   += part[i] * part[j];
+//				            		    }
+//				            		}
+//				},
+//				loc_centroid,
+//				loc_moment
+//		);	
+	
+	
 
-        MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-     
+    	for(unsigned i = 0; i < 2 * Dim; i++) {
+    	    for(unsigned j = 0; j < i; j++) {
+    	        loc_moment[j][i] = loc_moment[i][j];
+    	    }
+    	}
 
-  //computeBeamStatisticsi===========================================================
+    MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
 
-
-        const double zero = 0.0;
-        Vector_t eps2, fac, rsqsum, vsqsum, rvsum;
+    MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    
+    const double zero = 0.0;
+    Vector_t eps2, fac, rsqsum, vsqsum, rvsum;
 	Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
 
-        for(unsigned int i = 0 ; i < Dim; i++) {
-            rmean(i) = centroid[2 * i] / N;
-            vmean(i) = centroid[(2 * i) + 1] / N;
-            rsqsum(i) = moment[2 * i][2 * i] - N * rmean(i) * rmean(i);
-            vsqsum(i) = moment[(2 * i) + 1][(2 * i) + 1] - N * vmean(i) * vmean(i);
-            if(vsqsum(i) < 0)
-                vsqsum(i) = 0;
-            rvsum(i) = moment[(2 * i)][(2 * i) + 1] - N * rmean_m(i) * vmean_m(i);
-        }
+    	for(unsigned int i = 0 ; i < Dim; i++) {
+    	    rmean(i) = centroid[2 * i] / N;
+    	    vmean(i) = centroid[(2 * i) + 1] / N;
+    	    rsqsum(i) = moment[2 * i][2 * i] - N * rmean(i) * rmean(i);
+    	    vsqsum(i) = moment[(2 * i) + 1][(2 * i) + 1] - N * vmean(i) * vmean(i);
+    	    if(vsqsum(i) < 0)
+    	        vsqsum(i) = 0;
+    	    rvsum(i) = moment[(2 * i)][(2 * i) + 1] - N * rmean(i) * vmean(i);
+    	}
 
-        eps2 = (rsqsum * vsqsum - rvsum * rvsum) / (N * N);
-        rvsum /= N;
+    eps2 = (rsqsum * vsqsum - rvsum * rvsum) / (N * N);
+    rvsum = rvsum/double(N);
 
-        for(unsigned int i = 0 ; i < Dim; i++) {
-            rrms(i) = sqrt(rsqsum(i) / N);
-            vrms(i) = sqrt(vsqsum(i) / N);
-            eps(i)  =  std::sqrt(std::max(eps2(i), zero));
-            double tmp = rrms_m(i) * vrms_m(i);
-            fac(i) = (tmp == 0) ? zero : 1.0 / tmp;
-        }
-        rvrms = rvsum * fac;
+    	for(unsigned int i = 0 ; i < Dim; i++) {
+   		     rrms(i) = sqrt(rsqsum(i) / N);
+   		     vrms(i) = sqrt(vsqsum(i) / N);
+   		     eps(i)  =  std::sqrt(std::max(eps2(i), zero));
+   		     double tmp = rrms(i) * vrms(i);
+   		     fac(i) = (tmp == 0) ? zero : 1.0 / tmp;
+   		 }
+    rvrms = rvsum * fac;
 
 
- 
-//writeBeamStatisticsVelocity ===============================================================
-  if(Ippl::myNode()==0) {
+   ////=====writeBeamStatisticsVelocity ======================
+  //if(Ippl::myNode()==0) {
+  if(rank ==0) {
 
     std::stringstream fname;
     fname << "data/BeamStatistics";
@@ -531,11 +639,20 @@ int main(int argc, char *argv[]){
 
 
     msg << "Start test: LANGEVIN COLLISION OPERATOR" << endl
-        << "Total Timesteps = " << std::setw(20) << nt << endl
-        << "Total Particles = " << std::setw(20) << nP << endl
-        << "Griddimensions  = " << std::setw(20) << nr << endl
-        << "Beamradius      = " << std::setw(20) << beamRadius << endl
-        << "focusing force  = " << std::setw(20) << focusForce << endl;
+        
+        << "Griddimensions 	= " << std::setw(20) << nr << endl
+        << "Beamradius     	= " << std::setw(20) << beamRadius << endl
+	<< "Box Length	   	= " << std::setw(20) << boxL << endl
+        << "Total Particles 	= " << std::setw(20) << nP << endl 
+	<< "Interaction Radius 	= " << std::setw(20) << interactionRadius << endl
+        << "Alpha 		= " << std::setw(20) << alpha << endl
+        << "Time Step  		= " << std::setw(20) << dt << endl      
+	<< "total Timesteps 	= " << std::setw(20) << nt << endl
+	<< "Particlecharge 	= " << std::setw(20) << particleCharge << endl
+	<< "Particlemass       	= " << std::setw(20) << particleMass << endl
+        << "focusing force  	= " << std::setw(20) << focusForce << endl
+	<< "printing Intervall 	= " << std::setw(20) << printInterval << endl;
+
 
 //================================================================================== 
 // MESH & DOMAIN_DECOMPOSITION
@@ -569,7 +686,6 @@ int main(int argc, char *argv[]){
  
     	std::unique_ptr<bunch_type>  P;
    	P = std::make_unique<bunch_type>(PL,hr,box_boundaries_lower, box_boundaries_upper,decomp,Q);
-    
 //	bunch_type *P;
 //   	P = new bunch_type(PL,hr, box_boundaries_lower, box_boundaries_upper, decomp,Q);
     
@@ -765,3 +881,4 @@ int main(int argc, char *argv[]){
 }
 // Langevin Collision Operator Test
 // Usage:
+
