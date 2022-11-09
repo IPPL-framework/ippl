@@ -197,6 +197,7 @@ void createParticleDistributionColdSphere( 	bunch& P,
    	     
    	m << "start Initializing" << endl;
 	typename bunch::particle_position_type::HostMirror pRHost = P.R.getHostMirror();
+	Kokkos::deep_copy(pRHost, P.R.getView());
 
 	for (unsigned i = 0; i<Nparticle; ++i) {
          		Vector_t X({normal(),normal(),normal()});
@@ -205,7 +206,9 @@ void createParticleDistributionColdSphere( 	bunch& P,
        	 		pRHost(i) = pos; // () or [] is indifferent
 	}
 	Vector_t mom({0,0,0});
-        P.q = -qi;
+       
+	Kokkos::deep_copy(P.R.getView(), pRHost);
+	P.q = -qi;
         P.P = mom;  //zero momentum intial conditiov
 	//	m << "()"<< pRHost(0)(0) << pRHost(0)(1) << pRHost(0)(2) << endl;
 	//	m << "[]"<< pRHost[0](0) << pRHost[0](1) << pRHost[0](2) << endl;
@@ -215,20 +218,22 @@ void createParticleDistributionColdSphere( 	bunch& P,
 template<typename bunch>
 Vector_t compAvgSCForce(bunch& P, const size_type N ) {  
     Inform m("computeAvgSpaceChargeForces ");
-    	m << "start Calculation" << endl;
+    	m << "start" << endl;
 
 	Vector_t avgEF;
 	double locEFsum[Dim];//={0.0,0.0,0.0};
 	double globEFsum[Dim];
-	
-	//auto pEView = P.E.getView();
-	auto pEMirror = P.E.getHostMirror();
+
+	//TODO here should  be able to work only with getView()	
+	auto pEView = P.E.getView();
+	//auto pEMirror = P.E.getHostMirror();
+	//Kokkos::deep_copy(pEMirror, P.E.getView());
 	for(unsigned d = 0; d<Dim; ++d){
 		locEFsum[d]=0.0;
 		Kokkos::parallel_reduce("get local EField sum", 
 					 P.getLocalNum(),
 					 KOKKOS_LAMBDA(const int i, double& valL){
-                                   		double myVal =pEMirror[i](d);    //  P.E[i](d);
+                                   		double myVal =pEView[i](d);    //  P.E[i](d);
               		                      	valL += myVal;
                                 	 },                    			
 					 Kokkos::Sum<double>(locEFsum[d])
@@ -238,8 +243,9 @@ Vector_t compAvgSCForce(bunch& P, const size_type N ) {
 	MPI_Allreduce(locEFsum, globEFsum, Dim , MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
 	
     for(unsigned d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N; 
-
-   m << "finished Calculation; Dim = "<< Dim  <<  endl;
+   //DEBUG
+   m << "Caluclation done; AVG Electric Force = " << avgEF << endl; 
+   m << "finished"<< Dim  <<  endl;
     return avgEF;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -249,18 +255,25 @@ void applyConstantFocusing( bunch& P,
                             const double beamRadius,
                             const Vector_t avgEF
                                 ) {  
-	//Inform m("applyConstantFocusing");
-	//m << "start" << endl;
+	Inform m("applyConstantFocusing");
+	m << "start" << endl;
 	auto mydotpr = [](Vector_t a, Vector_t b)   {
 		return a(0)*b(0) + a(1)*b(1) + a(2)*b(2); 
 	};
 
-	auto pEMirror = P.E.getHostMirror();
-	auto pRMirror = P.R.getHostMirror();
-//	auto pEView = P.E.getView();
-//	auto pRView = P.R.getView();
-	double tmp = sqrt(mydotpr(avgEF, avgEF))*f/beamRadius;
 
+	//TODO here woking with getView should als suffice
+	//auto pEMirror = P.E.getHostMirror();
+	//auto pRMirror = P.R.getHostMirror();
+	//Kokkos::deep_copy(pEMirror, P.E.getView());
+	//Kokkos::deep_copy(pRMirror, P.R.getView());
+
+	auto pEMirror = P.E.getView();
+	auto pRMirror = P.R.getView();
+
+	double tmp = sqrt(mydotpr(avgEF, avgEF))*f/beamRadius;
+	m << "final focusing factor is:" << tmp << endl;
+	
 	Kokkos::parallel_for("Apply Constant Focusing",
 				P.getLocalNum(),
 				KOKKOS_LAMBDA(const int i){
@@ -268,194 +281,197 @@ void applyConstantFocusing( bunch& P,
 				}	
 	);
 	Kokkos::fence();
-	//m << "finished" << endl;
+	m << "finished" << endl;
 
 }
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-//Is directly integrated in dumpLandau and currently unused
+//Is directly integrated in dumpLagevin and currently unused.
+//Not up to date (deep copy)
 // PRE
 // POST
-template<typename bunch>
-Vector_t compute_temperature(const bunch& P, const double mass, const size_type N) {
-        Inform m("compute_temperature ");
+//template<typename bunch>
+//Vector_t compute_temperature(const bunch& P, const double mass, const size_type N) {
+//        Inform m("compute_temperature ");
+//
+//        double locVELsum[Dim]={0.0,0.0,0.0};
+//        double globVELsum[Dim];
+//        double avgVEL[Dim];
+//
+//        double locT[Dim]={0.0,0.0,0.0};
+//        double globT[Dim];       
+//	Vector_t temperature;
+//	
+//	auto pPMirror = P.P.getHostMirror();
+//	//auto pPView = P.P.getView();
+//	//i
+//        // GET AVERAGE VELOCITY GLOBALLY
+//        for(unsigned d = 0; d<Dim; ++d){
+//		    Kokkos::parallel_reduce("get local velocity sum", 
+//		    			 P.getLocalNum(), 
+//		    			 KOKKOS_LAMBDA(const int i, double& valL){
+//                                       		double myVal = pPMirror[i](d)/mass;
+//                                        	valL += myVal;
+//                                    	 },                    			
+//		    			 Kokkos::Sum<double>(locVELsum[d])
+//		    );
+//		Kokkos::fence();
+//	    }
+//    	MPI_Allreduce(locVELsum, globVELsum, Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
+//
+//        for(unsigned d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
+//
+//        m << "avgVEL[0]= " << avgVEL[0] << " avgVEL[1]= " << avgVEL[1] << " avgVEL[2]= " << avgVEL[2] <<  endl;
+//
+//        for(unsigned d = 0; d<Dim; ++d){
+//		    Kokkos::parallel_reduce("get local velocity sum", 
+//		    			 P.getLocalNum(), 
+//		    			 KOKKOS_LAMBDA(const int i, double& valL){
+//                                       		double myVal = (pPMirror[i](d)/mass-avgVEL[d])*(pPMirror[i](d)/mass-avgVEL[d]);
+//                                        	valL += myVal;
+//                                    	 },                    			
+//		    			 Kokkos::Sum<double>(locT[d])
+//		   );
+//		Kokkos::fence();
+//	    }
+//    	MPI_Allreduce(locT, globT, Dim, MPI_DOUBLE, MPI_SUM,Ippl::getComm());	
+//
+//        for(unsigned d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
+//
+//        return temperature;
+//}
+//
 
-        double locVELsum[Dim]={0.0,0.0,0.0};
-        double globVELsum[Dim];
-        double avgVEL[Dim];
-
-        double locT[Dim]={0.0,0.0,0.0};
-        double globT[Dim];       
-	Vector_t temperature;
-	
-	auto pPMirror = P.P.getHostMirror();
-	//auto pPView = P.P.getView();
-        // GET AVERAGE VELOCITY GLOBALLY
-        for(unsigned d = 0; d<Dim; ++d){
-		    Kokkos::parallel_reduce("get local velocity sum", 
-		    			 P.getLocalNum(), 
-		    			 KOKKOS_LAMBDA(const int i, double& valL){
-                                       		double myVal = pPMirror[i](d)/mass;
-                                        	valL += myVal;
-                                    	 },                    			
-		    			 Kokkos::Sum<double>(locVELsum[d])
-		    );
-		Kokkos::fence();
-	    }
-    	MPI_Allreduce(locVELsum, globVELsum, Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
-
-        for(unsigned d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
-
-        m << "avgVEL[0]= " << avgVEL[0] << " avgVEL[1]= " << avgVEL[1] << " avgVEL[2]= " << avgVEL[2] <<  endl;
-
-        for(unsigned d = 0; d<Dim; ++d){
-		    Kokkos::parallel_reduce("get local velocity sum", 
-		    			 P.getLocalNum(), 
-		    			 KOKKOS_LAMBDA(const int i, double& valL){
-                                       		double myVal = (pPMirror[i](d)/mass-avgVEL[d])*(pPMirror[i](d)/mass-avgVEL[d]);
-                                        	valL += myVal;
-                                    	 },                    			
-		    			 Kokkos::Sum<double>(locT[d])
-		   );
-		Kokkos::fence();
-	    }
-    	MPI_Allreduce(locT, globT, Dim, MPI_DOUBLE, MPI_SUM,Ippl::getComm());	
-
-        for(unsigned d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
-
-        return temperature;
-}
-
-
-// directly integratied into the dumpLandau function (particle Header); this function is currently unused
+// directly integratied into the dumpLangevin function (particle Header); this function is currently unused
+// NOT UP TOD DATE
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-template<typename bunch>
-void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const size_t iteration){
-	//prep
-	const size_t locNp = P.getLocalNum();
-
-   //calculate Moments================================
-	auto pPMirror = P.P.getHostMirror();
-	auto pRMirror = P.R.getHostMirror();
-	double     centroid[2 * Dim];
-	double       moment[2 * Dim][2 * Dim];//={};
-
-	double loc_centroid[2 * Dim];//={};
-	double   loc_moment[2 * Dim][2 * Dim];//={};
-        
-	for(unsigned i = 0; i < 2 * Dim; i++) {
-            loc_centroid[i] = 0.0;
-            for(unsigned j = 0; j <= i; j++) {
-                loc_moment[i][j] = 0.0;
-                loc_moment[j][i] = 0.0;
-            }
-   	 }
-
-	for(unsigned i = 0; i< 2*Dim; ++i){
-
-		Kokkos::parallel_reduce("write Emittance 1 redcution",
-				locNp,
-				KOKKOS_LAMBDA(const int k,
-						double& cent,
-						double& mom0,
-						double& mom1,
-						double& mom2,
-						double& mom3,
-						double& mom4,
-						double& mom5
-						){ 
-					double    part[2 * Dim];
-	            			part[1] = pPMirror[k](0);
-	            			part[3] = pPMirror[k](1);
-	            			part[5] = pPMirror[k](2);
-	            			part[0] = pRMirror[k](0);
-	            			part[2] = pRMirror[k](1);
-	            			part[4] = pRMirror[k](2);
-					
-					cent = loc_centroid[i];
-					mom0 = loc_moment[i][0];
-					mom1 = loc_moment[i][1];
-					mom2 = loc_moment[i][2];
-					mom3 = loc_moment[i][3];
-					mom4 = loc_moment[i][4];
-					mom5 = loc_moment[i][5];
-	            			
-					cent += part[i];
-					mom0 += part[i]*part[0];
-					mom1 += part[i]*part[1];
-					mom2 += part[i]*part[2];
-					mom3 += part[i]*part[3];
-					mom4 += part[i]*part[4];
-					mom5 += part[i]*part[5];
-				},
-				Kokkos::Sum<double>(loc_centroid[i]),
-				Kokkos::Sum<double>(loc_moment[i][0]),
-				Kokkos::Sum<double>(loc_moment[i][1]),
-				Kokkos::Sum<double>(loc_moment[i][2]),
-				Kokkos::Sum<double>(loc_moment[i][3]),
-				Kokkos::Sum<double>(loc_moment[i][4]),
-				Kokkos::Sum<double>(loc_moment[i][5])
-		);	
-	   Kokkos::fence();
-	}
-	
-    	for(unsigned i = 0; i < 2 * Dim; i++) {
-    	    for(unsigned j = 0; j < i; j++) {
-    	        loc_moment[j][i] = loc_moment[i][j];
-    	    }
-    	}
-
-    MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-
-    MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-    
-    const double zero = 0.0;
-    Vector_t eps2, fac, rsqsum, vsqsum, rvsum;
-	Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
-
-    	for(unsigned int i = 0 ; i < Dim; i++) {
-    	    rmean(i) = centroid[2 * i] / N;
-    	    vmean(i) = centroid[(2 * i) + 1] / N;
-    	    rsqsum(i) = moment[2 * i][2 * i] - N * rmean(i) * rmean(i);
-    	    vsqsum(i) = moment[(2 * i) + 1][(2 * i) + 1] - N * vmean(i) * vmean(i);
-    	    if(vsqsum(i) < 0)
-    	        vsqsum(i) = 0;
-    	    rvsum(i) = moment[(2 * i)][(2 * i) + 1] - N * rmean(i) * vmean(i);
-    	}
-
-    eps2 = (rsqsum * vsqsum - rvsum * rvsum) / (N * N);
-    rvsum = rvsum/double(N);
-
-    	for(unsigned int i = 0 ; i < Dim; i++) {
-   		     rrms(i) = sqrt(rsqsum(i) / N);
-   		     vrms(i) = sqrt(vsqsum(i) / N);
-   		     eps(i)  =  std::sqrt(std::max(eps2(i), zero));
-   		     double tmp = rrms(i) * vrms(i);
-   		     fac(i) = (tmp == 0) ? zero : 1.0 / tmp;
-   		 }
-    rvrms = rvsum * fac;
-
-   ////=====writeBeamStatisticsVelocity ======================
-  //if(Ippl::myNode()==0) {
-  if(rank ==0) {
-
-    std::stringstream fname;
-    fname << "data/BeamStatistics";
-    fname << ".csv";
-
-    // open a new data file for this iteration
-    // and start with header
-    Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-    csvout.precision(10);
-    csvout.setf(std::ios::scientific, std::ios::floatfield);
-
-    if (iteration==0){
-    	csvout << "it,rrmsX, rrmsY, rrmsZ, vrmsX,vrmsY,vrmsZ,rmeanX,rmeanY,rmeanZ,vmeanX,vmeanY,vmeanZ,epsX,epsY,epsZ,rvrmsX,rvrmsY,rvrmsZ" << endl;
-    }//header
-    	csvout <<iteration<<" "<<rrms<<" "<<vrms<<" "<<rmean<<" "<<vmean<<" "<<eps<<" "<<rvrms<< endl;
-  }//output
-}//function
+//template<typename bunch>
+//void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const size_t iteration){
+//	//prep
+//	const size_t locNp = P.getLocalNum();
+//
+//   //calculate Moments================================
+//	auto pPMirror = P.P.getHostMirror();
+//	auto pRMirror = P.R.getHostMirror();
+//	double     centroid[2 * Dim];
+//	double       moment[2 * Dim][2 * Dim];//={};
+//
+//	double loc_centroid[2 * Dim];//={};
+//	double   loc_moment[2 * Dim][2 * Dim];//={};
+//        
+//	for(unsigned i = 0; i < 2 * Dim; i++) {
+//            loc_centroid[i] = 0.0;
+//            for(unsigned j = 0; j <= i; j++) {
+//                loc_moment[i][j] = 0.0;
+//                loc_moment[j][i] = 0.0;
+//            }
+//   	 }
+//
+//	for(unsigned i = 0; i< 2*Dim; ++i){
+//
+//		Kokkos::parallel_reduce("write Emittance 1 redcution",
+//				locNp,
+//				KOKKOS_LAMBDA(const int k,
+//						double& cent,
+//						double& mom0,
+//						double& mom1,
+//						double& mom2,
+//						double& mom3,
+//						double& mom4,
+//						double& mom5
+//						){ 
+//					double    part[2 * Dim];
+//	            			part[1] = pPMirror[k](0);
+//	            			part[3] = pPMirror[k](1);
+//	            			part[5] = pPMirror[k](2);
+//	            			part[0] = pRMirror[k](0);
+//	            			part[2] = pRMirror[k](1);
+//	            			part[4] = pRMirror[k](2);
+//					
+//					cent = loc_centroid[i];
+//					mom0 = loc_moment[i][0];
+//					mom1 = loc_moment[i][1];
+//					mom2 = loc_moment[i][2];
+//					mom3 = loc_moment[i][3];
+//					mom4 = loc_moment[i][4];
+//					mom5 = loc_moment[i][5];
+//	            			
+//					cent += part[i];
+//					mom0 += part[i]*part[0];
+//					mom1 += part[i]*part[1];
+//					mom2 += part[i]*part[2];
+//					mom3 += part[i]*part[3];
+//					mom4 += part[i]*part[4];
+//					mom5 += part[i]*part[5];
+//				},
+//				Kokkos::Sum<double>(loc_centroid[i]),
+//				Kokkos::Sum<double>(loc_moment[i][0]),
+//				Kokkos::Sum<double>(loc_moment[i][1]),
+//				Kokkos::Sum<double>(loc_moment[i][2]),
+//				Kokkos::Sum<double>(loc_moment[i][3]),
+//				Kokkos::Sum<double>(loc_moment[i][4]),
+//				Kokkos::Sum<double>(loc_moment[i][5])
+//		);	
+//	   Kokkos::fence();
+//	}
+//	
+//    	for(unsigned i = 0; i < 2 * Dim; i++) {
+//    	    for(unsigned j = 0; j < i; j++) {
+//    	        loc_moment[j][i] = loc_moment[i][j];
+//    	    }
+//    	}
+//
+//    MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+//
+//    MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+//    
+//    const double zero = 0.0;
+//    Vector_t eps2, fac, rsqsum, vsqsum, rvsum;
+//	Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
+//
+//    	for(unsigned int i = 0 ; i < Dim; i++) {
+//    	    rmean(i) = centroid[2 * i] / N;
+//    	    vmean(i) = centroid[(2 * i) + 1] / N;
+//    	    rsqsum(i) = moment[2 * i][2 * i] - N * rmean(i) * rmean(i);
+//    	    vsqsum(i) = moment[(2 * i) + 1][(2 * i) + 1] - N * vmean(i) * vmean(i);
+//    	    if(vsqsum(i) < 0)
+//    	        vsqsum(i) = 0;
+//    	    rvsum(i) = moment[(2 * i)][(2 * i) + 1] - N * rmean(i) * vmean(i);
+//    	}
+//
+//    eps2 = (rsqsum * vsqsum - rvsum * rvsum) / (N * N);
+//    rvsum = rvsum/double(N);
+//
+//    	for(unsigned int i = 0 ; i < Dim; i++) {
+//   		     rrms(i) = sqrt(rsqsum(i) / N);
+//   		     vrms(i) = sqrt(vsqsum(i) / N);
+//   		     eps(i)  =  std::sqrt(std::max(eps2(i), zero));
+//   		     double tmp = rrms(i) * vrms(i);
+//   		     fac(i) = (tmp == 0) ? zero : 1.0 / tmp;
+//   		 }
+//    rvrms = rvsum * fac;
+//
+//   ////=====writeBeamStatisticsVelocity ======================
+//  //if(Ippl::myNode()==0) {
+//  if(rank ==0) {
+//
+//    std::stringstream fname;
+//    fname << "data/BeamStatistics";
+//    fname << ".csv";
+//
+//    // open a new data file for this iteration
+//    // and start with header
+//    Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+//    csvout.precision(10);
+//    csvout.setf(std::ios::scientific, std::ios::floatfield);
+//
+//    if (iteration==0){
+//    	csvout << "it,rrmsX, rrmsY, rrmsZ, vrmsX,vrmsY,vrmsZ,rmeanX,rmeanY,rmeanZ,vmeanX,vmeanY,vmeanZ,epsX,epsY,epsZ,rvrmsX,rvrmsY,rvrmsZ" << endl;
+//    }//header
+//    	csvout <<iteration<<" "<<rrms<<" "<<vrms<<" "<<rmean<<" "<<vmean<<" "<<eps<<" "<<rvrms<< endl;
+//  }//output
+//}//function
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -463,6 +479,10 @@ void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const s
 // MAIN	
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
+   
+    int rank;
+    MPI_Comm_rank(Ippl::getComm(),&rank);
+ 
     Inform msg("Langevin");
     msg << "main_1" << endl;
     Inform msg2all("Langevin ",INFORM_ALL_NODES);
@@ -493,10 +513,10 @@ int main(int argc, char *argv[]){
 
     msg << "main_3" << endl;
 
-    int rank;
-    MPI_Comm_rank(Ippl::getComm(),&rank);
+
    
-    msg << "main_4" << endl;
+    msg << "Dim = " << Dim <<  endl;
+ 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
@@ -657,6 +677,10 @@ int main(int argc, char *argv[]){
     //P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
 
+
+	//DEBUG
+	P->dumpParticleData();
+
 //TEST TIMERS
 //====================================================================================== 
 // TIMELOOP START
@@ -679,7 +703,7 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(RTimer);
 
         //Since the particles have moved spatially update them to correct processors
-	    IpplTimings::startTimer(updateTimer);
+	IpplTimings::startTimer(updateTimer);
         PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
 

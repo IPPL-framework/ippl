@@ -557,9 +557,11 @@ public:
         double avgVEL[Dim];
         double locT[Dim]={0.0,0.0,0.0};
         double globT[Dim];       
-	    Vector_t temperature;
-	   // auto pPView = this->P.getView();
-	    auto pPMirror = this->P.getHostMirror();
+	Vector_t temperature;
+	  
+	 // auto pPView = this->P.getView();
+	    auto pPMirror = this->P.getView();
+//	    auto pPMirror = this->P.getHostMirror();
    
 	    const size_t locNp = static_cast<size_t>(this->getLocalNum());
 
@@ -594,7 +596,8 @@ public:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //====== start  CALCULATING BEAM STATISTICS    &&    EMITTANCE ======
 
-	auto pRMirror = this->R.getHostMirror();
+	auto pRMirror = this->R.getView();
+	//auto pRMirror = this->R.getHostMirror();
 	double     centroid[2 * Dim];
 	double       moment[2 * Dim][2 * Dim];//={};
 
@@ -667,7 +670,7 @@ public:
     
     const double zero = 0.0;
     Vector_t eps2, fac, rsqsum, vsqsum, rvsum;
-	Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
+    Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
 
     	for(unsigned int i = 0 ; i < Dim; i++) {
     	    rmean(i) = centroid[2 * i] / N;
