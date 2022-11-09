@@ -245,11 +245,15 @@ namespace ippl {
 
 			Kokkos::parallel_scan(
 					"ParticleSpatialLayout::faceNeighbors",
-					Kokkos::RangePolicy<size_t>({0,0}, {positions.extent(0), faceNeighbors.size()} ),
-					KOKKOS_LAMBDA(const size_t i, const size_t face, size_t& idx, const bool final) {
-					bool xyz_bool = false;
+					Kokkos::RangePolicy<size_t>(0, positions.extent(0)),
+					KOKKOS_LAMBDA(const size_t i, size_t& idx, const bool final) {
+					
 
 					//Step 1
+					for( size_t face=0; face < faceNeighbors.size(); ++face){
+
+					bool xyz_bool = false;
+
 					xyz_bool = ((positions(i)[0] >= Regions(myRank)[0].min()) &&
 							(positions(i)[0] <= Regions(myRank)[0].max()) &&
 							(positions(i)[1] >= Regions(myRank)[1].min()) &&
@@ -285,6 +289,7 @@ namespace ippl {
 
 						}
 					} 
+					}
 					//Step 3
 					
 						
