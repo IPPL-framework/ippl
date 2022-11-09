@@ -232,18 +232,18 @@ namespace ippl {
 			//const edge_neighbor_type edgeNeighbors = flayout_m.getEdgeNeighbors();
 			//const vertex_neighbor_type vertexNeighbors = flayout_m.getVertexNeighbors();
 
-			//boolean container of particles that travelled more than one cell
+			//container of particles that travelled more than one cell
 			locate_type notfound("Not found", pdata.getLocalNum());
-			//bool_type found("Found", pdata.getLocalNum());
+			bool_type found("Found", pdata.getLocalNum());
 			size_t nLeft;
-			auto& pIds = pdata.ID.getView();
+
 			/*Begin Kokkos loop:
   			  *Step 1: search in current rank
   			  *Step 2: search in neighbors
   			  *Step 3: save information on whether the particle was located
   			  *Step 4: run additional loop on non-located particles */
 
-			/*Kokkos::parallel_scan(
+			Kokkos::parallel_scan(
 					"ParticleSpatialLayout::faceNeighbors",
 					Kokkos::RangePolicy<size_t>({0,0}, {positions.extent(0), faceNeighbors.size()} ),
 					KOKKOS_LAMBDA(const size_t i, const size_t face, size_t& idx, const bool final) {
@@ -298,48 +298,7 @@ namespace ippl {
 						}
 						
 					
-					}, nLeft);*/
-			typedef Kokkos::TeamPolicy<> team_policy;
-			typedef Kokkos::TeamPolicy<>::member_type member_type;
-
-			Kokkos::parallel_reduce("ParticleSpatialLayout::locateParticles()", 
-				team_policy( positions.extent(0), Kokkos::AUTO), 
-				KOKKOS_LAMBDA( const member_type &teamMember, size_t& idx ){
-					const size_t i = teamMember.league_rank();
-					size_t flag = 0;
-			
-					Kokkos::parallel_reduce( Kokkos::TeamThreadRange( teamMember, faceNeighbors.size() ) , 
-							[=] ( const size_t face, size_t& flagLocal ){
-								for( size_t j = 0; j < faceNeighbors[face].size(); ++j){
-									view_size_t rank = faceNeighbors[face][j];
-
-									bool xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
-                                                                        (positions(i)[0] <= Regions(rank)[0].max()) &&
-                                                                        (positions(i)[1] >= Regions(rank)[1].min()) &&
-                                                                        (positions(i)[1] <= Regions(rank)[1].max()) &&
-                                                                        (positions(i)[2] >= Regions(rank)[2].min()) &&
-                                                                        (positions(i)[2] <= Regions(rank)[2].max()));
-
-									flagLocal += size_t(xyz_bool);
-
-									if(xyz_bool){
-										ranks(i) = rank;
-										invalid(i) = true;
-										break;
-									}
-					
-
-								}}, flag);
-					teamMember.team_barrier();
-
-					if(!flag && teamMember.team_rank()==0 ){
-						notfound(idx) = i;
-						idx+=1;
-						std::cout << "Particle " << pIds(i) << " hasn't been found in rank " << myRank << std::endl;
-					} 
-
-			}, nLeft);
-				
+					}, nLeft);
 
 			Kokkos::fence();
 
