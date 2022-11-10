@@ -225,27 +225,40 @@ Vector_t compAvgSCForce(bunch& P, const size_type N ) {
 	double globEFsum[Dim];
 
 	//TODO here should  be able to work only with getView()	
-	auto pEView = P.E.getView();
-	//auto pEMirror = P.E.getHostMirror();
-	//Kokkos::deep_copy(pEMirror, P.E.getView());
+	auto pEMirror = P.E.getView();
+	// auto pEMirror = P.E.getHostMirror();
+	// Kokkos::deep_copy(pEMirror, P.E.getView());
 	for(unsigned d = 0; d<Dim; ++d){
 		locEFsum[d]=0.0;
 		Kokkos::parallel_reduce("get local EField sum", 
 					 P.getLocalNum(),
 					 KOKKOS_LAMBDA(const int i, double& valL){
-                                   		double myVal =pEView[i](d);    //  P.E[i](d);
-              		                      	valL += myVal;
+                                   		double myVal =pEMirror(i)[d];    //  P.E[i](d);
+              		                    valL += fabs(myVal);
                                 	 },                    			
-					 Kokkos::Sum<double>(locEFsum[d])
+					//  Kokkos::Sum<double>(
+                         locEFsum[d]
+                        //  )
 					);
 	}
+    //yields same result && is identical to p3m
+    // for (unsigned i=0; i< P.getLocalNum(); ++i) {
+    //         // locAvgEF[0]+=fabs(EF[i](0));
+    //         // locAvgEF[1]+=fabs(EF[i](1));
+    //         // locAvgEF[2]+=fabs(EF[i](2)); 
+    //         locEFsum[0]+=fabs(pEMirror[i](0));
+    //         locEFsum[1]+=fabs(pEMirror[i](1));
+    //         locEFsum[2]+=fabs(pEMirror[i](2));
+    //     }
 	Kokkos::fence();
 	MPI_Allreduce(locEFsum, globEFsum, Dim , MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
 	
     for(unsigned d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N; 
    //DEBUG
-   m << "Caluclation done; AVG Electric Force = " << avgEF << endl; 
-   m << "finished"<< Dim  <<  endl;
+   m << "globSumEF = " <<  globEFsum[0] << " " << globEFsum[1] << " " << globEFsum[2] << endl;
+   m << "AVG Electric SC Force = " << avgEF << endl; 
+   m << "Caluclation done" << endl; 
+   m << "finished"<< endl;
     return avgEF;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -496,7 +509,7 @@ int main(int argc, char *argv[]){
         std::atoi(argv[3])
     };
     const double beamRadius         = std::atof(argv[4]);
-    const double boxL 		    = std::atof(argv[5]);
+    const double boxL 		        = std::atof(argv[5]);
     const size_type nP              = std::atoll(argv[6]);
     const double interactionRadius  = std::atof(argv[7]);
     const double alpha              = std::atof(argv[8]);
@@ -534,16 +547,16 @@ int main(int argc, char *argv[]){
         
         << "Griddimensions 	= " << std::setw(20) << nr << endl
         << "Beamradius     	= " << std::setw(20) << beamRadius << endl
-	<< "Box Length	   	= " << std::setw(20) << boxL << endl
+	    << "Box Length	   	= " << std::setw(20) << boxL << endl
         << "Total Particles 	= " << std::setw(20) << nP << endl 
-	<< "Interaction Radius 	= " << std::setw(20) << interactionRadius << endl
+	    << "Interaction Radius 	= " << std::setw(20) << interactionRadius << endl
         << "Alpha 		= " << std::setw(20) << alpha << endl
         << "Time Step  		= " << std::setw(20) << dt << endl      
-	<< "total Timesteps 	= " << std::setw(20) << nt << endl
-	<< "Particlecharge 	= " << std::setw(20) << particleCharge << endl
-	<< "Particlemass       	= " << std::setw(20) << particleMass << endl
+	    << "total Timesteps 	= " << std::setw(20) << nt << endl
+	    << "Particlecharge 	= " << std::setw(20) << particleCharge << endl
+	    << "Particlemass       	= " << std::setw(20) << particleMass << endl
         << "focusing force  	= " << std::setw(20) << focusForce << endl
-	<< "printing Intervall 	= " << std::setw(20) << printInterval << endl;
+	    << "printing Intervall 	= " << std::setw(20) << printInterval << endl;
 
 
 //================================================================================== 
@@ -576,7 +589,7 @@ int main(int argc, char *argv[]){
     const double Q = nP * (-particleCharge);
     
  
-    	std::unique_ptr<bunch_type>  P;
+    std::unique_ptr<bunch_type>  P;
    	P = std::make_unique<bunch_type>(PL,hr,box_boundaries_lower, box_boundaries_upper,decomp,Q);
 //	bunch_type *P;
 //   	P = new bunch_type(PL,hr, box_boundaries_lower, box_boundaries_upper, decomp,Q);
@@ -644,6 +657,7 @@ int main(int argc, char *argv[]){
     
     msg << "Cold Sphere created" << endl;
     
+    //multiple node runs stop here
     PL.update(*P, bunchBuffer);
     msg << "Layout updated"  << endl;
    
@@ -651,7 +665,6 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(particleCreation);    
     msg << "particles created and initial conditions assigned " << endl;
 
-    Vector_t avgEF(compAvgSCForce(*P, nP));
 
 // PARTICLE CREATION
 //====================================================================================== 
@@ -671,15 +684,17 @@ int main(int argc, char *argv[]){
 	msg << "solve() tested" << endl;	
     P->gatherCIC();
 
+
+    Vector_t avgEF(compAvgSCForce(*P, nP));
+
+
     IpplTimings::startTimer(dumpDataTimer);
-    P->dumpLangevin(0, particleMass, nP);;
+    P->dumpLangevin(0, particleMass, nP);
+	// P->dumpParticleData();
     P->gatherStatistics(nP);
     //P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
 
-
-	//DEBUG
-	P->dumpParticleData();
 
 //TEST TIMERS
 //====================================================================================== 
@@ -703,7 +718,7 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(RTimer);
 
         //Since the particles have moved spatially update them to correct processors
-	IpplTimings::startTimer(updateTimer);
+	    IpplTimings::startTimer(updateTimer);
         PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
 

@@ -557,38 +557,55 @@ public:
         double avgVEL[Dim];
         double locT[Dim]={0.0,0.0,0.0};
         double globT[Dim];       
-	Vector_t temperature;
+	    Vector_t temperature;
 	  
-	 // auto pPView = this->P.getView();
-	    auto pPMirror = this->P.getView();
-//	    auto pPMirror = this->P.getHostMirror();
+	    auto pRMirror = this->R.getView();
+	    //  auto pRMirror = this->R.getHostMirror();
+        auto pPMirror = this->P.getView();
+        //	auto pPMirror = this->P.getHostMirror();
+        //  deep copy...
    
 	    const size_t locNp = static_cast<size_t>(this->getLocalNum());
 
         for(unsigned d = 0; d<Dim; ++d){
 		    Kokkos::parallel_reduce("get local velocity sum", 
 		    			 locNp, 
-		    			 KOKKOS_LAMBDA(const int i, double& valL){
-                                       		double myVal = pPMirror[i](d)/mass;
-                                        	valL += myVal;
-                                    	 },                    			
+		    			 KOKKOS_LAMBDA(const int k, double& valL){
+                                       	double myVal = pPMirror[k](d)/mass;
+                                        valL += myVal;
+                                        	//valL += pPMirror[i](d)/mass;
+                                    	},                    			
 		    			 Kokkos::Sum<double>(locVELsum[d])
 		    			);
     	Kokkos::fence();
 	    }
+        // for(unsigned long k = 0; k < this->getLocalNum(); ++k) {
+        //   for(unsigned d = 0; d < Dim; d++) {
+        //     // loc_avg_vel[d]   += this->v[k](d);
+        //     locVELsum[d] += pPMirror[k](d)/mass;
+        //   }
+        // }
 	   	MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
         for(unsigned d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
+
         for(unsigned d = 0; d<Dim; ++d){
 		    Kokkos::parallel_reduce("get local velocity sum", 
 					 locNp,
-		    			 KOKKOS_LAMBDA(const int i, double& valL){
-                                       		double myVal = (pPMirror[i](d)/mass-avgVEL[d])*(pPMirror[i](d)/mass-avgVEL[d]);
-                                        	valL += myVal;
-                                    	 },                    			
+		    			 KOKKOS_LAMBDA(const int k, double& valL){
+                                       	double myVal = (pPMirror[k](d)/mass-avgVEL[d])*(pPMirror[k](d)/mass-avgVEL[d]);
+                                        valL += myVal;
+                                         //valL += (pPMirror[i](d)/mass-avgVEL[d])*(pPMirror[i](d)/mass-avgVEL[d]);
+                                    	},                    			
 		    			 Kokkos::Sum<double>(locT[d])
 		     			);
     		Kokkos::fence();
 	    }
+        // for(unsigned long k = 0; k < this->getLocalNum(); ++k) {
+        //   for(unsigned d = 0; d < Dim; d++) {
+        //     // loc_temp[d]   += (this->v[k](d)-avg_vel[d])*(this->v[k](d)-avg_vel[d]);
+        //     locT[d] += (pPMirror[k](d)/mass-avgVEL[d])*(pPMirror[k](d)/mass-avgVEL[d]);
+        //   }
+        // }
     	MPI_Reduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());	
         if (Ippl::Comm->rank() == 0) for(unsigned d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
 
@@ -596,13 +613,11 @@ public:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //====== start  CALCULATING BEAM STATISTICS    &&    EMITTANCE ======
 
-	auto pRMirror = this->R.getView();
-	//auto pRMirror = this->R.getHostMirror();
 	double     centroid[2 * Dim];
-	double       moment[2 * Dim][2 * Dim];//={};
+	double       moment[2 * Dim][2 * Dim];
 
-	double loc_centroid[2 * Dim];//={};
-	double   loc_moment[2 * Dim][2 * Dim];//={};
+	double loc_centroid[2 * Dim];
+	double   loc_moment[2 * Dim][2 * Dim];
         
 	for(unsigned i = 0; i < 2 * Dim; i++) {
             loc_centroid[i] = 0.0;
@@ -632,14 +647,15 @@ public:
 	            			part[0] = pRMirror[k](0);
 	            			part[2] = pRMirror[k](1);
 	            			part[4] = pRMirror[k](2);
-					
-					cent = loc_centroid[i];
-					mom0 = loc_moment[i][0];
-					mom1 = loc_moment[i][1];
-					mom2 = loc_moment[i][2];
-					mom3 = loc_moment[i][3];
-					mom4 = loc_moment[i][4];
-					mom5 = loc_moment[i][5];
+                if(k==0){
+					cent += loc_centroid[i];
+					mom0 += loc_moment[i][0];
+					mom1 += loc_moment[i][1];
+					mom2 += loc_moment[i][2];
+					mom3 += loc_moment[i][3];
+					mom4 += loc_moment[i][4];
+					mom5 += loc_moment[i][5];
+                }
 	            			
 					cent += part[i];
 					mom0 += part[i]*part[0];
@@ -659,11 +675,28 @@ public:
 		);	
 	Kokkos::fence();
 	}
-    	for(unsigned i = 0; i < 2 * Dim; i++) {
-    	    for(unsigned j = 0; j < i; j++) {
-    	        loc_moment[j][i] = loc_moment[i][j];
-    	    }
-    	}
+        // for(unsigned long k = 0; k < locNp; ++k) {
+        //     double    part[2 * Dim];
+	    //         			part[1] = pPMirror[k](0);
+	    //         			part[3] = pPMirror[k](1);
+	    //         			part[5] = pPMirror[k](2);
+	    //         			part[0] = pRMirror[k](0);
+	    //         			part[2] = pRMirror[k](1);
+	    //         			part[4] = pRMirror[k](2);
+
+        //     for(unsigned i = 0; i < 2 * Dim; i++) {
+        //         loc_centroid[i]   += part[i];
+        //         for(unsigned j = 0; j <= i; j++) {
+        //             loc_moment[i][j]   += part[i] * part[j];
+        //         }
+        //     }
+        // }
+    
+    	// for(unsigned i = 0; i < 2 * Dim; i++) {
+    	//     for(unsigned j = 0; j < i; j++) {
+    	//         loc_moment[j][i] = loc_moment[i][j];
+    	//     }
+    	// }
 
     MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
     MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
@@ -693,6 +726,7 @@ public:
    		     fac(i) = (tmp == 0) ? zero : 1.0 / tmp;
    		 }
     rvrms = rvsum * fac;
+    //!!!since we are using momentum and not velocity v<->p!!!
 
 //====== end  CALCULATING BEAM STATISTICS    &&    EMITTANCE ======
 /////////////////////////////////////////////////////////////////////////////////
@@ -703,36 +737,64 @@ public:
             fname << "data/FieldLangevin_";
             fname << Ippl::Comm->size();
             fname << ".csv";
-
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-            if(time_m == 0.0) {
-                csvout  <<  "iteration" 	<<" "<< 
-                            "time" 		<<" "<< 
-                            "Ex_field_energy" 	<<" "<< 
-                            "Ex_max_norm" 	<<" "<< 
-                            "Tx Ty Tz "  	<<
-    			    "rrmsX rrmsY rrmsZ "<<
-			    "vrmsX vrmsY vrmsZ "<<
-			    "rmeanX rmeanY rmeanZ "<<
-			    "vmeanX vmeanY vmeanZ "<<
-			    "epsX epsY epsZ "<<
-			    "rvrmsX rvrmsY rvrmsZ" << endl;
-	    }
+            std::stringstream fname2;
+            fname2 << "data/All_FieldLangevin_";
+            fname2 << Ippl::Comm->size();
+            fname2 << ".csv";
+            Inform csvout2(NULL, fname2.str().c_str(), Inform::APPEND);
+            csvout2.precision(10);
+            csvout2.setf(std::ios::scientific, std::ios::floatfield);
 
-            csvout  <<  iteration 	<<" "<<
+
+            if(time_m == 0.0) {
+                csvout  <<  "iteration " 	    <<
+                            "time " 		    << 
+                            "E_X_field_energy " << 
+                            "E_X_max_norm " 	<< 
+                            "T_X "        	    <<
+		            	    "eps_X "            << 
+                            "rprms_X"           <<
+		        endl;
+
+		csvout2 <<  "iteration" 	    <<" "<< 
+                    "time" 		        <<" "<< 
+                    "Ex_field_energy"   <<" "<< 
+                    "Ex_max_norm" 	    <<" "<< 
+                    "Tx Ty Tz "  	    <<
+			        "epsX epsY epsZ "   <<
+                    "rrmsX rrmsY rrmsZ "<<
+			        "vrmsX vrmsY vrmsZ "<<
+			        "rmeanX rmeanY rmeanZ "<<
+			        "vmeanX vmeanY vmeanZ "<<
+			        "rvrmsX rvrmsY rvrmsZ" <<
+		endl;
+	    }     
+
+            csvout  <<  iteration 	    <<" "<<
+                        time_m 		    <<" "<< 
+                        fieldEnergy	    <<" "<< 
+                        ExAmp		    <<" "<< 
+                        temperature[0]  <<" "<< 
+		            	eps[0]	        <<" "<<
+		            	rvrms[0]	    <<" "<<
+    	 	endl;	
+
+	    csvout2 <<      iteration 	<<" "<<
                         time_m 		<<" "<< 
                         fieldEnergy	<<" "<< 
                         ExAmp		<<" "<< 
-                        temperature 	<<" "<<
-    			rrms		<<" "<<
-			vrms		<<" "<<
-			rmean		<<" "<<
-			vmean		<<" "<<
-			eps		<<" "<<
-			rvrms		<< endl;
+                        temperature  <<" "<<
+			               eps		    <<" "<<
+                        rrms		    <<" "<<
+			               vrms		    <<" "<<
+			               rmean		<<" "<<
+			               vmean		<<" "<<
+			               rvrms 		<<	
+		endl;
         }
         
         Ippl::Comm->barrier();
