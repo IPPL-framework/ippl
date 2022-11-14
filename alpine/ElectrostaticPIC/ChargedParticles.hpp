@@ -508,7 +508,61 @@ public:
         
         Ippl::Comm->barrier();
      }
-     
+    
+     void dumpLandauParticle(size_type totalP) {
+        
+        auto Eview = E.getView();
+
+        double fieldEnergy, ExAmp;
+        double temp = 0.0;
+
+        Kokkos::parallel_reduce("Ex energy", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const int i, double& valL){
+                                    double myVal = Eview(i)[0] * Eview(i)[0];
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+
+        double globaltemp = 0.0;
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
+        fieldEnergy = globaltemp * volume / totalP ;
+
+        double tempMax = 0.0;
+        Kokkos::parallel_reduce("Ex max norm", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const size_t i, double& valL)
+                                {
+                                    double myVal = std::fabs(Eview(i)[0]);
+                                    if(myVal > valL) valL = myVal;
+                                }, Kokkos::Max<double>(tempMax));
+        ExAmp = 0.0;
+        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+
+
+        if (Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/FieldLandau_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
+
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(time_m == 0.0) {
+                csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+            }
+
+            csvout << time_m << " "
+                   << fieldEnergy << " "
+                   << ExAmp << endl;
+
+        }
+        
+        Ippl::Comm->barrier();
+     }
+
+
      void dumpBumponTail() {
 
         const int nghostE = E_m.getNghost();
