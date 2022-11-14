@@ -222,31 +222,26 @@ namespace ippl {
 			auto& positions = pdata.R.getView();
 			typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
 			using view_size_t = typename RegionLayout_t::view_type::size_type;
-			using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>; 
+			//using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
 			int myRank = Ippl::Comm->rank();
 
 			using face_neighbor_type = typename FieldLayout_t::face_neighbor_type;
-			//using edge_neighbor_type = typename FieldLayout_t::edge_neighbor_type;
-			//using vertex_neighbor_type = typename FieldLayout_t::vertex_neighbor_type;
+			using edge_neighbor_type = typename FieldLayout_t::edge_neighbor_type;
+			using vertex_neighbor_type = typename FieldLayout_t::vertex_neighbor_type;
 			const face_neighbor_type faceNeighbors = flayout_m.getFaceNeighbors();
-			//const edge_neighbor_type edgeNeighbors = flayout_m.getEdgeNeighbors();
-			//const vertex_neighbor_type vertexNeighbors = flayout_m.getVertexNeighbors();
-
-			//container of particles that travelled more than one cell
-			locate_type notfound("Not found", pdata.getLocalNum());
-			size_t nLeft;
+			const edge_neighbor_type edgeNeighbors = flayout_m.getEdgeNeighbors();
+			const vertex_neighbor_type vertexNeighbors = flayout_m.getVertexNeighbors();
 							
 			typedef Kokkos::TeamPolicy<> team_policy;
 			typedef Kokkos::TeamPolicy<>::member_type member_type;
 
-			Kokkos::parallel_reduce("ParticleSpatialLayout::locateParticles()", 
-				team_policy( positions.extent(0), Kokkos::AUTO), 
-				KOKKOS_LAMBDA( const member_type &teamMember, size_t& idx ){
+			Kokkos::parallel_for("ParticleSpatialLayout::locateParticles()",
+				team_policy( ranks.extent(0), Kokkos::AUTO),
+				KOKKOS_LAMBDA( const member_type &teamMember){
 					const size_t i = teamMember.league_rank();
-					size_t flag = 0;
 			
-					Kokkos::parallel_reduce( Kokkos::TeamThreadRange( teamMember, faceNeighbors.size() ) , 
-							[=] ( const size_t face, size_t& flagLocal ){
+					Kokkos::parallel_for( Kokkos::TeamThreadRange( teamMember, faceNeighbors.size() ) ,
+							[=] ( const size_t face ){
 								for( size_t j = 0; j < faceNeighbors[face].size(); ++j){
 									view_size_t rank = faceNeighbors[face][j];
 
@@ -257,53 +252,80 @@ namespace ippl {
                                                                         (positions(i)[2] >= Regions(rank)[2].min()) &&
                                                                         (positions(i)[2] <= Regions(rank)[2].max()));
 
-									flagLocal += size_t(xyz_bool);
 
 									if(xyz_bool){
 										ranks(i) = rank;
 										invalid(i) = true;
 										break;
 									}
+                                }});
+					
+					Kokkos::parallel_for( Kokkos::TeamThreadRange( teamMember, edgeNeighbors.size() ) ,
+                                                        [=] ( const size_t edge ){
+                                                                for( size_t j = 0; j < edgeNeighbors[edge].size(); ++j){
+                                                                        view_size_t rank = edgeNeighbors[edge][j];
+
+                                                                        bool xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
+                                                                        (positions(i)[0] <= Regions(rank)[0].max()) &&
+                                                                        (positions(i)[1] >= Regions(rank)[1].min()) &&
+                                                                        (positions(i)[1] <= Regions(rank)[1].max()) &&
+                                                                        (positions(i)[2] >= Regions(rank)[2].min()) &&
+                                                                        (positions(i)[2] <= Regions(rank)[2].max()));
+
+
+                                                                        if(xyz_bool){
+                                                                                ranks(i) = rank;
+                                                                                invalid(i) = true;
+                                                                                break;
+                                                                        }
+
+
+                                                                }} );
+
+
+					Kokkos::parallel_for( Kokkos::TeamThreadRange( teamMember, faceNeighbors.size() ) ,
+                                                        [=] ( const size_t vertex ){
+                                          
+                                                                        view_size_t rank = vertexNeighbors[vertex];
+
+                                                                        bool xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
+                                                                        (positions(i)[0] <= Regions(rank)[0].max()) &&
+                                                                        (positions(i)[1] >= Regions(rank)[1].min()) &&
+                                                                        (positions(i)[1] <= Regions(rank)[1].max()) &&
+                                                                        (positions(i)[2] >= Regions(rank)[2].min()) &&
+                                                                        (positions(i)[2] <= Regions(rank)[2].max()));
+
+
+                                                                        if(xyz_bool){
+                                                                                ranks(i) = rank;
+                                                                                invalid(i) = true;
+                                                                        }
+
+                                                                });
+
+
+
+					Kokkos::single(PerTeam(teamMember), [&](){
+
+						 bool xyz_bool = ((positions(i)[0] >= Regions(myRank)[0].min()) &&
+                                                        (positions(i)[0] <= Regions(myRank)[0].max()) &&
+                                                        (positions(i)[1] >= Regions(myRank)[1].min()) &&
+                                                        (positions(i)[1] <= Regions(myRank)[1].max()) &&
+                                                        (positions(i)[2] >= Regions(myRank)[2].min()) &&
+                                                        (positions(i)[2] <= Regions(myRank)[2].max()));
+
+						 if(xyz_bool){
+                                                                                ranks(i) = myRank;
+                                                                                invalid(i) = false;
+                                                                        }
+
+					} );
+
 					
 
-								}}, flag);
-					teamMember.team_barrier();
-
-					if(!flag && teamMember.team_rank()==0 ){
-						notfound(idx) = i;
-						idx+=1;
-					} 
-
-			}, nLeft);
+			});
 				
 
-			Kokkos::fence();
-
-			
-
-			Kokkos::parallel_for(
-					"ParticleSpatialLayout::locateParticles()",
-					mdrange_type({0, 0},
-						{nLeft, Regions.extent(0)}),
-					KOKKOS_LAMBDA(const size_t i, const size_t j) {
-					
-					size_t pId = notfound(i);
-					
-
-					bool xyz_bool;
-
-					xyz_bool = ((positions(pId)[0] >= Regions(j)[0].min()) &&
-							(positions(pId)[0] <= Regions(j)[0].max()) &&
-							(positions(pId)[1] >= Regions(j)[1].min()) &&
-							(positions(pId)[1] <= Regions(j)[1].max()) &&
-							(positions(pId)[2] >= Regions(j)[2].min()) &&
-							(positions(pId)[2] <= Regions(j)[2].max()));
-					if(xyz_bool){
-					ranks(pId) = j;
-					invalid(pId) = (myRank != ranks(pId) );
-					}
-					
-					});
 			Kokkos::fence();
 
 		}
