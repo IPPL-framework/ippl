@@ -756,22 +756,22 @@ public:
                             "E_X_field_energy " << 
                             "E_X_max_norm " 	<< 
                             "T_X "        	    <<
-		            	    "eps_X "            << 
+                            "eps_X "            << 
                             "rprms_X"           <<
-		        endl;
+                             endl;
 
 		csvout2 <<  "iteration" 	    <<" "<< 
-                    "time" 		        <<" "<< 
-                    "Ex_field_energy"   <<" "<< 
-                    "Ex_max_norm" 	    <<" "<< 
-                    "Tx Ty Tz "  	    <<
-			        "epsX epsY epsZ "   <<
-                    "rrmsX rrmsY rrmsZ "<<
-			        "vrmsX vrmsY vrmsZ "<<
-			        "rmeanX rmeanY rmeanZ "<<
-			        "vmeanX vmeanY vmeanZ "<<
-			        "rvrmsX rvrmsY rvrmsZ" <<
-		endl;
+                    "time"                  <<" "<< 
+                    "Ex_field_energy"       <<" "<< 
+                    "Ex_max_norm"           <<" "<< 
+                    "Tx Ty Tz "             <<
+                    "epsX epsY epsZ "       <<
+                    "rrmsX rrmsY rrmsZ "    <<
+                    "vrmsX vrmsY vrmsZ "    <<
+                    "rmeanX rmeanY rmeanZ " <<
+                    "vmeanX vmeanY vmeanZ " <<
+                    "rvrmsX rvrmsY rvrmsZ"  <<
+                    endl;
 	    }     
 
             csvout  <<  iteration 	    <<" "<<
@@ -779,21 +779,21 @@ public:
                         fieldEnergy	    <<" "<< 
                         ExAmp		    <<" "<< 
                         temperature[0]  <<" "<< 
-		            	eps[0]	        <<" "<<
-		            	rvrms[0]	    <<" "<<
+		            	eps[0]          <<" "<<
+		            	rvrms[0]        <<" "<<
     	 	endl;	
 
-	    csvout2 <<      iteration 	<<" "<<
-                        time_m 		<<" "<< 
-                        fieldEnergy	<<" "<< 
-                        ExAmp		<<" "<< 
-                        temperature  <<" "<<
-			               eps		    <<" "<<
-                        rrms		    <<" "<<
-			               vrms		    <<" "<<
-			               rmean		<<" "<<
-			               vmean		<<" "<<
-			               rvrms 		<<	
+	    csvout2 <<      iteration   <<" "<<
+                        time_m      <<" "<< 
+                        fieldEnergy <<" "<< 
+                        ExAmp       <<" "<< 
+                        temperature <<" "<<
+                        eps         <<" "<<
+                        rrms        <<" "<<
+                        vrms        <<" "<<
+                        rmean       <<" "<<
+                        vmean       <<" "<<
+                        rvrms       <<	
 		endl;
         }
         

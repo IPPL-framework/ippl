@@ -173,7 +173,7 @@ const char* TestName = "LangevinCollsion";
 //POST: return the nuch_type paramter with particles initialize on a cold sphere
 template<typename bunch>
 void createParticleDistributionColdSphere( 	bunch& P,
-						const double& beamRadius, 
+						                    const double& beamRadius, 
                                         	const unsigned& Nparticle,
                                         	const double& qi//,
                                             // double mi
@@ -184,9 +184,13 @@ void createParticleDistributionColdSphere( 	bunch& P,
   	m << "creating Particles" << endl;
         P.create(Nparticle);
 	
-	auto mydotpr = [](Vector_t a, Vector_t b)   {
-		return a(0)*b(0) + a(1)*b(1) + a(2)*b(2); 
+	// auto mydotpr = [](Vector_t a, Vector_t b)   {
+	// 	return a(0)*b(0) + a(1)*b(1) + a(2)*b(2); 
+	// };
+    auto mynorm = [](Vector_t a){
+		return sqrt(a(0)*a(0) + a(1)*a(1) + a(2)*a(2)); 
 	};
+
         std::default_random_engine generator(0);
         std::normal_distribution<double> normdistribution(0,1.0);
         auto normal = std::bind(normdistribution, generator);
@@ -202,8 +206,10 @@ void createParticleDistributionColdSphere( 	bunch& P,
 	for (unsigned i = 0; i<Nparticle; ++i) {
          		Vector_t X({normal(),normal(),normal()});
         		double U = uni();
-         		Vector_t pos = source + beamRadius*pow(U,1./3.)/sqrt(mydotpr(X,X))*X;
-       	 		pRHost(i) = pos; // () or [] is indifferent
+                // Vector_t mullerBall = X*pow(U,1.0/3.0) / sqrt(mydotpr(X,X));
+                Vector_t mullerBall = pow(U,1.0/3.0)*X/mynorm(X);
+         		Vector_t pos = source + beamRadius*mullerBall;
+       	 		pRHost[i] = pos; // () or [] is indifferent
 	}
 	Vector_t mom({0,0,0});
        
@@ -216,32 +222,35 @@ void createParticleDistributionColdSphere( 	bunch& P,
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename bunch>
-Vector_t compAvgSCForce(bunch& P, const size_type N ) {  
+Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {  
     Inform m("computeAvgSpaceChargeForces ");
     	m << "start" << endl;
 
+    auto mysqrtnorm = [](Vector_t a)   {
+		return sqrt(a(0)*a(0) + a(1)*a(1) + a(2)*a(2)); 
+	};
+
 	Vector_t avgEF;
-	double locEFsum[Dim];//={0.0,0.0,0.0};
+	double locEFsum[Dim];
 	double globEFsum[Dim];
+    double locQ, globQ;
+    double locCheck, globCheck;
 
 	//TODO here should  be able to work only with getView()	
-	auto pEMirror = P.E.getView();
 	// auto pEMirror = P.E.getHostMirror();
 	// Kokkos::deep_copy(pEMirror, P.E.getView());
-	for(unsigned d = 0; d<Dim; ++d){
-		locEFsum[d]=0.0;
-		Kokkos::parallel_reduce("get local EField sum", 
-					 P.getLocalNum(),
-					 KOKKOS_LAMBDA(const int i, double& valL){
-                                   		double myVal =pEMirror(i)[d];    //  P.E[i](d);
-              		                    valL += fabs(myVal);
-                                	 },                    			
-					//  Kokkos::Sum<double>(
-                         locEFsum[d]
-                        //  )
-					);
-	}
-    //yields same result && is identical to p3m
+	auto pEMirror = P.E.getView();
+    auto pqView = P.q.getView();
+    auto pRView = P.R.getView();
+
+
+    // for (unsigned i=0; i< N; ++i) {
+    //         locEFsum[0]+=fabs(pEMirror[i](0));
+    //         locEFsum[1]+=fabs(pEMirror[i](1));
+    //         locEFsum[2]+=fabs(pEMirror[i](2));
+    //     }
+    // for(unsigned d=0; d<Dim; ++d) globEFsum[d] =  locEFsum[d]; 
+//===============
     // for (unsigned i=0; i< P.getLocalNum(); ++i) {
     //         // locAvgEF[0]+=fabs(EF[i](0));
     //         // locAvgEF[1]+=fabs(EF[i](1));
@@ -250,11 +259,58 @@ Vector_t compAvgSCForce(bunch& P, const size_type N ) {
     //         locEFsum[1]+=fabs(pEMirror[i](1));
     //         locEFsum[2]+=fabs(pEMirror[i](2));
     //     }
+
+
+
+	for(unsigned d = 0; d<Dim; ++d){
+		Kokkos::parallel_reduce("get local EField sum", 
+					 P.getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& lefsum){   
+              		                    lefsum += fabs(pEMirror[i][d]); //  P.E[i](d);
+
+                                	 },                    			
+					  Kokkos::Sum<double>(locEFsum[d])
+					);
+	}
+    Kokkos::parallel_reduce("check charge", 
+					 P.getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& qsum){
+                                        qsum += pqView[i];
+
+                                	 },                    			
+					  Kokkos::Sum<double>(locQ)
+					);
+    Kokkos::parallel_reduce("check  positioning", 
+					 P.getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& check){
+                                        bool partcheck = (mysqrtnorm(pRView[i]) <= beamRadius);
+                                        check += int(partcheck);
+
+                                	 },                    			
+					  Kokkos::Sum<double>(locCheck)
+					);
+// Kokkos::parallel_reduce("check positioning", 
+// 					 P.getLocalNum(),
+// 					 KOKKOS_LAMBDA(const int i, bool& check){
+//                                         bool partcheck = (mysqrtnorm(pRView[i]) <= beamRadius);
+//                                         check = check && partcheck;
+
+//                                 	 },                    			
+// 					  Kokkos::LAnd<bool>(locCheck)
+// 					);
+
+
 	Kokkos::fence();
-	MPI_Allreduce(locEFsum, globEFsum, Dim , MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
-	
+	MPI_Allreduce(locEFsum, globEFsum, Dim , MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+	MPI_Allreduce(&locQ, &globQ, 1 , MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
+	MPI_Allreduce(&locCheck, &globCheck, 1 , MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
+	// MPI_Allreduce(&locCheck, &globCheck, 1 , MPI_CXX_BOOL, MPI_LAND, Ippl::getComm());	
+
     for(unsigned d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N; 
-   //DEBUG
+
+    // P.dumpParticleData();
+   m << "Position Check = " <<  globCheck << endl;
+   m << "globQ = " <<  globQ << endl;
    m << "globSumEF = " <<  globEFsum[0] << " " << globEFsum[1] << " " << globEFsum[2] << endl;
    m << "AVG Electric SC Force = " << avgEF << endl; 
    m << "Caluclation done" << endl; 
@@ -269,7 +325,7 @@ void applyConstantFocusing( bunch& P,
                             const Vector_t avgEF
                                 ) {  
 	Inform m("applyConstantFocusing");
-	m << "start" << endl;
+	m << "start  "; // << endl;
 	auto mydotpr = [](Vector_t a, Vector_t b)   {
 		return a(0)*b(0) + a(1)*b(1) + a(2)*b(2); 
 	};
@@ -285,7 +341,7 @@ void applyConstantFocusing( bunch& P,
 	auto pRMirror = P.R.getView();
 
 	double tmp = sqrt(mydotpr(avgEF, avgEF))*f/beamRadius;
-	m << "final focusing factor is:" << tmp << endl;
+	// m << "final focusing factor is:" << tmp << endl;
 	
 	Kokkos::parallel_for("Apply Constant Focusing",
 				P.getLocalNum(),
@@ -579,20 +635,22 @@ int main(int argc, char *argv[]){
     Vector_t kw = {0.5, 0.5, 0.5}; //irregularities sth inside the plasma
     const double L = boxL*0.5;
     Vector_t box_boundaries_lower({-L, -L, -L});
-    Vector_t box_boundaries_upper({L, L, L});  
-    Vector_t origin({0.0, 0.0, 0.0});
+    Vector_t box_boundaries_upper({L, L, L}); 
+    Vector_t origin({-L, -L, -L});
+	msg   << "Origin 	= " << std::setw(20) << origin << endl;
     Vector_t hr = {boxL/nr[0], boxL/nr[1], boxL/nr[2]}; //spacing
+	msg   << "MeshSpacing 	= " << std::setw(20) << hr << endl;
+
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t PL(FL, mesh);
     const double Q = nP * (-particleCharge);
     
+	msg   << "total Charge 	= " << std::setw(20) << Q << endl;
  
     std::unique_ptr<bunch_type>  P;
    	P = std::make_unique<bunch_type>(PL,hr,box_boundaries_lower, box_boundaries_upper,decomp,Q);
-//	bunch_type *P;
-//   	P = new bunch_type(PL,hr, box_boundaries_lower, box_boundaries_upper, decomp,Q);
     
     P->nr_m = nr;
     P->E_m.initialize(mesh, FL);
@@ -650,7 +708,6 @@ int main(int argc, char *argv[]){
 
     if(rank == 0) 
 	    createParticleDistributionColdSphere(*P, beamRadius, nP, particleCharge);    
-    
 
     Kokkos::fence(); //??
     Ippl::Comm->barrier();  //??
@@ -685,7 +742,7 @@ int main(int argc, char *argv[]){
     P->gatherCIC();
 
 
-    Vector_t avgEF(compAvgSCForce(*P, nP));
+    Vector_t avgEF(compAvgSCForce(*P, nP, beamRadius));
 
 
     IpplTimings::startTimer(dumpDataTimer);
@@ -706,6 +763,7 @@ int main(int argc, char *argv[]){
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
         //  'kick-drift-kick' form;
         //TODO: work in charge and mass for other ratio than 1?
+
 
         // kick
         IpplTimings::startTimer(PTimer);
