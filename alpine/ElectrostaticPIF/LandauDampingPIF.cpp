@@ -164,6 +164,7 @@ int main(int argc, char *argv[]){
 
     const size_type totalP = std::atoll(argv[4]);
     const unsigned int nt     = std::atoi(argv[5]);
+    const double dt = std::atof(argv[6]);
 
     msg << "Landau damping"
         << endl
@@ -196,7 +197,6 @@ int main(int argc, char *argv[]){
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.05;//0.5*dx;
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
@@ -256,6 +256,7 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpLandau(totalP);
+    P->dumpEnergy(totalP);
     IpplTimings::stopTimer(dumpDataTimer);
 
     // begin main timestep loop
@@ -296,6 +297,7 @@ int main(int argc, char *argv[]){
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpLandau(totalP);
+        P->dumpEnergy(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
     }

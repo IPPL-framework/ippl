@@ -257,9 +257,10 @@ namespace ippl {
                     vector_type kVec;
                     double arg=0.0;
                     for(size_t d = 0; d < Dim; ++d) {
-                        //bool shift = (iVec[d] > (N[d]/2));
-                        //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
-                        kVec[d] = 2 * pi / Len[d] * iVec[d];
+                        bool shift = (iVec[d] > (N[d]/2));
+                        kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                        //kVec[d] = 2 * pi / Len[d] * iVec[d];
+                        //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d]/2));
                         arg += kVec[d]*pp(idx)[d];
                     }
                     const value_type& val = dview_m(idx);
@@ -276,35 +277,12 @@ namespace ippl {
 
         IpplTimings::stopTimer(scatterTimer);
 
-        //double sum = 0.0;
-        //Kokkos::parallel_reduce("inner product complex", f.getRangePolicy(),
-        //    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& val) {
-        //        val += std::pow(viewLocal(i, j, k).real(), 2) + std::pow(viewLocal(i, j, k).imag(), 2);
-        //    },
-        //    Kokkos::Sum<double>(sum)
-        //);
-        //double globalSum = 0;
-        //MPI_Allreduce(&sum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-
-        //msg << "rho inner product before all reduce: " << globalSum << endl;
-
         static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
         IpplTimings::startTimer(scatterAllReduceTimer);                                               
         int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
         MPI_Allreduce(viewLocal.data(), fview.data(), viewSize, 
                       MPI_C_DOUBLE_COMPLEX, MPI_SUM, Ippl::getComm());  
         IpplTimings::stopTimer(scatterAllReduceTimer);
-
-        //sum = 0.0;
-        //Kokkos::parallel_reduce("inner product complex2", f.getRangePolicy(),
-        //    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& val) {
-        //        val += std::pow(fview(i, j, k).real(), 2) + std::pow(fview(i, j, k).imag(), 2);
-        //    },
-        //    Kokkos::Sum<double>(sum)
-        //);
-        //MPI_Allreduce(&sum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-        //
-        //msg << "rho inner product after all reduce: " << globalSum << endl;
 
     }
 
@@ -422,12 +400,10 @@ namespace ippl {
                     vector_type kVec;
                     double Dr = 0.0, arg=0.0;
                     for(size_t d = 0; d < Dim; ++d) {
-                        //bool shift = (iVec[d] > (N[d]/2));
-                        //bool notMid = (iVec[d] != (N[d]/2));
-                        //For the noMid part see 
-                        //https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 1
-                        //kVec[d] = notMid * 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
-                        kVec[d] = 2 * pi / Len[d] * iVec[d];
+                        bool shift = (iVec[d] > (N[d]/2));
+                        kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                        //kVec[d] = 2 * pi / Len[d] * iVec[d];
+                        //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d]/2));
                         Dr += kVec[d] * kVec[d];
                         arg += kVec[d]*pp(idx)[d];
                     }
@@ -435,12 +411,17 @@ namespace ippl {
                     FT Ek = 0.0;
                     value_type Ex;
                     for(size_t d = 0; d < Dim; ++d) {
-                        if(Dr != 0.0)
+                        if(Dr != 0.0) {
                             Ek = -(imag * kVec[d] * fview(i+nghost,j+nghost,k+nghost) / Dr);
+                        }
                         
-                        //Inverse Fourier transform when the lhs is real
-                        Ex[d] = 2.0 * (Ek.real() * Kokkos::Experimental::cos(arg) 
-                                - Ek.imag() * Kokkos::Experimental::sin(arg));
+                        //Inverse Fourier transform when the lhs is real. Use when 
+                        //we choose k \in [0 K) instead of from [-K/2+1 K/2] 
+                        //Ex[d] = 2.0 * (Ek.real() * Kokkos::Experimental::cos(arg) 
+                        //        - Ek.imag() * Kokkos::Experimental::sin(arg));
+                        Ek *= (Kokkos::Experimental::cos(arg) 
+                                + imag * Kokkos::Experimental::sin(arg));
+                        Ex[d] = Ek.real();
                     }
                     
                     innerReduce += Ex;
@@ -456,76 +437,7 @@ namespace ippl {
         );
 
         
-        //Kokkos::parallel_for("ParticleAttrib::gatherPIF",
-        //        team_policy(Np, Kokkos::AUTO),
-        //        KOKKOS_CLASS_LAMBDA(const member_type& teamMember) {
-        //        const size_t idx = teamMember.league_rank();
-
-        //        for(size_t gd = 0; gd <  Dim; ++gd) {
-        //            double reducedValue = 0.0;
-        //            Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, flatN),
-        //            [=](const size_t flatIndex, double& innerReduce)
-        //            {
-        //                const int i = flatIndex % N[0];
-        //                const int j = (int)(flatIndex / N[0]);
-        //                const int k = (int)(flatIndex / (N[0] * N[1]));
-
-        //                Vector<int, 3> iVec = {i, j, k};
-        //                vector_type kVec;
-        //                double Dr = 0.0, arg=0.0;
-        //                for(size_t d = 0; d < Dim; ++d) {
-        //                    bool shift = (iVec[d] > (N[d]/2));
-        //                    bool notMid = (iVec[d] != (N[d]/2));
-        //                    //For the noMid part see 
-        //                    //https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 1
-        //                    kVec[d] = notMid * 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
-        //                    Dr += kVec[d] * kVec[d];
-        //                    arg += kVec[d]*pp(idx)[d];
-        //                }
-
-        //                FT Ek;
-        //                double Ex;
-        //                //for(size_t d = 0; d < Dim; ++d) {
-        //                    if(Dr != 0.0)
-        //                        Ek = -(imag * kVec[gd] * fview(i+nghost,j+nghost,k+nghost) / Dr);
-        //                    else
-        //                        Ek = 0.0;
-        //                    
-        //                    //Inverse Fourier transform when the lhs is real
-        //                    Ex = 2.0 * (Ek.real() * Kokkos::Experimental::cos(arg) 
-        //                            - Ek.imag() * Kokkos::Experimental::sin(arg));
-        //                //}
-        //                
-        //                innerReduce += Ex;
-        //            }, reducedValue);
-
-        //            teamMember.team_barrier();
-
-        //            if(teamMember.team_rank() == 0) {
-        //                dview_m(idx)[gd] = reducedValue;
-        //            }
-
-        //        }
-        //        }
-        //);
-
-
         IpplTimings::stopTimer(gatherTimer);
-
-        //double Energy = 0.0;
-
-        //Kokkos::parallel_reduce("E Energy", Np,
-        //                        KOKKOS_CLASS_LAMBDA(const int i, double& valL){
-        //                            double myVal = dot(dview_m(i), dview_m(i)).apply();
-        //                            valL += myVal;
-        //                        }, Kokkos::Sum<double>(Energy));
-
-        //double gEnergy = 0.0;
-
-        //MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-
-        //msg << "E energy in gatherPIF: " << gEnergy << endl;
-
 
     }
 

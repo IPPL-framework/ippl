@@ -563,6 +563,69 @@ public:
      }
 
 
+     void dumpEnergy(size_type totalP) {
+        
+        auto Eview = E.getView();
+
+        double potentialEnergy, kineticEnergy;
+        double temp = 0.0;
+
+        Kokkos::parallel_reduce("Potential energy", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const int i, double& valL){
+                                    double myVal = dot(Eview(i), Eview(i)).apply();
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+
+        double globaltemp = 0.0;
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
+        potentialEnergy = 0.5 * globaltemp * volume / totalP ;
+
+
+        auto Pview = P.getView();
+        auto qView = q.getView();
+
+        temp = 0.0;
+
+        Kokkos::parallel_reduce("Kinetic Energy", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const int i, double& valL){
+                                    double myVal = dot(Pview(i), Pview(i)).apply();
+                                    myVal *= -qView(i);
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+
+        temp *= 0.5;
+        globaltemp = 0.0;
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+
+        kineticEnergy = globaltemp;
+
+        if (Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/Energy_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
+
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(time_m == 0.0) {
+                csvout << "time, Potential energy, Kinetic energy, Total energy" << endl;
+            }
+
+            csvout << time_m << " "
+                   << potentialEnergy << " "
+                   << kineticEnergy << " "
+                   << potentialEnergy + kineticEnergy << endl;
+
+        }
+        
+        Ippl::Comm->barrier();
+     }
+
+
      void dumpBumponTail() {
 
         const int nghostE = E_m.getNghost();
