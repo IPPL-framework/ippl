@@ -103,6 +103,8 @@ int main(int argc, char *argv[]) {
     // number of gridpoints to iterate over   
     std::array<int, n> N = {4,8,16,32,64,128};
 
+    std::cout << "single prec" << std::endl;    
+
     msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
 
     for (int p = 0; p < n; ++p) {
@@ -121,7 +123,7 @@ int main(int argc, char *argv[]) {
 	float dx = 1.0/pt;
 	ippl::Vector<float, 3> hx = {dx, dx, dx};
 	ippl::Vector<float, 3> origin = {0.0, 0.0, 0.0};
-	ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+	ippl::UniformCartesian<float, 3> mesh(owned, hx, origin);
 
 	// all parallel layout, standard domain, normal axis order
 	ippl::FieldLayout<3> layout(owned, decomp);
@@ -228,7 +230,7 @@ int main(int argc, char *argv[]) {
     // compute relative error norm for potential
     rho = rho - exact;
     float err = norm(rho)/norm(exact);
-        
+
     // compute relative error norm for the E-field components
     ippl::Vector<float,3> errE {0.0, 0.0, 0.0};
     fieldE = fieldE - exactE;
