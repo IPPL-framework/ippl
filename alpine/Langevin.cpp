@@ -295,7 +295,7 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
 	MPI_Allreduce(&locQ, &globQ, 1 , MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
 	MPI_Allreduce(&locCheck, &globCheck, 1 , MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
 
-    for(unsigned d=0; d<Dim; ++d) avgEF[d] =  3e9*globEFsum[d]/N; 
+    for(unsigned d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N; 
 
     // P.dumpParticleData();
    m << "Position Check = " <<  globCheck << endl;
@@ -542,10 +542,8 @@ int main(int argc, char *argv[]){
     MPI_Comm_rank(Ippl::getComm(),&rank);
  
     Inform msg("Langevin");
-    msg << "main_1" << endl;
     Inform msg2all("Langevin ",INFORM_ALL_NODES);
     Ippl::Comm->setDefaultOverallocation(std::atof(argv[17]));
-    msg << "main_2" << endl;
     auto start = std::chrono::high_resolution_clock::now();
 
     ippl::Vector<int,Dim> nr = {
@@ -569,12 +567,8 @@ int main(int argc, char *argv[]){
     //17 -> default overallocation
  	
 
-    msg << "main_3" << endl;
-
 
    
-    msg << "Dim = " << Dim <<  endl;
- 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
@@ -586,22 +580,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
 
     IpplTimings::startTimer(mainTimer);
-
-
-    msg << "Start test: LANGEVIN COLLISION OPERATOR" << endl
-        
-        << "Griddimensions      = " << std::setw(20) << nr << endl
-        << "Beamradius          = " << std::setw(20) << beamRadius << endl
-        << "Box Length          = " << std::setw(20) << boxL << endl
-        << "Total Particles     = " << std::setw(20) << nP << endl 
-        << "Interaction Radius  = " << std::setw(20) << interactionRadius << endl
-        << "Alpha               = " << std::setw(20) << alpha << endl
-        << "Time Step           = " << std::setw(20) << dt << endl      
-        << "total Timesteps     = " << std::setw(20) << nt << endl
-        << "Particlecharge      = " << std::setw(20) << particleCharge << endl
-        << "Particlemass        = " << std::setw(20) << particleMass << endl
-        << "focusing force      = " << std::setw(20) << focusForce << endl
-        << "printing Intervall  = " << std::setw(20) << printInterval << endl;
+    msg << "Start test: LANGEVIN COLLISION OPERATOR" << endl;
 
 
 //================================================================================== 
@@ -613,19 +592,17 @@ int main(int argc, char *argv[]){
     for (unsigned i = 0; i< Dim; i++) {
         domain[i] = ippl::Index(nr[i]);
     }
-    //initializinh boundary conditions
+    //initializing boundary conditions
     ippl::e_dim_tag decomp[Dim];
     for (unsigned d = 0; d < Dim; ++d) {
         decomp[d] = ippl::PARALLEL;
     }
-    Vector_t kw = {0.5, 0.5, 0.5}; //irregularities sth inside the plasma
+    Vector_t kw = {0.5, 0.5, 0.5}; //irregularities inside plasma
     const double L = boxL*0.5;
     Vector_t box_boundaries_lower({-L, -L, -L});
     Vector_t box_boundaries_upper({L, L, L}); 
     Vector_t origin({-L, -L, -L});
-    msg   << "Origin 	        = " << std::setw(20) << origin << endl;
     Vector_t hr = {boxL/nr[0], boxL/nr[1], boxL/nr[2]}; //spacing
-    msg   << "MeshSpacing       = " << std::setw(20) << hr << endl;
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
@@ -633,8 +610,6 @@ int main(int argc, char *argv[]){
     PLayout_t PL(FL, mesh);
     const double Q = nP * (-particleCharge);
     
-    msg   << "total Charge      = " << std::setw(20) << Q << endl;
-
     std::unique_ptr<bunch_type>  P;
    	P = std::make_unique<bunch_type>(PL,hr,box_boundaries_lower, box_boundaries_upper,decomp,Q);
     
@@ -647,6 +622,25 @@ int main(int argc, char *argv[]){
     P->time_m = 0.0;
     P->loadbalancethreshold_m = std::atof(argv[16]);
     bool isFirstRepartition;
+
+    msg
+        << "Dim                 = " << std::setw(20) << Dim <<  endl
+        << "Griddimensions      = " << std::setw(20) << nr << endl
+        << "Beamradius          = " << std::setw(20) << beamRadius << endl
+        << "Box Length          = " << std::setw(20) << boxL << endl
+        << "Total Particles     = " << std::setw(20) << nP << endl 
+        << "Interaction Radius  = " << std::setw(20) << interactionRadius << endl
+        << "Alpha               = " << std::setw(20) << alpha << endl
+        << "Time Step           = " << std::setw(20) << dt << endl      
+        << "total Timesteps     = " << std::setw(20) << nt << endl
+        << "Particlecharge      = " << std::setw(20) << particleCharge << endl
+        << "Particlemass        = " << std::setw(20) << particleMass << endl
+        << "focusing force      = " << std::setw(20) << focusForce << endl
+        << "printing Intervall  = " << std::setw(20) << printInterval << endl
+        << "Origin              = " << std::setw(20) << origin << endl
+        << "MeshSpacing         = " << std::setw(20) << hr << endl
+        << "total Charge        = " << std::setw(20) << Q << endl;
+
     
     //INITIAL LOADBALANCING
     if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
@@ -683,7 +677,6 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(domainDecomposition);
     }
     isFirstRepartition = false;
-    msg << "First domain decomposition done" << endl;
 
 // MESH & DOMAIN_DECOMPOSITION
 //=======================================================================================
@@ -691,22 +684,13 @@ int main(int argc, char *argv[]){
 
 
     IpplTimings::startTimer(particleCreation); 
-
     if(rank == 0) 
 	    createParticleDistributionColdSphere(*P, beamRadius, nP, particleCharge);    
-
-    Kokkos::fence(); //??
-    Ippl::Comm->barrier();  //??
-    
-    msg << "Cold Sphere created" << endl;
+    Kokkos::fence();  Ippl::Comm->barrier();  //??//
     
     //multiple node runs stop here
     PL.update(*P, bunchBuffer);
-    msg << "Layout updated"  << endl;
-   
-
-    IpplTimings::stopTimer(particleCreation);    
-    msg << "particles created and initial conditions assigned " << endl;
+    IpplTimings::stopTimer(particleCreation);
 
 
 // PARTICLE CREATION
@@ -719,14 +703,11 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(DummySolveTimer);
 
     P->scatterCIC(nP, 0, hr);
-	msg << "scatter tested" << endl;
-
     IpplTimings::startTimer(SolveTimer);
     P->solver_mp->solve();
     IpplTimings::stopTimer(SolveTimer);
-	msg << "solve() tested" << endl;	
     P->gatherCIC();
-
+	msg << "scatter()solved()gather()" << endl;	
 
     Vector_t avgEF(compAvgSCForce(*P, nP, beamRadius));
 
