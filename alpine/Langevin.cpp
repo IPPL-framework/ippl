@@ -185,10 +185,10 @@ void createParticleDistributionColdSphere( 	bunch& P,
         P.create(Nparticle);
 	
 	// auto mydotpr = [](Vector_t a, Vector_t b)   {
-	// 	return a(0)*b(0) + a(1)*b(1) + a(2)*b(2); 
+	// 	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; 
 	// };
     auto mynorm = [](Vector_t a){
-		return sqrt(a(0)*a(0) + a(1)*a(1) + a(2)*a(2)); 
+		return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); 
 	};
 
         std::default_random_engine generator(0);
@@ -209,7 +209,7 @@ void createParticleDistributionColdSphere( 	bunch& P,
                 // Vector_t mullerBall = X*pow(U,1.0/3.0) / sqrt(mydotpr(X,X));
                 Vector_t mullerBall = pow(U,1.0/3.0)*X/mynorm(X);
          		Vector_t pos = source + beamRadius*mullerBall;
-       	 		pRHost[i] = pos; // () or [] is indifferent
+       	 		pRHost(i) = pos; // () or [] is indifferent
 	}
 	Vector_t mom({0,0,0});
        
@@ -227,11 +227,11 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
     	m << "start" << endl;
 
     auto mysqrtnorm = [](Vector_t a)   {
-		return sqrt(a(0)*a(0) + a(1)*a(1) + a(2)*a(2)); 
+		return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); 
 	};
 
 	Vector_t avgEF;
-	double locEFsum[Dim];
+	double locEFsum[Dim]={};
 	double globEFsum[Dim];
     double locQ, globQ;
     double locCheck, globCheck;
@@ -245,9 +245,9 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
 
 
     // for (unsigned i=0; i< N; ++i) {
-    //         locEFsum[0]+=fabs(pEMirror[i](0));
-    //         locEFsum[1]+=fabs(pEMirror[i](1));
-    //         locEFsum[2]+=fabs(pEMirror[i](2));
+    //         locEFsum[0]+=fabs(pEMirror(i)[0]);
+    //         locEFsum[1]+=fabs(pEMirror(i)[1]);
+    //         locEFsum[2]+=fabs(pEMirror(i)[2]);
     //     }
     // for(unsigned d=0; d<Dim; ++d) globEFsum[d] =  locEFsum[d]; 
 //===============
@@ -255,9 +255,9 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
     //         // locAvgEF[0]+=fabs(EF[i](0));
     //         // locAvgEF[1]+=fabs(EF[i](1));
     //         // locAvgEF[2]+=fabs(EF[i](2)); 
-    //         locEFsum[0]+=fabs(pEMirror[i](0));
-    //         locEFsum[1]+=fabs(pEMirror[i](1));
-    //         locEFsum[2]+=fabs(pEMirror[i](2));
+    //         locEFsum[0]+=fabs(pEMirror(i)[0]);
+    //         locEFsum[1]+=fabs(pEMirror(i)[1]);
+    //         locEFsum[2]+=fabs(pEMirror(i)[2]);
     //     }
 
 
@@ -266,7 +266,7 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
 		Kokkos::parallel_reduce("get local EField sum", 
 					 P.getLocalNum(),
 					 KOKKOS_LAMBDA(const int i, double& lefsum){   
-              		                    lefsum += fabs(pEMirror[i][d]); //  P.E[i](d);
+              		                    lefsum += fabs(pEMirror(i)[d]);
 
                                 	 },                    			
 					  Kokkos::Sum<double>(locEFsum[d])
@@ -289,24 +289,13 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
                                 	 },                    			
 					  Kokkos::Sum<double>(locCheck)
 					);
-// Kokkos::parallel_reduce("check positioning", 
-// 					 P.getLocalNum(),
-// 					 KOKKOS_LAMBDA(const int i, bool& check){
-//                                         bool partcheck = (mysqrtnorm(pRView[i]) <= beamRadius);
-//                                         check = check && partcheck;
-
-//                                 	 },                    			
-// 					  Kokkos::LAnd<bool>(locCheck)
-// 					);
-
 
 	Kokkos::fence();
 	MPI_Allreduce(locEFsum, globEFsum, Dim , MPI_DOUBLE, MPI_SUM, Ippl::getComm());
 	MPI_Allreduce(&locQ, &globQ, 1 , MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
 	MPI_Allreduce(&locCheck, &globCheck, 1 , MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
-	// MPI_Allreduce(&locCheck, &globCheck, 1 , MPI_CXX_BOOL, MPI_LAND, Ippl::getComm());	
 
-    for(unsigned d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N; 
+    for(unsigned d=0; d<Dim; ++d) avgEF[d] =  3e9*globEFsum[d]/N; 
 
     // P.dumpParticleData();
    m << "Position Check = " <<  globCheck << endl;
@@ -327,7 +316,7 @@ void applyConstantFocusing( bunch& P,
 	Inform m("applyConstantFocusing");
 	m << "start  "; // << endl;
 	auto mydotpr = [](Vector_t a, Vector_t b)   {
-		return a(0)*b(0) + a(1)*b(1) + a(2)*b(2); 
+		return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; 
 	};
 
 
@@ -346,7 +335,7 @@ void applyConstantFocusing( bunch& P,
 	Kokkos::parallel_for("Apply Constant Focusing",
 				P.getLocalNum(),
 				KOKKOS_LAMBDA(const int i){
-					pEMirror[i] += pRMirror[i]*tmp;
+					pEMirror(i) += pRMirror(i)*tmp;
 				}	
 	);
 	Kokkos::fence();
@@ -380,7 +369,7 @@ void applyConstantFocusing( bunch& P,
 //		    Kokkos::parallel_reduce("get local velocity sum", 
 //		    			 P.getLocalNum(), 
 //		    			 KOKKOS_LAMBDA(const int i, double& valL){
-//                                       		double myVal = pPMirror[i](d)/mass;
+//                                       		double myVal = pPMirror(i)(d)/mass;
 //                                        	valL += myVal;
 //                                    	 },                    			
 //		    			 Kokkos::Sum<double>(locVELsum[d])
@@ -397,7 +386,7 @@ void applyConstantFocusing( bunch& P,
 //		    Kokkos::parallel_reduce("get local velocity sum", 
 //		    			 P.getLocalNum(), 
 //		    			 KOKKOS_LAMBDA(const int i, double& valL){
-//                                       		double myVal = (pPMirror[i](d)/mass-avgVEL[d])*(pPMirror[i](d)/mass-avgVEL[d]);
+//                                       		double myVal = (pPMirror(i)(d)/mass-avgVEL[d])*(pPMirror(i)(d)/mass-avgVEL[d]);
 //                                        	valL += myVal;
 //                                    	 },                    			
 //		    			 Kokkos::Sum<double>(locT[d])
@@ -451,12 +440,12 @@ void applyConstantFocusing( bunch& P,
 //						double& mom5
 //						){ 
 //					double    part[2 * Dim];
-//	            			part[1] = pPMirror[k](0);
-//	            			part[3] = pPMirror[k](1);
-//	            			part[5] = pPMirror[k](2);
-//	            			part[0] = pRMirror[k](0);
-//	            			part[2] = pRMirror[k](1);
-//	            			part[4] = pRMirror[k](2);
+//	            			part[1] = pPMirror(k)(0);
+//	            			part[3] = pPMirror(k)(1);
+//	            			part[5] = pPMirror(k)(2);
+//	            			part[0] = pRMirror(k)(0);
+//	            			part[2] = pRMirror(k)(1);
+//	            			part[4] = pRMirror(k)(2);
 //					
 //					cent = loc_centroid[i];
 //					mom0 = loc_moment[i][0];
@@ -601,27 +590,24 @@ int main(int argc, char *argv[]){
 
     msg << "Start test: LANGEVIN COLLISION OPERATOR" << endl
         
-        << "Griddimensions 	= " << std::setw(20) << nr << endl
-        << "Beamradius     	= " << std::setw(20) << beamRadius << endl
-	    << "Box Length	   	= " << std::setw(20) << boxL << endl
-        << "Total Particles 	= " << std::setw(20) << nP << endl 
-	    << "Interaction Radius 	= " << std::setw(20) << interactionRadius << endl
-        << "Alpha 		= " << std::setw(20) << alpha << endl
-        << "Time Step  		= " << std::setw(20) << dt << endl      
-	    << "total Timesteps 	= " << std::setw(20) << nt << endl
-	    << "Particlecharge 	= " << std::setw(20) << particleCharge << endl
-	    << "Particlemass       	= " << std::setw(20) << particleMass << endl
-        << "focusing force  	= " << std::setw(20) << focusForce << endl
-	    << "printing Intervall 	= " << std::setw(20) << printInterval << endl;
+        << "Griddimensions      = " << std::setw(20) << nr << endl
+        << "Beamradius          = " << std::setw(20) << beamRadius << endl
+        << "Box Length          = " << std::setw(20) << boxL << endl
+        << "Total Particles     = " << std::setw(20) << nP << endl 
+        << "Interaction Radius  = " << std::setw(20) << interactionRadius << endl
+        << "Alpha               = " << std::setw(20) << alpha << endl
+        << "Time Step           = " << std::setw(20) << dt << endl      
+        << "total Timesteps     = " << std::setw(20) << nt << endl
+        << "Particlecharge      = " << std::setw(20) << particleCharge << endl
+        << "Particlemass        = " << std::setw(20) << particleMass << endl
+        << "focusing force      = " << std::setw(20) << focusForce << endl
+        << "printing Intervall  = " << std::setw(20) << printInterval << endl;
 
 
 //================================================================================== 
 // MESH & DOMAIN_DECOMPOSITION
 
-   	 using bunch_type = ChargedParticles<PLayout_t>;
-
-
-
+    using bunch_type = ChargedParticles<PLayout_t>;
     //initializing number of cells in mesh/domain
     ippl::NDIndex<Dim> domain;
     for (unsigned i = 0; i< Dim; i++) {
@@ -637,9 +623,9 @@ int main(int argc, char *argv[]){
     Vector_t box_boundaries_lower({-L, -L, -L});
     Vector_t box_boundaries_upper({L, L, L}); 
     Vector_t origin({-L, -L, -L});
-	msg   << "Origin 	= " << std::setw(20) << origin << endl;
+    msg   << "Origin 	        = " << std::setw(20) << origin << endl;
     Vector_t hr = {boxL/nr[0], boxL/nr[1], boxL/nr[2]}; //spacing
-	msg   << "MeshSpacing 	= " << std::setw(20) << hr << endl;
+    msg   << "MeshSpacing       = " << std::setw(20) << hr << endl;
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
@@ -647,8 +633,8 @@ int main(int argc, char *argv[]){
     PLayout_t PL(FL, mesh);
     const double Q = nP * (-particleCharge);
     
-	msg   << "total Charge 	= " << std::setw(20) << Q << endl;
- 
+    msg   << "total Charge      = " << std::setw(20) << Q << endl;
+
     std::unique_ptr<bunch_type>  P;
    	P = std::make_unique<bunch_type>(PL,hr,box_boundaries_lower, box_boundaries_upper,decomp,Q);
     
@@ -661,7 +647,7 @@ int main(int argc, char *argv[]){
     P->time_m = 0.0;
     P->loadbalancethreshold_m = std::atof(argv[16]);
     bool isFirstRepartition;
-
+    
     //INITIAL LOADBALANCING
     if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
         msg << "Starting first repartition" << endl;

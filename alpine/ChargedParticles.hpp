@@ -571,9 +571,9 @@ public:
 		    Kokkos::parallel_reduce("get local velocity sum", 
 		    			 locNp, 
 		    			 KOKKOS_LAMBDA(const int k, double& valL){
-                                       	double myVal = pPMirror[k](d)/mass;
+                                       	double myVal = pPMirror(k)[d]/mass;
                                         valL += myVal;
-                                        	//valL += pPMirror[i](d)/mass;
+                                        	//valL += pPMirror(i)[d]/mass;
                                     	},                    			
 		    			 Kokkos::Sum<double>(locVELsum[d])
 		    			);
@@ -582,7 +582,7 @@ public:
         // for(unsigned long k = 0; k < this->getLocalNum(); ++k) {
         //   for(unsigned d = 0; d < Dim; d++) {
         //     // loc_avg_vel[d]   += this->v[k](d);
-        //     locVELsum[d] += pPMirror[k](d)/mass;
+        //     locVELsum[d] += pPMirror(k)[d]/mass;
         //   }
         // }
 	   	MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
@@ -592,9 +592,9 @@ public:
 		    Kokkos::parallel_reduce("get local velocity sum", 
 					 locNp,
 		    			 KOKKOS_LAMBDA(const int k, double& valL){
-                                       	double myVal = (pPMirror[k](d)/mass-avgVEL[d])*(pPMirror[k](d)/mass-avgVEL[d]);
+                                       	double myVal = (pPMirror(k)[d]/mass-avgVEL[d])*(pPMirror(k)[d]/mass-avgVEL[d]);
                                         valL += myVal;
-                                         //valL += (pPMirror[i](d)/mass-avgVEL[d])*(pPMirror[i](d)/mass-avgVEL[d]);
+                                         //valL += (pPMirror(i)[d]/mass-avgVEL[d])*(pPMirror(i)[d]/mass-avgVEL[d]);
                                     	},                    			
 		    			 Kokkos::Sum<double>(locT[d])
 		     			);
@@ -603,7 +603,7 @@ public:
         // for(unsigned long k = 0; k < this->getLocalNum(); ++k) {
         //   for(unsigned d = 0; d < Dim; d++) {
         //     // loc_temp[d]   += (this->v[k](d)-avg_vel[d])*(this->v[k](d)-avg_vel[d]);
-        //     locT[d] += (pPMirror[k](d)/mass-avgVEL[d])*(pPMirror[k](d)/mass-avgVEL[d]);
+        //     locT[d] += (pPMirror(k)[d]/mass-avgVEL[d])*(pPMirror(k)[d]/mass-avgVEL[d]);
         //   }
         // }
     	MPI_Reduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());	
@@ -612,12 +612,13 @@ public:
 //======= end  TEMPERATURE CALCULATION    ======  
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //====== start  CALCULATING BEAM STATISTICS    &&    EMITTANCE ======
+        const double zero = 0.0;
 
-	double     centroid[2 * Dim];
-	double       moment[2 * Dim][2 * Dim];
+	double     centroid[2 * Dim]={};
+	double       moment[2 * Dim][2 * Dim]={};
 
-	double loc_centroid[2 * Dim];
-	double   loc_moment[2 * Dim][2 * Dim];
+	double loc_centroid[2 * Dim]={};
+	double   loc_moment[2 * Dim][2 * Dim]={};
         
 	for(unsigned i = 0; i < 2 * Dim; i++) {
             loc_centroid[i] = 0.0;
@@ -627,112 +628,128 @@ public:
             }
    	 }
 
-	for(unsigned i = 0; i< 2*Dim; ++i){
+	// for(unsigned i = 0; i< 2*Dim; ++i){
 
-	Kokkos::parallel_reduce("write Emittance 1 redcution",
-				locNp,
-				KOKKOS_LAMBDA(const int k,
-						double& cent,
-						double& mom0,
-						double& mom1,
-						double& mom2,
-						double& mom3,
-						double& mom4,
-						double& mom5
-						){ 
-					double    part[2 * Dim];
-	            			part[1] = pPMirror[k](0);
-	            			part[3] = pPMirror[k](1);
-	            			part[5] = pPMirror[k](2);
-	            			part[0] = pRMirror[k](0);
-	            			part[2] = pRMirror[k](1);
-	            			part[4] = pRMirror[k](2);
-                if(k==0){
-					cent += loc_centroid[i];
-					mom0 += loc_moment[i][0];
-					mom1 += loc_moment[i][1];
-					mom2 += loc_moment[i][2];
-					mom3 += loc_moment[i][3];
-					mom4 += loc_moment[i][4];
-					mom5 += loc_moment[i][5];
-                }
+	// Kokkos::parallel_reduce("write Emittance 1 redcution",
+	// 			locNp,
+	// 			KOKKOS_LAMBDA(const int k,
+	// 					double& cent,
+	// 					double& mom0,
+	// 					double& mom1,
+	// 					double& mom2,
+	// 					double& mom3,
+	// 					double& mom4,
+	// 					double& mom5
+	// 					){ 
+	// 				double  part[2 * Dim];
+	//             			part[0] = pRMirror(k)[0];
+	//             			part[1] = pPMirror(k)[0];
+	//             			part[2] = pRMirror(k)[1];
+	//             			part[3] = pPMirror(k)[1];
+	//             			part[4] = pRMirror(k)[2];
+	//             			part[5] = pPMirror(k)[2];
 	            			
-					cent += part[i];
-					mom0 += part[i]*part[0];
-					mom1 += part[i]*part[1];
-					mom2 += part[i]*part[2];
-					mom3 += part[i]*part[3];
-					mom4 += part[i]*part[4];
-					mom5 += part[i]*part[5];
-				},
-				Kokkos::Sum<double>(loc_centroid[i]),
-				Kokkos::Sum<double>(loc_moment[i][0]),
-				Kokkos::Sum<double>(loc_moment[i][1]),
-				Kokkos::Sum<double>(loc_moment[i][2]),
-				Kokkos::Sum<double>(loc_moment[i][3]),
-				Kokkos::Sum<double>(loc_moment[i][4]),
-				Kokkos::Sum<double>(loc_moment[i][5])
-		);	
-	Kokkos::fence();
-	}
-        // for(unsigned long k = 0; k < locNp; ++k) {
-        //     double    part[2 * Dim];
-	    //         			part[1] = pPMirror[k](0);
-	    //         			part[3] = pPMirror[k](1);
-	    //         			part[5] = pPMirror[k](2);
-	    //         			part[0] = pRMirror[k](0);
-	    //         			part[2] = pRMirror[k](1);
-	    //         			part[4] = pRMirror[k](2);
+	// 				cent += part[i];
+	// 				mom0 += part[i]*part[0];
+	// 				mom1 += part[i]*part[1];
+	// 				mom2 += part[i]*part[2];
+	// 				mom3 += part[i]*part[3];
+	// 				mom4 += part[i]*part[4];
+	// 				mom5 += part[i]*part[5];
+	// 			},
+	// 			Kokkos::Sum<double>(loc_centroid[i]),
+	// 			Kokkos::Sum<double>(loc_moment[i][0]),
+	// 			Kokkos::Sum<double>(loc_moment[i][1]),
+	// 			Kokkos::Sum<double>(loc_moment[i][2]),
+	// 			Kokkos::Sum<double>(loc_moment[i][3]),
+	// 			Kokkos::Sum<double>(loc_moment[i][4]),
+	// 			Kokkos::Sum<double>(loc_moment[i][5])
+	// 	);	
+	// Kokkos::fence();
+	// }
+        for(unsigned long k = 0; k < locNp; ++k) {
+            double    part[2 * Dim];
+	            			part[1] = pPMirror(k)[0];
+	            			part[3] = pPMirror(k)[1];
+	            			part[5] = pPMirror(k)[2];
+	            			part[0] = pRMirror(k)[0];
+	            			part[2] = pRMirror(k)[1];
+	            			part[4] = pRMirror(k)[2];
 
-        //     for(unsigned i = 0; i < 2 * Dim; i++) {
-        //         loc_centroid[i]   += part[i];
-        //         for(unsigned j = 0; j <= i; j++) {
-        //             loc_moment[i][j]   += part[i] * part[j];
-        //         }
-        //     }
-        // }
+            for(unsigned i = 0; i < 2 * Dim; i++) {
+                loc_centroid[i]   += part[i];
+                for(unsigned j = 0; j <= i; j++) {
+                    loc_moment[i][j]   += part[i] * part[j];
+                }
+            }
+        }
     
-    	// for(unsigned i = 0; i < 2 * Dim; i++) {
-    	//     for(unsigned j = 0; j < i; j++) {
-    	//         loc_moment[j][i] = loc_moment[i][j];
-    	//     }
-    	// }
-
-    MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-    MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-    
-    const double zero = 0.0;
-    Vector_t eps2, fac, rsqsum, vsqsum, rvsum;
-    Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
-
-    	for(unsigned int i = 0 ; i < Dim; i++) {
-    	    rmean(i) = centroid[2 * i] / N;
-    	    vmean(i) = centroid[(2 * i) + 1] / N;
-    	    rsqsum(i) = moment[2 * i][2 * i] - N * rmean(i) * rmean(i);
-    	    vsqsum(i) = moment[(2 * i) + 1][(2 * i) + 1] - N * vmean(i) * vmean(i);
-    	    if(vsqsum(i) < 0)
-    	        vsqsum(i) = 0;
-    	    rvsum(i) = moment[(2 * i)][(2 * i) + 1] - N * rmean(i) * vmean(i);
+    	for(unsigned i = 0; i < 2 * Dim; i++) {
+    	    for(unsigned j = 0; j < i; j++) {
+    	        loc_moment[j][i] = loc_moment[i][j];
+    	    }
     	}
 
-    eps2 = (rsqsum * vsqsum - rvsum * rvsum) / (N * N);
-    rvsum = rvsum/double(N);
+    Ippl::Comm->barrier();
+    MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    Ippl::Comm->barrier();
 
-    	for(unsigned int i = 0 ; i < Dim; i++) {
-   		     rrms(i) = sqrt(rsqsum(i) / N);
-   		     vrms(i) = sqrt(vsqsum(i) / N);
-   		     eps(i)  =  std::sqrt(std::max(eps2(i), zero));
-   		     double tmp = rrms(i) * vrms(i);
-   		     fac(i) = (tmp == 0) ? zero : 1.0 / tmp;
-   		 }
-    rvrms = rvsum * fac;
-    //!!!since we are using momentum and not velocity v<->p!!!
 
-//====== end  CALCULATING BEAM STATISTICS    &&    EMITTANCE ======
+
+    //TODO atm mass = 1 so P = V
+    if (Ippl::Comm->rank() == 0)
+    {
+    
+        Vector_t eps2, fac;
+        Vector_t rsqsum, vsqsum, rvsum;
+        Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
+
+        	for(unsigned int i = 0 ; i < Dim; i++) {
+        	    rmean(i) = centroid[2 * i] / N;
+        	    vmean(i) = centroid[(2 * i) + 1] / N;
+        	    rsqsum(i) = moment[2 * i][2 * i] - N * rmean(i) * rmean(i);
+        	    vsqsum(i) = moment[(2 * i) + 1][(2 * i) + 1] - N * vmean(i) * vmean(i);
+        	    if(vsqsum(i) < 0)   vsqsum(i) = 0;
+        	    rvsum(i) = (moment[(2 * i)][(2 * i) + 1] - N * rmean(i) * vmean(i));
+        	}
+
+
+        //coefficient wise
+        eps2  = (rsqsum * vsqsum - rvsum * rvsum) / (N * N);
+        rvsum = rvsum/ N;
+
+        	for(unsigned int i = 0 ; i < Dim; i++) {
+                //  rvsum(i) /= N;
+   	    	     rrms(i) = sqrt(rsqsum(i) / N);
+   	    	     vrms(i) = sqrt(vsqsum(i) / N);
+                //  eps2(i) = rsqsum(i)*vsqsum(i)/(N*N) - rvsum(i)*rvsum(i);
+
+   	    	     eps(i)  =  std::sqrt(std::max(eps2(i), zero));
+   	    	     double tmpry = rrms(i) * vrms(i);
+   	    	     fac(i) = (tmpry == 0.0) ? zero : 1.0/tmpry;
+   	    	 }
+        rvrms = rvsum * fac;
+//====
+
+        	// for(unsigned int i = 0 ; i < Dim; i++) {
+            //     //wrong
+   	    	//      rrms(i) = sqrt(rsqsum(i) / N);
+   	    	//      vrms(i) = sqrt(vsqsum(i) / N);
+            //      rvrms(i) = sqrt(rvsum(i)/N);
+            //      eps(i) = std::sqrt(rrms(i)*vrms(i) - pow(rvrms(i), 2) );
+   	    	//  }
+
+
+
+    // }
+//!!!since we are using momentum and not velocity v<->p!!!
+//==    ==== end  CALCULATING BEAM STATISTICS    &&    EMITTANCE ======
 /////////////////////////////////////////////////////////////////////////////////
 // ===== start PRINTING  =========
+	// if (Ippl::Comm->rank() == 0) {
 
-	if (Ippl::Comm->rank() == 0) {
+
             std::stringstream fname;
             fname << "data/FieldLangevin_";
             fname << Ippl::Comm->size();
@@ -751,49 +768,55 @@ public:
 
 
             if(time_m == 0.0) {
-                csvout  <<  "iteration " 	    <<
-                            "time " 		    << 
-                            "E_X_field_energy " << 
-                            "E_X_max_norm " 	<< 
-                            "T_X "        	    <<
-                            "eps_X "            << 
-                            "rprms_X"           <<
-                             endl;
+        csvout  <<          
+                    "iteration, "           <<
+                    "time,   "              << 
+                    // "E_X_field_energy, " << 
+                    // "E_X_max_norm, "     << 
+                    "T_X,    "              <<
+                    "rprms_X,"              <<
+                    "eps_X,  "              << 
+                    endl;
 
-		csvout2 <<  "iteration" 	    <<" "<< 
-                    "time"                  <<" "<< 
-                    "Ex_field_energy"       <<" "<< 
-                    "Ex_max_norm"           <<" "<< 
-                    "Tx Ty Tz "             <<
-                    "epsX epsY epsZ "       <<
-                    "rrmsX rrmsY rrmsZ "    <<
-                    "vrmsX vrmsY vrmsZ "    <<
-                    "rmeanX rmeanY rmeanZ " <<
-                    "vmeanX vmeanY vmeanZ " <<
-                    "rvrmsX rvrmsY rvrmsZ"  <<
+		csvout2 <<  
+                    "iteration,"            << 
+                    "Tx,Ty,Tz,"             <<"                                   "<<
+                    "epsX,epsY,epsZ,"       <<"                                   "<<
+                    "epsX2,epsY2,epsZ2,"    <<"                                   "<<
+                    "rrmsX,rrmsY,rrmsZ,"    <<"                                   "<<
+                    "vrmsX,vrmsY,vrmsZ,"    <<"                                   "<<
+                    "rmeanX,rmeanY,rmeanZ," <<"                                   "<<
+                    "vmeanX,vmeanY,vmeanZ," <<"                                   "<<
+                    "rvrmsX,rvrmsY,rvrmsZ," <<"                                   "<<
+                    "time,"                 <<
+                    "Ex_field_energy,"      <<
+                    "Ex_max_norm,"          <<
                     endl;
 	    }     
 
-            csvout  <<  iteration 	    <<" "<<
-                        time_m 		    <<" "<< 
-                        fieldEnergy	    <<" "<< 
-                        ExAmp		    <<" "<< 
-                        temperature[0]  <<" "<< 
-		            	eps[0]          <<" "<<
-		            	rvrms[0]        <<" "<<
+            csvout<<    
+                    iteration       <<" "<<
+                    time_m          <<" "<< 
+                    // fieldEnergy     <<" "<< 
+                    // ExAmp           <<" "<< 
+                    temperature[0]  <<" "<< 
+                    rvrms[0]        <<" "<<
+                    eps[0]          <<" "<<
     	 	endl;	
 
-	    csvout2 <<      iteration   <<" "<<
-                        time_m      <<" "<< 
-                        fieldEnergy <<" "<< 
-                        ExAmp       <<" "<< 
-                        temperature <<" "<<
-                        eps         <<" "<<
-                        rrms        <<" "<<
-                        vrms        <<" "<<
-                        rmean       <<" "<<
-                        vmean       <<" "<<
-                        rvrms       <<	
+            csvout2<<   
+                    iteration   <<","<<
+                    temperature (0)<<","<<temperature (1)<<","<<temperature (2)<<",     "<<
+                    eps         (0)<<","<<eps         (1)<<","<<eps         (2)<<",     "<<
+                    eps2        (0)<<","<<eps2        (1)<<","<<eps2        (2)<<",     "<<
+                    rrms        (0)<<","<<rrms        (1)<<","<<rrms        (2)<<",     "<<
+                    vrms        (0)<<","<<vrms        (1)<<","<<vrms        (2)<<",     "<<
+                    rmean       (0)<<","<<rmean       (1)<<","<<rmean       (2)<<",     "<<
+                    vmean       (0)<<","<<vmean       (1)<<","<<vmean       (2)<<",     "<<
+                    rvrms       (0)<<","<<rvrms       (1)<<","<<rvrms       (2)<<",     "<<	
+                    time_m      <<","<< 
+                    fieldEnergy <<","<< 
+                    ExAmp       <<","<< 
 		endl;
         }
         
