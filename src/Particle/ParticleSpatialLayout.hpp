@@ -226,31 +226,30 @@ namespace ippl {
 			int myRank = Ippl::Comm->rank();
 
 			using face_neighbor_type = typename FieldLayout_t::face_neighbor_type;
-			//using edge_neighbor_type = typename FieldLayout_t::edge_neighbor_type;
-			//using vertex_neighbor_type = typename FieldLayout_t::vertex_neighbor_type;
+			using edge_neighbor_type = typename FieldLayout_t::edge_neighbor_type;
+			using vertex_neighbor_type = typename FieldLayout_t::vertex_neighbor_type;
 			const face_neighbor_type faceNeighbors = flayout_m.getFaceNeighbors();
-			//const edge_neighbor_type edgeNeighbors = flayout_m.getEdgeNeighbors();
-			//const vertex_neighbor_type vertexNeighbors = flayout_m.getVertexNeighbors();
+			const edge_neighbor_type edgeNeighbors = flayout_m.getEdgeNeighbors();
+			const vertex_neighbor_type vertexNeighbors = flayout_m.getVertexNeighbors();
 
 			//container of particles that travelled more than one cell
-			locate_type notfound("Not found", pdata.getLocalNum());
+			locate_type notfound("Not found", Ippl::Comm->size());
 			bool_type found("Found", pdata.getLocalNum());
 			size_t nLeft;
 
 			/*Begin Kokkos loop:
-  			  *Step 1: search in current rank
-  			  *Step 2: search in neighbors
-  			  *Step 3: save information on whether the particle was located
-  			  *Step 4: run additional loop on non-located particles */
+			 *Step 1: search in current rank
+			 *Step 2: search in neighbors
+			 *Step 3: save information on whether the particle was located
+			 *Step 4: run additional loop on non-located particles */
 
 			Kokkos::parallel_scan(
 					"ParticleSpatialLayout::faceNeighbors",
-					Kokkos::RangePolicy<size_t>(0, positions.extent(0)),
+					Kokkos::RangePolicy<size_t>(0, ranks.extent(0)),
 					KOKKOS_LAMBDA(const size_t i, size_t& idx, const bool final) {
-					
+
 
 					//Step 1
-					for( size_t face=0; face < faceNeighbors.size(); ++face){
 
 					bool xyz_bool = false;
 
@@ -268,7 +267,8 @@ namespace ippl {
 					}
 					//Step 2
 					else{
-
+					
+						for(size_t face = 0; face < faceNeighbors.size(); ++face){	
 						for (size_t j = 0; j < faceNeighbors[face].size() ; ++j){
 							view_size_t rank = faceNeighbors[face][j];
 
@@ -287,37 +287,79 @@ namespace ippl {
 								break;	
 							}
 
-						}
+						}}
 					} 
-					}
+					
+
+					 if(!xyz_bool){
+						for (size_t edge=0; edge < edgeNeighbors.size(); edge++){
+                                                for (size_t j = 0; j < edgeNeighbors[edge].size() ; ++j){
+                                                        view_size_t rank = edgeNeighbors[edge][j];
+
+
+                                                        xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
+                                                                        (positions(i)[0] <= Regions(rank)[0].max()) &&
+                                                                        (positions(i)[1] >= Regions(rank)[1].min()) &&
+                                                                        (positions(i)[1] <= Regions(rank)[1].max()) &&
+                                                                        (positions(i)[2] >= Regions(rank)[2].min()) &&
+                                                                        (positions(i)[2] <= Regions(rank)[2].max()));
+
+                                                        if(xyz_bool){
+                                                                ranks(i) = rank;
+                                                                invalid(i) = true;
+                                                                found(i) = true;
+                                                                break;
+                                                        }
+
+                                                }}
+                                        }
+					
+					 if(!xyz_bool){
+                                                for (size_t vertex=0; vertex < vertexNeighbors.size(); vertex++){
+                                                        view_size_t rank = vertexNeighbors[vertex];
+
+
+                                                        xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
+                                                                        (positions(i)[0] <= Regions(rank)[0].max()) &&
+                                                                        (positions(i)[1] >= Regions(rank)[1].min()) &&
+                                                                        (positions(i)[1] <= Regions(rank)[1].max()) &&
+                                                                        (positions(i)[2] >= Regions(rank)[2].min()) &&
+                                                                        (positions(i)[2] <= Regions(rank)[2].max()));
+
+                                                        if(xyz_bool){
+                                                                ranks(i) = rank;
+                                                                invalid(i) = true;
+                                                                found(i) = true;
+                                                                break;
+                                                        }
+
+                                                }
+                                        }
+
+
 					//Step 3
 					
-						
-						if( final ){
-							if( !found(i) ){
-								notfound(idx) = i; 
-								idx+=1;
-								}
-							else if( idx > 0 )
-								idx-=1; 
-						}
-						
-					
+
+
+
+					if( final && !found(i) ) notfound(idx)=i;
+
+					if(!found(i)) idx+=1;										
+
+
 					}, nLeft);
 
-			Kokkos::fence();
+			Kokkos::fence(); 
 
-			
-				
 			//Step 4
 			Kokkos::parallel_for(
 					"ParticleSpatialLayout::locateParticles()",
 					mdrange_type({0, 0},
 						{nLeft, Regions.extent(0)}),
 					KOKKOS_LAMBDA(const size_t i, const size_t j) {
-					
+
 					size_t pId = notfound(i);
-					
+
 
 					bool xyz_bool;
 
@@ -329,9 +371,9 @@ namespace ippl {
 							(positions(pId)[2] <= Regions(j)[2].max()));
 					if(xyz_bool){
 					ranks(pId) = j;
-					invalid(pId) = (myRank != ranks(pId) );
+					invalid(pId) = true;
 					}
-					
+
 					});
 			Kokkos::fence();
 
@@ -381,5 +423,5 @@ namespace ippl {
 			return nSends;
 		} 
 
-	
+
 }
