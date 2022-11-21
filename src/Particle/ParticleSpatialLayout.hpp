@@ -236,7 +236,7 @@ namespace ippl {
 			//container of particles that travelled more than one cell
 			locate_type notfound("Not found", pdata.getLocalNum());
 			bool_type found("Found", pdata.getLocalNum());
-			size_t nLeft;
+			size_t nLeft=0;
 
 			/*Begin Kokkos loop:
 			 *Step 1: search in current rank
@@ -289,8 +289,8 @@ namespace ippl {
 							}
 
 						}}
-					} 
-					
+					}
+
 
 					 if(!xyz_bool){
 						for (size_t edge=0; edge < edgeNeighbors.size(); edge++){
@@ -350,9 +350,10 @@ namespace ippl {
 
 					}, nLeft);
 
-			Kokkos::fence(); 
+			Kokkos::fence();
 
 			//Step 4
+            if(nLeft > 0) {
 			Kokkos::parallel_for(
 					"ParticleSpatialLayout::locateParticles()",
 					mdrange_type({0, 0},
@@ -376,7 +377,7 @@ namespace ippl {
 					}
 
 					});
-			Kokkos::fence();
+			Kokkos::fence(); }
 
 		}
 
