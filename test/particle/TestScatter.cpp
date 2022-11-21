@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     bunch.setParticleBC(ippl::BC::PERIODIC);
     
     int nRanks = Ippl::Comm->size();
-    unsigned int nParticles = std::pow(2,3);
+    unsigned int nParticles = std::pow(256,3);
     
     if (nParticles % nRanks > 0) {
         if (Ippl::Comm->rank() == 0) {
@@ -91,6 +91,24 @@ int main(int argc, char *argv[]) {
 
     bunch_type bunchBuffer(pl);
     pl.update(bunch, bunchBuffer);
+	
+    
+            unsigned int Total_particles = 0;
+         unsigned int local_particles = bunch.getLocalNum();
+
+         MPI_Reduce(&local_particles, &Total_particles, 1,
+                       MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
+
+if(Ippl::Comm->rank() == 0) {
+             if(Total_particles != nParticles ) {
+                 std::cout << "Total particles in the sim. " << nParticles 
+                           << " " << "after update: " 
+                           << Total_particles << std::endl;
+                 exit(1);
+             }
+         }
+
+
    
     field = 0.0;
 
