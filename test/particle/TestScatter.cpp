@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     bunch.setParticleBC(ippl::BC::PERIODIC);
     
     int nRanks = Ippl::Comm->size();
-    unsigned int nParticles = std::pow(2,3);
+    unsigned int nParticles = std::pow(256,3);
     
     if (nParticles % nRanks > 0) {
         if (Ippl::Comm->rank() == 0) {
