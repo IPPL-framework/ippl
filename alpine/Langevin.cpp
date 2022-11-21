@@ -236,9 +236,6 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
     double locQ, globQ;
     double locCheck, globCheck;
 
-	//TODO here should  be able to work only with getView()	
-	// auto pEMirror = P.E.getHostMirror();
-	// Kokkos::deep_copy(pEMirror, P.E.getView());
 	auto pEMirror = P.E.getView();
     auto pqView = P.q.getView();
     auto pRView = P.R.getView();
@@ -313,19 +310,11 @@ void applyConstantFocusing( bunch& P,
                             const double beamRadius,
                             const Vector_t avgEF
                                 ) {  
-	Inform m("applyConstantFocusing");
-	m << "start  "; // << endl;
+	// Inform m("applyConstantFocusing");
+	// m << "start  "; // << endl;
 	auto mydotpr = [](Vector_t a, Vector_t b)   {
 		return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; 
 	};
-
-
-	//TODO here woking with getView should als suffice
-	//auto pEMirror = P.E.getHostMirror();
-	//auto pRMirror = P.R.getHostMirror();
-	//Kokkos::deep_copy(pEMirror, P.E.getView());
-	//Kokkos::deep_copy(pRMirror, P.R.getView());
-
 	auto pEMirror = P.E.getView();
 	auto pRMirror = P.R.getView();
 
@@ -339,7 +328,7 @@ void applyConstantFocusing( bunch& P,
 				}	
 	);
 	Kokkos::fence();
-	m << "finished" << endl;
+	// m << "finished" << endl;
 
 }
 
@@ -535,6 +524,9 @@ void applyConstantFocusing( bunch& P,
 //////////////////////////////////////////////////////////////////////////////////////////
 //======================================================================================== 
 // MAIN	
+
+// P3M IS DONE IN CENTIMETER landua damping is non dimensional
+// so we can work with the same values as well
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
    
@@ -566,7 +558,17 @@ int main(int argc, char *argv[]){
     //16 -> loadbalancethreshold
     //17 -> default overallocation
  	
+    //cm annahme, elektronen charge mass, / nicht milisekunde...
+    const double ke=2.532638e8;
+    // const double ke   =1./(4.*M_PI*8.8541878128e-14);  
+    //                  = 8.9875517923e11;
+    // const double ke=2.532638e9;
+    // const double ke=3e9;
+    // const double ke=9e9;
 
+    //SI
+    // const double ke = 8.9875517923e9;
+    // =1./(4.*M_PI*8.8541878128e-12); 
 
    
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
@@ -585,6 +587,8 @@ int main(int argc, char *argv[]){
 
 //================================================================================== 
 // MESH & DOMAIN_DECOMPOSITION
+
+    //box grösse mit 3 Längen parametrisieren TODO
 
     using bunch_type = ChargedParticles<PLayout_t>;
     //initializing number of cells in mesh/domain
@@ -639,7 +643,8 @@ int main(int argc, char *argv[]){
         << "printing Intervall  = " << std::setw(20) << printInterval << endl
         << "Origin              = " << std::setw(20) << origin << endl
         << "MeshSpacing         = " << std::setw(20) << hr << endl
-        << "total Charge        = " << std::setw(20) << Q << endl;
+        << "total Charge        = " << std::setw(20) << Q << endl
+        << "LBT                 = " << std::setw(20) << P->loadbalancethreshold_m << endl;
 
     
     //INITIAL LOADBALANCING
@@ -702,14 +707,28 @@ int main(int argc, char *argv[]){
     P->solver_mp->solve();
     IpplTimings::stopTimer(DummySolveTimer);
 
+    ///////////////////////////////////////////
+    
     P->scatterCIC(nP, 0, hr);
     IpplTimings::startTimer(SolveTimer);
     P->solver_mp->solve();
     IpplTimings::stopTimer(SolveTimer);
+
+    P->E_m = P->E_m * ke;
+
     P->gatherCIC();
 	msg << "scatter()solved()gather()" << endl;	
 
+    ///////////////////////////////////////////
+
     Vector_t avgEF(compAvgSCForce(*P, nP, beamRadius));
+
+    // dumpVTK(P->E_m,   P->nr_m[0], P->nr_m[1], P->nr_m[2], 0, P->hr_m[0], P->hr_m[1], P->hr_m[2]);
+    // dumpVTK(P->rho_m, P->nr_m[0], P->nr_m[1], P->nr_m[2], 0, P->hr_m[0], P->hr_m[1], P->hr_m[2]);
+
+
+
+    ///////////////////////////////////////////
 
 
     IpplTimings::startTimer(dumpDataTimer);
@@ -766,6 +785,9 @@ int main(int argc, char *argv[]){
         IpplTimings::startTimer(SolveTimer);
         P->solver_mp->solve();
         IpplTimings::stopTimer(SolveTimer);
+
+
+        P->E_m = P->E_m * ke;
 
         // gather E field
         P->gatherCIC();
