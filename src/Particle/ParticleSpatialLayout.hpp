@@ -234,7 +234,7 @@ namespace ippl {
 			const vertex_neighbor_type vertexNeighbors = flayout_m.getVertexNeighbors();
 
 			//container of particles that travelled more than one cell
-			locate_type notfound("Not found", Ippl::Comm->size());
+			locate_type notfound("Not found", pdata.getLocalNum());
 			bool_type found("Found", pdata.getLocalNum());
 			size_t nLeft;
 
