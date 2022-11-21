@@ -121,6 +121,7 @@ namespace ippl {
 						1, MPI_LONG_LONG_INT, win);
 			}
 			MPI_Win_fence(0, win);
+            MPI_Win_free(&win);
 			IpplTimings::stopTimer(preprocTimer);
 
 			static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("ParticleSend");
