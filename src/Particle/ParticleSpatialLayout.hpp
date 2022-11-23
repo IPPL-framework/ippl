@@ -223,7 +223,7 @@ namespace ippl {
 			auto& positions = pdata.R.getView();
 			typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
 			using view_size_t = typename RegionLayout_t::view_type::size_type;
-			using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>; 
+			using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
 			int myRank = Ippl::Comm->rank();
 
 			using face_neighbor_type = typename FieldLayout_t::face_neighbor_type;
@@ -234,13 +234,14 @@ namespace ippl {
 			const vertex_neighbor_type vertexNeighbors = flayout_m.getVertexNeighbors();
 
 			//container of particles that travelled more than one cell
-			locate_type notfound("Not found", pdata.getLocalNum());
+            Kokkos::View<int*> notfound("Not found", size_type(0.3*pdata.getLocalNum()));
+			/*For physical tests, 10% is enough. But for non-phyisical tests like pic3d, */
 			bool_type found("Found", pdata.getLocalNum());
-			size_t nLeft=0;
+			size_t nLeft;
 
 			/*Begin Kokkos loop:
 			 *Step 1: search in current rank
-			 *Step 2: search in neighbors
+			 *Step 2: searcloah in neighbors
 			 *Step 3: save information on whether the particle was located
 			 *Step 4: run additional loop on non-located particles */
 
@@ -343,9 +344,14 @@ namespace ippl {
 
 
 
-					if( final && !found(i) ) notfound(idx)=i;
+					if( final && !found(i) ){
+						if( idx > notfound.extent(0)) 
+                			Kokkos::realloc(notfound, 300);
 
-					if(!found(i)) idx+=1;										
+                        notfound(idx)=i;
+                    }
+
+					if(!found(i)) idx+=1;
 
 
 					}, nLeft);
@@ -353,7 +359,13 @@ namespace ippl {
 			Kokkos::fence();
 
 			//Step 4
+
+            static IpplTimings::TimerRef nonNeighboringParticles = IpplTimings::getTimer("nonNeighboringParticles");
+
             if(nLeft > 0) {
+
+                IpplTimings::startTimer(nonNeighboringParticles);
+
 			Kokkos::parallel_for(
 					"ParticleSpatialLayout::locateParticles()",
 					mdrange_type({0, 0},
@@ -377,7 +389,12 @@ namespace ippl {
 					}
 
 					});
-			Kokkos::fence(); }
+			Kokkos::fence();
+
+            IpplTimings::stopTimer(nonNeighboringParticles);
+
+            }
+
 
 		}
 
