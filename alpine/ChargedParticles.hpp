@@ -33,16 +33,22 @@ using size_type = ippl::detail::size_type;
 template<typename T, unsigned Dim>
 using Vector = ippl::Vector<T, Dim>;
 
+
 template<typename T, unsigned Dim>
 using Field = ippl::Field<T, Dim>;
 
 template<typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
 
+
 typedef Vector<double, Dim>  Vector_t;
 typedef Field<double, Dim>   Field_t;
 typedef Field<Vector_t, Dim> VField_t;
 typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim> Solver_t;
+
+//EXCL_LANGEVIN
+typedef Vector<Vector_t, Dim> Matrix_t;
+typedef Vector<Field_t, Dim>  MField_t;
 
 const double pi = std::acos(-1.0);
 
@@ -164,6 +170,44 @@ public:
     typename ippl::ParticleBase<PLayout>::particle_position_type P;  // particle velocity
     typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
 
+    // EXCL_LANGEVIN ...
+    //ippl gather are hard coded to 3 dimensions, so to gather a matrix D we have to use gather 3 times 
+    // Vector<Vector, Dim>>
+
+    //??V
+    Field_t   rho_mv; //NEW
+    VField_t  gradRBH_mv; //NEW  --> Fd
+    Field_t   RBG_mv; //NEW
+    MField_t  diffusionCoeff_mv;//NEW
+
+    // we dont actually need those since we get the SOL returned at the input address -> vel_m (overwrite)
+    // Field_t  RBH_m; //NEW  
+    // Field_t  RBG_m; //NEW
+    //defined elsewhere typedef ParticleAttrib<vector_type>   particle_position_type;
+
+    std::shared_ptr<Solver_t> solver_mvH; //NEW
+    std::shared_ptr<Solver_t> solver_mvG; //NEW
+
+
+    ParticleAttrib<Vector_t> rho;//NEW == 1
+    ParticleAttrib<Vector_t> Fd;//NEW
+    // ParticleAttrib<Tensor_t> D;
+    ParticleAttrib<Vector_t> D0;//NEW
+    ParticleAttrib<Vector_t> D1;//NEW
+    ParticleAttrib<Vector_t> D2;//NEW
+    // ParticleAttrib<Vector_t> L;//NEW
+    // ParticleAttrib<Vector_t> dW;//NEW
+    
+    double pMass;
+
+
+    //ORB orb_v;
+
+    Vector<int, Dim> nv_mv;
+    Vector_t hv_mv;
+    Vector_t vmin_mv;
+    Vector_t vmax_mv;
+
 
     /*
       This constructor is mandatory for all derived classes from
@@ -176,6 +220,16 @@ public:
         this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
+
+        //EXCL_LANGEVIN
+
+
+        this->addAttribute(rho);
+        this->addAttribute(Fd);
+        this->addAttribute(D0);
+        this->addAttribute(D1);
+        this->addAttribute(D2);
+        // this->addAttribute(L);
     }
 
     ChargedParticles(PLayout& pl,
@@ -194,6 +248,14 @@ public:
         this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
+
+        //EXCL_LANGEVIN
+        this->addAttribute(Fd);
+        this->addAttribute(D0);
+        this->addAttribute(D1);
+        this->addAttribute(D2);
+        // this->addAttribute(L);
+
         setupBCs();
         for (unsigned int i = 0; i < Dim; i++)
             decomp_m[i]=decomp[i];
@@ -376,6 +438,117 @@ public:
         solver_mp->setLhs(E_m);
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    void initRosenbluthHSolver(){
+
+        ippl::ParameterList sp;
+
+        sp.add("output_type", Solver_t::SOL_AND_GRAD);
+        sp.add("use_heffte_defaults", false);  
+        sp.add("use_pencils", true);  
+        sp.add("use_reorder", false);  
+        sp.add("use_gpu_aware", true);  
+        sp.add("comm", ippl::p2p_pl);  
+        sp.add("r2c_direction", 0);  
+
+        solver_mvH = std::make_shared<Solver_t>();
+        solver_mvH->mergeParameters(sp);
+        solver_mvH->setRhs(this->rho_mv);
+        solver_mvH->setLhs(this->gradRBH_mv);
+    }
+    void initRosenbluthGSolver(){
+
+        ippl::ParameterList sp;
+
+        sp.add("output_type", Solver_t::SOL);
+        sp.add("use_heffte_defaults", false);  
+        sp.add("use_pencils", true);  
+        sp.add("use_reorder", false);  
+        sp.add("use_gpu_aware", true);  
+        sp.add("comm", ippl::p2p_pl);  
+        sp.add("r2c_direction", 0);  
+
+        solver_mvG = std::make_shared<Solver_t>();
+        solver_mvG->mergeParameters(sp);
+        solver_mvG->setRhs(this->rho_mv);
+        solver_mvG->setLhs(this->RBG_mv);
+    }
+
+
+    void scatterVEL(size_type totalP, unsigned int iteration, Vector_t& hvField) {
+
+        Inform m("scatterVEL");
+
+        auto mynorm = [](Vector_t a){
+		return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); 
+    	};
+
+        //field (ijk)[d]  ;; how does this work??
+        for(int d=0; d<Dim; ++) vel_m[i] = 0.0;
+        scatter(this->rho, this->rho_mv, this->P/pMass);
+
+        //ingore for now this is currently wrong
+
+        // //  Kinetic energy conservation; both sides need to be recalculated with each timestep...
+        // //KINETIC ENERGY OF PARTICLES  
+        // DOESNT REALLY MAKE SENSE NOW DOES IT?? MORE LIKE AMOUNT OF PARTICLE IN VELOCITY SPACE
+        // auto pPView = this->P.getView();
+        // double Ekin_part_loc, Ekin_part;
+        // Kokkos::parallel_reduce("get kinetic Energy",
+	    // 			locNp,
+	    // 			KOKKOS_LAMBDA(const int k, double& vsum ){
+        //                 vsum += mynorm(pPView(k));
+	    // 			},
+        //             Kokkos::Sum<double>(Ekin_part_loc)	
+	    // );
+        // Kokkos::fence();
+        // MPI_Allreduce(Ekin_part_loc, Ekin_part, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+
+        // //KINETIC ENERGY FROM GRID
+        // // else: kokkos reduction over 3 dimension like elsewhere
+        // Field_t Ekin_field = mynrom(vel_m);
+        // double Ekin_grid = Ekin_field.sum();
+        // Ekin_grid *= 0.5*pMass;
+
+        //  double rel_error = std::fabs((Ekin_part-Ekin_grid)/Ekin_part);
+        //  m << "Rel. error in Ekin conservation = " << rel_error << endl;
+
+        //  if(Ippl::Comm->rank() == 0) {
+        //      if(rel_error > 1e-10) {
+        //          m << "Time step: " << iteration << endl;
+        //          m << "Rel. error in charge conservation: "
+        //            << rel_error << endl;
+        //          std::abort();
+        //      }
+        //  }
+
+        //there exist a reduction for views and particle attributes in ippl??
+        // ???????????????????????????????????????????????????????????
+        //  double Q_grid = rho_m.sum();
+        
+        // ???????????????????????????????????????????????????????????
+         rho_mv = rho_mv / (hvField[0] * hvField[1] * hvField[2]);
+         rho_mv = rho_mv - (totalP/(   (vmax_mv[0] - vmin_mv[0]) * (vmax_mv[1] - vmin_mv[1]) * (vmax_mv[2] - vmin_mv[2])  ));
+    }
+
+    void gatherFd() {
+
+        gather(this->Fd, this->gradRBH_m, this->P/pMass);
+
+    }
+
+    void gatherD() {
+
+        gather(this->D0, diffusionCoeff_m[0], this->P/pMass);
+        gather(this->D1, diffusionCoeff_m[1], this->P/pMass);
+        gather(this->D2, diffusionCoeff_m[2], this->P/pMass);
+
+    }
+
 
 
      void dumpData() {
@@ -513,7 +686,8 @@ public:
 //===================================================================================================
 //===================================================================================================
 
-     void dumpLangevin(unsigned int iteration, double mass, size_type N) {
+     void dumpLangevin(unsigned int iteration,  size_type N) {
+    //  void dumpLangevin(unsigned int iteration, size_type N) {
 
         const int nghostE = E_m.getNghost();
         auto Eview = E_m.getView();
@@ -558,22 +732,33 @@ public:
         double locT[Dim]={0.0,0.0,0.0};
         double globT[Dim];       
 	    Vector_t temperature;
-	  
-	    auto pRMirror = this->R.getView();
-	    //  auto pRMirror = this->R.getHostMirror();
-        auto pPMirror = this->P.getView();
-        //	auto pPMirror = this->P.getHostMirror();
-        //  deep copy...
-   
+
 	    const size_t locNp = static_cast<size_t>(this->getLocalNum());
+	  
+        //TODO get Rid of auto
+	    auto pRMirror = this->R.getView();
+        auto pPView = this->P.getView();
+        auto pVMirror = this->P.getHostMirror();
+        Kokkos::deep_copy(pVMirror, pPView);
+        
+    //why does no easier way work
+    Kokkos::parallel_for("get Velocity from Momenta",
+				locNp,
+				KOKKOS_LAMBDA(const int i){
+					pVMirror(i) = pVMirror(i)/pmass;
+				}	
+	);
+    Kokkos::fence();
+
+
 
         for(unsigned d = 0; d<Dim; ++d){
 		    Kokkos::parallel_reduce("get local velocity sum", 
 		    			 locNp, 
 		    			 KOKKOS_LAMBDA(const int k, double& valL){
-                                       	double myVal = pPMirror(k)[d]/mass;
+                                       	double myVal = pVMirror(k)[d];
                                         valL += myVal;
-                                        	//valL += pPMirror(i)[d]/mass;
+                                        //valL += pVMirror(i)[d];
                                     	},                    			
 		    			 Kokkos::Sum<double>(locVELsum[d])
 		    			);
@@ -582,7 +767,7 @@ public:
         // for(unsigned long k = 0; k < this->getLocalNum(); ++k) {
         //   for(unsigned d = 0; d < Dim; d++) {
         //     // loc_avg_vel[d]   += this->v[k](d);
-        //     locVELsum[d] += pPMirror(k)[d]/mass;
+        //     locVELsum[d] += pVMirror(k)[d];
         //   }
         // }
 	   	MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
@@ -592,9 +777,9 @@ public:
 		    Kokkos::parallel_reduce("get local velocity sum", 
 					 locNp,
 		    			 KOKKOS_LAMBDA(const int k, double& valL){
-                                       	double myVal = (pPMirror(k)[d]/mass-avgVEL[d])*(pPMirror(k)[d]/mass-avgVEL[d]);
+                                       	double myVal = (pVMirror(k)[d]-avgVEL[d])*(pVMirror(k)[d]-avgVEL[d]);
                                         valL += myVal;
-                                         //valL += (pPMirror(i)[d]/mass-avgVEL[d])*(pPMirror(i)[d]/mass-avgVEL[d]);
+                                         //valL += (pVMirror(i)[d]/mass-avgVEL[d])*(pVMirror(i)[d]/mass-avgVEL[d]);
                                     	},                    			
 		    			 Kokkos::Sum<double>(locT[d])
 		     			);
@@ -603,7 +788,7 @@ public:
         // for(unsigned long k = 0; k < this->getLocalNum(); ++k) {
         //   for(unsigned d = 0; d < Dim; d++) {
         //     // loc_temp[d]   += (this->v[k](d)-avg_vel[d])*(this->v[k](d)-avg_vel[d]);
-        //     locT[d] += (pPMirror(k)[d]/mass-avgVEL[d])*(pPMirror(k)[d]/mass-avgVEL[d]);
+        //     locT[d] += (pVMirror(k)[d]-avgVEL[d])*(pVMirror(k)[d]-avgVEL[d]);
         //   }
         // }
     	MPI_Reduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());	
@@ -643,11 +828,11 @@ public:
 						){ 
 					double  part[2 * Dim];
 	            			part[0] = pRMirror(k)[0];
-	            			part[1] = pPMirror(k)[0];
+	            			part[1] = pVMirror(k)[0];
 	            			part[2] = pRMirror(k)[1];
-	            			part[3] = pPMirror(k)[1];
+	            			part[3] = pVMirror(k)[1];
 	            			part[4] = pRMirror(k)[2];
-	            			part[5] = pPMirror(k)[2];
+	            			part[5] = pVMirror(k)[2];
 	            			
 					cent += part[i];
 					mom0 += part[i]*part[0];
@@ -669,9 +854,9 @@ public:
 	}
         // for(unsigned long k = 0; k < locNp; ++k) {
         //     double    part[2 * Dim];
-	    //         			part[1] = pPMirror(k)[0];
-	    //         			part[3] = pPMirror(k)[1];
-	    //         			part[5] = pPMirror(k)[2];
+	    //         			part[1] = pVMirror(k)[0];
+	    //         			part[3] = pVMirror(k)[1];
+	    //         			part[5] = pVMirror(k)[2];
 	    //         			part[0] = pRMirror(k)[0];
 	    //         			part[2] = pRMirror(k)[1];
 	    //         			part[4] = pRMirror(k)[2];
@@ -787,6 +972,8 @@ public:
                     temperature[0]  <<" "<< 
                     rvrms[0]        <<" "<<
                     eps[0]          <<" "<<
+                    // eps[0]*(4.0/5.0)<<" "<<
+                    // eps[0]*(3.0/4.0)<<" "<<
     	 	endl;	
 
             csvout2<<   

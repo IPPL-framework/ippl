@@ -544,7 +544,7 @@ int main(int argc, char *argv[]){
         std::atoi(argv[3])
     };
     const double beamRadius         = std::atof(argv[4]);
-    const double boxL 		        = std::atof(argv[5]);
+    const double boxL 		        = std::atof(argv[5]); // turn into 3 inputs
     const size_type nP              = std::atoll(argv[6]);
     const double interactionRadius  = std::atof(argv[7]);
     const double alpha              = std::atof(argv[8]);
@@ -557,9 +557,11 @@ int main(int argc, char *argv[]){
     //15 -> solvertype = FFT...
     //16 -> loadbalancethreshold
     //17 -> default overallocation
+    const double ke                 = std::atof(argv[18]);
+    const int NV                    = std::atoi(argv[19]);
  	
     //cm annahme, elektronen charge mass, / nicht milisekunde...
-    const double ke=2.532638e8;
+    // const double ke=2.532638e8;
     // const double ke   =1./(4.*M_PI*8.8541878128e-14);  
     //                  = 8.9875517923e11;
     // const double ke=2.532638e9;
@@ -586,7 +588,7 @@ int main(int argc, char *argv[]){
 
 
 //================================================================================== 
-// MESH & DOMAIN_DECOMPOSITION
+// SPATIAL MESH & DOMAIN_DECOMPOSITION
 
     //box grösse mit 3 Längen parametrisieren TODO
 
@@ -615,7 +617,7 @@ int main(int argc, char *argv[]){
     const double Q = nP * (-particleCharge);
     
     std::unique_ptr<bunch_type>  P;
-   	P = std::make_unique<bunch_type>(PL,hr,box_boundaries_lower, box_boundaries_upper,decomp,Q);
+   	P = std::make_unique<bunch_type>(PL,hr,box_boundaries_lower,box_boundaries_upper,decomp,Q);
     
     P->nr_m = nr;
     P->E_m.initialize(mesh, FL);
@@ -625,7 +627,36 @@ int main(int argc, char *argv[]){
     P->initSolver();
     P->time_m = 0.0;
     P->loadbalancethreshold_m = std::atof(argv[16]);
-    bool isFirstRepartition;
+    bool isFirstRepartition = false;
+
+// ========================================================================================
+// VEOCITY SPACE MESH:
+
+//we could just reset the mesh between velocity and particle configurations ... all the time...
+
+    P->PMass =particleMass;
+
+    Vector_t origin_v({0, 0, 0});
+    P->nv_mv = {NV,NV,NV};
+    P->hv_mv = {1, 1, 1};
+    ippl::NDIndex<Dim> domain_v;
+    for (unsigned i = 0; i< Dim; i++) {
+        // domain_v[i] = ippl::Index(P->nv_mv[i]);
+        domain_v[i] = ippl::Index(NV);
+    }
+
+    // first  MESH initialization doesnt matter we reget this after each step.
+    Mesh_t          mesh_v(domain_v, P->hv_mv, origin);
+    FieldLayout_t   FL_v(domain_v, decomp, false);
+
+    P->rho_mv.initialize(mesh_v, FL_v);
+    P->gradRBH_mv.initialize(mesh_v, FL_v);
+    P->gradRBG_mv.initialize(mesh_v, FL_v);
+    P->diffusionCoeff_mv.initialize(mesh_v, FL_v);
+
+
+
+
 
     msg
         << "Dim                 = " << std::setw(20) << Dim <<  endl
@@ -644,10 +675,10 @@ int main(int argc, char *argv[]){
         << "Origin              = " << std::setw(20) << origin << endl
         << "MeshSpacing         = " << std::setw(20) << hr << endl
         << "total Charge        = " << std::setw(20) << Q << endl
-        << "LBT                 = " << std::setw(20) << P->loadbalancethreshold_m << endl;
+        << "LBT                 = " << std::setw(20) << P->loadbalancethreshold_m << endl
+        << "Ke                 = " << std::setw(20) << ke << endl;
 
     
-    //INITIAL LOADBALANCING
     if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
         msg << "Starting first repartition" << endl;
         IpplTimings::startTimer(domainDecomposition);
@@ -723,6 +754,33 @@ int main(int argc, char *argv[]){
 
     Vector_t avgEF(compAvgSCForce(*P, nP, beamRadius));
 
+
+
+    std::default_random_engine generator(0);
+    std::normal_distribution<double> normdistribution(0.0, dt);
+    auto gauss = std::bind(normdistribution, generator);
+
+    //what are chances for this creating division by zero??
+    Matrix_t cholesky = [](Vector_t d0, Vector_t d1, Vector_t d2){
+        Matrix_t LL;
+        //since we hav a matrix as a list of vecotr our access is inversedm meaning 
+        // we use row major; different compared to mathematical writing
+        LL[0][0] = sqrt(d0[0]);
+        LL[0][1] = d0[1]/L[0][0];
+        LL[0][2] = d0[2]/L[0][0];
+        
+        LL[1][0] = 0.0;
+        LL[1][1] = sqrt(d1[1]- pow(LL[0][1]), 2);
+        LL[1][2] = (d1[2] - LL[0][1]*LL[0][2])/LL[1][1];
+
+        LL[2][0] = 0.0;
+        LL[2][1] = 0.0;
+        LL[2][2]= sqrt(d2[2] - pow(LL[0][1], 2) - pow(LL[0][2], 2));
+        return LL;
+    };
+    Vector_t 3dGaussian = [&gauss]()                {return Vector_t dW(gauss(), gauss(), gauss()); };
+    Vector_t GeMV_t     = [](Matrix_t M, Vector_t V){return V[0]*M[0]+V[1]*M[1]+V[2]*M[2];          };
+
     // dumpVTK(P->E_m,   P->nr_m[0], P->nr_m[1], P->nr_m[2], 0, P->hr_m[0], P->hr_m[1], P->hr_m[2]);
     // dumpVTK(P->rho_m, P->nr_m[0], P->nr_m[1], P->nr_m[2], 0, P->hr_m[0], P->hr_m[1], P->hr_m[2]);
 
@@ -732,7 +790,7 @@ int main(int argc, char *argv[]){
 
 
     IpplTimings::startTimer(dumpDataTimer);
-    P->dumpLangevin(0, particleMass, nP);
+    P->dumpLangevin(0,  nP);
 	// P->dumpParticleData();
     P->gatherStatistics(nP);
     //P->dumpLocalDomains(FL, 0);
@@ -748,9 +806,11 @@ int main(int argc, char *argv[]){
 
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
         //  'kick-drift-kick' form;
-        //TODO: work in charge and mass for other ratio than 1?
 
 
+msg << "Start time step: " << it+1 << endl;
+
+//for small numbers (SI) -> this gets kicked out
         // kick
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E * particleCharge;
@@ -760,12 +820,13 @@ int main(int argc, char *argv[]){
         IpplTimings::startTimer(RTimer);
         P->R = P->R + dt * P->P / particleMass;
         IpplTimings::stopTimer(RTimer);
-
         //Since the particles have moved spatially update them to correct processors
 	    IpplTimings::startTimer(updateTimer);
         PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
 
+
+        
         // Domain Decomposition
         if (P->balance(nP, it+1)) {
            msg << "Starting repartition" << endl;
@@ -777,15 +838,12 @@ int main(int argc, char *argv[]){
            //IpplTimings::stopTimer(dumpDataTimer);
         }
 
-
         //scatter the charge onto the underlying grid
         P->scatterCIC(nP, it+1, hr);
-
         //Field solve
         IpplTimings::startTimer(SolveTimer);
         P->solver_mp->solve();
         IpplTimings::stopTimer(SolveTimer);
-
 
         P->E_m = P->E_m * ke;
 
@@ -797,9 +855,55 @@ int main(int argc, char *argv[]){
         //avgEF = compAvgSCForce(*P, nP);
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
 	
-        //LANGEVIN COLLISIONS<-
+        //LANGEVIN COLLISIONS::
+
+        //get max and min velocities ..
+        //reset velocity grd
+
+        Vector_t vmax = getMAXv();
+        Vector_t vmin = getMINv();
+        bool change_vgrid = false;
+
+        // could make symmetric, or adaptive to getting smaller ...
+        for(int d = 0; d<Dim; ++d){
+
+            if(vmax[d] > P->vmax_mv){
+                change_vgrid = true;
+                P->vmax_mv[d] = vmax[d];
+            }
+            if(vmin[d] < P->vmin_mv){
+                change_vgrid = true;
+                P->vmin_mv[d] = vmin[d];
+            }
+        }
+
+        if(change_vgrid){
+            for(int d = 0; d>Dim; ++d){
+                P->hv_mv[d] = (P->vmax_mv[d]-P->vmin_mv[d])/P->nv_mv[d];
+            }
+            origin_v = P->vmin_mv;
+        }
+
+
+        mesh_v.setOrigin(origin_v);
+        mesh_v.setMeshSpacing(P->hv_mv);
+
+        P->scatterVEL(nP, it+1, P->hv_mv);
+
+        P->solver_mvH->solve();
+        P->solverr_mvG->solve();
+        P->diffusionCoeff_mv = hess(P->RBG_mv);
+
+        gatherFd();
+        gatherD();
+        
+        //do we have to mulitply with mass here or not ...
+        P->P = P->P + particleMass*(dt*Fd + GeMV_t(cholesky(P->D0, P->D1, P->D2), 3dGaussian()));
+        //does this work ??
+        
+
     
-   	//error if variable not used..
+   	//error if variable not used..   aaand we dont use it?? ever???
 	double tmp = interactionRadius;
 	tmp += 1;
 
@@ -814,11 +918,11 @@ int main(int argc, char *argv[]){
 
         if (it%printInterval==0){
             IpplTimings::startTimer(dumpDataTimer);
-            P->dumpLangevin(it+1, particleMass, nP);
+            P->dumpLangevin(it+1,  nP);
             // P->gatherStatistics(nP);
             IpplTimings::stopTimer(dumpDataTimer);
         }
-        msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
+        msg << "Finished time step: " << it+1 << endl;
     }
 
 // TIMELOOP END
