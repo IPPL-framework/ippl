@@ -48,7 +48,7 @@ typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim> Solver_t;
 
 //EXCL_LANGEVIN
 typedef Vector<Vector_t, Dim> Matrix_t;
-typedef Vector<Field_t, Dim>  MField_t;
+typedef Vector<Field_t, Dim>  MField_t; //no use ...
 
 const double pi = std::acos(-1.0);
 
@@ -177,8 +177,10 @@ public:
     //??V
     Field_t   rho_mv; //NEW
     VField_t  gradRBH_mv; //NEW  --> Fd
-    Field_t   RBG_mv; //NEW
-    MField_t  diffusionCoeff_mv;//NEW
+    VField_t  gradRBG_mv; //NEW
+
+    MField_t diffusionCoeff_mv;//NEW
+    VField_t diffCoeffArr_mv[3];//NEW
 
     // we dont actually need those since we get the SOL returned at the input address -> vel_m (overwrite)
     // Field_t  RBH_m; //NEW  
@@ -189,14 +191,12 @@ public:
     std::shared_ptr<Solver_t> solver_mvG; //NEW
 
 
-    ParticleAttrib<Vector_t> rho;//NEW == 1
+    ParticleAttrib<double> rho;//NEW == 1
     ParticleAttrib<Vector_t> Fd;//NEW
     // ParticleAttrib<Tensor_t> D;
     ParticleAttrib<Vector_t> D0;//NEW
     ParticleAttrib<Vector_t> D1;//NEW
     ParticleAttrib<Vector_t> D2;//NEW
-    // ParticleAttrib<Vector_t> L;//NEW
-    // ParticleAttrib<Vector_t> dW;//NEW
     
     double pMass;
 
@@ -229,7 +229,6 @@ public:
         this->addAttribute(D0);
         this->addAttribute(D1);
         this->addAttribute(D2);
-        // this->addAttribute(L);
     }
 
     ChargedParticles(PLayout& pl,
@@ -254,7 +253,6 @@ public:
         this->addAttribute(D0);
         this->addAttribute(D1);
         this->addAttribute(D2);
-        // this->addAttribute(L);
 
         setupBCs();
         for (unsigned int i = 0; i < Dim; i++)
@@ -475,11 +473,11 @@ public:
         solver_mvG = std::make_shared<Solver_t>();
         solver_mvG->mergeParameters(sp);
         solver_mvG->setRhs(this->rho_mv);
-        solver_mvG->setLhs(this->RBG_mv);
+        solver_mvG->setLhs(this->gradRBG_mv); // dont even need this but can i jus leave it away ...
     }
 
 
-    void scatterVEL(size_type totalP, unsigned int iteration, Vector_t& hvField) {
+    void scatterVEL(size_type totalP, Vector_t& hvField) {
 
         Inform m("scatterVEL");
 
@@ -488,8 +486,8 @@ public:
     	};
 
         //field (ijk)[d]  ;; how does this work??
-        for(int d=0; d<Dim; ++) vel_m[i] = 0.0;
-        scatter(this->rho, this->rho_mv, this->P/pMass);
+        for(unsigned int d=0; d<Dim; d++) rho_mv[d] = 0.0;
+        scatter(this->rho, this->rho_mv, this->P/*/pMass*/);
 
         //ingore for now this is currently wrong
 
@@ -537,15 +535,15 @@ public:
 
     void gatherFd() {
 
-        gather(this->Fd, this->gradRBH_m, this->P/pMass);
+        gather(this->Fd, this->gradRBH_mv, this->P/*/pMass*/);
 
     }
 
     void gatherD() {
 
-        gather(this->D0, diffusionCoeff_m[0], this->P/pMass);
-        gather(this->D1, diffusionCoeff_m[1], this->P/pMass);
-        gather(this->D2, diffusionCoeff_m[2], this->P/pMass);
+        gather(this->D0, diffCoeffArr_mv[0], this->P/*/pMass*/);
+        gather(this->D1, diffCoeffArr_mv[1], this->P/*/pMass*/);
+        gather(this->D2, diffCoeffArr_mv[2], this->P/*/pMass*/);
 
     }
 
@@ -745,7 +743,7 @@ public:
     Kokkos::parallel_for("get Velocity from Momenta",
 				locNp,
 				KOKKOS_LAMBDA(const int i){
-					pVMirror(i) = pVMirror(i)/pmass;
+					pVMirror(i) = pVMirror(i)/pMass;
 				}	
 	);
     Kokkos::fence();

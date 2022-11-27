@@ -215,7 +215,8 @@ void createParticleDistributionColdSphere( 	bunch& P,
        
 	Kokkos::deep_copy(P.R.getView(), pRHost);
 	P.q = -qi;
-        P.P = mom;  //zero momentum intial conditiov
+    P.P = mom;  //zero momentum intial conditiov
+    P.rho = 1.0;
 	//	m << "()"<< pRHost(0)(0) << pRHost(0)(1) << pRHost(0)(2) << endl;
 	//	m << "[]"<< pRHost[0](0) << pRHost[0](1) << pRHost[0](2) << endl;
    	m << "finished Initializing" << endl;
@@ -634,7 +635,7 @@ int main(int argc, char *argv[]){
 
 //we could just reset the mesh between velocity and particle configurations ... all the time...
 
-    P->PMass =particleMass;
+    P->pMass =particleMass;
 
     Vector_t origin_v({0, 0, 0});
     P->nv_mv = {NV,NV,NV};
@@ -652,7 +653,12 @@ int main(int argc, char *argv[]){
     P->rho_mv.initialize(mesh_v, FL_v);
     P->gradRBH_mv.initialize(mesh_v, FL_v);
     P->gradRBG_mv.initialize(mesh_v, FL_v);
-    P->diffusionCoeff_mv.initialize(mesh_v, FL_v);
+    P->diffusionCoeff_mv[0].initialize(mesh_v, FL_v);
+    P->diffusionCoeff_mv[1].initialize(mesh_v, FL_v);
+    P->diffusionCoeff_mv[2].initialize(mesh_v, FL_v);
+    P->diffCoeffArr_mv[0].initialize(mesh_v, FL_v);
+    P->diffCoeffArr_mv[1].initialize(mesh_v, FL_v);
+    P->diffCoeffArr_mv[2].initialize(mesh_v, FL_v);
 
 
 
@@ -761,25 +767,28 @@ int main(int argc, char *argv[]){
     auto gauss = std::bind(normdistribution, generator);
 
     //what are chances for this creating division by zero??
-    Matrix_t cholesky = [](Vector_t d0, Vector_t d1, Vector_t d2){
+    // Matrix_t
+    auto cholesky = [](Vector_t d0, Vector_t d1, Vector_t d2){
         Matrix_t LL;
         //since we hav a matrix as a list of vecotr our access is inversedm meaning 
         // we use row major; different compared to mathematical writing
         LL[0][0] = sqrt(d0[0]);
-        LL[0][1] = d0[1]/L[0][0];
-        LL[0][2] = d0[2]/L[0][0];
+        LL[0][1] = d0[1]/LL[0][0];
+        LL[0][2] = d0[2]/LL[0][0];
         
         LL[1][0] = 0.0;
-        LL[1][1] = sqrt(d1[1]- pow(LL[0][1]), 2);
+        LL[1][1] = sqrt(d1[1]- pow(LL[0][1], 2));
         LL[1][2] = (d1[2] - LL[0][1]*LL[0][2])/LL[1][1];
 
         LL[2][0] = 0.0;
         LL[2][1] = 0.0;
-        LL[2][2]= sqrt(d2[2] - pow(LL[0][1], 2) - pow(LL[0][2], 2));
+        LL[2][2]= sqrt( d2[2] - pow(LL[0][1], 2) - pow(LL[0][2], 2));
         return LL;
     };
-    Vector_t 3dGaussian = [&gauss]()                {return Vector_t dW(gauss(), gauss(), gauss()); };
-    Vector_t GeMV_t     = [](Matrix_t M, Vector_t V){return V[0]*M[0]+V[1]*M[1]+V[2]*M[2];          };
+    // Vector_t 
+    auto Gaussian3d = [&gauss]()                {return Vector_t({gauss(), gauss(), gauss()}); };
+    // Vector_t 
+    auto GeMV_t     = [](Matrix_t M, Vector_t V){return V[0]*M[0]+V[1]*M[1]+V[2]*M[2];          };
 
     // dumpVTK(P->E_m,   P->nr_m[0], P->nr_m[1], P->nr_m[2], 0, P->hr_m[0], P->hr_m[1], P->hr_m[2]);
     // dumpVTK(P->rho_m, P->nr_m[0], P->nr_m[1], P->nr_m[2], 0, P->hr_m[0], P->hr_m[1], P->hr_m[2]);
@@ -860,25 +869,58 @@ msg << "Start time step: " << it+1 << endl;
         //get max and min velocities ..
         //reset velocity grd
 
-        Vector_t vmax = getMAXv();
-        Vector_t vmin = getMINv();
+
+// implement as a function..
+    double vmax_loc[Dim];
+    double vmin_loc[Dim];
+    double vmax[Dim];
+    double vmin[Dim];
+
+	auto pPView = P->P.getView();
+	for(unsigned d = 0; d<Dim; ++d){
+
+		Kokkos::parallel_reduce("vel max", 
+					 P->getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& mm){   
+              		                    mm = std::max(pPView(i)[d], mm);
+                                	 },                    			
+					  Kokkos::Max<double>(vmax_loc[d])
+					);
+
+		Kokkos::parallel_reduce("vel min", 
+					 P->getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& mm){   
+              		                    mm = std::min(pPView(i)[d], mm);
+
+                                	 },                    			
+					  Kokkos::Min<double>(vmin_loc[d])
+					);
+	}
+	Kokkos::fence();
+	MPI_Allreduce(vmax_loc, vmax, Dim , MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+	MPI_Allreduce(vmin_loc, vmin, Dim , MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+
+
+
+
+
         bool change_vgrid = false;
 
         // could make symmetric, or adaptive to getting smaller ...
-        for(int d = 0; d<Dim; ++d){
+        for(unsigned int d = 0; d<Dim; ++d){
 
-            if(vmax[d] > P->vmax_mv){
+            if(vmax[d] > P->vmax_mv[d]){
                 change_vgrid = true;
                 P->vmax_mv[d] = vmax[d];
             }
-            if(vmin[d] < P->vmin_mv){
+            if(vmin[d] < P->vmin_mv[d]){
                 change_vgrid = true;
                 P->vmin_mv[d] = vmin[d];
             }
         }
 
         if(change_vgrid){
-            for(int d = 0; d>Dim; ++d){
+            for(unsigned int d = 0; d>Dim; ++d){
                 P->hv_mv[d] = (P->vmax_mv[d]-P->vmin_mv[d])/P->nv_mv[d];
             }
             origin_v = P->vmin_mv;
@@ -888,17 +930,31 @@ msg << "Start time step: " << it+1 << endl;
         mesh_v.setOrigin(origin_v);
         mesh_v.setMeshSpacing(P->hv_mv);
 
-        P->scatterVEL(nP, it+1, P->hv_mv);
+        P->scatterVEL(nP, P->hv_mv);
 
         P->solver_mvH->solve();
-        P->solverr_mvG->solve();
-        P->diffusionCoeff_mv = hess(P->RBG_mv);
+        P->solver_mvG->solve();
+        // Matrix_t dCtmp;
 
-        gatherFd();
-        gatherD();
+        //this does not work if dc is an array/stdvec of vector_t's;
+        //but the gather for ingle Di doesnt work if its an element for a bigger vector
+        P->diffusionCoeff_mv = hess(P->rho_mv);
+
+        for(unsigned d = 0; d<Dim; ++d){
+                P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d];
+        }
+
+
+        //if  i want to sue a parallel for loop instead i would need to create a 
+        // field layout object for the the velocity space mesh
+        // /if u do that you can only keep the array object and calculate the hessian inside a kokkos for loop
+
+
+        P->gatherFd();
+        P->gatherD();
         
         //do we have to mulitply with mass here or not ...
-        P->P = P->P + particleMass*(dt*Fd + GeMV_t(cholesky(P->D0, P->D1, P->D2), 3dGaussian()));
+        P->P = P->P + particleMass*(dt*P->Fd + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()));
         //does this work ??
         
 
