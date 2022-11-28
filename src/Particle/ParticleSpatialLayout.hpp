@@ -234,10 +234,32 @@ namespace ippl {
 			const vertex_neighbor_type vertexNeighbors = flayout_m.getVertexNeighbors();
 
 			//container of particles that travelled more than one cell
-            Kokkos::View<int*> notfound("Not found", size_type(0.3*pdata.getLocalNum()));
+            locate_type notfound("Not found", size_type(0.3*pdata.getLocalNum()));
 			/*For physical tests, 10% is enough. But for non-phyisical tests like pic3d, */
 			bool_type found("Found", pdata.getLocalNum());
 			size_t nLeft;
+			
+			Kokkos::View<int*> vertexNeighborsView("Vertex neighbors view", vertexNeighbors.size());
+			Kokkos::View<std::vector<int>*> faceNeighborsView("Face neighbors view", faceNeighbors.size());
+			Kokkos::View<std::vector<int>*> edgeNeighborsView("Edge neighbors view", edgeNeighbors.size());
+			
+			for( size_t vertex=0; vertex < vertexNeighbors.size(); vertex++){
+				if(vertexNeighbors[vertex] <  0)
+					continue;
+				vertexNeighborsView(vertex) = vertexNeighbors[vertex];
+			}
+					
+
+			
+			for( size_t face=0; face < faceNeighbors.size(); face++)
+					for(size_t i = 0; i < faceNeighbors[face].size(); i++)
+						faceNeighborsView(face).push_back( faceNeighbors[face][i] );
+
+			for( size_t edge=0; edge < edgeNeighbors.size(); edge++)
+					for(size_t i=0; i < edgeNeighbors[edge].size(); i++)
+						edgeNeighborsView(edge).push_back( edgeNeighbors[edge][i] );
+
+			
 
 			/*Begin Kokkos loop:
 			 *Step 1: search in current rank
@@ -270,9 +292,9 @@ namespace ippl {
 					//Step 2
 					else{
 					
-						for(size_t face = 0; face < faceNeighbors.size(); ++face){	
-						for (size_t j = 0; j < faceNeighbors[face].size() ; ++j){
-							view_size_t rank = faceNeighbors[face][j];
+						for(size_t face = 0; face < faceNeighborsView.extent(0); ++face){	
+						for (size_t j = 0; j < faceNeighborsView(face).size() ; ++j){
+							view_size_t rank = faceNeighborsView(face)[j];
 
 
 							xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
@@ -294,9 +316,9 @@ namespace ippl {
 
 
 					 if(!xyz_bool){
-						for (size_t edge=0; edge < edgeNeighbors.size(); edge++){
-                                                for (size_t j = 0; j < edgeNeighbors[edge].size() ; ++j){
-                                                        view_size_t rank = edgeNeighbors[edge][j];
+						for (size_t edge=0; edge < edgeNeighborsView.extent(0); edge++){
+                                                for (size_t j = 0; j < edgeNeighborsView(edge).size() ; ++j){
+                                                        view_size_t rank = edgeNeighborsView(edge)[j];
 
 
                                                         xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
@@ -315,10 +337,11 @@ namespace ippl {
 
                                                 }}
                                         }
-					
-					 if(!xyz_bool){
-                                                for (size_t vertex=0; vertex < vertexNeighbors.size(); vertex++){
-                                                        view_size_t rank = vertexNeighbors[vertex];
+                                        
+						
+					if(!xyz_bool){
+                                                for (size_t vertex=0; vertex < vertexNeighborsView.extent(0); vertex++){
+                                                        view_size_t rank = vertexNeighborsView(vertex);
 
 
                                                         xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
@@ -336,20 +359,16 @@ namespace ippl {
                                                         }
 
                                                 }
-                                        }
-
+					}
 
 					//Step 3
 					
 
-
+					
 
 					if( final && !found(i) ){
-						if( idx > notfound.extent(0)) 
-                			Kokkos::realloc(notfound, 300);
-
-                        notfound(idx)=i;
-                    }
+						notfound(idx)=i;
+						}
 
 					if(!found(i)) idx+=1;
 
@@ -357,6 +376,7 @@ namespace ippl {
 					}, nLeft);
 
 			Kokkos::fence();
+			
 
 			//Step 4
 
