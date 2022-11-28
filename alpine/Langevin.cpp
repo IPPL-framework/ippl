@@ -167,6 +167,16 @@ const char* TestName = "LangevinCollsion";
 
 
 //========================================================================================= 
+
+
+double mydotpr(Vector_t a, Vector_t b){return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
+double mynorm(Vector_t a){return sqrt(mydotpr(a,a)); }
+	// auto mydotpr = [](Vector_t a, Vector_t b)   {
+	// 	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; 
+	// };
+    // auto mynorm = [](Vector_t a){
+	// 	return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); 
+	// };
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 //PRE: beam radiues >= 0; NParticle ... 
@@ -184,12 +194,6 @@ void createParticleDistributionColdSphere( 	bunch& P,
   	m << "creating Particles" << endl;
         P.create(Nparticle);
 	
-	// auto mydotpr = [](Vector_t a, Vector_t b)   {
-	// 	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; 
-	// };
-    auto mynorm = [](Vector_t a){
-		return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); 
-	};
 
         std::default_random_engine generator(0);
         std::normal_distribution<double> normdistribution(0,1.0);
@@ -227,9 +231,6 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
     Inform m("computeAvgSpaceChargeForces ");
     	m << "start" << endl;
 
-    auto mysqrtnorm = [](Vector_t a)   {
-		return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); 
-	};
 
 	Vector_t avgEF;
 	double locEFsum[Dim]={};
@@ -281,7 +282,7 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
     Kokkos::parallel_reduce("check  positioning", 
 					 P.getLocalNum(),
 					 KOKKOS_LAMBDA(const int i, double& check){
-                                        bool partcheck = (mysqrtnorm(pRView[i]) <= beamRadius);
+                                        bool partcheck = (mynorm(pRView[i]) <= beamRadius);
                                         check += int(partcheck);
 
                                 	 },                    			
@@ -313,13 +314,10 @@ void applyConstantFocusing( bunch& P,
                                 ) {  
 	// Inform m("applyConstantFocusing");
 	// m << "start  "; // << endl;
-	auto mydotpr = [](Vector_t a, Vector_t b)   {
-		return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; 
-	};
 	auto pEMirror = P.E.getView();
 	auto pRMirror = P.R.getView();
 
-	double tmp = sqrt(mydotpr(avgEF, avgEF))*f/beamRadius;
+	double tmp = mynorm(avgEF)*f/beamRadius;
 	// m << "final focusing factor is:" << tmp << endl;
 	
 	Kokkos::parallel_for("Apply Constant Focusing",
@@ -522,6 +520,180 @@ void applyConstantFocusing( bunch& P,
 //}//function
 
 
+
+
+
+
+
+template<typename bunch>
+bool setVmaxmin( bunch& P){
+
+    double vmax_loc[Dim];
+    double vmin_loc[Dim];
+    double vmax[Dim];
+    double vmin[Dim];
+
+	auto pPView = P.P.getView();
+	for(unsigned d = 0; d<Dim; ++d){
+
+		Kokkos::parallel_reduce("vel max", 
+					 P.getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& mm){   
+              		                    mm = std::max(pPView(i)[d], mm);
+                                	 },                    			
+					  Kokkos::Max<double>(vmax_loc[d])
+					);
+
+		Kokkos::parallel_reduce("vel min", 
+					 P.getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& mm){   
+              		                    mm = std::min(pPView(i)[d], mm);
+
+                                	 },                    			
+					  Kokkos::Min<double>(vmin_loc[d])
+					);
+	}
+	Kokkos::fence();
+	MPI_Allreduce(vmax_loc, vmax, Dim , MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+	MPI_Allreduce(vmin_loc, vmin, Dim , MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+
+        bool change_vgrid = false;
+        // could make symmetric, or adaptive to getting smaller ...
+        for(unsigned int d = 0; d<Dim; ++d){
+
+            if(vmax[d] > P.vmax_mv[d]){
+                change_vgrid = true;
+                P.vmax_mv[d] = vmax[d];
+            }
+            if(vmin[d] < P.vmin_mv[d]){
+                change_vgrid = true;
+                P.vmin_mv[d] = vmin[d];
+            }
+        }
+
+        return change_vgrid;
+}
+
+//USE () INSTEAD OF [] LIEK WRITTEN IN THE IIPL2 USERGUIDE
+
+// void cholesky(Matrix_t LL, Vector_t d0, Vector_t d1, Vector_t d2){
+
+
+// void cholesky(  ParticleAttrib<Matrix_t>& LL,
+//                 ParticleAttrib<Vector_t>& d0,
+//                 ParticleAttrib<Vector_t>& d1,
+//                 ParticleAttrib<Vector_t>& d2){
+// template<typename V> // not sure how this would work
+// ParticleAttrib<Matrix_t> cholesky(const V& d0, const V& d1, const V& d2){
+
+//since particle Attributes here arent initialized with each iteration
+//and creating an Matrix_t particle Attribute creates ununderstandable compiler errors
+//this is officially an deadend and we switch to Kokkos::for_loop
+//  ParticleAttrib<Matrix_t> cholesky( ParticleAttrib<Vector_t>& d0,
+//                                     ParticleAttrib<Vector_t>& d1,
+//                                     ParticleAttrib<Vector_t>& d2){
+        
+//         //since we hav a matrix as a list of vecotr our access is inversedm meaning 
+//         // we use row major; different compared to mathematical writing
+//         ParticleAttrib<Matrix_t> LL;
+//         LL(0)(0) = sqrt(d0(0));
+//         LL(0)(1) = d0(1)/LL(0)(0);
+//         LL(0)(2) = d0(2)/LL(0)(0);
+//         LL(1)(0) = 0.0;
+//         LL(1)(1) = sqrt(d1(1)- pow(LL(0)(1), 2));
+//         LL(1)(2) = (d1(2) - LL(0)(1)*LL(0)(2))/LL(1)(1);
+//         LL(2)(0) = 0.0;
+//         LL(2)(1) = 0.0;
+//         LL(2)(2) = sqrt( d2(2) - pow(LL(0)(1), 2) - pow(LL(0)(2), 2));
+//         return LL;
+// }
+template<typename bunch>
+void prepareDiffCoeff(bunch& P){
+        auto pDCView     = P.diffusionCoeff_mv.getView();
+        auto pDCA0View   = P.diffCoeffArr_mv[0].getView();
+        auto pDCA1View   = P.diffCoeffArr_mv[1].getView();
+        auto pDCA2View   = P.diffCoeffArr_mv[2].getView();
+        const int nghost = P.rho_mv.getNghost();
+        //or do i have to use rho for the extent option?? and add a new view..
+
+    Kokkos::parallel_for("???????",
+                    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
+                                                            {   pDCView.extent(0) - nghost,
+							                                    pDCView.extent(1) - nghost,
+							                                    pDCView.extent(2) - nghost}),
+		            KOKKOS_LAMBDA(const int i, const int j, const int k){
+            
+                        pDCA0View(i,j,k) = pDCView(i,j,k)[0];
+                        pDCA1View(i,j,k) = pDCView(i,j,k)[1];
+                        pDCA2View(i,j,k) = pDCView(i,j,k)[2];
+                    }
+    );
+    Kokkos::fence();
+
+
+}
+
+//compiles
+template<typename V>
+Matrix_t cholesky(const V& d0, const V& d1, const V& d2){
+        
+        //since we hav a matrix as a list of vecotr our access is inversedm meaning 
+        // we use row major; different compared to mathematical writing
+        Matrix_t LL;
+        LL(0)(0) = sqrt(d0(0));
+        LL(0)(1) = d0(1)/LL(0)(0);
+        LL(0)(2) = d0(2)/LL(0)(0);
+        LL(1)(0) = 0.0;
+        LL(1)(1) = sqrt(d1(1)- pow(LL(0)(1), 2));
+        LL(1)(2) = (d1(2) - LL(0)(1)*LL(0)(2))/LL(1)(1);
+        LL(2)(0) = 0.0;
+        LL(2)(1) = 0.0;
+        LL(2)(2) = sqrt( d2(2) - pow(LL(0)(1), 2) - pow(LL(0)(2), 2));
+        return LL;
+}
+
+// template<typename M, typename V>
+// void cholesky(M& LL, const V& d0, const V& d1, const V& d2){
+    
+//         LL[0][0] = sqrt(d0[0]);
+//         LL[0][1] = d0[1]/LL[0][0];
+//         LL[0][2] = d0[2]/LL[0][0];
+//         LL[1][0] = 0.0;
+//         LL[1][1] = sqrt(d1[1]- pow(LL[0][1], 2));
+//         LL[1][2] = (d1[2] - LL[0][1]*LL[0][2])/LL[1][1];
+//         LL[2][0] = 0.0;
+//         LL[2][1] = 0.0;
+//         LL[2][2]= sqrt( d2[2] - pow(LL[0][1], 2) - pow(LL[0][2], 2));
+// }
+
+Vector_t  GeMV_t(const Matrix_t& M, const Vector_t& V){return V[0]*M[0]+V[1]*M[1]+V[2]*M[2];}
+
+
+template<typename bunch>
+void applyLangevin(bunch& P, std::function<Vector_t()> Gaussian3d){
+    // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d());
+
+    //different version of this might should work none of them have created a new error but im not sure ...
+
+    auto pPView =  P.P.getView();
+	auto pD0View = P.D0.getView();
+	auto pD1View = P.D1.getView();
+	auto pD2View = P.D2.getView();
+
+	Kokkos::parallel_for("Apply Langevin",
+				P.getLocalNum(),
+				KOKKOS_LAMBDA(const int i){
+                     pPView(i) += GeMV_t(cholesky(pD0View(i), pD1View(i), pD2View(i)), Gaussian3d());
+                    //  Matrix_t Q;
+                    //  cholesky(Q, pD0View(i), pD1View(i), pD2View(i));
+                    //  pPView(i) += GeMV_t(Q, Gaussian3d());
+	 			}	
+	 );
+	 Kokkos::fence();
+
+
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 //======================================================================================== 
 // MAIN	
@@ -653,13 +825,12 @@ int main(int argc, char *argv[]){
     P->rho_mv.initialize(mesh_v, FL_v);
     P->gradRBH_mv.initialize(mesh_v, FL_v);
     P->gradRBG_mv.initialize(mesh_v, FL_v);
-    P->diffusionCoeff_mv[0].initialize(mesh_v, FL_v);
-    P->diffusionCoeff_mv[1].initialize(mesh_v, FL_v);
-    P->diffusionCoeff_mv[2].initialize(mesh_v, FL_v);
+    P->diffusionCoeff_mv.initialize(mesh_v, FL_v);
     P->diffCoeffArr_mv[0].initialize(mesh_v, FL_v);
     P->diffCoeffArr_mv[1].initialize(mesh_v, FL_v);
     P->diffCoeffArr_mv[2].initialize(mesh_v, FL_v);
 
+    // P->TMP0.initialize(mesh_v, FL_v);
 
 
 
@@ -685,10 +856,13 @@ int main(int argc, char *argv[]){
         << "Ke                 = " << std::setw(20) << ke << endl;
 
     
+
+    //how to perform ORB without PDF etc
     if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
         msg << "Starting first repartition" << endl;
-        IpplTimings::startTimer(domainDecomposition);
+        IpplTimings::startTimer(domainDecomposition);//===========================
         isFirstRepartition = true;
+
         const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
         const int nghost = P->rho_m.getNghost();
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
@@ -716,7 +890,10 @@ int main(int argc, char *argv[]){
         Kokkos::fence();
         P->initializeORB(FL, mesh);
         P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
-        IpplTimings::stopTimer(domainDecomposition);
+        //=======================================================================
+        IpplTimings::stopTimer(domainDecomposition);//===========================
+        
+
     }
     isFirstRepartition = false;
 
@@ -765,33 +942,7 @@ int main(int argc, char *argv[]){
     std::default_random_engine generator(0);
     std::normal_distribution<double> normdistribution(0.0, dt);
     auto gauss = std::bind(normdistribution, generator);
-
-    //what are chances for this creating division by zero??
-    // Matrix_t
-    auto cholesky = [](Vector_t d0, Vector_t d1, Vector_t d2){
-        Matrix_t LL;
-        //since we hav a matrix as a list of vecotr our access is inversedm meaning 
-        // we use row major; different compared to mathematical writing
-        LL[0][0] = sqrt(d0[0]);
-        LL[0][1] = d0[1]/LL[0][0];
-        LL[0][2] = d0[2]/LL[0][0];
-        
-        LL[1][0] = 0.0;
-        LL[1][1] = sqrt(d1[1]- pow(LL[0][1], 2));
-        LL[1][2] = (d1[2] - LL[0][1]*LL[0][2])/LL[1][1];
-
-        LL[2][0] = 0.0;
-        LL[2][1] = 0.0;
-        LL[2][2]= sqrt( d2[2] - pow(LL[0][1], 2) - pow(LL[0][2], 2));
-        return LL;
-    };
-    // Vector_t 
-    auto Gaussian3d = [&gauss]()                {return Vector_t({gauss(), gauss(), gauss()}); };
-    // Vector_t 
-    auto GeMV_t     = [](Matrix_t M, Vector_t V){return V[0]*M[0]+V[1]*M[1]+V[2]*M[2];          };
-
-    // dumpVTK(P->E_m,   P->nr_m[0], P->nr_m[1], P->nr_m[2], 0, P->hr_m[0], P->hr_m[1], P->hr_m[2]);
-    // dumpVTK(P->rho_m, P->nr_m[0], P->nr_m[1], P->nr_m[2], 0, P->hr_m[0], P->hr_m[1], P->hr_m[2]);
+    auto Gaussian3d = [&gauss](){return Vector_t({gauss(), gauss(), gauss()}); };
 
 
 
@@ -859,104 +1010,51 @@ msg << "Start time step: " << it+1 << endl;
         // gather E field
         P->gatherCIC();
 
-// =================MYSTUFF==================================================================
-        
+// =================MYSTUFF::CONSTANT_FOCUSING======================        
         //avgEF = compAvgSCForce(*P, nP);
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
-	
-        //LANGEVIN COLLISIONS::
-
-        //get max and min velocities ..
-        //reset velocity grd
-
-
-// implement as a function..
-    double vmax_loc[Dim];
-    double vmin_loc[Dim];
-    double vmax[Dim];
-    double vmin[Dim];
-
-	auto pPView = P->P.getView();
-	for(unsigned d = 0; d<Dim; ++d){
-
-		Kokkos::parallel_reduce("vel max", 
-					 P->getLocalNum(),
-					 KOKKOS_LAMBDA(const int i, double& mm){   
-              		                    mm = std::max(pPView(i)[d], mm);
-                                	 },                    			
-					  Kokkos::Max<double>(vmax_loc[d])
-					);
-
-		Kokkos::parallel_reduce("vel min", 
-					 P->getLocalNum(),
-					 KOKKOS_LAMBDA(const int i, double& mm){   
-              		                    mm = std::min(pPView(i)[d], mm);
-
-                                	 },                    			
-					  Kokkos::Min<double>(vmin_loc[d])
-					);
-	}
-	Kokkos::fence();
-	MPI_Allreduce(vmax_loc, vmax, Dim , MPI_DOUBLE, MPI_MAX, Ippl::getComm());
-	MPI_Allreduce(vmin_loc, vmin, Dim , MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+// =================MYSTUFF::CONSTANT_FOCUSING======================
+        //kick
+        IpplTimings::startTimer(PTimer);
+        P->P = P->P - 0.5 * dt * P->E;
+        IpplTimings::stopTimer(PTimer);
 
 
+// =================MYSTUFF::_LANGEVIN_COLLISION======================
+        //switching  to velocity ...
+        P->P = P->P/P->pMass;
 
-
-
-        bool change_vgrid = false;
-
-        // could make symmetric, or adaptive to getting smaller ...
-        for(unsigned int d = 0; d<Dim; ++d){
-
-            if(vmax[d] > P->vmax_mv[d]){
-                change_vgrid = true;
-                P->vmax_mv[d] = vmax[d];
-            }
-            if(vmin[d] < P->vmin_mv[d]){
-                change_vgrid = true;
-                P->vmin_mv[d] = vmin[d];
-            }
-        }
-
-        if(change_vgrid){
-            for(unsigned int d = 0; d>Dim; ++d){
-                P->hv_mv[d] = (P->vmax_mv[d]-P->vmin_mv[d])/P->nv_mv[d];
-            }
+        if(setVmaxmin(*P)){
+            for(unsigned int d = 0; d>Dim; ++d) P->hv_mv[d] = (P->vmax_mv[d]-P->vmin_mv[d])/P->nv_mv[d];
             origin_v = P->vmin_mv;
+            mesh_v.setOrigin(origin_v);
+            mesh_v.setMeshSpacing(P->hv_mv);
         }
-
-
-        mesh_v.setOrigin(origin_v);
-        mesh_v.setMeshSpacing(P->hv_mv);
 
         P->scatterVEL(nP, P->hv_mv);
-
         P->solver_mvH->solve();
+        P->rho_mv = -8.0*M_PI*P->rho_mv;
+        P->gradRBH_mv = -8.0*M_PI*P->gradRBH_mv;
         P->solver_mvG->solve();
-        // Matrix_t dCtmp;
-
-        //this does not work if dc is an array/stdvec of vector_t's;
-        //but the gather for ingle Di doesnt work if its an element for a bigger vector
         P->diffusionCoeff_mv = hess(P->rho_mv);
 
-        for(unsigned d = 0; d<Dim; ++d){
-                P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d];
-        }
+        //do i need th all the subobjects for the velocity space mesh?? like orb and loadbalancing??
 
-
-        //if  i want to sue a parallel for loop instead i would need to create a 
-        // field layout object for the the velocity space mesh
-        // /if u do that you can only keep the array object and calculate the hessian inside a kokkos for loop
-
-
+        // for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d]; //doesnt work
+        prepareDiffCoeff(*P); // safer option       
         P->gatherFd();
         P->gatherD();
-        
-        //do we have to mulitply with mass here or not ...
-        P->P = P->P + particleMass*(dt*P->Fd + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()));
-        //does this work ??
-        
+
+        //possible to save some flops here ...
+        P->P = P->P + dt*P->Fd; 
+        applyLangevin(*P, Gaussian3d);
+                        // cholesky(P->tmp0, P->D0, P->D1, P->D2);
+                        // P->P = P->P + GeMV_t(P->tmp0, Gaussian3d());
+                        // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
+
+        P->P = P->P*P->pMass;
+        //switching to momenta
+    
 
     
    	//error if variable not used..   aaand we dont use it?? ever???
@@ -965,10 +1063,7 @@ msg << "Start time step: " << it+1 << endl;
 
 // =================MYSTUFF==================================================================
         
-        //kick
-        IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E;
-        IpplTimings::stopTimer(PTimer);
+
 
         P->time_m += dt;
 

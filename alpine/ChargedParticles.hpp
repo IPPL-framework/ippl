@@ -48,7 +48,8 @@ typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim> Solver_t;
 
 //EXCL_LANGEVIN
 typedef Vector<Vector_t, Dim> Matrix_t;
-typedef Vector<Field_t, Dim>  MField_t; //no use ...
+// typedef Vector<Field_t, Dim>  MField_t; //no use ...
+typedef Field<Matrix_t, Dim> MField_t;
 
 const double pi = std::acos(-1.0);
 
@@ -172,9 +173,9 @@ public:
 
     // EXCL_LANGEVIN ...
     //ippl gather are hard coded to 3 dimensions, so to gather a matrix D we have to use gather 3 times 
-    // Vector<Vector, Dim>>
 
-    //??V
+
+    // ORB orb_v;
     Field_t   rho_mv; //NEW
     VField_t  gradRBH_mv; //NEW  --> Fd
     VField_t  gradRBG_mv; //NEW
@@ -182,9 +183,9 @@ public:
     MField_t diffusionCoeff_mv;//NEW
     VField_t diffCoeffArr_mv[3];//NEW
 
-    // we dont actually need those since we get the SOL returned at the input address -> vel_m (overwrite)
-    // Field_t  RBH_m; //NEW  
-    // Field_t  RBG_m; //NEW
+    // VField_t TMP0;//NEW
+
+    // we dont actually need those since we get the SOL returned at the input address -> rho_mv (overwrite)
     //defined elsewhere typedef ParticleAttrib<vector_type>   particle_position_type;
 
     std::shared_ptr<Solver_t> solver_mvH; //NEW
@@ -193,12 +194,13 @@ public:
 
     ParticleAttrib<double> rho;//NEW == 1
     ParticleAttrib<Vector_t> Fd;//NEW
-    // ParticleAttrib<Tensor_t> D;
     ParticleAttrib<Vector_t> D0;//NEW
     ParticleAttrib<Vector_t> D1;//NEW
     ParticleAttrib<Vector_t> D2;//NEW
+
     
-    double pMass;
+    double pMass; // NEW
+    // unsigned int nP; // NEW
 
 
     //ORB orb_v;
@@ -220,10 +222,7 @@ public:
         this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
-
         //EXCL_LANGEVIN
-
-
         this->addAttribute(rho);
         this->addAttribute(Fd);
         this->addAttribute(D0);
@@ -253,6 +252,7 @@ public:
         this->addAttribute(D0);
         this->addAttribute(D1);
         this->addAttribute(D2);
+
 
         setupBCs();
         for (unsigned int i = 0; i < Dim; i++)
@@ -481,16 +481,14 @@ public:
 
         Inform m("scatterVEL");
 
-        auto mynorm = [](Vector_t a){
-		return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); 
-    	};
+        rho_mv = 0.0;
+        scatter(this->rho, this->rho_mv, this->P);
+        
 
-        //field (ijk)[d]  ;; how does this work??
-        for(unsigned int d=0; d<Dim; d++) rho_mv[d] = 0.0;
-        scatter(this->rho, this->rho_mv, this->P/*/pMass*/);
 
+
+    
         //ingore for now this is currently wrong
-
         // //  Kinetic energy conservation; both sides need to be recalculated with each timestep...
         // //KINETIC ENERGY OF PARTICLES  
         // DOESNT REALLY MAKE SENSE NOW DOES IT?? MORE LIKE AMOUNT OF PARTICLE IN VELOCITY SPACE
@@ -535,16 +533,18 @@ public:
 
     void gatherFd() {
 
-        gather(this->Fd, this->gradRBH_mv, this->P/*/pMass*/);
+        gather(this->Fd, this->gradRBH_mv, this->P);
 
     }
 
     void gatherD() {
 
-        gather(this->D0, diffCoeffArr_mv[0], this->P/*/pMass*/);
-        gather(this->D1, diffCoeffArr_mv[1], this->P/*/pMass*/);
-        gather(this->D2, diffCoeffArr_mv[2], this->P/*/pMass*/);
+        gather(this->D0, diffCoeffArr_mv[0], this->P);
+        gather(this->D1, diffCoeffArr_mv[1], this->P);
+        gather(this->D2, diffCoeffArr_mv[2], this->P);
 
+        //lower doesnt work..
+        // gather(this->tmp0, diffusionCoeff_mv, this->P);
     }
 
 
