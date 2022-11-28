@@ -198,7 +198,7 @@ public:
     ParticleAttrib<Vector_t> D1;//NEW
     ParticleAttrib<Vector_t> D2;//NEW
 
-    
+    double GAMMA;
     double pMass; // NEW
     // unsigned int nP; // NEW
 

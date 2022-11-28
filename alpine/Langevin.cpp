@@ -634,22 +634,141 @@ void prepareDiffCoeff(bunch& P){
 
 }
 
-//compiles
+//DUMBB
+// template<typename V>
+// Matrix_t cholesky(const V& d0, const V& d1, const V& d2){
+        
+//         //since we hav a matrix as a list of vecotr our access is inversedm meaning 
+//         // we use row major; different compared to mathematical writing
+//         Matrix_t LL;
+
+//             if( 0!=(LL(0)(0)=sqrt(d0(0))) && 0 != (LL(1)(1) = sqrt(d1(1)- pow( LL(0)(1)=d0(1)/LL(0)(0), 2))) ){
+//                 // LL(0)(0) = sqrt(d0(0));
+//                 // LL(0)(1) = d0(1)/LL(0)(0);
+//                 LL(0)(2) = d0(2)/LL(0)(0);
+//                 LL(1)(0) = 0.0;
+//                 // LL(1)(1) = sqrt(d1(1)- pow(LL(0)(1), 2));
+//                 LL(1)(2) = (d1(2) - LL(0)(1)*LL(0)(2))/LL(1)(1);
+//                 LL(2)(0) = 0.0;
+//                 LL(2)(1) = 0.0;
+//                 LL(2)(2) = sqrt( d2(2) - pow(LL(0)(1), 2) - pow(LL(0)(2), 2));
+//             }
+//             else if( 0!=LL(0)(0) && 0!=(LL(2)(2) = sqrt(d2(2) - pow( LL(0)(1)=d0(2)/LL(0)(0), 2)))){
+//                 LL(0)(2) = d0(2)/LL(0)(0);
+//                 LL(2)(0) = 0.0;
+//                 LL(2)(1) = (d2(1) - LL(0)(2)*LL(0)(1))/LL(2)(2);
+//                 LL(1)(0) = 0.0;
+//                 LL(1)(2) = 0.0;
+//                 LL(1)(1) = sqrt( d1(1) - pow(LL(0)(2), 2) - pow(LL(0)(1), 2));
+//             }
+//             else if(0!=(LL(1)(1)=sqrt(d1(1))) && 0 != (LL(0)(0) = sqrt(d0(0)- pow( LL(1)(0)=d1(0)/LL(1)(1), 2))) ){
+//                 LL(1)(2) = d1(2)/LL(1)(1);
+//                 LL(0)(1) = 0.0;
+//                 LL(0)(2) = (d0(2) - LL(1)(0)*LL(1)(2))/LL(0)(0);
+//                 LL(2)(1) = 0.0;
+//                 LL(2)(0) = 0.0;
+//                 LL(2)(2) = sqrt( d2(2) - pow(LL(1)(0), 2) - pow(LL(1)(2), 2));
+//             }
+//             else if (0 != LL(1)(1)   && 0 != (LL(2)(2) = sqrt(d2(2)- pow( LL(1)(2)=d1(2)/LL(1)(1), 2))) ){
+//                 LL(1)(0) = d1(0)/LL(1)(1);
+//                 LL(2)(1) = 0.0;
+//                 LL(2)(0) = (d2(0) - LL(1)(2)*LL(1)(0))/LL(2)(2);
+//                 LL(0)(1) = 0.0;
+//                 LL(0)(2) = 0.0;
+//                 LL(0)(0) = sqrt( d0(0) - pow(LL(1)(2), 2) - pow(LL(1)(0), 2));
+//             }
+//             else if(0!=(LL(2)(2)=sqrt(d2(2))) && 0 != (LL(1)(1) = sqrt(d1(1)- pow( LL(2)(1)=d2(1)/LL(2)(2), 2))) ){
+//                 LL(2)(0) = d2(0)/LL(2)(2);
+//                 LL(1)(2) = 0.0;
+//                 LL(1)(0) = (d1(0) - LL(2)(1)*LL(2)(0))/LL(1)(1);
+//                 LL(0)(2) = 0.0;
+//                 LL(0)(1) = 0.0;
+//                 LL(0)(0) = sqrt( d0(0) - pow(LL(2)(1), 2) - pow(LL(2)(0), 2));
+//             }
+//             else if(0!=LL(2)(2) && 0!= (LL(0)(0) = sqrt(d0(0)- pow( LL(2)(0)=d2(0)/LL(2)(2), 2))) ){
+//                 LL(2)(1) = d2(1)/LL(2)(2);
+//                 LL(0)(2) = 0.0;
+//                 LL(0)(1) = (d0(1) - LL(2)(0)*LL(2)(1))/LL(0)(0);
+//                 LL(1)(2) = 0.0;
+//                 LL(1)(0) = 0.0;
+//                 LL(1)(1) = sqrt( d1(1) - pow(LL(2)(0), 2) - pow(LL(2)(1), 2));
+//             }        
+//             else{
+//                 //throw std::invalid_argument( "shit ...no valid cholesky decomposition" );
+//                         LL(0)(0) = 0.0;
+//                         LL(0)(1) = 0.0;
+//                         LL(0)(2) = 0.0;
+//                         LL(1)(0) = 0.0;
+//                         LL(1)(1) = 0.0;
+//                         LL(1)(2) = 0.0;
+//                         LL(2)(0) = 0.0;
+//                         LL(2)(1) = 0.0;
+//                         LL(2)(2) = 0.0;
+//             }        
+//         // //debug only
+//         // LL(0) = d0;
+//         // LL(1) = d1;
+//         // LL(2) = d2;
+    
+//         //standard anfällig auf 0 division
+//         // LL(0)(0) = sqrt(d0(0));
+//         // LL(0)(1) = d0(1)/LL(0)(0);
+//         // LL(0)(2) = d0(2)/LL(0)(0);
+//         // LL(1)(0) = 0.0;
+//         // LL(1)(1) = sqrt(d1(1)- pow(LL(0)(1), 2));
+//         // LL(1)(2) = (d1(2) - LL(0)(1)*LL(0)(2))/LL(1)(1);
+//         // LL(2)(0) = 0.0;
+//         // LL(2)(1) = 0.0;
+//         // LL(2)(2) = sqrt( d2(2) - pow(LL(0)(1), 2) - pow(LL(0)(2), 2));
+//         return LL;
+// }
+
+//rowmajor...
 template<typename V>
 Matrix_t cholesky(const V& d0, const V& d1, const V& d2){
         
         //since we hav a matrix as a list of vecotr our access is inversedm meaning 
         // we use row major; different compared to mathematical writing
+        double epszero = 1e-30 ;
         Matrix_t LL;
-        LL(0)(0) = sqrt(d0(0));
-        LL(0)(1) = d0(1)/LL(0)(0);
-        LL(0)(2) = d0(2)/LL(0)(0);
-        LL(1)(0) = 0.0;
-        LL(1)(1) = sqrt(d1(1)- pow(LL(0)(1), 2));
-        LL(1)(2) = (d1(2) - LL(0)(1)*LL(0)(2))/LL(1)(1);
-        LL(2)(0) = 0.0;
-        LL(2)(1) = 0.0;
-        LL(2)(2) = sqrt( d2(2) - pow(LL(0)(1), 2) - pow(LL(0)(2), 2));
+        const V* D[] = {&d0, &d1, &d2}; 
+        // this is an array of pointers and not a pointer to an array
+
+        auto finish_LL = [&](const unsigned i0, const unsigned i1, const unsigned i2){
+                // LL(0)(0) = sqrt(d0(0));
+                // LL(0)(1) = d0(1)/LL(0)(0);
+                LL(i0)(i2) = (*D[i0])(i2)/LL(i0)(i0);
+                LL(i1)(i0) = 0.0;
+                // LL(1)(1) = sqrt(d1(1)- pow(LL(0)(1), 2));
+                LL(i1)(i2) = (*D[i1])(i2) - LL(i0)(i1)*LL(i0)(i2)/LL(i1)(i1);
+                LL(i2)(i0) = 0.0;
+                LL(i2)(i1) = 0.0;
+                LL(i2)(i2) = sqrt( (*D[i2])(i2) - pow(LL(i0)(i1), 2) - pow(LL(i0)(i2), 2)) ;
+        };
+
+        auto get_2_diag = [&](const unsigned i0, const unsigned i1){//, const unsigned i2){
+            return sqrt((*D[i1])(i1)- pow( LL(i0)(i1)=(*D[i0])(i1)/LL(i0)(i0), 2));
+        };
+
+
+
+            if     (epszero >=(LL(0)(0)=sqrt(d0(0)))    && epszero >= (LL(1)(1) = get_2_diag(0,1/*,2*/) ))    finish_LL(0, 1, 2);
+            else if(epszero >= LL(0)(0)                 && epszero >= (LL(2)(2) = get_2_diag(0,2/*,1*/) ))    finish_LL(0, 2, 1);
+            else if(epszero >=(LL(1)(1)=sqrt(d1(1)))    && epszero >= (LL(0)(0) = get_2_diag(1,0/*,2*/) ))    finish_LL(1, 0, 2);
+            else if(epszero >= LL(1)(1)                 && epszero >= (LL(2)(2) = get_2_diag(1,2/*,0*/) ))    finish_LL(1, 2, 0);
+            else if(epszero >=(LL(2)(2)=sqrt(d2(2)))    && epszero >= (LL(1)(1) = get_2_diag(2,1/*,0*/) ))    finish_LL(2, 1, 0);
+            else if(epszero >= LL(2)(2)                 && epszero >= (LL(0)(0) = get_2_diag(2,0/*,1*/) ))    finish_LL(2, 0, 1);
+            else{
+                for(unsigned di = 0; di<Dim; ++di)
+                 for(unsigned dj = 0; dj<Dim; ++dj)
+                  LL(di)(dj)=0.0;
+            }
+
+            //this shouldt be used but without we have runtime errors....
+            for(unsigned di = 0; di<Dim; ++di)
+                 for(unsigned dj = 0; dj<Dim; ++dj)
+                  if(std::isnan(LL(di)(dj)) || std::isinf(LL(di)(dj))) LL(di)(dj)=0.0;  
+
         return LL;
 }
 
@@ -667,7 +786,7 @@ Matrix_t cholesky(const V& d0, const V& d1, const V& d2){
 //         LL[2][2]= sqrt( d2[2] - pow(LL[0][1], 2) - pow(LL[0][2], 2));
 // }
 
-Vector_t  GeMV_t(const Matrix_t& M, const Vector_t& V){return V[0]*M[0]+V[1]*M[1]+V[2]*M[2];}
+Vector_t  GeMV_t(const Matrix_t& M, const Vector_t V){return V[0]*M[0]+V[1]*M[1]+V[2]*M[2];}
 
 
 template<typename bunch>
@@ -808,7 +927,10 @@ int main(int argc, char *argv[]){
 
 //we could just reset the mesh between velocity and particle configurations ... all the time...
 
+    //ke is only 1/e0!!
     P->pMass =particleMass;
+    //ln(LAMBDA) = 10;
+    P->GAMMA = 10.0* pow(particleCharge, 4) * ke*ke / ( 4*M_PI * pow(particleMass, 2));
 
     Vector_t origin_v({0, 0, 0});
     P->nv_mv = {NV,NV,NV};
@@ -855,7 +977,8 @@ int main(int argc, char *argv[]){
         << "MeshSpacing         = " << std::setw(20) << hr << endl
         << "total Charge        = " << std::setw(20) << Q << endl
         << "LBT                 = " << std::setw(20) << P->loadbalancethreshold_m << endl
-        << "Ke                 = " << std::setw(20) << ke << endl;
+        << "Ke                  = " << std::setw(20) << ke << endl
+        << "GridDim Vel-Mesh    = " << std::setw(20) << NV << endl;
 
     
 
@@ -1054,13 +1177,14 @@ msg << "Start time step: " << it+1 << endl;
         P->rho_mv = -8.0*M_PI*P->rho_mv;
         msg << "c"<<endl;
         P->gradRBH_mv = grad(P->rho_mv);
-        msg << "a"<<endl;
-        P->gradRBH_mv = -8.0*M_PI*P->gradRBH_mv;
+        msg << "a"<<endl; 
+        P->gradRBH_mv = P->GAMMA * P->gradRBH_mv;
         msg << "d"<<endl;
         P->solver_mvG->solve();
         msg << "a"<<endl;
         P->diffusionCoeff_mv = hess(P->rho_mv);
         msg << "e"<<endl;
+        P->diffusionCoeff_mv = P->diffusionCoeff_mv * P->GAMMA; 
 
         //do i need th all the subobjects for the velocity space mesh?? like orb and loadbalancing??
 
@@ -1075,7 +1199,7 @@ msg << "Start time step: " << it+1 << endl;
         //possible to save some flops here ...
         P->P = P->P + dt*P->Fd; 
         msg << "g"<<endl;
-        applyLangevin(*P, Gaussian3d);
+        applyLangevin(*P, Gaussian3d); //runtime error
                         // cholesky(P->tmp0, P->D0, P->D1, P->D2);
                         // P->P = P->P + GeMV_t(P->tmp0, Gaussian3d());
                         // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
