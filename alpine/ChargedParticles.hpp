@@ -248,6 +248,8 @@ public:
         this->addAttribute(E);
 
         //EXCL_LANGEVIN
+
+        this->addAttribute(rho);
         this->addAttribute(Fd);
         this->addAttribute(D0);
         this->addAttribute(D1);
@@ -445,7 +447,7 @@ public:
 
         ippl::ParameterList sp;
 
-        sp.add("output_type", Solver_t::SOL_AND_GRAD);
+        sp.add("output_type", Solver_t::SOL); // sol and grad doesnt work ...might be cause??...
         sp.add("use_heffte_defaults", false);  
         sp.add("use_pencils", true);  
         sp.add("use_reorder", false);  
@@ -484,10 +486,6 @@ public:
         rho_mv = 0.0;
         scatter(this->rho, this->rho_mv, this->P);
         
-
-
-
-    
         //ingore for now this is currently wrong
         // //  Kinetic energy conservation; both sides need to be recalculated with each timestep...
         // //KINETIC ENERGY OF PARTICLES  
@@ -704,6 +702,7 @@ public:
                                     double myVal = std::pow(Eview(i, j, k)[0], 2);
                                     valL += myVal;
                                 }, Kokkos::Sum<double>(temp));
+                                Kokkos::fence();
         double globaltemp = 0.0;
         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
         fieldEnergy = globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
@@ -720,6 +719,7 @@ public:
                                     double myVal = std::fabs(Eview(i, j, k)[0]);
                                     if(myVal > valL) valL = myVal;
                                 }, Kokkos::Max<double>(tempMax));
+                                Kokkos::fence();
         ExAmp = 0.0;
         MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 //////////////////////////////////////////////////////////////////////////////////////////////////////

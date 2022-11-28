@@ -216,10 +216,11 @@ void createParticleDistributionColdSphere( 	bunch& P,
        	 		pRHost(i) = pos; // () or [] is indifferent
 	}
 	Vector_t mom({0,0,0});
-       
+
+      
 	Kokkos::deep_copy(P.R.getView(), pRHost);
 	P.q = -qi;
-    P.P = mom;  //zero momentum intial conditiov
+    P.P = mom;  //zero momentum intial condition
     P.rho = 1.0;
 	//	m << "()"<< pRHost(0)(0) << pRHost(0)(1) << pRHost(0)(2) << endl;
 	//	m << "[]"<< pRHost[0](0) << pRHost[0](1) << pRHost[0](2) << endl;
@@ -830,7 +831,8 @@ int main(int argc, char *argv[]){
     P->diffCoeffArr_mv[1].initialize(mesh_v, FL_v);
     P->diffCoeffArr_mv[2].initialize(mesh_v, FL_v);
 
-    // P->TMP0.initialize(mesh_v, FL_v);
+    P->initRosenbluthHSolver();
+    P->initRosenbluthGSolver();
 
 
 
@@ -976,17 +978,20 @@ msg << "Start time step: " << it+1 << endl;
         P->P = P->P - 0.5 * dt * P->E * particleCharge;
         IpplTimings::stopTimer(PTimer);
 
+        msg << "A"<<endl; 
         //drift
         IpplTimings::startTimer(RTimer);
         P->R = P->R + dt * P->P / particleMass;
         IpplTimings::stopTimer(RTimer);
         //Since the particles have moved spatially update them to correct processors
+
+        msg << "B"<<endl; 
+
 	    IpplTimings::startTimer(updateTimer);
         PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
 
-
-        
+        msg << "C"<<endl; 
         // Domain Decomposition
         if (P->balance(nP, it+1)) {
            msg << "Starting repartition" << endl;
@@ -997,65 +1002,89 @@ msg << "Start time step: " << it+1 << endl;
            //P->dumpLocalDomains(FL, it+1);
            //IpplTimings::stopTimer(dumpDataTimer);
         }
-
+        msg << "C"<<endl; 
         //scatter the charge onto the underlying grid
-        P->scatterCIC(nP, it+1, hr);
+        P->scatterCIC(nP, it+1, hr); // runtime error during second loop
+        //scatter() causes to crash a Kokkos parallel for loop
+
+        msg << "D"<<endl; 
+
         //Field solve
         IpplTimings::startTimer(SolveTimer);
         P->solver_mp->solve();
         IpplTimings::stopTimer(SolveTimer);
 
+        msg << "E"<<endl; 
         P->E_m = P->E_m * ke;
 
+        msg << "F"<<endl; 
         // gather E field
         P->gatherCIC();
+
+        msg << "G"<<endl; 
 
 // =================MYSTUFF::CONSTANT_FOCUSING======================        
         //avgEF = compAvgSCForce(*P, nP);
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
-// =================MYSTUFF::CONSTANT_FOCUSING======================
+// =================================================================
+
+        msg << "H"<<endl; 
         //kick
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
 
 
+        msg << "I"<<endl; 
 // =================MYSTUFF::_LANGEVIN_COLLISION======================
         //switching  to velocity ...
         P->P = P->P/P->pMass;
-
+        msg << "a"<<endl; 
         if(setVmaxmin(*P)){
             for(unsigned int d = 0; d>Dim; ++d) P->hv_mv[d] = (P->vmax_mv[d]-P->vmin_mv[d])/P->nv_mv[d];
             origin_v = P->vmin_mv;
             mesh_v.setOrigin(origin_v);
             mesh_v.setMeshSpacing(P->hv_mv);
         }
-
+        msg << "b"<<endl; 
         P->scatterVEL(nP, P->hv_mv);
+        msg << "a"<<endl; 
         P->solver_mvH->solve();
+        msg << "aa" << endl;
         P->rho_mv = -8.0*M_PI*P->rho_mv;
+        msg << "c"<<endl;
+        P->gradRBH_mv = grad(P->rho_mv);
+        msg << "a"<<endl;
         P->gradRBH_mv = -8.0*M_PI*P->gradRBH_mv;
+        msg << "d"<<endl;
         P->solver_mvG->solve();
+        msg << "a"<<endl;
         P->diffusionCoeff_mv = hess(P->rho_mv);
+        msg << "e"<<endl;
 
         //do i need th all the subobjects for the velocity space mesh?? like orb and loadbalancing??
 
         // for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d]; //doesnt work
-        prepareDiffCoeff(*P); // safer option       
+        prepareDiffCoeff(*P); // safer option 
+        msg << "a"<<endl;      
         P->gatherFd();
+        msg << "f"<<endl;
         P->gatherD();
+        msg << "a"<<endl;
 
         //possible to save some flops here ...
         P->P = P->P + dt*P->Fd; 
+        msg << "g"<<endl;
         applyLangevin(*P, Gaussian3d);
                         // cholesky(P->tmp0, P->D0, P->D1, P->D2);
                         // P->P = P->P + GeMV_t(P->tmp0, Gaussian3d());
                         // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
 
+        msg << "a"<<endl;
         P->P = P->P*P->pMass;
         //switching to momenta
     
-
+//runs to the end and gets kicked out
     
    	//error if variable not used..   aaand we dont use it?? ever???
 	double tmp = interactionRadius;
