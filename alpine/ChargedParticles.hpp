@@ -18,6 +18,7 @@
 
 #include "Ippl.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
+#include "Solver/FFTPoissonSolver.h"
 
 // dimension of our positions
 constexpr unsigned Dim = 3;
@@ -45,6 +46,7 @@ typedef Vector<double, Dim>  Vector_t;
 typedef Field<double, Dim>   Field_t;
 typedef Field<Vector_t, Dim> VField_t;
 typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim> Solver_t;
+typedef ippl::FFTPoissonSolver<Vector_t, double, Dim> VSolver_t;
 
 //EXCL_LANGEVIN
 typedef Vector<Vector_t, Dim> Matrix_t;
@@ -178,7 +180,6 @@ public:
     // ORB orb_v;
     Field_t   fv_mv; //NEW
     VField_t  gradRBH_mv; //NEW  --> Fd
-    VField_t  gradRBG_mv; //NEW
 
     MField_t diffusionCoeff_mv;//NEW
     VField_t diffCoeffArr_mv[3];//NEW
@@ -188,8 +189,7 @@ public:
     // we dont actually need those since we get the SOL returned at the input address -> fv_mv (overwrite)
     //defined elsewhere typedef ParticleAttrib<vector_type>   particle_position_type;
 
-    std::shared_ptr<Solver_t> solver_mvH; //NEW
-    std::shared_ptr<Solver_t> solver_mvG; //NEW
+    std::shared_ptr<VSolver_t> solver_mvRB; //NEW
 
 
     ParticleAttrib<double> fv;//NEW == 1
@@ -439,41 +439,22 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
+// Possible algorithms: "HOCKNEY" or "VICO".
 
+    void initRosenbluthSolver(){
 
-    void initRosenbluthHSolver(){
-
+        Inform m("RBSolve init");
         ippl::ParameterList sp;
 
-        sp.add("output_type", Solver_t::SOL); // sol and grad doesnt work ...might be cause??...
-        sp.add("use_heffte_defaults", false);  
-        sp.add("use_pencils", true);  
-        sp.add("use_reorder", false);  
-        sp.add("use_gpu_aware", true);  
+        sp.add("use_pencils", true);
         sp.add("comm", ippl::p2p_pl);  
-        sp.add("r2c_direction", 0);  
-
-        solver_mvH = std::make_shared<Solver_t>();
-        solver_mvH->mergeParameters(sp);
-        solver_mvH->setRhs(this->fv_mv);
-        solver_mvH->setLhs(this->gradRBH_mv);
-    }
-    void initRosenbluthGSolver(){
-
-        ippl::ParameterList sp;
-
-        sp.add("output_type", Solver_t::SOL);
+        sp.add("use_reorder", false); 
         sp.add("use_heffte_defaults", false);  
-        sp.add("use_pencils", true);  
-        sp.add("use_reorder", false);  
         sp.add("use_gpu_aware", true);  
-        sp.add("comm", ippl::p2p_pl);  
-        sp.add("r2c_direction", 0);  
+        sp.add("r2c_direction", 0); 
+        // sp.add("output_type", VSolver_t::SOL);
 
-        solver_mvG = std::make_shared<Solver_t>();
-        solver_mvG->mergeParameters(sp);
-        solver_mvG->setRhs(this->fv_mv);
-        solver_mvG->setLhs(this->gradRBG_mv);
+        solver_mvRB = std::make_shared<VSolver_t>(this->fv_mv, sp, "HOCKNEY");
     }
 
 
@@ -484,46 +465,18 @@ public:
         fv_mv = 0.0;
         scatter(this->fv, this->fv_mv, this->P);
         
-        //ingore for now this is currently wrong
-        // //  Kinetic energy conservation; both sides need to be recalculated with each timestep...
-        // //KINETIC ENERGY OF PARTICLES  
-        // DOESNT REALLY MAKE SENSE NOW DOES IT?? MORE LIKE AMOUNT OF PARTICLE IN VELOCITY SPACE
-        // auto pPView = this->P.getView();
-        // double Ekin_part_loc, Ekin_part;
-        // Kokkos::parallel_reduce("get kinetic Energy",
-	    // 			locNp,
-	    // 			KOKKOS_LAMBDA(const int k, double& vsum ){
-        //                 vsum += mynorm(pPView(k));
-	    // 			},
-        //             Kokkos::Sum<double>(Ekin_part_loc)	
-	    // );
-        // Kokkos::fence();
-        // MPI_Allreduce(Ekin_part_loc, Ekin_part, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-
-        // //KINETIC ENERGY FROM GRID
-        // // else: kokkos reduction over 3 dimension like elsewhere
-        // Field_t Ekin_field = mynrom(vel_m);
-        // double Ekin_grid = Ekin_field.sum();
-        // Ekin_grid *= 0.5*pMass;
-
-        //  double rel_error = std::fabs((Ekin_part-Ekin_grid)/Ekin_part);
+        // how to check kinetic energy conservations...
         //  m << "Rel. error in Ekin conservation = " << rel_error << endl;
+        //there exist a reduction for views and particle attributes in ippl?
+        // iuess we can check for integration over velocity space conservation...
 
-        //  if(Ippl::Comm->rank() == 0) {
-        //      if(rel_error > 1e-10) {
-        //          m << "Time step: " << iteration << endl;
-        //          m << "Rel. error in charge conservation: "
-        //            << rel_error << endl;
-        //          std::abort();
-        //      }
-        //  }
+           
+        // ???????????????????????????????????????????????????????????
 
-        //there exist a reduction for views and particle attributes in ippl??
-        // ???????????????????????????????????????????????????????????
-        //  double Q_grid = rho_m.sum();
-        
-        // ???????????????????????????????????????????????????????????
-         fv_mv = fv_mv / (hvField[0] * hvField[1] * hvField[2]);
+        double tmp = totalP;
+        tmp += hvField[0];
+
+         fv_mv = fv_mv / (hvField[0] * hvField[1] * hvField[2]); //ask sri...
          fv_mv = fv_mv - (double(totalP)/(   (vmax_mv[0] - vmin_mv[0]) * (vmax_mv[1] - vmin_mv[1]) * (vmax_mv[2] - vmin_mv[2])  ));
     }
 

@@ -676,19 +676,18 @@ int main(int argc, char *argv[]){
     }
 
     // first  MESH initialization doesnt matter we reget this after each step.
-    Mesh_t          mesh_v(domain_v, P->hv_mv, origin);
-    FieldLayout_t   FL_v(domain_v, decomp, false);
+    bool isVallPeriodic = false;
+    Mesh_t          mesh_v(domain_v, P->hv_mv, origin_v);
+    FieldLayout_t   FL_v(domain_v, decomp, isVallPeriodic);
 
     P->fv_mv.initialize(mesh_v, FL_v);
     P->gradRBH_mv.initialize(mesh_v, FL_v);
-    P->gradRBG_mv.initialize(mesh_v, FL_v);
     P->diffusionCoeff_mv.initialize(mesh_v, FL_v);
     P->diffCoeffArr_mv[0].initialize(mesh_v, FL_v);
     P->diffCoeffArr_mv[1].initialize(mesh_v, FL_v);
     P->diffCoeffArr_mv[2].initialize(mesh_v, FL_v);
 
-    P->initRosenbluthHSolver();
-    P->initRosenbluthGSolver();
+    P->initRosenbluthSolver();
 
 
 
@@ -927,18 +926,24 @@ msg << "Start time step: " << it+1 << endl;
         P->fv_mv = -8.0*M_PI*P->fv_mv;
         
         msg << "d" << endl;
-        P->solver_mvH->solve(); // this solver causes to crash 362 //no error message ...
+
+        mesh_v.setOrigin({0, 0, 0});
+
+        P->solver_mvRB->solve(); // this solver causes to crash 362 //no error message ...
         msg << "e"<<endl;
         P->gradRBH_mv = grad(P->fv_mv);
         msg << "f"<<endl; 
         P->gradRBH_mv = P->GAMMA * P->gradRBH_mv;
 
         msg << "g"<<endl;
-        P->solver_mvG->solve(); // possible crash ... when langevin step isnt performed // cannot create std vector larger than max size..
+        P->solver_mvRB->solve(); // possible crash ... when langevin step isnt performed // cannot create std vector larger than max size..
         msg << "h"<<endl;
         P->diffusionCoeff_mv = hess(P->fv_mv);
         msg << "i"<<endl;
         P->diffusionCoeff_mv = P->GAMMA *  P->diffusionCoeff_mv; 
+
+
+        mesh_v.setOrigin(origin_v);
 
 
         prepareDiffCoeff(*P);                // for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d]; //doesnt work
@@ -948,9 +953,9 @@ msg << "Start time step: " << it+1 << endl;
         P->gatherD();
         msg << "l"<<endl;
 
-        // P->P = P->P + dt*P->Fd; 
+        P->P = P->P + dt*P->Fd;  //1
         // msg << "m"<<endl;
-        applyLangevin(*P, Gaussian3d);       // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
+        applyLangevin(*P, Gaussian3d);   //2    // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
 
         msg << "x"<<endl;
         P->P = P->P*P->pMass;
@@ -963,11 +968,16 @@ msg << "Start time step: " << it+1 << endl;
 	        tmp += 1;
             tmp += Gaussian3d()[1];
 
-            //if 1 2 are performed it crashes or scatterCIC    (print...)(in solver?? i think mostly bad numbers...
+            //if 1 2 are performed it crashes or scatterCIC 
+                        // or  PRINT ...   ?without error messahe ....
+                        // not sure anymore ..(in solver?? i think mostly bad numbers...
 
-            //if 1 is performed it crashes in scattercic with bad numbers in output
+            //if 1 is performed it crashes in scatterCIC with bad numbers in output
+            // or  gets stuck (print...) with error message: Error in `/data/user/klappr_s/wenv/ippl/build_openmp/alpine/./Langevin': free(): invalid next size (fast): 0x00000000023fffe0 ***..
 
             //if 2 is performed it too crasshes in ne of vel  solver (invalid fourrier transform)... no bad numbers are deetected..
+                // or  gets stuck (print...) without error messahe ....
+           
 
             // if neither it gets stuck in the print or velsolveer crashes with Segmentation fault: Sent by the kernel at address (nil))
             // no bad number in output
