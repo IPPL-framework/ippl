@@ -195,7 +195,8 @@ void createParticleDistributionColdSphere( 	bunch& P,
         P.create(Nparticle);
 	
 
-        std::default_random_engine generator(0);
+        std::mt19937 generator(0);
+        // std::default_random_engine generator(0);
         std::normal_distribution<double> normdistribution(0,1.0);
         auto normal = std::bind(normdistribution, generator);
         std::uniform_real_distribution<double> unidistribution(0,1);
@@ -221,7 +222,7 @@ void createParticleDistributionColdSphere( 	bunch& P,
 	Kokkos::deep_copy(P.R.getView(), pRHost);
 	P.q = -qi;
     P.P = mom;  //zero momentum intial condition
-    P.rho = 1.0;
+    P.fv = 1.0;
 	//	m << "()"<< pRHost(0)(0) << pRHost(0)(1) << pRHost(0)(2) << endl;
 	//	m << "[]"<< pRHost[0](0) << pRHost[0](1) << pRHost[0](2) << endl;
    	m << "finished Initializing" << endl;
@@ -404,7 +405,7 @@ void prepareDiffCoeff(bunch& P){
         auto pDCA0View   = P.diffCoeffArr_mv[0].getView();
         auto pDCA1View   = P.diffCoeffArr_mv[1].getView();
         auto pDCA2View   = P.diffCoeffArr_mv[2].getView();
-        const int nghost = P.rho_mv.getNghost();
+        const int nghost = P.fv_mv.getNghost();
         //or do i have to use rho for the extent option?? and add a new view..
 
     Kokkos::parallel_for("???????",
@@ -678,7 +679,7 @@ int main(int argc, char *argv[]){
     Mesh_t          mesh_v(domain_v, P->hv_mv, origin);
     FieldLayout_t   FL_v(domain_v, decomp, false);
 
-    P->rho_mv.initialize(mesh_v, FL_v);
+    P->fv_mv.initialize(mesh_v, FL_v);
     P->gradRBH_mv.initialize(mesh_v, FL_v);
     P->gradRBG_mv.initialize(mesh_v, FL_v);
     P->diffusionCoeff_mv.initialize(mesh_v, FL_v);
@@ -797,7 +798,8 @@ int main(int argc, char *argv[]){
 
 
 
-    std::default_random_engine generator(0);
+    std::mt19937 generator(0);
+    // std::default_random_engine generator(0);
     std::normal_distribution<double> normdistribution(0.0, dt);
     auto gauss = std::bind(normdistribution, generator);
     auto Gaussian3d = [&gauss](){return Vector_t({gauss(), gauss(), gauss()}); };
@@ -891,7 +893,6 @@ msg << "Start time step: " << it+1 << endl;
 
 
 // =================MYSTUFF::CONSTANT_FOCUSING======================        
-        //avgEF = compAvgSCForce(*P, nP);
         msg << "H"<<endl; 
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
 // =================================================================
@@ -923,19 +924,19 @@ msg << "Start time step: " << it+1 << endl;
 
 
         msg << "c"<<endl; 
-        P->rho_mv = -8.0*M_PI*P->rho_mv;
+        P->fv_mv = -8.0*M_PI*P->fv_mv;
         
         msg << "d" << endl;
         P->solver_mvH->solve(); // this solver causes to crash 362 //no error message ...
         msg << "e"<<endl;
-        P->gradRBH_mv = grad(P->rho_mv);
+        P->gradRBH_mv = grad(P->fv_mv);
         msg << "f"<<endl; 
         P->gradRBH_mv = P->GAMMA * P->gradRBH_mv;
 
         msg << "g"<<endl;
         P->solver_mvG->solve(); // possible crash ... when langevin step isnt performed // cannot create std vector larger than max size..
         msg << "h"<<endl;
-        P->diffusionCoeff_mv = hess(P->rho_mv);
+        P->diffusionCoeff_mv = hess(P->fv_mv);
         msg << "i"<<endl;
         P->diffusionCoeff_mv = P->GAMMA *  P->diffusionCoeff_mv; 
 

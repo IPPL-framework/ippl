@@ -176,7 +176,7 @@ public:
 
 
     // ORB orb_v;
-    Field_t   rho_mv; //NEW
+    Field_t   fv_mv; //NEW
     VField_t  gradRBH_mv; //NEW  --> Fd
     VField_t  gradRBG_mv; //NEW
 
@@ -185,14 +185,14 @@ public:
 
     // VField_t TMP0;//NEW
 
-    // we dont actually need those since we get the SOL returned at the input address -> rho_mv (overwrite)
+    // we dont actually need those since we get the SOL returned at the input address -> fv_mv (overwrite)
     //defined elsewhere typedef ParticleAttrib<vector_type>   particle_position_type;
 
     std::shared_ptr<Solver_t> solver_mvH; //NEW
     std::shared_ptr<Solver_t> solver_mvG; //NEW
 
 
-    ParticleAttrib<double> rho;//NEW == 1
+    ParticleAttrib<double> fv;//NEW == 1
     ParticleAttrib<Vector_t> Fd;//NEW
     ParticleAttrib<Vector_t> D0;//NEW
     ParticleAttrib<Vector_t> D1;//NEW
@@ -223,7 +223,7 @@ public:
         this->addAttribute(P);
         this->addAttribute(E);
         //EXCL_LANGEVIN
-        this->addAttribute(rho);
+        this->addAttribute(fv);
         this->addAttribute(Fd);
         this->addAttribute(D0);
         this->addAttribute(D1);
@@ -247,7 +247,7 @@ public:
         this->addAttribute(P);
         this->addAttribute(E);
         //EXCL_LANGEVIN
-        this->addAttribute(rho);
+        this->addAttribute(fv);
         this->addAttribute(Fd);
         this->addAttribute(D0);
         this->addAttribute(D1);
@@ -455,7 +455,7 @@ public:
 
         solver_mvH = std::make_shared<Solver_t>();
         solver_mvH->mergeParameters(sp);
-        solver_mvH->setRhs(this->rho_mv);
+        solver_mvH->setRhs(this->fv_mv);
         solver_mvH->setLhs(this->gradRBH_mv);
     }
     void initRosenbluthGSolver(){
@@ -472,7 +472,7 @@ public:
 
         solver_mvG = std::make_shared<Solver_t>();
         solver_mvG->mergeParameters(sp);
-        solver_mvG->setRhs(this->rho_mv);
+        solver_mvG->setRhs(this->fv_mv);
         solver_mvG->setLhs(this->gradRBG_mv);
     }
 
@@ -481,8 +481,8 @@ public:
 
         Inform m("scatterVEL");
 
-        rho_mv = 0.0;
-        scatter(this->rho, this->rho_mv, this->P);
+        fv_mv = 0.0;
+        scatter(this->fv, this->fv_mv, this->P);
         
         //ingore for now this is currently wrong
         // //  Kinetic energy conservation; both sides need to be recalculated with each timestep...
@@ -523,8 +523,8 @@ public:
         //  double Q_grid = rho_m.sum();
         
         // ???????????????????????????????????????????????????????????
-         rho_mv = rho_mv / (hvField[0] * hvField[1] * hvField[2]);
-         rho_mv = rho_mv - (double(totalP)/(   (vmax_mv[0] - vmin_mv[0]) * (vmax_mv[1] - vmin_mv[1]) * (vmax_mv[2] - vmin_mv[2])  ));
+         fv_mv = fv_mv / (hvField[0] * hvField[1] * hvField[2]);
+         fv_mv = fv_mv - (double(totalP)/(   (vmax_mv[0] - vmin_mv[0]) * (vmax_mv[1] - vmin_mv[1]) * (vmax_mv[2] - vmin_mv[2])  ));
     }
 
     void gatherFd() {
