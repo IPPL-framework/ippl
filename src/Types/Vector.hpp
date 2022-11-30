@@ -36,6 +36,13 @@ namespace ippl {
         }
     }
 
+    template<typename T, unsigned Dim>
+    Vector<T, Dim>::Vector(const std::array<T, Dim>& a){
+        for(unsigned int i = 0; i< Dim; ++i){
+            data_m[i]= a[i];
+        }
+    }
+
 
     template<typename T, unsigned Dim>
     KOKKOS_FUNCTION
