@@ -332,198 +332,7 @@ void applyConstantFocusing( bunch& P,
 
 }
 
-
-/////////////////////////////////////////////////////////////////////////////////////////
-//Is directly integrated in dumpLagevin and currently unused.
-//Not up to date (deep copy)
-// PRE
-// POST
-//template<typename bunch>
-//Vector_t compute_temperature(const bunch& P, const double mass, const size_type N) {
-//        Inform m("compute_temperature ");
-//
-//        double locVELsum[Dim]={0.0,0.0,0.0};
-//        double globVELsum[Dim];
-//        double avgVEL[Dim];
-//
-//        double locT[Dim]={0.0,0.0,0.0};
-//        double globT[Dim];       
-//	Vector_t temperature;
-//	
-//	auto pPMirror = P.P.getHostMirror();
-//	//auto pPView = P.P.getView();
-//	//i
-//        // GET AVERAGE VELOCITY GLOBALLY
-//        for(unsigned d = 0; d<Dim; ++d){
-//		    Kokkos::parallel_reduce("get local velocity sum", 
-//		    			 P.getLocalNum(), 
-//		    			 KOKKOS_LAMBDA(const int i, double& valL){
-//                                       		double myVal = pPMirror(i)(d)/mass;
-//                                        	valL += myVal;
-//                                    	 },                    			
-//		    			 Kokkos::Sum<double>(locVELsum[d])
-//		    );
-//		Kokkos::fence();
-//	    }
-//    	MPI_Allreduce(locVELsum, globVELsum, Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
-//
-//        for(unsigned d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
-//
-//        m << "avgVEL[0]= " << avgVEL[0] << " avgVEL[1]= " << avgVEL[1] << " avgVEL[2]= " << avgVEL[2] <<  endl;
-//
-//        for(unsigned d = 0; d<Dim; ++d){
-//		    Kokkos::parallel_reduce("get local velocity sum", 
-//		    			 P.getLocalNum(), 
-//		    			 KOKKOS_LAMBDA(const int i, double& valL){
-//                                       		double myVal = (pPMirror(i)(d)/mass-avgVEL[d])*(pPMirror(i)(d)/mass-avgVEL[d]);
-//                                        	valL += myVal;
-//                                    	 },                    			
-//		    			 Kokkos::Sum<double>(locT[d])
-//		   );
-//		Kokkos::fence();
-//	    }
-//    	MPI_Allreduce(locT, globT, Dim, MPI_DOUBLE, MPI_SUM,Ippl::getComm());	
-//
-//        for(unsigned d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
-//
-//        return temperature;
-//}
-//
-
-// directly integratied into the dumpLangevin function (particle Header); this function is currently unused
-// NOT UP TOD DATE
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//template<typename bunch>
-//void writeBeamStatistics(const bunch& P, const size_t N, const int rank, const size_t iteration){
-//	//prep
-//	const size_t locNp = P.getLocalNum();
-//
-//   //calculate Moments================================
-//	auto pPMirror = P.P.getHostMirror();
-//	auto pRMirror = P.R.getHostMirror();
-//	double     centroid[2 * Dim];
-//	double       moment[2 * Dim][2 * Dim];//={};
-//
-//	double loc_centroid[2 * Dim];//={};
-//	double   loc_moment[2 * Dim][2 * Dim];//={};
-//        
-//	for(unsigned i = 0; i < 2 * Dim; i++) {
-//            loc_centroid[i] = 0.0;
-//            for(unsigned j = 0; j <= i; j++) {
-//                loc_moment[i][j] = 0.0;
-//                loc_moment[j][i] = 0.0;
-//            }
-//   	 }
-//
-//	for(unsigned i = 0; i< 2*Dim; ++i){
-//
-//		Kokkos::parallel_reduce("write Emittance 1 redcution",
-//				locNp,
-//				KOKKOS_LAMBDA(const int k,
-//						double& cent,
-//						double& mom0,
-//						double& mom1,
-//						double& mom2,
-//						double& mom3,
-//						double& mom4,
-//						double& mom5
-//						){ 
-//					double    part[2 * Dim];
-//	            			part[1] = pPMirror(k)(0);
-//	            			part[3] = pPMirror(k)(1);
-//	            			part[5] = pPMirror(k)(2);
-//	            			part[0] = pRMirror(k)(0);
-//	            			part[2] = pRMirror(k)(1);
-//	            			part[4] = pRMirror(k)(2);
-//					
-//					cent = loc_centroid[i];
-//					mom0 = loc_moment[i][0];
-//					mom1 = loc_moment[i][1];
-//					mom2 = loc_moment[i][2];
-//					mom3 = loc_moment[i][3];
-//					mom4 = loc_moment[i][4];
-//					mom5 = loc_moment[i][5];
-//	            			
-//					cent += part[i];
-//					mom0 += part[i]*part[0];
-//					mom1 += part[i]*part[1];
-//					mom2 += part[i]*part[2];
-//					mom3 += part[i]*part[3];
-//					mom4 += part[i]*part[4];
-//					mom5 += part[i]*part[5];
-//				},
-//				Kokkos::Sum<double>(loc_centroid[i]),
-//				Kokkos::Sum<double>(loc_moment[i][0]),
-//				Kokkos::Sum<double>(loc_moment[i][1]),
-//				Kokkos::Sum<double>(loc_moment[i][2]),
-//				Kokkos::Sum<double>(loc_moment[i][3]),
-//				Kokkos::Sum<double>(loc_moment[i][4]),
-//				Kokkos::Sum<double>(loc_moment[i][5])
-//		);	
-//	   Kokkos::fence();
-//	}
-//	
-//    	for(unsigned i = 0; i < 2 * Dim; i++) {
-//    	    for(unsigned j = 0; j < i; j++) {
-//    	        loc_moment[j][i] = loc_moment[i][j];
-//    	    }
-//    	}
-//
-//    MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-//
-//    MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-//    
-//    const double zero = 0.0;
-//    Vector_t eps2, fac, rsqsum, vsqsum, rvsum;
-//	Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
-//
-//    	for(unsigned int i = 0 ; i < Dim; i++) {
-//    	    rmean(i) = centroid[2 * i] / N;
-//    	    vmean(i) = centroid[(2 * i) + 1] / N;
-//    	    rsqsum(i) = moment[2 * i][2 * i] - N * rmean(i) * rmean(i);
-//    	    vsqsum(i) = moment[(2 * i) + 1][(2 * i) + 1] - N * vmean(i) * vmean(i);
-//    	    if(vsqsum(i) < 0)
-//    	        vsqsum(i) = 0;
-//    	    rvsum(i) = moment[(2 * i)][(2 * i) + 1] - N * rmean(i) * vmean(i);
-//    	}
-//
-//    eps2 = (rsqsum * vsqsum - rvsum * rvsum) / (N * N);
-//    rvsum = rvsum/double(N);
-//
-//    	for(unsigned int i = 0 ; i < Dim; i++) {
-//   		     rrms(i) = sqrt(rsqsum(i) / N);
-//   		     vrms(i) = sqrt(vsqsum(i) / N);
-//   		     eps(i)  =  std::sqrt(std::max(eps2(i), zero));
-//   		     double tmp = rrms(i) * vrms(i);
-//   		     fac(i) = (tmp == 0) ? zero : 1.0 / tmp;
-//   		 }
-//    rvrms = rvsum * fac;
-//
-//   ////=====writeBeamStatisticsVelocity ======================
-//  //if(Ippl::myNode()==0) {
-//  if(rank ==0) {
-//
-//    std::stringstream fname;
-//    fname << "data/BeamStatistics";
-//    fname << ".csv";
-//
-//    // open a new data file for this iteration
-//    // and start with header
-//    Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-//    csvout.precision(10);
-//    csvout.setf(std::ios::scientific, std::ios::floatfield);
-//
-//    if (iteration==0){
-//    	csvout << "it,rrmsX, rrmsY, rrmsZ, vrmsX,vrmsY,vrmsZ,rmeanX,rmeanY,rmeanZ,vmeanX,vmeanY,vmeanZ,epsX,epsY,epsZ,rvrmsX,rvrmsY,rvrmsZ" << endl;
-//    }//header
-//    	csvout <<iteration<<" "<<rrms<<" "<<vrms<<" "<<rmean<<" "<<vmean<<" "<<eps<<" "<<rvrms<< endl;
-//  }//output
-//}//function
-
-
-
-
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 template<typename bunch>
@@ -559,55 +368,36 @@ bool setVmaxmin( bunch& P){
 	MPI_Allreduce(vmin_loc, vmin, Dim , MPI_DOUBLE, MPI_MIN, Ippl::getComm());
 
         bool change_vgrid = false;
-        // could make symmetric, or adaptive to getting smaller ...
+        
         for(unsigned int d = 0; d<Dim; ++d){
 
             if(vmax[d] > P.vmax_mv[d]){
                 change_vgrid = true;
-                P.vmax_mv[d] = vmax[d];
+                // P.vmax_mv[d] = vmax[d];
             }
             if(vmin[d] < P.vmin_mv[d]){
                 change_vgrid = true;
-                P.vmin_mv[d] = vmin[d];
+                // P.vmin_mv[d] = vmin[d];
             }
         }
 
+        //symmetric...
+        double max, min;
+        max = std::max(std::max(vmax[0], vmax[1]), vmax[2]);
+        min = std::min(std::min(vmin[0], vmin[1]), vmin[2]);
+
+        for(unsigned d = 0; d<Dim; ++d){
+            P.vmax_mv[d]=max;
+            P.vmin_mv[d]=min;
+        }
+
+
+        //introduce buffer???
+
         return change_vgrid;
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
-//USE () INSTEAD OF [] LIEK WRITTEN IN THE IIPL2 USERGUIDE
-
-// void cholesky(Matrix_t LL, Vector_t d0, Vector_t d1, Vector_t d2){
-
-
-// void cholesky(  ParticleAttrib<Matrix_t>& LL,
-//                 ParticleAttrib<Vector_t>& d0,
-//                 ParticleAttrib<Vector_t>& d1,
-//                 ParticleAttrib<Vector_t>& d2){
-// template<typename V> // not sure how this would work
-// ParticleAttrib<Matrix_t> cholesky(const V& d0, const V& d1, const V& d2){
-
-//since particle Attributes here arent initialized with each iteration
-//and creating an Matrix_t particle Attribute creates ununderstandable compiler errors
-//this is officially an deadend and we switch to Kokkos::for_loop
-//  ParticleAttrib<Matrix_t> cholesky( ParticleAttrib<Vector_t>& d0,
-//                                     ParticleAttrib<Vector_t>& d1,
-//                                     ParticleAttrib<Vector_t>& d2){
-        
-//         //since we hav a matrix as a list of vecotr our access is inversedm meaning 
-//         // we use row major; different compared to mathematical writing
-//         ParticleAttrib<Matrix_t> LL;
-//         LL(0)(0) = sqrt(d0(0));
-//         LL(0)(1) = d0(1)/LL(0)(0);
-//         LL(0)(2) = d0(2)/LL(0)(0);
-//         LL(1)(0) = 0.0;
-//         LL(1)(1) = sqrt(d1(1)- pow(LL(0)(1), 2));
-//         LL(1)(2) = (d1(2) - LL(0)(1)*LL(0)(2))/LL(1)(1);
-//         LL(2)(0) = 0.0;
-//         LL(2)(1) = 0.0;
-//         LL(2)(2) = sqrt( d2(2) - pow(LL(0)(1), 2) - pow(LL(0)(2), 2));
-//         return LL;
-// }
 template<typename bunch>
 void prepareDiffCoeff(bunch& P){
         auto pDCView     = P.diffusionCoeff_mv.getView();
@@ -633,113 +423,32 @@ void prepareDiffCoeff(bunch& P){
 
 
 }
-
-//DUMBB
-// template<typename V>
-// Matrix_t cholesky(const V& d0, const V& d1, const V& d2){
-        
-//         //since we hav a matrix as a list of vecotr our access is inversedm meaning 
-//         // we use row major; different compared to mathematical writing
-//         Matrix_t LL;
-
-//             if( 0!=(LL(0)(0)=sqrt(d0(0))) && 0 != (LL(1)(1) = sqrt(d1(1)- pow( LL(0)(1)=d0(1)/LL(0)(0), 2))) ){
-//                 // LL(0)(0) = sqrt(d0(0));
-//                 // LL(0)(1) = d0(1)/LL(0)(0);
-//                 LL(0)(2) = d0(2)/LL(0)(0);
-//                 LL(1)(0) = 0.0;
-//                 // LL(1)(1) = sqrt(d1(1)- pow(LL(0)(1), 2));
-//                 LL(1)(2) = (d1(2) - LL(0)(1)*LL(0)(2))/LL(1)(1);
-//                 LL(2)(0) = 0.0;
-//                 LL(2)(1) = 0.0;
-//                 LL(2)(2) = sqrt( d2(2) - pow(LL(0)(1), 2) - pow(LL(0)(2), 2));
-//             }
-//             else if( 0!=LL(0)(0) && 0!=(LL(2)(2) = sqrt(d2(2) - pow( LL(0)(1)=d0(2)/LL(0)(0), 2)))){
-//                 LL(0)(2) = d0(2)/LL(0)(0);
-//                 LL(2)(0) = 0.0;
-//                 LL(2)(1) = (d2(1) - LL(0)(2)*LL(0)(1))/LL(2)(2);
-//                 LL(1)(0) = 0.0;
-//                 LL(1)(2) = 0.0;
-//                 LL(1)(1) = sqrt( d1(1) - pow(LL(0)(2), 2) - pow(LL(0)(1), 2));
-//             }
-//             else if(0!=(LL(1)(1)=sqrt(d1(1))) && 0 != (LL(0)(0) = sqrt(d0(0)- pow( LL(1)(0)=d1(0)/LL(1)(1), 2))) ){
-//                 LL(1)(2) = d1(2)/LL(1)(1);
-//                 LL(0)(1) = 0.0;
-//                 LL(0)(2) = (d0(2) - LL(1)(0)*LL(1)(2))/LL(0)(0);
-//                 LL(2)(1) = 0.0;
-//                 LL(2)(0) = 0.0;
-//                 LL(2)(2) = sqrt( d2(2) - pow(LL(1)(0), 2) - pow(LL(1)(2), 2));
-//             }
-//             else if (0 != LL(1)(1)   && 0 != (LL(2)(2) = sqrt(d2(2)- pow( LL(1)(2)=d1(2)/LL(1)(1), 2))) ){
-//                 LL(1)(0) = d1(0)/LL(1)(1);
-//                 LL(2)(1) = 0.0;
-//                 LL(2)(0) = (d2(0) - LL(1)(2)*LL(1)(0))/LL(2)(2);
-//                 LL(0)(1) = 0.0;
-//                 LL(0)(2) = 0.0;
-//                 LL(0)(0) = sqrt( d0(0) - pow(LL(1)(2), 2) - pow(LL(1)(0), 2));
-//             }
-//             else if(0!=(LL(2)(2)=sqrt(d2(2))) && 0 != (LL(1)(1) = sqrt(d1(1)- pow( LL(2)(1)=d2(1)/LL(2)(2), 2))) ){
-//                 LL(2)(0) = d2(0)/LL(2)(2);
-//                 LL(1)(2) = 0.0;
-//                 LL(1)(0) = (d1(0) - LL(2)(1)*LL(2)(0))/LL(1)(1);
-//                 LL(0)(2) = 0.0;
-//                 LL(0)(1) = 0.0;
-//                 LL(0)(0) = sqrt( d0(0) - pow(LL(2)(1), 2) - pow(LL(2)(0), 2));
-//             }
-//             else if(0!=LL(2)(2) && 0!= (LL(0)(0) = sqrt(d0(0)- pow( LL(2)(0)=d2(0)/LL(2)(2), 2))) ){
-//                 LL(2)(1) = d2(1)/LL(2)(2);
-//                 LL(0)(2) = 0.0;
-//                 LL(0)(1) = (d0(1) - LL(2)(0)*LL(2)(1))/LL(0)(0);
-//                 LL(1)(2) = 0.0;
-//                 LL(1)(0) = 0.0;
-//                 LL(1)(1) = sqrt( d1(1) - pow(LL(2)(0), 2) - pow(LL(2)(1), 2));
-//             }        
-//             else{
-//                 //throw std::invalid_argument( "shit ...no valid cholesky decomposition" );
-//                         LL(0)(0) = 0.0;
-//                         LL(0)(1) = 0.0;
-//                         LL(0)(2) = 0.0;
-//                         LL(1)(0) = 0.0;
-//                         LL(1)(1) = 0.0;
-//                         LL(1)(2) = 0.0;
-//                         LL(2)(0) = 0.0;
-//                         LL(2)(1) = 0.0;
-//                         LL(2)(2) = 0.0;
-//             }        
-//         // //debug only
-//         // LL(0) = d0;
-//         // LL(1) = d1;
-//         // LL(2) = d2;
-    
-//         //standard anfällig auf 0 division
-//         // LL(0)(0) = sqrt(d0(0));
-//         // LL(0)(1) = d0(1)/LL(0)(0);
-//         // LL(0)(2) = d0(2)/LL(0)(0);
-//         // LL(1)(0) = 0.0;
-//         // LL(1)(1) = sqrt(d1(1)- pow(LL(0)(1), 2));
-//         // LL(1)(2) = (d1(2) - LL(0)(1)*LL(0)(2))/LL(1)(1);
-//         // LL(2)(0) = 0.0;
-//         // LL(2)(1) = 0.0;
-//         // LL(2)(2) = sqrt( d2(2) - pow(LL(0)(1), 2) - pow(LL(0)(2), 2));
-//         return LL;
-// }
+////////////////////////////////////////////////////////////////////////////////////////////////
 
 //rowmajor...
 template<typename V>
-Matrix_t cholesky(const V& d0, const V& d1, const V& d2){
+// Matrix_t cholesky(const V& d0, const V& d1, const V& d2){
+Matrix_t cholesky( V& d0, V& d1, V& d2){
         
-        //since we hav a matrix as a list of vecotr our access is inversedm meaning 
-        // we use row major; different compared to mathematical writing
-        double epszero = 1e-30 ;
+    d0 = d1 = d2;
+
         Matrix_t LL;
-        const V* D[] = {&d0, &d1, &d2}; 
-        // this is an array of pointers and not a pointer to an array
+        // const V* D[] = {&d0, &d1, &d2}; 
+        V* D[] = {&d0, &d1, &d2}; 
+        double epszero = 1e-14 ;
+        
+
+        // //make symmetric ... is the gathering of symmetric matrices symmetric..
+        // (*D[0])(1) = (*D[1])(0) = ((*D[0])(1)+(*D[1])(0)) *0.5;
+        // (*D[0])(2) = (*D[2])(0) = ((*D[0])(2)+(*D[2])(0)) *0.5;
+        // (*D[1])(2) = (*D[2])(1) = ((*D[1])(2)+(*D[2])(1)) *0.5; 
 
         auto finish_LL = [&](const unsigned i0, const unsigned i1, const unsigned i2){
-                // LL(0)(0) = sqrt(d0(0));
-                // LL(0)(1) = d0(1)/LL(0)(0);
+                // LL(0)(0) = sqrt(*D[i0])(i0));
+                // LL(0)(1) = *D[i0])(i1)/LL(i0)(i0);
                 LL(i0)(i2) = (*D[i0])(i2)/LL(i0)(i0);
                 LL(i1)(i0) = 0.0;
-                // LL(1)(1) = sqrt(d1(1)- pow(LL(0)(1), 2));
+                // LL(1)(1) = sqrt(*D[i1])(i1)- pow(LL(i0)(i1), 2));
                 LL(i1)(i2) = (*D[i1])(i2) - LL(i0)(i1)*LL(i0)(i2)/LL(i1)(i1);
                 LL(i2)(i0) = 0.0;
                 LL(i2)(i1) = 0.0;
@@ -764,14 +473,21 @@ Matrix_t cholesky(const V& d0, const V& d1, const V& d2){
                   LL(di)(dj)=0.0;
             }
 
-            //this shouldt be used but without we have runtime errors....
-            for(unsigned di = 0; di<Dim; ++di)
-                 for(unsigned dj = 0; dj<Dim; ++dj)
-                  if(std::isnan(LL(di)(dj)) || std::isinf(LL(di)(dj))) LL(di)(dj)=0.0;  
+            for(unsigned di = 0; di<Dim; ++di){
+                for(unsigned dj = 0; dj<Dim; ++dj){
+                    const double LLL = LL(di)(dj);
+                    if( std::isnan(LLL)        || 
+                        std::isinf(LLL)        ||
+                        (LLL>1e20 ||LLL<-1e20) ||
+                        (LLL<1e-15&&LLL>-1e-15)
+                    )      LL(di)(dj)=0.0;  
+                }
+            }
 
         return LL;
 }
 
+//rowmajor
 // template<typename M, typename V>
 // void cholesky(M& LL, const V& d0, const V& d1, const V& d2){
     
@@ -793,8 +509,6 @@ template<typename bunch>
 void applyLangevin(bunch& P, std::function<Vector_t()> Gaussian3d){
     // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d());
 
-    //different version of this might should work none of them have created a new error but im not sure ...
-
     auto pPView =  P.P.getView();
 	auto pD0View = P.D0.getView();
 	auto pD1View = P.D1.getView();
@@ -804,9 +518,6 @@ void applyLangevin(bunch& P, std::function<Vector_t()> Gaussian3d){
 				P.getLocalNum(),
 				KOKKOS_LAMBDA(const int i){
                      pPView(i) += GeMV_t(cholesky(pD0View(i), pD1View(i), pD2View(i)), Gaussian3d());
-                    //  Matrix_t Q;
-                    //  cholesky(Q, pD0View(i), pD1View(i), pD2View(i));
-                    //  pPView(i) += GeMV_t(Q, Gaussian3d());
 	 			}	
 	 );
 	 Kokkos::fence();
@@ -816,10 +527,32 @@ void applyLangevin(bunch& P, std::function<Vector_t()> Gaussian3d){
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
 // MAIN	
 
-// P3M IS DONE IN CENTIMETER landua damping is non dimensional
-// so we can work with the same values as well
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
    
@@ -978,7 +711,7 @@ int main(int argc, char *argv[]){
         << "total Charge        = " << std::setw(20) << Q << endl
         << "LBT                 = " << std::setw(20) << P->loadbalancethreshold_m << endl
         << "Ke                  = " << std::setw(20) << ke << endl
-        << "GridDim Vel-Mesh    = " << std::setw(20) << NV << endl;
+        << "GridDim Vel_Mesh    = " << std::setw(20) << NV << endl;
 
     
 
@@ -1083,7 +816,19 @@ int main(int argc, char *argv[]){
 
 
 //TEST TIMERS
-//====================================================================================== 
+//====================================================================================== ==== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
+//////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================== 
 // TIMELOOP START
 
     msg << "Starting iterations ..." << endl;
@@ -1124,102 +869,111 @@ msg << "Start time step: " << it+1 << endl;
            //IpplTimings::startTimer(dumpDataTimer);
            //P->dumpLocalDomains(FL, it+1);
            //IpplTimings::stopTimer(dumpDataTimer);
+            msg << "LB"<<endl; 
         }
-        msg << "C"<<endl; 
+        msg << "D"<<endl; 
         //scatter the charge onto the underlying grid
         P->scatterCIC(nP, it+1, hr); // runtime error during second loop
-        //scatter() causes to crash a Kokkos parallel for loop
-
-        msg << "D"<<endl; 
-
-        //Field solve
-        IpplTimings::startTimer(SolveTimer);
-        P->solver_mp->solve();
-        IpplTimings::stopTimer(SolveTimer);
+        //scatter() causes to crash a Kokkos parallel for loop, or doesnt conserrve particles...
 
         msg << "E"<<endl; 
-        P->E_m = P->E_m * ke;
+        P->rho_m = P->rho_m * ke;
 
         msg << "F"<<endl; 
-        // gather E field
+        IpplTimings::startTimer(SolveTimer);
+        P->solver_mp->solve();
+        // P->E_m = P->E_m * ke; 
+        IpplTimings::stopTimer(SolveTimer);
+
+
+        msg << "G"<<endl;
         P->gatherCIC();
 
-        msg << "G"<<endl; 
 
 // =================MYSTUFF::CONSTANT_FOCUSING======================        
         //avgEF = compAvgSCForce(*P, nP);
+        msg << "H"<<endl; 
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
 // =================================================================
 
-        msg << "H"<<endl; 
+        msg << "I"<<endl; 
         //kick
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
+        
+        msg << "J"<<endl; 
 
 
-        msg << "I"<<endl; 
 // =================MYSTUFF::_LANGEVIN_COLLISION======================
         //switching  to velocity ...
         P->P = P->P/P->pMass;
         msg << "a"<<endl; 
+
         if(setVmaxmin(*P)){
+            //add a buffer zone??
             for(unsigned int d = 0; d>Dim; ++d) P->hv_mv[d] = (P->vmax_mv[d]-P->vmin_mv[d])/P->nv_mv[d];
             origin_v = P->vmin_mv;
             mesh_v.setOrigin(origin_v);
             mesh_v.setMeshSpacing(P->hv_mv);
+            msg << "VELGRID_change"<<endl; 
         }
         msg << "b"<<endl; 
-        P->scatterVEL(nP, P->hv_mv);
-        msg << "a"<<endl; 
-        P->solver_mvH->solve();
-        msg << "aa" << endl;
+        P->scatterVEL(nP, P->hv_mv); // deconstructor error at the end??
+
+
+        msg << "c"<<endl; 
         P->rho_mv = -8.0*M_PI*P->rho_mv;
-        msg << "c"<<endl;
-        P->gradRBH_mv = grad(P->rho_mv);
-        msg << "a"<<endl; 
-        P->gradRBH_mv = P->GAMMA * P->gradRBH_mv;
-        msg << "d"<<endl;
-        P->solver_mvG->solve();
-        msg << "a"<<endl;
-        P->diffusionCoeff_mv = hess(P->rho_mv);
+        
+        msg << "d" << endl;
+        P->solver_mvH->solve(); // this solver causes to crash 362 //no error message ...
         msg << "e"<<endl;
-        P->diffusionCoeff_mv = P->diffusionCoeff_mv * P->GAMMA; 
+        P->gradRBH_mv = grad(P->rho_mv);
+        msg << "f"<<endl; 
+        P->gradRBH_mv = P->GAMMA * P->gradRBH_mv;
 
-        //do i need th all the subobjects for the velocity space mesh?? like orb and loadbalancing??
-
-        // for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d]; //doesnt work
-        prepareDiffCoeff(*P); // safer option 
-        msg << "a"<<endl;      
-        P->gatherFd();
-        msg << "f"<<endl;
-        P->gatherD();
-        msg << "a"<<endl;
-
-        //possible to save some flops here ...
-        P->P = P->P + dt*P->Fd; 
         msg << "g"<<endl;
-        applyLangevin(*P, Gaussian3d); //runtime error
-                        // cholesky(P->tmp0, P->D0, P->D1, P->D2);
-                        // P->P = P->P + GeMV_t(P->tmp0, Gaussian3d());
-                        // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
+        P->solver_mvG->solve(); // possible crash ... when langevin step isnt performed // cannot create std vector larger than max size..
+        msg << "h"<<endl;
+        P->diffusionCoeff_mv = hess(P->rho_mv);
+        msg << "i"<<endl;
+        P->diffusionCoeff_mv = P->GAMMA *  P->diffusionCoeff_mv; 
 
-        msg << "a"<<endl;
+
+        prepareDiffCoeff(*P);                // for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d]; //doesnt work
+        msg << "j"<<endl;      
+        P->gatherFd();
+        msg << "k"<<endl;
+        P->gatherD();
+        msg << "l"<<endl;
+
+        // P->P = P->P + dt*P->Fd; 
+        // msg << "m"<<endl;
+        applyLangevin(*P, Gaussian3d);       // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
+
+        msg << "x"<<endl;
         P->P = P->P*P->pMass;
-        //switching to momenta
+        // //switching to momenta
     
-//runs to the end and gets kicked out
+        msg << "y"<<endl;
     
-   	//error if variable not used..   aaand we dont use it?? ever???
-	double tmp = interactionRadius;
-	tmp += 1;
+   	        //error if variable not used..   aaand we dont use it?? ever???
+	        double tmp = interactionRadius;
+	        tmp += 1;
+            tmp += Gaussian3d()[1];
 
+            //if 1 2 are performed it crashes or scatterCIC    (print...)(in solver?? i think mostly bad numbers...
+
+            //if 1 is performed it crashes in scattercic with bad numbers in output
+
+            //if 2 is performed it too crasshes in ne of vel  solver (invalid fourrier transform)... no bad numbers are deetected..
+
+            // if neither it gets stuck in the print or velsolveer crashes with Segmentation fault: Sent by the kernel at address (nil))
+            // no bad number in output
 // =================MYSTUFF==================================================================
         
-
-
         P->time_m += dt;
-
+        msg << "z"<<endl; //breaks down at this print function ....
         if (it%printInterval==0){
             IpplTimings::startTimer(dumpDataTimer);
             P->dumpLangevin(it+1,  nP);
@@ -1228,6 +982,9 @@ msg << "Start time step: " << it+1 << endl;
         }
         msg << "Finished time step: " << it+1 << endl;
     }
+
+    //using NM = 256 reates runtime error in dump function step 15 -> cant print it nomore...
+    // using NM = 16 creates runtime error in after CC inside scatter cic
 
 // TIMELOOP END
 //====================================================================================== 
