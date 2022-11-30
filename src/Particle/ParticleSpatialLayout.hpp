@@ -239,26 +239,12 @@ namespace ippl {
 			bool_type found("Found", pdata.getLocalNum());
 			size_t nLeft;
 			
-			Kokkos::View<int*> vertexNeighborsView("Vertex neighbors view", vertexNeighbors.size());
-			Kokkos::View<std::vector<int>*> faceNeighborsView("Face neighbors view", faceNeighbors.size());
-			Kokkos::View<std::vector<int>*> edgeNeighborsView("Edge neighbors view", edgeNeighbors.size());
-			
-			for( size_t vertex=0; vertex < vertexNeighbors.size(); vertex++){
-				if(vertexNeighbors[vertex] <  0)
-					continue;
-				vertexNeighborsView(vertex) = vertexNeighbors[vertex];
-			}
-					
-
-			
-			for( size_t face=0; face < faceNeighbors.size(); face++)
-					for(size_t i = 0; i < faceNeighbors[face].size(); i++)
-						faceNeighborsView(face).push_back( faceNeighbors[face][i] );
-
-			for( size_t edge=0; edge < edgeNeighbors.size(); edge++)
-					for(size_t i=0; i < edgeNeighbors[edge].size(); i++)
-						edgeNeighborsView(edge).push_back( edgeNeighbors[edge][i] );
-
+			const size_t vSize = vertexNeighbors.size();
+			const size_t fSize = faceNeighbors.size();
+			const size_t eSize = edgeNeighbors.size();
+			ippl::Vector<int, vsize> vertexVector(vertexNeighbors);
+			ippl::Vector<std::vector<int>, fsize> faceVector(faceNeighbors);
+			ippl::Vector<std::vector<int>, esize> edgeVector(edgeNeighbors);
 			
 
 			/*Begin Kokkos loop:
@@ -290,11 +276,12 @@ namespace ippl {
 					found(i) = true;
 					}
 					//Step 2
+					
 					else{
 					
-						for(size_t face = 0; face < faceNeighborsView.extent(0); ++face){	
-						for (size_t j = 0; j < faceNeighborsView(face).size() ; ++j){
-							view_size_t rank = faceNeighborsView(face)[j];
+						for(size_t face = 0; face < fSize; ++face){	
+						for (size_t j = 0; j < faceVector[face].size() ; ++j){
+							view_size_t rank = faceVector[face][j];
 
 
 							xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
@@ -314,11 +301,11 @@ namespace ippl {
 						}}
 					}
 
-
+					
 					 if(!xyz_bool){
-						for (size_t edge=0; edge < edgeNeighborsView.extent(0); edge++){
-                                                for (size_t j = 0; j < edgeNeighborsView(edge).size() ; ++j){
-                                                        view_size_t rank = edgeNeighborsView(edge)[j];
+						for (size_t edge=0; edge < eSize; edge++){
+                                    for (size_t j = 0; j < edgeVector[edge].size() ; ++j){
+                                                        view_size_t rank = edgeVector[edge][j];
 
 
                                                         xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
@@ -340,8 +327,8 @@ namespace ippl {
                                         
 						
 					if(!xyz_bool){
-                                                for (size_t vertex=0; vertex < vertexNeighborsView.extent(0); vertex++){
-                                                        view_size_t rank = vertexNeighborsView(vertex);
+                                                for (size_t vertex=0; vertex < vSize; vertex++){
+                                                        view_size_t rank = vertexVector[vertex];
 
 
                                                         xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
