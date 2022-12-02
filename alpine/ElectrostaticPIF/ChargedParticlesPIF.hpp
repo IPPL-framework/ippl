@@ -184,24 +184,88 @@ public:
      }
 
 
-     void dumpEnergy(size_type totalP) {
+     void dumpEnergy(size_type /*totalP*/) {
         
-        auto Eview = E.getView();
 
         double potentialEnergy, kineticEnergy;
         double temp = 0.0;
 
-        Kokkos::parallel_reduce("Potential energy", this->getLocalNum(),
-                                KOKKOS_LAMBDA(const int i, double& valL){
-                                    double myVal = dot(Eview(i), Eview(i)).apply();
-                                    valL += myVal;
-                                }, Kokkos::Sum<double>(temp));
+        //auto Eview = E.getView();
+        //Kokkos::parallel_reduce("Potential energy", this->getLocalNum(),
+        //                        KOKKOS_LAMBDA(const int i, double& valL){
+        //                            double myVal = dot(Eview(i), Eview(i)).apply();
+        //                            valL += myVal;
+        //                        }, Kokkos::Sum<double>(temp));
+
+
+
+        auto rhoview = rho_m.getView();
+        const int nghost = rho_m.getNghost();
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
+       
+        const FieldLayout_t& layout = rho_m.getLayout(); 
+        const Mesh_t& mesh = rho_m.get_mesh();
+        const Vector<double, Dim>& dx = mesh.getMeshSpacing();
+        const auto& domain = layout.getDomain();
+        Vector<double, Dim> Len;
+        Vector<int, Dim> N;
+
+        for (unsigned d=0; d < Dim; ++d) {
+            N[d] = domain[d].length();
+            Len[d] = dx[d] * N[d];
+        }
+
+
+        Kokkos::complex<double> imag = {0.0, 1.0};
+        double pi = std::acos(-1.0);
+        Kokkos::parallel_reduce("Potential energy",
+                              mdrange_type({0, 0, 0},
+                                           {N[0],
+                                            N[1],
+                                            N[2]}),
+                              KOKKOS_LAMBDA(const int i,
+                                            const int j,
+                                            const int k,
+                                            double& valL)
+        {
+        
+            Vector<int, 3> iVec = {i, j, k};
+            Vector<double, 3> kVec;
+            double Dr = 0.0;
+            for(size_t d = 0; d < Dim; ++d) {
+                bool shift = (iVec[d] > (N[d]/2));
+                kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                //kVec[d] = 2 * pi / Len[d] * iVec[d];
+                Dr += kVec[d] * kVec[d];
+            }
+
+            Kokkos::complex<double> Ek = {0.0, 0.0}; 
+            double myVal = 0.0;
+            for(size_t d = 0; d < Dim; ++d) {
+                if(Dr != 0.0) {
+                    Ek = -(imag * kVec[d] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
+                }
+                myVal += Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
+            }
+
+            //double myVal = rhoview(i,j,k).real() * rhoview(i,j,k).real() + 
+            //               rhoview(i,j,k).imag() * rhoview(i,j,k).imag();
+            //if(Dr != 0.0) {
+            //    myVal /= Dr;
+            //}
+            //else {
+            //    myVal = 0.0;
+            //}
+            valL += myVal;
+
+        }, Kokkos::Sum<double>(temp));
+        
 
         double globaltemp = 0.0;
         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
         double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
-        potentialEnergy = 0.5 * globaltemp * volume / totalP ;
-
+        //potentialEnergy = 0.5 * globaltemp * volume / totalP ;
+        potentialEnergy = 0.25 * 0.5 * globaltemp * volume;
 
         auto Pview = P.getView();
         auto qView = q.getView();

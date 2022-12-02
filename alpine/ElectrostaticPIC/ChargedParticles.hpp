@@ -563,24 +563,26 @@ public:
      }
 
 
-     void dumpEnergy(size_type totalP) {
+     void dumpEnergy(size_type /*totalP*/) {
         
-        auto Eview = E.getView();
 
         double potentialEnergy, kineticEnergy;
+        //auto Eview = E.getView();
         double temp = 0.0;
 
-        Kokkos::parallel_reduce("Potential energy", this->getLocalNum(),
-                                KOKKOS_LAMBDA(const int i, double& valL){
-                                    double myVal = dot(Eview(i), Eview(i)).apply();
-                                    valL += myVal;
-                                }, Kokkos::Sum<double>(temp));
+        //Kokkos::parallel_reduce("Potential energy", this->getLocalNum(),
+        //                        KOKKOS_LAMBDA(const int i, double& valL){
+        //                            double myVal = dot(Eview(i), Eview(i)).apply();
+        //                            valL += myVal;
+        //                        }, Kokkos::Sum<double>(temp));
 
         double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
-        potentialEnergy = 0.5 * globaltemp * volume / totalP ;
+        //MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        //double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
+        //potentialEnergy = 0.5 * globaltemp * volume / totalP ;
 
+        rho_m = dot(E_m, E_m);
+        potentialEnergy = 0.5 * hr_m[0] * hr_m[1] * hr_m[2] * rho_m.sum();
 
         auto Pview = P.getView();
         auto qView = q.getView();
