@@ -411,10 +411,10 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
                 LL(i0)(i2) = (*D[i0])(i2)/LL(i0)(i0);
                 LL(i1)(i0) = 0.0;
                 // LL(1)(1) = sqrt(*D[i1])(i1)- pow(LL(i0)(i1), 2));
-                LL(i1)(i2) = (*D[i1])(i2) - LL(i0)(i1)*LL(i0)(i2)/LL(i1)(i1);
+                LL(i1)(i2) = ((*D[i1])(i2) - LL(i0)(i1)*LL(i0)(i2))/LL(i1)(i1);
                 LL(i2)(i0) = 0.0;
                 LL(i2)(i1) = 0.0;
-                LL(i2)(i2) = sqrt( (*D[i2])(i2) - pow(LL(i0)(i1), 2) - pow(LL(i0)(i2), 2)) ;
+                LL(i2)(i2) = sqrt( (*D[i2])(i2) - pow(LL(i0)(i2), 2) - pow(LL(i1)(i2), 2)) ;
         };
 
         auto get_2_diag = [&](const unsigned i0, const unsigned i1){//, const unsigned i2){
