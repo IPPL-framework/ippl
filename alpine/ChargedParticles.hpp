@@ -173,24 +173,20 @@ public:
     typename ippl::ParticleBase<PLayout>::particle_position_type P;  // particle velocity
     typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
 
-    // EXCL_LANGEVIN ...
-    //ippl gather are hard coded to 3 dimensions, so to gather a matrix D we have to use gather 3 times 
+    // EXCL_LANGEVIN ... 
+    //ORB orb_v;     //NEW
+    // unsigned int nP; // NEW
+    double pMass; // NEW
 
 
-    // ORB orb_v;
+    double GAMMA; //NEW
+
     Field_t   fv_mv; //NEW
-    VField_t  gradRBH_mv; //NEW  --> Fd
-
-    MField_t diffusionCoeff_mv;//NEW
+    VField_t  gradRBH_mv; //(=Fd) NEW
     VField_t diffCoeffArr_mv[3];//NEW
-
-    // VField_t TMP0;//NEW
-
-    // we dont actually need those since we get the SOL returned at the input address -> fv_mv (overwrite)
-    //defined elsewhere typedef ParticleAttrib<vector_type>   particle_position_type;
+    MField_t diffusionCoeff_mv;//NEW
 
     std::shared_ptr<VSolver_t> solver_mvRB; //NEW
-
 
     ParticleAttrib<double> fv;//NEW == 1
     ParticleAttrib<Vector_t> Fd;//NEW
@@ -198,17 +194,11 @@ public:
     ParticleAttrib<Vector_t> D1;//NEW
     ParticleAttrib<Vector_t> D2;//NEW
 
-    double GAMMA;
-    double pMass; // NEW
-    // unsigned int nP; // NEW
+    Vector<int, Dim> nv_mv; //NEW
+    Vector_t hv_mv; //NEW
+    Vector_t vmin_mv; //NEW
+    Vector_t vmax_mv; //NEW
 
-
-    //ORB orb_v;
-
-    Vector<int, Dim> nv_mv;
-    Vector_t hv_mv;
-    Vector_t vmin_mv;
-    Vector_t vmax_mv;
 
 
     /*
@@ -449,7 +439,6 @@ public:
 
     void initRosenbluthSolver(){
 
-        Inform m("RBSolve init");
         ippl::ParameterList sp;
 
         sp.add("use_pencils", true);
@@ -463,30 +452,24 @@ public:
         solver_mvRB = std::make_shared<VSolver_t>(this->fv_mv, sp, "HOCKNEY");
     }
 
-
-    void scatterVEL() {
-
-        Inform m("scatterVEL");
-
-        fv_mv = 0.0;
-
-        m << "scatter() now:" << endl;
-        scatter(this->fv, this->fv_mv, this->P);
-        
+        // Inform m("scatterVEL");
         // how to check kinetic energy conservations...
         //  m << "Rel. error in Ekin conservation = " << rel_error << endl;
         //there exist a reduction for views and particle attributes in ippl?
         // iuess we can check for integration over velocity space conservation...         
         // ???????????????????????????????????????????????????????????
-     
-        m << "getting density_distribution" << endl;
-        fv_mv = fv_mv / (this->hv_mv[0] * this->hv_mv[1] * this->hv_mv[2]); //ask sri...
+
+
+    void scatterVEL() {
+
+        fv_mv = 0.0;
+        scatter(this->fv, this->fv_mv, this->P);     
+        fv_mv = fv_mv / (this->hv_mv[0] * this->hv_mv[1] * this->hv_mv[2]);
     }
 
     void gatherFd() {
 
         gather(this->Fd, this->gradRBH_mv, this->P);
-
     }
 
     void gatherD() {
@@ -494,9 +477,6 @@ public:
         gather(this->D0, diffCoeffArr_mv[0], this->P);
         gather(this->D1, diffCoeffArr_mv[1], this->P);
         gather(this->D2, diffCoeffArr_mv[2], this->P);
-
-        //lower doesnt work..
-        // gather(this->tmp0, diffusionCoeff_mv, this->P);
     }
 
 
@@ -773,7 +753,6 @@ m << "temperature" << endl;
             }
    	 }
     
-    m << "BS1" << endl;
 
 	for(unsigned i = 0; i< 2*Dim; ++i){
 
@@ -815,14 +794,12 @@ m << "temperature" << endl;
 	Kokkos::fence();
 	}
 
-    m << "BS2" << endl;
     Ippl::Comm->barrier();
     MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
     MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
     Ippl::Comm->barrier();
 
 
-    m << "BS3" << endl;
 
     if (Ippl::Comm->rank() == 0)
     {
@@ -832,7 +809,6 @@ m << "temperature" << endl;
         Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
 
 
-            m << "BS4" << endl;
 
         	for(unsigned int i = 0 ; i < Dim; i++) {
         	    rmean(i) = centroid[2 * i] / N;
@@ -843,7 +819,6 @@ m << "temperature" << endl;
         	    rvsum(i) = (moment[(2 * i)][(2 * i) + 1] - N * rmean(i) * vmean(i));
         	}
 
-            m << "BS5" << endl;
 
         //coefficient wise
         eps2  = (rsqsum * vsqsum - rvsum * rvsum) / (N * N);
@@ -861,8 +836,7 @@ m << "temperature" << endl;
    	    	 }
         rvrms = rvsum * fac;
 
-        m << "BS6" << endl;
-//VMAX VMIN
+//VMAX VMIN////////////////////////////////////////////////////////////////////////////
     double vmax_loc[Dim];
     double vmin_loc[Dim];
     double vmax[Dim];

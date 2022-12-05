@@ -148,49 +148,48 @@ void createParticleDistributionColdSphere( 	bunch& P,
                                             ) {
     
    	Inform m("Cold Sphere Initialization ");
+   	m << "start" << endl;
 
-  	m << "creating Particles" << endl;
-        P.create(Nparticle);
+    P.create(Nparticle);
 	
 
-        // std::mt19937 generator(0);
-        std::default_random_engine generator(0);
-        std::normal_distribution<double> normdistribution(0,1.0);
-        auto normal = std::bind(normdistribution, generator);
-        std::uniform_real_distribution<double> unidistribution(0,1);
-        auto uni = std::bind(unidistribution, generator);
-        Vector_t source({0,0,0});
+    // std::mt19937 generator(0);
+    std::default_random_engine generator(0);
 
-   	     
-   	m << "start Initializing" << endl;
+    std::normal_distribution<double> normdistribution(0,1.0);
+    std::uniform_real_distribution<double> unidistribution(0,1);
+
+    auto normal = std::bind(normdistribution, generator);
+    auto uni = std::bind(unidistribution, generator);
+
+    Vector_t source({0,0,0});
+	Vector_t mom({0,0,0});
+
 	typename bunch::particle_position_type::HostMirror pRHost = P.R.getHostMirror();
-	Kokkos::deep_copy(pRHost, P.R.getView());
+	Kokkos::deep_copy(pRHost, P.R.getView()); //not necessary??
 
 	for (unsigned i = 0; i<Nparticle; ++i) {
          		Vector_t X({normal(),normal(),normal()});
-        		double U = uni();
-                // Vector_t mullerBall = X*pow(U,1.0/3.0) / sqrt(mydotpr(X,X));
-                Vector_t mullerBall = pow(U,1.0/3.0)*X/mynorm(X);
+                Vector_t mullerBall = pow(uni(),1.0/3.0)*X/mynorm(X);
          		Vector_t pos = source + beamRadius*mullerBall;
-       	 		pRHost(i) = pos; // () or [] is indifferent
+       	 		pRHost(i) = pos; 
 	}
-	Vector_t mom({0,0,0});
 
-      
 	Kokkos::deep_copy(P.R.getView(), pRHost);
 	P.q = -qi;
-    P.P = mom;  //zero momentum intial condition
+    P.P = mom;
     P.fv = 1.0;
+   	m << "finished" << endl;
+}
+
+
+    // () or [] is indifferent
 	//	m << "()"<< pRHost(0)(0) << pRHost(0)(1) << pRHost(0)(2) << endl;
 	//	m << "[]"<< pRHost[0](0) << pRHost[0](1) << pRHost[0](2) << endl;
-   	m << "finished Initializing" << endl;
-}
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename bunch>
 Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {  
     Inform m("computeAvgSpaceChargeForces ");
-    	m << "start" << endl;
-
 
 	Vector_t avgEF;
 	double locEFsum[Dim]={};
@@ -198,53 +197,30 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
     double locQ, globQ;
     double locCheck, globCheck;
 
-	auto pEMirror = P.E.getView();
+	auto pEView = P.E.getView();
     auto pqView = P.q.getView();
     auto pRView = P.R.getView();
-
-
-    // for (unsigned i=0; i< N; ++i) {
-    //         locEFsum[0]+=fabs(pEMirror(i)[0]);
-    //         locEFsum[1]+=fabs(pEMirror(i)[1]);
-    //         locEFsum[2]+=fabs(pEMirror(i)[2]);
-    //     }
-    // for(unsigned d=0; d<Dim; ++d) globEFsum[d] =  locEFsum[d]; 
-//===============
-    // for (unsigned i=0; i< P.getLocalNum(); ++i) {
-    //         // locAvgEF[0]+=fabs(EF[i](0));
-    //         // locAvgEF[1]+=fabs(EF[i](1));
-    //         // locAvgEF[2]+=fabs(EF[i](2)); 
-    //         locEFsum[0]+=fabs(pEMirror(i)[0]);
-    //         locEFsum[1]+=fabs(pEMirror(i)[1]);
-    //         locEFsum[2]+=fabs(pEMirror(i)[2]);
-    //     }
-
-
 
 	for(unsigned d = 0; d<Dim; ++d){
 		Kokkos::parallel_reduce("get local EField sum", 
 					 P.getLocalNum(),
 					 KOKKOS_LAMBDA(const int i, double& lefsum){   
-              		                    lefsum += fabs(pEMirror(i)[d]);
-
+              		                    lefsum += fabs(pEView(i)[d]);
                                 	 },                    			
 					  Kokkos::Sum<double>(locEFsum[d])
 					);
 	}
-    Kokkos::parallel_reduce("check charge", 
+        Kokkos::parallel_reduce("check charge", 
 					 P.getLocalNum(),
 					 KOKKOS_LAMBDA(const int i, double& qsum){
                                         qsum += pqView[i];
-
                                 	 },                    			
 					  Kokkos::Sum<double>(locQ)
 					);
-    Kokkos::parallel_reduce("check  positioning", 
+        Kokkos::parallel_reduce("check  positioning", 
 					 P.getLocalNum(),
 					 KOKKOS_LAMBDA(const int i, double& check){
-                                        bool partcheck = (mynorm(pRView[i]) <= beamRadius);
-                                        check += int(partcheck);
-
+                                        check += int(mynorm(pRView[i]) <= beamRadius);
                                 	 },                    			
 					  Kokkos::Sum<double>(locCheck)
 					);
@@ -256,47 +232,41 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
 
     for(unsigned d=0; d<Dim; ++d) avgEF[d] =  globEFsum[d]/N; 
 
-    // P.dumpParticleData();
-   m << "Position Check = " <<  globCheck << endl;
-   m << "globQ = " <<  globQ << endl;
-   m << "globSumEF = " <<  globEFsum[0] << " " << globEFsum[1] << " " << globEFsum[2] << endl;
-   m << "AVG Electric SC Force = " << avgEF << endl; 
-   m << "Caluclation done" << endl; 
-   m << "finished"<< endl;
+    m << "Position Check = " <<  globCheck << endl;
+    m << "globQ = " <<  globQ << endl;
+    m << "globSumEF = " <<  globEFsum[0] << " " << globEFsum[1] << " " << globEFsum[2] << endl;
+    m << "AVG Electric SC Force = " << avgEF << endl;
+
     return avgEF;
 }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 template<typename bunch>
 void applyConstantFocusing( bunch& P,
                             const double f,
                             const double beamRadius,
                             const Vector_t avgEF
-                                ) {  
-	// Inform m("applyConstantFocusing");
-	// m << "start  "; // << endl;
-	auto pEMirror = P.E.getView();
-	auto pRMirror = P.R.getView();
+                                ) {
+	auto pEView = P.E.getView();
+	auto pRView = P.R.getView();
 
 	double tmp = mynorm(avgEF)*f/beamRadius;
-	// m << "final focusing factor is:" << tmp << endl;
-	
 	Kokkos::parallel_for("Apply Constant Focusing",
 				P.getLocalNum(),
 				KOKKOS_LAMBDA(const int i){
-					pEMirror(i) += pRMirror(i)*tmp;
+					pEView(i) += pRView(i)*tmp;
 				}	
 	);
 	Kokkos::fence();
-	// m << "finished" << endl;
-
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-
+ //add a buffer zone??
 
 template<typename bunch>
-bool setVmaxmin( bunch& P){ //add a buffer zone??
-Inform m("set VDomain");
+bool setVmaxmin( bunch& P, double& ext, const double& relb){
 
     double vmax_loc[Dim];
     double vmin_loc[Dim];
@@ -326,37 +296,24 @@ Inform m("set VDomain");
 	Kokkos::fence();
 	MPI_Allreduce(vmax_loc, vmax, Dim , MPI_DOUBLE, MPI_MAX, Ippl::getComm());
 	MPI_Allreduce(vmin_loc, vmin, Dim , MPI_DOUBLE, MPI_MIN, Ippl::getComm());
-    Ippl::Comm->barrier();// aaaaaaaaaaaaaaaaahhhhhhhhhhhhh set
+    Ippl::Comm->barrier();
 
-        bool change_vgrid = false;
-        
-        for(unsigned int d = 0; d<Dim; ++d){
+    bool change_vgrid = false;
+    double max, min, next;
+    max = std::max(std::max(vmax[0], vmax[1]), vmax[2]);
+    min = std::min(std::min(vmin[0], vmin[1]), vmin[2]);
+    next = std::max(fabs(min), fabs(max));
 
-            if(vmax[d] > P.vmax_mv[d]){
-                change_vgrid = true;
-                P.vmax_mv[d] = vmax[d];
-            }
-            if(vmin[d] < P.vmin_mv[d]){
-                change_vgrid = true;
-                P.vmin_mv[d] = vmin[d];
-            }
-        }
-
-        double max, min;
-        max = std::max(std::max(vmax[0], vmax[1]), vmax[2]);
-        min = std::min(std::min(vmin[0], vmin[1]), vmin[2]);
-
+    if(next>ext){
+        ext = relb*next;
         for(unsigned d = 0; d<Dim; ++d){
-            P.vmax_mv[d]=max;
-            P.vmin_mv[d]=min;
+            P.vmax_mv[d]= next;
+            P.vmin_mv[d]=-next;
         }
+        change_vgrid=true;    
+    }
 
-
-        // //symmetric...
-        //introduce buffer???
-        for(unsigned int d = 0; d<Dim; ++d) m << P.vmax_mv[d] << "  " << P.vmin_mv[d] << endl;
-
-        return change_vgrid;
+    return change_vgrid;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -366,10 +323,9 @@ void prepareDiffCoeff(bunch& P){
         auto pDCA0View   = P.diffCoeffArr_mv[0].getView();
         auto pDCA1View   = P.diffCoeffArr_mv[1].getView();
         auto pDCA2View   = P.diffCoeffArr_mv[2].getView();
-        const int nghost = P.fv_mv.getNghost();
-        //or do i have to use rho for the extent option?? and add a new view..
+        const int nghost = P.fv_mv.getNghost(); // ???
 
-    Kokkos::parallel_for("???????",
+    Kokkos::parallel_for("write over diff coeff from matrix to vector array",
                     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
                                                             {   pDCView.extent(0) - nghost,
 							                                    pDCView.extent(1) - nghost,
@@ -382,22 +338,18 @@ void prepareDiffCoeff(bunch& P){
                     }
     );
     Kokkos::fence();
-
-
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 //rowmajor...
 template<typename V>
-// Matrix_t cholesky(const V& d0, const V& d1, const V& d2){
 Matrix_t cholesky( V& d0, V& d1, V& d2){
         
     d0 = d1 = d2;
 
         Matrix_t LL;
-        // const V* D[] = {&d0, &d1, &d2}; 
         V* D[] = {&d0, &d1, &d2}; 
-        double epszero = 1e-16; // what is good value ...??
+        double epszero = 1e-16; // ??
         
         assert(     (fabs((*D[0])(1)-(*D[1])(0))) < epszero &&
                     (fabs((*D[0])(2)-(*D[2])(0))) < epszero &&
@@ -478,10 +430,8 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
 
 Vector_t  GeMV_t(const Matrix_t& M, const Vector_t V){return V[0]*M[0]+V[1]*M[1]+V[2]*M[2];}
 
-
 template<typename bunch>
 void applyLangevin(bunch& P, std::function<Vector_t()> Gaussian3d){
-    // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d());
 
     auto pPView =  P.P.getView();
 	auto pD0View = P.D0.getView();
@@ -495,9 +445,9 @@ void applyLangevin(bunch& P, std::function<Vector_t()> Gaussian3d){
 	 			}	
 	 );
 	 Kokkos::fence();
-
-
 }
+
+    // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d());
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //======================================================================================== 
@@ -559,15 +509,18 @@ int main(int argc, char *argv[]){
     const double ke                 = std::atof(argv[16]);
     const int NV                    = std::atoi(argv[17]);
     const double VMAX               = std::atof(argv[18]);
-    const bool FFF                  = std::atoi(argv[19]);
-    const bool EEE                  = std::atoi(argv[20]);
-    const bool DDD                  = std::atoi(argv[21]);
-    const bool CCC                  = std::atoi(argv[22]);
-    const bool BBB                  = std::atoi(argv[23]);
-    const bool AAA                  = std::atoi(argv[24]);
-    const bool PRINT                = std::atoi(argv[25]);
-    const bool COLLISION            = std::atoi(argv[26]);
+    const double rel_buff           = std::atof(argv[19]);
+
+    const bool FFF                  = std::atoi(argv[20]);
+    const bool EEE                  = std::atoi(argv[21]);
+    const bool DDD                  = std::atoi(argv[22]);
+    const bool CCC                  = std::atoi(argv[23]);
+    const bool BBB                  = std::atoi(argv[24]);
+    const bool AAA                  = std::atoi(argv[25]);
+    const bool PRINT                = std::atoi(argv[26]);
+    const bool COLLISION            = std::atoi(argv[27]);
  	
+     
     //cm annahme, elektronen charge mass, / nicht milisekunde...
     // const double ke=2.532638e8;
     // const double ke   =1./(4.*M_PI*8.8541878128e-14);  
@@ -641,7 +594,6 @@ int main(int argc, char *argv[]){
     P->pMass = particleMass;
     P->GAMMA = 10.0* pow(particleCharge, 4) * ke*ke / ( 4*M_PI * pow(particleMass, 2));
 
-    Vector_t origin_v({0, 0, 0});
     P->nv_mv = {NV,NV,NV};
     P->hv_mv = { 2*VMAX/NV,  2*VMAX/NV,  2*VMAX/NV};
     ippl::NDIndex<Dim> domain_v;
@@ -656,12 +608,10 @@ int main(int argc, char *argv[]){
     }
 
 
-    // first  MESH initialization doesnt matter we reget this after each step.
     bool isVallPeriodic = false;
-    Mesh_t          mesh_v(domain_v, P->hv_mv, origin_v);
+    Mesh_t          mesh_v(domain_v, P->hv_mv, Vector_t({0.0, 0.0, 0.0}));
     FieldLayout_t   FL_v(domain_v, decomp_v, isVallPeriodic);
     PLayout_t       PL_v(FL_v, mesh_v);
-
 
     P->fv_mv.initialize(mesh_v, FL_v);
     P->gradRBH_mv.initialize(mesh_v, FL_v);
@@ -671,9 +621,9 @@ int main(int argc, char *argv[]){
     P->diffCoeffArr_mv[2].initialize(mesh_v, FL_v);
 
     P->initRosenbluthSolver();
-
     P->vmax_mv = { VMAX,  VMAX,  VMAX};
     P->vmin_mv = {-VMAX, -VMAX, -VMAX};
+    double ext = VMAX;
     for(unsigned int d = 0; d>Dim; ++d) P->hv_mv[d] = (P->vmax_mv[d]-P->vmin_mv[d])/P->nv_mv[d];
     mesh_v.setOrigin(P->vmin_mv);
     mesh_v.setMeshSpacing(P->hv_mv);
@@ -803,7 +753,6 @@ int main(int argc, char *argv[]){
     auto Gaussian3d = [&gauss](){return Vector_t({gauss(), gauss(), gauss()}); };
 
 
-
     ///////////////////////////////////////////
 
 
@@ -836,27 +785,22 @@ int main(int argc, char *argv[]){
 
         msg << "Start time step: " << it+1 << endl;
 
-        //for small numbers (SI) -> this gets kicked out
         // kick
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E * particleCharge;
         IpplTimings::stopTimer(PTimer);
 
-        msg << "A"<<endl; 
         //drift
         IpplTimings::startTimer(RTimer);
         P->R = P->R + dt * P->P / particleMass;
         IpplTimings::stopTimer(RTimer);
 
-        msg << "B"<<endl; 
-
-	    IpplTimings::startTimer(updateTimer);
         //Since the particles have moved spatially update them to correct processors
+	    IpplTimings::startTimer(updateTimer);
         PL.update(*P, bunchBuffer);
         PL_v.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
 
-        msg << "C"<<endl; 
         // Domain Decomposition
         if (P->balance(nP, it+1)) {
            msg << "Starting repartition" << endl;
@@ -868,128 +812,99 @@ int main(int argc, char *argv[]){
         //    //IpplTimings::stopTimer(dumpDataTimer);
         //     msg << "LB"<<endl; 
         }
-        msg << "D"<<endl; 
-        P->scatterCIC(nP, it+1, hr); 
-        //scatter() causes to crash a Kokkos parallel for loop, or doesnt conserrve particles...
 
-        msg << "E"<<endl; 
+
+        P->scatterCIC(nP, it+1, hr); 
+        
         P->rho_m = P->rho_m * ke;
 
-        msg << "F"<<endl; 
         IpplTimings::startTimer(SolveTimer);
         P->solver_mp->solve();
         IpplTimings::stopTimer(SolveTimer);
 
-
-        msg << "G"<<endl;
         P->gatherCIC();
 
 
-// =================MYSTUFF::CONSTANT_FOCUSING======================        
-        msg << "H"<<endl; 
+// =================MYSTUFF::CONSTANT_FOCUSING======================
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
 // =================================================================
 
-        msg << "I"<<endl; 
         //kick
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
-        
-        msg << "J"<<endl; 
 
 
 // =================MYSTUFF::_LANGEVIN_COLLISION======================
-
-    if(COLLISION){
+    //mass shift
     P->P = P->P/particleMass;
-    msg << "mass shift done"<<endl;
 
-    // Vector_t zerovec({1e-3, 1e-3, 1e-3});
-    // msg << "J"<<endl; 
-    // P->P = P->P+zerovec*P->fv;
-    // P->P = P->P+zerovec*P->fv;
-    // illegal syntax both ways...
+    if(COLLISION){msg << "COLLISION"<<endl;
 
-
-
-    //lassen wir momentan weg und haben fixes grid welches gross genug ist
-    if(FFF){msg << "FFF"<<endl;
-        if(setVmaxmin(*P)){
-            for(unsigned int d = 0; d>Dim; ++d) P->hv_mv[d] = (P->vmax_mv[d]-P->vmin_mv[d])/P->nv_mv[d];
-            origin_v = P->vmin_mv;
-            mesh_v.setOrigin(origin_v);
-            mesh_v.setMeshSpacing(P->hv_mv);
-            msg << "VELGRID_change"<<endl; 
+        //lassen wir momentan weg und haben fixes grid welches gross genug ist
+        if(FFF){msg << "FFF"<<endl;
+            if(setVmaxmin(*P, ext, rel_buff)){
+                for(unsigned int d = 0; d>Dim; ++d) P->hv_mv[d] = (P->vmax_mv[d]-P->vmin_mv[d])/P->nv_mv[d]; 
+                mesh_v.setOrigin(P->vmin_mv);
+                mesh_v.setMeshSpacing(P->hv_mv);
+                msg << "VELGRID_change"<<endl; 
+            }
         }
-    }
-    msg << "d" << endl;
 
-    if(EEE){   
-        msg << "EEE"<<endl;  
-        P->scatterVEL(); 
-        msg << "c"<<endl; 
-        P->fv_mv = -8.0*M_PI*P->fv_mv;
-    }
+        if(EEE){msg << "EEE"<<endl;
+        
+            P->scatterVEL(); 
+            P->fv_mv = -8.0*M_PI*P->fv_mv;
+        }
 
-    mesh_v.setOrigin({0, 0, 0});
-    msg << "origin shift done"<<endl;
+        //origin shift
+        mesh_v.setOrigin({0, 0, 0});
 
-    if(DDD){
-        msg << "DDD" << endl;
-        P->solver_mvRB->solve(); 
-        msg << "e"<<endl;
-        P->gradRBH_mv = grad(P->fv_mv);
-        msg << "f"<<endl; 
-        P->gradRBH_mv = P->GAMMA * P->gradRBH_mv;
+        if(DDD){msg << "DDD" << endl;
 
-        msg << "g"<<endl;
-        P->solver_mvRB->solve();.
-        msg << "h"<<endl;
-        P->diffusionCoeff_mv = hess(P->fv_mv);
-        msg << "i"<<endl;
-        P->diffusionCoeff_mv = P->GAMMA *  P->diffusionCoeff_mv; 
-    }
+            P->solver_mvRB->solve();
+            P->gradRBH_mv = grad(P->fv_mv);
+            P->gradRBH_mv = P->GAMMA * P->gradRBH_mv;
+
+            P->solver_mvRB->solve();
+            P->diffusionCoeff_mv = hess(P->fv_mv);
+            P->diffusionCoeff_mv = P->GAMMA *  P->diffusionCoeff_mv; 
+        }
+
+        //undo origin shift
+        mesh_v.setOrigin(P->vmin_mv);
 
 
-    mesh_v.setOrigin(P->vmin_mv);
-    msg << "undo originshift; done"<<endl;
+        if(CCC){msg << "CCC" << endl;
 
+            prepareDiffCoeff(*P);   //does:: for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d]; //doesnt work
+            P->gatherFd();
+            P->gatherD();
+        }
 
-    if(CCC){ msg << "CCC" << endl;
-        prepareDiffCoeff(*P);   //does:: for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d]; //doesnt work
-        msg << "j"<<endl;      
-        P->gatherFd();
-        msg << "k"<<endl;
-        P->gatherD();
-        msg << "l"<<endl;
-    }
+        //this does barely anything...?
+        if(BBB){ msg << "BBB" << endl;
 
-    //this does barely anything...?
-    //
-    if(BBB){ 
-        msg << "BBB" << endl;
-        P->P = P->P + dt*P->Fd;
-    }
+            P->P = P->P + dt*P->Fd;
+        }
 
-    //the cholesky is otften zero ..
-    if(AAA){
-        msg << "AAA" << endl;
-        applyLangevin(*P, Gaussian3d);   //2  does:: // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
-    }
+        //the cholesky is otften zero ..
+        if(AAA){msg << "AAA" << endl;
 
-    
-   	        //error if variable not used..   aaand we dont use it?? ever???
-	        double tmp = interactionRadius;
-	        tmp += 1;
-            tmp += Gaussian3d()[1];
-            tmp += isFirstRepartition;
+            applyLangevin(*P, Gaussian3d);   //does:: // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
+        }
+
+       	        //error if variable not used..   aaand we dont use it?? ever???
+    	        double tmp = interactionRadius;
+    	        tmp += 1;
+                tmp += Gaussian3d()[1];
+                tmp += isFirstRepartition;
     }
 
 // =================MYSTUFF==================================================================
         
         P->time_m += dt;
-        msg << "z"<<endl; //breaks down at this print function ....
+        
         if(PRINT){ msg << "PRINT" << endl;
             if (it%printInterval==0){
             IpplTimings::startTimer(dumpDataTimer);
@@ -999,10 +914,9 @@ int main(int argc, char *argv[]){
             }
         }
 
-        msg << "x"<<endl;
+        //undo Massshift
         P->P = P->P*P->pMass;
     
-        msg << "undo massshift; done"<<endl;
 
         msg << "Finished time step: " << it+1 << endl;
     }
@@ -1023,3 +937,12 @@ int main(int argc, char *argv[]){
 }
 
 
+
+
+
+
+    // Vector_t zerovec({1e-3, 1e-3, 1e-3});
+    // msg << "J"<<endl; 
+    // P->P = P->P+zerovec*P->fv;
+    // P->P = P->P+zerovec*P->fv;
+    // illegal syntax both ways...
