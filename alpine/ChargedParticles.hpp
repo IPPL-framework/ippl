@@ -464,7 +464,7 @@ public:
     }
 
 
-    void scatterVEL(size_type totalP, Vector_t& hvField) {
+    void scatterVEL() {
 
         Inform m("scatterVEL");
 
@@ -478,14 +478,9 @@ public:
         //there exist a reduction for views and particle attributes in ippl?
         // iuess we can check for integration over velocity space conservation...         
         // ???????????????????????????????????????????????????????????
-        // double tmp = totalP;
-        // tmp += hvField[0];
-
-
-        m << "ka22" << endl;
-
-        fv_mv = fv_mv / (hvField[0] * hvField[1] * hvField[2]); //ask sri...
-        fv_mv = fv_mv - (double(totalP)/(   (vmax_mv[0] - vmin_mv[0]) * (vmax_mv[1] - vmin_mv[1]) * (vmax_mv[2] - vmin_mv[2])  ));
+     
+        m << "getting density_distribution" << endl;
+        fv_mv = fv_mv / (this->hv_mv[0] * this->hv_mv[1] * this->hv_mv[2]); //ask sri...
     }
 
     void gatherFd() {

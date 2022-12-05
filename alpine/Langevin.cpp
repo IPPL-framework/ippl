@@ -927,7 +927,7 @@ int main(int argc, char *argv[]){
 
     if(EEE){   
         msg << "EEE"<<endl;  
-        P->scatterVEL(nP, P->hv_mv); // deconstructor error at the end??
+        P->scatterVEL(); 
         msg << "c"<<endl; 
         P->fv_mv = -8.0*M_PI*P->fv_mv;
     }
@@ -944,7 +944,7 @@ int main(int argc, char *argv[]){
         P->gradRBH_mv = P->GAMMA * P->gradRBH_mv;
 
         msg << "g"<<endl;
-        P->solver_mvRB->solve(); // possible crash ... when langevin step isnt performed // cannot create std vector larger than max size..
+        P->solver_mvRB->solve();.
         msg << "h"<<endl;
         P->diffusionCoeff_mv = hess(P->fv_mv);
         msg << "i"<<endl;
@@ -965,13 +965,14 @@ int main(int argc, char *argv[]){
         msg << "l"<<endl;
     }
 
-    //this does barely anything...
+    //this does barely anything...?
     //
     if(BBB){ 
         msg << "BBB" << endl;
         P->P = P->P + dt*P->Fd;
     }
-    //this cholesky is otften zero ..
+    
+    //the cholesky is otften zero ..
     if(AAA){
         msg << "AAA" << endl;
         applyLangevin(*P, Gaussian3d);   //2  does:: // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
@@ -989,19 +990,6 @@ int main(int argc, char *argv[]){
             tmp += isFirstRepartition;
     }
 
-            //if 1 2 are performed it crashes or scatterCIC 
-                        // or  PRINT ...   ?without error messahe ....
-                        // not sure anymore ..(in solver?? i think mostly bad numbers...
-
-            //if 1 is performed it crashes in scatterCIC with bad numbers in output
-            // or  gets stuck (print...) with error message: Error in `/data/user/klappr_s/wenv/ippl/build_openmp/alpine/./Langevin': free(): invalid next size (fast): 0x00000000023fffe0 ***..
-
-            //if 2 is performed it too crasshes in ne of vel  solver (invalid fourrier transform)... no bad numbers are deetected..
-                // or  gets stuck (print...) without error messahe ....
-           
-
-            // if neither it gets stuck in the print or velsolveer crashes with Segmentation fault: Sent by the kernel at address (nil))
-            // no bad number in output
 // =================MYSTUFF==================================================================
         
         P->time_m += dt;
@@ -1018,9 +1006,6 @@ int main(int argc, char *argv[]){
         msg << "Finished time step: " << it+1 << endl;
     }
 
-    //using NM = 256 reates runtime error in dump function step 15 -> cant print it nomore...
-    // using NM = 16 creates runtime error in after CC inside scatter cic
-
 // TIMELOOP END
 //====================================================================================== 
 
@@ -1035,6 +1020,5 @@ int main(int argc, char *argv[]){
 
     return 0;
 }
-// Langevin Collision Operator Test
-// Usage:
+
 
