@@ -1,6 +1,6 @@
 // Landau Damping Test
 //   Usage:
-//     srun ./LandauDamping <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
+//     srun ./LandauDamping <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> <dt> --info 10
 //     nx       = No. cell-centered points in the x-direction
 //     ny       = No. cell-centered points in the y-direction
 //     nz       = No. cell-centered points in the z-direction
@@ -13,6 +13,7 @@
 //                simulations.
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
+//     dt       = Time stepize
 //     Example:
 //     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 2.0 --info 10
 //

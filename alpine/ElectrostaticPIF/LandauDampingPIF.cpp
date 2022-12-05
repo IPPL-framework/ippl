@@ -1,13 +1,14 @@
 // Electrostatic Landau damping test with Particle-in-Fourier schemes
 //   Usage:
-//     srun ./LandauDampingPIF <nx> <ny> <nz> <Np> <Nt> --info 10
+//     srun ./LandauDampingPIF <nx> <ny> <nz> <Np> <Nt> <dt> --info 5
 //     nx       = No. of Fourier modes in the x-direction
 //     ny       = No. of Fourier modes in the y-direction
 //     nz       = No. of Fourier modes in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
+//     dt       = Time stepsize
 //     Example:
-//     srun ./LandauDampingPIF 128 128 128 10000 10 --info 10
+//     srun ./LandauDampingPIF 128 128 128 10000 10 --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
