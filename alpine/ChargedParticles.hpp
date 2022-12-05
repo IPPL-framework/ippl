@@ -901,7 +901,36 @@ m << "temperature" << endl;
         rvrms = rvsum * fac;
 
         m << "BS6" << endl;
+//VMAX VMIN
+    double vmax_loc[Dim];
+    double vmin_loc[Dim];
+    double vmax[Dim];
+    double vmin[Dim];
 
+	auto pPView = this->P.getView();
+	for(unsigned d = 0; d<Dim; ++d){
+
+		Kokkos::parallel_reduce("vel max", 
+					 this->getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& mm){   
+              		                    mm = std::max(pPView(i)[d], mm);
+                                	 },                    			
+					  Kokkos::Max<double>(vmax_loc[d])
+					);
+
+		Kokkos::parallel_reduce("vel min", 
+					 this->getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& mm){   
+              		                    mm = std::min(pPView(i)[d], mm);
+
+                                	 },                    			
+					  Kokkos::Min<double>(vmin_loc[d])
+					);
+	}
+	Kokkos::fence();
+	MPI_Allreduce(vmax_loc, vmax, Dim , MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+	MPI_Allreduce(vmin_loc, vmin, Dim , MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+    Ippl::Comm->barrier();
 
 //==    ==== end  CALCULATING BEAM STATISTICS    &&    EMITTANCE ======
 /////////////////////////////////////////////////////////////////////////////////
@@ -944,6 +973,8 @@ m << "temperature" << endl;
                     "rmeanX,rmeanY,rmeanZ," <<"                                        "<<
                     "vmeanX,vmeanY,vmeanZ," <<"                                        "<<
                     "rvrmsX,rvrmsY,rvrmsZ," <<"                                        "<<
+                    "vmaxX,vmaxY,vmaxZ," <<"                                        "<<
+                    "vminX,vminY,vminZ," <<"                                        "<<
                     "time,"                 <<
                     "Ex_field_energy,"      <<
                     "Ex_max_norm,"          <<
@@ -972,6 +1003,8 @@ m << "temperature" << endl;
                     rmean       (0)<<","<<rmean       (1)<<","<<rmean       (2)<<",     "<<
                     vmean       (0)<<","<<vmean       (1)<<","<<vmean       (2)<<",     "<<
                     rvrms       (0)<<","<<rvrms       (1)<<","<<rvrms       (2)<<",     "<<	
+                            vmax[0]<<","<<        vmax[1]<<","<<        vmax[2]<<",     "<<
+                            vmin[0]<<","<<        vmin[1]<<","<<        vmin[2]<<",     "<<	
                     time_m      <<","<< 
                     fieldEnergy <<","<< 
                     ExAmp       <<","<< 

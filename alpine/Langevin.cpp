@@ -397,13 +397,12 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
         Matrix_t LL;
         // const V* D[] = {&d0, &d1, &d2}; 
         V* D[] = {&d0, &d1, &d2}; 
-        double epszero = 1e-14 ;
+        double epszero = 1e-16; // what is good value ...??
         
-
-        // //make symmetric ... is the gathering of symmetric matrices symmetric..
-        (*D[0])(1) = (*D[1])(0) = ((*D[0])(1)+(*D[1])(0)) *0.5;
-        (*D[0])(2) = (*D[2])(0) = ((*D[0])(2)+(*D[2])(0)) *0.5;
-        (*D[1])(2) = (*D[2])(1) = ((*D[1])(2)+(*D[2])(1)) *0.5; 
+        assert(     (fabs((*D[0])(1)-(*D[1])(0))) < epszero &&
+                    (fabs((*D[0])(2)-(*D[2])(0))) < epszero &&
+                    (fabs((*D[1])(2)-(*D[2])(1))) < epszero 
+        );
 
         auto finish_LL = [&](const unsigned i0, const unsigned i1, const unsigned i2){
                 // LL(0)(0) = sqrt(*D[i0])(i0));
@@ -423,31 +422,44 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
 
 
 
-            if     (epszero >=(LL(0)(0)=sqrt(d0(0)))    && epszero >= (LL(1)(1) = get_2_diag(0,1/*,2*/) ))    finish_LL(0, 1, 2);
-            else if(epszero >= LL(0)(0)                 && epszero >= (LL(2)(2) = get_2_diag(0,2/*,1*/) ))    finish_LL(0, 2, 1);
-            else if(epszero >=(LL(1)(1)=sqrt(d1(1)))    && epszero >= (LL(0)(0) = get_2_diag(1,0/*,2*/) ))    finish_LL(1, 0, 2);
-            else if(epszero >= LL(1)(1)                 && epszero >= (LL(2)(2) = get_2_diag(1,2/*,0*/) ))    finish_LL(1, 2, 0);
-            else if(epszero >=(LL(2)(2)=sqrt(d2(2)))    && epszero >= (LL(1)(1) = get_2_diag(2,1/*,0*/) ))    finish_LL(2, 1, 0);
-            else if(epszero >= LL(2)(2)                 && epszero >= (LL(0)(0) = get_2_diag(2,0/*,1*/) ))    finish_LL(2, 0, 1);
+            if     (( epszero <=(LL(0)(0)=sqrt(d0(0)))     )&&(    epszero <= ( LL(1)(1) = get_2_diag(0,1/*,2*/) )       ))finish_LL(0, 1, 2);
+            else if(( epszero <= LL(0)(0)                  )&&(    epszero <= ( LL(2)(2) = get_2_diag(0,2/*,1*/) )       ))finish_LL(0, 2, 1);
+            else if(( epszero <=(LL(1)(1)=sqrt(d1(1)))     )&&(    epszero <= ( LL(0)(0) = get_2_diag(1,0/*,2*/) )       ))finish_LL(1, 0, 2);
+            else if(( epszero <= LL(1)(1)                  )&&(    epszero <= ( LL(2)(2) = get_2_diag(1,2/*,0*/) )       ))finish_LL(1, 2, 0);
+            else if(( epszero <=(LL(2)(2)=sqrt(d2(2)))     )&&(    epszero <= ( LL(1)(1) = get_2_diag(2,1/*,0*/) )       ))finish_LL(2, 1, 0);
+            else if(( epszero <= LL(2)(2)                  )&&(    epszero <= ( LL(0)(0) = get_2_diag(2,0/*,1*/) )       ))finish_LL(2, 0, 1);
             else{
+                // how often
+                // assert(false && "no cholesky decomposition possible for at least one particle");
                 for(unsigned di = 0; di<Dim; ++di)
-                 for(unsigned dj = 0; dj<Dim; ++dj)
-                  LL(di)(dj)=0.0;
-            }
-
-            for(unsigned di = 0; di<Dim; ++di){
                 for(unsigned dj = 0; dj<Dim; ++dj){
-                    const double LLL = LL(di)(dj);
-                    if( std::isnan(LLL)   
-                        || std::isinf(LLL)
-                        // || (LLL>1e20 ||LLL<-1e20) ||
-                        // || (LLL<1e-15&&LLL>-1e-15)
-                    )                               LL(di)(dj)=0.0;  
+                    LL(di)(dj)=0.0;
                 }
             }
 
         return LL;
 }
+
+
+
+        // // //make symmetric ... is the gathering of symmetric matrices symmetric..
+        // (*D[0])(1) = (*D[1])(0) = ((*D[0])(1)+(*D[1])(0)) *0.5;
+        // (*D[0])(2) = (*D[2])(0) = ((*D[0])(2)+(*D[2])(0)) *0.5;
+        // (*D[1])(2) = (*D[2])(1) = ((*D[1])(2)+(*D[2])(1)) *0.5; 
+
+                    // if( 
+            // for(unsigned di = 0; di<Dim; ++di){
+            //     for(unsigned dj = 0; dj<Dim; ++dj){
+            //         // const double LLL = LL(di)(dj);
+            //         if(std::isinf(LLL))
+            //         LL(di)(dj)=0.0;
+            //     }
+            // }
+                        // std::isnan(LLL)   
+                        // || std::isinf(LLL)
+                        // || (LLL>1e20 ||LLL<-1e20)
+                        // || (LLL<1e-15&&LLL>-1e-15)
+                    // )                                 
 
 //rowmajor
 // template<typename M, typename V>
@@ -913,9 +925,6 @@ int main(int argc, char *argv[]){
     }
     msg << "d" << endl;
 
-    // P->P = P->P - P->vmin_mv;
-    // msg << "vmin shift done"<<endl;
-
     if(EEE){   
         msg << "EEE"<<endl;  
         P->scatterVEL(nP, P->hv_mv); // deconstructor error at the end??
@@ -956,13 +965,13 @@ int main(int argc, char *argv[]){
         msg << "l"<<endl;
     }
 
-    // P->P = P->P + P->vmin_mv;
-    // msg << "undo velshift; done"<<endl;
-
+    //this does barely anything...
+    //
     if(BBB){ 
         msg << "BBB" << endl;
-        P->P = P->P + dt*P->Fd;  //1
+        P->P = P->P + dt*P->Fd;
     }
+    //this cholesky is otften zero ..
     if(AAA){
         msg << "AAA" << endl;
         applyLangevin(*P, Gaussian3d);   //2  does:: // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
