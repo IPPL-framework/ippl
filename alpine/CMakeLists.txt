@@ -16,6 +16,7 @@ endmacro()
 
 add_subdirectory (ElectrostaticPIC)
 add_subdirectory (ElectrostaticPIF)
+add_subdirectory (PinT)
 
 # vi: set et ts=4 sw=4 sts=4:
 
