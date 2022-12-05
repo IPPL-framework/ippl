@@ -721,17 +721,6 @@ m << "temperature" << endl;
         auto pPView = this->P.getView();
         auto pVMirror = this->P.getHostMirror();
         Kokkos::deep_copy(pVMirror, pPView);
-        
-    //why does no easier way work
-    Kokkos::parallel_for("get Velocity from Momenta",
-				locNp,
-				KOKKOS_LAMBDA(const int i){
-					pVMirror(i) = pVMirror(i)/pMass;
-				}	
-	);
-    Kokkos::fence();
-
-
 
         for(unsigned d = 0; d<Dim; ++d){
 		    Kokkos::parallel_reduce("get local velocity sum", 
@@ -739,7 +728,7 @@ m << "temperature" << endl;
 		    			 KOKKOS_LAMBDA(const int k, double& valL){
                                        	double myVal = pVMirror(k)[d];
                                         valL += myVal;
-                                        //valL += pVMirror(i)[d];
+                                        //valL += pVMirror(k)[d];
                                     	},                    			
 		    			 Kokkos::Sum<double>(locVELsum[d])
 		    			);
@@ -754,7 +743,7 @@ m << "temperature" << endl;
 		    			 KOKKOS_LAMBDA(const int k, double& valL){
                                        	double myVal = (pVMirror(k)[d]-avgVEL[d])*(pVMirror(k)[d]-avgVEL[d]);
                                         valL += myVal;
-                                         //valL += (pVMirror(i)[d]/mass-avgVEL[d])*(pVMirror(i)[d]/mass-avgVEL[d]);
+                                         //valL += (pVMirror(k)[d]/mass-avgVEL[d])*(pVMirror(k)[d]/mass-avgVEL[d]);
                                     	},                    			
 		    			 Kokkos::Sum<double>(locT[d])
 		     			);
@@ -825,28 +814,6 @@ m << "temperature" << endl;
 		);	
 	Kokkos::fence();
 	}
-        // for(unsigned long k = 0; k < locNp; ++k) {
-        //     double    part[2 * Dim];
-	    //         			part[1] = pVMirror(k)[0];
-	    //         			part[3] = pVMirror(k)[1];
-	    //         			part[5] = pVMirror(k)[2];
-	    //         			part[0] = pRMirror(k)[0];
-	    //         			part[2] = pRMirror(k)[1];
-	    //         			part[4] = pRMirror(k)[2];
-
-        //     for(unsigned i = 0; i < 2 * Dim; i++) {
-        //         loc_centroid[i]   += part[i];
-        //         for(unsigned j = 0; j <= i; j++) {
-        //             loc_moment[i][j]   += part[i] * part[j];
-        //         }
-        //     }
-        // }
-    
-    	// for(unsigned i = 0; i < 2 * Dim; i++) {
-    	//     for(unsigned j = 0; j < i; j++) {
-    	//         loc_moment[j][i] = loc_moment[i][j];
-    	//     }
-    	// }
 
     m << "BS2" << endl;
     Ippl::Comm->barrier();
@@ -857,7 +824,6 @@ m << "temperature" << endl;
 
     m << "BS3" << endl;
 
-    //TODO atm mass = 1 so P = V
     if (Ippl::Comm->rank() == 0)
     {
     
@@ -954,7 +920,7 @@ m << "temperature" << endl;
                     // "E_X_field_energy, " << 
                     // "E_X_max_norm, "     << 
                     "T_X,    "              <<
-                    "rprms_X,"              <<
+                    "rvrms_X,"              <<
                     "eps_X,  "              << 
                     endl;
 

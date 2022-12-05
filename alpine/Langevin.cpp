@@ -971,17 +971,13 @@ int main(int argc, char *argv[]){
         msg << "BBB" << endl;
         P->P = P->P + dt*P->Fd;
     }
-    
+
     //the cholesky is otften zero ..
     if(AAA){
         msg << "AAA" << endl;
         applyLangevin(*P, Gaussian3d);   //2  does:: // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
     }
 
-        msg << "x"<<endl;
-        P->P = P->P*P->pMass;
-    
-        msg << "undo massshift; done"<<endl;
     
    	        //error if variable not used..   aaand we dont use it?? ever???
 	        double tmp = interactionRadius;
@@ -1002,6 +998,11 @@ int main(int argc, char *argv[]){
             IpplTimings::stopTimer(dumpDataTimer);
             }
         }
+
+        msg << "x"<<endl;
+        P->P = P->P*P->pMass;
+    
+        msg << "undo massshift; done"<<endl;
 
         msg << "Finished time step: " << it+1 << endl;
     }
