@@ -105,48 +105,6 @@ struct Newton1D {
   }
 };
 
-
-template <typename T, class GeneratorPool, unsigned Dim>
-struct generate_random {
-
-  using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
-  using value_type  = typename T::value_type;
-  // Output View for the random numbers
-  view_type x, v;
-
-  // The GeneratorPool
-  GeneratorPool rand_pool;
-
-  value_type alpha;
-
-  T k, minU, maxU;
-
-  // Initialize all members
-  generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
-                  value_type& alpha_, T& k_, T& minU_, T& maxU_)
-      : x(x_), v(v_), rand_pool(rand_pool_), 
-        alpha(alpha_), k(k_), minU(minU_), maxU(maxU_) {}
-
-  KOKKOS_INLINE_FUNCTION
-  void operator()(const size_t i) const {
-    // Get a random number state from the pool for the active thread
-    typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
-
-    value_type u;
-    for (unsigned d = 0; d < Dim; ++d) {
-
-        u = rand_gen.drand(minU[d], maxU[d]);
-        x(i)[d] = u / (1 + alpha);
-        Newton1D<value_type> solver(k[d], alpha, u);
-        solver.solve(x(i)[d]);
-        v(i)[d] = rand_gen.normal(0.0, 1.0);
-    }
-
-    // Give the state back, which will allow another thread to acquire it
-    rand_pool.free_state(rand_gen);
-  }
-};
-
 double CDF(const double& x, const double& alpha, const double& k) {
    double cdf = x + (alpha / k) * std::sin(k * x);
    return cdf;
@@ -195,8 +153,8 @@ void createParticleDistributionColdSphere( 	bunch& P,
         P.create(Nparticle);
 	
 
-        std::mt19937 generator(0);
-        // std::default_random_engine generator(0);
+        // std::mt19937 generator(0);
+        std::default_random_engine generator(0);
         std::normal_distribution<double> normdistribution(0,1.0);
         auto normal = std::bind(normdistribution, generator);
         std::uniform_real_distribution<double> unidistribution(0,1);
@@ -337,7 +295,8 @@ void applyConstantFocusing( bunch& P,
 
 
 template<typename bunch>
-bool setVmaxmin( bunch& P){
+bool setVmaxmin( bunch& P){ //add a buffer zone??
+Inform m("set VDomain");
 
     double vmax_loc[Dim];
     double vmin_loc[Dim];
@@ -367,6 +326,7 @@ bool setVmaxmin( bunch& P){
 	Kokkos::fence();
 	MPI_Allreduce(vmax_loc, vmax, Dim , MPI_DOUBLE, MPI_MAX, Ippl::getComm());
 	MPI_Allreduce(vmin_loc, vmin, Dim , MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+    Ippl::Comm->barrier();// aaaaaaaaaaaaaaaaahhhhhhhhhhhhh set
 
         bool change_vgrid = false;
         
@@ -374,15 +334,14 @@ bool setVmaxmin( bunch& P){
 
             if(vmax[d] > P.vmax_mv[d]){
                 change_vgrid = true;
-                // P.vmax_mv[d] = vmax[d];
+                P.vmax_mv[d] = vmax[d];
             }
             if(vmin[d] < P.vmin_mv[d]){
                 change_vgrid = true;
-                // P.vmin_mv[d] = vmin[d];
+                P.vmin_mv[d] = vmin[d];
             }
         }
 
-        //symmetric...
         double max, min;
         max = std::max(std::max(vmax[0], vmax[1]), vmax[2]);
         min = std::min(std::min(vmin[0], vmin[1]), vmin[2]);
@@ -393,7 +352,9 @@ bool setVmaxmin( bunch& P){
         }
 
 
+        // //symmetric...
         //introduce buffer???
+        for(unsigned int d = 0; d<Dim; ++d) m << P.vmax_mv[d] << "  " << P.vmin_mv[d] << endl;
 
         return change_vgrid;
 }
@@ -440,9 +401,9 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
         
 
         // //make symmetric ... is the gathering of symmetric matrices symmetric..
-        // (*D[0])(1) = (*D[1])(0) = ((*D[0])(1)+(*D[1])(0)) *0.5;
-        // (*D[0])(2) = (*D[2])(0) = ((*D[0])(2)+(*D[2])(0)) *0.5;
-        // (*D[1])(2) = (*D[2])(1) = ((*D[1])(2)+(*D[2])(1)) *0.5; 
+        (*D[0])(1) = (*D[1])(0) = ((*D[0])(1)+(*D[1])(0)) *0.5;
+        (*D[0])(2) = (*D[2])(0) = ((*D[0])(2)+(*D[2])(0)) *0.5;
+        (*D[1])(2) = (*D[2])(1) = ((*D[1])(2)+(*D[2])(1)) *0.5; 
 
         auto finish_LL = [&](const unsigned i0, const unsigned i1, const unsigned i2){
                 // LL(0)(0) = sqrt(*D[i0])(i0));
@@ -477,11 +438,11 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
             for(unsigned di = 0; di<Dim; ++di){
                 for(unsigned dj = 0; dj<Dim; ++dj){
                     const double LLL = LL(di)(dj);
-                    if( std::isnan(LLL)        || 
-                        std::isinf(LLL)        ||
-                        (LLL>1e20 ||LLL<-1e20) ||
-                        (LLL<1e-15&&LLL>-1e-15)
-                    )      LL(di)(dj)=0.0;  
+                    if( std::isnan(LLL)   
+                        || std::isinf(LLL)
+                        // || (LLL>1e20 ||LLL<-1e20) ||
+                        // || (LLL<1e-15&&LLL>-1e-15)
+                    )                               LL(di)(dj)=0.0;  
                 }
             }
 
@@ -558,34 +519,42 @@ int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
    
     int rank;
-    MPI_Comm_rank(Ippl::getComm(),&rank);
+    // MPI_Comm_rank(Ippl::getComm(),&rank);
+    rank = Ippl::Comm->rank();
  
     Inform msg("Langevin");
     Inform msg2all("Langevin ",INFORM_ALL_NODES);
-    Ippl::Comm->setDefaultOverallocation(std::atof(argv[17]));
+    Ippl::Comm->setDefaultOverallocation(std::atof(argv[3]));
     auto start = std::chrono::high_resolution_clock::now();
 
-    ippl::Vector<int,Dim> nr = {
-        std::atoi(argv[1]),
-        std::atoi(argv[2]),
-        std::atoi(argv[3])
-    };
-    const double beamRadius         = std::atof(argv[4]);
-    const double boxL 		        = std::atof(argv[5]); // turn into 3 inputs
-    const size_type nP              = std::atoll(argv[6]);
-    const double interactionRadius  = std::atof(argv[7]);
-    const double alpha              = std::atof(argv[8]);
-    const double dt                 = std::atof(argv[9]);
-    const size_type nt              = std::atoll(argv[10]); // iterations
-    const double particleCharge     = std::atof(argv[11]);
-    const double particleMass       = std::atof(argv[12]);
-    const double focusForce         = std::atof(argv[13]);
-    const int printInterval         = std::atoi(argv[14]);
-    //15 -> solvertype = FFT...
-    //16 -> loadbalancethreshold
-    //17 -> default overallocation
-    const double ke                 = std::atof(argv[18]);
-    const int NV                    = std::atoi(argv[19]);
+    // make unsymmetric?
+
+    //1 -> solvertype = FFT...1
+    //2 -> loadbalancethreshold2
+    //3 -> default overallocation3
+    const int nr                    = std::atoi(argv[4]);
+    const double beamRadius         = std::atof(argv[5]);
+    const double boxL 		        = std::atof(argv[6]); 
+    const size_type nP              = std::atoll(argv[7]);
+    const double interactionRadius  = std::atof(argv[8]);
+    const double alpha              = std::atof(argv[9]);
+    const double dt                 = std::atof(argv[10]);
+    const size_type nt              = std::atoll(argv[11]);
+    const double particleCharge     = std::atof(argv[12]);
+    const double particleMass       = std::atof(argv[13]);
+    const double focusForce         = std::atof(argv[14]);
+    const int printInterval         = std::atoi(argv[15]);
+    const double ke                 = std::atof(argv[16]);
+    const int NV                    = std::atoi(argv[17]);
+    const double VMAX               = std::atof(argv[18]);
+    const bool FFF                  = std::atoi(argv[19]);
+    const bool EEE                  = std::atoi(argv[20]);
+    const bool DDD                  = std::atoi(argv[21]);
+    const bool CCC                  = std::atoi(argv[22]);
+    const bool BBB                  = std::atoi(argv[23]);
+    const bool AAA                  = std::atoi(argv[24]);
+    const bool PRINT                = std::atoi(argv[25]);
+    const bool COLLISION            = std::atoi(argv[26]);
  	
     //cm annahme, elektronen charge mass, / nicht milisekunde...
     // const double ke=2.532638e8;
@@ -594,10 +563,7 @@ int main(int argc, char *argv[]){
     // const double ke=2.532638e9;
     // const double ke=3e9;
     // const double ke=9e9;
-
-    //SI
-    // const double ke = 8.9875517923e9;
-    // =1./(4.*M_PI*8.8541878128e-12); 
+    //SI // const double ke = 8.9875517923e9;// =1./(4.*M_PI*8.8541878128e-12); 
 
    
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
@@ -623,7 +589,7 @@ int main(int argc, char *argv[]){
     //initializing number of cells in mesh/domain
     ippl::NDIndex<Dim> domain;
     for (unsigned i = 0; i< Dim; i++) {
-        domain[i] = ippl::Index(nr[i]);
+        domain[i] = ippl::Index(nr);
     }
     //initializing boundary conditions
     ippl::e_dim_tag decomp[Dim];
@@ -635,7 +601,7 @@ int main(int argc, char *argv[]){
     Vector_t box_boundaries_lower({-L, -L, -L});
     Vector_t box_boundaries_upper({L, L, L}); 
     Vector_t origin({-L, -L, -L});
-    Vector_t hr = {boxL/nr[0], boxL/nr[1], boxL/nr[2]}; //spacing
+    Vector_t hr = {boxL/nr, boxL/nr, boxL/nr}; //spacing
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);
@@ -646,39 +612,44 @@ int main(int argc, char *argv[]){
     std::unique_ptr<bunch_type>  P;
    	P = std::make_unique<bunch_type>(PL,hr,box_boundaries_lower,box_boundaries_upper,decomp,Q);
     
-    P->nr_m = nr;
+    P->nr_m = ippl::Vector<int,Dim>({nr, nr, nr});
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
     bunch_type bunchBuffer(PL);
-    P->stype_m = argv[15];
+    P->stype_m = argv[1];
     P->initSolver();
     P->time_m = 0.0;
-    P->loadbalancethreshold_m = std::atof(argv[16]);
+    P->loadbalancethreshold_m = std::atof(argv[2]);
     bool isFirstRepartition = false;
 
 // ========================================================================================
-// VEOCITY SPACE MESH:
-
-//we could just reset the mesh between velocity and particle configurations ... all the time...
-
-    //ke is only 1/e0!!
-    P->pMass =particleMass;
+// VEOCITY SPACE MESH& DOMAIN_DECOMPOSITION
+    //ke is "only" 1/eps0!!
     //ln(LAMBDA) = 10;
+    P->pMass = particleMass;
     P->GAMMA = 10.0* pow(particleCharge, 4) * ke*ke / ( 4*M_PI * pow(particleMass, 2));
 
     Vector_t origin_v({0, 0, 0});
     P->nv_mv = {NV,NV,NV};
-    P->hv_mv = {1, 1, 1};
+    P->hv_mv = { 2*VMAX/NV,  2*VMAX/NV,  2*VMAX/NV};
     ippl::NDIndex<Dim> domain_v;
     for (unsigned i = 0; i< Dim; i++) {
         // domain_v[i] = ippl::Index(P->nv_mv[i]);
         domain_v[i] = ippl::Index(NV);
     }
+    ippl::e_dim_tag decomp_v[Dim];
+    for (unsigned d = 0; d < Dim; ++d) {
+        // decomp[d] = ippl::SERIAL;//PARALLEL
+        decomp[d] = ippl::PARALLEL;
+    }
+
 
     // first  MESH initialization doesnt matter we reget this after each step.
     bool isVallPeriodic = false;
     Mesh_t          mesh_v(domain_v, P->hv_mv, origin_v);
-    FieldLayout_t   FL_v(domain_v, decomp, isVallPeriodic);
+    FieldLayout_t   FL_v(domain_v, decomp_v, isVallPeriodic);
+    PLayout_t       PL_v(FL_v, mesh_v);
+
 
     P->fv_mv.initialize(mesh_v, FL_v);
     P->gradRBH_mv.initialize(mesh_v, FL_v);
@@ -689,12 +660,18 @@ int main(int argc, char *argv[]){
 
     P->initRosenbluthSolver();
 
+    P->vmax_mv = { VMAX,  VMAX,  VMAX};
+    P->vmin_mv = {-VMAX, -VMAX, -VMAX};
+    for(unsigned int d = 0; d>Dim; ++d) P->hv_mv[d] = (P->vmax_mv[d]-P->vmin_mv[d])/P->nv_mv[d];
+    mesh_v.setOrigin(P->vmin_mv);
+    mesh_v.setMeshSpacing(P->hv_mv);
 
 
+// ========================================================================================
 
     msg
         << "Dim                 = " << std::setw(20) << Dim <<  endl
-        << "Griddimensions      = " << std::setw(20) << nr << endl
+        << "Griddimensions NR   = " << std::setw(20) << nr << endl
         << "Beamradius          = " << std::setw(20) << beamRadius << endl
         << "Box Length          = " << std::setw(20) << boxL << endl
         << "Total Particles     = " << std::setw(20) << nP << endl 
@@ -711,47 +688,56 @@ int main(int argc, char *argv[]){
         << "total Charge        = " << std::setw(20) << Q << endl
         << "LBT                 = " << std::setw(20) << P->loadbalancethreshold_m << endl
         << "Ke                  = " << std::setw(20) << ke << endl
-        << "GridDim Vel_Mesh    = " << std::setw(20) << NV << endl;
+        << "GridDim Vel_Mesh    = " << std::setw(20) << NV << endl
+        << "FFF                 = " << std::setw(20) <<  FFF   << endl
+        << "EEE                 = " << std::setw(20) <<  EEE   << endl
+        << "DDD                 = " << std::setw(20) <<  DDD   << endl
+        << "CCC                 = " << std::setw(20) <<  CCC   << endl
+        << "BBB                 = " << std::setw(20) <<  BBB   << endl
+        << "AAA                 = " << std::setw(20) <<  AAA   << endl
+        << "VMAX                = " << std::setw(20) <<  P->vmax_mv   << endl
+        << "VMIN                = " << std::setw(20) <<  P->vmin_mv   << endl
+        << "HV                  = " << std::setw(20) <<  P->hv_mv   << endl
+        << "PRINT               = " << std::setw(20) <<  PRINT << endl
+        << "COLLISIONS          = " << std::setw(20) <<  COLLISION << endl;
 
     
 
     //how to perform ORB without PDF etc
     if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
-        msg << "Starting first repartition" << endl;
+        // msg << "Starting first repartition" << endl;
         IpplTimings::startTimer(domainDecomposition);//===========================
-        isFirstRepartition = true;
+        // isFirstRepartition = true;
 
-        const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-        const int nghost = P->rho_m.getNghost();
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-        auto rhoview = P->rho_m.getView();
+        // const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+        // const int nghost = P->rho_m.getNghost();
+        // using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        // auto rhoview = P->rho_m.getView();
 
-        Kokkos::parallel_for("Assign initial rho based on PDF",
-                              mdrange_type({nghost, nghost, nghost},
-                                           {rhoview.extent(0) - nghost,
-                                            rhoview.extent(1) - nghost,
-                                            rhoview.extent(2) - nghost}),
-                              KOKKOS_LAMBDA(const int i,
-                                            const int j,
-                                            const int k)
-                              {
-                                //local to global index conversion
-                                const size_t ig = i + lDom[0].first() - nghost;
-                                const size_t jg = j + lDom[1].first() - nghost;
-                                const size_t kg = k + lDom[2].first() - nghost;
-                                double x = (ig + 0.5) * hr[0] + origin[0];
-                                double y = (jg + 0.5) * hr[1] + origin[1];
-                                double z = (kg + 0.5) * hr[2] + origin[2];
-                                Vector_t xvec = {x, y, z};
-                                rhoview(i, j, k) = PDF(xvec, alpha, kw, Dim);
-                              });
-        Kokkos::fence();
-        P->initializeORB(FL, mesh);
-        P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+        // Kokkos::parallel_for("Assign initial rho based on PDF",
+        //                       mdrange_type({nghost, nghost, nghost},
+        //                                    {rhoview.extent(0) - nghost,
+        //                                     rhoview.extent(1) - nghost,
+        //                                     rhoview.extent(2) - nghost}),
+        //                       KOKKOS_LAMBDA(const int i,
+        //                                     const int j,
+        //                                     const int k)
+        //                       {
+        //                         //local to global index conversion
+        //                         const size_t ig = i + lDom[0].first() - nghost;
+        //                         const size_t jg = j + lDom[1].first() - nghost;
+        //                         const size_t kg = k + lDom[2].first() - nghost;
+        //                         double x = (ig + 0.5) * hr[0] + origin[0];
+        //                         double y = (jg + 0.5) * hr[1] + origin[1];
+        //                         double z = (kg + 0.5) * hr[2] + origin[2];
+        //                         Vector_t xvec = {x, y, z};
+        //                         rhoview(i, j, k) = PDF(xvec, alpha, kw, Dim);
+        //                       });
+        // Kokkos::fence();
+        // P->initializeORB(FL, mesh);
+        // P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
         //=======================================================================
         IpplTimings::stopTimer(domainDecomposition);//===========================
-        
-
     }
     isFirstRepartition = false;
 
@@ -767,6 +753,7 @@ int main(int argc, char *argv[]){
     
     //multiple node runs stop here
     PL.update(*P, bunchBuffer);
+    PL_v.update(*P, bunchBuffer);
     IpplTimings::stopTimer(particleCreation);
 
 
@@ -797,8 +784,8 @@ int main(int argc, char *argv[]){
 
 
 
-    std::mt19937 generator(0);
-    // std::default_random_engine generator(0);
+    // std::mt19937 generator(0);
+    std::default_random_engine generator(0);
     std::normal_distribution<double> normdistribution(0.0, dt);
     auto gauss = std::bind(normdistribution, generator);
     auto Gaussian3d = [&gauss](){return Vector_t({gauss(), gauss(), gauss()}); };
@@ -811,7 +798,7 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpLangevin(0,  nP);
 	// P->dumpParticleData();
-    P->gatherStatistics(nP);
+    // P->gatherStatistics(nP);
     //P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
 
@@ -832,16 +819,12 @@ int main(int argc, char *argv[]){
 //======================================================================================== 
 // TIMELOOP START
 
-    msg << "Starting iterations ..." << endl;
+        msg << "Starting iterations ..." << endl;
     for (unsigned int it=0; it<nt; it++) {
 
-        // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
-        //  'kick-drift-kick' form;
+        msg << "Start time step: " << it+1 << endl;
 
-
-msg << "Start time step: " << it+1 << endl;
-
-//for small numbers (SI) -> this gets kicked out
+        //for small numbers (SI) -> this gets kicked out
         // kick
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E * particleCharge;
@@ -852,29 +835,29 @@ msg << "Start time step: " << it+1 << endl;
         IpplTimings::startTimer(RTimer);
         P->R = P->R + dt * P->P / particleMass;
         IpplTimings::stopTimer(RTimer);
-        //Since the particles have moved spatially update them to correct processors
 
         msg << "B"<<endl; 
 
 	    IpplTimings::startTimer(updateTimer);
+        //Since the particles have moved spatially update them to correct processors
         PL.update(*P, bunchBuffer);
+        PL_v.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
 
         msg << "C"<<endl; 
         // Domain Decomposition
         if (P->balance(nP, it+1)) {
            msg << "Starting repartition" << endl;
-           IpplTimings::startTimer(domainDecomposition);
-           P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
-           IpplTimings::stopTimer(domainDecomposition);
-           //IpplTimings::startTimer(dumpDataTimer);
-           //P->dumpLocalDomains(FL, it+1);
-           //IpplTimings::stopTimer(dumpDataTimer);
-            msg << "LB"<<endl; 
+        //    IpplTimings::startTimer(domainDecomposition);
+        //    P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+        //    IpplTimings::stopTimer(domainDecomposition);
+        //    //IpplTimings::startTimer(dumpDataTimer);
+        //    //P->dumpLocalDomains(FL, it+1);
+        //    //IpplTimings::stopTimer(dumpDataTimer);
+        //     msg << "LB"<<endl; 
         }
         msg << "D"<<endl; 
-        //scatter the charge onto the underlying grid
-        P->scatterCIC(nP, it+1, hr); // runtime error during second loop
+        P->scatterCIC(nP, it+1, hr); 
         //scatter() causes to crash a Kokkos parallel for loop, or doesnt conserrve particles...
 
         msg << "E"<<endl; 
@@ -883,7 +866,6 @@ msg << "Start time step: " << it+1 << endl;
         msg << "F"<<endl; 
         IpplTimings::startTimer(SolveTimer);
         P->solver_mp->solve();
-        // P->E_m = P->E_m * ke; 
         IpplTimings::stopTimer(SolveTimer);
 
 
@@ -906,30 +888,47 @@ msg << "Start time step: " << it+1 << endl;
 
 
 // =================MYSTUFF::_LANGEVIN_COLLISION======================
-        //switching  to velocity ...
-        P->P = P->P/P->pMass;
-        msg << "a"<<endl; 
 
+    if(COLLISION){
+    P->P = P->P/particleMass;
+    msg << "mass shift done"<<endl;
+
+    // Vector_t zerovec({1e-3, 1e-3, 1e-3});
+    // msg << "J"<<endl; 
+    // P->P = P->P+zerovec*P->fv;
+    // P->P = P->P+zerovec*P->fv;
+    // illegal syntax both ways...
+
+
+
+    //lassen wir momentan weg und haben fixes grid welches gross genug ist
+    if(FFF){msg << "FFF"<<endl;
         if(setVmaxmin(*P)){
-            //add a buffer zone??
             for(unsigned int d = 0; d>Dim; ++d) P->hv_mv[d] = (P->vmax_mv[d]-P->vmin_mv[d])/P->nv_mv[d];
             origin_v = P->vmin_mv;
             mesh_v.setOrigin(origin_v);
             mesh_v.setMeshSpacing(P->hv_mv);
             msg << "VELGRID_change"<<endl; 
         }
-        msg << "b"<<endl; 
+    }
+    msg << "d" << endl;
+
+    // P->P = P->P - P->vmin_mv;
+    // msg << "vmin shift done"<<endl;
+
+    if(EEE){   
+        msg << "EEE"<<endl;  
         P->scatterVEL(nP, P->hv_mv); // deconstructor error at the end??
-
-
         msg << "c"<<endl; 
         P->fv_mv = -8.0*M_PI*P->fv_mv;
-        
-        msg << "d" << endl;
+    }
 
-        mesh_v.setOrigin({0, 0, 0});
+    mesh_v.setOrigin({0, 0, 0});
+    msg << "origin shift done"<<endl;
 
-        P->solver_mvRB->solve(); // this solver causes to crash 362 //no error message ...
+    if(DDD){
+        msg << "DDD" << endl;
+        P->solver_mvRB->solve(); 
         msg << "e"<<endl;
         P->gradRBH_mv = grad(P->fv_mv);
         msg << "f"<<endl; 
@@ -941,32 +940,45 @@ msg << "Start time step: " << it+1 << endl;
         P->diffusionCoeff_mv = hess(P->fv_mv);
         msg << "i"<<endl;
         P->diffusionCoeff_mv = P->GAMMA *  P->diffusionCoeff_mv; 
+    }
 
 
-        mesh_v.setOrigin(origin_v);
+    mesh_v.setOrigin(P->vmin_mv);
+    msg << "undo originshift; done"<<endl;
 
 
-        prepareDiffCoeff(*P);                // for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d]; //doesnt work
+    if(CCC){ msg << "CCC" << endl;
+        prepareDiffCoeff(*P);   //does:: for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d]; //doesnt work
         msg << "j"<<endl;      
         P->gatherFd();
         msg << "k"<<endl;
         P->gatherD();
         msg << "l"<<endl;
+    }
 
+    // P->P = P->P + P->vmin_mv;
+    // msg << "undo velshift; done"<<endl;
+
+    if(BBB){ 
+        msg << "BBB" << endl;
         P->P = P->P + dt*P->Fd;  //1
-        // msg << "m"<<endl;
-        applyLangevin(*P, Gaussian3d);   //2    // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
+    }
+    if(AAA){
+        msg << "AAA" << endl;
+        applyLangevin(*P, Gaussian3d);   //2  does:: // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
+    }
 
         msg << "x"<<endl;
         P->P = P->P*P->pMass;
-        // //switching to momenta
     
-        msg << "y"<<endl;
+        msg << "undo massshift; done"<<endl;
     
    	        //error if variable not used..   aaand we dont use it?? ever???
 	        double tmp = interactionRadius;
 	        tmp += 1;
             tmp += Gaussian3d()[1];
+            tmp += isFirstRepartition;
+    }
 
             //if 1 2 are performed it crashes or scatterCIC 
                         // or  PRINT ...   ?without error messahe ....
@@ -985,12 +997,15 @@ msg << "Start time step: " << it+1 << endl;
         
         P->time_m += dt;
         msg << "z"<<endl; //breaks down at this print function ....
-        if (it%printInterval==0){
+        if(PRINT){ msg << "PRINT" << endl;
+            if (it%printInterval==0){
             IpplTimings::startTimer(dumpDataTimer);
             P->dumpLangevin(it+1,  nP);
             // P->gatherStatistics(nP);
             IpplTimings::stopTimer(dumpDataTimer);
+            }
         }
+
         msg << "Finished time step: " << it+1 << endl;
     }
 

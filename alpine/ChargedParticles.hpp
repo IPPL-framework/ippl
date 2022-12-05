@@ -438,7 +438,13 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
+    //===================================================================================================
+//===================================================================================================
+//===================================================================================================
     ////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
 // Possible algorithms: "HOCKNEY" or "VICO".
 
     void initRosenbluthSolver(){
@@ -452,7 +458,7 @@ public:
         sp.add("use_heffte_defaults", false);  
         sp.add("use_gpu_aware", true);  
         sp.add("r2c_direction", 0); 
-        // sp.add("output_type", VSolver_t::SOL);
+        sp.add("output_type", VSolver_t::SOL);
 
         solver_mvRB = std::make_shared<VSolver_t>(this->fv_mv, sp, "HOCKNEY");
     }
@@ -463,21 +469,23 @@ public:
         Inform m("scatterVEL");
 
         fv_mv = 0.0;
+
+        m << "scatter() now:" << endl;
         scatter(this->fv, this->fv_mv, this->P);
         
         // how to check kinetic energy conservations...
         //  m << "Rel. error in Ekin conservation = " << rel_error << endl;
         //there exist a reduction for views and particle attributes in ippl?
-        // iuess we can check for integration over velocity space conservation...
-
-           
+        // iuess we can check for integration over velocity space conservation...         
         // ???????????????????????????????????????????????????????????
+        // double tmp = totalP;
+        // tmp += hvField[0];
 
-        double tmp = totalP;
-        tmp += hvField[0];
 
-         fv_mv = fv_mv / (hvField[0] * hvField[1] * hvField[2]); //ask sri...
-         fv_mv = fv_mv - (double(totalP)/(   (vmax_mv[0] - vmin_mv[0]) * (vmax_mv[1] - vmin_mv[1]) * (vmax_mv[2] - vmin_mv[2])  ));
+        m << "ka22" << endl;
+
+        fv_mv = fv_mv / (hvField[0] * hvField[1] * hvField[2]); //ask sri...
+        fv_mv = fv_mv - (double(totalP)/(   (vmax_mv[0] - vmin_mv[0]) * (vmax_mv[1] - vmin_mv[1]) * (vmax_mv[2] - vmin_mv[2])  ));
     }
 
     void gatherFd() {
@@ -500,9 +508,15 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
+    //===================================================================================================
+//===================================================================================================
+//===================================================================================================
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
+//===================================================================================================
+//===================================================================================================
+//===================================================================================================
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -644,9 +658,19 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
+//===================================================================================================
+//===================================================================================================
+//===================================================================================================
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////
+//additionally print vmax or vmin??? ... 
+//print particle data every other step to for analysis ...
+
 
      void dumpLangevin(unsigned int iteration,  size_type N) {
-    //  void dumpLangevin(unsigned int iteration, size_type N) {
+         Inform m("DUMPLangevin");
+
 
         const int nghostE = E_m.getNghost();
         auto Eview = E_m.getView();
@@ -686,6 +710,7 @@ public:
         ExAmp = 0.0;
         MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+m << "temperature" << endl;
 //=======start TEMPERATURE CALCULATION======  
         double locVELsum[Dim]={0.0,0.0,0.0};
         double globVELsum[Dim];
@@ -725,12 +750,6 @@ public:
 		    			);
     	Kokkos::fence();
 	    }
-        // for(unsigned long k = 0; k < this->getLocalNum(); ++k) {
-        //   for(unsigned d = 0; d < Dim; d++) {
-        //     // loc_avg_vel[d]   += this->v[k](d);
-        //     locVELsum[d] += pVMirror(k)[d];
-        //   }
-        // }
 	   	MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());	
         for(unsigned d=0; d<Dim; ++d) avgVEL[d]=globVELsum[d]/N;
 
@@ -746,19 +765,15 @@ public:
 		     			);
     		Kokkos::fence();
 	    }
-        // for(unsigned long k = 0; k < this->getLocalNum(); ++k) {
-        //   for(unsigned d = 0; d < Dim; d++) {
-        //     // loc_temp[d]   += (this->v[k](d)-avg_vel[d])*(this->v[k](d)-avg_vel[d]);
-        //     locT[d] += (pVMirror(k)[d]-avgVEL[d])*(pVMirror(k)[d]-avgVEL[d]);
-        //   }
-        // }
+
     	MPI_Reduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());	
         if (Ippl::Comm->rank() == 0) for(unsigned d=0; d<Dim; ++d)    temperature[d]=globT[d]/N;
 
 //======= end  TEMPERATURE CALCULATION    ======  
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //====== start  CALCULATING BEAM STATISTICS    &&    EMITTANCE ======
-        const double zero = 0.0;
+    m << "BeamStatistics" << endl;
+    const double zero = 0.0;
 
 	double     centroid[2 * Dim]={};
 	double       moment[2 * Dim][2 * Dim]={};
@@ -773,6 +788,8 @@ public:
                 loc_moment[j][i] = 0.0;
             }
    	 }
+    
+    m << "BS1" << endl;
 
 	for(unsigned i = 0; i< 2*Dim; ++i){
 
@@ -836,12 +853,14 @@ public:
     	//     }
     	// }
 
+    m << "BS2" << endl;
     Ippl::Comm->barrier();
     MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
     MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
     Ippl::Comm->barrier();
 
 
+    m << "BS3" << endl;
 
     //TODO atm mass = 1 so P = V
     if (Ippl::Comm->rank() == 0)
@@ -850,6 +869,9 @@ public:
         Vector_t eps2, fac;
         Vector_t rsqsum, vsqsum, rvsum;
         Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
+
+
+            m << "BS4" << endl;
 
         	for(unsigned int i = 0 ; i < Dim; i++) {
         	    rmean(i) = centroid[2 * i] / N;
@@ -860,6 +882,7 @@ public:
         	    rvsum(i) = (moment[(2 * i)][(2 * i) + 1] - N * rmean(i) * vmean(i));
         	}
 
+            m << "BS5" << endl;
 
         //coefficient wise
         eps2  = (rsqsum * vsqsum - rvsum * rvsum) / (N * N);
@@ -876,6 +899,8 @@ public:
    	    	     fac(i) = (tmpry == 0.0) ? zero : 1.0/tmpry;
    	    	 }
         rvrms = rvsum * fac;
+
+        m << "BS6" << endl;
 
 
 //==    ==== end  CALCULATING BEAM STATISTICS    &&    EMITTANCE ======
