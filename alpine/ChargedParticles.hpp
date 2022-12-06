@@ -48,9 +48,8 @@ typedef Field<Vector_t, Dim> VField_t;
 typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim> Solver_t;
 typedef ippl::FFTPoissonSolver<Vector_t, double, Dim> VSolver_t;
 
-//EXCL_LANGEVIN
+
 typedef Vector<Vector_t, Dim> Matrix_t;
-// typedef Vector<Field_t, Dim>  MField_t; //no use ...
 typedef Field<Matrix_t, Dim> MField_t;
 
 const double pi = std::acos(-1.0);
