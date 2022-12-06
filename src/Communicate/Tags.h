@@ -26,13 +26,6 @@
 #define IPPL_EXIT_TAG             6    // program should exit()
 
 
-// tags for reduction
-#define COMM_REDUCE_SEND_TAG    10000
-#define COMM_REDUCE_RECV_TAG    11000
-#define COMM_REDUCE_SCATTER_TAG 12000
-#define COMM_REDUCE_CYCLE        1000
-
-
 // tag for applying parallel periodic boundary condition.
 
 #define BC_PARALLEL_PERIODIC_TAG 15000
@@ -48,28 +41,6 @@ namespace ippl {
     }
 }
 
-#define F_GUARD_CELLS_TAG       20000 // Field::fillGuardCells()
-#define F_WRITE_TAG             21000 // Field::write()
-#define F_READ_TAG              22000 // Field::read()
-#define F_GEN_ASSIGN_TAG        23000 // assign(BareField,BareField)
-#define F_REPARTITION_BCAST_TAG 24000 // broadcast in FieldLayout::repartion.
-#define F_REDUCE_PERP_TAG       25000 // reduction in binary load balance.
-#define F_GETSINGLE_TAG         26000 // IndexedBareField::getsingle()
-#define F_REDUCE_TAG            27000 // Reduction in minloc/maxloc
-#define F_LAYOUT_IO_TAG         28000 // Reduction in minloc/maxloc
-#define F_TAG_CYCLE              1000
-
-// // Tags for FieldView and FieldBlock
-// #define FV_2D_TAG               30000 // FieldView::update_2D_data()
-// #define FV_3D_TAG               31000 // FieldView::update_2D_data()
-// #define FV_TAG_CYCLE             1000
-//
-// #define FB_WRITE_TAG            32000 // FieldBlock::write()
-// #define FB_READ_TAG             33000 // FieldBlock::read()
-// #define FB_TAG_CYCLE             1000
-//
-// #define FP_GATHER_TAG           34000 // FieldPrint::print()
-// #define FP_TAG_CYCLE             1000
 
 // Special tags used by Particle classes for communication.
 #define P_WEIGHTED_LAYOUT_TAG   50000
@@ -88,7 +59,7 @@ namespace ippl {
 #define IPPL_TAG_CYCLE             1000
 
 // Tags for Ippl application codes
-#define IPPL_APP_TAG0    90000
+#define IPPL_PARAREAL_APP    90000
 #define IPPL_APP_TAG1    91000
 #define IPPL_APP_TAG2    92000
 #define IPPL_APP_TAG3    93000
@@ -127,5 +98,8 @@ namespace ippl {
 
 #define OPEN_SOLVER_TAG 18000
 #define VICO_SOLVER_TAG 70000
+
+#define IPPL_PARAREAL_SEND 19000
+#define IPPL_PARAREAL_RECV 21000
 
 #endif // TAGS_H

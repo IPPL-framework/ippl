@@ -257,7 +257,6 @@ int main(int argc, char *argv[]){
     Pcoarse->create(nloc);
     Pbegin->create(nloc);
     Pend->create(nloc);
-    //Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
@@ -278,7 +277,8 @@ int main(int argc, char *argv[]){
     Pcoarse->scatter(Pcoarse->q, Pcoarse->rhoPIC_m, Pcoarse->R);
     Pcoarse->rhoPIC_m = Pcoarse->rhoPIC_m / (hr[0] * hr[1] * hr[2]);
 
-    Pcoarse->rhoPIC_m = Pcoarse->rhoPIC_m - (Pcoarse->Q_m/((rmax[0] - rmin[0]) * (rmax[1] - rmin[1]) * (rmax[2] - rmin[2])));
+    Pcoarse->rhoPIC_m = Pcoarse->rhoPIC_m - 
+        (Pcoarse->Q_m/((rmax[0] - rmin[0]) * (rmax[1] - rmin[1]) * (rmax[2] - rmin[2])));
 
     Pcoarse->solver_mp->solve();
 
@@ -313,6 +313,7 @@ int main(int argc, char *argv[]){
     Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
 
 
+    using buffer_type = ippl::Communicate::buffer_type;
     msg << "Starting parareal iterations ..." << endl;
     for (unsigned int it=0; it<maxIter; it++) {
 
@@ -323,16 +324,44 @@ int main(int argc, char *argv[]){
         Pend->R = Pbegin->R - Pcoarse->R;
         Pend->P = Pbegin->P - Pcoarse->P;
 
-        if(Ippl::Comm-> rank() > 0) {
 
-            MPI_Recv(Pcoarse->R.getView().data(), nloc,
-                MPI_BYTE, src, tag, comm_m, &status);
+        int tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+        
+        if(Ippl::Comm->rank() > 0) {
+            size_type bufSize = Pbegin->packedSize(nloc);
+            buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
+            Ippl::Comm->recv(Ippl::Comm->rank()-1, tag, *Pbegin, *buf, bufSize, nloc);
+            buf->resetReadPos();
+        }
+        else {
+            Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R0.getView());
+            Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P0.getView());
+        }
 
+        Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
+        Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
+
+
+        LeapFrogPIC(*Pcoarse, Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse); 
+
+
+        Pend->R = Pend->R + Pcoarse->R;
+        Pend->P = Pend->P + Pcoarse->P;
+
+
+        if(Ippl::Comm->rank() < Ippl::Comm->size()-1) {
+            size_type bufSize = Pend->packedSize(nloc);
+            buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
+            MPI_Request request;
+            Ippl::Comm->isend(Ippl::Comm->rank()+1, tag, *Pend, *buf, request, nloc);
+            buf->resetWritePos();
+            MPI_Wait(&request, MPI_STATUS_IGNORE);
+        }
 
         msg << "Finished iteration: " << it+1 << endl;
     }
 
-    msg << "LandauDamping: End." << endl;
+    msg << "LandauDamping Parareal: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
