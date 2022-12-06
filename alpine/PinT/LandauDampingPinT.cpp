@@ -30,6 +30,8 @@
 //
 
 #include "ChargedParticlesPinT.hpp"
+#include "StatesBeginSlice.hpp"
+#include "StatesEndSlice.hpp"
 #include "LeapFrogPIC.cpp"
 #include "LeapFrogPIF.cpp"
 #include <string>
@@ -193,8 +195,12 @@ int main(int argc, char *argv[]){
         << endl;
 
     using bunch_type = ChargedParticlesPinT<PLayout_t>;
+    using states_begin_type = StatesBeginSlice<PLayout_t>;
+    using states_end_type = StatesEndSlice<PLayout_t>;
 
-    std::unique_ptr<bunch_type>  P;
+    std::unique_ptr<bunch_type>  Pcoarse;
+    std::unique_ptr<states_begin_type>  Pbegin;
+    std::unique_ptr<states_end_type>  Pend;
 
     ippl::NDIndex<Dim> domain;
     for (unsigned i = 0; i< Dim; i++) {
@@ -225,16 +231,18 @@ int main(int argc, char *argv[]){
 
     //Q = -\int\int f dx dv
     double Q = -rmax[0] * rmax[1] * rmax[2];
-    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
+    Pcoarse = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
+    Pbegin = std::make_unique<bunch_type>(PL);
+    Pend = std::make_unique<bunch_type>(PL);
 
-    P->nr_m = nr;
+    Pcoarse->nr_m = nr;
 
-    P->rhoPIF_m.initialize(mesh, FL);
-    P->rhoPIC_m.initialize(mesh, FL);
-    P->EfieldPIC_m.initialize(mesh, FL);
+    Pcoarse->rhoPIF_m.initialize(mesh, FL);
+    Pcoarse->rhoPIC_m.initialize(mesh, FL);
+    Pcoarse->EfieldPIC_m.initialize(mesh, FL);
 
-    P->initFFTSolver();
-    P->time_m = 0.0;
+    Pcoarse->initFFTSolver();
+    Pcoarse->time_m = 0.0;
 
     IpplTimings::startTimer(particleCreation);
 
@@ -246,64 +254,82 @@ int main(int argc, char *argv[]){
 
     size_type nloc = totalP;
 
-    P->create(nloc);
+    Pcoarse->create(nloc);
+    Pbegin->create(nloc);
+    Pend->create(nloc);
     //Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+                         Pcoarse->R.getView(), Pcoarse->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
     Kokkos::fence();
     Ippl::Comm->barrier();
     IpplTimings::stopTimer(particleCreation);                                                    
     
-    P->q = P->Q_m/totalP;
+    Pcoarse->q = Pcoarse->Q_m/totalP;
     msg << "particles created and initial conditions assigned " << endl;
 
     //Copy initial conditions as they are needed later
-    Kokkos::deep_copy(P->R0.getView(), P->R.getView());
-    Kokkos::deep_copy(P->P0.getView(), P->P.getView());
+    Kokkos::deep_copy(Pcoarse->R0.getView(), Pcoarse->R.getView());
+    Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
 
-    P->scatter(P->q, P->rhoPIC_m, P->R);
-    P->rhoPIC_m = P->rhoPIC_m / (hr[0] * hr[1] * hr[2]);
+    Pcoarse->rhoPIC_m = 0.0;
+    Pcoarse->scatter(Pcoarse->q, Pcoarse->rhoPIC_m, Pcoarse->R);
+    Pcoarse->rhoPIC_m = Pcoarse->rhoPIC_m / (hr[0] * hr[1] * hr[2]);
 
-    P->rhoPIC_m = P->rhoPIC_m - (P->Q_m/((rmax[0] - rmin[0]) * (rmax[1] - rmin[1]) * (rmax[2] - rmin[2])));
+    Pcoarse->rhoPIC_m = Pcoarse->rhoPIC_m - (Pcoarse->Q_m/((rmax[0] - rmin[0]) * (rmax[1] - rmin[1]) * (rmax[2] - rmin[2])));
 
-    P->solver_mp->solve();
+    Pcoarse->solver_mp->solve();
 
-    P->gather(P->E, P->EfieldPIC_m, P->R);
+    Pcoarse->gather(Pcoarse->E, Pcoarse->EfieldPIC_m, Pcoarse->R);
 
     //Get initial guess for ranks other than 0 by propagating the coarse solver
     if (Ippl::Comm->rank() > 0) {
-        LeapFrogPIC(*P, P->R, P->P, Ippl::Comm->rank()*ntCoarse, dtCoarse); 
+        LeapFrogPIC(*Pcoarse, Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse); 
     }
 
     Ippl::Comm->barrier();
 
-    Kokkos::deep_copy(P->GR.getView(), P->R.getView());
-    Kokkos::deep_copy(P->GP.getView(), P->P.getView());
+    
+    Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
+    Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
+
+    //Compute initial E fields corresponding to fine integrator
+    Pcoarse->rhoPIF_m = {0.0, 0.0};
+    Pcoarse->scatterPIF(Pcoarse->q, Pcoarse->rhoPIF_m, Pcoarse->R);
+
+    Pcoarse->rhoPIF_m = Pcoarse->rhoPIF_m / 
+                        ((rmax[0] - rmin[0]) * (rmax[1] - rmin[1]) * (rmax[2] - rmin[2]));
+
+    Pcoarse->gatherPIF(Pcoarse->E, Pcoarse->rhoPIF_m, Pcoarse->R);
+
 
     //Run the coarse integrator to get the values at the end of the time slice 
-    LeapFrogPIC(*P, P->GR, P->GP, ntCoarse, dtCoarse); 
+    LeapFrogPIC(*Pcoarse, Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse); 
+
+    //The following might not be needed
+    Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
+    Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
 
 
     msg << "Starting parareal iterations ..." << endl;
     for (unsigned int it=0; it<maxIter; it++) {
 
         //Run fine integrator in parallel
-        LeapFrogPIF(*P, P->R, P->P, ntFine, dtFine);
+        LeapFrogPIF(*Pcoarse, Pbegin->R, Pbegin->P, ntFine, dtFine);
 
         //Difference = Fine - Coarse
-        P->Rend = P->R - P->GR;
-        P->Pend = P->P - P->GP;
+        Pend->R = Pbegin->R - Pcoarse->R;
+        Pend->P = Pbegin->P - Pcoarse->P;
 
         if(Ippl::Comm-> rank() > 0) {
 
-            MPI_Recv(P->R.getView().data(), nloc,
+            MPI_Recv(Pcoarse->R.getView().data(), nloc,
                 MPI_BYTE, src, tag, comm_m, &status);
 
 
-        msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
+        msg << "Finished iteration: " << it+1 << endl;
     }
 
     msg << "LandauDamping: End." << endl;
