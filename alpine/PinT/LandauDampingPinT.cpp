@@ -159,7 +159,7 @@ double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qpr
 
     Kokkos::parallel_reduce("Abs. error", Q.size(),
                             KOKKOS_LAMBDA(const int i, double& valL){
-                                Vector_t diff = Qview(i) - QprevIterView;
+                                Vector_t diff = Qview(i) - QprevIterView(i);
                                 double myVal = dot(diff, diff).apply();
                                 valL += myVal;
                             }, Kokkos::Sum<double>(temp));
@@ -275,6 +275,7 @@ int main(int argc, char *argv[]){
 
     const bool isAllPeriodic=true;
     Mesh_t meshPIC(domainPIC, hr, origin);
+    Mesh_t meshPIF(domainPIF, hr, origin);
     FieldLayout_t FLPIC(domainPIC, decomp, isAllPeriodic);
     FieldLayout_t FLPIF(domainPIF, decomp, isAllPeriodic);
     PLayout_t PL(FLPIC, meshPIC);
@@ -324,7 +325,7 @@ int main(int argc, char *argv[]){
     Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
 
     Pcoarse->rhoPIC_m = 0.0;
-    Pcoarse->scatter(Pcoarse->q, Pcoarse->rhoPIC_m, Pcoarse->R);
+    scatter(Pcoarse->q, Pcoarse->rhoPIC_m, Pcoarse->R);
     Pcoarse->rhoPIC_m = Pcoarse->rhoPIC_m / (hr[0] * hr[1] * hr[2]);
 
     Pcoarse->rhoPIC_m = Pcoarse->rhoPIC_m - 
@@ -332,7 +333,7 @@ int main(int argc, char *argv[]){
 
     Pcoarse->solver_mp->solve();
 
-    Pcoarse->gather(Pcoarse->E, Pcoarse->EfieldPIC_m, Pcoarse->R);
+    gather(Pcoarse->E, Pcoarse->EfieldPIC_m, Pcoarse->R);
 
     //Get initial guess for ranks other than 0 by propagating the coarse solver
     if (Ippl::Comm->rank() > 0) {
@@ -347,12 +348,12 @@ int main(int argc, char *argv[]){
 
     //Compute initial E fields corresponding to fine integrator
     Pcoarse->rhoPIF_m = {0.0, 0.0};
-    Pcoarse->scatterPIF(Pcoarse->q, Pcoarse->rhoPIF_m, Pcoarse->R);
+    scatterPIF(Pcoarse->q, Pcoarse->rhoPIF_m, Pcoarse->R);
 
     Pcoarse->rhoPIF_m = Pcoarse->rhoPIF_m / 
                         ((rmax[0] - rmin[0]) * (rmax[1] - rmin[1]) * (rmax[2] - rmin[2]));
 
-    Pcoarse->gatherPIF(Pcoarse->E, Pcoarse->rhoPIF_m, Pcoarse->R);
+    gatherPIF(Pcoarse->E, Pcoarse->rhoPIF_m, Pcoarse->R);
 
 
     //Run the coarse integrator to get the values at the end of the time slice 

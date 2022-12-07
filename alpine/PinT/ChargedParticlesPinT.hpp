@@ -17,6 +17,7 @@
 //
 
 #include "Ippl.h"
+#include "Solver/FFTPeriodicPoissonSolver.h"
 
 // dimension of our positions
 constexpr unsigned Dim = 3;
@@ -65,6 +66,8 @@ public:
 
     double Q_m;
 
+    std::shared_ptr<Solver_t> solver_mp;
+    
     double time_m;
 
 

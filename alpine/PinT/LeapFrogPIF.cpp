@@ -16,13 +16,14 @@
 
 //#include "ChargedParticlesPinT.hpp"
 
-void LeapFrogPIF(ChargedParticlesPinT& P, ParticleAttrib<Vector_t>& Rtemp,
+void LeapFrogPIF(ChargedParticlesPinT<PLayout_t>& P, ParticleAttrib<Vector_t>& Rtemp,
                  ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
-                 const double& dt, const bool& isConverged, const double& tStartMySlice) {
+                 const double& dt, const bool& isConverged, 
+                 const double& tStartMySlice) {
 
     const auto& PL = P.getLayout();
     const auto& rmax = P.rmax_m;
-    const auto& rmax = P.rmin_m;
+    const auto& rmin = P.rmin_m;
 
     P.time_m = tStartMySlice;
     for (unsigned int it=0; it<nt; it++) {
@@ -43,12 +44,12 @@ void LeapFrogPIF(ChargedParticlesPinT& P, ParticleAttrib<Vector_t>& Rtemp,
 
         //scatter the charge onto the underlying grid
         P.rhoPIF_m = {0.0, 0.0};
-        P.scatterPIF(P.q, P.rhoPIF_m, Rtemp);
+        scatterPIF(P.q, P.rhoPIF_m, Rtemp);
 
         P.rhoPIF_m = P.rhoPIF_m / ((rmax[0] - rmin[0]) * (rmax[1] - rmin[1]) * (rmax[2] - rmin[2]));
 
         // Solve for and gather E field
-        P.gatherPIF(P.E, P.rhoPIF_m, Rtemp);
+        gatherPIF(P.E, P.rhoPIF_m, Rtemp);
 
         //kick
         Ptemp = Ptemp - 0.5 * dt * P.E;

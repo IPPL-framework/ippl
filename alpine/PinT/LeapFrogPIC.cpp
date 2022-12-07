@@ -15,7 +15,7 @@
 
 //#include "ChargedParticlesPinT.hpp"
 
-void LeapFrogPIC(ChargedParticlesPinT& P, ParticleAttrib<Vector_t>& Rtemp, 
+void LeapFrogPIC(ChargedParticlesPinT<PLayout_t>& P, ParticleAttrib<Vector_t>& Rtemp, 
                  ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
                  const double dt) {
 
@@ -23,7 +23,7 @@ void LeapFrogPIC(ChargedParticlesPinT& P, ParticleAttrib<Vector_t>& Rtemp,
 
     const auto& hr = P.hr_m;
     const auto& rmax = P.rmax_m;
-    const auto& rmax = P.rmin_m;
+    const auto& rmin = P.rmin_m;
     for (unsigned int it=0; it<nt; it++) {
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
         // Here, we assume a constant charge-to-mass ratio of -1 for
@@ -41,7 +41,7 @@ void LeapFrogPIC(ChargedParticlesPinT& P, ParticleAttrib<Vector_t>& Rtemp,
 
         //scatter the charge onto the underlying grid
         P.rhoPIC_m = 0.0;
-        P.scatter(P.q, P.rhoPIC_m, Rtemp);
+        scatter(P.q, P.rhoPIC_m, Rtemp);
 
 
         P.rhoPIC_m = P.rhoPIC_m / (hr[0] * hr[1] * hr[2]);
@@ -51,7 +51,7 @@ void LeapFrogPIC(ChargedParticlesPinT& P, ParticleAttrib<Vector_t>& Rtemp,
         P.solver_mp->solve();
 
         // gather E field
-        P.gather(P.E, P.EfieldPIC_m, Rtemp);
+        gather(P.E, P.EfieldPIC_m, Rtemp);
 
         //kick
         Ptemp = Ptemp - 0.5 * dt * P.E;
