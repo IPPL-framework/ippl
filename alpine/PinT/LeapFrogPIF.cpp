@@ -18,7 +18,7 @@
 
 void LeapFrogPIF(ChargedParticlesPinT& P, ParticleAttrib<Vector_t>& Rtemp,
                  ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
-                 const double dt) {
+                 const double dt, const bool isConverged) {
 
     const auto& PL = P.getLayout();
     const auto& rmax = P.rmax_m;
@@ -51,6 +51,11 @@ void LeapFrogPIF(ChargedParticlesPinT& P, ParticleAttrib<Vector_t>& Rtemp,
 
         //kick
         Ptemp = Ptemp - 0.5 * dt * P.E;
+
+        if(isConverged) {
+            P.dumpLandau(P.getLocalNum());         
+            P.dumpEnergy(P.getLocalNum());         
+        }
 
     }
 }

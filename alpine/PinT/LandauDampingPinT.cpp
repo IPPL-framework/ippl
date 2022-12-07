@@ -315,15 +315,21 @@ int main(int argc, char *argv[]){
 
     using buffer_type = ippl::Communicate::buffer_type;
     msg << "Starting parareal iterations ..." << endl;
+    bool isConverged = false;
     for (unsigned int it=0; it<maxIter; it++) {
 
         //Run fine integrator in parallel
-        LeapFrogPIF(*Pcoarse, Pbegin->R, Pbegin->P, ntFine, dtFine);
+        LeapFrogPIF(*Pcoarse, Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged);
+
+        if(isConverged) {
+            break;
+        }
 
         //Difference = Fine - Coarse
         Pend->R = Pbegin->R - Pcoarse->R;
         Pend->P = Pbegin->P - Pcoarse->P;
 
+        double Rerror = computeL2Error(
 
         int tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
         

@@ -277,12 +277,12 @@ namespace ippl {
 
         IpplTimings::stopTimer(scatterTimer);
 
-        static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
-        IpplTimings::startTimer(scatterAllReduceTimer);                                               
-        int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
-        MPI_Allreduce(viewLocal.data(), fview.data(), viewSize, 
-                      MPI_C_DOUBLE_COMPLEX, MPI_SUM, Ippl::getComm());  
-        IpplTimings::stopTimer(scatterAllReduceTimer);
+        //static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
+        //IpplTimings::startTimer(scatterAllReduceTimer);                                               
+        //int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
+        //MPI_Allreduce(viewLocal.data(), fview.data(), viewSize, 
+        //              MPI_C_DOUBLE_COMPLEX, MPI_SUM, Ippl::getComm());  
+        //IpplTimings::stopTimer(scatterAllReduceTimer);
 
     }
 

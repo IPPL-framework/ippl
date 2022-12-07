@@ -92,7 +92,14 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::fillHalo() {
-        if(Ippl::Comm->size() > 1) {
+        
+        bool isAllSerial = true;
+        
+        for (unsigned d = 0; d < Dim; ++d) {
+            isAllSerial = isAllSerial && (layout_m->getRequestedDistribution(d) == SERIAL);
+        }
+        
+        if((Ippl::Comm->size() > 1) && (!isAllSerial)) {
             halo_m.fillHalo(dview_m, layout_m);
         }
         if(layout_m->isAllPeriodic_m) {
@@ -106,7 +113,14 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::accumulateHalo() {
-        if(Ippl::Comm->size() > 1) {
+
+        bool isAllSerial = true;
+        
+        for (unsigned d = 0; d < Dim; ++d) {
+            isAllSerial = isAllSerial && (layout_m->getRequestedDistribution(d) == SERIAL);
+        }
+        
+        if((Ippl::Comm->size() > 1) && (!isAllSerial)) {
             halo_m.accumulateHalo(dview_m, layout_m);
         }
         if(layout_m->isAllPeriodic_m) {

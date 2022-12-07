@@ -131,174 +131,179 @@ public:
 
     void dumpLandau(size_type totalP) {
        
-       auto Eview = E.getView();
+        auto Eview = E.getView();
 
-       double fieldEnergy, ExAmp;
-       double temp = 0.0;
+        double fieldEnergy, ExAmp;
+        double temp = 0.0;
 
-       Kokkos::parallel_reduce("Ex energy", this->getLocalNum(),
-                               KOKKOS_LAMBDA(const int i, double& valL){
-                                   double myVal = Eview(i)[0] * Eview(i)[0];
-                                   valL += myVal;
-                               }, Kokkos::Sum<double>(temp));
+        Kokkos::parallel_reduce("Ex energy", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const int i, double& valL){
+                                    double myVal = Eview(i)[0] * Eview(i)[0];
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
 
-       double globaltemp = 0.0;
-       MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-       double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
-       fieldEnergy = globaltemp * volume / totalP ;
+        //double globaltemp = 0.0;
+        double globaltemp = temp;
+        //MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
+        fieldEnergy = globaltemp * volume / totalP ;
 
-       double tempMax = 0.0;
-       Kokkos::parallel_reduce("Ex max norm", this->getLocalNum(),
-                               KOKKOS_LAMBDA(const size_t i, double& valL)
-                               {
-                                   double myVal = std::fabs(Eview(i)[0]);
-                                   if(myVal > valL) valL = myVal;
-                               }, Kokkos::Max<double>(tempMax));
-       ExAmp = 0.0;
-       MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-
-
-       if (Ippl::Comm->rank() == 0) {
-           std::stringstream fname;
-           fname << "data/FieldLandau_";
-           fname << Ippl::Comm->size();
-           fname << ".csv";
+        double tempMax = 0.0;
+        Kokkos::parallel_reduce("Ex max norm", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const size_t i, double& valL)
+                                {
+                                    double myVal = std::fabs(Eview(i)[0]);
+                                    if(myVal > valL) valL = myVal;
+                                }, Kokkos::Max<double>(tempMax));
+        //ExAmp = 0.0;
+        ExAmp = tempMax;
+        //MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 
 
-           Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-           csvout.precision(10);
-           csvout.setf(std::ios::scientific, std::ios::floatfield);
+        for (int rank=0; rank < Ippl::Comm->size(); ++rank) {
+             if(Ippl::Comm->rank() == rank) {
+                 std::stringstream fname;
+                 fname << "data/FieldLandau_";
+                 fname << Ippl::Comm->size();
+                 fname << ".csv";
 
-           if(time_m == 0.0) {
-               csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
-           }
 
-           csvout << time_m << " "
-                  << fieldEnergy << " "
-                  << ExAmp << endl;
+                 Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, rank);
+                 csvout.precision(10);
+                 csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-       }
-       
-       Ippl::Comm->barrier();
+                 if(time_m == 0.0) {
+                     csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+                 }
+
+                 csvout << time_m << " "
+                        << fieldEnergy << " "
+                        << ExAmp << endl;
+             }
+             Ippl::Comm->barrier();
+        }
     }
 
 
     void dumpEnergy(size_type /*totalP*/) {
        
 
-       double potentialEnergy, kineticEnergy;
-       double temp = 0.0;
+        double potentialEnergy, kineticEnergy;
+        double temp = 0.0;
 
 
-       auto rhoview = rho_m.getView();
-       const int nghost = rho_m.getNghost();
-       using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
+        auto rhoview = rhoPIF_m.getView();
+        const int nghost = rhoPIF_m.getNghost();
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
       
-       const FieldLayout_t& layout = rho_m.getLayout(); 
-       const Mesh_t& mesh = rho_m.get_mesh();
-       const Vector<double, Dim>& dx = mesh.getMeshSpacing();
-       const auto& domain = layout.getDomain();
-       Vector<double, Dim> Len;
-       Vector<int, Dim> N;
+        const FieldLayout_t& layout = rhoPIF_m.getLayout(); 
+        const Mesh_t& mesh = rhoPIF_m.get_mesh();
+        const Vector<double, Dim>& dx = mesh.getMeshSpacing();
+        const auto& domain = layout.getDomain();
+        Vector<double, Dim> Len;
+        Vector<int, Dim> N;
 
-       for (unsigned d=0; d < Dim; ++d) {
-           N[d] = domain[d].length();
-           Len[d] = dx[d] * N[d];
-       }
-
-
-       Kokkos::complex<double> imag = {0.0, 1.0};
-       double pi = std::acos(-1.0);
-       Kokkos::parallel_reduce("Potential energy",
-                             mdrange_type({0, 0, 0},
-                                          {N[0],
-                                           N[1],
-                                           N[2]}),
-                             KOKKOS_LAMBDA(const int i,
-                                           const int j,
-                                           const int k,
-                                           double& valL)
-       {
-       
-           Vector<int, 3> iVec = {i, j, k};
-           Vector<double, 3> kVec;
-           double Dr = 0.0;
-           for(size_t d = 0; d < Dim; ++d) {
-               bool shift = (iVec[d] > (N[d]/2));
-               kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
-               //kVec[d] = 2 * pi / Len[d] * iVec[d];
-               Dr += kVec[d] * kVec[d];
-           }
-
-           Kokkos::complex<double> Ek = {0.0, 0.0}; 
-           double myVal = 0.0;
-           for(size_t d = 0; d < Dim; ++d) {
-               if(Dr != 0.0) {
-                   Ek = -(imag * kVec[d] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
-               }
-               myVal += Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
-           }
-
-           //double myVal = rhoview(i,j,k).real() * rhoview(i,j,k).real() + 
-           //               rhoview(i,j,k).imag() * rhoview(i,j,k).imag();
-           //if(Dr != 0.0) {
-           //    myVal /= Dr;
-           //}
-           //else {
-           //    myVal = 0.0;
-           //}
-           valL += myVal;
-
-       }, Kokkos::Sum<double>(temp));
-       
-
-       double globaltemp = 0.0;
-       MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-       double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
-       //potentialEnergy = 0.5 * globaltemp * volume / totalP ;
-       potentialEnergy = 0.25 * 0.5 * globaltemp * volume;
-
-       auto Pview = P.getView();
-       auto qView = q.getView();
-
-       temp = 0.0;
-
-       Kokkos::parallel_reduce("Kinetic Energy", this->getLocalNum(),
-                               KOKKOS_LAMBDA(const int i, double& valL){
-                                   double myVal = dot(Pview(i), Pview(i)).apply();
-                                   myVal *= -qView(i);
-                                   valL += myVal;
-                               }, Kokkos::Sum<double>(temp));
-
-       temp *= 0.5;
-       globaltemp = 0.0;
-       MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-
-       kineticEnergy = globaltemp;
-
-       if (Ippl::Comm->rank() == 0) {
-           std::stringstream fname;
-           fname << "data/Energy_";
-           fname << Ippl::Comm->size();
-           fname << ".csv";
+        for (unsigned d=0; d < Dim; ++d) {
+            N[d] = domain[d].length();
+            Len[d] = dx[d] * N[d];
+        }
 
 
-           Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-           csvout.precision(10);
-           csvout.setf(std::ios::scientific, std::ios::floatfield);
+        Kokkos::complex<double> imag = {0.0, 1.0};
+        double pi = std::acos(-1.0);
+        Kokkos::parallel_reduce("Potential energy",
+                              mdrange_type({0, 0, 0},
+                                           {N[0],
+                                            N[1],
+                                            N[2]}),
+                              KOKKOS_LAMBDA(const int i,
+                                            const int j,
+                                            const int k,
+                                            double& valL)
+        {
+        
+            Vector<int, 3> iVec = {i, j, k};
+            Vector<double, 3> kVec;
+            double Dr = 0.0;
+            for(size_t d = 0; d < Dim; ++d) {
+                bool shift = (iVec[d] > (N[d]/2));
+                kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                //kVec[d] = 2 * pi / Len[d] * iVec[d];
+                Dr += kVec[d] * kVec[d];
+            }
 
-           if(time_m == 0.0) {
-               csvout << "time, Potential energy, Kinetic energy, Total energy" << endl;
-           }
+            Kokkos::complex<double> Ek = {0.0, 0.0}; 
+            double myVal = 0.0;
+            for(size_t d = 0; d < Dim; ++d) {
+                if(Dr != 0.0) {
+                    Ek = -(imag * kVec[d] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
+                }
+                myVal += Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
+            }
 
-           csvout << time_m << " "
-                  << potentialEnergy << " "
-                  << kineticEnergy << " "
-                  << potentialEnergy + kineticEnergy << endl;
+            //double myVal = rhoview(i,j,k).real() * rhoview(i,j,k).real() + 
+            //               rhoview(i,j,k).imag() * rhoview(i,j,k).imag();
+            //if(Dr != 0.0) {
+            //    myVal /= Dr;
+            //}
+            //else {
+            //    myVal = 0.0;
+            //}
+            valL += myVal;
 
-       }
-       
-       Ippl::Comm->barrier();
+        }, Kokkos::Sum<double>(temp));
+        
+
+        //double globaltemp = 0.0;
+        double globaltemp = temp;
+        //MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
+        //potentialEnergy = 0.5 * globaltemp * volume / totalP ;
+        potentialEnergy = 0.25 * 0.5 * globaltemp * volume;
+
+        auto Pview = P.getView();
+        auto qView = q.getView();
+
+        temp = 0.0;
+
+        Kokkos::parallel_reduce("Kinetic Energy", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const int i, double& valL){
+                                    double myVal = dot(Pview(i), Pview(i)).apply();
+                                    myVal *= -qView(i);
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+
+        temp *= 0.5;
+        //globaltemp = 0.0;
+        globaltemp = temp;
+        //MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+
+        kineticEnergy = globaltemp;
+
+        for (int rank=0; rank < Ippl::Comm->size(); ++rank) {
+             if(Ippl::Comm->rank() == rank) {
+                 std::stringstream fname;
+                 fname << "data/Energy_";
+                 fname << Ippl::Comm->size();
+                 fname << ".csv";
+
+
+                 Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, rank);
+                 csvout.precision(10);
+                 csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+                 if(time_m == 0.0) {
+                     csvout << "time, Potential energy, Kinetic energy, Total energy" << endl;
+                 }
+
+                 csvout << time_m << " "
+                        << potentialEnergy << " "
+                        << kineticEnergy << " "
+                        << potentialEnergy + kineticEnergy << endl;
+             }
+             Ippl::Comm->barrier();
+        }
+
     }
 
 private:

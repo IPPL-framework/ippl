@@ -309,7 +309,7 @@ namespace ippl {
          }
 
          heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>
-                    (inbox, outbox, params.get<int>("r2c_direction"), Ippl::getComm(),
+                    (inbox, outbox, params.get<int>("r2c_direction"), MPI_COMM_SELF,
                      heffteOptions);
         
          //heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
