@@ -82,6 +82,23 @@ public:
     typename ippl::ParticleBase<PLayout>::particle_position_type RprevIter;  // G(R^(k-1)_n)
     typename ippl::ParticleBase<PLayout>::particle_position_type PprevIter;  // G(P^(k-1)_n)
 
+    /*
+      This constructor is mandatory for all derived classes from
+      ParticleBase as the bunch buffer uses this
+    */
+    ChargedParticlesPinT(PLayout& pl)
+    : ippl::ParticleBase<PLayout>(pl)
+    {
+        // register the particle attributes
+        this->addAttribute(q);
+        this->addAttribute(P);
+        this->addAttribute(E);
+        this->addAttribute(R0);
+        this->addAttribute(P0);
+        this->addAttribute(RprevIter);
+        this->addAttribute(PprevIter);
+    }
+    
     ChargedParticlesPinT(PLayout& pl,
                      Vector_t hr,
                      Vector_t rmin,
@@ -309,6 +326,92 @@ public:
              Ippl::Comm->barrier();
         }
 
+    }
+
+    void LeapFrogPIC(ParticleAttrib<Vector_t>& Rtemp, 
+                     ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
+                     const double dt) {
+    
+        PLayout& PL = this->getLayout();
+    
+        for (unsigned int it=0; it<nt; it++) {
+            // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
+            // Here, we assume a constant charge-to-mass ratio of -1 for
+            // all the particles hence eliminating the need to store mass as
+            // an attribute
+            // kick
+    
+            Ptemp = Ptemp - 0.5 * dt * E;
+    
+            //drift
+            Rtemp = Rtemp + dt * Ptemp;
+    
+            //Apply particle BC
+            PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+    
+            //scatter the charge onto the underlying grid
+            rhoPIC_m = 0.0;
+            scatter(q, rhoPIC_m, Rtemp);
+    
+    
+            rhoPIC_m = rhoPIC_m / (hr_m[0] * hr_m[1] * hr_m[2]);
+            rhoPIC_m = rhoPIC_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
+    
+            //Field solve
+            solver_mp->solve();
+    
+            // gather E field
+            gather(E, EfieldPIC_m, Rtemp);
+    
+            //kick
+            Ptemp = Ptemp - 0.5 * dt * E;
+        }
+    
+    }
+
+    void LeapFrogPIF(ParticleAttrib<Vector_t>& Rtemp,
+                     ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
+                     const double& dt, const bool& isConverged, 
+                     const double& tStartMySlice) {
+    
+        PLayout& PL = this->getLayout();
+    
+        time_m = tStartMySlice;
+        for (unsigned int it=0; it<nt; it++) {
+    
+            // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
+            // Here, we assume a constant charge-to-mass ratio of -1 for
+            // all the particles hence eliminating the need to store mass as
+            // an attribute
+            // kick
+    
+            Ptemp = Ptemp - 0.5 * dt * E;
+    
+            //drift
+            Rtemp = Rtemp + dt * Ptemp;
+    
+            //Apply particle BC
+            PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+    
+            //scatter the charge onto the underlying grid
+            rhoPIF_m = {0.0, 0.0};
+            scatterPIF(q, rhoPIF_m, Rtemp);
+    
+            rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
+    
+            // Solve for and gather E field
+            gatherPIF(E, rhoPIF_m, Rtemp);
+    
+            //kick
+            Ptemp = Ptemp - 0.5 * dt * E;
+    
+            time_m += dt;
+            if(isConverged) {
+                dumpLandau(this->getLocalNum());         
+                dumpEnergy(this->getLocalNum());         
+            }
+    
+        }
     }
 
 private:

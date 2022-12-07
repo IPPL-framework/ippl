@@ -21,7 +21,7 @@ void LeapFrogPIF(ChargedParticlesPinT<PLayout_t>& P, ParticleAttrib<Vector_t>& R
                  const double& dt, const bool& isConverged, 
                  const double& tStartMySlice) {
 
-    const auto& PL = P.getLayout();
+    auto& PL = P.getLayout();
     const auto& rmax = P.rmax_m;
     const auto& rmin = P.rmin_m;
 

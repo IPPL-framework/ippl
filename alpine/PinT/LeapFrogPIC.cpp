@@ -19,7 +19,7 @@ void LeapFrogPIC(ChargedParticlesPinT<PLayout_t>& P, ParticleAttrib<Vector_t>& R
                  ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
                  const double dt) {
 
-    const auto& PL = P.getLayout();
+    PLayout_t& PL = P.getLayout();
 
     const auto& hr = P.hr_m;
     const auto& rmax = P.rmax_m;

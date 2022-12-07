@@ -35,8 +35,8 @@
 #include "ChargedParticlesPinT.hpp"
 #include "StatesBeginSlice.hpp"
 #include "StatesEndSlice.hpp"
-#include "LeapFrogPIC.cpp"
-#include "LeapFrogPIF.cpp"
+//#include "LeapFrogPIC.cpp"
+//#include "LeapFrogPIF.cpp"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -337,7 +337,7 @@ int main(int argc, char *argv[]){
 
     //Get initial guess for ranks other than 0 by propagating the coarse solver
     if (Ippl::Comm->rank() > 0) {
-        LeapFrogPIC(*Pcoarse, Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse); 
+        Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse); 
     }
 
     Ippl::Comm->barrier();
@@ -357,7 +357,7 @@ int main(int argc, char *argv[]){
 
 
     //Run the coarse integrator to get the values at the end of the time slice 
-    LeapFrogPIC(*Pcoarse, Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse); 
+    Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse); 
 
     //The following might not be needed
     Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
@@ -370,7 +370,7 @@ int main(int argc, char *argv[]){
     for (unsigned int it=0; it<maxIter; it++) {
 
         //Run fine integrator in parallel
-        LeapFrogPIF(*Pcoarse, Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice);
+        Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice);
 
         if(isConverged) {
             break;
@@ -400,7 +400,7 @@ int main(int argc, char *argv[]){
         Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
 
 
-        LeapFrogPIC(*Pcoarse, Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse); 
+        Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse); 
 
         Pend->R = Pend->R + Pcoarse->R;
         Pend->P = Pend->P + Pcoarse->P;
