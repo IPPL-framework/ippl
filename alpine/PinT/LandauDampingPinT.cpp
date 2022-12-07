@@ -6,13 +6,16 @@
 // European Conference on Parallel Processing. Springer, Cham, 2017.
 // 
 //  Usage:
-//     srun ./LandauDampingPinT <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> <Niter> --info 5
-//     nx       = No. of Fourier modes in the x-direction
-//     ny       = No. of Fourier modes in the y-direction
-//     nz       = No. of Fourier modes in the z-direction
+//     srun ./LandauDampingPinT <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> <Niter> --info 5
+//     nmx       = No. of Fourier modes in the x-direction
+//     nmy       = No. of Fourier modes in the y-direction
+//     nmz       = No. of Fourier modes in the z-direction
+//     nx       = No. of grid points in the x-direction
+//     ny       = No. of grid points in the y-direction
+//     nz       = No. of grid points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Example:
-//     srun ./LandauDampingPinT 128 128 128 10000 20 0.05 0.05 1e-5 100 --info 5
+//     srun ./LandauDampingPinT 16 16 16 32 32 32 655360 20 0.05 0.05 1e-5 100 --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
 // Jülich Supercomputing Centre, Jülich, Germany.
@@ -193,10 +196,16 @@ int main(int argc, char *argv[]){
     Inform msg("LandauDampingPinT");
     Inform msg2all("LandauDampingPinT",INFORM_ALL_NODES);
 
-    ippl::Vector<int,Dim> nr = {
+    ippl::Vector<int,Dim> nmPIF = {
         std::atoi(argv[1]),
         std::atoi(argv[2]),
         std::atoi(argv[3])
+    };
+
+    ippl::Vector<int,Dim> nrPIC = {
+        std::atoi(argv[4]),
+        std::atoi(argv[5]),
+        std::atoi(argv[6])
     };
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
@@ -205,15 +214,15 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(mainTimer);
 
-    const size_type totalP = std::atoll(argv[4]);
-    const double tEnd = std::atof(argv[5]);
+    const size_type totalP = std::atoll(argv[7]);
+    const double tEnd = std::atof(argv[8]);
     const double dtSlice = tEnd / Ippl::Comm->size();
-    const double dtFine = std::atof(argv[6]);
-    const double dtCoarse = std::atof(argv[7]);
+    const double dtFine = std::atof(argv[9]);
+    const double dtCoarse = std::atof(argv[10]);
     const unsigned int ntFine = (unsigned int)(dtSlice / dtFine);
     const unsigned int ntCoarse = (unsigned int)(dtSlice / dtCoarse);
-    const double tol = std::atof(argv[8]);
-    const unsigned int maxIter = std::atoi(argv[9]);
+    const double tol = std::atof(argv[11]);
+    const unsigned int maxIter = std::atoi(argv[12]);
 
     const double tStartMySlice = Ippl::Comm->rank() * dtSlice; 
     const double tEndMySlice = (Ippl::Comm->rank() + 1) * dtSlice; 
@@ -228,7 +237,8 @@ int main(int argc, char *argv[]){
         << "Max. iterations: " << maxIter
         << endl
         << " Np= "
-        << totalP << " Fourier modes = " << nr
+        << totalP << " Fourier modes = " << nmPIF
+        << "Grid points = " << nrPIC
         << endl;
 
     using bunch_type = ChargedParticlesPinT<PLayout_t>;
@@ -239,9 +249,11 @@ int main(int argc, char *argv[]){
     std::unique_ptr<states_begin_type>  Pbegin;
     std::unique_ptr<states_end_type>  Pend;
 
-    ippl::NDIndex<Dim> domain;
+    ippl::NDIndex<Dim> domainPIC;
+    ippl::NDIndex<Dim> domainPIF;
     for (unsigned i = 0; i< Dim; i++) {
-        domain[i] = ippl::Index(nr[i]);
+        domainPIC[i] = ippl::Index(nrPIC[i]);
+        domainPIF[i] = ippl::Index(nmPIF[i]);
     }
 
     ippl::e_dim_tag decomp[Dim];
@@ -254,29 +266,30 @@ int main(int argc, char *argv[]){
     double alpha = 0.05;
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
-    double dx = rmax[0] / nr[0];
-    double dy = rmax[1] / nr[1];
-    double dz = rmax[2] / nr[2];
+    double dx = rmax[0] / nrPIC[0];
+    double dy = rmax[1] / nrPIC[1];
+    double dz = rmax[2] / nrPIC[2];
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
 
     const bool isAllPeriodic=true;
-    Mesh_t mesh(domain, hr, origin);
-    FieldLayout_t FL(domain, decomp, isAllPeriodic);
-    PLayout_t PL(FL, mesh);
+    Mesh_t meshPIC(domainPIC, hr, origin);
+    FieldLayout_t FLPIC(domainPIC, decomp, isAllPeriodic);
+    FieldLayout_t FLPIF(domainPIF, decomp, isAllPeriodic);
+    PLayout_t PL(FLPIC, meshPIC);
 
     //Q = -\int\int f dx dv
     double Q = -rmax[0] * rmax[1] * rmax[2];
     Pcoarse = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
-    Pbegin = std::make_unique<bunch_type>(PL);
-    Pend = std::make_unique<bunch_type>(PL);
+    Pbegin = std::make_unique<states_begin_type>(PL);
+    Pend = std::make_unique<states_end_type>(PL);
 
-    Pcoarse->nr_m = nr;
+    Pcoarse->nr_m = nrPIC;
 
-    Pcoarse->rhoPIF_m.initialize(mesh, FL);
-    Pcoarse->rhoPIC_m.initialize(mesh, FL);
-    Pcoarse->EfieldPIC_m.initialize(mesh, FL);
+    Pcoarse->rhoPIF_m.initialize(meshPIF, FLPIF);
+    Pcoarse->rhoPIC_m.initialize(meshPIC, FLPIC);
+    Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
 
     Pcoarse->initFFTSolver();
     Pcoarse->time_m = 0.0;
@@ -356,7 +369,7 @@ int main(int argc, char *argv[]){
     for (unsigned int it=0; it<maxIter; it++) {
 
         //Run fine integrator in parallel
-        LeapFrogPIF(*Pcoarse, Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged);
+        LeapFrogPIF(*Pcoarse, Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice);
 
         if(isConverged) {
             break;
@@ -400,10 +413,14 @@ int main(int argc, char *argv[]){
             MPI_Wait(&request, MPI_STATUS_IGNORE);
         }
 
-        msg << "Finished iteration: " << it+1 << endl;
 
         double Rerror = computeL2Error(Pcoarse->R, Pcoarse->RprevIter);
         double Perror = computeL2Error(Pcoarse->P, Pcoarse->PprevIter);
+
+        msg << "Finished iteration: " << it+1 
+            << "Rerror: " << Rerror 
+            << "Perror: " << Perror
+            << endl;
 
         if((Rerror <= tol) && (Perror <= tol)) {
             isConverged = true;

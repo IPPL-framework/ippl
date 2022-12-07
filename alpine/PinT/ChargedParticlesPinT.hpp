@@ -67,8 +67,6 @@ public:
 
     double time_m;
 
-    double rhoNorm_m;
-
 
 public:
     ParticleAttrib<double>     q; // charge

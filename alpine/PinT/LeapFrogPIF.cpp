@@ -17,13 +17,14 @@
 //#include "ChargedParticlesPinT.hpp"
 
 void LeapFrogPIF(ChargedParticlesPinT& P, ParticleAttrib<Vector_t>& Rtemp,
-                 ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
-                 const double dt, const bool isConverged) {
+                 ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
+                 const double& dt, const bool& isConverged, const double& tStartMySlice) {
 
     const auto& PL = P.getLayout();
     const auto& rmax = P.rmax_m;
     const auto& rmax = P.rmin_m;
 
+    P.time_m = tStartMySlice;
     for (unsigned int it=0; it<nt; it++) {
 
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
@@ -52,6 +53,7 @@ void LeapFrogPIF(ChargedParticlesPinT& P, ParticleAttrib<Vector_t>& Rtemp,
         //kick
         Ptemp = Ptemp - 0.5 * dt * P.E;
 
+        P.time_m += dt;
         if(isConverged) {
             P.dumpLandau(P.getLocalNum());         
             P.dumpEnergy(P.getLocalNum());         
