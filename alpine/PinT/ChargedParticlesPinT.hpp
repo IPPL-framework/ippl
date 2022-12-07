@@ -182,15 +182,15 @@ public:
         //MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 
 
-        for (int rank=0; rank < Ippl::Comm->size(); ++rank) {
-             if(Ippl::Comm->rank() == rank) {
+        //for (int rank=0; rank < Ippl::Comm->size(); ++rank) {
+        //     if(Ippl::Comm->rank() == rank) {
                  std::stringstream fname;
                  fname << "data/FieldLandau_";
-                 fname << Ippl::Comm->size();
+                 fname << Ippl::Comm->rank();
                  fname << ".csv";
 
 
-                 Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, rank);
+                 Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
                  csvout.precision(10);
                  csvout.setf(std::ios::scientific, std::ios::floatfield);
 
@@ -201,9 +201,9 @@ public:
                  csvout << time_m << " "
                         << fieldEnergy << " "
                         << ExAmp << endl;
-             }
-             Ippl::Comm->barrier();
-        }
+        //     }
+        //     Ippl::Comm->barrier();
+        //}
     }
 
 
@@ -302,15 +302,15 @@ public:
 
         kineticEnergy = globaltemp;
 
-        for (int rank=0; rank < Ippl::Comm->size(); ++rank) {
-             if(Ippl::Comm->rank() == rank) {
+        //for (int rank=0; rank < Ippl::Comm->size(); ++rank) {
+        //     if(Ippl::Comm->rank() == rank) {
                  std::stringstream fname;
                  fname << "data/Energy_";
-                 fname << Ippl::Comm->size();
+                 fname << Ippl::Comm->rank();
                  fname << ".csv";
 
 
-                 Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, rank);
+                 Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
                  csvout.precision(10);
                  csvout.setf(std::ios::scientific, std::ios::floatfield);
 
@@ -322,9 +322,9 @@ public:
                         << potentialEnergy << " "
                         << kineticEnergy << " "
                         << potentialEnergy + kineticEnergy << endl;
-             }
-             Ippl::Comm->barrier();
-        }
+             //}
+             //Ippl::Comm->barrier();
+        //}
 
     }
 

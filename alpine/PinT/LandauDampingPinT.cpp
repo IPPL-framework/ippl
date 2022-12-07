@@ -15,7 +15,7 @@
 //     nz       = No. of grid points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Example:
-//     srun ./LandauDampingPinT 16 16 16 32 32 32 655360 20 0.05 0.05 1e-5 100 --info 5
+//     srun ./LandauDampingPinT 16 16 16 32 32 32 655360 20.0 0.05 0.05 1e-5 100 --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
 // Jülich Supercomputing Centre, Jülich, Germany.
@@ -229,16 +229,18 @@ int main(int argc, char *argv[]){
 
     msg << "Parareal Landau damping"
         << endl
-        << "Slice dT: " << dtSlice 
+        << "Slice dT: " << dtSlice
+        << endl
         << "No. of fine time steps: " << ntFine 
+        << endl
         << "No. of coarse time steps: " << ntCoarse
         << endl
         << "Tolerance: " << tol
-        << "Max. iterations: " << maxIter
+        << " Max. iterations: " << maxIter
         << endl
-        << " Np= "
-        << totalP << " Fourier modes = " << nmPIF
-        << "Grid points = " << nrPIC
+        << "Np= " << totalP 
+        << " Fourier modes = " << nmPIF
+        << " Grid points = " << nrPIC
         << endl;
 
     using bunch_type = ChargedParticlesPinT<PLayout_t>;
@@ -419,8 +421,8 @@ int main(int argc, char *argv[]){
         double Perror = computeL2Error(Pcoarse->P, Pcoarse->PprevIter);
 
         msg << "Finished iteration: " << it+1 
-            << "Rerror: " << Rerror 
-            << "Perror: " << Perror
+            << " Rerror: " << Rerror 
+            << " Perror: " << Perror
             << endl;
 
         if((Rerror <= tol) && (Perror <= tol)) {
