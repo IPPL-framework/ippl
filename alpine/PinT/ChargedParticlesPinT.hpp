@@ -72,12 +72,14 @@ public:
 
 public:
     ParticleAttrib<double>     q; // charge
-    typename ippl::ParticleBase<PLayout>::particle_position_type P;  // G(P^(k-1)_n)
+    typename ippl::ParticleBase<PLayout>::particle_position_type P;  // G(P^(k)_n)
     typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
 
     typename ippl::ParticleBase<PLayout>::particle_position_type R0;  // Initial particle positions at t=0
     typename ippl::ParticleBase<PLayout>::particle_position_type P0;  // Initial particle velocities at t=0
 
+    typename ippl::ParticleBase<PLayout>::particle_position_type RprevIter;  // G(R^(k-1)_n)
+    typename ippl::ParticleBase<PLayout>::particle_position_type PprevIter;  // G(P^(k-1)_n)
 
     ChargedParticlesPinT(PLayout& pl,
                      Vector_t hr,
@@ -97,6 +99,8 @@ public:
         this->addAttribute(E);
         this->addAttribute(R0);
         this->addAttribute(P0);
+        this->addAttribute(RprevIter);
+        this->addAttribute(PprevIter);
         setupBCs();
         for (unsigned int i = 0; i < Dim; i++)
             decomp_m[i]=decomp[i];

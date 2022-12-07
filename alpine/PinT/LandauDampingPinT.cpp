@@ -148,6 +148,43 @@ double PDF(const Vector_t& xvec, const double& alpha,
     return pdf;
 }
 
+double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter) {
+    
+    auto Qview = Q.getView();
+    auto QprevIterView = QprevIter.getView();
+    double temp = 0.0;
+
+    Kokkos::parallel_reduce("Abs. error", Q.size(),
+                            KOKKOS_LAMBDA(const int i, double& valL){
+                                Vector_t diff = Qview(i) - QprevIterView;
+                                double myVal = dot(diff, diff).apply();
+                                valL += myVal;
+                            }, Kokkos::Sum<double>(temp));
+
+
+    double globaltemp = 0.0;
+    MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+
+    double absError = std::sqrt(globaltemp);
+
+    temp = 0.0;
+    Kokkos::parallel_reduce("Q norm", Q.size(),
+                            KOKKOS_LAMBDA(const int i, double& valL){
+                                double myVal = dot(Qview(i), Qview(i)).apply();
+                                valL += myVal;
+                            }, Kokkos::Sum<double>(temp));
+
+
+    globaltemp = 0.0;
+    MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+
+    double relError = absError / std::sqrt(globaltemp);
+    
+    return relError;
+
+}
+
+
 const char* TestName = "LandauDampingPinT";
 
 int main(int argc, char *argv[]){
@@ -329,7 +366,8 @@ int main(int argc, char *argv[]){
         Pend->R = Pbegin->R - Pcoarse->R;
         Pend->P = Pbegin->P - Pcoarse->P;
 
-        double Rerror = computeL2Error(
+        Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R.getView());
+        Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P.getView());
 
         int tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
         
@@ -350,10 +388,8 @@ int main(int argc, char *argv[]){
 
         LeapFrogPIC(*Pcoarse, Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse); 
 
-
         Pend->R = Pend->R + Pcoarse->R;
         Pend->P = Pend->P + Pcoarse->P;
-
 
         if(Ippl::Comm->rank() < Ippl::Comm->size()-1) {
             size_type bufSize = Pend->packedSize(nloc);
@@ -365,6 +401,13 @@ int main(int argc, char *argv[]){
         }
 
         msg << "Finished iteration: " << it+1 << endl;
+
+        double Rerror = computeL2Error(Pcoarse->R, Pcoarse->RprevIter);
+        double Perror = computeL2Error(Pcoarse->P, Pcoarse->PprevIter);
+
+        if((Rerror <= tol) && (Perror <= tol)) {
+            isConverged = true;
+        }
     }
 
     msg << "LandauDamping Parareal: End." << endl;
