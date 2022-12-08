@@ -277,6 +277,7 @@ namespace ippl {
 
         IpplTimings::stopTimer(scatterTimer);
 
+        Kokkos::deep_copy(fview, viewLocal);
         //static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
         //IpplTimings::startTimer(scatterAllReduceTimer);                                               
         //int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);

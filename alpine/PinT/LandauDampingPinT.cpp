@@ -151,7 +151,8 @@ double PDF(const Vector_t& xvec, const double& alpha,
     return pdf;
 }
 
-double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter) {
+double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
+                      const unsigned int& iter, const int& myrank) {
     
     auto Qview = Q.getView();
     auto QprevIterView = QprevIter.getView();
@@ -164,6 +165,7 @@ double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qpr
                                 valL += myVal;
                             }, Kokkos::Sum<double>(temp));
 
+    std::cout << "Rank: " << myrank << " Iter: " << iter << " Abs. Error: " << temp << std::endl;
 
     double globaltemp = 0.0;
     MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
@@ -295,7 +297,7 @@ int main(int argc, char *argv[]){
     Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
 
     Pcoarse->initFFTSolver();
-    Pcoarse->time_m = 0.0;
+    Pcoarse->time_m = tStartMySlice;
 
     IpplTimings::startTimer(particleCreation);
 
@@ -310,12 +312,47 @@ int main(int argc, char *argv[]){
     Pcoarse->create(nloc);
     Pbegin->create(nloc);
     Pend->create(nloc);
+
+    using buffer_type = ippl::Communicate::buffer_type;
+#ifdef KOKKOS_ENABLE_CUDA
+    //If we don't do the following even with the same seed the initial 
+    //condition is not the same on different GPUs
+    int tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+    if(Ippl::Comm->rank() == 0) {
+        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
+        Kokkos::parallel_for(nloc,
+                             generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                             Pcoarse->R.getView(), Pcoarse->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+
+        Kokkos::fence();
+        size_type bufSize = Pcoarse->packedSize(nloc);
+        std::vector<MPI_Request> requests(0);
+        int sends = 0;
+        for(int rank = 1; rank < Ippl::Comm->size(); ++rank) {
+            buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND + sends, bufSize);
+            requests.resize(requests.size() + 1);
+            Ippl::Comm->isend(rank, tag, *Pcoarse, *buf, requests.back(), nloc);
+            buf->resetWritePos();
+            ++sends;
+        }
+        MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+    }
+    else {
+        size_type bufSize = Pcoarse->packedSize(nloc);
+        buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
+        Ippl::Comm->recv(0, tag, *Pcoarse, *buf, bufSize, nloc);
+        buf->resetReadPos();
+    }
+#else
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
                          Pcoarse->R.getView(), Pcoarse->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
     Kokkos::fence();
+#endif
+
+
     Ippl::Comm->barrier();
     IpplTimings::stopTimer(particleCreation);                                                    
     
@@ -325,17 +362,6 @@ int main(int argc, char *argv[]){
     //Copy initial conditions as they are needed later
     Kokkos::deep_copy(Pcoarse->R0.getView(), Pcoarse->R.getView());
     Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
-
-    Pcoarse->rhoPIC_m = 0.0;
-    scatter(Pcoarse->q, Pcoarse->rhoPIC_m, Pcoarse->R);
-    Pcoarse->rhoPIC_m = Pcoarse->rhoPIC_m / (hr[0] * hr[1] * hr[2]);
-
-    Pcoarse->rhoPIC_m = Pcoarse->rhoPIC_m - 
-        (Pcoarse->Q_m/((rmax[0] - rmin[0]) * (rmax[1] - rmin[1]) * (rmax[2] - rmin[2])));
-
-    Pcoarse->solver_mp->solve();
-
-    gather(Pcoarse->E, Pcoarse->EfieldPIC_m, Pcoarse->R);
 
     //Get initial guess for ranks other than 0 by propagating the coarse solver
     if (Ippl::Comm->rank() > 0) {
@@ -348,15 +374,9 @@ int main(int argc, char *argv[]){
     Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
     Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
 
-    //Compute initial E fields corresponding to fine integrator
-    Pcoarse->rhoPIF_m = {0.0, 0.0};
-    scatterPIF(Pcoarse->q, Pcoarse->rhoPIF_m, Pcoarse->R);
 
-    Pcoarse->rhoPIF_m = Pcoarse->rhoPIF_m / 
-                        ((rmax[0] - rmin[0]) * (rmax[1] - rmin[1]) * (rmax[2] - rmin[2]));
-
-    gatherPIF(Pcoarse->E, Pcoarse->rhoPIF_m, Pcoarse->R);
-
+    //Pcoarse->dumpLandau(nloc);         
+    //Pcoarse->dumpEnergy(nloc);         
 
     //Run the coarse integrator to get the values at the end of the time slice 
     Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse); 
@@ -365,8 +385,9 @@ int main(int argc, char *argv[]){
     Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
     Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
 
+    //Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pend->R.getView());
+    //Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pend->P.getView());
 
-    using buffer_type = ippl::Communicate::buffer_type;
     msg << "Starting parareal iterations ..." << endl;
     bool isConverged = false;
     for (unsigned int it=0; it<maxIter; it++) {
@@ -385,7 +406,7 @@ int main(int argc, char *argv[]){
         Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R.getView());
         Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P.getView());
 
-        int tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+        tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
         
         if(Ippl::Comm->rank() > 0) {
             size_type bufSize = Pbegin->packedSize(nloc);
@@ -417,8 +438,13 @@ int main(int argc, char *argv[]){
         }
 
 
-        double Rerror = computeL2Error(Pcoarse->R, Pcoarse->RprevIter);
-        double Perror = computeL2Error(Pcoarse->P, Pcoarse->PprevIter);
+        double Rerror = computeL2Error(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank());
+        double Perror = computeL2Error(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank());
+        //double Rerror = computeL2Error(Pend->R, Pcoarse->RprevIter);
+        //double Perror = computeL2Error(Pend->P, Pcoarse->PprevIter);
+        
+        //Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pend->R.getView());
+        //Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pend->P.getView());
 
         msg << "Finished iteration: " << it+1 
             << " Rerror: " << Rerror 

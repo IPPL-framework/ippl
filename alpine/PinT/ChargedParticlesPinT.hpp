@@ -333,6 +333,17 @@ public:
                      const double dt) {
     
         PLayout& PL = this->getLayout();
+        rhoPIC_m = 0.0;
+        scatter(q, rhoPIC_m, Rtemp);
+    
+        rhoPIC_m = rhoPIC_m / (hr_m[0] * hr_m[1] * hr_m[2]);
+        rhoPIC_m = rhoPIC_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
+    
+        //Field solve
+        solver_mp->solve();
+    
+        // gather E field
+        gather(E, EfieldPIC_m, Rtemp);
     
         for (unsigned int it=0; it<nt; it++) {
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
@@ -375,6 +386,13 @@ public:
                      const double& tStartMySlice) {
     
         PLayout& PL = this->getLayout();
+        rhoPIF_m = {0.0, 0.0};
+        scatterPIF(q, rhoPIF_m, Rtemp);
+    
+        rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
+    
+        // Solve for and gather E field
+        gatherPIF(E, rhoPIF_m, Rtemp);
     
         time_m = tStartMySlice;
         for (unsigned int it=0; it<nt; it++) {
