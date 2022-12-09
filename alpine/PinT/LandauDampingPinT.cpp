@@ -322,32 +322,32 @@ int main(int argc, char *argv[]){
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
         Kokkos::parallel_for(nloc,
                              generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                             Pcoarse->R.getView(), Pcoarse->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+                             Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
         Kokkos::fence();
-        size_type bufSize = Pcoarse->packedSize(nloc);
+        size_type bufSize = Pbegin->packedSize(nloc);
         std::vector<MPI_Request> requests(0);
         int sends = 0;
         for(int rank = 1; rank < Ippl::Comm->size(); ++rank) {
             buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND + sends, bufSize);
             requests.resize(requests.size() + 1);
-            Ippl::Comm->isend(rank, tag, *Pcoarse, *buf, requests.back(), nloc);
+            Ippl::Comm->isend(rank, tag, *Pbegin, *buf, requests.back(), nloc);
             buf->resetWritePos();
             ++sends;
         }
         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
     }
     else {
-        size_type bufSize = Pcoarse->packedSize(nloc);
+        size_type bufSize = Pbegin->packedSize(nloc);
         buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
-        Ippl::Comm->recv(0, tag, *Pcoarse, *buf, bufSize, nloc);
+        Ippl::Comm->recv(0, tag, *Pbegin, *buf, bufSize, nloc);
         buf->resetReadPos();
     }
 #else
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         Pcoarse->R.getView(), Pcoarse->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+                         Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
     Kokkos::fence();
 #endif
@@ -355,13 +355,17 @@ int main(int argc, char *argv[]){
 
     Ippl::Comm->barrier();
     IpplTimings::stopTimer(particleCreation);                                                    
+    Pcoarse->R = Pbegin->R * 1;
+    Pcoarse->P = Pbegin->P * 1;
     
     Pcoarse->q = Pcoarse->Q_m/totalP;
     msg << "particles created and initial conditions assigned " << endl;
 
     //Copy initial conditions as they are needed later
-    Kokkos::deep_copy(Pcoarse->R0.getView(), Pcoarse->R.getView());
-    Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
+    //Kokkos::deep_copy(Pcoarse->R0.getView(), Pcoarse->R.getView());
+    //Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
+    Pcoarse->R0 = Pcoarse->R * 1;
+    Pcoarse->P0 = Pcoarse->P * 1;
 
     //Get initial guess for ranks other than 0 by propagating the coarse solver
     if (Ippl::Comm->rank() > 0) {
@@ -371,8 +375,10 @@ int main(int argc, char *argv[]){
     Ippl::Comm->barrier();
 
     
-    Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
-    Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
+    //Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
+    //Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
+    Pbegin->R = Pcoarse->R * 1;
+    Pbegin->P = Pcoarse->P * 1;
 
 
     //Pcoarse->dumpLandau(nloc);         
@@ -382,8 +388,10 @@ int main(int argc, char *argv[]){
     Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse); 
 
     //The following might not be needed
-    Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
-    Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
+    //Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
+    //Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
+    Pend->R = Pcoarse->R * 1;
+    Pend->P = Pcoarse->P * 1;
 
     //Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pend->R.getView());
     //Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pend->P.getView());
@@ -393,7 +401,7 @@ int main(int argc, char *argv[]){
     for (unsigned int it=0; it<maxIter; it++) {
 
         //Run fine integrator in parallel
-        Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice);
+        Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice, it+1);
 
         if(isConverged) {
             break;
@@ -403,9 +411,10 @@ int main(int argc, char *argv[]){
         Pend->R = Pbegin->R - Pcoarse->R;
         Pend->P = Pbegin->P - Pcoarse->P;
 
-        Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R.getView());
-        Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P.getView());
-
+        //Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R.getView());
+        //Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P.getView());
+        Pcoarse->RprevIter = Pcoarse->R * 1;
+        Pcoarse->PprevIter = Pcoarse->P * 1;
         tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
         
         if(Ippl::Comm->rank() > 0) {
@@ -415,12 +424,16 @@ int main(int argc, char *argv[]){
             buf->resetReadPos();
         }
         else {
-            Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R0.getView());
-            Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P0.getView());
+            //Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R0.getView());
+            //Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P0.getView());
+            Pbegin->R = Pcoarse->R0 * 1;
+            Pbegin->P = Pcoarse->P0 * 1;
         }
 
-        Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
-        Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
+        //Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
+        //Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
+        Pcoarse->R = Pbegin->R * 1;
+        Pcoarse->P = Pbegin->P * 1;
 
 
         Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse); 

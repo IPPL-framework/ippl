@@ -151,7 +151,7 @@ public:
     }
 
 
-    void dumpLandau(size_type totalP) {
+    void dumpLandau(size_type totalP, const unsigned int& iter) {
        
         auto Eview = E.getView();
 
@@ -187,6 +187,8 @@ public:
                  std::stringstream fname;
                  fname << "data/FieldLandau_";
                  fname << Ippl::Comm->rank();
+                 fname << "_iter_";
+                 fname << iter;
                  fname << ".csv";
 
 
@@ -194,9 +196,9 @@ public:
                  csvout.precision(10);
                  csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-                 if(time_m == 0.0) {
-                     csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
-                 }
+                 //if(time_m == 0.0) {
+                 //    csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+                 //}
 
                  csvout << time_m << " "
                         << fieldEnergy << " "
@@ -207,7 +209,7 @@ public:
     }
 
 
-    void dumpEnergy(size_type /*totalP*/) {
+    void dumpEnergy(size_type /*totalP*/, const unsigned int& iter) {
        
 
         double potentialEnergy, kineticEnergy;
@@ -307,6 +309,8 @@ public:
                  std::stringstream fname;
                  fname << "data/Energy_";
                  fname << Ippl::Comm->rank();
+                 fname << "_iter_";
+                 fname << iter;
                  fname << ".csv";
 
 
@@ -314,9 +318,7 @@ public:
                  csvout.precision(10);
                  csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-                 if(time_m == 0.0) {
-                     csvout << "time, Potential energy, Kinetic energy, Total energy" << endl;
-                 }
+                 //csvout << "time, Potential energy, Kinetic energy, Total energy" << endl;
 
                  csvout << time_m << " "
                         << potentialEnergy << " "
@@ -382,8 +384,8 @@ public:
 
     void LeapFrogPIF(ParticleAttrib<Vector_t>& Rtemp,
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
-                     const double& dt, const bool& isConverged, 
-                     const double& tStartMySlice) {
+                     const double& dt, const bool& /*isConverged*/, 
+                     const double& tStartMySlice, const unsigned int& iter) {
     
         PLayout& PL = this->getLayout();
         rhoPIF_m = {0.0, 0.0};
@@ -395,6 +397,12 @@ public:
         gatherPIF(E, rhoPIF_m, Rtemp);
     
         time_m = tStartMySlice;
+
+        //isConverged = false;
+        if((time_m == 0.0)) {
+            dumpLandau(this->getLocalNum(), iter);         
+            dumpEnergy(this->getLocalNum(), iter);
+        }
         for (unsigned int it=0; it<nt; it++) {
     
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
@@ -424,10 +432,10 @@ public:
             Ptemp = Ptemp - 0.5 * dt * E;
     
             time_m += dt;
-            if(isConverged) {
-                dumpLandau(this->getLocalNum());         
-                dumpEnergy(this->getLocalNum());         
-            }
+            //if(isConverged) {
+            dumpLandau(this->getLocalNum(), iter);         
+            dumpEnergy(this->getLocalNum(), iter);         
+            //}
     
         }
     }

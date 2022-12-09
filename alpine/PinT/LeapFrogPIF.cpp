@@ -26,6 +26,7 @@ void LeapFrogPIF(ChargedParticlesPinT<PLayout_t>& P, ParticleAttrib<Vector_t>& R
     const auto& rmin = P.rmin_m;
 
     P.time_m = tStartMySlice;
+
     for (unsigned int it=0; it<nt; it++) {
 
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
