@@ -151,70 +151,126 @@ public:
     }
 
 
-    void dumpLandau(size_type totalP, const unsigned int& iter) {
+    void dumpLandau(size_type /*totalP*/, const unsigned int& iter) {
        
-        auto Eview = E.getView();
 
-        double fieldEnergy, ExAmp;
-        double temp = 0.0;
+        double fieldEnergy = 0.0; 
+        double ExAmp = 0.0;
+        //auto Eview = E.getView();
+        //double temp = 0.0;
 
-        Kokkos::parallel_reduce("Ex energy", this->getLocalNum(),
-                                KOKKOS_LAMBDA(const int i, double& valL){
-                                    double myVal = Eview(i)[0] * Eview(i)[0];
-                                    valL += myVal;
-                                }, Kokkos::Sum<double>(temp));
+        //Kokkos::parallel_reduce("Ex energy", this->getLocalNum(),
+        //                        KOKKOS_LAMBDA(const int i, double& valL){
+        //                            double myVal = Eview(i)[0] * Eview(i)[0];
+        //                            valL += myVal;
+        //                        }, Kokkos::Sum<double>(temp));
 
-        //double globaltemp = 0.0;
-        double globaltemp = temp;
-        //MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        ////double globaltemp = 0.0;
+        //double globaltemp = temp;
+        ////MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        //double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
+        //fieldEnergy = globaltemp * volume / totalP ;
+
+        //double tempMax = 0.0;
+        //Kokkos::parallel_reduce("Ex max norm", this->getLocalNum(),
+        //                        KOKKOS_LAMBDA(const size_t i, double& valL)
+        //                        {
+        //                            double myVal = std::fabs(Eview(i)[0]);
+        //                            if(myVal > valL) valL = myVal;
+        //                        }, Kokkos::Max<double>(tempMax));
+        ////ExAmp = 0.0;
+        //ExAmp = tempMax;
+        ////MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+
+
+
+        auto rhoview = rhoPIF_m.getView();
+        const int nghost = rhoPIF_m.getNghost();
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
+      
+        const FieldLayout_t& layout = rhoPIF_m.getLayout(); 
+        const Mesh_t& mesh = rhoPIF_m.get_mesh();
+        const Vector<double, Dim>& dx = mesh.getMeshSpacing();
+        const auto& domain = layout.getDomain();
+        Vector<double, Dim> Len;
+        Vector<int, Dim> N;
+
+        for (unsigned d=0; d < Dim; ++d) {
+            N[d] = domain[d].length();
+            Len[d] = dx[d] * N[d];
+        }
+
+
+        Kokkos::complex<double> imag = {0.0, 1.0};
+        double pi = std::acos(-1.0);
+        Kokkos::parallel_reduce("Ex energy and Max",
+                              mdrange_type({0, 0, 0},
+                                           {N[0],
+                                            N[1],
+                                            N[2]}),
+                              KOKKOS_LAMBDA(const int i,
+                                            const int j,
+                                            const int k,
+                                            double& tlSum,
+                                            double& tlMax)
+        {
+        
+            Vector<int, 3> iVec = {i, j, k};
+            Vector<double, 3> kVec;
+            double Dr = 0.0;
+            for(size_t d = 0; d < Dim; ++d) {
+                bool shift = (iVec[d] > (N[d]/2));
+                kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                Dr += kVec[d] * kVec[d];
+            }
+
+            Kokkos::complex<double> Ek = {0.0, 0.0}; 
+            if(Dr != 0.0) {
+                Ek = -(imag * kVec[0] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
+            }
+            double myVal = Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
+
+            tlSum += myVal;
+
+            double myValMax = std::sqrt(myVal);
+
+            if(myValMax > tlMax) tlMax = myValMax;
+
+        }, Kokkos::Sum<double>(fieldEnergy), Kokkos::Max<double>(ExAmp));
+        
+
+        Kokkos::fence();
         double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
-        fieldEnergy = globaltemp * volume / totalP ;
-
-        double tempMax = 0.0;
-        Kokkos::parallel_reduce("Ex max norm", this->getLocalNum(),
-                                KOKKOS_LAMBDA(const size_t i, double& valL)
-                                {
-                                    double myVal = std::fabs(Eview(i)[0]);
-                                    if(myVal > valL) valL = myVal;
-                                }, Kokkos::Max<double>(tempMax));
-        //ExAmp = 0.0;
-        ExAmp = tempMax;
-        //MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        fieldEnergy *= volume;
 
 
-        //for (int rank=0; rank < Ippl::Comm->size(); ++rank) {
-        //     if(Ippl::Comm->rank() == rank) {
-                 std::stringstream fname;
-                 fname << "data/FieldLandau_";
-                 fname << Ippl::Comm->rank();
-                 fname << "_iter_";
-                 fname << iter;
-                 fname << ".csv";
+        std::stringstream fname;
+        fname << "data/FieldLandau_";
+        fname << Ippl::Comm->rank();
+        fname << "_iter_";
+        fname << iter;
+        fname << ".csv";
 
 
-                 Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
-                 csvout.precision(10);
-                 csvout.setf(std::ios::scientific, std::ios::floatfield);
+        Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
+        csvout.precision(10);
+        csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-                 //if(time_m == 0.0) {
-                 //    csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
-                 //}
-
-                 csvout << time_m << " "
-                        << fieldEnergy << " "
-                        << ExAmp << endl;
-        //     }
-        //     Ippl::Comm->barrier();
+        //if(time_m == 0.0) {
+        //    csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
         //}
+
+        csvout << time_m << " "
+               << fieldEnergy << " "
+               << ExAmp << endl;
     }
 
 
-    void dumpEnergy(size_type /*totalP*/, const unsigned int& iter) {
+    void dumpEnergy(size_type /*totalP*/, const unsigned int& iter, ParticleAttrib<Vector_t>& Ptemp) {
        
 
         double potentialEnergy, kineticEnergy;
         double temp = 0.0;
-
 
         auto rhoview = rhoPIF_m.getView();
         const int nghost = rhoPIF_m.getNghost();
@@ -278,14 +334,10 @@ public:
         }, Kokkos::Sum<double>(temp));
         
 
-        //double globaltemp = 0.0;
-        double globaltemp = temp;
-        //MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
         double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
-        //potentialEnergy = 0.5 * globaltemp * volume / totalP ;
-        potentialEnergy = 0.25 * 0.5 * globaltemp * volume;
+        potentialEnergy = 0.5 * temp * volume;
 
-        auto Pview = P.getView();
+        auto Pview = Ptemp.getView();
         auto qView = q.getView();
 
         temp = 0.0;
@@ -299,40 +351,35 @@ public:
 
         temp *= 0.5;
         //globaltemp = 0.0;
-        globaltemp = temp;
+        double globaltemp = temp;
         //MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
         kineticEnergy = globaltemp;
 
-        //for (int rank=0; rank < Ippl::Comm->size(); ++rank) {
-        //     if(Ippl::Comm->rank() == rank) {
-                 std::stringstream fname;
-                 fname << "data/Energy_";
-                 fname << Ippl::Comm->rank();
-                 fname << "_iter_";
-                 fname << iter;
-                 fname << ".csv";
+        std::stringstream fname;
+        fname << "data/Energy_";
+        fname << Ippl::Comm->rank();
+        fname << "_iter_";
+        fname << iter;
+        fname << ".csv";
 
 
-                 Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
-                 csvout.precision(10);
-                 csvout.setf(std::ios::scientific, std::ios::floatfield);
+        Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
+        csvout.precision(10);
+        csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-                 //csvout << "time, Potential energy, Kinetic energy, Total energy" << endl;
+        //csvout << "time, Potential energy, Kinetic energy, Total energy" << endl;
 
-                 csvout << time_m << " "
-                        << potentialEnergy << " "
-                        << kineticEnergy << " "
-                        << potentialEnergy + kineticEnergy << endl;
-             //}
-             //Ippl::Comm->barrier();
-        //}
+        csvout << time_m << " "
+               << potentialEnergy << " "
+               << kineticEnergy << " "
+               << potentialEnergy + kineticEnergy << endl;
 
     }
 
     void LeapFrogPIC(ParticleAttrib<Vector_t>& Rtemp, 
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
-                     const double dt) {
+                     const double dt, const double& tStartMySlice) {
     
         PLayout& PL = this->getLayout();
         rhoPIC_m = 0.0;
@@ -347,6 +394,9 @@ public:
         // gather E field
         gather(E, EfieldPIC_m, Rtemp);
     
+        time_m = tStartMySlice;
+
+
         for (unsigned int it=0; it<nt; it++) {
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
             // Here, we assume a constant charge-to-mass ratio of -1 for
@@ -378,6 +428,8 @@ public:
     
             //kick
             Ptemp = Ptemp - 0.5 * dt * E;
+            
+            time_m += dt;
         }
     
     }
@@ -398,10 +450,9 @@ public:
     
         time_m = tStartMySlice;
 
-        //isConverged = false;
         if((time_m == 0.0)) {
             dumpLandau(this->getLocalNum(), iter);         
-            dumpEnergy(this->getLocalNum(), iter);
+            dumpEnergy(this->getLocalNum(), iter, Ptemp);
         }
         for (unsigned int it=0; it<nt; it++) {
     
@@ -432,10 +483,9 @@ public:
             Ptemp = Ptemp - 0.5 * dt * E;
     
             time_m += dt;
-            //if(isConverged) {
+            
             dumpLandau(this->getLocalNum(), iter);         
-            dumpEnergy(this->getLocalNum(), iter);         
-            //}
+            dumpEnergy(this->getLocalNum(), iter, Ptemp);         
     
         }
     }

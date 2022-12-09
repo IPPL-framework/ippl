@@ -261,11 +261,8 @@ public:
         }, Kokkos::Sum<double>(temp));
         
 
-        double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
         double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
-        //potentialEnergy = 0.5 * globaltemp * volume / totalP ;
-        potentialEnergy = 0.25 * 0.5 * globaltemp * volume;
+        potentialEnergy = 0.5 * temp * volume;
 
         auto Pview = P.getView();
         auto qView = q.getView();
@@ -280,7 +277,7 @@ public:
                                 }, Kokkos::Sum<double>(temp));
 
         temp *= 0.5;
-        globaltemp = 0.0;
+        double globaltemp = 0.0;
         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
         kineticEnergy = globaltemp;

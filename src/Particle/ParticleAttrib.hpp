@@ -269,7 +269,8 @@ namespace ippl {
                 }, Kokkos::Sum<FT>(reducedValue));
 
                 if(teamMember.team_rank() == 0) {
-                    viewLocal(i+nghost,j+nghost,k+nghost) = reducedValue;
+                    //viewLocal(i+nghost,j+nghost,k+nghost) = reducedValue;
+                    fview(i+nghost,j+nghost,k+nghost) = reducedValue;
                 }
 
                 }
@@ -277,7 +278,7 @@ namespace ippl {
 
         IpplTimings::stopTimer(scatterTimer);
 
-        Kokkos::deep_copy(fview, viewLocal);
+        //Kokkos::deep_copy(fview, viewLocal);
         //static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
         //IpplTimings::startTimer(scatterAllReduceTimer);                                               
         //int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
