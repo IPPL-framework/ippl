@@ -446,6 +446,8 @@ int main(int argc, char *argv[]){
             << " Perror: " << Perror
             << endl;
 
+        Pcoarse->writeError(Rerror, Perror, it+1);
+
         if((Rerror <= tol) && (Perror <= tol)) {
             break;
         }

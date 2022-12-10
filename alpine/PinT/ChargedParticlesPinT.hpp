@@ -375,6 +375,30 @@ public:
 
     }
 
+    void writeError(double Rerror, double Perror, unsigned int iter) {
+        
+        if(Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/Error_Vs_Iter.csv";
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(iter == 1) {
+                csvout << "Iter, Rerror, Perror" << endl;
+            }
+
+            csvout << iter << " "
+                   << Rerror << " "
+                   << Perror << endl;
+
+        }
+    
+        Ippl::Comm->barrier();
+
+    }
+
     void LeapFrogPIC(ParticleAttrib<Vector_t>& Rtemp, 
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
                      const double dt, const double& tStartMySlice) {
