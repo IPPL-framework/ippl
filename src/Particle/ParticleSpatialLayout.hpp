@@ -37,6 +37,7 @@
 #include <memory>
 #include "Utility/IpplTimings.h"
 
+
 namespace ippl {
 
 	template <typename T, unsigned Dim, class Mesh>
@@ -51,6 +52,24 @@ namespace ippl {
 		ParticleSpatialLayout<T, Dim, Mesh>::updateLayout(FieldLayout<Dim>& fl, Mesh& mesh) {
 			rlayout_m.changeDomain(fl, mesh);
 		}
+
+		template <typename T, unsigned Dim, class Mesh>
+		size_t ParticleSpatialLayout<T, Dim, Mesh>::numberOfSends(
+				int rank,
+				const locate_type& ranks)
+		{
+			size_t nSends = 0;
+			Kokkos::parallel_reduce(
+					"ParticleSpatialLayout::numberOfSends()",
+					ranks.extent(0),
+					KOKKOS_LAMBDA(const size_t i,
+						size_t& num)
+					{
+					num += size_t(rank == ranks(i));
+					}, nSends);
+			Kokkos::fence();
+			return nSends;
+		} 
 
 	template <typename T, unsigned Dim, class Mesh>
 		template <class BufferType>
@@ -225,6 +244,7 @@ namespace ippl {
 			using view_size_t = typename RegionLayout_t::view_type::size_type;
 			using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
 			int myRank = Ippl::Comm->rank();
+			Inform msg("debug");
 
 			using face_neighbor_type = typename FieldLayout_t::face_neighbor_type;
 			using edge_neighbor_type = typename FieldLayout_t::edge_neighbor_type;
@@ -235,21 +255,22 @@ namespace ippl {
 
 			//container of particles that travelled more than one cell
             locate_type notfound("Not found", size_type(0.3*pdata.getLocalNum()));
-			/*For physical tests, 10% is enough. But for non-phyisical tests like pic3d, */
+			//Now: dimension hard-coded, for future implementations maybe make it as a run parameter.
 			bool_type found("Found", pdata.getLocalNum());
 			size_t nLeft;
-			
-			const size_t vSize = vertexNeighbors.size();
-			const size_t fSize = faceNeighbors.size();
-			const size_t eSize = edgeNeighbors.size();
-			ippl::Vector<int, vsize> vertexVector(vertexNeighbors);
-			ippl::Vector<std::vector<int>, fsize> faceVector(faceNeighbors);
-			ippl::Vector<std::vector<int>, esize> edgeVector(edgeNeighbors);
-			
 
+			const size_t faceSz = faceNeighbors.size();
+			const size_t edgeSz = edgeNeighbors.size();
+			const size_t vertexSz = vertexNeighbors.size();
+
+		        ippl::Vector<int, faceSz> faceNeighbors_v(faceNeighbors);
+			ippl::Vector<int, edgeSz> edgeNeighbors_v(edgeNeighbors);
+			ippl::Vector<int, vertexSz> vertexNeighbors_v(vertexNeighbors);			
+			
+			
 			/*Begin Kokkos loop:
 			 *Step 1: search in current rank
-			 *Step 2: searcloah in neighbors
+			 *Step 2: search in neighbors
 			 *Step 3: save information on whether the particle was located
 			 *Step 4: run additional loop on non-located particles */
 
@@ -276,36 +297,34 @@ namespace ippl {
 					found(i) = true;
 					}
 					//Step 2
+					else{ 
+						
 					
-					else{
-					
-						for(size_t face = 0; face < fSize; ++face){	
-						for (size_t j = 0; j < faceVector[face].size() ; ++j){
-							view_size_t rank = faceVector[face][j];
+						for(size_t face = 0; face < faceSz ; ++face){
+								
+							view_size_t rank = faceNeighbors_v[face];
 
 
-							xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
-									(positions(i)[0] <= Regions(rank)[0].max()) &&
-									(positions(i)[1] >= Regions(rank)[1].min()) &&
-									(positions(i)[1] <= Regions(rank)[1].max()) &&
-									(positions(i)[2] >= Regions(rank)[2].min()) &&
-									(positions(i)[2] <= Regions(rank)[2].max()));
+								xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
+										(positions(i)[0] <= Regions(rank)[0].max()) &&
+										(positions(i)[1] >= Regions(rank)[1].min()) &&
+										(positions(i)[1] <= Regions(rank)[1].max()) &&
+										(positions(i)[2] >= Regions(rank)[2].min()) &&
+										(positions(i)[2] <= Regions(rank)[2].max()));
 
-							if(xyz_bool){
-								ranks(i) = rank;
-								invalid(i) = true;
-								found(i) = true;
-								break;	
-							}
+								if(xyz_bool){
+									ranks(i) = rank;
+									invalid(i) = true;
+									found(i) = true;
+									break;	
+								}
 
-						}}
+						}
 					}
 
-					
 					 if(!xyz_bool){
-						for (size_t edge=0; edge < eSize; edge++){
-                                    for (size_t j = 0; j < edgeVector[edge].size() ; ++j){
-                                                        view_size_t rank = edgeVector[edge][j];
+						for (size_t edge=0; edge < edgeSz; edge++){
+                                                        view_size_t rank = edgeNeighbors_v[edge];
 
 
                                                         xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
@@ -322,13 +341,12 @@ namespace ippl {
                                                                 break;
                                                         }
 
-                                                }}
+                                                }
                                         }
-                                        
 						
 					if(!xyz_bool){
-                                                for (size_t vertex=0; vertex < vSize; vertex++){
-                                                        view_size_t rank = vertexVector[vertex];
+                                                for (size_t vertex=0; vertex < vertexSz; vertex++){
+                                                        view_size_t rank = vertexNeighbors_v[vertex];
 
 
                                                         xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
@@ -348,9 +366,8 @@ namespace ippl {
                                                 }
 					}
 
+				
 					//Step 3
-					
-
 					
 
 					if( final && !found(i) ){
@@ -363,7 +380,9 @@ namespace ippl {
 					}, nLeft);
 
 			Kokkos::fence();
-			
+
+			msg << "Finished" << endl;
+				
 
 			//Step 4
 
@@ -430,24 +449,5 @@ namespace ippl {
 			Kokkos::fence();
 		}
 
-
-	template <typename T, unsigned Dim, class Mesh>
-		size_t ParticleSpatialLayout<T, Dim, Mesh>::numberOfSends(
-				int rank,
-				const locate_type& ranks)
-		{
-			size_t nSends = 0;
-			Kokkos::parallel_reduce(
-					"ParticleSpatialLayout::numberOfSends()",
-					ranks.extent(0),
-					KOKKOS_LAMBDA(const size_t i,
-						size_t& num)
-					{
-					num += size_t(rank == ranks(i));
-					}, nSends);
-			Kokkos::fence();
-			return nSends;
-		} 
-
-
+	
 }

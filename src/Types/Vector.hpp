@@ -36,12 +36,31 @@ namespace ippl {
         }
     }
 
+    /*
+ 	*
+ 	*
+ 	* Constructors with std::array and std::vector to assign
+ 	* vertex, face and edge neighbors in locateParticles
+ 	*
+ 	*/ 
     template<typename T, unsigned Dim>
     Vector<T, Dim>::Vector(const std::array<T, Dim>& a){
         for(unsigned int i = 0; i< Dim; ++i){
             data_m[i]= a[i];
         }
     }
+
+    template<typename T, unsigned Dim>
+    Vector<T, Dim>::Vector(const std::array<std::vector<T>, Dim>& a){
+
+	unsigned int idx = 0;
+	for(unsigned int i = 0; i < a.size(); i++){
+		for(unsigned int j = 0; j < a[i].size(); j++){
+			data_m[idx] = a[i][j];
+			++idx;	
+		}
+	}
+	}
 
 
     template<typename T, unsigned Dim>
