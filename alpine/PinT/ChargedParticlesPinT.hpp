@@ -182,8 +182,6 @@ public:
         //ExAmp = tempMax;
         ////MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 
-
-
         auto rhoview = rhoPIF_m.getView();
         const int nghost = rhoPIF_m.getNghost();
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
@@ -398,12 +396,8 @@ public:
 
 
         for (unsigned int it=0; it<nt; it++) {
-            // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
-            // Here, we assume a constant charge-to-mass ratio of -1 for
-            // all the particles hence eliminating the need to store mass as
-            // an attribute
+            
             // kick
-    
             Ptemp = Ptemp - 0.5 * dt * E;
     
             //drift
@@ -456,10 +450,6 @@ public:
         }
         for (unsigned int it=0; it<nt; it++) {
     
-            // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
-            // Here, we assume a constant charge-to-mass ratio of -1 for
-            // all the particles hence eliminating the need to store mass as
-            // an attribute
             // kick
     
             Ptemp = Ptemp - 0.5 * dt * E;
