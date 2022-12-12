@@ -53,8 +53,10 @@ template<class PLayout>
 class ChargedParticlesPinT : public ippl::ParticleBase<PLayout> {
 public:
     CxField_t rhoPIF_m;
+    CxField_t rhoPIFprevIter_m;
     Field_t rhoPIC_m;
     VField_t EfieldPIC_m;
+    //VField_t EfieldPICprevIter_m;
 
     Vector<int, Dim> nr_m;
 

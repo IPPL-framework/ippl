@@ -141,37 +141,123 @@ double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qpr
     
     auto Qview = Q.getView();
     auto QprevIterView = QprevIter.getView();
-    double temp = 0.0;
+    double localError = 0.0;
+    double localNorm = 0.0;
 
-    Kokkos::parallel_reduce("Abs. error", Q.size(),
-                            KOKKOS_LAMBDA(const int i, double& valL){
+    Kokkos::parallel_reduce("Abs. error and norm", Q.size(),
+                            KOKKOS_LAMBDA(const int i, double& valLError, double& valLnorm){
                                 Vector_t diff = Qview(i) - QprevIterView(i);
-                                double myVal = dot(diff, diff).apply();
-                                valL += myVal;
-                            }, Kokkos::Sum<double>(temp));
+                                double myValError = dot(diff, diff).apply();
+                                valLError += myValError;
+                                double myValnorm = dot(Qview(i), Qview(i)).apply();
+                                valLnorm += myValnorm;
+                            }, Kokkos::Sum<double>(localError), Kokkos::Sum<double>(localNorm));
 
-    std::cout << "Rank: " << myrank << " Iter: " << iter << " Abs. Error: " << temp << std::endl;
+    Kokkos::fence();
+    std::cout << "Rank: " << myrank << " Iter: " << iter << " Abs. Error: " << localError << std::endl;
 
     double globaltemp = 0.0;
-    MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(&localError, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
 
     double absError = std::sqrt(globaltemp);
 
-    temp = 0.0;
-    Kokkos::parallel_reduce("Q norm", Q.size(),
-                            KOKKOS_LAMBDA(const int i, double& valL){
-                                double myVal = dot(Qview(i), Qview(i)).apply();
-                                valL += myVal;
-                            }, Kokkos::Sum<double>(temp));
+    //temp = 0.0;
+    //Kokkos::parallel_reduce("Q norm", Q.size(),
+    //                        KOKKOS_LAMBDA(const int i, double& valL){
+    //                            double myVal = dot(Qview(i), Qview(i)).apply();
+    //                            valL += myVal;
+    //                        }, Kokkos::Sum<double>(temp));
 
 
     globaltemp = 0.0;
-    MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(&localNorm, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
 
     double relError = absError / std::sqrt(globaltemp);
     
     return relError;
 
+}
+
+double computeFieldError(CxField_t& rhoPIF, CxField_t& rhoPIFprevIter) {
+
+    auto rhoview = rhoPIF.getView();
+    auto rhoprevview = rhoPIFprevIter.getView();
+    const int nghost = rhoPIF.getNghost();
+    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
+    
+    const FieldLayout_t& layout = rhoPIF.getLayout(); 
+    const Mesh_t& mesh = rhoPIF.get_mesh();
+    const Vector<double, Dim>& dx = mesh.getMeshSpacing();
+    const auto& domain = layout.getDomain();
+    Vector<double, Dim> Len;
+    Vector<int, Dim> N;
+
+    for (unsigned d=0; d < Dim; ++d) {
+        N[d] = domain[d].length();
+        Len[d] = dx[d] * N[d];
+    }
+
+    double AbsError = 0.0;
+    double Enorm = 0.0;
+    //Kokkos::complex<double> imag = {0.0, 1.0};
+    double pi = std::acos(-1.0);
+    Kokkos::parallel_reduce("Ex field error",
+                          mdrange_type({0, 0, 0},
+                                       {N[0],
+                                        N[1],
+                                        N[2]}),
+                          KOKKOS_LAMBDA(const int i,
+                                        const int j,
+                                        const int k,
+                                        double& errorSum,
+                                        double& fieldSum)
+    {
+    
+        Vector<int, 3> iVec = {i, j, k};
+        Vector<double, 3> kVec;
+        double Dr = 0.0;
+        for(size_t d = 0; d < Dim; ++d) {
+            bool shift = (iVec[d] > (N[d]/2));
+            kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+            Dr += kVec[d] * kVec[d];
+        }
+
+        double myError = 0.0;
+        double myField = 0.0;
+        //Kokkos::complex<double> Ek = {0.0, 0.0};
+        //Kokkos::complex<double> Ekprev = {0.0, 0.0};
+        //for(size_t d = 0; d < Dim; ++d) {
+        //    if(Dr != 0.0) {
+        //        Ek = -(imag * kVec[d] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
+        //        Ekprev = -(imag * kVec[d] * rhoprevview(i+nghost,j+nghost,k+nghost) / Dr);
+        //    }
+        //    Ekprev = Ekprev - Ek;
+        //    myError += Ekprev.real() * Ekprev.real() + Ekprev.imag() * Ekprev.imag();
+        //    myField += Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
+        //}
+        //errorSum += myError;
+        //fieldSum += myField;
+        Kokkos::complex<double> rhok = rhoview(i+nghost,j+nghost,k+nghost);
+        Kokkos::complex<double> rhokprev = rhoprevview(i+nghost,j+nghost,k+nghost);
+        rhokprev = rhokprev - rhok;
+        myError = rhokprev.real() * rhokprev.real() + rhokprev.imag() * rhokprev.imag();
+        errorSum += myError;
+        myField = rhok.real() * rhok.real() + rhok.imag() * rhok.imag();
+        fieldSum += myField;
+
+    }, Kokkos::Sum<double>(AbsError), Kokkos::Sum<double>(Enorm));
+    
+    Kokkos::fence();
+    double globalError = 0.0;
+    MPI_Allreduce(&AbsError, &globalError, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    double globalNorm = 0.0;
+    MPI_Allreduce(&Enorm, &globalNorm, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    //double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
+    //fieldEnergy *= volume;
+
+    double relError = std::sqrt(globalError)/std::sqrt(globalNorm);
+
+    return relError;
 }
 
 
@@ -282,8 +368,11 @@ int main(int argc, char *argv[]){
     Pcoarse->nr_m = nrPIC;
 
     Pcoarse->rhoPIF_m.initialize(meshPIF, FLPIF);
+    Pcoarse->rhoPIFprevIter_m.initialize(meshPIF, FLPIF);
     Pcoarse->rhoPIC_m.initialize(meshPIC, FLPIC);
     Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
+    Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
+    //Pcoarse->EfieldPICprevIter_m.initialize(meshPIC, FLPIC);
 
     Pcoarse->initFFTSolver();
     Pcoarse->time_m = tStartMySlice;
@@ -373,6 +462,8 @@ int main(int argc, char *argv[]){
     Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
     msg << "Second Leap frog PIC done " << endl;
 
+    //Kokkos::deep_copy(Pcoarse->EfieldPICprevIter_m.getView(), Pcoarse->EfieldPIC_m.getView());
+
     //The following might not be needed
     Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
     Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
@@ -384,6 +475,7 @@ int main(int argc, char *argv[]){
 
         //Run fine integrator in parallel
         Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice, it+1);
+    
 
         //if(isConverged) {
 
@@ -437,17 +529,31 @@ int main(int argc, char *argv[]){
             MPI_Wait(&request, MPI_STATUS_IGNORE);
         }
 
+        //Pcoarse->EfieldPICprevIter_m = Pcoarse->EfieldPICprevIter_m - Pcoarse->EfieldPIC_m;
+        //Pcoarse->rhoPIC_m = dot(Pcoarse->EfieldPICprevIter_m, Pcoarse->EfieldPICprevIter_m);
+        //double absFieldError = std::sqrt(Pcoarse->rhoPIC_m.sum());
+        //Pcoarse->rhoPIC_m = dot(Pcoarse->EfieldPIC_m, Pcoarse->EfieldPIC_m);
+        //double EfieldNorm = std::sqrt(Pcoarse->rhoPIC_m.sum());
+        //double EfieldError = absFieldError / EfieldNorm;
 
         double Rerror = computeL2Error(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank());
         double Perror = computeL2Error(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank());
-        
+    
+        double EfieldError = 0;
+        if(it > 0) {
+            EfieldError = computeFieldError(Pcoarse->rhoPIF_m, Pcoarse->rhoPIFprevIter_m);
+        }
 
+        Kokkos::deep_copy(Pcoarse->rhoPIFprevIter_m.getView(), Pcoarse->rhoPIF_m.getView());
         msg << "Finished iteration: " << it+1 
             << " Rerror: " << Rerror 
             << " Perror: " << Perror
+            //<< " Efield error: " << EfieldError
+            << " Rhofield error: " << EfieldError
             << endl;
 
         Pcoarse->writeError(Rerror, Perror, it+1);
+        //Kokkos::deep_copy(Pcoarse->EfieldPICprevIter_m.getView(), Pcoarse->EfieldPIC_m.getView());
 
         if((Rerror <= tol) && (Perror <= tol)) {
             break;
