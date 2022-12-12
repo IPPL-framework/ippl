@@ -399,11 +399,57 @@ public:
 
     }
 
+    void checkBounds(ParticleAttrib<Vector_t>& R) {
+
+        auto Rview = R.getView();
+        double xMin = 0.0;
+        double yMin = 0.0;
+        double zMin = 0.0;
+        double xMax = 0.0;
+        double yMax = 0.0;
+        double zMax = 0.0;
+        Kokkos::parallel_reduce("Bounds calculation", R.size(),
+                                KOKKOS_LAMBDA(const int i, 
+                                              double& xlMin, 
+                                              double& ylMin, 
+                                              double& zlMin, 
+                                              double& xlMax, 
+                                              double& ylMax, 
+                                              double& zlMax){
+
+                                    if(Rview(i)[0] < xlMin) xlMin = Rview(i)[0];
+                                    if(Rview(i)[1] < ylMin) ylMin = Rview(i)[1];
+                                    if(Rview(i)[2] < zlMin) zlMin = Rview(i)[2];
+
+                                    if(Rview(i)[0] > xlMax) xlMax = Rview(i)[0];
+                                    if(Rview(i)[1] > ylMax) ylMax = Rview(i)[1];
+                                    if(Rview(i)[2] > zlMax) zlMax = Rview(i)[2];
+                                
+                                }, Kokkos::Min<double>(xMin), Kokkos::Min<double>(yMin), Kokkos::Min<double>(zMin),
+                                   Kokkos::Max<double>(xMax), Kokkos::Max<double>(yMax), Kokkos::Max<double>(zMax));
+
+        Kokkos::fence();
+
+        Vector_t Rmin = {xMin, yMin, zMin};
+        Vector_t Rmax = {xMax, yMax, zMax};
+
+        for (unsigned d = 0; d < 3; ++d) {
+            if(Rmin[d] < rmin_m[d]) {
+                std::cout << "Invalid particles with min. in rank: " << Ippl::Comm->rank() << " Rmin: " << Rmin << std::endl;
+            }
+            if(Rmax[d] > rmax_m[d]) {
+                std::cout << "Invalid particles with max. in rank: " << Ippl::Comm->rank() << " Rmax: " << Rmax << std::endl;
+            }
+        }
+    }
+
     void LeapFrogPIC(ParticleAttrib<Vector_t>& Rtemp, 
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
                      const double dt, const double& tStartMySlice) {
     
         PLayout& PL = this->getLayout();
+        PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+        //checkBounds(Rtemp);
         rhoPIC_m = 0.0;
         scatter(q, rhoPIC_m, Rtemp);
     
@@ -429,6 +475,7 @@ public:
     
             //Apply particle BC
             PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+            //checkBounds(Rtemp);
     
             //scatter the charge onto the underlying grid
             rhoPIC_m = 0.0;
@@ -458,6 +505,8 @@ public:
                      const double& tStartMySlice, const unsigned int& iter) {
     
         PLayout& PL = this->getLayout();
+        PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+        //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
         scatterPIF(q, rhoPIF_m, Rtemp);
     
@@ -483,6 +532,7 @@ public:
     
             //Apply particle BC
             PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+            //checkBounds(Rtemp);
     
             //scatter the charge onto the underlying grid
             rhoPIF_m = {0.0, 0.0};

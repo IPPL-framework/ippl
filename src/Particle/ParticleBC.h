@@ -77,8 +77,11 @@ namespace ippl {
         struct PeriodicBC : public ParticleBC<T, Dim, ViewType> {
             using value_type = typename ParticleBC<T, Dim, ViewType>::value_type;
 
-            using ParticleBC<T, Dim, ViewType>::extent_m;
-            using ParticleBC<T, Dim, ViewType>::middle_m;
+            //using ParticleBC<T, Dim, ViewType>::extent_m;
+            //using ParticleBC<T, Dim, ViewType>::middle_m;
+            using ParticleBC<T, Dim, ViewType>::maxval_m;
+            using ParticleBC<T, Dim, ViewType>::minval_m;
+            using ParticleBC<T, Dim, ViewType>::isUpper_m;
 
             KOKKOS_DEFAULTED_FUNCTION
             PeriodicBC() = default;
@@ -94,7 +97,16 @@ namespace ippl {
             KOKKOS_INLINE_FUNCTION
             void operator()(const size_t& i) const {
                 value_type& value = this->view_m(i)[this->dim_m];
-                value = value - extent_m * (int)((value - middle_m) * 2 / extent_m);
+                //value = value - this->extent_m * (int)((value - this->middle_m) * 2 / extent_m);
+                //if ((value < this->minval_m) && (!this->isUpper_m))
+                //    value = (this->maxval_m - (this->minval_m - value));
+                //else if ((value >= this->maxval_m) && (this->isUpper_m))
+                //    value = (this->minval_m + (value - this->maxval_m));
+                bool tooHigh = value >= maxval_m;
+                bool tooLow = value < minval_m;
+
+                value += tooHigh * (minval_m - maxval_m) +
+                         tooLow * (maxval_m - minval_m);
             }
 
             KOKKOS_DEFAULTED_FUNCTION

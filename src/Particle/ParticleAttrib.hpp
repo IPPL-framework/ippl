@@ -170,10 +170,15 @@ namespace ippl {
                 Vector<double, Dim> whi = l - index;
                 Vector<double, Dim> wlo = 1.0 - whi;
 
-                const size_t i = index[0] - lDom[0].first() + nghost;
-                const size_t j = index[1] - lDom[1].first() + nghost;
-                const size_t k = index[2] - lDom[2].first() + nghost;
+                const int i = index[0] - lDom[0].first() + nghost;
+                const int j = index[1] - lDom[1].first() + nghost;
+                const int k = index[2] - lDom[2].first() + nghost;
 
+                //if((i < 1) || (i > lDom[0].last() + 2) || (j < 1) || (j > lDom[1].last() + 2)
+                //   || (k < 1) || (k > lDom[0].last() + 2)) {
+                //    std::cout << "i: " << i << ", j: " << j << ", k: " << k << std::endl;
+                //    std::cout << "Invalid particle co-ordinates: " << pp(idx) << std::endl;
+                //}
 
                 // scatter
                 const value_type& val = dview_m(idx);

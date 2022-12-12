@@ -197,7 +197,6 @@ int main(int argc, char *argv[]){
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
-    static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
 
     IpplTimings::startTimer(mainTimer);
 
@@ -212,7 +211,7 @@ int main(int argc, char *argv[]){
     const unsigned int maxIter = std::atoi(argv[12]);
 
     const double tStartMySlice = Ippl::Comm->rank() * dtSlice; 
-    const double tEndMySlice = (Ippl::Comm->rank() + 1) * dtSlice; 
+    //const double tEndMySlice = (Ippl::Comm->rank() + 1) * dtSlice; 
 
     msg << "Parareal Landau damping"
         << endl
@@ -363,6 +362,7 @@ int main(int argc, char *argv[]){
     }
 
     Ippl::Comm->barrier();
+    msg << "First Leap frog PIC done " << endl;
 
     
     Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
@@ -371,6 +371,7 @@ int main(int argc, char *argv[]){
 
     //Run the coarse integrator to get the values at the end of the time slice 
     Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
+    msg << "Second Leap frog PIC done " << endl;
 
     //The following might not be needed
     Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
