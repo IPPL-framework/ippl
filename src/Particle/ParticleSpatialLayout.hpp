@@ -254,7 +254,7 @@ namespace ippl {
 			const vertex_neighbor_type vertexNeighbors = flayout_m.getVertexNeighbors();
 
 			//container of particles that travelled more than one cell
-            locate_type notfound("Not found", size_type(0.3*pdata.getLocalNum()));
+            locate_type notfound("Not found", size_type(0.1*pdata.getLocalNum()));
 			//Now: dimension hard-coded, for future implementations maybe make it as a run parameter.
 			bool_type found("Found", pdata.getLocalNum());
 			size_t nLeft;
@@ -263,7 +263,7 @@ namespace ippl {
 			const size_t edgeSz = edgeNeighbors.size();
 			const size_t vertexSz = vertexNeighbors.size();
 
-		        ippl::Vector<int, faceSz> faceNeighbors_v(faceNeighbors);
+		    ippl::Vector<int, faceSz> faceNeighbors_v(faceNeighbors);
 			ippl::Vector<int, edgeSz> edgeNeighbors_v(edgeNeighbors);
 			ippl::Vector<int, vertexSz> vertexNeighbors_v(vertexNeighbors);			
 			
