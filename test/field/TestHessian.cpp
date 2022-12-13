@@ -72,6 +72,7 @@ int main(int argc, char *argv[]) {
 
     Field_t field(mesh, layout);
     MField_t result(mesh, layout);
+    MField_t exact(mesh, layout);
 
     typename Field_t::view_type& view = field.getView();
 
@@ -100,10 +101,124 @@ int main(int argc, char *argv[]) {
                 } else {
                     view(i, j, k) = x*y*z;
                 }
+
+                    std::cout << "x,y,z: " << x << ", " << y << ", " << z << " / "
+                              << "(" << ig << "," << jg << "," << kg << ") = " << 
+                              view(i,j,k) << std::endl;
+    });
+
+    typename MField_t::view_type& view_exact = exact.getView();
+    typename MField_t::view_type& view_result = result.getView();
+
+    std::cout << "Exact" << std::endl;
+    Kokkos::parallel_for("Assign exact", mdrange_type({0,0,0},
+                             {view_exact.extent(0),
+                              view_exact.extent(1),
+                              view_exact.extent(2)}),
+                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+
+                    //local to global index conversion
+                    const int ig = i + lDom[0].first() - nghost;
+                    const int jg = j + lDom[1].first() - nghost;
+                    const int kg = k + lDom[2].first() - nghost;
+            
+                    double x = (ig + 0.5) * hx[0] + origin[0];
+                    double y = (jg + 0.5) * hx[1] + origin[1];
+                    double z = (kg + 0.5) * hx[2] + origin[2];
+                    
+                    if (gauss_fct) {
+                        view_exact(i, j, k)[0] = {(x*x-1)*gaussian(x,y,z), 
+                                                  x*y*gaussian(x,y,z),
+                                                  x*z*gaussian(x,y,z)};
+                        view_exact(i, j, k)[1] = {x*y*gaussian(x,y,z), 
+                                                  (y*y-1)*gaussian(x,y,z),
+                                                  y*z*gaussian(x,y,z)};
+                        view_exact(i, j, k)[2] = {x*z*gaussian(x,y,z), 
+                                                  y*z*gaussian(x,y,z),
+                                                  (z*z-1)*gaussian(x,y,z)};
+                    } else {
+                        view_exact(i, j, k)[0] = {0.0, z, y};
+                        view_exact(i, j, k)[1] = {z, 0.0, x};
+                        view_exact(i, j, k)[2] = {y, x, 0.0};
+                    }
+
+                    std::cout << "x,y,z: " << x << ", " << y << ", " << z << " / "
+                              << "(" << ig << "," << jg << "," << kg << ") = " << 
+                              view_exact(i,j,k)[0] << ", " << view_exact(i,j,k)[1]
+                              << ", " << view_exact(i,j,k)[2] << std::endl;
     });
 
     result = {0.0, 0.0, 0.0};
     result = hess(field);
+
+    std::cout << "Result" << std::endl;
+    Kokkos::parallel_for("Assign exact", mdrange_type({0,0,0},
+                             {view_exact.extent(0),
+                              view_exact.extent(1),
+                              view_exact.extent(2)}),
+                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+
+                    //local to global index conversion
+                    const int ig = i + lDom[0].first() - nghost;
+                    const int jg = j + lDom[1].first() - nghost;
+                    const int kg = k + lDom[2].first() - nghost;
+            
+                    double x = (ig + 0.5) * hx[0] + origin[0];
+                    double y = (jg + 0.5) * hx[1] + origin[1];
+                    double z = (kg + 0.5) * hx[2] + origin[2];
+                    
+                    std::cout << "x,y,z: " << x << ", " << y << ", " << z << " / "
+                              << "(" << ig << "," << jg << "," << kg << ") = " << 
+                              view_result(i,j,k)[0] << ", " << view_result(i,j,k)[1]
+                              << ", " << view_result(i,j,k)[2] << std::endl;
+    });
+
+    result = result - exact;
+
+    ippl::Vector<Vector_t, 3> err_hess {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+
+    for (size_t dim1 = 0; dim1 < dim; ++dim1) {
+        for (size_t dim2 = 0; dim2 < dim; ++dim2) {
+            
+            double valN(0.0);
+
+            Kokkos::parallel_reduce("Relative error", mdrange_type({0,0,0},
+                                {view_result.extent(0),
+                                 view_result.extent(1),
+                                 view_result.extent(2)}),
+                KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
+                    double myVal = pow(view_result(i,j,k)[dim1][dim2], 2);
+                    val += myVal;
+            }, Kokkos::Sum<double>(valN));
+
+            double globalN(0.0);
+            MPI_Allreduce(&valN, &globalN, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+            double errorN = std::sqrt(globalN);
+
+            double valD(0.0);
+
+            Kokkos::parallel_reduce("Relative error", mdrange_type({0,0,0},
+                                {view_exact.extent(0),
+                                 view_exact.extent(1),
+                                 view_exact.extent(2)}),
+                KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
+                    double myVal = pow(view_exact(i,j,k)[dim1][dim2], 2);
+                    val += myVal;
+            }, Kokkos::Sum<double>(valD));
+
+            double globalD(0.0);
+            MPI_Allreduce(&valD, &globalD, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+            double errorD = std::sqrt(globalD);
+
+            err_hess[dim1][dim2] = errorN/errorD;
+
+            if (Ippl::Comm->rank() == 0) {
+                std::cout << std::setprecision(16) << "Error (" << dim1+1 << "," << dim2+1 << "): "
+                    << err_hess[dim1][dim2] << std::endl;
+            }
+
+        }
+    }
 
     return 0;
 }
