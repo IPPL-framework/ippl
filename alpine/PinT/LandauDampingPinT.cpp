@@ -199,7 +199,7 @@ double computeFieldError(CxField_t& rhoPIF, CxField_t& rhoPIFprevIter) {
 
     double AbsError = 0.0;
     double Enorm = 0.0;
-    //Kokkos::complex<double> imag = {0.0, 1.0};
+    Kokkos::complex<double> imag = {0.0, 1.0};
     double pi = std::acos(-1.0);
     Kokkos::parallel_reduce("Ex field error",
                           mdrange_type({0, 0, 0},
@@ -224,26 +224,26 @@ double computeFieldError(CxField_t& rhoPIF, CxField_t& rhoPIFprevIter) {
 
         double myError = 0.0;
         double myField = 0.0;
-        //Kokkos::complex<double> Ek = {0.0, 0.0};
-        //Kokkos::complex<double> Ekprev = {0.0, 0.0};
-        //for(size_t d = 0; d < Dim; ++d) {
-        //    if(Dr != 0.0) {
-        //        Ek = -(imag * kVec[d] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
-        //        Ekprev = -(imag * kVec[d] * rhoprevview(i+nghost,j+nghost,k+nghost) / Dr);
-        //    }
-        //    Ekprev = Ekprev - Ek;
-        //    myError += Ekprev.real() * Ekprev.real() + Ekprev.imag() * Ekprev.imag();
-        //    myField += Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
-        //}
-        //errorSum += myError;
-        //fieldSum += myField;
-        Kokkos::complex<double> rhok = rhoview(i+nghost,j+nghost,k+nghost);
-        Kokkos::complex<double> rhokprev = rhoprevview(i+nghost,j+nghost,k+nghost);
-        rhokprev = rhokprev - rhok;
-        myError = rhokprev.real() * rhokprev.real() + rhokprev.imag() * rhokprev.imag();
+        Kokkos::complex<double> Ek = {0.0, 0.0};
+        Kokkos::complex<double> Ekprev = {0.0, 0.0};
+        for(size_t d = 0; d < Dim; ++d) {
+            if(Dr != 0.0) {
+                Ek = -(imag * kVec[d] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
+                Ekprev = -(imag * kVec[d] * rhoprevview(i+nghost,j+nghost,k+nghost) / Dr);
+            }
+            Ekprev = Ekprev - Ek;
+            myError += Ekprev.real() * Ekprev.real() + Ekprev.imag() * Ekprev.imag();
+            myField += Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
+        }
         errorSum += myError;
-        myField = rhok.real() * rhok.real() + rhok.imag() * rhok.imag();
         fieldSum += myField;
+        //Kokkos::complex<double> rhok = rhoview(i+nghost,j+nghost,k+nghost);
+        //Kokkos::complex<double> rhokprev = rhoprevview(i+nghost,j+nghost,k+nghost);
+        //rhokprev = rhokprev - rhok;
+        //myError = rhokprev.real() * rhokprev.real() + rhokprev.imag() * rhokprev.imag();
+        //errorSum += myError;
+        //myField = rhok.real() * rhok.real() + rhok.imag() * rhok.imag();
+        //fieldSum += myField;
 
     }, Kokkos::Sum<double>(AbsError), Kokkos::Sum<double>(Enorm));
     
@@ -446,30 +446,32 @@ int main(int argc, char *argv[]){
     Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
 
     //Get initial guess for ranks other than 0 by propagating the coarse solver
-    if (Ippl::Comm->rank() > 0) {
-        Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice); 
+    //if (Ippl::Comm->rank() > 0) {
+    if (Ippl::Comm->rank() == 0) {
+        //Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice); 
+        Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->size()*ntCoarse, dtCoarse, tStartMySlice); 
     }
 
     Ippl::Comm->barrier();
-    msg << "First Leap frog PIC done " << endl;
+    //msg << "First Leap frog PIC done " << endl;
 
-    
-    Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
-    Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
-
-
-    //Run the coarse integrator to get the values at the end of the time slice 
-    Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
-    msg << "Second Leap frog PIC done " << endl;
-
-    //Kokkos::deep_copy(Pcoarse->EfieldPICprevIter_m.getView(), Pcoarse->EfieldPIC_m.getView());
-
-    //The following might not be needed
-    Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
-    Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
+    //
+    //Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
+    //Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
 
 
-    msg << "Starting parareal iterations ..." << endl;
+    ////Run the coarse integrator to get the values at the end of the time slice 
+    //Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
+    //msg << "Second Leap frog PIC done " << endl;
+
+    ////Kokkos::deep_copy(Pcoarse->EfieldPICprevIter_m.getView(), Pcoarse->EfieldPIC_m.getView());
+
+    ////The following might not be needed
+    //Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
+    //Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
+
+
+    //msg << "Starting parareal iterations ..." << endl;
     bool isConverged = false;
     for (unsigned int it=0; it<maxIter; it++) {
 
@@ -539,17 +541,17 @@ int main(int argc, char *argv[]){
         double Rerror = computeL2Error(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank());
         double Perror = computeL2Error(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank());
     
-        double EfieldError = 0;
-        if(it > 0) {
-            EfieldError = computeFieldError(Pcoarse->rhoPIF_m, Pcoarse->rhoPIFprevIter_m);
-        }
+        //double EfieldError = 0;
+        //if(it > 0) {
+        //    EfieldError = computeFieldError(Pcoarse->rhoPIF_m, Pcoarse->rhoPIFprevIter_m);
+        //}
 
-        Kokkos::deep_copy(Pcoarse->rhoPIFprevIter_m.getView(), Pcoarse->rhoPIF_m.getView());
+        //Kokkos::deep_copy(Pcoarse->rhoPIFprevIter_m.getView(), Pcoarse->rhoPIF_m.getView());
         msg << "Finished iteration: " << it+1 
             << " Rerror: " << Rerror 
             << " Perror: " << Perror
             //<< " Efield error: " << EfieldError
-            << " Rhofield error: " << EfieldError
+            //<< " Rhofield error: " << EfieldError
             << endl;
 
         Pcoarse->writeError(Rerror, Perror, it+1);

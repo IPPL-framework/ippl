@@ -152,7 +152,71 @@ public:
         solver_mp->setLhs(EfieldPIC_m);
     }
 
+     void dumpLandauPIC() {
 
+        const int nghostE = EfieldPIC_m.getNghost();
+        auto Eview = EfieldPIC_m.getView();
+        double fieldEnergy, ExAmp;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+        double temp = 0.0;
+        Kokkos::parallel_reduce("Ex inner product",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = std::pow(Eview(i, j, k)[0], 2);
+                                    valL += myVal;
+                                }, Kokkos::Sum<double>(temp));
+        double globaltemp = temp;
+        //MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        fieldEnergy = globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
+
+        double tempMax = 0.0;
+        Kokkos::parallel_reduce("Ex max norm",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, double& valL)
+                                {
+                                    double myVal = std::fabs(Eview(i, j, k)[0]);
+                                    if(myVal > valL) valL = myVal;
+                                }, Kokkos::Max<double>(tempMax));
+        ExAmp = tempMax;
+        //MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+
+
+        if (Ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/FieldLandau_";
+            fname << Ippl::Comm->size();
+            fname << ".csv";
+
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(time_m == 0.0) {
+                csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+            }
+
+            csvout << time_m << " "
+                   << fieldEnergy << " "
+                   << ExAmp << endl;
+
+        }
+        
+        Ippl::Comm->barrier();
+     }
+
+
+    
     void dumpLandau(size_type /*totalP*/, const unsigned int& iter) {
        
 
@@ -466,6 +530,7 @@ public:
     
         time_m = tStartMySlice;
 
+        dumpLandauPIC();         
 
         for (unsigned int it=0; it<nt; it++) {
             
@@ -497,6 +562,7 @@ public:
             Ptemp = Ptemp - 0.5 * dt * E;
             
             time_m += dt;
+            dumpLandauPIC();         
         }
     
     }
