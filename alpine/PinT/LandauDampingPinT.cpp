@@ -368,7 +368,7 @@ int main(int argc, char *argv[]){
     Pcoarse->nr_m = nrPIC;
 
     Pcoarse->rhoPIF_m.initialize(meshPIF, FLPIF);
-    Pcoarse->rhoPIFprevIter_m.initialize(meshPIF, FLPIF);
+    //Pcoarse->rhoPIFprevIter_m.initialize(meshPIF, FLPIF);
     Pcoarse->rhoPIC_m.initialize(meshPIC, FLPIC);
     Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
     Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
@@ -446,32 +446,30 @@ int main(int argc, char *argv[]){
     Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
 
     //Get initial guess for ranks other than 0 by propagating the coarse solver
-    //if (Ippl::Comm->rank() > 0) {
-    if (Ippl::Comm->rank() == 0) {
-        //Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice); 
-        Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->size()*ntCoarse, dtCoarse, tStartMySlice); 
+    if (Ippl::Comm->rank() > 0) {
+        Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice); 
     }
 
     Ippl::Comm->barrier();
-    //msg << "First Leap frog PIC done " << endl;
+    msg << "First Leap frog PIC done " << endl;
 
-    //
-    //Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
-    //Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
-
-
-    ////Run the coarse integrator to get the values at the end of the time slice 
-    //Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
-    //msg << "Second Leap frog PIC done " << endl;
-
-    ////Kokkos::deep_copy(Pcoarse->EfieldPICprevIter_m.getView(), Pcoarse->EfieldPIC_m.getView());
-
-    ////The following might not be needed
-    //Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
-    //Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
+    
+    Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
+    Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
 
 
-    //msg << "Starting parareal iterations ..." << endl;
+    //Run the coarse integrator to get the values at the end of the time slice 
+    Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
+    msg << "Second Leap frog PIC done " << endl;
+
+    //Kokkos::deep_copy(Pcoarse->EfieldPICprevIter_m.getView(), Pcoarse->EfieldPIC_m.getView());
+
+    //The following might not be needed
+    Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
+    Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
+
+
+    msg << "Starting parareal iterations ..." << endl;
     bool isConverged = false;
     for (unsigned int it=0; it<maxIter; it++) {
 

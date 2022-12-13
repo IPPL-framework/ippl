@@ -53,7 +53,7 @@ template<class PLayout>
 class ChargedParticlesPinT : public ippl::ParticleBase<PLayout> {
 public:
     CxField_t rhoPIF_m;
-    CxField_t rhoPIFprevIter_m;
+    //CxField_t rhoPIFprevIter_m;
     Field_t rhoPIC_m;
     VField_t EfieldPIC_m;
     //VField_t EfieldPICprevIter_m;
@@ -212,7 +212,7 @@ public:
 
         }
         
-        Ippl::Comm->barrier();
+        //Ippl::Comm->barrier();
      }
 
 
@@ -530,7 +530,7 @@ public:
     
         time_m = tStartMySlice;
 
-        dumpLandauPIC();         
+        //dumpLandauPIC();         
 
         for (unsigned int it=0; it<nt; it++) {
             
@@ -562,7 +562,7 @@ public:
             Ptemp = Ptemp - 0.5 * dt * E;
             
             time_m += dt;
-            dumpLandauPIC();         
+            //dumpLandauPIC();         
         }
     
     }
