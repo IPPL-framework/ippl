@@ -444,12 +444,6 @@ namespace ippl {
                         yvector_m * ((u_m(i,j+1,k+1) - u_m(i,j+1,k-1) - u_m(i,j-1,k+1) + u_m(i,j-1,k-1))/(4.0*hvector_m[2]*hvector_m[1])) +
                         zvector_m * ((u_m(i,j,k+1) - 2.0*u_m(i,j,k) + u_m(i,j,k-1))/(hvector_m[2]*hvector_m[2]));
 
-                std::cout << "Inside meta::hess " << row_1 << " , " << row_2 << " , " << row_3 << std::endl;
-
-                vector_type result = xvector_m * row_1 + yvector_m * row_2 +  zvector_m * row_3;
-
-                std::cout << "Inside meta::hess " << result[0] << " , " << result[1] << " , " << result[2] << std::endl;
-
                 matrix_type hessian = {row_1, row_2, row_3};
                 return hessian; 
             }
