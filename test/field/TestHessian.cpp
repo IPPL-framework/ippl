@@ -51,7 +51,8 @@ int main(int argc, char *argv[]) {
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
 
-    ippl::e_dim_tag decomp[dim];    // Specifies SERIAL, PARALLEL dims
+    // Specifies SERIAL, PARALLEL dims
+    ippl::e_dim_tag decomp[dim];
     for (unsigned int d=0; d<dim; d++)
         decomp[d] = ippl::PARALLEL;
 
@@ -81,7 +82,7 @@ int main(int argc, char *argv[]) {
     using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
     Kokkos::parallel_for("Assign field",
-                mdrange_type({0,0,0},
+                mdrange_type({0, 0, 0},
                              {view.extent(0),
                               view.extent(1),
                               view.extent(2)}),
@@ -101,20 +102,16 @@ int main(int argc, char *argv[]) {
                 } else {
                     view(i, j, k) = x*y*z;
                 }
-
-                    std::cout << "x,y,z: " << x << ", " << y << ", " << z << " / "
-                              << "(" << ig << "," << jg << "," << kg << ") = " << 
-                              view(i,j,k) << std::endl;
     });
 
     typename MField_t::view_type& view_exact = exact.getView();
     typename MField_t::view_type& view_result = result.getView();
 
     std::cout << "Exact" << std::endl;
-    Kokkos::parallel_for("Assign exact", mdrange_type({0,0,0},
-                             {view_exact.extent(0),
-                              view_exact.extent(1),
-                              view_exact.extent(2)}),
+    Kokkos::parallel_for("Assign exact", mdrange_type({nghost,nghost,nghost},
+                             {view_exact.extent(0) - nghost,
+                              view_exact.extent(1) - nghost,
+                              view_exact.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
 
                     //local to global index conversion
@@ -142,8 +139,7 @@ int main(int argc, char *argv[]) {
                         view_exact(i, j, k)[2] = {y, x, 0.0};
                     }
 
-                    std::cout << "x,y,z: " << x << ", " << y << ", " << z << " / "
-                              << "(" << ig << "," << jg << "," << kg << ") = " << 
+                    std::cout << "(" << ig << "," << jg << "," << kg << ") = " << 
                               view_exact(i,j,k)[0] << ", " << view_exact(i,j,k)[1]
                               << ", " << view_exact(i,j,k)[2] << std::endl;
     });
@@ -152,10 +148,10 @@ int main(int argc, char *argv[]) {
     result = hess(field);
 
     std::cout << "Result" << std::endl;
-    Kokkos::parallel_for("Assign exact", mdrange_type({0,0,0},
-                             {view_exact.extent(0),
-                              view_exact.extent(1),
-                              view_exact.extent(2)}),
+    Kokkos::parallel_for("Assign exact", mdrange_type({nghost,nghost,nghost},
+                             {view_result.extent(0) - nghost,
+                              view_result.extent(1) - nghost,
+                              view_result.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
 
                     //local to global index conversion
@@ -163,17 +159,29 @@ int main(int argc, char *argv[]) {
                     const int jg = j + lDom[1].first() - nghost;
                     const int kg = k + lDom[2].first() - nghost;
             
-                    double x = (ig + 0.5) * hx[0] + origin[0];
-                    double y = (jg + 0.5) * hx[1] + origin[1];
-                    double z = (kg + 0.5) * hx[2] + origin[2];
-                    
-                    std::cout << "x,y,z: " << x << ", " << y << ", " << z << " / "
-                              << "(" << ig << "," << jg << "," << kg << ") = " << 
+                    std::cout << "(" << ig << "," << jg << "," << kg << ") = " << 
                               view_result(i,j,k)[0] << ", " << view_result(i,j,k)[1]
                               << ", " << view_result(i,j,k)[2] << std::endl;
     });
 
     result = result - exact;
+
+    std::cout << "Diff" << std::endl;
+    Kokkos::parallel_for("Assign exact", mdrange_type({nghost,nghost,nghost},
+                             {view_result.extent(0) - nghost,
+                              view_result.extent(1) - nghost,
+                              view_result.extent(2) - nghost}),
+                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+
+                    //local to global index conversion
+                    const int ig = i + lDom[0].first() - nghost;
+                    const int jg = j + lDom[1].first() - nghost;
+                    const int kg = k + lDom[2].first() - nghost;
+            
+                    std::cout << "(" << ig << "," << jg << "," << kg << ") = " << 
+                              view_result(i,j,k)[0] << ", " << view_result(i,j,k)[1]
+                              << ", " << view_result(i,j,k)[2] << std::endl;
+    });
 
     ippl::Vector<Vector_t, 3> err_hess {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
@@ -182,10 +190,10 @@ int main(int argc, char *argv[]) {
             
             double valN(0.0);
 
-            Kokkos::parallel_reduce("Relative error", mdrange_type({0,0,0},
-                                {view_result.extent(0),
-                                 view_result.extent(1),
-                                 view_result.extent(2)}),
+            Kokkos::parallel_reduce("Relative error", mdrange_type({nghost, nghost, nghost},
+                                {view_result.extent(0) - nghost,
+                                 view_result.extent(1) - nghost,
+                                 view_result.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
                     double myVal = pow(view_result(i,j,k)[dim1][dim2], 2);
                     val += myVal;
@@ -197,10 +205,10 @@ int main(int argc, char *argv[]) {
 
             double valD(0.0);
 
-            Kokkos::parallel_reduce("Relative error", mdrange_type({0,0,0},
-                                {view_exact.extent(0),
-                                 view_exact.extent(1),
-                                 view_exact.extent(2)}),
+            Kokkos::parallel_reduce("Relative error", mdrange_type({nghost, nghost, nghost},
+                                {view_exact.extent(0) - nghost,
+                                 view_exact.extent(1) - nghost,
+                                 view_exact.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
                     double myVal = pow(view_exact(i,j,k)[dim1][dim2], 2);
                     val += myVal;
@@ -210,7 +218,11 @@ int main(int argc, char *argv[]) {
             MPI_Allreduce(&valD, &globalD, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
             double errorD = std::sqrt(globalD);
 
-            err_hess[dim1][dim2] = errorN/errorD;
+            if ((errorD == 0) && (errorN == 0)) {
+                err_hess[dim1][dim2] = 0.0;
+            } else { 
+                err_hess[dim1][dim2] = errorN/errorD;
+            }
 
             if (Ippl::Comm->rank() == 0) {
                 std::cout << std::setprecision(16) << "Error (" << dim1+1 << "," << dim2+1 << "): "
