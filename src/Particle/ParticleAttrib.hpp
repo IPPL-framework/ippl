@@ -142,8 +142,8 @@ namespace ippl {
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
     const
     {
-        static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("Scatter");           
-        IpplTimings::startTimer(scatterTimer);                                               
+        static IpplTimings::TimerRef scatterPICTimer = IpplTimings::getTimer("ScatterPIC");           
+        IpplTimings::startTimer(scatterPICTimer);                                               
         typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
@@ -192,12 +192,12 @@ namespace ippl {
                 Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
             }
         );
-        IpplTimings::stopTimer(scatterTimer);
+        IpplTimings::stopTimer(scatterPICTimer);
             
-        static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("AccumulateHalo");           
-        IpplTimings::startTimer(accumulateHaloTimer);                                               
+        //static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("AccumulateHalo");           
+        //IpplTimings::startTimer(accumulateHaloTimer);                                               
         f.accumulateHalo();
-        IpplTimings::stopTimer(accumulateHaloTimer);                                               
+        //IpplTimings::stopTimer(accumulateHaloTimer);                                               
     }
 
 
@@ -209,8 +209,8 @@ namespace ippl {
     {
         //Inform msg("scatterPIF");
         
-        static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("Scatter");           
-        IpplTimings::startTimer(scatterTimer);
+        static IpplTimings::TimerRef scatterPIFTimer = IpplTimings::getTimer("ScatterPIF");           
+        IpplTimings::startTimer(scatterPIFTimer);
         
         using view_type = typename Field<FT, Dim, M, C>::view_type;
         using vector_type = typename M::vector_type;
@@ -281,7 +281,7 @@ namespace ippl {
                 }
         );
 
-        IpplTimings::stopTimer(scatterTimer);
+        IpplTimings::stopTimer(scatterPIFTimer);
 
         //Kokkos::deep_copy(fview, viewLocal);
         //static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
@@ -300,13 +300,13 @@ namespace ippl {
                                                   const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
 
-        static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("FillHalo");           
-        IpplTimings::startTimer(fillHaloTimer);                                               
+        //static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("FillHalo");           
+        //IpplTimings::startTimer(fillHaloTimer);                                               
         f.fillHalo();
-        IpplTimings::stopTimer(fillHaloTimer);                                               
+        //IpplTimings::stopTimer(fillHaloTimer);                                               
 
-        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("Gather");           
-        IpplTimings::startTimer(gatherTimer);                                               
+        static IpplTimings::TimerRef gatherPICTimer = IpplTimings::getTimer("GatherPIC");           
+        IpplTimings::startTimer(gatherPICTimer);                                               
         const typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
@@ -349,7 +349,7 @@ namespace ippl {
                     + whi[0] * whi[1] * whi[2] * view(i,   j,   k  );
             }
         );
-        IpplTimings::stopTimer(gatherTimer);                                               
+        IpplTimings::stopTimer(gatherPICTimer);                                               
     }
 
     template<typename T, class... Properties>
@@ -359,8 +359,8 @@ namespace ippl {
     const
     {
         //Inform msg("gatherPIF");
-        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("Gather");           
-        IpplTimings::startTimer(gatherTimer);
+        static IpplTimings::TimerRef gatherPIFTimer = IpplTimings::getTimer("GatherPIF");           
+        IpplTimings::startTimer(gatherPIFTimer);
         
         using view_type = typename Field<FT, Dim, M, C>::view_type;
         using vector_type = typename M::vector_type;
@@ -444,7 +444,7 @@ namespace ippl {
         );
 
         
-        IpplTimings::stopTimer(gatherTimer);
+        IpplTimings::stopTimer(gatherPIFTimer);
 
     }
 

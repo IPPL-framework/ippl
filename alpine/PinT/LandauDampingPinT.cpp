@@ -137,7 +137,7 @@ struct generate_random {
 
 
 double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
-                      const unsigned int& iter, const int& myrank) {
+                      const unsigned int& /*iter*/, const int& /*myrank*/) {
     
     auto Qview = Q.getView();
     auto QprevIterView = QprevIter.getView();
@@ -154,7 +154,7 @@ double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qpr
                             }, Kokkos::Sum<double>(localError), Kokkos::Sum<double>(localNorm));
 
     Kokkos::fence();
-    std::cout << "Rank: " << myrank << " Iter: " << iter << " Abs. Error: " << localError << std::endl;
+    //std::cout << "Rank: " << myrank << " Iter: " << iter << " Abs. Error: " << localError << std::endl;
 
     double globaltemp = 0.0;
     MPI_Allreduce(&localError, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
@@ -283,6 +283,12 @@ int main(int argc, char *argv[]){
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+    static IpplTimings::TimerRef timeCommunication = IpplTimings::getTimer("timeCommunication");
+    static IpplTimings::TimerRef deepCopy = IpplTimings::getTimer("deepCopy");
+    static IpplTimings::TimerRef finePropagator = IpplTimings::getTimer("finePropagator");
+    static IpplTimings::TimerRef coarsePropagator = IpplTimings::getTimer("coarsePropagator");
+    static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
+    static IpplTimings::TimerRef computeErrors = IpplTimings::getTimer("computeErrors");
 
     IpplTimings::startTimer(mainTimer);
 
@@ -368,7 +374,7 @@ int main(int argc, char *argv[]){
     Pcoarse->nr_m = nrPIC;
 
     Pcoarse->rhoPIF_m.initialize(meshPIF, FLPIF);
-    //Pcoarse->rhoPIFprevIter_m.initialize(meshPIF, FLPIF);
+    Pcoarse->rhoPIFprevIter_m.initialize(meshPIF, FLPIF);
     Pcoarse->rhoPIC_m.initialize(meshPIC, FLPIC);
     Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
     Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
@@ -423,8 +429,10 @@ int main(int argc, char *argv[]){
         buf->resetReadPos();
     }
     Ippl::Comm->barrier();
+    IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
     Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
+    IpplTimings::stopTimer(deepCopy);
 #else
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
     Kokkos::parallel_for(nloc,
@@ -442,31 +450,41 @@ int main(int argc, char *argv[]){
     msg << "particles created and initial conditions assigned " << endl;
 
     //Copy initial conditions as they are needed later
+    IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pcoarse->R0.getView(), Pcoarse->R.getView());
     Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
+    IpplTimings::stopTimer(deepCopy);
 
     //Get initial guess for ranks other than 0 by propagating the coarse solver
+    IpplTimings::startTimer(coarsePropagator);
     if (Ippl::Comm->rank() > 0) {
         Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice); 
     }
+    IpplTimings::stopTimer(coarsePropagator);
 
     Ippl::Comm->barrier();
     msg << "First Leap frog PIC done " << endl;
 
     
+    IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
     Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
+    IpplTimings::stopTimer(deepCopy);
 
 
     //Run the coarse integrator to get the values at the end of the time slice 
+    IpplTimings::startTimer(coarsePropagator);
     Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
+    IpplTimings::stopTimer(coarsePropagator);
     msg << "Second Leap frog PIC done " << endl;
 
     //Kokkos::deep_copy(Pcoarse->EfieldPICprevIter_m.getView(), Pcoarse->EfieldPIC_m.getView());
 
     //The following might not be needed
+    IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
     Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
+    IpplTimings::stopTimer(deepCopy);
 
 
     msg << "Starting parareal iterations ..." << endl;
@@ -474,7 +492,9 @@ int main(int argc, char *argv[]){
     for (unsigned int it=0; it<maxIter; it++) {
 
         //Run fine integrator in parallel
+        IpplTimings::startTimer(finePropagator);
         Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice, it+1);
+        IpplTimings::stopTimer(finePropagator);
     
 
         //if(isConverged) {
@@ -496,9 +516,12 @@ int main(int argc, char *argv[]){
         Pend->R = Pbegin->R - Pcoarse->R;
         Pend->P = Pbegin->P - Pcoarse->P;
 
+        IpplTimings::startTimer(deepCopy);
         Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R.getView());
         Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P.getView());
+        IpplTimings::stopTimer(deepCopy);
         
+        IpplTimings::startTimer(timeCommunication);
         tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
         
         if(Ippl::Comm->rank() > 0) {
@@ -511,15 +534,21 @@ int main(int argc, char *argv[]){
             Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R0.getView());
             Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P0.getView());
         }
+        IpplTimings::stopTimer(timeCommunication);
 
+        IpplTimings::startTimer(deepCopy);
         Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
         Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
+        IpplTimings::stopTimer(deepCopy);
 
+        IpplTimings::startTimer(coarsePropagator);
         Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
+        IpplTimings::stopTimer(coarsePropagator);
 
         Pend->R = Pend->R + Pcoarse->R;
         Pend->P = Pend->P + Pcoarse->P;
 
+        IpplTimings::startTimer(timeCommunication);
         if(Ippl::Comm->rank() < Ippl::Comm->size()-1) {
             size_type bufSize = Pend->packedSize(nloc);
             buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
@@ -528,6 +557,7 @@ int main(int argc, char *argv[]){
             buf->resetWritePos();
             MPI_Wait(&request, MPI_STATUS_IGNORE);
         }
+        IpplTimings::stopTimer(timeCommunication);
 
         //Pcoarse->EfieldPICprevIter_m = Pcoarse->EfieldPICprevIter_m - Pcoarse->EfieldPIC_m;
         //Pcoarse->rhoPIC_m = dot(Pcoarse->EfieldPICprevIter_m, Pcoarse->EfieldPICprevIter_m);
@@ -536,26 +566,34 @@ int main(int argc, char *argv[]){
         //double EfieldNorm = std::sqrt(Pcoarse->rhoPIC_m.sum());
         //double EfieldError = absFieldError / EfieldNorm;
 
+        IpplTimings::startTimer(computeErrors);
         double Rerror = computeL2Error(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank());
         double Perror = computeL2Error(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank());
     
-        //double EfieldError = 0;
-        //if(it > 0) {
-        //    EfieldError = computeFieldError(Pcoarse->rhoPIF_m, Pcoarse->rhoPIFprevIter_m);
-        //}
+        double EfieldError = 0;
+        if(it > 0) {
+            EfieldError = computeFieldError(Pcoarse->rhoPIF_m, Pcoarse->rhoPIFprevIter_m);
+        }
+        IpplTimings::stopTimer(computeErrors);
 
-        //Kokkos::deep_copy(Pcoarse->rhoPIFprevIter_m.getView(), Pcoarse->rhoPIF_m.getView());
+        IpplTimings::startTimer(deepCopy);
+        Kokkos::deep_copy(Pcoarse->rhoPIFprevIter_m.getView(), Pcoarse->rhoPIF_m.getView());
+        IpplTimings::stopTimer(deepCopy);
+        
         msg << "Finished iteration: " << it+1 
             << " Rerror: " << Rerror 
             << " Perror: " << Perror
-            //<< " Efield error: " << EfieldError
+            << " Efield error: " << EfieldError
             //<< " Rhofield error: " << EfieldError
             << endl;
 
+        IpplTimings::startTimer(dumpData);
         Pcoarse->writeError(Rerror, Perror, it+1);
+        IpplTimings::stopTimer(dumpData);
         //Kokkos::deep_copy(Pcoarse->EfieldPICprevIter_m.getView(), Pcoarse->EfieldPIC_m.getView());
 
         if((Rerror <= tol) && (Perror <= tol)) {
+        //if(Perror <= tol) {
             break;
         }
     }

@@ -53,7 +53,7 @@ template<class PLayout>
 class ChargedParticlesPinT : public ippl::ParticleBase<PLayout> {
 public:
     CxField_t rhoPIF_m;
-    //CxField_t rhoPIFprevIter_m;
+    CxField_t rhoPIFprevIter_m;
     Field_t rhoPIC_m;
     VField_t EfieldPIC_m;
     //VField_t EfieldPICprevIter_m;
@@ -513,6 +513,7 @@ public:
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
                      const double dt, const double& tStartMySlice) {
     
+        static IpplTimings::TimerRef fieldSolvePIC = IpplTimings::getTimer("fieldSolvePIC");
         PLayout& PL = this->getLayout();
         PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
@@ -553,7 +554,9 @@ public:
             rhoPIC_m = rhoPIC_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
     
             //Field solve
+            IpplTimings::startTimer(fieldSolvePIC);
             solver_mp->solve();
+            IpplTimings::stopTimer(fieldSolvePIC);
     
             // gather E field
             gather(E, EfieldPIC_m, Rtemp);
@@ -572,6 +575,7 @@ public:
                      const double& dt, const bool& /*isConverged*/, 
                      const double& tStartMySlice, const unsigned int& iter) {
     
+        static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
         PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
@@ -586,8 +590,10 @@ public:
         time_m = tStartMySlice;
 
         if((time_m == 0.0)) {
+            IpplTimings::startTimer(dumpData);
             dumpLandau(this->getLocalNum(), iter);         
             dumpEnergy(this->getLocalNum(), iter, Ptemp);
+            IpplTimings::stopTimer(dumpData);
         }
         for (unsigned int it=0; it<nt; it++) {
     
@@ -616,8 +622,10 @@ public:
     
             time_m += dt;
             
+            IpplTimings::startTimer(dumpData);
             dumpLandau(this->getLocalNum(), iter);         
             dumpEnergy(this->getLocalNum(), iter, Ptemp);         
+            IpplTimings::stopTimer(dumpData);
     
         }
     }
