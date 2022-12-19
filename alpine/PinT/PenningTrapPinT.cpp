@@ -6,7 +6,7 @@
 // European Conference on Parallel Processing. Springer, Cham, 2017.
 // 
 //  Usage:
-//     srun ./LandauDampingPinT <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> <Niter> --info 5
+//     srun ./PenningTrap <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> <Niter> --info 5
 //     nmx       = No. of Fourier modes in the x-direction
 //     nmy       = No. of Fourier modes in the y-direction
 //     nmz       = No. of Fourier modes in the z-direction
@@ -15,7 +15,7 @@
 //     nz       = No. of grid points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Example:
-//     srun ./LandauDampingPinT 16 16 16 32 32 32 655360 20.0 0.05 0.05 1e-5 100 --info 5
+//     srun ./PenningTrap 16 16 16 32 32 32 655360 20.0 0.05 0.05 1e-5 100 --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
 // Jülich Supercomputing Centre, Jülich, Germany.
@@ -56,15 +56,15 @@ struct Newton1D {
   int max_iter = 20;
   double pi = std::acos(-1.0);
   
-  T k, alpha, u;
+  T mu, sigma, u;
 
   KOKKOS_INLINE_FUNCTION
   Newton1D() {}
 
   KOKKOS_INLINE_FUNCTION
-  Newton1D(const T& k_, const T& alpha_, 
+  Newton1D(const T& mu_, const T& sigma_, 
            const T& u_) 
-  : k(k_), alpha(alpha_), u(u_) {}
+  : mu(mu_), sigma(sigma_), u(u_) {}
 
   KOKKOS_INLINE_FUNCTION
   ~Newton1D() {}
@@ -72,21 +72,23 @@ struct Newton1D {
   KOKKOS_INLINE_FUNCTION
   T f(T& x) {
       T F;
-      F = x  + (alpha  * (std::sin(k * x) / k)) - u;
+      F = std::erf((x - mu)/(sigma * std::sqrt(2.0))) 
+          - 2 * u + 1;
       return F;
   }
 
   KOKKOS_INLINE_FUNCTION
   T fprime(T& x) {
       T Fprime;
-      Fprime = 1  + (alpha  * std::cos(k * x));
+      Fprime = (1 / sigma) * std::sqrt(2 / pi) * 
+               std::exp(-0.5 * (std::pow(((x - mu) / sigma),2)));
       return Fprime;
   }
 
   KOKKOS_FUNCTION
   void solve(T& x) {
       int iterations = 0;
-      while (iterations < max_iter && std::fabs(f(x)) > tol) {
+      while ((iterations < max_iter) && (std::fabs(f(x)) > tol)) {
           x = x - (f(x)/fprime(x));
           iterations += 1;
       }
@@ -105,15 +107,15 @@ struct generate_random {
   // The GeneratorPool
   GeneratorPool rand_pool;
 
-  value_type alpha;
+  T mu, sigma, minU, maxU;
 
-  T k, minU, maxU;
+  double pi = std::acos(-1.0);
 
   // Initialize all members
-  generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
-                  value_type& alpha_, T& k_, T& minU_, T& maxU_)
+  generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_,
+                  T& mu_, T& sigma_, T& minU_, T& maxU_)
       : x(x_), v(v_), rand_pool(rand_pool_), 
-        alpha(alpha_), k(k_), minU(minU_), maxU(maxU_) {}
+        mu(mu_), sigma(sigma_), minU(minU_), maxU(maxU_) {}
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const size_t i) const {
@@ -122,10 +124,10 @@ struct generate_random {
 
     value_type u;
     for (unsigned d = 0; d < Dim; ++d) {
-
         u = rand_gen.drand(minU[d], maxU[d]);
-        x(i)[d] = u / (1 + alpha);
-        Newton1D<value_type> solver(k[d], alpha, u);
+        x(i)[d] = (std::sqrt(pi / 2) * (2 * u - 1)) * 
+                  sigma[d] + mu[d];
+        Newton1D<value_type> solver(mu[d], sigma[d], u);
         solver.solve(x(i)[d]);
         v(i)[d] = rand_gen.normal(0.0, 1.0);
     }
@@ -305,13 +307,13 @@ double computeFieldError(CxField_t& rhoPIF, CxField_t& rhoPIFprevIter) {
 }
 
 
-const char* TestName = "LandauDampingPinT";
+const char* TestName = "PenningTrap";
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     
-    Inform msg("LandauDampingPinT");
-    Inform msg2all("LandauDampingPinT",INFORM_ALL_NODES);
+    Inform msg(TestName);
+    Inform msg2all(TestName,INFORM_ALL_NODES);
 
     ippl::Vector<int,Dim> nmPIF = {
         std::atoi(argv[1]),
@@ -346,24 +348,14 @@ int main(int argc, char *argv[]){
     const double tol = std::atof(argv[11]);
     const unsigned int maxIter = std::atoi(argv[12]);
 
+    msg << "dtSlice: " << dtSlice 
+        << "dtSlice/dtFine: " << dtSlice / dtFine
+        << "(int)dtSlice/dtFine: " << (unsigned int)(dtSlice / dtFine)
+        << endl;
+
     const double tStartMySlice = Ippl::Comm->rank() * dtSlice; 
     //const double tEndMySlice = (Ippl::Comm->rank() + 1) * dtSlice; 
 
-    msg << "Parareal Landau damping"
-        << endl
-        << "Slice dT: " << dtSlice
-        << endl
-        << "No. of fine time steps: " << ntFine 
-        << endl
-        << "No. of coarse time steps: " << ntCoarse
-        << endl
-        << "Tolerance: " << tol
-        << " Max. iterations: " << maxIter
-        << endl
-        << "Np= " << totalP 
-        << " Fourier modes = " << nmPIF
-        << " Grid points = " << nrPIC
-        << endl;
 
     using bunch_type = ChargedParticlesPinT<PLayout_t>;
     using states_begin_type = StatesBeginSlice<PLayout_t>;
@@ -386,13 +378,23 @@ int main(int argc, char *argv[]){
     }
 
     // create mesh and layout objects for this problem domain
-    Vector_t kw = {0.5, 0.5, 0.5};
-    double alpha = 0.05;
     Vector_t rmin(0.0);
-    Vector_t rmax = 2 * pi / kw ;
+    Vector_t rmax(20.0);
     double dxPIC = rmax[0] / nrPIC[0];
     double dyPIC = rmax[1] / nrPIC[1];
     double dzPIC = rmax[2] / nrPIC[2];
+
+    Vector_t length = rmax - rmin;
+
+    Vector_t mu, sd;
+
+    for (unsigned d = 0; d<Dim; d++) {
+        mu[d] = 0.5 * length[d];
+    }
+    sd[0] = 0.15*length[0];
+    sd[1] = 0.05*length[1];
+    sd[2] = 0.20*length[2];
+
 
 
     double dxPIF = rmax[0] / nmPIF[0];
@@ -409,8 +411,8 @@ int main(int argc, char *argv[]){
     FieldLayout_t FLPIF(domainPIF, decomp, isAllPeriodic);
     PLayout_t PL(FLPIC, meshPIC);
 
-    //Q = -\int\int f dx dv
-    double Q = -rmax[0] * rmax[1] * rmax[2];
+    double Q = -1562.5;
+    double Bext = 5.0;
     Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q);
     Pbegin = std::make_unique<states_begin_type>(PL);
     Pend = std::make_unique<states_end_type>(PL);
@@ -451,7 +453,9 @@ int main(int argc, char *argv[]){
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
         Kokkos::parallel_for(nloc,
                              generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                             Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+                             Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, mu, sd, 
+                             minU, maxU));
+
 
         Kokkos::fence();
         size_type bufSize = Pbegin->packedSize(nloc);
@@ -481,14 +485,31 @@ int main(int argc, char *argv[]){
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         Pcoarse->R.getView(), Pcoarse->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+                         Pcoarse->R.getView(), Pcoarse->P.getView(), rand_pool64, mu, sd, 
+                         minU, maxU));
 
     Kokkos::fence();
     Ippl::Comm->barrier();
 #endif
 
 
-    Pcoarse->q = Pcoarse->Q_m/totalP;
+    msg << "Parareal Penning trap"
+        << endl
+        << "Slice dT: " << dtSlice
+        << endl
+        << "No. of fine time steps: " << ntFine 
+        << endl
+        << "No. of coarse time steps: " << ntCoarse
+        << endl
+        << "Tolerance: " << tol
+        << " Max. iterations: " << maxIter
+        << endl
+        << "Np= " << nloc 
+        << " Fourier modes = " << nmPIF
+        << " Grid points = " << nrPIC
+        << endl;
+    
+    Pcoarse->q = Pcoarse->Q_m/nloc;
     IpplTimings::stopTimer(particleCreation);                                                    
     
     msg << "particles created and initial conditions assigned " << endl;
@@ -502,14 +523,14 @@ int main(int argc, char *argv[]){
     //Get initial guess for ranks other than 0 by propagating the coarse solver
     IpplTimings::startTimer(coarsePropagator);
     if (Ippl::Comm->rank() > 0) {
-        Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice); 
+        Pcoarse->BorisPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice, Bext); 
     }
     
     Ippl::Comm->barrier();
     
     IpplTimings::stopTimer(coarsePropagator);
 
-    msg << "First Leap frog PIC done " << endl;
+    msg << "First Boris PIC done " << endl;
 
     
     IpplTimings::startTimer(deepCopy);
@@ -520,9 +541,9 @@ int main(int argc, char *argv[]){
 
     //Run the coarse integrator to get the values at the end of the time slice 
     IpplTimings::startTimer(coarsePropagator);
-    Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
+    Pcoarse->BorisPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, Bext); 
     IpplTimings::stopTimer(coarsePropagator);
-    msg << "Second Leap frog PIC done " << endl;
+    msg << "Second Boris PIC done " << endl;
 
     //Kokkos::deep_copy(Pcoarse->EfieldPICprevIter_m.getView(), Pcoarse->EfieldPIC_m.getView());
 
@@ -544,7 +565,7 @@ int main(int argc, char *argv[]){
 
         //Run fine integrator in parallel
         IpplTimings::startTimer(finePropagator);
-        Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice, it+1);
+        Pcoarse->BorisPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice, it+1, Bext);
         IpplTimings::stopTimer(finePropagator);
     
 
@@ -593,7 +614,7 @@ int main(int argc, char *argv[]){
         IpplTimings::stopTimer(deepCopy);
 
         IpplTimings::startTimer(coarsePropagator);
-        Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
+        Pcoarse->BorisPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, Bext); 
         IpplTimings::stopTimer(coarsePropagator);
 
         Pend->R = Pend->R + Pcoarse->R;
@@ -653,7 +674,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    msg << "LandauDamping Parareal: End." << endl;
+    msg << "Penning trap Parareal: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));

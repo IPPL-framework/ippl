@@ -6,7 +6,7 @@
 // European Conference on Parallel Processing. Springer, Cham, 2017.
 // 
 //  Usage:
-//     srun ./LandauDampingPinT <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> <Niter> --info 5
+//     srun ./BumponTailInstability <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> <Niter> --info 5
 //     nmx       = No. of Fourier modes in the x-direction
 //     nmy       = No. of Fourier modes in the y-direction
 //     nmz       = No. of Fourier modes in the z-direction
@@ -15,7 +15,7 @@
 //     nz       = No. of grid points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Example:
-//     srun ./LandauDampingPinT 16 16 16 32 32 32 655360 20.0 0.05 0.05 1e-5 100 --info 5
+//     srun ./BumponTailInstability 16 16 16 32 32 32 655360 20.0 0.05 0.05 1e-5 100 --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
 // Jülich Supercomputing Centre, Jülich, Germany.
@@ -49,6 +49,7 @@
 #include <random>
 #include "Utility/IpplTimings.h"
 
+
 template <typename T>
 struct Newton1D {
 
@@ -56,15 +57,15 @@ struct Newton1D {
   int max_iter = 20;
   double pi = std::acos(-1.0);
   
-  T k, alpha, u;
+  T k, delta, u;
 
   KOKKOS_INLINE_FUNCTION
   Newton1D() {}
 
   KOKKOS_INLINE_FUNCTION
-  Newton1D(const T& k_, const T& alpha_, 
+  Newton1D(const T& k_, const T& delta_, 
            const T& u_) 
-  : k(k_), alpha(alpha_), u(u_) {}
+  : k(k_), delta(delta_), u(u_) {}
 
   KOKKOS_INLINE_FUNCTION
   ~Newton1D() {}
@@ -72,14 +73,14 @@ struct Newton1D {
   KOKKOS_INLINE_FUNCTION
   T f(T& x) {
       T F;
-      F = x  + (alpha  * (std::sin(k * x) / k)) - u;
+      F = x  + (delta  * (std::sin(k * x) / k)) - u;
       return F;
   }
 
   KOKKOS_INLINE_FUNCTION
   T fprime(T& x) {
       T Fprime;
-      Fprime = 1  + (alpha  * std::cos(k * x));
+      Fprime = 1  + (delta  * std::cos(k * x));
       return Fprime;
   }
 
@@ -105,36 +106,46 @@ struct generate_random {
   // The GeneratorPool
   GeneratorPool rand_pool;
 
-  value_type alpha;
+  value_type delta, sigma, muBulk, muBeam;
+  size_type nlocBulk; 
 
   T k, minU, maxU;
 
   // Initialize all members
   generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
-                  value_type& alpha_, T& k_, T& minU_, T& maxU_)
+                  value_type& delta_, T& k_, value_type& sigma_, 
+                  value_type& muBulk_, value_type& muBeam_, 
+                  size_type& nlocBulk_, T& minU_, T& maxU_)
       : x(x_), v(v_), rand_pool(rand_pool_), 
-        alpha(alpha_), k(k_), minU(minU_), maxU(maxU_) {}
+        delta(delta_), sigma(sigma_), muBulk(muBulk_), muBeam(muBeam_),
+        nlocBulk(nlocBulk_), k(k_), minU(minU_), maxU(maxU_) {}
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const size_t i) const {
     // Get a random number state from the pool for the active thread
     typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-    value_type u;
-    for (unsigned d = 0; d < Dim; ++d) {
-
-        u = rand_gen.drand(minU[d], maxU[d]);
-        x(i)[d] = u / (1 + alpha);
-        Newton1D<value_type> solver(k[d], alpha, u);
-        solver.solve(x(i)[d]);
-        v(i)[d] = rand_gen.normal(0.0, 1.0);
+    bool isBeam = (i >= nlocBulk);
+    
+    value_type muZ = (value_type)(((!isBeam) * muBulk) + (isBeam * muBeam));
+    
+    for (unsigned d = 0; d < Dim-1; ++d) {
+        
+        x(i)[d] = rand_gen.drand(minU[d], maxU[d]); 
+        v(i)[d] = rand_gen.normal(0.0, sigma);
     }
+    v(i)[Dim-1] = rand_gen.normal(muZ, sigma);
+    
+    value_type u = rand_gen.drand(minU[Dim-1], maxU[Dim-1]);
+    x(i)[Dim-1] = u / (1 + delta);
+    Newton1D<value_type> solver(k[Dim-1], delta, u);
+    solver.solve(x(i)[Dim-1]);
+    
 
     // Give the state back, which will allow another thread to acquire it
     rand_pool.free_state(rand_gen);
   }
 };
-
 
 double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
                       const unsigned int& /*iter*/, const int& /*myrank*/, double& lError) {
@@ -305,13 +316,14 @@ double computeFieldError(CxField_t& rhoPIF, CxField_t& rhoPIFprevIter) {
 }
 
 
-const char* TestName = "LandauDampingPinT";
+//const char* TestName = "TwoStreamInstability";
+const char* TestName = "BumponTailInstability";
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     
-    Inform msg("LandauDampingPinT");
-    Inform msg2all("LandauDampingPinT",INFORM_ALL_NODES);
+    Inform msg("TestName");
+    Inform msg2all("TestName",INFORM_ALL_NODES);
 
     ippl::Vector<int,Dim> nmPIF = {
         std::atoi(argv[1]),
@@ -346,24 +358,14 @@ int main(int argc, char *argv[]){
     const double tol = std::atof(argv[11]);
     const unsigned int maxIter = std::atoi(argv[12]);
 
+    msg << "dtSlice: " << dtSlice 
+        << "dtSlice/dtFine: " << dtSlice / dtFine
+        << "(int)dtSlice/dtFine: " << (unsigned int)(dtSlice / dtFine)
+        << endl;
+
     const double tStartMySlice = Ippl::Comm->rank() * dtSlice; 
     //const double tEndMySlice = (Ippl::Comm->rank() + 1) * dtSlice; 
 
-    msg << "Parareal Landau damping"
-        << endl
-        << "Slice dT: " << dtSlice
-        << endl
-        << "No. of fine time steps: " << ntFine 
-        << endl
-        << "No. of coarse time steps: " << ntCoarse
-        << endl
-        << "Tolerance: " << tol
-        << " Max. iterations: " << maxIter
-        << endl
-        << "Np= " << totalP 
-        << " Fourier modes = " << nmPIF
-        << " Grid points = " << nrPIC
-        << endl;
 
     using bunch_type = ChargedParticlesPinT<PLayout_t>;
     using states_begin_type = StatesBeginSlice<PLayout_t>;
@@ -386,8 +388,37 @@ int main(int argc, char *argv[]){
     }
 
     // create mesh and layout objects for this problem domain
-    Vector_t kw = {0.5, 0.5, 0.5};
-    double alpha = 0.05;
+    Vector_t kw;
+    double sigma, muBulk, muBeam, epsilon, delta;
+    
+   
+    if(std::strcmp(TestName,"TwoStreamInstability") == 0) {
+        // Parameters for two stream instability as in 
+        //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
+        kw = {0.5, 0.5, 0.5};
+        sigma = 0.1;
+        epsilon = 0.5;
+        muBulk = -pi / 2.0;
+        muBeam = pi / 2.0;
+        delta = 0.01;
+    }
+    else if(std::strcmp(TestName,"BumponTailInstability") == 0) {
+        kw = {0.21, 0.21, 0.21};
+        sigma = 1.0 / std::sqrt(2.0);
+        epsilon = 0.1;
+        muBulk = 0.0;
+        muBeam = 4.0;
+        delta = 0.01;
+    }
+    else {
+        //Default value is two stream instability
+        kw = {0.5, 0.5, 0.5};
+        sigma = 0.1;
+        epsilon = 0.5;
+        muBulk = -pi / 2.0;
+        muBeam = pi / 2.0;
+        delta = 0.01;
+    }
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
     double dxPIC = rmax[0] / nrPIC[0];
@@ -435,7 +466,11 @@ int main(int argc, char *argv[]){
         maxU[d] = rmax[d];
     }
 
-    size_type nloc = totalP;
+    double factorVelBulk = 1.0 - epsilon;
+    double factorVelBeam = 1.0 - factorVelBulk;
+    size_type nlocBulk = (size_type)(factorVelBulk * totalP);
+    size_type nlocBeam = (size_type)(factorVelBeam * totalP);
+    size_type nloc = nlocBulk + nlocBeam;
 
     Pcoarse->create(nloc);
     Pbegin->create(nloc);
@@ -451,7 +486,9 @@ int main(int argc, char *argv[]){
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
         Kokkos::parallel_for(nloc,
                              generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                             Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+                             Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, delta, kw, 
+                             sigma, muBulk, muBeam, nlocBulk, minU, maxU));
+
 
         Kokkos::fence();
         size_type bufSize = Pbegin->packedSize(nloc);
@@ -481,14 +518,32 @@ int main(int argc, char *argv[]){
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         Pcoarse->R.getView(), Pcoarse->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+                         Pcoarse->R.getView(), Pcoarse->P.getView(), rand_pool64, delta, kw, 
+                         sigma, muBulk, muBeam, nlocBulk, minU, maxU));
+
 
     Kokkos::fence();
     Ippl::Comm->barrier();
 #endif
 
 
-    Pcoarse->q = Pcoarse->Q_m/totalP;
+    msg << "Parareal Bump on tail instability"
+        << endl
+        << "Slice dT: " << dtSlice
+        << endl
+        << "No. of fine time steps: " << ntFine 
+        << endl
+        << "No. of coarse time steps: " << ntCoarse
+        << endl
+        << "Tolerance: " << tol
+        << " Max. iterations: " << maxIter
+        << endl
+        << "Np= " << nloc 
+        << " Fourier modes = " << nmPIF
+        << " Grid points = " << nrPIC
+        << endl;
+    
+    Pcoarse->q = Pcoarse->Q_m/nloc;
     IpplTimings::stopTimer(particleCreation);                                                    
     
     msg << "particles created and initial conditions assigned " << endl;
@@ -653,7 +708,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    msg << "LandauDamping Parareal: End." << endl;
+    msg << "Twostream instability Parareal: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));

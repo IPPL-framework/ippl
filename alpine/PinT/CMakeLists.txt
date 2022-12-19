@@ -16,6 +16,12 @@ set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 add_executable (LandauDampingPinT LandauDampingPinT.cpp)
 target_link_libraries (LandauDampingPinT ${IPPL_LIBS})
 
+add_executable (BumponTailInstabilityPinT BumponTailInstabilityPinT.cpp)
+target_link_libraries (BumponTailInstabilityPinT ${IPPL_LIBS})
+
+add_executable (PenningTrapPinT PenningTrapPinT.cpp)
+target_link_libraries (PenningTrapPinT ${IPPL_LIBS})
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

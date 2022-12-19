@@ -217,36 +217,11 @@ public:
 
 
     
-    void dumpLandau(size_type /*totalP*/, const unsigned int& iter) {
+    void dumpLandau(const unsigned int& iter) {
        
 
         double fieldEnergy = 0.0; 
         double ExAmp = 0.0;
-        //auto Eview = E.getView();
-        //double temp = 0.0;
-
-        //Kokkos::parallel_reduce("Ex energy", this->getLocalNum(),
-        //                        KOKKOS_LAMBDA(const int i, double& valL){
-        //                            double myVal = Eview(i)[0] * Eview(i)[0];
-        //                            valL += myVal;
-        //                        }, Kokkos::Sum<double>(temp));
-
-        ////double globaltemp = 0.0;
-        //double globaltemp = temp;
-        ////MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        //double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
-        //fieldEnergy = globaltemp * volume / totalP ;
-
-        //double tempMax = 0.0;
-        //Kokkos::parallel_reduce("Ex max norm", this->getLocalNum(),
-        //                        KOKKOS_LAMBDA(const size_t i, double& valL)
-        //                        {
-        //                            double myVal = std::fabs(Eview(i)[0]);
-        //                            if(myVal > valL) valL = myVal;
-        //                        }, Kokkos::Max<double>(tempMax));
-        ////ExAmp = 0.0;
-        //ExAmp = tempMax;
-        ////MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 
         auto rhoview = rhoPIF_m.getView();
         const int nghost = rhoPIF_m.getNghost();
@@ -320,14 +295,97 @@ public:
         csvout.precision(10);
         csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-        //if(time_m == 0.0) {
-        //    csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
-        //}
 
         csvout << time_m << " "
                << fieldEnergy << " "
                << ExAmp << endl;
     }
+
+    void dumpBumponTail(const unsigned int& iter) {
+       
+
+        double fieldEnergy = 0.0; 
+        double EzAmp = 0.0;
+
+        auto rhoview = rhoPIF_m.getView();
+        const int nghost = rhoPIF_m.getNghost();
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
+      
+        const FieldLayout_t& layout = rhoPIF_m.getLayout(); 
+        const Mesh_t& mesh = rhoPIF_m.get_mesh();
+        const Vector<double, Dim>& dx = mesh.getMeshSpacing();
+        const auto& domain = layout.getDomain();
+        Vector<double, Dim> Len;
+        Vector<int, Dim> N;
+
+        for (unsigned d=0; d < Dim; ++d) {
+            N[d] = domain[d].length();
+            Len[d] = dx[d] * N[d];
+        }
+
+
+        Kokkos::complex<double> imag = {0.0, 1.0};
+        double pi = std::acos(-1.0);
+        Kokkos::parallel_reduce("Ez energy and Max",
+                              mdrange_type({0, 0, 0},
+                                           {N[0],
+                                            N[1],
+                                            N[2]}),
+                              KOKKOS_LAMBDA(const int i,
+                                            const int j,
+                                            const int k,
+                                            double& tlSum,
+                                            double& tlMax)
+        {
+        
+            Vector<int, 3> iVec = {i, j, k};
+            Vector<double, 3> kVec;
+            double Dr = 0.0;
+            for(size_t d = 0; d < Dim; ++d) {
+                bool shift = (iVec[d] > (N[d]/2));
+                kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                Dr += kVec[d] * kVec[d];
+            }
+
+            Kokkos::complex<double> Ek = {0.0, 0.0}; 
+            if(Dr != 0.0) {
+                Ek = -(imag * kVec[2] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
+            }
+            double myVal = Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
+
+            tlSum += myVal;
+
+            double myValMax = std::sqrt(myVal);
+
+            if(myValMax > tlMax) tlMax = myValMax;
+
+        }, Kokkos::Sum<double>(fieldEnergy), Kokkos::Max<double>(EzAmp));
+        
+
+        Kokkos::fence();
+        double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
+        fieldEnergy *= volume;
+
+
+        std::stringstream fname;
+        fname << "data/FieldBumponTail_";
+        fname << Ippl::Comm->rank();
+        fname << "_iter_";
+        fname << iter;
+        fname << ".csv";
+
+
+        Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
+        csvout.precision(10);
+        csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+
+        csvout << time_m << " "
+               << fieldEnergy << " "
+               << EzAmp << endl;
+    }
+
+
 
 
     void dumpEnergy(size_type /*totalP*/, const unsigned int& iter, ParticleAttrib<Vector_t>& Ptemp) {
@@ -441,6 +499,28 @@ public:
 
     }
 
+    void writelocalError(double Rerror, double Perror, unsigned int iter) {
+        
+            std::stringstream fname;
+            fname << "data/localError_";
+            fname << Ippl::Comm->rank();
+            fname << ".csv";
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if(iter == 1) {
+                csvout << "Iter, Rerror, Perror" << endl;
+            }
+
+            csvout << iter << " "
+                   << Rerror << " "
+                   << Perror << endl;
+
+    }
+
+    
     void writeError(double Rerror, double Perror, unsigned int iter) {
         
         if(Ippl::Comm->rank() == 0) {
@@ -570,6 +650,113 @@ public:
     
     }
 
+    void BorisPIC(ParticleAttrib<Vector_t>& Rtemp, 
+                     ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
+                     const double dt, const double& tStartMySlice, const double& Bext) {
+    
+        static IpplTimings::TimerRef fieldSolvePIC = IpplTimings::getTimer("fieldSolvePIC");
+        PLayout& PL = this->getLayout();
+        PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+        //checkBounds(Rtemp);
+        rhoPIC_m = 0.0;
+        scatter(q, rhoPIC_m, Rtemp);
+    
+        rhoPIC_m = rhoPIC_m / (hr_m[0] * hr_m[1] * hr_m[2]);
+        rhoPIC_m = rhoPIC_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
+    
+        //Field solve
+        solver_mp->solve();
+    
+        // gather E field
+        gather(E, EfieldPIC_m, Rtemp);
+    
+        time_m = tStartMySlice;
+
+        //dumpLandauPIC();         
+        double alpha = -0.5 * dt;
+        double DrInv = 1.0 / (1 + (std::pow((alpha * Bext), 2)));
+        Vector_t rmax = rmax_m;
+
+        for (unsigned int it=0; it<nt; it++) {
+            
+            // Staggered Leap frog or Boris algorithm as per 
+            // https://www.sciencedirect.com/science/article/pii/S2590055219300526
+            // eqns 4(a)-4(c). Note we don't use the Boris trick here and do
+            // the analytical matrix inversion which is not complex in this case.
+            // Here, we assume a constant charge-to-mass ratio of -1 for
+            // all the particles hence eliminating the need to store mass as
+            // an attribute
+            // kick
+            auto Rview = Rtemp.getView();
+            auto Pview = Ptemp.getView();
+            auto Eview = E.getView();
+            double V0 = 30*rmax[2];
+            Kokkos::parallel_for("Kick1", this->getLocalNum(),
+                                  KOKKOS_LAMBDA(const size_t j){
+                double Eext_x = -(Rview(j)[0] - 0.5*rmax[0]) * (V0/(2*std::pow(rmax[2],2)));
+                double Eext_y = -(Rview(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
+                double Eext_z =  (Rview(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
+
+                Eview(j)[0] += Eext_x;
+                Eview(j)[1] += Eext_y;
+                Eview(j)[2] += Eext_z;
+                
+                Pview(j)[0] += alpha * (Eview(j)[0]  + Pview(j)[1] * Bext);
+                Pview(j)[1] += alpha * (Eview(j)[1]  - Pview(j)[0] * Bext);
+                Pview(j)[2] += alpha * Eview(j)[2];
+            });
+    
+            //drift
+            Rtemp = Rtemp + dt * Ptemp;
+    
+            //Apply particle BC
+            PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+            //checkBounds(Rtemp);
+    
+            //scatter the charge onto the underlying grid
+            rhoPIC_m = 0.0;
+            scatter(q, rhoPIC_m, Rtemp);
+    
+    
+            rhoPIC_m = rhoPIC_m / (hr_m[0] * hr_m[1] * hr_m[2]);
+            rhoPIC_m = rhoPIC_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
+    
+            //Field solve
+            IpplTimings::startTimer(fieldSolvePIC);
+            solver_mp->solve();
+            IpplTimings::stopTimer(fieldSolvePIC);
+    
+            // gather E field
+            gather(E, EfieldPIC_m, Rtemp);
+    
+            //kick
+            auto R2view = Rtemp.getView();
+            auto P2view = Ptemp.getView();
+            auto E2view = E.getView();
+            Kokkos::parallel_for("Kick2", this->getLocalNum(),
+                                  KOKKOS_LAMBDA(const size_t j){
+                double Eext_x = -(R2view(j)[0] - 0.5*rmax[0]) * (V0/(2*std::pow(rmax[2],2)));
+                double Eext_y = -(R2view(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
+                double Eext_z =  (R2view(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
+
+                E2view(j)[0] += Eext_x;
+                E2view(j)[1] += Eext_y;
+                E2view(j)[2] += Eext_z;
+                P2view(j)[0]  = DrInv * ( P2view(j)[0] + alpha * (E2view(j)[0] 
+                                + P2view(j)[1] * Bext + alpha * Bext * E2view(j)[1]) );
+                P2view(j)[1]  = DrInv * ( P2view(j)[1] + alpha * (E2view(j)[1] 
+                                - P2view(j)[0] * Bext - alpha * Bext * E2view(j)[0]) );
+                P2view(j)[2] += alpha * E2view(j)[2];
+            });
+            
+            time_m += dt;
+            //dumpLandauPIC();         
+        }
+    
+    }
+
+
+
     void LeapFrogPIF(ParticleAttrib<Vector_t>& Rtemp,
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
                      const double& dt, const bool& /*isConverged*/, 
@@ -591,7 +778,8 @@ public:
 
         if((time_m == 0.0)) {
             IpplTimings::startTimer(dumpData);
-            dumpLandau(this->getLocalNum(), iter);         
+            //dumpLandau(iter);         
+            dumpBumponTail(iter);         
             dumpEnergy(this->getLocalNum(), iter, Ptemp);
             IpplTimings::stopTimer(dumpData);
         }
@@ -623,7 +811,112 @@ public:
             time_m += dt;
             
             IpplTimings::startTimer(dumpData);
-            dumpLandau(this->getLocalNum(), iter);         
+            //dumpLandau(iter);         
+            dumpBumponTail(iter);         
+            dumpEnergy(this->getLocalNum(), iter, Ptemp);         
+            IpplTimings::stopTimer(dumpData);
+    
+        }
+    }
+
+
+    void BorisPIF(ParticleAttrib<Vector_t>& Rtemp,
+                     ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
+                     const double& dt, const bool& /*isConverged*/, 
+                     const double& tStartMySlice, const unsigned int& iter, const double& Bext) {
+    
+        static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
+        PLayout& PL = this->getLayout();
+        PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+        //checkBounds(Rtemp);
+        rhoPIF_m = {0.0, 0.0};
+        scatterPIF(q, rhoPIF_m, Rtemp);
+    
+        rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
+    
+        // Solve for and gather E field
+        gatherPIF(E, rhoPIF_m, Rtemp);
+    
+        time_m = tStartMySlice;
+
+        if((time_m == 0.0)) {
+            IpplTimings::startTimer(dumpData);
+            dumpEnergy(this->getLocalNum(), iter, Ptemp);
+            IpplTimings::stopTimer(dumpData);
+        }
+        double alpha = -0.5 * dt;
+        double DrInv = 1.0 / (1 + (std::pow((alpha * Bext), 2)));
+        Vector_t rmax = rmax_m;
+        for (unsigned int it=0; it<nt; it++) {
+    
+            // kick
+    
+            // Staggered Leap frog or Boris algorithm as per 
+            // https://www.sciencedirect.com/science/article/pii/S2590055219300526
+            // eqns 4(a)-4(c). Note we don't use the Boris trick here and do
+            // the analytical matrix inversion which is not complex in this case.
+            // Here, we assume a constant charge-to-mass ratio of -1 for
+            // all the particles hence eliminating the need to store mass as
+            // an attribute
+            // kick
+            auto Rview = Rtemp.getView();
+            auto Pview = Ptemp.getView();
+            auto Eview = E.getView();
+            double V0 = 30*rmax[2];
+            Kokkos::parallel_for("Kick1", this->getLocalNum(),
+                                  KOKKOS_LAMBDA(const size_t j){
+                double Eext_x = -(Rview(j)[0] - 0.5*rmax[0]) * (V0/(2*std::pow(rmax[2],2)));
+                double Eext_y = -(Rview(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
+                double Eext_z =  (Rview(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
+
+                Eview(j)[0] += Eext_x;
+                Eview(j)[1] += Eext_y;
+                Eview(j)[2] += Eext_z;
+                
+                Pview(j)[0] += alpha * (Eview(j)[0]  + Pview(j)[1] * Bext);
+                Pview(j)[1] += alpha * (Eview(j)[1]  - Pview(j)[0] * Bext);
+                Pview(j)[2] += alpha * Eview(j)[2];
+            });
+    
+            //drift
+            Rtemp = Rtemp + dt * Ptemp;
+    
+            //Apply particle BC
+            PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+            //checkBounds(Rtemp);
+    
+            //scatter the charge onto the underlying grid
+            rhoPIF_m = {0.0, 0.0};
+            scatterPIF(q, rhoPIF_m, Rtemp);
+    
+            rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
+    
+            // Solve for and gather E field
+            gatherPIF(E, rhoPIF_m, Rtemp);
+    
+            //kick
+            auto R2view = Rtemp.getView();
+            auto P2view = Ptemp.getView();
+            auto E2view = E.getView();
+            Kokkos::parallel_for("Kick2", this->getLocalNum(),
+                                  KOKKOS_LAMBDA(const size_t j){
+                double Eext_x = -(R2view(j)[0] - 0.5*rmax[0]) * (V0/(2*std::pow(rmax[2],2)));
+                double Eext_y = -(R2view(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
+                double Eext_z =  (R2view(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
+
+                E2view(j)[0] += Eext_x;
+                E2view(j)[1] += Eext_y;
+                E2view(j)[2] += Eext_z;
+                P2view(j)[0]  = DrInv * ( P2view(j)[0] + alpha * (E2view(j)[0] 
+                                + P2view(j)[1] * Bext + alpha * Bext * E2view(j)[1]) );
+                P2view(j)[1]  = DrInv * ( P2view(j)[1] + alpha * (E2view(j)[1] 
+                                - P2view(j)[0] * Bext - alpha * Bext * E2view(j)[0]) );
+                P2view(j)[2] += alpha * E2view(j)[2];
+            });
+    
+            time_m += dt;
+            
+            IpplTimings::startTimer(dumpData);
             dumpEnergy(this->getLocalNum(), iter, Ptemp);         
             IpplTimings::stopTimer(dumpData);
     
