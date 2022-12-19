@@ -71,9 +71,9 @@ int main(int argc, char *argv[]) {
     Vector_t origin = {0.0, 0.0, 0.0};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
-    Field_t field(mesh, layout);
-    MField_t result(mesh, layout);
-    MField_t exact(mesh, layout);
+    Field_t field(mesh, layout, 2);
+    MField_t result(mesh, layout, 2);
+    MField_t exact(mesh, layout, 2);
 
     typename Field_t::view_type& view = field.getView();
 
@@ -122,17 +122,19 @@ int main(int argc, char *argv[]) {
                     double x = (ig + 0.5) * hx[0] + origin[0];
                     double y = (jg + 0.5) * hx[1] + origin[1];
                     double z = (kg + 0.5) * hx[2] + origin[2];
+
+                    double mu = 0.5;
                     
                     if (gauss_fct) {
-                        view_exact(i, j, k)[0] = {(x*x-1)*gaussian(x,y,z), 
-                                                  x*y*gaussian(x,y,z),
-                                                  x*z*gaussian(x,y,z)};
-                        view_exact(i, j, k)[1] = {x*y*gaussian(x,y,z), 
-                                                  (y*y-1)*gaussian(x,y,z),
-                                                  y*z*gaussian(x,y,z)};
-                        view_exact(i, j, k)[2] = {x*z*gaussian(x,y,z), 
-                                                  y*z*gaussian(x,y,z),
-                                                  (z*z-1)*gaussian(x,y,z)};
+                        view_exact(i, j, k)[0] = {((x-mu)*(x-mu)-1)*gaussian(x,y,z), 
+                                                  (x-mu)*(y-mu)*gaussian(x,y,z), 
+                                                  (x-mu)*(z-mu)*gaussian(x,y,z)};
+                        view_exact(i, j, k)[1] = {(x-mu)*(y-mu)*gaussian(x,y,z), 
+                                                  ((y-mu)*(y-mu)-1)*gaussian(x,y,z), 
+                                                  (y-mu)*(z-mu)*gaussian(x,y,z)};
+                        view_exact(i, j, k)[2] = {(x-mu)*(z-mu)*gaussian(x,y,z), 
+                                                  (y-mu)*(z-mu)*gaussian(x,y,z), 
+                                                  ((z-mu)*(z-mu)-1)*gaussian(x,y,z)};
                     } else {
                         view_exact(i, j, k)[0] = {0.0, z, y};
                         view_exact(i, j, k)[1] = {z, 0.0, x};
@@ -185,6 +187,8 @@ int main(int argc, char *argv[]) {
 
     ippl::Vector<Vector_t, 3> err_hess {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
+    double avg = 0.0;
+
     for (size_t dim1 = 0; dim1 < dim; ++dim1) {
         for (size_t dim2 = 0; dim2 < dim; ++dim2) {
             
@@ -229,8 +233,13 @@ int main(int argc, char *argv[]) {
                     << err_hess[dim1][dim2] << std::endl;
             }
 
+            avg += err_hess[dim1][dim2];
         }
     }
+
+    // print total error (average of each matrix entry)
+    avg /= 9.0;
+    std::cout << std::setprecision(16) << "Average error = " << avg;
 
     return 0;
 }
