@@ -71,9 +71,9 @@ int main(int argc, char *argv[]) {
     Vector_t origin = {0.0, 0.0, 0.0};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
-    Field_t field(mesh, layout, 2);
-    MField_t result(mesh, layout, 2);
-    MField_t exact(mesh, layout, 2);
+    Field_t field(mesh, layout, 1);
+    MField_t result(mesh, layout, 1);
+    MField_t exact(mesh, layout, 1);
 
     typename Field_t::view_type& view = field.getView();
 
@@ -107,7 +107,6 @@ int main(int argc, char *argv[]) {
     typename MField_t::view_type& view_exact = exact.getView();
     typename MField_t::view_type& view_result = result.getView();
 
-    std::cout << "Exact" << std::endl;
     Kokkos::parallel_for("Assign exact", mdrange_type({nghost,nghost,nghost},
                              {view_exact.extent(0) - nghost,
                               view_exact.extent(1) - nghost,
@@ -126,64 +125,26 @@ int main(int argc, char *argv[]) {
                     double mu = 0.5;
                     
                     if (gauss_fct) {
-                        view_exact(i, j, k)[0] = {((x-mu)*(x-mu)-1)*gaussian(x,y,z), 
+                        view_exact(i, j, k)[0] = {((x-mu)*(x-mu)-1.0)*gaussian(x,y,z), 
                                                   (x-mu)*(y-mu)*gaussian(x,y,z), 
                                                   (x-mu)*(z-mu)*gaussian(x,y,z)};
                         view_exact(i, j, k)[1] = {(x-mu)*(y-mu)*gaussian(x,y,z), 
-                                                  ((y-mu)*(y-mu)-1)*gaussian(x,y,z), 
+                                                  ((y-mu)*(y-mu)-1.0)*gaussian(x,y,z), 
                                                   (y-mu)*(z-mu)*gaussian(x,y,z)};
                         view_exact(i, j, k)[2] = {(x-mu)*(z-mu)*gaussian(x,y,z), 
                                                   (y-mu)*(z-mu)*gaussian(x,y,z), 
-                                                  ((z-mu)*(z-mu)-1)*gaussian(x,y,z)};
+                                                  ((z-mu)*(z-mu)-1.0)*gaussian(x,y,z)};
                     } else {
                         view_exact(i, j, k)[0] = {0.0, z, y};
                         view_exact(i, j, k)[1] = {z, 0.0, x};
                         view_exact(i, j, k)[2] = {y, x, 0.0};
                     }
-
-                    std::cout << "(" << ig << "," << jg << "," << kg << ") = " << 
-                              view_exact(i,j,k)[0] << ", " << view_exact(i,j,k)[1]
-                              << ", " << view_exact(i,j,k)[2] << std::endl;
     });
 
     result = {0.0, 0.0, 0.0};
     result = hess(field);
 
-    std::cout << "Result" << std::endl;
-    Kokkos::parallel_for("Assign exact", mdrange_type({nghost,nghost,nghost},
-                             {view_result.extent(0) - nghost,
-                              view_result.extent(1) - nghost,
-                              view_result.extent(2) - nghost}),
-                KOKKOS_LAMBDA(const int i, const int j, const int k) {
-
-                    //local to global index conversion
-                    const int ig = i + lDom[0].first() - nghost;
-                    const int jg = j + lDom[1].first() - nghost;
-                    const int kg = k + lDom[2].first() - nghost;
-            
-                    std::cout << "(" << ig << "," << jg << "," << kg << ") = " << 
-                              view_result(i,j,k)[0] << ", " << view_result(i,j,k)[1]
-                              << ", " << view_result(i,j,k)[2] << std::endl;
-    });
-
     result = result - exact;
-
-    std::cout << "Diff" << std::endl;
-    Kokkos::parallel_for("Assign exact", mdrange_type({nghost,nghost,nghost},
-                             {view_result.extent(0) - nghost,
-                              view_result.extent(1) - nghost,
-                              view_result.extent(2) - nghost}),
-                KOKKOS_LAMBDA(const int i, const int j, const int k) {
-
-                    //local to global index conversion
-                    const int ig = i + lDom[0].first() - nghost;
-                    const int jg = j + lDom[1].first() - nghost;
-                    const int kg = k + lDom[2].first() - nghost;
-            
-                    std::cout << "(" << ig << "," << jg << "," << kg << ") = " << 
-                              view_result(i,j,k)[0] << ", " << view_result(i,j,k)[1]
-                              << ", " << view_result(i,j,k)[2] << std::endl;
-    });
 
     ippl::Vector<Vector_t, 3> err_hess {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 
@@ -222,11 +183,13 @@ int main(int argc, char *argv[]) {
             MPI_Allreduce(&valD, &globalD, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
             double errorD = std::sqrt(globalD);
 
-            if ((errorD == 0) && (errorN == 0)) {
+            if ((errorD < 1e-15) && (errorN < 1e-15)) {
                 err_hess[dim1][dim2] = 0.0;
             } else { 
                 err_hess[dim1][dim2] = errorN/errorD;
             }
+
+            err_hess[dim1][dim2] = errorN;
 
             if (Ippl::Comm->rank() == 0) {
                 std::cout << std::setprecision(16) << "Error (" << dim1+1 << "," << dim2+1 << "): "
