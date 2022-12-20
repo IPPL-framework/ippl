@@ -147,6 +147,14 @@ struct generate_random {
   }
 };
 
+double CDF(const double& x, const double& delta, const double& k,
+           const unsigned& dim) {
+
+   bool isDimZ = (dim == (Dim-1)); 
+   double cdf = x + (double)(isDimZ * ((delta / k) * std::sin(k * x)));
+   return cdf;
+}
+
 double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
                       const unsigned int& /*iter*/, const int& /*myrank*/, double& lError) {
     
@@ -462,8 +470,10 @@ int main(int argc, char *argv[]){
 
     Vector_t minU, maxU;
     for (unsigned d = 0; d <Dim; ++d) {
-        minU[d] = rmin[d];
-        maxU[d] = rmax[d];
+        minU[d] = CDF(rmin[d], delta, kw[d], d);
+        maxU[d]   = CDF(rmax[d], delta, kw[d], d);
+        //minU[d] = rmin[d];
+        //maxU[d] = rmax[d];
     }
 
     double factorVelBulk = 1.0 - epsilon;

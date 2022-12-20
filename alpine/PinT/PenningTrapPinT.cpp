@@ -137,6 +137,11 @@ struct generate_random {
   }
 };
 
+double CDF(const double& x, const double& mu, const double& sigma) {
+   double cdf = 0.5 * (1.0 + std::erf((x - mu)/(sigma * std::sqrt(2))));
+   return cdf;
+}
+
 
 double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
                       const unsigned int& /*iter*/, const int& /*myrank*/, double& lError) {
@@ -396,7 +401,6 @@ int main(int argc, char *argv[]){
     sd[2] = 0.20*length[2];
 
 
-
     double dxPIF = rmax[0] / nmPIF[0];
     double dyPIF = rmax[1] / nmPIF[1];
     double dzPIF = rmax[2] / nmPIF[2];
@@ -433,8 +437,8 @@ int main(int argc, char *argv[]){
 
     Vector_t minU, maxU;
     for (unsigned d = 0; d <Dim; ++d) {
-        minU[d] = rmin[d];
-        maxU[d] = rmax[d];
+        minU[d] = CDF(rmin[d], mu[d], sd[d]);
+        maxU[d] = CDF(rmax[d], mu[d], sd[d]);
     }
 
     size_type nloc = totalP;

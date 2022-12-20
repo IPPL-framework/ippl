@@ -677,6 +677,7 @@ public:
         double DrInv = 1.0 / (1 + (std::pow((alpha * Bext), 2)));
         Vector_t rmax = rmax_m;
 
+
         for (unsigned int it=0; it<nt; it++) {
             
             // Staggered Leap frog or Boris algorithm as per 
