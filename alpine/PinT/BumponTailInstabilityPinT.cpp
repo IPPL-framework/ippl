@@ -324,14 +324,14 @@ double computeFieldError(CxField_t& rhoPIF, CxField_t& rhoPIFprevIter) {
 }
 
 
-//const char* TestName = "TwoStreamInstability";
-const char* TestName = "BumponTailInstability";
+const char* TestName = "TwoStreamInstability";
+//const char* TestName = "BumponTailInstability";
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     
-    Inform msg("TestName");
-    Inform msg2all("TestName",INFORM_ALL_NODES);
+    Inform msg(TestName);
+    Inform msg2all(TestName,INFORM_ALL_NODES);
 
     ippl::Vector<int,Dim> nmPIF = {
         std::atoi(argv[1]),
@@ -361,15 +361,11 @@ int main(int argc, char *argv[]){
     const double dtSlice = tEnd / Ippl::Comm->size();
     const double dtFine = std::atof(argv[9]);
     const double dtCoarse = std::atof(argv[10]);
-    const unsigned int ntFine = (unsigned int)(dtSlice / dtFine);
-    const unsigned int ntCoarse = (unsigned int)(dtSlice / dtCoarse);
+    const unsigned int ntFine = std::ceil(dtSlice / dtFine);
+    const unsigned int ntCoarse = std::ceil(dtSlice / dtCoarse);
     const double tol = std::atof(argv[11]);
     const unsigned int maxIter = std::atoi(argv[12]);
 
-    msg << "dtSlice: " << dtSlice 
-        << "dtSlice/dtFine: " << dtSlice / dtFine
-        << "(int)dtSlice/dtFine: " << (unsigned int)(dtSlice / dtFine)
-        << endl;
 
     const double tStartMySlice = Ippl::Comm->rank() * dtSlice; 
     //const double tEndMySlice = (Ippl::Comm->rank() + 1) * dtSlice; 
@@ -537,7 +533,8 @@ int main(int argc, char *argv[]){
 #endif
 
 
-    msg << "Parareal Bump on tail instability"
+    msg << "Parareal "
+        << TestName
         << endl
         << "Slice dT: " << dtSlice
         << endl
@@ -718,7 +715,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    msg << "Twostream instability Parareal: End." << endl;
+    msg << TestName << " Parareal: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));

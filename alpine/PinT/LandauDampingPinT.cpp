@@ -345,8 +345,8 @@ int main(int argc, char *argv[]){
     const double dtSlice = tEnd / Ippl::Comm->size();
     const double dtFine = std::atof(argv[9]);
     const double dtCoarse = std::atof(argv[10]);
-    const unsigned int ntFine = (unsigned int)(dtSlice / dtFine);
-    const unsigned int ntCoarse = (unsigned int)(dtSlice / dtCoarse);
+    const unsigned int ntFine = std::ceil(dtSlice / dtFine);
+    const unsigned int ntCoarse = std::ceil(dtSlice / dtCoarse);
     const double tol = std::atof(argv[11]);
     const unsigned int maxIter = std::atoi(argv[12]);
 
