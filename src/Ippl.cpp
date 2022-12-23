@@ -98,7 +98,7 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
 
         if (infoLevel > 0 && Comm->myNode() == 0) {
             for (auto& l : notparsed) {
-                std::cout << "Warning: Option '" << l << "' is not parsed by Ippl." << std::endl;
+                std::cout << "Option '" << l << "' is not parsed by Ippl. Make sure your application parses it." << std::endl;
             }
         }
 

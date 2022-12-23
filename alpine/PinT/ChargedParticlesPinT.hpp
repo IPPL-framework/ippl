@@ -779,8 +779,8 @@ public:
 
         if((time_m == 0.0)) {
             IpplTimings::startTimer(dumpData);
-            //dumpLandau(iter);         
-            dumpBumponTail(iter);         
+            dumpLandau(iter);         
+            //dumpBumponTail(iter);         
             dumpEnergy(this->getLocalNum(), iter, Ptemp);
             IpplTimings::stopTimer(dumpData);
         }
@@ -812,8 +812,8 @@ public:
             time_m += dt;
             
             IpplTimings::startTimer(dumpData);
-            //dumpLandau(iter);         
-            dumpBumponTail(iter);         
+            dumpLandau(iter);         
+            //dumpBumponTail(iter);         
             dumpEnergy(this->getLocalNum(), iter, Ptemp);         
             IpplTimings::stopTimer(dumpData);
     

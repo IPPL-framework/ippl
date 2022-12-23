@@ -226,15 +226,16 @@ double computeLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Q
     //std::cout << "Rank: " << myrank << " Iter: " << iter << " Local. Error: " << lError << std::endl;
 
 
-    double globaltemp = 0.0;
-    MPI_Allreduce(&localError, &globaltemp, 1, MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+    //double globaltemp = 0.0;
+    //MPI_Allreduce(&localError, &globaltemp, 1, MPI_DOUBLE, MPI_MAX, Ippl::getComm());
 
-    double absError = globaltemp;
+    //double absError = globaltemp;
 
-    globaltemp = 0.0;
-    MPI_Allreduce(&localNorm, &globaltemp, 1, MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+    //globaltemp = 0.0;
+    //MPI_Allreduce(&localNorm, &globaltemp, 1, MPI_DOUBLE, MPI_MAX, Ippl::getComm());
 
-    double relError = absError / globaltemp;
+    //double relError = absError / globaltemp;
+    double relError = lError;
     
     return relError;
 
@@ -330,7 +331,7 @@ const char* TestName = "TwoStreamInstability";
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     
-    Inform msg(TestName);
+    Inform msg(TestName, Ippl::Comm->size()-1);
     Inform msg2all(TestName,INFORM_ALL_NODES);
 
     ippl::Vector<int,Dim> nmPIF = {
@@ -468,8 +469,6 @@ int main(int argc, char *argv[]){
     for (unsigned d = 0; d <Dim; ++d) {
         minU[d] = CDF(rmin[d], delta, kw[d], d);
         maxU[d]   = CDF(rmax[d], delta, kw[d], d);
-        //minU[d] = rmin[d];
-        //maxU[d] = rmax[d];
     }
 
     double factorVelBulk = 1.0 - epsilon;
@@ -597,11 +596,13 @@ int main(int argc, char *argv[]){
 
     msg << "Starting parareal iterations ..." << endl;
     bool isConverged = false;
-    //Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R0.getView());
-    //Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P0.getView());
-    //Pcoarse->LeapFrogPIF(Pcoarse->RprevIter, Pcoarse->PprevIter, (Ippl::Comm->rank()+1)*ntFine, 
-    //                     dtFine, isConverged, tStartMySlice, 0);
-    //Ippl::Comm->barrier();
+    bool isPreviousDomainConverged;
+    if(Ippl::Comm->rank() == 0) {
+        isPreviousDomainConverged = true;
+    }
+    else {
+        isPreviousDomainConverged = false;
+    }
     for (unsigned int it=0; it<maxIter; it++) {
 
         //Run fine integrator in parallel
@@ -609,21 +610,6 @@ int main(int argc, char *argv[]){
         Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice, it+1);
         IpplTimings::stopTimer(finePropagator);
     
-
-        //if(isConverged) {
-
-            //test with the serial solution
-            //Pcoarse->LeapFrogPIF(Pcoarse->R0, Pcoarse->P0, (Ippl::Comm->rank()+1)*ntFine, 
-            //                     dtFine, isConverged, tStartMySlice, it+1);
-            //Ippl::Comm->barrier();
-            //double Rerror = computeL2Error(Pcoarse->R0, Pbegin->R, it+1, Ippl::Comm->rank());
-            //double Perror = computeL2Error(Pcoarse->P0, Pbegin->P, it+1, Ippl::Comm->rank());
-            //msg << "Finished iteration: " << it+1 
-            //<< " Rerror: " << Rerror 
-            //<< " Perror: " << Perror
-            //<< endl;
-        //    break;
-        //}
 
         //Difference = Fine - Coarse
         Pend->R = Pbegin->R - Pcoarse->R;
@@ -636,20 +622,25 @@ int main(int argc, char *argv[]){
         
         IpplTimings::startTimer(timeCommunication);
         tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+        int tagbool = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
         
-        if(Ippl::Comm->rank() > 0) {
+        if((Ippl::Comm->rank() > 0) && (!isPreviousDomainConverged)) {
             size_type bufSize = Pbegin->packedSize(nloc);
             buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
             Ippl::Comm->recv(Ippl::Comm->rank()-1, tag, *Pbegin, *buf, bufSize, nloc);
             buf->resetReadPos();
-        }
-        else {
-            Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R0.getView());
-            Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P0.getView());
+            MPI_Recv(&isPreviousDomainConverged, 1, MPI_C_BOOL, Ippl::Comm->rank()-1, tagbool, 
+                    Ippl::getComm(), MPI_STATUS_IGNORE);
+            IpplTimings::startTimer(deepCopy);
+            Kokkos::deep_copy(Pcoarse->R0.getView(), Pbegin->R.getView());
+            Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
+            IpplTimings::stopTimer(deepCopy);
         }
         IpplTimings::stopTimer(timeCommunication);
 
         IpplTimings::startTimer(deepCopy);
+        Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R0.getView());
+        Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P0.getView());
         Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
         Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
         IpplTimings::stopTimer(deepCopy);
@@ -661,6 +652,18 @@ int main(int argc, char *argv[]){
         Pend->R = Pend->R + Pcoarse->R;
         Pend->P = Pend->P + Pcoarse->P;
 
+        IpplTimings::startTimer(computeErrors);
+        double localRerror, localPerror;
+        double Rerror = computeLinfError(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror);
+        double Perror = computeLinfError(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
+    
+        IpplTimings::stopTimer(computeErrors);
+
+        if((Rerror <= tol) && (Perror <= tol)) {
+            isConverged = true;
+        }
+
+
         IpplTimings::startTimer(timeCommunication);
         if(Ippl::Comm->rank() < Ippl::Comm->size()-1) {
             size_type bufSize = Pend->packedSize(nloc);
@@ -669,52 +672,27 @@ int main(int argc, char *argv[]){
             Ippl::Comm->isend(Ippl::Comm->rank()+1, tag, *Pend, *buf, request, nloc);
             buf->resetWritePos();
             MPI_Wait(&request, MPI_STATUS_IGNORE);
+            MPI_Send(&isConverged, 1, MPI_C_BOOL, Ippl::Comm->rank()+1, tagbool, Ippl::getComm());
         }
         IpplTimings::stopTimer(timeCommunication);
 
-        //Pcoarse->EfieldPICprevIter_m = Pcoarse->EfieldPICprevIter_m - Pcoarse->EfieldPIC_m;
-        //Pcoarse->rhoPIC_m = dot(Pcoarse->EfieldPICprevIter_m, Pcoarse->EfieldPICprevIter_m);
-        //double absFieldError = std::sqrt(Pcoarse->rhoPIC_m.sum());
-        //Pcoarse->rhoPIC_m = dot(Pcoarse->EfieldPIC_m, Pcoarse->EfieldPIC_m);
-        //double EfieldNorm = std::sqrt(Pcoarse->rhoPIC_m.sum());
-        //double EfieldError = absFieldError / EfieldNorm;
-
-        IpplTimings::startTimer(computeErrors);
-        double localRerror, localPerror;
-        double Rerror = computeLinfError(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror);
-        double Perror = computeLinfError(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
-        //double Rerror = computeLinfError(Pend->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror);
-        //double Perror = computeLinfError(Pend->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
-    
-        double EfieldError = 0;
-        if(it > 0) {
-            EfieldError = computeFieldError(Pcoarse->rhoPIF_m, Pcoarse->rhoPIFprevIter_m);
-        }
-        IpplTimings::stopTimer(computeErrors);
-
-        IpplTimings::startTimer(deepCopy);
-        Kokkos::deep_copy(Pcoarse->rhoPIFprevIter_m.getView(), Pcoarse->rhoPIF_m.getView());
-        IpplTimings::stopTimer(deepCopy);
         
         msg << "Finished iteration: " << it+1 
             << " Rerror: " << Rerror 
             << " Perror: " << Perror
-            << " Efield error: " << EfieldError
-            //<< " Rhofield error: " << EfieldError
             << endl;
 
         IpplTimings::startTimer(dumpData);
-        Pcoarse->writeError(Rerror, Perror, it+1);
+        //Pcoarse->writeError(Rerror, Perror, it+1);
         Pcoarse->writelocalError(localRerror, localPerror, it+1);
         IpplTimings::stopTimer(dumpData);
-        //Kokkos::deep_copy(Pcoarse->EfieldPICprevIter_m.getView(), Pcoarse->EfieldPIC_m.getView());
 
-        if((Rerror <= tol) && (Perror <= tol)) {
-        //if(Perror <= tol) {
+        if(isConverged && isPreviousDomainConverged) {
             break;
         }
     }
 
+    Ippl::Comm->barrier();
     msg << TestName << " Parareal: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
