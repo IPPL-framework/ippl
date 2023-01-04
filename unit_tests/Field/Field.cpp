@@ -228,6 +228,79 @@ TEST_F(FieldTest, Curl) {
     }
 }
 
+TEST_F(FieldTest, Hessian) {
+
+    typedef ippl::Vector<double, dim> Vector_t;
+    typedef ippl::Field<ippl::Vector<Vector_t,dim>, dim> MField_t;
+
+    ippl::Field<double, dim> field(*mesh, *layout);
+    int nghost = field.getNghost();
+    auto view_field = field.getView();
+    
+    auto lDom = this->layout->getLocalNDIndex();
+    ippl::Vector<double, dim> hx = this->mesh->getMeshSpacing();
+    ippl::Vector<double, dim> origin = this->mesh->getOrigin();   
+
+    auto mirror = Kokkos::create_mirror_view(view_field);
+    Kokkos::deep_copy(mirror, view_field);
+
+    for (size_t i = 0; i < view_field.extent(0); ++i) {
+        for (size_t j = 0; j < view_field.extent(1); ++j) {
+            for (size_t k = 0; k < view_field.extent(2); ++k) {
+
+                    //local to global index conversion
+                    const int ig = i + lDom[0].first() - nghost;
+                    const int jg = j + lDom[1].first() - nghost;
+                    const int kg = k + lDom[2].first() - nghost;
+            
+                    double x = (ig + 0.5) * hx[0] + origin[0];
+                    double y = (jg + 0.5) * hx[1] + origin[1];
+                    double z = (kg + 0.5) * hx[2] + origin[2];
+                
+                    mirror(i,j,k) = x*y*z;
+            }
+        }
+    }
+
+    Kokkos::deep_copy(view_field, mirror);
+
+    MField_t result(*mesh, *layout);
+    result = hess(field);
+
+    nghost = result.getNghost();
+    auto view_result = result.getView();
+
+    // assignment does not work with Matrix_t type
+    /*
+    mirror = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(mirror, view);
+
+    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
+        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
+            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
+                double det = mirror(i,j,k)[0][0] +
+                             mirror(i,j,k)[1][1] +
+                             mirror(i,j,k)[2][2] ;
+                ASSERT_DOUBLE_EQ(det, 0);
+            }
+        }
+    }
+    */
+    
+    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+    Kokkos::parallel_for("Det", mdrange_type({nghost, nghost, nghost},
+                            {view_result.extent(0) - nghost,
+                             view_result.extent(1) - nghost,
+                             view_result.extent(2) - nghost}),
+        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            double det = view_result(i,j,k)[0][0] + 
+                         view_result(i,j,k)[1][1] +
+                         view_result(i,j,k)[2][2] ;
+            ASSERT_DOUBLE_EQ(det, 0.);
+        });
+}
+
 int main(int argc, char *argv[]) {
     Ippl ippl(argc,argv);
     ::testing::InitGoogleTest(&argc, argv);
