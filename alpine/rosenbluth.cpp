@@ -146,8 +146,8 @@ for(int NV = 2; NV <=128; NV*=2){
     Gerror = Gerror / (NV*NV*NV);
 
     std::cout << "MESH NV " << NV << std::endl;
-    std::cout << "avg relative H error: "  << avgHerror << std::endl;
-    std::cout << "avg relative G error: "  << avgGerror << std::endl;
+    std::cout << "avg relative H error: "  << Herror << std::endl;
+    std::cout << "avg relative G error: "  << Gerror << std::endl;
 }
     return 0;
 }

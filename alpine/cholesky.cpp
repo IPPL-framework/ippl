@@ -82,8 +82,8 @@ int main(){
     std::ifstream fin;
     // std::ofstream fout;
 
-    fin.open("./tests/cholesky.csv");
-    // fout.open("./tests/results.csv");
+    fin.open("./cholesky_test_data/cholesky.csv");
+    // fout.open("./cholesky_test_data/results.csv");
 
     std::string tmp;
 
@@ -127,10 +127,11 @@ int main(){
     }
 
     avgerror  /= 200;
-    std::cout << "average error over 200 tests is:  " << avgerror << std::endl;
-    std::cout << "but the given solution from python is in single precision soo ... " << avgerror << std::endl;
+    std::cout << "average error(sum of relative errors over all elements of L) over 200stof tests is:  " << std::endl;
+    std::cout << avgerror << std::endl;
+    std::cout << "but the given solution from python is in single precision soo ... " <<  std::endl;
     
-    // fin.close();
+    fin.close();
 
     return 0;
 }
