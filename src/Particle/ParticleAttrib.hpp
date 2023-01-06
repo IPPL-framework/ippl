@@ -254,23 +254,41 @@ namespace ippl {
                 const int i = flatIndex2D % N[0];
                 const int j = (int)(flatIndex2D / N[0]);
 
+                //const int i = (int)(flatIndex / (N[0] * N[1]));
+                //const int flatIndex2D = flatIndex - (i * N[0] * N[1]);
+                //const int k = flatIndex2D % N[0];
+                //const int j = (int)(flatIndex2D / N[0]);
+                
                 FT reducedValue = 0.0;
+                Vector<int, 3> iVec = {i, j, k};
+                vector_type kVec;
+                double Sk = 1.0; //Fourier transform of the shape function
+                for(size_t d = 0; d < Dim; ++d) {
+                    bool shift = (iVec[d] > (N[d]/2));
+                    kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                    //double kh = kVec[d] * dx[d];
+                    ////Fourier transform of CIC
+                    //if(kh != 0.0) {
+                    //    Sk *= std::pow(Kokkos::Experimental::sin(kh)/kh, 2);
+                    //}
+                }
                 Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, Np),
                 [=](const size_t idx, FT& innerReduce)
                 {
-                    Vector<int, 3> iVec = {i, j, k};
-                    vector_type kVec;
-                    double arg=0.0;
+                    //Vector<int, 3> iVec = {i, j, k};
+                    //vector_type kVec;
+                    double arg = 0.0;
                     for(size_t d = 0; d < Dim; ++d) {
-                        bool shift = (iVec[d] > (N[d]/2));
-                        kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                        //bool shift = (iVec[d] > (N[d]/2));
+                        //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
                         //kVec[d] = 2 * pi / Len[d] * iVec[d];
                         //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d]/2));
                         arg += kVec[d]*pp(idx)[d];
                     }
                     const value_type& val = dview_m(idx);
 
-                    innerReduce += (Kokkos::Experimental::cos(arg) - imag*Kokkos::Experimental::sin(arg))*val;
+                    innerReduce += Sk*(Kokkos::Experimental::cos(arg) - imag*Kokkos::Experimental::sin(arg))*val;
+                    //innerReduce += Sk*(arg - imag*arg)*val;
                 }, Kokkos::Sum<FT>(reducedValue));
 
                 if(teamMember.team_rank() == 0) {
@@ -395,17 +413,27 @@ namespace ippl {
                 const size_t idx = teamMember.league_rank();
 
                 value_type reducedValue = 0.0;
+                //double ExReducedValue = 0.0, EyReducedValue = 0.0;
+                //double EzReducedValue = 0.0;
                 Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, flatN),
                 [=](const size_t flatIndex, value_type& innerReduce)
+                //[=](const size_t flatIndex, double& ExReduce, double& EyReduce, double& EzReduce)
                 {
                     const int k = (int)(flatIndex / (N[0] * N[1]));
                     const int flatIndex2D = flatIndex - (k * N[0] * N[1]);
                     const int i = flatIndex2D % N[0];
                     const int j = (int)(flatIndex2D / N[0]);
 
+
+                    //const int i = (int)(flatIndex / (N[0] * N[1]));
+                    //const int flatIndex2D = flatIndex - (i * N[0] * N[1]);
+                    //const int k = flatIndex2D % N[0];
+                    //const int j = (int)(flatIndex2D / N[0]);
+
                     Vector<int, 3> iVec = {i, j, k};
                     vector_type kVec;
-                    double Dr = 0.0, arg=0.0;
+                    double Dr = 0.0, arg = 0.0;
+                    double Sk = 1.0; //Fourier transform of shape function
                     for(size_t d = 0; d < Dim; ++d) {
                         bool shift = (iVec[d] > (N[d]/2));
                         kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
@@ -413,31 +441,46 @@ namespace ippl {
                         //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d]/2));
                         Dr += kVec[d] * kVec[d];
                         arg += kVec[d]*pp(idx)[d];
+                        //double kh = kVec[d] * dx[d];
+                        ////Fourier transform of CIC
+                        //if(kh != 0.0) {
+                        //    Sk *= std::pow(Kokkos::Experimental::sin(kh)/kh, 2);
+                        //}
                     }
 
                     FT Ek = 0.0;
-                    value_type Ex;
+                    value_type Ex = 0.0;
                     for(size_t d = 0; d < Dim; ++d) {
-                        if(Dr != 0.0) {
-                            Ek = -(imag * kVec[d] * fview(i+nghost,j+nghost,k+nghost) / Dr);
-                        }
+                        
+                        bool isNotZero = (Dr != 0.0);
+                        double factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0))); 
+                        Ek = -(imag * kVec[d] * fview(i+nghost,j+nghost,k+nghost) * factor);
                         
                         //Inverse Fourier transform when the lhs is real. Use when 
                         //we choose k \in [0 K) instead of from [-K/2+1 K/2] 
                         //Ex[d] = 2.0 * (Ek.real() * Kokkos::Experimental::cos(arg) 
                         //        - Ek.imag() * Kokkos::Experimental::sin(arg));
-                        Ek *= (Kokkos::Experimental::cos(arg) 
+                        Ek *= Sk * (Kokkos::Experimental::cos(arg) 
                                 + imag * Kokkos::Experimental::sin(arg));
+                        //Ek *= Sk * (arg + imag * arg);
                         Ex[d] = Ek.real();
                     }
                     
                     innerReduce += Ex;
+                    //ExReduce += Ex[0];
+                    //EyReduce += Ex[1];
+                    //EzReduce += Ex[2];
                 }, Kokkos::Sum<value_type>(reducedValue));
+                //}, Kokkos::Sum<double>(ExReducedValue), Kokkos::Sum<double>(EyReducedValue), 
+                //Kokkos::Sum<double>(EzReducedValue));
 
                 teamMember.team_barrier();
 
                 if(teamMember.team_rank() == 0) {
                     dview_m(idx) = reducedValue;
+                    //dview_m(idx)[0] = ExReducedValue;
+                    //dview_m(idx)[1] = EyReducedValue;
+                    //dview_m(idx)[2] = EzReducedValue;
                 }
 
                 }

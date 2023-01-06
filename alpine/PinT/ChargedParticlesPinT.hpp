@@ -791,6 +791,7 @@ public:
             Ptemp = Ptemp - 0.5 * dt * E;
     
             //drift
+            
             Rtemp = Rtemp + dt * Ptemp;
     
             //Apply particle BC

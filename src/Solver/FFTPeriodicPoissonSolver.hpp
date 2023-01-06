@@ -113,12 +113,11 @@ namespace ippl {
 
                   double Dr = kVec[0] * kVec[0] +
                               kVec[1] * kVec[1] + kVec[2] * kVec[2];
-
-                  //It would be great if we can remove this conditional
-                  if(Dr != 0.0)
-                      view(i, j, k) *= 1 / Dr;
-                  else
-                      view(i, j, k) = 0.0;
+                  
+                  bool isNotZero = (Dr != 0.0);
+                  double factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0))); 
+                  
+                  view(i, j, k) *= factor;
               });
 
               fft_mp->transform(-1, *this->rhs_mp, fieldComplex_m);
@@ -168,11 +167,10 @@ namespace ippl {
 
                         tempview(i, j, k) = view(i, j, k);
                         
-                        //It would be great if we can remove this conditional
-                        if(Dr != 0.0)
-                            tempview(i, j, k) *= -(imag * kVec[gd] / Dr);
-                        else
-                            tempview(i, j, k) = 0.0;
+                        bool isNotZero = (Dr != 0.0);
+                        double factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0))); 
+                        
+                        tempview(i, j, k) *= -(imag * kVec[gd] * factor);
                     });
 
                     fft_mp->transform(-1, *this->rhs_mp, tempFieldComplex_m);
