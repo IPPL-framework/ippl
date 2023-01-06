@@ -32,6 +32,7 @@ namespace ippl {
         enum { Dimension = Dim };
 
         typedef Vector<T, Dim> vector_type;
+        typedef Vector<vector_type, Dim> matrix_type;
 
         Mesh() {};
 
