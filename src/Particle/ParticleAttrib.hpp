@@ -233,9 +233,9 @@ namespace ippl {
         typedef Kokkos::TeamPolicy<>::member_type member_type;
 
 
-        using view_type_temp = typename detail::ViewType<FT, 3>::view_type;
+        //using view_type_temp = typename detail::ViewType<FT, 3>::view_type;
 
-        view_type_temp viewLocal("viewLocal",fview.extent(0),fview.extent(1),fview.extent(2));
+        //view_type_temp viewLocal("viewLocal",fview.extent(0),fview.extent(1),fview.extent(2));
 
         double pi = std::acos(-1.0);
         Kokkos::complex<double> imag = {0.0, 1.0};
@@ -278,20 +278,13 @@ namespace ippl {
                 Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, Np),
                 [=](const size_t idx, FT& innerReduce)
                 {
-                    //Vector<int, 3> iVec = {i, j, k};
-                    //vector_type kVec;
                     double arg = 0.0;
                     for(size_t d = 0; d < Dim; ++d) {
-                        //bool shift = (iVec[d] > (N[d]/2));
-                        //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
-                        //kVec[d] = 2 * pi / Len[d] * iVec[d];
-                        //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d]/2));
                         arg += kVec[d]*pp(idx)[d];
                     }
                     const value_type& val = dview_m(idx);
 
                     innerReduce += Sk*(Kokkos::Experimental::cos(arg) - imag*Kokkos::Experimental::sin(arg))*val;
-                    //innerReduce += Sk*(arg - imag*arg)*val;
                 }, Kokkos::Sum<FT>(reducedValue));
 
                 if(teamMember.team_rank() == 0) {
@@ -304,7 +297,6 @@ namespace ippl {
 
         IpplTimings::stopTimer(scatterPIFTimer);
 
-        //Kokkos::deep_copy(fview, viewLocal);
         //static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
         //IpplTimings::startTimer(scatterAllReduceTimer);                                               
         //int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
@@ -416,11 +408,8 @@ namespace ippl {
                 const size_t idx = teamMember.league_rank();
 
                 value_type reducedValue = 0.0;
-                //double ExReducedValue = 0.0, EyReducedValue = 0.0;
-                //double EzReducedValue = 0.0;
                 Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, flatN),
                 [=](const size_t flatIndex, value_type& innerReduce)
-                //[=](const size_t flatIndex, double& ExReduce, double& EyReduce, double& EzReduce)
                 {
                     
 #ifdef KOKKOS_ENABLE_CUDA
@@ -455,11 +444,12 @@ namespace ippl {
 
                     FT Ek = 0.0;
                     value_type Ex = 0.0;
+                    auto rho = fview(i+nghost,j+nghost,k+nghost);
                     for(size_t d = 0; d < Dim; ++d) {
                         
                         bool isNotZero = (Dr != 0.0);
                         double factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0))); 
-                        Ek = -(imag * kVec[d] * fview(i+nghost,j+nghost,k+nghost) * factor);
+                        Ek = -(imag * kVec[d] * rho * factor);
                         
                         //Inverse Fourier transform when the lhs is real. Use when 
                         //we choose k \in [0 K) instead of from [-K/2+1 K/2] 
@@ -467,25 +457,16 @@ namespace ippl {
                         //        - Ek.imag() * Kokkos::Experimental::sin(arg));
                         Ek *= Sk * (Kokkos::Experimental::cos(arg) 
                                 + imag * Kokkos::Experimental::sin(arg));
-                        //Ek *= Sk * (arg + imag * arg);
                         Ex[d] = Ek.real();
                     }
                     
                     innerReduce += Ex;
-                    //ExReduce += Ex[0];
-                    //EyReduce += Ex[1];
-                    //EzReduce += Ex[2];
                 }, Kokkos::Sum<value_type>(reducedValue));
-                //}, Kokkos::Sum<double>(ExReducedValue), Kokkos::Sum<double>(EyReducedValue), 
-                //Kokkos::Sum<double>(EzReducedValue));
 
                 teamMember.team_barrier();
 
                 if(teamMember.team_rank() == 0) {
                     dview_m(idx) = reducedValue;
-                    //dview_m(idx)[0] = ExReducedValue;
-                    //dview_m(idx)[1] = EyReducedValue;
-                    //dview_m(idx)[2] = EzReducedValue;
                 }
 
                 }

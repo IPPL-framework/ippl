@@ -220,7 +220,7 @@ int main(int argc, char *argv[]){
     //const RegionLayout_t& RLayout = PL.getRegionLayout();
     //const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
     Vector_t minU, maxU;
-    int myRank = Ippl::Comm->rank();
+    //int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d <Dim; ++d) {
         minU[d] = rmin[d];//CDF(Regions(myRank)[d].min(), alpha, kw[d]);
         maxU[d] = rmax[d];//CDF(Regions(myRank)[d].max(), alpha, kw[d]);

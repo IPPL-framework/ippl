@@ -115,7 +115,7 @@ void Timing::print() {
     msg << level1
         << "---------------------------------------------";
     msg << "\n";
-    msg << "     Timing results for " << Ippl::Comm->getNodes() << " nodes:" << "\n";
+    msg << "     Timing results for " << Ippl::Comm->getNodes() << " ranks:" << "\n";
     msg << "---------------------------------------------";
     msg << "\n";
 
@@ -178,7 +178,7 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
         *msg << endl;
     }
 
-    *msg << std::setw(27) << "num Nodes"
+    *msg << std::setw(27) << "num Ranks"
          << std::setw(11) << "Wall tot\n"
          << std::string().assign(37,'=')
          << "\n";
@@ -198,7 +198,7 @@ void Timing::print(const std::string &fn, const std::map<std::string, unsigned i
     }
 
     *msg << "\n"
-         << std::setw(27) << "num Nodes"
+         << std::setw(27) << "num Ranks"
          << std::setw(10) << "Wall max"
          << std::setw(10) << "Wall min"
          << std::setw(11) << "Wall avg\n"
