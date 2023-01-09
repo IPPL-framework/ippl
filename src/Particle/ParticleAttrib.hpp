@@ -248,16 +248,19 @@ namespace ippl {
                 team_policy(flatN, Kokkos::AUTO),
                 KOKKOS_CLASS_LAMBDA(const member_type& teamMember) {
                 const size_t flatIndex = teamMember.league_rank();
-                
+               
+#ifdef KOKKOS_ENABLE_CUDA
                 const int k = (int)(flatIndex / (N[0] * N[1]));
                 const int flatIndex2D = flatIndex - (k * N[0] * N[1]);
                 const int i = flatIndex2D % N[0];
                 const int j = (int)(flatIndex2D / N[0]);
+#else
 
-                //const int i = (int)(flatIndex / (N[0] * N[1]));
-                //const int flatIndex2D = flatIndex - (i * N[0] * N[1]);
-                //const int k = flatIndex2D % N[0];
-                //const int j = (int)(flatIndex2D / N[0]);
+                const int i = (int)(flatIndex / (N[0] * N[1]));
+                const int flatIndex2D = flatIndex - (i * N[0] * N[1]);
+                const int k = flatIndex2D % N[0];
+                const int j = (int)(flatIndex2D / N[0]);
+#endif
                 
                 FT reducedValue = 0.0;
                 Vector<int, 3> iVec = {i, j, k};
@@ -419,16 +422,18 @@ namespace ippl {
                 [=](const size_t flatIndex, value_type& innerReduce)
                 //[=](const size_t flatIndex, double& ExReduce, double& EyReduce, double& EzReduce)
                 {
+                    
+#ifdef KOKKOS_ENABLE_CUDA
                     const int k = (int)(flatIndex / (N[0] * N[1]));
                     const int flatIndex2D = flatIndex - (k * N[0] * N[1]);
                     const int i = flatIndex2D % N[0];
                     const int j = (int)(flatIndex2D / N[0]);
-
-
-                    //const int i = (int)(flatIndex / (N[0] * N[1]));
-                    //const int flatIndex2D = flatIndex - (i * N[0] * N[1]);
-                    //const int k = flatIndex2D % N[0];
-                    //const int j = (int)(flatIndex2D / N[0]);
+#else
+                    const int i = (int)(flatIndex / (N[0] * N[1]));
+                    const int flatIndex2D = flatIndex - (i * N[0] * N[1]);
+                    const int k = flatIndex2D % N[0];
+                    const int j = (int)(flatIndex2D / N[0]);
+#endif
 
                     Vector<int, 3> iVec = {i, j, k};
                     vector_type kVec;

@@ -54,7 +54,7 @@ namespace ippl {
         };
 
         /*!
-         * Specialized view type for thee dimensions.
+         * Specialized view type for three dimensions.
          */
         template <typename T, class... Properties>
         struct ViewType<T, 3, Properties...> {
