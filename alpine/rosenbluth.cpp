@@ -1,9 +1,6 @@
 #ifndef RBH_H
 #define RBH_H
 
-
-// ./rosenbluth N VTH VMAX
-
 #include "ChargedParticles.hpp"
 #include <string>
 #include <vector>
@@ -11,17 +8,13 @@
 #include <cmath>
 #include <set>
 #include <chrono>
-
 #include <string>
-
 #include<Kokkos_Random.hpp>
-
 #include <random>
-
 
 const char* TestName = "RosenbluthTest";
 
-
+// ./rosenbluth N VTH VMAX
 // the rosenbluth potentials are clearly defined in the case the prbability distribution in
 // velocity space is defined as the maxwellian
 
@@ -34,7 +27,20 @@ int main(int argc, char *argv[]){
     const double vth = std::atof(argv[2]);
     double VMAX = std::atof(argv[3]);
 
-for(int NV = 2; NV <=128; NV*=2){
+
+    std::ofstream fout;
+    fout.open("./cholesky_test_data/rbh_out.csv");
+    fout
+            << "NV" << ","
+            << "Herror_avg2" << "," 
+            << "Gerror_avg2" << "," 
+            << "HerrorL1" << "," 
+            << "GerrorL1" << ","  
+            << "HerrorL2" << "," 
+            << "GerrorL2" << " "  
+            << std::endl;
+
+for(int NV = 2; NV <=256; NV*=2){
 
     Vector<int, Dim> nv_mv = {NV,NV,NV};
     Vector_t hv_mv { 2*VMAX/NV,  2*VMAX/NV,  2*VMAX/NV};
@@ -58,7 +64,6 @@ for(int NV = 2; NV <=128; NV*=2){
     Field_t fv;
 
     fv.initialize(mesh_v, FL_v);
-
 
     std::shared_ptr<VSolver_t> solver_RB;
     ippl::ParameterList sp;
@@ -89,7 +94,7 @@ for(int NV = 2; NV <=128; NV*=2){
     auto GView      =    G.getView();
 
     const double vth2 = vth*vth;
-    const double w2 = sqrt(2);
+    const double w2 = sqrt(2.0);
 
     const ippl::NDIndex<3>& lDom = FL_v.getLocalNDIndex();
     const int nghost = fv.getNghost();
@@ -109,10 +114,62 @@ for(int NV = 2; NV <=128; NV*=2){
                         double vy = vmin_mv[1] + (jg + 0.5)*hv_mv[1];
                         double vz = vmin_mv[2] + (kg + 0.5)*hv_mv[2];
                         double vnorm2  = vx*vx+vy*vy+vz*vz;
-                        double vnorm = sqrt(vnorm2); 
+                        // double vnorm = sqrt(vnorm2); 
             
                         fvView(i,j,k)   = n / pow(2*M_PI*vth2, 1.5)* exp(-vnorm2/(2*vth2));
+                        // HsolView(i,j,k) = n / vnorm * std::erf(vnorm/(w2*vth));
+                        // GsolView(i,j,k) = w2 * n * vth *( exp(-vnorm2/(2*vth2))/sqrt(M_PI)  +  std::erf(vnorm/(w2*vth))  * (vth/(w2*vnorm)+vnorm/(w2*vth))    );
+
+                    }
+    );
+    Kokkos::fence();
+
+        Kokkos::parallel_for("set values",
+                    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+                                                            {   HsolView.extent(0),
+							                                    HsolView.extent(1),
+							                                    HsolView.extent(2)}),
+		            KOKKOS_LAMBDA(const int i, const int j, const int k){
+
+                        //local to global index conversion
+                        const int ig = i + lDom[0].first() - nghost;
+                        const int jg = j + lDom[1].first() - nghost;
+                        const int kg = k + lDom[2].first() - nghost;
+
+                        double vx = vmin_mv[0] + (ig + 0.5)*hv_mv[0];
+                        double vy = vmin_mv[1] + (jg + 0.5)*hv_mv[1];
+                        double vz = vmin_mv[2] + (kg + 0.5)*hv_mv[2];
+                        double vnorm2  = vx*vx+vy*vy+vz*vz;
+                        double vnorm = sqrt(vnorm2); 
+            
+                        // fvView(i,j,k)   = n / pow(2*M_PI*vth2, 1.5)* exp(-vnorm2/(2*vth2));
                         HsolView(i,j,k) = n / vnorm * std::erf(vnorm/(w2*vth));
+                        // GsolView(i,j,k) = w2 * n * vth *( exp(-vnorm2/(2*vth2))/sqrt(M_PI)  +  std::erf(vnorm/(w2*vth))  * (vth/(w2*vnorm)+vnorm/(w2*vth))    );
+
+                    }
+    );
+    Kokkos::fence();
+
+        Kokkos::parallel_for("set values",
+                    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+                                                            {   GsolView.extent(0),
+							                                    GsolView.extent(1),
+							                                    GsolView.extent(2)}),
+		            KOKKOS_LAMBDA(const int i, const int j, const int k){
+
+                        //local to global index conversion
+                        const int ig = i + lDom[0].first() - nghost;
+                        const int jg = j + lDom[1].first() - nghost;
+                        const int kg = k + lDom[2].first() - nghost;
+
+                        double vx = vmin_mv[0] + (ig + 0.5)*hv_mv[0];
+                        double vy = vmin_mv[1] + (jg + 0.5)*hv_mv[1];
+                        double vz = vmin_mv[2] + (kg + 0.5)*hv_mv[2];
+                        double vnorm2  = vx*vx+vy*vy+vz*vz;
+                        double vnorm = sqrt(vnorm2); 
+            
+                        // fvView(i,j,k)   = n / pow(2*M_PI*vth2, 1.5)* exp(-vnorm2/(2*vth2));
+                        // HsolView(i,j,k) = n / vnorm * std::erf(vnorm/(w2*vth));
                         GsolView(i,j,k) = w2 * n * vth *( exp(-vnorm2/(2*vth2))/sqrt(M_PI)  +  std::erf(vnorm/(w2*vth))  * (vth/(w2*vnorm)+vnorm/(w2*vth))    );
 
                     }
@@ -120,34 +177,52 @@ for(int NV = 2; NV <=128; NV*=2){
     Kokkos::fence();
    //////////////////////////////////////////////////////////////////////////////
 
-    fv = -4 * M_PI * fv;
+    fv = -8 * M_PI * fv;
+    // fv = -4 * M_PI * fv;
     mesh_v.setOrigin({0, 0, 0});
     solver_RB->solve();
     mesh_v.setOrigin(vmin_mv);
     Kokkos::deep_copy(HView, fvView);  // H = fv
-    fv = 2*fv;
+
+    // fv = 2*fv;
     mesh_v.setOrigin({0,0,0});
     solver_RB->solve();
     mesh_v.setOrigin(vmin_mv);
     Kokkos::deep_copy(GView, fvView);  // G = fv
 
-    double Gerror, Herror;
+
+
+    double Gerror_avg2, Herror_avg2;
+    double GerrorL1, HerrorL1;
+    double GerrorL2, HerrorL2;
 
     H = H - H_sol;
     G = G - G_sol;
-
+    
+    HerrorL1 = norm(H, 1)/norm(H_sol, 1);
+    GerrorL1 = norm(G, 1)/norm(G_sol, 1);
+    HerrorL2 = norm(H)/norm(H_sol);
+    GerrorL2 = norm(G)/norm(G_sol);
+    
     H = H/H_sol;
     G = G/G_sol;
-
-    Herror = norm(H);// / norm(H_sol);
-    Gerror = norm(G);// / norm(G_sol);
-    
-    Herror = Herror / (NV*NV*NV);
-    Gerror = Gerror / (NV*NV*NV);
+    Herror_avg2 = pow(norm(H), 2) /(NV*NV*NV); // converges to 0 if we dont use 0
+    Gerror_avg2 = pow(norm(G), 2) /(NV*NV*NV);
 
     std::cout << "MESH NV " << NV << std::endl;
-    std::cout << "avg relative H error: "  << Herror << std::endl;
-    std::cout << "avg relative G error: "  << Gerror << std::endl;
+    std::cout << "H error: "  << Herror_avg2 << " "<< HerrorL1 << " " << HerrorL2 << std::endl;
+    std::cout << "G error: "  << Gerror_avg2 << " "<< GerrorL2 << " " << GerrorL2 << std::endl;
+
+    fout    << NV << ","
+            << Herror_avg2 << "," 
+            << Gerror_avg2 << "," 
+            << HerrorL1 << "," 
+            << GerrorL1 << ","  
+            << HerrorL2 << "," 
+            << GerrorL2 << " "  
+            << std::endl;
+
+    
 }
     return 0;
 }
@@ -156,16 +231,10 @@ for(int NV = 2; NV <=128; NV*=2){
 #endif
 
 
+// MPI_Allreduce(&Herror, &globH, 1 , MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+// MPI_Allreduce(&Gerror, &globG, 1 , MPI_DOUBLE, MPI_SUM, Ippl::getComm());
 
-
-
-
-
-	// MPI_Allreduce(&Herror, &globH, 1 , MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-	// MPI_Allreduce(&Gerror, &globG, 1 , MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-
-
- // std::cout << "FVIEW" << std::endl;
+// std::cout << "FVIEW" << std::endl;
     // for(int i = 0; i<NV; ++i){
     // for(int j = 0; j<NV; ++j){
     // for(int k = 0; k<NV; ++k){
@@ -238,3 +307,34 @@ for(int NV = 2; NV <=128; NV*=2){
     // );
     // Kokkos::fence();
 
+
+
+
+
+
+
+    // H = fv*2.21;
+    // std::cout <<  norm(H)/norm(H_sol)<<std::endl;
+ 
+
+
+
+    // H = 2.5*fv - H_sol;
+    // std::cout << norm(H)/norm(H_sol) << std::endl;
+    // H = 2.45*fv - H_sol;
+    // std::cout << norm(H)/norm(H_sol) << std::endl;
+    // H = 2.4*fv - H_sol;
+    // std::cout << norm(H)/norm(H_sol) << std::endl;
+    // H = 2.35*fv - H_sol;
+    // std::cout << norm(H)/norm(H_sol) << std::endl;
+    // H = 2.3*fv - H_sol;
+    // std::cout << norm(H)/norm(H_sol) << std::endl;
+    // H = 2.25*fv - H_sol;
+    // std::cout << norm(H)/norm(H_sol) << std::endl;
+    // H = 2.2*fv - H_sol;
+    // std::cout << norm(H)/norm(H_sol) << std::endl;
+    // H = 2.15*fv - H_sol;
+    // std::cout << norm(H)/norm(H_sol) << std::endl;
+    // H = 2.1*fv - H_sol;
+    // std::cout << norm(H)/norm(H_sol) << std::endl;
+    
