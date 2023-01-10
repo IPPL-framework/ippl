@@ -6,7 +6,7 @@
 // European Conference on Parallel Processing. Springer, Cham, 2017.
 // 
 //  Usage:
-//     srun ./BumponTailInstability <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> 
+//     srun ./BumponTailInstabilityPinT <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> 
 //     <Niter> <ShapeType> <degree> --info 5
 //     nmx       = No. of Fourier modes in the x-direction
 //     nmy       = No. of Fourier modes in the y-direction
@@ -18,7 +18,7 @@
 //     ShapeType = Shape function type B-spline only for the moment
 //     degree = B-spline degree (-1 for delta function)
 //     Example:
-//     srun ./BumponTailInstability 32 32 32 32 32 32 655360 20.0 0.05 0.05 1e-5 100 B-spline 1 --info 5
+//     srun ./BumponTailInstabilityPinT 32 32 32 32 32 32 655360 20.0 0.05 0.05 1e-5 100 B-spline 1 --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
 // Jülich Supercomputing Centre, Jülich, Germany.
