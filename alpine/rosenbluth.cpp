@@ -25,11 +25,16 @@ int main(int argc, char *argv[]){
 
     const double n = std::atof(argv[1]);
     const double vth = std::atof(argv[2]);
-    double VMAX = std::atof(argv[3]);
+    const double fct = std::atof(argv[3]);
 
+    // std::string ALGO = argv[3];
+    std::string ALGO = "HOCKNEY"; //VICO
+
+    double VMAX = fct*vth;
+    std::string path = "./rb/" + std::to_string(int(n)) + std::to_string(int(vth)) + std::to_string(int(fct)) +".csv";
 
     std::ofstream fout;
-    fout.open("./cholesky_test_data/rbh_out.csv");
+    fout.open(path);
     fout
             << "NV" << ","
             << "Herror_avg2" << "," 
@@ -37,7 +42,9 @@ int main(int argc, char *argv[]){
             << "HerrorL1" << "," 
             << "GerrorL1" << ","  
             << "HerrorL2" << "," 
-            << "GerrorL2" << " "  
+            << "GerrorL2" << ","  
+            << "HerrorL4" << "," 
+            << "GerrorL4" << ","  
             << std::endl;
 
 for(int NV = 2; NV <=256; NV*=2){
@@ -74,7 +81,7 @@ for(int NV = 2; NV <=256; NV*=2){
     sp.add("use_gpu_aware", true);  
     sp.add("r2c_direction", 0); 
     sp.add("output_type", VSolver_t::SOL);
-    solver_RB = std::make_shared<VSolver_t>(fv, sp, "HOCKNEY");
+    solver_RB = std::make_shared<VSolver_t>(fv, sp, ALGO);
 
     mesh_v.setOrigin(vmin_mv);
 
@@ -143,7 +150,7 @@ for(int NV = 2; NV <=256; NV*=2){
                         double vnorm = sqrt(vnorm2); 
             
                         // fvView(i,j,k)   = n / pow(2*M_PI*vth2, 1.5)* exp(-vnorm2/(2*vth2));
-                        HsolView(i,j,k) = n / vnorm * std::erf(vnorm/(w2*vth));
+                        HsolView(i,j,k) = n / vnorm * erf(vnorm/(w2*vth));
                         // GsolView(i,j,k) = w2 * n * vth *( exp(-vnorm2/(2*vth2))/sqrt(M_PI)  +  std::erf(vnorm/(w2*vth))  * (vth/(w2*vnorm)+vnorm/(w2*vth))    );
 
                     }
@@ -170,31 +177,33 @@ for(int NV = 2; NV <=256; NV*=2){
             
                         // fvView(i,j,k)   = n / pow(2*M_PI*vth2, 1.5)* exp(-vnorm2/(2*vth2));
                         // HsolView(i,j,k) = n / vnorm * std::erf(vnorm/(w2*vth));
-                        GsolView(i,j,k) = w2 * n * vth *( exp(-vnorm2/(2*vth2))/sqrt(M_PI)  +  std::erf(vnorm/(w2*vth))  * (vth/(w2*vnorm)+vnorm/(w2*vth))    );
+                        GsolView(i,j,k) = w2 * n * vth *( exp(-vnorm2/(2*vth2))/sqrt(M_PI)  +  erf(vnorm/(w2*vth))  * (vth/(w2*vnorm)+vnorm/(w2*vth))    );
 
                     }
     );
     Kokkos::fence();
    //////////////////////////////////////////////////////////////////////////////
 
-    fv = -8 * M_PI * fv;
-    // fv = -4 * M_PI * fv;
+    fv = -4 * M_PI * fv;
     mesh_v.setOrigin({0, 0, 0});
     solver_RB->solve();
     mesh_v.setOrigin(vmin_mv);
-    Kokkos::deep_copy(HView, fvView);  // H = fv
+    Kokkos::deep_copy(HView, fvView);  
+    // H = fv;
 
-    // fv = 2*fv;
+    fv = 2*fv;
     mesh_v.setOrigin({0,0,0});
     solver_RB->solve();
     mesh_v.setOrigin(vmin_mv);
-    Kokkos::deep_copy(GView, fvView);  // G = fv
+    Kokkos::deep_copy(GView, fvView);  
+    // G = fv;
 
 
 
     double Gerror_avg2, Herror_avg2;
     double GerrorL1, HerrorL1;
     double GerrorL2, HerrorL2;
+    double GerrorL4, HerrorL4;
 
     H = H - H_sol;
     G = G - G_sol;
@@ -203,15 +212,15 @@ for(int NV = 2; NV <=256; NV*=2){
     GerrorL1 = norm(G, 1)/norm(G_sol, 1);
     HerrorL2 = norm(H)/norm(H_sol);
     GerrorL2 = norm(G)/norm(G_sol);
+    HerrorL4 = norm(H, 4)/norm(H_sol, 4);
+    GerrorL4 = norm(G, 4)/norm(G_sol, 4);
     
     H = H/H_sol;
     G = G/G_sol;
-    Herror_avg2 = pow(norm(H), 2) /(NV*NV*NV); // converges to 0 if we dont use 0
+    Herror_avg2 = pow(norm(H), 2) /(NV*NV*NV);
     Gerror_avg2 = pow(norm(G), 2) /(NV*NV*NV);
 
-    std::cout << "MESH NV " << NV << std::endl;
-    std::cout << "H error: "  << Herror_avg2 << " "<< HerrorL1 << " " << HerrorL2 << std::endl;
-    std::cout << "G error: "  << Gerror_avg2 << " "<< GerrorL2 << " " << GerrorL2 << std::endl;
+    std::cout << path+"MESH NV " << NV << std::endl;
 
     fout    << NV << ","
             << Herror_avg2 << "," 
@@ -219,7 +228,9 @@ for(int NV = 2; NV <=256; NV*=2){
             << HerrorL1 << "," 
             << GerrorL1 << ","  
             << HerrorL2 << "," 
-            << GerrorL2 << " "  
+            << GerrorL2 << ","  
+            << HerrorL4 << "," 
+            << GerrorL4 << ","  
             << std::endl;
 
     
