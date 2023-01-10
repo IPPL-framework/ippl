@@ -26,8 +26,11 @@ int main(int argc, char *argv[]){
     const double n = std::atof(argv[1]);
     const double vth = std::atof(argv[2]);
     const double fct = std::atof(argv[3]);
+    // const double fct = 5.0;
+    const double vth2 = vth*vth;
+    const double w2 = sqrt(2.0);
 
-    // std::string ALGO = argv[3];
+    // std::string ALGO = argv[4];
     std::string ALGO = "HOCKNEY"; //VICO
 
     double VMAX = fct*vth;
@@ -68,9 +71,17 @@ for(int NV = 2; NV <=256; NV*=2){
     Mesh_t          mesh_v(domain_v, hv_mv, Vector_t({0.0, 0.0, 0.0}));
     FieldLayout_t   FL_v(domain_v, decomp_v, isVallPeriodic);
     PLayout_t       PL_v(FL_v, mesh_v);
-    Field_t fv;
 
+    Field_t fv;
+    Field_t H;
+    Field_t H_sol;
+    Field_t G;
+    Field_t G_sol;
     fv.initialize(mesh_v, FL_v);
+    H.initialize(mesh_v, FL_v);
+    H_sol.initialize(mesh_v, FL_v);
+    G.initialize(mesh_v, FL_v);
+    G_sol.initialize(mesh_v, FL_v);
 
     std::shared_ptr<VSolver_t> solver_RB;
     ippl::ParameterList sp;
@@ -85,27 +96,16 @@ for(int NV = 2; NV <=256; NV*=2){
 
     mesh_v.setOrigin(vmin_mv);
 
-    Field_t H;
-    Field_t H_sol;
-    Field_t G;
-    Field_t G_sol;
-    H.initialize(mesh_v, FL_v);
-    H_sol.initialize(mesh_v, FL_v);
-    G.initialize(mesh_v, FL_v);
-    G_sol.initialize(mesh_v, FL_v);
-
     auto fvView     =   fv.getView();
     auto HsolView   = H_sol.getView();
     auto GsolView   = G_sol.getView();
     auto HView      =    H.getView();
     auto GView      =    G.getView();
 
-    const double vth2 = vth*vth;
-    const double w2 = sqrt(2.0);
-
     const ippl::NDIndex<3>& lDom = FL_v.getLocalNDIndex();
     const int nghost = fv.getNghost();
-    Kokkos::parallel_for("set values",
+
+    Kokkos::parallel_for("set values1",
                     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
                                                             {   fvView.extent(0),
 							                                    fvView.extent(1),
@@ -131,7 +131,7 @@ for(int NV = 2; NV <=256; NV*=2){
     );
     Kokkos::fence();
 
-        Kokkos::parallel_for("set values",
+        Kokkos::parallel_for("set values2",
                     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
                                                             {   HsolView.extent(0),
 							                                    HsolView.extent(1),
@@ -157,7 +157,7 @@ for(int NV = 2; NV <=256; NV*=2){
     );
     Kokkos::fence();
 
-        Kokkos::parallel_for("set values",
+        Kokkos::parallel_for("set values3",
                     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
                                                             {   GsolView.extent(0),
 							                                    GsolView.extent(1),
@@ -177,7 +177,8 @@ for(int NV = 2; NV <=256; NV*=2){
             
                         // fvView(i,j,k)   = n / pow(2*M_PI*vth2, 1.5)* exp(-vnorm2/(2*vth2));
                         // HsolView(i,j,k) = n / vnorm * std::erf(vnorm/(w2*vth));
-                        GsolView(i,j,k) = w2 * n * vth *( exp(-vnorm2/(2*vth2))/sqrt(M_PI)  +  erf(vnorm/(w2*vth))  * (vth/(w2*vnorm)+vnorm/(w2*vth))    );
+                        GsolView(i,j,k) = 
+                        w2 * n * vth *( exp(-vnorm2/(2.0*vth2))/sqrt(M_PI)  +  erf(vnorm/(w2*vth))  * (vth/(w2*vnorm)+vnorm/(w2*vth))    );
 
                     }
     );
@@ -188,15 +189,39 @@ for(int NV = 2; NV <=256; NV*=2){
     mesh_v.setOrigin({0, 0, 0});
     solver_RB->solve();
     mesh_v.setOrigin(vmin_mv);
-    Kokkos::deep_copy(HView, fvView);  
-    // H = fv;
+    Kokkos::deep_copy(HView, fvView); // H = fv;
+
+ // if u want to use true f value fopr the next step... 
+    //     Kokkos::parallel_for("set values1",
+    //                 Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+    //                                                         {   fvView.extent(0),
+	// 						                                    fvView.extent(1),
+	// 						                                    fvView.extent(2)}),
+	// 	            KOKKOS_LAMBDA(const int i, const int j, const int k){
+
+    //                     //local to global index conversion
+    //                     const int ig = i + lDom[0].first() - nghost;
+    //                     const int jg = j + lDom[1].first() - nghost;
+    //                     const int kg = k + lDom[2].first() - nghost;
+
+    //                     double vx = vmin_mv[0] + (ig + 0.5)*hv_mv[0];
+    //                     double vy = vmin_mv[1] + (jg + 0.5)*hv_mv[1];
+    //                     double vz = vmin_mv[2] + (kg + 0.5)*hv_mv[2];
+    //                     double vnorm2  = vx*vx+vy*vy+vz*vz;
+    //                     double vnorm = sqrt(vnorm2); 
+            
+    //                     fvView(i,j,k) = n / vnorm * std::erf(vnorm/(w2*vth));
+                        
+    //                 }
+    // );
+    // Kokkos::fence();
+
 
     fv = 2*fv;
     mesh_v.setOrigin({0,0,0});
     solver_RB->solve();
     mesh_v.setOrigin(vmin_mv);
-    Kokkos::deep_copy(GView, fvView);  
-    // G = fv;
+    Kokkos::deep_copy(GView, fvView);
 
 
 
@@ -220,7 +245,7 @@ for(int NV = 2; NV <=256; NV*=2){
     Herror_avg2 = pow(norm(H), 2) /(NV*NV*NV);
     Gerror_avg2 = pow(norm(G), 2) /(NV*NV*NV);
 
-    std::cout << path+"MESH NV " << NV << std::endl;
+    std::cout << path+" - MESH NV: " << NV << std::endl;
 
     fout    << NV << ","
             << Herror_avg2 << "," 
