@@ -156,20 +156,20 @@ namespace ippl {
         scatter(Field<T, Dim, M, C>& f,
                 const ParticleAttrib<Vector<P2, Dim>, Properties... >& pp) const;
 
-        template <unsigned Dim, class M, class C, typename P2, typename P3>
+        template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void
-        scatterPIF(Field<P2, Dim, M, C>& f,
-                const ParticleAttrib<Vector<P3, Dim>, Properties... >& pp) const;
+        scatterPIF(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
+                const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp) const;
 
         template <unsigned Dim, class M, class C, typename P2>
         void
         gather(Field<T, Dim, M, C>& f,
                const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
 
-        template <unsigned Dim, class M, class C, typename P2, typename P3>
+        template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void
-        gatherPIF(Field<P2, Dim, M, C>& f,
-                const ParticleAttrib<Vector<P3, Dim>, Properties... >& pp) const;
+        gatherPIF(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
+                const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp) const;
 
         T sum();
         T max();

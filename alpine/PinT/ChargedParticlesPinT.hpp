@@ -53,12 +53,13 @@ template<class PLayout>
 class ChargedParticlesPinT : public ippl::ParticleBase<PLayout> {
 public:
     CxField_t rhoPIF_m;
-    CxField_t rhoPIFprevIter_m;
+    Field_t Sk_m;
     Field_t rhoPIC_m;
     VField_t EfieldPIC_m;
     //VField_t EfieldPICprevIter_m;
 
     Vector<int, Dim> nr_m;
+    Vector<int, Dim> nm_m;
 
     ippl::e_dim_tag decomp_m[Dim];
 
@@ -72,6 +73,9 @@ public:
     
     double time_m;
 
+    std::string shapetype_m;
+
+    int shapedegree_m;
 
 public:
     ParticleAttrib<double>     q; // charge
@@ -589,6 +593,58 @@ public:
         }
     }
 
+    void initializeShapeFunctionPIF() {
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        auto Skview = Sk_m.getView();
+        auto N = nm_m;
+        const Mesh_t& mesh = rhoPIF_m.get_mesh();
+        const Vector_t& dx = mesh.getMeshSpacing();
+        const Vector_t& Len = rmax_m - rmin_m;
+        const double pi = std::acos(-1.0);
+        int order = shapedegree_m + 1;
+        
+        if(shapetype_m == "Gaussian") {
+
+            throw IpplException("initializeShapeFunctionPIF",
+                                "Gaussian shape function not implemented yet");
+
+        }
+        else if(shapetype_m == "B-spline") {
+
+            Kokkos::parallel_for("B-spline shape functions",
+                                mdrange_type({0, 0, 0},
+                                             {N[0], N[1], N[2]}),
+                                KOKKOS_LAMBDA(const int i,
+                                              const int j,
+                                              const int k)
+            {
+                
+                Vector<int, 3> iVec = {i, j, k};
+                Vector<double, 3> kVec;
+                double Sk = 1.0;
+                for(size_t d = 0; d < Dim; ++d) {
+                    bool shift = (iVec[d] > (N[d]/2));
+                    kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                    double kh = kVec[d] * dx[d];
+                    bool isNotZero = (kh != 0.0);
+                    double factor = (1.0 / (kh + ((!isNotZero) * 1.0)));
+                    double arg = isNotZero * (Kokkos::Experimental::sin(kh) * factor) + 
+                                 (!isNotZero) * 1.0;
+                    //Fourier transform of CIC
+                    Sk *= std::pow(arg, order);
+                }
+                    Skview(i, j, k) = Sk;
+            });
+
+        }
+        else {
+            throw IpplException("initializeShapeFunctionPIF",
+                                "Unrecognized shape function type");
+        }
+
+    }
+
     void LeapFrogPIC(ParticleAttrib<Vector_t>& Rtemp, 
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
                      const double dt, const double& tStartMySlice) {
@@ -768,12 +824,12 @@ public:
         PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
-        scatterPIF(q, rhoPIF_m, Rtemp);
+        scatterPIF(q, rhoPIF_m, Sk_m, Rtemp);
     
         rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
         // Solve for and gather E field
-        gatherPIF(E, rhoPIF_m, Rtemp);
+        gatherPIF(E, rhoPIF_m, Sk_m, Rtemp);
     
         time_m = tStartMySlice;
 
@@ -800,12 +856,12 @@ public:
     
             //scatter the charge onto the underlying grid
             rhoPIF_m = {0.0, 0.0};
-            scatterPIF(q, rhoPIF_m, Rtemp);
+            scatterPIF(q, rhoPIF_m, Sk_m, Rtemp);
     
             rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
             // Solve for and gather E field
-            gatherPIF(E, rhoPIF_m, Rtemp);
+            gatherPIF(E, rhoPIF_m, Sk_m, Rtemp);
     
             //kick
             Ptemp = Ptemp - 0.5 * dt * E;
@@ -832,12 +888,12 @@ public:
         PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
-        scatterPIF(q, rhoPIF_m, Rtemp);
+        scatterPIF(q, rhoPIF_m, Sk_m, Rtemp);
     
         rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
         // Solve for and gather E field
-        gatherPIF(E, rhoPIF_m, Rtemp);
+        gatherPIF(E, rhoPIF_m, Sk_m, Rtemp);
     
         time_m = tStartMySlice;
 
@@ -889,12 +945,12 @@ public:
     
             //scatter the charge onto the underlying grid
             rhoPIF_m = {0.0, 0.0};
-            scatterPIF(q, rhoPIF_m, Rtemp);
+            scatterPIF(q, rhoPIF_m, Sk_m, Rtemp);
     
             rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
             // Solve for and gather E field
-            gatherPIF(E, rhoPIF_m, Rtemp);
+            gatherPIF(E, rhoPIF_m, Sk_m, Rtemp);
     
             //kick
             auto R2view = Rtemp.getView();

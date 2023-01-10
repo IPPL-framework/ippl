@@ -6,7 +6,8 @@
 // European Conference on Parallel Processing. Springer, Cham, 2017.
 // 
 //  Usage:
-//     srun ./LandauDampingPinT <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> <Niter> --info 5
+//     srun ./LandauDampingPinT <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> 
+//          <Niter> <ShapeType> <degree> --info 5
 //     nmx       = No. of Fourier modes in the x-direction
 //     nmy       = No. of Fourier modes in the y-direction
 //     nmz       = No. of Fourier modes in the z-direction
@@ -14,8 +15,10 @@
 //     ny       = No. of grid points in the y-direction
 //     nz       = No. of grid points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
+//     ShapeType = Shape function type B-spline only for the moment
+//     degree = B-spline degree (-1 for delta function)
 //     Example:
-//     srun ./LandauDampingPinT 16 16 16 32 32 32 655360 20.0 0.05 0.05 1e-5 100 --info 5
+//     srun ./LandauDampingPinT 32 32 32 32 32 32 655360 20.0 0.05 0.05 1e-5 100 B-spline 1 --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
 // Jülich Supercomputing Centre, Jülich, Germany.
@@ -338,6 +341,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef coarsePropagator = IpplTimings::getTimer("coarsePropagator");
     static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
     static IpplTimings::TimerRef computeErrors = IpplTimings::getTimer("computeErrors");
+    static IpplTimings::TimerRef initializeShapeFunctionPIF = IpplTimings::getTimer("initializeShapeFunctionPIF");
 
     IpplTimings::startTimer(mainTimer);
 
@@ -422,11 +426,12 @@ int main(int argc, char *argv[]){
     Pend = std::make_unique<states_end_type>(PL);
 
     Pcoarse->nr_m = nrPIC;
+    Pcoarse->nm_m = nmPIF;
 
     Pcoarse->rhoPIF_m.initialize(meshPIF, FLPIF);
-    Pcoarse->rhoPIFprevIter_m.initialize(meshPIF, FLPIF);
+    Pcoarse->Sk_m.initialize(meshPIF, FLPIF);
+    //Pcoarse->rhoPIFprevIter_m.initialize(meshPIF, FLPIF);
     Pcoarse->rhoPIC_m.initialize(meshPIC, FLPIC);
-    Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
     Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
     //Pcoarse->EfieldPICprevIter_m.initialize(meshPIC, FLPIC);
 
@@ -507,6 +512,7 @@ int main(int argc, char *argv[]){
     Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
     IpplTimings::stopTimer(deepCopy);
 
+
     //Get initial guess for ranks other than 0 by propagating the coarse solver
     IpplTimings::startTimer(coarsePropagator);
     if (Ippl::Comm->rank() > 0) {
@@ -555,6 +561,11 @@ int main(int argc, char *argv[]){
         isPreviousDomainConverged = false;
     }
 
+    Pcoarse->shapetype_m = argv[13];
+    Pcoarse->shapedegree_m = std::atoi(argv[14]); 
+    IpplTimings::startTimer(initializeShapeFunctionPIF);
+    Pcoarse->initializeShapeFunctionPIF();
+    IpplTimings::stopTimer(initializeShapeFunctionPIF);
     //unsigned int maxIterRank;
     for (unsigned int it=0; it<maxIter; it++) {
 

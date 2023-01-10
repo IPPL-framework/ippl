@@ -8,7 +8,7 @@
 //     Nt       = Number of time steps
 //     dt       = Time stepsize
 //     Example:
-//     srun ./LandauDampingPIF 128 128 128 10000 10 --info 5
+//     srun ./LandauDampingPIF 128 128 128 10000 10 0.05 CIC --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -160,6 +160,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("kick");
     static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("drift");
     static IpplTimings::TimerRef BCTimer = IpplTimings::getTimer("particleBC");
+    static IpplTimings::TimerRef initializeShapeFunctionPIF = IpplTimings::getTimer("initializeShapeFunctionPIF");
 
     IpplTimings::startTimer(mainTimer);
 
@@ -211,8 +212,12 @@ int main(int argc, char *argv[]){
     P->nr_m = nr;
 
     P->rho_m.initialize(mesh, FL);
+    P->Sk_m.initialize(mesh, FL);
 
     P->time_m = 0.0;
+
+    P->shapetype_m = argv[7]; 
+    P->shapedegree_m = std::atoi(argv[8]); 
 
     IpplTimings::startTimer(particleCreation);
 
@@ -250,6 +255,11 @@ int main(int argc, char *argv[]){
     
     P->q = P->Q_m/totalP;
     msg << "particles created and initial conditions assigned " << endl;
+
+    IpplTimings::startTimer(initializeShapeFunctionPIF);
+    P->initializeShapeFunctionPIF();
+    IpplTimings::stopTimer(initializeShapeFunctionPIF);
+
 
     P->scatter();
 

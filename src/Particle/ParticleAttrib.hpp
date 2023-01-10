@@ -202,8 +202,8 @@ namespace ippl {
 
 
     template<typename T, class... Properties>
-    template <unsigned Dim, class M, class C, class FT, class PT>
-    void ParticleAttrib<T, Properties...>::scatterPIF(Field<FT,Dim,M,C>& f,
+    template <unsigned Dim, class M, class C, class FT, class ST, class PT>
+    void ParticleAttrib<T, Properties...>::scatterPIF(Field<FT,Dim,M,C>& f, Field<ST,Dim,M,C>& Sk,
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
     const
     {
@@ -216,6 +216,7 @@ namespace ippl {
         using vector_type = typename M::vector_type;
         using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
         view_type fview = f.getView();
+        typename Field<ST, Dim, M, C>::view_type Skview = Sk.getView();
         const int nghost = f.getNghost();
         const FieldLayout<Dim>& layout = f.getLayout(); 
         const M& mesh = f.get_mesh();
@@ -265,16 +266,11 @@ namespace ippl {
                 FT reducedValue = 0.0;
                 Vector<int, 3> iVec = {i, j, k};
                 vector_type kVec;
-                double Sk = 1.0; //Fourier transform of the shape function
                 for(size_t d = 0; d < Dim; ++d) {
                     bool shift = (iVec[d] > (N[d]/2));
                     kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
-                    //double kh = kVec[d] * dx[d];
-                    ////Fourier transform of CIC
-                    //if(kh != 0.0) {
-                    //    Sk *= std::pow(Kokkos::Experimental::sin(kh)/kh, 2);
-                    //}
                 }
+                auto Sk = Skview(i, j, k);
                 Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, Np),
                 [=](const size_t idx, FT& innerReduce)
                 {
@@ -366,8 +362,8 @@ namespace ippl {
     }
 
     template<typename T, class... Properties>
-    template <unsigned Dim, class M, class C, class FT, class PT>
-    void ParticleAttrib<T, Properties...>::gatherPIF(Field<FT,Dim,M,C>& f,
+    template <unsigned Dim, class M, class C, class FT, class ST, class PT>
+    void ParticleAttrib<T, Properties...>::gatherPIF(Field<FT,Dim,M,C>& f, Field<ST,Dim,M,C>& Sk,
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
     const
     {
@@ -379,6 +375,7 @@ namespace ippl {
         using vector_type = typename M::vector_type;
         using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
         view_type fview = f.getView();
+        typename Field<ST, Dim, M, C>::view_type Skview = Sk.getView();
         const int nghost = f.getNghost();
         const FieldLayout<Dim>& layout = f.getLayout(); 
         const M& mesh = f.get_mesh();
@@ -427,7 +424,6 @@ namespace ippl {
                     Vector<int, 3> iVec = {i, j, k};
                     vector_type kVec;
                     double Dr = 0.0, arg = 0.0;
-                    double Sk = 1.0; //Fourier transform of shape function
                     for(size_t d = 0; d < Dim; ++d) {
                         bool shift = (iVec[d] > (N[d]/2));
                         kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
@@ -435,16 +431,13 @@ namespace ippl {
                         //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d]/2));
                         Dr += kVec[d] * kVec[d];
                         arg += kVec[d]*pp(idx)[d];
-                        //double kh = kVec[d] * dx[d];
-                        ////Fourier transform of CIC
-                        //if(kh != 0.0) {
-                        //    Sk *= std::pow(Kokkos::Experimental::sin(kh)/kh, 2);
-                        //}
                     }
+                    
 
                     FT Ek = 0.0;
                     value_type Ex = 0.0;
                     auto rho = fview(i+nghost,j+nghost,k+nghost);
+                    auto Sk = Skview(i,j,k);
                     for(size_t d = 0; d < Dim; ++d) {
                         
                         bool isNotZero = (Dr != 0.0);
@@ -492,12 +485,12 @@ namespace ippl {
         attrib.scatter(f, pp);
     }
 
-    template<typename P1, unsigned Dim, class M, class C, typename P2, typename P3, class... Properties>
+    template<typename P1, unsigned Dim, class M, class C, typename P2, typename P3, typename P4, class... Properties>
     inline
     void scatterPIF(const ParticleAttrib<P1, Properties...>& attrib, Field<P2, Dim, M, C>& f,
-                 const ParticleAttrib<Vector<P3, Dim>, Properties...>& pp)
+                 Field<P3, Dim, M, C>& Sk, const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp)
     {
-        attrib.scatterPIF(f, pp);
+        attrib.scatterPIF(f, Sk, pp);
     }
 
 
@@ -510,12 +503,12 @@ namespace ippl {
         attrib.gather(f, pp);
     }
 
-    template<typename P1, unsigned Dim, class M, class C, typename P2, typename P3, class... Properties>
+    template<typename P1, unsigned Dim, class M, class C, typename P2, typename P3, typename P4, class... Properties>
     inline
     void gatherPIF(const ParticleAttrib<P1, Properties...>& attrib, Field<P2, Dim, M, C>& f,
-                 const ParticleAttrib<Vector<P3, Dim>, Properties...>& pp)
+                 Field<P3, Dim, M, C>& Sk, const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp)
     {
-        attrib.gatherPIF(f, pp);
+        attrib.gatherPIF(f, Sk, pp);
     }
 
 
