@@ -80,6 +80,9 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION
         value_type operator()(unsigned int i) const;
 
+	KOKKOS_INLINE_FUNCTION
+	size_t size() const;
+
         // Assignment Operators
         template<typename E, size_t N>
         KOKKOS_INLINE_FUNCTION
@@ -103,6 +106,7 @@ namespace ippl {
 
     private:
         T data_m[Dim];
+	size_t size_m = Dim;
     };
 }
 

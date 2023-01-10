@@ -267,7 +267,8 @@ namespace ippl {
 			ippl::Vector<int, edgeSz> edgeNeighbors_v(edgeNeighbors);
 			ippl::Vector<int, vertexSz> vertexNeighbors_v(vertexNeighbors);			
 			
-			
+
+
 			/*Begin Kokkos loop:
 			 *Step 1: search in current rank
 			 *Step 2: search in neighbors
@@ -300,7 +301,7 @@ namespace ippl {
 					else{ 
 						
 					
-						for(size_t face = 0; face < faceSz ; ++face){
+						for(size_t face = 0; face < faceNeighbors_v.size() ; ++face){
 								
 							view_size_t rank = faceNeighbors_v[face];
 
@@ -323,9 +324,9 @@ namespace ippl {
 					}
 
 					 if(!xyz_bool){
-						for (size_t edge=0; edge < edgeSz; edge++){
+						for (size_t edge=0; edge < edgeNeighbors_v.size() ; edge++){
                                                         view_size_t rank = edgeNeighbors_v[edge];
-
+						
 
                                                         xyz_bool = ((positions(i)[0] >= Regions(rank)[0].min()) &&
                                                                         (positions(i)[0] <= Regions(rank)[0].max()) &&
@@ -345,7 +346,7 @@ namespace ippl {
                                         }
 						
 					if(!xyz_bool){
-                                                for (size_t vertex=0; vertex < vertexSz; vertex++){
+                                                for (size_t vertex=0; vertex < vertexNeighbors_v.size() ; vertex++){
                                                         view_size_t rank = vertexNeighbors_v[vertex];
 
 
@@ -380,8 +381,6 @@ namespace ippl {
 					}, nLeft);
 
 			Kokkos::fence();
-
-			msg << "Finished" << endl;
 				
 
 			//Step 4
