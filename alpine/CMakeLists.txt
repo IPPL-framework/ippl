@@ -32,8 +32,11 @@ add_executable (cholesky cholesky.cpp)
 target_link_libraries (cholesky ${IPPL_LIBS})
 
 
-add_executable (rosenbluth rosenbluth.cpp)
-target_link_libraries (rosenbluth ${IPPL_LIBS})
+add_executable (rosenbluth-maxwellian rosenbluth-maxwellian.cpp)
+target_link_libraries (rosenbluth-maxwellian ${IPPL_LIBS})
+
+add_executable (rosenbluth-relations rosenbluth-relations.cpp)
+target_link_libraries (rosenbluth-relations ${IPPL_LIBS})
 
 # vi: set et ts=4 sw=4 sts=4:
 
