@@ -108,13 +108,13 @@ struct generate_random {
   // The GeneratorPool
   GeneratorPool rand_pool;
 
-  value_type alpha;
+  //value_type alpha;
 
-  T k, minU, maxU;
+  T alpha, k, minU, maxU;
 
   // Initialize all members
   generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, 
-                  value_type& alpha_, T& k_, T& minU_, T& maxU_)
+                  T& alpha_, T& k_, T& minU_, T& maxU_)
       : x(x_), v(v_), rand_pool(rand_pool_), 
         alpha(alpha_), k(k_), minU(minU_), maxU(maxU_) {}
 
@@ -127,8 +127,8 @@ struct generate_random {
     for (unsigned d = 0; d < Dim; ++d) {
 
         u = rand_gen.drand(minU[d], maxU[d]);
-        x(i)[d] = u / (1 + alpha);
-        Newton1D<value_type> solver(k[d], alpha, u);
+        x(i)[d] = u / (1 + alpha[d]);
+        Newton1D<value_type> solver(k[d], alpha[d], u);
         solver.solve(x(i)[d]);
         v(i)[d] = rand_gen.normal(0.0, 1.0);
     }
@@ -397,7 +397,8 @@ int main(int argc, char *argv[]){
 
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
-    double alpha = 0.05;
+    //double alpha = 0.05;
+    Vector_t alpha = {0.05, 0.05, 0.05};
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
     double dxPIC = rmax[0] / nrPIC[0];
@@ -442,8 +443,8 @@ int main(int argc, char *argv[]){
 
     Vector_t minU, maxU;
     for (unsigned d = 0; d <Dim; ++d) {
-        minU[d] = CDF(rmin[d], alpha, kw[d]);
-        maxU[d]   = CDF(rmax[d], alpha, kw[d]);
+        minU[d] = CDF(rmin[d], alpha[d], kw[d]);
+        maxU[d]   = CDF(rmax[d], alpha[d], kw[d]);
         //minU[d] = rmin[d];
         //maxU[d] = rmax[d];
     }

@@ -13,7 +13,7 @@
 //     srun ./LandauDampingPIF 32 32 32 655360 20 0.05 B-spline 1 --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
+// Jülich Supercomputing Centre, Jülich, Germany.
 // All rights reserved
 //
 // This file is part of IPPL.
@@ -268,8 +268,8 @@ int main(int argc, char *argv[]){
     P->gather();
 
     IpplTimings::startTimer(dumpDataTimer);
-    P->dumpLandau(totalP);
-    P->dumpEnergy(totalP);
+    P->dumpLandau();
+    P->dumpEnergy();
     IpplTimings::stopTimer(dumpDataTimer);
 
     // begin main timestep loop
@@ -309,8 +309,8 @@ int main(int argc, char *argv[]){
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpLandau(totalP);
-        P->dumpEnergy(totalP);
+        P->dumpLandau();
+        P->dumpEnergy();
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
     }

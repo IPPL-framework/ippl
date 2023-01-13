@@ -268,9 +268,9 @@ public:
             }
 
             Kokkos::complex<double> Ek = {0.0, 0.0}; 
-            if(Dr != 0.0) {
-                Ek = -(imag * kVec[0] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
-            }
+            bool isNotZero = (Dr != 0.0);
+            double factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0))); 
+            Ek = -(imag * kVec[0] * rhoview(i+nghost,j+nghost,k+nghost) * factor);
             double myVal = Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
 
             tlSum += myVal;
@@ -352,9 +352,9 @@ public:
             }
 
             Kokkos::complex<double> Ek = {0.0, 0.0}; 
-            if(Dr != 0.0) {
-                Ek = -(imag * kVec[2] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
-            }
+            bool isNotZero = (Dr != 0.0);
+            double factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0))); 
+            Ek = -(imag * kVec[2] * rhoview(i+nghost,j+nghost,k+nghost) * factor);
             double myVal = Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
 
             tlSum += myVal;
@@ -440,10 +440,11 @@ public:
 
             Kokkos::complex<double> Ek = {0.0, 0.0}; 
             double myVal = 0.0;
+            auto rho = rhoview(i+nghost,j+nghost,k+nghost);
             for(size_t d = 0; d < Dim; ++d) {
-                if(Dr != 0.0) {
-                    Ek = -(imag * kVec[d] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
-                }
+                bool isNotZero = (Dr != 0.0);
+                double factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0))); 
+                Ek = -(imag * kVec[d] * rho * factor);
                 myVal += Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
             }
 
