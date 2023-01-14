@@ -23,19 +23,21 @@ int main(int argc, char *argv[]){
 
     Inform msg("Langevin");
 
-    const double n = std::atof(argv[1]);
-    const double vth = std::atof(argv[2]);
-    const double fct = std::atof(argv[3]);
-    int L;
-    std::cout << argc;
-    if(argc == 5)   L= std::atof(argv[4]);
-    else L = 2;
+    // int arg = 1;
+    // std::cout << argc;
+
+    const double fct = (argc>=2 ? std::atof(argv[1]) : 5) ;
+    const int vers   = (argc>=3 ? std::atoi(argv[2]) : 1) ;
+    const int L      = (argc>=4 ? std::atoi(argv[3]) : 2) ;
+    const double n   = (argc>=5 ? std::atof(argv[4]) : 1) ;
+    const double vth = (argc>=6 ? std::atof(argv[5]) : 1) ;
+    std::string ALGO = (argc>=7 ?           argv[6]  : "HOCKNEY") ; //VICO
+
         
-    const double vtTrD = vth*vth;
+    const double vth2 = vth*vth;
     const double w2 = sqrt(2.0);
 
     // std::string ALGO = argv[4];
-    std::string ALGO = "HOCKNEY"; //VICO
     bool isVallPeriodic = false;
     double VMAX = fct*vth;
     std::string path0 = "./rb-rel/AN" + std::to_string(int(n)) + std::to_string(int(vth)) + std::to_string(int(fct)) + "L" + std::to_string(L) +".csv";
@@ -48,23 +50,23 @@ int main(int argc, char *argv[]){
     fout1.open(path1);
     tabout.open(path2);
     fout0   << "NV" << ","
-            << "TrD_h_err" << ","    
             << "lapH_f_err" << "," 
             << "lapG_h_err" << "," 
+            << "TrD_h_err" << ","    
             << "divD_gradH_err[0]" << "," 
             << "divD_gradH_err[1]" << "," 
             << "divD_gradH_err[2]" << "," 
             << std::endl;
     fout1   << "NV" << ","
-            << "TrD_h_err" << ","   
             << "lapH_f_err" << "," 
             << "lapG_h_err" << "," 
+            << "TrD_h_err" << ","   
             << "divD_gradH_err[0]" << "," 
             << "divD_gradH_err[1]" << "," 
             << "divD_gradH_err[2]" << "," 
             << std::endl;
 
-for(int NV = 8; NV <=128; NV*=2){
+for(int NV = 2; NV <=256; NV*=2){
 
     Vector<int, Dim> nv_mv = {NV,NV,NV};
     Vector_t hv_mv { 2*VMAX/NV,  2*VMAX/NV,  2*VMAX/NV};
@@ -95,6 +97,8 @@ for(int NV = 8; NV <=128; NV*=2){
     Field_t TrD;
 
     VField_t Fd;
+    Field_t Fd0;
+
     VField_t a;
     Field_t a0;
     Field_t a1;
@@ -116,11 +120,15 @@ for(int NV = 8; NV <=128; NV*=2){
     lapG.initialize(mesh_v, FL_v);
     
     TrD.initialize(mesh_v, FL_v);
+
     Fd.initialize(mesh_v, FL_v);
+    Fd0.initialize(mesh_v, FL_v);
+
     a.initialize(mesh_v, FL_v);
     a0.initialize(mesh_v, FL_v);
     a1.initialize(mesh_v, FL_v);
     a2.initialize(mesh_v, FL_v);
+
     D.initialize(mesh_v, FL_v);
     D0.initialize(mesh_v, FL_v);
     D1.initialize(mesh_v, FL_v);
@@ -153,7 +161,9 @@ for(int NV = 8; NV <=128; NV*=2){
     auto a0View      =    a0.getView();
     auto a1View      =    a1.getView();
     auto a2View      =    a2.getView();
+
     auto FdView      =    Fd.getView();
+    auto Fd0View      =   Fd0.getView();
 
     auto DView       =    D.getView();
     auto D0View      =    D0.getView();
@@ -163,34 +173,40 @@ for(int NV = 8; NV <=128; NV*=2){
     const ippl::NDIndex<3>& lDom = FL_v.getLocalNDIndex();
     const int nghost = fv.getNghost();
 
-    Kokkos::parallel_for("set values1",
-                    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
-                                                            {   fView.extent(0),
-							                                    fView.extent(1),
-							                                    fView.extent(2)}),
-		            KOKKOS_LAMBDA(const int i, const int j, const int k){
+    switch(vers)
+{
+    case 1:
+        Kokkos::parallel_for("set values1",
+                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+                                                                {   fView.extent(0),
+	    						                                    fView.extent(1),
+	    						                                    fView.extent(2)}),
+	    	            KOKKOS_LAMBDA(const int i, const int j, const int k){
 
-                        //local to global index conversion
-                        const int ig = i + lDom[0].first() - nghost;
-                        const int jg = j + lDom[1].first() - nghost;
-                        const int kg = k + lDom[2].first() - nghost;
+                            //local to global index conversion
+                            const int ig = i + lDom[0].first() - nghost;
+                            const int jg = j + lDom[1].first() - nghost;
+                            const int kg = k + lDom[2].first() - nghost;
 
-                        double vx = vmin_mv[0] + (ig + 0.5)*hv_mv[0];
-                        double vy = vmin_mv[1] + (jg + 0.5)*hv_mv[1];
-                        double vz = vmin_mv[2] + (kg + 0.5)*hv_mv[2];
-                        double vnorm2  = vx*vx+vy*vy+vz*vz;
-                        double vnorm = sqrt(vnorm2); 
-            
-                        fView(i,j,k)   = n / pow(2*M_PI*vtTrD, 1.5)* exp(-vnorm2/(2*vtTrD));
-                        HView(i,j,k) = (2.0) * n / vnorm * std::erf(vnorm/(w2*vth));
-                        GView(i,j,k) = w2 * n * vth *( exp(-vnorm2/(2*vtTrD))/sqrt(M_PI)  +  std::erf(vnorm/(w2*vth))  * (vth/(w2*vnorm)+vnorm/(w2*vth))    );
+                            double vx = vmin_mv[0] + (ig + 0.5)*hv_mv[0];
+                            double vy = vmin_mv[1] + (jg + 0.5)*hv_mv[1];
+                            double vz = vmin_mv[2] + (kg + 0.5)*hv_mv[2];
+                            double vnorm2  = vx*vx+vy*vy+vz*vz;
+                            double vnorm = sqrt(vnorm2); 
 
-                    }
-    );
-    Kokkos::fence();  
+                            fView(i,j,k)  = n / pow(2*M_PI*vth2, 1.5)* exp(-vnorm2/(2*vth2));
+                            HView(i,j,k) = (2.0) * n / vnorm * std::erf(vnorm/(w2*vth));
+                            GView(i,j,k) = w2 * n * vth *( exp(-vnorm2/(2*vth2))/sqrt(M_PI)  +  std::erf(vnorm/(w2*vth))  * (vth/(w2*vnorm)+vnorm/(w2*vth))    );
+
+                        }
+        );
+        Kokkos::fence();
+        break;
+
+
+}
 
     fv = 1.0*f;   
-
 
     for(int kk = 0; kk<2; ++kk){
 
@@ -233,6 +249,13 @@ for(int NV = 8; NV <=128; NV*=2){
                             aView(i,j,k)[0] = a0View(i,j,k);
                             aView(i,j,k)[1] = a1View(i,j,k);
                             aView(i,j,k)[2] = a2View(i,j,k);
+
+                            Fd0View(i,j,k) = FdView(i,j,k)[0];
+                            
+                            a0View(i,j,k) = FdView(i,j,k)[0] - a0View(i,j,k);
+                            a1View(i,j,k) = FdView(i,j,k)[1] - a1View(i,j,k);
+                            a2View(i,j,k) = FdView(i,j,k)[2] - a2View(i,j,k);
+
                         }
         );
         Kokkos::fence();
@@ -275,8 +298,12 @@ for(int NV = 8; NV <=128; NV*=2){
         TrD_h_err = norm(TrD, L)/norm(H, L);
 
         ippl::Vector<double,3> divD_gradH_err {0.0, 0.0, 0.0};
+
+        divD_gradH_err[0] = norm(a0, L) / norm(Fd0, L);
+
         a = a - Fd;
-        for (size_t d=0; d<3; ++d) {
+        // for (size_t d=0; d<3; ++d) {
+        for (size_t d=1; d<3; ++d) {
                         // nghoste 3 array instead of 0 3 array
                         double temp = 0.0;                                                                                        
                         Kokkos::parallel_reduce("Vector errorNr reduce", 
@@ -284,13 +311,13 @@ for(int NV = 8; NV <=128; NV*=2){
                                                                             aView.extent(1) - nghost,
                                                                             aView.extent(2) - nghost}),          
                                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {                                
-                                    double myVal = pow(aView(i, j, k)[d], 2);                                              
+                                    double myVal = pow(fabs(aView(i, j, k)[d]), L);                                              
                                     valL += myVal;                                                                      
                         }, Kokkos::Sum<double>(temp));
 
                         double globaltemp = 0.0;                                                                                  
                         MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());                                             
-                        double errorNr = std::sqrt(globaltemp);                                                                                   
+                        double errorNr = pow(globaltemp, (1/double(L)));                                                                                   
 
                         temp = 0.0;                                                                                        
                         Kokkos::parallel_reduce("Vector errorDr reduce",                                                                       
@@ -298,32 +325,25 @@ for(int NV = 8; NV <=128; NV*=2){
                                                                             FdView.extent(1) - nghost,
                                                                             FdView.extent(2) - nghost}),          
                                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {                                
-                                    double myVal = pow(FdView(i, j, k)[d], 2);                                              
+                                    double myVal = pow(fabs(FdView(i, j, k)[d]), L);                                              
                                     valL += myVal;                                                                      
                         }, Kokkos::Sum<double>(temp));  
 
                         globaltemp = 0.0;                                                                                  
                         MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-                        double errorDr = std::sqrt(globaltemp);
+                        double errorDr = pow(globaltemp, (1/double(L)));;
 
                         divD_gradH_err[d] = errorNr/errorDr;
         } 
 
 
-        if(kk == 0) std::cout << "MESH NV: " << NV << std::endl; 
-        // std::cout   << (kk==0 ? "ANALYTIC:  " : "COMPUTED:  ") 
-        //             << TrD_h_err << "," 
-        //             << divD_gradH_err[0] << "," 
-        //             << divD_gradH_err[1] << "," 
-        //             << divD_gradH_err[2] << ",   " << M_PI
-        //             << std::endl;
-
+        // if(kk == 0) std::cout << "MESH NV: " << NV << std::endl; 
 
         (kk==0 ? fout0 : fout1)
                 << NV << ","
-                << TrD_h_err << "," 
                 << lapH_f_err << "," 
                 << lapG_h_err << "," 
+                << TrD_h_err << "," 
                 << divD_gradH_err[0] << "," 
                 << divD_gradH_err[1] << "," 
                 << divD_gradH_err[2] << "," 
@@ -357,55 +377,6 @@ for(int NV = 8; NV <=128; NV*=2){
     return 0;
 }
 
-//resetting of origin doesnt seem to be relevant
+//resetting of origin relevant???
 
 #endif
-
-
-// Kokkos::parallel_for("set values2",
-//                     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
-//                                                             {   HView.extent(0),
-// 							                                    HView.extent(1),
-// 							                                    HView.extent(2)}),
-// 		            KOKKOS_LAMBDA(const int i, const int j, const int k){
-
-//                         //local to global index conversion
-//                         const int ig = i + lDom[0].first() - nghost;
-//                         const int jg = j + lDom[1].first() - nghost;
-//                         const int kg = k + lDom[2].first() - nghost;
-
-//                         double vx = vmin_mv[0] + (ig + 0.5)*hv_mv[0];
-//                         double vy = vmin_mv[1] + (jg + 0.5)*hv_mv[1];
-//                         double vz = vmin_mv[2] + (kg + 0.5)*hv_mv[2];
-//                         double vnorm2  = vx*vx+vy*vy+vz*vz;
-//                         double vnorm = sqrt(vnorm2); 
-            
-//                         HView(i,j,k) = (2.0)* n / vnorm * erf(vnorm/(w2*vth));
-
-//                     }
-//     );
-//     Kokkos::fence();
-//     Kokkos::parallel_for("set values3",
-//                     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
-//                                                             {   GView.extent(0),
-// 							                                    GView.extent(1),
-// 							                                    GView.extent(2)}),
-// 		            KOKKOS_LAMBDA(const int i, const int j, const int k){
-
-//                         //local to global index conversion
-//                         const int ig = i + lDom[0].first() - nghost;
-//                         const int jg = j + lDom[1].first() - nghost;
-//                         const int kg = k + lDom[2].first() - nghost;
-
-//                         double vx = vmin_mv[0] + (ig + 0.5)*hv_mv[0];
-//                         double vy = vmin_mv[1] + (jg + 0.5)*hv_mv[1];
-//                         double vz = vmin_mv[2] + (kg + 0.5)*hv_mv[2];
-//                         double vnorm2  = vx*vx+vy*vy+vz*vz;
-//                         double vnorm = sqrt(vnorm2); 
-            
-//                         GView(i,j,k) = 
-//                         w2 * n * vth *( exp(-vnorm2/(2.0*vtTrD))/sqrt(M_PI)  +  erf(vnorm/(w2*vth))  * (vth/(w2*vnorm)+vnorm/(w2*vth))    );
-
-//                     }
-//     );
-//     Kokkos::fence();
