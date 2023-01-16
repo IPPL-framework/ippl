@@ -345,11 +345,9 @@ void prepareDiffCoeff(bunch& P){
 template<typename V>
 Matrix_t cholesky( V& d0, V& d1, V& d2){
         
-    d0 = d1 = d2;
-
         Matrix_t LL;
         V* D[] = {&d0, &d1, &d2}; 
-        double epszero = 1e-16; // ??
+        double epszero = 1e-20; // ??
         
         assert(     (fabs((*D[0])(1)-(*D[1])(0))) < epszero &&
                     (fabs((*D[0])(2)-(*D[2])(0))) < epszero &&
@@ -375,11 +373,11 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
 
 
             if     (( epszero <=(LL(0)(0)=sqrt(d0(0)))     )&&(    epszero <= ( LL(1)(1) = get_2_diag(0,1/*,2*/) )       ))finish_LL(0, 1, 2);
-            else if(( epszero <= LL(0)(0)                  )&&(    epszero <= ( LL(2)(2) = get_2_diag(0,2/*,1*/) )       ))finish_LL(0, 2, 1);
-            else if(( epszero <=(LL(1)(1)=sqrt(d1(1)))     )&&(    epszero <= ( LL(0)(0) = get_2_diag(1,0/*,2*/) )       ))finish_LL(1, 0, 2);
-            else if(( epszero <= LL(1)(1)                  )&&(    epszero <= ( LL(2)(2) = get_2_diag(1,2/*,0*/) )       ))finish_LL(1, 2, 0);
-            else if(( epszero <=(LL(2)(2)=sqrt(d2(2)))     )&&(    epszero <= ( LL(1)(1) = get_2_diag(2,1/*,0*/) )       ))finish_LL(2, 1, 0);
-            else if(( epszero <= LL(2)(2)                  )&&(    epszero <= ( LL(0)(0) = get_2_diag(2,0/*,1*/) )       ))finish_LL(2, 0, 1);
+            // else if(( epszero <= LL(0)(0)                  )&&(    epszero <= ( LL(2)(2) = get_2_diag(0,2/*,1*/) )       ))finish_LL(0, 2, 1);
+            // else if(( epszero <=(LL(1)(1)=sqrt(d1(1)))     )&&(    epszero <= ( LL(0)(0) = get_2_diag(1,0/*,2*/) )       ))finish_LL(1, 0, 2);
+            // else if(( epszero <= LL(1)(1)                  )&&(    epszero <= ( LL(2)(2) = get_2_diag(1,2/*,0*/) )       ))finish_LL(1, 2, 0);
+            // else if(( epszero <=(LL(2)(2)=sqrt(d2(2)))     )&&(    epszero <= ( LL(1)(1) = get_2_diag(2,1/*,0*/) )       ))finish_LL(2, 1, 0);
+            // else if(( epszero <= LL(2)(2)                  )&&(    epszero <= ( LL(0)(0) = get_2_diag(2,0/*,1*/) )       ))finish_LL(2, 0, 1);
             else{
                 // how often
                 // assert(false && "no cholesky decomposition possible for at least one particle");
@@ -506,7 +504,7 @@ int main(int argc, char *argv[]){
     const double particleMass       = std::atof(argv[13]);
     const double focusForce         = std::atof(argv[14]);
     const int printInterval         = std::atoi(argv[15]);
-    const double ke                 = std::atof(argv[16]);
+    const double eps_inv                 = std::atof(argv[16]);
     const int NV                    = std::atoi(argv[17]);
     const double VMAX               = std::atof(argv[18]);
     const double rel_buff           = std::atof(argv[19]);
@@ -589,10 +587,9 @@ int main(int argc, char *argv[]){
 
 // ========================================================================================
 // VEOCITY SPACE MESH& DOMAIN_DECOMPOSITION
-    //ke is "only" 1/eps0!!
     //ln(LAMBDA) = 10;
     P->pMass = particleMass;
-    P->GAMMA = 10.0* pow(particleCharge, 4) * ke*ke / ( 4*M_PI * pow(particleMass, 2));
+    P->GAMMA = 10.0* pow(particleCharge, 4) * eps_inv*eps_inv / ( 4*M_PI * pow(particleMass, 2));
 
     P->nv_mv = {NV,NV,NV};
     P->hv_mv = { 2*VMAX/NV,  2*VMAX/NV,  2*VMAX/NV};
@@ -649,7 +646,7 @@ int main(int argc, char *argv[]){
         << "MeshSpacing         = " << std::setw(20) << hr << endl
         << "total Charge        = " << std::setw(20) << Q << endl
         << "LBT                 = " << std::setw(20) << P->loadbalancethreshold_m << endl
-        << "Ke                  = " << std::setw(20) << ke << endl
+        << "eps_inv             = " << std::setw(20) << eps_inv << endl
         << "GridDim Vel_Mesh    = " << std::setw(20) << NV << endl
         << "FFF                 = " << std::setw(20) <<  FFF   << endl
         << "EEE                 = " << std::setw(20) <<  EEE   << endl
@@ -735,7 +732,7 @@ int main(int argc, char *argv[]){
     P->solver_mp->solve();
     IpplTimings::stopTimer(SolveTimer);
 
-    P->E_m = P->E_m * ke;
+    P->E_m = P->E_m * eps_inv;
 
     P->gatherCIC();
 	msg << "scatter()solved()gather()" << endl;	
@@ -792,7 +789,7 @@ int main(int argc, char *argv[]){
 
         //drift
         IpplTimings::startTimer(RTimer);
-        P->R = P->R + dt * P->P / particleMass;
+        P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);
 
         //Since the particles have moved spatially update them to correct processors
@@ -816,7 +813,7 @@ int main(int argc, char *argv[]){
 
         P->scatterCIC(nP, it+1, hr); 
         
-        P->rho_m = P->rho_m * ke;
+        P->rho_m = P->rho_m * eps_inv;
 
         IpplTimings::startTimer(SolveTimer);
         P->solver_mp->solve();
@@ -836,8 +833,6 @@ int main(int argc, char *argv[]){
 
 
 // =================MYSTUFF::_LANGEVIN_COLLISION======================
-    //mass shift
-    P->P = P->P/particleMass;
 
     if(COLLISION){msg << "COLLISION"<<endl;
 
@@ -913,9 +908,6 @@ int main(int argc, char *argv[]){
             IpplTimings::stopTimer(dumpDataTimer);
             }
         }
-
-        //undo Massshift
-        P->P = P->P*P->pMass;
     
 
         msg << "Finished time step: " << it+1 << endl;

@@ -25,8 +25,6 @@ const char* TestName = "choleskyTest";
 template<typename V>
 Matrix_t choleskyb( V& d0, V& d1, V& d2){
         
-    // d0 = d1 = d2;
-
         Matrix_t LL;
         V* D[] = {&d0, &d1, &d2}; 
         double epszero = 1e-20; // ??
