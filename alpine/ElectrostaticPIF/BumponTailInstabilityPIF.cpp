@@ -194,6 +194,8 @@ int main(int argc, char *argv[]){
     }
 
     // create mesh and layout objects for this problem domain
+    Vector_t kw;
+    double sigma, muBulk, muBeam, epsilon, delta;
     
     if(std::strcmp(TestName,"TwoStreamInstabilityPIF") == 0) {
         // Parameters for two stream instability as in 
@@ -270,7 +272,6 @@ int main(int argc, char *argv[]){
     size_type nlocBulk = (size_type)(factorConf * factorVelBulk * totalP);
     size_type nlocBeam = (size_type)(factorConf * factorVelBeam * totalP);
     size_type nloc = nlocBulk + nlocBeam;
-    size_type nloc = (size_type)(factor * totalP);
     size_type Total_particles = 0;
 
     MPI_Allreduce(&nloc, &Total_particles, 1,

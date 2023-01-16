@@ -596,9 +596,11 @@ public:
 
     void initializeShapeFunctionPIF() {
 
+        Inform m("initializeShape");
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         auto Skview = Sk_m.getView();
         auto N = nm_m;
+        const int nghost = Sk_m.getNghost();
         const Mesh_t& mesh = rhoPIF_m.get_mesh();
         const Vector_t& dx = mesh.getMeshSpacing();
         const Vector_t& Len = rmax_m - rmin_m;
@@ -635,14 +637,17 @@ public:
                     //Fourier transform of CIC
                     Sk *= std::pow(arg, order);
                 }
-                    Skview(i, j, k) = Sk;
+                    Skview(i+nghost, j+nghost, k+nghost) = Sk;
             });
+            
 
         }
         else {
             throw IpplException("initializeShapeFunctionPIF",
                                 "Unrecognized shape function type");
         }
+        double Sknorm = norm(Sk_m);
+        m << "Sknorm in initialize: " << Sknorm << endl;
 
     }
 
@@ -836,8 +841,8 @@ public:
 
         if((time_m == 0.0)) {
             IpplTimings::startTimer(dumpData);
-            dumpLandau(iter);         
-            //dumpBumponTail(iter);         
+            //dumpLandau(iter);         
+            dumpBumponTail(iter);         
             dumpEnergy(this->getLocalNum(), iter, Ptemp);
             IpplTimings::stopTimer(dumpData);
         }
@@ -870,8 +875,8 @@ public:
             time_m += dt;
             
             IpplTimings::startTimer(dumpData);
-            dumpLandau(iter);         
-            //dumpBumponTail(iter);         
+            //dumpLandau(iter);         
+            dumpBumponTail(iter);         
             dumpEnergy(this->getLocalNum(), iter, Ptemp);         
             IpplTimings::stopTimer(dumpData);
     

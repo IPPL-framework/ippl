@@ -207,7 +207,6 @@ namespace ippl {
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
     const
     {
-        //Inform msg("scatterPIF");
         
         static IpplTimings::TimerRef scatterPIFTimer = IpplTimings::getTimer("ScatterPIF");           
         IpplTimings::startTimer(scatterPIFTimer);
@@ -224,6 +223,7 @@ namespace ippl {
         const auto& domain = layout.getDomain();
         vector_type Len;
         Vector<int, Dim> N;
+
 
         for (unsigned d=0; d < Dim; ++d) {
             N[d] = domain[d].length();
@@ -270,7 +270,7 @@ namespace ippl {
                     bool shift = (iVec[d] > (N[d]/2));
                     kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
                 }
-                auto Sk = Skview(i, j, k);
+                auto Sk = Skview(i+nghost, j+nghost, k+nghost);
                 Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, Np),
                 [=](const size_t idx, FT& innerReduce)
                 {
@@ -280,7 +280,8 @@ namespace ippl {
                     }
                     const value_type& val = dview_m(idx);
 
-                    innerReduce += Sk*(Kokkos::Experimental::cos(arg) - imag*Kokkos::Experimental::sin(arg))*val;
+                    innerReduce += Sk * (Kokkos::Experimental::cos(arg) - imag*Kokkos::Experimental::sin(arg))*val;
+                    //innerReduce += (Kokkos::Experimental::cos(arg) - imag*Kokkos::Experimental::sin(arg))*val;
                 }, Kokkos::Sum<FT>(reducedValue));
 
                 if(teamMember.team_rank() == 0) {
@@ -367,7 +368,6 @@ namespace ippl {
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
     const
     {
-        //Inform msg("gatherPIF");
         static IpplTimings::TimerRef gatherPIFTimer = IpplTimings::getTimer("GatherPIF");           
         IpplTimings::startTimer(gatherPIFTimer);
         
@@ -388,6 +388,8 @@ namespace ippl {
             N[d] = domain[d].length();
             Len[d] = dx[d] * N[d];
         }
+
+
 
         typedef Kokkos::TeamPolicy<> team_policy;
         typedef Kokkos::TeamPolicy<>::member_type member_type;
@@ -437,7 +439,7 @@ namespace ippl {
                     FT Ek = 0.0;
                     value_type Ex = 0.0;
                     auto rho = fview(i+nghost,j+nghost,k+nghost);
-                    auto Sk = Skview(i,j,k);
+                    auto Sk = Skview(i+nghost,j+nghost,k+nghost);
                     for(size_t d = 0; d < Dim; ++d) {
                         
                         bool isNotZero = (Dr != 0.0);

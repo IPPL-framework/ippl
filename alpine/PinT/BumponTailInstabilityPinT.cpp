@@ -357,6 +357,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef coarsePropagator = IpplTimings::getTimer("coarsePropagator");
     static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
     static IpplTimings::TimerRef computeErrors = IpplTimings::getTimer("computeErrors");
+    static IpplTimings::TimerRef initializeShapeFunctionPIF = IpplTimings::getTimer("initializeShapeFunctionPIF");
 
     IpplTimings::startTimer(mainTimer);
 
@@ -455,6 +456,7 @@ int main(int argc, char *argv[]){
     Pend = std::make_unique<states_end_type>(PL);
 
     Pcoarse->nr_m = nrPIC;
+    Pcoarse->nm_m = nmPIF;
 
     Pcoarse->rhoPIF_m.initialize(meshPIF, FLPIF);
     Pcoarse->Sk_m.initialize(meshPIF, FLPIF);

@@ -502,7 +502,7 @@ int main(int argc, char *argv[]){
 #endif
 
 
-    Pcoarse->q = Pcoarse->Q_m/totalP;
+    Pcoarse->q = Pcoarse->Q_m/nloc;
     IpplTimings::stopTimer(particleCreation);                                                    
     
     msg << "particles created and initial conditions assigned " << endl;

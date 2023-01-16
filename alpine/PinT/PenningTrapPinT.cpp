@@ -316,7 +316,7 @@ double computeFieldError(CxField_t& rhoPIF, CxField_t& rhoPIFprevIter) {
 }
 
 
-const char* TestName = "PenningTrap";
+const char* TestName = "PenningTrapPinT";
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
@@ -344,6 +344,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef coarsePropagator = IpplTimings::getTimer("coarsePropagator");
     static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
     static IpplTimings::TimerRef computeErrors = IpplTimings::getTimer("computeErrors");
+    static IpplTimings::TimerRef initializeShapeFunctionPIF = IpplTimings::getTimer("initializeShapeFunctionPIF");
 
     IpplTimings::startTimer(mainTimer);
 
@@ -356,11 +357,6 @@ int main(int argc, char *argv[]){
     const unsigned int ntCoarse = std::ceil(dtSlice / dtCoarse);
     const double tol = std::atof(argv[11]);
     const unsigned int maxIter = std::atoi(argv[12]);
-
-    msg << "dtSlice: " << dtSlice 
-        << "dtSlice/dtFine: " << dtSlice / dtFine
-        << "(int)dtSlice/dtFine: " << (unsigned int)(dtSlice / dtFine)
-        << endl;
 
     const double tStartMySlice = Ippl::Comm->rank() * dtSlice; 
     //const double tEndMySlice = (Ippl::Comm->rank() + 1) * dtSlice; 
@@ -426,6 +422,7 @@ int main(int argc, char *argv[]){
     Pend = std::make_unique<states_end_type>(PL);
 
     Pcoarse->nr_m = nrPIC;
+    Pcoarse->nm_m = nmPIF;
 
     Pcoarse->rhoPIF_m.initialize(meshPIF, FLPIF);
     Pcoarse->Sk_m.initialize(meshPIF, FLPIF);
@@ -598,7 +595,7 @@ int main(int argc, char *argv[]){
         tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
         int tagbool = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
         
-        if(Ippl::Comm->rank() > 0) {
+        if((Ippl::Comm->rank() > 0) && (!isPreviousDomainConverged)) {
             size_type bufSize = Pbegin->packedSize(nloc);
             buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
             Ippl::Comm->recv(Ippl::Comm->rank()-1, tag, *Pbegin, *buf, bufSize, nloc);
