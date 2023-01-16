@@ -280,8 +280,8 @@ namespace ippl {
                     }
                     const value_type& val = dview_m(idx);
 
-                    innerReduce += Sk * (Kokkos::Experimental::cos(arg) - imag*Kokkos::Experimental::sin(arg))*val;
-                    //innerReduce += (Kokkos::Experimental::cos(arg) - imag*Kokkos::Experimental::sin(arg))*val;
+                    innerReduce += Sk * (Kokkos::Experimental::cos(arg) 
+                                - imag * Kokkos::Experimental::sin(arg)) * val;
                 }, Kokkos::Sum<FT>(reducedValue));
 
                 if(teamMember.team_rank() == 0) {

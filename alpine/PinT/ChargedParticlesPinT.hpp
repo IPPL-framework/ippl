@@ -596,7 +596,6 @@ public:
 
     void initializeShapeFunctionPIF() {
 
-        Inform m("initializeShape");
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         auto Skview = Sk_m.getView();
         auto N = nm_m;
@@ -646,8 +645,6 @@ public:
             throw IpplException("initializeShapeFunctionPIF",
                                 "Unrecognized shape function type");
         }
-        double Sknorm = norm(Sk_m);
-        m << "Sknorm in initialize: " << Sknorm << endl;
 
     }
 
