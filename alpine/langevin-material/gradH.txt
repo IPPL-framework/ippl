@@ -1,0 +1,41 @@
+Mathematica 11.2.0 Kernel for Linux x86 (64-bit)
+Copyright 1988-2017 Wolfram Research, Inc.
+
+In[1]:= 
+               2     2     2
+Out[1]= Sqrt[vx  + vy  + vz ]
+
+In[2]:= 
+                     2     2     2
+              Sqrt[vx  + vy  + vz ]
+        n Erf[---------------------]
+                   Sqrt[2] vth
+Out[2]= ----------------------------
+                  2     2     2
+           Sqrt[vx  + vy  + vz ]
+
+In[3]:= 
+                                 2
+                          n Sqrt[--] vx
+                                 Pi
+Out[3]= ------------------------------------------------- - 
+            2     2     2        2
+         (vx  + vy  + vz )/(2 vth )        2     2     2
+        E                           vth (vx  + vy  + vz )
+ 
+                     2     2     2
+              Sqrt[vx  + vy  + vz ]
+     n vx Erf[---------------------]
+                   Sqrt[2] vth
+>    -------------------------------
+             2     2     2 3/2
+          (vx  + vy  + vz )
+
+In[4]:= 
+Out[4]//CForm= (n*Sqrt(2/Pi)*vx)/
+     (Power(E,(Power(vx,2) + Power(vy,2) + Power(vz,2))/(2.*Power(vth,2)))*
+       vth*(Power(vx,2) + Power(vy,2) + Power(vz,2))) - 
+    (n*vx*Erf(Sqrt(Power(vx,2) + Power(vy,2) + Power(vz,2))/(Sqrt(2)*vth)))/
+     Power(Power(vx,2) + Power(vy,2) + Power(vz,2),1.5)
+
+In[5]:= 
