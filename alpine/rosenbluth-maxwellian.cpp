@@ -112,7 +112,8 @@ int main(int argc, char *argv[]){
     const double n = std::atof(argv[1]);
     const double vth = std::atof(argv[2]);
     const double fct = std::atof(argv[3]);
-    const int comp  = std::atoi(argv[4]);
+    const int compare_opt  = std::atoi(argv[4]);
+    const char print_opt = *(argv[5]); // H h G g F f D d
     // std::string ALGO = (argc>=5 ? argv[4] : "HOCKNEY") ; //VICO
 
     double L =2;
@@ -127,8 +128,8 @@ int main(int argc, char *argv[]){
     std::string ALGO = "HOCKNEY";
     bool isVallPeriodic = false;
     double VMAX = fct*vth;
-    std::string path = "./rb/" + std::to_string(int(n)) + std::to_string(int(vth)) + std::to_string(int(fct)) +".csv";
-    std::string pathA = "./rb/B" + std::to_string(int(n)) + std::to_string(int(vth)) + std::to_string(int(fct)) +".csv";
+    std::string path = "./rb/" + std::to_string(int(n)) + std::to_string(int(vth)) + std::to_string(int(fct))+ std::to_string(int(compare_opt))+".csv";
+    std::string pathA = "./rb/curve" + std::to_string(int(n)) + std::to_string(int(vth)) + std::to_string(int(fct)) + std::to_string(int(compare_opt))+print_opt+".csv";
 
     std::ofstream fout, aout;
     fout.open(path);
@@ -207,13 +208,22 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
     auto FsolView   =F_sol.getView();
 
     const ippl::NDIndex<3>& lDom = FL_v.getLocalNDIndex();
-    const int nghost = fv.getNghost();
 
-    Kokkos::parallel_for("set values1",
+///////!!!!!!!!!!
+    int nghost = fv.getNghost();
+    // nghost = 2*fv.getNghost();
+
+    Kokkos::parallel_for("set values1", // here are ghost included?? at the start ill leave them??? border regions are critical...
+                    // Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
+                    //                                         {   fvView.extent(0)-nghost,
+					// 		                                    fvView.extent(1)-nghost,
+					// 		                                    fvView.extent(2)-nghost}),
                     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
                                                             {   fvView.extent(0),
 							                                    fvView.extent(1),
 							                                    fvView.extent(2)}),
+
+
 		            KOKKOS_LAMBDA(const int i, const int j, const int k){
 
                         //local to global index conversion
@@ -262,7 +272,21 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
     Kokkos::deep_copy(GView, fvView);
     Kokkos::fence();
 
-    switch(comp)
+
+ 
+
+    
+    // G = G + 2.44*vth*n*fct;
+
+    //this is the better sequence of shift buti dont know why...?
+    double offset = G.sum();
+    offset = offset/pow(2*VMAX, 3);
+    offset = offset*pow(hv, 3);
+    G = G - offset;// + n*VMAX;
+    G = G+n*VMAX;
+
+
+    switch(compare_opt)
     {
         case 2: // compare analyt(hess(G)) with hess(analyt(G))
             D = hess(G_sol);
@@ -277,37 +301,66 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
             F = grad(H);
     }
 
+
+
     if(NV==128 && rank == 0){
         // int ix[2] = {30, 60};
         // int iy[3] = {20, 40, 60};
-        int ix[1] = {60};
-        int iy[7] = {4,14,24,34,44,54,64};
+        // int ix[] = {5,20, 40, 60};
+        int ix[] = {60};
+        int iy[] = {4,14,24,34,44,54,64};
         for(int i : ix){
         for(int j : iy){
-            // aout << "HsolView("+std::to_string(i)+"_"+std::to_string(j)+")" << ","
-            //      << "HView("+std::to_string(i)+"_"+std::to_string(j)+")" << ","
-            //      << "GsolView("+std::to_string(i)+"_"+std::to_string(j)+")" << ","
-            //      << "GView("+std::to_string(i)+"_"+std::to_string(j)+")" << ",";
-            aout << "DsolView(i,j,k)[0][0]" +std::to_string(i)+"_"+std::to_string(j)+")" << ","
-                 << "DView(i,j,k)[0][0]" +std::to_string(i)+"_"+std::to_string(j)+")" << ",";
-            // aout << DsolView(i,j,k)[0][1] << ","
-            //      << DView(i,j,k)[0][1] << ","
+            switch(print_opt)
+            {       case 'h':[[fallthrough]];
+                    case 'H':
+                        aout << "HsolView("+std::to_string(i)+"_"+std::to_string(j)+")" << ","
+                             << "HView("+std::to_string(i)+"_"+std::to_string(j)+")" << ",";
+                    break;
+                    case 'g':[[fallthrough]];
+                    case 'G':
+                        aout << "GsolView("+std::to_string(i)+"_"+std::to_string(j)+")" << ","
+                             << "GView("+std::to_string(i)+"_"+std::to_string(j)+")" << ",";
+                    break;
+                    case 'd': [[fallthrough]];
+                    case 'D':
+                        aout << "DsolView(i,j,k)[0][0]" +std::to_string(i)+"_"+std::to_string(j)+")" << ","
+                             << "DView(i,j,k)[0][0]" +std::to_string(i)+"_"+std::to_string(j)+")" << ",";
+                    break;
+                    case 'f':[[fallthrough]];
+                    case 'F':
+                        aout << "FsolView(i,j,k)[0]" +std::to_string(i)+"_"+std::to_string(j)+")" << ","
+                             <<"FView(i,j,k)[0]" +std::to_string(i)+"_"+std::to_string(j)+")" << ",";
+            }
             
         }
         }aout << std::endl;
+
         for(int k = 1; k<NV; ++k){
             aout << k << ",";
         for(int i : ix){
         for(int j : iy){
-            // aout << HsolView(i,j,k) << ","
-            //      << HView(i,j,k) << ","
-            //      << GsolView(i,j,k) << ","
-            //      << GView(i,j,k) << ",";
-            aout << DsolView(i,j,k)[0][0] << ","
-                 << DView(i,j,k)[0][0] << ",";
-            // aout << FsolView(i,j,k)[0][1] << ","
-            //      << FView(i,j,k)[0][1] << ",";
-            
+         switch(print_opt)
+            {       case 'h':[[fallthrough]];
+                    case 'H':
+                        aout << HsolView(i,j,k) << ","
+                             << HView(i,j,k) << ",";
+                    break;
+                    case 'g':[[fallthrough]];
+                    case 'G':
+                        aout << GsolView(i,j,k) << ","
+                             << GView(i,j,k) << ",";
+                    break;
+                    case 'd': [[fallthrough]];
+                    case 'D':
+                        aout << DsolView(i,j,k)[0][0] << ","
+                             << DView(i,j,k)[0][0] << ",";
+                    break;
+                    case 'f':[[fallthrough]];
+                    case 'F':
+                        aout << FsolView(i,j,k)[1]<< ","
+                             << FView(i,j,k)[1] << ",";
+            }
         }
         } aout<< std::endl;
         }
@@ -325,13 +378,27 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
         D = D - D_sol;
         F = F - F_sol;
 
+    // if(NV<=16)
+    // {
+    // std::cout << "F diff is" << std::endl;
+    // for(int i = 0; i<NV/2 +1; ++i){
+    // for(int j = 0; j<NV/2 +1; ++j){
+    // for(int k = 0; k<NV/2 +1; ++k){
+    //     std::cout << FView(i,j,k)[2] << " ";
+    // } std::cout << "  ";
+    // } std::cout << std::endl;
+    // }
+    // }
+
+
+        // {0, 0, 0} {nghost, nghost, nghost}???
         for (size_t di=0; di<3; ++di) {
         for (size_t dj=0; dj<3; ++dj) {
                         double temp = 0.0;                                                                                        
                         Kokkos::parallel_reduce("Vector errorNr reduce", 
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, { DView.extent(0) - nghost, 
-                                                                            DView.extent(1) - nghost,
-                                                                            DView.extent(2) - nghost}),          
+                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, {  DView.extent(0) - nghost, 
+                                                                                            DView.extent(1) - nghost,
+                                                                                            DView.extent(2) - nghost}),          
                                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {                                
                                     double myVal = pow(fabs(DView(i, j, k)[di][dj]), L);                                              
                                     valL += myVal;                                                                      
@@ -344,9 +411,9 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
 
                         temp = 0.0;                                                                                        
                         Kokkos::parallel_reduce("Vector errorDr reduce",                                                                       
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, { DsolView.extent(0) - nghost,
-                                                                            DsolView.extent(1) - nghost,
-                                                                            DsolView.extent(2) - nghost}),          
+                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, { DsolView.extent(0) - nghost,
+                                                                                            DsolView.extent(1) - nghost,
+                                                                                            DsolView.extent(2) - nghost}),          
                                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {                                
                                     double myVal = pow(fabs(DsolView(i, j, k)[di][dj]), L);                                              
                                     valL += myVal;                                                                      
@@ -365,9 +432,9 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
         for (size_t dj=0; dj<3; ++dj) {
                         double temp = 0.0;                                                                                        
                         Kokkos::parallel_reduce("Vector errorNr reduce", 
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, { FView.extent(0) - nghost, 
-                                                                            FView.extent(1) - nghost,
-                                                                            FView.extent(2) - nghost}),          
+                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, { FView.extent(0) - nghost, 
+                                                                                            FView.extent(1) - nghost,
+                                                                                            FView.extent(2) - nghost}),          
                                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {                                
                                     double myVal = pow(fabs(FView(i, j, k)[dj]), L);                                              
                                     valL += myVal;                                                                      
@@ -377,9 +444,9 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
                         double errorNr = pow(globaltemp, (1/double(L)));                                                                                   
                         temp = 0.0;                                                                                        
                         Kokkos::parallel_reduce("Vector errorDr reduce",                                                                       
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, { FsolView.extent(0) - nghost,
-                                                                            FsolView.extent(1) - nghost,
-                                                                            FsolView.extent(2) - nghost}),          
+                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, { FsolView.extent(0) - nghost,
+                                                                                            FsolView.extent(1) - nghost,
+                                                                                            FsolView.extent(2) - nghost}),          
                                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {                                
                                     double myVal = pow(fabs(FsolView(i, j, k)[dj]), L);                                              
                                     valL += myVal;                                                                      
@@ -393,13 +460,7 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
 
 
 
-    // G = G + 2.44*vth*n*fct;
-    // double offset = G.sum();
-    // offset = offset/pow(2*VMAX, 3);
-    // offset = offset*pow(hv, 3);
-    // G = G - offset;
-
-
+ 
  
 
     Ferror_tot /= 3;
@@ -432,6 +493,38 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
 //resetting of origin doesnt seem to be relevant
 
 #endif
+
+
+
+
+// /rb/1150.csv - MESH NV: 4
+// F diff is
+// 0.0953026 0.10237 0.108115 0.111414   0.10237 0.111415 0.119239 0.124042   0.108115 0.119239 0.129779 0.13703   0.111414 0.124042 0.13703 0.146958   
+// -0.000597123 -0.000904619 -0.00122128 -0.00142004   -0.000904619 -0.00142007 -0.0018529 -0.0019632   -0.00122128 -0.0018529 -0.00208312 -0.0019747   -0.00142004 -0.0019632 -0.0019747 -0.00326933   
+// -0.000647064 -0.00115723 -0.00186756 -0.00246544   -0.00115723 -0.00246991 -0.00495641 -0.00780592   -0.00186756 -0.00495641 -0.0151542 -0.0347315   -0.00246544 -0.00780592 -0.0347315 -0.100894   
+// -0.000295564 -0.000580188 -0.00103514 -0.0014662   -0.000580188 -0.00147016 -0.00366111 -0.00673389   -0.00103514 -0.00366111 -0.0152704 -0.0399873   -0.0014662 -0.00673389 -0.0399873 -0.124356   
+// ./rb/1150.csv - MESH NV: 8
+// ./rb/1150.csv - MESH NV: 16
+// ./rb/1150.csv - MESH NV: 32
+// ./rb/1150.csv - MESH NV: 64
+// [klappr_s@merlin-l-001 alpine]$ ./rb/1150.csv - MESH NV: 128
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -511,3 +604,30 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
 // MPI_Allreduce(&Gerror, &globG, 1 , MPI_DOUBLE, MPI_SUM, Ippl::getComm());
 
 
+//    Kokkos::parallel_for("set values1", // here are ghost included?? at the start ill leave them??? border regions are critical...
+//                     // Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
+//                     //                                         {   fvView.extent(0)-nghost,
+// 					// 		                                    fvView.extent(1)-nghost,
+// 					// 		                                    fvView.extent(2)-nghost}),
+//                     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+//                                                             {   fvView.extent(0),
+// 							                                    fvView.extent(1),
+// 							                                    fvView.extent(2)}),
+
+
+// 		            KOKKOS_LAMBDA(const int i, const int j, const int k){
+
+//                         const int ig = i + lDom[0].first() - nghost;
+//                         const int jg = j + lDom[1].first() - nghost;
+//                         const int kg = k + lDom[2].first() - nghost;
+
+//                         const double vx = vmin_mv[0] + (ig + 0.5)*hv_mv[0];
+//                         const double vy = vmin_mv[1] + (jg + 0.5)*hv_mv[1];
+//                         const double vz = vmin_mv[2] + (kg + 0.5)*hv_mv[2];
+//                         const double vnorm2  = vx*vx+vy*vy+vz*vz;
+//                         const double vnorm = sqrt(vnorm2);
+            
+//                         GView(i,j,k) = GView(i,j,k) + n*vnorm;
+//                     }
+//     );
+    // Kokkos::fence();
