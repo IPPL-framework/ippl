@@ -347,11 +347,17 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
         
         Matrix_t LL;
         V* D[] = {&d0, &d1, &d2}; 
-        double epszero = 1e-20; // ??
+        double epszero = DBL_EPSILON; //1e-5; //DBL_EPSILON   or -10
+
+
+        // // //make symmetric ... is the gathering of symmetric matrices symmetric..
+        (*D[0])(1) = (*D[1])(0) = ((*D[0])(1)+(*D[1])(0)) *0.5;
+        (*D[0])(2) = (*D[2])(0) = ((*D[0])(2)+(*D[2])(0)) *0.5;
+        (*D[1])(2) = (*D[2])(1) = ((*D[1])(2)+(*D[2])(1)) *0.5; 
         
-        assert(     (fabs((*D[0])(1)-(*D[1])(0))) < epszero &&
-                    (fabs((*D[0])(2)-(*D[2])(0))) < epszero &&
-                    (fabs((*D[1])(2)-(*D[2])(1))) < epszero 
+        assert(     (fabs((*D[0])(1)-(*D[1])(0))) <= epszero &&
+                    (fabs((*D[0])(2)-(*D[2])(0))) <= epszero &&
+                    (fabs((*D[1])(2)-(*D[2])(1))) <= epszero 
         );
 
         auto finish_LL = [&](const unsigned i0, const unsigned i1, const unsigned i2){
@@ -371,8 +377,7 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
         };
 
 
-
-            if     (( epszero <=(LL(0)(0)=sqrt(d0(0)))     )&&(    epszero <= ( LL(1)(1) = get_2_diag(0,1/*,2*/) )       ))finish_LL(0, 1, 2);
+            if     (( DBL_EPSILON <=(LL(0)(0)=sqrt(d0(0)))     )&&(   DBL_EPSILON <= ( LL(1)(1) = get_2_diag(0,1/*,2*/) )       ))finish_LL(0, 1, 2);
             // else if(( epszero <= LL(0)(0)                  )&&(    epszero <= ( LL(2)(2) = get_2_diag(0,2/*,1*/) )       ))finish_LL(0, 2, 1);
             // else if(( epszero <=(LL(1)(1)=sqrt(d1(1)))     )&&(    epszero <= ( LL(0)(0) = get_2_diag(1,0/*,2*/) )       ))finish_LL(1, 0, 2);
             // else if(( epszero <= LL(1)(1)                  )&&(    epszero <= ( LL(2)(2) = get_2_diag(1,2/*,0*/) )       ))finish_LL(1, 2, 0);
@@ -626,6 +631,7 @@ int main(int argc, char *argv[]){
     mesh_v.setMeshSpacing(P->hv_mv);
 
 
+
 // ========================================================================================
 
     msg
@@ -709,6 +715,12 @@ int main(int argc, char *argv[]){
     if(rank == 0) 
 	    createParticleDistributionColdSphere(*P, beamRadius, nP, particleCharge);    
     Kokkos::fence();  Ippl::Comm->barrier();  //??//
+
+
+	// auto pD0Host = P->D0.getHostMirror();
+	// auto pD1Host = P->D1.getHostMirror();
+	// auto pD2Host = P->D2.getHostMirror();
+
     
     //multiple node runs stop here
     PL.update(*P, bunchBuffer);
@@ -872,7 +884,7 @@ int main(int argc, char *argv[]){
 
         if(CCC){msg << "CCC" << endl;
 
-            prepareDiffCoeff(*P);   //does:: for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d]; //doesnt work
+            prepareDiffCoeff(*P);   //does:: for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d];
             P->gatherFd();
             P->gatherD();
         }
@@ -883,22 +895,50 @@ int main(int argc, char *argv[]){
             P->P = P->P + dt*P->Fd;
         }
 
-        //the cholesky is otften zero ..
         if(AAA){msg << "AAA" << endl;
+
+
+                // Kokkos::deep_copy(pD0Host, P->D0.getView());
+                // Kokkos::deep_copy(pD1Host, P->D1.getView());
+                // Kokkos::deep_copy(pD2Host, P->D2.getView());
+
+                // Kokkos::fence();
+
+                // // diffusion coefficient does seem to be symmetric; which makes senes maybe because the derivates at border regions dont work...
+
+                //     int ddd[] = { 10, 134, 2345, 10555, 100000};
+                //     int xyz[] = {0,1,2};
+                    
+                //     for(int di : ddd){
+                //     for(int x : xyz){
+                //     // for(int y : xyz){
+                //         // std::cout << DView(di)[x][y] << " ";//cant access particle Views directly for printing
+                //         msg << pD0Host(di)[x] << " " << pD1Host(di)[x] << " " << pD2Host(di)[x];
+                //     // }
+                //     msg <<  endl;
+                //     }msg << endl;
+                //     }
+                    
+                // Kokkos::fence();
+                // // MPI_Waitall();
 
             applyLangevin(*P, Gaussian3d);   //does:: // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
         }
 
        	        //error if variable not used..   aaand we dont use it?? ever???
+                if(false){
     	        double tmp = interactionRadius;
     	        tmp += 1;
                 tmp += Gaussian3d()[1];
                 tmp += isFirstRepartition;
+                }
     }
 
 // =================MYSTUFF==================================================================
         
         P->time_m += dt;
+
+        msg << "Finished time step: " << it+1 << endl;
         
         if(PRINT){ msg << "PRINT" << endl;
             if (it%printInterval==0){
@@ -910,7 +950,6 @@ int main(int argc, char *argv[]){
         }
     
 
-        msg << "Finished time step: " << it+1 << endl;
     }
 
 // TIMELOOP END
