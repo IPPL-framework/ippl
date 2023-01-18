@@ -1,0 +1,94 @@
+Mathematica 11.2.0 Kernel for Linux x86 (64-bit)
+Copyright 1988-2017 Wolfram Research, Inc.
+
+In[1]:= 
+               2     2     2
+Out[1]= Sqrt[vx  + vy  + vz ]
+
+In[2]:= 
+                         1
+Out[2]= ------------------------------------
+            2     2     2        2
+         (vx  + vy  + vz )/(2 vth )
+        E                           Sqrt[Pi]
+
+In[3]:= 
+                   2     2     2
+            Sqrt[vx  + vy  + vz ]
+Out[3]= Erf[---------------------]
+                 Sqrt[2] vth
+
+In[4]:= 
+                                               2     2     2
+                     vth                Sqrt[vx  + vy  + vz ]
+Out[4]= ----------------------------- + ---------------------
+                       2     2     2         Sqrt[2] vth
+        Sqrt[2] Sqrt[vx  + vy  + vz ]
+
+In[5]:= 
+                         1
+Out[5]= ------------------------------------ + 
+            2     2     2        2
+         (vx  + vy  + vz )/(2 vth )
+        E                           Sqrt[Pi]
+ 
+                                             2     2     2
+                   vth                Sqrt[vx  + vy  + vz ]
+>    (----------------------------- + ---------------------) 
+                     2     2     2         Sqrt[2] vth
+      Sqrt[2] Sqrt[vx  + vy  + vz ]
+ 
+                 2     2     2
+          Sqrt[vx  + vy  + vz ]
+>     Erf[---------------------]
+               Sqrt[2] vth
+
+In[6]:= 
+                               2     2     2
+                          -2 vx  + vy  + vz
+Out[6]= ------------------------------------------------------- + 
+            2     2     2        2
+         (vx  + vy  + vz )/(2 vth )             2     2     2 2
+        E                           Sqrt[Pi] (vx  + vy  + vz )
+ 
+          2      2     2     2       2     2     2     2     2
+>    ((vth  (2 vx  - vy  - vz ) + (vy  + vz ) (vx  + vy  + vz )) 
+ 
+                   2     2     2
+            Sqrt[vx  + vy  + vz ]                     2     2     2 5/2
+>       Erf[---------------------]) / (Sqrt[2] vth (vx  + vy  + vz )   )
+                 Sqrt[2] vth
+
+In[7]:= 
+                               -3 vx vy
+Out[7]= ------------------------------------------------------- - 
+            2     2     2        2
+         (vx  + vy  + vz )/(2 vth )             2     2     2 2
+        E                           Sqrt[Pi] (vx  + vy  + vz )
+ 
+                                                  2     2     2
+                  2     2     2     2      Sqrt[vx  + vy  + vz ]
+     vx vy (-3 vth  + vx  + vy  + vz ) Erf[---------------------]
+                                                Sqrt[2] vth
+>    ------------------------------------------------------------
+                                  2     2     2 5/2
+                   Sqrt[2] vth (vx  + vy  + vz )
+
+In[8]:= 
+Out[8]//CForm= (-2*Power(vx,2) + Power(vy,2) + Power(vz,2))/
+     (Power(E,(Power(vx,2) + Power(vy,2) + Power(vz,2))/(2.*Power(vth,2)))*
+       Sqrt(Pi)*Power(Power(vx,2) + Power(vy,2) + Power(vz,2),2)) + 
+    ((Power(vth,2)*(2*Power(vx,2) - Power(vy,2) - Power(vz,2)) + 
+         (Power(vy,2) + Power(vz,2))*(Power(vx,2) + Power(vy,2) + Power(vz,2))
+         )*Erf(Sqrt(Power(vx,2) + Power(vy,2) + Power(vz,2))/(Sqrt(2)*vth)))/
+     (Sqrt(2)*vth*Power(Power(vx,2) + Power(vy,2) + Power(vz,2),2.5))
+
+In[9]:= 
+Out[9]//CForm= (-3*vx*vy)/
+     (Power(E,(Power(vx,2) + Power(vy,2) + Power(vz,2))/(2.*Power(vth,2)))*
+       Sqrt(Pi)*Power(Power(vx,2) + Power(vy,2) + Power(vz,2),2)) - 
+    (vx*vy*(-3*Power(vth,2) + Power(vx,2) + Power(vy,2) + Power(vz,2))*
+       Erf(Sqrt(Power(vx,2) + Power(vy,2) + Power(vz,2))/(Sqrt(2)*vth)))/
+     (Sqrt(2)*vth*Power(Power(vx,2) + Power(vy,2) + Power(vz,2),2.5))
+
+In[10]:= 
