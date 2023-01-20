@@ -545,8 +545,6 @@ int main(int argc, char *argv[]){
         maxU[d]   = CDF(rmax[d], delta, kw[d], d);
     }
 
-    minU = minU;
-    maxU = maxU;
     double factorVelBulk = 1.0 - epsilon;
     double factorVelBeam = 1.0 - factorVelBulk;
     size_type nlocBulk = (size_type)(factorVelBulk * totalP);
