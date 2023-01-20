@@ -504,6 +504,35 @@ public:
 
     }
 
+
+     void dumpParticleData(const unsigned int& iter, ParticleAttrib<Vector_t>& Rtemp, ParticleAttrib<Vector_t>& Ptemp, const char* fname) {
+
+        typename ParticleAttrib<Vector_t>::HostMirror R_host = Rtemp.getHostMirror();
+        typename ParticleAttrib<Vector_t>::HostMirror P_host = Ptemp.getHostMirror();
+        Kokkos::deep_copy(R_host, Rtemp.getView());
+        Kokkos::deep_copy(P_host, Ptemp.getView());
+        std::stringstream pname;
+        pname << "data/";
+        pname << fname;
+        pname << "_rank_";
+        pname << Ippl::Comm->rank();
+        pname << "_iter_";
+        pname << iter;
+        pname << ".csv";
+        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+        pcsvout.precision(10);
+        pcsvout.setf(std::ios::scientific, std::ios::floatfield);
+        pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
+        for (size_type i = 0; i< this->getLocalNum(); i++) {
+            pcsvout << R_host(i)[0] << " "
+                    << R_host(i)[1] << " "
+                    << R_host(i)[2] << " "
+                    << P_host(i)[0] << " "
+                    << P_host(i)[1] << " "
+                    << P_host(i)[2] << endl;
+        }
+     }
+
     void writelocalError(double Rerror, double Perror, unsigned int iter) {
         
             std::stringstream fname;
