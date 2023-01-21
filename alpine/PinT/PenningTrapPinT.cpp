@@ -657,9 +657,7 @@ int main(int argc, char *argv[]){
         IpplTimings::startTimer(dumpData);
         //Pcoarse->writeError(Rerror, Perror, it+1);
         Pcoarse->writelocalError(localRerror, localPerror, it+1);
-        if(Ippl::Comm->rank() == Ippl::Comm->size()-1) {
-            Pcoarse->dumpParticleData(it+1, Pend->R, Pend->P);
-        }
+        //Pcoarse->dumpParticleData(it+1, Pend->R, Pend->P, "Parareal");
         IpplTimings::stopTimer(dumpData);
 
         if(isConverged && isPreviousDomainConverged) {
