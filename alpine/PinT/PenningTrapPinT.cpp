@@ -623,6 +623,7 @@ int main(int argc, char *argv[]){
         Pend->R = Pend->R + Pcoarse->R;
         Pend->P = Pend->P + Pcoarse->P;
 
+        PL.applyBC(Pend->R, PL.getRegionLayout().getDomain());
         IpplTimings::startTimer(computeErrors);
         double localRerror, localPerror;
         double Rerror = computeLinfError(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror);

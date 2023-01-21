@@ -683,7 +683,7 @@ public:
     
         static IpplTimings::TimerRef fieldSolvePIC = IpplTimings::getTimer("fieldSolvePIC");
         PLayout& PL = this->getLayout();
-        PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+        //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIC_m = 0.0;
         scatter(q, rhoPIC_m, Rtemp);
@@ -744,7 +744,7 @@ public:
     
         static IpplTimings::TimerRef fieldSolvePIC = IpplTimings::getTimer("fieldSolvePIC");
         PLayout& PL = this->getLayout();
-        PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+        //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIC_m = 0.0;
         scatter(q, rhoPIC_m, Rtemp);
@@ -853,7 +853,7 @@ public:
     
         static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
-        PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+        //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
         scatterPIF(q, rhoPIF_m, Sk_m, Rtemp);
@@ -917,7 +917,7 @@ public:
     
         static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
-        PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+        //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
         scatterPIF(q, rhoPIF_m, Sk_m, Rtemp);

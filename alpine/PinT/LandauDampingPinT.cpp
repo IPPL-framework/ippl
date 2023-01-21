@@ -187,7 +187,52 @@ double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qpr
 
 }
 
-double computeLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
+double computeRLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
+                      const unsigned int& /*iter*/, const int& /*myrank*/, double& lError, 
+                      unsigned int& notIncluded) {
+    
+    auto Qview = Q.getView();
+    auto QprevIterView = QprevIter.getView();
+    double localError = 0.0;
+    double localNorm = 0.0;
+    notIncluded = 0;
+
+    Kokkos::parallel_reduce("Abs. max error and norm", Q.size(),
+                            KOKKOS_LAMBDA(const int i, double& valLError, double& valLnorm, 
+                                          unsigned int& excluded){
+                                Vector_t diff = Qview(i) - QprevIterView(i);
+                                double myValError = dot(diff, diff).apply();
+
+                                myValError = std::sqrt(myValError);
+
+                                bool isIncluded = (myValError < 10.0);
+
+
+                                myValError *= isIncluded;
+                                
+                                if(myValError > valLError) valLError = myValError;
+                                
+                                double myValnorm = dot(Qview(i), Qview(i)).apply();
+                                myValnorm = std::sqrt(myValnorm);
+
+                                myValnorm *= isIncluded;
+                                
+                                if(myValnorm > valLnorm) valLnorm = myValnorm;
+                                
+                                excluded += (!isIncluded);
+                            }, Kokkos::Max<double>(localError), Kokkos::Max<double>(localNorm), 
+                               Kokkos::Sum<unsigned int>(notIncluded));
+
+    Kokkos::fence();
+    lError = localError/localNorm;
+    
+    double relError = lError;
+    
+    return relError;
+
+}
+
+double computePLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
                       const unsigned int& /*iter*/, const int& /*myrank*/, double& lError) {
     
     auto Qview = Q.getView();
@@ -211,18 +256,7 @@ double computeLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Q
 
     Kokkos::fence();
     lError = localError/localNorm;
-    //std::cout << "Rank: " << myrank << " Iter: " << iter << " Local. Error: " << lError << std::endl;
-
-
-    //double globaltemp = 0.0;
-    //MPI_Allreduce(&localError, &globaltemp, 1, MPI_DOUBLE, MPI_MAX, Ippl::getComm());
-
-    //double absError = globaltemp;
-
-    //globaltemp = 0.0;
-    //MPI_Allreduce(&localNorm, &globaltemp, 1, MPI_DOUBLE, MPI_MAX, Ippl::getComm());
-
-    //double relError = absError / globaltemp;
+    
     double relError = lError;
     
     return relError;
@@ -617,10 +651,12 @@ int main(int argc, char *argv[]){
         Pend->R = Pend->R + Pcoarse->R;
         Pend->P = Pend->P + Pcoarse->P;
 
+        PL.applyBC(Pend->R, PL.getRegionLayout().getDomain());
         IpplTimings::startTimer(computeErrors);
         double localRerror, localPerror;
-        double Rerror = computeLinfError(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror);
-        double Perror = computeLinfError(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
+        unsigned int excludedNp;
+        double Rerror = computeRLinfError(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror, excludedNp);
+        double Perror = computePLinfError(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
     
         //double EfieldError = 0;
         //if(it > 0) {
@@ -649,8 +685,7 @@ int main(int argc, char *argv[]){
         msg << "Finished iteration: " << it+1 
             << " Rerror: " << Rerror 
             << " Perror: " << Perror
-            //<< " Efield error: " << EfieldError
-            //<< " Rhofield error: " << EfieldError
+            << " # Excluded: " << excludedNp 
             << endl;
 
         IpplTimings::startTimer(dumpData);
