@@ -180,6 +180,7 @@ public:
 
     double GAMMA; //NEW
 
+    Field_t   fr_m; //NEW
     Field_t   fv_mv; //NEW
     VField_t  gradRBH_mv; //(=Fd) NEW
     VField_t diffCoeffArr_mv[3];//NEW
@@ -187,6 +188,7 @@ public:
 
     std::shared_ptr<VSolver_t> solver_mvRB; //NEW
 
+    ParticleAttrib<double> fr;//NEW == 1
     ParticleAttrib<double> fv;//NEW == 1
     ParticleAttrib<Vector_t> Fd;//NEW
     ParticleAttrib<Vector_t> D0;//NEW
@@ -212,6 +214,7 @@ public:
         this->addAttribute(P);
         this->addAttribute(E);
         //EXCL_LANGEVIN
+        this->addAttribute(fr);
         this->addAttribute(fv);
         this->addAttribute(Fd);
         this->addAttribute(D0);
@@ -236,6 +239,7 @@ public:
         this->addAttribute(P);
         this->addAttribute(E);
         //EXCL_LANGEVIN
+        this->addAttribute(fr);
         this->addAttribute(fv);
         this->addAttribute(Fd);
         this->addAttribute(D0);
@@ -459,19 +463,32 @@ public:
         // ???????????????????????????????????????????????????????????
 
 
-    void scatterVEL() {
+    // void scatterVEL() {
+
+    //     fv_mv = 0.0;
+    //     scatter(this->fv, this->fv_mv, this->P);     
+    //     fv_mv = fv_mv / (this->hv_mv[0] * this->hv_mv[1] * this->hv_mv[2]);
+    // }
+    void scatterPhaseSpaceDist(Vector_t& hrField) {
 
         fv_mv = 0.0;
         scatter(this->fv, this->fv_mv, this->P);     
         fv_mv = fv_mv / (this->hv_mv[0] * this->hv_mv[1] * this->hv_mv[2]);
+
+
+        fr = 1.0;
+        fr_m = 0.0;
+        scatter(this->fr, this->fr_m, this->R);     
+        fr_m = fr_m / (hrField[0] * hrField[1] * hrField[2]);
+
+
     }
 
-    void gatherFd() {
+    void gather_Fd_D_Density() {
+
+        gather(this->fr, this->fr_m, this->R); 
 
         gather(this->Fd, this->gradRBH_mv, this->P);
-    }
-
-    void gatherD() {
 
         gather(this->D0, diffCoeffArr_mv[0], this->P);
         gather(this->D1, diffCoeffArr_mv[1], this->P);
@@ -642,7 +659,7 @@ public:
 //print particle data every other step to for analysis ...
 
 
-     void dumpLangevin(unsigned int iteration,  size_type N) {
+     void dumpLangevin(unsigned int iteration,  size_type N, std::string folder) {
          Inform m("DUMPLangevin");
 
 
@@ -696,7 +713,7 @@ m << "temperature" << endl;
 	    const size_t locNp = static_cast<size_t>(this->getLocalNum());
 	  
         //TODO get Rid of auto
-	    auto pRMirror = this->R.getView();
+	    auto pRView = this->R.getView();
         auto pPView = this->P.getView();
         auto pVMirror = this->P.getHostMirror();
         Kokkos::deep_copy(pVMirror, pPView);
@@ -767,11 +784,11 @@ m << "temperature" << endl;
 						double& mom5
 						){ 
 					double  part[2 * Dim];
-	            			part[0] = pRMirror(k)[0];
+	            			part[0] = pRView(k)[0];
 	            			part[1] = pVMirror(k)[0];
-	            			part[2] = pRMirror(k)[1];
+	            			part[2] = pRView(k)[1];
 	            			part[3] = pVMirror(k)[1];
-	            			part[4] = pRMirror(k)[2];
+	            			part[4] = pRView(k)[2];
 	            			part[5] = pVMirror(k)[2];
 	            			
 					cent += part[i];
@@ -841,7 +858,6 @@ m << "temperature" << endl;
     double vmax[Dim];
     double vmin[Dim];
 
-	auto pPView = this->P.getView();
 	for(unsigned d = 0; d<Dim; ++d){
 
 		Kokkos::parallel_reduce("vel max", 
@@ -866,22 +882,53 @@ m << "temperature" << endl;
 	MPI_Allreduce(vmin_loc, vmin, Dim , MPI_DOUBLE, MPI_MIN, Ippl::getComm());
     Ippl::Comm->barrier();
 
+    // RMAX RMIN    // ??? cant use  coefficient wise given reductions here?
+    double rmax_loc[Dim];
+    double rmin_loc[Dim];
+    double rmax[Dim];
+    double rmin[Dim];
+
+	for(unsigned d = 0; d<Dim; ++d){
+
+		Kokkos::parallel_reduce("rel max", 
+					 this->getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& mm){   
+              		                    mm = std::max(pRView(i)[d], mm);
+                                	 },                    			
+					  Kokkos::Max<double>(rmax_loc[d])
+					);
+
+		Kokkos::parallel_reduce("rel min", 
+					 this->getLocalNum(),
+					 KOKKOS_LAMBDA(const int i, double& mm){   
+              		                    mm = std::min(pRView(i)[d], mm);
+
+                                	 },                    			
+					  Kokkos::Min<double>(rmin_loc[d])
+					);
+	}
+	Kokkos::fence();
+	MPI_Allreduce(rmax_loc, rmax, Dim , MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+	MPI_Allreduce(rmin_loc, rmin, Dim , MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+    Ippl::Comm->barrier();
 //==    ==== end  CALCULATING BEAM STATISTICS    &&    EMITTANCE ======
 /////////////////////////////////////////////////////////////////////////////////
 // ===== start PRINTING  =========
+
+            // std::string folder2 = folder;
             std::stringstream fname;
-            fname << "data/FieldLangevin_";
+            fname << "/FieldLangevin_";
             fname << Ippl::Comm->size();
             fname << ".csv";
-            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            Inform csvout(NULL, (folder+fname.str()).c_str(), Inform::APPEND);
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             std::stringstream fname2;
-            fname2 << "data/All_FieldLangevin_";
+            fname2 << "/All_FieldLangevin_";
             fname2 << Ippl::Comm->size();
             fname2 << ".csv";
-            Inform csvout2(NULL, fname2.str().c_str(), Inform::APPEND);
+            Inform csvout2(NULL, (folder+fname2.str()).c_str(), Inform::APPEND);
             csvout2.precision(10);
             csvout2.setf(std::ios::scientific, std::ios::floatfield);
 
@@ -894,21 +941,24 @@ m << "temperature" << endl;
                     // "E_X_max_norm, "     << 
                     "T_X,    "              <<
                     "rvrms_X,"              <<
-                    "eps_X,  "              << 
+                    "eps_X,  "              <<
+                    "vmax,"              <<  
                     endl;
 
 		csvout2 <<  
                     "iteration,"            << 
+                    "vmaxX,vmaxY,vmaxZ,"    <<"                                        "<<
+                    "vminX,vminY,vminZ,"    <<"                                        "<<
+                    "rmaxX,rmaxY,rmaxZ,"    <<"                                        "<<
+                    "rminX,rminY,rminZ,"    <<"                                        "<<
+                    "vrmsX,vrmsY,vrmsZ,"    <<"                                        "<<
                     "Tx,Ty,Tz,"             <<"                                        "<<
                     "epsX,epsY,epsZ,"       <<"                                        "<<
                     "epsX2,epsY2,epsZ2,"    <<"                                        "<<
+                    "rvrmsX,rvrmsY,rvrmsZ," <<"                                        "<<
                     "rrmsX,rrmsY,rrmsZ,"    <<"                                        "<<
-                    "vrmsX,vrmsY,vrmsZ,"    <<"                                        "<<
                     "rmeanX,rmeanY,rmeanZ," <<"                                        "<<
                     "vmeanX,vmeanY,vmeanZ," <<"                                        "<<
-                    "rvrmsX,rvrmsY,rvrmsZ," <<"                                        "<<
-                    "vmaxX,vmaxY,vmaxZ," <<"                                        "<<
-                    "vminX,vminY,vminZ," <<"                                        "<<
                     "time,"                 <<
                     "Ex_field_energy,"      <<
                     "Ex_max_norm,"          <<
@@ -916,29 +966,34 @@ m << "temperature" << endl;
 	    }     
 
             csvout<<    
-                    iteration       <<" "<<
-                    time_m          <<" "<< 
+                    iteration       <<","<<
+                    time_m          <<","<< 
                     // fieldEnergy     <<" "<< 
                     // ExAmp           <<" "<< 
-                    temperature[0]  <<" "<< 
-                    rvrms[0]        <<" "<<
-                    eps[0]          <<" "<<
+                    temperature[0]  <<","<< 
+                    rvrms[0]        <<","<<
+                    eps[0]          <<","<<
+                    vmax[0]         <<","<<
+                    rmax[0]         <<","<<
+                    
                     // eps[0]*(4.0/5.0)<<" "<<
                     // eps[0]*(3.0/4.0)<<" "<<
     	 	endl;	
 
             csvout2<<   
                     iteration   <<","<<
+                            vmax[0]<<","<<        vmax[1]<<","<<        vmax[2]<<",     "<<
+                            vmin[0]<<","<<        vmin[1]<<","<<        vmin[2]<<",     "<<	
+                            rmax[0]<<","<<        rmax[1]<<","<<        rmax[2]<<",     "<<
+                            rmin[0]<<","<<        rmin[1]<<","<<        rmin[2]<<",     "<<	
+                    vrms        (0)<<","<<vrms        (1)<<","<<vrms        (2)<<",     "<<
                     temperature (0)<<","<<temperature (1)<<","<<temperature (2)<<",     "<<
                     eps         (0)<<","<<eps         (1)<<","<<eps         (2)<<",     "<<
                     eps2        (0)<<","<<eps2        (1)<<","<<eps2        (2)<<",     "<<
+                    rvrms       (0)<<","<<rvrms       (1)<<","<<rvrms       (2)<<",     "<<	
                     rrms        (0)<<","<<rrms        (1)<<","<<rrms        (2)<<",     "<<
-                    vrms        (0)<<","<<vrms        (1)<<","<<vrms        (2)<<",     "<<
                     rmean       (0)<<","<<rmean       (1)<<","<<rmean       (2)<<",     "<<
                     vmean       (0)<<","<<vmean       (1)<<","<<vmean       (2)<<",     "<<
-                    rvrms       (0)<<","<<rvrms       (1)<<","<<rvrms       (2)<<",     "<<	
-                            vmax[0]<<","<<        vmax[1]<<","<<        vmax[2]<<",     "<<
-                            vmin[0]<<","<<        vmin[1]<<","<<        vmin[2]<<",     "<<	
                     time_m      <<","<< 
                     fieldEnergy <<","<< 
                     ExAmp       <<","<< 

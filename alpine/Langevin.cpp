@@ -317,6 +317,27 @@ bool setVmaxmin( bunch& P, double& ext, const double& relb){
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+// template<typename bunch>
+// void setBC(bunch& P){
+//         auto pDCView     = P.diffusionCoeff_mv.getView();
+//         const int nghost = P.fv_mv.getNghost(); // ???
+
+//     Kokkos::parallel_for("write over diff coeff from matrix to vector array",
+//                     Kokkos::MDRangePolicy<Kokkos::Rank<1>>({nghost},
+//                                                             {   pDCView.extent(0) - nghost,
+// 							                                    pDCView.extent(1) - nghost,
+// 							                                    pDCView.extent(2) - nghost}),
+// 		            KOKKOS_LAMBDA(const int i, const int j, const int k){
+            
+//                         pDCA0View(i,j,k) = pDCView(i,j,k)[0];
+//                         pDCA1View(i,j,k) = pDCView(i,j,k)[1];
+//                         pDCA2View(i,j,k) = pDCView(i,j,k)[2];
+//                     }
+//     );
+//     Kokkos::fence();
+// }
+
+
 template<typename bunch>
 void prepareDiffCoeff(bunch& P){
         auto pDCView     = P.diffusionCoeff_mv.getView();
@@ -350,15 +371,37 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
         double epszero = DBL_EPSILON; //1e-5; //DBL_EPSILON   or -10
 
 
-        // // //make symmetric ... is the gathering of symmetric matrices symmetric..
-        (*D[0])(1) = (*D[1])(0) = ((*D[0])(1)+(*D[1])(0)) *0.5;
-        (*D[0])(2) = (*D[2])(0) = ((*D[0])(2)+(*D[2])(0)) *0.5;
-        (*D[1])(2) = (*D[2])(1) = ((*D[1])(2)+(*D[2])(1)) *0.5; 
+        //make symmetric ... is the gathering of symmetric matrices symmetric..
+        //might not achieve anything here....
+        int da[]={0,1,2};
+        std::pair<int, int> PAIRs[6] = {{0,1},{1,0},{1,2},{2,1},{0,2},{2,0}};
+        for( std::pair<int, int> pa : PAIRs){
+            if(std::isnan( (*D[pa.first])(pa.second)) ){
+                if(std::isnan( (*D[pa.second])(pa.first)) )
+                    assert(false && "both sym element are nan");
+                else    (*D[pa.first])(pa.second) = (*D[pa.second])(pa.first);
+            }
+        }
         
-        assert(     (fabs((*D[0])(1)-(*D[1])(0))) <= epszero &&
-                    (fabs((*D[0])(2)-(*D[2])(0))) <= epszero &&
-                    (fabs((*D[1])(2)-(*D[2])(1))) <= epszero 
-        );
+        for(int ii : da){
+            if (std::isnan((*D[ii])(ii))){
+                if(std::isnan((*D[(ii+1)%3])((ii+1)%3))){
+                    if(std::isnan((*D[(ii)+2%3])((ii+2)%3))){
+                        assert( false && "all diags are nan");
+                    }
+                    else (*D[ii])(ii) =  (*D[(ii+2)%3])((ii+2)%3);
+                }
+                else (*D[ii])(ii) =  (*D[(ii+1)%3])((ii+1)%3);
+            }
+        }
+
+        // (*D[0])(1) = (*D[1])(0) = ((*D[0])(1)+(*D[1])(0)) *0.5;
+        // (*D[0])(2) = (*D[2])(0) = ((*D[0])(2)+(*D[2])(0)) *0.5;
+        // (*D[1])(2) = (*D[2])(1) = ((*D[1])(2)+(*D[2])(1)) *0.5; 
+        // assert(     (fabs((*D[0])(1)-(*D[1])(0))) <= epszero &&
+        //             (fabs((*D[0])(2)-(*D[2])(0))) <= epszero &&
+        //             (fabs((*D[1])(2)-(*D[2])(1))) <= epszero 
+        // );
 
         auto finish_LL = [&](const unsigned i0, const unsigned i1, const unsigned i2){
                 // LL(0)(0) = sqrt(*D[i0])(i0));
@@ -376,20 +419,49 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
             return sqrt((*D[i1])(i1)- pow( LL(i0)(i1)=(*D[i0])(i1)/LL(i0)(i0), 2));
         };
 
+            bool alternative = false;
 
-            if     (( DBL_EPSILON <=(LL(0)(0)=sqrt(d0(0)))     )&&(   DBL_EPSILON <= ( LL(1)(1) = get_2_diag(0,1/*,2*/) )       ))finish_LL(0, 1, 2);
-            // else if(( epszero <= LL(0)(0)                  )&&(    epszero <= ( LL(2)(2) = get_2_diag(0,2/*,1*/) )       ))finish_LL(0, 2, 1);
-            // else if(( epszero <=(LL(1)(1)=sqrt(d1(1)))     )&&(    epszero <= ( LL(0)(0) = get_2_diag(1,0/*,2*/) )       ))finish_LL(1, 0, 2);
-            // else if(( epszero <= LL(1)(1)                  )&&(    epszero <= ( LL(2)(2) = get_2_diag(1,2/*,0*/) )       ))finish_LL(1, 2, 0);
-            // else if(( epszero <=(LL(2)(2)=sqrt(d2(2)))     )&&(    epszero <= ( LL(1)(1) = get_2_diag(2,1/*,0*/) )       ))finish_LL(2, 1, 0);
-            // else if(( epszero <= LL(2)(2)                  )&&(    epszero <= ( LL(0)(0) = get_2_diag(2,0/*,1*/) )       ))finish_LL(2, 0, 1);
+            if     (( epszero <=fabs(LL(0)(0)=sqrt(d0(0)))      )&&(    epszero <= fabs( LL(1)(1) = get_2_diag(0,1/*,2*/) )       ))finish_LL(0, 1, 2);
+            // else if(( epszero <=fabs(LL(0)(0))                  )&&(    epszero <= fabs( LL(2)(2) = get_2_diag(0,2/*,1*/) )       ))finish_LL(0, 2, 1);
+            // else if(( epszero <=fabs(LL(1)(1)=sqrt(d1(1)))      )&&(    epszero <= fabs( LL(0)(0) = get_2_diag(1,0/*,2*/) )       ))finish_LL(1, 0, 2);
+            // else if(( epszero <=fabs(LL(1)(1))                  )&&(    epszero <= fabs( LL(2)(2) = get_2_diag(1,2/*,0*/) )       ))finish_LL(1, 2, 0);
+            // else if(( epszero <=fabs(LL(2)(2)=sqrt(d2(2)))      )&&(    epszero <= fabs( LL(1)(1) = get_2_diag(2,1/*,0*/) )       ))finish_LL(2, 1, 0);
+            // else if(( epszero <=fabs(LL(2)(2))                  )&&(    epszero <= fabs( LL(0)(0) = get_2_diag(2,0/*,1*/) )       ))finish_LL(2, 0, 1);
             else{
-                // how often
+                // how often assoon as they leave their orig cell...
+                // std::cout << "no cholesky for: " << std::endl;
+                // for(int id : da){
+                //     for(int jd : da)
+                //     std::cout << (*D[id])(jd) << " ";
+                //     std::cout << std::endl;
+                // }
                 // assert(false && "no cholesky decomposition possible for at least one particle");
-                for(unsigned di = 0; di<Dim; ++di)
+
+                alternative = true;
+
+            }
+
+
+            for(unsigned di = 0; di<Dim; ++di){
+                for(unsigned dj = 0; dj<Dim; ++dj){
+                    const double LLL = LL[di][dj];
+                    if(std::isnan(LLL)){
+                        // LL[di][dj]=333.333;
+                        alternative = true;
+                    }
+                }
+            }
+
+            if(alternative){
+                for(unsigned di = 0; di<Dim; ++di){
                 for(unsigned dj = 0; dj<Dim; ++dj){
                     LL(di)(dj)=0.0;
-                }
+                }}
+                for(int di : da)   LL(di)(di) = sqrt(fabs((*D[di])(di)));
+
+
+
+
             }
 
         return LL;
@@ -433,6 +505,8 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
 
 Vector_t  GeMV_t(const Matrix_t& M, const Vector_t V){return V[0]*M[0]+V[1]*M[1]+V[2]*M[2];}
 
+
+    // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d());
 template<typename bunch>
 void applyLangevin(bunch& P, std::function<Vector_t()> Gaussian3d){
 
@@ -450,7 +524,6 @@ void applyLangevin(bunch& P, std::function<Vector_t()> Gaussian3d){
 	 Kokkos::fence();
 }
 
-    // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d());
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //======================================================================================== 
@@ -509,7 +582,7 @@ int main(int argc, char *argv[]){
     const double particleMass       = std::atof(argv[13]);
     const double focusForce         = std::atof(argv[14]);
     const int printInterval         = std::atoi(argv[15]);
-    const double eps_inv                 = std::atof(argv[16]);
+    const double eps_inv            = std::atof(argv[16]);
     const int NV                    = std::atoi(argv[17]);
     const double VMAX               = std::atof(argv[18]);
     const double rel_buff           = std::atof(argv[19]);
@@ -518,10 +591,12 @@ int main(int argc, char *argv[]){
     const bool EEE                  = std::atoi(argv[21]);
     const bool DDD                  = std::atoi(argv[22]);
     const bool CCC                  = std::atoi(argv[23]);
-    const bool BBB                  = std::atoi(argv[24]);
-    const bool AAA                  = std::atoi(argv[25]);
-    const bool PRINT                = std::atoi(argv[26]);
-    const bool COLLISION            = std::atoi(argv[27]);
+    const double BBB                  = std::atoi(argv[24]);
+    const bool DRAG                 = std::atoi(argv[25]);
+    const bool DIFFUSION            = std::atoi(argv[26]);
+    const bool PRINT                = std::atoi(argv[27]);
+    const bool COLLISION            = std::atoi(argv[28]);
+    std::string folder              = argv[29];
  	
      
     //cm annahme, elektronen charge mass, / nicht milisekunde...
@@ -597,7 +672,7 @@ int main(int argc, char *argv[]){
     P->GAMMA = 10.0* pow(particleCharge, 4) * eps_inv*eps_inv / ( 4*M_PI * pow(particleMass, 2));
 
     P->nv_mv = {NV,NV,NV};
-    P->hv_mv = { 2*VMAX/NV,  2*VMAX/NV,  2*VMAX/NV};
+    P->hv_mv = { 2.0*VMAX/NV,  2.0*VMAX/NV,  2.0*VMAX/NV};
     ippl::NDIndex<Dim> domain_v;
     for (unsigned i = 0; i< Dim; i++) {
         // domain_v[i] = ippl::Index(P->nv_mv[i]);
@@ -606,15 +681,18 @@ int main(int argc, char *argv[]){
     ippl::e_dim_tag decomp_v[Dim];
     for (unsigned d = 0; d < Dim; ++d) {
         // decomp[d] = ippl::SERIAL;//PARALLEL
-        decomp[d] = ippl::PARALLEL;
+        decomp_v[d] = ippl::PARALLEL;
     }
 
 
-    bool isVallPeriodic = false;
+    bool isVallPeriodic = false; 
+    // false; nooo?
+
     Mesh_t          mesh_v(domain_v, P->hv_mv, Vector_t({0.0, 0.0, 0.0}));
     FieldLayout_t   FL_v(domain_v, decomp_v, isVallPeriodic);
     PLayout_t       PL_v(FL_v, mesh_v);
 
+    P->fr_m.initialize(mesh_v, FL_v);
     P->fv_mv.initialize(mesh_v, FL_v);
     P->gradRBH_mv.initialize(mesh_v, FL_v);
     P->diffusionCoeff_mv.initialize(mesh_v, FL_v);
@@ -659,7 +737,8 @@ int main(int argc, char *argv[]){
         << "DDD                 = " << std::setw(20) <<  DDD   << endl
         << "CCC                 = " << std::setw(20) <<  CCC   << endl
         << "BBB                 = " << std::setw(20) <<  BBB   << endl
-        << "AAA                 = " << std::setw(20) <<  AAA   << endl
+        << "DRAG                = " << std::setw(20) <<  DRAG   << endl
+        << "DIFFUSION           = " << std::setw(20) <<  DIFFUSION   << endl
         << "VMAX                = " << std::setw(20) <<  P->vmax_mv   << endl
         << "VMIN                = " << std::setw(20) <<  P->vmin_mv   << endl
         << "HV                  = " << std::setw(20) <<  P->hv_mv   << endl
@@ -717,9 +796,10 @@ int main(int argc, char *argv[]){
     Kokkos::fence();  Ippl::Comm->barrier();  //??//
 
 
-	// auto pD0Host = P->D0.getHostMirror();
-	// auto pD1Host = P->D1.getHostMirror();
-	// auto pD2Host = P->D2.getHostMirror();
+	auto pfrHost = P->fr.getHostMirror();
+	auto pD0Host = P->D0.getHostMirror();
+	auto pD1Host = P->D1.getHostMirror();
+	auto pD2Host = P->D2.getHostMirror();
 
     
     //multiple node runs stop here
@@ -766,7 +846,7 @@ int main(int argc, char *argv[]){
 
 
     IpplTimings::startTimer(dumpDataTimer);
-    P->dumpLangevin(0,  nP);
+    P->dumpLangevin(0,  nP, folder);
 	// P->dumpParticleData();
     // P->gatherStatistics(nP);
     //P->dumpLocalDomains(FL, 0);
@@ -794,23 +874,24 @@ int main(int argc, char *argv[]){
 
         msg << "Start time step: " << it+1 << endl;
 
-        // kick
+        //Vorzeichen?? checken
+        msg << "kick" <<endl;
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E * particleCharge;
         IpplTimings::stopTimer(PTimer);
 
-        //drift
+        msg << "drift" << endl;
         IpplTimings::startTimer(RTimer);
         P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);
 
+        msg << "update" << endl;
         //Since the particles have moved spatially update them to correct processors
 	    IpplTimings::startTimer(updateTimer);
         PL.update(*P, bunchBuffer);
-        PL_v.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
 
-        // Domain Decomposition
+        // Domain Decomposition for Positions
         if (P->balance(nP, it+1)) {
            msg << "Starting repartition" << endl;
         //    IpplTimings::startTimer(domainDecomposition);
@@ -823,6 +904,9 @@ int main(int argc, char *argv[]){
         }
 
 
+        P->dumpLangevin(it+1,  nP, folder);
+
+        msg << "scatter" << endl;
         P->scatterCIC(nP, it+1, hr); 
         
         P->rho_m = P->rho_m * eps_inv;
@@ -831,14 +915,18 @@ int main(int argc, char *argv[]){
         P->solver_mp->solve();
         IpplTimings::stopTimer(SolveTimer);
 
+
+        msg << "gather" << endl;
         P->gatherCIC();
 
 
 // =================MYSTUFF::CONSTANT_FOCUSING======================
+
+        msg << "constant Focusing" << endl;
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
 // =================================================================
 
-        //kick
+        msg << "kick" << endl;
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
@@ -858,9 +946,17 @@ int main(int argc, char *argv[]){
             }
         }
 
+
+
+        PL_v.update(*P, bunchBuffer);
+        // P->dumpLangevin(0,  nP);
+        // Domain Decomposition for Positions
+
+        P->dumpLangevin(it+1,  nP, folder);
+
         if(EEE){msg << "EEE"<<endl;
         
-            P->scatterVEL(); 
+            P->scatterPhaseSpaceDist(hr); 
             P->fv_mv = -8.0*M_PI*P->fv_mv;
         }
 
@@ -876,6 +972,10 @@ int main(int argc, char *argv[]){
             P->solver_mvRB->solve();
             P->diffusionCoeff_mv = hess(P->fv_mv);
             P->diffusionCoeff_mv = P->GAMMA *  P->diffusionCoeff_mv; 
+
+            //here we have to set all values of hess and grad at the bounaries to zero because they carry big errors!!!!!
+            //change of plans we set them to value bordering them!!!!!
+            // setBC(*P);
         }
 
         //undo origin shift
@@ -885,17 +985,45 @@ int main(int argc, char *argv[]){
         if(CCC){msg << "CCC" << endl;
 
             prepareDiffCoeff(*P);   //does:: for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d];
-            P->gatherFd();
-            P->gatherD();
+            P->gather_Fd_D_Density();
+        
         }
 
-        //this does barely anything...?
+
+        Kokkos::deep_copy(pfrHost, P->fr.getView());
+        msg << pfrHost(9) << " " 
+            << pfrHost(1000) << " " 
+            << pfrHost(5000) << " " 
+            << pfrHost(10000) << " " 
+            << pfrHost(50000) << " " 
+            << pfrHost(100000) << " " 
+            <<endl;
+
         if(BBB){ msg << "BBB" << endl;
 
+
+            
+            P->Fd = P->Fd*BBB;
+            P->D0 = P->D0*BBB*90000;
+            P->D1 = P->D1*BBB*90000;
+            P->D2 = P->D2*BBB*90000;
+
+            // msg << 
+            
+        }
+        else{
+            msg << "spacedensity factor P->fr" << endl;
+            P->Fd = P->Fd*P->fr;
+            P->D0 = P->D0*P->fr;
+            P->D1 = P->D1*P->fr;
+            P->D2 = P->D2*P->fr;
+        }
+
+        if(DRAG){ msg << "DRAG" << endl;
             P->P = P->P + dt*P->Fd;
         }
 
-        if(AAA){msg << "AAA" << endl;
+        if(DIFFUSION){msg << "DIFFUSION" << endl;
 
 
                 // Kokkos::deep_copy(pD0Host, P->D0.getView());
@@ -910,13 +1038,17 @@ int main(int argc, char *argv[]){
                 //     int xyz[] = {0,1,2};
                     
                 //     for(int di : ddd){
-                //     for(int x : xyz){
-                //     // for(int y : xyz){
-                //         // std::cout << DView(di)[x][y] << " ";//cant access particle Views directly for printing
-                //         msg << pD0Host(di)[x] << " " << pD1Host(di)[x] << " " << pD2Host(di)[x];
-                //     // }
-                //     msg <<  endl;
-                //     }msg << endl;
+                //         for(int x : xyz){
+                //             // std::cout << DView(di)[x][y] << " ";//cant access particle Views directly for printing
+                //             msg << pD0Host(di)[x] << " " << pD1Host(di)[x] << " " << pD2Host(di)[x] << endl;
+                //         }msg << endl;
+                        
+                //         auto cholll = cholesky( pD0Host(di), pD1Host(di),pD2Host(di));
+                //         for(int x : xyz){
+                //         for(int y : xyz){
+                //             msg << cholll[x][y] << " ";
+                //         } msg << endl;
+                //         }msg << endl;
                 //     }
                     
                 // Kokkos::fence();
@@ -925,7 +1057,9 @@ int main(int argc, char *argv[]){
             applyLangevin(*P, Gaussian3d);   //does:: // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
         }
 
-       	        //error if variable not used..   aaand we dont use it?? ever???
+            PL_v.update(*P, bunchBuffer);
+
+       	        //error if variable not used..   DIFFUSIONnd we dont use it?? ever???
                 if(false){
     	        double tmp = interactionRadius;
     	        tmp += 1;
@@ -943,7 +1077,7 @@ int main(int argc, char *argv[]){
         if(PRINT){ msg << "PRINT" << endl;
             if (it%printInterval==0){
             IpplTimings::startTimer(dumpDataTimer);
-            P->dumpLangevin(it+1,  nP);
+            P->dumpLangevin(it+1,  nP, folder);
             // P->gatherStatistics(nP);
             IpplTimings::stopTimer(dumpDataTimer);
             }
