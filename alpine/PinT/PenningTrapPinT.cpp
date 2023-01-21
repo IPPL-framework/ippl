@@ -168,23 +168,15 @@ double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qpr
     //std::cout << "Rank: " << myrank << " Iter: " << iter << " Local. Error: " << lError << std::endl;
 
 
-    double globaltemp = 0.0;
-    MPI_Allreduce(&localError, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    //double globaltemp = 0.0;
+    //MPI_Allreduce(&localError, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
 
-    double absError = std::sqrt(globaltemp);
+    //double absError = std::sqrt(globaltemp);
 
-    //temp = 0.0;
-    //Kokkos::parallel_reduce("Q norm", Q.size(),
-    //                        KOKKOS_LAMBDA(const int i, double& valL){
-    //                            double myVal = dot(Qview(i), Qview(i)).apply();
-    //                            valL += myVal;
-    //                        }, Kokkos::Sum<double>(temp));
+    //globaltemp = 0.0;
+    //MPI_Allreduce(&localNorm, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
 
-
-    globaltemp = 0.0;
-    MPI_Allreduce(&localNorm, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-
-    double relError = absError / std::sqrt(globaltemp);
+    double relError = lError;//absError / std::sqrt(globaltemp);
     
     return relError;
 
@@ -626,8 +618,8 @@ int main(int argc, char *argv[]){
         PL.applyBC(Pend->R, PL.getRegionLayout().getDomain());
         IpplTimings::startTimer(computeErrors);
         double localRerror, localPerror;
-        double Rerror = computeLinfError(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror);
-        double Perror = computeLinfError(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
+        double Rerror = computeL2Error(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror);
+        double Perror = computeL2Error(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
     
         IpplTimings::stopTimer(computeErrors);
 

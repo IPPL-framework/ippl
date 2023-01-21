@@ -143,7 +143,43 @@ double CDF(const double& x, const double& alpha, const double& k) {
    return cdf;
 }
 
-double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
+double computeRL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
+                         const unsigned int& /*iter*/, const int& /*myrank*/, double& lError, 
+                         Vector_t& length) {
+    
+    auto Qview = Q.getView();
+    auto QprevIterView = QprevIter.getView();
+    double localError = 0.0;
+    double localNorm = 0.0;
+
+    Kokkos::parallel_reduce("Abs. error and norm", Q.size(),
+                            KOKKOS_LAMBDA(const int i, double& valLError, double& valLnorm){
+                                Vector_t diff = Qview(i) - QprevIterView(i);
+
+                                for (unsigned d = 0; d < 3; ++d) {
+                                    bool isLeft = (diff[d] <= -10.0);
+                                    bool isRight = (diff[d] >= 10.0);
+                                    bool isInside = ((diff[d] > -10.0) && (diff[d] < 10.0));
+                                    diff[d] = (isInside * diff[d]) + (isLeft * (diff[d] + length[d]))
+                                              +(isRight * (diff[d] - length[d]));
+                                }
+
+                                double myValError = dot(diff, diff).apply();
+                                valLError += myValError;
+                                double myValnorm = dot(Qview(i), Qview(i)).apply();
+                                valLnorm += myValnorm;
+                            }, Kokkos::Sum<double>(localError), Kokkos::Sum<double>(localNorm));
+
+    Kokkos::fence();
+    lError = std::sqrt(localError)/std::sqrt(localNorm);
+
+    double relError = lError;//absError / std::sqrt(globaltemp);
+    
+    return relError;
+
+}
+
+double computePL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
                       const unsigned int& /*iter*/, const int& /*myrank*/, double& lError) {
     
     auto Qview = Q.getView();
@@ -162,26 +198,8 @@ double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qpr
 
     Kokkos::fence();
     lError = std::sqrt(localError)/std::sqrt(localNorm);
-    //std::cout << "Rank: " << myrank << " Iter: " << iter << " Local. Error: " << lError << std::endl;
 
-
-    double globaltemp = 0.0;
-    MPI_Allreduce(&localError, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-
-    double absError = std::sqrt(globaltemp);
-
-    //temp = 0.0;
-    //Kokkos::parallel_reduce("Q norm", Q.size(),
-    //                        KOKKOS_LAMBDA(const int i, double& valL){
-    //                            double myVal = dot(Qview(i), Qview(i)).apply();
-    //                            valL += myVal;
-    //                        }, Kokkos::Sum<double>(temp));
-
-
-    globaltemp = 0.0;
-    MPI_Allreduce(&localNorm, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-
-    double relError = absError / std::sqrt(globaltemp);
+    double relError = lError;//absError / std::sqrt(globaltemp);
     
     return relError;
 
@@ -189,39 +207,44 @@ double computeL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qpr
 
 double computeRLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
                       const unsigned int& /*iter*/, const int& /*myrank*/, double& lError, 
-                      unsigned int& notIncluded) {
+                      Vector_t& length) {
     
     auto Qview = Q.getView();
     auto QprevIterView = QprevIter.getView();
     double localError = 0.0;
     double localNorm = 0.0;
-    notIncluded = 0;
 
     Kokkos::parallel_reduce("Abs. max error and norm", Q.size(),
-                            KOKKOS_LAMBDA(const int i, double& valLError, double& valLnorm, 
-                                          unsigned int& excluded){
+                            KOKKOS_LAMBDA(const int i, double& valLError, double& valLnorm){
                                 Vector_t diff = Qview(i) - QprevIterView(i);
+                                
+                                for (unsigned d = 0; d < 3; ++d) {
+                                    bool isLeft = (diff[d] <= -10.0);
+                                    bool isRight = (diff[d] >= 10.0);
+                                    bool isInside = ((diff[d] > -10.0) && (diff[d] < 10.0));
+                                    diff[d] = (isInside * diff[d]) + (isLeft * (diff[d] + length[d]))
+                                              +(isRight * (diff[d] - length[d]));
+                                }
+                                
                                 double myValError = dot(diff, diff).apply();
 
                                 myValError = std::sqrt(myValError);
 
-                                bool isIncluded = (myValError < 10.0);
+                                //bool isIncluded = (myValError < 10.0);
 
-
-                                myValError *= isIncluded;
+                                //myValError *= isIncluded;
                                 
                                 if(myValError > valLError) valLError = myValError;
                                 
                                 double myValnorm = dot(Qview(i), Qview(i)).apply();
                                 myValnorm = std::sqrt(myValnorm);
 
-                                myValnorm *= isIncluded;
+                                //myValnorm *= isIncluded;
                                 
                                 if(myValnorm > valLnorm) valLnorm = myValnorm;
                                 
-                                excluded += (!isIncluded);
-                            }, Kokkos::Max<double>(localError), Kokkos::Max<double>(localNorm), 
-                               Kokkos::Sum<unsigned int>(notIncluded));
+                                //excluded += (!isIncluded);
+                            }, Kokkos::Max<double>(localError), Kokkos::Max<double>(localNorm));
 
     Kokkos::fence();
     lError = localError/localNorm;
@@ -435,14 +458,15 @@ int main(int argc, char *argv[]){
     Vector_t alpha = {0.05, 0.05, 0.05};
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
-    double dxPIC = rmax[0] / nrPIC[0];
-    double dyPIC = rmax[1] / nrPIC[1];
-    double dzPIC = rmax[2] / nrPIC[2];
+    Vector_t length = rmax - rmin;
+    double dxPIC = length[0] / nrPIC[0];
+    double dyPIC = length[1] / nrPIC[1];
+    double dzPIC = length[2] / nrPIC[2];
 
 
-    double dxPIF = rmax[0] / nmPIF[0];
-    double dyPIF = rmax[1] / nmPIF[1];
-    double dzPIF = rmax[2] / nmPIF[2];
+    double dxPIF = length[0] / nmPIF[0];
+    double dyPIF = length[1] / nmPIF[1];
+    double dzPIF = length[2] / nmPIF[2];
     Vector_t hrPIC = {dxPIC, dyPIC, dzPIC};
     Vector_t hrPIF = {dxPIF, dyPIF, dzPIF};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
@@ -455,7 +479,7 @@ int main(int argc, char *argv[]){
     PLayout_t PL(FLPIC, meshPIC);
 
     //Q = -\int\int f dx dv
-    double Q = -rmax[0] * rmax[1] * rmax[2];
+    double Q = -length[0] * length[1] * length[2];
     Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q);
     Pbegin = std::make_unique<states_begin_type>(PL);
     Pend = std::make_unique<states_end_type>(PL);
@@ -654,9 +678,8 @@ int main(int argc, char *argv[]){
         PL.applyBC(Pend->R, PL.getRegionLayout().getDomain());
         IpplTimings::startTimer(computeErrors);
         double localRerror, localPerror;
-        unsigned int excludedNp;
-        double Rerror = computeRLinfError(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror, excludedNp);
-        double Perror = computePLinfError(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
+        double Rerror = computeRL2Error(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror, length);
+        double Perror = computePL2Error(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
     
         //double EfieldError = 0;
         //if(it > 0) {
@@ -685,7 +708,6 @@ int main(int argc, char *argv[]){
         msg << "Finished iteration: " << it+1 
             << " Rerror: " << Rerror 
             << " Perror: " << Perror
-            << " # Excluded: " << excludedNp 
             << endl;
 
         IpplTimings::startTimer(dumpData);
