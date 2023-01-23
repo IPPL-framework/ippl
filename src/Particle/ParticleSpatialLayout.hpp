@@ -57,12 +57,12 @@ namespace ippl {
     void ParticleSpatialLayout<T, Dim, Mesh>::update(
         BufferType& pdata, BufferType& buffer)
     {
-        static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("ParticleBC");
+        static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
         IpplTimings::startTimer(ParticleBCTimer);
         this->applyBC(pdata.R, rlayout_m.getDomain());
         IpplTimings::stopTimer(ParticleBCTimer);
 
-        static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("ParticleUpdate");
+        static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("updateParticle");
         IpplTimings::startTimer(ParticleUpdateTimer);
         int nRanks = Ippl::Comm->size();
 
@@ -99,7 +99,7 @@ namespace ippl {
         // 2nd step
 
         // figure out how many receives
-        static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("SendPreprocess");
+        static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("sendPreprocess");
         IpplTimings::startTimer(preprocTimer);
         MPI_Win win;
         std::vector<size_type> nRecvs(nRanks, 0);
@@ -123,7 +123,7 @@ namespace ippl {
         MPI_Win_free(&win);
         IpplTimings::stopTimer(preprocTimer);
 
-        static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("ParticleSend");
+        static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("particleSend");
         IpplTimings::startTimer(sendTimer);
         // send
         std::vector<MPI_Request> requests(0);
@@ -155,7 +155,7 @@ namespace ippl {
         IpplTimings::stopTimer(sendTimer);
 
         // 3rd step
-        static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("ParticleDestroy");
+        static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("particleDestroy");
         IpplTimings::startTimer(destroyTimer);
 
         size_type invalidCount = 0;
@@ -175,7 +175,7 @@ namespace ippl {
         Kokkos::fence();
 
         IpplTimings::stopTimer(destroyTimer);
-        static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("ParticleRecv");
+        static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
         IpplTimings::startTimer(recvTimer);
         // 4th step
         int recvs = 0;
