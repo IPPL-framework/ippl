@@ -43,7 +43,7 @@ namespace ippl {
     , mesh_m(&m)
     { 
         for (unsigned int face=0; face < 2 * Dim; ++face) {
-            bc_m[face] = std::make_shared<NoBcFace<T, Dim>>(face);
+            bc_m[face] = std::make_shared<NoBcFace<T, Dim, M>>(face);
         }
     }
 
@@ -54,7 +54,7 @@ namespace ippl {
         BareField<T,Dim>::initialize(l, nghost);
         mesh_m = &m;
         for (unsigned int face=0; face < 2 * Dim; ++face) {
-            bc_m[face] = std::make_shared<NoBcFace<T, Dim>>(face);
+            bc_m[face] = std::make_shared<NoBcFace<T, Dim, M>>(face);
         }
     }
 
