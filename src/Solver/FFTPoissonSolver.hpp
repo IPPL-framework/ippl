@@ -432,7 +432,7 @@ namespace ippl {
                 grnL_m.initialize(*mesh4_m, *layout4_m);
 
                 // create a Complex-to-Complex FFT object to transform for layout4
-                fft4n_m = std::make_unique<FFT<CCTransform, Dim, Trhs>>(*layout4_m, this->params_m);
+                fft4n_m = std::make_unique<FFT<CCTransform, Dim, Trhs,M>>(*layout4_m, this->params_m);
                     
                 IpplTimings::stopTimer(initialize_vico);
             }

@@ -40,10 +40,10 @@ ippl::Vector<float, 3> exact_E(float x, float y, float z, float sigma = 0.05, fl
 }
 
 // Define vtk dump function for plotting the fields
-void dumpVTK(std::string path, ippl::Field<float,3>& rho, int nx, int ny, int nz, int iteration,
+void dumpVTK(std::string path, ippl::Field<float,3,ippl::UniformCartesian<float, 3>>& rho, int nx, int ny, int nz, int iteration,
              float dx, float dy, float dz) {
     
-    typename ippl::Field<float,3>::view_type::host_mirror_type host_view = rho.getHostMirror();
+    typename ippl::Field<float,3,ippl::UniformCartesian<float, 3>>::view_type::host_mirror_type host_view = rho.getHostMirror();
     Kokkos::deep_copy(host_view, rho.getView());
     std::ofstream vtkout;
     vtkout.precision(10);
@@ -123,26 +123,27 @@ int main(int argc, char *argv[]) {
 	float dx = 1.0/pt;
 	ippl::Vector<float, 3> hx = {dx, dx, dx};
 	ippl::Vector<float, 3> origin = {0.0, 0.0, 0.0};
-	ippl::UniformCartesian<float, 3> mesh(owned, hx, origin);
+    typedef ippl::UniformCartesian<float, 3> Mesh_t;
+	Mesh_t mesh(owned, hx, origin);
 
 	// all parallel layout, standard domain, normal axis order
 	ippl::FieldLayout<3> layout(owned, decomp);
 		
 	// define the R (rho) field
-	typedef ippl::Field<float, 3> field;
+	typedef ippl::Field<float, 3, Mesh_t> field;
 	field rho;
 	rho.initialize(mesh, layout);
 
-        // define the exact solution field
-        field exact;
-        exact.initialize(mesh, layout);
+    // define the exact solution field
+    field exact;
+    exact.initialize(mesh, layout);
 
-        // define the Vector field E and the exact E field
-        typedef ippl::Field<ippl::Vector<float, 3>, 3> fieldV;
+    // define the Vector field E and the exact E field
+    typedef ippl::Field<ippl::Vector<float, 3>, 3, Mesh_t> fieldV;
         
-        fieldV exactE, fieldE;
-        exactE.initialize(mesh, layout);
-        fieldE.initialize(mesh, layout);
+    fieldV exactE, fieldE;
+    exactE.initialize(mesh, layout);
+    fieldE.initialize(mesh, layout);
 		
 	// assign the rho field with a gaussian
 	typename field::view_type view_rho = rho.getView();
@@ -222,7 +223,7 @@ int main(int argc, char *argv[]) {
     fftParams.add("r2c_direction", 0); 
     
     // define an FFTPoissonSolver object
-    ippl::FFTPoissonSolver<ippl::Vector<float,3>, float, 3> FFTsolver(fieldE, rho, fftParams, algorithm);
+    ippl::FFTPoissonSolver<ippl::Vector<float,3>, float, 3, Mesh_t> FFTsolver(fieldE, rho, fftParams, algorithm);
 	
     // solve the Poisson equation -> rho contains the solution (phi) now
     FFTsolver.solve();

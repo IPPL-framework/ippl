@@ -38,19 +38,19 @@ namespace ippl {
             // type of output
             using Base = Electrostatics<Tlhs, Trhs, Dim, M, C>;
 
-	    // define a type for a 3 dimensional field (e.g. charge density field)
-	    // define a type of Field with integers to be used for the helper Green's function
-	    // also define a type for the Fourier transformed complex valued fields
-	    typedef Field<Trhs, Dim, M> Field_t;
-	    typedef Field<int, Dim, M> IField_t;
-	    typedef Field<Kokkos::complex<Trhs>, Dim, M> CxField_t;
-	    typedef Vector<Trhs, Dim> Vector_t;
+	        // define a type for a 3 dimensional field (e.g. charge density field)
+	        // define a type of Field with integers to be used for the helper Green's function
+	        // also define a type for the Fourier transformed complex valued fields
+	        typedef Field<Trhs, Dim, M> Field_t;
+	        typedef Field<int, Dim, M> IField_t;
+	        typedef Field<Kokkos::complex<Trhs>, Dim, M> CxField_t;
+	        typedef Vector<Trhs, Dim> Vector_t;
 
             // define type for field layout
             typedef FieldLayout<Dim> FieldLayout_t;
 
             // define a type for the 3 dimensional real to complex Fourier transform  
-            typedef FFT<RCTransform, Dim, Trhs> FFT_t;
+            typedef FFT<RCTransform, Dim, Trhs, M> FFT_t;
 
             // type for communication buffers
             using buffer_type = Communicate::buffer_type;
@@ -133,7 +133,7 @@ namespace ippl {
             // members for Vico-Greengard
             CxField_t grnL_m;
 
-            std::unique_ptr<FFT<CCTransform, Dim, Trhs>> fft4n_m;
+            std::unique_ptr<FFT<CCTransform, Dim, Trhs, M>> fft4n_m;
 
             std::unique_ptr<M> mesh4_m;
             std::unique_ptr<FieldLayout_t> layout4_m;
