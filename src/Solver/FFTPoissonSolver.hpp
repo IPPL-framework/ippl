@@ -602,7 +602,7 @@ namespace ippl {
                         Communicate::size_type nsends;
                         pack(intersection, view1, fd_m, nghost1, ldom1, nsends);
 
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_SOLVER_SEND + i, nsends);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
 
                         Ippl::Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(), nsends);
                         buf->resetWritePos();
@@ -620,9 +620,9 @@ namespace ippl {
                         Communicate::size_type nrecvs;
                         nrecvs = intersection.size();
 
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_SOLVER_RECV + myRank, nrecvs);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
 
-                        Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                        Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
 
                         unpack(intersection, view2, fd_m, nghost2, ldom2);
@@ -1206,7 +1206,7 @@ namespace ippl {
                         Communicate::size_type nsends;
                         pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND+i, nsends);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+i, nsends);
     
                         int tag = VICO_SOLVER_TAG;
     
@@ -1233,7 +1233,7 @@ namespace ippl {
                         Communicate::size_type nsends;
                         pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND+8+i, nsends);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+8+i, nsends);
     
                         int tag = VICO_SOLVER_TAG + 1;
     
@@ -1260,7 +1260,7 @@ namespace ippl {
                         Communicate::size_type nsends;
                         pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND+2*8+i, nsends);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+2*8+i, nsends);
     
                         int tag = VICO_SOLVER_TAG + 2;
     
@@ -1316,7 +1316,7 @@ namespace ippl {
                         Communicate::size_type nsends;
                         pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND+4*8+i, nsends);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+4*8+i, nsends);
     
                         int tag = VICO_SOLVER_TAG + 4;
     
@@ -1345,7 +1345,7 @@ namespace ippl {
                         Communicate::size_type nsends;
                         pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND+5*8+i, nsends);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+5*8+i, nsends);
     
                         int tag = VICO_SOLVER_TAG + 5;
     
@@ -1374,7 +1374,7 @@ namespace ippl {
                         Communicate::size_type nsends;
                         pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND+6*8+i, nsends);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+6*8+i, nsends);
     
                         int tag = VICO_SOLVER_TAG + 6;
     
@@ -1405,7 +1405,7 @@ namespace ippl {
                         Communicate::size_type nsends;
                         pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND+7*8+i, nsends);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+7*8+i, nsends);
     
                         int tag = VICO_SOLVER_TAG + 7;
     
@@ -1427,11 +1427,11 @@ namespace ippl {
                         Communicate::size_type nrecvs;
                         nrecvs = intersection.size();
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV+myRank, nrecvs);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_RECV+myRank, nrecvs);
     
                         int tag = VICO_SOLVER_TAG;
     
-                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
                         unpack(intersection, view, fd_m, nghost, ldom);
@@ -1459,11 +1459,11 @@ namespace ippl {
                         Communicate::size_type nrecvs;
                         nrecvs = intersection.size();
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV+8+myRank, nrecvs);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_RECV+8+myRank, nrecvs);
     
                         int tag = VICO_SOLVER_TAG + 1;
     
-                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
                         unpack(intersection, view, fd_m, nghost, ldom, true, false, false);
@@ -1491,11 +1491,11 @@ namespace ippl {
                         Communicate::size_type nrecvs;
                         nrecvs = intersection.size();
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV+8*2+myRank, nrecvs);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_RECV+8*2+myRank, nrecvs);
     
                         int tag = VICO_SOLVER_TAG + 2;
     
-                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
                         unpack(intersection, view, fd_m, nghost, ldom, false, true, false);
@@ -1523,11 +1523,11 @@ namespace ippl {
                         Communicate::size_type nrecvs;
                         nrecvs = intersection.size();
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV+8*3+myRank, nrecvs);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_RECV+8*3+myRank, nrecvs);
     
                         int tag = VICO_SOLVER_TAG + 3;
     
-                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
                         unpack(intersection, view, fd_m, nghost, ldom, false, false, true);
@@ -1559,11 +1559,11 @@ namespace ippl {
                         Communicate::size_type nrecvs;
                         nrecvs = intersection.size();
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV+8*4+myRank, nrecvs);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_RECV+8*4+myRank, nrecvs);
     
                         int tag = VICO_SOLVER_TAG + 4;
     
-                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
                         unpack(intersection, view, fd_m, nghost, ldom, true, true, false);
@@ -1595,11 +1595,11 @@ namespace ippl {
                         Communicate::size_type nrecvs;
                         nrecvs = intersection.size();
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV+8*5+myRank, nrecvs);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_RECV+8*5+myRank, nrecvs);
     
                         int tag = VICO_SOLVER_TAG + 5;
     
-                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
                         unpack(intersection, view, fd_m, nghost, ldom, false, true, true);
@@ -1631,11 +1631,11 @@ namespace ippl {
                         Communicate::size_type nrecvs;
                         nrecvs = intersection.size();
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV+8*6+myRank, nrecvs);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_RECV+8*6+myRank, nrecvs);
     
                         int tag = VICO_SOLVER_TAG + 6;
     
-                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
                         unpack(intersection, view, fd_m, nghost, ldom, true, false, true);
@@ -1671,11 +1671,11 @@ namespace ippl {
                         Communicate::size_type nrecvs;
                         nrecvs = intersection.size();
     
-                        buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV+8*7+myRank, nrecvs);
+                        buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_RECV+8*7+myRank, nrecvs);
     
                         int tag = VICO_SOLVER_TAG + 7;
     
-                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                        Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
                         unpack(intersection, view, fd_m, nghost, ldom, true, true, true);
