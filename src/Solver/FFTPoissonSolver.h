@@ -37,14 +37,14 @@ namespace ippl {
 
             // type of output
             using Base = Electrostatics<Tlhs, Trhs, Dim, M, C>;
-
-	        // define a type for a 3 dimensional field (e.g. charge density field)
-	        // define a type of Field with integers to be used for the helper Green's function
-	        // also define a type for the Fourier transformed complex valued fields
-	        typedef Field<Trhs, Dim, M> Field_t;
-	        typedef Field<int, Dim, M> IField_t;
-	        typedef Field<Kokkos::complex<Trhs>, Dim, M> CxField_t;
-	        typedef Vector<Trhs, Dim> Vector_t;
+            
+            // define a type for a 3 dimensional field (e.g. charge density field)
+            // define a type of Field with integers to be used for the helper Green's function
+            // also define a type for the Fourier transformed complex valued fields
+            typedef Field<Trhs, Dim, M> Field_t;
+            typedef Field<int, Dim, M> IField_t;
+            typedef Field<Kokkos::complex<Trhs>, Dim, M> CxField_t;
+            typedef Vector<Trhs, Dim> Vector_t;
 
             // define type for field layout
             typedef FieldLayout<Dim> FieldLayout_t;
