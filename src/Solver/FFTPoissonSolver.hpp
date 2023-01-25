@@ -353,7 +353,7 @@ namespace ippl {
 
             // get origin
             Vector_t origin = mesh_mp->getOrigin();
-            double sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
+            Trhs sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
 
             // origin should always be 0 for Green's function computation to work...
             if (sum != 0.0) {
@@ -808,8 +808,8 @@ namespace ippl {
                 auto view_g = temp_m.getView();
             
                 // define some constants
-                double pi = std::acos(-1.0);
-                Kokkos::complex<double> I = {0.0, 1.0};
+                Trhs pi = std::acos(-1.0);
+                Kokkos::complex<Trhs> I = {0.0, 1.0};
 
                 // define some member variables in local scope for the parallel_for
                 Vector_t hsize = hr_m;
@@ -834,14 +834,14 @@ namespace ippl {
 
                             for(size_t d = 0; d < Dim; ++d) {
 
-                                const double Len = N[d]*hsize[d];
+                                const Trhs Len = N[d]*hsize[d];
                                 bool shift = (iVec[d] > N[d]);
                                 bool notMid = (iVec[d] != N[d]);
 
                                 kVec[d] = notMid * (pi / Len) * (iVec[d] - shift*2*N[d]);
                             }
 
-                            double Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
+                            Trhs Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
                               
                             if(Dr != 0.0)
                                 view_g(i,j,k) = -(I * kVec[gd])*viewR(i,j,k);
@@ -959,14 +959,14 @@ namespace ippl {
         void
         FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::greensFunction() {
 
-            double pi = std::acos(-1.0);
+            Trhs pi = std::acos(-1.0);
             grn_mr = 0.0;
 
             if (alg_m == "VICO") {
             
                 Vector_t l(hr_m * nr_m);
                 Vector_t hs_m;
-                double L_sum (0.0);                
+                Trhs L_sum (0.0);                
 
                 // compute length of the physical domain
                 // compute Fourier domain spacing
@@ -1009,15 +1009,15 @@ namespace ippl {
                         const int kg = k + ldom_g[2].first() - nghost_g;
 
                         bool isOutside = (ig > 2*size[0]-1);
-                        double t = ig*hs_m[0] + isOutside*origin[0];
+                        Trhs t = ig*hs_m[0] + isOutside*origin[0];
 
                         isOutside = (jg > 2*size[1]-1);
-                        double u = jg*hs_m[1] + isOutside*origin[1];
+                        Trhs u = jg*hs_m[1] + isOutside*origin[1];
 
                         isOutside = (kg > 2*size[2]-1);
-                        double v = kg*hs_m[2] + isOutside*origin[2];
+                        Trhs v = kg*hs_m[2] + isOutside*origin[2];
 
-                        double s = (t*t) + (u*u) + (v*v);
+                        Trhs s = (t*t) + (u*u) + (v*v);
                         s = std::sqrt(s);
 
                         view_g(i,j,k) = -2*(std::sin(0.5*L_sum*s)/s)*(std::sin(0.5*L_sum*s)/s);
