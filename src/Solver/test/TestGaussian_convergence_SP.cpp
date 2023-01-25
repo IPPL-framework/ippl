@@ -110,134 +110,132 @@ int main(int argc, char *argv[]) {
     for (int p = 0; p < n; ++p) {
 
         // domain
-	int pt = N[p];
-	ippl::Index I(pt);
-	ippl::NDIndex<3> owned(I, I, I);
+        int pt = N[p];
+        ippl::Index I(pt);
+        ippl::NDIndex<3> owned(I, I, I);
 
-	// specifies decomposition; here all dimensions are parallel
-	ippl::e_dim_tag decomp[3];
-	for (unsigned int d = 0; d < 3; d++)
-	    decomp[d] = ippl::PARALLEL;
-
-	// unit box
-	float dx = 1.0/pt;
-	ippl::Vector<float, 3> hx = {dx, dx, dx};
-	ippl::Vector<float, 3> origin = {0.0, 0.0, 0.0};
-    typedef ippl::UniformCartesian<float, 3> Mesh_t;
-	Mesh_t mesh(owned, hx, origin);
-
-	// all parallel layout, standard domain, normal axis order
-	ippl::FieldLayout<3> layout(owned, decomp);
-		
-	// define the R (rho) field
-	typedef ippl::Field<float, 3, Mesh_t> field;
-	field rho;
-	rho.initialize(mesh, layout);
-
-    // define the exact solution field
-    field exact;
-    exact.initialize(mesh, layout);
-
-    // define the Vector field E and the exact E field
-    typedef ippl::Field<ippl::Vector<float, 3>, 3, Mesh_t> fieldV;
+        // specifies decomposition; here all dimensions are parallel
+        ippl::e_dim_tag decomp[3];
+        for (unsigned int d = 0; d < 3; d++)
+            decomp[d] = ippl::PARALLEL;
         
-    fieldV exactE, fieldE;
-    exactE.initialize(mesh, layout);
-    fieldE.initialize(mesh, layout);
-		
-	// assign the rho field with a gaussian
-	typename field::view_type view_rho = rho.getView();
-	const int nghost = rho.getNghost();
-	const auto& ldom = layout.getLocalNDIndex();
+        // unit box
+        float dx = 1.0/pt;
+        ippl::Vector<float, 3> hx = {dx, dx, dx};
+        ippl::Vector<float, 3> origin = {0.0, 0.0, 0.0};
+        typedef ippl::UniformCartesian<float, 3> Mesh_t;
+        Mesh_t mesh(owned, hx, origin);
 
-	Kokkos::parallel_for("Assign rho field",
-	                     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
-	                                                            {view_rho.extent(0) - nghost,
-								     view_rho.extent(1) - nghost,
-								     view_rho.extent(2) - nghost}),
-			     KOKKOS_LAMBDA(const int i, const int j, const int k){
-                                 // go from local to global indices
-				 const int ig = i + ldom[0].first() - nghost;
-				 const int jg = j + ldom[1].first() - nghost;
-				 const int kg = k + ldom[2].first() - nghost;
-								
-				 // define the physical points (cell-centered)
-				 float x = (ig + 0.5) * hx[0] + origin[0];
-				 float y = (jg + 0.5) * hx[1] + origin[1];
-				 float z = (kg + 0.5) * hx[2] + origin[2];
+        // all parallel layout, standard domain, normal axis order
+        ippl::FieldLayout<3> layout(owned, decomp);
+            
+        // define the R (rho) field
+        typedef ippl::Field<float, 3, Mesh_t> field;
+        field rho;
+        rho.initialize(mesh, layout);
 
-				 view_rho(i, j, k) = gaussian(x, y, z);
+        // define the exact solution field
+        field exact;
+        exact.initialize(mesh, layout);
 
-	});
+        // define the Vector field E and the exact E field
+        typedef ippl::Field<ippl::Vector<float, 3>, 3, Mesh_t> fieldV;
+            
+        fieldV exactE, fieldE;
+        exactE.initialize(mesh, layout);
+        fieldE.initialize(mesh, layout);
+            
+        // assign the rho field with a gaussian
+        typename field::view_type view_rho = rho.getView();
+        const int nghost = rho.getNghost();
+        const auto& ldom = layout.getLocalNDIndex();
+
+	    Kokkos::parallel_for("Assign rho field",
+	        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
+	                                                {view_rho.extent(0) - nghost,
+								                     view_rho.extent(1) - nghost,
+								                     view_rho.extent(2) - nghost}),
+			        KOKKOS_LAMBDA(const int i, const int j, const int k){
+                        // go from local to global indices
+                        const int ig = i + ldom[0].first() - nghost;
+                        const int jg = j + ldom[1].first() - nghost;
+                        const int kg = k + ldom[2].first() - nghost;
+                                        
+                        // define the physical points (cell-centered)
+                        float x = (ig + 0.5) * hx[0] + origin[0];
+                        float y = (jg + 0.5) * hx[1] + origin[1];
+                        float z = (kg + 0.5) * hx[2] + origin[2];
+
+                        view_rho(i, j, k) = gaussian(x, y, z);
+	    });
 
         // assign the exact field with its values (erf function)
         typename field::view_type view_exact = exact.getView();
         
         Kokkos::parallel_for("Assign exact field",
-                             Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
-                                                                    {view_exact.extent(0) - nghost,
-                                                                     view_exact.extent(1) - nghost,
-                                                                     view_exact.extent(2) - nghost}),
-                             KOKKOS_LAMBDA(const int i, const int j, const int k){
-                                 const int ig = i + ldom[0].first() - nghost;
-                                 const int jg = j + ldom[1].first() - nghost;
-                                 const int kg = k + ldom[2].first() - nghost;
+            Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
+                                                    {view_exact.extent(0) - nghost,
+                                                     view_exact.extent(1) - nghost,
+                                                     view_exact.extent(2) - nghost}),
+                    KOKKOS_LAMBDA(const int i, const int j, const int k){
+                        const int ig = i + ldom[0].first() - nghost;
+                        const int jg = j + ldom[1].first() - nghost;
+                        const int kg = k + ldom[2].first() - nghost;
 
-                                 float x = (ig + 0.5) * hx[0] + origin[0];
-                                 float y = (jg + 0.5) * hx[1] + origin[1];
-                                 float z = (kg + 0.5) * hx[2] + origin[2];
+                        float x = (ig + 0.5) * hx[0] + origin[0];
+                        float y = (jg + 0.5) * hx[1] + origin[1];
+                        float z = (kg + 0.5) * hx[2] + origin[2];
 
-                                 view_exact(i, j, k) = exact_fct(x,y,z);
+                        view_exact(i, j, k) = exact_fct(x,y,z);
         });
         
         // assign the exact E field
         auto view_exactE = exactE.getView();
         
         Kokkos::parallel_for("Assign exact E-field", 
-                             Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
-                                                                     {view_exactE.extent(0) - nghost,
-                                                                      view_exactE.extent(1) - nghost,
-                                                                      view_exactE.extent(2) - nghost}),
-                              KOKKOS_LAMBDA(const int i, const int j, const int k){
-                                 const int ig = i + ldom[0].first() - nghost;
-                                 const int jg = j + ldom[1].first() - nghost;
-                                 const int kg = k + ldom[2].first() - nghost;
-                                 
-                                 float x = (ig + 0.5) * hx[0] + origin[0];
-                                 float y = (jg + 0.5) * hx[1] + origin[1];
-                                 float z = (kg + 0.5) * hx[2] + origin[2];
-                                 
-                                 view_exactE(i, j, k)[0] = exact_E(x,y,z)[0];
-                                 view_exactE(i, j, k)[1] = exact_E(x,y,z)[1];
-                                 view_exactE(i, j, k)[2] = exact_E(x,y,z)[2];
+            Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
+                                                   {view_exactE.extent(0) - nghost,
+                                                    view_exactE.extent(1) - nghost,
+                                                    view_exactE.extent(2) - nghost}),
+                    KOKKOS_LAMBDA(const int i, const int j, const int k){
+                        const int ig = i + ldom[0].first() - nghost;
+                        const int jg = j + ldom[1].first() - nghost;
+                        const int kg = k + ldom[2].first() - nghost;
+                            
+                        float x = (ig + 0.5) * hx[0] + origin[0];
+                        float y = (jg + 0.5) * hx[1] + origin[1];
+                        float z = (kg + 0.5) * hx[2] + origin[2];
+                            
+                        view_exactE(i, j, k)[0] = exact_E(x,y,z)[0];
+                        view_exactE(i, j, k)[1] = exact_E(x,y,z)[1];
+                        view_exactE(i, j, k)[2] = exact_E(x,y,z)[2];
         });
+
+        // set the FFT parameters
         
-    
-    // set the FFT parameters
-	
-    ippl::ParameterList fftParams;
-    fftParams.add("use_heffte_defaults", false);  
-    fftParams.add("use_pencils", true);  
-    fftParams.add("use_gpu_aware", true);  
-    fftParams.add("comm", ippl::a2av);  
-    fftParams.add("r2c_direction", 0); 
-    
-    // define an FFTPoissonSolver object
-    ippl::FFTPoissonSolver<ippl::Vector<float,3>, float, 3, Mesh_t> FFTsolver(fieldE, rho, fftParams, algorithm);
-	
-    // solve the Poisson equation -> rho contains the solution (phi) now
-    FFTsolver.solve();
+        ippl::ParameterList fftParams;
+        fftParams.add("use_heffte_defaults", false);  
+        fftParams.add("use_pencils", true);  
+        fftParams.add("use_gpu_aware", true);  
+        fftParams.add("comm", ippl::a2av);  
+        fftParams.add("r2c_direction", 0); 
+        
+        // define an FFTPoissonSolver object
+        ippl::FFTPoissonSolver<ippl::Vector<float,3>, float, 3, Mesh_t> FFTsolver(fieldE, rho, fftParams, algorithm);
+        
+        // solve the Poisson equation -> rho contains the solution (phi) now
+        FFTsolver.solve();
 
-    // compute relative error norm for potential
-    rho = rho - exact;
-    float err = norm(rho)/norm(exact);
+        // compute relative error norm for potential
+        rho = rho - exact;
+        float err = norm(rho)/norm(exact);
 
-    // compute relative error norm for the E-field components
-    ippl::Vector<float,3> errE {0.0, 0.0, 0.0};
-    fieldE = fieldE - exactE;
-    auto view_fieldE = fieldE.getView();
+        // compute relative error norm for the E-field components
+        ippl::Vector<float,3> errE {0.0, 0.0, 0.0};
+        fieldE = fieldE - exactE;
+        auto view_fieldE = fieldE.getView();
 
-    for (size_t d=0; d<3; ++d) {
+        for (size_t d=0; d<3; ++d) {
 
             float temp = 0.0;                                                                                        
             Kokkos::parallel_reduce("Vector errorNr reduce", 
