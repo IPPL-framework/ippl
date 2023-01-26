@@ -58,6 +58,14 @@ namespace ippl {
 
         std::shared_ptr<bc_type>& operator[](const int& i) noexcept { return bc_m[i]; }
 
+        const_iterator begin() const {
+            return bc_m.begin();
+        }
+
+        const_iterator end() const {
+            return bc_m.end();
+        }
+
     private:
         container bc_m;
     };
