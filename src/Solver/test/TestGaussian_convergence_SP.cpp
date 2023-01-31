@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
             }, Kokkos::Sum<float>(temp));
 
             float globaltemp = 0.0;                                                                                  
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());                                             
+            MPI_Allreduce(&temp, &globaltemp, 1, MPI_FLOAT, MPI_SUM, Ippl::getComm());                                             
             float errorNr = std::sqrt(globaltemp);                                                                                   
 
             temp = 0.0;                                                                                        
@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
             }, Kokkos::Sum<float>(temp));  
 
             globaltemp = 0.0;                                                                                  
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+            MPI_Allreduce(&temp, &globaltemp, 1, MPI_FLOAT, MPI_SUM, Ippl::getComm());
             float errorDr = std::sqrt(globaltemp);
 
             errE[d] = errorNr/errorDr;
