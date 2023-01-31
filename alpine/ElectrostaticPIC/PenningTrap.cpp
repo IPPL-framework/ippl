@@ -205,8 +205,8 @@ int main(int argc, char *argv[]){
     }
 
     // create mesh and layout objects for this problem domain
-    Vector_t rmin(0.0);
-    Vector_t rmax(20.0);
+    Vector_t rmin = {0.0, 0.0, 0.0};
+    Vector_t rmax = {20.0, 20.0, 20.0};
     double dx = rmax[0] / nr[0];
     double dy = rmax[1] / nr[1];
     double dz = rmax[2] / nr[2];

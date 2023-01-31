@@ -606,11 +606,6 @@ int main(int argc, char *argv[]){
 
 
     msg << "Starting parareal iterations ..." << endl;
-    //Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R0.getView());
-    //Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P0.getView());
-    //Pcoarse->LeapFrogPIF(Pcoarse->RprevIter, Pcoarse->PprevIter, (Ippl::Comm->rank()+1)*ntFine, 
-    //                     dtFine, isConverged, tStartMySlice, 0);
-    //Ippl::Comm->barrier();
     bool isConverged = false;
     bool isPreviousDomainConverged;
     if(Ippl::Comm->rank() == 0) {
@@ -625,6 +620,14 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(initializeShapeFunctionPIF);
     Pcoarse->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
+    
+    
+    //Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R0.getView());
+    //Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P0.getView());
+    //Pcoarse->LeapFrogPIF(Pcoarse->RprevIter, Pcoarse->PprevIter, (Ippl::Comm->rank()+1)*ntFine, 
+    //                     dtFine, isConverged, tStartMySlice, 0);
+    //Ippl::Comm->barrier();
+    
     //unsigned int maxIterRank;
     for (unsigned int it=0; it<maxIter; it++) {
 
@@ -681,6 +684,8 @@ int main(int argc, char *argv[]){
         double Rerror = computeRL2Error(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror, length);
         double Perror = computePL2Error(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
     
+        //double Rerror = computeRL2Error(Pend->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror, length);
+        //double Perror = computePL2Error(Pend->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
         //double EfieldError = 0;
         //if(it > 0) {
         //    EfieldError = computeFieldError(Pcoarse->rhoPIF_m, Pcoarse->rhoPIFprevIter_m);
