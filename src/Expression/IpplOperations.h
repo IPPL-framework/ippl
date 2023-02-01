@@ -612,13 +612,14 @@ namespace ippl {
     namespace detail {
 
         /*!
-            * Meta function of Hessian with 2nd order forward difference stencil
+            * Meta function of Hessian with 2nd order forward/backward difference stencil
+            * Depending on the template argument `Op`
             */
-        template <typename E>
-        struct meta_forwardHess : public Expression<meta_forwardHess<E>, sizeof(E) + 4 * sizeof(typename E::Mesh_t::vector_type) + 9 * sizeof(float)> {
+        template <typename Op, typename E>
+        struct meta_onesidedHess : public Expression<meta_onesidedHess<Op, E>, sizeof(E) + 4 * sizeof(typename E::Mesh_t::vector_type) + 9 * sizeof(float)> {
 
             KOKKOS_FUNCTION
-            meta_forwardHess (const E& u,
+            meta_onesidedHess (const E& u,
                         const typename E::Mesh_t::vector_type& xvector,
                         const typename E::Mesh_t::vector_type& yvector,
                         const typename E::Mesh_t::vector_type& zvector,
@@ -631,42 +632,42 @@ namespace ippl {
             { }
 
             /*
-                * 3-dimensional hessian based on forward differencing of 2nd order (return Vector<Vector<T,3>,3>)
+                * 3-dimensional hessian based on forward/backward differencing of 2nd order (return Vector<Vector<T,3>,3>)
                 * See 'https://en.wikipedia.org/wiki/Finite_difference_coefficient' for appropriate coefficients
                 */
             KOKKOS_INLINE_FUNCTION
             auto operator()(size_t i, size_t j, size_t k) const {
                 vector_type row_1, row_2, row_3;
 
-                row_1 = xvector_m * ((2.0*u_m(i,j,k) - 5.0*u_m(i+1,j,k) + 4.0*u_m(i+2,j,k) - u_m(i+3,j,k)) / (hvector_m[0]*hvector_m[0])) +
+                row_1 = xvector_m * ((2.0*u_m(i,j,k) - 5.0*u_m(op(i,1),j,k) + 4.0*u_m(op(i,2),j,k) - u_m(op(i,3),j,k)) / (hvector_m[0]*hvector_m[0])) +
                     
-                        yvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i,j+1,k)   + coeffs_m[2]*u_m(i,j+2,k) +
-                                    coeffs_m[3]*u_m(i+1,j,k) + coeffs_m[4]*u_m(i+1,j+1,k) + coeffs_m[5]*u_m(i+1,j+2,k) +
-                                    coeffs_m[6]*u_m(i+2,j,k) + coeffs_m[7]*u_m(i+2,j+1,k) + coeffs_m[8]*u_m(i+2,j+2,k)) / (hvector_m[0]*hvector_m[1])) +
+                        yvector_m * ((coeffs_m[0]*u_m(i,j,k)     + coeffs_m[1]*u_m(i,op(j,1),k)       + coeffs_m[2]*u_m(i,op(j,2),k)        +
+                                    coeffs_m[3]*u_m(op(i,1),j,k) + coeffs_m[4]*u_m(op(i,1),op(j,1),k) + coeffs_m[5]*u_m(op(i,1),op(j,2),k)  +
+                                    coeffs_m[6]*u_m(op(i,2),j,k) + coeffs_m[7]*u_m(op(i,2),op(j,1),k) + coeffs_m[8]*u_m(op(i,2),op(j,2),k)) / (hvector_m[0]*hvector_m[1])) +
                         
-                        zvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i,j,k+1)   + coeffs_m[2]*u_m(i,j,k+2) +
-                                    coeffs_m[3]*u_m(i+1,j,k) + coeffs_m[4]*u_m(i+1,j,k+1) + coeffs_m[5]*u_m(i+1,j,k+2)+
-                                    coeffs_m[6]*u_m(i+2,j,k) + coeffs_m[7]*u_m(i+2,j,k+1) + coeffs_m[8]*u_m(i+2,j,k+2)) / (hvector_m[0]*hvector_m[2]));
+                        zvector_m * ((coeffs_m[0]*u_m(i,j,k)     + coeffs_m[1]*u_m(i,j,op(k,1))       + coeffs_m[2]*u_m(i,j,op(k,2))        +
+                                    coeffs_m[3]*u_m(op(i,1),j,k) + coeffs_m[4]*u_m(op(i,1),j,op(k,1)) + coeffs_m[5]*u_m(op(i,1),j,op(k,2))  +
+                                    coeffs_m[6]*u_m(op(i,2),j,k) + coeffs_m[7]*u_m(op(i,2),j,op(k,1)) + coeffs_m[8]*u_m(op(i,2),j,op(k,2))) / (hvector_m[0]*hvector_m[2]));
 
 
-                row_2 = xvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i+1,j,k)   + coeffs_m[2]*u_m(i+2,j,k) +
-                                    coeffs_m[3]*u_m(i,j+1,k) + coeffs_m[4]*u_m(i+1,j+1,k) + coeffs_m[5]*u_m(i+2,j+1,k) +
-                                    coeffs_m[6]*u_m(i,j+2,k) + coeffs_m[7]*u_m(i+1,j+2,k) + coeffs_m[8]*u_m(i+2,j+2,k)) / (hvector_m[1]*hvector_m[0])) +
+                row_2 = xvector_m * ((coeffs_m[0]*u_m(i,j,k)     + coeffs_m[1]*u_m(op(i,1),j,k)       + coeffs_m[2]*u_m(op(i,2),j,k)        +
+                                    coeffs_m[3]*u_m(i,op(j,1),k) + coeffs_m[4]*u_m(op(i,1),op(j,1),k) + coeffs_m[5]*u_m(op(i,2),op(j,1),k)  +
+                                    coeffs_m[6]*u_m(i,op(j,2),k) + coeffs_m[7]*u_m(op(i,1),op(j,2),k) + coeffs_m[8]*u_m(op(i,2),op(j,2),k)) / (hvector_m[1]*hvector_m[0])) +
 
-                        yvector_m * ((2.0*u_m(i,j,k) - 5.0*u_m(i,j+1,k) + 4.0*u_m(i,j+2,k) - u_m(i,j+3,k))/(hvector_m[1]*hvector_m[1])) +
+                        yvector_m * ((2.0*u_m(i,j,k) - 5.0*u_m(i,op(j,1),k) + 4.0*u_m(i,op(j,2),k) - u_m(i,op(j,3),k))/(hvector_m[1]*hvector_m[1])) +
 
-                        zvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i,j,k+1)   + coeffs_m[2]*u_m(i,j,k+2) +
-                                    coeffs_m[3]*u_m(i,j+1,k) + coeffs_m[4]*u_m(i,j+1,k+1) + coeffs_m[5]*u_m(i,j+1,k+2)+
-                                    coeffs_m[6]*u_m(i,j+2,k) + coeffs_m[7]*u_m(i,j+2,k+1) + coeffs_m[8]*u_m(i,j+2,k+2)) / (hvector_m[1]*hvector_m[2]));
+                        zvector_m * ((coeffs_m[0]*u_m(i,j,k)     + coeffs_m[1]*u_m(i,j,op(k,1))       + coeffs_m[2]*u_m(i,j,op(k,2))        +
+                                    coeffs_m[3]*u_m(i,op(j,1),k) + coeffs_m[4]*u_m(i,op(j,1),op(k,1)) + coeffs_m[5]*u_m(i,op(j,1),op(k,2))  +
+                                    coeffs_m[6]*u_m(i,op(j,2),k) + coeffs_m[7]*u_m(i,op(j,2),op(k,1)) + coeffs_m[8]*u_m(i,op(j,2),op(k,2))) / (hvector_m[1]*hvector_m[2]));
 
 
-                row_3 = xvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i+1,j,k)   + coeffs_m[2]*u_m(i+2,j,k) +
-                                    coeffs_m[3]*u_m(i,j,k+1) + coeffs_m[4]*u_m(i+1,j,k+1) + coeffs_m[5]*u_m(i+2,j,k+1) +
-                                    coeffs_m[6]*u_m(i,j,k+2) + coeffs_m[7]*u_m(i+1,j,k+2) + coeffs_m[8]*u_m(i+2,j,k+2)) / (hvector_m[2]*hvector_m[0])) +
+                row_3 = xvector_m * ((coeffs_m[0]*u_m(i,j,k)     + coeffs_m[1]*u_m(op(i,1),j,k)       + coeffs_m[2]*u_m(op(i,2),j,k)        +
+                                    coeffs_m[3]*u_m(i,j,op(k,1)) + coeffs_m[4]*u_m(op(i,1),j,op(k,1)) + coeffs_m[5]*u_m(op(i,2),j,op(k,1))  +
+                                    coeffs_m[6]*u_m(i,j,op(k,2)) + coeffs_m[7]*u_m(op(i,1),j,op(k,2)) + coeffs_m[8]*u_m(op(i,2),j,op(k,2))) / (hvector_m[2]*hvector_m[0])) +
 
-                        yvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i,j+1,k)   + coeffs_m[2]*u_m(i,j+2,k) +
-                                    coeffs_m[3]*u_m(i,j,k+1) + coeffs_m[4]*u_m(i,j+1,k+1) + coeffs_m[5]*u_m(i,j+2,k+1)+
-                                    coeffs_m[6]*u_m(i,j,k+2) + coeffs_m[7]*u_m(i,j+1,k+2) + coeffs_m[8]*u_m(i,j+2,k+2)) / (hvector_m[2]*hvector_m[1])) +
+                        yvector_m * ((coeffs_m[0]*u_m(i,j,k)     + coeffs_m[1]*u_m(i,op(j,1),k)       + coeffs_m[2]*u_m(i,op(j,2),k)        +
+                                    coeffs_m[3]*u_m(i,j,op(k,1)) + coeffs_m[4]*u_m(i,op(j,1),op(k,1)) + coeffs_m[5]*u_m(i,op(j,2),op(k,1))  +
+                                    coeffs_m[6]*u_m(i,j,op(k,2)) + coeffs_m[7]*u_m(i,op(j,1),op(k,2)) + coeffs_m[8]*u_m(i,op(j,2),op(k,2))) / (hvector_m[2]*hvector_m[1])) +
 
                         zvector_m * ((2.0*u_m(i,j,k) - 5.0*u_m(i,j,k+1) + 4.0*u_m(i,j,k+2) - u_m(i,j,k+3)) / (hvector_m[2]*hvector_m[2]));
 
@@ -684,6 +685,8 @@ namespace ippl {
             const vector_type zvector_m;
             const vector_type hvector_m;
             const float coeffs_m[9] = {2.25, -3.0, 0.75, -3.0, 4.0, -1.0, 0.75, -1.0, 0.25};
+            // Defines whether indexing for forward or backward differencing is used 
+            Op op;
         };
     }  // namespace detail
 }  // namespace ippl
