@@ -608,6 +608,84 @@ namespace ippl {
             }
         };
     }  // namespace detail
+
+    namespace detail {
+
+        /*!
+            * Meta function of Hessian with 2nd order forward difference stencil
+            */
+        template <typename E>
+        struct meta_forwardHess : public Expression<meta_forwardHess<E>, sizeof(E) + 4 * sizeof(typename E::Mesh_t::vector_type) + 9 * sizeof(float)> {
+
+            KOKKOS_FUNCTION
+            meta_forwardHess (const E& u,
+                        const typename E::Mesh_t::vector_type& xvector,
+                        const typename E::Mesh_t::vector_type& yvector,
+                        const typename E::Mesh_t::vector_type& zvector,
+                        const typename E::Mesh_t::vector_type& hvector)
+            : u_m(u)
+            , xvector_m(xvector)
+            , yvector_m(yvector)
+            , zvector_m(zvector)
+            , hvector_m(hvector)
+            { }
+
+            /*
+                * 3-dimensional hessian based on forward differencing of 2nd order (return Vector<Vector<T,3>,3>)
+                * See 'https://en.wikipedia.org/wiki/Finite_difference_coefficient' for appropriate coefficients
+                */
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(size_t i, size_t j, size_t k) const {
+                vector_type row_1, row_2, row_3;
+
+                row_1 = xvector_m * ((2.0*u_m(i,j,k) - 5.0*u_m(i+1,j,k) + 4.0*u_m(i+2,j,k) - u_m(i+3,j,k)) / (hvector_m[0]*hvector_m[0])) +
+                    
+                        yvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i,j+1,k)   + coeffs_m[2]*u_m(i,j+2,k) +
+                                    coeffs_m[3]*u_m(i+1,j,k) + coeffs_m[4]*u_m(i+1,j+1,k) + coeffs_m[5]*u_m(i+1,j+2,k) +
+                                    coeffs_m[6]*u_m(i+2,j,k) + coeffs_m[7]*u_m(i+2,j+1,k) + coeffs_m[8]*u_m(i+2,j+2,k)) / (hvector_m[0]*hvector_m[1])) +
+                        
+                        zvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i,j,k+1)   + coeffs_m[2]*u_m(i,j,k+2) +
+                                    coeffs_m[3]*u_m(i+1,j,k) + coeffs_m[4]*u_m(i+1,j,k+1) + coeffs_m[5]*u_m(i+1,j,k+2)+
+                                    coeffs_m[6]*u_m(i+2,j,k) + coeffs_m[7]*u_m(i+2,j,k+1) + coeffs_m[8]*u_m(i+2,j,k+2)) / (hvector_m[0]*hvector_m[2]));
+
+
+                row_2 = xvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i+1,j,k)   + coeffs_m[2]*u_m(i+2,j,k) +
+                                    coeffs_m[3]*u_m(i,j+1,k) + coeffs_m[4]*u_m(i+1,j+1,k) + coeffs_m[5]*u_m(i+2,j+1,k) +
+                                    coeffs_m[6]*u_m(i,j+2,k) + coeffs_m[7]*u_m(i+1,j+2,k) + coeffs_m[8]*u_m(i+2,j+2,k)) / (hvector_m[1]*hvector_m[0])) +
+
+                        yvector_m * ((2.0*u_m(i,j,k) - 5.0*u_m(i,j+1,k) + 4.0*u_m(i,j+2,k) - u_m(i,j+3,k))/(hvector_m[1]*hvector_m[1])) +
+
+                        zvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i,j,k+1)   + coeffs_m[2]*u_m(i,j,k+2) +
+                                    coeffs_m[3]*u_m(i,j+1,k) + coeffs_m[4]*u_m(i,j+1,k+1) + coeffs_m[5]*u_m(i,j+1,k+2)+
+                                    coeffs_m[6]*u_m(i,j+2,k) + coeffs_m[7]*u_m(i,j+2,k+1) + coeffs_m[8]*u_m(i,j+2,k+2)) / (hvector_m[1]*hvector_m[2]));
+
+
+                row_3 = xvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i+1,j,k)   + coeffs_m[2]*u_m(i+2,j,k) +
+                                    coeffs_m[3]*u_m(i,j,k+1) + coeffs_m[4]*u_m(i+1,j,k+1) + coeffs_m[5]*u_m(i+2,j,k+1) +
+                                    coeffs_m[6]*u_m(i,j,k+2) + coeffs_m[7]*u_m(i+1,j,k+2) + coeffs_m[8]*u_m(i+2,j,k+2)) / (hvector_m[2]*hvector_m[0])) +
+
+                        yvector_m * ((coeffs_m[0]*u_m(i,j,k) + coeffs_m[1]*u_m(i,j+1,k)   + coeffs_m[2]*u_m(i,j+2,k) +
+                                    coeffs_m[3]*u_m(i,j,k+1) + coeffs_m[4]*u_m(i,j+1,k+1) + coeffs_m[5]*u_m(i,j+2,k+1)+
+                                    coeffs_m[6]*u_m(i,j,k+2) + coeffs_m[7]*u_m(i,j+1,k+2) + coeffs_m[8]*u_m(i,j+2,k+2)) / (hvector_m[2]*hvector_m[1])) +
+
+                        zvector_m * ((2.0*u_m(i,j,k) - 5.0*u_m(i,j,k+1) + 4.0*u_m(i,j,k+2) - u_m(i,j,k+3)) / (hvector_m[2]*hvector_m[2]));
+
+                matrix_type hessian = {row_1, row_2, row_3};
+                return hessian; 
+            }
+
+        private:
+            using Mesh_t = typename E::Mesh_t;
+            using vector_type = typename Mesh_t::vector_type;
+            using matrix_type = typename Mesh_t::matrix_type;
+            const E u_m;
+            const vector_type xvector_m;
+            const vector_type yvector_m;
+            const vector_type zvector_m;
+            const vector_type hvector_m;
+            const float coeffs_m[9] = {2.25, -3.0, 0.75, -3.0, 4.0, -1.0, 0.75, -1.0, 0.25};
+        };
+    }  // namespace detail
 }  // namespace ippl
 
 #endif

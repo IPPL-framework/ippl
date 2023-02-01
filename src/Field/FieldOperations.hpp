@@ -122,27 +122,10 @@ namespace ippl {
      * @param u field
      */
     template <typename T, unsigned Dim, class M, class C>
-    detail::meta_hess<Field<T, Dim, M, C>> onesidedHess(Field<T, Dim, M, C>& u) {
+    detail::meta_forwardHess<Field<T, Dim, M, C>> onesidedHess(Field<T, Dim, M, C>& u) {
         u.fillHalo();
         BConds<T,Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
-
-        // Check if on physical boundary
-        const auto &layout = u.getLayout();
-        const int &nghost = u.getNghost();
-        const auto &domain = layout.getDomain();
-        const auto &lDomains = layout.getHostLocalDomains();
-        int myRank = Ippl::Comm->rank();
-        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
-
-        bool isBoundary = (lDomains[myRank][1].max() == domain[1].max()) ||
-                          (lDomains[myRank][1].min() == domain[1].min());
-
-        if(Ippl::Comm->rank() == 0){
-            std::cout << "isBoundary: " << isBoundary << std::endl;
-            std::cout << "nghost: " << nghost << std::endl;
-            std::cout << lDom << std::endl;
-        }
 
         M& mesh = u.get_mesh();
         typename M::vector_type xvector(0);
@@ -153,6 +136,6 @@ namespace ippl {
         zvector[2] = 1.0;
         typename M::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
-        return detail::meta_hess<Field<T, Dim, M, C>>(u, xvector, yvector, zvector, hvector);
+        return detail::meta_forwardHess<Field<T, Dim, M, C>>(u, xvector, yvector, zvector, hvector);
     }
 }  // namespace ippl
