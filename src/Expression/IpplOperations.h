@@ -669,7 +669,7 @@ namespace ippl {
                                     coeffs_m[3]*u_m(i,j,op(k,1)) + coeffs_m[4]*u_m(i,op(j,1),op(k,1)) + coeffs_m[5]*u_m(i,op(j,2),op(k,1))  +
                                     coeffs_m[6]*u_m(i,j,op(k,2)) + coeffs_m[7]*u_m(i,op(j,1),op(k,2)) + coeffs_m[8]*u_m(i,op(j,2),op(k,2))) / (hvector_m[2]*hvector_m[1])) +
 
-                        zvector_m * ((2.0*u_m(i,j,k) - 5.0*u_m(i,j,k+1) + 4.0*u_m(i,j,k+2) - u_m(i,j,k+3)) / (hvector_m[2]*hvector_m[2]));
+                        zvector_m * ((2.0*u_m(i,j,k) - 5.0*u_m(i,j,op(k,1)) + 4.0*u_m(i,j,op(k,2)) - u_m(i,j,op(k,3))) / (hvector_m[2]*hvector_m[2]));
 
                 matrix_type hessian = {row_1, row_2, row_3};
                 return hessian; 
