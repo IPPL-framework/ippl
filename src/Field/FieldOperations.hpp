@@ -119,11 +119,11 @@ namespace ippl {
 
     /*!
      * Hessian based on onesided differencing in three dimensions
-     * Forward (`+`) or backward (`-`) differencing depending on `Op`
+     * Forward (`+`) or backward (`-`) differencing depending on `IdxOp`
      * @param u field
      */
-    template <typename Op, typename T, unsigned Dim, class M, class C>
-    detail::meta_onesidedHess<Op, Field<T, Dim, M, C>> onesidedHess(Field<T, Dim, M, C>& u) {
+    template <typename IdxOp, typename T, unsigned Dim, class M, class C>
+    detail::meta_onesidedHess<IdxOp, Field<T, Dim, M, C>> onesidedHess(Field<T, Dim, M, C>& u) {
         u.fillHalo();
         BConds<T,Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
@@ -137,14 +137,14 @@ namespace ippl {
         zvector[2] = 1.0;
         typename M::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
-        return detail::meta_onesidedHess<Op, Field<T, Dim, M, C>>(u, xvector, yvector, zvector, hvector);
+        return detail::meta_onesidedHess<IdxOp, Field<T, Dim, M, C>>(u, xvector, yvector, zvector, hvector);
     }
 
     /*!
      * User interface of Hessian with forward differencing of second order in three dimensions
      * @param u field
      */
-    template <typename Op=std::binary_function<size_t,size_t,size_t>, typename T, unsigned Dim, class M, class C>
+    template <typename IdxOp=std::binary_function<size_t,size_t,size_t>, typename T, unsigned Dim, class M, class C>
     auto forwardHess(Field<T, Dim, M, C>& u) {
         return onesidedHess<std::plus<size_t>>(u);
     }
@@ -153,7 +153,7 @@ namespace ippl {
      * User interface of Hessian with backward differencing of second order in three dimensions
      * @param u field
      */
-    template <typename Op=std::binary_function<size_t,size_t,size_t>, typename T, unsigned Dim, class M, class C>
+    template <typename IdxOp=std::binary_function<size_t,size_t,size_t>, typename T, unsigned Dim, class M, class C>
     auto backwardHess(Field<T, Dim, M, C>& u) {
         return onesidedHess<std::minus<size_t>>(u);
     }

@@ -613,10 +613,10 @@ namespace ippl {
 
         /*!
             * Meta function of Hessian with 2nd order forward/backward difference stencil
-            * Depending on the template argument `Op`
+            * Depending on the template argument `IdxOp`
             */
-        template <typename Op, typename E>
-        struct meta_onesidedHess : public Expression<meta_onesidedHess<Op, E>, sizeof(E) + 4 * sizeof(typename E::Mesh_t::vector_type) + 9 * sizeof(float)> {
+        template <typename IdxOp, typename E>
+        struct meta_onesidedHess : public Expression<meta_onesidedHess<IdxOp, E>, sizeof(E) + 4 * sizeof(typename E::Mesh_t::vector_type) + 9 * sizeof(float)> {
 
             KOKKOS_FUNCTION
             meta_onesidedHess (const E& u,
@@ -686,7 +686,7 @@ namespace ippl {
             const vector_type hvector_m;
             const float coeffs_m[9] = {2.25, -3.0, 0.75, -3.0, 4.0, -1.0, 0.75, -1.0, 0.25};
             // Defines whether indexing for forward or backward differencing is used 
-            Op op;
+            IdxOp op;
         };
     }  // namespace detail
 }  // namespace ippl
