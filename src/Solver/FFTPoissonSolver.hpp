@@ -889,7 +889,7 @@ namespace ippl {
                 using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
                 if (alg_m == "VICO") {
-                Kokkos::parallel_for("Initialize Green's function ",
+                    Kokkos::parallel_for("Initialize Green's function ",
                         mdrange_type({nghost_g, nghost_g, nghost_g},
                         {view_g.extent(0)-nghost_g, view_g.extent(1)-nghost_g, view_g.extent(2)-nghost_g}),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -917,11 +917,11 @@ namespace ippl {
                         if ((ig == 0 && jg == 0 && kg == 0)) {
                             view_g(i,j,k) = -L_sum * L_sum * 0.5;
                         }
-	        });
+	                });
 
-            } else if (alg_m == "BIHARMONIC") {
+                } else if (alg_m == "BIHARMONIC") {
 
-                Kokkos::parallel_for("Initialize Green's function ",
+                    Kokkos::parallel_for("Initialize Green's function ",
                         mdrange_type({nghost_g, nghost_g, nghost_g},
                         {view_g.extent(0)-nghost_g, view_g.extent(1)-nghost_g, view_g.extent(2)-nghost_g}),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -949,9 +949,9 @@ namespace ippl {
                         if ((ig == 0 && jg == 0 && kg == 0)) {
                             view_g(i,j,k) = -L_sum * L_sum * L_sum * L_sum / 8.0;
                         }
-	        });
+	                });
 
-            }
+                }
 
                 // start a timer
                 static IpplTimings::TimerRef fft4 = IpplTimings::getTimer("FFT: Precomputation");
