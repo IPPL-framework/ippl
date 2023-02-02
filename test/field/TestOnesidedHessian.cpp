@@ -1,12 +1,12 @@
 //
 ////
-//// TestHessian.cpp
-////   This program tests the Hessian operator on a vector field.
+//// TestOnesidedHessian.cpp
+////   This program tests the onesided Hessian operator on a vector field.
 ////   The problem size can be given by the user (N^3), and a bool (0 or 1)
 ////   indicates whether the field is f=xyz or a Gaussian field.
 ////
 //// Usage:
-////   srun ./TestHessian N 0 --info 10
+////   srun ./TestOnesidedHessian N 0 --info 10
 ////
 //// Copyright (c) 2022, Sonali Mayani,
 //// Paul Scherrer Institut, Villigen, Switzerland
@@ -43,6 +43,8 @@ double gaussian(double x, double y, double z, double sigma = 1.0, double mu = 0.
 int main(int argc, char *argv[]) {
 
     Ippl ippl(argc,argv);
+    Inform msg(argv[0], "TestOnesidedHessian");
+    Inform msg2all(argv[0], INFORM_ALL_NODES);
 
     constexpr unsigned int dim = 3;
 
@@ -158,10 +160,9 @@ int main(int argc, char *argv[]) {
                     "`onesidedHess()` operator not applicable with periodic b.c.");
         }
         
-        if (Ippl::Comm->rank() == 0){
-            std::cout << "Face: " << bc->getFace() << std::endl;
-            typename Field_t::view_type diffSlice;
-        }
+        
+        msg << "Face: " << bc->getFace() << endl;
+        typename Field_t::view_type diffSlice;
     }
 
     // Check if on physical boundary
@@ -171,19 +172,18 @@ int main(int argc, char *argv[]) {
     const auto &faceNeighbors = layout.getFaceNeighbors();
 
     for (unsigned int d = 0; d < 2*dim; ++d){
-        if (Ippl::Comm->rank() == 0){
-            std::cout << "faceneighbors[d].size() = " << faceNeighbors[d].size() << std::endl;
-            bool isBoundary = (lDomains[myRank][d].max() == domain[d].max()) ||
-                              (lDomains[myRank][d].min() == domain[d].min());
-            std::cout << "Rank " << Ippl::Comm->rank() << ": " << d << " isBoundary = " << isBoundary << std::endl;
-        }
+        msg << "faceneighbors[" << d << "].size() = " << faceNeighbors[d].size() << endl;
+        bool isBoundary = (lDomains[myRank][d].max() == domain[d].max()) ||
+            (lDomains[myRank][d].min() == domain[d].min());
+        msg << "Rank " << Ippl::Comm->rank() << ": " << "dim" << d << " isBoundary = " << isBoundary << endl;
     } 
 
     result = {0.0, 0.0, 0.0};
-    if (Ippl::Comm->rank() == 0){
-        std::cout << "Calling `onesidedHess()`" << std::endl;
-    }
-    result = onesidedHess(field);
+    msg << "Calling `onesidedHess()`" << endl;
+    //msg << "(" << view.extent(0) << "," << view.extent(0) << "," << view.extent(0) << ")" << endl;
+    
+
+    result = backwardHess(field);
 
     result = result - exact;
 
@@ -196,10 +196,10 @@ int main(int argc, char *argv[]) {
             
             double valN(0.0);
 
-            Kokkos::parallel_reduce("Relative error", mdrange_type({nghost, nghost, nghost},
-                                {view_result.extent(0) - nghost,
-                                 view_result.extent(1) - nghost,
-                                 view_result.extent(2) - nghost}),
+            Kokkos::parallel_reduce("Relative error", mdrange_type({3*nghost, 3*nghost, 3*nghost},
+                                {view_result.extent(0) - 3*nghost,
+                                 view_result.extent(1) - 3*nghost,
+                                 view_result.extent(2) - 3*nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
                     double myVal = pow(view_result(i,j,k)[dim1][dim2], 2);
                     val += myVal;
@@ -211,10 +211,10 @@ int main(int argc, char *argv[]) {
 
             double valD(0.0);
 
-            Kokkos::parallel_reduce("Relative error", mdrange_type({nghost, nghost, nghost},
-                                {view_exact.extent(0) - nghost,
-                                 view_exact.extent(1) - nghost,
-                                 view_exact.extent(2) - nghost}),
+            Kokkos::parallel_reduce("Relative error", mdrange_type({3*nghost, 3*nghost, 3*nghost},
+                                {view_exact.extent(0) - 3*nghost,
+                                 view_exact.extent(1) - 3*nghost,
+                                 view_exact.extent(2) - 3*nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
                     double myVal = pow(view_exact(i,j,k)[dim1][dim2], 2);
                     val += myVal;
@@ -232,10 +232,8 @@ int main(int argc, char *argv[]) {
 
             err_hess[dim1][dim2] = errorN;
 
-            if (Ippl::Comm->rank() == 0) {
-                std::cout << std::setprecision(16) << "Error (" << dim1+1 << "," << dim2+1 << "): "
-                    << err_hess[dim1][dim2] << std::endl;
-            }
+            msg << std::setprecision(16) << "Error (" << dim1+1 << "," << dim2+1 << "): "
+                << err_hess[dim1][dim2] << endl;
 
             avg += err_hess[dim1][dim2];
         }
@@ -243,7 +241,7 @@ int main(int argc, char *argv[]) {
 
     // print total error (average of each matrix entry)
     avg /= 9.0;
-    std::cout << std::setprecision(16) << "Average error = " << avg;
+    msg << std::setprecision(16) << "Average error = " << avg << endl;
 
     return 0;
 }
