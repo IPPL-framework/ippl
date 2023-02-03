@@ -38,38 +38,38 @@ int main(int argc, char *argv[]){
     for (int p = 0; p < number; ++p) {
 
         // domain
-	    int pt = N[p];
-	    ippl::Index I(pt);
-	    ippl::NDIndex<3> owned(I, I, I);
-
-	    // specifies decomposition; here all dimensions are parallel
-	    ippl::e_dim_tag decomp[3];
-	    for (unsigned int d = 0; d < 3; d++)
-	        decomp[d] = ippl::PARALLEL;
-
-	    // unit box
-	    double dv = 2.0*max/pt;
-	    ippl::Vector<double, 3> hv = {dv, dv, dv};
-	    ippl::Vector<double, 3> vmin = {-max, -max, -max};
-	    ippl::Vector<double, 3> vmax = {max, max, max};
-	    ippl::Vector<double, 3> zero = {0.0, 0.0, 0.0};
-	    ippl::UniformCartesian<double, 3> mesh(owned, hv, vmin);
-
-	    // all parallel layout, standard domain, normal axis order
-	    ippl::FieldLayout<3> layout(owned, decomp);
-
-	    // define the R (rho) field
-	    typedef ippl::Field<double, 3> field;
-	    field fv, G_exact;
-	    fv.initialize(mesh, layout);
-	    G_exact.initialize(mesh, layout);
+        int pt = N[p];
+        ippl::Index I(pt);
+        ippl::NDIndex<3> owned(I, I, I);
+        
+        // specifies decomposition; here all dimensions are parallel
+        ippl::e_dim_tag decomp[3];
+        for (unsigned int d = 0; d < 3; d++)
+            decomp[d] = ippl::PARALLEL;
+            
+        // unit box
+        double dv = 2.0*max/pt;
+        ippl::Vector<double, 3> hv = {dv, dv, dv};
+        ippl::Vector<double, 3> vmin = {-max, -max, -max};
+        ippl::Vector<double, 3> vmax = {max, max, max};
+        ippl::Vector<double, 3> zero = {0.0, 0.0, 0.0};
+        ippl::UniformCartesian<double, 3> mesh(owned, hv, vmin);
+        
+        // all parallel layout, standard domain, normal axis order
+        ippl::FieldLayout<3> layout(owned, decomp);
+        
+        // define the R (rho) field
+        typedef ippl::Field<double, 3> field;
+        field fv, G_exact;
+        fv.initialize(mesh, layout);
+        G_exact.initialize(mesh, layout);
         
         // assign the exact field
         typename field::view_type view_fv = fv.getView();
         typename field::view_type view_G = G_exact.getView();
         const int nghost = fv.getNghost();
         const auto& lDom = layout.getLocalNDIndex();
-
+        
         Kokkos::parallel_for("Assign fv and G_exact",
             Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
 	                                               {view_fv.extent(0) - nghost,
