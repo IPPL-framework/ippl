@@ -109,10 +109,10 @@ int main(int argc, char *argv[]){
         fftParams.add("r2c_direction", 0);  
 	    
         // define an FFTPoissonSolver object
+        mesh.setOrigin({0, 0, 0});
 	    ippl::FFTPoissonSolver<ippl::Vector<double,3>, double, 3> FFTsolver(fv, fftParams, algorithm);
 	
     	// solve the Poisson equation -> rho contains the solution (phi) now
-        mesh.setOrigin({0, 0, 0});
 	    FFTsolver.solve();
         mesh.setOrigin(vmin);
 
