@@ -110,15 +110,15 @@ int main(int argc, char *argv[]){
 	    
         // define an FFTPoissonSolver object
         mesh.setOrigin({0, 0, 0});
-	    ippl::FFTPoissonSolver<ippl::Vector<double,3>, double, 3> FFTsolver(fv, fftParams, algorithm);
-	
-    	// solve the Poisson equation -> rho contains the solution (phi) now
-	    FFTsolver.solve();
+        ippl::FFTPoissonSolver<ippl::Vector<double,3>, double, 3> FFTsolver(fv, fftParams, algorithm);
+        
+        // solve the Poisson equation -> rho contains the solution (phi) now
+        FFTsolver.solve();
         mesh.setOrigin(vmin);
 
         // compute relative error norm for potential
-	    fv = fv - G_exact;
-	    double err = norm(fv)/norm(G_exact);
+        fv = fv - G_exact;
+        double err = norm(fv)/norm(G_exact);
         
         msg << std::setprecision(16) << dv << " " << err << endl;
     }
