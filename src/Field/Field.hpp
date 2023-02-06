@@ -80,4 +80,13 @@ namespace ippl {
         BareField<T, Dim>::updateLayout(l, nghost);
     }
 
+    template<class T, unsigned Dim, class M, class C>
+    template <typename ...Args>
+    Field<T,Dim,M,C> Field<T,Dim,M,C>::subField(Mesh_t& m, Layout_t &l, int nghost, Args... args){
+
+        Field<T,Dim,M,C> subfield(m, l, nghost);
+        // Assign data from subview of original data
+        subfield.getView() = Kokkos::subview(BareField<T,Dim>::getView(), args...);
+        return subfield;
+    }
 }  // namespace ippl

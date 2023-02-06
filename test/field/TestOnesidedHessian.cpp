@@ -73,14 +73,14 @@ int main(int argc, char *argv[]) {
     Vector_t origin = {0.0, 0.0, 0.0};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
-    Field_t field(mesh, layout, 1);
-    MField_t result(mesh, layout, 1);
-    MField_t exact(mesh, layout, 1);
+    const int nghost = 3;
+    Field_t field(mesh, layout, nghost);
+    MField_t result(mesh, layout, nghost);
+    MField_t exact(mesh, layout, nghost);
 
     typename Field_t::view_type& view = field.getView();
 
     const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
-    const int nghost = field.getNghost();
     using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
     Kokkos::parallel_for("Assign field",
@@ -179,11 +179,21 @@ int main(int argc, char *argv[]) {
     } 
 
     result = {0.0, 0.0, 0.0};
-    msg << "Calling `onesidedHess()`" << endl;
-    //msg << "(" << view.extent(0) << "," << view.extent(0) << "," << view.extent(0) << ")" << endl;
     
+    // Define properties of subfield
+    int subPt = 10;
+    ippl::Index subI(subPt);
+    ippl::NDIndex<dim> subOwned(subI, I, I);
 
-    result = backwardHess(field);
+    // Create subLayout of desired size
+    ippl::FieldLayout<dim> subLayout(subOwned, decomp);
+
+    Field_t subfield = field.subField(mesh, subLayout, nghost, Kokkos::make_pair(0, 20), Kokkos::ALL, Kokkos::ALL);
+    Field_t::view_type subView = subfield.getView();
+    msg2all << "(" << subView.extent(0) << "," << subView.extent(1) << "," << subView.extent(2) << ")" << endl;
+
+    // Test backwardHess on subfield only
+    result = ippl::backwardHess(subfield);
 
     result = result - exact;
 
