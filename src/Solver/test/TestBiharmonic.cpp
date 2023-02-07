@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
 
     // constants for the Maxwellian
     const double n = 1;
-    const double vth = 2.0;
+    const double vth = 0.1;
     const double vth2 = vth*vth;
     const double w2 = sqrt(2.0);
     double max = 5.0*vth;
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]){
         ippl::Vector<double, 3> vmin = {-max, -max, -max};
         ippl::Vector<double, 3> vmax = {max, max, max};
         ippl::Vector<double, 3> zero = {0.0, 0.0, 0.0};
-        ippl::UniformCartesian<double, 3> mesh(owned, hv, vmin);
+        ippl::UniformCartesian<double, 3> mesh(owned, hv, zero); // modified vmin->zero
         
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<3> layout(owned, decomp);
@@ -109,12 +109,12 @@ int main(int argc, char *argv[]){
         fftParams.add("r2c_direction", 0);  
 	    
         // define an FFTPoissonSolver object
-        mesh.setOrigin({0, 0, 0});
+        //mesh.setOrigin({0, 0, 0});
         ippl::FFTPoissonSolver<ippl::Vector<double,3>, double, 3> FFTsolver(fv, fftParams, algorithm);
         
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();
-        mesh.setOrigin(vmin);
+        //mesh.setOrigin(vmin);
 
         // compute relative error norm for potential
         fv = fv - G_exact;
