@@ -63,6 +63,9 @@ namespace ippl {
             bc_m.findBCNeighbors(*this);
         }
 
+        template <typename... Args>
+        Field<T, Dim, M, C> subField(Mesh_t& m, Layout_t& l, int nghost, Args... args);
+
         // Access to the mesh
         KOKKOS_INLINE_FUNCTION
         Mesh_t& get_mesh() const { return *mesh_m; }
