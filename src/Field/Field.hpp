@@ -80,13 +80,29 @@ namespace ippl {
         BareField<T, Dim>::updateLayout(l, nghost);
     }
 
-    template<class T, unsigned Dim, class M, class C>
-    template <typename ...Args>
-    Field<T,Dim,M,C> Field<T,Dim,M,C>::subField(Mesh_t& m, Layout_t &l, int nghost, Args... args){
-
-        Field<T,Dim,M,C> subfield(m, l, nghost);
+    /**
+     * @brief Constructs a Field given Mesh and Layout with subview data from current Field. The
+     * data passed by reference, meaning changes in the subField will be reflected in the original
+     * Field data
+     *
+     * @tparam T
+     * @tparam Dim
+     * @tparam M
+     * @tparam C
+     * @param m Mesh fewer meshpoints than <tt>this->mesh_m</tt>
+     * @param l Layout with same same decomposition <tt>this->layout_m</tt> as and index range as \p m
+     * @param nghost
+     * @param args
+     *
+     * @return
+     */
+    template <class T, unsigned Dim, class M, class C>
+    template <typename... Args>
+    Field<T, Dim, M, C> Field<T, Dim, M, C>::subField(
+        Mesh_t& m, Layout_t& l, int nghost, Args... args) {
+        Field<T, Dim, M, C> subfield(m, l, nghost);
         // Assign data from subview of original data
-        subfield.getView() = Kokkos::subview(BareField<T,Dim>::getView(), args...);
+        subfield.getView() = Kokkos::subview(BareField<T, Dim>::getView(), args...);
         return subfield;
     }
 }  // namespace ippl

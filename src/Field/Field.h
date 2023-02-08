@@ -63,8 +63,8 @@ namespace ippl {
         // ML
         void updateLayout(Layout_t&, int nghost = 1);
 
-        template<typename ...Args>
-        Field<T,Dim,M,C> subField(Mesh_t& m, Layout_t &l, int nghost, Args... args);
+        template <typename... Args>
+        Field<T, Dim, M, C> subField(Mesh_t& m, Layout_t& l, int nghost, Args... args);
 
         void setFieldBC(BConds_t& bc) {
             bc_m = bc;
