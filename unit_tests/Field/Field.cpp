@@ -272,9 +272,9 @@ TEST_F(FieldTest, Hessian) {
     auto mirror_result = Kokkos::create_mirror_view(view_result);
     Kokkos::deep_copy(mirror_result, view_result);
 
-    for (size_t i = 0; i < view_result.extent(0); ++i) {
-        for (size_t j = 0; j < view_result.extent(1); ++j) {
-            for (size_t k = 0; k < view_result.extent(2); ++k) {
+    for (size_t i = nghost; i < view_result.extent(0)-nghost; ++i) {
+        for (size_t j = nghost; j < view_result.extent(1)-nghost; ++j) {
+            for (size_t k = nghost; k < view_result.extent(2)-nghost; ++k) {
 
                 double det = mirror_result(i,j,k)[0][0] + 
                              mirror_result(i,j,k)[1][1] +
