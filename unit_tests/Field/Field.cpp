@@ -269,36 +269,21 @@ TEST_F(FieldTest, Hessian) {
 
     nghost = result.getNghost();
     auto view_result = result.getView();
+    auto mirror_result = Kokkos::create_mirror_view(view_result);
+    Kokkos::deep_copy(mirror_result, view_result);
 
-    // assignment does not work with Matrix_t type
-    /*
-    mirror = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(mirror, view);
+    for (size_t i = nghost; i < view_result.extent(0)-nghost; ++i) {
+        for (size_t j = nghost; j < view_result.extent(1)-nghost; ++j) {
+            for (size_t k = nghost; k < view_result.extent(2)-nghost; ++k) {
 
-    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
-        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
-            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                double det = mirror(i,j,k)[0][0] +
-                             mirror(i,j,k)[1][1] +
-                             mirror(i,j,k)[2][2] ;
-                ASSERT_DOUBLE_EQ(det, 0);
+                double det = mirror_result(i,j,k)[0][0] + 
+                             mirror_result(i,j,k)[1][1] +
+                             mirror_result(i,j,k)[2][2] ;
+            
+                ASSERT_DOUBLE_EQ(det, 0.);
             }
         }
     }
-    */
-    
-    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
-    Kokkos::parallel_for("Det", mdrange_type({nghost, nghost, nghost},
-                            {view_result.extent(0) - nghost,
-                             view_result.extent(1) - nghost,
-                             view_result.extent(2) - nghost}),
-        KOKKOS_LAMBDA(const int i, const int j, const int k) {
-            double det = view_result(i,j,k)[0][0] + 
-                         view_result(i,j,k)[1][1] +
-                         view_result(i,j,k)[2][2] ;
-            ASSERT_DOUBLE_EQ(det, 0.);
-        });
 }
 
 int main(int argc, char *argv[]) {
