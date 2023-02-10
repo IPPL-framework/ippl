@@ -30,6 +30,7 @@
 
 #include <heffte_fft3d.h>
 #include <heffte_fft3d_r2c.h>
+#include <cufinufft.h>
 #include <array>
 #include <memory>
 #include <type_traits>
@@ -64,6 +65,10 @@ namespace ippl {
        Tag classes for Cosine transforms
     */
     class CosTransform {};
+    /**
+       Tag classes for Non-uniform type of Fourier transforms
+    */
+    class NUFFTransform {};
 
     enum FFTComm {
         a2av = 0,
@@ -110,6 +115,29 @@ namespace ippl {
             using backendCos = heffte::backend::stock_cos;
         };
 #endif
+#endif
+
+#ifdef KOKKOS_ENABLE_CUDA
+        template <class T>
+        struct CufinufftType {};
+
+        template <>
+        struct Cufinufft<float> {
+            using makeplan    = cufinufftf_makeplan;
+            using setpts      = cufinufftf_setpts;
+            using transform   = cufinufftf_execute;
+            using destroy     = cufinufftf_destroy;
+            using plan_t      = cufinufftf_plan;
+        };
+
+        template <>
+        struct Cufinufft<double> {
+            using makeplan    = cufinufft_makeplan;
+            using setpts      = cufinufft_setpts;
+            using transform   = cufinufft_execute;
+            using destroy     = cufinufft_destroy;
+            using plan_t      = cufinufft_plan;
+        };
 #endif
     }
 
@@ -292,6 +320,55 @@ namespace ippl {
 
         std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
+
+    };
+
+
+    /**
+       Non-uniform FFT class
+    */
+    template <size_t Dim, class T>
+    class FFT<NUFFTransform,Dim,T> {
+
+    public:
+
+        typedef FieldLayout<Dim> Layout_t;
+        typedef std::complex<T> Complex_t;
+        typedef Field<Complex_t,Dim> ComplexField_t;
+
+        using makeplan = detail::Cufinufft<T>::makeplan;
+        using setpts = detail::Cufinufft<T>::setpts;
+        using transform = detail::Cufinufft<T>::transform;
+        using destroy = detail::Cufinufft<T>::destroy;
+        using plan_t = detail::Cufinufft<T>::plan_t;
+
+        /** Create a new FFT object with the layout for the input Field, type 
+         * (1 or 2) for the NUFFT and parameters for cuFINUFFT.
+        */
+        FFT(const Layout_t& layout, int type, const ParameterList& params);
+
+        // Destructor
+        ~FFT();
+
+        /** Do the NUFFT.
+        */
+        template<class PT1, class PT2, class... Properties>
+        void transform(const ParticleAttrib< Vector<PT1, Dim>, Properties... >& R, 
+                       ParticleAttrib<PT2, Properties... >& Q, ComplexField_t& f);
+
+
+    private:
+
+        /**
+           setup performs the initialization necessary.
+        */
+        void setup(const std::array<int, 3>& nmodes,
+                   const ParameterList& params);
+
+        plan_t plan_m;
+        int ier_m;
+        T tol_m;
+        int type_m;
 
     };
 
