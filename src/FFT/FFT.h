@@ -37,6 +37,7 @@
 
 #include "FieldLayout/FieldLayout.h"
 #include "Field/Field.h"
+#include "Particle/ParticleAttrib.h"
 #include "Utility/ParameterList.h"
 #include "Utility/IpplException.h"
 
@@ -122,21 +123,33 @@ namespace ippl {
         struct CufinufftType {};
 
         template <>
-        struct Cufinufft<float> {
-            using makeplan    = cufinufftf_makeplan;
-            using setpts      = cufinufftf_setpts;
-            using transform   = cufinufftf_execute;
-            using destroy     = cufinufftf_destroy;
-            using plan_t      = cufinufftf_plan;
+        struct CufinufftType<float> {
+            //using makeplan    = typename  cufinufftf_makeplan;
+            //using setpts      = typename  cufinufftf_setpts;
+            //using execute     = typename  cufinufftf_execute;
+            //using destroy     = typename  cufinufftf_destroy;
+            //using plan_t      = typename  cufinufftf_plan;
+
+
+            //typedef typename cufinufftf_makeplan makeplan;
+            //typedef typename cufinufftf_setpts setpts;
+            //typedef typename cufinufftf_execute execute;
+            //typedef typename cufinufftf_destroy destroy;
+            //typedef typename cufinufftf_plan plan_t;
         };
 
         template <>
-        struct Cufinufft<double> {
-            using makeplan    = cufinufft_makeplan;
-            using setpts      = cufinufft_setpts;
-            using transform   = cufinufft_execute;
-            using destroy     = cufinufft_destroy;
-            using plan_t      = cufinufft_plan;
+        struct CufinufftType<double> {
+            //using makeplan    = typename  cufinufft_makeplan;
+            //using setpts      = typename  cufinufft_setpts;
+            //using execute     = typename  cufinufft_execute;
+            //using destroy     = typename  cufinufft_destroy;
+            //using plan_t      = typename  cufinufft_plan;
+            //typedef typename cufinufft_makeplan makeplan;
+            //typedef typename cufinufft_setpts setpts;
+            //typedef typename cufinufft_execute execute;
+            //typedef typename cufinufft_destroy destroy;
+            //typedef typename cufinufft_plan plan_t;
         };
 #endif
     }
@@ -333,14 +346,15 @@ namespace ippl {
     public:
 
         typedef FieldLayout<Dim> Layout_t;
-        typedef std::complex<T> Complex_t;
-        typedef Field<Complex_t,Dim> ComplexField_t;
+        typedef std::complex<T> StdComplex_t;
+        typedef Kokkos::complex<T> KokkosComplex_t;
+        typedef Field<KokkosComplex_t,Dim> ComplexField_t;
 
-        using makeplan = detail::Cufinufft<T>::makeplan;
-        using setpts = detail::Cufinufft<T>::setpts;
-        using transform = detail::Cufinufft<T>::transform;
-        using destroy = detail::Cufinufft<T>::destroy;
-        using plan_t = detail::Cufinufft<T>::plan_t;
+        //using makeplan = typename detail::CufinufftType<T>::makeplan;
+        //using setpts = typename detail::CufinufftType<T>::setpts;
+        //using execute = typename detail::CufinufftType<T>::execute;
+        //using destroy = typename detail::CufinufftType<T>::destroy;
+        //using plan_t = typename detail::CufinufftType<T>::plan_t;
 
         /** Create a new FFT object with the layout for the input Field, type 
          * (1 or 2) for the NUFFT and parameters for cuFINUFFT.
@@ -355,6 +369,9 @@ namespace ippl {
         template<class PT1, class PT2, class... Properties>
         void transform(const ParticleAttrib< Vector<PT1, Dim>, Properties... >& R, 
                        ParticleAttrib<PT2, Properties... >& Q, ComplexField_t& f);
+        //template<class PT1, class PT2, class... Properties>
+        //void transform(const ParticleAttrib< Vector<double, Dim>>& R, 
+        //               ParticleAttrib<Kokkos::complex<double>>& Q, ComplexField_t& f);
 
 
     private:
@@ -362,10 +379,11 @@ namespace ippl {
         /**
            setup performs the initialization necessary.
         */
-        void setup(const std::array<int, 3>& nmodes,
+        void setup(std::array<int, 3>& nmodes,
                    const ParameterList& params);
 
-        plan_t plan_m;
+        //plan_t plan_m;
+        cufinufft_plan plan_m;
         int ier_m;
         T tol_m;
         int type_m;

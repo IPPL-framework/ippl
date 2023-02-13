@@ -793,15 +793,15 @@ namespace ippl {
     */
     template <size_t Dim, class T>
     void
-    FFT<NUFFTransform,Dim,T>::setup(const std::array<int, 3>& nmodes,
+    FFT<NUFFTransform,Dim,T>::setup(std::array<int, 3>& nmodes,
                                     const ParameterList& params)
     {
 
         cufinufft_opts opts;
-	    ier = cufinufft_default_opts(type, Dim, &opts);
+	    ier_m = cufinufft_default_opts(type_m, Dim, &opts);
 
         if(!params.get<bool>("use_cufinufft_defaults")) {
-           tol = params.get<T>("tolerance");
+           tol_m = params.get<T>("tolerance");
            opts.gpu_method = params.get<int>("gpu_method");
            opts.gpu_sort = params.get<int>("gpu_sort");
            opts.gpu_kerevalmeth = params.get<int>("gpu_kerevalmeth");
@@ -821,9 +821,10 @@ namespace ippl {
         else {
             throw std::logic_error("Only type 1 and type 2 NUFFT are allowed now");
         }
-        
-        ier = makeplan(type_m, Dim, nmodes, iflag, 1, tol,
-                       maxbatchsize, &plan, &opts);  
+
+        int dim = static_cast<int>(Dim);
+        ier_m = cufinufft_makeplan(type_m, dim, nmodes.data(), iflag, 1, tol_m,
+                       maxbatchsize, &plan_m, &opts);  
 
     }
 
@@ -835,6 +836,9 @@ namespace ippl {
     FFT<NUFFTransform,Dim,T>::transform(const ParticleAttrib< Vector<PT1, Dim>, Properties... >& R,
                                         ParticleAttrib<PT2, Properties... >& Q,
                                         typename FFT<NUFFTransform,Dim,T>::ComplexField_t& f)
+    //FFT<NUFFTransform,Dim,T>::transform(const ParticleAttrib< Vector<double, Dim>>& R,
+    //                                    ParticleAttrib<Kokkos::complex<double>>& Q,
+    //                                    typename FFT<NUFFTransform,Dim,T>::ComplexField_t& f)
     {
         auto fview = f.getView();
         auto Rview = R.getView();
@@ -847,21 +851,21 @@ namespace ippl {
          * cuFINUFFT's layout is left, hence we allocate the temporary
          * Kokkos views with the same layout
          */
-        Kokkos::View<Complex_t***,Kokkos::LayoutLeft>
+        Kokkos::View<cuDoubleComplex***,Kokkos::LayoutLeft>
             tempField("tempField", fview.extent(0) - 2*nghost,
                                    fview.extent(1) - 2*nghost,
                                    fview.extent(2) - 2*nghost);
 
 
-        std::array<Kokkos::View<PT1*,Kokkos::LayoutLeft>, 3> tempR;
+        Vector<Kokkos::View<PT1*,Kokkos::LayoutLeft>, 3> tempR;
       
-        tempR.fill(NULL);
 
         for(size_t d = 0; d < Dim; ++d) {
             Kokkos::realloc(tempR[d], localNp);
         }
+
        
-        Kokkos::View<std::complex<PT2>*,Kokkos::LayoutLeft> tempQ("tempQ", localNp);
+        Kokkos::View<cuDoubleComplex*,Kokkos::LayoutLeft> tempQ("tempQ", localNp);
        
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
@@ -875,10 +879,10 @@ namespace ippl {
                                            const size_t j,
                                            const size_t k)
                              {
-                                 tempField(i-nghost, j-nghost, k-nghost).real(
-                                       fview(i, j, k).real());
-                                 tempField(i-nghost, j-nghost, k-nghost).imag(
-                                       fview(i, j, k).imag());
+                                 tempField(i-nghost, j-nghost, k-nghost).x =
+                                       fview(i, j, k).real();
+                                 tempField(i-nghost, j-nghost, k-nghost).y = 
+                                       fview(i, j, k).imag();
                              });
 
 
@@ -887,16 +891,16 @@ namespace ippl {
                              KOKKOS_LAMBDA(const size_t i)
                              {
                                  for(size_t d = 0; d < Dim; ++d) {
-                                    temp[R](i) = Rview(i)[d];
+                                    tempR[d](i) = Rview(i)[d];
                                  }
-                                 tempQ(i).real(Qview(i));
-                                 tempQ(i).imag(0.0);
+                                 tempQ(i).x = Qview(i).real();
+                                 tempQ(i).y = Qview(i).imag();
                              });
 
-        ier = setpts(localNp, tempR[0].data(), tempR[1].data(), tempR[2].data(), 0, 
-                     NULL, NULL, NULL, plan);
+        ier_m = cufinufft_setpts(localNp, tempR[0].data(), tempR[1].data(), tempR[2].data(), 0, 
+                     NULL, NULL, NULL, plan_m);
 
-        ier = transform(tempQ.data(), tempField.data(), plan);
+        ier_m = cufinufft_execute(tempQ.data(), tempField.data(), plan_m);
 
 
         if(type_m == 1) { 
@@ -911,9 +915,9 @@ namespace ippl {
                                                const size_t k)
                                  {
                                      fview(i, j, k).real() =
-                                     tempField(i-nghost, j-nghost, k-nghost).real();
+                                     tempField(i-nghost, j-nghost, k-nghost).x;
                                      fview(i, j, k).imag() =
-                                     tempField(i-nghost, j-nghost, k-nghost).imag();
+                                     tempField(i-nghost, j-nghost, k-nghost).y;
                                  });
         }
         else if(type_m == 2) {
@@ -921,7 +925,7 @@ namespace ippl {
                                  localNp,
                                  KOKKOS_LAMBDA(const size_t i)
                                  {
-                                     Qview(i) = tempQ(i).real();
+                                     Qview(i) = tempQ(i).x;
                                  });
         }
     }
@@ -929,7 +933,7 @@ namespace ippl {
     template <size_t Dim, class T>
     FFT<NUFFTransform,Dim,T>::~FFT() {
         
-        ier = destroy(plan);
+        ier_m = cufinufft_destroy(plan_m);
 
     }
 }
