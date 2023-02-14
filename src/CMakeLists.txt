@@ -96,7 +96,7 @@ add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
 
 
 if (ENABLE_NUFFT)
-    target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY} ${CUFINUFFT_LIBRARY_DIR}/libcufinufft.a)
+    target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY} ${CUFINUFFT_LIBRARY_DIR})
 else()
     target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY})
 endif()
