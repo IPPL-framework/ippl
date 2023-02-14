@@ -94,7 +94,13 @@ include_directories (
 
 add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
 
-target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY})
+
+if (ENABLE_NUFFT)
+    target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY} ${CUFINUFFT_LIBRARY_DIR})
+else()
+    target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY})
+endif()
+
 
 install (TARGETS ippl DESTINATION lib)
 install (FILES ${IPPL_BASEDIR_HDRS} DESTINATION include)

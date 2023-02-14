@@ -164,15 +164,15 @@ int main(int argc, char *argv[]){
         std::atoi(argv[3])
     };
 
-    static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
+    static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
     static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
-    static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("kick");
-    static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("drift");
+    static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("pushVelocity");
+    static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("pushPosition");
     static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
     static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
     static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
-    static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
+    static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
 
     IpplTimings::startTimer(mainTimer);
 

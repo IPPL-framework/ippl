@@ -403,6 +403,62 @@ namespace ippl {
             const vector_type hvector_m;
         };
     }
+
+    namespace detail {
+
+        /*!
+         * Meta function of Hessian
+         */
+        template <typename E>
+        struct meta_hess : public Expression<meta_hess<E>, sizeof(E) + 4 * sizeof(typename E::Mesh_t::vector_type)> {
+
+            KOKKOS_FUNCTION
+            meta_hess(const E& u,
+                     const typename E::Mesh_t::vector_type& xvector,
+                     const typename E::Mesh_t::vector_type& yvector,
+                     const typename E::Mesh_t::vector_type& zvector,
+                     const typename E::Mesh_t::vector_type& hvector)
+            : u_m(u)
+            , xvector_m(xvector)
+            , yvector_m(yvector)
+            , zvector_m(zvector)
+            , hvector_m(hvector)
+            { }
+
+            /*
+             * 3-dimensional hessian (return Vector<Vector<T,3>,3>)
+             */
+            KOKKOS_INLINE_FUNCTION
+            auto operator()(size_t i, size_t j, size_t k) const {
+                vector_type row_1, row_2, row_3;
+
+                row_1 = xvector_m * ((u_m(i+1,j,k) - 2.0*u_m(i,j,k) + u_m(i-1,j,k))/(hvector_m[0]*hvector_m[0])) +
+                        yvector_m * ((u_m(i+1,j+1,k) - u_m(i-1,j+1,k) - u_m(i+1,j-1,k) + u_m(i-1,j-1,k))/(4.0*hvector_m[0]*hvector_m[1])) +
+                        zvector_m * ((u_m(i+1,j,k+1) - u_m(i-1,j,k+1) - u_m(i+1,j,k-1) + u_m(i-1,j,k-1))/(4.0*hvector_m[0]*hvector_m[2]));
+
+                row_2 = xvector_m * ((u_m(i+1,j+1,k) - u_m(i+1,j-1,k) - u_m(i-1,j+1,k) + u_m(i-1,j-1,k))/(4.0*hvector_m[1]*hvector_m[0])) +
+                        yvector_m * ((u_m(i,j+1,k) - 2.0*u_m(i,j,k) + u_m(i,j-1,k))/(hvector_m[1]*hvector_m[1])) +
+                        zvector_m * ((u_m(i,j+1,k+1) - u_m(i,j-1,k+1) - u_m(i,j+1,k-1) + u_m(i,j-1,k-1))/(4.0*hvector_m[1]*hvector_m[2]));
+
+                row_3 = xvector_m * ((u_m(i+1,j,k+1) - u_m(i+1,j,k-1) - u_m(i-1,j,k+1) + u_m(i-1,j,k-1))/(4.0*hvector_m[2]*hvector_m[0])) +
+                        yvector_m * ((u_m(i,j+1,k+1) - u_m(i,j+1,k-1) - u_m(i,j-1,k+1) + u_m(i,j-1,k-1))/(4.0*hvector_m[2]*hvector_m[1])) +
+                        zvector_m * ((u_m(i,j,k+1) - 2.0*u_m(i,j,k) + u_m(i,j,k-1))/(hvector_m[2]*hvector_m[2]));
+
+                matrix_type hessian = {row_1, row_2, row_3};
+                return hessian; 
+            }
+
+        private:
+            using Mesh_t = typename E::Mesh_t;
+            using vector_type = typename Mesh_t::vector_type;
+            using matrix_type = typename Mesh_t::matrix_type;
+            const E u_m;
+            const vector_type xvector_m;
+            const vector_type yvector_m;
+            const vector_type zvector_m;
+            const vector_type hvector_m;
+        };
+    }
 }
 
 #endif

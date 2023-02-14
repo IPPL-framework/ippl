@@ -39,6 +39,18 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
+add_executable (TestNUFFT1 TestNUFFT1.cpp)
+target_link_libraries (
+    TestNUFFT1
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+add_executable (TestNUFFT2 TestNUFFT2.cpp)
+target_link_libraries (
+    TestNUFFT2
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

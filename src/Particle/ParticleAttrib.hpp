@@ -144,6 +144,7 @@ namespace ippl {
     {
         static IpplTimings::TimerRef scatterPICTimer = IpplTimings::getTimer("ScatterPIC");           
         IpplTimings::startTimer(scatterPICTimer);                                               
+        
         typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();
@@ -317,6 +318,7 @@ namespace ippl {
 
         static IpplTimings::TimerRef gatherPICTimer = IpplTimings::getTimer("GatherPIC");           
         IpplTimings::startTimer(gatherPICTimer);                                               
+        
         const typename Field<T, Dim, M, C>::view_type view = f.getView();
 
         const M& mesh = f.get_mesh();

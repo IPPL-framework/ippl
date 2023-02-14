@@ -62,6 +62,13 @@ if (ENABLE_FFT)
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
 
+option (ENABLE_NUFFT "Enable NUFFT transform" OFF)
+if (ENABLE_NUFFT)
+    add_definitions (-DENABLE_NUFFT)
+    find_package(CUFINUFFT REQUIRED)
+    message (STATUS "Found CUFINUFFT_DIR: ${CUFINUFFT_DIR}")
+endif ()
+
 option (ENABLE_SOLVERS "Enable IPPL solvers" OFF)
 
 add_subdirectory (src)
