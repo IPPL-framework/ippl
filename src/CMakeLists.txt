@@ -96,6 +96,9 @@ add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
 
 
 if (ENABLE_NUFFT)
+    include_directories (
+        BEFORE ${CUFINUFFT_INCLUDE_DIR}
+    )
     target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY} ${CUFINUFFT_LIBRARY_DIR})
 else()
     target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY})
