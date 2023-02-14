@@ -750,6 +750,7 @@ namespace ippl {
     }
 
 
+#ifdef KOKKOS_ENABLE_CUDA
     //=========================================================================
     // FFT NUFFTransform Constructors
     //=========================================================================
@@ -764,8 +765,6 @@ namespace ippl {
                                   int type,
                                   const ParameterList& params)
     {
-
-
         /**
          * cuFINUFFT requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to fill in other
@@ -823,6 +822,7 @@ namespace ippl {
             throw std::logic_error("Only type 1 and type 2 NUFFT are allowed now");
         }
 
+        //dim in cufinufft is int
         int dim = static_cast<int>(Dim);
         ier_m = cufinufft_makeplan(type_m, dim, nmodes.data(), iflag, 1, tol_m,
                        maxbatchsize, &plan_m, &opts);  
@@ -943,6 +943,7 @@ namespace ippl {
         ier_m = cufinufft_destroy(plan_m);
 
     }
+#endif
 }
 
 // vi: set et ts=4 sw=4 sts=4:

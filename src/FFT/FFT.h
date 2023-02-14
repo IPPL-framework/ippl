@@ -66,10 +66,12 @@ namespace ippl {
        Tag classes for Cosine transforms
     */
     class CosTransform {};
+#ifdef KOKKOS_ENABLE_CUDA
     /**
        Tag classes for Non-uniform type of Fourier transforms
     */
     class NUFFTransform {};
+#endif
 
     enum FFTComm {
         a2av = 0,
@@ -337,6 +339,7 @@ namespace ippl {
     };
 
 
+#ifdef KOKKOS_ENABLE_CUDA
     /**
        Non-uniform FFT class
     */
@@ -346,7 +349,6 @@ namespace ippl {
     public:
 
         typedef FieldLayout<Dim> Layout_t;
-        typedef std::complex<T> StdComplex_t;
         typedef Kokkos::complex<T> KokkosComplex_t;
         typedef Field<KokkosComplex_t,Dim> ComplexField_t;
 
@@ -369,9 +371,6 @@ namespace ippl {
         template<class PT1, class PT2, class... Properties>
         void transform(const ParticleAttrib< Vector<PT1, Dim>, Properties... >& R, 
                        ParticleAttrib<PT2, Properties... >& Q, ComplexField_t& f);
-        //template<class PT1, class PT2, class... Properties>
-        //void transform(const ParticleAttrib< Vector<double, Dim>>& R, 
-        //               ParticleAttrib<Kokkos::complex<double>>& Q, ComplexField_t& f);
 
 
     private:
@@ -392,6 +391,7 @@ namespace ippl {
 
 
 }
+#endif
 #include "FFT/FFT.hpp"
 #endif // IPPL_FFT_FFT_H
 

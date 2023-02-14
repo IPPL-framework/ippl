@@ -2,14 +2,14 @@
 # Find CUFINUFFT includes and library
 #
 # CUFINUFFT_INCLUDE_DIR - where to find cufinufft.h
-# CUFINUFFT_LIBRARY     - libcufinufft.a path
+# CUFINUFFT_LIBRARY     - libcufinufft.so path
 # CUFINUFFT_FOUND       - do not attempt to use if "no" or undefined.
 
 FIND_PATH(CUFINUFFT_INCLUDE_DIR cufinufft.h
     HINTS $ENV{CUFINUFFT_INCLUDE_PATH} $ENV{CUFINUFFT_INCLUDE_DIR} $ENV{CUFINUFFT_PREFIX}/include $ENV{CUFINUFFT_DIR}/include ${PROJECT_SOURCE_DIR}/include
     PATHS ENV CPP_INCLUDE_PATH
 )
-
+#Static library has some issues and gives a cuda error at the end of compilation
 FIND_LIBRARY(CUFINUFFT_LIBRARY_DIR libcufinufft.so
     HINTS $ENV{CUFINUFFT_LIBRARY_PATH} $ENV{CUFINUFFT_LIBRARY_DIR} $ENV{CUFINUFFT_PREFIX}/lib $ENV{CUFINUFFT_DIR}/lib $ENV{CUFINUFFT}/lib ${PROJECT_SOURCE_DIR}/lib
     PATHS ENV LIBRARY_PATH
