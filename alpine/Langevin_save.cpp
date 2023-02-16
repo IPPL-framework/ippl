@@ -619,6 +619,18 @@ int main(int argc, char *argv[]){
     // const double ke=9e9;
     //SI // const double ke = 8.9875517923e9;// =1./(4.*M_PI*8.8541878128e-12); 
 
+   
+    static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
+    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+    static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
+    static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("kick");
+    static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("drift");
+    static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
+    static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
+    static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
+    // static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("domainDecomp");
+
+    IpplTimings::startTimer(mainTimer);
     msg << "Start test: LANGEVIN COLLISION OPERATOR" << endl;
 
 
@@ -743,7 +755,7 @@ int main(int argc, char *argv[]){
         << "EEE                 = " << std::setw(20) <<  EEE   << endl
         << "DDD                 = " << std::setw(20) <<  DDD   << endl
         << "CCC                 = " << std::setw(20) <<  CCC   << endl
-        << "FCT_BB              = " << std::setw(20) <<  BBB   << endl
+        << "FCT_BB                 = " << std::setw(20) <<  BBB   << endl
         << "DRAG                = " << std::setw(20) <<  DRAG   << endl
         << "DIFFUSION           = " << std::setw(20) <<  DIFFUSION   << endl
         << "VMAX                = " << std::setw(20) <<  P->vmax_mv   << endl
@@ -754,10 +766,50 @@ int main(int argc, char *argv[]){
 
     
 
+    //how to perform ORB without PDF etc
+    // if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
+        // msg << "Starting first repartition" << endl;
+        // IpplTimings::startTimer(domainDecomposition);//===========================
+        // isFirstRepartition = true;
+
+        // const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+        // const int nghost = P->rho_m.getNghost();
+        // using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        // auto rhoview = P->rho_m.getView();
+
+        // Kokkos::parallel_for("Assign initial rho based on PDF",
+        //                       mdrange_type({nghost, nghost, nghost},
+        //                                    {rhoview.extent(0) - nghost,
+        //                                     rhoview.extent(1) - nghost,
+        //                                     rhoview.extent(2) - nghost}),
+        //                       KOKKOS_LAMBDA(const int i,
+        //                                     const int j,
+        //                                     const int k)
+        //                       {
+        //                         //local to global index conversion
+        //                         const size_t ig = i + lDom[0].first() - nghost;
+        //                         const size_t jg = j + lDom[1].first() - nghost;
+        //                         const size_t kg = k + lDom[2].first() - nghost;
+        //                         double x = (ig + 0.5) * hr[0] + origin[0];
+        //                         double y = (jg + 0.5) * hr[1] + origin[1];
+        //                         double z = (kg + 0.5) * hr[2] + origin[2];
+        //                         Vector_t xvec = {x, y, z};
+        //                         rhoview(i, j, k) = PDF(xvec, alpha, kw, Dim);
+        //                       });
+        // Kokkos::fence();
+        // P->initializeORB(FL, mesh);
+        // P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+        //=======================================================================
+    //     IpplTimings::stopTimer(domainDecomposition);//===========================
+    // }
+    // isFirstRepartition = false;
+
+// MESH & DOMAIN_DECOMPOSITION
 //=======================================================================================
 // PARTICLE CREATION
 
 
+    IpplTimings::startTimer(particleCreation); 
     if(rank == 0) 
 	    createParticleDistributionColdSphere(*P, beamRadius, nP, particleCharge);    
     Kokkos::fence();  Ippl::Comm->barrier();  //??//
@@ -771,22 +823,37 @@ int main(int argc, char *argv[]){
 	auto pD2Host = P->D2.getHostMirror();
 
     
+    //multiple node runs stop here
     PL.update(*P, bunchBuffer);
     // PL_v.update(*P, bunchBuffer);
+    IpplTimings::stopTimer(particleCreation);
 
 
 // PARTICLE CREATION
 //====================================================================================== 
 // TEST TIMERS
+
+    IpplTimings::startTimer(DummySolveTimer);
+    P->rho_m = 0.0;
+    P->solver_mp->solve();
+    IpplTimings::stopTimer(DummySolveTimer);
+
+    ///////////////////////////////////////////
     
     P->scatterCIC(nP, 0, hr);
+    IpplTimings::startTimer(SolveTimer);
     P->solver_mp->solve();
+    IpplTimings::stopTimer(SolveTimer);
+
     P->E_m = P->E_m * eps_inv;
+
     P->gatherCIC();
+	msg << "scatter()solved()gather()" << endl;	
 
     ///////////////////////////////////////////
 
     Vector_t avgEF(compAvgSCForce(*P, nP, beamRadius));
+
 
 
     // std::mt19937 generator(0);
@@ -798,9 +865,14 @@ int main(int argc, char *argv[]){
 
     ///////////////////////////////////////////
 
+
+    IpplTimings::startTimer(dumpDataTimer);
     P->dumpLangevin(0,  nP, folder);
 	// P->dumpParticleData();
     // P->gatherStatistics(nP);
+    //P->dumpLocalDomains(FL, 0);
+    IpplTimings::stopTimer(dumpDataTimer);
+
 
 //TEST TIMERS
 //====================================================================================== ==== 
@@ -825,23 +897,63 @@ int main(int argc, char *argv[]){
 
         //Vorzeichen?? checken
         msg << "kick" <<endl;
+        IpplTimings::startTimer(PTimer);
         P->P = P->P + 0.5 * dt * P->E * particleCharge/particleMass;
-        msg << "drift" << endl;
-        P->R = P->R + dt * P->P;
+        IpplTimings::stopTimer(PTimer);
 
-        msg << "update" << endl;
-	    PL.update(*P, bunchBuffer);//Since the particles have moved spatially update them to correct processors
-        
+        msg << "drift" << endl;
+        IpplTimings::startTimer(RTimer);
+        P->R = P->R + dt * P->P;
+        IpplTimings::stopTimer(RTimer);
+
+        // msg << "update" << endl;
+        // //Since the particles have moved spatially update them to correct processors
+	    IpplTimings::startTimer(updateTimer);
+        PL.update(*P, bunchBuffer);
+        IpplTimings::stopTimer(updateTimer);
+
+        // Domain Decomposition for Positions
+        // if (P->balance(nP, it+1)) {
+        //    msg << "Starting repartition" << endl;
+        //    IpplTimings::startTimer(domainDecomposition);
+        //    P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+        //    IpplTimings::stopTimer(domainDecomposition);
+        //    //IpplTimings::startTimer(dumpDataTimer);
+        //    //P->dumpLocalDomains(FL, it+1);
+        //    //IpplTimings::stopTimer(dumpDataTimer);
+        //     msg << "LB"<<endl; 
+        // }
+
+
+        // P->dumpLangevin(it+1,  nP, folder);
+
+        msg << "scatter" << endl;
         P->scatterCIC(nP, it+1, hr); 
+        
         P->rho_m = P->rho_m * eps_inv;
+
+        IpplTimings::startTimer(SolveTimer);
         P->solver_mp->solve();
+        IpplTimings::stopTimer(SolveTimer);
+
+
+        msg << "gather" << endl;
         P->gatherCIC();
+
+
 // =================MYSTUFF::CONSTANT_FOCUSING======================
+
         msg << "constant Focusing" << endl;
         applyConstantFocusing(*P, focusForce, beamRadius, avgEF);
 // =================================================================
+
         msg << "kick" << endl;
+        IpplTimings::startTimer(PTimer);
+
         P->P = P->P + 0.5 * dt * P->E*particleCharge / particleMass;
+        IpplTimings::stopTimer(PTimer);
+
+
 // =================MYSTUFF::_LANGEVIN_COLLISION======================
 
     if(COLLISION){msg << "COLLISION"<<endl;
@@ -864,6 +976,15 @@ int main(int argc, char *argv[]){
         
             P->scatterPhaseSpaceDist(hr); 
             P->fv_mv = -8.0*M_PI*P->fv_mv;
+
+            // PL_v.update(*P, bunchBuffer);
+            // msg << pfvView(9) << " " 
+            // << pfvView(5220) << " " 
+            // << pfvView(10110) << " "       //is constant!!!!
+            // << pfvView(53000) << " " 
+            // <<endl;
+
+
         }
         
 
@@ -871,21 +992,28 @@ int main(int argc, char *argv[]){
 
         //origin shift
         mesh_v.setOrigin({0, 0, 0});
+
         if(DDD){msg << "DDD" << endl;
 
             P->solver_mvRB_H->solve();
             // P->gradRBH_mv = grad(P->fv_mv);
             //spectral gradient returns wrong negative
             P->gradRBH_mv =- P->KAPPA * P->gradRBH_mv;
+            Kokkos::fence();
+
             P->rescatterVelocityDist();
             P->fv_mv = -8.0*M_PI*P->fv_mv;
+
             P->solver_mvRB_G->solve();
             P->diffusionCoeff_mv = hess(P->fv_mv);
             P->diffusionCoeff_mv = P->KAPPA *  P->diffusionCoeff_mv; 
+
             //here one sided hessian might benecessary ... ??? 
+            // setBC(*P);
         }
-        mesh_v.setOrigin(P->vmin_mv);
+
         //undo origin shift
+        mesh_v.setOrigin(P->vmin_mv);
 
 
         if(CCC){msg << "CCC" << endl;
@@ -915,22 +1043,78 @@ int main(int argc, char *argv[]){
 
         if(BBB){ msg << "BBB" << endl;
             //  need to find best way to approximate cholesky
-            // P->Fd = P->Fd*constNumDensity;
-            // P->D0 = P->D0*constNumDensity;
-            // P->D1 = P->D1*constNumDensity;
-            // P->D2 = P->D2*constNumDensity;
 
-            P->Fd = P->Fd*P->fr/constNumDensity;
-            P->D0 = P->D0*P->fr/constNumDensity;
-            P->D1 = P->D1*P->fr/constNumDensity;
-            P->D2 = P->D2*P->fr/constNumDensity;
+
+            P->Fd = P->Fd*constNumDensity;
+            P->D0 = P->D0*constNumDensity;
+            P->D1 = P->D1*constNumDensity;
+            P->D2 = P->D2*constNumDensity;
+            
+            // P->Fd = P->Fd*4e3;
+            // P->D0 = P->D0*16e8;
+            // P->D1 = P->D1*16e8;
+            // P->D2 = P->D2*16e8;
+           
+
+
+            //64-8
+            // 4e4 drag is to big... it seeems
+            //4e3 drag small but good... with
+            //16e6 barely present ;; diffusion
+            //16e7 diffusion cancels out 4000er drag
+            //16e8 diffusion as it probably should be
+            //16e9 prbbly bit too big
+            //bot can be reasoned with average density ..but are too big
+            // 2.6e11 inverse cell density;;       
+            // factor should be dependent on cell volume else is doesnt make sense
+             // 1.6e11 average celldensity in all cases... N/domainVolume
+            // #######################///////////////////////////////////////////
+            // P->Fd = P->Fd*BBB;
+            // // P->Fd = P->Fd*2e4; too small
+            // // P->Fd = P->Fd*2e5; too small??
+            // // P->Fd = P->Fd*sqrt(2.62e11); intrest
+            // // P->Fd = P->Fd*2e6; interest
+            // // P->Fd = P->Fd*2e7; too big crash
+            // // P->Fd = P->Fd*2.62e11; too big crash
+            // P->D0 = P->D0*2.62e11;
+            // P->D1 = P->D1*2.62e11;
+            // P->D2 = P->D2*2.62e11;
+            // // interessant wir sehen wo constant focusing and diffusion the emittanz hinbewegen..
+            // #######################/////////////////////////////////
+            // P->Fd = P->Fd*BBB;
+            // P->D0 = P->D0*BBB*BBB;
+            // P->D1 = P->D1*BBB*BBB;
+            // P->D2 = P->D2*BBB*BBB;
+            //interesting for 1e6, 1e5, 5e4big, 3e4ok    1e4small
+            // #######################///////////////////////////////////////////
+            //if fr could be constant
+            // P->Fd = P->Fd*BBB;
+            // P->D0 = P->D0*BBB;
+            // P->D1 = P->D1*BBB;
+            // P->D2 = P->D2*BBB;
+                        // i dont think there is a constant BBB where
+            // #######################///////////////////////////////////////////
+            // cholesky approximation
+            // i think the the hessian or cholesky decomp is still so wrong that we cant find the correct second part
+            // of the force...
+            // there seems to be stuff that might work with different factor for both coefficients
+            // the KAPPA function mihgt be wrong?? dont think soo..
+
         }
         else{
             msg << "spacedensity factor P->fr" << endl;
+                // msg << P->fr(1) << " "
+            // for(int i = 0; i<=150000; i += 3000){
+            //     msg << pfrView(i) << " ";
+            //     if(i%30000 == 0) msg << endl;
+            // }
+
             P->Fd = P->Fd*P->fr;
             P->D0 = P->D0*P->fr;
             P->D1 = P->D1*P->fr;
             P->D2 = P->D2*P->fr;
+            // this is my theory and forces are way to be big but scatter and gather seems to be off somehow
+            //correcting still bugs out
         }
 
         if(DRAG){ msg << "DRAG" << endl;
@@ -938,12 +1122,42 @@ int main(int argc, char *argv[]){
         }
 
         if(DIFFUSION){msg << "DIFFUSION" << endl;
+
+
+                // Kokkos::deep_copy(pD0Host, P->D0.getView());
+                // Kokkos::deep_copy(pD1Host, P->D1.getView());
+                // Kokkos::deep_copy(pD2Host, P->D2.getView());
+
+                // Kokkos::fence();
+
+                // // diffusion coefficient does seem to be symmetric; which makes senes maybe because the derivates at border regions dont work...
+
+                //     int ddd[] = { 10, 134, 2345, 10555, 100000};
+                //     int xyz[] = {0,1,2};
+                    
+                //     for(int di : ddd){
+                //         for(int x : xyz){
+                //             // std::cout << DView(di)[x][y] << " ";//cant access particle Views directly for printing
+                //             msg << pD0Host(di)[x] << " " << pD1Host(di)[x] << " " << pD2Host(di)[x] << endl;
+                //         }msg << endl;
+                        
+                //         auto cholll = cholesky( pD0Host(di), pD1Host(di),pD2Host(di));
+                //         for(int x : xyz){
+                //         for(int y : xyz){
+                //             msg << cholll[x][y] << " ";
+                //         } msg << endl;
+                //         }msg << endl;
+                //     }
+                    
+                // Kokkos::fence();
+                // // MPI_Waitall();
+
             applyLangevin(*P, Gaussian3d);   //does:: // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
         }
 
                 // PL_v.update(*P, bunchBuffer);
 
-       	        //error if variable not used
+       	        //error if variable not used..   DIFFUSIONnd we dont use it?? ever???
                 if(false){
     	        double tmp = interactionRadius;
     	        tmp += 1;
@@ -952,6 +1166,7 @@ int main(int argc, char *argv[]){
     }
 
 
+///////////////////////////////////////////
 
 
         P->time_m += dt;
@@ -960,7 +1175,10 @@ int main(int argc, char *argv[]){
         
         if(PRINT){ msg << "PRINT" << endl;
             if (it%printInterval==0){
+            IpplTimings::startTimer(dumpDataTimer);
             P->dumpLangevin(it+1,  nP, folder);
+            // P->gatherStatistics(nP);
+            IpplTimings::stopTimer(dumpDataTimer);
             }
         }
     
@@ -971,10 +1189,108 @@ int main(int argc, char *argv[]){
 //====================================================================================== 
 
     msg << "Langevin: End." << endl;
+    IpplTimings::stopTimer(mainTimer);
+    IpplTimings::print();
+    IpplTimings::print(std::string("timing.dat"));
     auto end = std::chrono::high_resolution_clock::now();
+
     std::chrono::duration<double> time_chrono = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
 
     return 0;
 }
 
+
+
+
+
+
+    // Vector_t zerovec({1e-3, 1e-3, 1e-3});
+    // msg << "J"<<endl; 
+    // P->P = P->P+zerovec*P->fv;
+    // P->P = P->P+zerovec*P->fv;
+    // illegal syntax both ways...
+
+
+
+//     In file included from /data/user/klappr_s/ippl-2/ippl/src/Types/Vector.h:21,
+//                  from /data/user/klappr_s/ippl-2/ippl/src/Communicate/Archive.h:30,
+//                  from /data/user/klappr_s/ippl-2/ippl/src/Communicate/Communicate.h:27,
+//                  from /data/user/klappr_s/ippl-2/ippl/src/Ippl.h:23,
+//                  from /data/user/klappr_s/ippl-2/ippl/alpine/ChargedParticles.hpp:19,
+//                  from /data/user/klappr_s/ippl-2/ippl/alpine/Langevin.cpp:51:
+// /data/user/klappr_s/ippl-2/ippl/src/Expression/IpplExpressions.h: In instantiation of ‘auto ippl::detail::Expression<E, N>::operator[](size_t) const [with E = ippl::ParticleAttrib<ippl::Vector<double, 3> >; long unsigned int N = 24; size_t = long unsigned int]’:
+// /data/user/klappr_s/ippl-2/ippl/alpine/Langevin.cpp:1180:15:   required from here
+// /data/user/klappr_s/ippl-2/ippl/src/Expression/IpplExpressions.h:45:52: error: use of ‘auto ippl::detail::Expression<E, N>::operator[](size_t) const [with E = ippl::ParticleAttrib<ippl::Vector<double, 3> >; long unsigned int N = 24; size_t = long unsigned int]’ before deduction of ‘auto’
+//    45 |                 return static_cast<const E&>(*this)[i];
+//       |                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+// /data/user/klappr_s/ippl-2/ippl/src/Expression/IpplExpressions.h: In instantiation of ‘auto ippl::detail::Expression<E, N>::operator[](size_t) const [with E = ippl::BareField<ippl::Vector<double, 3>, 3>; long unsigned int N = 40; size_t = long unsigned int]’:
+// /data/user/klappr_s/ippl-2/ippl/alpine/Langevin.cpp:1186:17:   required from here
+// /data/user/klappr_s/ippl-2/ippl/src/Expression/IpplExpressions.h:45:52: error: use of ‘auto ippl::detail::Expression<E, N>::operator[](size_t) const [with E = ippl::BareField<ippl::Vector<double, 3>, 3>; long unsigned int N = 40; size_t = long unsigned int]’ before deduction of ‘auto’
+
+
+// in-c-210:43395:0:43395] Caught signal 11 (Segmentation fault: address not mapped to object at address 0x7fff98806000)
+// [merlin-c-210:43395:1:43405] Caught signal 11 (Segmentation fault: address not mapped to object at address 0x7fff98898fa8)
+// BFD: /opt/psi/Libraries/ucx/1.10.0-1_slurm/lib/libucs.so.0: warning: loop in section dependencies detected
+// BFD: /opt/psi/Libraries/ucx/1.10.0-1_slurm/lib/libucs.so.0: warning: loop in section dependencies detected
+// BFD: /data/user/klappr_s/ippl-2/ippl/build_openmp/alpine/Langevin: warning: loop in section dependencies detected
+// srun: error: merlin-c-210: task 0: Segmentation fault
+
+
+
+// // =================MYSTUFF==================================================================
+        
+//         //not working ippl:
+//         Vector_t one;
+//         one[0] = 0; //
+//         one[1] = 0;
+//         one[2] = 0;
+
+
+//         //particle attribute
+//         P->P = P->R; //no?   deep copy
+
+//         P->q = 1; //yes
+//         P->P = one; //yes
+//         P->q = P->fv; //yes
+
+//         // P->P[0]= 1;// no coompiler error
+//         P->P(0) = 1; // assigns 1 to each component  in 0 particle
+//         msg << P->P(5)(0) <<
+//         " " << P->P(5) <<
+//         " " << P->P(10) <<
+//         " " << P->P(0) << endl;
+//         // P->P[1] = P->R[1]; // n0 compiler error
+
+//         // P->P[1] = 2*P->P[1]; // n0 compiler
+
+
+//         msg<< "a" << endl;
+//         P->q = P->q +1; // yes
+
+//         msg<< "b" << endl;
+//         // P->P  = P->P  + one; //no runtime error
+//         // P->P[2] += P->P[2] + 1; // no // compiler
+
+//         // Fields
+
+
+//         msg<< "c" << endl;
+//         P->rho_m = 1; //yes
+
+//         msg<< "d" << endl;
+//         P->E_m = one; // yes
+//         // P->E_m[1] = P->E_m[2]; // no
+
+//         // P->E_m[1] = P->E_m[1]*3; // yes
+
+//         msg<< "e" << endl;
+//         P->fv = P->fv +1; // yes
+
+//         msg<< "f" << endl;
+//         // P->P  = P->P  + one; //no runtime error
+//         // P->P[2] += P->P[2] + 1; // no //compiler
+
+// //coefficient might be a problem that one can use [] aand () as possiblbe braces for both 
+// //cases which means this creates a problem
+// //should be always clear!!!
