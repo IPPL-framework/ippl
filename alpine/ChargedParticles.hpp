@@ -157,6 +157,7 @@ public:
     std::string stype_m;
 
     std::shared_ptr<Solver_t> solver_mp;
+    std::shared_ptr<VSolver_t> solver_mp2;
 
     double time_m;
 
@@ -169,16 +170,19 @@ public:
 
 public:
     ParticleAttrib<double>     q; // charge
-    typename ippl::ParticleBase<PLayout>::particle_position_type P;  // particle velocity
-    typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
+    ParticleAttrib<Vector_t> P;  // particle velocity
+    ParticleAttrib<Vector_t> E;  // electric field at particle position
+
+    // typename ippl::ParticleBase<PLayout>::particle_position_type P;  // particle velocity
+    // typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
 
     // EXCL_LANGEVIN ... 
     //ORB orb_v;     //NEW
-    // unsigned int nP; // NEW
+    unsigned int nP; // NEW
     double pMass; // NEW
 
 
-    double GAMMA; //NEW
+    double KAPPA; //NEW
 
     Field_t   fr_m; //NEW
     Field_t   fv_mv; //NEW
@@ -186,7 +190,8 @@ public:
     VField_t diffCoeffArr_mv[3];//NEW
     MField_t diffusionCoeff_mv;//NEW
 
-    std::shared_ptr<VSolver_t> solver_mvRB; //NEW
+    std::shared_ptr<VSolver_t> solver_mvRB_H; //NEW
+    std::shared_ptr<VSolver_t> solver_mvRB_G; //NEW
 
     ParticleAttrib<double> fr;//NEW == 1
     ParticleAttrib<double> fv;//NEW == 1
@@ -293,7 +298,8 @@ public:
         }
         // Update
         this->updateLayout(fl, mesh, buffer, isFirstRepartition);
-        this->solver_mp->setRhs(rho_m);
+        this->solver_mp->setRhs(rho_m); //does not exist for current solver used??
+        // #######################################################################
     }
 
     bool balance(size_type totalP, const unsigned int nstep){
@@ -411,8 +417,9 @@ public:
     }
 
     void initFFTSolver() {
+
+
         ippl::ParameterList sp;
-        sp.add("output_type", Solver_t::GRAD);
         sp.add("use_heffte_defaults", false);  
         sp.add("use_pencils", true);  
         sp.add("use_reorder", false);  
@@ -420,13 +427,25 @@ public:
         sp.add("comm", ippl::p2p_pl);  
         sp.add("r2c_direction", 0);  
 
-        solver_mp = std::make_shared<Solver_t>();
 
+        // sp.add("output_type", Solver_t::GRAD);
+        //open boundary condion:
+
+        solver_mp2 = std::make_shared<VSolver_t>(this->E_m, this->rho_m, sp, "VICO");
+        
+        // solver_mp2 = std::make_shared<VSolver_t>(this->E_m, this->rho_m, sp, "HOCKNEY");
+        solver_mp2 = std::make_shared<VSolver_t>(this->E_m, this->rho_m, sp, "VICO");
+
+
+        sp.add("output_type", Solver_t::GRAD);
+        solver_mp = std::make_shared<Solver_t>(); //periodic
         solver_mp->mergeParameters(sp);
-
+        solver_mp->setLhs(E_m);
         solver_mp->setRhs(rho_m);
 
-        solver_mp->setLhs(E_m);
+
+
+
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -450,9 +469,10 @@ public:
         sp.add("use_heffte_defaults", false);  
         sp.add("use_gpu_aware", true);  
         sp.add("r2c_direction", 0); 
-        sp.add("output_type", VSolver_t::SOL);
+        // sp.add("output_type", VSolver_t::SOL); //GRAD
 
-        solver_mvRB = std::make_shared<VSolver_t>(this->fv_mv, sp, "HOCKNEY");
+        solver_mvRB_H = std::make_shared<VSolver_t>(this->gradRBH_mv,  this->fv_mv, sp, "VICO");
+        solver_mvRB_G = std::make_shared<VSolver_t>(this->fv_mv, sp, "BIHARMONIC");
     }
 
         // Inform m("scatterVEL");
@@ -463,37 +483,72 @@ public:
         // ???????????????????????????????????????????????????????????
 
 
-    // void scatterVEL() {
-
-    //     fv_mv = 0.0;
-    //     scatter(this->fv, this->fv_mv, this->P);     
-    //     fv_mv = fv_mv / (this->hv_mv[0] * this->hv_mv[1] * this->hv_mv[2]);
-    // }
+   
     void scatterPhaseSpaceDist(Vector_t& hrField) {
 
-        fv_mv = 0.0;
-        scatter(this->fv, this->fv_mv, this->P);     
-        fv_mv = fv_mv / (this->hv_mv[0] * this->hv_mv[1] * this->hv_mv[2]);
 
+         Inform m("scatter 2");
+
+        fv = 1.0;
+        fv_mv = 0.0;
+        scatter(this->fv, this->fv_mv, this->P);   
+        fv_mv = fv_mv / (this->hv_mv[0] * this->hv_mv[1] * this->hv_mv[2]*this->nP);
+        // fv_mv = fv_mv - (double(nP)/((vmax_mv[0] - vmin_mv[0]) * (vmax_mv[1] - vmin_mv[1]) * (vmax_mv[2] - vmin_mv[2])));
 
         fr = 1.0;
         fr_m = 0.0;
         scatter(this->fr, this->fr_m, this->R);     
-        fr_m = fr_m / (hrField[0] * hrField[1] * hrField[2]);
+        fr_m = fr_m / (hrField[0] * hrField[1] * hrField[2]);// / this->nP);
+        // fr_m = fr_m - (double(nP)/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]))); 
 
-
+        
+        double parts_grid_m = fr_m.sum()*(hrField[0] * hrField[1] * hrField[2]);
+        double parts_grid_v = fv_mv.sum()*(this->hv_mv[0] * this->hv_mv[1] * this->hv_mv[2]);
+        m << parts_grid_m << "  " << parts_grid_v << endl;
     }
+    void rescatterVelocityDist() {
 
+        Inform m("scatter 3");
+        fv = 1.0;
+        fv_mv = 0.0;
+        scatter(this->fv, this->fv_mv, this->P);   
+        fv_mv = fv_mv / (this->hv_mv[0] * this->hv_mv[1] * this->hv_mv[2]*this->nP);
+    }
     void gather_Fd_D_Density() {
 
         gather(this->fr, this->fr_m, this->R); 
 
         gather(this->Fd, this->gradRBH_mv, this->P);
-
         gather(this->D0, diffCoeffArr_mv[0], this->P);
         gather(this->D1, diffCoeffArr_mv[1], this->P);
         gather(this->D2, diffCoeffArr_mv[2], this->P);
+
+
+
     }
+
+
+
+
+    // void gather22(Vector_t& hrField) {
+        
+    //     Inform m("gatter 22");
+
+    //     double parts_grid_1 = fr_m.sum();
+    //     fr_m = fr_m / 156055;
+    //     double parts_grid_2 = fr_m.sum();
+    //     fr_m = fr_m * 156055;
+
+
+    //     fr_m = fr_m / (hrField[0] * hrField[1] * hrField[2]);
+    //     double parts_grid_mt = fr_m.sum();
+
+    //     m << parts_grid_1 << "  "
+    //     << parts_grid_2 << "  " 
+    //     << parts_grid_mt << endl;
+
+    //     gather(this->fr, this->fr_m, this->R); 
+    // }
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -757,6 +812,8 @@ m << "temperature" << endl;
 
 	double     centroid[2 * Dim]={};
 	double       moment[2 * Dim][2 * Dim]={};
+	double     Ncentroid[2 * Dim]={};
+	double       Nmoment[2 * Dim][2 * Dim]={};
 
 	double loc_centroid[2 * Dim]={};
 	double   loc_moment[2 * Dim][2 * Dim]={};
@@ -782,7 +839,7 @@ m << "temperature" << endl;
 						double& mom3,
 						double& mom4,
 						double& mom5
-						){ 
+                        ){ 
 					double  part[2 * Dim];
 	            			part[0] = pRView(k)[0];
 	            			part[1] = pVMirror(k)[0];
@@ -790,6 +847,7 @@ m << "temperature" << endl;
 	            			part[3] = pVMirror(k)[1];
 	            			part[4] = pRView(k)[2];
 	            			part[5] = pVMirror(k)[2];
+
 	            			
 					cent += part[i];
 					mom0 += part[i]*part[0];
@@ -798,6 +856,71 @@ m << "temperature" << endl;
 					mom3 += part[i]*part[3];
 					mom4 += part[i]*part[4];
 					mom5 += part[i]*part[5];
+
+				},
+				Kokkos::Sum<double>(loc_centroid[i]),
+				Kokkos::Sum<double>(loc_moment[i][0]),
+				Kokkos::Sum<double>(loc_moment[i][1]),
+				Kokkos::Sum<double>(loc_moment[i][2]),
+				Kokkos::Sum<double>(loc_moment[i][3]),
+				Kokkos::Sum<double>(loc_moment[i][4]),
+				Kokkos::Sum<double>(loc_moment[i][5])
+		);	
+	Kokkos::fence();
+	}
+    Ippl::Comm->barrier();
+    MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+
+    Ippl::Comm->barrier();
+    	for(unsigned i = 0; i < 2 * Dim; i++) {
+            loc_centroid[i] = 0.0;
+            for(unsigned j = 0; j <= i; j++) {
+                loc_moment[i][j] = 0.0;
+                loc_moment[j][i] = 0.0;
+            }
+   	 }
+
+        
+
+	for(unsigned i = 0; i< 2*Dim; ++i){
+        // NORMALIZED EMITTANCE!!!!!
+    	Kokkos::parallel_reduce("write Emittance 1 redcution",
+				locNp,
+				KOKKOS_LAMBDA(const int k,
+						double& cent,
+						double& mom0,
+						double& mom1,
+						double& mom2,
+						double& mom3,
+						double& mom4,
+						double& mom5
+						
+                        ){ 
+                            // double c = 3e9; //(cm/ms) used most of the time...
+                            double c = 2.99792458e9;
+                            double v2 =       pVMirror(k)[0]*pVMirror(k)[0]
+                                            + pVMirror(k)[1]*pVMirror(k)[1]
+                                            + pVMirror(k)[2]*pVMirror(k)[2];
+                            double lorentz = 1.0/(sqrt(1.0-v2/c));
+
+					double  part[2 * Dim];
+	            			part[0] = pRView(k)[0];
+	            			part[1] = (pVMirror(k)[0]/c)*lorentz;
+	            			part[2] = pRView(k)[1];
+	            			part[3] = (pVMirror(k)[1]/c)*lorentz;
+	            			part[4] = pRView(k)[2];
+	            			part[5] = (pVMirror(k)[2]/c)*lorentz;
+                            
+	            			
+					cent += part[i];
+					mom0 += part[i]*part[0];
+					mom1 += part[i]*part[1];
+					mom2 += part[i]*part[2];
+					mom3 += part[i]*part[3];
+					mom4 += part[i]*part[4];
+					mom5 += part[i]*part[5];
+
 				},
 				Kokkos::Sum<double>(loc_centroid[i]),
 				Kokkos::Sum<double>(loc_moment[i][0]),
@@ -811,18 +934,25 @@ m << "temperature" << endl;
 	}
 
     Ippl::Comm->barrier();
-    MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-    MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(loc_moment, Nmoment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(loc_centroid, Ncentroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
     Ippl::Comm->barrier();
+    /////////////////////////////////////////////////////////
 
 
-
-    if (Ippl::Comm->rank() == 0)
-    {
     
         Vector_t eps2, fac;
         Vector_t rsqsum, vsqsum, rvsum;
         Vector_t rmean, vmean, rrms, vrms, eps, rvrms;
+        Vector_t norm;
+
+        Vector_t Neps2, Nfac;
+        Vector_t Nrsqsum, Nvsqsum, Nrvsum;
+        Vector_t Nrmean, Nvmean, Nrrms, Nvrms, Neps, Nrvrms;
+        Vector_t Nnorm;
+
+    if (Ippl::Comm->rank() == 0)
+    {
 
 
 
@@ -833,12 +963,27 @@ m << "temperature" << endl;
         	    vsqsum(i) = moment[(2 * i) + 1][(2 * i) + 1] - N * vmean(i) * vmean(i);
         	    if(vsqsum(i) < 0)   vsqsum(i) = 0;
         	    rvsum(i) = (moment[(2 * i)][(2 * i) + 1] - N * rmean(i) * vmean(i));
+
+                Nrmean(i) = Ncentroid[2 * i] / N;
+        	    Nvmean(i) = Ncentroid[(2 * i) + 1] / N;
+        	    Nrsqsum(i) = Nmoment[2 * i][2 * i] - N * Nrmean(i) * Nrmean(i);
+        	    Nvsqsum(i) = Nmoment[(2 * i) + 1][(2 * i) + 1] - N * Nvmean(i) * Nvmean(i);
+        	    if(Nvsqsum(i) < 0)   Nvsqsum(i) = 0;
+        	    Nrvsum(i) = (Nmoment[(2 * i)][(2 * i) + 1] - N * Nrmean(i) * Nvmean(i));
+
+
         	}
 
 
         //coefficient wise
         eps2  = (rsqsum * vsqsum - rvsum * rvsum) / (N * N);
         rvsum = rvsum/ N;
+
+        Neps2  = (Nrsqsum * Nvsqsum - Nrvsum * Nrvsum) / (N * N);
+        Nrvsum = Nrvsum/ N;
+
+
+
 
         	for(unsigned int i = 0 ; i < Dim; i++) {
                 //  rvsum(i) /= N;
@@ -849,8 +994,19 @@ m << "temperature" << endl;
    	    	     eps(i)  =  std::sqrt(std::max(eps2(i), zero));
    	    	     double tmpry = rrms(i) * vrms(i);
    	    	     fac(i) = (tmpry == 0.0) ? zero : 1.0/tmpry;
-   	    	 }
-        rvrms = rvsum * fac;
+
+
+   	    	     Nrrms(i) = sqrt(rsqsum(i) / N);
+   	    	     Nvrms(i) = sqrt(vsqsum(i) / N);
+
+   	    	     Neps(i)  =  std::sqrt(std::max(Neps2(i), zero));
+   	    	     tmpry = Nrrms(i) * Nvrms(i);
+   	    	     Nfac(i) = (tmpry == 0.0) ? zero : 1.0/tmpry;
+   	    	}
+        Nrvrms = Nrvsum * Nfac;
+
+
+    }
 
 //VMAX VMIN////////////////////////////////////////////////////////////////////////////
     double vmax_loc[Dim];
@@ -915,6 +1071,11 @@ m << "temperature" << endl;
 /////////////////////////////////////////////////////////////////////////////////
 // ===== start PRINTING  =========
 
+
+    if (Ippl::Comm->rank() == 0)
+    {
+    
+
             // std::string folder2 = folder;
             std::stringstream fname;
             fname << "/FieldLangevin_";
@@ -942,7 +1103,7 @@ m << "temperature" << endl;
                     "T_X,    "              <<
                     "rvrms_X,"              <<
                     "eps_X,  "              <<
-                    "vmax,"              <<  
+                    "Neps_X,"              <<  
                     endl;
 
 		csvout2 <<  
@@ -973,11 +1134,7 @@ m << "temperature" << endl;
                     temperature[0]  <<","<< 
                     rvrms[0]        <<","<<
                     eps[0]          <<","<<
-                    vmax[0]         <<","<<
-                    rmax[0]         <<","<<
-                    
-                    // eps[0]*(4.0/5.0)<<" "<<
-                    // eps[0]*(3.0/4.0)<<" "<<
+                    Neps[0]          <<","<<
     	 	endl;	
 
             csvout2<<   
