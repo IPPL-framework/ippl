@@ -3,7 +3,6 @@ message (STATUS "Adding test FFT found in ${_relPath}")
 
 include_directories (
     ${CMAKE_SOURCE_DIR}/src
-    ${CUFINUFFT_INCLUDE_DIR}
 )
 
 link_directories (
