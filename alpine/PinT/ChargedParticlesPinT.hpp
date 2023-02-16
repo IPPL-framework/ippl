@@ -861,7 +861,7 @@ public:
         rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
         // Solve for and gather E field
-        gatherPIF(E, rhoPIF_m, Sk_m, Rtemp);
+        gatherPIF(E, rhoPIF_m, Sk_m, Rtemp, q);
     
         time_m = tStartMySlice;
 
@@ -893,7 +893,7 @@ public:
             rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
             // Solve for and gather E field
-            gatherPIF(E, rhoPIF_m, Sk_m, Rtemp);
+            gatherPIF(E, rhoPIF_m, Sk_m, Rtemp, q);
     
             //kick
             Ptemp = Ptemp - 0.5 * dt * E;

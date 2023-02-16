@@ -456,8 +456,10 @@ int main(int argc, char *argv[]){
     Vector_t kw = {0.5, 0.5, 0.5};
     //double alpha = 0.05;
     Vector_t alpha = {0.05, 0.05, 0.05};
-    Vector_t rmin(0.0);
-    Vector_t rmax = 2 * pi / kw ;
+    //Vector_t rmin(0.0);
+    //Vector_t rmax = 2 * pi / kw ;
+    Vector_t rmin(-2.0 * pi);
+    Vector_t rmax = 2 * pi;
     Vector_t length = rmax - rmin;
     double dxPIC = length[0] / nrPIC[0];
     double dyPIC = length[1] / nrPIC[1];
