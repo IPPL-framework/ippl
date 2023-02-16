@@ -109,12 +109,18 @@ int main(int argc, char *argv[]){
     Inform msg2all("Langevin ",INFORM_ALL_NODES);
     Inform msg("Langevin");
 
-    const double n = std::atof(argv[1]);
-    const double vth = std::atof(argv[2]);
-    const double fct = std::atof(argv[3]);
-    const int compare_opt  = std::atoi(argv[4]);
-    const char print_opt = *(argv[5]); // H h G g F f D d
-    // std::string ALGO = (argc>=5 ? argv[4] : "HOCKNEY") ; //VICO
+
+
+
+
+    // const double fct = (argc>=2 ? std::atof(argv[1]) : 5) ;
+    // const int vers   = (argc>=3 ? std::atoi(argv[2]) : 1) ;
+    const char print_opt   = (argc>= 2 ?         *(argv[1]) : 'D'); // H h G g F f D d
+    std::string ALGO       = (argc>= 3 ?           argv[2] : "VICO") ; //VICO
+    const double n         = (argc>= 4 ? std::atof(argv[3]) : 1);
+    const double vth       = (argc>= 5 ? std::atof(argv[4]) : 1);
+    const double fct       = (argc>= 6 ? std::atof(argv[5]) : 5);
+    const int compare_opt  = (argc>= 7 ? std::atoi(argv[6]) : 8);
 
     double L =2;
     // const double cst = std::atof(argv[4]);
@@ -125,11 +131,10 @@ int main(int argc, char *argv[]){
     const double vth2 = vth*vth;
     const double w2 = sqrt(2.0);
 
-    std::string ALGO = "HOCKNEY";
     bool isVallPeriodic = false;
     double VMAX = fct*vth;
-    std::string path = "./rb/" + std::to_string(int(n)) + std::to_string(int(vth)) + std::to_string(int(fct))+ std::to_string(int(compare_opt))+".csv";
-    std::string pathA = "./rb/curve" + std::to_string(int(n)) + std::to_string(int(vth)) + std::to_string(int(fct)) + std::to_string(int(compare_opt))+print_opt+".csv";
+    std::string path = "./tests/rb/" + std::to_string(int(n)) + std::to_string(int(vth)) + std::to_string(int(fct))+ std::to_string(int(compare_opt))+".csv";
+    std::string pathA = "./tests/rb/curve" + std::to_string(int(n)) + std::to_string(int(vth)) + std::to_string(int(fct)) + std::to_string(int(compare_opt))+print_opt+".csv";
 
     std::ofstream fout, aout;
     fout.open(path);
@@ -138,13 +143,15 @@ int main(int argc, char *argv[]){
         fout
             << "NV" << "," 
             << "HerrorL2" << "," 
-            << "GerrorL2" << ","  
-            << "Derror" << ",,,,,"
-            << "Ferror" << ",,"
+            << "GerrorL2" << "," 
+            << "Derror" << ","
+            << "Derror_on_diag" << ","
+            << "Derror_off_diag" << ","
+            << "Ferror" << ","
             << std::endl;
     }
 
-for(int NV = 4; NV <=128 /*256*/; NV*=2){
+for(int NV = 4; NV <=256; NV*=2){
 
     Vector<int, Dim> nv_mv = {NV,NV,NV};
     double hv = 2*VMAX/NV;
@@ -185,6 +192,9 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
     F_sol.initialize(mesh_v, FL_v);
 
     std::shared_ptr<VSolver_t> solver_RB;
+    // std::shared_ptr<VSolver_t> solver_RB_G_1;
+    std::shared_ptr<VSolver_t> solver_RB_G_2;
+
     ippl::ParameterList sp;
     sp.add("use_pencils", true);
     sp.add("comm", ippl::p2p_pl);  
@@ -192,8 +202,17 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
     sp.add("use_heffte_defaults", false);  
     sp.add("use_gpu_aware", true);  
     sp.add("r2c_direction", 0); 
-    sp.add("output_type", VSolver_t::SOL);
-    solver_RB = std::make_shared<VSolver_t>(fv, sp, ALGO);
+
+
+      
+    // fftParams.add("comm", ippl::a2av);  ????
+    // ippl::ParameterList sp2(sp);
+    // sp.add("output_type", VSolver_t::SOL_AND_GRAD); // finds version automatically via templates
+    // doesnt need to be initialized
+
+    solver_RB = std::make_shared<VSolver_t>(F, fv, sp, ALGO);
+    // solver_RB_G_1 = std::make_shared<VSolver_t>(fv, sp, ALGO);
+    solver_RB_G_2 = std::make_shared<VSolver_t>(fv, sp, "BIHARMONIC");
 
     mesh_v.setOrigin(vmin_mv);
 
@@ -209,20 +228,15 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
 
     const ippl::NDIndex<3>& lDom = FL_v.getLocalNDIndex();
 
-///////!!!!!!!!!!
+    ///////!!!!!!!!!!
     int nghost = fv.getNghost();
-    // nghost = 2*fv.getNghost();
+    nghost = 2*fv.getNghost();
 
-    Kokkos::parallel_for("set values1", // here are ghost included?? at the start ill leave them??? border regions are critical...
-                    // Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
-                    //                                         {   fvView.extent(0)-nghost,
-					// 		                                    fvView.extent(1)-nghost,
-					// 		                                    fvView.extent(2)-nghost}),
-                    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+    // initialisation of analytical solutions
+    Kokkos::parallel_for("set values1", Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
                                                             {   fvView.extent(0),
 							                                    fvView.extent(1),
 							                                    fvView.extent(2)}),
-
 
 		            KOKKOS_LAMBDA(const int i, const int j, const int k){
 
@@ -258,7 +272,7 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
     );
     Kokkos::fence();
 
-
+    // use first open boundary poisson solve to get H
     fv = -8.0 * M_PI * fv;
     mesh_v.setOrigin({0, 0, 0});
     solver_RB->solve();
@@ -266,25 +280,61 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
     Kokkos::deep_copy(HView, fvView);
     Kokkos::fence();
 
+
+    // START 1.0
+    // use a second open boundary poisson solve to get G
+    // mesh_v.setOrigin({0, 0, 0});
+    // solver_RB_G_1->solve();
+    // mesh_v.setOrigin(vmin_mv);
+    // Kokkos::deep_copy(GView, fvView);
+    // Kokkos::fence();
+
+    // // NECESSARY SHIFT TO MAKE G OVERLAP
+    //  this is the better sequence of shift... but
+    // double offset = G.sum() * ( pow(hv, 3)/pow(2*VMAX, 3) );
+    // G = G - offset;
+    // G = G + n*VMAX;
+
+    // ... why not like this?(doesnt work...)
+    // G = G+n*VMAX;
+    // double offset = G.sum() * ( pow(hv, 3)/pow(2*VMAX, 3) );
+    // G = G - offset;// + n*VMAX;
+
+
+
+    // END 1.0
+
+   // start:2.0
+    //  reininistialize f; to afterwards do biharmonic solve:
+    Kokkos::parallel_for("set values1", Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+                                                            {   fvView.extent(0),
+							                                    fvView.extent(1),
+							                                    fvView.extent(2)}),
+
+		            KOKKOS_LAMBDA(const int i, const int j, const int k){
+
+                        //local to global index conversion
+                        const int ig = i + lDom[0].first() - nghost;
+                        const int jg = j + lDom[1].first() - nghost;
+                        const int kg = k + lDom[2].first() - nghost;
+                        const double vx = vmin_mv[0] + (ig + 0.5)*hv_mv[0];
+                        const double vy = vmin_mv[1] + (jg + 0.5)*hv_mv[1];
+                        const double vz = vmin_mv[2] + (kg + 0.5)*hv_mv[2];
+                        const double vnorm2  = vx*vx+vy*vy+vz*vz;
+                        const double EXP = exp(-vnorm2/(2*vth2));
+                        fvView(i,j,k)   = n / pow(2*M_PI*vth2, 1.5)* EXP;
+                    }
+    );
+    Kokkos::fence();
+    fv = -8.0 * M_PI * fv;
     mesh_v.setOrigin({0,0,0});
-    solver_RB->solve();
+    solver_RB_G_2->solve();
     mesh_v.setOrigin(vmin_mv);
     Kokkos::deep_copy(GView, fvView);
     Kokkos::fence();
-
+    // END 2.0
 
  
-
-    
-    // G = G + 2.44*vth*n*fct;
-
-    //this is the better sequence of shift buti dont know why...?
-    double offset = G.sum();
-    offset = offset/pow(2*VMAX, 3);
-    offset = offset*pow(hv, 3);
-    G = G - offset;// + n*VMAX;
-    G = G+n*VMAX;
-
 
     switch(compare_opt)
     {
@@ -299,6 +349,10 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
         case 0: // compare analyt(hess(G)) with hess(num(G)
             D = hess(G);
             F = grad(H);
+            break;
+        case 8://default // compare analyt(hess(G)) with spectral_hess(num(G) 
+            F=-F;
+            D = hess(G);
     }
 
 
@@ -369,7 +423,7 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
     double GerrorL, HerrorL;
 
     Matrix_t  Derror;
-    double Derror_tot=0;
+    double Derror_tot=0, Derror_on_diag=0, Derror_off_diag=0;
 
     Vector_t  Ferror;
     double Ferror_tot=0;
@@ -391,7 +445,6 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
     // }
 
 
-        // {0, 0, 0} {nghost, nghost, nghost}???
         for (size_t di=0; di<3; ++di) {
         for (size_t dj=0; dj<3; ++dj) {
                         double temp = 0.0;                                                                                        
@@ -411,7 +464,7 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
 
                         temp = 0.0;                                                                                        
                         Kokkos::parallel_reduce("Vector errorDr reduce",                                                                       
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, { DsolView.extent(0) - nghost,
+                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, {  DsolView.extent(0) - nghost,
                                                                                             DsolView.extent(1) - nghost,
                                                                                             DsolView.extent(2) - nghost}),          
                                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {                                
@@ -425,6 +478,9 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
 
                         Derror[di][dj] = errorNr/errorDr;
                         Derror_tot += errorNr/errorDr;
+                        if(di == dj) Derror_on_diag += errorNr/errorDr;
+                        else Derror_off_diag += errorNr/errorDr;
+
         }
         }
 
@@ -432,7 +488,7 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
         for (size_t dj=0; dj<3; ++dj) {
                         double temp = 0.0;                                                                                        
                         Kokkos::parallel_reduce("Vector errorNr reduce", 
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, { FView.extent(0) - nghost, 
+                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, {  FView.extent(0) - nghost, 
                                                                                             FView.extent(1) - nghost,
                                                                                             FView.extent(2) - nghost}),          
                                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {                                
@@ -444,7 +500,7 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
                         double errorNr = pow(globaltemp, (1/double(L)));                                                                                   
                         temp = 0.0;                                                                                        
                         Kokkos::parallel_reduce("Vector errorDr reduce",                                                                       
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, { FsolView.extent(0) - nghost,
+                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, {  FsolView.extent(0) - nghost,
                                                                                             FsolView.extent(1) - nghost,
                                                                                             FsolView.extent(2) - nghost}),          
                                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {                                
@@ -465,6 +521,9 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
 
     Ferror_tot /= 3;
     Derror_tot /= 9;
+    Derror_on_diag /= 3;
+    Derror_off_diag /= 6;
+
     H = H - H_sol;
     G = G - G_sol;
 
@@ -477,12 +536,9 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
             << HerrorL << "," 
             << GerrorL << "," 
             << Derror_tot << ","
-            << Derror[0][0] << ","
-            << Derror[1][1] << ","
-            << Derror[0][1] << ","
-            << Derror[1][2] << ","
+            << Derror_on_diag << ","
+            << Derror_off_diag << ","
             << Ferror_tot << ","
-            << Ferror[0] << ","
             << std::endl;
     }
 
@@ -490,7 +546,7 @@ for(int NV = 4; NV <=128 /*256*/; NV*=2){
     return 0;
 }
 
-//resetting of origin doesnt seem to be relevant
+//resetting of origin doesnt seem to be relevant ??
 
 #endif
 
