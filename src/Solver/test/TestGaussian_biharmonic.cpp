@@ -149,10 +149,6 @@ int main(int argc, char *argv[]) {
 				view_rho(i, j, k) = gaussian(x, y, z);
 	});
 
-    // debug
-    //std::cout << "exact source:" << std::endl;
-    //rho.write();
-
     // assign the exact field with its values (erf function)
     typename field::view_type view_exact = exact.getView();
         
@@ -171,12 +167,8 @@ int main(int argc, char *argv[]) {
                     double z = (kg + 0.5) * hx[2] + origin[2];
 
                     view_exact(i, j, k) = exact_fct(x,y,z);
-        });
+    });
 
-    // debug
-    //std::cout << "exact potential:" << std::endl;
-    //exact.write();
-        
     // set the FFT parameters	
     ippl::ParameterList fftParams;
     fftParams.add("use_heffte_defaults", false);  
@@ -190,10 +182,6 @@ int main(int argc, char *argv[]) {
 	
 	// solve the Poisson equation -> rho contains the solution (phi) now
 	FFTsolver.solve();
-
-    // debug
-    //std::cout << "solution:" << std::endl;
-    //rho.write();
 
     // compute relative error norm for potential
 	rho = rho - exact;
