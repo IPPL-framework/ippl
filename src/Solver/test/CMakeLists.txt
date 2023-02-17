@@ -62,13 +62,6 @@ if (ENABLE_FFT)
         ${MPI_CXX_LIBRARIES}
     )
 
-    add_executable (TestBiharmonic TestBiharmonic.cpp)
-    target_link_libraries (
-        TestBiharmonic
-        ${IPPL_LIBS}
-        ${MPI_CXX_LIBRARIES}
-    )
-
     add_executable (TestGaussian_biharmonic TestGaussian_biharmonic.cpp)
     target_link_libraries (
         TestGaussian_biharmonic
