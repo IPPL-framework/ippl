@@ -824,7 +824,7 @@ namespace ippl {
 
         //dim in cufinufft is int
         int dim = static_cast<int>(Dim);
-        ier_m = cufinufft_makeplan(type_m, dim, nmodes.data(), iflag, 1, tol_m,
+        ier_m = nufft_m.makeplan(type_m, dim, nmodes.data(), iflag, 1, tol_m,
                        maxbatchsize, &plan_m, &opts);  
 
     }
@@ -849,24 +849,23 @@ namespace ippl {
          * cuFINUFFT's layout is left, hence we allocate the temporary
          * Kokkos views with the same layout
          */
-        Kokkos::View<cuDoubleComplex***,Kokkos::LayoutLeft>
+        Kokkos::View<complexType***,Kokkos::LayoutLeft>
             tempField("tempField", fview.extent(0) - 2*nghost,
                                    fview.extent(1) - 2*nghost,
                                    fview.extent(2) - 2*nghost);
 
 
-        //Vector<Kokkos::View<PT1[localNp],Kokkos::LayoutLeft>, 3> tempR;
-        Kokkos::View<PT1*,Kokkos::LayoutLeft> tempRx("tempRx", localNp);
-        Kokkos::View<PT1*,Kokkos::LayoutLeft> tempRy("tempRy", localNp);
-        Kokkos::View<PT1*,Kokkos::LayoutLeft> tempRz("tempRz", localNp);
+        //Initialize the pointers to NULL and fill only relevant dimensions
+        //CUFINUFFT requires the input like this.
+        Kokkos::View<PT1*,Kokkos::LayoutLeft> tempR[3] = {};
       
 
-        //for(size_t d = 0; d < Dim; ++d) {
-        //    Kokkos::realloc(tempR[d], localNp);
-        //}
+        for(size_t d = 0; d < Dim; ++d) {
+            Kokkos::realloc(tempR[d], localNp);
+        }
 
        
-        Kokkos::View<cuDoubleComplex*,Kokkos::LayoutLeft> tempQ("tempQ", localNp);
+        Kokkos::View<complexType*,Kokkos::LayoutLeft> tempQ("tempQ", localNp);
        
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
@@ -891,22 +890,17 @@ namespace ippl {
                              localNp,
                              KOKKOS_LAMBDA(const size_t i)
                              {
-                                 //for(size_t d = 0; d < Dim; ++d) {
-                                 //   tempR[d](i) = Rview(i)[d];
-                                 //}
-                                 tempRx(i) = Rview(i)[0];
-                                 tempRy(i) = Rview(i)[1];
-                                 tempRz(i) = Rview(i)[2];
+                                 for(size_t d = 0; d < Dim; ++d) {
+                                    tempR[d](i) = Rview(i)[d];
+                                 }
                                  tempQ(i).x = Qview(i).real();
                                  tempQ(i).y = Qview(i).imag();
                              });
 
-        //ier_m = cufinufft_setpts(localNp, tempR[0].data(), tempR[1].data(), tempR[2].data(), 0, 
-        //             NULL, NULL, NULL, plan_m);
-        ier_m = cufinufft_setpts(localNp, tempRx.data(), tempRy.data(), tempRz.data(), 0, 
+        ier_m = nufft_m.setpts(localNp, tempR[0].data(), tempR[1].data(), tempR[2].data(), 0, 
                      NULL, NULL, NULL, plan_m);
 
-        ier_m = cufinufft_execute(tempQ.data(), tempField.data(), plan_m);
+        ier_m = nufft_m.execute(tempQ.data(), tempField.data(), plan_m);
 
 
         if(type_m == 1) { 
@@ -940,7 +934,7 @@ namespace ippl {
     template <size_t Dim, class T>
     FFT<NUFFTransform,Dim,T>::~FFT() {
         
-        ier_m = cufinufft_destroy(plan_m);
+        ier_m = nufft_m.destroy(plan_m);
 
     }
 #endif

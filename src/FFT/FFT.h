@@ -33,6 +33,7 @@
 #include <cufinufft.h>
 #include <array>
 #include <memory>
+#include <functional>
 #include <type_traits>
 
 #include "FieldLayout/FieldLayout.h"
@@ -126,32 +127,28 @@ namespace ippl {
 
         template <>
         struct CufinufftType<float> {
-            //using makeplan    = typename  cufinufftf_makeplan;
-            //using setpts      = typename  cufinufftf_setpts;
-            //using execute     = typename  cufinufftf_execute;
-            //using destroy     = typename  cufinufftf_destroy;
-            //using plan_t      = typename  cufinufftf_plan;
-
-
-            //typedef typename cufinufftf_makeplan makeplan;
-            //typedef typename cufinufftf_setpts setpts;
-            //typedef typename cufinufftf_execute execute;
-            //typedef typename cufinufftf_destroy destroy;
-            //typedef typename cufinufftf_plan plan_t;
+            std::function<int(int, int, int*, int, int, 
+                              float, int, cufinufftf_plan*, cufinufft_opts*)> makeplan = cufinufftf_makeplan; 
+            std::function<int(int, float*, float*, float*, 
+                              int, float*, float*, float*, cufinufftf_plan)> setpts = cufinufftf_setpts; 
+            std::function<int(cuFloatComplex*, cuFloatComplex*, cufinufftf_plan)> execute = cufinufftf_execute; 
+            std::function<int(cufinufftf_plan)> destroy = cufinufftf_destroy;
+            
+            using complexType = cuFloatComplex;
+            using plan_t      = cufinufftf_plan;
         };
 
         template <>
         struct CufinufftType<double> {
-            //using makeplan    = typename  cufinufft_makeplan;
-            //using setpts      = typename  cufinufft_setpts;
-            //using execute     = typename  cufinufft_execute;
-            //using destroy     = typename  cufinufft_destroy;
-            //using plan_t      = typename  cufinufft_plan;
-            //typedef typename cufinufft_makeplan makeplan;
-            //typedef typename cufinufft_setpts setpts;
-            //typedef typename cufinufft_execute execute;
-            //typedef typename cufinufft_destroy destroy;
-            //typedef typename cufinufft_plan plan_t;
+            std::function<int(int, int, int*, int, int, 
+                              double, int, cufinufft_plan*, cufinufft_opts*)> makeplan = cufinufft_makeplan; 
+            std::function<int(int, double*, double*, double*, 
+                              int, double*, double*, double*, cufinufft_plan)> setpts = cufinufft_setpts; 
+            std::function<int(cuDoubleComplex*, cuDoubleComplex*, cufinufft_plan)> execute = cufinufft_execute; 
+            std::function<int(cufinufft_plan)> destroy = cufinufft_destroy; 
+            
+            using complexType = cuDoubleComplex;
+            using plan_t      = cufinufft_plan;
         };
 #endif
     }
@@ -352,11 +349,8 @@ namespace ippl {
         typedef Kokkos::complex<T> KokkosComplex_t;
         typedef Field<KokkosComplex_t,Dim> ComplexField_t;
 
-        //using makeplan = typename detail::CufinufftType<T>::makeplan;
-        //using setpts = typename detail::CufinufftType<T>::setpts;
-        //using execute = typename detail::CufinufftType<T>::execute;
-        //using destroy = typename detail::CufinufftType<T>::destroy;
-        //using plan_t = typename detail::CufinufftType<T>::plan_t;
+        using complexType = typename detail::CufinufftType<T>::complexType;
+        using plan_t = typename detail::CufinufftType<T>::plan_t;
 
         /** Create a new FFT object with the layout for the input Field, type 
          * (1 or 2) for the NUFFT and parameters for cuFINUFFT.
@@ -381,8 +375,8 @@ namespace ippl {
         void setup(std::array<int, 3>& nmodes,
                    const ParameterList& params);
 
-        //plan_t plan_m;
-        cufinufft_plan plan_m;
+        detail::CufinufftType<T> nufft_m;
+        plan_t plan_m;
         int ier_m;
         T tol_m;
         int type_m;
