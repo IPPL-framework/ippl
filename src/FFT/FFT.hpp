@@ -893,9 +893,8 @@ namespace ippl {
                                  for(size_t d = 0; d < Dim; ++d) {
                                     tempR[d](i) = Rview(i)[d];
                                  }
-                                 tempQ(i).x = Qview(i).real();
-                                 //tempQ(i).y = 0.0;
-                                 tempQ(i).y = Qview(i).imag();
+                                 tempQ(i).x = Qview(i);
+                                 tempQ(i).y = 0.0;
                              });
 
         ier_m = nufft_m.setpts(localNp, tempR[0].data(), tempR[1].data(), tempR[2].data(), 0, 
@@ -926,8 +925,7 @@ namespace ippl {
                                  localNp,
                                  KOKKOS_LAMBDA(const size_t i)
                                  {
-                                     Qview(i).real() = tempQ(i).x;
-                                     Qview(i).imag() = tempQ(i).y;
+                                     Qview(i) = tempQ(i).x;
                                  });
         }
     }

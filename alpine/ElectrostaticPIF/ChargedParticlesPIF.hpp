@@ -63,6 +63,8 @@ public:
 
     double Q_m;
 
+    size_type Np_m;
+
     double time_m;
 
     double rhoNorm_m;
@@ -95,12 +97,14 @@ public:
                      Vector_t rmin,
                      Vector_t rmax,
                      ippl::e_dim_tag decomp[Dim],
-                     double Q)
+                     double Q,
+                     size_type Np)
     : ippl::ParticleBase<PLayout>(pl)
     , hr_m(hr)
     , rmin_m(rmin)
     , rmax_m(rmax)
     , Q_m(Q)
+    , Np_m(Np)  
     {
         // register the particle attributes
         this->addAttribute(q);
@@ -119,7 +123,11 @@ public:
 
     void gather() {
 
-        gatherPIF(this->E, rho_m, Sk_m, this->R);
+        gatherPIFNUFFT(this->E, rho_m, Sk_m, this->R, this->q);
+
+        //Set the charge back to original as we used this view as a 
+        //temporary buffer during gather
+        this->q = Q_m / Np_m; 
 
     }
 
@@ -127,7 +135,7 @@ public:
         
         Inform m("scatter ");
         rho_m = {0.0, 0.0};
-        scatterPIF(q, rho_m, Sk_m, this->R);
+        scatterPIFNUFFT(q, rho_m, Sk_m, this->R);
 
         rho_m = rho_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
 
@@ -390,18 +398,17 @@ public:
            Vector<double, 3> kVec;
            double Dr = 0.0;
            for(size_t d = 0; d < Dim; ++d) {
-               bool shift = (iVec[d] > (N[d]/2));
-               kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
-               //kVec[d] = 2 * pi / Len[d] * iVec[d];
+               kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                Dr += kVec[d] * kVec[d];
            }
 
            Kokkos::complex<double> Ek = {0.0, 0.0}; 
            double myVal = 0.0;
+           auto rho = rhoview(i+nghost,j+nghost,k+nghost);
            for(size_t d = 0; d < Dim; ++d) {
-               if(Dr != 0.0) {
-                   Ek = -(imag * kVec[d] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
-               }
+               bool isNotZero = (Dr != 0.0);
+               double factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0))); 
+               Ek = -(imag * kVec[d] * rho * factor);
                myVal += Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
            }
 

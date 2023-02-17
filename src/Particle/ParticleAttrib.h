@@ -31,6 +31,8 @@
 
 #include "Expression/IpplExpressions.h"
 #include "Particle/ParticleAttribBase.h"
+#include "FFT/FFT.h"
+#include "Utility/ParameterList.h"
 
 namespace Kokkos { //reduction identity must be defined in Kokkos namespace
     template<>
@@ -59,11 +61,6 @@ namespace ippl {
 
         using size_type = detail::size_type;
 
-#ifdef KOKKOS_ENABLE_CUDA
-        //TODO: Remove hard-coded dimension by having Dim as template 
-        //parameter. Does this need to be in CUDA ifdefs? 
-        using FFT_t = FFT<NUFFTransform, 3, T>;
-#endif
 
         // Create storage for M particle attributes.  The storage is uninitialized.
         // New items are appended to the end of the array.
@@ -162,35 +159,35 @@ namespace ippl {
         scatter(Field<T, Dim, M, C>& f,
                 const ParticleAttrib<Vector<P2, Dim>, Properties... >& pp) const;
 
-        template <unsigned Dim, class M, class C, typename P2, typename P3>
+        template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void
-        scatterPIFNUDFT(Field<P2, Dim, M, C>& f, Field<P2, Dim, M, C>& Sk,
-                const ParticleAttrib<Vector<P3, Dim>, Properties... >& pp) const;
+        scatterPIFNUDFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
+                const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp) const;
 
         template <unsigned Dim, class M, class C, typename P2>
         void
         gather(Field<T, Dim, M, C>& f,
                const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
 
-        template <unsigned Dim, class M, class C, typename P2, typename P3>
+        template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void
-        gatherPIFNUDFT(Field<P2, Dim, M, C>& f, Field<P2, Dim, M, C>& Sk,
-                const ParticleAttrib<Vector<P3, Dim>, Properties... >& pp) const;
+        gatherPIFNUDFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
+                const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp);
 
 #ifdef KOKKOS_ENABLE_CUDA
         template<unsigned Dim>
-        void initializeNUFFT(FieldLayout<Dim>& layout, ParameterList& fftParams); 
+        void initializeNUFFT(FieldLayout<Dim>& layout, int type, ParameterList& fftParams); 
 
-        template <unsigned Dim, class M, class C, typename P2, typename P3>
+        template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void
-        scatterPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P2, Dim, M, C>& Sk,
-                const ParticleAttrib<Vector<P3, Dim>, Properties... >& pp) const;
+        scatterPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
+                const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp) const;
         
-        template <unsigned Dim, class M, class C, typename P2, typename P3>
+        template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void
-        gatherPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P2, Dim, M, C>& Sk,
-                const ParticleAttrib<Vector<P3, Dim>, Properties... >& pp,
-                ParticleAttrib<P3, Properties... >& q) const;
+        gatherPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
+                const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp,
+                ParticleAttrib<P4, Properties... >& q);
 #endif
 
         T sum();
@@ -201,8 +198,9 @@ namespace ippl {
     private:
         view_type dview_m;
 #ifdef KOKKOS_ENABLE_CUDA
-        std::shared_ptr<FFT_t> fftType1_mp;
-        std::shared_ptr<FFT_t> fftType2_mp;
+        //TODO: Remove hard-coded dimension by having Dim as template 
+        //parameter. Does this need to be in CUDA ifdefs?
+        std::shared_ptr<FFT<NUFFTransform, 3, double>> fftType_mp;
 #endif
     };
 }

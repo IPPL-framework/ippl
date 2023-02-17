@@ -38,7 +38,7 @@
 
 #include "FieldLayout/FieldLayout.h"
 #include "Field/Field.h"
-#include "Particle/ParticleAttrib.h"
+//#include "Particle/ParticleAttrib.h"
 #include "Utility/ParameterList.h"
 #include "Utility/IpplException.h"
 
@@ -50,6 +50,8 @@ namespace heffte {
 }
 
 namespace ippl {
+
+    template <typename T, class... Properties> class ParticleAttrib;
 
     /**
        Tag classes for CC type of Fourier transforms

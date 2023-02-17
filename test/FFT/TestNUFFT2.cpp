@@ -19,7 +19,7 @@ struct Bunch : public ippl::ParticleBase<PLayout>
 
     ~Bunch(){ }
     
-    typedef ippl::ParticleAttrib<Kokkos::complex<double>> charge_container_type;
+    typedef ippl::ParticleAttrib<double> charge_container_type;
     charge_container_type Q;
 
 };
@@ -177,8 +177,6 @@ int main(int argc, char *argv[]) {
     auto Q_result = Kokkos::create_mirror_view_and_copy(
                         Kokkos::HostSpace(), bunch.Q.getView());
 
-    Kokkos::complex<double> max_error_abs(0.0, 0.0);
-    Kokkos::complex<double> max_error_rel(0.0, 0.0);
 
     //Pick some target point to check. We choose it same as cuFINUFFT testcase cufinufft3d2_test.cu
     
@@ -210,15 +208,15 @@ int main(int argc, char *argv[]) {
                                 + imag * Kokkos::Experimental::sin(arg)) * fview(i + nghost, j + nghost, k + nghost);
                             }, Kokkos::Sum<Kokkos::complex<double>>(reducedValue));
     
-    double abs_error_real = std::fabs(reducedValue.real() - Q_result(idx).real());
-    double rel_error_real = std::fabs(reducedValue.real() - Q_result(idx).real()) /std::fabs(reducedValue.real());
-    double abs_error_imag = std::fabs(reducedValue.imag() - Q_result(idx).imag());
-    double rel_error_imag = std::fabs(reducedValue.imag() - Q_result(idx).imag()) /std::fabs(reducedValue.imag());
+    double abs_error_real = std::fabs(reducedValue.real() - Q_result(idx));
+    double rel_error_real = std::fabs(reducedValue.real() - Q_result(idx)) /std::fabs(reducedValue.real());
+    //double abs_error_imag = std::fabs(reducedValue.imag() - Q_result(idx).imag());
+    //double rel_error_imag = std::fabs(reducedValue.imag() - Q_result(idx).imag()) /std::fabs(reducedValue.imag());
  
     std::cout << "Abs Error in real part: " << std::setprecision(16) 
               << abs_error_real << " Rel. error in real part: " << std::setprecision(16) << rel_error_real << std::endl;
-    std::cout << "Abs Error in imag part: " << std::setprecision(16) 
-              << abs_error_imag << " Rel. error in imag part: " << std::setprecision(16) << rel_error_imag << std::endl;
+    //std::cout << "Abs Error in imag part: " << std::setprecision(16) 
+    //          << abs_error_imag << " Rel. error in imag part: " << std::setprecision(16) << rel_error_imag << std::endl;
 
 
     //Kokkos::complex<double> max_error(0.0, 0.0);

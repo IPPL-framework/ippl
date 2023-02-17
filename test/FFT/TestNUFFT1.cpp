@@ -19,7 +19,7 @@ struct Bunch : public ippl::ParticleBase<PLayout>
 
     ~Bunch(){ }
     
-    typedef ippl::ParticleAttrib<Kokkos::complex<double>> charge_container_type;
+    typedef ippl::ParticleAttrib<double> charge_container_type;
     charge_container_type Q;
 
 };
@@ -29,11 +29,11 @@ struct generate_random {
 
   using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
   using value_type  = typename T::value_type;
-  using view_type_complex = typename ippl::detail::ViewType<Kokkos::complex<value_type>, 1>::view_type;
+  using view_type_scalar = typename ippl::detail::ViewType<value_type, 1>::view_type;
   // Output View for the random numbers
   view_type x;
 
-  view_type_complex Q;
+  view_type_scalar Q;
 
   // The GeneratorPool
   GeneratorPool rand_pool;
@@ -41,7 +41,7 @@ struct generate_random {
   T minU, maxU;
 
   // Initialize all members
-  generate_random(view_type x_,view_type_complex Q_,  GeneratorPool rand_pool_, 
+  generate_random(view_type x_,view_type_scalar Q_,  GeneratorPool rand_pool_, 
                   T& minU_, T& maxU_)
       : x(x_), Q(Q_), rand_pool(rand_pool_), 
         minU(minU_), maxU(maxU_) {}
@@ -54,8 +54,7 @@ struct generate_random {
     for (unsigned d = 0; d < Dim; ++d) {
         x(i)[d] = rand_gen.drand(minU[d], maxU[d]);
     }
-    Q(i).real() = rand_gen.drand(0.0, 1.0);
-    Q(i).imag() = rand_gen.drand(0.0, 1.0);
+    Q(i) = rand_gen.drand(0.0, 1.0);
 
     // Give the state back, which will allow another thread to acquire it
     rand_pool.free_state(rand_gen);
@@ -147,8 +146,6 @@ int main(int argc, char *argv[]) {
     auto field_result = Kokkos::create_mirror_view_and_copy(
                         Kokkos::HostSpace(), field.getView());
 
-    Kokkos::complex<double> max_error_abs(0.0, 0.0);
-    Kokkos::complex<double> max_error_rel(0.0, 0.0);
 
     //Pick some mode to check. We choose it same as cuFINUFFT testcase cufinufft3d1_test.cu
     ippl::Vector<int, 3> kVec;

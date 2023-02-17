@@ -193,11 +193,12 @@ int main(int argc, char *argv[]){
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
     double alpha = 0.05;
-    Vector_t rmin(0.0);
-    Vector_t rmax = 2 * pi / kw ;
-    double dx = rmax[0] / nr[0];
-    double dy = rmax[1] / nr[1];
-    double dz = rmax[2] / nr[2];
+    Vector_t rmin(-2.0 * pi);
+    Vector_t rmax = 2 * pi;
+    Vector_t length = rmax - rmin;
+    double dx = length[0] / nr[0];
+    double dy = length[1] / nr[1];
+    double dz = length[2] / nr[2];
 
     Vector_t hr = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
@@ -208,8 +209,8 @@ int main(int argc, char *argv[]){
     PLayout_t PL(FL, mesh);
 
     //Q = -\int\int f dx dv
-    double Q = -rmax[0] * rmax[1] * rmax[2];
-    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
+    double Q = -length[0] * length[1] * length[2];
+    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q,totalP);
 
     P->nr_m = nr;
 
@@ -261,6 +262,19 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(initializeShapeFunctionPIF);
     P->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
+
+
+    ippl::ParameterList fftParams;
+
+    fftParams.add("gpu_method", 1);
+    fftParams.add("gpu_sort", 1);
+    fftParams.add("gpu_kerevalmeth", 1);
+    fftParams.add("tolerance", 1e-10);
+
+    fftParams.add("use_cufinufft_defaults", false);
+
+    P->q.initializeNUFFT(FL, 1, fftParams);
+    P->E.initializeNUFFT(FL, 2, fftParams);
 
 
     P->scatter();
