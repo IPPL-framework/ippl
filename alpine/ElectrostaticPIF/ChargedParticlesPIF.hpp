@@ -123,7 +123,8 @@ public:
 
     void gather() {
 
-        gatherPIFNUFFT(this->E, rho_m, Sk_m, this->R, this->q);
+        //gatherPIFNUFFT(this->E, rho_m, Sk_m, this->R, this->q);
+        gatherPIFNUDFT(this->E, rho_m, Sk_m, this->R);
 
         //Set the charge back to original as we used this view as a 
         //temporary buffer during gather
@@ -135,7 +136,8 @@ public:
         
         Inform m("scatter ");
         rho_m = {0.0, 0.0};
-        scatterPIFNUFFT(q, rho_m, Sk_m, this->R);
+        //scatterPIFNUFFT(q, rho_m, Sk_m, this->R);
+        scatterPIFNUDFT(q, rho_m, Sk_m, this->R);
 
         rho_m = rho_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
 
@@ -185,13 +187,15 @@ public:
            for(size_t d = 0; d < Dim; ++d) {
                bool shift = (iVec[d] > (N[d]/2));
                kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+               //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                Dr += kVec[d] * kVec[d];
            }
 
            Kokkos::complex<double> Ek = {0.0, 0.0}; 
-           if(Dr != 0.0) {
-               Ek = -(imag * kVec[0] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
-           }
+           auto rho = rhoview(i+nghost,j+nghost,k+nghost);
+           bool isNotZero = (Dr != 0.0);
+           double factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0))); 
+           Ek = -(imag * kVec[0] * rho * factor);
            double myVal = Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
 
            tlSum += myVal;
@@ -398,7 +402,9 @@ public:
            Vector<double, 3> kVec;
            double Dr = 0.0;
            for(size_t d = 0; d < Dim; ++d) {
-               kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
+               bool shift = (iVec[d] > (N[d]/2));
+               kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+               //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                Dr += kVec[d] * kVec[d];
            }
 
