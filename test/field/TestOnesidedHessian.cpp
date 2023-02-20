@@ -35,17 +35,20 @@ namespace hess_test {
     constexpr unsigned int dim = 3;
 
     // type definitions
+    typedef ippl::UniformCartesian<double, 3> Mesh_t;
     typedef ippl::Vector<double, dim> Vector_t;
     typedef ippl::Field<double, dim> Field_t;
     typedef ippl::Vector<Vector_t, dim> Matrix_t;
     typedef ippl::Field<Matrix_t, dim> MField_t;
     typedef Kokkos::MDRangePolicy<Kokkos::Rank<dim>> mdrange_type;
+    typedef Field_t::view_type fview_type;
+    typedef MField_t::view_type mview_type;
 
     void pickHessianIdx(
         Field_t& out_field, MField_t& hessian_field, size_t row_idx, size_t col_idx,
         size_t nghost) {
-        MField_t::view_type hess_view = hessian_field.getView();
-        Field_t::view_type idx_view   = out_field.getView();
+        mview_type hess_view = hessian_field.getView();
+        fview_type idx_view   = out_field.getView();
 
         Kokkos::parallel_for(
             "Pick Index from Hessian",
@@ -57,49 +60,43 @@ namespace hess_test {
             });
     }
 
-    void dumpVTK(
-        std::string path, Field_t& field, int nx, int ny, int nz, int iteration, double dx,
-        double dy, double dz) {
-        Field_t::view_type::host_mirror_type host_view = field.getHostMirror();
-        Kokkos::deep_copy(host_view, field.getView());
-        std::ofstream vtkout;
-        vtkout.precision(10);
-        vtkout.setf(std::ios::scientific, std::ios::floatfield);
+	void dumpVTKScalar( Field_t & f, int iteration, double dx, double dy, double dz, std::string label="gaussian") {
+			ippl::NDIndex<3> lDom = f.getLayout().getLocalNDIndex();
+			int nx =lDom[0].length() ; int ny = lDom[1].length(); int nz=lDom[2].length() ;
+            std::cout << nx << " " << ny << " " << nz << std::endl;
+            std::cout << lDom[0].last() << std::endl;
 
-        std::stringstream fname;
-        fname << path;
-        fname << "/scalar_";
-        fname << std::setw(4) << std::setfill('0') << iteration;
-        fname << ".vtk";
+            std::string filename;
+            filename = "data/";
+            filename+= label;
+            filename += "_nod_";
+            filename+= std::to_string(Ippl::Comm->rank());
+            filename+= "_it_";
+            filename+= std::to_string(iteration);
+            filename+=".vtk";
 
-        // open a new data file for this iteration
-        // and start with header
-        vtkout.open(fname.str().c_str(), std::ios::out);
-        if (!vtkout) {
-            std::cout << "couldn't open" << std::endl;
-        }
-        vtkout << "# vtk DataFile Version 2.0" << std::endl;
-        vtkout << "GaussianSource" << std::endl;
-        vtkout << "ASCII" << std::endl;
-        vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-        vtkout << "DIMENSIONS " << nx + 1 << " " << ny + 1 << " " << nz + 1 << std::endl;
-        vtkout << "ORIGIN " << 0.0 << " " << 0.0 << " " << 0.0 << std::endl;
-        vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-        vtkout << "CELL_DATA " << (nx) * (ny) * (nz) << std::endl;
+			Inform vtkout(NULL, filename.c_str(), Inform::OVERWRITE);
+			vtkout.precision(10);
+			vtkout.setf(std::ios::scientific, std::ios::floatfield);
 
-        vtkout << "SCALARS Hessian double" << std::endl;
-        vtkout << "LOOKUP_TABLE default" << std::endl;
-        for (int z = 1; z < nz + 1; z++) {
-            for (int y = 1; y < ny + 1; y++) {
-                for (int x = 1; x < nx + 1; x++) {
-                    vtkout << host_view(x, y, z) << std::endl;
-                }
-            }
-        }
-
-        // close the output file for this iteration:
-        vtkout.close();
-    }
+			vtkout << "# vtk DataFile Version 2.0" << endl;
+			vtkout << "toyfdtd" << endl;
+			vtkout << "ASCII" << endl;
+			vtkout << "DATASET STRUCTURED_POINTS" << endl;
+			vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << endl;
+        	vtkout << "ORIGIN " << 0.0 << " " << 0.0 << " " << 0.0 << endl;
+			vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
+			vtkout << "POINT_DATA " << nx*ny*nz << endl;
+			vtkout << "SCALARS Scalar_Value float" << endl;
+			vtkout << "LOOKUP_TABLE default" << endl;
+			for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
+					for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
+							for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
+									vtkout << f(x,y,z) << endl;
+							}
+					}
+			}
+	}
 
     KOKKOS_INLINE_FUNCTION
     double gaussian(double x, double y, double z, double sigma = 1.0, double mu = 0.5) {
@@ -110,6 +107,97 @@ namespace hess_test {
 
         return -prefactor * std::exp(-r2 / (2 * sigma * sigma));
     }
+
+    struct CenteredHessOp {
+        CenteredHessOp(Field_t &field) : f_m(field.getView()){
+            Mesh_t& mesh = field.get_mesh();
+            hvector_m = mesh.getMeshSpacing();
+        }
+
+        KOKKOS_INLINE_FUNCTION
+        Mesh_t::matrix_type operator()(size_t i, size_t j, size_t k) const {
+            typename Mesh_t::vector_type row_1, row_2, row_3;
+
+            // clang-format off
+            row_1 = xvector_m * ((f_m(i+1,j,k) - 2.0*f_m(i,j,k) + f_m(i-1,j,k))/(hvector_m[0]*hvector_m[0])) +
+                    yvector_m * ((f_m(i+1,j+1,k) - f_m(i-1,j+1,k) - f_m(i+1,j-1,k) + f_m(i-1,j-1,k))/(4.0*hvector_m[0]*hvector_m[1])) +
+                    zvector_m * ((f_m(i+1,j,k+1) - f_m(i-1,j,k+1) - f_m(i+1,j,k-1) + f_m(i-1,j,k-1))/(4.0*hvector_m[0]*hvector_m[2]));
+
+            row_2 = xvector_m * ((f_m(i+1,j+1,k) - f_m(i+1,j-1,k) - f_m(i-1,j+1,k) + f_m(i-1,j-1,k))/(4.0*hvector_m[1]*hvector_m[0])) +
+                    yvector_m * ((f_m(i,j+1,k) - 2.0*f_m(i,j,k) + f_m(i,j-1,k))/(hvector_m[1]*hvector_m[1])) +
+                    zvector_m * ((f_m(i,j+1,k+1) - f_m(i,j-1,k+1) - f_m(i,j+1,k-1) + f_m(i,j-1,k-1))/(4.0*hvector_m[1]*hvector_m[2]));
+
+            row_3 = xvector_m * ((f_m(i+1,j,k+1) - f_m(i+1,j,k-1) - f_m(i-1,j,k+1) + f_m(i-1,j,k-1))/(4.0*hvector_m[2]*hvector_m[0])) +
+                    yvector_m * ((f_m(i,j+1,k+1) - f_m(i,j+1,k-1) - f_m(i,j-1,k+1) + f_m(i,j-1,k-1))/(4.0*hvector_m[2]*hvector_m[1])) +
+                    zvector_m * ((f_m(i,j,k+1) - 2.0*f_m(i,j,k) + f_m(i,j,k-1))/(hvector_m[2]*hvector_m[2]));
+            // clang-format on
+
+            typename Mesh_t::matrix_type hessian = {row_1, row_2, row_3};
+            return hessian; 
+        }
+
+        fview_type &f_m;
+        typename Mesh_t::vector_type hvector_m;
+        const typename Mesh_t::vector_type xvector_m = {1.0, 0.0, 0.0};
+        const typename Mesh_t::vector_type yvector_m = {0.0, 1.0, 0.0};
+        const typename Mesh_t::vector_type zvector_m = {0.0, 0.0, 1.0};
+    };
+
+    template <typename IdxOp>
+    struct OnesidedHessOp {
+        OnesidedHessOp(Field_t &field) : f_m(field.getView()){
+            Mesh_t& mesh = field.get_mesh();
+            hvector_m = mesh.getMeshSpacing();
+        }
+
+        KOKKOS_INLINE_FUNCTION
+        Mesh_t::matrix_type operator()(size_t i, size_t j, size_t k) const {
+            typename Mesh_t::vector_type row_1, row_2, row_3;
+
+            row_1 = xvector_m * ((2.0*f_m(i,j,k) - 5.0*f_m(op(i,1),j,k) + 4.0*f_m(op(i,2),j,k) - f_m(op(i,3),j,k)) / (hvector_m[0]*hvector_m[0])) +
+
+                yvector_m * ((coeffs_m[0]*f_m(i,j,k)     + coeffs_m[1]*f_m(i,op(j,1),k)       + coeffs_m[2]*f_m(i,op(j,2),k)        +
+                            coeffs_m[3]*f_m(op(i,1),j,k) + coeffs_m[4]*f_m(op(i,1),op(j,1),k) + coeffs_m[5]*f_m(op(i,1),op(j,2),k)  +
+                            coeffs_m[6]*f_m(op(i,2),j,k) + coeffs_m[7]*f_m(op(i,2),op(j,1),k) + coeffs_m[8]*f_m(op(i,2),op(j,2),k)) / (hvector_m[0]*hvector_m[1])) +
+
+                zvector_m * ((coeffs_m[0]*f_m(i,j,k)     + coeffs_m[1]*f_m(i,j,op(k,1))       + coeffs_m[2]*f_m(i,j,op(k,2))        +
+                            coeffs_m[3]*f_m(op(i,1),j,k) + coeffs_m[4]*f_m(op(i,1),j,op(k,1)) + coeffs_m[5]*f_m(op(i,1),j,op(k,2))  +
+                            coeffs_m[6]*f_m(op(i,2),j,k) + coeffs_m[7]*f_m(op(i,2),j,op(k,1)) + coeffs_m[8]*f_m(op(i,2),j,op(k,2))) / (hvector_m[0]*hvector_m[2]));
+
+
+            row_2 = xvector_m * ((coeffs_m[0]*f_m(i,j,k)     + coeffs_m[1]*f_m(op(i,1),j,k)       + coeffs_m[2]*f_m(op(i,2),j,k)        +
+                        coeffs_m[3]*f_m(i,op(j,1),k) + coeffs_m[4]*f_m(op(i,1),op(j,1),k) + coeffs_m[5]*f_m(op(i,2),op(j,1),k)  +
+                        coeffs_m[6]*f_m(i,op(j,2),k) + coeffs_m[7]*f_m(op(i,1),op(j,2),k) + coeffs_m[8]*f_m(op(i,2),op(j,2),k)) / (hvector_m[1]*hvector_m[0])) +
+
+                yvector_m * ((2.0*f_m(i,j,k) - 5.0*f_m(i,op(j,1),k) + 4.0*f_m(i,op(j,2),k) - f_m(i,op(j,3),k))/(hvector_m[1]*hvector_m[1])) +
+
+                zvector_m * ((coeffs_m[0]*f_m(i,j,k)     + coeffs_m[1]*f_m(i,j,op(k,1))       + coeffs_m[2]*f_m(i,j,op(k,2))        +
+                            coeffs_m[3]*f_m(i,op(j,1),k) + coeffs_m[4]*f_m(i,op(j,1),op(k,1)) + coeffs_m[5]*f_m(i,op(j,1),op(k,2))  +
+                            coeffs_m[6]*f_m(i,op(j,2),k) + coeffs_m[7]*f_m(i,op(j,2),op(k,1)) + coeffs_m[8]*f_m(i,op(j,2),op(k,2))) / (hvector_m[1]*hvector_m[2]));
+
+
+            row_3 = xvector_m * ((coeffs_m[0]*f_m(i,j,k)     + coeffs_m[1]*f_m(op(i,1),j,k)       + coeffs_m[2]*f_m(op(i,2),j,k)        +
+                        coeffs_m[3]*f_m(i,j,op(k,1)) + coeffs_m[4]*f_m(op(i,1),j,op(k,1)) + coeffs_m[5]*f_m(op(i,2),j,op(k,1))  +
+                        coeffs_m[6]*f_m(i,j,op(k,2)) + coeffs_m[7]*f_m(op(i,1),j,op(k,2)) + coeffs_m[8]*f_m(op(i,2),j,op(k,2))) / (hvector_m[2]*hvector_m[0])) +
+
+                yvector_m * ((coeffs_m[0]*f_m(i,j,k)     + coeffs_m[1]*f_m(i,op(j,1),k)       + coeffs_m[2]*f_m(i,op(j,2),k)        +
+                            coeffs_m[3]*f_m(i,j,op(k,1)) + coeffs_m[4]*f_m(i,op(j,1),op(k,1)) + coeffs_m[5]*f_m(i,op(j,2),op(k,1))  +
+                            coeffs_m[6]*f_m(i,j,op(k,2)) + coeffs_m[7]*f_m(i,op(j,1),op(k,2)) + coeffs_m[8]*f_m(i,op(j,2),op(k,2))) / (hvector_m[2]*hvector_m[1])) +
+
+                zvector_m * ((2.0*f_m(i,j,k) - 5.0*f_m(i,j,op(k,1)) + 4.0*f_m(i,j,op(k,2)) - f_m(i,j,op(k,3))) / (hvector_m[2]*hvector_m[2]));
+
+            typename Mesh_t::matrix_type hessian = {row_1, row_2, row_3};
+            return hessian; 
+        }
+
+        fview_type &f_m;
+        IdxOp op;
+        const float coeffs_m[9] = {2.25, -3.0, 0.75, -3.0, 4.0, -1.0, 0.75, -1.0, 0.25};
+        const typename Mesh_t::vector_type xvector_m = {1.0, 0.0, 0.0};
+        const typename Mesh_t::vector_type yvector_m = {0.0, 1.0, 0.0};
+        const typename Mesh_t::vector_type zvector_m = {0.0, 0.0, 1.0};
+        typename Mesh_t::vector_type hvector_m;
+    };
 
 }  // namespace hess_test
 
@@ -137,14 +225,14 @@ int main(int argc, char* argv[]) {
     hess_test::Vector_t origin = {0.0, 0.0, 0.0};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
-    const int nghost = 3;
+    const unsigned int nghost = 1;
     hess_test::Field_t field(mesh, layout, nghost);
     hess_test::Field_t hessReductionField(mesh, layout, nghost);
-    hess_test::Field_t gradResult(mesh, layout, nghost);
     hess_test::MField_t result(mesh, layout, nghost);
+    hess_test::MField_t subResult(mesh, layout, nghost);
     hess_test::MField_t exact(mesh, layout, nghost);
 
-    typename hess_test::Field_t::view_type& view = field.getView();
+    typename hess_test::fview_type& view = field.getView();
 
     const ippl::NDIndex<hess_test::dim>& lDom = layout.getLocalNDIndex();
 
@@ -168,8 +256,8 @@ int main(int argc, char* argv[]) {
             }
         });
 
-    typename hess_test::MField_t::view_type& view_exact  = exact.getView();
-    typename hess_test::MField_t::view_type& view_result = result.getView();
+    typename hess_test::mview_type& view_exact  = exact.getView();
+    typename hess_test::mview_type& view_result = result.getView();
 
     Kokkos::parallel_for(
         "Assign exact",
@@ -224,58 +312,175 @@ int main(int argc, char* argv[]) {
                 "Ippl::onesidedHess",
                 "`onesidedHess()` operator not applicable with periodic b.c.");
         }
-
-        msg << "Face: " << bc->getFace() << endl;
-        typename hess_test::Field_t::view_type diffSlice;
     }
 
     // Check if on physical boundary
-    const auto& domain        = layout.getDomain();
-    const auto& lDomains      = layout.getHostLocalDomains();
+    //const auto& domain        = layout.getDomain();
+    //const auto& lDomains      = layout.getHostLocalDomains();
     int myRank                = Ippl::Comm->rank();
     const auto& faceNeighbors = layout.getFaceNeighbors();
 
-    for (unsigned int d = 0; d < 2 * hess_test::dim; ++d) {
-        msg << "faceneighbors[" << d << "].size() = " << faceNeighbors[d].size() << endl;
-        bool isBoundary = (lDomains[myRank][d].max() == domain[d].max())
-                          || (lDomains[myRank][d].min() == domain[d].min());
-        msg << "Rank " << Ippl::Comm->rank() << ": "
-            << "hess_test::dim" << d << " isBoundary = " << isBoundary << endl;
-    }
+    //for (unsigned int d = 0; d < 2 * hess_test::dim; ++d) {
+        //msg << "faceneighbors[" << d << "].size() = " << faceNeighbors[d].size() << endl;
+        //bool isBoundary = (lDomains[myRank][d].max() == domain[d].max())
+                          //|| (lDomains[myRank][d].min() == domain[d].min());
+        //msg << "Rank " << Ippl::Comm->rank() << ": "
+            //<< "hess_test::dim" << d << " isBoundary = " << isBoundary << endl;
+    //}
+
+    // Assign initial values to subField
 
     result = {0.0, 0.0, 0.0};
+    //subResult = {0.0, 0.0, 0.0};
 
-    // Define properties of subfield
-    int subPt     = 20;
-    int subNghost = 1;
-    ippl::Index subI(subPt);
-    ippl::NDIndex<hess_test::dim> subOwned(subI, I, I);
+    ////////////////////////////////////////
+    // Define subfield and its properties //
+    ////////////////////////////////////////
 
-    // Create subLayout of desired size
-    ippl::UniformCartesian<double, hess_test::dim> subMesh(subOwned, hx, origin);
-    ippl::FieldLayout<hess_test::dim> subLayout(subOwned, decomp);
+    // Define properties of subField
+    //int subPt     = 20;
+    //int subNghost = 1;
+    //ippl::Index subI(subPt);
+    //ippl::NDIndex<hess_test::dim> subOwned(subI, I, I);
 
-    hess_test::Field_t subfield = field.subField(
-        subMesh, subLayout, subNghost, Kokkos::make_pair(0, 30), Kokkos::ALL, Kokkos::ALL);
-    hess_test::Field_t::view_type subView = subfield.getView();
-    Kokkos::fence();
+    //// Create subLayout of desired size
+    //ippl::UniformCartesian<double, hess_test::dim> subMesh(subOwned, hx, origin);
+    //ippl::FieldLayout<hess_test::dim> subLayout(subOwned, decomp);
 
-    msg2all << "(" << subView.extent(0) << "," << subView.extent(1) << "," << subView.extent(2)
-            << ")" << endl;
+    //hess_test::Field_t subField = field.subField(
+        //subMesh, subLayout, subNghost, Kokkos::make_pair(0, 30), Kokkos::ALL, Kokkos::ALL);
+    //hess_test::fview_type subView = subField.getView();
+
+    //msg2all << "(" << subView.extent(0) << "," << subView.extent(1) << "," << subView.extent(2)
+            //<< ")" << endl;
 
     // Test to write slice of field
-    std::string outDir = "data";
-    hess_test::dumpVTK(outDir, field, I.length(), I.length(), I.length(), 0, dx, dx, dx);
+    // TODO There is an error in running this in parallel!
+    hess_test::dumpVTKScalar(field, 0, dx, dx, dx);
+    //Kokkos::fence();
+    
+    msg2all << "Extents of view: (" << view.extent(0) << "," << view.extent(1) << "," << view.extent(2) << ")" << endl;
 
-    // Test backwardHess on subfield only
-    result = ippl::hess(field);
-    // gradResult = ippl::grad(subfield);
+    // Test backwardHess on subField only
+    //result = ippl::hess(field);
+    //subResult = ippl::hess(subField);
+    //hess_test::pickHessianIdx(hessReductionField, result, 0, 0, 3);
+    //hess_test::dumpVTKScalar(hessReductionField, 0, dx, dx, dx);
+
+    /////////////////////////////
+    // Kokkos loop for Hessian //
+    /////////////////////////////
+	
+	// Define Opereators
+    hess_test::CenteredHessOp centered_hess(field);
+    hess_test::OnesidedHessOp<std::plus<size_t>> forward_hess(field);
+    hess_test::OnesidedHessOp<std::minus<size_t>> backward_hess(field);
+
+    // Check whether system boundaries are touched
+    const size_t stencilWidth = 3;
+    const size_t nghostExt = nghost + stencilWidth;
+    const size_t extents[hess_test::dim] = {view.extent(0), view.extent(1), view.extent(2)};
+    ippl::NDIndex<hess_test::dim> isSystemBoundary[2*hess_test::dim];
+    ippl::NDIndex<hess_test::dim> isCenterDomain = ippl::NDIndex<hess_test::dim>(ippl::Index(nghostExt, extents[0] - nghostExt),
+                                                                     ippl::Index(nghostExt, extents[1] - nghostExt),
+                                                                     ippl::Index(nghostExt, extents[2] - nghostExt));
+
+
+    // Assign to each system boundary face a domain for which onesided differencing should be used
+    for(size_t face = 0; face < 2*hess_test::dim; ++face){
+        if (faceNeighbors[face].size() == 0) {
+            isSystemBoundary[face] = ippl::NDIndex<hess_test::dim>(ippl::Index(nghost, extents[0] - nghost),
+                                                                     ippl::Index(nghost, extents[1] - nghost),
+                                                                     ippl::Index(nghost, extents[2] - nghost));
+            size_t d = face/2;
+
+            // Backward difference
+            if (face & 1){
+                isSystemBoundary[face][d] = ippl::Index(extents[d]-nghost-stencilWidth, extents[d]-nghost);
+            } else { // Forward difference
+                isSystemBoundary[face][d] = ippl::Index(nghost, nghost+stencilWidth);
+            }
+
+        }
+    }
+
+    if (myRank == 0){
+        for(const auto& idxRange : isSystemBoundary){
+            std::cout << idxRange << std::endl;
+        }
+    }
+
+    ippl::NDIndex testIndex = ippl::NDIndex<hess_test::dim>(ippl::Index(4, 4+1),
+                                                             ippl::Index(4, 4+1),
+                                                             ippl::Index(1, 1+1));
+    std::cout << "testIndex is center: " << isCenterDomain.contains(testIndex) << std::endl;
+
+    //for(size_t i = 1*nghost; i < view.extent(0) - 1*nghost; ++i){
+        //for(size_t j = 1*nghost; j < view.extent(1) - 1*nghost; ++j){
+            //for(size_t k = 1*nghost; k < view.extent(2) - 1*nghost; ++k){
+                //ippl::NDIndex currNDIndex = ippl::NDIndex<hess_test::dim>(ippl::Index(i, i+1),
+                                                                         //ippl::Index(j, j+1),
+                                                                         //ippl::Index(k, k+1));
+                ////std::cout << "(i,j,k) = " << "(" << i << "," << j << "," << k << ")" << std::endl;
+                //if (isSystemBoundary[0].contains(currNDIndex)){
+                    //std::cout << currNDIndex << " || " << std::endl;
+                //}
+                //printf("(%lu, %lu, %lu)\n", i, j, k);
+
+                //// Check all faces
+                //view_result(i, j, k) = 
+                                //isCenterDomain.contains(currNDIndex) * centered_hess(i,j,k);
+                                //isSystemBoundary[0].contains(currNDIndex) * forward_hess(i,j,k) +
+                                //isSystemBoundary[1].contains(currNDIndex) * backward_hess(i,j,k) +
+                                //isSystemBoundary[2].contains(currNDIndex) * forward_hess(i,j,k) +
+                                //isSystemBoundary[3].contains(currNDIndex) * backward_hess(i,j,k) +
+                                //isSystemBoundary[4].contains(currNDIndex) * forward_hess(i,j,k) +
+                                //isSystemBoundary[5].contains(currNDIndex) * backward_hess(i,j,k);
+
+            //}
+        //}
+    //}
+
+    Kokkos::parallel_for("Onesided Hessian Loop", hess_test::mdrange_type(
+                    {3*nghost, 3*nghost, 3*nghost},
+                    {view.extent(0) - 3*nghost,
+                     view.extent(1) - 3*nghost,
+                     view.extent(2) - 3*nghost}),
+        KOKKOS_LAMBDA(const int i, const int j, const int k){
+            // Check which type of differencing is needed
+            ippl::NDIndex currNDIndex = ippl::NDIndex<hess_test::dim>(ippl::Index(i, i+1),
+                                                                     ippl::Index(j, j+1),
+                                                                     ippl::Index(k, k+1));
+
+            //std::cout << "(i,j,k) = " << "(" << i << "," << j << "," << k << ")" << std::endl;
+            
+            if (myRank == 0){
+                printf("(%d, %d, %d)\n", i, j, k);
+            }
+            //printf("asdf");
+            if (isSystemBoundary[0].contains(currNDIndex)){
+                std::cout << currNDIndex << " || " << std::endl;
+            }
+
+            // Check all faces
+            view_result(i, j, k) = 
+                             isCenterDomain.contains(currNDIndex) * centered_hess(i,j,k) +
+                            isSystemBoundary[0].contains(currNDIndex) * forward_hess(i,j,k) +
+                            isSystemBoundary[1].contains(currNDIndex) * backward_hess(i,j,k) +
+                            isSystemBoundary[2].contains(currNDIndex) * forward_hess(i,j,k) +
+                            isSystemBoundary[3].contains(currNDIndex) * backward_hess(i,j,k) +
+                            isSystemBoundary[4].contains(currNDIndex) * forward_hess(i,j,k) +
+                            isSystemBoundary[5].contains(currNDIndex) * backward_hess(i,j,k);
+
+        });
+
+    Kokkos::fence();
+
+    hess_test::pickHessianIdx(hessReductionField, result, 0, 2, 3);
+    //hess_test::dumpVTKScalar(hessReductionField, 0, dx, dx, dx);
 
     result = result - exact;
 
-    // hess_test::pickHessianIdx(hessReductionField, result, 1, 1, 1);
-    hess_test::dumpVTK(outDir, gradResult, subI.length(), I.length(), I.length(), 1, dx, dx, dx);
-    // msg << hessReductionField.max(nghost) << endl;
 
     ippl::Vector<hess_test::Vector_t, hess_test::dim> err_hess{
         {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
@@ -289,9 +494,10 @@ int main(int argc, char* argv[]) {
             Kokkos::parallel_reduce(
                 "Relative error",
                 hess_test::mdrange_type(
-                    {2 * nghost, 2 * nghost, 2 * nghost},
-                    {view_result.extent(0) - 2 * nghost, view_result.extent(1) - 2 * nghost,
-                     view_result.extent(2) - 2 * nghost}),
+                    {1 * nghost, 1 * nghost, 1 * nghost},
+                    {view_result.extent(0) - 1 * nghost,
+                     view_result.extent(1) - 1 * nghost,
+                     view_result.extent(2) - 1 * nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
                     double myVal = pow(view_result(i, j, k)[dim1][dim2], 2);
                     val += myVal;
@@ -307,9 +513,10 @@ int main(int argc, char* argv[]) {
             Kokkos::parallel_reduce(
                 "Relative error",
                 hess_test::mdrange_type(
-                    {2 * nghost, 2 * nghost, 2 * nghost},
-                    {view_exact.extent(0) - 2 * nghost, view_exact.extent(1) - 2 * nghost,
-                     view_exact.extent(2) - 2 * nghost}),
+                    {1 * nghost, 1 * nghost, 1 * nghost},
+                    {view_exact.extent(0) - 1 * nghost,
+                     view_exact.extent(1) - 1 * nghost,
+                     view_exact.extent(2) - 1 * nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
                     double myVal = pow(view_exact(i, j, k)[dim1][dim2], 2);
                     val += myVal;
