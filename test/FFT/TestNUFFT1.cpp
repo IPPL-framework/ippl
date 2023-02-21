@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
     typedef ippl::Vector<double, 3> Vector_t;
 
     Vector_t hx = {dx[0], dx[1], dx[2]};
-    Vector_t origin = {-2.0 * pi, -2.0 * pi, -2.0 * pi};
+    Vector_t origin = {-pi, -pi, -pi};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
     playout_type pl(layout, mesh);
