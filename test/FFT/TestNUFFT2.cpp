@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
     //typedef ippl::Vector<Kokkos::complex<double>, 3> CxVector_t;
 
     Vector_t hx = {dx[0], dx[1], dx[2]};
-    Vector_t origin = {-pi, -pi, -pi};
+    Vector_t origin = {-2.0 * pi, -2.0 * pi, -2.0 * pi};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
     playout_type pl(layout, mesh);
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
     using size_type = ippl::detail::size_type;
 
 
-    size_type Np = std::pow(32,3) * 10;
+    size_type Np = std::pow(32,3) * 20;
     
     typedef ippl::Field<Kokkos::complex<double>, dim> field_type;
 
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
     fftParams.add("gpu_method", 1);
     fftParams.add("gpu_sort", 1);
     fftParams.add("gpu_kerevalmeth", 1);
-    fftParams.add("tolerance", 1e-12);
+    fftParams.add("tolerance", 1e-10);
 
     fftParams.add("use_cufinufft_defaults", false);  
     
@@ -150,9 +150,9 @@ int main(int argc, char *argv[]) {
     
     fft = std::make_unique<FFT_type>(layout, type, fftParams);
 
+
     Vector_t minU = {-pi, -pi, -pi};
     Vector_t maxU = {pi, pi, pi};
-
 
     size_type nloc = Np/Ippl::Comm->size();
 

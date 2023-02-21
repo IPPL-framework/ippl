@@ -42,6 +42,8 @@ typedef Field<double, Dim>   Field_t;
 typedef Field<Kokkos::complex<double>, Dim>   CxField_t;
 typedef Field<Vector_t, Dim> VField_t;
 
+typedef ippl::FFT<ippl::NUFFTransform, 3, double> FFT_type;
+
 const double pi = std::acos(-1.0);
 
 // Test programs have to define this variable for VTK dump purposes
@@ -51,6 +53,7 @@ template<class PLayout>
 class ChargedParticlesPIF : public ippl::ParticleBase<PLayout> {
 public:
     CxField_t rho_m;
+    CxField_t rhoDFT_m;
     Field_t Sk_m;
 
     Vector<int, Dim> nr_m;
@@ -72,6 +75,8 @@ public:
     std::string shapetype_m;
 
     int shapedegree_m;
+
+    std::shared_ptr<FFT_type> fft;
 
 public:
     ParticleAttrib<double>     q; // charge
@@ -123,8 +128,8 @@ public:
 
     void gather() {
 
-        //gatherPIFNUFFT(this->E, rho_m, Sk_m, this->R, this->q);
-        gatherPIFNUDFT(this->E, rho_m, Sk_m, this->R);
+        gatherPIFNUFFT(this->E, rho_m, Sk_m, this->R, this->q);
+        //gatherPIFNUDFT(this->E, rho_m, Sk_m, this->R);
 
         //Set the charge back to original as we used this view as a 
         //temporary buffer during gather
@@ -136,10 +141,15 @@ public:
         
         Inform m("scatter ");
         rho_m = {0.0, 0.0};
-        //scatterPIFNUFFT(q, rho_m, Sk_m, this->R);
-        scatterPIFNUDFT(q, rho_m, Sk_m, this->R);
+        scatterPIFNUFFT(q, rho_m, Sk_m, this->R);
+        //fft->transform(this->R, q, rho_m);
+        //rhoDFT_m = {0.0, 0.0};
+        //scatterPIFNUDFT(q, rho_m, Sk_m, this->R);
+
+        //dumpFieldData();
 
         rho_m = rho_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
+        //rhoDFT_m = rhoDFT_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
 
     }
 
@@ -185,9 +195,9 @@ public:
            Vector<double, 3> kVec;
            double Dr = 0.0;
            for(size_t d = 0; d < Dim; ++d) {
-               bool shift = (iVec[d] > (N[d]/2));
-               kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
-               //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
+               //bool shift = (iVec[d] > (N[d]/2));
+               //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+               kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                Dr += kVec[d] * kVec[d];
            }
 
@@ -402,9 +412,9 @@ public:
            Vector<double, 3> kVec;
            double Dr = 0.0;
            for(size_t d = 0; d < Dim; ++d) {
-               bool shift = (iVec[d] > (N[d]/2));
-               kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
-               //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
+               //bool shift = (iVec[d] > (N[d]/2));
+               //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+               kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                Dr += kVec[d] * kVec[d];
            }
 
@@ -483,6 +493,7 @@ public:
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         auto Skview = Sk_m.getView();
         auto N = nr_m;
+        const int nghost = Sk_m.getNghost();
         const Mesh_t& mesh = rho_m.get_mesh();
         const Vector_t& dx = mesh.getMeshSpacing();
         const Vector_t& Len = rmax_m - rmin_m;
@@ -508,8 +519,9 @@ public:
                 Vector<double, 3> kVec;
                 double Sk = 1.0;
                 for(size_t d = 0; d < Dim; ++d) {
-                    bool shift = (iVec[d] > (N[d]/2));
-                    kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                    //bool shift = (iVec[d] > (N[d]/2));
+                    //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                    kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                     double kh = kVec[d] * dx[d];
                     bool isNotZero = (kh != 0.0);
                     double factor = (1.0 / (kh + ((!isNotZero) * 1.0)));
@@ -518,7 +530,7 @@ public:
                     //Fourier transform of CIC
                     Sk *= std::pow(arg, order);
                 }
-                    Skview(i, j, k) = Sk;
+                    Skview(i+nghost, j+nghost, k+nghost) = Sk;
             });
 
         }
@@ -591,6 +603,47 @@ public:
     //   
     //   Ippl::Comm->barrier();
     //}
+
+    void dumpFieldData() {
+
+       typename CxField_t::HostMirror rhoNUFFT_host = rho_m.getHostMirror();
+       typename CxField_t::HostMirror rhoNUDFT_host = rhoDFT_m.getHostMirror();
+       Kokkos::deep_copy(rhoNUFFT_host, rho_m.getView());
+       Kokkos::deep_copy(rhoNUDFT_host, rhoDFT_m.getView());
+       const int nghost = rho_m.getNghost();
+       std::stringstream pname;
+       pname << "data/FieldFFT_";
+       pname << Ippl::Comm->rank();
+       pname << ".csv";
+       Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+       pcsvout.precision(10);
+       pcsvout.setf(std::ios::scientific, std::ios::floatfield);
+       pcsvout << "rho" << endl;
+       for (int i = 0; i< nr_m[0]; i++) {
+            for (int j = 0; j< nr_m[1]; j++) {
+                for (int k = 0; k< nr_m[2]; k++) {
+                    pcsvout << rhoNUFFT_host(i+nghost,j+nghost, k+nghost) << endl;
+                }
+            }
+       }
+       std::stringstream pname2;
+       pname2 << "data/FieldDFT_";
+       pname2 << Ippl::Comm->rank();
+       pname2 << ".csv";
+       Inform pcsvout2(NULL, pname2.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+       pcsvout2.precision(10);
+       pcsvout2.setf(std::ios::scientific, std::ios::floatfield);
+       pcsvout2 << "rho" << endl;
+       for (int i = 0; i< nr_m[0]; i++) {
+            for (int j = 0; j< nr_m[1]; j++) {
+                for (int k = 0; k< nr_m[2]; k++) {
+                    pcsvout2 << rhoNUDFT_host(i+nghost,j+nghost, k+nghost) << endl;
+                }
+            }
+       }
+       Ippl::Comm->barrier();
+    }
+
 
     //void dumpParticleData() {
 

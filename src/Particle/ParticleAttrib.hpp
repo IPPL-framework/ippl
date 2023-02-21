@@ -268,8 +268,9 @@ namespace ippl {
                 Vector<int, 3> iVec = {i, j, k};
                 vector_type kVec;
                 for(size_t d = 0; d < Dim; ++d) {
-                    bool shift = (iVec[d] > (N[d]/2));
-                    kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                    //bool shift = (iVec[d] > (N[d]/2));
+                    //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                    kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                 }
                 auto Sk = Skview(i+nghost, j+nghost, k+nghost);
                 Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, Np),
@@ -428,10 +429,10 @@ namespace ippl {
                     vector_type kVec;
                     double Dr = 0.0, arg = 0.0;
                     for(size_t d = 0; d < Dim; ++d) {
-                        bool shift = (iVec[d] > (N[d]/2));
-                        kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                        //bool shift = (iVec[d] > (N[d]/2));
+                        //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
                         //kVec[d] = 2 * pi / Len[d] * iVec[d];
-                        //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d]/2));
+                        kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d]/2));
                         Dr += kVec[d] * kVec[d];
                         arg += kVec[d]*pp(idx)[d];
                     }
@@ -497,6 +498,8 @@ namespace ippl {
         auto q = *this;
 
         fftType_mp->transform(pp, q, f);
+
+        //std::cout << "NUFFT transform done" << std::endl;
         
         using view_type = typename Field<FT, Dim, M, C>::view_type;
         view_type fview = f.getView();
@@ -579,12 +582,13 @@ namespace ippl {
                                               const int j,
                                               const int k)
             {
-                Vector<int, 3> iVec = {i, j, k};
+                Vector<int, 3> iVec = {i-nghost, j-nghost, k-nghost};
                 Vector<double, 3> kVec;
 
                 double Dr = 0.0;
                 for(size_t d = 0; d < Dim; ++d) {
                     kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
+                    //kVec[d] = (iVec[d] - (N[d] / 2));
                     Dr += kVec[d] * kVec[d];
                 }
 

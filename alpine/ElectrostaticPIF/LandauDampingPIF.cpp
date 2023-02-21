@@ -192,9 +192,10 @@ int main(int argc, char *argv[]){
 
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
+    //Vector_t kw = {1.0, 1.0, 1.0};
     double alpha = 0.05;
-    //Vector_t rmin(-2.0 * pi);
-    //Vector_t rmax = 2 * pi;
+    //Vector_t rmin(-pi);
+    //Vector_t rmax(pi);
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw;
     Vector_t length = rmax - rmin;
@@ -212,11 +213,13 @@ int main(int argc, char *argv[]){
 
     //Q = -\int\int f dx dv
     double Q = -length[0] * length[1] * length[2];
+    //double Q = -64.0 * pi * pi * pi;
     P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q,totalP);
 
     P->nr_m = nr;
 
     P->rho_m.initialize(mesh, FL);
+    P->rhoDFT_m.initialize(mesh, FL);
     P->Sk_m.initialize(mesh, FL);
 
     P->time_m = 0.0;
@@ -232,8 +235,10 @@ int main(int argc, char *argv[]){
     Vector_t minU, maxU;
     //int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d <Dim; ++d) {
-        minU[d] = rmin[d];//CDF(Regions(myRank)[d].min(), alpha, kw[d]);
-        maxU[d] = rmax[d];//CDF(Regions(myRank)[d].max(), alpha, kw[d]);
+        minU[d] = CDF(rmin[d], alpha, kw[d]);
+        maxU[d]   = CDF(rmax[d], alpha, kw[d]);
+        //minU[d] = rmin[d];//CDF(Regions(myRank)[d].min(), alpha, kw[d]);
+        //maxU[d] = rmax[d];//CDF(Regions(myRank)[d].max(), alpha, kw[d]);
     }
 
     double factor = 1.0/Ippl::Comm->size();
@@ -274,6 +279,9 @@ int main(int argc, char *argv[]){
     fftParams.add("tolerance", 1e-10);
 
     fftParams.add("use_cufinufft_defaults", false);
+
+
+    P->fft = std::make_shared<FFT_type>(FL, 1, fftParams);
 
     P->q.initializeNUFFT(FL, 1, fftParams);
     P->E.initializeNUFFT(FL, 2, fftParams);

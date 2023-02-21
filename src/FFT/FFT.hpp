@@ -845,6 +845,20 @@ namespace ippl {
 
         auto localNp = R.getParticleCount();
 
+        const Layout_t& layout = f.getLayout(); 
+        const UniformCartesian<T, Dim>& mesh = f.get_mesh();
+        const Vector<T, Dim>& dx = mesh.getMeshSpacing();
+        const auto& domain = layout.getDomain();
+        Vector<T, Dim> Len;
+        Vector<int, Dim> N;
+
+        for (unsigned d=0; d < Dim; ++d) {
+            N[d] = domain[d].length();
+            Len[d] = dx[d] * N[d];
+        }
+
+        const double pi = std::acos(-1.0);
+
         /**
          * cuFINUFFT's layout is left, hence we allocate the temporary
          * Kokkos views with the same layout
@@ -891,7 +905,7 @@ namespace ippl {
                              KOKKOS_LAMBDA(const size_t i)
                              {
                                  for(size_t d = 0; d < Dim; ++d) {
-                                    tempR[d](i) = Rview(i)[d];
+                                    tempR[d](i) = Rview(i)[d] * (2.0 * pi / Len[d]);
                                  }
                                  tempQ(i).x = Qview(i);
                                  tempQ(i).y = 0.0;
