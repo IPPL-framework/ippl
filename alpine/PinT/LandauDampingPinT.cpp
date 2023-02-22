@@ -456,10 +456,8 @@ int main(int argc, char *argv[]){
     Vector_t kw = {0.5, 0.5, 0.5};
     //double alpha = 0.05;
     Vector_t alpha = {0.05, 0.05, 0.05};
-    //Vector_t rmin(0.0);
-    //Vector_t rmax = 2 * pi / kw ;
-    Vector_t rmin(-2.0 * pi);
-    Vector_t rmax = 2 * pi;
+    Vector_t rmin(0.0);
+    Vector_t rmax = 2 * pi / kw ;
     Vector_t length = rmax - rmin;
     double dxPIC = length[0] / nrPIC[0];
     double dyPIC = length[1] / nrPIC[1];
@@ -482,7 +480,7 @@ int main(int argc, char *argv[]){
 
     //Q = -\int\int f dx dv
     double Q = -length[0] * length[1] * length[2];
-    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q);
+    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q,totalP);
     Pbegin = std::make_unique<states_begin_type>(PL);
     Pend = std::make_unique<states_end_type>(PL);
 
@@ -622,7 +620,19 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(initializeShapeFunctionPIF);
     Pcoarse->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
-    
+
+    ippl::ParameterList fftParams;
+
+    fftParams.add("gpu_method", 1);
+    fftParams.add("gpu_sort", 1);
+    fftParams.add("gpu_kerevalmeth", 1);
+    fftParams.add("tolerance", 1e-6);
+
+    fftParams.add("use_cufinufft_defaults", false);
+
+    Pcoarse->q.initializeNUFFT(FLPIF, 1, fftParams);
+    Pcoarse->E.initializeNUFFT(FLPIF, 2, fftParams);
+
     
     //Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R0.getView());
     //Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P0.getView());

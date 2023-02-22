@@ -496,16 +496,35 @@ namespace ippl {
         IpplTimings::startTimer(scatterPIFNUFFTTimer);
 
         auto q = *this;
+        
+        //Field<FT,Dim,M,C> tempField;
 
+        //FieldLayout<Dim>& layout = f.getLayout(); 
+        //M& mesh = f.get_mesh();
+
+        //tempField.initialize(mesh, layout);
+        //
+        //fftType_mp->transform(pp, q, tempField);
         fftType_mp->transform(pp, q, f);
 
-        //std::cout << "NUFFT transform done" << std::endl;
         
         using view_type = typename Field<FT, Dim, M, C>::view_type;
         view_type fview = f.getView();
+        //view_type viewLocal = tempField.getView();
         typename Field<ST, Dim, M, C>::view_type Skview = Sk.getView();
         const int nghost = f.getNghost();
         
+        IpplTimings::stopTimer(scatterPIFNUFFTTimer);
+
+        //static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
+        //IpplTimings::startTimer(scatterAllReduceTimer);                                               
+        //int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
+        //MPI_Allreduce(viewLocal.data(), fview.data(), viewSize, 
+        //              MPI_C_DOUBLE_COMPLEX, MPI_SUM, Ippl::getComm());  
+        //IpplTimings::stopTimer(scatterAllReduceTimer);
+
+        //IpplTimings::startTimer(scatterPIFNUFFTTimer);
+
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         Kokkos::parallel_for("Multiply with shape functions",
                             mdrange_type({nghost, nghost, nghost},
@@ -520,14 +539,6 @@ namespace ippl {
         });
 
         IpplTimings::stopTimer(scatterPIFNUFFTTimer);
-
-        //static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
-        //IpplTimings::startTimer(scatterAllReduceTimer);                                               
-        //int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
-        //MPI_Allreduce(viewLocal.data(), fview.data(), viewSize, 
-        //              MPI_C_DOUBLE_COMPLEX, MPI_SUM, Ippl::getComm());  
-        //IpplTimings::stopTimer(scatterAllReduceTimer);
-
     }
 
 

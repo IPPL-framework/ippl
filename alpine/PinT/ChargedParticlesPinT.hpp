@@ -69,6 +69,8 @@ public:
 
     double Q_m;
 
+    size_type Np_m;
+    
     std::shared_ptr<Solver_t> solver_mp;
     
     double time_m;
@@ -110,12 +112,14 @@ public:
                      Vector_t rmin,
                      Vector_t rmax,
                      ippl::e_dim_tag decomp[Dim],
-                     double Q)
+                     double Q,
+                     size_type Np)
     : ippl::ParticleBase<PLayout>(pl)
     , hr_m(hr)
     , rmin_m(rmin)
     , rmax_m(rmax)
     , Q_m(Q)
+    , Np_m(Np)
     {
         // register the particle attributes
         this->addAttribute(q);
@@ -262,8 +266,9 @@ public:
             Vector<double, 3> kVec;
             double Dr = 0.0;
             for(size_t d = 0; d < Dim; ++d) {
-                bool shift = (iVec[d] > (N[d]/2));
-                kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                //bool shift = (iVec[d] > (N[d]/2));
+                //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                 Dr += kVec[d] * kVec[d];
             }
 
@@ -346,8 +351,9 @@ public:
             Vector<double, 3> kVec;
             double Dr = 0.0;
             for(size_t d = 0; d < Dim; ++d) {
-                bool shift = (iVec[d] > (N[d]/2));
-                kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                //bool shift = (iVec[d] > (N[d]/2));
+                //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                 Dr += kVec[d] * kVec[d];
             }
 
@@ -432,8 +438,9 @@ public:
             Vector<double, 3> kVec;
             double Dr = 0.0;
             for(size_t d = 0; d < Dim; ++d) {
-                bool shift = (iVec[d] > (N[d]/2));
-                kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                //bool shift = (iVec[d] > (N[d]/2));
+                //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                 //kVec[d] = 2 * pi / Len[d] * iVec[d];
                 Dr += kVec[d] * kVec[d];
             }
@@ -655,8 +662,9 @@ public:
                 Vector<double, 3> kVec;
                 double Sk = 1.0;
                 for(size_t d = 0; d < Dim; ++d) {
-                    bool shift = (iVec[d] > (N[d]/2));
-                    kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                    //bool shift = (iVec[d] > (N[d]/2));
+                    //kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                    kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                     double kh = kVec[d] * dx[d];
                     bool isNotZero = (kh != 0.0);
                     double factor = (1.0 / (kh + ((!isNotZero) * 1.0)));
@@ -856,12 +864,14 @@ public:
         //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
-        scatterPIF(q, rhoPIF_m, Sk_m, Rtemp);
+        scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp);
     
         rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
         // Solve for and gather E field
-        gatherPIF(E, rhoPIF_m, Sk_m, Rtemp, q);
+        gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, q);
+
+        q = Q_m / Np_m;
     
         time_m = tStartMySlice;
 
@@ -888,13 +898,15 @@ public:
     
             //scatter the charge onto the underlying grid
             rhoPIF_m = {0.0, 0.0};
-            scatterPIF(q, rhoPIF_m, Sk_m, Rtemp);
+            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp);
     
             rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
             // Solve for and gather E field
-            gatherPIF(E, rhoPIF_m, Sk_m, Rtemp, q);
-    
+            gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, q);
+
+            q = Q_m / Np_m;
+
             //kick
             Ptemp = Ptemp - 0.5 * dt * E;
     
@@ -920,13 +932,15 @@ public:
         //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
-        scatterPIF(q, rhoPIF_m, Sk_m, Rtemp);
+        scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp);
     
         rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
         // Solve for and gather E field
-        gatherPIF(E, rhoPIF_m, Sk_m, Rtemp, q);
-    
+        gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, q);
+
+        q = Q_m / Np_m;
+
         time_m = tStartMySlice;
 
         if((time_m == 0.0)) {
@@ -977,13 +991,14 @@ public:
     
             //scatter the charge onto the underlying grid
             rhoPIF_m = {0.0, 0.0};
-            scatterPIF(q, rhoPIF_m, Sk_m, Rtemp);
+            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp);
     
             rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
             // Solve for and gather E field
-            gatherPIF(E, rhoPIF_m, Sk_m, Rtemp, q);
+            gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, q);
     
+            q = Q_m / Np_m;
             //kick
             auto R2view = Rtemp.getView();
             auto P2view = Ptemp.getView();

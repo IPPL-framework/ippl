@@ -276,7 +276,7 @@ int main(int argc, char *argv[]){
     fftParams.add("gpu_method", 1);
     fftParams.add("gpu_sort", 1);
     fftParams.add("gpu_kerevalmeth", 1);
-    fftParams.add("tolerance", 1e-10);
+    fftParams.add("tolerance", 1e-2);
 
     fftParams.add("use_cufinufft_defaults", false);
 
