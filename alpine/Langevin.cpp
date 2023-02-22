@@ -61,65 +61,6 @@
 #include <random>
 #include "Utility/IpplTimings.h"
 
-template <typename T>
-struct Newton1D {
-
-  double tol = 1e-12;
-  int max_iter = 20;
-  double pi = std::acos(-1.0);
-  
-  T k, alpha, u;
-
-  KOKKOS_INLINE_FUNCTION
-  Newton1D() {}
-
-  KOKKOS_INLINE_FUNCTION
-  Newton1D(const T& k_, const T& alpha_, 
-           const T& u_) 
-  : k(k_), alpha(alpha_), u(u_) {}
-
-  KOKKOS_INLINE_FUNCTION
-  ~Newton1D() {}
-
-  KOKKOS_INLINE_FUNCTION
-  T f(T& x) {
-      T F;
-      F = x  + (alpha  * (std::sin(k * x) / k)) - u;
-      return F;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  T fprime(T& x) {
-      T Fprime;
-      Fprime = 1  + (alpha  * std::cos(k * x));
-      return Fprime;
-  }
-
-  KOKKOS_FUNCTION
-  void solve(T& x) {
-      int iterations = 0;
-      while (iterations < max_iter && std::fabs(f(x)) > tol) {
-          x = x - (f(x)/fprime(x));
-          iterations += 1;
-      }
-  }
-};
-
-double CDF(const double& x, const double& alpha, const double& k) {
-   double cdf = x + (alpha / k) * std::sin(k * x);
-   return cdf;
-}
-
-KOKKOS_FUNCTION
-double PDF(const Vector_t& xvec, const double& alpha, 
-             const Vector_t& kw, const unsigned Dim) {
-    double pdf = 1.0;
-
-    for (unsigned d = 0; d < Dim; ++d) {
-        pdf *= (1.0 + alpha * std::cos(kw[d] * xvec[d]));
-    }
-    return pdf;
-}
 
 const char* TestName = "LangevinCollsion";
 
@@ -480,24 +421,11 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
 
 
 
-        // // //make symmetric ... is the gathering of symmetric matrices symmetric..
-        // (*D[0])(1) = (*D[1])(0) = ((*D[0])(1)+(*D[1])(0)) *0.5;
-        // (*D[0])(2) = (*D[2])(0) = ((*D[0])(2)+(*D[2])(0)) *0.5;
-        // (*D[1])(2) = (*D[2])(1) = ((*D[1])(2)+(*D[2])(1)) *0.5; 
-
-                    // if( 
-            // for(unsigned di = 0; di<Dim; ++di){
-            //     for(unsigned dj = 0; dj<Dim; ++dj){
-            //         // const double LLL = LL(di)(dj);
-            //         if(std::isinf(LLL))
-            //         LL(di)(dj)=0.0;
-            //     }
-            // }
-                        // std::isnan(LLL)   
-                        // || std::isinf(LLL)
-                        // || (LLL>1e20 ||LLL<-1e20)
-                        // || (LLL<1e-15&&LLL>-1e-15)
-                    // )                                 
+// // //make symmetric ... is the gathering of symmetric matrices symmetric..
+// (*D[0])(1) = (*D[1])(0) = ((*D[0])(1)+(*D[1])(0)) *0.5;
+// (*D[0])(2) = (*D[2])(0) = ((*D[0])(2)+(*D[2])(0)) *0.5;
+// (*D[1])(2) = (*D[2])(1) = ((*D[1])(2)+(*D[2])(1)) *0.5; 
+                            
 
 //rowmajor
 // template<typename M, typename V>
@@ -576,7 +504,9 @@ int main(int argc, char *argv[]){
     Ippl::Comm->setDefaultOverallocation(std::atof(argv[3]));
     auto start = std::chrono::high_resolution_clock::now();
 
-    // make unsymmetric?
+
+    // const double interactionRadius  = std::atof(argv[8]);
+    // const double alpha              = std::atof(argv[9]);
 
     //1 -> solvertype = FFT...1
     //2 -> loadbalancethreshold2
@@ -585,30 +515,29 @@ int main(int argc, char *argv[]){
     const double beamRadius         = std::atof(argv[5]);
     const double boxL 		        = std::atof(argv[6]); 
     const size_type nP              = std::atoll(argv[7]);
-    const double interactionRadius  = std::atof(argv[8]);
-    const double alpha              = std::atof(argv[9]);
-    const double dt                 = std::atof(argv[10]);
-    const size_type nt              = std::atoll(argv[11]);
-    const double particleCharge     = std::atof(argv[12]);
-    const double particleMass       = std::atof(argv[13]);
-    const double focusForce         = std::atof(argv[14]);
-    const int printInterval         = std::atoi(argv[15]);
-    const double eps_inv            = std::atof(argv[16]);
-    const int NV                    = std::atoi(argv[17]);
-    const double VMAX               = std::atof(argv[18]);
-    const double rel_buff           = std::atof(argv[19]);
-
-    const bool FFF                  = std::atoi(argv[20]);
-    const bool EEE                  = std::atoi(argv[21]);
-    const bool DDD                  = std::atoi(argv[22]);
-    const bool CCC                  = std::atoi(argv[23]);
-    const double BBB                  = std::atoi(argv[24]);
-    const bool DRAG                 = std::atoi(argv[25]);
-    const bool DIFFUSION            = std::atoi(argv[26]);
-    const bool PRINT                = std::atoi(argv[27]);
-    const bool COLLISION            = std::atoi(argv[28]);
-    std::string folder              = argv[29];
+    const double dt                 = std::atof(argv[8]);
+    const size_type nt             = std::atoll(argv[9]);
+    const double particleCharge     = std::atof(argv[10]);
+    const double particleMass       = std::atof(argv[11]);
+    const double focusForce         = std::atof(argv[12]);
+    const int printInterval         = std::atoi(argv[13]);
+    const double eps_inv            = std::atof(argv[14]);
+    const int NV                    = std::atoi(argv[15]);
+    const double VMAX               = std::atof(argv[16]);
+    const double rel_buff           = std::atof(argv[17]);
+    const bool FFF                  = std::atoi(argv[18]);
+    const bool EEE                  = std::atoi(argv[19]);
+    const double DRAG_B             = std::atof(argv[20]);
+    const double DIFF_B             = std::atof(argv[21]);
+    const double FCT                = std::atof(argv[22]);
+    const double DRAG               = std::atof(argv[23]);
+    const double DIFFUSION          = std::atof(argv[24]);
+    const bool PRINT                = std::atoi(argv[25]);
+    const bool COLLISION            = std::atoi(argv[26]);    
+    std::string folder              = argv[27];
  	
+
+
      
     //cm annahme, elektronen charge mass, / nicht milisekunde...
     // const double ke=2.532638e8;
@@ -671,7 +600,7 @@ int main(int argc, char *argv[]){
     
     P->time_m = 0.0;
     P->loadbalancethreshold_m = std::atof(argv[2]);
-    bool isFirstRepartition = false;
+    // bool isFirstRepartition = false;
 
 // ========================================================================================
 // VEOCITY SPACE MESH& DOMAIN_DECOMPOSITION
@@ -713,7 +642,7 @@ int main(int argc, char *argv[]){
     mesh_v.setOrigin(P->vmin_mv);
     mesh_v.setMeshSpacing(P->hv_mv);
 
-    double constNumDensity = nP / (4.0/3.0 * M_PI * pow(beamRadius, 3.0));
+    // double constNumDensity = nP / (4.0/3.0 * M_PI * pow(beamRadius, 3.0));
 
 
 
@@ -725,8 +654,8 @@ int main(int argc, char *argv[]){
         << "Beamradius          = " << std::setw(20) << beamRadius << endl
         << "Box Length          = " << std::setw(20) << boxL << endl
         << "Total Particles     = " << std::setw(20) << nP << endl 
-        << "Interaction Radius  = " << std::setw(20) << interactionRadius << endl
-        << "Alpha               = " << std::setw(20) << alpha << endl
+        // << "Interaction Radius  = " << std::setw(20) << interactionRadius << endl
+        // << "Alpha               = " << std::setw(20) << alpha << endl
         << "Time Step           = " << std::setw(20) << dt << endl      
         << "total Timesteps     = " << std::setw(20) << nt << endl
         << "Particlecharge      = " << std::setw(20) << particleCharge << endl
@@ -741,9 +670,9 @@ int main(int argc, char *argv[]){
         << "GridDim Vel_Mesh    = " << std::setw(20) << NV << endl
         << "FFF                 = " << std::setw(20) <<  FFF   << endl
         << "EEE                 = " << std::setw(20) <<  EEE   << endl
-        << "DDD                 = " << std::setw(20) <<  DDD   << endl
-        << "CCC                 = " << std::setw(20) <<  CCC   << endl
-        << "FCT_BB              = " << std::setw(20) <<  BBB   << endl
+        << "DRAG_B             = " << std::setw(20) <<  DRAG_B << " as bool: " << bool(DRAG_B)   << endl
+        << "DIFF_B             = " << std::setw(20) <<  DIFF_B << " as bool: " << bool(DIFF_B)   << endl
+        << "FCT_BB              = " << std::setw(20) <<  FCT   << endl
         << "DRAG                = " << std::setw(20) <<  DRAG   << endl
         << "DIFFUSION           = " << std::setw(20) <<  DIFFUSION   << endl
         << "VMAX                = " << std::setw(20) <<  P->vmax_mv   << endl
@@ -771,8 +700,7 @@ int main(int argc, char *argv[]){
 	auto pD2Host = P->D2.getHostMirror();
 
     
-    PL.update(*P, bunchBuffer);
-    // PL_v.update(*P, bunchBuffer);
+    PL.update(*P, bunchBuffer); //creation
 
 
 // PARTICLE CREATION
@@ -823,6 +751,7 @@ int main(int argc, char *argv[]){
 
         msg << "Start time step: " << it+1 << endl;
 
+
         //Vorzeichen?? checken
         msg << "kick" <<endl;
         P->P = P->P + 0.5 * dt * P->E * particleCharge/particleMass;
@@ -830,11 +759,11 @@ int main(int argc, char *argv[]){
         P->R = P->R + dt * P->P;
 
         msg << "update" << endl;
-	    PL.update(*P, bunchBuffer);//Since the particles have moved spatially update them to correct processors
+	    PL.update(*P, bunchBuffer);// particles moved spatially 
         
         P->scatterCIC(nP, it+1, hr); 
         P->rho_m = P->rho_m * eps_inv;
-        P->solver_mp->solve();
+        P->solver_mp->solve(); // automatically return negative gradient to E_m
         P->gatherCIC();
 // =================MYSTUFF::CONSTANT_FOCUSING======================
         msg << "constant Focusing" << endl;
@@ -843,6 +772,8 @@ int main(int argc, char *argv[]){
         msg << "kick" << endl;
         P->P = P->P + 0.5 * dt * P->E*particleCharge / particleMass;
 // =================MYSTUFF::_LANGEVIN_COLLISION======================
+
+        PL.update(*P, bunchBuffer);
 
     if(COLLISION){msg << "COLLISION"<<endl;
 
@@ -858,8 +789,6 @@ int main(int argc, char *argv[]){
 
 
 
-        // PL_v.update(*P, bunchBuffer);
-
         if(EEE){msg << "EEE"<<endl;
         
             P->scatterPhaseSpaceDist(hr); 
@@ -869,29 +798,37 @@ int main(int argc, char *argv[]){
 
 
 
-        //origin shift
-        mesh_v.setOrigin({0, 0, 0});
-        if(DDD){msg << "DDD" << endl;
+        if(DRAG_B){msg << "DRAG_B" << endl;
+            //origin shift
+            mesh_v.setOrigin({0, 0, 0});
 
             P->solver_mvRB_H->solve();
             // P->gradRBH_mv = grad(P->fv_mv);
             //spectral gradient returns wrong negative
-            P->gradRBH_mv =- P->KAPPA * P->gradRBH_mv;
+            P->gradRBH_mv = - P->KAPPA * P->gradRBH_mv;
+
+            mesh_v.setOrigin(P->vmin_mv);
+            //undo origin shift
+        }
+
+
+        if(DIFF_B){msg << "DIFF_B" << endl;
+            //origin shift
+            mesh_v.setOrigin({0, 0, 0});
+
+
             P->rescatterVelocityDist();
             P->fv_mv = -8.0*M_PI*P->fv_mv;
             P->solver_mvRB_G->solve();
             P->diffusionCoeff_mv = hess(P->fv_mv);
-            P->diffusionCoeff_mv = P->KAPPA *  P->diffusionCoeff_mv; 
             //here one sided hessian might benecessary ... ??? 
-        }
-        mesh_v.setOrigin(P->vmin_mv);
-        //undo origin shift
-
-
-        if(CCC){msg << "CCC" << endl;
-
+            P->diffusionCoeff_mv = P->KAPPA *  P->diffusionCoeff_mv; 
             prepareDiffCoeff(*P);   //does:: for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d];
             P->gather_Fd_D_Density();
+
+
+            mesh_v.setOrigin(P->vmin_mv);
+            //undo origin shift
         
         }
 
@@ -913,24 +850,43 @@ int main(int argc, char *argv[]){
         // 1.9506e5 -> scatter without taking density
         // 2.62e11  -> density in this case ... multiplied equals fct which we use for both forces..
 
-        if(BBB){ msg << "BBB" << endl;
+
+        if(FCT){ msg << "FCT: " << FCT << endl;
             //  need to find best way to approximate cholesky
+
             // P->Fd = P->Fd*constNumDensity;
             // P->D0 = P->D0*constNumDensity;
             // P->D1 = P->D1*constNumDensity;
             // P->D2 = P->D2*constNumDensity;
 
-            P->Fd = P->Fd*P->fr/constNumDensity;
-            P->D0 = P->D0*P->fr/constNumDensity;
-            P->D1 = P->D1*P->fr/constNumDensity;
-            P->D2 = P->D2*P->fr/constNumDensity;
+            P->Fd = P->Fd*P->fr*DRAG_B*FCT;        
+            P->D0 = P->D0*P->fr*DIFF_B*FCT;
+            P->D1 = P->D1*P->fr*DIFF_B*FCT;
+            P->D2 = P->D2*P->fr*DIFF_B*FCT;
+
+
+
+            // P->Fd = P->Fd*P->fr*4e-7;        
+            // P->D0 = P->D0*P->fr*FCT;
+            // P->D1 = P->D1*P->fr*FCT;
+            // P->D2 = P->D2*P->fr*FCT;
+
+
+            // P->Fd = P->Fd*P->fr*1e-5;        
+            // P->D0 = P->D0*P->fr*1e7;
+            // P->D1 = P->D1*P->fr*1e7;
+            // P->D2 = P->D2*P->fr*1e7;
+
+
+
         }
         else{
             msg << "spacedensity factor P->fr" << endl;
-            P->Fd = P->Fd*P->fr;
-            P->D0 = P->D0*P->fr;
-            P->D1 = P->D1*P->fr;
-            P->D2 = P->D2*P->fr;
+            P->Fd = P->Fd*P->fr*DRAG_B;
+            P->D0 = P->D0*P->fr*DIFF_B;
+            P->D1 = P->D1*P->fr*DIFF_B;
+            P->D2 = P->D2*P->fr*DIFF_B;
+            // assert(false);
         }
 
         if(DRAG){ msg << "DRAG" << endl;
@@ -941,22 +897,17 @@ int main(int argc, char *argv[]){
             applyLangevin(*P, Gaussian3d);   //does:: // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d()); //DEAD END
         }
 
-                // PL_v.update(*P, bunchBuffer);
 
-       	        //error if variable not used
-                if(false){
-    	        double tmp = interactionRadius;
-    	        tmp += 1;
-                tmp += isFirstRepartition;
-                }
+       	        //error if variable not used error, can be avoided by something like this
+                // if(false){
+    	        // double tmp = 0;
+                // tmp += isFirstRepartition;
+    	        // tmp += 1;
+                // }
     }
 
-
-
-
-        P->time_m += dt;
-
         msg << "Finished time step: " << it+1 << endl;
+        P->time_m += dt;
         
         if(PRINT){ msg << "PRINT" << endl;
             if (it%printInterval==0){
