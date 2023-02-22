@@ -253,6 +253,7 @@ public:
 
 
         setupBCs();
+
         for (unsigned int i = 0; i < Dim; i++)
             decomp_m[i]=decomp[i];
     }
@@ -400,10 +401,12 @@ public:
          rhoNorm_m = norm(rho_m);
          IpplTimings::stopTimer(sumTimer);
 
-         //dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
+        //dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
 
-         //rho = rho_e - rho_i
-         rho_m = rho_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
+        //necessary for periodic solver (for bc to work or sth...)
+        // physical intention -> electronic background we can subtract out; ask sri
+        //rho = rho_e - rho_i
+        //  rho_m = rho_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
     }
 
     void initSolver() {
@@ -431,7 +434,6 @@ public:
         // sp.add("output_type", Solver_t::GRAD);
         //open boundary condion:
 
-        solver_mp2 = std::make_shared<VSolver_t>(this->E_m, this->rho_m, sp, "VICO");
         
         // solver_mp2 = std::make_shared<VSolver_t>(this->E_m, this->rho_m, sp, "HOCKNEY");
         solver_mp2 = std::make_shared<VSolver_t>(this->E_m, this->rho_m, sp, "VICO");

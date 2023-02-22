@@ -184,7 +184,9 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
+// might work as a two liners inside main:
+// double tmp = mynorm(avgEF)*f/beamRadius;
+// P.E = P.E + P.R*tmp;
 template<typename bunch>
 void applyConstantFocusing( bunch& P,
                             const double f,
@@ -198,6 +200,7 @@ void applyConstantFocusing( bunch& P,
     // calcuate the norm in the compute vergae space charge force instead
     //seems to be way more efficient
 
+
 	double tmp = mynorm(avgEF)*f/beamRadius;
 	Kokkos::parallel_for("Apply Constant Focusing",
 				P.getLocalNum(),
@@ -206,6 +209,7 @@ void applyConstantFocusing( bunch& P,
 				}	
 	);
 	Kokkos::fence();
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -445,7 +449,7 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
 Vector_t  GeMV_t(const Matrix_t& M, const Vector_t V){return V[0]*M[0]+V[1]*M[1]+V[2]*M[2];}
 
 
-    // P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d());
+// P->P = P->P + GeMV_t(cholesky(P->D0, P->D1, P->D2), Gaussian3d());
 template<typename bunch>
 void applyLangevin(bunch& P, std::function<Vector_t()> Gaussian3d){
 
@@ -708,7 +712,7 @@ int main(int argc, char *argv[]){
 // TEST TIMERS
     
     P->scatterCIC(nP, 0, hr);
-    P->solver_mp->solve();
+    P->solver_mp2->solve();
     P->E_m = P->E_m * eps_inv;
     P->gatherCIC();
 
@@ -763,7 +767,7 @@ int main(int argc, char *argv[]){
         
         P->scatterCIC(nP, it+1, hr); 
         P->rho_m = P->rho_m * eps_inv;
-        P->solver_mp->solve(); // automatically return negative gradient to E_m
+        P->solver_mp2->solve(); // automatically return negative gradient to E_m
         P->gatherCIC();
 // =================MYSTUFF::CONSTANT_FOCUSING======================
         msg << "constant Focusing" << endl;
@@ -814,20 +818,21 @@ int main(int argc, char *argv[]){
 
         if(DIFF_B){msg << "DIFF_B" << endl;
             //origin shift
-            mesh_v.setOrigin({0, 0, 0});
 
 
             P->rescatterVelocityDist();
+
+            mesh_v.setOrigin({0, 0, 0});
             P->fv_mv = -8.0*M_PI*P->fv_mv;
             P->solver_mvRB_G->solve();
             P->diffusionCoeff_mv = hess(P->fv_mv);
             //here one sided hessian might benecessary ... ??? 
             P->diffusionCoeff_mv = P->KAPPA *  P->diffusionCoeff_mv; 
             prepareDiffCoeff(*P);   //does:: for(unsigned d = 0; d<Dim; ++d) P->diffCoeffArr_mv[d] = P->diffusionCoeff_mv[d];
-            P->gather_Fd_D_Density();
 
 
             mesh_v.setOrigin(P->vmin_mv);
+            P->gather_Fd_D_Density();
             //undo origin shift
         
         }
