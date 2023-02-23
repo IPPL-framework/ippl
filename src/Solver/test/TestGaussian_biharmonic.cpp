@@ -25,7 +25,21 @@ double exact_fct(double x, double y, double z, double sigma = 0.05, double mu = 
     double r = std::sqrt((x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu));
     double r2 = (x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu);
 
-    return (1/(8.0*pi)) * (sigma*std::sqrt(2.0/pi)*exp(-r2/(2*sigma*sigma)) + std::erf(r/(std::sqrt(2.0)*sigma))*(r + (sigma*sigma/r)));
+    return (1/(8.0*pi)) * (sigma*std::sqrt(2.0/pi)*exp(-r2/(2*sigma*sigma)) 
+           + std::erf(r/(std::sqrt(2.0)*sigma))*(r + (sigma*sigma/r)));
+}
+
+KOKKOS_INLINE_FUNCTION
+ippl::Vector<double,3> exact_grad(double x, double y, double z, double sigma = 0.05, double mu = 0.5) {
+
+    double pi = std::acos(-1.0);
+    double r = std::sqrt((x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu));
+    double r2 = (x-mu)*(x-mu) + (y-mu)*(y-mu) + (z-mu)*(z-mu);
+
+    ippl::Vector<double, 3> Efield = {(x-mu), (y-mu), (z-mu)};
+    double factor = -(1.0/r) * (1/(8.0*pi)) * ((sigma/r)*std::sqrt(2.0/pi)*exp(-r2/(2*sigma*sigma)) 
+                    + std::erf(r/(std::sqrt(2.0)*sigma))*(1.0 - (sigma*sigma/(r*r))));
+    return factor * Efield;
 }
 
 // Define vtk dump function for plotting the fields
@@ -90,7 +104,6 @@ int main(int argc, char *argv[]) {
     const int n = 6;
 
     // number of gridpoints to iterate over   
-    //std::array<int, n> N = {std::atoi(argv[1])};
     std::array<int, n> N = {4,8,16,32,64,128};
 
     msg << "Spacing Error" << endl;
@@ -124,6 +137,12 @@ int main(int argc, char *argv[]) {
     // define the exact solution field
     field exact;
     exact.initialize(mesh, layout);
+
+    // field for gradient and exact gradient
+    typedef ippl::Field<ippl::Vector<double, 3>, 3> fieldV;
+	fieldV fieldE, exactE;
+	fieldE.initialize(mesh, layout);
+	exactE.initialize(mesh, layout);
 
 	// assign the rho field with a gaussian
 	typename field::view_type view_rho = rho.getView();
@@ -169,6 +188,29 @@ int main(int argc, char *argv[]) {
                     view_exact(i, j, k) = exact_fct(x,y,z);
     });
 
+    // assign the exact gradient field
+    auto view_grad = exactE.getView();
+    Kokkos::parallel_for("Assign exact field",
+                         Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
+                                                                {view_grad.extent(0) - nghost,
+                                                                     view_grad.extent(1) - nghost,
+                                                                     view_grad.extent(2) - nghost}),
+                 KOKKOS_LAMBDA(const int i, const int j, const int k){
+                    const int ig = i + ldom[0].first() - nghost;
+                    const int jg = j + ldom[1].first() - nghost;
+                    const int kg = k + ldom[2].first() - nghost;
+
+                    double x = (ig + 0.5) * hx[0] + origin[0];
+                    double y = (jg + 0.5) * hx[1] + origin[1];
+                    double z = (kg + 0.5) * hx[2] + origin[2];
+
+                    view_grad(i, j, k)[0] = exact_grad(x,y,z)[0];
+                    view_grad(i, j, k)[1] = exact_grad(x,y,z)[1];
+                    view_grad(i, j, k)[2] = exact_grad(x,y,z)[2];
+    });
+
+    Kokkos::fence();
+
     // set the FFT parameters	
     ippl::ParameterList fftParams;
     fftParams.add("use_heffte_defaults", false);  
@@ -178,7 +220,7 @@ int main(int argc, char *argv[]) {
     fftParams.add("r2c_direction", 0); 
 
 	// define an FFTPoissonSolver object
-	ippl::FFTPoissonSolver<ippl::Vector<double,3>, double, 3> FFTsolver(rho, fftParams, algorithm);
+	ippl::FFTPoissonSolver<ippl::Vector<double,3>, double, 3> FFTsolver(fieldE, rho, fftParams, algorithm);
 	
 	// solve the Poisson equation -> rho contains the solution (phi) now
 	FFTsolver.solve();
@@ -187,7 +229,47 @@ int main(int argc, char *argv[]) {
 	rho = rho - exact;
 	double err = norm(rho)/norm(exact);
         
-    msg << std::setprecision(16) << dx << " " << err << endl;
+    // compute relative error norm for the E-field components
+    ippl::Vector<double, 3> errE {0.0, 0.0, 0.0};
+    fieldE = fieldE - exactE;
+    auto view_fieldE = fieldE.getView();
+
+    for (size_t d = 0; d < 3; ++d) {
+        double temp = 0.0;
+
+        Kokkos::parallel_reduce("Vector errorNr reduce",
+        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, 
+        {view_fieldE.extent(0)-nghost, view_fieldE.extent(1)-nghost, view_fieldE.extent(2)-nghost}),
+                
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
+                double myVal = pow(view_fieldE(i,j,k)[d], 2);
+                valL += myVal;
+        }, Kokkos::Sum<double>(temp));
+
+        double globaltemp = 0.0;
+        MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        double errorNr = std::sqrt(globaltemp);
+
+        temp = 0.0;
+
+        Kokkos::parallel_reduce("Vector errorDr reduce",
+        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost}, 
+        {view_grad.extent(0)-nghost, view_grad.extent(1)-nghost, view_grad.extent(2)-nghost}),
+                
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
+                double myVal = pow(view_grad(i,j,k)[d], 2);
+                valL += myVal;
+        }, Kokkos::Sum<double>(temp));
+
+        globaltemp = 0.0;
+        MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        double errorDr = std::sqrt(globaltemp);
+
+        errE[d] = errorNr/errorDr;
+    }
+
+    msg << std::setprecision(16) << dx << " " << err 
+        << " " << errE[0] << " " << errE[1] << " " << errE[2] << endl;
 
     }
     
