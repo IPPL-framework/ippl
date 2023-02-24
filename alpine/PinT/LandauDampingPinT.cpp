@@ -478,9 +478,12 @@ int main(int argc, char *argv[]){
     FieldLayout_t FLPIF(domainPIF, decomp, isAllPeriodic);
     PLayout_t PL(FLPIC, meshPIC);
 
+
+    size_type nloc = totalP;
+
     //Q = -\int\int f dx dv
     double Q = -length[0] * length[1] * length[2];
-    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q,totalP);
+    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q,nloc);
     Pbegin = std::make_unique<states_begin_type>(PL);
     Pend = std::make_unique<states_end_type>(PL);
 
@@ -507,7 +510,6 @@ int main(int argc, char *argv[]){
         //maxU[d] = rmax[d];
     }
 
-    size_type nloc = totalP;
 
     Pcoarse->create(nloc);
     Pbegin->create(nloc);
@@ -621,18 +623,7 @@ int main(int argc, char *argv[]){
     Pcoarse->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
 
-    ippl::ParameterList fftParams;
-
-    fftParams.add("gpu_method", 1);
-    fftParams.add("gpu_sort", 1);
-    fftParams.add("gpu_kerevalmeth", 1);
-    fftParams.add("tolerance", 1e-6);
-
-    fftParams.add("use_cufinufft_defaults", false);
-
-    Pcoarse->q.initializeNUFFT(FLPIF, 1, fftParams);
-    Pcoarse->E.initializeNUFFT(FLPIF, 2, fftParams);
-
+    Pcoarse->initNUFFT(FLPIF);
     
     //Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R0.getView());
     //Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P0.getView());

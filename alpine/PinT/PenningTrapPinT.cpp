@@ -471,9 +471,12 @@ int main(int argc, char *argv[]){
     FieldLayout_t FLPIF(domainPIF, decomp, isAllPeriodic);
     PLayout_t PL(FLPIC, meshPIC);
 
+    size_type nloc = totalP;
+
+
     double Q = -1562.5;
     double Bext = 5.0;
-    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q);
+    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q,nloc);
     Pbegin = std::make_unique<states_begin_type>(PL);
     Pend = std::make_unique<states_end_type>(PL);
 
@@ -498,7 +501,6 @@ int main(int argc, char *argv[]){
         maxU[d] = CDF(rmax[d], mu[d], sd[d]);
     }
 
-    size_type nloc = totalP;
 
     Pcoarse->create(nloc);
     Pbegin->create(nloc);
@@ -630,6 +632,11 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(initializeShapeFunctionPIF);
     Pcoarse->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
+    
+    
+    Pcoarse->initNUFFT(FLPIF);
+    
+    
     for (unsigned int it=0; it<maxIter; it++) {
 
         //Run fine integrator in parallel

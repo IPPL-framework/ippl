@@ -160,6 +160,21 @@ public:
         solver_mp->setLhs(EfieldPIC_m);
     }
 
+
+    void initNUFFT(FieldLayout_t& FLPIF) {
+        ippl::ParameterList fftParams;
+
+        fftParams.add("gpu_method", 1);
+        fftParams.add("gpu_sort", 1);
+        fftParams.add("gpu_kerevalmeth", 1);
+        fftParams.add("tolerance", 1e-6);
+
+        fftParams.add("use_cufinufft_defaults", false);
+
+        q.initializeNUFFT(FLPIF, 1, fftParams);
+        E.initializeNUFFT(FLPIF, 2, fftParams);
+    }
+
      void dumpLandauPIC() {
 
         const int nghostE = EfieldPIC_m.getNghost();

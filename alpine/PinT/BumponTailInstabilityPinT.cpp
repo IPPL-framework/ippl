@@ -507,9 +507,17 @@ int main(int argc, char *argv[]){
     FieldLayout_t FLPIF(domainPIF, decomp, isAllPeriodic);
     PLayout_t PL(FLPIC, meshPIC);
 
+
+    double factorVelBulk = 1.0 - epsilon;
+    double factorVelBeam = 1.0 - factorVelBulk;
+    size_type nlocBulk = (size_type)(factorVelBulk * totalP);
+    size_type nlocBeam = (size_type)(factorVelBeam * totalP);
+    size_type nloc = nlocBulk + nlocBeam;
+    
+    
     //Q = -\int\int f dx dv
     double Q = -length[0] * length[1] * length[2];
-    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q);
+    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q,nloc);
     Pbegin = std::make_unique<states_begin_type>(PL);
     Pend = std::make_unique<states_end_type>(PL);
 
@@ -534,11 +542,6 @@ int main(int argc, char *argv[]){
         maxU[d]   = CDF(rmax[d], delta, kw[d], d);
     }
 
-    double factorVelBulk = 1.0 - epsilon;
-    double factorVelBeam = 1.0 - factorVelBulk;
-    size_type nlocBulk = (size_type)(factorVelBulk * totalP);
-    size_type nlocBeam = (size_type)(factorVelBeam * totalP);
-    size_type nloc = nlocBulk + nlocBeam;
 
     Pcoarse->create(nloc);
     Pbegin->create(nloc);
@@ -673,7 +676,9 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(initializeShapeFunctionPIF);
     Pcoarse->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
-   
+  
+    Pcoarse->initNUFFT(FLPIF);
+
     for (unsigned int it=0; it<maxIter; it++) {
 
         //Run fine integrator in parallel

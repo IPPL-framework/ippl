@@ -503,7 +503,7 @@ namespace ippl {
         //M& mesh = f.get_mesh();
 
         //tempField.initialize(mesh, layout);
-        //
+        
         //fftType_mp->transform(pp, q, tempField);
         fftType_mp->transform(pp, q, f);
 
