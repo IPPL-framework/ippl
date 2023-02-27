@@ -1045,9 +1045,12 @@ namespace ippl {
                         const int kg = k + ldom[2].first() - nghost;
                               
                         // if (0,0,0), assign to it 1/(4*pi)
-                        if (ig == 0 && jg == 0 && kg == 0) {
-                            view(i,j,k) = -1.0/(4.0*pi);
-                        }
+                        bool isOrig = (ig == 0 && jg == 0 && kg == 0);
+                        view(i,j,k) = (-1.0/(4.0*pi))*isOrig + (1.0-isOrig)*view(i,j,k);
+
+                        //if (ig == 0 && jg == 0 && kg == 0) {
+                        //    view(i,j,k) = -1.0/(4.0*pi);
+                        //}
                 });
             }
 
