@@ -3,10 +3,14 @@ BasedOnStyle:  Google
 AccessModifierOffset: -4
 AlignAfterOpenBracket: AlwaysBreak
 AlignConsecutiveAssignments: true
-AllowShortFunctionsOnASingleLine: None
+AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+AlignEscapedNewlines: Left
+AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: Empty
 AllowShortLoopsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AttributeMacros: ['KOKKOS_INLINE_FUNCTION']
 BreakBeforeBinaryOperators: NonAssignment
 ColumnLimit:     100
 DerivePointerAlignment: false
@@ -14,3 +18,4 @@ IndentWidth:     4
 IncludeBlocks: Preserve
 IndentGotoLabels: false
 NamespaceIndentation: All 
+StatementMacros: ['DefineUnaryOperation', 'DefineBinaryOperation']
