@@ -46,7 +46,6 @@ namespace ippl {
             }
         };
 
-
         /*!
          * This expression is only used to allocate
          * enough memory for the kernel on the device.
@@ -55,28 +54,25 @@ namespace ippl {
          */
         template <typename E, size_t N = sizeof(E)>
         struct CapturedExpression {
-            template <typename ...Args>
-            KOKKOS_INLINE_FUNCTION
-            auto operator()(Args... args) const {
+            template <typename... Args>
+            KOKKOS_INLINE_FUNCTION auto operator()(Args... args) const {
                 return reinterpret_cast<const E&>(*this)(args...);
             }
 
             char buffer[N];
         };
 
-
         /*!
          * Expression for intrinsic data types. They are both regular expressions
          * and field expressions.
          */
         template <typename T>
-        struct Scalar : public Expression<Scalar<T>, sizeof(T)>
-        {
+        struct Scalar : public Expression<Scalar<T>, sizeof(T)> {
             typedef T value_type;
 
-
             KOKKOS_FUNCTION
-            Scalar(value_type val) : val_m(val) { }
+            Scalar(value_type val) : val_m(val) {
+            }
 
             /*!
              * Access the scalar value with single index.
@@ -94,9 +90,8 @@ namespace ippl {
              * Scalar and BareField, Scalar and BareField,
              * and Scalar and Field.
              */
-            template <typename ...Args>
-            KOKKOS_INLINE_FUNCTION
-            auto operator()(Args... /*args*/) const {
+            template <typename... Args>
+            KOKKOS_INLINE_FUNCTION auto operator()(Args... /*args*/) const {
                 return val_m;
             }
 
@@ -104,16 +99,14 @@ namespace ippl {
             value_type val_m;
         };
 
+        template <typename T>
+        struct isExpression : std::false_type {};
 
-    template <typename T>
-    struct isExpression : std::false_type {};
+        template <typename T>
+        struct isExpression<Scalar<T>> : std::true_type {};
 
-    template <typename T>
-    struct isExpression<Scalar<T>> : std::true_type {};
-
-    }
-}
-
+    }  // namespace detail
+}  // namespace ippl
 
 #include "Expression/IpplOperations.h"
 

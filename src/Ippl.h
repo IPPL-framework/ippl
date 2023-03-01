@@ -21,14 +21,13 @@
 #include <iostream>
 
 #include "Communicate/Communicate.h"
-#include "Utility/Inform.h"
 #include "Types/IpplTypes.h"
+#include "Utility/Inform.h"
 
 class Ippl;
 std::ostream& operator<<(std::ostream&, const Ippl&);
 
 class Ippl {
-
 public:
     // an enumeration used to indicate whether to KEEP command-line arguments
     // or REMOVE them
@@ -47,21 +46,23 @@ public:
     // The second argument controls whether the IPPL-specific command line
     // arguments are stripped out (the default) or left in (if the setting
     // is IpplInfo::KEEP).
-    Ippl(int&, char** &, MPI_Comm mpicomm = MPI_COMM_WORLD);
+    Ippl(int&, char**&, MPI_Comm mpicomm = MPI_COMM_WORLD);
 
     // Constructor 2: default constructor.  This will not change anything in
     // how the static data members are set up.  This is useful for declaring
     // automatic IpplInfo instances in functions after IpplInfo.has been
     // initially created in the main() routine.
-    Ippl() {};
+    Ippl(){};
 
     // Destructor.
     ~Ippl();
 
-    static MPI_Comm getComm() {return *Ippl::Comm->getCommunicator();}
+    static MPI_Comm getComm() {
+        return *Ippl::Comm->getCommunicator();
+    }
 
     // Kill the communication and throw runtime error exception.
-    static void abort(const char * = 0);
+    static void abort(const char* = 0);
 
     static void fence();
 
@@ -73,12 +74,14 @@ private:
 };
 
 // macros used to print out messages to the console or a directed file
-#define INFOMSG(msg)  { *Ippl::Info << msg; }
-#define WARNMSG(msg)  { *Ippl::Warn << msg; }
-#define ERRORMSG(msg) { *Ippl::Error << msg; }
+#define INFOMSG(msg) \
+    { *Ippl::Info << msg; }
+#define WARNMSG(msg) \
+    { *Ippl::Warn << msg; }
+#define ERRORMSG(msg) \
+    { *Ippl::Error << msg; }
 
-
-//FIMXE remove (only for backwards compatibility)
+// FIMXE remove (only for backwards compatibility)
 #include "IpplCore.h"
 
 #endif

@@ -1,14 +1,13 @@
 #include "Ippl.h"
 #include "Utility/ParameterList.h"
 
-#include <iostream>
-#include <typeinfo>
 #include <array>
+#include <iostream>
 #include <random>
+#include <typeinfo>
 
-int main(int argc, char *argv[]) {
-
-    Ippl ippl(argc,argv);
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
 
@@ -18,8 +17,8 @@ int main(int argc, char *argv[]) {
     ippl::Index K(pt[2]);
     ippl::NDIndex<dim> owned(I, J, K);
 
-    ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
-    for (unsigned int d=0; d<dim; d++)
+    ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
+    for (unsigned int d = 0; d < dim; d++)
         allParallel[d] = ippl::PARALLEL;
 
     ippl::FieldLayout<dim> layout(owned, allParallel);
@@ -29,7 +28,7 @@ int main(int argc, char *argv[]) {
         1.0 / double(pt[1]),
         1.0 / double(pt[2]),
     };
-    ippl::Vector<double, 3> hx = {dx[0], dx[1], dx[2]};
+    ippl::Vector<double, 3> hx     = {dx[0], dx[1], dx[2]};
     ippl::Vector<double, 3> origin = {0, 0, 0};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
@@ -39,75 +38,63 @@ int main(int argc, char *argv[]) {
 
     ippl::ParameterList fftParams;
 
-    fftParams.add("use_heffte_defaults", false);  
-    fftParams.add("use_pencils", true);  
-    fftParams.add("use_reorder", false);  
-    fftParams.add("use_gpu_aware", true);  
-    fftParams.add("comm", ippl::p2p_pl);  
-    
+    fftParams.add("use_heffte_defaults", false);
+    fftParams.add("use_pencils", true);
+    fftParams.add("use_reorder", false);
+    fftParams.add("use_gpu_aware", true);
+    fftParams.add("comm", ippl::p2p_pl);
+
     typedef ippl::FFT<ippl::SineTransform, 3, double> FFT_type;
 
     std::unique_ptr<FFT_type> fft;
 
     fft = std::make_unique<FFT_type>(layout, fftParams);
 
-    typename field_type::view_type& view = field.getView();    
+    typename field_type::view_type& view       = field.getView();
     typename field_type::HostMirror field_host = field.getHostMirror();
 
     const int nghost = field.getNghost();
     std::mt19937_64 eng(42 + Ippl::Comm->rank());
     std::uniform_real_distribution<double> unif(0, 1);
-    
 
     for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
         for (size_t j = nghost; j < view.extent(1) - nghost; ++j) {
             for (size_t k = nghost; k < view.extent(2) - nghost; ++k) {
-    
-                field_host(i, j, k) = unif(eng);//1.0; 
-                              
+                field_host(i, j, k) = unif(eng);  // 1.0;
             }
         }
     }
 
     Kokkos::deep_copy(field.getView(), field_host);
 
-    //Forward transform
+    // Forward transform
     fft->transform(1, field);
-    //Reverse transform
+    // Reverse transform
     fft->transform(-1, field);
 
-    
-    auto field_result = Kokkos::create_mirror_view_and_copy(
-                        Kokkos::HostSpace(), field.getView());
+    auto field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
 
     double max_error_local = 0.0;
     for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
         for (size_t j = nghost; j < view.extent(1) - nghost; ++j) {
             for (size_t k = nghost; k < view.extent(2) - nghost; ++k) {
-    
-                double error = std::fabs(field_host(i, j, k) - 
-                                         field_result(i, j, k)); 
+                double error = std::fabs(field_host(i, j, k) - field_result(i, j, k));
 
-                if(error > max_error_local) 
+                if (error > max_error_local)
                     max_error_local = error;
-                
-                std::cout << "Error: " 
-                          << std::setprecision(16) 
-                          << error << std::endl;
+
+                std::cout << "Error: " << std::setprecision(16) << error << std::endl;
             }
         }
     }
 
     double max_error = 0.0;
-    MPI_Reduce(&max_error_local, &max_error, 1, 
-                MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+    MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 
-    std::cout << "Rank:" << Ippl::Comm->rank() 
-              << "Max. error " << std::setprecision(16) << max_error_local 
-              << std::endl;
-    if(Ippl::Comm->rank() == 0) {
-        std::cout << "Overall Max. error " << std::setprecision(16) << max_error
-                  << std::endl;
+    std::cout << "Rank:" << Ippl::Comm->rank() << "Max. error " << std::setprecision(16)
+              << max_error_local << std::endl;
+    if (Ippl::Comm->rank() == 0) {
+        std::cout << "Overall Max. error " << std::setprecision(16) << max_error << std::endl;
     }
     return 0;
 }

@@ -27,16 +27,13 @@ Timer::Timer() {
     this->clear();
 }
 
-
 void Timer::clear() {
     elapsed_m = 0.0;
 }
 
-
 void Timer::start() {
     start_m = std::chrono::high_resolution_clock::now();
 }
-
 
 void Timer::stop() {
     Kokkos::fence();
@@ -46,7 +43,6 @@ void Timer::stop() {
 
     elapsed_m += elapsed.count();
 }
-
 
 double Timer::elapsed() {
     return elapsed_m;

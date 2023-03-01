@@ -15,10 +15,8 @@
  * GlobalComm.h - Global communication functions, such as reduce and scatter.
  */
 
-
 // forward declarations
 class Communicate;
-
 
 // Reduce equally-sized arrays across the machine, by sending to node
 // 0 and broadcasting back the result.  The arguments are two begin,end
@@ -32,13 +30,13 @@ class Communicate;
 // which do not require their own special getCommunicate/putMessage.  If you
 // need to reduce a complex quantity, use the scalar version of reduce.
 template <class InputIterator, class OutputIterator, class ReduceOp>
-bool reduce(Communicate&, InputIterator, InputIterator, OutputIterator,
-            const ReduceOp&, bool *IncludeVal = 0);
+bool reduce(
+    Communicate&, InputIterator, InputIterator, OutputIterator, const ReduceOp&,
+    bool* IncludeVal = 0);
 
 // same as above, but this uses the default Communicate object
 template <class InputIterator, class OutputIterator, class ReduceOp>
-bool reduce(InputIterator, InputIterator, OutputIterator,
-            const ReduceOp&, bool *IncludeVal = 0);
+bool reduce(InputIterator, InputIterator, OutputIterator, const ReduceOp&, bool* IncludeVal = 0);
 
 // scalar versions of reduce ... instead of iterators, these versions
 // expect a single quantity to reduce and a location to place the result.
@@ -49,37 +47,30 @@ bool reduce(Communicate& comm, T& input, T& output, const ReduceOp& op);
 template <class T, class ReduceOp>
 bool reduce(T& input, T& output, const ReduceOp& op);
 
-
 // masked scalar versions of reduce ... instead of iterators, these versions
 // expect a single quantity to reduce and a location to place the result.
 // The final argument indicates whether the LOCAL NODE should have it's
 // value included in the reduction (by default, this is true).
 // Return success of operation.
 template <class T, class ReduceOp>
-bool reduce_masked(Communicate& comm, T& input, T& output, const ReduceOp& op,
-                   bool IncludeVal);
+bool reduce_masked(Communicate& comm, T& input, T& output, const ReduceOp& op, bool IncludeVal);
 
 // same as above, but this uses the default Communicate object
 template <class T, class ReduceOp>
-bool reduce_masked(T& input, T& output, const ReduceOp& op,
-                   bool IncludeVal);
-
+bool reduce_masked(T& input, T& output, const ReduceOp& op, bool IncludeVal);
 
 // scalar versions of reduce ... instead of iterators, these versions
 // expect a single quantity to reduce and a location to place the result.
 template <class T, class ReduceOp>
-bool reduce(Communicate& comm, T& input, T& output, const ReduceOp& op)
-{
+bool reduce(Communicate& comm, T& input, T& output, const ReduceOp& op) {
     return reduce_masked(comm, input, output, op, true);
 }
 
 // same as above, but this uses the default Communicate object
 template <class T, class ReduceOp>
-bool reduce(T& input, T& output, const ReduceOp& op)
-{
+bool reduce(T& input, T& output, const ReduceOp& op) {
     return reduce_masked(input, output, op, true);
 }
-
 
 // Scatter the data in the given source container to all other nodes.
 // The data is read using the first two begin,end iterators, and written
@@ -91,22 +82,18 @@ bool reduce(T& input, T& output, const ReduceOp& op)
 // same node.
 // Return success of operation.
 template <class InputIterator, class RandomIterator, class ScatterOp>
-bool scatter(Communicate&, InputIterator, InputIterator, RandomIterator,
-             int *, int *, const ScatterOp&);
+bool scatter(
+    Communicate&, InputIterator, InputIterator, RandomIterator, int*, int*, const ScatterOp&);
 
 // same as above, but this uses the default Communicate object
 template <class InputIterator, class RandomIterator, class ScatterOp>
-bool scatter(InputIterator, InputIterator, RandomIterator,
-             int *, int *, const ScatterOp&);
-
-
+bool scatter(InputIterator, InputIterator, RandomIterator, int*, int*, const ScatterOp&);
 
 /* Gather the data in the given source container from all other nodes to a
  * specific node (default: 0).
  */
 template <typename T>
 void gather(const T* input, T* output, int count, int root = 0);
-
 
 /* Scatter the data from all other nodes to a
  * specific node (default: 0).
@@ -142,7 +129,6 @@ void allreduce(T* inout, int count, Op op);
 template <typename T, class Op>
 void allreduce(T& inout, int count, Op op);
 
-
 #include "Communicate/GlobalComm.hpp"
 
-#endif // GLOBAL_COMM_H
+#endif  // GLOBAL_COMM_H

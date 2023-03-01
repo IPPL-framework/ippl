@@ -26,19 +26,15 @@
 #ifndef AMR_PARTICLE_LEVEL_COUNTER_H
 #define AMR_PARTICLE_LEVEL_COUNTER_H
 
-#include <map>
-#include <numeric>
 #include <functional>
 #include <iterator>
+#include <map>
+#include <numeric>
 
 template <
-    class Key,
-    class T,
-    class Compare = std::less<Key>,
-    class Allocator = std::allocator<std::pair<const Key, T> >
-> class AmrParticleLevelCounter
-{
-    
+    class Key, class T, class Compare = std::less<Key>,
+    class Allocator = std::allocator<std::pair<const Key, T> > >
+class AmrParticleLevelCounter {
 public:
     typedef typename std::map<Key, T>::value_type value_type;
     typedef typename std::map<Key, T>::size_type size_type;
@@ -46,38 +42,57 @@ public:
     typedef typename std::map<Key, T>::const_iterator const_iterator;
 
 public:
-    
-    AmrParticleLevelCounter() : count_m() { }
-    
+    AmrParticleLevelCounter() : count_m() {
+    }
+
     /*!
      * Add more "particles" to that level
      * @param level where to add
      * @param nTimes to increment
      */
-    void increment(const Key& level, T nTimes = T(1)) { count_m[level] += nTimes; }
-    
+    void increment(const Key& level, T nTimes = T(1)) {
+        count_m[level] += nTimes;
+    }
+
     /*!
      * Add more "particles" to that level
      * @param level where to add
      * @param nTimes to decrement
      */
-    void decrement(const Key& level, T nTimes = T(1)) { increment(level, -nTimes); }
-    
-    T& operator[](T level) { return count_m[level]; }
-    
-    const T& operator[](T level) const { return count_m[level]; }
-    
-    size_type size() const { return count_m.size(); }
-    
-    bool empty() const { return count_m.empty(); }
-    
-    iterator begin() { return count_m.begin(); }
-    const_iterator begin() const { return count_m.begin(); }
-    
-    iterator end() { return count_m.end(); }
-    const_iterator end() const { return count_m.end(); }
-    
-    
+    void decrement(const Key& level, T nTimes = T(1)) {
+        increment(level, -nTimes);
+    }
+
+    T& operator[](T level) {
+        return count_m[level];
+    }
+
+    const T& operator[](T level) const {
+        return count_m[level];
+    }
+
+    size_type size() const {
+        return count_m.size();
+    }
+
+    bool empty() const {
+        return count_m.empty();
+    }
+
+    iterator begin() {
+        return count_m.begin();
+    }
+    const_iterator begin() const {
+        return count_m.begin();
+    }
+
+    iterator end() {
+        return count_m.end();
+    }
+    const_iterator end() const {
+        return count_m.end();
+    }
+
     /*!
      * Obtain the start of a level
      * @param level
@@ -85,26 +100,25 @@ public:
      */
     T begin(T level) const {
         auto end = count_m.begin();
-        
+
         // make sure to stay within container
         T size = count_m.size();
         std::advance(end, (level > size) ? size : level);
-        
-        return std::accumulate(count_m.begin(), end, 0,
-                               [](T sum, const value_type& value_pair) {
-                                   return sum + value_pair.second;
-                               });
+
+        return std::accumulate(count_m.begin(), end, 0, [](T sum, const value_type& value_pair) {
+            return sum + value_pair.second;
+        });
     }
-    
-    
+
     /*!
      * Obtain the end of a level
      * @param level
      * @returns the index of the local end of that level
      */
-    T end(T level) const { return begin(level + 1); }
-    
-    
+    T end(T level) const {
+        return begin(level + 1);
+    }
+
     /*!
      * Remove particle indices from the container
      * @param num of particles that will be removed
@@ -112,22 +126,20 @@ public:
      */
     void remove(T num, T begin) {
         int inum = int(num);
-        while ( inum > -1 ) {
+        while (inum > -1) {
             T level = which(begin + inum);
             --count_m[level];
             --inum;
         }
     }
 
-
     /*!
      * @returns the total particle count
      * (should be the same as AmrParticleBase::LocalNum)
      */
     T getLocalNumAllLevel() {
-        return begin( count_m.size() );
+        return begin(count_m.size());
     }
-
 
     /*!
      * @returns the total particle count up to the given level
@@ -140,7 +152,6 @@ public:
         }
         return sum;
     }
-
 
     /*!
      * @returns the total particle count at the given level
@@ -158,14 +169,13 @@ private:
      */
     T which(T idx) {
         T level = 0;
-        
-        while ( idx >= end(level) && level < size() )
+
+        while (idx >= end(level) && level < size())
             ++level;
-        
+
         return level;
     }
-        
-        
+
 private:
     /*!
      * Key represents level

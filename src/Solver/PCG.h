@@ -23,11 +23,10 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, typename OpRet,
-              class M=UniformCartesian<double, Dim>,
-              class C=typename M::DefaultCentering>
-    class PCG : public SolverAlgorithm<Tlhs, Trhs, Dim>
-    {
+    template <
+        typename Tlhs, typename Trhs, unsigned Dim, typename OpRet,
+        class M = UniformCartesian<double, Dim>, class C = typename M::DefaultCentering>
+    class PCG : public SolverAlgorithm<Tlhs, Trhs, Dim> {
     public:
         using Base = SolverAlgorithm<Tlhs, Trhs, Dim, M, C>;
         using typename Base::lhs_type;
@@ -54,17 +53,17 @@ namespace ippl {
         void operator()(lhs_type& lhs, rhs_type& rhs, const ParameterList& params) override {
             typedef typename lhs_type::type T;
 
-            typename lhs_type::Mesh_t mesh = lhs.get_mesh();
+            typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
             typename lhs_type::Layout_t layout = lhs.getLayout();
 
-            iterations_m = 0;
+            iterations_m            = 0;
             const int maxIterations = params.get<int>("max_iterations");
 
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
             lhs_type r(mesh, layout), d(mesh, layout);
 
-            using bc_type = BConds<T, lhs_type::dimension>;
+            using bc_type  = BConds<T, lhs_type::dimension>;
             bc_type lhsBCs = lhs.getFieldBC();
             bc_type bc;
 
@@ -77,11 +76,11 @@ namespace ippl {
                 } else if (bcType & CONSTANT_FACE) {
                     // If the LHS has constant BCs, the residue is zero on the BCs
                     // Bitwise AND with CONSTANT_FACE will succeed for ZeroFace or ConstantFace
-                    bc[i] = std::make_shared<ZeroFace<T, lhs_type::dimension>>(i);
+                    bc[i]            = std::make_shared<ZeroFace<T, lhs_type::dimension>>(i);
                     allFacesPeriodic = false;
                 } else {
-                    throw IpplException("PCG::operator()",
-                            "Only periodic or constant BCs for LHS supported.");
+                    throw IpplException(
+                        "PCG::operator()", "Only periodic or constant BCs for LHS supported.");
                     return;
                 }
             }
@@ -94,16 +93,16 @@ namespace ippl {
             // https://gitlab.psi.ch/OPAL/Libraries/ippl/-/issues/80
             d = r * 1;
 
-            T delta1 = innerProduct(r, r);
-            T rNorm = std::sqrt(delta1);
+            T delta1          = innerProduct(r, r);
+            T rNorm           = std::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
             lhs_type q(mesh, layout);
 
             while (iterations_m < maxIterations && rNorm > tolerance) {
-                q = op_m(d);
+                q       = op_m(d);
                 T alpha = delta1 / innerProduct(d, q);
-                lhs = lhs + alpha * d;
+                lhs     = lhs + alpha * d;
 
                 // The exact residue is given by
                 // r = rhs - op_m(lhs);
@@ -115,8 +114,8 @@ namespace ippl {
                 r = r - alpha * q;
 
                 T delta0 = delta1;
-                delta1 = innerProduct(r, r);
-                T beta = delta1 / delta0;
+                delta1   = innerProduct(r, r);
+                T beta   = delta1 / delta0;
 
                 rNorm = std::sqrt(delta1);
 
@@ -127,7 +126,7 @@ namespace ippl {
 
             if (allFacesPeriodic) {
                 T avg = lhs.getVolumeAverage();
-                lhs = lhs - avg;
+                lhs   = lhs - avg;
             }
         }
 
@@ -136,6 +135,6 @@ namespace ippl {
         int iterations_m = 0;
     };
 
-}
+}  // namespace ippl
 
 #endif

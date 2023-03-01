@@ -1,23 +1,20 @@
-#include "Ippl.h"
 #include <random>
+#include "Ippl.h"
 
-template<class PLayout>
-struct Bunch : public ippl::ParticleBase<PLayout>
-{
-
-    Bunch(PLayout& playout)
-    : ippl::ParticleBase<PLayout>(playout)
-    {
+template <class PLayout>
+struct Bunch : public ippl::ParticleBase<PLayout> {
+    Bunch(PLayout& playout) : ippl::ParticleBase<PLayout>(playout) {
         this->addAttribute(Q);
     }
 
-    ~Bunch() {}
+    ~Bunch() {
+    }
 
     typedef ippl::ParticleAttrib<double> charge_container_type;
     charge_container_type Q;
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
@@ -27,15 +24,15 @@ int main(int argc, char *argv[]) {
     ippl::Index I(pt);
     ippl::NDIndex<3> owned(I, I, I);
 
-    ippl::e_dim_tag allParallel[3];    // Specifies SERIAL, PARALLEL dims
-    for (unsigned int d=0; d<3; d++)
+    ippl::e_dim_tag allParallel[3];  // Specifies SERIAL, PARALLEL dims
+    for (unsigned int d = 0; d < 3; d++)
         allParallel[d] = ippl::PARALLEL;
 
     // all parallel layout, standard domain, normal axis order
     ippl::FieldLayout<3> layout(owned, allParallel);
 
-    double dx = 1.0 / double(pt);
-    ippl::Vector<double, 3> hx = {dx, dx, dx};
+    double dx                      = 1.0 / double(pt);
+    ippl::Vector<double, 3> hx     = {dx, dx, dx};
     ippl::Vector<double, 3> origin = {0, 0, 0};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
@@ -50,11 +47,11 @@ int main(int argc, char *argv[]) {
     std::uniform_real_distribution<double> unif(0, 1);
 
     typename bunch_type::particle_position_type::HostMirror R_host = bunch.R.getHostMirror();
-    typename bunch_type::charge_container_type::HostMirror Q_host = bunch.Q.getHostMirror();
-    for(int i = 0; i < n; ++i) {
+    typename bunch_type::charge_container_type::HostMirror Q_host  = bunch.Q.getHostMirror();
+    for (int i = 0; i < n; ++i) {
         ippl::Vector<double, 3> r = {unif(eng), unif(eng), unif(eng)};
-        R_host(i) = r;
-        Q_host(i) = 0.0;
+        R_host(i)                 = r;
+        Q_host(i)                 = 0.0;
     }
     Kokkos::deep_copy(bunch.R.getView(), R_host);
     Kokkos::deep_copy(bunch.Q.getView(), Q_host);
@@ -69,7 +66,6 @@ int main(int argc, char *argv[]) {
     field.initialize(mesh, layout);
 
     field = 1.0;
-
 
     gather(bunch.Q, field, bunch.R);
 

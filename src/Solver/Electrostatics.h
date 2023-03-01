@@ -23,41 +23,31 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim,
-              class M=UniformCartesian<double, Dim>,
-              class C=typename M::DefaultCentering>
-    class Electrostatics : public Solver<Tlhs, Trhs, Dim, M, C>
-    {
+    template <
+        typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
+        class C = typename M::DefaultCentering>
+    class Electrostatics : public Solver<Tlhs, Trhs, Dim, M, C> {
     public:
         using grad_type = Field<Vector<Tlhs, Dim>, Dim, M, C>;
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
+        using lhs_type  = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
+        using rhs_type  = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
 
         /*!
          * Represents the types of fields that should
          * be output by the solver
          */
-        enum OutputType {
-            SOL             = 0b01,
-            GRAD            = 0b10,
-            SOL_AND_GRAD    = 0b11
-        };
+        enum OutputType { SOL = 0b01, GRAD = 0b10, SOL_AND_GRAD = 0b11 };
 
         /*!
          * Default constructor for electrostatic solvers;
          * desired output type defaults to solution only
          */
-        Electrostatics()
-            : Solver<Tlhs, Trhs, Dim, M, C>()
-            , grad_mp(nullptr)
-        {
+        Electrostatics() : Solver<Tlhs, Trhs, Dim, M, C>(), grad_mp(nullptr) {
             setDefaultParameters();
         }
 
         Electrostatics(lhs_type& lhs, rhs_type& rhs)
-            : Solver<Tlhs, Trhs, Dim, M, C>(lhs, rhs)
-            , grad_mp(nullptr)
-        {
+            : Solver<Tlhs, Trhs, Dim, M, C>(lhs, rhs), grad_mp(nullptr) {
             setDefaultParameters();
         }
 
@@ -66,7 +56,9 @@ namespace ippl {
          * should be stored
          * @param grad Reference to field in which to store the gradient
          */
-        void setGradient(grad_type& grad) { grad_mp = &grad; }
+        void setGradient(grad_type& grad) {
+            grad_mp = &grad;
+        }
 
         /*!
          * Solve the electrostatics problem described by
@@ -74,7 +66,8 @@ namespace ippl {
          */
         virtual void solve() = 0;
 
-        virtual ~Electrostatics() { }
+        virtual ~Electrostatics() {
+        }
 
     protected:
         grad_type* grad_mp;
@@ -83,6 +76,6 @@ namespace ippl {
             this->params_m.add("output_type", SOL);
         }
     };
-}
+}  // namespace ippl
 
 #endif

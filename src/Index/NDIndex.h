@@ -29,15 +29,14 @@ namespace ippl {
      * @tparam Dim the number of index dimensions
      */
     template <unsigned Dim>
-    class NDIndex
-    {
+    class NDIndex {
     public:
         KOKKOS_FUNCTION
-        NDIndex() {}
+        NDIndex() {
+        }
 
         template <class... Args>
-        KOKKOS_FUNCTION
-        NDIndex(const Args&... args);
+        KOKKOS_FUNCTION NDIndex(const Args&... args);
 
         /*!
          * @returns a reference to any of the Indexes.
@@ -75,7 +74,6 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION
         NDIndex<Dim> grow(int ncells, unsigned int dim) const;
 
-
         KOKKOS_INLINE_FUNCTION
         bool touches(const NDIndex<Dim>&) const;
 
@@ -104,7 +102,7 @@ namespace ippl {
         //! Array of indices
         Index indices_m[Dim];
     };
-}
+}  // namespace ippl
 
 #include "Index/NDIndex.hpp"
 

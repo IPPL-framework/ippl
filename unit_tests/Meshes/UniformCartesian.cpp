@@ -21,20 +21,18 @@
 #include "gtest/gtest.h"
 
 class UniformCartesianTest : public ::testing::Test {
-
 public:
-    UniformCartesianTest()
-    { }
+    UniformCartesianTest() {
+    }
 };
-
 
 TEST_F(UniformCartesianTest, Constructor1D) {
     int pt = 10;
     ippl::Index I(pt);
     ippl::NDIndex<1> owned(I);
 
-    double dx = 1.0 / double(pt);
-    ippl::Vector<double, 1> hx = {dx};
+    double dx                      = 1.0 / double(pt);
+    ippl::Vector<double, 1> hx     = {dx};
     ippl::Vector<double, 1> origin = {0};
     ippl::UniformCartesian<double, 1> mesh(owned, hx, origin);
 
@@ -44,14 +42,13 @@ TEST_F(UniformCartesianTest, Constructor1D) {
     ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
 }
 
-
 TEST_F(UniformCartesianTest, Constructor2D) {
     int pt = 10;
     ippl::Index I(pt);
     ippl::NDIndex<2> owned(I, I);
 
-    double dx = 1.0 / double(pt);
-    ippl::Vector<double, 2> hx = {dx, dx};
+    double dx                      = 1.0 / double(pt);
+    ippl::Vector<double, 2> hx     = {dx, dx};
     ippl::Vector<double, 2> origin = {0, 0};
     ippl::UniformCartesian<double, 2> mesh(owned, hx, origin);
 
@@ -61,14 +58,13 @@ TEST_F(UniformCartesianTest, Constructor2D) {
     ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
 }
 
-
 TEST_F(UniformCartesianTest, Constructor3D) {
     int pt = 10;
     ippl::Index I(pt);
     ippl::NDIndex<3> owned(I, I, I);
 
-    double dx = 1.0 / double(pt);
-    ippl::Vector<double, 3> hx = {dx, dx, dx};
+    double dx                      = 1.0 / double(pt);
+    ippl::Vector<double, 3> hx     = {dx, dx, dx};
     ippl::Vector<double, 3> origin = {0, 0, 0};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
@@ -83,8 +79,8 @@ TEST_F(UniformCartesianTest, Initialize1D) {
     ippl::Index I(pt);
     ippl::NDIndex<1> owned(I);
 
-    double dx = 1.0 / double(pt);
-    ippl::Vector<double, 1> hx = {dx};
+    double dx                      = 1.0 / double(pt);
+    ippl::Vector<double, 1> hx     = {dx};
     ippl::Vector<double, 1> origin = {0};
     ippl::UniformCartesian<double, 1> mesh;
 
@@ -96,14 +92,13 @@ TEST_F(UniformCartesianTest, Initialize1D) {
     ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
 }
 
-
 TEST_F(UniformCartesianTest, Initialize2D) {
     int pt = 10;
     ippl::Index I(pt);
     ippl::NDIndex<2> owned(I, I);
 
-    double dx = 1.0 / double(pt);
-    ippl::Vector<double, 2> hx = {dx, dx};
+    double dx                      = 1.0 / double(pt);
+    ippl::Vector<double, 2> hx     = {dx, dx};
     ippl::Vector<double, 2> origin = {0, 0};
     ippl::UniformCartesian<double, 2> mesh;
 
@@ -115,14 +110,13 @@ TEST_F(UniformCartesianTest, Initialize2D) {
     ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
 }
 
-
 TEST_F(UniformCartesianTest, Initialize3D) {
     int pt = 10;
     ippl::Index I(pt);
     ippl::NDIndex<3> owned(I, I, I);
 
-    double dx = 1.0 / double(pt);
-    ippl::Vector<double, 3> hx = {dx, dx, dx};
+    double dx                      = 1.0 / double(pt);
+    ippl::Vector<double, 3> hx     = {dx, dx, dx};
     ippl::Vector<double, 3> origin = {0, 0, 0};
     ippl::UniformCartesian<double, 3> mesh;
 
@@ -134,9 +128,8 @@ TEST_F(UniformCartesianTest, Initialize3D) {
     ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
 }
 
-
-int main(int argc, char *argv[]) {
-    Ippl ippl(argc,argv);
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

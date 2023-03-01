@@ -32,21 +32,18 @@ const char* Cell::CenteringName = "Cell";
 const char* Vert::CenteringName = "Vert";
 const char* Edge::CenteringName = "Edge";
 
-const char* Centering::CenteringEnum_Names[] = {"CELL  ","VERTEX","EDGE  "};
+const char* Centering::CenteringEnum_Names[] = {"CELL  ", "VERTEX", "EDGE  "};
 
-//CC chokes static void Cell::print_Centerings(ostream& out)
-void Cell::print_Centerings(std::ostream& out)
-{
-  out << Cell::CenteringName << std::endl;
+// CC chokes static void Cell::print_Centerings(ostream& out)
+void Cell::print_Centerings(std::ostream& out) {
+    out << Cell::CenteringName << std::endl;
 }
-//CC chokes static void Vert::print_Centerings(ostream& out)
-void Vert::print_Centerings(std::ostream& out)
-{
-  out << Vert::CenteringName << std::endl;
+// CC chokes static void Vert::print_Centerings(ostream& out)
+void Vert::print_Centerings(std::ostream& out) {
+    out << Vert::CenteringName << std::endl;
 }
 
-void Edge::print_Centerings(std::ostream& out)
-{
+void Edge::print_Centerings(std::ostream& out) {
     out << Edge::CenteringName << std::endl;
 }
 

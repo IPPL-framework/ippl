@@ -25,6 +25,6 @@ namespace ippl {
     namespace detail {
         typedef std::size_t size_type;
     }
-}
+}  // namespace ippl
 
 #endif

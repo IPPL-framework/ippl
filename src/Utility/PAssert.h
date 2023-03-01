@@ -2,7 +2,7 @@
  *
  * The IPPL Framework
  *
-  ***************************************************************************/
+ ***************************************************************************/
 
 #ifndef PASSERT_H
 #define PASSERT_H
@@ -26,9 +26,14 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-template<bool B> struct IpplCTAssert {};
+template <bool B>
+struct IpplCTAssert {};
 
-template<> struct IpplCTAssert<true> { static void test() {} };
+template <>
+struct IpplCTAssert<true> {
+    static void test() {
+    }
+};
 
 #if defined(NOCTAssert)
 #define CTAssert(c)
@@ -46,23 +51,27 @@ template<> struct IpplCTAssert<true> { static void test() {} };
 // classes for which we don't have implementations...
 //===========================================================================//
 
-class assertion: public std::runtime_error
-{
-    char *msg;
+class assertion : public std::runtime_error {
+    char* msg;
+
 public:
-    assertion( const char *cond, const char *file, int line );
-    
-    assertion( const char *m );
-    
-    assertion( const assertion& a );
-    
-    ~assertion() throw() { delete[] msg; }
-    
-    assertion& operator=( const assertion& a );
+    assertion(const char* cond, const char* file, int line);
+
+    assertion(const char* m);
+
+    assertion(const assertion& a);
+
+    ~assertion() throw() {
+        delete[] msg;
+    }
+
+    assertion& operator=(const assertion& a);
 
     using std::runtime_error::what;
-    
-    virtual const char* what() { return msg; };
+
+    virtual const char* what() {
+        return msg;
+    };
 };
 
 //---------------------------------------------------------------------------//
@@ -72,10 +81,10 @@ public:
 //---------------------------------------------------------------------------//
 
 // These are the functions that will be called in the assert macros.
-void toss_cookies( const char *cond, const char *file, int line );
+void toss_cookies(const char* cond, const char* file, int line);
 template <class S, class T>
-void toss_cookies( const char *cond, const char *astr, const char *bstr, S a, T b, const char *file, int line) {
-
+void toss_cookies(
+    const char* cond, const char* astr, const char* bstr, S a, T b, const char* file, int line) {
     std::string what = "Assertion '" + std::string(cond) + "' failed. \n";
     what += std::string(astr) + " = " + std::to_string(a) + ", ";
     what += std::string(bstr) + " = " + std::to_string(b) + "\n";
@@ -84,7 +93,7 @@ void toss_cookies( const char *cond, const char *astr, const char *bstr, S a, T 
 
     throw std::runtime_error(what);
 }
-void insist( const char *cond, const char *msg, const char *file, int line );
+void insist(const char* cond, const char* msg, const char* file, int line);
 
 //---------------------------------------------------------------------------//
 // The PAssert macro is intended to be used for validating preconditions
@@ -104,8 +113,12 @@ void insist( const char *cond, const char *msg, const char *file, int line );
 #define PAssert_GT(a, b)
 #define PAssert_GE(a, b)
 #else
-#define PAssert(c) if (!(c)) toss_cookies( #c, __FILE__, __LINE__ );
-#define PAssert_CMP(cmp, a, b) if (!(cmp)) toss_cookies(#cmp, #a, #b, a, b, __FILE__, __LINE__);
+#define PAssert(c) \
+    if (!(c))      \
+        toss_cookies(#c, __FILE__, __LINE__);
+#define PAssert_CMP(cmp, a, b) \
+    if (!(cmp))                \
+        toss_cookies(#cmp, #a, #b, a, b, __FILE__, __LINE__);
 #define PAssert_EQ(a, b) PAssert_CMP(a == b, a, b)
 #define PAssert_NE(a, b) PAssert_CMP(a != b, a, b)
 #define PAssert_LT(a, b) PAssert_CMP(a < b, a, b)
@@ -122,7 +135,9 @@ void insist( const char *cond, const char *msg, const char *file, int line );
 // corrected, providing a corrective hint.
 //---------------------------------------------------------------------------//
 
-#define PInsist(c,m) if (!(c)) insist( #c, m, __FILE__, __LINE__ );
+#define PInsist(c, m) \
+    if (!(c))         \
+        insist(#c, m, __FILE__, __LINE__);
 
 //---------------------------------------------------------------------------//
 // NOTE:  We provide a way to eliminate assertions, but not insistings.  The
@@ -135,7 +150,7 @@ void insist( const char *cond, const char *msg, const char *file, int line );
 // you want checked even in a production code.
 //---------------------------------------------------------------------------//
 
-#endif // PASSERT_H
+#endif  // PASSERT_H
 
 // vi: set et ts=4 sw=4 sts=4:
 // Local Variables:

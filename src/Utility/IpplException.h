@@ -4,12 +4,10 @@
 #include <string>
 
 class IpplException {
-
 public:
-
-    IpplException(const std::string &meth, const std::string &descr) {
+    IpplException(const std::string& meth, const std::string& descr) {
         descr_ = descr;
-        meth_ = meth;
+        meth_  = meth;
     }
 
     virtual const char* what() const throw() {
@@ -21,10 +19,8 @@ public:
     }
 
 private:
-
     std::string descr_;
     std::string meth_;
-
 };
 
 #endif

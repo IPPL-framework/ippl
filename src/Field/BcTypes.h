@@ -1,18 +1,18 @@
-//   This file contains the abstract base class for 
+//   This file contains the abstract base class for
 //   field boundary conditions and other child classes
-//   which represent specific BCs. At the moment the 
+//   which represent specific BCs. At the moment the
 //   following field BCs are supported
-//   
+//
 //   1. Periodic BC
 //   2. Zero BC
 //   3. Specifying a constant BC
 //   4. No BC (default option)
 //   5. Constant extrapolation BC
-//   Only cell-centered field BCs are implemented 
+//   Only cell-centered field BCs are implemented
 //   at the moment.
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
-// Matthias Frey, University of St Andrews, 
+// Matthias Frey, University of St Andrews,
 // St Andrews, Scotland
 // All rights reserved
 //
@@ -29,15 +29,16 @@
 #ifndef IPPL_FIELD_BC_TYPES_H
 #define IPPL_FIELD_BC_TYPES_H
 
-#include "Index/NDIndex.h"
-#include "Types/ViewTypes.h"
-#include "Types/IpplTypes.h"
 #include "Communicate/Archive.h"
 #include "FieldLayout/FieldLayout.h"
+#include "Index/NDIndex.h"
 #include "Meshes/UniformCartesian.h"
+#include "Types/IpplTypes.h"
+#include "Types/ViewTypes.h"
 
 namespace ippl {
-    template<typename T, unsigned Dim, class Mesh, class Cell> class Field;
+    template <typename T, unsigned Dim, class Mesh, class Cell>
+    class Field;
 
     /*
      * Enum type to identify different kinds of
@@ -55,20 +56,18 @@ namespace ippl {
     };
 
     namespace detail {
-        template<typename T, unsigned Dim, class Mesh, class Cell> class BCondBase;
+        template <typename T, unsigned Dim, class Mesh, class Cell>
+        class BCondBase;
 
-        template<typename T, unsigned Dim, class Mesh, class Cell>
+        template <typename T, unsigned Dim, class Mesh, class Cell>
         std::ostream& operator<<(std::ostream&, const BCondBase<T, Dim, Mesh, Cell>&);
 
-
-        template<typename T, unsigned Dim, class Mesh, class Cell>
-        class BCondBase
-        {
+        template <typename T, unsigned Dim, class Mesh, class Cell>
+        class BCondBase {
         public:
-
-            using Field_t = Field<T, Dim, Mesh, Cell>;
+            using Field_t  = Field<T, Dim, Mesh, Cell>;
             using Layout_t = FieldLayout<Dim>;
-            
+
             // Constructor takes:
             // face: the face to apply the boundary condition on.
             // i : what component of T to apply the boundary condition to.
@@ -77,17 +76,23 @@ namespace ippl {
 
             virtual ~BCondBase() = default;
 
-            virtual FieldBC getBCType() const { return NO_FACE; }
+            virtual FieldBC getBCType() const {
+                return NO_FACE;
+            }
 
             virtual void findBCNeighbors(Field<T, Dim, Mesh, Cell>& field) = 0;
-            virtual void apply(Field<T, Dim, Mesh, Cell>& field) = 0;
-            virtual void write(std::ostream&) const = 0;
+            virtual void apply(Field<T, Dim, Mesh, Cell>& field)           = 0;
+            virtual void write(std::ostream&) const                        = 0;
 
             // Return face on which BC applies
-            unsigned int getFace() const { return face_m; }
+            unsigned int getFace() const {
+                return face_m;
+            }
 
             // Returns whether or not this BC changes physical cells.
-            bool changesPhysicalCells() const { return changePhysical_m; }
+            bool changesPhysicalCells() const {
+                return changePhysical_m;
+            }
 
         protected:
             // What face to apply the boundary condition to.
@@ -97,117 +102,112 @@ namespace ippl {
             bool changePhysical_m;
         };
 
-    }
-    
-    template<typename T,
-             unsigned Dim,
-             class Mesh = UniformCartesian<double, Dim>,
-             class Cell = typename Mesh::DefaultCentering>
-    class ExtrapolateFace : public detail::BCondBase<T, Dim, Mesh, Cell>
-    {
+    }  // namespace detail
+
+    template <
+        typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
+        class Cell = typename Mesh::DefaultCentering>
+    class ExtrapolateFace : public detail::BCondBase<T, Dim, Mesh, Cell> {
     public:
         // Constructor takes zero, one, or two int's specifying components of
         // multicomponent types like Vector this BC applies to.
         // Zero int's specified means apply to all components; one means apply to
         // component (i), and two means apply to component (i,j),
         using base_type = detail::BCondBase<T, Dim, Mesh, Cell>;
-        using Field_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
-        using Layout_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Layout_t;
+        using Field_t   = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
+        using Layout_t  = typename detail::BCondBase<T, Dim, Mesh, Cell>::Layout_t;
 
-        ExtrapolateFace(unsigned face,
-                        T offset,
-                        T slope)
-        : base_type(face)
-        , offset_m(offset)
-        , slope_m(slope)
-        {}
+        ExtrapolateFace(unsigned face, T offset, T slope)
+            : base_type(face), offset_m(offset), slope_m(slope) {
+        }
 
         virtual ~ExtrapolateFace() = default;
 
-        virtual FieldBC getBCType() const { return EXTRAPOLATE_FACE; }
+        virtual FieldBC getBCType() const {
+            return EXTRAPOLATE_FACE;
+        }
 
-        virtual void findBCNeighbors(Field_t& /*field*/) {}
+        virtual void findBCNeighbors(Field_t& /*field*/) {
+        }
         virtual void apply(Field_t& field);
 
         virtual void write(std::ostream& out) const;
 
-        const T& getOffset() const { return offset_m; }
-        const T& getSlope() const { return slope_m; }
+        const T& getOffset() const {
+            return offset_m;
+        }
+        const T& getSlope() const {
+            return slope_m;
+        }
 
     protected:
         T offset_m;
         T slope_m;
     };
 
-    template<typename T,
-             unsigned Dim,
-             class Mesh = UniformCartesian<double, Dim>,
-             class Cell = typename Mesh::DefaultCentering>
-    class NoBcFace : public detail::BCondBase<T, Dim, Mesh, Cell>
-    {
-        public:
-            
-            using Field_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
-            NoBcFace(int face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
+    template <
+        typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
+        class Cell = typename Mesh::DefaultCentering>
+    class NoBcFace : public detail::BCondBase<T, Dim, Mesh, Cell> {
+    public:
+        using Field_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
+        NoBcFace(int face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {
+        }
 
-            virtual void findBCNeighbors(Field_t& /*field*/) {}
-            virtual void apply(Field_t& /*field*/) {}
+        virtual void findBCNeighbors(Field_t& /*field*/) {
+        }
+        virtual void apply(Field_t& /*field*/) {
+        }
 
-            virtual void write(std::ostream& out) const;
-        
+        virtual void write(std::ostream& out) const;
     };
 
-
-    template<typename T,
-             unsigned Dim,
-             class Mesh = UniformCartesian<double, Dim>,
-             class Cell = typename Mesh::DefaultCentering>
-    class ConstantFace : public ExtrapolateFace<T, Dim, Mesh, Cell>
-    {
+    template <
+        typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
+        class Cell = typename Mesh::DefaultCentering>
+    class ConstantFace : public ExtrapolateFace<T, Dim, Mesh, Cell> {
     public:
         ConstantFace(unsigned int face, T constant)
-        : ExtrapolateFace<T, Dim, Mesh, Cell>(face, constant, 0)
-        {}
+            : ExtrapolateFace<T, Dim, Mesh, Cell>(face, constant, 0) {
+        }
 
-        virtual FieldBC getBCType() const { return CONSTANT_FACE; }
+        virtual FieldBC getBCType() const {
+            return CONSTANT_FACE;
+        }
 
         virtual void write(std::ostream& out) const;
     };
 
-
-    template<typename T,
-             unsigned Dim,
-             class Mesh = UniformCartesian<double, Dim>,
-             class Cell = typename Mesh::DefaultCentering>
-    class ZeroFace : public ConstantFace<T, Dim, Mesh, Cell>
-    {
+    template <
+        typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
+        class Cell = typename Mesh::DefaultCentering>
+    class ZeroFace : public ConstantFace<T, Dim, Mesh, Cell> {
     public:
-        ZeroFace(unsigned face)
-        : ConstantFace<T, Dim, Mesh, Cell>(face, 0.0)
-        {}
+        ZeroFace(unsigned face) : ConstantFace<T, Dim, Mesh, Cell>(face, 0.0) {
+        }
 
-        virtual FieldBC getBCType() const { return ZERO_FACE; }
+        virtual FieldBC getBCType() const {
+            return ZERO_FACE;
+        }
 
         virtual void write(std::ostream& out) const;
     };
 
-
-    template<typename T,
-             unsigned Dim,
-             class Mesh = UniformCartesian<double, Dim>,
-             class Cell = typename Mesh::DefaultCentering>
-    class PeriodicFace : public detail::BCondBase<T, Dim, Mesh, Cell>
-    {
+    template <
+        typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
+        class Cell = typename Mesh::DefaultCentering>
+    class PeriodicFace : public detail::BCondBase<T, Dim, Mesh, Cell> {
     public:
         using face_neighbor_type = std::array<std::vector<int>, 2 * Dim>;
-        using Field_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
-        using Layout_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Layout_t;
-        
-        PeriodicFace(unsigned face)
-        : detail::BCondBase<T, Dim, Mesh, Cell>(face)
-        { }
+        using Field_t            = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
+        using Layout_t           = typename detail::BCondBase<T, Dim, Mesh, Cell>::Layout_t;
 
-        virtual FieldBC getBCType() const { return PERIODIC_FACE; }
+        PeriodicFace(unsigned face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {
+        }
+
+        virtual FieldBC getBCType() const {
+            return PERIODIC_FACE;
+        }
 
         virtual void findBCNeighbors(Field_t& field);
         virtual void apply(Field_t& field);
@@ -218,8 +218,7 @@ namespace ippl {
         face_neighbor_type faceNeighbors_m;
         detail::FieldBufferData<T> haloData_m;
     };
-}
-
+}  // namespace ippl
 
 #include "Field/BcTypes.hpp"
 

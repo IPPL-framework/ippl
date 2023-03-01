@@ -19,16 +19,15 @@
 #ifndef IPPL_SOLVER_H
 #define IPPL_SOLVER_H
 
-#include "Utility/ParameterList.h"
 #include "Field/Field.h"
+#include "Utility/ParameterList.h"
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim,
-              class M=UniformCartesian<double, Dim>,
-              class C=typename M::DefaultCentering>
-    class Solver
-    {
+    template <
+        typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
+        class C = typename M::DefaultCentering>
+    class Solver {
     public:
         using lhs_type = Field<Tlhs, Dim, M, C>;
         using rhs_type = Field<Trhs, Dim, M, C>;
@@ -36,7 +35,8 @@ namespace ippl {
         /*!
          * Default constructor
          */
-        Solver() { }
+        Solver() {
+        }
 
         /*!
          * Convenience constructor with LHS and RHS parameters
@@ -62,7 +62,8 @@ namespace ippl {
         /*!
          * Updates all solver parameters based on values in another parameter set
          * @param params Parameter list with updated values
-         * @throw IpplException Fails if the provided parameter list includes keys not already present
+         * @throw IpplException Fails if the provided parameter list includes keys not already
+         * present
          */
         void updateParameters(const ParameterList& params) {
             params_m.update(params);
@@ -81,13 +82,17 @@ namespace ippl {
          * Set the problem LHS
          * @param lhs Reference to problem LHS field
          */
-        void setLhs(lhs_type& lhs) { lhs_mp = &lhs; }
+        void setLhs(lhs_type& lhs) {
+            lhs_mp = &lhs;
+        }
 
         /*!
          * Set the problem RHS
          * @param rhs Reference to problem RHS field
          */
-        virtual void setRhs(rhs_type& rhs) { rhs_mp = &rhs; }
+        virtual void setRhs(rhs_type& rhs) {
+            rhs_mp = &rhs;
+        }
 
     protected:
         ParameterList params_m;
@@ -99,8 +104,9 @@ namespace ippl {
          * Utility function for initializing a solver's default
          * parameters (to be overridden for each base class)
          */
-        virtual void setDefaultParameters() {}
+        virtual void setDefaultParameters() {
+        }
     };
-}
+}  // namespace ippl
 
 #endif

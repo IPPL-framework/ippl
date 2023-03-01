@@ -30,17 +30,18 @@ namespace ippl {
      * @tparam T data type
      * @tparam Dim number of PRegions
      */
-    class NDRegion
-    {
+    class NDRegion {
     public:
         /*!
          * Create an empty NDregion
          */
         KOKKOS_FUNCTION
-        NDRegion() { }
+        NDRegion() {
+        }
 
         KOKKOS_FUNCTION
-        ~NDRegion() { }
+        ~NDRegion() {
+        }
 
         /*!
          * Create a NDregion from PRegions
@@ -50,8 +51,7 @@ namespace ippl {
          * https://stackoverflow.com/questions/16478089/converting-variadic-template-pack-into-stdinitializer-list
          */
         template <class... Args>
-        KOKKOS_FUNCTION
-        NDRegion(const Args&... args);
+        KOKKOS_FUNCTION NDRegion(const Args&... args);
 
         KOKKOS_INLINE_FUNCTION
         NDRegion(const NDRegion<T, Dim>& nr);
@@ -87,7 +87,7 @@ namespace ippl {
         //! Array of PRegions
         PRegion<T> regions_m[Dim];
     };
-}
+}  // namespace ippl
 
 #include "Region/NDRegion.hpp"
 

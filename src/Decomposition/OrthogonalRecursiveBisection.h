@@ -23,11 +23,11 @@
 #ifndef IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
 #define IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
 
-#include "Particle/ParticleSpatialLayout.h"
-#include "Particle/ParticleAttrib.h"
-#include "Index/NDIndex.h"
-#include "Index/Index.h"
 #include "FieldLayout/FieldLayout.h"
+#include "Index/Index.h"
+#include "Index/NDIndex.h"
+#include "Particle/ParticleAttrib.h"
+#include "Particle/ParticleSpatialLayout.h"
 #include "Region/NDRegion.h"
 
 namespace ippl {
@@ -37,13 +37,13 @@ namespace ippl {
      * @tparam Dim dimension
      * @tparam M mesh
      */
-    template<class T, unsigned Dim, class M>
+    template <class T, unsigned Dim, class M>
     class OrthogonalRecursiveBisection {
     public:
         using view_type = typename detail::ViewType<T, Dim>::view_type;
 
         // Weight for reduction
-        Field<T,Dim> bf_m;
+        Field<T, Dim> bf_m;
 
         /*!
          * Initialize member field with mesh and field layout
@@ -51,8 +51,8 @@ namespace ippl {
          * @param mesh Mesh
          * @param rho Density field
          */
-        void initialize(FieldLayout<Dim>& fl, UniformCartesian<T,Dim>& mesh,
-                        const Field<T,Dim>& rho);
+        void initialize(
+            FieldLayout<Dim>& fl, UniformCartesian<T, Dim>& mesh, const Field<T, Dim>& rho);
 
         /*!
          * Performs scatter operation of particle positions in field (weights) and
@@ -61,9 +61,9 @@ namespace ippl {
          * @param fl FieldLayout
          * @param isFirstRepartition boolean which tells whether to scatter or not
          */
-        bool binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R,
-                               FieldLayout<Dim>& fl,
-                               const bool& isFirstRepartition);
+        bool binaryRepartition(
+            const ParticleAttrib<Vector<T, Dim>>& R, FieldLayout<Dim>& fl,
+            const bool& isFirstRepartition);
 
         /*!
          * Find cutting axis as the longest axis of the field layout.
@@ -78,8 +78,7 @@ namespace ippl {
          * @param dom Domain to reduce
          * @param cutAxis Index of cut axis
          */
-        void perpendicularReduction(std::vector<T>& res, unsigned int cutAxis,
-                                                         NDIndex<Dim>& dom);
+        void perpendicularReduction(std::vector<T>& res, unsigned int cutAxis, NDIndex<Dim>& dom);
 
         /*!
          * Find median of array
@@ -96,21 +95,20 @@ namespace ippl {
          * @param cutAxis Index of cut axis
          * @param median Median
          */
-        void cutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs,
-						           int it, int cutAxis, int median);
+        void cutDomain(
+            std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis,
+            int median);
 
         /*!
          * Scattering of particle positions in field using a CIC method
          * @param r Weights
          */
-        void scatterR(const ParticleAttrib<Vector<T,Dim>>& r);
+        void scatterR(const ParticleAttrib<Vector<T, Dim>>& r);
 
-    }; // class
+    };  // class
 
-} // namespace
-
+}  // namespace ippl
 
 #include "Decomposition/OrthogonalRecursiveBisection.hpp"
 
-#endif // IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
-
+#endif  // IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H

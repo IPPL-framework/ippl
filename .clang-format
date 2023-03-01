@@ -1,0 +1,16 @@
+Language:        Cpp
+BasedOnStyle:  Google
+AccessModifierOffset: -4
+AlignAfterOpenBracket: AlwaysBreak
+AlignConsecutiveAssignments: true
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Empty
+AllowShortLoopsOnASingleLine: false
+BreakBeforeBinaryOperators: NonAssignment
+ColumnLimit:     100
+DerivePointerAlignment: false
+IndentWidth:     4
+IncludeBlocks: Preserve
+IndentGotoLabels: false
+NamespaceIndentation: All 

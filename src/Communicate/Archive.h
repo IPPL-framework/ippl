@@ -26,8 +26,8 @@
 #define IPPL_ARCHIVE_H
 
 #include "Types/IpplTypes.h"
-#include "Types/ViewTypes.h"
 #include "Types/Vector.h"
+#include "Types/ViewTypes.h"
 
 namespace ippl {
     namespace detail {
@@ -38,9 +38,8 @@ namespace ippl {
          */
         template <class... Properties>
         class Archive {
-
         public:
-            using buffer_type = typename ViewType<char, 1, Properties...>::view_type;
+            using buffer_type  = typename ViewType<char, 1, Properties...>::view_type;
             using pointer_type = typename buffer_type::pointer_type;
 
             Archive(size_type size = 0);
@@ -88,7 +87,6 @@ namespace ippl {
                 return buffer_m.data();
             }
 
-
             /*!
              * @returns the size of the buffer
              */
@@ -107,7 +105,7 @@ namespace ippl {
             void reallocBuffer(size_type size) {
                 Kokkos::realloc(buffer_m, size);
             }
-            
+
             void resetWritePos() {
                 writepos_m = 0;
             }
@@ -125,8 +123,8 @@ namespace ippl {
             //! serialized data
             buffer_type buffer_m;
         };
-    }
-}
+    }  // namespace detail
+}  // namespace ippl
 
 #include "Archive.hpp"
 

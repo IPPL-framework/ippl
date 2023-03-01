@@ -21,15 +21,12 @@
 #include "gtest/gtest.h"
 
 class BareFieldTest : public ::testing::Test {
-
 public:
     static constexpr size_t dim = 3;
     typedef ippl::BareField<double, dim> field_type;
     typedef ippl::BareField<ippl::Vector<double, 3>, dim> vfield_type;
 
-    BareFieldTest()
-    : nPoints(8)
-    {
+    BareFieldTest() : nPoints(8) {
         setup();
     }
 
@@ -37,12 +34,12 @@ public:
         ippl::Index I(nPoints);
         ippl::NDIndex<dim> owned(I, I, I);
 
-        ippl::e_dim_tag domDec[dim];    // Specifies SERIAL, PARALLEL dims
+        ippl::e_dim_tag domDec[dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++)
             domDec[d] = ippl::PARALLEL;
 
         ippl::FieldLayout<dim> layout(owned, domDec);
-        field = std::make_unique<field_type>(layout);
+        field  = std::make_unique<field_type>(layout);
         vfield = std::make_unique<vfield_type>(layout);
     }
 
@@ -50,8 +47,6 @@ public:
     std::unique_ptr<vfield_type> vfield;
     size_t nPoints;
 };
-
-
 
 TEST_F(BareFieldTest, Sum) {
     double val = 1.0;
@@ -65,9 +60,9 @@ TEST_F(BareFieldTest, Sum) {
 
 TEST_F(BareFieldTest, Min) {
     const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
-    const int shift = field->getNghost();
+    const int shift               = field->getNghost();
 
-    auto view = field->getView();
+    auto view   = field->getView();
     auto mirror = Kokkos::create_mirror_view(view);
     Kokkos::deep_copy(mirror, view);
 
@@ -91,9 +86,9 @@ TEST_F(BareFieldTest, Min) {
 
 TEST_F(BareFieldTest, Max) {
     const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
-    const int shift = field->getNghost();
+    const int shift               = field->getNghost();
 
-    auto view = field->getView();
+    auto view   = field->getView();
     auto mirror = Kokkos::create_mirror_view(view);
     Kokkos::deep_copy(mirror, view);
 
@@ -110,13 +105,13 @@ TEST_F(BareFieldTest, Max) {
     }
     Kokkos::deep_copy(view, mirror);
 
-    double max = field->max();
+    double max      = field->max();
     double expected = -1. + nPoints * 3;
     ASSERT_DOUBLE_EQ(max, expected);
 }
 
 TEST_F(BareFieldTest, Prod) {
-    *field = 2.;
+    *field     = 2.;
     double val = field->prod();
     ASSERT_DOUBLE_EQ(val, pow(2, nPoints * nPoints * nPoints));
 }
@@ -127,14 +122,14 @@ TEST_F(BareFieldTest, ScalarMultiplication) {
 
     const int shift = field->getNghost();
 
-    auto view = field->getView();
+    auto view   = field->getView();
     auto mirror = Kokkos::create_mirror_view(view);
     Kokkos::deep_copy(mirror, view);
 
     for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
         for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
             for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                ASSERT_DOUBLE_EQ(mirror(i,j,k), 10.);
+                ASSERT_DOUBLE_EQ(mirror(i, j, k), 10.);
             }
         }
     }
@@ -142,56 +137,56 @@ TEST_F(BareFieldTest, ScalarMultiplication) {
 
 TEST_F(BareFieldTest, DotProduct) {
     *vfield = 1.;
-    *field = 5. * dot(*vfield, *vfield);
+    *field  = 5. * dot(*vfield, *vfield);
 
     const int shift = field->getNghost();
 
-    auto view = field->getView();
+    auto view   = field->getView();
     auto mirror = Kokkos::create_mirror_view(view);
     Kokkos::deep_copy(mirror, view);
 
     for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
         for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
             for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                ASSERT_DOUBLE_EQ(mirror(i,j,k), 15.);
+                ASSERT_DOUBLE_EQ(mirror(i, j, k), 15.);
             }
         }
     }
 }
 
 TEST_F(BareFieldTest, AllFuncs) {
-    double pi = acos(-1.);
+    double pi    = acos(-1.);
     double alpha = pi / 4;
-    *field = alpha;
+    *field       = alpha;
     // Compute new value
-    double beta = fabs(7.0 * (sin(alpha) * cos(alpha))/(tan(alpha) * acos(alpha)) 
-                - exp(alpha) + erf(alpha) + (asin(alpha) * cosh(alpha)) / (atan(alpha) 
-                * sinh(alpha)) + tanh(alpha) * log(alpha)
-                - log10(alpha) * sqrt(alpha) + floor(alpha) * ceil(alpha));
+    double beta = fabs(
+        7.0 * (sin(alpha) * cos(alpha)) / (tan(alpha) * acos(alpha)) - exp(alpha) + erf(alpha)
+        + (asin(alpha) * cosh(alpha)) / (atan(alpha) * sinh(alpha)) + tanh(alpha) * log(alpha)
+        - log10(alpha) * sqrt(alpha) + floor(alpha) * ceil(alpha));
 
     // Compute same value via field ops
-    *field = fabs(7.0 * (sin(*field) * cos(*field))/(tan(*field) * acos(*field)) 
-                - exp(*field) + erf(*field) + (asin(*field) * cosh(*field)) / (atan(*field) 
-                * sinh(*field)) + tanh(*field) * log(*field)
-                - log10(*field) * sqrt(*field) + floor(*field) * ceil(*field));
+    *field = fabs(
+        7.0 * (sin(*field) * cos(*field)) / (tan(*field) * acos(*field)) - exp(*field) + erf(*field)
+        + (asin(*field) * cosh(*field)) / (atan(*field) * sinh(*field)) + tanh(*field) * log(*field)
+        - log10(*field) * sqrt(*field) + floor(*field) * ceil(*field));
 
     const int shift = field->getNghost();
 
-    auto view = field->getView();
+    auto view   = field->getView();
     auto mirror = Kokkos::create_mirror_view(view);
     Kokkos::deep_copy(mirror, view);
 
     for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
         for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
             for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                ASSERT_DOUBLE_EQ(mirror(i,j,k), beta);
+                ASSERT_DOUBLE_EQ(mirror(i, j, k), beta);
             }
         }
     }
 }
 
-int main(int argc, char *argv[]) {
-    Ippl ippl(argc,argv);
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
