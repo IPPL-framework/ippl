@@ -1046,11 +1046,12 @@ namespace ippl {
                               
                         // if (0,0,0), assign to it 1/(4*pi)
                         bool isOrig = (ig == 0 && jg == 0 && kg == 0);
-                        view(i,j,k) = (-1.0/(4.0*pi))*isOrig + (1.0-isOrig)*view(i,j,k);
 
-                        //if (ig == 0 && jg == 0 && kg == 0) {
-                        //    view(i,j,k) = -1.0/(4.0*pi);
-                        //}
+                        // these steps need to be done to remove the propagation
+                        // of the "inf" at the origin (1/inf = 0)
+                        view(i,j,k) = 1.0 / view(i,j,k);
+                        view(i,j,k) += (-4.0 * pi) * isOrig;
+                        view(i,j,k) = 1.0 / view(i,j,k);
                 });
             }
 
