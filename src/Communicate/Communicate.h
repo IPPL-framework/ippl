@@ -52,9 +52,7 @@ namespace ippl {
          * Query the current default overallocation factor
          * @return Factor by which new buffers are overallocated by default
          */
-        double getDefaultOverallocation() const {
-            return defaultOveralloc_m;
-        }
+        double getDefaultOverallocation() const { return defaultOveralloc_m; }
 
         /**
          * Set the default overallocation factor
@@ -93,25 +91,15 @@ namespace ippl {
          */
         void deleteAllBuffers();
 
-        [[deprecated]] int myNode() const noexcept {
-            return rank_m;
-        }
+        [[deprecated]] int myNode() const noexcept { return rank_m; }
 
-        [[deprecated]] int getNodes() const noexcept {
-            return size_m;
-        }
+        [[deprecated]] int getNodes() const noexcept { return size_m; }
 
-        [[deprecated]] const char* name() const noexcept {
-            return "MPI";
-        }
+        [[deprecated]] const char* name() const noexcept { return "MPI"; }
 
-        int size() const noexcept {
-            return size_m;
-        }
+        int size() const noexcept { return size_m; }
 
-        int rank() const noexcept {
-            return rank_m;
-        }
+        int rank() const noexcept { return rank_m; }
 
         /*!
          * \warning Only works with default spaces!
@@ -132,13 +120,9 @@ namespace ippl {
          */
         void irecv(int src, int tag, archive_type&, MPI_Request&, size_type msize);
 
-        MPI_Comm* getCommunicator() noexcept {
-            return &comm_m;
-        }
+        MPI_Comm* getCommunicator() noexcept { return &comm_m; }
 
-        void barrier() noexcept {
-            MPI_Barrier(comm_m);
-        }
+        void barrier() noexcept { MPI_Barrier(comm_m); }
 
     private:
         std::map<int, buffer_type> buffers_m;

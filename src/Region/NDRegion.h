@@ -36,12 +36,10 @@ namespace ippl {
          * Create an empty NDregion
          */
         KOKKOS_FUNCTION
-        NDRegion() {
-        }
+        NDRegion() {}
 
         KOKKOS_FUNCTION
-        ~NDRegion() {
-        }
+        ~NDRegion() {}
 
         /*!
          * Create a NDregion from PRegions
@@ -53,32 +51,23 @@ namespace ippl {
         template <class... Args>
         KOKKOS_FUNCTION NDRegion(const Args&... args);
 
-        KOKKOS_INLINE_FUNCTION
-        NDRegion(const NDRegion<T, Dim>& nr);
+        KOKKOS_INLINE_FUNCTION NDRegion(const NDRegion<T, Dim>& nr);
 
-        KOKKOS_INLINE_FUNCTION
-        NDRegion<T, Dim>& operator=(const NDRegion<T, Dim>& nr);
+        KOKKOS_INLINE_FUNCTION NDRegion<T, Dim>& operator=(const NDRegion<T, Dim>& nr);
 
-        KOKKOS_INLINE_FUNCTION
-        const PRegion<T>& operator[](unsigned d) const;
+        KOKKOS_INLINE_FUNCTION const PRegion<T>& operator[](unsigned d) const;
 
-        KOKKOS_INLINE_FUNCTION
-        PRegion<T>& operator[](unsigned d);
+        KOKKOS_INLINE_FUNCTION PRegion<T>& operator[](unsigned d);
 
-        KOKKOS_INLINE_FUNCTION
-        NDRegion<T, Dim>& operator+=(const T t);
+        KOKKOS_INLINE_FUNCTION NDRegion<T, Dim>& operator+=(const T t);
 
-        KOKKOS_INLINE_FUNCTION
-        NDRegion<T, Dim>& operator-=(const T t);
+        KOKKOS_INLINE_FUNCTION NDRegion<T, Dim>& operator-=(const T t);
 
-        KOKKOS_INLINE_FUNCTION
-        NDRegion<T, Dim>& operator*=(const T t);
+        KOKKOS_INLINE_FUNCTION NDRegion<T, Dim>& operator*=(const T t);
 
-        KOKKOS_INLINE_FUNCTION
-        NDRegion<T, Dim>& operator/=(const T t);
+        KOKKOS_INLINE_FUNCTION NDRegion<T, Dim>& operator/=(const T t);
 
-        KOKKOS_INLINE_FUNCTION
-        bool empty() const;
+        KOKKOS_INLINE_FUNCTION bool empty() const;
 
     private:
         KOKKOS_FUNCTION

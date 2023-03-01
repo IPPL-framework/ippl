@@ -41,9 +41,7 @@ public:
     typedef Vektor<MFLOAT, Dim> MeshVektor_t;
 
     // Default constructor (use initialize() to make valid)
-    Cartesian() {
-        hasSpacingFields = false;
-    };
+    Cartesian() { hasSpacingFields = false; };
     // Destructor
     ~Cartesian() {
         if (hasSpacingFields) {

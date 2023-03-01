@@ -34,12 +34,9 @@ public:
 
     template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
-        Bunch(PLayout& playout) : ippl::ParticleBase<PLayout>(playout) {
-            this->addAttribute(Q);
-        }
+        Bunch(PLayout& playout) : ippl::ParticleBase<PLayout>(playout) { this->addAttribute(Q); }
 
-        ~Bunch() {
-        }
+        ~Bunch() {}
 
         typedef ippl::ParticleAttrib<double> charge_container_type;
         charge_container_type Q;
@@ -116,9 +113,7 @@ public:
         bunch->updateLayout(layout_m, mesh_m);
     }
 
-    ippl::NDIndex<dim> getDomain() {
-        return layout_m.getDomain();
-    }
+    ippl::NDIndex<dim> getDomain() { return layout_m.getDomain(); }
 
     std::unique_ptr<field_type> field;
     std::unique_ptr<bunch_type> bunch;

@@ -26,9 +26,7 @@ public:
     typedef ippl::BareField<double, dim> field_type;
     typedef ippl::BareField<ippl::Vector<double, 3>, dim> vfield_type;
 
-    BareFieldTest() : nPoints(8) {
-        setup();
-    }
+    BareFieldTest() : nPoints(8) { setup(); }
 
     void setup() {
         ippl::Index I(nPoints);

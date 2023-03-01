@@ -17,8 +17,7 @@
 #include "Communicate.h"
 
 namespace ippl {
-    Communicate::Communicate(int& argc, char**& argv) : Communicate(argc, argv, MPI_COMM_WORLD) {
-    }
+    Communicate::Communicate(int& argc, char**& argv) : Communicate(argc, argv, MPI_COMM_WORLD) {}
 
     Communicate::Communicate(int& argc, char**& argv, const MPI_Comm& comm) : comm_m(comm) {
         MPI_Init(&argc, &argv);

@@ -44,9 +44,7 @@ namespace ippl {
         using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
         using rhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
 
-        FFTPeriodicPoissonSolver() : Base() {
-            setDefaultParameters();
-        }
+        FFTPeriodicPoissonSolver() : Base() { setDefaultParameters(); }
 
         FFTPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs) : Base(lhs, rhs) {
             setDefaultParameters();

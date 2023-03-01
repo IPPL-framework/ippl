@@ -8,8 +8,7 @@
 template <typename E>
 class VectorExpr {
 public:
-    KOKKOS_INLINE_FUNCTION
-    double operator[](size_t i) const {
+    KOKKOS_INLINE_FUNCTION double operator[](size_t i) const {
         return static_cast<E const&>(*this)[i];
     }
 };
@@ -18,8 +17,7 @@ template <typename T, unsigned D>
 class Vector : public VectorExpr<Vector<T, D>> {
 public:
     KOKKOS_FUNCTION
-    Vector() {
-    }
+    Vector() {}
 
     KOKKOS_FUNCTION
     Vector(T val) {
@@ -38,18 +36,13 @@ public:
     }
 
     KOKKOS_FUNCTION
-    T operator[](const int i) const {
-        return data_m[i];
-    }
+    T operator[](const int i) const { return data_m[i]; }
 
     KOKKOS_FUNCTION
-    T& operator[](const int i) {
-        return data_m[i];
-    }
+    T& operator[](const int i) { return data_m[i]; }
 
     KOKKOS_FUNCTION
-    ~Vector() {
-    }
+    ~Vector() {}
 
     template <typename E>
     KOKKOS_FUNCTION Vector& operator=(VectorExpr<E> const& expr) {
@@ -70,13 +63,9 @@ class VecSum : public VectorExpr<VecSum<E1, E2>> {
 
 public:
     KOKKOS_FUNCTION
-    VecSum(E1 const& u, E2 const& v) : _u(u), _v(v) {
-    }
+    VecSum(E1 const& u, E2 const& v) : _u(u), _v(v) {}
 
-    KOKKOS_INLINE_FUNCTION
-    double operator[](size_t i) const {
-        return _u[i] + _v[i];
-    }
+    KOKKOS_INLINE_FUNCTION double operator[](size_t i) const { return _u[i] + _v[i]; }
 };
 
 template <typename E1, typename E2>
@@ -94,8 +83,8 @@ struct meta_cross {};
 
 template <class T1, class T2>
 struct meta_cross<Vector<T1, 3>, Vector<T2, 3>> {
-    KOKKOS_INLINE_FUNCTION
-    static Vector<double, 3> apply(const Vector<T1, 3>& a, const Vector<T2, 3>& b) {
+    KOKKOS_INLINE_FUNCTION static Vector<double, 3> apply(
+        const Vector<T1, 3>& a, const Vector<T2, 3>& b) {
         Vector<double, 3> c;
         c[0] = a[1] * b[2] - a[2] * b[1];
         c[1] = a[2] * b[0] - a[0] * b[2];
@@ -124,10 +113,7 @@ struct meta_cross : public VectorExpr<meta_cross<E1, E2>> {
         _result[2] = a[0] * b[1] - a[1] * b[0];
     }
 
-    KOKKOS_INLINE_FUNCTION
-    double operator[](size_t i) const {
-        return _result[i];
-    }
+    KOKKOS_INLINE_FUNCTION double operator[](size_t i) const { return _result[i]; }
 
 private:
     E1 _result;
@@ -148,11 +134,9 @@ KOKKOS_INLINE_FUNCTION meta_cross<E1, E2> cross(
 template <typename E1, typename E2>
 struct meta_cross : public VectorExpr<meta_cross<E1, E2>> {
     KOKKOS_FUNCTION
-    meta_cross(E1 const& u, E2 const& v) : _u(u), _v(v) {
-    }
+    meta_cross(E1 const& u, E2 const& v) : _u(u), _v(v) {}
 
-    KOKKOS_INLINE_FUNCTION
-    double operator[](size_t i) const {
+    KOKKOS_INLINE_FUNCTION double operator[](size_t i) const {
         size_t j = (i + 1) % 3;
         size_t k = (i + 2) % 3;
         return _u[j] * _v[k] - _u[k] * _v[j];
@@ -177,11 +161,9 @@ KOKKOS_INLINE_FUNCTION meta_cross<E1, E2> cross(
 template <typename E1, typename E2>
 struct meta_dot : public VectorExpr<meta_dot<E1, E2>> {
     KOKKOS_FUNCTION
-    meta_dot(E1 const& u, E2 const& v) : _u(u), _v(v) {
-    }
+    meta_dot(E1 const& u, E2 const& v) : _u(u), _v(v) {}
 
-    KOKKOS_INLINE_FUNCTION
-    double operator()() const {
+    KOKKOS_INLINE_FUNCTION double operator()() const {
         return _u[0] * _v[0] + _u[1] * _v[1] + _u[2] * _v[2];
     }
 

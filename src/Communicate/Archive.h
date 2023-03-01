@@ -83,35 +83,21 @@ namespace ippl {
             /*!
              * @returns a pointer to the data of the buffer
              */
-            pointer_type getBuffer() {
-                return buffer_m.data();
-            }
+            pointer_type getBuffer() { return buffer_m.data(); }
 
             /*!
              * @returns the size of the buffer
              */
-            size_type getSize() const {
-                return writepos_m;
-            }
+            size_type getSize() const { return writepos_m; }
 
-            size_type getBufferSize() const {
-                return buffer_m.size();
-            }
+            size_type getBufferSize() const { return buffer_m.size(); }
 
-            void resizeBuffer(size_type size) {
-                Kokkos::resize(buffer_m, size);
-            }
+            void resizeBuffer(size_type size) { Kokkos::resize(buffer_m, size); }
 
-            void reallocBuffer(size_type size) {
-                Kokkos::realloc(buffer_m, size);
-            }
+            void reallocBuffer(size_type size) { Kokkos::realloc(buffer_m, size); }
 
-            void resetWritePos() {
-                writepos_m = 0;
-            }
-            void resetReadPos() {
-                readpos_m = 0;
-            }
+            void resetWritePos() { writepos_m = 0; }
+            void resetReadPos() { readpos_m = 0; }
 
             ~Archive() = default;
 

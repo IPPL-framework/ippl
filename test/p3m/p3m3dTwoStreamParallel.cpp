@@ -196,13 +196,9 @@ public:
         INFOMSG("INIT FFT DONE" << endl);
     }
 
-    inline const Mesh_t& getMesh() const {
-        return this->getLayout().getLayout().getMesh();
-    }
+    inline const Mesh_t& getMesh() const { return this->getLayout().getLayout().getMesh(); }
 
-    inline Mesh_t& getMesh() {
-        return this->getLayout().getLayout().getMesh();
-    }
+    inline Mesh_t& getMesh() { return this->getLayout().getLayout().getMesh(); }
 
     inline const FieldLayout_t& getFieldLayout() const {
         return dynamic_cast<FieldLayout_t&>(this->getLayout().getLayout().getFieldLayout());
@@ -457,16 +453,10 @@ public:
         Phi.gather(phi_m, this->R, IntrplCIC_t());
     }
 
-    Vector_t getRmin() {
-        return this->rmin_m;
-    }
-    Vector_t getRmax() {
-        return this->rmax_m;
-    }
+    Vector_t getRmin() { return this->rmin_m; }
+    Vector_t getRmax() { return this->rmax_m; }
 
-    Vector_t get_hr() {
-        return hr_m;
-    }
+    Vector_t get_hr() { return hr_m; }
 
     // private:
     BConds<double, Dim, Mesh_t, Center_t> bc_m;
@@ -518,8 +508,7 @@ public:
 
 template <class T>
 struct ApplyField {
-    ApplyField(T c, double r, double epsilon, double alpha) : C(c), R(r), eps(epsilon), a(alpha) {
-    }
+    ApplyField(T c, double r, double epsilon, double alpha) : C(c), R(r), eps(epsilon), a(alpha) {}
     void operator()(
         std::size_t i, std::size_t j, ChargedParticles<playout_t>& P,
         Vektor<double, 3>& shift) const {

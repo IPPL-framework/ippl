@@ -36,7 +36,11 @@ namespace ippl {
          * Represents the types of fields that should
          * be output by the solver
          */
-        enum OutputType { SOL = 0b01, GRAD = 0b10, SOL_AND_GRAD = 0b11 };
+        enum OutputType {
+            SOL          = 0b01,
+            GRAD         = 0b10,
+            SOL_AND_GRAD = 0b11
+        };
 
         /*!
          * Default constructor for electrostatic solvers;
@@ -56,9 +60,7 @@ namespace ippl {
          * should be stored
          * @param grad Reference to field in which to store the gradient
          */
-        void setGradient(grad_type& grad) {
-            grad_mp = &grad;
-        }
+        void setGradient(grad_type& grad) { grad_mp = &grad; }
 
         /*!
          * Solve the electrostatics problem described by
@@ -66,15 +68,12 @@ namespace ippl {
          */
         virtual void solve() = 0;
 
-        virtual ~Electrostatics() {
-        }
+        virtual ~Electrostatics() {}
 
     protected:
         grad_type* grad_mp;
 
-        virtual void setDefaultParameters() override {
-            this->params_m.add("output_type", SOL);
-        }
+        virtual void setDefaultParameters() override { this->params_m.add("output_type", SOL); }
     };
 }  // namespace ippl
 

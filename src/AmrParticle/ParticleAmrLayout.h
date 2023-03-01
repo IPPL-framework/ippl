@@ -64,8 +64,7 @@ protected:
 // ============================================================================
 
 template <class T, unsigned Dim>
-ParticleAmrLayout<T, Dim>::ParticleAmrLayout() : finestLevel_m(0), maxLevel_m(0) {
-}
+ParticleAmrLayout<T, Dim>::ParticleAmrLayout() : finestLevel_m(0), maxLevel_m(0) {}
 
 template <class T, unsigned Dim>
 void ParticleAmrLayout<T, Dim>::setFinestLevel(int finestLevel) {

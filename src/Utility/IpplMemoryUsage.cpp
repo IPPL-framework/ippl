@@ -41,8 +41,7 @@
 #include "Utility/IpplMemoryUsage.h"
 
 //////////////////////////////////////////////////////////////////////
-IpplMemoryUsage::IpplMemoryUsage() {
-}
+IpplMemoryUsage::IpplMemoryUsage() {}
 
 IpplMemoryUsage::IpplMemoryUsage(Unit unit, bool reset) : who_m(RUSAGE_SELF) {
     globalMemPerCore_m = std::unique_ptr<double[]>(new double[Ippl::Comm->getNodes()]);

@@ -61,8 +61,7 @@ public:
     }
 
     // destructor
-    ~IpplTimerInfo() {
-    }
+    ~IpplTimerInfo() {}
 
     // timer operations
     void start() {
@@ -130,9 +129,7 @@ struct Timing {
     void clearTimer(TimerRef);
 
     // return a TimerInfo struct by asking for the name
-    TimerInfo* infoTimer(const char* nm) {
-        return TimerMap[std::string(nm)];
-    }
+    TimerInfo* infoTimer(const char* nm) { return TimerMap[std::string(nm)]; }
 
     // print the results to standard out
     void print();
@@ -161,34 +158,22 @@ public:
     typedef Timing::TimerInfo TimerInfo;
 
     // create a timer, or get one that already exists
-    static TimerRef getTimer(const char* nm) {
-        return instance->getTimer(nm);
-    }
+    static TimerRef getTimer(const char* nm) { return instance->getTimer(nm); }
 
     // start a timer
-    static void startTimer(TimerRef t) {
-        instance->startTimer(t);
-    }
+    static void startTimer(TimerRef t) { instance->startTimer(t); }
 
     // stop a timer, and accumulate it's values
-    static void stopTimer(TimerRef t) {
-        instance->stopTimer(t);
-    }
+    static void stopTimer(TimerRef t) { instance->stopTimer(t); }
 
     // clear a timer, by turning it off and throwing away its time
-    static void clearTimer(TimerRef t) {
-        instance->clearTimer(t);
-    }
+    static void clearTimer(TimerRef t) { instance->clearTimer(t); }
 
     // return a TimerInfo struct by asking for the name
-    static TimerInfo* infoTimer(const char* nm) {
-        return instance->infoTimer(nm);
-    }
+    static TimerInfo* infoTimer(const char* nm) { return instance->infoTimer(nm); }
 
     // print the results to standard out
-    static void print() {
-        instance->print();
-    }
+    static void print() { instance->print(); }
 
     // print the results to a file
     static void print(

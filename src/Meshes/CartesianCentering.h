@@ -29,7 +29,11 @@
 // May add to this when unstructured comes in, and it means something to
 // simply say FACE or EDGE centering (for cartesian meshes, face and edge
 // centerings are a combination of CELL and VERTEX along directions):
-enum CenteringEnum { CELL = 0, VERTEX = 1, VERT = 1 };
+enum CenteringEnum {
+    CELL   = 0,
+    VERTEX = 1,
+    VERT   = 1
+};
 
 // Primary class for canned and user-defined cartesian centerings:
 template <CenteringEnum* CE, unsigned Dim, unsigned NComponents = 1U>

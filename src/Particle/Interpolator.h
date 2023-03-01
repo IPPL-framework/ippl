@@ -206,10 +206,8 @@ protected:
 
 public:
     // constructor/destructor
-    Interpolator() {
-    }
-    ~Interpolator() {
-    }
+    Interpolator() {}
+    ~Interpolator() {}
 
     // gather/scatter function interfaces (implemented in derived classes)
     /*

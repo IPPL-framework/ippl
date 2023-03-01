@@ -22,8 +22,7 @@
 
 class UniformCartesianTest : public ::testing::Test {
 public:
-    UniformCartesianTest() {
-    }
+    UniformCartesianTest() {}
 };
 
 TEST_F(UniformCartesianTest, Constructor1D) {

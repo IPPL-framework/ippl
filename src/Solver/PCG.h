@@ -37,18 +37,14 @@ namespace ippl {
          * Sets the differential operator for the conjugate gradient algorithm
          * @param op A function that returns OpRet and takes a field of the LHS type
          */
-        void setOperator(operator_type op) {
-            op_m = std::move(op);
-        }
+        void setOperator(operator_type op) { op_m = std::move(op); }
 
         /*!
          * Query how many iterations were required to obtain the solution
          * the last time this solver was used
          * @return Iteration count of last solve
          */
-        int getIterationCount() {
-            return iterations_m;
-        }
+        int getIterationCount() { return iterations_m; }
 
         void operator()(lhs_type& lhs, rhs_type& rhs, const ParameterList& params) override {
             typedef typename lhs_type::type T;

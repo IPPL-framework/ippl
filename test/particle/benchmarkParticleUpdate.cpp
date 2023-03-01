@@ -83,12 +83,9 @@ public:
             decomp_m[i] = decomp[i];
     }
 
-    ~ChargedParticles() {
-    }
+    ~ChargedParticles() {}
 
-    void setupBCs() {
-        setBCAllPeriodic();
-    }
+    void setupBCs() { setBCAllPeriodic(); }
 
     void gatherStatistics(unsigned int totalP, int iteration) {
         unsigned int Total_particles = 0;
@@ -112,15 +109,9 @@ public:
         std::cout << "Rank " << Ippl::Comm->rank() << " has " << local_particles << std::endl;
     }
 
-    Vector_t getRMin() {
-        return rmin_m;
-    }
-    Vector_t getRMax() {
-        return rmax_m;
-    }
-    Vector_t getHr() {
-        return hr_m;
-    }
+    Vector_t getRMin() { return rmin_m; }
+    Vector_t getRMax() { return rmax_m; }
+    Vector_t getHr() { return hr_m; }
 
     void dumpData(int iteration) {
         double Energy = 0.0;
@@ -143,9 +134,7 @@ public:
     }
 
 private:
-    void setBCAllPeriodic() {
-        this->setParticleBC(ippl::BC::PERIODIC);
-    }
+    void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
 };
 
 int main(int argc, char* argv[]) {

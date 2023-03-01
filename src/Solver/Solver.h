@@ -35,8 +35,7 @@ namespace ippl {
         /*!
          * Default constructor
          */
-        Solver() {
-        }
+        Solver() {}
 
         /*!
          * Convenience constructor with LHS and RHS parameters
@@ -65,34 +64,26 @@ namespace ippl {
          * @throw IpplException Fails if the provided parameter list includes keys not already
          * present
          */
-        void updateParameters(const ParameterList& params) {
-            params_m.update(params);
-        }
+        void updateParameters(const ParameterList& params) { params_m.update(params); }
 
         /*!
          * Merges another parameter set into the solver's parameters, overwriting
          * existing parameters in case of conflict
          * @param params Parameter list with desired values
          */
-        void mergeParameters(const ParameterList& params) {
-            params_m.merge(params);
-        }
+        void mergeParameters(const ParameterList& params) { params_m.merge(params); }
 
         /*!
          * Set the problem LHS
          * @param lhs Reference to problem LHS field
          */
-        void setLhs(lhs_type& lhs) {
-            lhs_mp = &lhs;
-        }
+        void setLhs(lhs_type& lhs) { lhs_mp = &lhs; }
 
         /*!
          * Set the problem RHS
          * @param rhs Reference to problem RHS field
          */
-        virtual void setRhs(rhs_type& rhs) {
-            rhs_mp = &rhs;
-        }
+        virtual void setRhs(rhs_type& rhs) { rhs_mp = &rhs; }
 
     protected:
         ParameterList params_m;
@@ -104,8 +95,7 @@ namespace ippl {
          * Utility function for initializing a solver's default
          * parameters (to be overridden for each base class)
          */
-        virtual void setDefaultParameters() {
-        }
+        virtual void setDefaultParameters() {}
     };
 }  // namespace ippl
 

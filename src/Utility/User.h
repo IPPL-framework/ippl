@@ -41,9 +41,7 @@ public:
     virtual ~User();
 
     // return the ID of this user
-    ID_t get_Id() const {
-        return Id;
-    }
+    ID_t get_Id() const { return Id; }
 
     //
     // virtual functions for User

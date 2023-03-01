@@ -125,8 +125,7 @@ namespace ippl {
          * function("ippl::ParticleBase<
          * ::ippl::ParticleLayout<double, (unsigned int)3u> > ::~ParticleBase") is not allowed
          */
-        ~ParticleBase() {
-        }  // = default; //{ }
+        ~ParticleBase() {}  // = default; //{ }
 
         /*!
          * Initialize the particle layout. Needs to be called
@@ -138,43 +137,31 @@ namespace ippl {
         /*!
          * @returns processor local number of particles
          */
-        size_type getLocalNum() const {
-            return localNum_m;
-        }
+        size_type getLocalNum() const { return localNum_m; }
 
-        void setLocalNum(size_type size) {
-            localNum_m = size;
-        }
+        void setLocalNum(size_type size) { localNum_m = size; }
 
         /*!
          * @returns particle layout
          */
-        Layout_t& getLayout() {
-            return *layout_m;
-        }
+        Layout_t& getLayout() { return *layout_m; }
 
         /*!
          * @returns particle layout
          */
-        const Layout_t& getLayout() const {
-            return *layout_m;
-        }
+        const Layout_t& getLayout() const { return *layout_m; }
 
         /*!
          * Set all boundary conditions
          * @param bc the boundary conditions
          */
-        void setParticleBC(const bc_container_type& bcs) {
-            layout_m->setParticleBC(bcs);
-        }
+        void setParticleBC(const bc_container_type& bcs) { layout_m->setParticleBC(bcs); }
 
         /*!
          * Set all boundary conditions to this BC
          * @param bc the boundary conditions
          */
-        void setParticleBC(BC bc) {
-            layout_m->setParticleBC(bc);
-        }
+        void setParticleBC(BC bc) { layout_m->setParticleBC(bc); }
 
         /*!
          * Add particle attribute
@@ -187,9 +174,7 @@ namespace ippl {
          * @param i attribute number in container
          * @returns a pointer to the attribute
          */
-        attribute_type* getAttribute(size_t i) {
-            return attributes_m[i];
-        }
+        attribute_type* getAttribute(size_t i) { return attributes_m[i]; }
 
         /*!
          * @returns the number of attributes

@@ -67,7 +67,12 @@ namespace ippl {
     */
     class CosTransform {};
 
-    enum FFTComm { a2av = 0, a2a = 1, p2p = 2, p2p_pl = 3 };
+    enum FFTComm {
+        a2av   = 0,
+        a2a    = 1,
+        p2p    = 2,
+        p2p_pl = 3
+    };
 
     namespace detail {
 

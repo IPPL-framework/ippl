@@ -67,9 +67,7 @@ namespace ippl {
 
             ~RegionLayout() = default;
 
-            const NDRegion_t& getDomain() const {
-                return region_m;
-            }
+            const NDRegion_t& getDomain() const { return region_m; }
 
             const view_type getdLocalRegions() const;
 

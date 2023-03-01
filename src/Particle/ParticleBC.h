@@ -21,7 +21,12 @@
 #include "Region/NDRegion.h"
 
 namespace ippl {
-    enum BC { PERIODIC, REFLECTIVE, SINK, NO };
+    enum BC {
+        PERIODIC,
+        REFLECTIVE,
+        SINK,
+        NO
+    };
 
     namespace detail {
 
@@ -49,8 +54,7 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             ParticleBC() = default;
 
-            KOKKOS_INLINE_FUNCTION
-            ParticleBC(
+            KOKKOS_INLINE_FUNCTION ParticleBC(
                 const ViewType& view, const NDRegion<T, Dim>& nr, const unsigned& dim,
                 const bool& isUpper)
                 : view_m(view),
@@ -76,15 +80,12 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             PeriodicBC() = default;
 
-            KOKKOS_INLINE_FUNCTION
-            PeriodicBC(
+            KOKKOS_INLINE_FUNCTION PeriodicBC(
                 const ViewType& view, const NDRegion<T, Dim>& nr, const unsigned& dim,
                 const bool& isUpper)
-                : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {
-            }
+                : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {}
 
-            KOKKOS_INLINE_FUNCTION
-            void operator()(const size_t& i) const {
+            KOKKOS_INLINE_FUNCTION void operator()(const size_t& i) const {
                 value_type& value = this->view_m(i)[this->dim_m];
                 value             = value - extent_m * (int)((value - middle_m) * 2 / extent_m);
             }
@@ -104,15 +105,12 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             ReflectiveBC() = default;
 
-            KOKKOS_INLINE_FUNCTION
-            ReflectiveBC(
+            KOKKOS_INLINE_FUNCTION ReflectiveBC(
                 const ViewType& view, const NDRegion<T, Dim>& nr, const unsigned& dim,
                 const bool& isUpper)
-                : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {
-            }
+                : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {}
 
-            KOKKOS_INLINE_FUNCTION
-            void operator()(const size_t& i) const {
+            KOKKOS_INLINE_FUNCTION void operator()(const size_t& i) const {
                 value_type& value = this->view_m(i)[this->dim_m];
                 bool tooHigh      = value >= maxval_m;
                 bool tooLow       = value < minval_m;
@@ -136,15 +134,12 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             SinkBC() = default;
 
-            KOKKOS_INLINE_FUNCTION
-            SinkBC(
+            KOKKOS_INLINE_FUNCTION SinkBC(
                 const ViewType& view, const NDRegion<T, Dim>& nr, const unsigned& dim,
                 const bool& isUpper)
-                : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {
-            }
+                : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {}
 
-            KOKKOS_INLINE_FUNCTION
-            void operator()(const size_t& i) const {
+            KOKKOS_INLINE_FUNCTION void operator()(const size_t& i) const {
                 value_type& value = this->view_m(i)[this->dim_m];
                 bool tooHigh      = value >= maxval_m;
                 bool tooLow       = value < minval_m;

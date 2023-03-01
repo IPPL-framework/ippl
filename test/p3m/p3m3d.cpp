@@ -120,13 +120,9 @@ public:
         domain_m = this->getFieldLayout().getDomain();
     }
 
-    inline const Mesh_t& getMesh() const {
-        return this->getLayout().getLayout().getMesh();
-    }
+    inline const Mesh_t& getMesh() const { return this->getLayout().getLayout().getMesh(); }
 
-    inline Mesh_t& getMesh() {
-        return this->getLayout().getLayout().getMesh();
-    }
+    inline Mesh_t& getMesh() { return this->getLayout().getLayout().getMesh(); }
 
     inline const FieldLayout_t& getFieldLayout() const {
         return dynamic_cast<FieldLayout_t&>(this->getLayout().getLayout().getFieldLayout());
@@ -400,8 +396,7 @@ private:
 
 template <class T>
 struct ApplyField {
-    ApplyField(T c, double r) : C(c), R(r) {
-    }
+    ApplyField(T c, double r) : C(c), R(r) {}
     void operator()(std::size_t i, std::size_t j, ChargedParticles<playout_t>& P) const {
         const Vector_t diff = P.R[i] - P.R[j];
         double sqr          = 0;
@@ -457,7 +452,11 @@ int main(int argc, char* argv[]) {
     double interaction_radius = atof(argv[param++]);
     size_t count              = atoi(argv[param++]);
 
-    enum DistType { UNIFORM, RANDOM, POINT };
+    enum DistType {
+        UNIFORM,
+        RANDOM,
+        POINT
+    };
     DistType type = UNIFORM;
 
     if (argv[param] == std::string("uniform")) {

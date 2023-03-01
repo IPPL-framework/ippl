@@ -27,9 +27,7 @@ public:
     typedef ippl::UniformCartesian<double, dim> mesh_type;
     typedef ippl::FieldLayout<dim> layout_type;
 
-    FieldTest() : nPoints(8) {
-        setup();
-    }
+    FieldTest() : nPoints(8) { setup(); }
 
     void setup() {
         ippl::Index I(nPoints);

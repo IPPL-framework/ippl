@@ -28,14 +28,12 @@
 
 ////////////////////////////////////////////////////////////////////////
 // default constuctor for User
-User::User() : Id(Unique::get()) {
-}
+User::User() : Id(Unique::get()) {}
 
 ////////////////////////////////////////////////////////////////////////
 // destructor ... nothing to do, subclasses are responsible for
 // doing checkin's and checkout's
-User::~User() {
-}
+User::~User() {}
 
 /***************************************************************************
  * $RCSfile: User.cpp,v $   $Author: adelmann $

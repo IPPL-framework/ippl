@@ -78,21 +78,15 @@ namespace ippl {
 
         virtual ~ParticleAttrib() = default;
 
-        size_type size() const override {
-            return dview_m.extent(0);
-        }
+        size_type size() const override { return dview_m.extent(0); }
 
         size_type packedSize(const size_type count) const override {
             return count * sizeof(value_type);
         }
 
-        void resize(size_type n) {
-            Kokkos::resize(dview_m, n);
-        }
+        void resize(size_type n) { Kokkos::resize(dview_m, n); }
 
-        void realloc(size_type n) {
-            Kokkos::realloc(dview_m, n);
-        }
+        void realloc(size_type n) { Kokkos::realloc(dview_m, n); }
 
         void print() {
             HostMirror hview = Kokkos::create_mirror_view(dview_m);
@@ -102,22 +96,13 @@ namespace ippl {
             }
         }
 
-        KOKKOS_INLINE_FUNCTION
-        T& operator()(const size_t i) const {
-            return dview_m(i);
-        }
+        KOKKOS_INLINE_FUNCTION T& operator()(const size_t i) const { return dview_m(i); }
 
-        view_type& getView() {
-            return dview_m;
-        }
+        view_type& getView() { return dview_m; }
 
-        const view_type& getView() const {
-            return dview_m;
-        }
+        const view_type& getView() const { return dview_m; }
 
-        HostMirror getHostMirror() {
-            return Kokkos::create_mirror(dview_m);
-        }
+        HostMirror getHostMirror() { return Kokkos::create_mirror(dview_m); }
 
         /*!
          * Assign the same value to the whole attribute.

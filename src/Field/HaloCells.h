@@ -34,13 +34,9 @@ namespace ippl {
         struct FieldBufferData {
             using view_type = typename detail::ViewType<T, 1>::view_type;
 
-            void serialize(Archive<>& ar, size_type nsends) {
-                ar.serialize(buffer, nsends);
-            }
+            void serialize(Archive<>& ar, size_type nsends) { ar.serialize(buffer, nsends); }
 
-            void deserialize(Archive<>& ar, size_type nrecvs) {
-                ar.deserialize(buffer, nrecvs);
-            }
+            void deserialize(Archive<>& ar, size_type nrecvs) { ar.deserialize(buffer, nrecvs); }
 
             view_type buffer;
         };
@@ -56,7 +52,10 @@ namespace ippl {
             using Layout_t   = FieldLayout<Dim>;
             using bound_type = typename Layout_t::bound_type;
 
-            enum SendOrder { HALO_TO_INTERNAL, INTERNAL_TO_HALO };
+            enum SendOrder {
+                HALO_TO_INTERNAL,
+                INTERNAL_TO_HALO
+            };
 
             HaloCells();
 
@@ -101,10 +100,7 @@ namespace ippl {
              * This operator is used in case of INTERNAL_TO_HALO.
              */
             struct assign {
-                KOKKOS_INLINE_FUNCTION
-                void operator()(T& lhs, const T& rhs) const {
-                    lhs = rhs;
-                }
+                KOKKOS_INLINE_FUNCTION void operator()(T& lhs, const T& rhs) const { lhs = rhs; }
             };
 
             /*!
@@ -112,10 +108,7 @@ namespace ippl {
              * This operator is used in case of HALO_TO_INTERNAL.
              */
             struct lhs_plus_assign {
-                KOKKOS_INLINE_FUNCTION
-                void operator()(T& lhs, const T& rhs) const {
-                    lhs += rhs;
-                }
+                KOKKOS_INLINE_FUNCTION void operator()(T& lhs, const T& rhs) const { lhs += rhs; }
             };
 
             /*!
@@ -123,10 +116,7 @@ namespace ippl {
              * all periodic BCs application in BareField.
              */
             struct rhs_plus_assign {
-                KOKKOS_INLINE_FUNCTION
-                void operator()(const T& lhs, T& rhs) const {
-                    rhs += lhs;
-                }
+                KOKKOS_INLINE_FUNCTION void operator()(const T& lhs, T& rhs) const { rhs += lhs; }
             };
 
             /*!

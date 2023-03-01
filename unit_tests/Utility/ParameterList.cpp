@@ -23,8 +23,7 @@
 
 class ParameterListTest : public ::testing::Test {
 public:
-    ParameterListTest() {
-    }
+    ParameterListTest() {}
 };
 
 TEST_F(ParameterListTest, Add) {

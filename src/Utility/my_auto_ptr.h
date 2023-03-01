@@ -28,12 +28,9 @@ class my_auto_ptr {
     X* px;
 
 public:
-    my_auto_ptr() : px(0) {
-    }
-    my_auto_ptr(X* p) : px(p) {
-    }
-    my_auto_ptr(const my_auto_ptr<X>& r) : px(r.release()) {
-    }
+    my_auto_ptr() : px(0) {}
+    my_auto_ptr(X* p) : px(p) {}
+    my_auto_ptr(const my_auto_ptr<X>& r) : px(r.release()) {}
     my_auto_ptr& operator=(const my_auto_ptr<X>& r) {
         if (&r != this) {
             delete px;
@@ -41,18 +38,10 @@ public:
         }
         return *this;
     }
-    ~my_auto_ptr() {
-        delete px;
-    }
-    X& operator*() const {
-        return *px;
-    }
-    X* operator->() const {
-        return px;
-    }
-    X* get() const {
-        return px;
-    }
+    ~my_auto_ptr() { delete px; }
+    X& operator*() const { return *px; }
+    X* operator->() const { return px; }
+    X* get() const { return px; }
     X* release() const {
         X* p                          = px;
         ((my_auto_ptr<X>*)(this))->px = 0;

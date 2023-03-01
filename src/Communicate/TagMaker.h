@@ -24,10 +24,8 @@
 class TagMaker {
 public:
     // constructor/destructor
-    TagMaker(void) {
-    }
-    virtual ~TagMaker(void) {
-    }
+    TagMaker(void) {}
+    virtual ~TagMaker(void) {}
 
     // generate a new tag given a base tag.  If the base tag has not been
     // previously established by create_base_tag, it will be done so by
@@ -84,18 +82,14 @@ private:
         int base;       // base tag value, the key for the map
         int cycleSize;  // range through which to cycle tag
         int current;    // current value of tag
-        TagInfo(int b, int s) : base(b), cycleSize(s), current(0) {
-        }
-        TagInfo() : base(-1), cycleSize(-1), current(0) {
-        }
+        TagInfo(int b, int s) : base(b), cycleSize(s), current(0) {}
+        TagInfo() : base(-1), cycleSize(-1), current(0) {}
     };
 
     // class used for comparisons
     class TagCompare {
     public:
-        bool operator()(const int& x, const int& y) const {
-            return x < y;
-        }
+        bool operator()(const int& x, const int& y) const { return x < y; }
     };
 
     // the list of base tags which have been established

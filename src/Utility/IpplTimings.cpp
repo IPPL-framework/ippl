@@ -46,8 +46,7 @@
 Timing* IpplTimings::instance = new Timing();
 std::stack<Timing*> IpplTimings::stashedInstance;
 
-Timing::Timing() : TimerList(), TimerMap() {
-}
+Timing::Timing() : TimerList(), TimerMap() {}
 
 Timing::~Timing() {
     for (TimerMap_t::iterator it = TimerMap.begin(); it != TimerMap.end(); ++it) {
@@ -201,10 +200,8 @@ void Timing::print(const std::string& fn, const std::map<std::string, unsigned i
     delete timer_stream;
 }
 
-IpplTimings::IpplTimings() {
-}
-IpplTimings::~IpplTimings() {
-}
+IpplTimings::IpplTimings() {}
+IpplTimings::~IpplTimings() {}
 
 void IpplTimings::stash() {
     PAssert_EQ(stashedInstance.size(), 0);

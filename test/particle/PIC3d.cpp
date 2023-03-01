@@ -106,9 +106,7 @@ public:
             decomp_m[i] = decomp[i];
     }
 
-    void setupBCs() {
-        setBCAllPeriodic();
-    }
+    void setupBCs() { setBCAllPeriodic(); }
 
     void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
         // Update local fields
@@ -127,12 +125,9 @@ public:
         IpplTimings::stopTimer(tupdatePLayout);
     }
 
-    void initializeORB(FieldLayout_t& fl, Mesh_t& mesh) {
-        orb.initialize(fl, mesh, EFDMag_m);
-    }
+    void initializeORB(FieldLayout_t& fl, Mesh_t& mesh) { orb.initialize(fl, mesh, EFDMag_m); }
 
-    ~ChargedParticles() {
-    }
+    ~ChargedParticles() {}
 
     void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
         // Repartition the domains
@@ -430,9 +425,7 @@ public:
     }
 
 private:
-    void setBCAllPeriodic() {
-        this->setParticleBC(ippl::BC::PERIODIC);
-    }
+    void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
 };
 
 int main(int argc, char* argv[]) {

@@ -56,11 +56,9 @@ struct generate_random {
 
     // Initialize all members
     generate_random(view_type vals_, GeneratorPool rand_pool_, T start_, T end_)
-        : vals(vals_), rand_pool(rand_pool_), start(start_), end(end_) {
-    }
+        : vals(vals_), rand_pool(rand_pool_), start(start_), end(end_) {}
 
-    KOKKOS_INLINE_FUNCTION
-    void operator()(const size_t i) const {
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
         // Get a random number state from the pool for the active thread
         typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 

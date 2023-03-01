@@ -31,7 +31,10 @@ class Ippl {
 public:
     // an enumeration used to indicate whether to KEEP command-line arguments
     // or REMOVE them
-    enum { KEEP = 0, REMOVE = 1 };
+    enum {
+        KEEP   = 0,
+        REMOVE = 1
+    };
 
     // the parallel communication object
     static std::unique_ptr<ippl::Communicate> Comm;
@@ -57,9 +60,7 @@ public:
     // Destructor.
     ~Ippl();
 
-    static MPI_Comm getComm() {
-        return *Ippl::Comm->getCommunicator();
-    }
+    static MPI_Comm getComm() { return *Ippl::Comm->getCommunicator(); }
 
     // Kill the communication and throw runtime error exception.
     static void abort(const char* = 0);

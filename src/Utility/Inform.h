@@ -40,7 +40,10 @@
 class Inform {
 public:
     // enumeration listing the ways in which a file may be opened for writing
-    enum WriteMode { OVERWRITE, APPEND };
+    enum WriteMode {
+        OVERWRITE,
+        APPEND
+    };
 
 public:
     // constructor: arguments = name, print node
@@ -63,48 +66,30 @@ public:
     ~Inform();
 
     // turn messages on/off
-    void on(const bool o) {
-        On = o;
-    }
-    bool isOn() const {
-        return On;
-    }
+    void on(const bool o) { On = o; }
+    bool isOn() const { return On; }
 
     // change output destination
     void setDestination(std::ostream& dest);
-    std::ostream& getDestination() {
-        return *MsgDest;
-    }
+    std::ostream& getDestination() { return *MsgDest; }
 
     // get/set the current output level
     Inform& setOutputLevel(const int);
-    int getOutputLevel(void) const {
-        return OutputLevel;
-    }
+    int getOutputLevel(void) const { return OutputLevel; }
 
     // get/set the current message level
     Inform& setMessageLevel(const int);
-    int getMessageLevel(void) const {
-        return MsgLevel;
-    }
+    int getMessageLevel(void) const { return MsgLevel; }
 
     // get/set the printing node.  If set to a value < 0, all nodes print.
-    int getPrintNode() const {
-        return PrintNode;
-    }
-    void setPrintNode(int n = (-1)) {
-        PrintNode = n;
-    }
+    int getPrintNode() const { return PrintNode; }
+    void setPrintNode(int n = (-1)) { PrintNode = n; }
 
     // return a reference to the internal ostream used to print messages
-    std::ostream& getStream() {
-        return FormatBuf;
-    }
+    std::ostream& getStream() { return FormatBuf; }
 
     // Was the stream opened successfully on construction?
-    bool openedSuccessfully() {
-        return OpenedSuccessfully;
-    }
+    bool openedSuccessfully() { return OpenedSuccessfully; }
 
     // the signal has been given, print out the message.  Return ref to object.
     Inform& outputMessage(void);
@@ -113,43 +98,19 @@ public:
 
     typedef std::ios_base::fmtflags FmtFlags_t;
 
-    FmtFlags_t setf(FmtFlags_t setbits, FmtFlags_t field) {
-        return FormatBuf.setf(setbits, field);
-    }
+    FmtFlags_t setf(FmtFlags_t setbits, FmtFlags_t field) { return FormatBuf.setf(setbits, field); }
 
-    FmtFlags_t setf(FmtFlags_t f) {
-        return FormatBuf.setf(f);
-    }
-    void /*long*/ unsetf(FmtFlags_t f) {
-        FormatBuf.unsetf(f);
-    }
-    FmtFlags_t flags() const {
-        return FormatBuf.flags();
-    }
-    FmtFlags_t flags(FmtFlags_t f) {
-        return FormatBuf.flags(f);
-    }
-    int width() const {
-        return FormatBuf.width();
-    }
-    int width(int w) {
-        return FormatBuf.width(w);
-    }
-    char fill() const {
-        return FormatBuf.fill();
-    }
-    char fill(char c) {
-        return FormatBuf.fill(c);
-    }
-    int precision() const {
-        return FormatBuf.precision();
-    }
-    int precision(int p) {
-        return FormatBuf.precision(p);
-    }
-    void flush() {
-        MsgDest->flush();
-    }
+    FmtFlags_t setf(FmtFlags_t f) { return FormatBuf.setf(f); }
+    void /*long*/ unsetf(FmtFlags_t f) { FormatBuf.unsetf(f); }
+    FmtFlags_t flags() const { return FormatBuf.flags(); }
+    FmtFlags_t flags(FmtFlags_t f) { return FormatBuf.flags(f); }
+    int width() const { return FormatBuf.width(); }
+    int width(int w) { return FormatBuf.width(w); }
+    char fill() const { return FormatBuf.fill(); }
+    char fill(char c) { return FormatBuf.fill(c); }
+    int precision() const { return FormatBuf.precision(); }
+    int precision(int p) { return FormatBuf.precision(p); }
+    void flush() { MsgDest->flush(); }
 
 private:
     // name of this object; put at the start of each message.

@@ -106,29 +106,21 @@ namespace ippl {
          * @param d the dimension
          * @returns the number of grid points in the given dimension.
          */
-        detail::size_type size(unsigned d) const {
-            return owned_m[d].length();
-        }
+        detail::size_type size(unsigned d) const { return owned_m[d].length(); }
 
         /*!
          * Index domain of the local field.
          * @returns the index domain.
          */
-        const Domain_t& getOwned() const {
-            return owned_m;
-        }
+        const Domain_t& getOwned() const { return owned_m; }
 
         /*!
          * Index domain of the allocated field.
          * @returns the allocated index domain (including ghost cells)
          */
-        const Domain_t getAllocated() const {
-            return owned_m.grow(nghost_m);
-        }
+        const Domain_t getAllocated() const { return owned_m.grow(nghost_m); }
 
-        int getNghost() const {
-            return nghost_m;
-        }
+        int getNghost() const { return nghost_m; }
 
         void fillHalo();
 
@@ -140,16 +132,10 @@ namespace ippl {
             return *layout_m;
         }
 
-        const Index& getIndex(unsigned d) const {
-            return getLayout().getDomain()[d];
-        }
-        const NDIndex<Dim>& getDomain() const {
-            return getLayout().getDomain();
-        }
+        const Index& getIndex(unsigned d) const { return getLayout().getDomain()[d]; }
+        const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
 
-        detail::HaloCells<T, Dim>& getHalo() {
-            return halo_m;
-        }
+        detail::HaloCells<T, Dim>& getHalo() { return halo_m; }
 
         // Assignment from a constant.
         BareField<T, Dim>& operator=(T x);
@@ -176,17 +162,11 @@ namespace ippl {
             return dview_m(args...);
         }
 
-        view_type& getView() {
-            return dview_m;
-        }
+        view_type& getView() { return dview_m; }
 
-        const view_type& getView() const {
-            return dview_m;
-        }
+        const view_type& getView() const { return dview_m; }
 
-        HostMirror getHostMirror() {
-            return Kokkos::create_mirror(dview_m);
-        }
+        HostMirror getHostMirror() { return Kokkos::create_mirror(dview_m); }
 
         /*!
          * Generate the 3D range policy for iterating over the field,

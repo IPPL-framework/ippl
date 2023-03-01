@@ -67,8 +67,7 @@ public:
 
     AmrParticleBase(PLayout* layout);
 
-    ~AmrParticleBase() {
-    }
+    ~AmrParticleBase() {}
 
     // initialize AmrParticleBase class - add level and grid variables to attribute list
     void initializeAmr() {
@@ -121,12 +120,8 @@ public:
     // sort the particles given a sortlist
     void sort(SortList_t& sortlist);
 
-    PLayout& getAmrLayout() {
-        return this->getLayout();
-    }
-    const PLayout& getAmrLayout() const {
-        return this->getLayout();
-    }
+    PLayout& getAmrLayout() { return this->getLayout(); }
+    const PLayout& getAmrLayout() const { return this->getLayout(); }
 
     /*!
      * This method is used in the AmrPartBunch::boundp() function

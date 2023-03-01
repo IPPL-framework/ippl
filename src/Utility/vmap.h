@@ -45,9 +45,7 @@
 template <class Key>
 class dummy_less {
 public:
-    bool operator()(const Key l, const Key r) const {
-        return l < r;
-    }
+    bool operator()(const Key l, const Key r) const { return l < r; }
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -68,8 +66,7 @@ public:
         Compare comp;
 
     public:
-        value_compare(const Compare& c) : comp(c) {
-        }
+        value_compare(const Compare& c) : comp(c) {}
         bool operator()(const value_type& x, const value_type& y) const {
             return comp(x.first, y.first);
         }
@@ -83,15 +80,9 @@ private:
 
     // The comparator object and some convenient permutations.
     Compare Lt;
-    bool Gt(const key_type& a, const key_type& b) const {
-        return Lt(b, a);
-    }
-    bool Ge(const key_type& a, const key_type& b) const {
-        return !Lt(a, b);
-    }
-    bool Le(const key_type& a, const key_type& b) const {
-        return !Lt(b, a);
-    }
+    bool Gt(const key_type& a, const key_type& b) const { return Lt(b, a); }
+    bool Ge(const key_type& a, const key_type& b) const { return !Lt(a, b); }
+    bool Le(const key_type& a, const key_type& b) const { return !Lt(b, a); }
 
 public:
     // More typedefs.
@@ -108,62 +99,29 @@ public:
 
     // accessors:
 
-    iterator begin() {
-        return V_c.begin();
-    }
-    iterator end() {
-        return V_c.end();
-    }
-    reverse_iterator rbegin() {
-        return V_c.rbegin();
-    }
-    reverse_iterator rend() {
-        return V_c.rend();
-    }
+    iterator begin() { return V_c.begin(); }
+    iterator end() { return V_c.end(); }
+    reverse_iterator rbegin() { return V_c.rbegin(); }
+    reverse_iterator rend() { return V_c.rend(); }
 
-    const_iterator begin() const {
-        return V_c.begin();
-    }
-    const_iterator end() const {
-        return V_c.end();
-    }
-    const_reverse_iterator rbegin() const {
-        return V_c.rbegin();
-    }
-    const_reverse_iterator rend() const {
-        return V_c.rend();
-    }
+    const_iterator begin() const { return V_c.begin(); }
+    const_iterator end() const { return V_c.end(); }
+    const_reverse_iterator rbegin() const { return V_c.rbegin(); }
+    const_reverse_iterator rend() const { return V_c.rend(); }
 
-    key_compare key_comp() const {
-        return Lt;
-    }
-    value_compare value_comp() const {
-        return value_compare(Lt);
-    }
-    bool empty() const {
-        return V_c.empty();
-    }
-    size_type size() const {
-        return V_c.size();
-    }
-    size_type max_size() const {
-        return V_c.max_size();
-    }
-    size_type capacity() const {
-        return V_c.capacity();
-    }
+    key_compare key_comp() const { return Lt; }
+    value_compare value_comp() const { return value_compare(Lt); }
+    bool empty() const { return V_c.empty(); }
+    size_type size() const { return V_c.size(); }
+    size_type max_size() const { return V_c.max_size(); }
+    size_type capacity() const { return V_c.capacity(); }
 
-    void swap(vmap<Key, T, Compare>& x) {
-        V_c.swap(x.V_c);
-    }
-    void reserve(size_type n) {
-        V_c.reserve(n);
-    }
+    void swap(vmap<Key, T, Compare>& x) { V_c.swap(x.V_c); }
+    void reserve(size_type n) { V_c.reserve(n); }
 
     // allocation/deallocation/assignment
 
-    vmap(const Compare& comp = Compare()) : Lt(comp) {
-    }
+    vmap(const Compare& comp = Compare()) : Lt(comp) {}
     vmap(const vmap<Key, T, Compare>& x);
     vmap<Key, T, Compare>& operator=(const vmap<Key, T, Compare>& x);
 

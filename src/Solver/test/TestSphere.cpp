@@ -7,8 +7,8 @@
 #include "FFTPoissonSolver.h"
 #include "Ippl.h"
 
-KOKKOS_INLINE_FUNCTION
-double source(double x, double y, double z, double density = 1.0, double R = 1.0, double mu = 1.2) {
+KOKKOS_INLINE_FUNCTION double source(
+    double x, double y, double z, double density = 1.0, double R = 1.0, double mu = 1.2) {
     double pi = std::acos(-1.0);
     double G  = 6.674e-11;
 
@@ -18,8 +18,7 @@ double source(double x, double y, double z, double density = 1.0, double R = 1.0
     return double(checkInside) * 4.0 * pi * G * density;
 }
 
-KOKKOS_INLINE_FUNCTION
-double exact_fct(
+KOKKOS_INLINE_FUNCTION double exact_fct(
     double x, double y, double z, double density = 1.0, double R = 1.0, double mu = 1.2) {
     double pi = std::acos(-1.0);
     double G  = 6.674e-11;

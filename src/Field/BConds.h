@@ -56,13 +56,9 @@ namespace ippl {
         bool changesPhysicalCells() const;
         virtual void write(std::ostream&) const;
 
-        const std::shared_ptr<bc_type>& operator[](const int& i) const noexcept {
-            return bc_m[i];
-        }
+        const std::shared_ptr<bc_type>& operator[](const int& i) const noexcept { return bc_m[i]; }
 
-        std::shared_ptr<bc_type>& operator[](const int& i) noexcept {
-            return bc_m[i];
-        }
+        std::shared_ptr<bc_type>& operator[](const int& i) noexcept { return bc_m[i]; }
 
     private:
         container bc_m;

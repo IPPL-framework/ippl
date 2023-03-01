@@ -40,8 +40,7 @@ namespace ippl {
             /*!
              * Access single element of the expression
              */
-            KOKKOS_INLINE_FUNCTION
-            auto operator[](size_t i) const {
+            KOKKOS_INLINE_FUNCTION auto operator[](size_t i) const {
                 return static_cast<const E&>(*this)[i];
             }
         };
@@ -71,18 +70,14 @@ namespace ippl {
             typedef T value_type;
 
             KOKKOS_FUNCTION
-            Scalar(value_type val) : val_m(val) {
-            }
+            Scalar(value_type val) : val_m(val) {}
 
             /*!
              * Access the scalar value with single index.
              * This is used for binary operations between
              * Scalar and Vector.
              */
-            KOKKOS_INLINE_FUNCTION
-            value_type operator[](size_t /*i*/) const {
-                return val_m;
-            }
+            KOKKOS_INLINE_FUNCTION value_type operator[](size_t /*i*/) const { return val_m; }
 
             /*!
              * Access the scalar value with multiple indices.

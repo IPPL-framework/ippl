@@ -76,23 +76,17 @@ namespace ippl {
 
             virtual ~BCondBase() = default;
 
-            virtual FieldBC getBCType() const {
-                return NO_FACE;
-            }
+            virtual FieldBC getBCType() const { return NO_FACE; }
 
             virtual void findBCNeighbors(Field<T, Dim, Mesh, Cell>& field) = 0;
             virtual void apply(Field<T, Dim, Mesh, Cell>& field)           = 0;
             virtual void write(std::ostream&) const                        = 0;
 
             // Return face on which BC applies
-            unsigned int getFace() const {
-                return face_m;
-            }
+            unsigned int getFace() const { return face_m; }
 
             // Returns whether or not this BC changes physical cells.
-            bool changesPhysicalCells() const {
-                return changePhysical_m;
-            }
+            bool changesPhysicalCells() const { return changePhysical_m; }
 
         protected:
             // What face to apply the boundary condition to.
@@ -118,27 +112,19 @@ namespace ippl {
         using Layout_t  = typename detail::BCondBase<T, Dim, Mesh, Cell>::Layout_t;
 
         ExtrapolateFace(unsigned face, T offset, T slope)
-            : base_type(face), offset_m(offset), slope_m(slope) {
-        }
+            : base_type(face), offset_m(offset), slope_m(slope) {}
 
         virtual ~ExtrapolateFace() = default;
 
-        virtual FieldBC getBCType() const {
-            return EXTRAPOLATE_FACE;
-        }
+        virtual FieldBC getBCType() const { return EXTRAPOLATE_FACE; }
 
-        virtual void findBCNeighbors(Field_t& /*field*/) {
-        }
+        virtual void findBCNeighbors(Field_t& /*field*/) {}
         virtual void apply(Field_t& field);
 
         virtual void write(std::ostream& out) const;
 
-        const T& getOffset() const {
-            return offset_m;
-        }
-        const T& getSlope() const {
-            return slope_m;
-        }
+        const T& getOffset() const { return offset_m; }
+        const T& getSlope() const { return slope_m; }
 
     protected:
         T offset_m;
@@ -151,13 +137,10 @@ namespace ippl {
     class NoBcFace : public detail::BCondBase<T, Dim, Mesh, Cell> {
     public:
         using Field_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
-        NoBcFace(int face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {
-        }
+        NoBcFace(int face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
 
-        virtual void findBCNeighbors(Field_t& /*field*/) {
-        }
-        virtual void apply(Field_t& /*field*/) {
-        }
+        virtual void findBCNeighbors(Field_t& /*field*/) {}
+        virtual void apply(Field_t& /*field*/) {}
 
         virtual void write(std::ostream& out) const;
     };
@@ -168,12 +151,9 @@ namespace ippl {
     class ConstantFace : public ExtrapolateFace<T, Dim, Mesh, Cell> {
     public:
         ConstantFace(unsigned int face, T constant)
-            : ExtrapolateFace<T, Dim, Mesh, Cell>(face, constant, 0) {
-        }
+            : ExtrapolateFace<T, Dim, Mesh, Cell>(face, constant, 0) {}
 
-        virtual FieldBC getBCType() const {
-            return CONSTANT_FACE;
-        }
+        virtual FieldBC getBCType() const { return CONSTANT_FACE; }
 
         virtual void write(std::ostream& out) const;
     };
@@ -183,12 +163,9 @@ namespace ippl {
         class Cell = typename Mesh::DefaultCentering>
     class ZeroFace : public ConstantFace<T, Dim, Mesh, Cell> {
     public:
-        ZeroFace(unsigned face) : ConstantFace<T, Dim, Mesh, Cell>(face, 0.0) {
-        }
+        ZeroFace(unsigned face) : ConstantFace<T, Dim, Mesh, Cell>(face, 0.0) {}
 
-        virtual FieldBC getBCType() const {
-            return ZERO_FACE;
-        }
+        virtual FieldBC getBCType() const { return ZERO_FACE; }
 
         virtual void write(std::ostream& out) const;
     };
@@ -202,12 +179,9 @@ namespace ippl {
         using Field_t            = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
         using Layout_t           = typename detail::BCondBase<T, Dim, Mesh, Cell>::Layout_t;
 
-        PeriodicFace(unsigned face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {
-        }
+        PeriodicFace(unsigned face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
 
-        virtual FieldBC getBCType() const {
-            return PERIODIC_FACE;
-        }
+        virtual FieldBC getBCType() const { return PERIODIC_FACE; }
 
         virtual void findBCNeighbors(Field_t& field);
         virtual void apply(Field_t& field);

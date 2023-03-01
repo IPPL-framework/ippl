@@ -39,8 +39,7 @@ public:
             this->addAttribute(Q);
         }
 
-        ~Bunch() {
-        }
+        ~Bunch() {}
 
         typedef ippl::ParticleAttrib<int> rank_type;
         typedef ippl::ParticleAttrib<double> charge_container_type;
@@ -55,9 +54,7 @@ public:
 
     typedef Bunch<playout_type> bunch_type;
 
-    ParticleSendRecv() : nParticles(std::pow(256, 3)), nPoints(1024) {
-        setup();
-    }
+    ParticleSendRecv() : nParticles(std::pow(256, 3)), nPoints(1024) { setup(); }
 
     void setup() {
         ippl::Index I(nPoints);

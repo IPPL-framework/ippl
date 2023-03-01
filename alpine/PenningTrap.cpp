@@ -51,27 +51,20 @@ struct Newton1D {
 
     T mu, sigma, u;
 
-    KOKKOS_INLINE_FUNCTION
-    Newton1D() {
-    }
+    KOKKOS_INLINE_FUNCTION Newton1D() {}
 
-    KOKKOS_INLINE_FUNCTION
-    Newton1D(const T& mu_, const T& sigma_, const T& u_) : mu(mu_), sigma(sigma_), u(u_) {
-    }
+    KOKKOS_INLINE_FUNCTION Newton1D(const T& mu_, const T& sigma_, const T& u_)
+        : mu(mu_), sigma(sigma_), u(u_) {}
 
-    KOKKOS_INLINE_FUNCTION
-    ~Newton1D() {
-    }
+    KOKKOS_INLINE_FUNCTION ~Newton1D() {}
 
-    KOKKOS_INLINE_FUNCTION
-    T f(T& x) {
+    KOKKOS_INLINE_FUNCTION T f(T& x) {
         T F;
         F = std::erf((x - mu) / (sigma * std::sqrt(2.0))) - 2 * u + 1;
         return F;
     }
 
-    KOKKOS_INLINE_FUNCTION
-    T fprime(T& x) {
+    KOKKOS_INLINE_FUNCTION T fprime(T& x) {
         T Fprime;
         Fprime =
             (1 / sigma) * std::sqrt(2 / pi) * std::exp(-0.5 * (std::pow(((x - mu) / sigma), 2)));
@@ -105,11 +98,9 @@ struct generate_random {
     // Initialize all members
     generate_random(
         view_type x_, view_type v_, GeneratorPool rand_pool_, T& mu_, T& sigma_, T& minU_, T& maxU_)
-        : x(x_), v(v_), rand_pool(rand_pool_), mu(mu_), sigma(sigma_), minU(minU_), maxU(maxU_) {
-    }
+        : x(x_), v(v_), rand_pool(rand_pool_), mu(mu_), sigma(sigma_), minU(minU_), maxU(maxU_) {}
 
-    KOKKOS_INLINE_FUNCTION
-    void operator()(const size_t i) const {
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
         // Get a random number state from the pool for the active thread
         typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 

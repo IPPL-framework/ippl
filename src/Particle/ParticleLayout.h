@@ -66,9 +66,7 @@ namespace ippl {
             static constexpr unsigned dim = Dim;
 
         public:
-            ParticleLayout() {
-                bcs_m.fill(BC::NO);
-            };
+            ParticleLayout() { bcs_m.fill(BC::NO); };
 
             ~ParticleLayout() = default;
 
@@ -82,17 +80,13 @@ namespace ippl {
              * Copy over the given boundary conditions.
              * @param bcs are the boundary conditions
              */
-            void setParticleBC(bc_container_type bcs) {
-                bcs_m = bcs;
-            }
+            void setParticleBC(bc_container_type bcs) { bcs_m = bcs; }
 
             /*!
              * Use the same boundary condition on each face
              * @param bcs are the boundary conditions
              */
-            void setParticleBC(BC bc) {
-                bcs_m.fill(bc);
-            }
+            void setParticleBC(BC bc) { bcs_m.fill(bc); }
 
             /*!
              * Apply the given boundary conditions to the current particle positions.

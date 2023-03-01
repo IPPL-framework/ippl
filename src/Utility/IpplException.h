@@ -10,13 +10,9 @@ public:
         meth_  = meth;
     }
 
-    virtual const char* what() const throw() {
-        return descr_.c_str();
-    }
+    virtual const char* what() const throw() { return descr_.c_str(); }
 
-    virtual const std::string& where() const {
-        return meth_;
-    }
+    virtual const std::string& where() const { return meth_; }
 
 private:
     std::string descr_;

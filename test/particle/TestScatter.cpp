@@ -3,12 +3,9 @@
 
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
-    Bunch(PLayout& playout) : ippl::ParticleBase<PLayout>(playout) {
-        this->addAttribute(Q);
-    }
+    Bunch(PLayout& playout) : ippl::ParticleBase<PLayout>(playout) { this->addAttribute(Q); }
 
-    ~Bunch() {
-    }
+    ~Bunch() {}
 
     typedef ippl::ParticleAttrib<double> charge_container_type;
     charge_container_type Q;

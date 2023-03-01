@@ -32,10 +32,8 @@ struct InterpolatorTraits<T, Dim, IntNGP> {
 class IntNGP : public Interpolator {
 public:
     // constructor/destructor
-    IntNGP() {
-    }
-    ~IntNGP() {
-    }
+    IntNGP() {}
+    ~IntNGP() {}
 
     // gather/scatter functions
 

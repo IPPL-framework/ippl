@@ -37,7 +37,10 @@ namespace ippl {
     std::ostream& operator<<(std::ostream&, const FieldLayout<Dim>&);
 
     // enumeration used to select serial or parallel axes
-    enum e_dim_tag { SERIAL = 0, PARALLEL = 1 };
+    enum e_dim_tag {
+        SERIAL   = 0,
+        PARALLEL = 1
+    };
 
     template <unsigned Dim>
     class FieldLayout {
@@ -84,9 +87,7 @@ namespace ippl {
         void initialize(const NDIndex<Dim>& domain, e_dim_tag* p = 0, bool isAllPeriodic = false);
 
         // Return the domain.
-        const NDIndex<Dim>& getDomain() const {
-            return gDomain_m;
-        }
+        const NDIndex<Dim>& getDomain() const { return gDomain_m; }
 
         // Compare FieldLayouts to see if they represent the same domain; if
         // dimensionalities are different, the NDIndex operator==() will return
@@ -115,9 +116,7 @@ namespace ippl {
 
         // for the requested dimension, report if the distribution was requested to
         // be SERIAL or PARALLEL
-        e_dim_tag getRequestedDistribution(unsigned int d) const {
-            return requestedLayout_m[d];
-        }
+        e_dim_tag getRequestedDistribution(unsigned int d) const { return requestedLayout_m[d]; }
 
         const NDIndex_t& getLocalNDIndex(int rank = Ippl::Comm->rank()) const;
 
@@ -132,9 +131,7 @@ namespace ippl {
          * x low, x high, y low, y high, z low, z high
          * @returns the dimension of the face
          */
-        unsigned int getDimOfFace(unsigned int face) const {
-            return face / 2;
-        }
+        unsigned int getDimOfFace(unsigned int face) const { return face / 2; }
 
         const edge_neighbor_type& getEdgeNeighbors() const;
 

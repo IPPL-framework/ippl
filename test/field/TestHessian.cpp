@@ -30,8 +30,8 @@
 #include <iostream>
 #include <typeinfo>
 
-KOKKOS_INLINE_FUNCTION
-double gaussian(double x, double y, double z, double sigma = 1.0, double mu = 0.5) {
+KOKKOS_INLINE_FUNCTION double gaussian(
+    double x, double y, double z, double sigma = 1.0, double mu = 0.5) {
     double pi        = std::acos(-1.0);
     double prefactor = (1 / std::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);

@@ -12,8 +12,7 @@ void recv(int, int, BType&);
 
 class Archive {
 public:
-    Archive(int size = 0) : writepos(0), readpos(0), buffer_m("buffer", size) {
-    }
+    Archive(int size = 0) : writepos(0), readpos(0), buffer_m("buffer", size) {}
 
     template <typename T>
     void operator<<(const Kokkos::View<T*>& val) {
@@ -36,13 +35,9 @@ public:
         readpos += s * val.size();
     }
 
-    void* getBuffer() const {
-        return buffer_m.data();
-    }
+    void* getBuffer() const { return buffer_m.data(); }
 
-    size_t getSize() const {
-        return buffer_m.size();
-    }
+    size_t getSize() const { return buffer_m.size(); }
 
     ~Archive() = default;
 
@@ -61,16 +56,11 @@ public:
         addAttribute(id_m);
     };
 
-    ~BunchBase() {
-    }
+    ~BunchBase() {}
 
-    void addAttribute(Kokkos::View<double*>& pa) {
-        attrib_m.push_back(&pa);
-    }
+    void addAttribute(Kokkos::View<double*>& pa) { attrib_m.push_back(&pa); }
 
-    view_type& getView(size_t i) {
-        return *attrib_m[i];
-    }
+    view_type& getView(size_t i) { return *attrib_m[i]; }
 
     template <class BType>
     void update() {
@@ -142,15 +132,10 @@ private:
 
 class BunchDerived : public BunchBase {
 public:
-    BunchDerived(int n) : BunchBase(n), charge_m("charge", n) {
-        addAttribute(charge_m);
-    };
+    BunchDerived(int n) : BunchBase(n), charge_m("charge", n) { addAttribute(charge_m); };
 
-    ~BunchDerived() {
-    }
-    void update() {
-        BunchBase::update<BunchDerived>();
-    }
+    ~BunchDerived() {}
+    void update() { BunchBase::update<BunchDerived>(); }
 
 public:
     view_type charge_m;

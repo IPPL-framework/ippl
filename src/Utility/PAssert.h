@@ -31,8 +31,7 @@ struct IpplCTAssert {};
 
 template <>
 struct IpplCTAssert<true> {
-    static void test() {
-    }
+    static void test() {}
 };
 
 #if defined(NOCTAssert)
@@ -61,17 +60,13 @@ public:
 
     assertion(const assertion& a);
 
-    ~assertion() throw() {
-        delete[] msg;
-    }
+    ~assertion() throw() { delete[] msg; }
 
     assertion& operator=(const assertion& a);
 
     using std::runtime_error::what;
 
-    virtual const char* what() {
-        return msg;
-    };
+    virtual const char* what() { return msg; };
 };
 
 //---------------------------------------------------------------------------//

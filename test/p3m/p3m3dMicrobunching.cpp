@@ -212,13 +212,9 @@ public:
         fft_m->setDirectionName(-1, "inverse");
     }
 
-    inline const Mesh_t& getMesh() const {
-        return this->getLayout().getLayout().getMesh();
-    }
+    inline const Mesh_t& getMesh() const { return this->getLayout().getLayout().getMesh(); }
 
-    inline Mesh_t& getMesh() {
-        return this->getLayout().getLayout().getMesh();
-    }
+    inline Mesh_t& getMesh() { return this->getLayout().getLayout().getMesh(); }
 
     inline const FieldLayout_t& getFieldLayout() const {
         return dynamic_cast<FieldLayout_t&>(this->getLayout().getLayout().getFieldLayout());
@@ -456,9 +452,7 @@ public:
         Phi.gather(phi_m, this->R, IntrplCIC_t());
     }
 
-    void closeH5() {
-        H5CloseFile(H5f_m);
-    }
+    void closeH5() { H5CloseFile(H5f_m); }
 
     void openH5(std::string fn) {
         h5_prop_t props = H5CreateFileProp();
@@ -468,9 +462,7 @@ public:
         H5f_m = H5OpenFile(fn.c_str(), H5_O_WRONLY, props);
     }
 
-    const Vector_t get_hr() {
-        return hr_m;
-    }
+    const Vector_t get_hr() { return hr_m; }
 
     // private:
     BConds<double, Dim, Mesh_t, Center_t> bc_m;
@@ -555,8 +547,7 @@ public:
 template <class T>
 struct ApplyField {
     ApplyField(T c, double r, double epsilon, double alpha, double coulombConst)
-        : C(c), R(r), eps(epsilon), a(alpha), ke(coulombConst) {
-    }
+        : C(c), R(r), eps(epsilon), a(alpha), ke(coulombConst) {}
     void operator()(
         std::size_t i, std::size_t j, ChargedParticles<playout_t>& P,
         Vektor<double, 3>& shift) const {

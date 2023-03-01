@@ -65,8 +65,7 @@ namespace ippl {
         // constructor: this one also takes a Mesh
         ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&);
 
-        ParticleSpatialLayout() : detail::ParticleLayout<T, Dim>() {
-        }
+        ParticleSpatialLayout() : detail::ParticleLayout<T, Dim>() {}
 
         ~ParticleSpatialLayout() = default;
         //~ParticleSpatialLayout() {}
@@ -76,9 +75,7 @@ namespace ippl {
         template <class BufferType>
         void update(BufferType& pdata, BufferType& buffer);
 
-        const RegionLayout_t& getRegionLayout() const {
-            return rlayout_m;
-        }
+        const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
 
     protected:
         //! The RegionLayout which determines where our particles go.

@@ -26,13 +26,9 @@ public:
     typedef ippl::detail::ParticleLayout<double, dim> playout_type;
     typedef ippl::ParticleBase<playout_type> bunch_type;
 
-    ParticleBaseTest() {
-        setup();
-    }
+    ParticleBaseTest() { setup(); }
 
-    void setup() {
-        pbase = std::make_unique<bunch_type>(pl_m);
-    }
+    void setup() { pbase = std::make_unique<bunch_type>(pl_m); }
 
     playout_type pl_m;
     std::unique_ptr<bunch_type> pbase;
