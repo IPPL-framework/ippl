@@ -139,13 +139,13 @@ public:
         PL* pl, Vektor<double, 3> nr, e_dim_tag /*decomp*/[Dim], Vektor<double, 3> extend_l_,
         Vektor<double, 3> extend_r_, Vektor<int, 3> Nx_, Vektor<int, 3> Nv_,
         Vektor<double, 3> Vmax_)
-        : IpplParticleBase<PL>(pl),
-          nr_m(nr),
-          extend_l(extend_l_),
-          extend_r(extend_r_),
-          Nx(Nx_),
-          Nv(Nv_),
-          Vmax(Vmax_) {
+        : IpplParticleBase<PL>(pl)
+        , nr_m(nr)
+        , extend_l(extend_l_)
+        , extend_r(extend_r_)
+        , Nx(Nx_)
+        , Nv(Nv_)
+        , Vmax(Vmax_) {
         this->addAttribute(Q);
         this->addAttribute(m);
         this->addAttribute(SpaceQ);
@@ -517,7 +517,11 @@ public:
 
 template <class T>
 struct ApplyField {
-    ApplyField(T c, double r, double epsilon, double alpha) : C(c), R(r), eps(epsilon), a(alpha) {}
+    ApplyField(T c, double r, double epsilon, double alpha)
+        : C(c)
+        , R(r)
+        , eps(epsilon)
+        , a(alpha) {}
     void operator()(
         std::size_t i, std::size_t j, ChargedParticles<playout_t>& P,
         Vektor<double, 3>& shift) const {

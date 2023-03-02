@@ -28,7 +28,10 @@ public:
     typedef ippl::Field<double, dim> field_type;
     typedef ippl::BConds<double, dim> bc_type;
 
-    FieldBCTest() : nPoints(8) { setup(); }
+    FieldBCTest()
+        : nPoints(8) {
+        setup();
+    }
 
     void setup() {
         ippl::Index I(nPoints);

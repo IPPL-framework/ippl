@@ -65,7 +65,9 @@ class VecSum : public Expression<VecSum<E1, E2>> {
 
 public:
     KOKKOS_FUNCTION
-    VecSum(E1 const& u, E2 const& v) : _u(u), _v(v) {}
+    VecSum(E1 const& u, E2 const& v)
+        : _u(u)
+        , _v(v) {}
 
     KOKKOS_INLINE_FUNCTION double operator[](size_t i) const { return _u[i] + _v[i]; }
 };

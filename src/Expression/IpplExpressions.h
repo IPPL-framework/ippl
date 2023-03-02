@@ -70,7 +70,8 @@ namespace ippl {
             typedef T value_type;
 
             KOKKOS_FUNCTION
-            Scalar(value_type val) : val_m(val) {}
+            Scalar(value_type val)
+                : val_m(val) {}
 
             /*!
              * Access the scalar value with single index.

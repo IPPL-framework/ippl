@@ -66,7 +66,8 @@ public:
         Compare comp;
 
     public:
-        value_compare(const Compare& c) : comp(c) {}
+        value_compare(const Compare& c)
+            : comp(c) {}
         bool operator()(const value_type& x, const value_type& y) const {
             return comp(x.first, y.first);
         }
@@ -121,7 +122,8 @@ public:
 
     // allocation/deallocation/assignment
 
-    vmap(const Compare& comp = Compare()) : Lt(comp) {}
+    vmap(const Compare& comp = Compare())
+        : Lt(comp) {}
     vmap(const vmap<Key, T, Compare>& x);
     vmap<Key, T, Compare>& operator=(const vmap<Key, T, Compare>& x);
 

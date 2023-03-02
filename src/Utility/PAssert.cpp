@@ -42,17 +42,20 @@ using namespace std;
 
 //---------------------------------------------------------------------------//
 
-assertion::assertion(const char* cond, const char* file, int line) : std::runtime_error(cond) {
+assertion::assertion(const char* cond, const char* file, int line)
+    : std::runtime_error(cond) {
     msg = new char[strlen(cond) + strlen(file) + 500];
     sprintf(msg, "Assertion: %s, failed in %s, line %8d.", cond, file, line);
 }
 
-assertion::assertion(const char* m) : std::runtime_error(m) {
+assertion::assertion(const char* m)
+    : std::runtime_error(m) {
     msg = new char[strlen(m) + 1];
     strcpy(msg, m);
 }
 
-assertion::assertion(const assertion& a) : std::runtime_error(a.msg) {
+assertion::assertion(const assertion& a)
+    : std::runtime_error(a.msg) {
     msg = new char[strlen(a.msg) + 1];
     strcpy(msg, a.msg);
 }

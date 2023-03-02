@@ -46,12 +46,15 @@ namespace ippl {
          * Default constructor for electrostatic solvers;
          * desired output type defaults to solution only
          */
-        Electrostatics() : Solver<Tlhs, Trhs, Dim, M, C>(), grad_mp(nullptr) {
+        Electrostatics()
+            : Solver<Tlhs, Trhs, Dim, M, C>()
+            , grad_mp(nullptr) {
             setDefaultParameters();
         }
 
         Electrostatics(lhs_type& lhs, rhs_type& rhs)
-            : Solver<Tlhs, Trhs, Dim, M, C>(lhs, rhs), grad_mp(nullptr) {
+            : Solver<Tlhs, Trhs, Dim, M, C>(lhs, rhs)
+            , grad_mp(nullptr) {
             setDefaultParameters();
         }
 

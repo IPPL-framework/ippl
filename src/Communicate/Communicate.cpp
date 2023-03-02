@@ -17,9 +17,11 @@
 #include "Communicate.h"
 
 namespace ippl {
-    Communicate::Communicate(int& argc, char**& argv) : Communicate(argc, argv, MPI_COMM_WORLD) {}
+    Communicate::Communicate(int& argc, char**& argv)
+        : Communicate(argc, argv, MPI_COMM_WORLD) {}
 
-    Communicate::Communicate(int& argc, char**& argv, const MPI_Comm& comm) : comm_m(comm) {
+    Communicate::Communicate(int& argc, char**& argv, const MPI_Comm& comm)
+        : comm_m(comm) {
         MPI_Init(&argc, &argv);
         MPI_Comm_rank(comm_m, &rank_m);
         MPI_Comm_size(comm_m, &size_m);

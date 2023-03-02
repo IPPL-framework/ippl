@@ -3,7 +3,10 @@
 
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
-    Bunch(PLayout& playout) : ippl::ParticleBase<PLayout>(playout) { this->addAttribute(Q); }
+    Bunch(PLayout& playout)
+        : ippl::ParticleBase<PLayout>(playout) {
+        this->addAttribute(Q);
+    }
 
     ~Bunch() {}
 

@@ -93,7 +93,8 @@ public:
     ParticleAttrib<Vector_t> EF;
 
     ChargedParticles(PL* pl, Vector_t nr, e_dim_tag decomp[Dim])
-        : IpplParticleBase<PL>(pl), nr_m(nr) {
+        : IpplParticleBase<PL>(pl)
+        , nr_m(nr) {
         this->addAttribute(Q);
         this->addAttribute(EF);
 
@@ -396,7 +397,9 @@ private:
 
 template <class T>
 struct ApplyField {
-    ApplyField(T c, double r) : C(c), R(r) {}
+    ApplyField(T c, double r)
+        : C(c)
+        , R(r) {}
     void operator()(std::size_t i, std::size_t j, ChargedParticles<playout_t>& P) const {
         const Vector_t diff = P.R[i] - P.R[j];
         double sqr          = 0;

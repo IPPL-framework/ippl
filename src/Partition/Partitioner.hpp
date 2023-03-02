@@ -25,11 +25,8 @@ namespace ippl {
 
         template <unsigned Dim>
         template <typename view_type>
-        void Partitioner<Dim>::split(const NDIndex<Dim>& domain,
-                                     view_type& view,
-                                     e_dim_tag* decomp,
-                                     int nSplits) const
-        {
+        void Partitioner<Dim>::split(
+            const NDIndex<Dim>& domain, view_type& view, e_dim_tag* decomp, int nSplits) const {
             using NDIndex_t = NDIndex<Dim>;
 
             // Recursively split the domain until we have generated all the domains.
@@ -39,11 +36,10 @@ namespace ippl {
             // Start with the whole domain.
             domains_c[0] = domain;
             int v;
-            unsigned int d=0;
+            unsigned int d = 0;
 
-            int v1,v2,rm,vtot,vl,vr;
-            double a,lmax,len;
-
+            int v1, v2, rm, vtot, vl, vr;
+            double a, lmax, len;
 
             for (v = nSplits, rm = 0; v > 1; v /= 2) {
                 rm += (v % 2);
@@ -64,7 +60,7 @@ namespace ippl {
                     int i, j;
                     for (i = 0, j = 0; i < v; ++i, j += 2) {
                         // Split to the left and to the right, saving both.
-                        domains_c[i].split(copy_c[j], copy_c[j+1], d);
+                        domains_c[i].split(copy_c[j], copy_c[j + 1], d);
                     }
                     // Copy back.
                     std::copy(copy_c.begin(), copy_c.begin() + v * 2, domains_c.begin());
@@ -74,11 +70,10 @@ namespace ippl {
                         d = 0;
                 }
 
-
             } else {
-                vtot = 1; // count the number of nSplits to make sure that it worked
-                        // nSplits is not a power of 2 so we need to do some fancy splitting
-                        // sorry... this would be much cleaner with recursion
+                vtot = 1;  // count the number of nSplits to make sure that it worked
+                           // nSplits is not a power of 2 so we need to do some fancy splitting
+                           // sorry... this would be much cleaner with recursion
                 /*
                     The way this works is to recursively split on the longest dimension.
                     Suppose you request 11 nSplits.  It will split the longest dimension
@@ -97,7 +92,7 @@ namespace ippl {
                     vr = nSplits;
 
                     while (v1 > 1) {
-                        if ((v1 % 2) ==1) {
+                        if ((v1 % 2) == 1) {
                             vl = vl + (vr - vl) / 2;
                         } else {
                             vr = vl + (vr - vl) / 2;
@@ -110,19 +105,19 @@ namespace ippl {
                     if (v2 > vl) {
                         a = v2 - vl;
                         a /= vr - vl;
-                        vr = v2;
+                        vr         = v2;
                         leftDomain = domains_c[vl];
-                        lmax=0;
-                        d = std::numeric_limits<unsigned int>::max();
-                        for (unsigned int dd=0;dd<Dim;++dd) {
-                            if ( decomp[dd] == PARALLEL ) {
+                        lmax       = 0;
+                        d          = std::numeric_limits<unsigned int>::max();
+                        for (unsigned int dd = 0; dd < Dim; ++dd) {
+                            if (decomp[dd] == PARALLEL) {
                                 if ((len = leftDomain[dd].length()) > lmax) {
                                     lmax = len;
-                                    d = dd;
+                                    d    = dd;
                                 }
                             }
                         }
-                        domains_c[vl].split( domains_c[vl] , domains_c[vr] , d , a);
+                        domains_c[vl].split(domains_c[vl], domains_c[vr], d, a);
                         ++vtot;
                     }
                 }
@@ -137,5 +132,5 @@ namespace ippl {
                 view(i) = domains_c[i];
             }
         }
-    }
-}
+    }  // namespace detail
+}  // namespace ippl

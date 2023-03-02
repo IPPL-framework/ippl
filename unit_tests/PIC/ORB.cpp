@@ -34,7 +34,10 @@ public:
 
     template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
-        Bunch(PLayout& playout) : ippl::ParticleBase<PLayout>(playout) { this->addAttribute(Q); }
+        Bunch(PLayout& playout)
+            : ippl::ParticleBase<PLayout>(playout) {
+            this->addAttribute(Q);
+        }
 
         ~Bunch() {}
 
@@ -51,7 +54,8 @@ public:
 
     ORBTest()
         // Original configuration 256^3 particles, 512^3 grid.
-        : nParticles(17000000), nPoints(256) {
+        : nParticles(17000000)
+        , nPoints(256) {
         setup();
     }
 

@@ -64,7 +64,8 @@ public:
       This constructor is mandatory for all derived classes from
       ParticleBase as the update function invokes this
     */
-    ChargedParticles(PLayout& pl) : ippl::ParticleBase<PLayout>(pl) {
+    ChargedParticles(PLayout& pl)
+        : ippl::ParticleBase<PLayout>(pl) {
         // register the particle attributes
         this->addAttribute(qm);
         this->addAttribute(P);
@@ -74,7 +75,11 @@ public:
     ChargedParticles(
         PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax, ippl::e_dim_tag decomp[Dim],
         double Q)
-        : ippl::ParticleBase<PLayout>(pl), hr_m(hr), rmin_m(rmin), rmax_m(rmax), Q_m(Q) {
+        : ippl::ParticleBase<PLayout>(pl)
+        , hr_m(hr)
+        , rmin_m(rmin)
+        , rmax_m(rmax)
+        , Q_m(Q) {
         this->addAttribute(qm);
         this->addAttribute(P);
         this->addAttribute(E);

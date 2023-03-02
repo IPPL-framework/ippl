@@ -129,7 +129,9 @@ public:
     ParticleAttrib<int> ID;       // unique ID for debugging reasons => remove for production
 
     ChargedParticles(PL* pl, Vektor<double, 3> nr, e_dim_tag /*decomp*/[Dim], unsigned seedID_ = 0)
-        : IpplParticleBase<PL>(pl), nr_m(nr), seedID(seedID_) {
+        : IpplParticleBase<PL>(pl)
+        , nr_m(nr)
+        , seedID(seedID_) {
         this->addAttribute(Q);
         this->addAttribute(m);
         this->addAttribute(Phi);
@@ -547,7 +549,11 @@ public:
 template <class T>
 struct ApplyField {
     ApplyField(T c, double r, double epsilon, double alpha, double coulombConst)
-        : C(c), R(r), eps(epsilon), a(alpha), ke(coulombConst) {}
+        : C(c)
+        , R(r)
+        , eps(epsilon)
+        , a(alpha)
+        , ke(coulombConst) {}
     void operator()(
         std::size_t i, std::size_t j, ChargedParticles<playout_t>& P,
         Vektor<double, 3>& shift) const {

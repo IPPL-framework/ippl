@@ -28,9 +28,12 @@ class my_auto_ptr {
     X* px;
 
 public:
-    my_auto_ptr() : px(0) {}
-    my_auto_ptr(X* p) : px(p) {}
-    my_auto_ptr(const my_auto_ptr<X>& r) : px(r.release()) {}
+    my_auto_ptr()
+        : px(0) {}
+    my_auto_ptr(X* p)
+        : px(p) {}
+    my_auto_ptr(const my_auto_ptr<X>& r)
+        : px(r.release()) {}
     my_auto_ptr& operator=(const my_auto_ptr<X>& r) {
         if (&r != this) {
             delete px;

@@ -63,7 +63,9 @@ class VecSum : public VectorExpr<VecSum<E1, E2>> {
 
 public:
     KOKKOS_FUNCTION
-    VecSum(E1 const& u, E2 const& v) : _u(u), _v(v) {}
+    VecSum(E1 const& u, E2 const& v)
+        : _u(u)
+        , _v(v) {}
 
     KOKKOS_INLINE_FUNCTION double operator[](size_t i) const { return _u[i] + _v[i]; }
 };
@@ -134,7 +136,9 @@ KOKKOS_INLINE_FUNCTION meta_cross<E1, E2> cross(
 template <typename E1, typename E2>
 struct meta_cross : public VectorExpr<meta_cross<E1, E2>> {
     KOKKOS_FUNCTION
-    meta_cross(E1 const& u, E2 const& v) : _u(u), _v(v) {}
+    meta_cross(E1 const& u, E2 const& v)
+        : _u(u)
+        , _v(v) {}
 
     KOKKOS_INLINE_FUNCTION double operator[](size_t i) const {
         size_t j = (i + 1) % 3;
@@ -161,7 +165,9 @@ KOKKOS_INLINE_FUNCTION meta_cross<E1, E2> cross(
 template <typename E1, typename E2>
 struct meta_dot : public VectorExpr<meta_dot<E1, E2>> {
     KOKKOS_FUNCTION
-    meta_dot(E1 const& u, E2 const& v) : _u(u), _v(v) {}
+    meta_dot(E1 const& u, E2 const& v)
+        : _u(u)
+        , _v(v) {}
 
     KOKKOS_INLINE_FUNCTION double operator()() const {
         return _u[0] * _v[0] + _u[1] * _v[1] + _u[2] * _v[2];

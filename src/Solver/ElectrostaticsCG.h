@@ -43,9 +43,15 @@ namespace ippl {
         using algo     = PCG<Tlhs, Trhs, Dim, OpRet, M, C>;
         using Base     = Electrostatics<Tlhs, Trhs, Dim, M, C>;
 
-        ElectrostaticsCG() : Base() { setDefaultParameters(); }
+        ElectrostaticsCG()
+            : Base() {
+            setDefaultParameters();
+        }
 
-        ElectrostaticsCG(lhs_type& lhs, rhs_type& rhs) : Base(lhs, rhs) { setDefaultParameters(); }
+        ElectrostaticsCG(lhs_type& lhs, rhs_type& rhs)
+            : Base(lhs, rhs) {
+            setDefaultParameters();
+        }
 
         void solve() override {
             algo_m.setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));

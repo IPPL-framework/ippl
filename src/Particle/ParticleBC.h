@@ -57,11 +57,11 @@ namespace ippl {
             KOKKOS_INLINE_FUNCTION ParticleBC(
                 const ViewType& view, const NDRegion<T, Dim>& nr, const unsigned& dim,
                 const bool& isUpper)
-                : view_m(view),
-                  dim_m(dim),
-                  minval_m(nr[dim].min()),
-                  maxval_m(nr[dim].max()),
-                  isUpper_m(isUpper) {
+                : view_m(view)
+                , dim_m(dim)
+                , minval_m(nr[dim].min())
+                , maxval_m(nr[dim].max())
+                , isUpper_m(isUpper) {
                 extent_m = nr[dim].length();
                 middle_m = (minval_m + maxval_m) / 2;
             }

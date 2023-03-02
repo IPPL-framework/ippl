@@ -29,7 +29,8 @@
 
 ////////////////////////////////////////////////////////////////////////////
 // constructor: just get unique ID for this object
-UserList::UserList() : userlistID(Unique::get()) {}
+UserList::UserList()
+    : userlistID(Unique::get()) {}
 
 ////////////////////////////////////////////////////////////////////////////
 // destructor: inform all users of our untimely demise

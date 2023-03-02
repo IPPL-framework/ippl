@@ -82,8 +82,14 @@ private:
         int base;       // base tag value, the key for the map
         int cycleSize;  // range through which to cycle tag
         int current;    // current value of tag
-        TagInfo(int b, int s) : base(b), cycleSize(s), current(0) {}
-        TagInfo() : base(-1), cycleSize(-1), current(0) {}
+        TagInfo(int b, int s)
+            : base(b)
+            , cycleSize(s)
+            , current(0) {}
+        TagInfo()
+            : base(-1)
+            , cycleSize(-1)
+            , current(0) {}
     };
 
     // class used for comparisons

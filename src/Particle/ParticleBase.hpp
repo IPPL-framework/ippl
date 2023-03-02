@@ -66,61 +66,53 @@ namespace ippl {
 
     template <class PLayout, class... Properties>
     ParticleBase<PLayout, Properties...>::ParticleBase()
-    : layout_m(nullptr)
-    , localNum_m(0)
-    , attributes_m(0)
-    , nextID_m(Ippl::Comm->myNode())
-    , numNodes_m(Ippl::Comm->getNodes())
-    {
-        addAttribute(ID); // needs to be added first due to destroy function
+        : layout_m(nullptr)
+        , localNum_m(0)
+        , attributes_m(0)
+        , nextID_m(Ippl::Comm->myNode())
+        , numNodes_m(Ippl::Comm->getNodes()) {
+        addAttribute(ID);  // needs to be added first due to destroy function
         addAttribute(R);
     }
 
     template <class PLayout, class... Properties>
     ParticleBase<PLayout, Properties...>::ParticleBase(PLayout& layout)
-    : ParticleBase()
-    {
+        : ParticleBase() {
         initialize(layout);
     }
 
-
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::addAttribute(detail::ParticleAttribBase<Properties...>& pa)
-    {
+    void ParticleBase<PLayout, Properties...>::addAttribute(
+        detail::ParticleAttribBase<Properties...>& pa) {
         attributes_m.push_back(&pa);
         pa.setParticleCount(localNum_m);
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::initialize(PLayout& layout)
-    {
-//         PAssert(layout_m == nullptr);
+    void ParticleBase<PLayout, Properties...>::initialize(PLayout& layout) {
+        //         PAssert(layout_m == nullptr);
 
         // save the layout, and perform setup tasks
         layout_m = &layout;
     }
 
-
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::create(size_type nLocal)
-    {
+    void ParticleBase<PLayout, Properties...>::create(size_type nLocal) {
         PAssert(layout_m != nullptr);
 
-        for (attribute_iterator it = attributes_m.begin();
-             it != attributes_m.end(); ++it) {
+        for (attribute_iterator it = attributes_m.begin(); it != attributes_m.end(); ++it) {
             (*it)->create(nLocal);
         }
 
         // set the unique ID value for these new particles
-        auto pIDs = ID.getView();
-        auto nextID = this->nextID_m;
+        auto pIDs     = ID.getView();
+        auto nextID   = this->nextID_m;
         auto numNodes = this->numNodes_m;
-        Kokkos::parallel_for("ParticleBase<PLayout, Properties...>::create(size_t)",
-                             Kokkos::RangePolicy<size_type>(localNum_m, nLocal),
-                             KOKKOS_LAMBDA(const std::int64_t i) {
-                                 pIDs(i) = nextID + numNodes * i;
-                             });
-        //nextID_m += numNodes_m * (nLocal - localNum_m);
+        Kokkos::parallel_for(
+            "ParticleBase<PLayout, Properties...>::create(size_t)",
+            Kokkos::RangePolicy<size_type>(localNum_m, nLocal),
+            KOKKOS_LAMBDA(const std::int64_t i) { pIDs(i) = nextID + numNodes * i; });
+        // nextID_m += numNodes_m * (nLocal - localNum_m);
         nextID_m += numNodes_m * nLocal;
 
         // remember that we're creating these new particles
@@ -128,24 +120,22 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::createWithID(index_type id)
-    {
+    void ParticleBase<PLayout, Properties...>::createWithID(index_type id) {
         PAssert(layout_m != nullptr);
 
         // temporary change
         index_type tmpNextID = nextID_m;
-        nextID_m = id;
-        numNodes_m = 0;
+        nextID_m             = id;
+        numNodes_m           = 0;
 
         create(1);
 
-        nextID_m = tmpNextID;
+        nextID_m   = tmpNextID;
         numNodes_m = Ippl::Comm->getNodes();
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::globalCreate(size_type nTotal)
-    {
+    void ParticleBase<PLayout, Properties...>::globalCreate(size_type nTotal) {
         PAssert(layout_m != nullptr);
 
         // Compute the number of particles local to each processor
@@ -161,11 +151,13 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::destroy(const Kokkos::View<bool*>& invalid, const size_type destroyNum) {
+    void ParticleBase<PLayout, Properties...>::destroy(
+        const Kokkos::View<bool*>& invalid, const size_type destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
         // If there aren't any particles to delete, do nothing
-        if (destroyNum == 0) return;
+        if (destroyNum == 0)
+            return;
 
         // If we're deleting all the particles, there's no point in doing
         // anything because the valid region will be empty; we only need to
@@ -186,49 +178,53 @@ namespace ippl {
         Kokkos::deep_copy(deleteIndex_m, -1);
 
         auto locDeleteIndex = deleteIndex_m;
-        auto locKeepIndex = keepIndex_m;
+        auto locKeepIndex   = keepIndex_m;
 
         // Find the indices of the invalid particles in the valid region
-        Kokkos::parallel_scan("Scan in ParticleBase::destroy()",
-                              localNum_m - destroyNum,
-                              KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
-                              {
-                                  if (final && invalid(i)) locDeleteIndex(idx) = i;
-                                  if (invalid(i)) idx += 1;
-                              });
+        Kokkos::parallel_scan(
+            "Scan in ParticleBase::destroy()", localNum_m - destroyNum,
+            KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
+                if (final && invalid(i))
+                    locDeleteIndex(idx) = i;
+                if (invalid(i))
+                    idx += 1;
+            });
         Kokkos::fence();
 
         // Determine the total number of invalid particles in the valid region
         size_type maxDeleteIndex = 0;
-        Kokkos::parallel_reduce("Reduce in ParticleBase::destroy()", destroyNum,
-                               KOKKOS_LAMBDA(const size_t i, size_t& maxIdx)
-                               {
-                                   if (locDeleteIndex(i) >= 0 && i > maxIdx) maxIdx = i;
-                               }, Kokkos::Max<size_type>(maxDeleteIndex));
+        Kokkos::parallel_reduce(
+            "Reduce in ParticleBase::destroy()", destroyNum,
+            KOKKOS_LAMBDA(const size_t i, size_t& maxIdx) {
+                if (locDeleteIndex(i) >= 0 && i > maxIdx)
+                    maxIdx = i;
+            },
+            Kokkos::Max<size_type>(maxDeleteIndex));
 
         // Find the indices of the valid particles in the invalid region
-        Kokkos::parallel_scan("Second scan in ParticleBase::destroy()",
-                              Kokkos::RangePolicy<size_type>(localNum_m - destroyNum, localNum_m),
-                              KOKKOS_LAMBDA(const size_t i, int& idx, const bool final)
-                              {
-                                  if (final && !invalid(i)) locKeepIndex(idx) = i;
-                                  if (!invalid(i)) idx += 1;
-                              });
+        Kokkos::parallel_scan(
+            "Second scan in ParticleBase::destroy()",
+            Kokkos::RangePolicy<size_type>(localNum_m - destroyNum, localNum_m),
+            KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
+                if (final && !invalid(i))
+                    locKeepIndex(idx) = i;
+                if (!invalid(i))
+                    idx += 1;
+            });
 
         Kokkos::fence();
 
         localNum_m -= destroyNum;
 
         // Partition the attributes into valid and invalid regions
-        for (attribute_iterator it = attributes_m.begin();
-             it != attributes_m.end(); ++it)
-        {
+        for (attribute_iterator it = attributes_m.begin(); it != attributes_m.end(); ++it) {
             (*it)->destroy(deleteIndex_m, keepIndex_m, maxDeleteIndex + 1);
         }
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::serialize(detail::Archive<Properties...>& ar, size_type nsends) {
+    void ParticleBase<PLayout, Properties...>::serialize(
+        detail::Archive<Properties...>& ar, size_type nsends) {
         using size_type = typename attribute_container_t::size_type;
         for (size_type i = 0; i < attributes_m.size(); ++i) {
             attributes_m[i]->serialize(ar, nsends);
@@ -236,7 +232,8 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::deserialize(detail::Archive<Properties...>& ar, size_type nrecvs) {
+    void ParticleBase<PLayout, Properties...>::deserialize(
+        detail::Archive<Properties...>& ar, size_type nrecvs) {
         using size_type = typename attribute_container_t::size_type;
         for (size_type i = 0; i < attributes_m.size(); ++i) {
             attributes_m[i]->deserialize(ar, nrecvs);
@@ -244,7 +241,8 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    detail::size_type ParticleBase<PLayout, Properties...>::packedSize(const size_type count) const {
+    detail::size_type ParticleBase<PLayout, Properties...>::packedSize(
+        const size_type count) const {
         size_type total = 0;
         // Vector size type
         using vsize_t = typename attribute_container_t::size_type;
@@ -256,9 +254,7 @@ namespace ippl {
 
     template <class PLayout, class... Properties>
     template <class Buffer>
-    void ParticleBase<PLayout, Properties...>::pack(Buffer& buffer,
-                                                    const hash_type& hash)
-    {
+    void ParticleBase<PLayout, Properties...>::pack(Buffer& buffer, const hash_type& hash) {
         // Vector size type
         using vsize_t = typename attribute_container_t::size_type;
         for (vsize_t j = 0; j < attributes_m.size(); ++j) {
@@ -268,8 +264,7 @@ namespace ippl {
 
     template <class PLayout, class... Properties>
     template <class Buffer>
-    void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer, size_type nrecvs)
-    {
+    void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer, size_type nrecvs) {
         // Vector size type
         using vsize_t = typename attribute_container_t::size_type;
         for (vsize_t j = 0; j < attributes_m.size(); ++j) {
@@ -277,4 +272,4 @@ namespace ippl {
         }
         localNum_m += nrecvs;
     }
-}
+}  // namespace ippl

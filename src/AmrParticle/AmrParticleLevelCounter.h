@@ -42,7 +42,8 @@ public:
     typedef typename std::map<Key, T>::const_iterator const_iterator;
 
 public:
-    AmrParticleLevelCounter() : count_m() {}
+    AmrParticleLevelCounter()
+        : count_m() {}
 
     /*!
      * Add more "particles" to that level

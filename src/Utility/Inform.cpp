@@ -84,7 +84,9 @@ void Inform::setup(const char* myname, int pnode) {
 
 /////////////////////////////////////////////////////////////////////
 // class constructor
-Inform::Inform(const char* myname, int pnode) : FormatBuf(std::ios::out), OpenedSuccessfully(true) {
+Inform::Inform(const char* myname, int pnode)
+    : FormatBuf(std::ios::out)
+    , OpenedSuccessfully(true) {
     // in this case, the default destination stream is cout
     NeedClose = false;
     MsgDest   = &std::cout;
@@ -96,7 +98,8 @@ Inform::Inform(const char* myname, int pnode) : FormatBuf(std::ios::out), Opened
 /////////////////////////////////////////////////////////////////////
 // class constructor specifying a file to open
 Inform::Inform(const char* myname, const char* fname, const WriteMode opnmode, int pnode)
-    : FormatBuf(std::ios::out), OpenedSuccessfully(true) {
+    : FormatBuf(std::ios::out)
+    , OpenedSuccessfully(true) {
     // only open a file if we're on the proper node
     MsgDest = 0;
     if (pnode >= 0 && pnode == Ippl::Comm->myNode()) {
@@ -125,7 +128,8 @@ Inform::Inform(const char* myname, const char* fname, const WriteMode opnmode, i
 /////////////////////////////////////////////////////////////////////
 // class constructor specifying an output stream to use
 Inform::Inform(const char* myname, std::ostream& os, int pnode)
-    : FormatBuf(std::ios::out), OpenedSuccessfully(true) {
+    : FormatBuf(std::ios::out)
+    , OpenedSuccessfully(true) {
     // just store a ref to the provided stream
     NeedClose = false;
     MsgDest   = &os;
@@ -137,7 +141,9 @@ Inform::Inform(const char* myname, std::ostream& os, int pnode)
 /////////////////////////////////////////////////////////////////////
 // class constructor specifying an other Inform instance
 Inform::Inform(const char* myname, const Inform& os, int pnode)
-    : FormatBuf(std::ios::out), MsgDest(os.MsgDest), OpenedSuccessfully(true) {
+    : FormatBuf(std::ios::out)
+    , MsgDest(os.MsgDest)
+    , OpenedSuccessfully(true) {
     // just store a ref to the provided stream
     NeedClose = false;
 

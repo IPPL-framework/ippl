@@ -39,7 +39,8 @@ namespace ippl {
         static constexpr unsigned dim = Dim;
 
         KOKKOS_FUNCTION
-        Vector() : Vector(value_type(0)) {}
+        Vector()
+            : Vector(value_type(0)) {}
 
         template <typename E, size_t N>
         KOKKOS_FUNCTION Vector(const detail::Expression<E, N>& expr);

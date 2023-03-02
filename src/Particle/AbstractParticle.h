@@ -36,7 +36,9 @@ public:
     typedef ParticleLayout<T, Dim> Layout_t;
 
 public:
-    AbstractParticle() : R_p(0), ID_p(0) {}
+    AbstractParticle()
+        : R_p(0)
+        , ID_p(0) {}
 
     virtual ~AbstractParticle() {}
     //     AbstractParticle(ParticlePos_t& R,

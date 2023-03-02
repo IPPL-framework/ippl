@@ -12,7 +12,10 @@ void recv(int, int, BType&);
 
 class Archive {
 public:
-    Archive(int size = 0) : writepos(0), readpos(0), buffer_m("buffer", size) {}
+    Archive(int size = 0)
+        : writepos(0)
+        , readpos(0)
+        , buffer_m("buffer", size) {}
 
     template <typename T>
     void operator<<(const Kokkos::View<T*>& val) {
@@ -51,7 +54,9 @@ class BunchBase {
 public:
     typedef Kokkos::View<double*> view_type;
 
-    BunchBase(int n) : mass_m("mass", n), id_m("id", n) {
+    BunchBase(int n)
+        : mass_m("mass", n)
+        , id_m("id", n) {
         addAttribute(mass_m);
         addAttribute(id_m);
     };
@@ -132,7 +137,11 @@ private:
 
 class BunchDerived : public BunchBase {
 public:
-    BunchDerived(int n) : BunchBase(n), charge_m("charge", n) { addAttribute(charge_m); };
+    BunchDerived(int n)
+        : BunchBase(n)
+        , charge_m("charge", n) {
+        addAttribute(charge_m);
+    };
 
     ~BunchDerived() {}
     void update() { BunchBase::update<BunchDerived>(); }

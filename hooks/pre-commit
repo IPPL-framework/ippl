@@ -1,5 +1,5 @@
 #!/bin/sh
-git diff --cached --name-only | grep -e '\.h$' -e '\.cpp$' | while read FILE; do
+git diff --cached --name-only | grep -e '\.h$' -e '\.cpp$' -e '\.hpp$' | while read FILE; do
 	clang-format -i "$FILE"
 	git add "$FILE"
 done

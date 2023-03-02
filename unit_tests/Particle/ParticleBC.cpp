@@ -28,7 +28,9 @@ public:
     typedef ippl::detail::ParticleLayout<double, dim> playout_type;
     typedef ippl::ParticleBase<playout_type> bunch_type;
 
-    ParticleBCTest() : len(0.2), nParticles(1000) {}
+    ParticleBCTest()
+        : len(0.2)
+        , nParticles(1000) {}
 
     void setup(double pos) {
         bunch = std::make_unique<bunch_type>(pl_m);

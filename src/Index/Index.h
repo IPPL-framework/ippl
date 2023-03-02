@@ -54,9 +54,13 @@ namespace ippl {
     public:
         class iterator {
         public:
-            iterator() : current_m(0), stride_m(0) {}
+            iterator()
+                : current_m(0)
+                , stride_m(0) {}
 
-            iterator(int current, int stride = 1) : current_m(current), stride_m(stride) {}
+            iterator(int current, int stride = 1)
+                : current_m(current)
+                , stride_m(stride) {}
 
             int operator*() { return current_m; }
 

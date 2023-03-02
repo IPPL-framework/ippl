@@ -29,7 +29,8 @@ namespace ippl {
     template <typename E>                                                      \
     struct fun : public detail::Expression<fun<E>, sizeof(E)> {                \
         KOKKOS_FUNCTION                                                        \
-        fun(const E& u) : u_m(u) {}                                            \
+        fun(const E& u)                                                        \
+            : u_m(u) {}                                                        \
                                                                                \
         KOKKOS_INLINE_FUNCTION auto operator[](size_t i) const { return op1; } \
                                                                                \
@@ -84,7 +85,9 @@ namespace ippl {
     template <typename E1, typename E2>                                                          \
     struct fun : public detail::Expression<fun<E1, E2>, sizeof(E1) + sizeof(E2)> {               \
         KOKKOS_FUNCTION                                                                          \
-        fun(const E1& u, const E2& v) : u_m(u), v_m(v) {}                                        \
+        fun(const E1& u, const E2& v)                                                            \
+            : u_m(u)                                                                             \
+            , v_m(v) {}                                                                          \
                                                                                                  \
         KOKKOS_INLINE_FUNCTION auto operator[](size_t i) const { return op1; }                   \
                                                                                                  \
@@ -153,7 +156,9 @@ namespace ippl {
         template <typename E1, typename E2>
         struct meta_cross : public detail::Expression<meta_cross<E1, E2>, sizeof(E1) + sizeof(E2)> {
             KOKKOS_FUNCTION
-            meta_cross(const E1& u, const E2& v) : u_m(u), v_m(v) {}
+            meta_cross(const E1& u, const E2& v)
+                : u_m(u)
+                , v_m(v) {}
 
             /*
              * Vector::cross
@@ -191,7 +196,9 @@ namespace ippl {
         template <typename E1, typename E2>
         struct meta_dot : public Expression<meta_dot<E1, E2>, sizeof(E1) + sizeof(E2)> {
             KOKKOS_FUNCTION
-            meta_dot(const E1& u, const E2& v) : u_m(u), v_m(v) {}
+            meta_dot(const E1& u, const E2& v)
+                : u_m(u)
+                , v_m(v) {}
 
             /*
              * Vector::dot
@@ -238,7 +245,10 @@ namespace ippl {
                 const E& u, const typename E::Mesh_t::vector_type& xvector,
                 const typename E::Mesh_t::vector_type& yvector,
                 const typename E::Mesh_t::vector_type& zvector)
-                : u_m(u), xvector_m(xvector), yvector_m(yvector), zvector_m(zvector) {}
+                : u_m(u)
+                , xvector_m(xvector)
+                , yvector_m(yvector)
+                , zvector_m(zvector) {}
 
             /*
              * 3-dimensional grad
@@ -273,7 +283,10 @@ namespace ippl {
                 const E& u, const typename E::Mesh_t::vector_type& xvector,
                 const typename E::Mesh_t::vector_type& yvector,
                 const typename E::Mesh_t::vector_type& zvector)
-                : u_m(u), xvector_m(xvector), yvector_m(yvector), zvector_m(zvector) {}
+                : u_m(u)
+                , xvector_m(xvector)
+                , yvector_m(yvector)
+                , zvector_m(zvector) {}
 
             /*
              * 3-dimensional div
@@ -302,7 +315,8 @@ namespace ippl {
                   meta_laplace<E>, sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
             KOKKOS_FUNCTION
             meta_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector)
-                : u_m(u), hvector_m(hvector) {}
+                : u_m(u)
+                , hvector_m(hvector) {}
 
             /*
              * 3-dimensional Laplacian
@@ -336,11 +350,11 @@ namespace ippl {
                 const typename E::Mesh_t::vector_type& yvector,
                 const typename E::Mesh_t::vector_type& zvector,
                 const typename E::Mesh_t::vector_type& hvector)
-                : u_m(u),
-                  xvector_m(xvector),
-                  yvector_m(yvector),
-                  zvector_m(zvector),
-                  hvector_m(hvector) {}
+                : u_m(u)
+                , xvector_m(xvector)
+                , yvector_m(yvector)
+                , zvector_m(zvector)
+                , hvector_m(hvector) {}
 
             /*
              * 3-dimensional curl
@@ -383,11 +397,11 @@ namespace ippl {
                 const typename E::Mesh_t::vector_type& yvector,
                 const typename E::Mesh_t::vector_type& zvector,
                 const typename E::Mesh_t::vector_type& hvector)
-                : u_m(u),
-                  xvector_m(xvector),
-                  yvector_m(yvector),
-                  zvector_m(zvector),
-                  hvector_m(hvector) {}
+                : u_m(u)
+                , xvector_m(xvector)
+                , yvector_m(yvector)
+                , zvector_m(zvector)
+                , hvector_m(hvector) {}
 
             /*
              * 3-dimensional hessian (return Vector<Vector<T,3>,3>)

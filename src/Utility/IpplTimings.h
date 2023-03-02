@@ -56,7 +56,10 @@ public:
     typedef unsigned int TimerRef;
 
     // constructor
-    IpplTimerInfo() : name(""), wallTime(0.0), indx(std::numeric_limits<TimerRef>::max()) {
+    IpplTimerInfo()
+        : name("")
+        , wallTime(0.0)
+        , indx(std::numeric_limits<TimerRef>::max()) {
         clear();
     }
 

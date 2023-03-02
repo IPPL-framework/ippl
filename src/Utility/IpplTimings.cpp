@@ -46,7 +46,9 @@
 Timing* IpplTimings::instance = new Timing();
 std::stack<Timing*> IpplTimings::stashedInstance;
 
-Timing::Timing() : TimerList(), TimerMap() {}
+Timing::Timing()
+    : TimerList()
+    , TimerMap() {}
 
 Timing::~Timing() {
     for (TimerMap_t::iterator it = TimerMap.begin(); it != TimerMap.end(); ++it) {

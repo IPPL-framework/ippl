@@ -34,7 +34,8 @@ public:
 
     template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
-        Bunch(PLayout& playout) : ippl::ParticleBase<PLayout>(playout) {
+        Bunch(PLayout& playout)
+            : ippl::ParticleBase<PLayout>(playout) {
             this->addAttribute(expectedRank);
             this->addAttribute(Q);
         }
@@ -54,7 +55,11 @@ public:
 
     typedef Bunch<playout_type> bunch_type;
 
-    ParticleSendRecv() : nParticles(std::pow(256, 3)), nPoints(1024) { setup(); }
+    ParticleSendRecv()
+        : nParticles(std::pow(256, 3))
+        , nPoints(1024) {
+        setup();
+    }
 
     void setup() {
         ippl::Index I(nPoints);

@@ -112,7 +112,9 @@ namespace ippl {
         using Layout_t  = typename detail::BCondBase<T, Dim, Mesh, Cell>::Layout_t;
 
         ExtrapolateFace(unsigned face, T offset, T slope)
-            : base_type(face), offset_m(offset), slope_m(slope) {}
+            : base_type(face)
+            , offset_m(offset)
+            , slope_m(slope) {}
 
         virtual ~ExtrapolateFace() = default;
 
@@ -137,7 +139,8 @@ namespace ippl {
     class NoBcFace : public detail::BCondBase<T, Dim, Mesh, Cell> {
     public:
         using Field_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
-        NoBcFace(int face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
+        NoBcFace(int face)
+            : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
 
         virtual void findBCNeighbors(Field_t& /*field*/) {}
         virtual void apply(Field_t& /*field*/) {}
@@ -163,7 +166,8 @@ namespace ippl {
         class Cell = typename Mesh::DefaultCentering>
     class ZeroFace : public ConstantFace<T, Dim, Mesh, Cell> {
     public:
-        ZeroFace(unsigned face) : ConstantFace<T, Dim, Mesh, Cell>(face, 0.0) {}
+        ZeroFace(unsigned face)
+            : ConstantFace<T, Dim, Mesh, Cell>(face, 0.0) {}
 
         virtual FieldBC getBCType() const { return ZERO_FACE; }
 
@@ -179,7 +183,8 @@ namespace ippl {
         using Field_t            = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
         using Layout_t           = typename detail::BCondBase<T, Dim, Mesh, Cell>::Layout_t;
 
-        PeriodicFace(unsigned face) : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
+        PeriodicFace(unsigned face)
+            : detail::BCondBase<T, Dim, Mesh, Cell>(face) {}
 
         virtual FieldBC getBCType() const { return PERIODIC_FACE; }
 

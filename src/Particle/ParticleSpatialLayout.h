@@ -65,7 +65,8 @@ namespace ippl {
         // constructor: this one also takes a Mesh
         ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&);
 
-        ParticleSpatialLayout() : detail::ParticleLayout<T, Dim>() {}
+        ParticleSpatialLayout()
+            : detail::ParticleLayout<T, Dim>() {}
 
         ~ParticleSpatialLayout() = default;
         //~ParticleSpatialLayout() {}

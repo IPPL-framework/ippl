@@ -54,7 +54,9 @@ struct Newton1D {
     KOKKOS_INLINE_FUNCTION Newton1D() {}
 
     KOKKOS_INLINE_FUNCTION Newton1D(const T& mu_, const T& sigma_, const T& u_)
-        : mu(mu_), sigma(sigma_), u(u_) {}
+        : mu(mu_)
+        , sigma(sigma_)
+        , u(u_) {}
 
     KOKKOS_INLINE_FUNCTION ~Newton1D() {}
 
@@ -98,7 +100,13 @@ struct generate_random {
     // Initialize all members
     generate_random(
         view_type x_, view_type v_, GeneratorPool rand_pool_, T& mu_, T& sigma_, T& minU_, T& maxU_)
-        : x(x_), v(v_), rand_pool(rand_pool_), mu(mu_), sigma(sigma_), minU(minU_), maxU(maxU_) {}
+        : x(x_)
+        , v(v_)
+        , rand_pool(rand_pool_)
+        , mu(mu_)
+        , sigma(sigma_)
+        , minU(minU_)
+        , maxU(maxU_) {}
 
     KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
         // Get a random number state from the pool for the active thread

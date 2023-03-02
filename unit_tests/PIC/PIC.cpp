@@ -32,7 +32,10 @@ public:
 
     template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
-        Bunch(PLayout& playout) : ippl::ParticleBase<PLayout>(playout) { this->addAttribute(Q); }
+        Bunch(PLayout& playout)
+            : ippl::ParticleBase<PLayout>(playout) {
+            this->addAttribute(Q);
+        }
 
         ~Bunch() {}
 
@@ -42,7 +45,11 @@ public:
 
     typedef Bunch<playout_type> bunch_type;
 
-    PICTest() : nParticles(std::pow(256, 3)), nPoints(512) { setup(); }
+    PICTest()
+        : nParticles(std::pow(256, 3))
+        , nPoints(512) {
+        setup();
+    }
 
     void setup() {
         ippl::Index I(nPoints);
