@@ -537,10 +537,10 @@ namespace ippl {
                         const size_t ig1 = i + ldom1[0].first() - nghost1;
                         const size_t jg1 = j + ldom1[1].first() - nghost1;
                         const size_t kg1 = k + ldom1[2].first() - nghost1;
-                  
-                        if ((ig1==ig2) && (jg1==jg2) && (kg1==kg2)) {
-                            view2(i,j,k) = view1(i,j,k);
-                        }
+
+                        // write physical rho on [0,N-1] of doubled field
+                        bool isQuadrant1 = ((ig1==ig2) && (jg1==jg2) && (kg1==kg2));
+                        view2(i,j,k) = view1(i,j,k)*isQuadrant1;
                 });
             }
 
@@ -661,11 +661,10 @@ namespace ippl {
                             const int ig = i + ldom1[0].first() - nghost1;
                             const int jg = j + ldom1[1].first() - nghost1;
                             const int kg = k + ldom1[2].first() - nghost1;
-                                  
+
                             // take [0,N-1] as physical solution
-                            if ((ig==ig2) && (jg==jg2) && (kg==kg2)) { 
-                                view1(i,j,k) = view2(i,j,k);
-                            }
+                            bool isQuadrant1 = ((ig==ig2) && (jg==jg2) && (kg==kg2));
+                            view1(i,j,k) = view2(i,j,k)*isQuadrant1;
                     });
                 }
                 IpplTimings::stopTimer(dtos);
@@ -828,9 +827,8 @@ namespace ippl {
                                 const int kg = k + ldom1[2].first() - nghostL;
                                 
                                 // take [0,N-1] as physical solution
-                                if ((ig==ig2) && (jg==jg2) && (kg==kg2)) {
-                                    viewL(i,j,k)[gd] = view2(i,j,k);
-                                } 
+                                bool isQuadrant1 = ((ig==ig2) && (jg==jg2) && (kg==kg2));
+                                viewL(i,j,k)[gd] = view2(i,j,k)*isQuadrant1;
                         });
                     }    
                     IpplTimings::stopTimer(edtos);
@@ -880,8 +878,8 @@ namespace ippl {
 
                 // initialize grnL_m 
                 typename CxField_t::view_type view_g = grnL_m.getView();
-	        const int nghost_g = grnL_m.getNghost();
-	        const auto& ldom_g = layout4_m->getLocalNDIndex();
+                const int nghost_g = grnL_m.getNghost();
+                const auto& ldom_g = layout4_m->getLocalNDIndex();
 
                 Vector<int,Dim> size = nr_m;
 
@@ -917,7 +915,7 @@ namespace ippl {
                         if ((ig == 0 && jg == 0 && kg == 0)) {
                             view_g(i,j,k) = -L_sum * L_sum * 0.5;
                         }
-	                });
+                    });
 
                 } else if (alg_m == "BIHARMONIC") {
 
@@ -945,7 +943,7 @@ namespace ippl {
 
                         view_g(i,j,k) = -((2-(L_sum*L_sum*s*s))*std::cos(L_sum*s) + 2*L_sum*s*std::sin(L_sum*s) - 2)/(2*s*s*s*s);
                   
-                        // if (0,0,0), assign L^2/2 (analytical limit of sinc)
+                        // if (0,0,0), assign analytical limit
                         if ((ig == 0 && jg == 0 && kg == 0)) {
                             view_g(i,j,k) = -L_sum * L_sum * L_sum * L_sum / 8.0;
                         }
