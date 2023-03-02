@@ -29,36 +29,33 @@ namespace ippl {
      */
     namespace detail {
         /*!
-         * Empty struct for the specialized view types.
+         * Recursively templated struct for defining pointers with arbitrary
+         * indirection depth.
+         * @tparam T data type
+         * @tparam N indirection level
+         */
+        template <typename T, int N>
+        struct NPtr {
+            typedef typename NPtr<T, N - 1>::type* type;
+        };
+
+        /*!
+         * Base case template specialization for a simple pointer.
+         */
+        template <typename T>
+        struct NPtr<T, 1> {
+            typedef T* type;
+        };
+
+        /*!
+         * View type for an arbitrary number of dimensions.
          * @tparam T view data type
          * @tparam Dim view dimension
          * @tparam Properties further template parameters of Kokkos
          */
         template <typename T, unsigned Dim, class... Properties>
-        struct ViewType {};
-
-        /*!
-         * Specialized view type for one dimension.
-         */
-        template <typename T, class... Properties>
-        struct ViewType<T, 1, Properties...> {
-            typedef Kokkos::View<T*, Properties...> view_type;
-        };
-
-        /*!
-         * Specialized view type for two dimensions.
-         */
-        template <typename T, class... Properties>
-        struct ViewType<T, 2, Properties...> {
-            typedef Kokkos::View<T**, Properties...> view_type;
-        };
-
-        /*!
-         * Specialized view type for thee dimensions.
-         */
-        template <typename T, class... Properties>
-        struct ViewType<T, 3, Properties...> {
-            typedef Kokkos::View<T***, Properties...> view_type;
+        struct ViewType {
+            typedef Kokkos::View<typename NPtr<T, Dim>::type, Properties...> view_type;
         };
 
         /*!
