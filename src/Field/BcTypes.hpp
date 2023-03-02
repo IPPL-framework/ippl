@@ -93,8 +93,8 @@ namespace ippl {
             case 0:
                 Kokkos::parallel_for(
                     "Assign extrapolate BC X",
-                    mdrange_type(
-                        {nghost, nghost}, {view.extent(1) - nghost, view.extent(2) - nghost}),
+                    mdrange_type({nghost, nghost},
+                                 {view.extent(1) - nghost, view.extent(2) - nghost}),
                     KOKKOS_CLASS_LAMBDA(const size_t j, const size_t k) {
                         view(dest, j, k) = slope_m * view(src, j, k) + offset_m;
                     });
@@ -103,8 +103,8 @@ namespace ippl {
             case 1:
                 Kokkos::parallel_for(
                     "Assign extrapolate BC Y",
-                    mdrange_type(
-                        {nghost, nghost}, {view.extent(0) - nghost, view.extent(2) - nghost}),
+                    mdrange_type({nghost, nghost},
+                                 {view.extent(0) - nghost, view.extent(2) - nghost}),
                     KOKKOS_CLASS_LAMBDA(const size_t i, const size_t k) {
                         view(i, dest, k) = slope_m * view(i, src, k) + offset_m;
                     });
@@ -112,8 +112,8 @@ namespace ippl {
             case 2:
                 Kokkos::parallel_for(
                     "Assign extrapolate BC Z",
-                    mdrange_type(
-                        {nghost, nghost}, {view.extent(0) - nghost, view.extent(1) - nghost}),
+                    mdrange_type({nghost, nghost},
+                                 {view.extent(0) - nghost, view.extent(1) - nghost}),
                     KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j) {
                         view(i, j, dest) = slope_m * view(i, j, src) + offset_m;
                     });

@@ -97,8 +97,8 @@ std::pair<typename vmap<Key, T, Compare>::iterator, bool> vmap<Key, T, Compare>:
 //
 
 template <class Key, class T, class Compare>
-typename vmap<Key, T, Compare>::iterator vmap<Key, T, Compare>::insert(
-    iterator hint_i, const value_type& value) {
+typename vmap<Key, T, Compare>::iterator vmap<Key, T, Compare>::insert(iterator hint_i,
+                                                                       const value_type& value) {
     iterator low_i  = begin();                               // The bounds for the search range
     iterator high_i = end();                                 // to find where to really put it.
     if (hint_i == high_i) {                                  // Is the hint to append?
@@ -308,8 +308,8 @@ typename vmap<Key, T, Compare>::const_iterator vmap<Key, T, Compare>::upper_boun
 //
 
 template <class Key, class T, class Compare>
-std::pair<
-    typename vmap<Key, T, Compare>::const_iterator, typename vmap<Key, T, Compare>::const_iterator>
+std::pair<typename vmap<Key, T, Compare>::const_iterator,
+          typename vmap<Key, T, Compare>::const_iterator>
 vmap<Key, T, Compare>::equal_range(const key_type& key) const {
     return std::equal_range(begin(), end(), value_type(key, T()), value_compare(Lt));
 }

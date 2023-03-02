@@ -75,9 +75,9 @@ namespace ippl {
            setup performs the initialization necessary.
     */
     template <size_t Dim, class T, class M>
-    void FFT<CCTransform, Dim, T, M>::setup(
-        const std::array<long long, Dim>& low, const std::array<long long, Dim>& high,
-        const ParameterList& params) {
+    void FFT<CCTransform, Dim, T, M>::setup(const std::array<long long, Dim>& low,
+                                            const std::array<long long, Dim>& high,
+                                            const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
 
@@ -146,11 +146,11 @@ namespace ippl {
             });
 
         if (direction == 1) {
-            heffte_m->forward(
-                tempField.data(), tempField.data(), workspace_m.data(), heffte::scale::full);
+            heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
+                              heffte::scale::full);
         } else if (direction == -1) {
-            heffte_m->backward(
-                tempField.data(), tempField.data(), workspace_m.data(), heffte::scale::none);
+            heffte_m->backward(tempField.data(), tempField.data(), workspace_m.data(),
+                               heffte::scale::none);
         } else {
             throw std::logic_error("Only 1:forward and -1:backward are allowed as directions");
         }
@@ -176,8 +176,8 @@ namespace ippl {
      */
 
     template <size_t Dim, class T, class M>
-    FFT<RCTransform, Dim, T, M>::FFT(
-        const Layout_t& layoutInput, const Layout_t& layoutOutput, const ParameterList& params) {
+    FFT<RCTransform, Dim, T, M>::FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput,
+                                     const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -216,10 +216,11 @@ namespace ippl {
        setup performs the initialization.
     */
     template <size_t Dim, class T, class M>
-    void FFT<RCTransform, Dim, T, M>::setup(
-        const std::array<long long, Dim>& lowInput, const std::array<long long, Dim>& highInput,
-        const std::array<long long, Dim>& lowOutput, const std::array<long long, Dim>& highOutput,
-        const ParameterList& params) {
+    void FFT<RCTransform, Dim, T, M>::setup(const std::array<long long, Dim>& lowInput,
+                                            const std::array<long long, Dim>& highInput,
+                                            const std::array<long long, Dim>& lowOutput,
+                                            const std::array<long long, Dim>& highOutput,
+                                            const ParameterList& params) {
         heffte::box3d<long long> inbox  = {lowInput, highInput};
         heffte::box3d<long long> outbox = {lowOutput, highOutput};
 
@@ -303,11 +304,11 @@ namespace ippl {
             });
 
         if (direction == 1) {
-            heffte_m->forward(
-                tempFieldf.data(), tempFieldg.data(), workspace_m.data(), heffte::scale::full);
+            heffte_m->forward(tempFieldf.data(), tempFieldg.data(), workspace_m.data(),
+                              heffte::scale::full);
         } else if (direction == -1) {
-            heffte_m->backward(
-                tempFieldg.data(), tempFieldf.data(), workspace_m.data(), heffte::scale::none);
+            heffte_m->backward(tempFieldg.data(), tempFieldf.data(), workspace_m.data(),
+                               heffte::scale::none);
         } else {
             throw std::logic_error("Only 1:forward and -1:backward are allowed as directions");
         }
@@ -372,9 +373,9 @@ namespace ippl {
            setup performs the initialization necessary.
     */
     template <size_t Dim, class T, class M>
-    void FFT<SineTransform, Dim, T, M>::setup(
-        const std::array<long long, Dim>& low, const std::array<long long, Dim>& high,
-        const ParameterList& params) {
+    void FFT<SineTransform, Dim, T, M>::setup(const std::array<long long, Dim>& low,
+                                              const std::array<long long, Dim>& high,
+                                              const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
 
@@ -425,9 +426,9 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        Kokkos::View<T***, Kokkos::LayoutLeft> tempField(
-            "tempField", fview.extent(0) - 2 * nghost, fview.extent(1) - 2 * nghost,
-            fview.extent(2) - 2 * nghost);
+        Kokkos::View<T***, Kokkos::LayoutLeft> tempField("tempField", fview.extent(0) - 2 * nghost,
+                                                         fview.extent(1) - 2 * nghost,
+                                                         fview.extent(2) - 2 * nghost);
 
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
@@ -441,11 +442,11 @@ namespace ippl {
             });
 
         if (direction == 1) {
-            heffte_m->forward(
-                tempField.data(), tempField.data(), workspace_m.data(), heffte::scale::full);
+            heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
+                              heffte::scale::full);
         } else if (direction == -1) {
-            heffte_m->backward(
-                tempField.data(), tempField.data(), workspace_m.data(), heffte::scale::none);
+            heffte_m->backward(tempField.data(), tempField.data(), workspace_m.data(),
+                               heffte::scale::none);
         } else {
             throw std::logic_error("Only 1:forward and -1:backward are allowed as directions");
         }
@@ -500,9 +501,9 @@ namespace ippl {
            setup performs the initialization necessary.
     */
     template <size_t Dim, class T, class M>
-    void FFT<CosTransform, Dim, T, M>::setup(
-        const std::array<long long, Dim>& low, const std::array<long long, Dim>& high,
-        const ParameterList& params) {
+    void FFT<CosTransform, Dim, T, M>::setup(const std::array<long long, Dim>& low,
+                                             const std::array<long long, Dim>& high,
+                                             const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
 
@@ -553,9 +554,9 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        Kokkos::View<T***, Kokkos::LayoutLeft> tempField(
-            "tempField", fview.extent(0) - 2 * nghost, fview.extent(1) - 2 * nghost,
-            fview.extent(2) - 2 * nghost);
+        Kokkos::View<T***, Kokkos::LayoutLeft> tempField("tempField", fview.extent(0) - 2 * nghost,
+                                                         fview.extent(1) - 2 * nghost,
+                                                         fview.extent(2) - 2 * nghost);
 
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
@@ -569,11 +570,11 @@ namespace ippl {
             });
 
         if (direction == 1) {
-            heffte_m->forward(
-                tempField.data(), tempField.data(), workspace_m.data(), heffte::scale::full);
+            heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
+                              heffte::scale::full);
         } else if (direction == -1) {
-            heffte_m->backward(
-                tempField.data(), tempField.data(), workspace_m.data(), heffte::scale::none);
+            heffte_m->backward(tempField.data(), tempField.data(), workspace_m.data(),
+                               heffte::scale::none);
         } else {
             throw std::logic_error("Only 1:forward and -1:backward are allowed as directions");
         }

@@ -42,9 +42,9 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::destroy(
-        const Kokkos::View<int*>& deleteIndex, const Kokkos::View<int*>& keepIndex,
-        size_type invalidCount) {
+    void ParticleAttrib<T, Properties...>::destroy(const Kokkos::View<int*>& deleteIndex,
+                                                   const Kokkos::View<int*>& keepIndex,
+                                                   size_type invalidCount) {
         // Replace all invalid particles in the valid region with valid
         // particles in the invalid region
         Kokkos::parallel_for(
@@ -54,8 +54,8 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::pack(
-        void* buffer, const Kokkos::View<int*>& hash) const {
+    void ParticleAttrib<T, Properties...>::pack(void* buffer,
+                                                const Kokkos::View<int*>& hash) const {
         using this_type     = ParticleAttrib<T, Properties...>;
         this_type* buffer_p = static_cast<this_type*>(buffer);
         auto& view          = buffer_p->dview_m;
@@ -223,16 +223,14 @@ namespace ippl {
      */
 
     template <typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
-    inline void scatter(
-        const ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-        const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) {
+    inline void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
+                        const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) {
         attrib.scatter(f, pp);
     }
 
     template <typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
-    inline void gather(
-        ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-        const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) {
+    inline void gather(ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
+                       const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) {
         attrib.gather(f, pp);
     }
 

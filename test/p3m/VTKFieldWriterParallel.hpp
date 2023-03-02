@@ -25,8 +25,8 @@
 #include <H5hut.h>
 
 template <typename FieldType, typename ParticleType>
-void dumpVTKVector(
-    FieldType& f, const ParticleType& p, int iteration = 0, std::string label = "EField") {
+void dumpVTKVector(FieldType& f, const ParticleType& p, int iteration = 0,
+                   std::string label = "EField") {
     if (Ippl::myNode() == 0) {
         NDIndex<3> lDom = f.getLayout().getLocalNDIndex();
         int nx          = lDom[0].length();
@@ -75,8 +75,8 @@ void dumpVTKVector(
 }
 
 template <typename FieldType, typename ParticleType>
-void dumpVTKScalar(
-    FieldType& f, const ParticleType& p, int iteration = 0, std::string label = "RhoField") {
+void dumpVTKScalar(FieldType& f, const ParticleType& p, int iteration = 0,
+                   std::string label = "RhoField") {
     NDIndex<3> lDom = f.getLayout().getLocalNDIndex();
     int nx          = lDom[0].length();
     int ny          = lDom[1].length();
@@ -183,14 +183,12 @@ void dumpParticlesCSV(const ParticleType& p, int iteration = 0) {
     for (unsigned i = 0; i < p->getLocalNum() + p->getGhostNum(); ++i) {
         double distributionf =
             p->v[i][2] * p->v[i][2]
-            * exp(
-                -(p->v[i][0] * p->v[i][0] + p->v[i][1] * p->v[i][1] + p->v[i][2] * p->v[i][2])
-                / 2.);
+            * exp(-(p->v[i][0] * p->v[i][0] + p->v[i][1] * p->v[i][1] + p->v[i][2] * p->v[i][2])
+                  / 2.);
 
         csvout << p->R[i][0] << "," << p->R[i][1] << "," << p->R[i][2] << "," << p->Q[i] << ","
-               << sqrt(
-                      p->EF[i][0] * p->EF[i][0] + p->EF[i][1] * p->EF[i][1]
-                      + p->EF[i][2] * p->EF[i][2])
+               << sqrt(p->EF[i][0] * p->EF[i][0] + p->EF[i][1] * p->EF[i][1]
+                       + p->EF[i][2] * p->EF[i][2])
                << "," << p->ID[i] << "," << p->v[i][0] << "," << p->v[i][1] << "," << p->v[i][2]
                << "," << distributionf << endl;
     }
@@ -229,9 +227,8 @@ void dumpParticlesCSVp(const ParticleType& p, int iteration = 0) {
             double pz0    = p->beta0 * p->gamma * p->m0;
             csvout << p->R[i][0] << "," << p->R[i][1] << "," << p->R[i][2] << "," << zlab << ","
                    << zlab + p->R56 * pz_lab / pz0 << "," << p->Q[i] << ","
-                   << sqrt(
-                          p->EF[i][0] * p->EF[i][0] + p->EF[i][1] * p->EF[i][1]
-                          + p->EF[i][2] * p->EF[i][2])
+                   << sqrt(p->EF[i][0] * p->EF[i][0] + p->EF[i][1] * p->EF[i][1]
+                           + p->EF[i][2] * p->EF[i][2])
                    << "," << p->ID[i] << "," << p->p[i][0] << "," << p->p[i][1] << "," << p->p[i][2]
                    << "," << pz_lab << endl;
             //}
@@ -416,8 +413,8 @@ void writeEamplitude(const ParticleType& p, int iteration) {
 }
 
 template <typename FieldType2d, typename ParticleType>
-void write_f_field(
-    FieldType2d& f, const ParticleType& p, int iteration = 0, std::string /*label*/ = "fInterpol") {
+void write_f_field(FieldType2d& f, const ParticleType& p, int iteration = 0,
+                   std::string /*label*/ = "fInterpol") {
     Vektor<double, 3> dx = (p->extend_r - p->extend_l) / (p->Nx);
     Vektor<double, 3> dv = 2. * p->Vmax / (p->Nv);
     std::stringstream fname;

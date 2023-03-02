@@ -8,8 +8,8 @@
 #include "Ippl.h"
 #include "Utility/IpplTimings.h"
 
-KOKKOS_INLINE_FUNCTION double gaussian(
-    double x, double y, double z, double sigma = 0.05, double mu = 0.5) {
+KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
+                                       double mu = 0.5) {
     double pi        = std::acos(-1.0);
     double prefactor = (1 / std::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
@@ -17,16 +17,16 @@ KOKKOS_INLINE_FUNCTION double gaussian(
     return -prefactor * exp(-r2 / (2 * sigma * sigma));
 }
 
-KOKKOS_INLINE_FUNCTION double exact_fct(
-    double x, double y, double z, double sigma = 0.05, double mu = 0.5) {
+KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sigma = 0.05,
+                                        double mu = 0.5) {
     double pi = std::acos(-1.0);
     double r  = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
 
     return (1 / (4.0 * pi * r)) * std::erf(r / (std::sqrt(2.0) * sigma));
 }
 
-KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_E(
-    double x, double y, double z, double sigma = 0.05, double mu = 0.5) {
+KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_E(double x, double y, double z,
+                                                       double sigma = 0.05, double mu = 0.5) {
     double pi     = std::acos(-1.0);
     double r      = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
     double factor = (1.0 / (4.0 * pi * r * r))
@@ -38,9 +38,8 @@ KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_E(
 }
 
 // Define vtk dump function for plotting the fields
-void dumpVTK(
-    std::string path, ippl::Field<double, 3>& rho, int nx, int ny, int nz, int iteration, double dx,
-    double dy, double dz) {
+void dumpVTK(std::string path, ippl::Field<double, 3>& rho, int nx, int ny, int nz, int iteration,
+             double dx, double dy, double dz) {
     typename ippl::Field<double, 3>::view_type::host_mirror_type host_view = rho.getHostMirror();
     Kokkos::deep_copy(host_view, rho.getView());
     std::ofstream vtkout;
@@ -214,8 +213,8 @@ int main(int argc, char* argv[]) {
         fftParams.add("comm", ippl::a2av);
         fftParams.add("r2c_direction", 0);
         // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3> FFTsolver(
-            fieldE, rho, fftParams, algorithm);
+        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3> FFTsolver(fieldE, rho, fftParams,
+                                                                             algorithm);
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

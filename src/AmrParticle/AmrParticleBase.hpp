@@ -197,12 +197,11 @@ void AmrParticleBase<PLayout>::sort() {
     // sort the lists by grid and level
     // slist1 hold the index of where each element should go in the list
     std::iota(slist1.begin(), slist1.end(), 0);
-    std::sort(
-        slist1.begin(), slist1.end(), [this](const SortListIndex_t& i, const SortListIndex_t& j) {
-            return (
-                this->Level[i] < this->Level[j]
-                || (this->Level[i] == this->Level[j] && this->Grid[i] < this->Grid[j]));
-        });
+    std::sort(slist1.begin(), slist1.end(),
+              [this](const SortListIndex_t& i, const SortListIndex_t& j) {
+                  return (this->Level[i] < this->Level[j]
+                          || (this->Level[i] == this->Level[j] && this->Grid[i] < this->Grid[j]));
+              });
 
     // slist2 holds the index of which element should go in this position
     for (unsigned int i = 0; i < LocalNum; ++i)
@@ -272,10 +271,9 @@ const double& AmrParticleBase<PLayout>::domainMapping(bool inverse) {
         const auto& lo = layout.lowerBound;
         const auto& hi = layout.upperBound;
 
-        Vector_t tmp = Vector_t(
-            std::max(std::abs(rmin[0] / lo[0]), std::abs(rmax[0] / hi[0])),
-            std::max(std::abs(rmin[1] / lo[1]), std::abs(rmax[1] / hi[1])),
-            std::max(std::abs(rmin[2] / lo[2]), std::abs(rmax[2] / hi[2])));
+        Vector_t tmp = Vector_t(std::max(std::abs(rmin[0] / lo[0]), std::abs(rmax[0] / hi[0])),
+                                std::max(std::abs(rmin[1] / lo[1]), std::abs(rmax[1] / hi[1])),
+                                std::max(std::abs(rmin[2] / lo[2]), std::abs(rmax[2] / hi[2])));
 
         scale = std::max(tmp[0], tmp[1]);
         scale = std::max(scale, tmp[2]);

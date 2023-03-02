@@ -23,9 +23,8 @@
 
 namespace ippl {
 
-    template <
-        typename Tlhs, typename Trhs, unsigned Dim, typename OpRet,
-        class M = UniformCartesian<double, Dim>, class C = typename M::DefaultCentering>
+    template <typename Tlhs, typename Trhs, unsigned Dim, typename OpRet,
+              class M = UniformCartesian<double, Dim>, class C = typename M::DefaultCentering>
     class PCG : public SolverAlgorithm<Tlhs, Trhs, Dim> {
     public:
         using Base = SolverAlgorithm<Tlhs, Trhs, Dim, M, C>;
@@ -75,8 +74,8 @@ namespace ippl {
                     bc[i]            = std::make_shared<ZeroFace<T, lhs_type::dimension>>(i);
                     allFacesPeriodic = false;
                 } else {
-                    throw IpplException(
-                        "PCG::operator()", "Only periodic or constant BCs for LHS supported.");
+                    throw IpplException("PCG::operator()",
+                                        "Only periodic or constant BCs for LHS supported.");
                     return;
                 }
             }

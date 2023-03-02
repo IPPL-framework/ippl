@@ -135,10 +135,9 @@ public:
     ParticleAttrib<int> ID;                     // velocity of the particles
     ParticleAttrib<Vektor<double, 2> > Rphase;  // velocity of the particles
 
-    ChargedParticles(
-        PL* pl, Vektor<double, 3> nr, e_dim_tag /*decomp*/[Dim], Vektor<double, 3> extend_l_,
-        Vektor<double, 3> extend_r_, Vektor<int, 3> Nx_, Vektor<int, 3> Nv_,
-        Vektor<double, 3> Vmax_)
+    ChargedParticles(PL* pl, Vektor<double, 3> nr, e_dim_tag /*decomp*/[Dim],
+                     Vektor<double, 3> extend_l_, Vektor<double, 3> extend_r_, Vektor<int, 3> Nx_,
+                     Vektor<int, 3> Nv_, Vektor<double, 3> Vmax_)
         : IpplParticleBase<PL>(pl)
         , nr_m(nr)
         , extend_l(extend_l_)
@@ -340,10 +339,9 @@ public:
 
                     double val = 0;
                     double r   = 0;
-                    r          = sqrt(
-                        (i) * (i)*hr_m[0] * hr_m[0] + (j) * (j)*hr_m[1] * hr_m[1]
-                        + (k) * (k)*hr_m[2] * hr_m[2]);
-                    val = 1. / (4. * M_PI) * erf(alpha * r) / (r + eps);
+                    r          = sqrt((i) * (i)*hr_m[0] * hr_m[0] + (j) * (j)*hr_m[1] * hr_m[1]
+                                      + (k) * (k)*hr_m[2] * hr_m[2]);
+                    val        = 1. / (4. * M_PI) * erf(alpha * r) / (r + eps);
 
                     elem_all                         = elem;
                     grncmpl_m.localElement(elem_all) = std::complex<double>(val);
@@ -383,9 +381,8 @@ public:
         }
     }
 
-    void calculateGridForces(
-        double /*interaction_radius*/, double alpha, double eps, int it = 0,
-        bool normalizeSphere = 0) {
+    void calculateGridForces(double /*interaction_radius*/, double alpha, double eps, int it = 0,
+                             bool normalizeSphere = 0) {
         // (1) scatter charge to charge density grid and transform to fourier space
         // this->Q.scatter(this->rho_m, this->R, IntrplTSC_t());
         rho_m[domain_m] = 0;  //!!!!!! there has to be a better way than setting rho to 0 every time
@@ -428,9 +425,9 @@ public:
         // axis. e.g. grnIField_m[0]=[(0 1 2 3 ... 3 2 1) ; (0 1 2 3 ... 3 2 1; ...)]
         for (int i = 0; i < 3; ++i) {
             grnIField_m[i].initialize(*mesh_m, *layout_m);
-            grnIField_m[i][domain_m] = where(
-                lt(domain_m[i], nr_m[i] / 2), domain_m[i] * domain_m[i],
-                (nr_m[i] - domain_m[i]) * (nr_m[i] - domain_m[i]));
+            grnIField_m[i][domain_m] =
+                where(lt(domain_m[i], nr_m[i] / 2), domain_m[i] * domain_m[i],
+                      (nr_m[i] - domain_m[i]) * (nr_m[i] - domain_m[i]));
         }
         Vector_t hrsq(hr_m * hr_m);
         SpecializedGreensFunction<3>::calculate(hrsq, grncmpl_m, grnIField_m, alpha, eps);
@@ -522,9 +519,8 @@ struct ApplyField {
         , R(r)
         , eps(epsilon)
         , a(alpha) {}
-    void operator()(
-        std::size_t i, std::size_t j, ChargedParticles<playout_t>& P,
-        Vektor<double, 3>& shift) const {
+    void operator()(std::size_t i, std::size_t j, ChargedParticles<playout_t>& P,
+                    Vektor<double, 3>& shift) const {
         Vector_t diff = P.R[i] - (P.R[j] + shift);
         double sqr    = 0;
 
@@ -565,19 +561,19 @@ struct ApplyField {
 };
 
 template <class PL>
-void ChargedParticles<PL>::calculatePairForces(
-    double interaction_radius, double eps, double alpha) {
+void ChargedParticles<PL>::calculatePairForces(double interaction_radius, double eps,
+                                               double alpha) {
     if (interaction_radius > 0) {
         if (Ippl::getNodes() > 1) {
             HashPairBuilderPeriodicParallel<ChargedParticles<playout_t> > HPB(*this);
-            HPB.for_each(
-                RadiusCondition<double, Dim>(interaction_radius),
-                ApplyField<double>(-1, interaction_radius, eps, alpha), extend_l, extend_r);
+            HPB.for_each(RadiusCondition<double, Dim>(interaction_radius),
+                         ApplyField<double>(-1, interaction_radius, eps, alpha), extend_l,
+                         extend_r);
         } else {
             HashPairBuilderPeriodic<ChargedParticles<playout_t> > HPB(*this);
-            HPB.for_each(
-                RadiusCondition<double, Dim>(interaction_radius),
-                ApplyField<double>(-1, interaction_radius, eps, alpha), extend_l, extend_r);
+            HPB.for_each(RadiusCondition<double, Dim>(interaction_radius),
+                         ApplyField<double>(-1, interaction_radius, eps, alpha), extend_l,
+                         extend_r);
         }
     }
 }
@@ -705,8 +701,8 @@ int main(int argc, char* argv[]) {
             Vektor<int, Dim> Nv(16, 16, 16);
             Vektor<double, Dim> Vmax(6, 6, 6);
             P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, Nx, Nv, Vmax);
-            createParticleDistribution(
-                P, "random", 20000, 0.00005, extend_l, extend_r, source, 1., 0);
+            createParticleDistribution(P, "random", 20000, 0.00005, extend_l, extend_r, source, 1.,
+                                       0);
 
             break;
         }
@@ -810,8 +806,8 @@ int main(int argc, char* argv[]) {
             P->calc_Amplitude_E();
             writeEamplitude(P, it + 1);
             msg << "start interpolation to phase space " << endl;
-            P->interpolate_distribution(
-                (P->extend_r - P->extend_l) / (P->Nx), 2. * P->Vmax / (P->Nv));
+            P->interpolate_distribution((P->extend_r - P->extend_l) / (P->Nx),
+                                        2. * P->Vmax / (P->Nv));
             write_f_field(P->f_m, P, it + 1, "f_m");
         }
         msg << "Finished iteration " << it << endl;

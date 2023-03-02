@@ -41,9 +41,9 @@ namespace ippl {
 
             virtual void create(size_type) = 0;
 
-            virtual void destroy(
-                const Kokkos::View<int*>&, const Kokkos::View<int*>&, size_type) = 0;
-            virtual size_type packedSize(const size_type) const                  = 0;
+            virtual void destroy(const Kokkos::View<int*>&, const Kokkos::View<int*>&,
+                                 size_type)                     = 0;
+            virtual size_type packedSize(const size_type) const = 0;
 
             virtual void pack(void*, const Kokkos::View<int*>&) const = 0;
 

@@ -78,8 +78,8 @@ public:
 // These are the functions that will be called in the assert macros.
 void toss_cookies(const char* cond, const char* file, int line);
 template <class S, class T>
-void toss_cookies(
-    const char* cond, const char* astr, const char* bstr, S a, T b, const char* file, int line) {
+void toss_cookies(const char* cond, const char* astr, const char* bstr, S a, T b, const char* file,
+                  int line) {
     std::string what = "Assertion '" + std::string(cond) + "' failed. \n";
     what += std::string(astr) + " = " + std::to_string(a) + ", ";
     what += std::string(bstr) + " = " + std::to_string(b) + "\n";

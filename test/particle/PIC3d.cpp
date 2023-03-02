@@ -94,9 +94,8 @@ public:
         this->addAttribute(E);
     }
 
-    ChargedParticles(
-        PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax, ippl::e_dim_tag decomp[Dim],
-        double Q)
+    ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
+                     ippl::e_dim_tag decomp[Dim], double Q)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
@@ -194,8 +193,8 @@ public:
         unsigned int Total_particles = 0;
         unsigned int local_particles = this->getLocalNum();
 
-        MPI_Reduce(
-            &local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
+                   Ippl::getComm());
 
         double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
         m << "Rel. error in charge conservation = " << rel_error << endl;
@@ -223,9 +222,9 @@ public:
         using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         Kokkos::parallel_reduce(
             "Particle Charge",
-            mdrange_t(
-                {nghost, nghost, nghost}, {viewRho.extent(0) - nghost, viewRho.extent(1) - nghost,
-                                           viewRho.extent(2) - nghost}),
+            mdrange_t({nghost, nghost, nghost},
+                      {viewRho.extent(0) - nghost, viewRho.extent(1) - nghost,
+                       viewRho.extent(2) - nghost}),
             KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
                 val += viewRho(i, j, k);
             },
@@ -601,8 +600,8 @@ int main(int argc, char* argv[]) {
     msg << "Particle test PIC3d: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
-    IpplTimings::print(std::string(
-        "timing" + std::to_string(Ippl::Comm->size()) + "r_" + std::to_string(nr[0]) + "c.dat"));
+    IpplTimings::print(std::string("timing" + std::to_string(Ippl::Comm->size()) + "r_"
+                                   + std::to_string(nr[0]) + "c.dat"));
 
     return 0;
 }

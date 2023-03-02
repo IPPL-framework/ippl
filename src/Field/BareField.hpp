@@ -72,9 +72,8 @@ namespace ippl {
         } else if constexpr (Dim == 2) {
             this->resize(owned_m[0].length() + 2 * nghost_m, owned_m[1].length() + 2 * nghost_m);
         } else if constexpr (Dim == 3) {
-            this->resize(
-                owned_m[0].length() + 2 * nghost_m, owned_m[1].length() + 2 * nghost_m,
-                owned_m[2].length() + 2 * nghost_m);
+            this->resize(owned_m[0].length() + 2 * nghost_m, owned_m[1].length() + 2 * nghost_m,
+                         owned_m[2].length() + 2 * nghost_m);
         }
     }
 
@@ -126,10 +125,9 @@ namespace ippl {
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         Kokkos::parallel_for(
             "BareField::operator=(const Expression&)",
-            mdrange_type(
-                {nghost_m, nghost_m, nghost_m},
-                {dview_m.extent(0) - nghost_m, dview_m.extent(1) - nghost_m,
-                 dview_m.extent(2) - nghost_m}),
+            mdrange_type({nghost_m, nghost_m, nghost_m},
+                         {dview_m.extent(0) - nghost_m, dview_m.extent(1) - nghost_m,
+                          dview_m.extent(2) - nghost_m}),
             KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                 dview_m(i, j, k) = expr_(i, j, k);
             });

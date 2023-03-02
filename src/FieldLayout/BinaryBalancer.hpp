@@ -250,9 +250,8 @@ static void LocalReduce(double* reduced, int cutAxis, BrickIterator<double, Dim>
 //
 
 template <class IndexIterator, unsigned Dim>
-static void SendReduce(
-    IndexIterator domainsBegin, IndexIterator domainsEnd, BareField<double, Dim>& weights,
-    int tag) {
+static void SendReduce(IndexIterator domainsBegin, IndexIterator domainsEnd,
+                       BareField<double, Dim>& weights, int tag) {
     // Buffers to store up domains and blocks of reduced data.
     std::vector<double*> reducedBuffer;
     std::vector<Index> domainBuffer;
@@ -321,9 +320,8 @@ static void SendReduce(
 //
 
 template <unsigned Dim>
-static void ReceiveReduce(
-    NDIndex<Dim>& domain, BareField<double, Dim>& weights, int reduce_tag, int nprocs, int& cutLoc,
-    int& cutAxis) {
+static void ReceiveReduce(NDIndex<Dim>& domain, BareField<double, Dim>& weights, int reduce_tag,
+                          int nprocs, int& cutLoc, int& cutAxis) {
     // Build a place to accumulate the reduced data.
     cutAxis = FindCutAxis(domain, weights.getLayout());
     /*out << "ReceiveReduce, cutAxis=" << cutAxis << endl;*/
@@ -421,8 +419,8 @@ inline void BcastCuts(int cutLoc, int cutAxis, int bcast_tag) {
 //
 
 template <unsigned Dim>
-static void ReceiveCuts(
-    std::vector<NDIndex<Dim> >& domains, std::vector<int>& nprocs, int bcast_tag) {
+static void ReceiveCuts(std::vector<NDIndex<Dim> >& domains, std::vector<int>& nprocs,
+                        int bcast_tag) {
     // Make a container to hold the split domains.
     int nDomains = domains.size();
     std::vector<NDIndex<Dim> > cutDomains(nDomains * 2);
@@ -485,9 +483,8 @@ static void ReceiveCuts(
 //
 
 template <unsigned Dim>
-static void CutEach(
-    std::vector<NDIndex<Dim> >& domains, std::vector<int>& nprocs,
-    BareField<double, Dim>& weights) {
+static void CutEach(std::vector<NDIndex<Dim> >& domains, std::vector<int>& nprocs,
+                    BareField<double, Dim>& weights) {
     // Get tags for the reduction and the broadcast.
     int reduce_tag = Ippl::Comm->next_tag(F_REDUCE_PERP_TAG, F_TAG_CYCLE);
     int bcast_tag  = Ippl::Comm->next_tag(F_REDUCE_PERP_TAG, F_TAG_CYCLE);

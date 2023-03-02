@@ -78,8 +78,8 @@ struct SpecializedGreensFunction {};
 template <>
 struct SpecializedGreensFunction<3> {
     template <class T, class FT, class FT2>
-    static void calculate(
-        Vektor<T, 3>& hrsq, FT& grn, FT2* grnI, double alpha, double eps, double ke) {
+    static void calculate(Vektor<T, 3>& hrsq, FT& grn, FT2* grnI, double alpha, double eps,
+                          double ke) {
         double r;
         NDIndex<3> elem0     = NDIndex<3>(Index(0, 0), Index(0, 0), Index(0, 0));
         grn                  = grnI[0] * hrsq[0] + grnI[1] * hrsq[1] + grnI[2] * hrsq[2];
@@ -286,9 +286,8 @@ public:
             }
         }
 
-        reduce(
-            &(loc_moment[0][0]), &(loc_moment[0][0]) + 2 * Dim * 2 * Dim, &(moments[0][0]),
-            OpAddAssign());
+        reduce(&(loc_moment[0][0]), &(loc_moment[0][0]) + 2 * Dim * 2 * Dim, &(moments[0][0]),
+               OpAddAssign());
 
         reduce(&(loc_centroid[0]), &(loc_centroid[0]) + 2 * Dim, &(centroid_m[0]), OpAddAssign());
 
@@ -372,11 +371,10 @@ public:
         // Find normalized emittance.
         double actual_gamma = 0.0;
         for (size_t i = 0; i < locNp; i++)
-            actual_gamma += sqrt(
-                1.0
-                + (gamma * p[i](2) + m0 * gamma * beta0) * (gamma * p[i](2) + m0 * gamma * beta0)
-                      / m0 / m0
-                + p[i](1) * p[i](1) / m0 / m0 + p[i](0) * p[i](0) / m0 / m0);
+            actual_gamma += sqrt(1.0
+                                 + (gamma * p[i](2) + m0 * gamma * beta0)
+                                       * (gamma * p[i](2) + m0 * gamma * beta0) / m0 / m0
+                                 + p[i](1) * p[i](1) / m0 / m0 + p[i](0) * p[i](0) / m0 / m0);
 
         reduce(actual_gamma, actual_gamma, OpAddAssign());
         actual_gamma /= N;
@@ -389,8 +387,8 @@ public:
 
     void calculatePairForces(double interaction_radius, double eps, double alpha);
 
-    void calculateGridForces(
-        double /*interaction_radius*/, double alpha, double eps, int /*it*/ = 0) {
+    void calculateGridForces(double /*interaction_radius*/, double alpha, double eps,
+                             int /*it*/ = 0) {
         // (1) scatter charge to charge density grid and transform to fourier space
         // this->Q.scatter(this->rho_m, this->R, IntrplTSC_t());
         rho_m[domain_m] = 0;  //!!!!!! there has to be a better way than setting rho to 0 every time
@@ -423,9 +421,9 @@ public:
         // axis. e.g. grnIField_m[0]=[(0 1 2 3 ... 3 2 1) ; (0 1 2 3 ... 3 2 1; ...)]
         for (int i = 0; i < 3; ++i) {
             grnIField_m[i].initialize(*mesh_m, *layout_m);
-            grnIField_m[i][domain_m] = where(
-                lt(domain_m[i], nr_m[i] / 2), domain_m[i] * domain_m[i],
-                (nr_m[i] - domain_m[i]) * (nr_m[i] - domain_m[i]));
+            grnIField_m[i][domain_m] =
+                where(lt(domain_m[i], nr_m[i] / 2), domain_m[i] * domain_m[i],
+                      (nr_m[i] - domain_m[i]) * (nr_m[i] - domain_m[i]));
         }
         Vector_t hrsq(hr_m * hr_m);
         SpecializedGreensFunction<3>::calculate(hrsq, grncmpl_m, grnIField_m, alpha, eps, ke);
@@ -554,9 +552,8 @@ struct ApplyField {
         , eps(epsilon)
         , a(alpha)
         , ke(coulombConst) {}
-    void operator()(
-        std::size_t i, std::size_t j, ChargedParticles<playout_t>& P,
-        Vektor<double, 3>& shift) const {
+    void operator()(std::size_t i, std::size_t j, ChargedParticles<playout_t>& P,
+                    Vektor<double, 3>& shift) const {
         Vector_t diff = P.R[i] - (P.R[j] + shift);
         double sqr    = 0;
 
@@ -595,19 +592,19 @@ struct ApplyField {
 };
 
 template <class PL>
-void ChargedParticles<PL>::calculatePairForces(
-    double interaction_radius, double eps, double alpha) {
+void ChargedParticles<PL>::calculatePairForces(double interaction_radius, double eps,
+                                               double alpha) {
     if (interaction_radius > 0) {
         if (Ippl::getNodes() > 1) {
             HashPairBuilderPeriodicParallel<ChargedParticles<playout_t> > HPB(*this);
-            HPB.for_each(
-                RadiusCondition<double, Dim>(interaction_radius),
-                ApplyField<double>(-1, interaction_radius, eps, alpha, ke), extend_l, extend_r);
+            HPB.for_each(RadiusCondition<double, Dim>(interaction_radius),
+                         ApplyField<double>(-1, interaction_radius, eps, alpha, ke), extend_l,
+                         extend_r);
         } else {
             HashPairBuilderPeriodic<ChargedParticles<playout_t> > HPB(*this);
-            HPB.for_each(
-                RadiusCondition<double, Dim>(interaction_radius),
-                ApplyField<double>(-1, interaction_radius, eps, alpha, ke), extend_l, extend_r);
+            HPB.for_each(RadiusCondition<double, Dim>(interaction_radius),
+                         ApplyField<double>(-1, interaction_radius, eps, alpha, ke), extend_l,
+                         extend_r);
         }
     }
 }

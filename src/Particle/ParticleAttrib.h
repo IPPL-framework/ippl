@@ -60,9 +60,8 @@ namespace ippl {
          * @param keepIndex List of indices of valid particles in the invalid region
          * @param invalidCount Number of invalid particles in the valid region
          */
-        void destroy(
-            const Kokkos::View<int*>& deleteIndex, const Kokkos::View<int*>& keepIndex,
-            size_type invalidCount) override;
+        void destroy(const Kokkos::View<int*>& deleteIndex, const Kokkos::View<int*>& keepIndex,
+                     size_type invalidCount) override;
 
         void pack(void*, const Kokkos::View<int*>&) const override;
 
@@ -124,12 +123,12 @@ namespace ippl {
         //     // scatter the data from this attribute onto the given Field, using
         //     // the given Position attribute
         template <unsigned Dim, class M, class C, typename P2>
-        void scatter(
-            Field<T, Dim, M, C>& f, const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) const;
+        void scatter(Field<T, Dim, M, C>& f,
+                     const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) const;
 
         template <unsigned Dim, class M, class C, typename P2>
-        void gather(
-            Field<T, Dim, M, C>& f, const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
+        void gather(Field<T, Dim, M, C>& f,
+                    const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
 
         T sum();
         T max();

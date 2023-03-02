@@ -66,21 +66,17 @@ public:
     Cartesian(const NDIndex<Dim>& ndi, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig);
     Cartesian(const Index& I, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig);
     Cartesian(const Index& I, const Index& J, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig);
-    Cartesian(
-        const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
-        const Vektor<MFLOAT, Dim>& orig);
+    Cartesian(const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
+              const Vektor<MFLOAT, Dim>& orig);
     // These further take a MeshBC_E array specifying mesh boundary conditions.
-    Cartesian(
-        const NDIndex<Dim>& ndi, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
-        MeshBC_E* const mbc);
-    Cartesian(
-        const Index& I, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc);
-    Cartesian(
-        const Index& I, const Index& J, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
-        MeshBC_E* const mbc);
-    Cartesian(
-        const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
-        const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc);
+    Cartesian(const NDIndex<Dim>& ndi, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
+              MeshBC_E* const mbc);
+    Cartesian(const Index& I, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
+              MeshBC_E* const mbc);
+    Cartesian(const Index& I, const Index& J, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
+              MeshBC_E* const mbc);
+    Cartesian(const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
+              const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc);
 
     // initialize functions
     void initialize(const NDIndex<Dim>& ndi);
@@ -95,23 +91,19 @@ public:
     // These further take a Vektor<MFLOAT,Dim>& specifying the origin:
     void initialize(const NDIndex<Dim>& ndi, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig);
     void initialize(const Index& I, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig);
-    void initialize(
-        const Index& I, const Index& J, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig);
-    void initialize(
-        const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
-        const Vektor<MFLOAT, Dim>& orig);
+    void initialize(const Index& I, const Index& J, MFLOAT** const delX,
+                    const Vektor<MFLOAT, Dim>& orig);
+    void initialize(const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
+                    const Vektor<MFLOAT, Dim>& orig);
     // These further take a MeshBC_E array specifying mesh boundary conditions.
-    void initialize(
-        const NDIndex<Dim>& ndi, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
-        MeshBC_E* const mbc);
-    void initialize(
-        const Index& I, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc);
-    void initialize(
-        const Index& I, const Index& J, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
-        MeshBC_E* const mbc);
-    void initialize(
-        const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
-        const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc);
+    void initialize(const NDIndex<Dim>& ndi, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
+                    MeshBC_E* const mbc);
+    void initialize(const Index& I, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
+                    MeshBC_E* const mbc);
+    void initialize(const Index& I, const Index& J, MFLOAT** const delX,
+                    const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc);
+    void initialize(const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
+                    const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc);
 
 private:
     // Private member data:
@@ -161,16 +153,15 @@ public:
     // cases for 1-3 dimensions, ala FieldLayout ctors (see FieldLayout.h for
     // more relevant comments, including definition of recurse):
     void storeSpacingFields(e_dim_tag p1, unsigned vnodes1, bool recurse = false, int vnodes = -1);
-    void storeSpacingFields(
-        e_dim_tag p1, e_dim_tag p2, unsigned vnodes1, unsigned vnodes2, bool recurse = false,
-        int vnodes = -1);
-    void storeSpacingFields(
-        e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, unsigned vnodes1, unsigned vnodes2,
-        unsigned vnodes3, bool recurse = false, int vnodes = -1);
+    void storeSpacingFields(e_dim_tag p1, e_dim_tag p2, unsigned vnodes1, unsigned vnodes2,
+                            bool recurse = false, int vnodes = -1);
+    void storeSpacingFields(e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, unsigned vnodes1,
+                            unsigned vnodes2, unsigned vnodes3, bool recurse = false,
+                            int vnodes = -1);
     // Next we have one for arbitrary dimension, ala FieldLayout ctor:
     // All the others call this one internally:
-    void storeSpacingFields(
-        e_dim_tag* p, unsigned* vnodesPerDirection, bool recurse = false, int vnodes = -1);
+    void storeSpacingFields(e_dim_tag* p, unsigned* vnodesPerDirection, bool recurse = false,
+                            int vnodes = -1);
 
     // Accessor functions for member data:
     // Get the origin of mesh vertex positions:

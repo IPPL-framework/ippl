@@ -16,8 +16,8 @@
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
-KOKKOS_INLINE_FUNCTION double gaussian(
-    double x, double y, double z, double sigma = 0.05, double mu = 0.5) {
+KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
+                                       double mu = 0.5) {
     double pi        = std::acos(-1.0);
     double prefactor = (1 / std::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
@@ -25,16 +25,16 @@ KOKKOS_INLINE_FUNCTION double gaussian(
     return -prefactor * exp(-r2 / (2 * sigma * sigma));
 }
 
-KOKKOS_INLINE_FUNCTION double exact_fct(
-    double x, double y, double z, double sigma = 0.05, double mu = 0.5) {
+KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sigma = 0.05,
+                                        double mu = 0.5) {
     double pi = std::acos(-1.0);
     double r  = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
 
     return (1 / (4.0 * pi * r)) * std::erf(r / (std::sqrt(2.0) * sigma));
 }
 
-KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_E(
-    double x, double y, double z, double sigma = 0.05, double mu = 0.5) {
+KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_E(double x, double y, double z,
+                                                       double sigma = 0.05, double mu = 0.5) {
     double pi     = std::acos(-1.0);
     double r      = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
     double factor = (1.0 / (4.0 * pi * r * r))
@@ -214,8 +214,8 @@ int main(int argc, char* argv[]) {
     fftParams.add("r2c_direction", 0);
 
     // define an FFTPoissonSolver object
-    ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, Dim> FFTsolver(
-        fieldE, rho, fftParams, algorithm);
+    ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, Dim> FFTsolver(fieldE, rho, fftParams,
+                                                                           algorithm);
 
     // iterate over 5 timesteps
     for (int times = 0; times < 5; ++times) {

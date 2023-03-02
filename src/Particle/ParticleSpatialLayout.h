@@ -83,9 +83,8 @@ namespace ippl {
         RegionLayout_t rlayout_m;
 
     public:
-        void locateParticles(
-            const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata, locate_type& ranks,
-            bool_type& invalid) const;
+        void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
+                             locate_type& ranks, bool_type& invalid) const;
 
         /*!
          * @param rank we sent to

@@ -49,9 +49,8 @@
 // which do not require their own special getCommunicate/putMessage.  If you
 // need to reduce a complex quantity, use the scalar version of reduce.
 template <class InputIterator, class OutputIterator, class ReduceOp>
-bool reduce(
-    Communicate& comm, InputIterator s1, InputIterator s2, OutputIterator t1, const ReduceOp& op,
-    bool* IncludeVal) {
+bool reduce(Communicate& comm, InputIterator s1, InputIterator s2, OutputIterator t1,
+            const ReduceOp& op, bool* IncludeVal) {
     /*
 
         // Inform dbgmsg("reduce-vector", INFORM_ALL_NODES);
@@ -186,8 +185,8 @@ bool reduce(
 ////////////////////////////////////////////////////////////////////////////
 // same as above, but this uses the default Communicate object
 template <class InputIterator, class OutputIterator, class ReduceOp>
-bool reduce(
-    InputIterator s1, InputIterator s2, OutputIterator t1, const ReduceOp& op, bool* IncludeVal) {
+bool reduce(InputIterator s1, InputIterator s2, OutputIterator t1, const ReduceOp& op,
+            bool* IncludeVal) {
     return reduce(*Ippl::Comm, s1, s2, t1, op, IncludeVal);
 }
 
@@ -333,9 +332,8 @@ bool reduce_masked(T& input, T& output, const ReduceOp& op, bool IncludeVal) {
 // same node.
 // Return success of operation.
 template <class InputIterator, class RandomIterator, class ScatterOp>
-bool scatter(
-    Communicate& comm, InputIterator s1, InputIterator s2, RandomIterator t1, int* target_node,
-    int* target_position, const ScatterOp& op) {
+bool scatter(Communicate& comm, InputIterator s1, InputIterator s2, RandomIterator t1,
+             int* target_node, int* target_position, const ScatterOp& op) {
     /*
         int i;			// loop variables
         int tag = comm.next_tag(COMM_REDUCE_SCATTER_TAG, COMM_REDUCE_CYCLE);
@@ -417,9 +415,8 @@ bool scatter(
 
 // same as above, but this uses the default Communicate object
 template <class InputIterator, class RandomIterator, class ScatterOp>
-bool scatter(
-    InputIterator s1, InputIterator s2, RandomIterator t1, int* target_node, int* target_position,
-    const ScatterOp& op) {
+bool scatter(InputIterator s1, InputIterator s2, RandomIterator t1, int* target_node,
+             int* target_position, const ScatterOp& op) {
     return scatter(*Ippl::Comm, s1, s2, t1, target_node, target_position, op);
 }
 

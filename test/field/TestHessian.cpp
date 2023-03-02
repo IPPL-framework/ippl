@@ -30,8 +30,8 @@
 #include <iostream>
 #include <typeinfo>
 
-KOKKOS_INLINE_FUNCTION double gaussian(
-    double x, double y, double z, double sigma = 1.0, double mu = 0.5) {
+KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 1.0,
+                                       double mu = 0.5) {
     double pi        = std::acos(-1.0);
     double prefactor = (1 / std::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
@@ -103,9 +103,9 @@ int main(int argc, char* argv[]) {
 
     Kokkos::parallel_for(
         "Assign exact",
-        mdrange_type(
-            {nghost, nghost, nghost}, {view_exact.extent(0) - nghost, view_exact.extent(1) - nghost,
-                                       view_exact.extent(2) - nghost}),
+        mdrange_type({nghost, nghost, nghost},
+                     {view_exact.extent(0) - nghost, view_exact.extent(1) - nghost,
+                      view_exact.extent(2) - nghost}),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             // local to global index conversion
             const int ig = i + lDom[0].first() - nghost;
@@ -119,18 +119,15 @@ int main(int argc, char* argv[]) {
             double mu = 0.5;
 
             if (gauss_fct) {
-                view_exact(i, j, k)[0] = {
-                    ((x - mu) * (x - mu) - 1.0) * gaussian(x, y, z),
-                    (x - mu) * (y - mu) * gaussian(x, y, z),
-                    (x - mu) * (z - mu) * gaussian(x, y, z)};
-                view_exact(i, j, k)[1] = {
-                    (x - mu) * (y - mu) * gaussian(x, y, z),
-                    ((y - mu) * (y - mu) - 1.0) * gaussian(x, y, z),
-                    (y - mu) * (z - mu) * gaussian(x, y, z)};
-                view_exact(i, j, k)[2] = {
-                    (x - mu) * (z - mu) * gaussian(x, y, z),
-                    (y - mu) * (z - mu) * gaussian(x, y, z),
-                    ((z - mu) * (z - mu) - 1.0) * gaussian(x, y, z)};
+                view_exact(i, j, k)[0] = {((x - mu) * (x - mu) - 1.0) * gaussian(x, y, z),
+                                          (x - mu) * (y - mu) * gaussian(x, y, z),
+                                          (x - mu) * (z - mu) * gaussian(x, y, z)};
+                view_exact(i, j, k)[1] = {(x - mu) * (y - mu) * gaussian(x, y, z),
+                                          ((y - mu) * (y - mu) - 1.0) * gaussian(x, y, z),
+                                          (y - mu) * (z - mu) * gaussian(x, y, z)};
+                view_exact(i, j, k)[2] = {(x - mu) * (z - mu) * gaussian(x, y, z),
+                                          (y - mu) * (z - mu) * gaussian(x, y, z),
+                                          ((z - mu) * (z - mu) - 1.0) * gaussian(x, y, z)};
             } else {
                 view_exact(i, j, k)[0] = {0.0, z, y};
                 view_exact(i, j, k)[1] = {z, 0.0, x};
@@ -153,10 +150,9 @@ int main(int argc, char* argv[]) {
 
             Kokkos::parallel_reduce(
                 "Relative error",
-                mdrange_type(
-                    {nghost, nghost, nghost},
-                    {view_result.extent(0) - nghost, view_result.extent(1) - nghost,
-                     view_result.extent(2) - nghost}),
+                mdrange_type({nghost, nghost, nghost},
+                             {view_result.extent(0) - nghost, view_result.extent(1) - nghost,
+                              view_result.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
                     double myVal = pow(view_result(i, j, k)[dim1][dim2], 2);
                     val += myVal;
@@ -171,10 +167,9 @@ int main(int argc, char* argv[]) {
 
             Kokkos::parallel_reduce(
                 "Relative error",
-                mdrange_type(
-                    {nghost, nghost, nghost},
-                    {view_exact.extent(0) - nghost, view_exact.extent(1) - nghost,
-                     view_exact.extent(2) - nghost}),
+                mdrange_type({nghost, nghost, nghost},
+                             {view_exact.extent(0) - nghost, view_exact.extent(1) - nghost,
+                              view_exact.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
                     double myVal = pow(view_exact(i, j, k)[dim1][dim2], 2);
                     val += myVal;

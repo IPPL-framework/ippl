@@ -54,9 +54,8 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             ParticleBC() = default;
 
-            KOKKOS_INLINE_FUNCTION ParticleBC(
-                const ViewType& view, const NDRegion<T, Dim>& nr, const unsigned& dim,
-                const bool& isUpper)
+            KOKKOS_INLINE_FUNCTION ParticleBC(const ViewType& view, const NDRegion<T, Dim>& nr,
+                                              const unsigned& dim, const bool& isUpper)
                 : view_m(view)
                 , dim_m(dim)
                 , minval_m(nr[dim].min())
@@ -80,9 +79,8 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             PeriodicBC() = default;
 
-            KOKKOS_INLINE_FUNCTION PeriodicBC(
-                const ViewType& view, const NDRegion<T, Dim>& nr, const unsigned& dim,
-                const bool& isUpper)
+            KOKKOS_INLINE_FUNCTION PeriodicBC(const ViewType& view, const NDRegion<T, Dim>& nr,
+                                              const unsigned& dim, const bool& isUpper)
                 : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {}
 
             KOKKOS_INLINE_FUNCTION void operator()(const size_t& i) const {
@@ -105,9 +103,8 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             ReflectiveBC() = default;
 
-            KOKKOS_INLINE_FUNCTION ReflectiveBC(
-                const ViewType& view, const NDRegion<T, Dim>& nr, const unsigned& dim,
-                const bool& isUpper)
+            KOKKOS_INLINE_FUNCTION ReflectiveBC(const ViewType& view, const NDRegion<T, Dim>& nr,
+                                                const unsigned& dim, const bool& isUpper)
                 : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {}
 
             KOKKOS_INLINE_FUNCTION void operator()(const size_t& i) const {
@@ -134,9 +131,8 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             SinkBC() = default;
 
-            KOKKOS_INLINE_FUNCTION SinkBC(
-                const ViewType& view, const NDRegion<T, Dim>& nr, const unsigned& dim,
-                const bool& isUpper)
+            KOKKOS_INLINE_FUNCTION SinkBC(const ViewType& view, const NDRegion<T, Dim>& nr,
+                                          const unsigned& dim, const bool& isUpper)
                 : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {}
 
             KOKKOS_INLINE_FUNCTION void operator()(const size_t& i) const {

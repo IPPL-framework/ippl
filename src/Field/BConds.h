@@ -37,9 +37,8 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, class Cell>
     std::ostream& operator<<(std::ostream&, const BConds<T, Dim, Mesh, Cell>&);
 
-    template <
-        typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
-        class Cell = typename Mesh::DefaultCentering>
+    template <typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
+              class Cell = typename Mesh::DefaultCentering>
     class BConds {
     public:
         using bc_type        = detail::BCondBase<T, Dim, Mesh, Cell>;

@@ -78,9 +78,8 @@ int main(int argc, char* argv[]) {
 
     Kokkos::parallel_for(
         "Assign field",
-        mdrange_type(
-            {nghost, nghost, nghost},
-            {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
+        mdrange_type({nghost, nghost, nghost},
+                     {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             // local to global index conversion
             const size_t ig = i + lDom[0].first() - nghost;

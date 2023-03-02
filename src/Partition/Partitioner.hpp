@@ -25,8 +25,8 @@ namespace ippl {
 
         template <unsigned Dim>
         template <typename view_type>
-        void Partitioner<Dim>::split(
-            const NDIndex<Dim>& domain, view_type& view, e_dim_tag* decomp, int nSplits) const {
+        void Partitioner<Dim>::split(const NDIndex<Dim>& domain, view_type& view, e_dim_tag* decomp,
+                                     int nSplits) const {
             using NDIndex_t = NDIndex<Dim>;
 
             // Recursively split the domain until we have generated all the domains.

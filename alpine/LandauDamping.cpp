@@ -98,9 +98,8 @@ struct generate_random {
     T k, minU, maxU;
 
     // Initialize all members
-    generate_random(
-        view_type x_, view_type v_, GeneratorPool rand_pool_, value_type& alpha_, T& k_, T& minU_,
-        T& maxU_)
+    generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, value_type& alpha_, T& k_,
+                    T& minU_, T& maxU_)
         : x(x_)
         , v(v_)
         , rand_pool(rand_pool_)
@@ -233,9 +232,9 @@ int main(int argc, char* argv[]) {
 
         Kokkos::parallel_for(
             "Assign initial rho based on PDF",
-            mdrange_type(
-                {nghost, nghost, nghost}, {rhoview.extent(0) - nghost, rhoview.extent(1) - nghost,
-                                           rhoview.extent(2) - nghost}),
+            mdrange_type({nghost, nghost, nghost},
+                         {rhoview.extent(0) - nghost, rhoview.extent(1) - nghost,
+                          rhoview.extent(2) - nghost}),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // local to global index conversion
                 const size_t ig = i + lDom[0].first() - nghost;
@@ -286,9 +285,9 @@ int main(int argc, char* argv[]) {
 
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
-    Kokkos::parallel_for(
-        nloc, generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                  P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+    Kokkos::parallel_for(nloc,
+                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                             P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
     Kokkos::fence();
     Ippl::Comm->barrier();

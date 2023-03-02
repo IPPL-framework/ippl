@@ -39,8 +39,8 @@ public:
 
     // scatter particle data into Field using particle position and mesh
     template <class FT, unsigned Dim, class M, class C, class PT>
-    static void scatter(
-        const FT& pdata, Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos, const M& mesh) {
+    static void scatter(const FT& pdata, Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos,
+                        const M& mesh) {
         // find nearest-grid-point for particle position, store in NDIndex obj
         NDIndex<Dim> ngp = FindNGP(mesh, ppos, CenteringTag<C>());
         // scatter data value to Field ... this assumes that the Field
@@ -55,9 +55,8 @@ public:
     // scatter particle data into Field using particle position and mesh
     // and cache mesh information for reuse
     template <class FT, unsigned Dim, class M, class C, class PT>
-    static void scatter(
-        const FT& pdata, Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos, const M& mesh,
-        NDIndex<Dim>& ngp) {
+    static void scatter(const FT& pdata, Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos,
+                        const M& mesh, NDIndex<Dim>& ngp) {
         // find nearest-grid-point for particle position, store in NDIndex obj
         ngp = FindNGP(mesh, ppos, CenteringTag<C>());
         // scatter data value to Field ... this assumes that the Field
@@ -83,8 +82,8 @@ public:
 
     // gather particle data from Field using particle position and mesh
     template <class FT, unsigned Dim, class M, class C, class PT>
-    static void gather(
-        FT& pdata, const Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos, const M& mesh) {
+    static void gather(FT& pdata, const Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos,
+                       const M& mesh) {
         // find nearest-grid-point for particle position, store in NDIndex obj
         NDIndex<Dim> ngp = FindNGP(mesh, ppos, CenteringTag<C>());
         // gather Field value to particle data ... this assumes that the Field
@@ -99,9 +98,8 @@ public:
     // gather particle data from Field using particle position and mesh
     // and cache mesh information for reuse
     template <class FT, unsigned Dim, class M, class C, class PT>
-    static void gather(
-        FT& pdata, const Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos, const M& mesh,
-        NDIndex<Dim>& ngp) {
+    static void gather(FT& pdata, const Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos,
+                       const M& mesh, NDIndex<Dim>& ngp) {
         // find nearest-grid-point for particle position, store in NDIndex obj
         ngp = FindNGP(mesh, ppos, CenteringTag<C>());
         // gather Field value to particle data ... this assumes that the Field

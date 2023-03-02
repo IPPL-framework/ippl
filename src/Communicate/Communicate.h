@@ -105,15 +105,15 @@ namespace ippl {
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void recv(
-            int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, size_type nrecvs);
+        void recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize,
+                  size_type nrecvs);
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void isend(
-            int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&, size_type nsends);
+        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&,
+                   size_type nsends);
 
         /*!
          * \warning Only works with default spaces!
@@ -134,8 +134,8 @@ namespace ippl {
     };
 
     template <class Buffer>
-    void Communicate::recv(
-        int src, int tag, Buffer& buffer, archive_type& ar, size_type msize, size_type nrecvs) {
+    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize,
+                           size_type nrecvs) {
         // Temporary fix. MPI communication seems to have problems when the
         // count argument exceeds the range of int, so large messages should
         // be split into smaller messages
@@ -150,9 +150,8 @@ namespace ippl {
     }
 
     template <class Buffer>
-    void Communicate::isend(
-        int dest, int tag, Buffer& buffer, archive_type& ar, MPI_Request& request,
-        size_type nsends) {
+    void Communicate::isend(int dest, int tag, Buffer& buffer, archive_type& ar,
+                            MPI_Request& request, size_type nsends) {
         if (ar.getSize() > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
             std::abort();

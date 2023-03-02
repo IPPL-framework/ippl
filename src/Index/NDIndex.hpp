@@ -111,8 +111,8 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(
-        NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d, int i) const {
+    KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d,
+                                                    int i) const {
         if (&l != this)
             l = *this;
         if (&r != this)
@@ -121,8 +121,8 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(
-        NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d, double a) const {
+    KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d,
+                                                    double a) const {
         if (&l != this)
             l = *this;
         if (&r != this)
@@ -131,8 +131,8 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(
-        NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d) const {
+    KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r,
+                                                    unsigned d) const {
         if (&l != this)
             l = *this;
         if (&r != this)

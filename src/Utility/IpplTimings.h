@@ -179,9 +179,8 @@ public:
     static void print() { instance->print(); }
 
     // print the results to a file
-    static void print(
-        std::string fn, const std::map<std::string, unsigned int>& problemSize =
-                            std::map<std::string, unsigned int>()) {
+    static void print(std::string fn, const std::map<std::string, unsigned int>& problemSize =
+                                          std::map<std::string, unsigned int>()) {
         instance->print(fn, problemSize);
     }
 

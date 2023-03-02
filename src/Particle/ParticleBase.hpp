@@ -151,8 +151,8 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::destroy(
-        const Kokkos::View<bool*>& invalid, const size_type destroyNum) {
+    void ParticleBase<PLayout, Properties...>::destroy(const Kokkos::View<bool*>& invalid,
+                                                       const size_type destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
         // If there aren't any particles to delete, do nothing
@@ -223,8 +223,8 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::serialize(
-        detail::Archive<Properties...>& ar, size_type nsends) {
+    void ParticleBase<PLayout, Properties...>::serialize(detail::Archive<Properties...>& ar,
+                                                         size_type nsends) {
         using size_type = typename attribute_container_t::size_type;
         for (size_type i = 0; i < attributes_m.size(); ++i) {
             attributes_m[i]->serialize(ar, nsends);
@@ -232,8 +232,8 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::deserialize(
-        detail::Archive<Properties...>& ar, size_type nrecvs) {
+    void ParticleBase<PLayout, Properties...>::deserialize(detail::Archive<Properties...>& ar,
+                                                           size_type nrecvs) {
         using size_type = typename attribute_container_t::size_type;
         for (size_type i = 0; i < attributes_m.size(); ++i) {
             attributes_m[i]->deserialize(ar, nrecvs);

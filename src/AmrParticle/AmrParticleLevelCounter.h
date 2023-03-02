@@ -31,9 +31,8 @@
 #include <map>
 #include <numeric>
 
-template <
-    class Key, class T, class Compare = std::less<Key>,
-    class Allocator = std::allocator<std::pair<const Key, T> > >
+template <class Key, class T, class Compare = std::less<Key>,
+          class Allocator = std::allocator<std::pair<const Key, T> > >
 class AmrParticleLevelCounter {
 public:
     typedef typename std::map<Key, T>::value_type value_type;

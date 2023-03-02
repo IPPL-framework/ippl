@@ -48,8 +48,8 @@ namespace ippl {
         }
 
         template <typename T, unsigned Dim, class Mesh>
-        void RegionLayout<T, Dim, Mesh>::changeDomain(
-            const FieldLayout<Dim>& fl, const Mesh& mesh) {
+        void RegionLayout<T, Dim, Mesh>::changeDomain(const FieldLayout<Dim>& fl,
+                                                      const Mesh& mesh) {
             // set our index space offset
             for (unsigned int d = 0; d < Dim; ++d) {
                 indexOffset_m[d]  = fl.getDomain()[d].first();

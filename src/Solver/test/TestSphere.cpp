@@ -7,8 +7,8 @@
 #include "FFTPoissonSolver.h"
 #include "Ippl.h"
 
-KOKKOS_INLINE_FUNCTION double source(
-    double x, double y, double z, double density = 1.0, double R = 1.0, double mu = 1.2) {
+KOKKOS_INLINE_FUNCTION double source(double x, double y, double z, double density = 1.0,
+                                     double R = 1.0, double mu = 1.2) {
     double pi = std::acos(-1.0);
     double G  = 6.674e-11;
 
@@ -18,8 +18,8 @@ KOKKOS_INLINE_FUNCTION double source(
     return double(checkInside) * 4.0 * pi * G * density;
 }
 
-KOKKOS_INLINE_FUNCTION double exact_fct(
-    double x, double y, double z, double density = 1.0, double R = 1.0, double mu = 1.2) {
+KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double density = 1.0,
+                                        double R = 1.0, double mu = 1.2) {
     double pi = std::acos(-1.0);
     double G  = 6.674e-11;
 
@@ -125,8 +125,8 @@ int main(int argc, char* argv[]) {
         fftParams.add("comm", ippl::a2av);
         fftParams.add("r2c_direction", 0);
 
-        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3> FFTsolver(
-            rho, fftParams, algorithm);
+        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3> FFTsolver(rho, fftParams,
+                                                                             algorithm);
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

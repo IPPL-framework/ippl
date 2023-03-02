@@ -25,9 +25,8 @@
 #include "Types/Vector.h"
 
 namespace ippl {
-    template <
-        typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
-        class C = typename M::DefaultCentering>
+    template <typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
+              class C = typename M::DefaultCentering>
     class FFTPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, M, C> {
     public:
         // types for LHS and RHS
@@ -56,9 +55,8 @@ namespace ippl {
 
         // constructor and destructor
         FFTPoissonSolver(rhs_type& rhs, ParameterList& fftparams, std::string alg);
-        FFTPoissonSolver(
-            lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams, std::string alg,
-            int sol = Base::SOL_AND_GRAD);
+        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams, std::string alg,
+                         int sol = Base::SOL_AND_GRAD);
         ~FFTPoissonSolver();
 
         // allows user to set gradient of phi = Efield instead of spectral
@@ -76,10 +74,10 @@ namespace ippl {
         void initializeFields();
 
         // communication used for multi-rank Vico-Greengard's Green's function
-        void communicateVico(
-            Vector<int, Dim> size, typename CxField_t::view_type view_g,
-            const ippl::NDIndex<Dim> ldom_g, const int nghost_g, typename Field_t::view_type view,
-            const ippl::NDIndex<Dim> ldom, const int nghost);
+        void communicateVico(Vector<int, Dim> size, typename CxField_t::view_type view_g,
+                             const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
+                             typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
+                             const int nghost);
 
     private:
         // create a field to use as temporary storage
@@ -170,9 +168,8 @@ namespace ippl {
                     this->params_m.add("comm", p2p_pl);
                     break;
                 default:
-                    throw IpplException(
-                        "FFTPoissonSolver::setDefaultParameters",
-                        "Unrecognized heffte communication type");
+                    throw IpplException("FFTPoissonSolver::setDefaultParameters",
+                                        "Unrecognized heffte communication type");
             }
         }
     };

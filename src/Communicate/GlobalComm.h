@@ -30,9 +30,8 @@ class Communicate;
 // which do not require their own special getCommunicate/putMessage.  If you
 // need to reduce a complex quantity, use the scalar version of reduce.
 template <class InputIterator, class OutputIterator, class ReduceOp>
-bool reduce(
-    Communicate&, InputIterator, InputIterator, OutputIterator, const ReduceOp&,
-    bool* IncludeVal = 0);
+bool reduce(Communicate&, InputIterator, InputIterator, OutputIterator, const ReduceOp&,
+            bool* IncludeVal = 0);
 
 // same as above, but this uses the default Communicate object
 template <class InputIterator, class OutputIterator, class ReduceOp>
@@ -82,8 +81,8 @@ bool reduce(T& input, T& output, const ReduceOp& op) {
 // same node.
 // Return success of operation.
 template <class InputIterator, class RandomIterator, class ScatterOp>
-bool scatter(
-    Communicate&, InputIterator, InputIterator, RandomIterator, int*, int*, const ScatterOp&);
+bool scatter(Communicate&, InputIterator, InputIterator, RandomIterator, int*, int*,
+             const ScatterOp&);
 
 // same as above, but this uses the default Communicate object
 template <class InputIterator, class RandomIterator, class ScatterOp>

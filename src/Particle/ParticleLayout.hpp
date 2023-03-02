@@ -44,8 +44,8 @@
 namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim>
-        void ParticleLayout<T, Dim>::applyBC(
-            const particle_position_type& R, const NDRegion<T, Dim>& nr) {
+        void ParticleLayout<T, Dim>::applyBC(const particle_position_type& R,
+                                             const NDRegion<T, Dim>& nr) {
             /* loop over all faces
              * 0: lower x-face
              * 1: upper x-face
@@ -66,18 +66,16 @@ namespace ippl {
                         if (isUpper)
                             break;
 
-                        Kokkos::parallel_for(
-                            "Periodic BC", R.getParticleCount(),
-                            PeriodicBC(R.getView(), nr, d, isUpper));
+                        Kokkos::parallel_for("Periodic BC", R.getParticleCount(),
+                                             PeriodicBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::REFLECTIVE:
-                        Kokkos::parallel_for(
-                            "Reflective BC", R.getParticleCount(),
-                            ReflectiveBC(R.getView(), nr, d, isUpper));
+                        Kokkos::parallel_for("Reflective BC", R.getParticleCount(),
+                                             ReflectiveBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::SINK:
-                        Kokkos::parallel_for(
-                            "Sink BC", R.getParticleCount(), SinkBC(R.getView(), nr, d, isUpper));
+                        Kokkos::parallel_for("Sink BC", R.getParticleCount(),
+                                             SinkBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::NO:
                     default:

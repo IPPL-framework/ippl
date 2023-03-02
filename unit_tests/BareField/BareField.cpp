@@ -160,16 +160,16 @@ TEST_F(BareFieldTest, AllFuncs) {
     double alpha = pi / 4;
     *field       = alpha;
     // Compute new value
-    double beta = fabs(
-        7.0 * (sin(alpha) * cos(alpha)) / (tan(alpha) * acos(alpha)) - exp(alpha) + erf(alpha)
-        + (asin(alpha) * cosh(alpha)) / (atan(alpha) * sinh(alpha)) + tanh(alpha) * log(alpha)
-        - log10(alpha) * sqrt(alpha) + floor(alpha) * ceil(alpha));
+    double beta =
+        fabs(7.0 * (sin(alpha) * cos(alpha)) / (tan(alpha) * acos(alpha)) - exp(alpha) + erf(alpha)
+             + (asin(alpha) * cosh(alpha)) / (atan(alpha) * sinh(alpha)) + tanh(alpha) * log(alpha)
+             - log10(alpha) * sqrt(alpha) + floor(alpha) * ceil(alpha));
 
     // Compute same value via field ops
-    *field = fabs(
-        7.0 * (sin(*field) * cos(*field)) / (tan(*field) * acos(*field)) - exp(*field) + erf(*field)
-        + (asin(*field) * cosh(*field)) / (atan(*field) * sinh(*field)) + tanh(*field) * log(*field)
-        - log10(*field) * sqrt(*field) + floor(*field) * ceil(*field));
+    *field = fabs(7.0 * (sin(*field) * cos(*field)) / (tan(*field) * acos(*field)) - exp(*field)
+                  + erf(*field) + (asin(*field) * cosh(*field)) / (atan(*field) * sinh(*field))
+                  + tanh(*field) * log(*field) - log10(*field) * sqrt(*field)
+                  + floor(*field) * ceil(*field));
 
     const int shift = field->getNghost();
 

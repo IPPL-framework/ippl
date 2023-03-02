@@ -49,8 +49,8 @@ namespace ippl {
 
         template <typename T, unsigned Dim>
         template <class Op>
-        void HaloCells<T, Dim>::exchangeFaces(
-            view_type& view, const Layout_t* layout, SendOrder order) {
+        void HaloCells<T, Dim>::exchangeFaces(view_type& view, const Layout_t* layout,
+                                              SendOrder order) {
             /* The neighbor list has length 2 * Dim. Each index
              * denotes a face. The value tells which MPI rank
              * we need to send to.
@@ -97,8 +97,8 @@ namespace ippl {
                     buffer_type buf = Ippl::Comm->getBuffer<T>(
                         IPPL_HALO_FACE_SEND + i * groupCount + face, nsends);
 
-                    Ippl::Comm->isend(
-                        rank, face_tag[face], haloData_m, *buf, requests[requestIndex++], nsends);
+                    Ippl::Comm->isend(rank, face_tag[face], haloData_m, *buf,
+                                      requests[requestIndex++], nsends);
                     buf->resetWritePos();
                 }
             }
@@ -115,16 +115,15 @@ namespace ippl {
                         range = neighborsSendRange[face][i];
                     }
 
-                    size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
-                                 (range.hi[1] - range.lo[1]) *
-                                 (range.hi[2] - range.lo[2]));
+                    size_type nrecvs =
+                        (int)((range.hi[0] - range.lo[0]) * (range.hi[1] - range.lo[1])
+                              * (range.hi[2] - range.lo[2]));
 
                     buffer_type buf = Ippl::Comm->getBuffer<T>(
                         IPPL_HALO_FACE_RECV + i * groupCount + face, nrecvs);
 
-                    Ippl::Comm->recv(
-                        rank, face_tag[matchface[face]], haloData_m, *buf, nrecvs * sizeof(T),
-                        nrecvs);
+                    Ippl::Comm->recv(rank, face_tag[matchface[face]], haloData_m, *buf,
+                                     nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, haloData_m);
@@ -138,8 +137,8 @@ namespace ippl {
 
         template <typename T, unsigned Dim>
         template <class Op>
-        void HaloCells<T, Dim>::exchangeEdges(
-            view_type& view, const Layout_t* layout, SendOrder order) {
+        void HaloCells<T, Dim>::exchangeEdges(view_type& view, const Layout_t* layout,
+                                              SendOrder order) {
             using neighbor_type            = typename Layout_t::edge_neighbor_type;
             const neighbor_type& neighbors = layout->getEdgeNeighbors();
             using neighbor_range_type      = typename Layout_t::edge_neighbor_range_type;
@@ -177,8 +176,8 @@ namespace ippl {
                     buffer_type buf = Ippl::Comm->getBuffer<T>(
                         IPPL_HALO_EDGE_SEND + i * groupCount + edge, nsends);
 
-                    Ippl::Comm->isend(
-                        rank, edge_tag[edge], haloData_m, *buf, requests[requestIndex++], nsends);
+                    Ippl::Comm->isend(rank, edge_tag[edge], haloData_m, *buf,
+                                      requests[requestIndex++], nsends);
                     buf->resetWritePos();
                 }
             }
@@ -195,16 +194,15 @@ namespace ippl {
                         range = neighborsSendRange[edge][i];
                     }
 
-                    size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
-                                 (range.hi[1] - range.lo[1]) *
-                                 (range.hi[2] - range.lo[2]));
+                    size_type nrecvs =
+                        (int)((range.hi[0] - range.lo[0]) * (range.hi[1] - range.lo[1])
+                              * (range.hi[2] - range.lo[2]));
 
                     buffer_type buf = Ippl::Comm->getBuffer<T>(
                         IPPL_HALO_EDGE_RECV + i * groupCount + edge, nrecvs);
 
-                    Ippl::Comm->recv(
-                        rank, edge_tag[matchedge[edge]], haloData_m, *buf, nrecvs * sizeof(T),
-                        nrecvs);
+                    Ippl::Comm->recv(rank, edge_tag[matchedge[edge]], haloData_m, *buf,
+                                     nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, haloData_m);
@@ -218,8 +216,8 @@ namespace ippl {
 
         template <typename T, unsigned Dim>
         template <class Op>
-        void HaloCells<T, Dim>::exchangeVertices(
-            view_type& view, const Layout_t* layout, SendOrder order) {
+        void HaloCells<T, Dim>::exchangeVertices(view_type& view, const Layout_t* layout,
+                                                 SendOrder order) {
             using neighbor_type            = typename Layout_t::vertex_neighbor_type;
             const neighbor_type& neighbors = layout->getVertexNeighbors();
             using neighbor_range_type      = typename Layout_t::vertex_neighbor_range_type;
@@ -254,8 +252,8 @@ namespace ippl {
 
                 buffer_type buf = Ippl::Comm->getBuffer<T>(IPPL_HALO_VERTEX_SEND + vertex, nsends);
 
-                Ippl::Comm->isend(
-                    rank, vertex_tag[vertex], haloData_m, *buf, requests[requestIndex++], nsends);
+                Ippl::Comm->isend(rank, vertex_tag[vertex], haloData_m, *buf,
+                                  requests[requestIndex++], nsends);
                 buf->resetWritePos();
             }
 
@@ -275,15 +273,13 @@ namespace ippl {
                     range = neighborsSendRange[vertex];
                 }
 
-                size_type nrecvs = (int)((range.hi[0] - range.lo[0]) *
-                             (range.hi[1] - range.lo[1]) *
-                             (range.hi[2] - range.lo[2]));
+                size_type nrecvs = (int)((range.hi[0] - range.lo[0]) * (range.hi[1] - range.lo[1])
+                                         * (range.hi[2] - range.lo[2]));
 
                 buffer_type buf = Ippl::Comm->getBuffer<T>(IPPL_HALO_VERTEX_RECV + vertex, nrecvs);
 
-                Ippl::Comm->recv(
-                    rank, vertex_tag[matchvertex[vertex]], haloData_m, *buf, nrecvs * sizeof(T),
-                    nrecvs);
+                Ippl::Comm->recv(rank, vertex_tag[matchvertex[vertex]], haloData_m, *buf,
+                                 nrecvs * sizeof(T), nrecvs);
                 buf->resetReadPos();
 
                 unpack<Op>(range, view, haloData_m);
@@ -295,9 +291,8 @@ namespace ippl {
         }
 
         template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::pack(
-            const bound_type& range, const view_type& view, FieldBufferData<T>& fd,
-            size_type& nsends) {
+        void HaloCells<T, Dim>::pack(const bound_type& range, const view_type& view,
+                                     FieldBufferData<T>& fd, size_type& nsends) {
             auto subview = makeSubview(view, range);
 
             auto& buffer = fd.buffer;
@@ -322,8 +317,8 @@ namespace ippl {
 
         template <typename T, unsigned Dim>
         template <typename Op>
-        void HaloCells<T, Dim>::unpack(
-            const bound_type& range, const view_type& view, FieldBufferData<T>& fd) {
+        void HaloCells<T, Dim>::unpack(const bound_type& range, const view_type& view,
+                                       FieldBufferData<T>& fd) {
             auto subview = makeSubview(view, range);
             auto buffer  = fd.buffer;
 
@@ -345,16 +340,15 @@ namespace ippl {
         template <typename T, unsigned Dim>
         auto HaloCells<T, Dim>::makeSubview(const view_type& view, const bound_type& intersect) {
             using Kokkos::make_pair;
-            return Kokkos::subview(
-                view, make_pair(intersect.lo[0], intersect.hi[0]),
-                make_pair(intersect.lo[1], intersect.hi[1]),
-                make_pair(intersect.lo[2], intersect.hi[2]));
+            return Kokkos::subview(view, make_pair(intersect.lo[0], intersect.hi[0]),
+                                   make_pair(intersect.lo[1], intersect.hi[1]),
+                                   make_pair(intersect.lo[2], intersect.hi[2]));
         }
 
         template <typename T, unsigned Dim>
         template <typename Op>
-        void HaloCells<T, Dim>::applyPeriodicSerialDim(
-            view_type& view, const Layout_t* layout, const int nghost) {
+        void HaloCells<T, Dim>::applyPeriodicSerialDim(view_type& view, const Layout_t* layout,
+                                                       const int nghost) {
             int myRank           = Ippl::Comm->rank();
             const auto& lDomains = layout->getHostLocalDomains();
             const auto& domain   = layout->getDomain();

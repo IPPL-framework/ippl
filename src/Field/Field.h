@@ -24,9 +24,8 @@
 
 namespace ippl {
 
-    template <
-        typename T, unsigned Dim, class M = UniformCartesian<double, Dim>,
-        class C = typename M::DefaultCentering>
+    template <typename T, unsigned Dim, class M = UniformCartesian<double, Dim>,
+              class C = typename M::DefaultCentering>
     class Field : public BareField<T, Dim> {
     public:
         typedef T type;

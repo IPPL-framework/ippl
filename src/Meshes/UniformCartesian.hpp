@@ -28,14 +28,14 @@ namespace ippl {
         , volume_m(0.0) {}
 
     template <typename T, unsigned Dim>
-    UniformCartesian<T, Dim>::UniformCartesian(
-        const NDIndex<Dim>& ndi, const vector_type& hx, const vector_type& origin) {
+    UniformCartesian<T, Dim>::UniformCartesian(const NDIndex<Dim>& ndi, const vector_type& hx,
+                                               const vector_type& origin) {
         this->initialize(ndi, hx, origin);
     }
 
     template <typename T, unsigned Dim>
-    void UniformCartesian<T, Dim>::initialize(
-        const NDIndex<Dim>& ndi, const vector_type& hx, const vector_type& origin) {
+    void UniformCartesian<T, Dim>::initialize(const NDIndex<Dim>& ndi, const vector_type& hx,
+                                              const vector_type& origin) {
         meshSpacing_m = hx;
 
         volume_m = 1.0;

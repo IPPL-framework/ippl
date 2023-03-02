@@ -157,9 +157,8 @@ namespace ippl {
 
         void findNeighbors(int nghost = 1);
 
-        void addNeighbors(
-            NDIndex_t& gnd, NDIndex_t& nd, NDIndex_t& ndNeighbor, NDIndex_t& intersect, int nghost,
-            int rank);
+        void addNeighbors(NDIndex_t& gnd, NDIndex_t& nd, NDIndex_t& ndNeighbor,
+                          NDIndex_t& intersect, int nghost, int rank);
 
         void write(std::ostream& = std::cout) const;
 
@@ -173,17 +172,14 @@ namespace ippl {
          * @param inersect the intersection between grown and the remote domain
          * @param rank the rank of the remote domain
          */
-        void addVertex(
-            const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
-            const bound_type& rangeSend, const bound_type& rangeRecv);
+        void addVertex(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
+                       const bound_type& rangeSend, const bound_type& rangeRecv);
 
-        void addEdge(
-            const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
-            const bound_type& rangeSend, const bound_type& rangeRecv);
+        void addEdge(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
+                     const bound_type& rangeSend, const bound_type& rangeRecv);
 
-        void addFace(
-            const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
-            const bound_type& rangeSend, const bound_type& rangeRecv);
+        void addFace(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
+                     const bound_type& rangeSend, const bound_type& rangeRecv);
 
         /*!
          * Obtain the bounds to send / receive. The second domain, i.e.,
@@ -194,8 +190,8 @@ namespace ippl {
          * @param offset to map global to local grid point
          * @param nghost number of ghost cells per dimension
          */
-        bound_type getBounds(
-            const NDIndex_t& nd1, const NDIndex_t& nd2, const NDIndex_t& offset, int nghost);
+        bound_type getBounds(const NDIndex_t& nd1, const NDIndex_t& nd2, const NDIndex_t& offset,
+                             int nghost);
 
         int getPeriodicOffset(const NDIndex_t& nd, const unsigned int d, const int k);
 

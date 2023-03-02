@@ -2,8 +2,9 @@
 namespace ippl {
 
     template <class T, unsigned Dim, class M>
-    void OrthogonalRecursiveBisection<T, Dim, M>::initialize(
-        FieldLayout<Dim>& fl, UniformCartesian<T, Dim>& mesh, const Field<T, Dim>& rho) {
+    void OrthogonalRecursiveBisection<T, Dim, M>::initialize(FieldLayout<Dim>& fl,
+                                                             UniformCartesian<T, Dim>& mesh,
+                                                             const Field<T, Dim>& rho) {
         bf_m.initialize(mesh, fl);
         bf_m = rho;
     }
@@ -68,9 +69,8 @@ namespace ippl {
 
             // Communicate to all the reduced weights
             IpplTimings::startTimer(tallReduce);
-            MPI_Allreduce(
-                reducedRank.data(), reduced.data(), reducedRank.size(), MPI_DOUBLE, MPI_SUM,
-                Ippl::getComm());
+            MPI_Allreduce(reducedRank.data(), reduced.data(), reducedRank.size(), MPI_DOUBLE,
+                          MPI_SUM, Ippl::getComm());
             IpplTimings::stopTimer(tallReduce);
 
             // Find median of reduced weights
@@ -251,9 +251,9 @@ namespace ippl {
     }
 
     template <class T, unsigned Dim, class M>
-    void OrthogonalRecursiveBisection<T, Dim, M>::cutDomain(
-        std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis,
-        int median) {
+    void OrthogonalRecursiveBisection<T, Dim, M>::cutDomain(std::vector<NDIndex<Dim>>& domains,
+                                                            std::vector<int>& procs, int it,
+                                                            int cutAxis, int median) {
         // Cut domains[it] in half at median along cutAxis
         NDIndex<Dim> leftDom, rightDom;
         domains[it].split(leftDom, rightDom, cutAxis, median + domains[it][cutAxis].first());

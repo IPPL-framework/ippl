@@ -121,10 +121,9 @@ public:
     ParticleAttrib<int> ID;                     // velocity of the particles
     ParticleAttrib<Vektor<double, 2> > Rphase;  // velocity of the particles
 
-    ChargedParticles(
-        PL* pl, Vektor<double, 3> nr, e_dim_tag /*decomp*/[Dim], Vektor<double, 3> extend_l_,
-        Vektor<double, 3> extend_r_, Vektor<int, 3> Nx_, Vektor<int, 3> Nv_,
-        Vektor<double, 3> Vmax_)
+    ChargedParticles(PL* pl, Vektor<double, 3> nr, e_dim_tag /*decomp*/[Dim],
+                     Vektor<double, 3> extend_l_, Vektor<double, 3> extend_r_, Vektor<int, 3> Nx_,
+                     Vektor<int, 3> Nv_, Vektor<double, 3> Vmax_)
         : IpplParticleBase<PL>(pl)
         , nr_m(nr)
         , extend_l(extend_l_)
@@ -292,9 +291,8 @@ public:
         NDIndex<3> elem, elem_mirr, elem_all;
         Vector_t hrsq(hr_m * hr_m);
         int N = domain_m[0].max();
-        INFOMSG(
-            "domainlength = " << domain_m[0].max() << " " << domain_m[1].max() << " "
-                              << domain_m[2].max() << endl);
+        INFOMSG("domainlength = " << domain_m[0].max() << " " << domain_m[1].max() << " "
+                                  << domain_m[2].max() << endl);
         INFOMSG("hr_m = " << hr_m << endl);
         // Loop over first octant of domain
         for (int i = lDomain_m[0].min(); i <= (lDomain_m[0].max()) / 2. + 1; ++i) {
@@ -309,10 +307,9 @@ public:
 
                     double val = 0;
                     double r   = 0;
-                    r          = sqrt(
-                        (i) * (i)*hr_m[0] * hr_m[0] + (j) * (j)*hr_m[1] * hr_m[1]
-                        + (k) * (k)*hr_m[2] * hr_m[2]);
-                    val = 1. / (4. * M_PI) * erf(alpha * r) / (r + eps);
+                    r          = sqrt((i) * (i)*hr_m[0] * hr_m[0] + (j) * (j)*hr_m[1] * hr_m[1]
+                                      + (k) * (k)*hr_m[2] * hr_m[2]);
+                    val        = 1. / (4. * M_PI) * erf(alpha * r) / (r + eps);
 
                     elem_all                         = elem;
                     grncmpl_m.localElement(elem_all) = std::complex<double>(val);
@@ -360,8 +357,8 @@ public:
         }
     }
 
-    void calculateGridForces(
-        double /*interaction_radius*/, double alpha, double eps, bool GcalcKSpace, int it = 0) {
+    void calculateGridForces(double /*interaction_radius*/, double alpha, double eps,
+                             bool GcalcKSpace, int it = 0) {
         // this->Q.scatter(this->rho_m, this->R, IntrplTSC_t());
         rho_m[lDomain_m] =
             0;  //!!!!!! there has to be a better way than setting rho to 0 every time
@@ -415,9 +412,9 @@ public:
             // central axis. e.g. grnIField_m[0]=[(0 1 2 3 ... 3 2 1) ; (0 1 2 3 ... 3 2 1; ...)]
             for (int i = 0; i < 3; ++i) {
                 grnIField_m[i].initialize(*mesh_m, *layout_m);
-                grnIField_m[i][domain_m] = where(
-                    lt(domain_m[i], nr_m[i] / 2), domain_m[i] * domain_m[i],
-                    (nr_m[i] - domain_m[i]) * (nr_m[i] - domain_m[i]));
+                grnIField_m[i][domain_m] =
+                    where(lt(domain_m[i], nr_m[i] / 2), domain_m[i] * domain_m[i],
+                          (nr_m[i] - domain_m[i]) * (nr_m[i] - domain_m[i]));
             }
 
             Vector_t hrsq(hr_m * hr_m);
@@ -513,9 +510,8 @@ struct ApplyField {
         , R(r)
         , eps(epsilon)
         , a(alpha) {}
-    void operator()(
-        std::size_t i, std::size_t j, ChargedParticles<playout_t>& P,
-        Vektor<double, 3>& shift) const {
+    void operator()(std::size_t i, std::size_t j, ChargedParticles<playout_t>& P,
+                    Vektor<double, 3>& shift) const {
         Vector_t diff = P.R[i] - (P.R[j] + shift);
         double sqr    = 0;
 
@@ -553,13 +549,12 @@ struct ApplyField {
 };
 
 template <class PL>
-void ChargedParticles<PL>::calculatePairForces(
-    double interaction_radius, double eps, double alpha) {
+void ChargedParticles<PL>::calculatePairForces(double interaction_radius, double eps,
+                                               double alpha) {
     if (interaction_radius > 0) {
         HashPairBuilderPeriodicParallel<ChargedParticles<playout_t> > HPB(*this);
-        HPB.for_each(
-            RadiusCondition<double, Dim>(interaction_radius),
-            ApplyField<double>(-1, interaction_radius, eps, alpha), extend_l, extend_r);
+        HPB.for_each(RadiusCondition<double, Dim>(interaction_radius),
+                     ApplyField<double>(-1, interaction_radius, eps, alpha), extend_l, extend_r);
     }
 }
 
@@ -651,8 +646,8 @@ int main(int argc, char* argv[]) {
     double ampl_alpha = atof(argv[param++]);
     // refinement factor for mesh in 2d phase space
     int refine = 1;
-    P          = new ChargedParticles<playout_t>(
-        PL, nr, decomp, extend_l, extend_r, refine * Nx, refine * Nv, Vmax);
+    P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
+                                        refine * Nv, Vmax);
 
     createParticleDistributionTwoStream(P, extend_l, extend_r, Nx, Nv, Vmax, ampl_alpha);
 
@@ -667,8 +662,8 @@ int main(int argc, char* argv[]) {
     double ampl_alpha = atof(argv[param++]);
     // refinement factor for mesh in 2d phase space
     int refine = 1;
-    P          = new ChargedParticles<playout_t>(
-        PL, nr, decomp, extend_l, extend_r, refine * Nx, refine * Nv, Vmax);
+    P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
+                                        refine * Nv, Vmax);
     createParticleDistributionLandau(P, extend_l, extend_r, Nx, Nv, Vmax, ampl_alpha);
     // std::cout << "charge per particle pls: " << std::endl;
     // double qi;
@@ -682,8 +677,8 @@ int main(int argc, char* argv[]) {
     Vektor<double, Dim> Vmax(6, 6, 6);
     // refinement factor for mesh in 2d phase space
     int refine = 4;
-    P          = new ChargedParticles<playout_t>(
-        PL, nr, decomp, extend_l, extend_r, refine * Nx, refine * Nv, Vmax);
+    P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
+                                        refine * Nv, Vmax);
     createParticleDistribution(P, "random", 20000, 0.00005, extend_l, extend_r, source, 1., 0);
     // createParticleDistribution(P,"random", 10, 0.1, extend_l,extend_r,source,1.,0);
     // createParticleDistribution(P,"manual", 2, 1, extend_l,extend_r,1.)0

@@ -168,9 +168,8 @@ public:
         this->addAttribute(E);
     }
 
-    ChargedParticles(
-        PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax, ippl::e_dim_tag decomp[Dim],
-        double Q)
+    ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
+                     ippl::e_dim_tag decomp[Dim], double Q)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
@@ -189,9 +188,8 @@ public:
 
     void setupBCs() { setBCAllPeriodic(); }
 
-    void updateLayout(
-        FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer,
-        bool& isFirstRepartition) {
+    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer,
+                      bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -212,9 +210,8 @@ public:
 
     void initializeORB(FieldLayout_t& fl, Mesh_t& mesh) { orb.initialize(fl, mesh, rho_m); }
 
-    void repartition(
-        FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer,
-        bool& isFirstRepartition) {
+    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer,
+                     bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
 
@@ -290,8 +287,8 @@ public:
         size_type Total_particles = 0;
         size_type local_particles = this->getLocalNum();
 
-        MPI_Reduce(
-            &local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
+                   Ippl::getComm());
 
         double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
         m << "Rel. error in charge conservation = " << rel_error << endl;
@@ -373,10 +370,9 @@ public:
             double temp = 0.0;
             Kokkos::parallel_reduce(
                 "Vector E reduce",
-                mdrange_type(
-                    {nghostE, nghostE, nghostE},
-                    {Eview.extent(0) - nghostE, Eview.extent(1) - nghostE,
-                     Eview.extent(2) - nghostE}),
+                mdrange_type({nghostE, nghostE, nghostE},
+                             {Eview.extent(0) - nghostE, Eview.extent(1) - nghostE,
+                              Eview.extent(2) - nghostE}),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
                     double myVal = std::pow(Eview(i, j, k)[d], 2);
                     valL += myVal;

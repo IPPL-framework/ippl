@@ -85,9 +85,9 @@ namespace ippl {
             case Base::SOL: {
                 Kokkos::parallel_for(
                     "Solution FFTPeriodicPoissonSolver",
-                    mdrange_type(
-                        {nghost, nghost, nghost}, {view.extent(0) - nghost, view.extent(1) - nghost,
-                                                   view.extent(2) - nghost}),
+                    mdrange_type({nghost, nghost, nghost},
+                                 {view.extent(0) - nghost, view.extent(1) - nghost,
+                                  view.extent(2) - nghost}),
                     KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                         const int ig = i + lDomComplex[0].first() - nghost;
                         const int jg = j + lDomComplex[1].first() - nghost;
@@ -128,10 +128,9 @@ namespace ippl {
                 for (size_t gd = 0; gd < Dim; ++gd) {
                     Kokkos::parallel_for(
                         "Gradient FFTPeriodicPoissonSolver",
-                        mdrange_type(
-                            {nghost, nghost, nghost},
-                            {view.extent(0) - nghost, view.extent(1) - nghost,
-                             view.extent(2) - nghost}),
+                        mdrange_type({nghost, nghost, nghost},
+                                     {view.extent(0) - nghost, view.extent(1) - nghost,
+                                      view.extent(2) - nghost}),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                             const int ig = i + lDomComplex[0].first() - nghost;
                             const int jg = j + lDomComplex[1].first() - nghost;
@@ -162,10 +161,9 @@ namespace ippl {
 
                     Kokkos::parallel_for(
                         "Assign Gradient FFTPeriodicPoissonSolver",
-                        mdrange_type(
-                            {nghostL, nghostL, nghostL},
-                            {viewLhs.extent(0) - nghostL, viewLhs.extent(1) - nghostL,
-                             viewLhs.extent(2) - nghostL}),
+                        mdrange_type({nghostL, nghostL, nghostL},
+                                     {viewLhs.extent(0) - nghostL, viewLhs.extent(1) - nghostL,
+                                      viewLhs.extent(2) - nghostL}),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                             viewLhs(i, j, k)[gd] = viewRhs(i, j, k);
                         });

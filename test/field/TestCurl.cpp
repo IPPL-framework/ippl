@@ -31,8 +31,8 @@
 #include <iostream>
 #include <typeinfo>
 
-KOKKOS_INLINE_FUNCTION double gaussian(
-    double x, double y, double z, double sigma = 1.0, double mu = 0.5) {
+KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 1.0,
+                                       double mu = 0.5) {
     double pi        = std::acos(-1.0);
     double prefactor = (1 / std::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
@@ -131,10 +131,9 @@ int main(int argc, char* argv[]) {
 
         Kokkos::parallel_reduce(
             "Vector errorNr reduce",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {view_result.extent(0) - nghost, view_result.extent(1) - nghost,
-                 view_result.extent(2) - nghost}),
+            mdrange_type({nghost, nghost, nghost},
+                         {view_result.extent(0) - nghost, view_result.extent(1) - nghost,
+                          view_result.extent(2) - nghost}),
             KOKKOS_LAMBDA(const int i, const int j, const int k, double& valL) {
                 double myVal = pow(view_result(i, j, k)[gd], 2);
                 valL += myVal;
@@ -149,10 +148,9 @@ int main(int argc, char* argv[]) {
 
         Kokkos::parallel_reduce(
             "Vector errorDr reduce",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {view_exact.extent(0) - nghost, view_exact.extent(1) - nghost,
-                 view_exact.extent(2) - nghost}),
+            mdrange_type({nghost, nghost, nghost},
+                         {view_exact.extent(0) - nghost, view_exact.extent(1) - nghost,
+                          view_exact.extent(2) - nghost}),
             KOKKOS_LAMBDA(const int i, const int j, const int k, double& valL) {
                 double myVal = pow(view_exact(i, j, k)[gd], 2);
                 valL += myVal;

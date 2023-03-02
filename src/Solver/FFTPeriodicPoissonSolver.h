@@ -28,9 +28,8 @@
 
 namespace ippl {
 
-    template <
-        typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
-        class C = typename M::DefaultCentering>
+    template <typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
+              class C = typename M::DefaultCentering>
     class FFTPeriodicPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, M, C> {
     public:
         using Field_t   = Field<Trhs, Dim>;
@@ -92,9 +91,8 @@ namespace ippl {
                     this->params_m.add("comm", p2p_pl);
                     break;
                 default:
-                    throw IpplException(
-                        "FFTPeriodicPoissonSolver::setDefaultParameters",
-                        "Unrecognized heffte communication type");
+                    throw IpplException("FFTPeriodicPoissonSolver::setDefaultParameters",
+                                        "Unrecognized heffte communication type");
             }
         }
     };

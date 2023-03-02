@@ -43,8 +43,8 @@ inline NDIndex<Dim> FindNGP(const M& mesh, const Vektor<PT, Dim>& ppos, Centerin
 }
 
 template <class PT, unsigned Dim, class M>
-inline std::vector<NDIndex<Dim> > FindNGP(
-    const M& mesh, const Vektor<PT, Dim>& ppos, CenteringTag<Edge>) {
+inline std::vector<NDIndex<Dim> > FindNGP(const M& mesh, const Vektor<PT, Dim>& ppos,
+                                          CenteringTag<Edge>) {
     std::vector<NDIndex<Dim> > ngp;
     ngp.push_back(mesh.getCellContaining(ppos));
     ngp.push_back(mesh.getNearestVertex(ppos));
@@ -53,23 +53,22 @@ inline std::vector<NDIndex<Dim> > FindNGP(
 
 // Return position of element indicated by NDIndex
 template <class PT, unsigned Dim, class M>
-inline void FindPos(
-    Vektor<PT, Dim>& pos, const M& mesh, const NDIndex<Dim>& indices, CenteringTag<Cell>) {
+inline void FindPos(Vektor<PT, Dim>& pos, const M& mesh, const NDIndex<Dim>& indices,
+                    CenteringTag<Cell>) {
     pos = mesh.getCellPosition(indices);
     return;
 }
 
 template <class PT, unsigned Dim, class M>
-inline void FindPos(
-    Vektor<PT, Dim>& pos, const M& mesh, const NDIndex<Dim>& indices, CenteringTag<Vert>) {
+inline void FindPos(Vektor<PT, Dim>& pos, const M& mesh, const NDIndex<Dim>& indices,
+                    CenteringTag<Vert>) {
     pos = mesh.getVertexPosition(indices);
     return;
 }
 
 template <class PT, unsigned Dim, class M>
-inline void FindPos(
-    std::vector<Vektor<PT, Dim> >& pos, const M& mesh, const std::vector<NDIndex<Dim> >& indices,
-    CenteringTag<Edge>) {
+inline void FindPos(std::vector<Vektor<PT, Dim> >& pos, const M& mesh,
+                    const std::vector<NDIndex<Dim> >& indices, CenteringTag<Edge>) {
     pos.resize(Dim);
     Vektor<PT, Dim> cell_pos = mesh.getCellPosition(indices[0]);
     Vektor<PT, Dim> vert_pos = mesh.getVertexPosition(indices[1]);
@@ -84,8 +83,8 @@ inline void FindPos(
 
 // Find sizes of next mesh element
 template <class PT, unsigned Dim, class M>
-inline void FindDelta(
-    Vektor<PT, Dim>& delta, const M& mesh, const NDIndex<Dim>& gp, CenteringTag<Cell>) {
+inline void FindDelta(Vektor<PT, Dim>& delta, const M& mesh, const NDIndex<Dim>& gp,
+                      CenteringTag<Cell>) {
     NDIndex<Dim> vp;
     for (unsigned d = 0; d < Dim; ++d)
         vp[d] = gp[d] + 1;
@@ -94,16 +93,15 @@ inline void FindDelta(
 }
 
 template <class PT, unsigned Dim, class M>
-inline void FindDelta(
-    Vektor<PT, Dim>& delta, const M& mesh, const NDIndex<Dim>& gp, CenteringTag<Vert>) {
+inline void FindDelta(Vektor<PT, Dim>& delta, const M& mesh, const NDIndex<Dim>& gp,
+                      CenteringTag<Vert>) {
     delta = mesh.getDeltaVertex(gp);
     return;
 }
 
 template <class PT, unsigned Dim, class M>
-inline void FindDelta(
-    std::vector<Vektor<PT, Dim> >& delta, const M& mesh, const std::vector<NDIndex<Dim> >& gp,
-    CenteringTag<Edge>) {
+inline void FindDelta(std::vector<Vektor<PT, Dim> >& delta, const M& mesh,
+                      const std::vector<NDIndex<Dim> >& gp, CenteringTag<Edge>) {
     NDIndex<Dim> vp;
     for (unsigned d = 0; d < Dim; ++d)
         vp[d] = (gp[0])[d] + 1;
@@ -165,8 +163,8 @@ class Interpolator {
 protected:
     // helper function, similar to BareField::localElement, but return iterator
     template <class T, unsigned Dim>
-    static CompressedBrickIterator<T, Dim> getFieldIter(
-        const BareField<T, Dim>& f, const NDIndex<Dim>& pt) {
+    static CompressedBrickIterator<T, Dim> getFieldIter(const BareField<T, Dim>& f,
+                                                        const NDIndex<Dim>& pt) {
         typename BareField<T, Dim>::const_iterator_if lf_i, lf_end = f.end_if();
         for (lf_i = f.begin_if(); lf_i != lf_end; ++lf_i) {
             LField<T, Dim>& lf(*(*lf_i).second);

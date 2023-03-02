@@ -87,17 +87,15 @@ namespace ippl {
          * @param out stream
          */
         template <typename T, unsigned Dim, class... Properties>
-        void write(
-            const typename ViewType<T, Dim, Properties...>::view_type& view,
-            std::ostream& out = std::cout);
+        void write(const typename ViewType<T, Dim, Properties...>::view_type& view,
+                   std::ostream& out = std::cout);
 
         /*!
          * Specialized write function for one-dimensional views.
          */
         template <typename T, class... Properties>
-        void write(
-            const typename ViewType<T, 1, Properties...>::view_type& view,
-            std::ostream& out = std::cout) {
+        void write(const typename ViewType<T, 1, Properties...>::view_type& view,
+                   std::ostream& out = std::cout) {
             using view_type = typename ViewType<T, 1, Properties...>::view_type;
             typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
             Kokkos::deep_copy(hview, view);
@@ -111,9 +109,8 @@ namespace ippl {
          * Specialized write function for two-dimensional views.
          */
         template <typename T, class... Properties>
-        void write(
-            const typename ViewType<T, 2, Properties...>::view_type& view,
-            std::ostream& out = std::cout) {
+        void write(const typename ViewType<T, 2, Properties...>::view_type& view,
+                   std::ostream& out = std::cout) {
             using view_type = typename ViewType<T, 2, Properties...>::view_type;
             typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
             Kokkos::deep_copy(hview, view);
@@ -129,9 +126,8 @@ namespace ippl {
          * Specialized write function for three-dimensional views.
          */
         template <typename T, class... Properties>
-        void write(
-            const typename ViewType<T, 3, Properties...>::view_type& view,
-            std::ostream& out = std::cout) {
+        void write(const typename ViewType<T, 3, Properties...>::view_type& view,
+                   std::ostream& out = std::cout) {
             using view_type = typename ViewType<T, 3, Properties...>::view_type;
             typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
             Kokkos::deep_copy(hview, view);

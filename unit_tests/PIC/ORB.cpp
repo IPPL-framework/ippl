@@ -142,9 +142,8 @@ TEST_F(ORBTest, Volume) {
 
     ippl::NDIndex<dim> ndom = getDomain();
 
-    ASSERT_DOUBLE_EQ(
-        dom[0].length() * dom[1].length() * dom[2].length(),
-        ndom[0].length() * ndom[1].length() * ndom[2].length());
+    ASSERT_DOUBLE_EQ(dom[0].length() * dom[1].length() * dom[2].length(),
+                     ndom[0].length() * ndom[1].length() * ndom[2].length());
 }
 
 TEST_F(ORBTest, Charge) {

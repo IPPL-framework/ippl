@@ -97,9 +97,8 @@ namespace ippl {
         IpplTimings::startTimer(preprocTimer);
         MPI_Win win;
         std::vector<size_type> nRecvs(nRanks, 0);
-        MPI_Win_create(
-            nRecvs.data(), nRanks * sizeof(size_type), sizeof(size_type), MPI_INFO_NULL,
-            Ippl::getComm(), &win);
+        MPI_Win_create(nRecvs.data(), nRanks * sizeof(size_type), sizeof(size_type), MPI_INFO_NULL,
+                       Ippl::getComm(), &win);
 
         std::vector<size_type> nSends(nRanks, 0);
 
@@ -111,9 +110,8 @@ namespace ippl {
                 continue;
             }
             nSends[rank] = numberOfSends(rank, ranks);
-            MPI_Put(
-                nSends.data() + rank, 1, MPI_LONG_LONG_INT, rank, Ippl::Comm->rank(), 1,
-                MPI_LONG_LONG_INT, win);
+            MPI_Put(nSends.data() + rank, 1, MPI_LONG_LONG_INT, rank, Ippl::Comm->rank(), 1,
+                    MPI_LONG_LONG_INT, win);
         }
         MPI_Win_fence(0, win);
         MPI_Win_free(&win);
@@ -213,13 +211,12 @@ namespace ippl {
             mdrange_type({0, 0}, {ranks.extent(0), Regions.extent(0)}),
             KOKKOS_LAMBDA(const size_t i, const view_size_t j) {
                 bool xyz_bool = false;
-                xyz_bool =
-                    ((positions(i)[0] >= Regions(j)[0].min())
-                     && (positions(i)[0] <= Regions(j)[0].max())
-                     && (positions(i)[1] >= Regions(j)[1].min())
-                     && (positions(i)[1] <= Regions(j)[1].max())
-                     && (positions(i)[2] >= Regions(j)[2].min())
-                     && (positions(i)[2] <= Regions(j)[2].max()));
+                xyz_bool      = ((positions(i)[0] >= Regions(j)[0].min())
+                            && (positions(i)[0] <= Regions(j)[0].max())
+                            && (positions(i)[1] >= Regions(j)[1].min())
+                            && (positions(i)[1] <= Regions(j)[1].max())
+                            && (positions(i)[2] >= Regions(j)[2].min())
+                            && (positions(i)[2] <= Regions(j)[2].max()));
                 if (xyz_bool) {
                     ranks(i)   = j;
                     invalid(i) = (myRank != ranks(i));
@@ -229,8 +226,8 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, class Mesh>
-    void ParticleSpatialLayout<T, Dim, Mesh>::fillHash(
-        int rank, const locate_type& ranks, hash_type& hash) {
+    void ParticleSpatialLayout<T, Dim, Mesh>::fillHash(int rank, const locate_type& ranks,
+                                                       hash_type& hash) {
         /* Compute the prefix sum and fill the hash
          */
         Kokkos::parallel_scan(

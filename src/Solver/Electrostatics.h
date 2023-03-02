@@ -23,9 +23,8 @@
 
 namespace ippl {
 
-    template <
-        typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
-        class C = typename M::DefaultCentering>
+    template <typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
+              class C = typename M::DefaultCentering>
     class Electrostatics : public Solver<Tlhs, Trhs, Dim, M, C> {
     public:
         using grad_type = Field<Vector<Tlhs, Dim>, Dim, M, C>;

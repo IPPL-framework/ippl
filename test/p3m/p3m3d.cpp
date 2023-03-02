@@ -75,10 +75,9 @@ struct SpecializedGreensFunction<3> {
     // order two transition-function
     template <class T, class FT, class FT2>
     static void calculate(Vektor<T, 3>& hrsq, FT& grn, FT2* grnI, double R) {
-        grn = grnI[0] * hrsq[0] + grnI[1] * hrsq[1] + grnI[2] * hrsq[2];
-        grn = where(
-            lt(R * R, grn), 1. / sqrt(grn),
-            ((grn * sqrt(grn)) / R - 2 * grn) / (R * R * R) + 2 / R);
+        grn          = grnI[0] * hrsq[0] + grnI[1] * hrsq[1] + grnI[2] * hrsq[2];
+        grn          = where(lt(R * R, grn), 1. / sqrt(grn),
+                             ((grn * sqrt(grn)) / R - 2 * grn) / (R * R * R) + 2 / R);
         grn[0][0][0] = grn[0][0][1];
     }
 };
@@ -273,9 +272,9 @@ public:
         // they eliminate some calculation at each time-step.
         for (int i = 0; i < 3; ++i) {
             grnIField_m[i].initialize(*mesh2_m, *layout2_m);
-            grnIField_m[i][domain2_m] = where(
-                lt(domain2_m[i], nr_m[i]), domain2_m[i] * domain2_m[i],
-                (2 * nr_m[i] - domain2_m[i]) * (2 * nr_m[i] - domain2_m[i]));
+            grnIField_m[i][domain2_m] =
+                where(lt(domain2_m[i], nr_m[i]), domain2_m[i] * domain2_m[i],
+                      (2 * nr_m[i] - domain2_m[i]) * (2 * nr_m[i] - domain2_m[i]));
         }
 
         tmpgreen.initialize(*mesh2_m, *layout2_m);
@@ -427,9 +426,8 @@ struct ApplyField {
 template <class PL>
 void ChargedParticles<PL>::calculatePairForces(double interaction_radius) {
     HashPairBuilder<ChargedParticles<playout_t> > HPB(*this);
-    HPB.for_each(
-        RadiusCondition<double, Dim>(interaction_radius),
-        ApplyField<double>(-1, interaction_radius));
+    HPB.for_each(RadiusCondition<double, Dim>(interaction_radius),
+                 ApplyField<double>(-1, interaction_radius));
 }
 
 int main(int argc, char* argv[]) {
@@ -551,8 +549,8 @@ int main(int argc, char* argv[]) {
                     Vektor<double, Dim> pos;
                     do {
                         pos = 2
-                              * Vektor<double, Dim>(
-                                  (IpplRandom() - 0.5), (IpplRandom() - 0.5), (IpplRandom() - 0.5));
+                              * Vektor<double, Dim>((IpplRandom() - 0.5), (IpplRandom() - 0.5),
+                                                    (IpplRandom() - 0.5));
                     } while (dot(pos, pos) > 1);
 
                     P->R[index] = source + pos * radius;

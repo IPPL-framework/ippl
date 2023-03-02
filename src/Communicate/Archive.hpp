@@ -42,8 +42,8 @@ namespace ippl {
 
         template <class... Properties>
         template <typename T, unsigned Dim>
-        void Archive<Properties...>::serialize(
-            const Kokkos::View<Vector<T, Dim>*>& view, size_type nsends) {
+        void Archive<Properties...>::serialize(const Kokkos::View<Vector<T, Dim>*>& view,
+                                               size_type nsends) {
             size_t size = sizeof(T);
             // Default index type for range policies is int64,
             // so we have to explicitly specify size_type (uint64)
@@ -56,9 +56,8 @@ namespace ippl {
                 // to avoid compiler warnings
                 mdrange_t({0, 0}, {(long int)nsends, Dim}),
                 KOKKOS_CLASS_LAMBDA(const size_type i, const size_t d) {
-                    std::memcpy(
-                        buffer_m.data() + (Dim * i + d) * size + writepos_m,
-                        &(*(view.data() + i))[d], size);
+                    std::memcpy(buffer_m.data() + (Dim * i + d) * size + writepos_m,
+                                &(*(view.data() + i))[d], size);
                 });
             Kokkos::fence();
             writepos_m += Dim * size * nsends;
@@ -83,8 +82,8 @@ namespace ippl {
 
         template <class... Properties>
         template <typename T, unsigned Dim>
-        void Archive<Properties...>::deserialize(
-            Kokkos::View<Vector<T, Dim>*>& view, size_type nrecvs) {
+        void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*>& view,
+                                                 size_type nrecvs) {
             size_t size = sizeof(T);
             if (nrecvs > view.extent(0)) {
                 Kokkos::realloc(view, nrecvs);
@@ -93,9 +92,8 @@ namespace ippl {
             Kokkos::parallel_for(
                 "Archive::deserialize()", mdrange_t({0, 0}, {(long int)nrecvs, Dim}),
                 KOKKOS_CLASS_LAMBDA(const size_type i, const size_t d) {
-                    std::memcpy(
-                        &(*(view.data() + i))[d],
-                        buffer_m.data() + (Dim * i + d) * size + readpos_m, size);
+                    std::memcpy(&(*(view.data() + i))[d],
+                                buffer_m.data() + (Dim * i + d) * size + readpos_m, size);
                 });
             Kokkos::fence();
             readpos_m += Dim * size * nrecvs;

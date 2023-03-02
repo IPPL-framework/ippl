@@ -32,9 +32,8 @@ namespace ippl {
         return fun(arg);                        \
     }
 
-    template <
-        typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
-        class C = typename M::DefaultCentering>
+    template <typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
+              class C = typename M::DefaultCentering>
     class ElectrostaticsCG : public Electrostatics<Tlhs, Trhs, Dim, M, C> {
     public:
         using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;

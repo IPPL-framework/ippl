@@ -84,8 +84,8 @@ Cartesian<Dim, MFLOAT>::Cartesian(const NDIndex<Dim>& ndi, MFLOAT** const delX) 
 }
 // Also specify mesh spacings and origin:
 template <unsigned Dim, class MFLOAT>
-Cartesian<Dim, MFLOAT>::Cartesian(
-    const NDIndex<Dim>& ndi, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig) {
+Cartesian<Dim, MFLOAT>::Cartesian(const NDIndex<Dim>& ndi, MFLOAT** const delX,
+                                  const Vektor<MFLOAT, Dim>& orig) {
     int d;
     for (d = 0; d < Dim; d++)
         gridSizes[d] = ndi[d].length();  // Number of vertices along this dimension.
@@ -100,9 +100,8 @@ Cartesian<Dim, MFLOAT>::Cartesian(
 }
 // Also specify a MeshBC_E array for mesh boundary conditions:
 template <unsigned Dim, class MFLOAT>
-Cartesian<Dim, MFLOAT>::Cartesian(
-    const NDIndex<Dim>& ndi, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
-    MeshBC_E* const mbc) {
+Cartesian<Dim, MFLOAT>::Cartesian(const NDIndex<Dim>& ndi, MFLOAT** const delX,
+                                  const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc) {
     int d;
     for (d = 0; d < Dim; d++)
         gridSizes[d] = ndi[d].length();  // Number of vertices along this dimension.
@@ -152,8 +151,8 @@ Cartesian<Dim, MFLOAT>::Cartesian(const Index& I, MFLOAT** const delX) {
 }
 // Also specify mesh spacings and origin:
 template <unsigned Dim, class MFLOAT>
-Cartesian<Dim, MFLOAT>::Cartesian(
-    const Index& I, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig) {
+Cartesian<Dim, MFLOAT>::Cartesian(const Index& I, MFLOAT** const delX,
+                                  const Vektor<MFLOAT, Dim>& orig) {
     PInsist(Dim == 1, "Number of Index arguments does not match mesh dimension!!");
     setup();
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
@@ -167,8 +166,8 @@ Cartesian<Dim, MFLOAT>::Cartesian(
 }
 // Also specify a MeshBC_E array for mesh boundary conditions:
 template <unsigned Dim, class MFLOAT>
-Cartesian<Dim, MFLOAT>::Cartesian(
-    const Index& I, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc) {
+Cartesian<Dim, MFLOAT>::Cartesian(const Index& I, MFLOAT** const delX,
+                                  const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc) {
     PInsist(Dim == 1, "Number of Index arguments does not match mesh dimension!!");
     setup();
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
@@ -223,8 +222,8 @@ Cartesian<Dim, MFLOAT>::Cartesian(const Index& I, const Index& J, MFLOAT** const
 }
 // Also specify mesh spacings and origin:
 template <unsigned Dim, class MFLOAT>
-Cartesian<Dim, MFLOAT>::Cartesian(
-    const Index& I, const Index& J, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig) {
+Cartesian<Dim, MFLOAT>::Cartesian(const Index& I, const Index& J, MFLOAT** const delX,
+                                  const Vektor<MFLOAT, Dim>& orig) {
     PInsist(Dim == 2, "Number of Index arguments does not match mesh dimension!!");
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
     gridSizes[1] = J.length();  // Number of vertices along this dimension.
@@ -239,9 +238,8 @@ Cartesian<Dim, MFLOAT>::Cartesian(
 }
 // Also specify a MeshBC_E array for mesh boundary conditions:
 template <unsigned Dim, class MFLOAT>
-Cartesian<Dim, MFLOAT>::Cartesian(
-    const Index& I, const Index& J, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
-    MeshBC_E* const mbc) {
+Cartesian<Dim, MFLOAT>::Cartesian(const Index& I, const Index& J, MFLOAT** const delX,
+                                  const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc) {
     PInsist(Dim == 2, "Number of Index arguments does not match mesh dimension!!");
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
     gridSizes[1] = J.length();  // Number of vertices along this dimension.
@@ -290,8 +288,8 @@ Cartesian<Dim, MFLOAT>::Cartesian(const Index& I, const Index& J, const Index& K
 }
 // Also specify mesh spacings:
 template <unsigned Dim, class MFLOAT>
-Cartesian<Dim, MFLOAT>::Cartesian(
-    const Index& I, const Index& J, const Index& K, MFLOAT** const delX) {
+Cartesian<Dim, MFLOAT>::Cartesian(const Index& I, const Index& J, const Index& K,
+                                  MFLOAT** const delX) {
     PInsist(Dim == 3, "Number of Index arguments does not match mesh dimension!!");
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
     gridSizes[1] = J.length();  // Number of vertices along this dimension.
@@ -309,9 +307,8 @@ Cartesian<Dim, MFLOAT>::Cartesian(
 }
 // Also specify mesh spacings and origin:
 template <unsigned Dim, class MFLOAT>
-Cartesian<Dim, MFLOAT>::Cartesian(
-    const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
-    const Vektor<MFLOAT, Dim>& orig) {
+Cartesian<Dim, MFLOAT>::Cartesian(const Index& I, const Index& J, const Index& K,
+                                  MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig) {
     PInsist(Dim == 3, "Number of Index arguments does not match mesh dimension!!");
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
     gridSizes[1] = J.length();  // Number of vertices along this dimension.
@@ -327,9 +324,9 @@ Cartesian<Dim, MFLOAT>::Cartesian(
 }
 // Also specify a MeshBC_E array for mesh boundary conditions:
 template <unsigned Dim, class MFLOAT>
-Cartesian<Dim, MFLOAT>::Cartesian(
-    const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
-    const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc) {
+Cartesian<Dim, MFLOAT>::Cartesian(const Index& I, const Index& J, const Index& K,
+                                  MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
+                                  MeshBC_E* const mbc) {
     PInsist(Dim == 3, "Number of Index arguments does not match mesh dimension!!");
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
     gridSizes[1] = J.length();  // Number of vertices along this dimension.
@@ -380,8 +377,8 @@ void Cartesian<Dim, MFLOAT>::initialize(const NDIndex<Dim>& ndi, MFLOAT** const 
 }
 // Also specify mesh spacings and origin:
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::initialize(
-    const NDIndex<Dim>& ndi, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig) {
+void Cartesian<Dim, MFLOAT>::initialize(const NDIndex<Dim>& ndi, MFLOAT** const delX,
+                                        const Vektor<MFLOAT, Dim>& orig) {
     int d;
     for (d = 0; d < Dim; d++)
         gridSizes[d] = ndi[d].length();  // Number of vertices along this dimension.
@@ -396,9 +393,8 @@ void Cartesian<Dim, MFLOAT>::initialize(
 }
 // Also specify a MeshBC_E array for mesh boundary conditions:
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::initialize(
-    const NDIndex<Dim>& ndi, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
-    MeshBC_E* const mbc) {
+void Cartesian<Dim, MFLOAT>::initialize(const NDIndex<Dim>& ndi, MFLOAT** const delX,
+                                        const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc) {
     int d;
     for (d = 0; d < Dim; d++)
         gridSizes[d] = ndi[d].length();  // Number of vertices along this dimension.
@@ -448,8 +444,8 @@ void Cartesian<Dim, MFLOAT>::initialize(const Index& I, MFLOAT** const delX) {
 }
 // Also specify mesh spacings and origin:
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::initialize(
-    const Index& I, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig) {
+void Cartesian<Dim, MFLOAT>::initialize(const Index& I, MFLOAT** const delX,
+                                        const Vektor<MFLOAT, Dim>& orig) {
     PInsist(Dim == 1, "Number of Index arguments does not match mesh dimension!!");
     setup();
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
@@ -463,8 +459,8 @@ void Cartesian<Dim, MFLOAT>::initialize(
 }
 // Also specify a MeshBC_E array for mesh boundary conditions:
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::initialize(
-    const Index& I, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc) {
+void Cartesian<Dim, MFLOAT>::initialize(const Index& I, MFLOAT** const delX,
+                                        const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc) {
     PInsist(Dim == 1, "Number of Index arguments does not match mesh dimension!!");
     setup();
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
@@ -519,8 +515,8 @@ void Cartesian<Dim, MFLOAT>::initialize(const Index& I, const Index& J, MFLOAT**
 }
 // Also specify mesh spacings and origin:
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::initialize(
-    const Index& I, const Index& J, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig) {
+void Cartesian<Dim, MFLOAT>::initialize(const Index& I, const Index& J, MFLOAT** const delX,
+                                        const Vektor<MFLOAT, Dim>& orig) {
     PInsist(Dim == 2, "Number of Index arguments does not match mesh dimension!!");
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
     gridSizes[1] = J.length();  // Number of vertices along this dimension.
@@ -535,9 +531,8 @@ void Cartesian<Dim, MFLOAT>::initialize(
 }
 // Also specify a MeshBC_E array for mesh boundary conditions:
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::initialize(
-    const Index& I, const Index& J, MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
-    MeshBC_E* const mbc) {
+void Cartesian<Dim, MFLOAT>::initialize(const Index& I, const Index& J, MFLOAT** const delX,
+                                        const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc) {
     PInsist(Dim == 2, "Number of Index arguments does not match mesh dimension!!");
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
     gridSizes[1] = J.length();  // Number of vertices along this dimension.
@@ -586,8 +581,8 @@ void Cartesian<Dim, MFLOAT>::initialize(const Index& I, const Index& J, const In
 }
 // Also specify mesh spacings:
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::initialize(
-    const Index& I, const Index& J, const Index& K, MFLOAT** const delX) {
+void Cartesian<Dim, MFLOAT>::initialize(const Index& I, const Index& J, const Index& K,
+                                        MFLOAT** const delX) {
     PInsist(Dim == 3, "Number of Index arguments does not match mesh dimension!!");
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
     gridSizes[1] = J.length();  // Number of vertices along this dimension.
@@ -605,9 +600,8 @@ void Cartesian<Dim, MFLOAT>::initialize(
 }
 // Also specify mesh spacings and origin:
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::initialize(
-    const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
-    const Vektor<MFLOAT, Dim>& orig) {
+void Cartesian<Dim, MFLOAT>::initialize(const Index& I, const Index& J, const Index& K,
+                                        MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig) {
     PInsist(Dim == 3, "Number of Index arguments does not match mesh dimension!!");
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
     gridSizes[1] = J.length();  // Number of vertices along this dimension.
@@ -623,9 +617,9 @@ void Cartesian<Dim, MFLOAT>::initialize(
 }
 // Also specify a MeshBC_E array for mesh boundary conditions:
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::initialize(
-    const Index& I, const Index& J, const Index& K, MFLOAT** const delX,
-    const Vektor<MFLOAT, Dim>& orig, MeshBC_E* const mbc) {
+void Cartesian<Dim, MFLOAT>::initialize(const Index& I, const Index& J, const Index& K,
+                                        MFLOAT** const delX, const Vektor<MFLOAT, Dim>& orig,
+                                        MeshBC_E* const mbc) {
     PInsist(Dim == 3, "Number of Index arguments does not match mesh dimension!!");
     gridSizes[0] = I.length();  // Number of vertices along this dimension.
     gridSizes[1] = J.length();  // Number of vertices along this dimension.
@@ -776,8 +770,8 @@ void Cartesian<Dim, MFLOAT>::storeSpacingFields(e_dim_tag p1, e_dim_tag p2, int 
 }
 // 3D
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::storeSpacingFields(
-    e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, int vnodes) {
+void Cartesian<Dim, MFLOAT>::storeSpacingFields(e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
+                                                int vnodes) {
     e_dim_tag et[3];
     et[0] = p1;
     et[1] = p2;
@@ -945,8 +939,8 @@ void Cartesian<Dim, MFLOAT>::storeSpacingFields(e_dim_tag* et, int vnodes) {
                         LFI rhs = from.begin(from_it);
                         // And do the assignment.
                         if (bct == Periodic) {
-                            BrickExpression<Dim, LFI, LFI, OpMeshPeriodic<T> >(
-                                lhs, rhs, OpMeshPeriodic<T>())
+                            BrickExpression<Dim, LFI, LFI, OpMeshPeriodic<T> >(lhs, rhs,
+                                                                               OpMeshPeriodic<T>())
                                 .apply();
                         } else {
                             if (bct == Reflective) {
@@ -1008,8 +1002,8 @@ void Cartesian<Dim, MFLOAT>::storeSpacingFields(e_dim_tag* et, int vnodes) {
                         LFI rhs = from.begin(from_it);
                         // And do the assignment.
                         if (bct == Periodic) {
-                            BrickExpression<Dim, LFI, LFI, OpMeshPeriodic<T> >(
-                                lhs, rhs, OpMeshPeriodic<T>())
+                            BrickExpression<Dim, LFI, LFI, OpMeshPeriodic<T> >(lhs, rhs,
+                                                                               OpMeshPeriodic<T>())
                                 .apply();
                         } else {
                             if (bct == Reflective) {
@@ -1042,8 +1036,8 @@ void Cartesian<Dim, MFLOAT>::storeSpacingFields(e_dim_tag* et, int vnodes) {
 
 // 1D
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::storeSpacingFields(
-    e_dim_tag p1, unsigned vnodes1, bool recurse, int vnodes) {
+void Cartesian<Dim, MFLOAT>::storeSpacingFields(e_dim_tag p1, unsigned vnodes1, bool recurse,
+                                                int vnodes) {
     e_dim_tag et[1];
     et[0] = p1;
     unsigned vnodesPerDirection[Dim];
@@ -1052,8 +1046,8 @@ void Cartesian<Dim, MFLOAT>::storeSpacingFields(
 }
 // 2D
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::storeSpacingFields(
-    e_dim_tag p1, e_dim_tag p2, unsigned vnodes1, unsigned vnodes2, bool recurse, int vnodes) {
+void Cartesian<Dim, MFLOAT>::storeSpacingFields(e_dim_tag p1, e_dim_tag p2, unsigned vnodes1,
+                                                unsigned vnodes2, bool recurse, int vnodes) {
     e_dim_tag et[2];
     et[0] = p1;
     et[1] = p2;
@@ -1064,9 +1058,9 @@ void Cartesian<Dim, MFLOAT>::storeSpacingFields(
 }
 // 3D
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::storeSpacingFields(
-    e_dim_tag p1, e_dim_tag p2, e_dim_tag p3, unsigned vnodes1, unsigned vnodes2, unsigned vnodes3,
-    bool recurse, int vnodes) {
+void Cartesian<Dim, MFLOAT>::storeSpacingFields(e_dim_tag p1, e_dim_tag p2, e_dim_tag p3,
+                                                unsigned vnodes1, unsigned vnodes2,
+                                                unsigned vnodes3, bool recurse, int vnodes) {
     e_dim_tag et[3];
     et[0] = p1;
     et[1] = p2;
@@ -1083,8 +1077,8 @@ void Cartesian<Dim, MFLOAT>::storeSpacingFields(
 // function. Need to check this in quickly for Blanca right now --12/8/98
 // The general storeSpacingfields() function; others invoke this internally:
 template <unsigned Dim, class MFLOAT>
-void Cartesian<Dim, MFLOAT>::storeSpacingFields(
-    e_dim_tag* p, unsigned* vnodesPerDirection, bool recurse, int vnodes) {
+void Cartesian<Dim, MFLOAT>::storeSpacingFields(e_dim_tag* p, unsigned* vnodesPerDirection,
+                                                bool recurse, int vnodes) {
     unsigned int d;
     int currentLocation[Dim];
     NDIndex<Dim> cells, verts;
@@ -1244,8 +1238,8 @@ void Cartesian<Dim, MFLOAT>::storeSpacingFields(
                         LFI rhs = from.begin(from_it);
                         // And do the assignment.
                         if (bct == Periodic) {
-                            BrickExpression<Dim, LFI, LFI, OpMeshPeriodic<T> >(
-                                lhs, rhs, OpMeshPeriodic<T>())
+                            BrickExpression<Dim, LFI, LFI, OpMeshPeriodic<T> >(lhs, rhs,
+                                                                               OpMeshPeriodic<T>())
                                 .apply();
                         } else {
                             if (bct == Reflective) {
@@ -1307,8 +1301,8 @@ void Cartesian<Dim, MFLOAT>::storeSpacingFields(
                         LFI rhs = from.begin(from_it);
                         // And do the assignment.
                         if (bct == Periodic) {
-                            BrickExpression<Dim, LFI, LFI, OpMeshPeriodic<T> >(
-                                lhs, rhs, OpMeshPeriodic<T>())
+                            BrickExpression<Dim, LFI, LFI, OpMeshPeriodic<T> >(lhs, rhs,
+                                                                               OpMeshPeriodic<T>())
                                 .apply();
                         } else {
                             if (bct == Reflective) {
@@ -1370,9 +1364,8 @@ MFLOAT Cartesian<Dim, MFLOAT>::getCellVolume(const NDIndex<Dim>& ndi) const {
     MFLOAT volume = 1.0;
     for (unsigned int d = 0; d < Dim; d++)
         if (ndi[d].length() != 1) {
-            ERRORMSG(
-                "Cartesian::getCellVolume() error: arg is not a NDIndex"
-                << "specifying a single element" << endl);
+            ERRORMSG("Cartesian::getCellVolume() error: arg is not a NDIndex"
+                     << "specifying a single element" << endl);
         } else {
             volume *= (*(meshSpacing[d].find(ndi[d].first()))).second;
         }
@@ -1407,17 +1400,15 @@ MFLOAT Cartesian<Dim, MFLOAT>::getVertRangeVolume(const NDIndex<Dim>& ndi) const
     for (d = 0; d < Dim; d++) {
         i0 = ndi[d].first();
         if ((i0 < -(int(gridSizes[d]) - 1) / 2) || (i0 > 3 * (int(gridSizes[d]) - 1) / 2))
-            ERRORMSG(
-                "Cartesian::getVertRangeVolume() error: "
-                << ndi << " is an NDIndex ranging outside the mesh and guard layers;"
-                << " not allowed." << endl);
+            ERRORMSG("Cartesian::getVertRangeVolume() error: "
+                     << ndi << " is an NDIndex ranging outside the mesh and guard layers;"
+                     << " not allowed." << endl);
         v0(d) = (*(meshPosition[d].find(i0))).second;
         i1    = ndi[d].last();
         if ((i1 < -(int(gridSizes[d]) - 1) / 2) || (i1 > 3 * (int(gridSizes[d]) - 1) / 2))
-            ERRORMSG(
-                "Cartesian::getVertRangeVolume() error: "
-                << ndi << " is an NDIndex ranging outside the mesh and guard layers;"
-                << " not allowed." << endl);
+            ERRORMSG("Cartesian::getVertRangeVolume() error: "
+                     << ndi << " is an NDIndex ranging outside the mesh and guard layers;"
+                     << " not allowed." << endl);
         v1(d) = (*(meshPosition[d].find(i1))).second;
     }
     // Compute volume of rectangular solid beweeen these extremal vertices:
@@ -1435,17 +1426,15 @@ MFLOAT Cartesian<Dim, MFLOAT>::getCellRangeVolume(const NDIndex<Dim>& ndi) const
     for (unsigned int d = 0; d < Dim; d++) {
         i0 = ndi[d].first();
         if ((i0 < -(int(gridSizes[d]) - 1) / 2) || (i0 > 3 * (int(gridSizes[d]) - 1) / 2))
-            ERRORMSG(
-                "Cartesian::getCellRangeVolume() error: "
-                << ndi << " is an NDIndex ranging outside the mesh and guard layers;"
-                << " not allowed." << endl);
+            ERRORMSG("Cartesian::getCellRangeVolume() error: "
+                     << ndi << " is an NDIndex ranging outside the mesh and guard layers;"
+                     << " not allowed." << endl);
         v0(d) = (*(meshPosition[d].find(i0))).second;
         i1    = ndi[d].last() + 1;
         if ((i1 < -(int(gridSizes[d]) - 1) / 2) || (i1 > 3 * (int(gridSizes[d]) - 1) / 2))
-            ERRORMSG(
-                "Cartesian::getCellRangeVolume() error: "
-                << ndi << " is an NDIndex ranging outside the mesh and guard layers;"
-                << " not allowed." << endl);
+            ERRORMSG("Cartesian::getCellRangeVolume() error: "
+                     << ndi << " is an NDIndex ranging outside the mesh and guard layers;"
+                     << " not allowed." << endl);
         v1(d) = (*(meshPosition[d].find(i1))).second;
     }
     // Compute volume of rectangular solid beweeen these extremal vertices:
@@ -1467,9 +1456,8 @@ NDIndex<Dim> Cartesian<Dim, MFLOAT>::getNearestVertex(const Vektor<MFLOAT, Dim>&
     }
     for (d = 0; d < Dim; d++)
         if ((x(d) < boxMin(d)) || (x(d) > boxMax(d)))
-            ERRORMSG(
-                "Cartesian::getNearestVertex() - input point is outside"
-                << " mesh boundary and guard layers; not allowed." << endl);
+            ERRORMSG("Cartesian::getNearestVertex() - input point is outside"
+                     << " mesh boundary and guard layers; not allowed." << endl);
 
     // Find coordinate vectors of the vertices just above and just below the
     // input point (extremal vertices on cell containing point);
@@ -1530,9 +1518,8 @@ NDIndex<Dim> Cartesian<Dim, MFLOAT>::getVertexBelow(const Vektor<MFLOAT, Dim>& x
     }
     for (d = 0; d < Dim; d++)
         if ((x(d) < boxMin(d)) || (x(d) > boxMax(d)))
-            ERRORMSG(
-                "Cartesian::getVertexBelow() - input point is outside"
-                << " mesh boundary and guard layers; not allowed." << endl);
+            ERRORMSG("Cartesian::getVertexBelow() - input point is outside"
+                     << " mesh boundary and guard layers; not allowed." << endl);
 
     // Find coordinate vectors of the vertices just below the input point;
     MFLOAT xVertexBelow, xVertexAbove, xVertex;
@@ -1584,15 +1571,13 @@ Vektor<MFLOAT, Dim> Cartesian<Dim, MFLOAT>::getVertexPosition(const NDIndex<Dim>
     Vektor<MFLOAT, Dim> vertexPosition;
     for (d = 0; d < Dim; d++) {
         if (ndi[d].length() != 1)
-            ERRORMSG(
-                "Cartesian::getVertexPosition() error: "
-                << ndi << " is not an NDIndex specifying a single element" << endl);
+            ERRORMSG("Cartesian::getVertexPosition() error: "
+                     << ndi << " is not an NDIndex specifying a single element" << endl);
         i = ndi[d].first();
         if ((i < -(int(gridSizes[d]) - 1) / 2) || (i > 3 * (int(gridSizes[d]) - 1) / 2))
-            ERRORMSG(
-                "Cartesian::getVertexPosition() error: "
-                << ndi << " is an NDIndex outside the mesh and guard layers;"
-                << " not allowed." << endl);
+            ERRORMSG("Cartesian::getVertexPosition() error: "
+                     << ndi << " is an NDIndex outside the mesh and guard layers;"
+                     << " not allowed." << endl);
         vertexPosition(d) = (*(meshPosition[d].find(i))).second;
     }
     return vertexPosition;
@@ -1626,15 +1611,13 @@ Vektor<MFLOAT, Dim> Cartesian<Dim, MFLOAT>::getCellPosition(const NDIndex<Dim>& 
     Vektor<MFLOAT, Dim> cellPosition;
     for (d = 0; d < Dim; d++) {
         if (ndi[d].length() != 1)
-            ERRORMSG(
-                "Cartesian::getCellPosition() error: "
-                << ndi << " is not an NDIndex specifying a single element" << endl);
+            ERRORMSG("Cartesian::getCellPosition() error: "
+                     << ndi << " is not an NDIndex specifying a single element" << endl);
         i = ndi[d].first();
         if ((i < -(int(gridSizes[d]) - 1) / 2) || (i >= 3 * (int(gridSizes[d]) - 1) / 2))
-            ERRORMSG(
-                "Cartesian::getCellPosition() error: "
-                << ndi << " is an NDIndex outside the mesh and guard layers;"
-                << " not allowed." << endl);
+            ERRORMSG("Cartesian::getCellPosition() error: "
+                     << ndi << " is an NDIndex outside the mesh and guard layers;"
+                     << " not allowed." << endl);
         cellPosition(d) =
             0.5 * ((*(meshPosition[d].find(i))).second + (*(meshPosition[d].find(i + 1))).second);
     }
@@ -1681,10 +1664,9 @@ Vektor<MFLOAT, Dim> Cartesian<Dim, MFLOAT>::getDeltaVertex(const NDIndex<Dim>& n
 
         // make sure we have valid endpoints
         if (a < -((int(gridSizes[d]) - 1) / 2) || b >= 3 * (int(gridSizes[d]) - 1) / 2) {
-            ERRORMSG(
-                "Cartesian::getDeltaVertex() error: "
-                << ndi << " is an NDIndex ranging outside"
-                << " the mesh and guard layers region; not allowed." << endl);
+            ERRORMSG("Cartesian::getDeltaVertex() error: "
+                     << ndi << " is an NDIndex ranging outside"
+                     << " the mesh and guard layers region; not allowed." << endl);
         }
 
         // add up all the values between the endpoints
@@ -1733,10 +1715,9 @@ Vektor<MFLOAT, Dim> Cartesian<Dim, MFLOAT>::getDeltaCell(const NDIndex<Dim>& ndi
 
         // make sure the endpoints are valid
         if (a <= -(int(gridSizes[d]) - 1) / 2 || b >= 3 * (int(gridSizes[d]) - 1) / 2) {
-            ERRORMSG(
-                "Cartesian::getDeltaCell() error: "
-                << ndi << " is an NDIndex ranging outside"
-                << " the mesh and guard layers region; not allowed." << endl);
+            ERRORMSG("Cartesian::getDeltaCell() error: "
+                     << ndi << " is an NDIndex ranging outside"
+                     << " the mesh and guard layers region; not allowed." << endl);
         }
 
         // add up the contributions along the interval ...
@@ -1808,8 +1789,8 @@ void Cartesian<Dim, MFLOAT>::getSurfaceNormalFields(
 // 2nd dim, and so on:
 // Surface normal to face on indexed cell:
 template <unsigned Dim, class MFLOAT>
-Vektor<MFLOAT, Dim> Cartesian<Dim, MFLOAT>::getSurfaceNormal(
-    const NDIndex<Dim>& /*ndi*/, unsigned face) const {
+Vektor<MFLOAT, Dim> Cartesian<Dim, MFLOAT>::getSurfaceNormal(const NDIndex<Dim>& /*ndi*/,
+                                                             unsigned face) const {
     Vektor<MFLOAT, Dim> surfaceNormal;
     unsigned int d;
     // The following bitwise AND logical test returns true if face is odd

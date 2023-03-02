@@ -156,9 +156,8 @@ int main(int argc, char* argv[]) {
     }
 
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
-    Kokkos::parallel_for(
-        nloc, generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                  P->R.getView(), rand_pool64, Rmin, Rmax));
+    Kokkos::parallel_for(nloc, generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                                   P->R.getView(), rand_pool64, Rmin, Rmax));
     Kokkos::fence();
     P->q = P->Q_m / totalP;
     P->P = 0.0;
@@ -214,9 +213,9 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(PTimer);
 
         IpplTimings::startTimer(temp);
-        Kokkos::parallel_for(
-            P->getLocalNum(), generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                                  P->P.getView(), rand_pool64, -hr, hr));
+        Kokkos::parallel_for(P->getLocalNum(),
+                             generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                                 P->P.getView(), rand_pool64, -hr, hr));
         Kokkos::fence();
         IpplTimings::stopTimer(temp);
 

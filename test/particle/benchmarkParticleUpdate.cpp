@@ -72,9 +72,8 @@ public:
         this->addAttribute(E);
     }
 
-    ChargedParticles(
-        PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax, ippl::e_dim_tag decomp[Dim],
-        double Q)
+    ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
+                     ippl::e_dim_tag decomp[Dim], double Q)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
@@ -96,8 +95,8 @@ public:
         unsigned int Total_particles = 0;
         unsigned int local_particles = this->getLocalNum();
 
-        MPI_Reduce(
-            &local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
+                   Ippl::getComm());
 
         if (Ippl::Comm->rank() == 0) {
             if (Total_particles != totalP) {

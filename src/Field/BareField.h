@@ -50,8 +50,9 @@ namespace ippl {
      * runtime issues with "if constrexpr" in the assignment operator when running on GPU.
      */
     template <typename T, unsigned Dim>
-    class BareField : public detail::Expression<
-                          BareField<T, Dim>, sizeof(typename detail::ViewType<T, Dim>::view_type)> {
+    class BareField
+        : public detail::Expression<BareField<T, Dim>,
+                                    sizeof(typename detail::ViewType<T, Dim>::view_type)> {
     public:
         using Layout_t = FieldLayout<Dim>;
 

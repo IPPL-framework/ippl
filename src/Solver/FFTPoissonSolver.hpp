@@ -23,10 +23,9 @@
 
 // Communication specific functions (pack and unpack).
 template <typename T>
-void pack(
-    const ippl::NDIndex<3> intersect, Kokkos::View<T***>& view,
-    ippl::detail::FieldBufferData<double>& fd, int nghost, const ippl::NDIndex<3> ldom,
-    ippl::Communicate::size_type& nsends) {
+void pack(const ippl::NDIndex<3> intersect, Kokkos::View<T***>& view,
+          ippl::detail::FieldBufferData<double>& fd, int nghost, const ippl::NDIndex<3> ldom,
+          ippl::Communicate::size_type& nsends) {
     ippl::Field<double, 1>::view_type& buffer = fd.buffer;
 
     size_t size = intersect.size();
@@ -65,10 +64,9 @@ void pack(
     Kokkos::fence();
 }
 
-void unpack(
-    const ippl::NDIndex<3> intersect, const ippl::Field<double, 3>::view_type& view,
-    ippl::detail::FieldBufferData<double>& fd, int nghost, const ippl::NDIndex<3> ldom,
-    bool x = false, bool y = false, bool z = false) {
+void unpack(const ippl::NDIndex<3> intersect, const ippl::Field<double, 3>::view_type& view,
+            ippl::detail::FieldBufferData<double>& fd, int nghost, const ippl::NDIndex<3> ldom,
+            bool x = false, bool y = false, bool z = false) {
     ippl::Field<double, 1>::view_type& buffer = fd.buffer;
 
     const int first0 = intersect[0].first() + nghost - ldom[0].first();
@@ -99,10 +97,9 @@ void unpack(
     Kokkos::fence();
 }
 
-void unpack(
-    const ippl::NDIndex<3> intersect,
-    const ippl::Field<ippl::Vector<double, 3>, 3>::view_type& view, size_t dim,
-    ippl::detail::FieldBufferData<double>& fd, int nghost, const ippl::NDIndex<3> ldom) {
+void unpack(const ippl::NDIndex<3> intersect,
+            const ippl::Field<ippl::Vector<double, 3>, 3>::view_type& view, size_t dim,
+            ippl::detail::FieldBufferData<double>& fd, int nghost, const ippl::NDIndex<3> ldom) {
     ippl::Field<double, 1>::view_type& buffer = fd.buffer;
 
     const int first0 = intersect[0].first() + nghost - ldom[0].first();
@@ -134,8 +131,9 @@ namespace ippl {
     // constructor and destructor
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class M, class C>
-    FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::FFTPoissonSolver(
-        rhs_type& rhs, ParameterList& fftparams, std::string alg)
+    FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::FFTPoissonSolver(rhs_type& rhs,
+                                                              ParameterList& fftparams,
+                                                              std::string alg)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
@@ -163,8 +161,9 @@ namespace ippl {
     }
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class M, class C>
-    FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::FFTPoissonSolver(
-        lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams, std::string alg, int sol)
+    FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs,
+                                                              ParameterList& fftparams,
+                                                              std::string alg, int sol)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
@@ -342,10 +341,9 @@ namespace ippl {
                     case 0:
                         Kokkos::parallel_for(
                             "Helper index Green field initialization",
-                            mdrange_type(
-                                {nghost, nghost, nghost},
-                                {view.extent(0) - nghost, view.extent(1) - nghost,
-                                 view.extent(2) - nghost}),
+                            mdrange_type({nghost, nghost, nghost},
+                                         {view.extent(0) - nghost, view.extent(1) - nghost,
+                                          view.extent(2) - nghost}),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 // go from local indices to global
                                 const int ig = i + ldom[0].first() - nghost;
@@ -365,10 +363,9 @@ namespace ippl {
                     case 1:
                         Kokkos::parallel_for(
                             "Helper index Green field initialization",
-                            mdrange_type(
-                                {nghost, nghost, nghost},
-                                {view.extent(0) - nghost, view.extent(1) - nghost,
-                                 view.extent(2) - nghost}),
+                            mdrange_type({nghost, nghost, nghost},
+                                         {view.extent(0) - nghost, view.extent(1) - nghost,
+                                          view.extent(2) - nghost}),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 // go from local indices to global
                                 const int jg = j + ldom[1].first() - nghost;
@@ -382,10 +379,9 @@ namespace ippl {
                     case 2:
                         Kokkos::parallel_for(
                             "Helper index Green field initialization",
-                            mdrange_type(
-                                {nghost, nghost, nghost},
-                                {view.extent(0) - nghost, view.extent(1) - nghost,
-                                 view.extent(2) - nghost}),
+                            mdrange_type({nghost, nghost, nghost},
+                                         {view.extent(0) - nghost, view.extent(1) - nghost,
+                                          view.extent(2) - nghost}),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 // go from local indices to global
                                 const int kg = k + ldom[2].first() - nghost;
@@ -514,8 +510,8 @@ namespace ippl {
                     buffer_type buf =
                         Ippl::Comm->getBuffer<double>(IPPL_SOLVER_RECV + myRank, nrecvs);
 
-                    Ippl::Comm->recv(
-                        i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                    Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(double),
+                                     nrecvs);
                     buf->resetReadPos();
 
                     unpack(intersection, view2, fd_m, nghost2, ldom2);
@@ -531,10 +527,9 @@ namespace ippl {
         } else {
             Kokkos::parallel_for(
                 "Write rho on the doubled grid",
-                mdrange_type(
-                    {nghost1, nghost1, nghost1},
-                    {view1.extent(0) - nghost1, view1.extent(1) - nghost1,
-                     view1.extent(2) - nghost1}),
+                mdrange_type({nghost1, nghost1, nghost1},
+                             {view1.extent(0) - nghost1, view1.extent(1) - nghost1,
+                              view1.extent(2) - nghost1}),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                     const size_t ig2 = i + ldom2[0].first() - nghost2;
                     const size_t jg2 = j + ldom2[1].first() - nghost2;
@@ -639,8 +634,8 @@ namespace ippl {
                         buffer_type buf =
                             Ippl::Comm->getBuffer<double>(IPPL_SOLVER_RECV + myRank, nrecvs);
 
-                        Ippl::Comm->recv(
-                            i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                        Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(double),
+                                         nrecvs);
                         buf->resetReadPos();
 
                         unpack(intersection, view1, fd_m, nghost1, ldom1);
@@ -656,10 +651,9 @@ namespace ippl {
             } else {
                 Kokkos::parallel_for(
                     "Write the solution into the LHS on physical grid",
-                    mdrange_type(
-                        {nghost1, nghost1, nghost1},
-                        {view1.extent(0) - nghost1, view1.extent(1) - nghost1,
-                         view1.extent(2) - nghost1}),
+                    mdrange_type({nghost1, nghost1, nghost1},
+                                 {view1.extent(0) - nghost1, view1.extent(1) - nghost1,
+                                  view1.extent(2) - nghost1}),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         const int ig2 = i + ldom2[0].first() - nghost2;
                         const int jg2 = j + ldom2[1].first() - nghost2;
@@ -714,10 +708,9 @@ namespace ippl {
                 // loop over rho2tr_m to multiply by -ik (gradient in Fourier space)
                 Kokkos::parallel_for(
                     "Gradient - E field",
-                    mdrange_type(
-                        {nghostR, nghostR, nghostR},
-                        {viewR.extent(0) - nghostR, viewR.extent(1) - nghostR,
-                         viewR.extent(2) - nghostR}),
+                    mdrange_type({nghostR, nghostR, nghostR},
+                                 {viewR.extent(0) - nghostR, viewR.extent(1) - nghostR,
+                                  viewR.extent(2) - nghostR}),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // global indices for 2N rhotr_m
                         const int ig = i + ldomR[0].first() - nghostR;
@@ -784,8 +777,8 @@ namespace ippl {
                             buffer_type buf =
                                 Ippl::Comm->getBuffer<double>(IPPL_SOLVER_SEND + i, nsends);
 
-                            Ippl::Comm->isend(
-                                i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(), nsends);
+                            Ippl::Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(),
+                                              nsends);
                             buf->resetWritePos();
                         }
                     }
@@ -804,8 +797,8 @@ namespace ippl {
                             buffer_type buf =
                                 Ippl::Comm->getBuffer<double>(IPPL_SOLVER_RECV + myRank, nrecvs);
 
-                            Ippl::Comm->recv(
-                                i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                            Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf,
+                                             nrecvs * sizeof(double), nrecvs);
                             buf->resetReadPos();
 
                             unpack(intersection, viewL, gd, fd_m, nghostL, ldom1);
@@ -821,10 +814,9 @@ namespace ippl {
                 } else {
                     Kokkos::parallel_for(
                         "Write the E-field on physical grid",
-                        mdrange_type(
-                            {nghostL, nghostL, nghostL},
-                            {viewL.extent(0) - nghostL, viewL.extent(1) - nghostL,
-                             viewL.extent(2) - nghostL}),
+                        mdrange_type({nghostL, nghostL, nghostL},
+                                     {viewL.extent(0) - nghostL, viewL.extent(1) - nghostL,
+                                      viewL.extent(2) - nghostL}),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             const int ig2 = i + ldom2[0].first() - nghost2;
                             const int jg2 = j + ldom2[1].first() - nghost2;
@@ -893,10 +885,9 @@ namespace ippl {
             if (alg_m == "VICO") {
                 Kokkos::parallel_for(
                     "Initialize Green's function ",
-                    mdrange_type(
-                        {nghost_g, nghost_g, nghost_g},
-                        {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
-                         view_g.extent(2) - nghost_g}),
+                    mdrange_type({nghost_g, nghost_g, nghost_g},
+                                 {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
+                                  view_g.extent(2) - nghost_g}),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // go from local indices to global
                         const int ig = i + ldom_g[0].first() - nghost_g;
@@ -929,10 +920,9 @@ namespace ippl {
             } else if (alg_m == "BIHARMONIC") {
                 Kokkos::parallel_for(
                     "Initialize Green's function ",
-                    mdrange_type(
-                        {nghost_g, nghost_g, nghost_g},
-                        {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
-                         view_g.extent(2) - nghost_g}),
+                    mdrange_type({nghost_g, nghost_g, nghost_g},
+                                 {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
+                                  view_g.extent(2) - nghost_g}),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // go from local indices to global
                         const int ig = i + ldom_g[0].first() - nghost_g;
@@ -992,10 +982,9 @@ namespace ippl {
                 // restrict the green's function to a (2N)^3 grid from the (4N)^3 grid
                 Kokkos::parallel_for(
                     "Restrict domain of Green's function from 4N to 2N",
-                    mdrange_type(
-                        {nghost, nghost, nghost},
-                        {view.extent(0) - nghost - size[0], view.extent(1) - nghost - size[1],
-                         view.extent(2) - nghost - size[2]}),
+                    mdrange_type({nghost, nghost, nghost}, {view.extent(0) - nghost - size[0],
+                                                            view.extent(1) - nghost - size[1],
+                                                            view.extent(2) - nghost - size[2]}),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // go from local indices to global
                         const int ig = i + ldom[0].first() - nghost;
@@ -1150,9 +1139,8 @@ namespace ippl {
 
             if (domain2.touches(x)) {
                 auto intersection = domain2.intersect(x);
-                auto xdom         = ippl::Index(
-                    (2 * size[0] - intersection[0].first()), (2 * size[0] - intersection[0].last()),
-                    -1);
+                auto xdom         = ippl::Index((2 * size[0] - intersection[0].first()),
+                                                (2 * size[0] - intersection[0].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = xdom;
@@ -1178,9 +1166,8 @@ namespace ippl {
 
             if (domain2.touches(y)) {
                 auto intersection = domain2.intersect(y);
-                auto ydom         = ippl::Index(
-                    (2 * size[1] - intersection[1].first()), (2 * size[1] - intersection[1].last()),
-                    -1);
+                auto ydom         = ippl::Index((2 * size[1] - intersection[1].first()),
+                                                (2 * size[1] - intersection[1].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = intersection[0];
@@ -1207,9 +1194,8 @@ namespace ippl {
 
             if (domain2.touches(z)) {
                 auto intersection = domain2.intersect(z);
-                auto zdom         = ippl::Index(
-                    (2 * size[2] - intersection[2].first()), (2 * size[2] - intersection[2].last()),
-                    -1);
+                auto zdom         = ippl::Index((2 * size[2] - intersection[2].first()),
+                                                (2 * size[2] - intersection[2].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = intersection[0];
@@ -1236,12 +1222,10 @@ namespace ippl {
 
             if (domain2.touches(xy)) {
                 auto intersection = domain2.intersect(xy);
-                auto xdom         = ippl::Index(
-                    (2 * size[0] - intersection[0].first()), (2 * size[0] - intersection[0].last()),
-                    -1);
-                auto ydom = ippl::Index(
-                    (2 * size[1] - intersection[1].first()), (2 * size[1] - intersection[1].last()),
-                    -1);
+                auto xdom         = ippl::Index((2 * size[0] - intersection[0].first()),
+                                                (2 * size[0] - intersection[0].last()), -1);
+                auto ydom         = ippl::Index((2 * size[1] - intersection[1].first()),
+                                                (2 * size[1] - intersection[1].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = xdom;
@@ -1268,12 +1252,10 @@ namespace ippl {
 
             if (domain2.touches(yz)) {
                 auto intersection = domain2.intersect(yz);
-                auto ydom         = ippl::Index(
-                    (2 * size[1] - intersection[1].first()), (2 * size[1] - intersection[1].last()),
-                    -1);
-                auto zdom = ippl::Index(
-                    (2 * size[2] - intersection[2].first()), (2 * size[2] - intersection[2].last()),
-                    -1);
+                auto ydom         = ippl::Index((2 * size[1] - intersection[1].first()),
+                                                (2 * size[1] - intersection[1].last()), -1);
+                auto zdom         = ippl::Index((2 * size[2] - intersection[2].first()),
+                                                (2 * size[2] - intersection[2].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = intersection[0];
@@ -1300,12 +1282,10 @@ namespace ippl {
 
             if (domain2.touches(xz)) {
                 auto intersection = domain2.intersect(xz);
-                auto xdom         = ippl::Index(
-                    (2 * size[0] - intersection[0].first()), (2 * size[0] - intersection[0].last()),
-                    -1);
-                auto zdom = ippl::Index(
-                    (2 * size[2] - intersection[2].first()), (2 * size[2] - intersection[2].last()),
-                    -1);
+                auto xdom         = ippl::Index((2 * size[0] - intersection[0].first()),
+                                                (2 * size[0] - intersection[0].last()), -1);
+                auto zdom         = ippl::Index((2 * size[2] - intersection[2].first()),
+                                                (2 * size[2] - intersection[2].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = xdom;
@@ -1332,15 +1312,12 @@ namespace ippl {
 
             if (domain2.touches(xyz)) {
                 auto intersection = domain2.intersect(xyz);
-                auto xdom         = ippl::Index(
-                    (2 * size[0] - intersection[0].first()), (2 * size[0] - intersection[0].last()),
-                    -1);
-                auto ydom = ippl::Index(
-                    (2 * size[1] - intersection[1].first()), (2 * size[1] - intersection[1].last()),
-                    -1);
-                auto zdom = ippl::Index(
-                    (2 * size[2] - intersection[2].first()), (2 * size[2] - intersection[2].last()),
-                    -1);
+                auto xdom         = ippl::Index((2 * size[0] - intersection[0].first()),
+                                                (2 * size[0] - intersection[0].last()), -1);
+                auto ydom         = ippl::Index((2 * size[1] - intersection[1].first()),
+                                                (2 * size[1] - intersection[1].last()), -1);
+                auto zdom         = ippl::Index((2 * size[2] - intersection[2].first()),
+                                                (2 * size[2] - intersection[2].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = xdom;
@@ -1392,9 +1369,8 @@ namespace ippl {
             if (ldom.touches(x)) {
                 auto intersection = ldom.intersect(x);
 
-                auto xdom = ippl::Index(
-                    (2 * size[0] - intersection[0].first()), (2 * size[0] - intersection[0].last()),
-                    -1);
+                auto xdom = ippl::Index((2 * size[0] - intersection[0].first()),
+                                        (2 * size[0] - intersection[0].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = xdom;
@@ -1403,8 +1379,8 @@ namespace ippl {
 
                 if (lDomains4[i].touches(domain4)) {
                     domain4    = lDomains4[i].intersect(domain4);
-                    domain4[0] = ippl::Index(
-                        2 * size[0] - domain4[0].first(), 2 * size[0] - domain4[0].last(), -1);
+                    domain4[0] = ippl::Index(2 * size[0] - domain4[0].first(),
+                                             2 * size[0] - domain4[0].last(), -1);
 
                     intersection = intersection.intersect(domain4);
 
@@ -1426,9 +1402,8 @@ namespace ippl {
             if (ldom.touches(y)) {
                 auto intersection = ldom.intersect(y);
 
-                auto ydom = ippl::Index(
-                    (2 * size[1] - intersection[1].first()), (2 * size[1] - intersection[1].last()),
-                    -1);
+                auto ydom = ippl::Index((2 * size[1] - intersection[1].first()),
+                                        (2 * size[1] - intersection[1].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = intersection[0];
@@ -1437,8 +1412,8 @@ namespace ippl {
 
                 if (lDomains4[i].touches(domain4)) {
                     domain4    = lDomains4[i].intersect(domain4);
-                    domain4[1] = ippl::Index(
-                        2 * size[1] - domain4[1].first(), 2 * size[1] - domain4[1].last(), -1);
+                    domain4[1] = ippl::Index(2 * size[1] - domain4[1].first(),
+                                             2 * size[1] - domain4[1].last(), -1);
 
                     intersection = intersection.intersect(domain4);
 
@@ -1460,9 +1435,8 @@ namespace ippl {
             if (ldom.touches(z)) {
                 auto intersection = ldom.intersect(z);
 
-                auto zdom = ippl::Index(
-                    (2 * size[2] - intersection[2].first()), (2 * size[2] - intersection[2].last()),
-                    -1);
+                auto zdom = ippl::Index((2 * size[2] - intersection[2].first()),
+                                        (2 * size[2] - intersection[2].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = intersection[0];
@@ -1471,8 +1445,8 @@ namespace ippl {
 
                 if (lDomains4[i].touches(domain4)) {
                     domain4    = lDomains4[i].intersect(domain4);
-                    domain4[2] = ippl::Index(
-                        2 * size[2] - domain4[2].first(), 2 * size[2] - domain4[2].last(), -1);
+                    domain4[2] = ippl::Index(2 * size[2] - domain4[2].first(),
+                                             2 * size[2] - domain4[2].last(), -1);
 
                     intersection = intersection.intersect(domain4);
 
@@ -1494,12 +1468,10 @@ namespace ippl {
             if (ldom.touches(xy)) {
                 auto intersection = ldom.intersect(xy);
 
-                auto xdom = ippl::Index(
-                    (2 * size[0] - intersection[0].first()), (2 * size[0] - intersection[0].last()),
-                    -1);
-                auto ydom = ippl::Index(
-                    (2 * size[1] - intersection[1].first()), (2 * size[1] - intersection[1].last()),
-                    -1);
+                auto xdom = ippl::Index((2 * size[0] - intersection[0].first()),
+                                        (2 * size[0] - intersection[0].last()), -1);
+                auto ydom = ippl::Index((2 * size[1] - intersection[1].first()),
+                                        (2 * size[1] - intersection[1].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = xdom;
@@ -1508,10 +1480,10 @@ namespace ippl {
 
                 if (lDomains4[i].touches(domain4)) {
                     domain4    = lDomains4[i].intersect(domain4);
-                    domain4[0] = ippl::Index(
-                        2 * size[0] - domain4[0].first(), 2 * size[0] - domain4[0].last(), -1);
-                    domain4[1] = ippl::Index(
-                        2 * size[1] - domain4[1].first(), 2 * size[1] - domain4[1].last(), -1);
+                    domain4[0] = ippl::Index(2 * size[0] - domain4[0].first(),
+                                             2 * size[0] - domain4[0].last(), -1);
+                    domain4[1] = ippl::Index(2 * size[1] - domain4[1].first(),
+                                             2 * size[1] - domain4[1].last(), -1);
 
                     intersection = intersection.intersect(domain4);
 
@@ -1533,12 +1505,10 @@ namespace ippl {
             if (ldom.touches(yz)) {
                 auto intersection = ldom.intersect(yz);
 
-                auto ydom = ippl::Index(
-                    (2 * size[1] - intersection[1].first()), (2 * size[1] - intersection[1].last()),
-                    -1);
-                auto zdom = ippl::Index(
-                    (2 * size[2] - intersection[2].first()), (2 * size[2] - intersection[2].last()),
-                    -1);
+                auto ydom = ippl::Index((2 * size[1] - intersection[1].first()),
+                                        (2 * size[1] - intersection[1].last()), -1);
+                auto zdom = ippl::Index((2 * size[2] - intersection[2].first()),
+                                        (2 * size[2] - intersection[2].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = intersection[0];
@@ -1547,10 +1517,10 @@ namespace ippl {
 
                 if (lDomains4[i].touches(domain4)) {
                     domain4    = lDomains4[i].intersect(domain4);
-                    domain4[1] = ippl::Index(
-                        2 * size[1] - domain4[1].first(), 2 * size[1] - domain4[1].last(), -1);
-                    domain4[2] = ippl::Index(
-                        2 * size[2] - domain4[2].first(), 2 * size[2] - domain4[2].last(), -1);
+                    domain4[1] = ippl::Index(2 * size[1] - domain4[1].first(),
+                                             2 * size[1] - domain4[1].last(), -1);
+                    domain4[2] = ippl::Index(2 * size[2] - domain4[2].first(),
+                                             2 * size[2] - domain4[2].last(), -1);
 
                     intersection = intersection.intersect(domain4);
 
@@ -1572,12 +1542,10 @@ namespace ippl {
             if (ldom.touches(xz)) {
                 auto intersection = ldom.intersect(xz);
 
-                auto xdom = ippl::Index(
-                    (2 * size[0] - intersection[0].first()), (2 * size[0] - intersection[0].last()),
-                    -1);
-                auto zdom = ippl::Index(
-                    (2 * size[2] - intersection[2].first()), (2 * size[2] - intersection[2].last()),
-                    -1);
+                auto xdom = ippl::Index((2 * size[0] - intersection[0].first()),
+                                        (2 * size[0] - intersection[0].last()), -1);
+                auto zdom = ippl::Index((2 * size[2] - intersection[2].first()),
+                                        (2 * size[2] - intersection[2].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = xdom;
@@ -1586,10 +1554,10 @@ namespace ippl {
 
                 if (lDomains4[i].touches(domain4)) {
                     domain4    = lDomains4[i].intersect(domain4);
-                    domain4[0] = ippl::Index(
-                        2 * size[0] - domain4[0].first(), 2 * size[0] - domain4[0].last(), -1);
-                    domain4[2] = ippl::Index(
-                        2 * size[2] - domain4[2].first(), 2 * size[2] - domain4[2].last(), -1);
+                    domain4[0] = ippl::Index(2 * size[0] - domain4[0].first(),
+                                             2 * size[0] - domain4[0].last(), -1);
+                    domain4[2] = ippl::Index(2 * size[2] - domain4[2].first(),
+                                             2 * size[2] - domain4[2].last(), -1);
 
                     intersection = intersection.intersect(domain4);
 
@@ -1611,15 +1579,12 @@ namespace ippl {
             if (ldom.touches(xyz)) {
                 auto intersection = ldom.intersect(xyz);
 
-                auto xdom = ippl::Index(
-                    (2 * size[0] - intersection[0].first()), (2 * size[0] - intersection[0].last()),
-                    -1);
-                auto ydom = ippl::Index(
-                    (2 * size[1] - intersection[1].first()), (2 * size[1] - intersection[1].last()),
-                    -1);
-                auto zdom = ippl::Index(
-                    (2 * size[2] - intersection[2].first()), (2 * size[2] - intersection[2].last()),
-                    -1);
+                auto xdom = ippl::Index((2 * size[0] - intersection[0].first()),
+                                        (2 * size[0] - intersection[0].last()), -1);
+                auto ydom = ippl::Index((2 * size[1] - intersection[1].first()),
+                                        (2 * size[1] - intersection[1].last()), -1);
+                auto zdom = ippl::Index((2 * size[2] - intersection[2].first()),
+                                        (2 * size[2] - intersection[2].last()), -1);
 
                 ippl::NDIndex<Dim> domain4;
                 domain4[0] = xdom;
@@ -1628,12 +1593,12 @@ namespace ippl {
 
                 if (lDomains4[i].touches(domain4)) {
                     domain4    = lDomains4[i].intersect(domain4);
-                    domain4[0] = ippl::Index(
-                        2 * size[0] - domain4[0].first(), 2 * size[0] - domain4[0].last(), -1);
-                    domain4[1] = ippl::Index(
-                        2 * size[1] - domain4[1].first(), 2 * size[1] - domain4[1].last(), -1);
-                    domain4[2] = ippl::Index(
-                        2 * size[2] - domain4[2].first(), 2 * size[2] - domain4[2].last(), -1);
+                    domain4[0] = ippl::Index(2 * size[0] - domain4[0].first(),
+                                             2 * size[0] - domain4[0].last(), -1);
+                    domain4[1] = ippl::Index(2 * size[1] - domain4[1].first(),
+                                             2 * size[1] - domain4[1].last(), -1);
+                    domain4[2] = ippl::Index(2 * size[2] - domain4[2].first(),
+                                             2 * size[2] - domain4[2].last(), -1);
 
                     intersection = intersection.intersect(domain4);
 

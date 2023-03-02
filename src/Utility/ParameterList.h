@@ -55,8 +55,8 @@ namespace ippl {
 #else
             if (params_m.find(key) != params_m.end()) {
 #endif
-                throw IpplException(
-                    "ParameterList::add()", "Parameter '" + key + "' already exists.");
+                throw IpplException("ParameterList::add()",
+                                    "Parameter '" + key + "' already exists.");
             }
             params_m[key] = value;
         }
@@ -74,8 +74,8 @@ namespace ippl {
 #else
             if (params_m.find(key) == params_m.end()) {
 #endif
-                throw IpplException(
-                    "ParameterList::get()", "Parameter '" + key + "' not contained.");
+                throw IpplException("ParameterList::get()",
+                                    "Parameter '" + key + "' not contained.");
             }
             return std::get<T>(params_m.at(key));
         }
@@ -119,8 +119,8 @@ namespace ippl {
 #else
             if (params_m.find(key) == params_m.end()) {
 #endif
-                throw IpplException(
-                    "ParameterList::update()", "Parameter '" + key + "' does not exist.");
+                throw IpplException("ParameterList::update()",
+                                    "Parameter '" + key + "' does not exist.");
             }
             params_m[key] = value;
         }

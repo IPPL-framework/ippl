@@ -114,8 +114,8 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    void FieldLayout<Dim>::initialize(
-        const NDIndex<Dim>& domain, e_dim_tag* userflags, bool isAllPeriodic) {
+    void FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain, e_dim_tag* userflags,
+                                      bool isAllPeriodic) {
         int nRanks = Ippl::Comm->size();
 
         gDomain_m = domain;
@@ -381,8 +381,8 @@ namespace ippl {
                                             ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
                                             ndNeighbor[d1] = ndNeighbor[d1] - offsetd1;
                                             ndNeighbor[d2] = ndNeighbor[d2] - offsetd2;
-                                            addNeighbors(
-                                                gnd, nd, ndNeighbor, intersect, nghost, rank);
+                                            addNeighbors(gnd, nd, ndNeighbor, intersect, nghost,
+                                                         rank);
                                             ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
                                             ndNeighbor[d1] = ndNeighbor[d1] + offsetd1;
                                             ndNeighbor[d2] = ndNeighbor[d2] + offsetd2;
@@ -402,9 +402,8 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    void FieldLayout<Dim>::addNeighbors(
-        NDIndex_t& gnd, NDIndex_t& nd, NDIndex_t& ndNeighbor, NDIndex_t& intersect, int nghost,
-        int rank) {
+    void FieldLayout<Dim>::addNeighbors(NDIndex_t& gnd, NDIndex_t& nd, NDIndex_t& ndNeighbor,
+                                        NDIndex_t& intersect, int nghost, int rank) {
         bound_type rangeSend, rangeRecv;
         rangeSend = getBounds(nd, ndNeighbor, nd, nghost);
 
@@ -434,9 +433,8 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    void FieldLayout<Dim>::addVertex(
-        const NDIndex_t& grown, const NDIndex_t& intersect, int rank, const bound_type& rangeSend,
-        const bound_type& rangeRecv) {
+    void FieldLayout<Dim>::addVertex(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
+                                     const bound_type& rangeSend, const bound_type& rangeRecv) {
         /* The following routine computes the correct index
          * of the vertex.
          *
@@ -466,9 +464,8 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    void FieldLayout<Dim>::addEdge(
-        const NDIndex_t& grown, const NDIndex_t& intersect, int rank, const bound_type& rangeSend,
-        const bound_type& rangeRecv) {
+    void FieldLayout<Dim>::addEdge(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
+                                   const bound_type& rangeSend, const bound_type& rangeRecv) {
         int nEdgesPerDim = (1 << (Dim - 1));
 
         size_t index = 0;
@@ -494,9 +491,8 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    void FieldLayout<Dim>::addFace(
-        const NDIndex_t& grown, const NDIndex_t& intersect, int rank, const bound_type& rangeSend,
-        const bound_type& rangeRecv) {
+    void FieldLayout<Dim>::addFace(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
+                                   const bound_type& rangeSend, const bound_type& rangeRecv) {
         for (unsigned int d = 0; d < Dim; ++d) {
             const Index& index = intersect[d];
 
@@ -528,8 +524,10 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    typename FieldLayout<Dim>::bound_type FieldLayout<Dim>::getBounds(
-        const NDIndex_t& nd1, const NDIndex_t& nd2, const NDIndex_t& offset, int nghost) {
+    typename FieldLayout<Dim>::bound_type FieldLayout<Dim>::getBounds(const NDIndex_t& nd1,
+                                                                      const NDIndex_t& nd2,
+                                                                      const NDIndex_t& offset,
+                                                                      int nghost) {
         NDIndex<Dim> gnd = nd2.grow(nghost);
 
         NDIndex<Dim> overlap = gnd.intersect(nd1);
@@ -548,8 +546,8 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    int FieldLayout<Dim>::getPeriodicOffset(
-        const NDIndex_t& nd, const unsigned int d, const int k) {
+    int FieldLayout<Dim>::getPeriodicOffset(const NDIndex_t& nd, const unsigned int d,
+                                            const int k) {
         int offset = 0;
         switch (k) {
             case 0:

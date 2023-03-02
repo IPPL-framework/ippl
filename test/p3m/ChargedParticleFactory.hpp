@@ -24,10 +24,10 @@
 #define CHARGED_PARTICLE_FACTORY_
 
 template <typename Particles>
-void createParticleDistribution(
-    Particles& P, std::string distribution, unsigned count, double qi, Vektor<double, 3> extend_l,
-    Vektor<double, 3> extend_r, Vektor<double, 3> source, double sphere_radius = 1.,
-    unsigned n_dummies = 0) {
+void createParticleDistribution(Particles& P, std::string distribution, unsigned count, double qi,
+                                Vektor<double, 3> extend_l, Vektor<double, 3> extend_r,
+                                Vektor<double, 3> source, double sphere_radius = 1.,
+                                unsigned n_dummies = 0) {
     enum DistType {
         UNIFORM,
         RANDOM,
@@ -148,8 +148,8 @@ void createParticleDistribution(
             // place particles with 0 charge outside the sphere
 
             P->create(n_dummies);
-            std::uniform_real_distribution<double> o_unidistribution(
-                -2. * sphere_radius, 2. * sphere_radius);
+            std::uniform_real_distribution<double> o_unidistribution(-2. * sphere_radius,
+                                                                     2. * sphere_radius);
             auto o_uni = std::bind(o_unidistribution, generator);
 
             for (unsigned i = 0; i < n_dummies; ++i) {
@@ -241,9 +241,10 @@ void createParticleDistribution(
 }
 
 template <typename Particles>
-void createParticleDistributionTwoStream(
-    Particles& P, Vektor<double, 3> extend_l, Vektor<double, 3> extend_r, Vektor<int, 3> Nx,
-    Vektor<int, 3> Nv, Vektor<double, 3> Vmax, double alpha = 0.05, double kk = 0.5) {
+void createParticleDistributionTwoStream(Particles& P, Vektor<double, 3> extend_l,
+                                         Vektor<double, 3> extend_r, Vektor<int, 3> Nx,
+                                         Vektor<int, 3> Nv, Vektor<double, 3> Vmax,
+                                         double alpha = 0.05, double kk = 0.5) {
     Vektor<double, 3> L = extend_r - extend_l;
     // Vektor<double,3>Nx(2,2,16);
     // Vektor<double,3>Nv(4,4,32);
@@ -265,9 +266,9 @@ void createParticleDistributionTwoStream(
         for (int i = 0; i < Nx[0]; ++i) {
             for (int j = 0; j < Nx[1]; ++j) {
                 for (int k = 0; k < Nx[2]; ++k) {
-                    pos = Vektor<double, 3>(
-                        (.5 + i) * hx[0] + extend_l[0], (.5 + j) * hx[1] + extend_l[1],
-                        (.5 + k) * hx[2] + extend_l[2]);
+                    pos = Vektor<double, 3>((.5 + i) * hx[0] + extend_l[0],
+                                            (.5 + j) * hx[1] + extend_l[1],
+                                            (.5 + k) * hx[2] + extend_l[2]);
                     // std::cout << "pos = " << pos << std::endl;
                     for (int iv = 0; iv < Nv[0]; ++iv) {
                         for (int jv = 0; jv < Nv[1]; ++jv) {
@@ -307,9 +308,10 @@ void createParticleDistributionTwoStream(
 }
 
 template <typename Particles>
-void createParticleDistributionLandau(
-    Particles& P, Vektor<double, 3> extend_l, Vektor<double, 3> extend_r, Vektor<int, 3> Nx,
-    Vektor<int, 3> Nv, Vektor<double, 3> Vmax, double alpha = 0.05, double kk = 0.5) {
+void createParticleDistributionLandau(Particles& P, Vektor<double, 3> extend_l,
+                                      Vektor<double, 3> extend_r, Vektor<int, 3> Nx,
+                                      Vektor<int, 3> Nv, Vektor<double, 3> Vmax,
+                                      double alpha = 0.05, double kk = 0.5) {
     Vektor<double, 3> L    = extend_r - extend_l;
     Vektor<double, 3> Vmin = -Vmax;
 
@@ -330,9 +332,9 @@ void createParticleDistributionLandau(
         for (int i = 0; i < Nx[0]; ++i) {
             for (int j = 0; j < Nx[1]; ++j) {
                 for (int k = 0; k < Nx[2]; ++k) {
-                    pos = Vektor<double, 3>(
-                        (.5 + i) * hx[0] + extend_l[0], (.5 + j) * hx[1] + extend_l[1],
-                        (.5 + k) * hx[2] + extend_l[2]);
+                    pos = Vektor<double, 3>((.5 + i) * hx[0] + extend_l[0],
+                                            (.5 + j) * hx[1] + extend_l[1],
+                                            (.5 + k) * hx[2] + extend_l[2]);
 
                     for (int iv = 0; iv < Nv[0]; ++iv) {
                         for (int jv = 0; jv < Nv[1]; ++jv) {
@@ -369,9 +371,10 @@ void createParticleDistributionLandau(
 }
 
 template <typename Particles>
-void createParticleDistributionRecurrence(
-    Particles& P, Vektor<double, 3> extend_l, Vektor<double, 3> extend_r, Vektor<int, 3> Nx,
-    Vektor<int, 3> Nv, Vektor<double, 3> Vmax, double alpha = 0.05, double kk = 0.5) {
+void createParticleDistributionRecurrence(Particles& P, Vektor<double, 3> extend_l,
+                                          Vektor<double, 3> extend_r, Vektor<int, 3> Nx,
+                                          Vektor<int, 3> Nv, Vektor<double, 3> Vmax,
+                                          double alpha = 0.05, double kk = 0.5) {
     Vektor<double, 3> L    = extend_r - extend_l;
     Vektor<double, 3> Vmin = -Vmax;
 
@@ -392,9 +395,9 @@ void createParticleDistributionRecurrence(
         for (int i = 0; i < Nx[0]; ++i) {
             for (int j = 0; j < Nx[1]; ++j) {
                 for (int k = 0; k < Nx[2]; ++k) {
-                    pos = Vektor<double, 3>(
-                        (.5 + i) * hx[0] + extend_l[0], (.5 + j) * hx[1] + extend_l[1],
-                        (.5 + k) * hx[2] + extend_l[2]);
+                    pos = Vektor<double, 3>((.5 + i) * hx[0] + extend_l[0],
+                                            (.5 + j) * hx[1] + extend_l[1],
+                                            (.5 + k) * hx[2] + extend_l[2]);
 
                     for (int iv = 0; iv < Nv[0]; ++iv) {
                         for (int jv = 0; jv < Nv[1]; ++jv) {
@@ -486,8 +489,8 @@ void createParticleDistributionMicrobunching(Particles& P, unsigned seedID = 0) 
             double z = unidistz(generator);
             // Vektor<double, 3>
             // momentumPrime(P->m0*normdistpx(generator),P->m0*normdistpy(generator),deltapz/P->gamma);
-            Vektor<double, 3> momentumPrime(
-                normdistpx(generator), normdistpy(generator), pz / P->gamma);
+            Vektor<double, 3> momentumPrime(normdistpx(generator), normdistpy(generator),
+                                            pz / P->gamma);
             Vektor<double, 3> posPrime(unidistx(generator), unidisty(generator), P->gamma * z);
             P->Q[i] = -P->q;
             P->m[i] = P->m0;
@@ -511,9 +514,9 @@ void createParticleDistributionMicrobunching(Particles& P, unsigned seedID = 0) 
 }
 
 template <typename Particles>
-void createParticleDistributionEquiPart(
-    Particles& P, Vektor<double, 3> /*extend_l*/, Vektor<double, 3> /*extend_r*/,
-    double beam_length, double part_density, double qi, double mi, int seed = 0) {
+void createParticleDistributionEquiPart(Particles& P, Vektor<double, 3> /*extend_l*/,
+                                        Vektor<double, 3> /*extend_r*/, double beam_length,
+                                        double part_density, double qi, double mi, int seed = 0) {
     std::cout << "Initializing Equipartitioning" << std::endl;
     P->total_charge    = 0;
     const double c     = 299792458000;
@@ -534,8 +537,8 @@ void createParticleDistributionEquiPart(
     if (P->singleInitNode()) {
         P->create(Nparticle);
         for (unsigned i = 0; i < Nparticle; ++i) {
-            Vektor<double, 3> pos(
-                unidist_spacial(generator), unidist_spacial(generator), unidist_spacial(generator));
+            Vektor<double, 3> pos(unidist_spacial(generator), unidist_spacial(generator),
+                                  unidist_spacial(generator));
             Vektor<double, 3> vel(vel_trans(generator), vel_trans(generator), vel_long(generator));
             P->Q[i] = -qi;
             P->m[i] = mi;
@@ -548,9 +551,9 @@ void createParticleDistributionEquiPart(
 }
 
 template <typename Particles>
-void createParticleDistributionEquiPartSphere(
-    Particles& P, Vektor<double, 3> /*extend_l*/, Vektor<double, 3> /*extend_r*/,
-    double beam_length, unsigned Nparts, double qi, double mi, int seed = 0) {
+void createParticleDistributionEquiPartSphere(Particles& P, Vektor<double, 3> /*extend_l*/,
+                                              Vektor<double, 3> /*extend_r*/, double beam_length,
+                                              unsigned Nparts, double qi, double mi, int seed = 0) {
     std::cout << "Initializing Equipartitioning Sphere" << std::endl;
     P->total_charge      = 0;
     const double c       = 299792458000;
@@ -594,9 +597,9 @@ void createParticleDistributionEquiPartSphere(
 }
 
 template <typename Particles>
-void createParticleDistributionHeating(
-    Particles& P, Vektor<double, 3> /*extend_l*/, Vektor<double, 3> /*extend_r*/,
-    double beam_radius, unsigned Nparts, double qi, double mi) {
+void createParticleDistributionHeating(Particles& P, Vektor<double, 3> /*extend_l*/,
+                                       Vektor<double, 3> /*extend_r*/, double beam_radius,
+                                       unsigned Nparts, double qi, double mi) {
     Inform msg("p3m3dHeating ");
 
     msg << "Initializing Cold Sphere" << endl;
@@ -633,9 +636,9 @@ void createParticleDistributionHeating(
 }
 
 template <typename Particles>
-void createParticleDistributionPerformance(
-    Particles& P, Vektor<double, 3> extend_l, Vektor<double, 3> extend_r, unsigned Nparts,
-    double qi, double mi, double vMin, double vMax) {
+void createParticleDistributionPerformance(Particles& P, Vektor<double, 3> extend_l,
+                                           Vektor<double, 3> extend_r, unsigned Nparts, double qi,
+                                           double mi, double vMin, double vMax) {
     P->total_charge    = 0;
     unsigned Nparticle = Nparts;
     // the momenta are normally distributed with std deviation sigma_px
@@ -650,9 +653,8 @@ void createParticleDistributionPerformance(
     if (P->singleInitNode()) {
         P->create(Nparticle);
         for (unsigned i = 0; i < Nparticle; ++i) {
-            Vektor<double, 3> pos(
-                unidistributionX(generator), unidistributionY(generator),
-                unidistributionZ(generator));
+            Vektor<double, 3> pos(unidistributionX(generator), unidistributionY(generator),
+                                  unidistributionZ(generator));
             Vektor<double, 3> vel(uniVel(), uniVel(), uniVel());
             P->Q[i] = -qi;
             P->m[i] = mi;

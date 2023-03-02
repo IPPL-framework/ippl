@@ -85,8 +85,8 @@ struct meta_cross {};
 
 template <class T1, class T2>
 struct meta_cross<Vector<T1, 3>, Vector<T2, 3>> {
-    KOKKOS_INLINE_FUNCTION static Vector<double, 3> apply(
-        const Vector<T1, 3>& a, const Vector<T2, 3>& b) {
+    KOKKOS_INLINE_FUNCTION static Vector<double, 3> apply(const Vector<T1, 3>& a,
+                                                          const Vector<T2, 3>& b) {
         Vector<double, 3> c;
         c[0] = a[1] * b[2] - a[2] * b[1];
         c[1] = a[2] * b[0] - a[0] * b[2];
@@ -122,8 +122,8 @@ private:
 };
 
 template <typename E1, typename E2>
-KOKKOS_INLINE_FUNCTION meta_cross<E1, E2> cross(
-    const VectorExpr<E1>& lhs, const VectorExpr<E2>& rhs) {
+KOKKOS_INLINE_FUNCTION meta_cross<E1, E2> cross(const VectorExpr<E1>& lhs,
+                                                const VectorExpr<E2>& rhs) {
     return meta_cross<E1, E2>(*static_cast<const E1*>(&lhs), *static_cast<const E2*>(&rhs));
 }
 #endif
@@ -152,8 +152,8 @@ private:
 };
 
 template <typename E1, typename E2>
-KOKKOS_INLINE_FUNCTION meta_cross<E1, E2> cross(
-    const VectorExpr<E1>& lhs, const VectorExpr<E2>& rhs) {
+KOKKOS_INLINE_FUNCTION meta_cross<E1, E2> cross(const VectorExpr<E1>& lhs,
+                                                const VectorExpr<E2>& rhs) {
     return meta_cross<E1, E2>(*static_cast<const E1*>(&lhs), *static_cast<const E2*>(&rhs));
 }
 #endif

@@ -39,8 +39,8 @@
 // calculate a new RegionLayout for a given ParticleBase, and distribute the
 // new RegionLayout to all the nodes.  This uses a Field BinaryBalancer.
 template <class T, unsigned Dim, class Mesh, class CachingPolicy>
-bool BinaryRepartition(
-    IpplParticleBase<ParticleSpatialLayout<T, Dim, Mesh, CachingPolicy> >& PB, double offset) {
+bool BinaryRepartition(IpplParticleBase<ParticleSpatialLayout<T, Dim, Mesh, CachingPolicy> >& PB,
+                       double offset) {
     static IntNGP interp;  // to scatter particle density
 
     // Inform dbgmsg("Particle BinaryRepartition", INFORM_ALL_NODES);
