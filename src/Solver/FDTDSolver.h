@@ -29,13 +29,13 @@ namespace ippl {
               class M=UniformCartesian<double, Dim>,
               class C=typename M::DefaultCentering>
     class FDTDSolver { 
+        
         public:
-
-	    // define a type for scalar field (e.g. charge density field)
-	    // define a type for vectors
+            // define a type for scalar field (e.g. charge density field)
+            // define a type for vectors
             // define a type for vector field
-	    typedef Field<Tfields, Dim, M> Field_t;
-	    typedef Vector<Tfields, Dim> Vector_t;
+            typedef Field<Tfields, Dim, M> Field_t;
+            typedef Vector<Tfields, Dim> Vector_t;
             typedef Field<Vector_t, Dim, M> VField_t;
 
             // define type for field layout
