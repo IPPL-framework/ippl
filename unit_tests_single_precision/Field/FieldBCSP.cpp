@@ -26,8 +26,9 @@ class FieldBCTest : public ::testing::Test {
 
 public:
     static constexpr size_t dim = 3;
-    typedef ippl::Field<double, dim> field_type;
-    typedef ippl::BConds<double, dim> bc_type; 
+    typedef ippl::UniformCartesian<float, dim> mesh_type;
+    typedef ippl::Field<float, dim, mesh_type> field_type;
+    typedef ippl::BConds<float, dim, mesh_type> bc_type; 
 
     FieldBCTest()
     : nPoints(8)
@@ -45,10 +46,10 @@ public:
 
         layout = ippl::FieldLayout<dim>(owned, domDec);
 
-        double dx = 1.0 / double(nPoints);
-        ippl::Vector<double, dim> hx = {dx, dx, dx};
-        ippl::Vector<double, dim> origin = {0, 0, 0};
-        ippl::UniformCartesian<double, dim> mesh(owned, hx, origin);
+        float dx = 1.0 / float(nPoints);
+        ippl::Vector<float, dim> hx = {dx, dx, dx};
+        ippl::Vector<float, dim> origin = {0, 0, 0};
+        mesh_type mesh(owned, hx, origin);
 
         field = std::make_unique<field_type>(mesh, layout);
         *field = 1.0;
@@ -56,7 +57,7 @@ public:
         HostF = field->getHostMirror();
     }
 
-    void checkResult(const double expected) {
+    void checkResult(const float expected) {
         const auto& lDomains = layout.getHostLocalDomains();
         const auto& domain = layout.getDomain();
         const int myRank = Ippl::Comm->rank();
@@ -76,10 +77,10 @@ public:
                     for (size_t j = 1; j < HostF.extent(1) - 1; ++j) {
                         for (size_t k = 1; k < HostF.extent(2) - 1; ++k) {
                             if (checkLower) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(0,j,k));
+                                    EXPECT_FLOAT_EQ(expected, HostF(0,j,k));
                             }
                             if (checkUpper) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(N-1,j,k));
+                                EXPECT_FLOAT_EQ(expected, HostF(N-1,j,k));
                             }
                         }
                      }
@@ -88,10 +89,10 @@ public:
                     for (size_t i = 1; i < HostF.extent(0) - 1; ++i) {
                         for (size_t k = 1; k < HostF.extent(2) - 1; ++k) {
                             if (checkLower) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(i,0,k));
+                                EXPECT_FLOAT_EQ(expected, HostF(i,0,k));
                             }
                             if (checkUpper) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(i,N-1,k));
+                                EXPECT_FLOAT_EQ(expected, HostF(i,N-1,k));
                             }
                         }
                      }
@@ -100,10 +101,10 @@ public:
                     for (size_t i = 1; i < HostF.extent(0) - 1; ++i) {
                         for (size_t j = 1; j < HostF.extent(1) - 1; ++j) {
                             if (checkLower) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(i,j,0));
+                                EXPECT_FLOAT_EQ(expected, HostF(i,j,0));
                             }
                             if (checkUpper) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(i,j,N-1));
+                                EXPECT_FLOAT_EQ(expected, HostF(i,j,N-1));
                             }
                         }
                      }
@@ -126,7 +127,7 @@ public:
 
 TEST_F(FieldBCTest, PeriodicBC) {
     for (size_t i=0; i < 2*dim; ++i) {
-        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
+        bcField[i] = std::make_shared<ippl::PeriodicFace<float, dim, mesh_type>>(i);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
@@ -136,42 +137,42 @@ TEST_F(FieldBCTest, PeriodicBC) {
 
 TEST_F(FieldBCTest, NoBC) {
     for (size_t i=0; i < 2*dim; ++i) {
-        bcField[i] = std::make_shared<ippl::NoBcFace<double, dim>>(i);
+        bcField[i] = std::make_shared<ippl::NoBcFace<float, dim, mesh_type>>(i);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
-    double expected = 1.0;
+    float expected = 1.0;
     checkResult(expected);
 }
 
 TEST_F(FieldBCTest, ZeroBC) {
     for (size_t i=0; i < 2*dim; ++i) {
-        bcField[i] = std::make_shared<ippl::ZeroFace<double, dim>>(i);
+        bcField[i] = std::make_shared<ippl::ZeroFace<float, dim, mesh_type>>(i);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
-    double expected = 0.0;
+    float expected = 0.0;
     checkResult(expected);
 }
 
 TEST_F(FieldBCTest, ConstantBC) {
-    double constant = 7.0; 
+    float constant = 7.0; 
     for (size_t i=0; i < 2*dim; ++i) {
-        bcField[i] = std::make_shared<ippl::ConstantFace<double, dim>>(i, constant);
+        bcField[i] = std::make_shared<ippl::ConstantFace<float, dim, mesh_type>>(i, constant);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
-    double expected = constant;
+    float expected = constant;
     checkResult(expected);
 }
 
 TEST_F(FieldBCTest, ExtrapolateBC) {
     for (size_t i=0; i < 2*dim; ++i) {
-        bcField[i] = std::make_shared<ippl::ExtrapolateFace<double, dim>>(i, 0.0, 1.0);
+        bcField[i] = std::make_shared<ippl::ExtrapolateFace<float, dim, mesh_type>>(i, 0.0, 1.0);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
-    double expected = 10.0;
+    float expected = 10.0;
     checkResult(expected);
 }
 
