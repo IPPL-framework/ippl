@@ -105,11 +105,15 @@ TEST_F(ParameterListTest, Update) {
 
     p1.update(p2);
 
+    // Update only modifies the values of the existing
+    // parameters, does not add new parameters to p1,
+    // so "size" should not be contained in p1 
+    // we try to get "size" from p1, which should not
+    // run, so isContained should continue being false.
+
     bool isContained = false;
     try {
-        int size = p1.get<int>("size");
-        size += 1;
-        isContained = true;
+        isContained = p1.get<int>("size") == 5;
     } catch(...) {
         // do nothing here
     }

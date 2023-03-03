@@ -228,7 +228,7 @@ namespace ippl {
 	FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::initializeFields() {
  	    
             // first check if valid algorithm choice
-            if ((alg_m != "VICO") && (alg_m != "HOCKNEY")) {
+            if ((alg_m != "VICO") && (alg_m != "HOCKNEY") && (alg_m != "BIHARMONIC")) {
                 throw IpplException("FFTPoissonSolver::initializeFields()",
                 "Currently only Hockney and Vico algorithms are supported for open BCs");
             }
@@ -303,7 +303,7 @@ namespace ippl {
             // if Vico, also need to create mesh and layout for 4N Fourier domain
             // on this domain, the truncated Green's function is defined
             // also need to create the 4N complex grid, on which precomputation step done
-            if (alg_m == "VICO") {
+            if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
 
                 // start a timer
                 static IpplTimings::TimerRef initialize_vico = IpplTimings::getTimer("Initialize: extra Vico");
@@ -399,7 +399,7 @@ namespace ippl {
             IpplTimings::startTimer(warmup);
 
 	    fft_m->transform(+1, rho2_mr, rho2tr_m);
-            if (alg_m == "VICO") {
+            if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
                 fft4n_m->transform(+1, grnL_m);
             }
 
@@ -582,7 +582,7 @@ namespace ippl {
                 // Vico: need to multiply by normalization factor of 1/4N^3,
                 // since only backward transform was performed on the 4N grid
                 for (unsigned int i = 0; i < Dim; ++i) {
-                    if (alg_m == "VICO")
+                    if ((alg_m == "VICO") || (alg_m == "BIHARMONIC"))
                         rho2_mr = rho2_mr * 2.0  * (1.0/4.0);
                     else 
                         rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
@@ -749,7 +749,7 @@ namespace ippl {
                 
                     // apply proper normalization
                     for (unsigned int i = 0; i < Dim; ++i) {
-                        if (alg_m == "VICO")
+                        if ((alg_m == "VICO") || (alg_m == "BIHARMONIC"))
                             rho2_mr = rho2_mr * 2.0  * (1.0/4.0) ;
                         else 
                             rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
@@ -851,7 +851,7 @@ namespace ippl {
             double pi = std::acos(-1.0);
             grn_mr = 0.0;
 
-            if (alg_m == "VICO") {
+            if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
             
                 Vector_t l(hr_m * nr_m);
                 Vector_t hs_m;
@@ -887,7 +887,9 @@ namespace ippl {
 
                 // Kokkos parallel for loop to assign analytic grnL_m
                 using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-                Kokkos::parallel_for("Initialize Green's function ",
+
+                if (alg_m == "VICO") {
+                    Kokkos::parallel_for("Initialize Green's function ",
                         mdrange_type({nghost_g, nghost_g, nghost_g},
                         {view_g.extent(0)-nghost_g, view_g.extent(1)-nghost_g, view_g.extent(2)-nghost_g}),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -915,7 +917,41 @@ namespace ippl {
                         if ((ig == 0 && jg == 0 && kg == 0)) {
                             view_g(i,j,k) = -L_sum * L_sum * 0.5;
                         }
-	        });
+	                });
+
+                } else if (alg_m == "BIHARMONIC") {
+
+                    Kokkos::parallel_for("Initialize Green's function ",
+                        mdrange_type({nghost_g, nghost_g, nghost_g},
+                        {view_g.extent(0)-nghost_g, view_g.extent(1)-nghost_g, view_g.extent(2)-nghost_g}),
+                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                                  
+                        // go from local indices to global
+                        const int ig = i + ldom_g[0].first() - nghost_g;
+                        const int jg = j + ldom_g[1].first() - nghost_g;
+                        const int kg = k + ldom_g[2].first() - nghost_g;
+
+                        bool isOutside = (ig > 2*size[0]-1);
+                        double t = ig*hs_m[0] + isOutside*origin[0];
+
+                        isOutside = (jg > 2*size[1]-1);
+                        double u = jg*hs_m[1] + isOutside*origin[1];
+
+                        isOutside = (kg > 2*size[2]-1);
+                        double v = kg*hs_m[2] + isOutside*origin[2];
+
+                        double s = (t*t) + (u*u) + (v*v);
+                        s = std::sqrt(s);
+
+                        view_g(i,j,k) = -((2-(L_sum*L_sum*s*s))*std::cos(L_sum*s) + 2*L_sum*s*std::sin(L_sum*s) - 2)/(2*s*s*s*s);
+                  
+                        // if (0,0,0), assign L^2/2 (analytical limit of sinc)
+                        if ((ig == 0 && jg == 0 && kg == 0)) {
+                            view_g(i,j,k) = -L_sum * L_sum * L_sum * L_sum / 8.0;
+                        }
+	                });
+
+                }
 
                 // start a timer
                 static IpplTimings::TimerRef fft4 = IpplTimings::getTimer("FFT: Precomputation");
