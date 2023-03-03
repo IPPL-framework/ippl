@@ -178,9 +178,7 @@ namespace ippl {
         policy_type getRangePolicy(const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
             const size_t shift = nghost_m - nghost;
-            return policy_type(
-                {shift, shift, shift},
-                {dview_m.extent(0) - shift, dview_m.extent(1) - shift, dview_m.extent(2) - shift});
+            return detail::getRangePolicy<Dim>(dview_m, shift);
         }
 
         /*!

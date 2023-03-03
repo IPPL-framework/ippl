@@ -65,7 +65,6 @@ int main(int argc, char* argv[]) {
 
         const ippl::NDIndex<dim>& lDom   = layout.getLocalNDIndex();
         const int nghost                 = field.getNghost();
-        using mdrange_type               = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         typename Field_t::view_type view = field.getView();
 
         switch (params.template get<int>("output_type")) {
@@ -75,10 +74,7 @@ int main(int argc, char* argv[]) {
                 auto view_exact = phifield_exact.getView();
 
                 Kokkos::parallel_for(
-                    "Assign rhs",
-                    mdrange_type({nghost, nghost, nghost},
-                                 {view.extent(0) - nghost, view.extent(1) - nghost,
-                                  view.extent(2) - nghost}),
+                    "Assign rhs", ippl::detail::getRangePolicy<3>(view, nghost),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // local to global index conversion
                         const size_t ig = i + lDom[0].first() - nghost;
@@ -131,10 +127,7 @@ int main(int argc, char* argv[]) {
                 auto Eview_exact = Efield_exact.getView();
 
                 Kokkos::parallel_for(
-                    "Assign rhs",
-                    mdrange_type({nghost, nghost, nghost},
-                                 {view.extent(0) - nghost, view.extent(1) - nghost,
-                                  view.extent(2) - nghost}),
+                    "Assign rhs", ippl::detail::getRangePolicy<3>(view, nghost),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // local to global index conversion
                         const size_t ig = i + lDom[0].first() - nghost;
@@ -175,11 +168,7 @@ int main(int argc, char* argv[]) {
                 for (size_t d = 0; d < dim; ++d) {
                     double temp = 0.0;
                     Kokkos::parallel_reduce(
-                        "Vector errorNr reduce",
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                            {nghost, nghost, nghost},
-                            {view.extent(0) - nghost, view.extent(1) - nghost,
-                             view.extent(2) - nghost}),
+                        "Vector errorNr reduce", ippl::detail::getRangePolicy<3>(view, nghost),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
                                       double& valL) {
                             double myVal = pow(Eview(i, j, k)[d], 2);
@@ -192,11 +181,7 @@ int main(int argc, char* argv[]) {
 
                     temp = 0.0;
                     Kokkos::parallel_reduce(
-                        "Vector errorDr reduce",
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                            {nghost, nghost, nghost},
-                            {view.extent(0) - nghost, view.extent(1) - nghost,
-                             view.extent(2) - nghost}),
+                        "Vector errorDr reduce", ippl::detail::getRangePolicy<3>(view, nghost),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
                                       double& valL) {
                             double myVal = pow(Eview_exact(i, j, k)[d], 2);

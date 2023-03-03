@@ -305,10 +305,8 @@ namespace ippl {
                 Kokkos::realloc(buffer, size * overalloc);
             }
 
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(
-                "HaloCells::pack()",
-                mdrange_type({0, 0, 0}, {subview.extent(0), subview.extent(1), subview.extent(2)}),
+                "HaloCells::pack()", detail::getRangePolicy<Dim>(subview),
                 KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                     int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
                     buffer(l) = subview(i, j, k);
@@ -327,10 +325,8 @@ namespace ippl {
             // https://stackoverflow.com/questions/3735398/operator-as-template-parameter
             Op op;
 
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(
-                "HaloCells::unpack()",
-                mdrange_type({0, 0, 0}, {subview.extent(0), subview.extent(1), subview.extent(2)}),
+                "HaloCells::unpack()", detail::getRangePolicy<Dim>(subview),
                 KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                     int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
                     op(subview(i, j, k), buffer(l));

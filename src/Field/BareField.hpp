@@ -109,10 +109,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         Kokkos::parallel_for(
-            "BareField::operator=(T)",
-            mdrange_type({0, 0, 0}, {dview_m.extent(0), dview_m.extent(1), dview_m.extent(2)}),
+            "BareField::operator=(T)", detail::getRangePolicy<Dim>(dview_m),
             KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                 dview_m(i, j, k) = x;
             });
@@ -124,12 +122,9 @@ namespace ippl {
     BareField<T, Dim>& BareField<T, Dim>::operator=(const detail::Expression<E, N>& expr) {
         using capture_type = detail::CapturedExpression<E, N>;
         capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         Kokkos::parallel_for(
             "BareField::operator=(const Expression&)",
-            mdrange_type({nghost_m, nghost_m, nghost_m},
-                         {dview_m.extent(0) - nghost_m, dview_m.extent(1) - nghost_m,
-                          dview_m.extent(2) - nghost_m}),
+            detail::getRangePolicy<Dim>(dview_m, nghost_m),
             KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                 dview_m(i, j, k) = expr_(i, j, k);
             });
@@ -147,26 +142,22 @@ namespace ippl {
         write(inf.getDestination());
     }
 
-#define DefineReduction(fun, name, op, MPI_Op)                                                \
-    template <typename T, unsigned Dim>                                                       \
-    T BareField<T, Dim>::name(int nghost) const {                                             \
-        PAssert_LE(nghost, nghost_m);                                                         \
-        T temp             = 0.0;                                                             \
-        const size_t shift = nghost_m - nghost;                                               \
-        Kokkos::parallel_reduce(                                                              \
-            "fun",                                                                            \
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(                                           \
-                {shift, shift, shift}, {dview_m.extent(0) - shift, dview_m.extent(1) - shift, \
-                                        dview_m.extent(2) - shift}),                          \
-            KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) {    \
-                T myVal = dview_m(i, j, k);                                                   \
-                op;                                                                           \
-            },                                                                                \
-            Kokkos::fun<T>(temp));                                                            \
-        T globaltemp      = 0.0;                                                              \
-        MPI_Datatype type = get_mpi_datatype<T>(temp);                                        \
-        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());                  \
-        return globaltemp;                                                                    \
+#define DefineReduction(fun, name, op, MPI_Op)                                             \
+    template <typename T, unsigned Dim>                                                    \
+    T BareField<T, Dim>::name(int nghost) const {                                          \
+        PAssert_LE(nghost, nghost_m);                                                      \
+        T temp = 0.0;                                                                      \
+        Kokkos::parallel_reduce(                                                           \
+            "fun", detail::getRangePolicy<Dim>(dview_m, nghost_m - nghost),                \
+            KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) { \
+                T myVal = dview_m(i, j, k);                                                \
+                op;                                                                        \
+            },                                                                             \
+            Kokkos::fun<T>(temp));                                                         \
+        T globaltemp      = 0.0;                                                           \
+        MPI_Datatype type = get_mpi_datatype<T>(temp);                                     \
+        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());               \
+        return globaltemp;                                                                 \
     }
 
     DefineReduction(Sum, sum, valL += myVal, MPI_SUM)
