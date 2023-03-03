@@ -45,8 +45,8 @@ namespace ippl {
        given layout and heffte parameters.
     */
 
-    template <size_t Dim, class T>
-    FFT<CCTransform,Dim,T>::FFT(
+    template <size_t Dim, class T, class M>
+    FFT<CCTransform,Dim,T,M>::FFT(
         const Layout_t& layout,
         const ParameterList& params)
     {
@@ -81,9 +81,9 @@ namespace ippl {
     /**
            setup performs the initialization necessary.
     */
-    template <size_t Dim, class T>
+    template <size_t Dim, class T, class M>
     void
-    FFT<CCTransform,Dim,T>::setup(const std::array<long long, Dim>& low,
+    FFT<CCTransform,Dim,T,M>::setup(const std::array<long long, Dim>& low,
                                   const std::array<long long, Dim>& high,
                                   const ParameterList& params)
     {
@@ -132,11 +132,11 @@ namespace ippl {
 
 
 
-    template <size_t Dim, class T>
+    template <size_t Dim, class T, class M>
     void
-    FFT<CCTransform,Dim,T>::transform(
+    FFT<CCTransform,Dim,T,M>::transform(
         int direction,
-        typename FFT<CCTransform,Dim,T>::ComplexField_t& f)
+        typename FFT<CCTransform,Dim,T,M>::ComplexField_t& f)
     {
        auto fview = f.getView();
        const int nghost = f.getNghost();
@@ -219,8 +219,8 @@ namespace ippl {
        *layouts and heffte parameters.
     */
 
-    template <size_t Dim, class T>
-    FFT<RCTransform,Dim,T>::FFT(
+    template <size_t Dim, class T, class M>
+    FFT<RCTransform,Dim,T,M>::FFT(
         const Layout_t& layoutInput,
         const Layout_t& layoutOutput,
         const ParameterList& params)
@@ -266,9 +266,9 @@ namespace ippl {
     /**
        setup performs the initialization.
     */
-    template <size_t Dim, class T>
+    template <size_t Dim, class T, class M>
     void
-    FFT<RCTransform,Dim,T>::setup(const std::array<long long, Dim>& lowInput,
+    FFT<RCTransform,Dim,T,M>::setup(const std::array<long long, Dim>& lowInput,
                                   const std::array<long long, Dim>& highInput,
                                   const std::array<long long, Dim>& lowOutput,
                                   const std::array<long long, Dim>& highOutput,
@@ -318,12 +318,12 @@ namespace ippl {
 
     }
 
-    template <size_t Dim, class T>
+    template <size_t Dim, class T, class M>
     void
-    FFT<RCTransform,Dim,T>::transform(
+    FFT<RCTransform,Dim,T,M>::transform(
         int direction,
-        typename FFT<RCTransform,Dim,T>::RealField_t& f,
-        typename FFT<RCTransform,Dim,T>::ComplexField_t& g)
+        typename FFT<RCTransform,Dim,T,M>::RealField_t& f,
+        typename FFT<RCTransform,Dim,T,M>::ComplexField_t& g)
     {
        auto fview = f.getView();
        auto gview = g.getView();
@@ -435,8 +435,8 @@ namespace ippl {
        given layout and heffte parameters.
     */
 
-    template <size_t Dim, class T>
-    FFT<SineTransform,Dim,T>::FFT(
+    template <size_t Dim, class T, class M>
+    FFT<SineTransform,Dim,T,M>::FFT(
         const Layout_t& layout,
         const ParameterList& params)
     {
@@ -470,9 +470,9 @@ namespace ippl {
     /**
            setup performs the initialization necessary.
     */
-    template <size_t Dim, class T>
+    template <size_t Dim, class T, class M>
     void
-    FFT<SineTransform,Dim,T>::setup(const std::array<long long, Dim>& low,
+    FFT<SineTransform,Dim,T,M>::setup(const std::array<long long, Dim>& low,
                                   const std::array<long long, Dim>& high,
                                   const ParameterList& params)
     {
@@ -518,11 +518,11 @@ namespace ippl {
 
     }
 
-    template <size_t Dim, class T>
+    template <size_t Dim, class T, class M>
     void
-    FFT<SineTransform,Dim,T>::transform(
+    FFT<SineTransform,Dim,T,M>::transform(
         int direction,
-        typename FFT<SineTransform,Dim,T>::Field_t& f)
+        typename FFT<SineTransform,Dim,T,M>::Field_t& f)
     {
        auto fview = f.getView();
        const int nghost = f.getNghost();
@@ -596,8 +596,8 @@ namespace ippl {
        given layout and heffte parameters.
     */
 
-    template <size_t Dim, class T>
-    FFT<CosTransform,Dim,T>::FFT(
+    template <size_t Dim, class T, class M>
+    FFT<CosTransform,Dim,T,M>::FFT(
         const Layout_t& layout,
         const ParameterList& params)
     {
@@ -631,9 +631,9 @@ namespace ippl {
     /**
            setup performs the initialization necessary.
     */
-    template <size_t Dim, class T>
+    template <size_t Dim, class T, class M>
     void
-    FFT<CosTransform,Dim,T>::setup(const std::array<long long, Dim>& low,
+    FFT<CosTransform,Dim,T,M>::setup(const std::array<long long, Dim>& low,
                                   const std::array<long long, Dim>& high,
                                   const ParameterList& params)
     {
@@ -680,11 +680,11 @@ namespace ippl {
     }
 
 
-    template <size_t Dim, class T>
+    template <size_t Dim, class T, class M>
     void
-    FFT<CosTransform,Dim,T>::transform(
+    FFT<CosTransform,Dim,T,M>::transform(
         int direction,
-        typename FFT<CosTransform,Dim,T>::Field_t& f)
+        typename FFT<CosTransform,Dim,T,M>::Field_t& f)
     {
        auto fview = f.getView();
        const int nghost = f.getNghost();

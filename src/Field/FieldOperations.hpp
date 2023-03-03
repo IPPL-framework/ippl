@@ -23,8 +23,8 @@ namespace ippl {
      * @param f2 second field
      * @return Result of f1^T f2
      */
-    template <typename T, unsigned Dim>
-    T innerProduct(const Field<T, Dim>& f1, const Field<T, Dim>& f2) {
+    template <typename T, unsigned Dim, class M = UniformCartesian<double,Dim>>
+    T innerProduct(const Field<T, Dim,M>& f1, const Field<T, Dim,M>& f2) {
         T sum = 0;
         auto view1 = f1.getView();
         auto view2 = f2.getView();
@@ -92,7 +92,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class M, class C>
     detail::meta_grad<Field<T, Dim, M, C>> grad(Field<T, Dim, M, C>& u) {
         u.fillHalo();
-        BConds<T,Dim>& bcField = u.getFieldBC();
+        BConds<T,Dim,M>& bcField = u.getFieldBC();
         bcField.apply(u);
         M& mesh = u.get_mesh();
         typename M::vector_type xvector(0);
@@ -112,7 +112,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class M, class C>
     detail::meta_div<Field<T, Dim, M, C>> div(Field<T, Dim, M, C>& u) {
         u.fillHalo();
-        BConds<T,Dim>& bcField = u.getFieldBC();
+        BConds<T,Dim,M>& bcField = u.getFieldBC();
         bcField.apply(u);
         M& mesh = u.get_mesh();
         typename M::vector_type xvector(0);
@@ -132,7 +132,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class M, class C>
     detail::meta_laplace<Field<T, Dim, M, C>> laplace(Field<T, Dim, M, C>& u) {
         u.fillHalo();
-        BConds<T,Dim>& bcField = u.getFieldBC();
+        BConds<T,Dim,M>& bcField = u.getFieldBC();
         bcField.apply(u);
         M& mesh = u.get_mesh();
         typename M::vector_type hvector(0);
@@ -149,7 +149,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class M, class C>
     detail::meta_curl<Field<T, Dim, M, C>> curl(Field<T, Dim, M, C>& u) {
         u.fillHalo();
-        BConds<T,Dim>& bcField = u.getFieldBC();
+        BConds<T,Dim,M>& bcField = u.getFieldBC();
         bcField.apply(u);
         M& mesh = u.get_mesh();
         typename M::vector_type xvector(0);
@@ -161,5 +161,26 @@ namespace ippl {
         typename M::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
         return detail::meta_curl<Field<T, Dim, M, C>>(u, xvector, yvector, zvector, hvector);
+    }
+
+    /*!
+     * User interface of Hessian in three dimensions.
+     * @param u field
+     */
+    template <typename T, unsigned Dim, class M, class C>
+    detail::meta_hess<Field<T, Dim, M, C>> hess(Field<T, Dim, M, C>& u) {
+        u.fillHalo();
+        BConds<T,Dim,M>& bcField = u.getFieldBC();
+        bcField.apply(u);
+        M& mesh = u.get_mesh();
+        typename M::vector_type xvector(0);
+        xvector[0] = 1.0;
+        typename M::vector_type yvector(0);
+        yvector[1] = 1.0;
+        typename M::vector_type zvector(0);
+        zvector[2] = 1.0;
+        typename M::vector_type hvector(0);
+        hvector = mesh.getMeshSpacing();
+        return detail::meta_hess<Field<T, Dim, M, C>>(u, xvector, yvector, zvector, hvector);
     }
 }
