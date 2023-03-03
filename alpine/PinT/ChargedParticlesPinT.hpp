@@ -175,6 +175,43 @@ public:
         E.initializeNUFFT(FLPIF, 2, fftParams);
     }
 
+    void initializeParareal(ParticleAttrib<Vector_t>& Rbegin,
+                            ParticleAttrib<Vector_t>& Pbegin,
+                            bool& isConverged,
+                            bool& isPreviousDomainConverged,
+                            const unsigned int& ntCoarse,
+                            const double& dtCoarse,
+                            const double& tStartMySlice,
+                            const double& Bext) {
+
+        //Copy initial conditions as they are needed later
+        Kokkos::deep_copy(R0.getView(), R.getView());
+        Kokkos::deep_copy(P0.getView(), P.getView());
+
+        //Get initial guess for ranks other than 0 by propagating the coarse solver
+        if (Ippl::Comm->rank() > 0) {
+            BorisPIC(R, P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice, Bext); 
+        }
+        
+        Ippl::Comm->barrier();
+        
+        Kokkos::deep_copy(Rbegin.getView(), R.getView());
+        Kokkos::deep_copy(Pbegin.getView(), P.getView());
+
+
+        //Run the coarse integrator to get the values at the end of the time slice 
+        Pcoarse->BorisPIC(R, P, ntCoarse, dtCoarse, tStartMySlice, Bext); 
+
+        isConverged = false;
+        if(Ippl::Comm->rank() == 0) {
+            isPreviousDomainConverged = true;
+        }
+        else {
+            isPreviousDomainConverged = false;
+        }
+    }
+
+
      void dumpLandauPIC() {
 
         const int nghostE = EfieldPIC_m.getNghost();
