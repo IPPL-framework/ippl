@@ -6,7 +6,7 @@
 // European Conference on Parallel Processing. Springer, Cham, 2017.
 // 
 //  Usage:
-//     srun ./PenningTrapPinT <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> <Niter> 
+//     srun ./PenningTrapPinT <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> <nCycles> 
 //     <ShapeType> <degree> --info 5
 //     nmx       = No. of Fourier modes in the x-direction
 //     nmy       = No. of Fourier modes in the y-direction
@@ -15,6 +15,7 @@
 //     ny       = No. of grid points in the y-direction
 //     nz       = No. of grid points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
+//     nCycles = No. of Parareal blocks/cycles
 //     ShapeType = Shape function type B-spline only for the moment
 //     degree = B-spline degree (-1 for delta function)
 //     Example:
@@ -406,8 +407,8 @@ int main(int argc, char *argv[]){
 
     const size_type totalP = std::atoll(argv[7]);
     const double tEnd = std::atof(argv[8]);
-    const unsigned int maxCycles = std::atoi(argv[12]);
-    double tEndCycle = tEnd / maxCycles;
+    const unsigned int nCycles = std::atoi(argv[12]);
+    double tEndCycle = tEnd / nCycles;
     const double dtSlice = tEndCycle / Ippl::Comm->size();
     const double dtFine = std::atof(argv[9]);
     const double dtCoarse = std::atof(argv[10]);
@@ -598,7 +599,7 @@ int main(int argc, char *argv[]){
         << endl
         << "Tolerance: " << tol
         //<< " Max. iterations: " << maxIter
-        << " Max. cycles: " << maxCycles
+        << " Max. cycles: " << nCycles
         << endl
         << "Np= " << nloc 
         << " Fourier modes = " << nmPIF
@@ -662,8 +663,6 @@ int main(int argc, char *argv[]){
 
     bool isConverged, isPreviousDomainConverged;
 
-
-
     Pcoarse->shapetype_m = argv[13];
     Pcoarse->shapedegree_m = std::atoi(argv[14]); 
     IpplTimings::startTimer(initializeShapeFunctionPIF);
@@ -675,7 +674,7 @@ int main(int argc, char *argv[]){
     
    
     unsigned int it = 0;
-    for (unsigned int nc=0; nc < maxCycles; nc++) {
+    for (unsigned int nc=0; nc < nCycles; nc++) {
         double tStartMySlice = (nc * tEndCycle) + (Ippl::Comm->rank() * dtSlice); 
         Pcoarse->time_m = tStartMySlice;
         Pcoarse->initializeParareal(Pbegin->R, Pbegin->P, isConverged,
@@ -686,7 +685,7 @@ int main(int argc, char *argv[]){
 
             //Run fine integrator in parallel
             IpplTimings::startTimer(finePropagator);
-            Pcoarse->BorisPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice, it+1, Bext);
+            Pcoarse->BorisPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice, nc+1, it+1, Bext);
             IpplTimings::stopTimer(finePropagator);
         
 
@@ -771,7 +770,7 @@ int main(int argc, char *argv[]){
 
             IpplTimings::startTimer(dumpData);
             //Pcoarse->writeError(Rerror, Perror, it+1);
-            Pcoarse->writelocalError(localRerror, localPerror, it+1);
+            Pcoarse->writelocalError(localRerror, localPerror, nc+1, it+1);
             //Pcoarse->dumpParticleData(it+1, Pend->R, Pend->P, "Parareal");
             IpplTimings::stopTimer(dumpData);
 

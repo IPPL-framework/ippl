@@ -450,7 +450,8 @@ public:
 
 
 
-    void dumpEnergy(size_type /*totalP*/, const unsigned int& iter, ParticleAttrib<Vector_t>& Ptemp) {
+    void dumpEnergy(size_type /*totalP*/, const unsigned int& nc, 
+                    const unsigned int& iter, ParticleAttrib<Vector_t>& Ptemp) {
        
 
         double potentialEnergy, kineticEnergy;
@@ -543,8 +544,10 @@ public:
         kineticEnergy = globaltemp;
 
         std::stringstream fname;
-        fname << "data/Energy_";
+        fname << "data/Energy_rank_";
         fname << Ippl::Comm->rank();
+        fname << "_nc_";
+        fname << nc;
         fname << "_iter_";
         fname << iter;
         fname << ".csv";
@@ -592,11 +595,13 @@ public:
         }
      }
 
-    void writelocalError(double Rerror, double Perror, unsigned int iter) {
+    void writelocalError(double Rerror, double Perror, unsigned int nc, unsigned int iter) {
         
             std::stringstream fname;
-            fname << "data/localError_";
+            fname << "data/localError_rank_";
             fname << Ippl::Comm->rank();
+            fname << "_nc_";
+            fname << nc;
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
@@ -977,7 +982,8 @@ public:
     void BorisPIF(ParticleAttrib<Vector_t>& Rtemp,
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
                      const double& dt, const bool& /*isConverged*/, 
-                     const double& tStartMySlice, const unsigned int& iter, const double& Bext) {
+                     const double& tStartMySlice, const unsigned& nc, 
+                     const unsigned int& iter, const double& Bext) {
     
         static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
@@ -997,7 +1003,7 @@ public:
 
         if((time_m == 0.0)) {
             IpplTimings::startTimer(dumpData);
-            dumpEnergy(this->getLocalNum(), iter, Ptemp);
+            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp);
             IpplTimings::stopTimer(dumpData);
         }
         double alpha = -0.5 * dt;
@@ -1074,7 +1080,7 @@ public:
             time_m += dt;
             
             IpplTimings::startTimer(dumpData);
-            dumpEnergy(this->getLocalNum(), iter, Ptemp);         
+            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp);         
             IpplTimings::stopTimer(dumpData);
     
         }
