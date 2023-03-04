@@ -183,13 +183,12 @@ int main(int argc, char *argv[]) {
             MPI_Allreduce(&valD, &globalD, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
             double errorD = std::sqrt(globalD);
 
+            // Compute relative Error
             if ((errorD < 1e-15) && (errorN < 1e-15)) {
                 err_hess[dim1][dim2] = 0.0;
             } else { 
                 err_hess[dim1][dim2] = errorN/errorD;
             }
-
-            err_hess[dim1][dim2] = errorN;
 
             if (Ippl::Comm->rank() == 0) {
                 std::cout << std::setprecision(16) << "Error (" << dim1+1 << "," << dim2+1 << "): "
