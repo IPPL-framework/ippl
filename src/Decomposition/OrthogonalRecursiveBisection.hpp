@@ -5,7 +5,7 @@ namespace ippl {
     void
     OrthogonalRecursiveBisection<T,Dim,M>::initialize(FieldLayout<Dim>& fl, 
                                                       UniformCartesian<T,Dim>& mesh,
-                                                      const Field<T,Dim>& rho) {
+                                                      const Field<T,Dim, M>& rho) {
        bf_m.initialize(mesh, fl);
        bf_m = rho;
 

@@ -43,7 +43,7 @@ namespace ippl {
         using view_type = typename detail::ViewType<T, Dim>::view_type;
 
         // Weight for reduction
-        Field<T,Dim> bf_m;
+        Field<T,Dim,M> bf_m;
 
         /*!
          * Initialize member field with mesh and field layout
@@ -52,7 +52,7 @@ namespace ippl {
          * @param rho Density field
          */
         void initialize(FieldLayout<Dim>& fl, UniformCartesian<T,Dim>& mesh,
-                        const Field<T,Dim>& rho);
+                        const Field<T,Dim,M>& rho);
 
         /*!
          * Performs scatter operation of particle positions in field (weights) and
