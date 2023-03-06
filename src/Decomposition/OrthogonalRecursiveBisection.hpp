@@ -22,6 +22,11 @@ namespace ippl {
        static IpplTimings::TimerRef tallReduce = IpplTimings::getTimer("allReduce");           
        static IpplTimings::TimerRef tscatter = IpplTimings::getTimer("scatterR");           
 
+       //MPI datatype
+       MPI_Datatype mpi_data= MPI_DATATYPE_NULL;
+       if constexpr ( std::is_same_v<T, float> ) mpi_data = MPI_FLOAT;
+       else if constexpr ( std::is_same_v<T, double> ) mpi_data = MPI_DOUBLE;
+       
        // Scattering of particle positions in field
        // In case of first repartition we know the density from the
        // analytical expression and we use that for load balancing
@@ -73,7 +78,7 @@ namespace ippl {
           // Communicate to all the reduced weights
           IpplTimings::startTimer(tallReduce);                                                    
           MPI_Allreduce(reducedRank.data(), reduced.data(), reducedRank.size(), 
-                                            MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+                                            mpi_data/*DOUBLE*/, MPI_SUM, Ippl::getComm());
           IpplTimings::stopTimer(tallReduce);                                                    
         
           // Find median of reduced weights
@@ -302,8 +307,8 @@ namespace ippl {
                 // Find nearest grid point
                 vector_type l = (r(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index = l;
-                Vector<double, Dim> whi = l - index;
-                Vector<double, Dim> wlo = 1.0 - whi;
+                Vector<T, Dim> whi = l - index;
+                Vector<T, Dim> wlo = 1.0 - whi;
 
                 const size_t i = index[0] - lDom[0].first() + nghost;
                 const size_t j = index[1] - lDom[1].first() + nghost;
