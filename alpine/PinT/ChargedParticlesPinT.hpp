@@ -185,22 +185,22 @@ public:
                             const double& Bext) {
 
         //Copy initial conditions as they are needed later
-        Kokkos::deep_copy(R0.getView(), R.getView());
+        Kokkos::deep_copy(R0.getView(), this->R.getView());
         Kokkos::deep_copy(P0.getView(), P.getView());
 
         //Get initial guess for ranks other than 0 by propagating the coarse solver
         if (Ippl::Comm->rank() > 0) {
-            BorisPIC(R, P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice, Bext); 
+            BorisPIC(this->R, P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice, Bext); 
         }
         
-        Ippl::Comm->barrier();
+        //Ippl::Comm->barrier();
         
-        Kokkos::deep_copy(Rbegin.getView(), R.getView());
+        Kokkos::deep_copy(Rbegin.getView(), this->R.getView());
         Kokkos::deep_copy(Pbegin.getView(), P.getView());
 
 
         //Run the coarse integrator to get the values at the end of the time slice 
-        Pcoarse->BorisPIC(R, P, ntCoarse, dtCoarse, tStartMySlice, Bext); 
+        BorisPIC(this->R, P, ntCoarse, dtCoarse, tStartMySlice, Bext); 
 
         isConverged = false;
         if(Ippl::Comm->rank() == 0) {
@@ -211,6 +211,40 @@ public:
         }
     }
 
+    void initializeParareal(ParticleAttrib<Vector_t>& Rbegin,
+                            ParticleAttrib<Vector_t>& Pbegin,
+                            bool& isConverged,
+                            bool& isPreviousDomainConverged,
+                            const unsigned int& ntCoarse,
+                            const double& dtCoarse,
+                            const double& tStartMySlice) {
+
+        //Copy initial conditions as they are needed later
+        Kokkos::deep_copy(R0.getView(), this->R.getView());
+        Kokkos::deep_copy(P0.getView(), P.getView());
+
+        //Get initial guess for ranks other than 0 by propagating the coarse solver
+        if (Ippl::Comm->rank() > 0) {
+            LeapFrogPIC(this->R, P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice); 
+        }
+        
+        //Ippl::Comm->barrier();
+        
+        Kokkos::deep_copy(Rbegin.getView(), this->R.getView());
+        Kokkos::deep_copy(Pbegin.getView(), P.getView());
+
+
+        //Run the coarse integrator to get the values at the end of the time slice 
+        LeapFrogPIC(this->R, P, ntCoarse, dtCoarse, tStartMySlice); 
+
+        isConverged = false;
+        if(Ippl::Comm->rank() == 0) {
+            isPreviousDomainConverged = true;
+        }
+        else {
+            isPreviousDomainConverged = false;
+        }
+    }
 
      void dumpLandauPIC() {
 
@@ -362,7 +396,7 @@ public:
                << ExAmp << endl;
     }
 
-    void dumpBumponTail(const unsigned int& iter) {
+    void dumpBumponTail(const unsigned int& nc, const unsigned int& iter) {
        
 
         double fieldEnergy = 0.0; 
@@ -430,8 +464,10 @@ public:
 
 
         std::stringstream fname;
-        fname << "data/FieldBumponTail_";
+        fname << "data/FieldBumponTail_rank_";
         fname << Ippl::Comm->rank();
+        fname << "_nc_";
+        fname << nc;
         fname << "_iter_";
         fname << iter;
         fname << ".csv";
@@ -914,7 +950,8 @@ public:
     void LeapFrogPIF(ParticleAttrib<Vector_t>& Rtemp,
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
                      const double& dt, const bool& /*isConverged*/, 
-                     const double& tStartMySlice, const unsigned int& iter) {
+                     const double& tStartMySlice, const unsigned& nc, 
+                     const unsigned int& iter) {
     
         static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
@@ -935,8 +972,8 @@ public:
         if((time_m == 0.0)) {
             IpplTimings::startTimer(dumpData);
             //dumpLandau(iter);         
-            dumpBumponTail(iter);         
-            dumpEnergy(this->getLocalNum(), iter, Ptemp);
+            dumpBumponTail(nc, iter);         
+            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp);
             IpplTimings::stopTimer(dumpData);
         }
         for (unsigned int it=0; it<nt; it++) {
@@ -971,8 +1008,8 @@ public:
             
             IpplTimings::startTimer(dumpData);
             //dumpLandau(iter);         
-            dumpBumponTail(iter);         
-            dumpEnergy(this->getLocalNum(), iter, Ptemp);         
+            dumpBumponTail(nc, iter);         
+            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp);         
             IpplTimings::stopTimer(dumpData);
     
         }

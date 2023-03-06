@@ -572,7 +572,7 @@ int main(int argc, char *argv[]){
         MPI_Wait(&request, MPI_STATUS_IGNORE);
     }
 
-    Ippl::Comm->barrier();
+    //Ippl::Comm->barrier();
     IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
     Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
@@ -599,7 +599,7 @@ int main(int argc, char *argv[]){
         << endl
         << "Tolerance: " << tol
         //<< " Max. iterations: " << maxIter
-        << " Max. cycles: " << nCycles
+        << " No. of cycles: " << nCycles
         << endl
         << "Np= " << nloc 
         << " Fourier modes = " << nmPIF
@@ -673,14 +673,15 @@ int main(int argc, char *argv[]){
     Pcoarse->initNUFFT(FLPIF);
     
    
-    unsigned int it = 0;
     for (unsigned int nc=0; nc < nCycles; nc++) {
         double tStartMySlice = (nc * tEndCycle) + (Ippl::Comm->rank() * dtSlice); 
         Pcoarse->time_m = tStartMySlice;
         Pcoarse->initializeParareal(Pbegin->R, Pbegin->P, isConverged,
                                     isPreviousDomainConverged, ntCoarse,
                                     dtCoarse, tStartMySlice, Bext);
-        while ((!isPreviousDomainConverged) || (!isConverged)) { 
+        unsigned int it = 0;
+        while (!isConverged) { 
+        //while ((!isPreviousDomainConverged) || (!isConverged)) { 
         //for (unsigned int it=0; it < maxIter; it++) {
 
             //Run fine integrator in parallel
@@ -703,8 +704,8 @@ int main(int argc, char *argv[]){
             IpplTimings::stopTimer(deepCopy);
             
             IpplTimings::startTimer(timeCommunication);
-            tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
-            int tagbool = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+            tag = 1100;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+            int tagbool = 1300;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
             
             if((Ippl::Comm->rank() > 0) && (!isPreviousDomainConverged)) {
                 size_type bufSize = Pbegin->packedSize(nloc);
@@ -744,7 +745,7 @@ int main(int argc, char *argv[]){
         
             IpplTimings::stopTimer(computeErrors);
 
-            if((Rerror <= tol) && (Perror <= tol)) {
+            if((Rerror <= tol) && (Perror <= tol) && isPreviousDomainConverged) {
                 isConverged = true;
             }
 
@@ -780,30 +781,38 @@ int main(int argc, char *argv[]){
             //}
         }
     
+        //std::cout << "Before barrier in cycle: " << nc+1 << "for rank: " << Ippl::Comm->rank() << std::endl;
         Ippl::Comm->barrier();
-        IpplTimings::startTimer(timeCommunication);
-        tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
-        
-        if(Ippl::Comm->rank() < Ippl::Comm->size()-1) {
-            size_type bufSize = Pend->packedSize(nloc);
-            buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
-            Ippl::Comm->recv(Ippl::Comm->rank()+1, tag, *Pend, *buf, bufSize, nloc);
-            buf->resetReadPos();
+        //msg << "Communication started in cycle: " << nc+1 << endl;
+        //std::cout << "Communication started in cycle: " << nc+1 << "for rank: " << Ippl::Comm->rank() << std::endl;
+        if((nCycles > 1) && (nc < (nCycles - 1))) {  
+            IpplTimings::startTimer(timeCommunication);
+            tag = 1000;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+            
+            if(Ippl::Comm->rank() < Ippl::Comm->size()-1) {
+                size_type bufSize = Pend->packedSize(nloc);
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
+                Ippl::Comm->recv(Ippl::Comm->rank()+1, tag, *Pend, *buf, bufSize, nloc);
+                buf->resetReadPos();
+            }
+            if(Ippl::Comm->rank() > 0) {
+                size_type bufSize = Pend->packedSize(nloc);
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
+                MPI_Request request;
+                Ippl::Comm->isend(Ippl::Comm->rank()-1, tag, *Pend, *buf, request, nloc);
+                buf->resetWritePos();
+                MPI_Wait(&request, MPI_STATUS_IGNORE);
+            }
+            IpplTimings::stopTimer(timeCommunication);
+            //std::cout << "Communication finished in cycle: " << nc+1 << "for rank: " << Ippl::Comm->rank() << std::endl;
+            //Ippl::Comm->barrier();
+
+            //msg << "Communication finished in cycle: " << nc+1 << endl;
+            IpplTimings::startTimer(deepCopy);
+            Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
+            Kokkos::deep_copy(Pcoarse->P.getView(), Pend->P.getView());
+            IpplTimings::stopTimer(deepCopy);
         }
-        if(Ippl::Comm->rank() > 0) {
-            size_type bufSize = Pend->packedSize(nloc);
-            buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
-            MPI_Request request;
-            Ippl::Comm->isend(Ippl::Comm->rank()-1, tag, *Pend, *buf, request, nloc);
-            buf->resetWritePos();
-            MPI_Wait(&request, MPI_STATUS_IGNORE);
-        }
-        IpplTimings::stopTimer(timeCommunication);
-        Ippl::Comm->barrier();
-        IpplTimings::startTimer(deepCopy);
-        Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
-        Kokkos::deep_copy(Pcoarse->P.getView(), Pend->P.getView());
-        IpplTimings::stopTimer(deepCopy);
     }
     msg << TestName << " Parareal: End." << endl;
     IpplTimings::stopTimer(mainTimer);
