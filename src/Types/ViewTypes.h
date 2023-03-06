@@ -20,6 +20,8 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <tuple>
+
 namespace ippl {
     /**
      * @file ViewTypes.h
@@ -47,6 +49,20 @@ namespace ippl {
             typedef T* type;
         };
 
+        template <unsigned Dim, typename T = size_t>
+        struct Coords {
+            // https://stackoverflow.com/a/53398815/2773311
+            // https://en.cppreference.com/w/cpp/utility/declval
+            typedef decltype(std::tuple_cat(
+                std::declval<typename Coords<1, T>::type>(),
+                std::declval<typename Coords<Dim - 1, T>::type>())) type;
+        };
+
+        template <typename T>
+        struct Coords<1, T> {
+            typedef std::tuple<T> type;
+        };
+
         /*!
          * View type for an arbitrary number of dimensions.
          * @tparam T view data type
@@ -61,17 +77,17 @@ namespace ippl {
         /*!
          * Multidimensional range policies.
          */
-        template <unsigned Dim>
+        template <unsigned Dim, typename Tag = void>
         struct RangePolicy {
-            typedef Kokkos::MDRangePolicy<Kokkos::Rank<Dim>> policy_type;
+            typedef Kokkos::MDRangePolicy<Tag, Kokkos::Rank<Dim>> policy_type;
         };
 
         /*!
          * Specialized range policy for one dimension.
          */
-        template <>
-        struct RangePolicy<1> {
-            typedef Kokkos::RangePolicy<> policy_type;
+        template <typename Tag>
+        struct RangePolicy<1, Tag> {
+            typedef Kokkos::RangePolicy<Tag> policy_type;
         };
 
         /*!
@@ -86,9 +102,10 @@ namespace ippl {
          *
          * @return A (MD)RangePolicy that spans the desired elements of the given view
          */
-        template <unsigned Dim, typename View>
-        typename RangePolicy<Dim>::policy_type getRangePolicy(const View& view, int shift = 0) {
-            using policy_type = typename RangePolicy<Dim>::policy_type;
+        template <unsigned Dim, typename Tag = void, typename View>
+        typename RangePolicy<Dim, Tag>::policy_type getRangePolicy(const View& view,
+                                                                   int shift = 0) {
+            using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
             using index_type  = typename policy_type::array_index_type;
             Kokkos::Array<index_type, Dim> begin, end;
             for (unsigned int d = 0; d < Dim; d++) {
@@ -97,6 +114,23 @@ namespace ippl {
             }
             return policy_type(begin, end);
         }
+
+#define CreateFunctor(contents)                                                          \
+    template <typename, typename>                                                        \
+    struct Functor;                                                                      \
+    template <typename... Idx, typename Acc>                                             \
+    struct Functor<std::tuple<Idx...>, Acc> {                                            \
+        static constexpr unsigned FunctorDim = sizeof...(Idx);                           \
+        using view_type = typename ::ippl::detail::ViewType<Acc, FunctorDim>::view_type; \
+        view_type view_m;                                                                \
+        KOKKOS_FUNCTION                                                                  \
+        Functor(view_type v)                                                             \
+            : view_m(v) {}                                                               \
+        contents                                                                         \
+    };
+
+#define CreateTaggedFunctor(tag) \
+    KOKKOS_INLINE_FUNCTION void operator()(const tag&, const Idx... args, Acc& acc) const;
 
         /*!
          * Empty function for general write.

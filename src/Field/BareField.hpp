@@ -140,22 +140,25 @@ namespace ippl {
         write(inf.getDestination());
     }
 
-#define DefineReduction(fun, name, op, MPI_Op)                                             \
-    template <typename T, unsigned Dim>                                                    \
-    T BareField<T, Dim>::name(int nghost) const {                                          \
-        PAssert_LE(nghost, nghost_m);                                                      \
-        T temp = 0.0;                                                                      \
-        Kokkos::parallel_reduce(                                                           \
-            "fun", detail::getRangePolicy<Dim>(dview_m, nghost_m - nghost),                \
-            KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) { \
-                T myVal = dview_m(i, j, k);                                                \
-                op;                                                                        \
-            },                                                                             \
-            Kokkos::fun<T>(temp));                                                         \
-        T globaltemp      = 0.0;                                                           \
-        MPI_Datatype type = get_mpi_datatype<T>(temp);                                     \
-        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());               \
-        return globaltemp;                                                                 \
+#define DefineReduction(fun, name, op, MPI_Op)                                                   \
+    template <typename T, unsigned Dim>                                                          \
+    template <typename... Idx, typename Acc>                                                     \
+    KOKKOS_INLINE_FUNCTION void BareField<T, Dim>::Functor<std::tuple<Idx...>, Acc>::operator()( \
+        const typename BareField<T, Dim>::fun&, const Idx... args, Acc& valL) const {            \
+        T myVal = view_m(args...);                                                               \
+        op;                                                                                      \
+    }                                                                                            \
+    template <typename T, unsigned Dim>                                                          \
+    T BareField<T, Dim>::name(int nghost) const {                                                \
+        PAssert_LE(nghost, nghost_m);                                                            \
+        T temp = 0.0;                                                                            \
+        Kokkos::parallel_reduce(                                                                 \
+            "fun", detail::getRangePolicy<Dim, fun>(dview_m, nghost_m - nghost),                 \
+            Functor<typename detail::Coords<Dim>::type, T>{dview_m}, Kokkos::fun<T>(temp));      \
+        T globaltemp      = 0.0;                                                                 \
+        MPI_Datatype type = get_mpi_datatype<T>(temp);                                           \
+        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());                     \
+        return globaltemp;                                                                       \
     }
 
     DefineReduction(Sum, sum, valL += myVal, MPI_SUM)
