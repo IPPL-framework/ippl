@@ -18,14 +18,25 @@ struct Coords<T, 1> {
 	using type = std::tuple<T>;
 };
 
-// stdlib specialization (unclear whether this is needed)
-/*template <class T, std::size_t Size> struct std::tuple_size<Kokkos::Array<T, Size>>
-    : public integral_constant<std::size_t, Size> {};*/
+template <typename View, typename Coords, size_t... Idx>
+KOKKOS_INLINE_FUNCTION
+constexpr decltype(auto)
+apply_impl(const View& view, const Coords& coords, std::index_sequence<Idx...>) {
+    return view(coords[Idx]...);
+}
 
-template <typename, typename, unsigned, typename> struct Reducer;
+template <unsigned Dim, typename View, typename Coords>
+KOKKOS_INLINE_FUNCTION
+constexpr decltype(auto)
+apply(const View& view, const Coords& coords) {
+    using Indices = std::make_index_sequence<Dim>;
+    return apply_impl(view, coords, Indices{});
+}
 
-template <typename... T, size_t... Idx, unsigned Dim, typename R>
-struct Reducer<std::tuple<T...>, std::index_sequence<Idx...>, Dim, R> {
+template <typename, unsigned, typename> struct Reducer;
+
+template <typename... T, unsigned Dim, typename R>
+struct Reducer<std::tuple<T...>, Dim, R> {
 	using view_type = Kokkos::View<typename NPtr<R, Dim>::type>;
 	view_type view_m;
 
@@ -37,9 +48,10 @@ struct Reducer<std::tuple<T...>, std::index_sequence<Idx...>, Dim, R> {
 		using T1 = std::tuple_element_t<0, std::tuple<T...>>;
 		T1 args[sizeof...(T)] = {xs...};
 
-		res += view_m(args[Idx]...);
+		//res += view_m(args[Idx]...);
+        res += apply<Dim>(view_m, args);
 	}
 };
 
 template <unsigned Dim, typename R, typename C=unsigned int>
-using ConvenientReducer = Reducer<typename Coords<C, Dim>::type, std::make_index_sequence<Dim>, Dim, R>;
+using ConvenientReducer = Reducer<typename Coords<C, Dim>::type, Dim, R>;
