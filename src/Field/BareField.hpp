@@ -111,9 +111,7 @@ namespace ippl {
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
         Kokkos::parallel_for(
             "BareField::operator=(T)", detail::getRangePolicy<Dim>(dview_m),
-            KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                dview_m(i, j, k) = x;
-            });
+            KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) { dview_m(args...) = x; });
         return *this;
     }
 
@@ -125,8 +123,8 @@ namespace ippl {
         Kokkos::parallel_for(
             "BareField::operator=(const Expression&)",
             detail::getRangePolicy<Dim>(dview_m, nghost_m),
-            KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                dview_m(i, j, k) = expr_(i, j, k);
+            KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
+                dview_m(args...) = expr_(args...);
             });
         return *this;
     }
