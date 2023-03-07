@@ -45,7 +45,7 @@ namespace ippl {
     FDTDSolver<Tfields, Dim, M, C>::~FDTDSolver() {};
 
     template <typename Tfields, unsigned Dim, class M, class C>
-    FDTDSolver<Tfields, Dim, M, C>::solve() { 
+    void FDTDSolver<Tfields, Dim, M, C>::solve() { 
 
         // physical constant
         double c = 299792458.0;
@@ -81,8 +81,9 @@ namespace ippl {
 
         const int nghost_phi = phiN_m.getNghost();
         const int nghost_a = aN_m.getNghost();
-
         const auto& ldom = layout_mp->getLocalNDIndex(); 
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         // compute scalar potential at next time-step using Finite Differences
         Kokkos::parallel_for("Scalar potential update",
@@ -199,7 +200,7 @@ namespace ippl {
     };
 
     template <typename Tfields, unsigned Dim, class M, class C>
-    FDTDSolver<Tfields, Dim, M, C>::field_evaluation() { 
+    void FDTDSolver<Tfields, Dim, M, C>::field_evaluation() { 
         
         // magnetic field is the curl of the vector potential
         // we take the average of the potential at N and N+1
@@ -211,7 +212,7 @@ namespace ippl {
     };
 
     template <typename Tfields, unsigned Dim, class M, class C>
-    FDTDSolver<Tfields, Dim, M, C>::initialize() { 
+    void FDTDSolver<Tfields, Dim, M, C>::initialize() { 
 
         // get layout and mesh
         layout_mp = &(this->rhoN_mp->getLayout());
