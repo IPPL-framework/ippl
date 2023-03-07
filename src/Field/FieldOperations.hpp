@@ -131,9 +131,9 @@ namespace ippl {
         bcField.apply(u);
         M& mesh = u.get_mesh();
         typename M::vector_type hvector(0);
-        hvector[0] = 1.0 / std::pow(mesh.getMeshSpacing(0), 2);
-        hvector[1] = 1.0 / std::pow(mesh.getMeshSpacing(1), 2);
-        hvector[2] = 1.0 / std::pow(mesh.getMeshSpacing(2), 2);
+        for (unsigned d = 0; d < Dim; d++) {
+            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
+        }
         return detail::meta_laplace<Field<T, Dim, M, C>>(u, hvector);
     }
 

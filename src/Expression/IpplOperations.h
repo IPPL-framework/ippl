@@ -18,12 +18,27 @@
 #ifndef IPPL_OPERATIONS_H
 #define IPPL_OPERATIONS_H
 
+#include <tuple>
+
 #include "Types/Vector.h"
 
 namespace ippl {
     /*!
      * @file IpplOperations.h
      */
+
+    template <typename View, typename Coords, size_t... Idx>
+    KOKKOS_INLINE_FUNCTION constexpr decltype(auto) apply_impl(const View& view,
+                                                               const Coords& coords,
+                                                               std::index_sequence<Idx...>) {
+        return view(coords[Idx]...);
+    }
+
+    template <unsigned Dim, typename View, typename Coords>
+    KOKKOS_INLINE_FUNCTION constexpr decltype(auto) apply(const View& view, const Coords& coords) {
+        using Indices = std::make_index_sequence<Dim>;
+        return apply_impl(view, coords, Indices{});
+    }
 
 #define DefineUnaryOperation(fun, name, op1, op2)                              \
     template <typename E>                                                      \
@@ -50,30 +65,28 @@ namespace ippl {
 
     /// @cond
 
-    // clang-format off
-    DefineUnaryOperation(UnaryMinus, operator-, -u_m[i],  -u_m(args...))
-    DefineUnaryOperation(UnaryPlus,  operator+, +u_m[i],  +u_m(args...))
-    DefineUnaryOperation(BitwiseNot, operator~, ~u_m[i],  ~u_m(args...))
-    DefineUnaryOperation(Not,        operator!, !u_m[i],  !u_m(args...))
+    DefineUnaryOperation(UnaryMinus, operator-, -u_m[i], -u_m(args...))
+    DefineUnaryOperation(UnaryPlus, operator+, +u_m[i], +u_m(args...))
+    DefineUnaryOperation(BitwiseNot, operator~, ~u_m[i], ~u_m(args...))
+    DefineUnaryOperation(Not, operator!, !u_m[i], !u_m(args...))
 
-    DefineUnaryOperation(ArcCos, acos,  acos(u_m[i]),  acos(u_m(args...)))
-    DefineUnaryOperation(ArcSin, asin,  asin(u_m[i]),  asin(u_m(args...)))
-    DefineUnaryOperation(ArcTan, atan,  atan(u_m[i]),  atan(u_m(args...)))
-    DefineUnaryOperation(Ceil,   ceil,  ceil(u_m[i]),  ceil(u_m(args...)))
-    DefineUnaryOperation(Cos,    cos,   cos(u_m[i]),   cos(u_m(args...)))
-    DefineUnaryOperation(HypCos, cosh,  cosh(u_m[i]),  cosh(u_m(args...)))
-    DefineUnaryOperation(Exp,    exp,   exp(u_m[i]),   exp(u_m(args...)))
-    DefineUnaryOperation(Fabs,   fabs,  fabs(u_m[i]),  fabs(u_m(args...)))
-    DefineUnaryOperation(Floor,  floor, floor(u_m[i]), floor(u_m(args...)))
-    DefineUnaryOperation(Log,    log,   log(u_m[i]),   log(u_m(args...)))
-    DefineUnaryOperation(Log10,  log10, log10(u_m[i]), log10(u_m(args...)))
-    DefineUnaryOperation(Sin,    sin,   sin(u_m[i]),   sin(u_m(args...)))
-    DefineUnaryOperation(HypSin, sinh,  sinh(u_m[i]),  sinh(u_m(args...)))
-    DefineUnaryOperation(Sqrt,   sqrt,  sqrt(u_m[i]),  sqrt(u_m(args...)))
-    DefineUnaryOperation(Tan,    tan,   tan(u_m[i]),   tan(u_m(args...)))
-    DefineUnaryOperation(HypTan, tanh,  tanh(u_m[i]),  tanh(u_m(args...)))
-    DefineUnaryOperation(Erf,    erf,   erf(u_m[i]),   erf(u_m(args...)))
-// clang-format on
+    DefineUnaryOperation(ArcCos, acos, acos(u_m[i]), acos(u_m(args...)))
+    DefineUnaryOperation(ArcSin, asin, asin(u_m[i]), asin(u_m(args...)))
+    DefineUnaryOperation(ArcTan, atan, atan(u_m[i]), atan(u_m(args...)))
+    DefineUnaryOperation(Ceil, ceil, ceil(u_m[i]), ceil(u_m(args...)))
+    DefineUnaryOperation(Cos, cos, cos(u_m[i]), cos(u_m(args...)))
+    DefineUnaryOperation(HypCos, cosh, cosh(u_m[i]), cosh(u_m(args...)))
+    DefineUnaryOperation(Exp, exp, exp(u_m[i]), exp(u_m(args...)))
+    DefineUnaryOperation(Fabs, fabs, fabs(u_m[i]), fabs(u_m(args...)))
+    DefineUnaryOperation(Floor, floor, floor(u_m[i]), floor(u_m(args...)))
+    DefineUnaryOperation(Log, log, log(u_m[i]), log(u_m(args...)))
+    DefineUnaryOperation(Log10, log10, log10(u_m[i]), log10(u_m(args...)))
+    DefineUnaryOperation(Sin, sin, sin(u_m[i]), sin(u_m(args...)))
+    DefineUnaryOperation(HypSin, sinh, sinh(u_m[i]), sinh(u_m(args...)))
+    DefineUnaryOperation(Sqrt, sqrt, sqrt(u_m[i]), sqrt(u_m(args...)))
+    DefineUnaryOperation(Tan, tan, tan(u_m[i]), tan(u_m(args...)))
+    DefineUnaryOperation(HypTan, tanh, tanh(u_m[i]), tanh(u_m(args...)))
+    DefineUnaryOperation(Erf, erf, erf(u_m[i]), erf(u_m(args...)))
 /// @endcond
 
 /*!
@@ -124,35 +137,30 @@ namespace ippl {
     }
 
     /// @cond
-    // clang-format off
-    DefineBinaryOperation(Add,      operator+,  u_m[i] + v_m[i],  u_m(args...) + v_m(args...))
-    DefineBinaryOperation(Subtract, operator-,  u_m[i] - v_m[i],  u_m(args...) - v_m(args...))
-    DefineBinaryOperation(Multiply, operator*,  u_m[i] * v_m[i],  u_m(args...) * v_m(args...))
-    DefineBinaryOperation(Divide,   operator/,  u_m[i] / v_m[i],  u_m(args...) / v_m(args...))
-    DefineBinaryOperation(Mod,      operator%,  u_m[i] % v_m[i],  u_m(args...) % v_m(args...))
-    DefineBinaryOperation(LT,       operator<,  u_m[i] < v_m[i],  u_m(args...) < v_m(args...))
-    DefineBinaryOperation(LE,       operator<=, u_m[i] <= v_m[i], u_m(args...) <= v_m(args...))
-    DefineBinaryOperation(GT,       operator>,  u_m[i] > v_m[i],  u_m(args...) > v_m(args...))
-    DefineBinaryOperation(GE,       operator>=, u_m[i] >= v_m[i], u_m(args...) >= v_m(args...))
-    DefineBinaryOperation(EQ,       operator==, u_m[i] == v_m[i], u_m(args...) == v_m(args...))
-    DefineBinaryOperation(NEQ,      operator!=, u_m[i] != v_m[i], u_m(args...) != v_m(args...))
-    DefineBinaryOperation(And,      operator&&, u_m[i] && v_m[i], u_m(args...) && v_m(args...))
-    DefineBinaryOperation(Or,       operator||, u_m[i] || v_m[i], u_m(args...) || v_m(args...))
+    DefineBinaryOperation(Add, operator+, u_m[i] + v_m[i], u_m(args...) + v_m(args...))
+    DefineBinaryOperation(Subtract, operator-, u_m[i] - v_m[i], u_m(args...) - v_m(args...))
+    DefineBinaryOperation(Multiply, operator*, u_m[i] * v_m[i], u_m(args...) * v_m(args...))
+    DefineBinaryOperation(Divide, operator/, u_m[i] / v_m[i], u_m(args...) / v_m(args...))
+    DefineBinaryOperation(Mod, operator%, u_m[i] % v_m[i], u_m(args...) % v_m(args...))
+    DefineBinaryOperation(LT, operator<, u_m[i] < v_m[i], u_m(args...) < v_m(args...))
+    DefineBinaryOperation(LE, operator<=, u_m[i] <= v_m[i], u_m(args...) <= v_m(args...))
+    DefineBinaryOperation(GT, operator>, u_m[i] > v_m[i], u_m(args...) > v_m(args...))
+    DefineBinaryOperation(GE, operator>=, u_m[i] >= v_m[i], u_m(args...) >= v_m(args...))
+    DefineBinaryOperation(EQ, operator==, u_m[i] == v_m[i], u_m(args...) == v_m(args...))
+    DefineBinaryOperation(NEQ, operator!=, u_m[i] != v_m[i], u_m(args...) != v_m(args...))
+    DefineBinaryOperation(And, operator&&, u_m[i] && v_m[i], u_m(args...) && v_m(args...))
+    DefineBinaryOperation(Or, operator||, u_m[i] || v_m[i], u_m(args...) || v_m(args...))
 
     DefineBinaryOperation(BitwiseAnd, operator&, u_m[i] & v_m[i], u_m(args...) & v_m(args...))
-    DefineBinaryOperation(BitwiseOr,  operator|, u_m[i] | v_m[i], u_m(args...) | v_m(args...))
+    DefineBinaryOperation(BitwiseOr, operator|, u_m[i] | v_m[i], u_m(args...) | v_m(args...))
     DefineBinaryOperation(BitwiseXor, operator^, u_m[i] ^ v_m[i], u_m(args...) ^ v_m(args...))
 
-    DefineBinaryOperation(Copysign, copysign, copysign(u_m[i],v_m[i]),
-                          copysign(u_m(args...),v_m(args...)))
-    DefineBinaryOperation(Ldexp, ldexp, ldexp(u_m[i],v_m[i]),
-                          ldexp(u_m(args...),v_m(args...)))
-    DefineBinaryOperation(Fmod, fmod, fmod(u_m[i],v_m[i]),
-                          fmod(u_m(args...),v_m(args...)))
-    DefineBinaryOperation(Pow, pow, pow(u_m[i],v_m[i]), pow(u_m(args...),v_m(args...)))
-    DefineBinaryOperation(ArcTan2, atan2, atan2(u_m[i],v_m[i]),
-                          atan2(u_m(args...),v_m(args...)))
-    // clang-format on
+    DefineBinaryOperation(Copysign, copysign, copysign(u_m[i], v_m[i]),
+                          copysign(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(Ldexp, ldexp, ldexp(u_m[i], v_m[i]), ldexp(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(Fmod, fmod, fmod(u_m[i], v_m[i]), fmod(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(Pow, pow, pow(u_m[i], v_m[i]), pow(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(ArcTan2, atan2, atan2(u_m[i], v_m[i]), atan2(u_m(args...), v_m(args...)))
     /// @endcond
 
     namespace detail {
@@ -324,12 +332,33 @@ namespace ippl {
                 , hvector_m(hvector) {}
 
             /*
-             * 3-dimensional Laplacian
+             * n-dimensional Laplacian
              */
-            KOKKOS_INLINE_FUNCTION auto operator()(size_t i, size_t j, size_t k) const {
-                return hvector_m[0] * (u_m(i + 1, j, k) - 2 * u_m(i, j, k) + u_m(i - 1, j, k))
-                       + hvector_m[1] * (u_m(i, j + 1, k) - 2 * u_m(i, j, k) + u_m(i, j - 1, k))
-                       + hvector_m[2] * (u_m(i, j, k + 1) - 2 * u_m(i, j, k) + u_m(i, j, k - 1));
+            template <typename... Idx>
+            KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                using T                = typename E::Mesh_t::value_type;
+                T res                  = 0;
+                constexpr unsigned Dim = E::Mesh_t::Dimension;
+                for (unsigned d = 0; d < Dim; d++) {
+                    index_type coords[Dim] = {args...};
+                    T center               = apply<Dim>(u_m, coords);
+
+                    coords[d] -= 1;
+                    T left = apply<Dim>(u_m, coords);
+
+                    coords[d] += 2;
+                    T right = apply<Dim>(u_m, coords);
+
+                    res += hvector_m[d] * (left - 2 * center + right);
+                }
+                return res;
+
+                /*
+                return hvector_m[0] * (u_m(i+1, j,   k)   - 2 * u_m(i, j, k) + u_m(i-1, j,   k  )) +
+                       hvector_m[1] * (u_m(i  , j+1, k)   - 2 * u_m(i, j, k) + u_m(i  , j-1, k  )) +
+                       hvector_m[2] * (u_m(i  , j  , k+1) - 2 * u_m(i, j, k) + u_m(i  , j  , k-1));
+                       */
             }
 
         private:
