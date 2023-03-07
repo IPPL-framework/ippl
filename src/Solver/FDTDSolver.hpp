@@ -47,16 +47,22 @@ namespace ippl {
     template <typename Tfields, unsigned Dim, class M, class C>
     FDTDSolver<Tfields, Dim, M, C>::solve() { 
 
+        // physical constant
+        double c = 299792458.0;
+        double mu0 = 1.25663706212e-6;
+        double epsilon0 = 1.0/(c * c * mu0);
+
         // finite differences constants
-        double a1 = 2.0 * (1.0 - pow(c*dt/hr_m[0], 2) - pow(c*dt/hr_m[1], 2) - pow(c*dt/hr_m[2], 2));
-        double a2 = pow(c*dt/hr_m[0], 2); // a3 = a2
-        double a4 = pow(c*dt/hr_m[1], 2); // a5 = a4
-        double a6 = pow(c*dt/hr_m[2], 2); // a7 = a6
-        double a8 = pow(c*dt, 2);
+        double a1 = 2.0 * (1.0 - std::pow(c*dt/hr_m[0], 2)
+                    - std::pow(c*dt/hr_m[1], 2) - std::pow(c*dt/hr_m[2], 2));
+        double a2 = std::pow(c*dt/hr_m[0], 2); // a3 = a2
+        double a4 = std::pow(c*dt/hr_m[1], 2); // a5 = a4
+        double a6 = std::pow(c*dt/hr_m[2], 2); // a7 = a6
+        double a8 = std::pow(c*dt, 2);
 
         // 1st order absorbing boundary conditions constants
         double beta0[3] = {(c*dt - hr_m[0])/(c*dt + hr_m[0]), (c*dt - hr_m[1])/(c*dt + hr_m[1]),
-                           (c*dt - hr_m[2])/(c*dt + hr_m[2]);
+                           (c*dt - hr_m[2])/(c*dt + hr_m[2])};
         double beta1[3] = {2.0 * dt * hr_m[0]/(c*dt + hr_m[0]), 2.0 * dt * hr_m[1]/(c*dt + hr_m[1]),
                            2.0 * dt * hr_m[2]/(c*dt + hr_m[2])};
         double beta2[3] = {-1.0, -1.0, -1.0};
@@ -147,7 +153,7 @@ namespace ippl {
                     double interior = -view_aNm1(i,j,k)[gd] + a1*view_aN(i,j,k)[gd] +
                                       a2*(view_aN(i+1,j,k)[gd] + view_aN(i-1,j,k)[gd]) +
                                       a4*(view_aN(i,j+1,k)[gd] + view_aN(i,j-1,k)[gd]) +
-                                      a6*(view_aN(i,j,k+1[gd]) + view_aN(i,j,k-1)[gd]) +
+                                      a6*(view_aN(i,j,k+1)[gd] + view_aN(i,j,k-1)[gd]) +
                                       a8*(- view_JN(i,j,k)[gd] * mu0);
 
                     // boundary values: 1st order Absorbing Boundary Conditions
@@ -214,9 +220,8 @@ namespace ippl {
         // get mesh spacing, domain, and mesh size
         hr_m = mesh_mp->getMeshSpacing();
         domain_m = layout_mp->getDomain();
-        for (unsigned int i = 0; i < Dim; ++i) }
+        for (unsigned int i = 0; i < Dim; ++i)
             nr_m[i] = domain_m[i].length();
-        }
 
         // initialize fields
         phiNm1_m.initialize(*mesh_mp, *layout_mp);
