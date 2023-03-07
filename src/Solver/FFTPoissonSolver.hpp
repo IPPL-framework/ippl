@@ -730,11 +730,9 @@ namespace ippl {
                             }
 
                             double Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
-                              
-                            if(Dr != 0.0)
-                                view_g(i,j,k) = -(I * kVec[gd])*viewR(i,j,k);
-                            else
-                                view_g(i,j,k) = 0.0;
+
+                            bool isNotZero = (Dr != 0.0);
+                            view_g(i,j,k) = - isNotZero * (I * kVec[gd])*viewR(i,j,k);
                     });
 
                     // start a timer
@@ -944,12 +942,14 @@ namespace ippl {
                         double s = (t*t) + (u*u) + (v*v);
                         s = std::sqrt(s);
 
-                        view_g(i,j,k) = -((2-(L_sum*L_sum*s*s))*std::cos(L_sum*s) + 2*L_sum*s*std::sin(L_sum*s) - 2)/(2*s*s*s*s);
-                  
-                        // if (0,0,0), assign analytical limit
-                        if ((ig == 0 && jg == 0 && kg == 0)) {
-                            view_g(i,j,k) = -L_sum * L_sum * L_sum * L_sum / 8.0;
-                        }
+                        // assign value and replace with analytic limit at origin (0,0,0)
+
+                        bool isOrig = ((ig == 0 && jg == 0 && kg == 0));
+                        double analyticLim = -L_sum * L_sum * L_sum * L_sum / 8.0;
+                        double value = -((2-(L_sum*L_sum*s*s))*std::cos(L_sum*s)
+                                       + 2*L_sum*s*std::sin(L_sum*s) - 2)/(2*s*s*s*s + isOrig * 1.0);
+
+                        view_g(i,j,k) = (1.0 - isOrig) * value + isOrig * analyticLim;
 	                });
 
                 }
