@@ -21,11 +21,12 @@
 #include "FieldLayout/FieldLayout.h"
 #include "Types/Vector.h"
 #include "Meshes/UniformCartesian.h"
+#include "Field/HaloCells.h"
 
 namespace ippl {
 
     template <typename Tfields, unsigned Dim, class M, class C>
-    class FDTDSolver<Tfields, Dim, M, C>::FDTDSolver(Field_t charge, VField_t current, double timestep) {
+    FDTDSolver<Tfields, Dim, M, C>::FDTDSolver(Field_t charge, VField_t current, double timestep) {
 
         // set the rho and J fields to be references to charge and current
         // since charge and current deposition will happen at each timestep
@@ -41,10 +42,10 @@ namespace ippl {
     }
 
     template <typename Tfields, unsigned Dim, class M, class C>
-    class FDTDSolver<Tfields, Dim, M, C>::~FDTDSolver() {};
+    FDTDSolver<Tfields, Dim, M, C>::~FDTDSolver() {};
 
     template <typename Tfields, unsigned Dim, class M, class C>
-    class FDTDSolver<Tfields, Dim, M, C>::solve() { 
+    FDTDSolver<Tfields, Dim, M, C>::solve() { 
 
         // finite differences constants
         double a1 = 2.0 * (1.0 - pow(c*dt/hr_m[0], 2) - pow(c*dt/hr_m[1], 2) - pow(c*dt/hr_m[2], 2));
@@ -192,7 +193,7 @@ namespace ippl {
     };
 
     template <typename Tfields, unsigned Dim, class M, class C>
-    class FDTDSolver<Tfields, Dim, M, C>::field_evaluation() { 
+    FDTDSolver<Tfields, Dim, M, C>::field_evaluation() { 
         
         // magnetic field is the curl of the vector potential
         // we take the average of the potential at N and N+1
@@ -204,7 +205,7 @@ namespace ippl {
     };
 
     template <typename Tfields, unsigned Dim, class M, class C>
-    class FDTDSolver<Tfields, Dim, M, C>::initialize() { 
+    FDTDSolver<Tfields, Dim, M, C>::initialize() { 
 
         // get layout and mesh
         layout_mp = &(this->rhoN_mp->getLayout());
