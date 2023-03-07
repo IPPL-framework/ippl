@@ -68,6 +68,7 @@ namespace ippl {
         const int nghost_phi = phiN_m.getNghost();
         const int nghost_a = aN_m.getNghost();
 
+        const auto& ldom = layout_mp->getLocalNDIndex(); 
 
         // compute scalar potential at next time-step using Finite Differences
         Kokkos::parallel_for("Scalar potential update",
@@ -79,6 +80,40 @@ namespace ippl {
                                      a4*(view_phiN(i,j+1,k) + view_phiN(i,j-1,k)) +
                                      a6*(view_phiN(i,j,k+1) + view_phiN(i,j,k-1)) +
                                      a8*(- view_rhoN(i,j,k) / epsilon0);
+
+                // global indices
+                const int ig = i + ldom[0].first() - nghost_phi;
+                const int jg = j + ldom[1].first() - nghost_phi;
+                const int kg = k + ldom[2].first() - nghost_phi;
+
+                // set 1st order Absorbing Boundary Conditions
+                if (ig == 0) {
+                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i+1,j,k)) +
+                                         beta1 * (view_phiN(i,j,k) + view_phiN(i+1,j,k)) + 
+                                         beta2 * (view_phiNm1(i+1,j,k));
+                } else if (jg == 0) {
+                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i,j+1,k)) +
+                                         beta1 * (view_phiN(i,j,k) + view_phiN(i,j+1,k)) + 
+                                         beta2 * (view_phiNm1(i,j+1,k));
+                } else if (kg == 0) {
+                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i,j,k+1)) +
+                                         beta1 * (view_phiN(i,j,k) + view_phiN(i,j,k+1)) + 
+                                         beta2 * (view_phiNm1(i,j,k+1));
+                }
+
+                if (ig == nr_m[0] - 1) {
+                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i-1,j,k)) +
+                                         beta1 * (view_phiN(i,j,k) + view_phiN(i-1,j,k)) + 
+                                         beta2 * (view_phiNm1(i-1,j,k));
+                } else if (jg == nr_m[1] - 1) {
+                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i,j-1,k)) +
+                                         beta1 * (view_phiN(i,j,k) + view_phiN(i,j-1,k)) + 
+                                         beta2 * (view_phiNm1(i,j-1,k));
+                } else if (kg == nr_m[2] - 1) {
+                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i,j,k-1)) +
+                                         beta1 * (view_phiN(i,j,k) + view_phiN(i,j,k-1)) + 
+                                         beta2 * (view_phiNm1(i,j,k-1));
+                }
         });
 
 
@@ -93,6 +128,40 @@ namespace ippl {
                                              a4*(view_aN(i,j+1,k)[gd] + view_aN(i,j-1,k)[gd]) +
                                              a6*(view_aN(i,j,k+1[gd]) + view_aN(i,j,k-1)[gd]) +
                                              a8*(- view_JN(i,j,k)[gd] * mu0);
+
+                        // global indices
+                        const int ig = i + ldom[0].first() - nghost_a;
+                        const int jg = j + ldom[1].first() - nghost_a;
+                        const int kg = k + ldom[2].first() - nghost_a;
+
+                        // set 1st order Absorbing Boundary Conditions
+                        if (ig == 0) {
+                            view_aNp1(i,j,k)[gd] = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i+1,j,k)[gd])) +
+                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i+1,j,k)[gd])) + 
+                                               beta2 * (view_aNm1(i+1,j,k)[gd]));
+                        } else if (jg == 0) {
+                            view_aNp1(i,j,k)[gd]) = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i,j+1,k)[gd])) +
+                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i,j+1,k)[gd])) + 
+                                               beta2 * (view_aNm1(i,j+1,k)[gd]));
+                        } else if (kg == 0) {
+                            view_aNp1(i,j,k)[gd]) = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i,j,k+1)[gd]) +
+                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i,j,k+1)[gd]) + 
+                                               beta2 * (view_aNm1(i,j,k+1)[gd]);
+                        }
+
+                        if (ig == nr_m[0] - 1) {
+                            view_aNp1(i,j,k)[gd]) = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i-1,j,k)[gd])) +
+                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i-1,j,k)[gd])) + 
+                                               beta2 * (view_aNm1(i-1,j,k)[gd]));
+                        } else if (jg == nr_m[1] - 1) {
+                            view_aNp1(i,j,k)[gd]) = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i,j-1,k)[gd])) +
+                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i,j-1,k)[gd])) + 
+                                               beta2 * (view_aNm1(i,j-1,k)[gd]));
+                        } else if (kg == nr_m[2] - 1) {
+                            view_aNp1(i,j,k)[gd]) = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i,j,k-1)[gd]) +
+                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i,j,k-1)[gd]) + 
+                                               beta2 * (view_aNm1(i,j,k-1)[gd]);
+                        }
             });
         }
 
