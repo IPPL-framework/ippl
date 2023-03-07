@@ -46,12 +46,19 @@ namespace ippl {
     template <typename Tfields, unsigned Dim, class M, class C>
     class FDTDSolver<Tfields, Dim, M, C>::solve() { 
 
-        // define some constants
+        // finite differences constants
         double a1 = 2.0 * (1.0 - pow(c*dt/hr_m[0], 2) - pow(c*dt/hr_m[1], 2) - pow(c*dt/hr_m[2], 2));
         double a2 = pow(c*dt/hr_m[0], 2); // a3 = a2
         double a4 = pow(c*dt/hr_m[1], 2); // a5 = a4
         double a6 = pow(c*dt/hr_m[2], 2); // a7 = a6
         double a8 = pow(c*dt, 2);
+
+        // 1st order absorbing boundary conditions constants
+        double beta0[3] = {(c*dt - hr_m[0])/(c*dt + hr_m[0]), (c*dt - hr_m[1])/(c*dt + hr_m[1]),
+                           (c*dt - hr_m[2])/(c*dt + hr_m[2]);
+        double beta1[3] = {2.0 * dt * hr_m[0]/(c*dt + hr_m[0]), 2.0 * dt * hr_m[1]/(c*dt + hr_m[1]),
+                           2.0 * dt * hr_m[2]/(c*dt + hr_m[2])};
+        double beta2[3] = {-1.0, -1.0, -1.0};
 
         // preliminaries for Kokkos loops (ghost cells and views)
         auto view_phiN = phiN_m.getView();
@@ -75,45 +82,49 @@ namespace ippl {
                 mdrange_type({nghost_phi, nghost_phi, nghost_phi},
                 {view_phiN.extent(0)-nghost_phi, view_phiN.extent(1)-nghost_phi, view_phiN.extent(2)-nghost_phi}),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                view_phiNp1(i,j,k) = -view_phiNm1(i,j,k) + a1*view_phiN(i,j,k) +
-                                     a2*(view_phiN(i+1,j,k) + view_phiN(i-1,j,k)) +
-                                     a4*(view_phiN(i,j+1,k) + view_phiN(i,j-1,k)) +
-                                     a6*(view_phiN(i,j,k+1) + view_phiN(i,j,k-1)) +
-                                     a8*(- view_rhoN(i,j,k) / epsilon0);
 
                 // global indices
                 const int ig = i + ldom[0].first() - nghost_phi;
                 const int jg = j + ldom[1].first() - nghost_phi;
                 const int kg = k + ldom[2].first() - nghost_phi;
 
-                // set 1st order Absorbing Boundary Conditions
-                if (ig == 0) {
-                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i+1,j,k)) +
-                                         beta1 * (view_phiN(i,j,k) + view_phiN(i+1,j,k)) + 
-                                         beta2 * (view_phiNm1(i+1,j,k));
-                } else if (jg == 0) {
-                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i,j+1,k)) +
-                                         beta1 * (view_phiN(i,j,k) + view_phiN(i,j+1,k)) + 
-                                         beta2 * (view_phiNm1(i,j+1,k));
-                } else if (kg == 0) {
-                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i,j,k+1)) +
-                                         beta1 * (view_phiN(i,j,k) + view_phiN(i,j,k+1)) + 
-                                         beta2 * (view_phiNm1(i,j,k+1));
-                }
+                // interior values
+                bool isInterior = ((ig > 0) && (jg > 0) && (kg > 0) && (ig < nr_m[0] - 1) &&
+                                   (jg < nr_m[1] - 1) && (kg < nr_m[2] - 1));
+                double interior = -view_phiNm1(i,j,k) + a1*view_phiN(i,j,k) +
+                                  a2*(view_phiN(i+1,j,k) + view_phiN(i-1,j,k)) +
+                                  a4*(view_phiN(i,j+1,k) + view_phiN(i,j-1,k)) +
+                                  a6*(view_phiN(i,j,k+1) + view_phiN(i,j,k-1)) +
+                                  a8*(- view_rhoN(i,j,k) / epsilon0);
 
-                if (ig == nr_m[0] - 1) {
-                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i-1,j,k)) +
-                                         beta1 * (view_phiN(i,j,k) + view_phiN(i-1,j,k)) + 
-                                         beta2 * (view_phiNm1(i-1,j,k));
-                } else if (jg == nr_m[1] - 1) {
-                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i,j-1,k)) +
-                                         beta1 * (view_phiN(i,j,k) + view_phiN(i,j-1,k)) + 
-                                         beta2 * (view_phiNm1(i,j-1,k));
-                } else if (kg == nr_m[2] - 1) {
-                    view_phiNp1(i,j,k) = beta0 * (view_phiNm1(i,j,k) + view_phiNp1(i,j,k-1)) +
-                                         beta1 * (view_phiN(i,j,k) + view_phiN(i,j,k-1)) + 
-                                         beta2 * (view_phiNm1(i,j,k-1));
-                }
+                // boundary values: 1st order Absorbing Boundary Conditions
+                bool isXmin = ((ig == 0) && (jg > 0) && (kg > 0) && (jg < nr_m[1]-1) && (kg < nr_m[2]-1));
+                double xmin = beta0[0] * (view_phiNm1(i,j,k) + view_phiNp1(i+1,j,k)) +
+                              beta1[0] * (view_phiN(i,j,k) + view_phiN(i+1,j,k)) + 
+                              beta2[0] * (view_phiNm1(i+1,j,k));
+                bool isYmin = ((ig > 0) && (jg == 0) && (kg > 0) && (ig < nr_m[0]-1) && (kg < nr_m[2]-1));
+                double ymin = beta0[1] * (view_phiNm1(i,j,k) + view_phiNp1(i,j+1,k)) +
+                              beta1[1] * (view_phiN(i,j,k) + view_phiN(i,j+1,k)) + 
+                              beta2[1] * (view_phiNm1(i,j+1,k));
+                bool isZmin = ((ig > 0) && (jg > 0) && (kg == 0) && (ig < nr_m[0]-1) && (jg < nr_m[1]-1));
+                double zmin = beta0[2] * (view_phiNm1(i,j,k) + view_phiNp1(i,j,k+1)) +
+                              beta1[2] * (view_phiN(i,j,k) + view_phiN(i,j,k+1)) + 
+                              beta2[2] * (view_phiNm1(i,j,k+1));
+                bool isXmax = ((ig == nr_m[0]-1) && (jg > 0) && (kg > 0) && (jg < nr_m[1]-1) && (kg < nr_m[2]-1));
+                double xmax = beta0[0] * (view_phiNm1(i,j,k) + view_phiNp1(i-1,j,k)) +
+                              beta1[0] * (view_phiN(i,j,k) + view_phiN(i-1,j,k)) + 
+                              beta2[0] * (view_phiNm1(i-1,j,k));
+                bool isYmax = ((ig > 0) && (jg == nr_m[1]-1) && (kg > 0) && (ig < nr_m[0]-1) && (kg < nr_m[2]-1));
+                double ymax = beta0[1] * (view_phiNm1(i,j,k) + view_phiNp1(i,j-1,k)) +
+                              beta1[1] * (view_phiN(i,j,k) + view_phiN(i,j-1,k)) + 
+                              beta2[1] * (view_phiNm1(i,j-1,k));
+                bool isZmax = ((ig > 0) && (jg > 0) && (kg == nr_m[2]-1) && (ig < nr_m[0]-1) && (jg < nr_m[1]-1));
+                double zmax = beta0[2] * (view_phiNm1(i,j,k) + view_phiNp1(i,j,k-1)) +
+                              beta1[2] * (view_phiN(i,j,k) + view_phiN(i,j,k-1)) + 
+                              beta2[2] * (view_phiNm1(i,j,k-1));
+
+                view_phiNp1(i,j,k) = isInterior * interior + isXmin * xmin + isYmin * ymin + isZmin * zmin +
+                                     isXmax * xmax + isYmax * ymax + isZmax * zmax;
         });
 
 
@@ -123,45 +134,49 @@ namespace ippl {
                     mdrange_type({nghost_a, nghost_a, nghost_a},
                     {view_aN.extent(0)-nghost_a, view_aN.extent(1)-nghost_a, view_aN.extent(2)-nghost_a}),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                        view_aNp1(i,j,k)[gd] = -view_aNm1(i,j,k)[gd] + a1*view_aN(i,j,k)[gd] +
-                                             a2*(view_aN(i+1,j,k)[gd] + view_aN(i-1,j,k)[gd]) +
-                                             a4*(view_aN(i,j+1,k)[gd] + view_aN(i,j-1,k)[gd]) +
-                                             a6*(view_aN(i,j,k+1[gd]) + view_aN(i,j,k-1)[gd]) +
-                                             a8*(- view_JN(i,j,k)[gd] * mu0);
 
-                        // global indices
-                        const int ig = i + ldom[0].first() - nghost_a;
-                        const int jg = j + ldom[1].first() - nghost_a;
-                        const int kg = k + ldom[2].first() - nghost_a;
+                    // global indices
+                    const int ig = i + ldom[0].first() - nghost_a;
+                    const int jg = j + ldom[1].first() - nghost_a;
+                    const int kg = k + ldom[2].first() - nghost_a;
 
-                        // set 1st order Absorbing Boundary Conditions
-                        if (ig == 0) {
-                            view_aNp1(i,j,k)[gd] = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i+1,j,k)[gd])) +
-                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i+1,j,k)[gd])) + 
-                                               beta2 * (view_aNm1(i+1,j,k)[gd]));
-                        } else if (jg == 0) {
-                            view_aNp1(i,j,k)[gd]) = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i,j+1,k)[gd])) +
-                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i,j+1,k)[gd])) + 
-                                               beta2 * (view_aNm1(i,j+1,k)[gd]));
-                        } else if (kg == 0) {
-                            view_aNp1(i,j,k)[gd]) = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i,j,k+1)[gd]) +
-                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i,j,k+1)[gd]) + 
-                                               beta2 * (view_aNm1(i,j,k+1)[gd]);
-                        }
+                    // interior values
+                    bool isInterior = ((ig > 0) && (jg > 0) && (kg > 0) && (ig < nr_m[0] - 1) &&
+                                       (jg < nr_m[1] - 1) && (kg < nr_m[2] - 1));
+                    double interior = -view_aNm1(i,j,k)[gd] + a1*view_aN(i,j,k)[gd] +
+                                      a2*(view_aN(i+1,j,k)[gd] + view_aN(i-1,j,k)[gd]) +
+                                      a4*(view_aN(i,j+1,k)[gd] + view_aN(i,j-1,k)[gd]) +
+                                      a6*(view_aN(i,j,k+1[gd]) + view_aN(i,j,k-1)[gd]) +
+                                      a8*(- view_JN(i,j,k)[gd] * mu0);
 
-                        if (ig == nr_m[0] - 1) {
-                            view_aNp1(i,j,k)[gd]) = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i-1,j,k)[gd])) +
-                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i-1,j,k)[gd])) + 
-                                               beta2 * (view_aNm1(i-1,j,k)[gd]));
-                        } else if (jg == nr_m[1] - 1) {
-                            view_aNp1(i,j,k)[gd]) = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i,j-1,k)[gd])) +
-                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i,j-1,k)[gd])) + 
-                                               beta2 * (view_aNm1(i,j-1,k)[gd]));
-                        } else if (kg == nr_m[2] - 1) {
-                            view_aNp1(i,j,k)[gd]) = beta0 * (view_aNm1(i,j,k)[gd]) + view_aNp1(i,j,k-1)[gd]) +
-                                               beta1 * (view_aN(i,j,k)[gd]) + view_aN(i,j,k-1)[gd]) + 
-                                               beta2 * (view_aNm1(i,j,k-1)[gd]);
-                        }
+                    // boundary values: 1st order Absorbing Boundary Conditions
+                    bool isXmin = ((ig == 0) && (jg > 0) && (kg > 0) && (jg < nr_m[1]-1) && (kg < nr_m[2]-1));
+                    double xmin = beta0[0] * (view_aNm1(i,j,k)[gd] + view_aNp1(i+1,j,k)[gd]) +
+                                  beta1[0] * (view_aN(i,j,k)[gd] + view_aN(i+1,j,k)[gd]) + 
+                                  beta2[0] * (view_aNm1(i+1,j,k)[gd]);
+                    bool isYmin = ((ig > 0) && (jg == 0) && (kg > 0) && (ig < nr_m[0]-1) && (kg < nr_m[2]-1));
+                    double ymin = beta0[1] * (view_aNm1(i,j,k)[gd] + view_aNp1(i,j+1,k)[gd]) +
+                                  beta1[1] * (view_aN(i,j,k)[gd] + view_aN(i,j+1,k)[gd]) + 
+                                  beta2[1] * (view_aNm1(i,j+1,k)[gd]);
+                    bool isZmin = ((ig > 0) && (jg > 0) && (kg == 0) && (ig < nr_m[0]-1) && (jg < nr_m[1]-1));
+                    double zmin = beta0[2] * (view_aNm1(i,j,k)[gd] + view_aNp1(i,j,k+1)[gd]) +
+                                  beta1[2] * (view_aN(i,j,k)[gd] + view_aN(i,j,k+1)[gd]) + 
+                                  beta2[2] * (view_aNm1(i,j,k+1)[gd]);
+                    bool isXmax = ((ig == nr_m[0]-1) && (jg > 0) && (kg > 0) && (jg < nr_m[1]-1) && (kg < nr_m[2]-1));
+                    double xmax = beta0[0] * (view_aNm1(i,j,k)[gd] + view_aNp1(i-1,j,k)[gd]) +
+                                  beta1[0] * (view_aN(i,j,k)[gd] + view_aN(i-1,j,k)[gd]) + 
+                                  beta2[0] * (view_aNm1(i-1,j,k)[gd]);
+                    bool isYmax = ((ig > 0) && (jg == nr_m[1]-1) && (kg > 0) && (ig < nr_m[0]-1) && (kg < nr_m[2]-1));
+                    double ymax = beta0[1] * (view_aNm1(i,j,k)[gd] + view_aNp1(i,j-1,k)[gd]) +
+                                  beta1[1] * (view_aN(i,j,k)[gd] + view_aN(i,j-1,k)[gd]) + 
+                                  beta2[1] * (view_aNm1(i,j-1,k)[gd]);
+                    bool isZmax = ((ig > 0) && (jg > 0) && (kg == nr_m[2]-1) && (ig < nr_m[0]-1) && (jg < nr_m[1]-1));
+                    double zmax = beta0[2] * (view_aNm1(i,j,k)[gd] + view_aNp1(i,j,k-1)[gd]) +
+                                  beta1[2] * (view_aN(i,j,k)[gd] + view_aN(i,j,k-1)[gd]) + 
+                                  beta2[2] * (view_aNm1(i,j,k-1)[gd]);
+
+                    view_aNp1(i,j,k)[gd] = isInterior * interior + isXmin * xmin + isYmin * ymin + isZmin * zmin +
+                                     isXmax * xmax + isYmax * ymax + isZmax * zmax;
             });
         }
 
