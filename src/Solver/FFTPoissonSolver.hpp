@@ -909,12 +909,15 @@ namespace ippl {
                         double s = (t*t) + (u*u) + (v*v);
                         s = std::sqrt(s);
 
-                        view_g(i,j,k) = -2*(std::sin(0.5*L_sum*s)/s)*(std::sin(0.5*L_sum*s)/s);
-                  
+                        // assign the green's function value
                         // if (0,0,0), assign L^2/2 (analytical limit of sinc)
-                        if ((ig == 0 && jg == 0 && kg == 0)) {
-                            view_g(i,j,k) = -L_sum * L_sum * 0.5;
-                        }
+
+                        bool isOrig = ((ig == 0 && jg == 0 && kg == 0));
+                        double analyticLim = -L_sum * L_sum * 0.5;
+                        double value = -2.0 * (std::sin(0.5 * L_sum * s) / (s + isOrig*1.0))
+                                            * (std::sin(0.5 * L_sum * s) / (s + isOrig*1.0));
+
+                        view_g(i,j,k) = (1.0 - isOrig) * value + isOrig * analyticLim;
                     });
 
                 } else if (alg_m == "BIHARMONIC") {
