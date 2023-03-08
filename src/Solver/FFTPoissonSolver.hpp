@@ -357,10 +357,16 @@ namespace ippl {
 
                                     // go from local indices to global
                                     const int ig = i + ldom[0].first() - nghost;
-                                                                                            
+                                    const int jg = j + ldom[1].first() - nghost;
+                                    const int kg = k + ldom[2].first() - nghost;
+
                                     // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
                                     const bool outsideN = (ig >= size);
                                     view(i,j,k) = (2*size*outsideN - ig) * (2*size*outsideN - ig);
+
+                                    // add 1.0 if at (0,0,0) to avoid singularity
+                                    const bool isOrig = ((ig == 0) && (jg == 0) && (kg == 0));
+                                    view(i,j,k) += isOrig * 1.0;
 		            });
                             break;
 		        case 1:
@@ -1048,12 +1054,7 @@ namespace ippl {
                               
                         // if (0,0,0), assign to it 1/(4*pi)
                         const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
-
-                        // these steps need to be done to remove the propagation
-                        // of the "inf" at the origin (1/inf = 0)
-                        view(i,j,k) = 1.0 / view(i,j,k);
-                        view(i,j,k) += (-4.0 * pi) * isOrig;
-                        view(i,j,k) = 1.0 / view(i,j,k);
+                        view(i,j,k) = isOrig * (-1.0/(4.0 * pi)) + (!isOrig) * view(i,j,k);
                 });
             }
 
