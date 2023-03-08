@@ -32,17 +32,17 @@ void pack(const ippl::NDIndex<3> intersect, Kokkos::View<T***>& view,
     size_t size = intersect.size();
     nsends = size;
     if (buffer.size() < size) {
-        int overalloc = Ippl::Comm->getDefaultOverallocation();
+        const int overalloc = Ippl::Comm->getDefaultOverallocation();
         Kokkos::realloc(buffer, size * overalloc);
     }
 
-    int first0 = intersect[0].first() + nghost - ldom[0].first();
-    int first1 = intersect[1].first() + nghost - ldom[1].first();
-    int first2 = intersect[2].first() + nghost - ldom[2].first();
+    const int first0 = intersect[0].first() + nghost - ldom[0].first();
+    const int first1 = intersect[1].first() + nghost - ldom[1].first();
+    const int first2 = intersect[2].first() + nghost - ldom[2].first();
 
-    int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
-    int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
-    int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
+    const int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
+    const int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
+    const int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
 
     using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
     //This type casting to long int is necessary as otherwise Kokkos complains for
@@ -56,7 +56,7 @@ void pack(const ippl::NDIndex<3> intersect, Kokkos::View<T***>& view,
                 const int jg = j - first1;
                 const int kg = k - first2;
                              
-                int l = ig + jg * intersect[0].length() + 
+                const int l = ig + jg * intersect[0].length() + 
                         kg * intersect[1].length() * intersect[0].length();
 
                 Kokkos::complex<double> val = view(i,j,k);
@@ -72,13 +72,13 @@ void unpack(const ippl::NDIndex<3> intersect, const ippl::Field<double,3>::view_
 
     ippl::Field<double, 1>::view_type& buffer = fd.buffer;
  
-    int first0 = intersect[0].first() + nghost - ldom[0].first();
-    int first1 = intersect[1].first() + nghost - ldom[1].first();
-    int first2 = intersect[2].first() + nghost - ldom[2].first();
+    const int first0 = intersect[0].first() + nghost - ldom[0].first();
+    const int first1 = intersect[1].first() + nghost - ldom[1].first();
+    const int first2 = intersect[2].first() + nghost - ldom[2].first();
 
-    int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
-    int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
-    int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
+    const int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
+    const int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
+    const int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
 
     using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
     Kokkos::parallel_for("pack()", mdrange_type({first0, first1, first2},
@@ -93,7 +93,7 @@ void unpack(const ippl::NDIndex<3> intersect, const ippl::Field<double,3>::view_
                 jg = y * (intersect[1].length() - 2*jg - 1) + jg;
                 kg = z * (intersect[2].length() - 2*kg - 1) + kg;
                              
-                int l = ig + jg * intersect[0].length() + 
+                const int l = ig + jg * intersect[0].length() + 
                         kg * intersect[1].length() * intersect[0].length();
 
                 view(i,j,k) = buffer(l);
@@ -107,13 +107,13 @@ void unpack(const ippl::NDIndex<3> intersect, const ippl::Field<ippl::Vector<dou
 
     ippl::Field<double, 1>::view_type& buffer = fd.buffer;
 
-    int first0 = intersect[0].first() + nghost - ldom[0].first();
-    int first1 = intersect[1].first() + nghost - ldom[1].first();
-    int first2 = intersect[2].first() + nghost - ldom[2].first();
+    const int first0 = intersect[0].first() + nghost - ldom[0].first();
+    const int first1 = intersect[1].first() + nghost - ldom[1].first();
+    const int first2 = intersect[2].first() + nghost - ldom[2].first();
 
-    int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
-    int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
-    int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
+    const int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
+    const int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
+    const int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
 
     using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
     Kokkos::parallel_for("pack()", mdrange_type({first0, first1, first2},
@@ -124,7 +124,8 @@ void unpack(const ippl::NDIndex<3> intersect, const ippl::Field<ippl::Vector<dou
                 const int jg = j - first1;
                 const int kg = k - first2;
                              
-                int l = ig + jg * intersect[0].length() + kg * intersect[1].length() * intersect[0].length();
+                const int l = ig + jg * intersect[0].length() + kg * intersect[1].length()
+                              * intersect[0].length();
                 view(i,j,k)[dim] = buffer(l);
     });
     Kokkos::fence();    
@@ -210,7 +211,7 @@ namespace ippl {
         FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::setGradFD()
         {
             // get the output type (sol, grad, or sol & grad)
-            int out = this->params_m.template get<int>("output_type");
+            const int out = this->params_m.template get<int>("output_type");
 
             if (out != Base::SOL_AND_GRAD) {
                 throw IpplException("FFTPoissonSolver::setGradFD()", 
@@ -242,7 +243,7 @@ namespace ippl {
 
             // get origin
             Vector_t origin = mesh_mp->getOrigin();
-            double sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
+            const double sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
 
             // origin should always be 0 for Green's function computation to work...
             if (sum != 0.0) {
@@ -343,7 +344,7 @@ namespace ippl {
 		    const auto& ldom = layout2_m->getLocalNDIndex();
 
 		    // the length of the physical domain
-		    int size = nr_m[d];
+		    const int size = nr_m[d];
 
 		    // Kokkos parallel for loop to initialize grnIField[d]
 		    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
@@ -356,10 +357,16 @@ namespace ippl {
 
                                     // go from local indices to global
                                     const int ig = i + ldom[0].first() - nghost;
-                                                                                            
+                                    const int jg = j + ldom[1].first() - nghost;
+                                    const int kg = k + ldom[2].first() - nghost;
+
                                     // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
-                                    bool outsideN = (ig >= size);
+                                    const bool outsideN = (ig >= size);
                                     view(i,j,k) = (2*size*outsideN - ig) * (2*size*outsideN - ig);
+
+                                    // add 1.0 if at (0,0,0) to avoid singularity
+                                    const bool isOrig = ((ig == 0) && (jg == 0) && (kg == 0));
+                                    view(i,j,k) += isOrig * 1.0;
 		            });
                             break;
 		        case 1:
@@ -372,7 +379,7 @@ namespace ippl {
                                     const int jg = j + ldom[1].first() - nghost;
                                                                                             
                                     // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
-                                    bool outsideN = (jg >= size);
+                                    const bool outsideN = (jg >= size);
                                     view(i,j,k) = (2*size*outsideN - jg) * (2*size*outsideN - jg);
 		            });
                             break;
@@ -386,7 +393,7 @@ namespace ippl {
                                     const int kg = k + ldom[2].first() - nghost;
                                                                                             
                                     // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
-                                    bool outsideN = (kg >= size);
+                                    const bool outsideN = (kg >= size);
                                     view(i,j,k) = (2*size*outsideN - kg) * (2*size*outsideN - kg);
 		            });
                             break;
@@ -432,7 +439,7 @@ namespace ippl {
             IpplTimings::startTimer(solve);
 
             // get the output type (sol, grad, or sol & grad)
-            int out = this->params_m.template get<int>("output_type");
+            const int out = this->params_m.template get<int>("output_type");
 
             // set the mesh & spacing, which may change each timestep
             mesh_mp = &(this->rhs_mp->get_mesh()); 
@@ -463,7 +470,7 @@ namespace ippl {
             
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-            int ranks = Ippl::Comm->size();
+            const int ranks = Ippl::Comm->size();
 
             auto view2 = rho2_mr.getView();
             auto view1 = this->rhs_mp->getView();
@@ -537,10 +544,10 @@ namespace ippl {
                         const size_t ig1 = i + ldom1[0].first() - nghost1;
                         const size_t jg1 = j + ldom1[1].first() - nghost1;
                         const size_t kg1 = k + ldom1[2].first() - nghost1;
-                  
-                        if ((ig1==ig2) && (jg1==jg2) && (kg1==kg2)) {
-                            view2(i,j,k) = view1(i,j,k);
-                        }
+
+                        // write physical rho on [0,N-1] of doubled field
+                        const bool isQuadrant1 = ((ig1==ig2) && (jg1==jg2) && (kg1==kg2));
+                        view2(i,j,k) = view1(i,j,k)*isQuadrant1;
                 });
             }
 
@@ -661,11 +668,10 @@ namespace ippl {
                             const int ig = i + ldom1[0].first() - nghost1;
                             const int jg = j + ldom1[1].first() - nghost1;
                             const int kg = k + ldom1[2].first() - nghost1;
-                                  
+
                             // take [0,N-1] as physical solution
-                            if ((ig==ig2) && (jg==jg2) && (kg==kg2)) { 
-                                view1(i,j,k) = view2(i,j,k);
-                            }
+                            const bool isQuadrant1 = ((ig==ig2) && (jg==jg2) && (kg==kg2));
+                            view1(i,j,k) = view2(i,j,k)*isQuadrant1;
                     });
                 }
                 IpplTimings::stopTimer(dtos);
@@ -697,8 +703,8 @@ namespace ippl {
                 auto view_g = temp_m.getView();
             
                 // define some constants
-                double pi = std::acos(-1.0);
-                Kokkos::complex<double> I = {0.0, 1.0};
+                const double pi = std::acos(-1.0);
+                const Kokkos::complex<double> I = {0.0, 1.0};
 
                 // define some member variables in local scope for the parallel_for
                 Vector_t hsize = hr_m;
@@ -724,18 +730,16 @@ namespace ippl {
                             for(size_t d = 0; d < Dim; ++d) {
 
                                 const double Len = N[d]*hsize[d];
-                                bool shift = (iVec[d] > N[d]);
-                                bool notMid = (iVec[d] != N[d]);
+                                const bool shift = (iVec[d] > N[d]);
+                                const bool notMid = (iVec[d] != N[d]);
 
                                 kVec[d] = notMid * (pi / Len) * (iVec[d] - shift*2*N[d]);
                             }
 
-                            double Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
-                              
-                            if(Dr != 0.0)
-                                view_g(i,j,k) = -(I * kVec[gd])*viewR(i,j,k);
-                            else
-                                view_g(i,j,k) = 0.0;
+                            const double Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
+
+                            const bool isNotZero = (Dr != 0.0);
+                            view_g(i,j,k) = - isNotZero * (I * kVec[gd])*viewR(i,j,k);
                     });
 
                     // start a timer
@@ -828,9 +832,8 @@ namespace ippl {
                                 const int kg = k + ldom1[2].first() - nghostL;
                                 
                                 // take [0,N-1] as physical solution
-                                if ((ig==ig2) && (jg==jg2) && (kg==kg2)) {
-                                    viewL(i,j,k)[gd] = view2(i,j,k);
-                                } 
+                                const bool isQuadrant1 = ((ig==ig2) && (jg==jg2) && (kg==kg2));
+                                viewL(i,j,k)[gd] = view2(i,j,k)*isQuadrant1;
                         });
                     }    
                     IpplTimings::stopTimer(edtos);
@@ -848,7 +851,7 @@ namespace ippl {
         void
         FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::greensFunction() {
 
-            double pi = std::acos(-1.0);
+            const double pi = std::acos(-1.0);
             grn_mr = 0.0;
 
             if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
@@ -880,8 +883,8 @@ namespace ippl {
 
                 // initialize grnL_m 
                 typename CxField_t::view_type view_g = grnL_m.getView();
-	        const int nghost_g = grnL_m.getNghost();
-	        const auto& ldom_g = layout4_m->getLocalNDIndex();
+                const int nghost_g = grnL_m.getNghost();
+                const auto& ldom_g = layout4_m->getLocalNDIndex();
 
                 Vector<int,Dim> size = nr_m;
 
@@ -900,24 +903,27 @@ namespace ippl {
                         const int kg = k + ldom_g[2].first() - nghost_g;
 
                         bool isOutside = (ig > 2*size[0]-1);
-                        double t = ig*hs_m[0] + isOutside*origin[0];
+                        const double t = ig*hs_m[0] + isOutside*origin[0];
 
                         isOutside = (jg > 2*size[1]-1);
-                        double u = jg*hs_m[1] + isOutside*origin[1];
+                        const double u = jg*hs_m[1] + isOutside*origin[1];
 
                         isOutside = (kg > 2*size[2]-1);
-                        double v = kg*hs_m[2] + isOutside*origin[2];
+                        const double v = kg*hs_m[2] + isOutside*origin[2];
 
                         double s = (t*t) + (u*u) + (v*v);
                         s = std::sqrt(s);
 
-                        view_g(i,j,k) = -2*(std::sin(0.5*L_sum*s)/s)*(std::sin(0.5*L_sum*s)/s);
-                  
+                        // assign the green's function value
                         // if (0,0,0), assign L^2/2 (analytical limit of sinc)
-                        if ((ig == 0 && jg == 0 && kg == 0)) {
-                            view_g(i,j,k) = -L_sum * L_sum * 0.5;
-                        }
-	                });
+
+                        const bool isOrig = ((ig == 0 && jg == 0 && kg == 0));
+                        const double analyticLim = -L_sum * L_sum * 0.5;
+                        const double value = -2.0 * (std::sin(0.5 * L_sum * s) / (s + isOrig*1.0))
+                                            * (std::sin(0.5 * L_sum * s) / (s + isOrig*1.0));
+
+                        view_g(i,j,k) = (!isOrig) * value + isOrig * analyticLim;
+                    });
 
                 } else if (alg_m == "BIHARMONIC") {
 
@@ -932,23 +938,25 @@ namespace ippl {
                         const int kg = k + ldom_g[2].first() - nghost_g;
 
                         bool isOutside = (ig > 2*size[0]-1);
-                        double t = ig*hs_m[0] + isOutside*origin[0];
+                        const double t = ig*hs_m[0] + isOutside*origin[0];
 
                         isOutside = (jg > 2*size[1]-1);
-                        double u = jg*hs_m[1] + isOutside*origin[1];
+                        const double u = jg*hs_m[1] + isOutside*origin[1];
 
                         isOutside = (kg > 2*size[2]-1);
-                        double v = kg*hs_m[2] + isOutside*origin[2];
+                        const double v = kg*hs_m[2] + isOutside*origin[2];
 
                         double s = (t*t) + (u*u) + (v*v);
                         s = std::sqrt(s);
 
-                        view_g(i,j,k) = -((2-(L_sum*L_sum*s*s))*std::cos(L_sum*s) + 2*L_sum*s*std::sin(L_sum*s) - 2)/(2*s*s*s*s);
-                  
-                        // if (0,0,0), assign L^2/2 (analytical limit of sinc)
-                        if ((ig == 0 && jg == 0 && kg == 0)) {
-                            view_g(i,j,k) = -L_sum * L_sum * L_sum * L_sum / 8.0;
-                        }
+                        // assign value and replace with analytic limit at origin (0,0,0)
+
+                        const bool isOrig = ((ig == 0 && jg == 0 && kg == 0));
+                        const double analyticLim = -L_sum * L_sum * L_sum * L_sum / 8.0;
+                        const double value = -((2-(L_sum*L_sum*s*s))*std::cos(L_sum*s)
+                                       + 2*L_sum*s*std::sin(L_sum*s) - 2)/(2*s*s*s*s + isOrig * 1.0);
+
+                        view_g(i,j,k) = (!isOrig) * value + isOrig * analyticLim;
 	                });
 
                 }
@@ -974,7 +982,7 @@ namespace ippl {
                 IpplTimings::startTimer(ifftshift);
 
                 // get number of ranks to see if need communication
-                int ranks = Ippl::Comm->size();
+                const int ranks = Ippl::Comm->size();
 
                 if (ranks > 1) {
                     communicateVico(size, view_g, ldom_g, nghost_g, view, ldom, nghost);
@@ -1045,9 +1053,8 @@ namespace ippl {
                         const int kg = k + ldom[2].first() - nghost;
                               
                         // if (0,0,0), assign to it 1/(4*pi)
-                        if (ig == 0 && jg == 0 && kg == 0) {
-                            view(i,j,k) = -1.0/(4.0*pi);
-                        }
+                        const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
+                        view(i,j,k) = isOrig * (-1.0/(4.0 * pi)) + (!isOrig) * view(i,j,k);
                 });
             }
 
@@ -1073,8 +1080,8 @@ namespace ippl {
             const auto& lDomains4 = layout4_m->getHostLocalDomains();
 
             std::vector<MPI_Request> requests(0);
-            int myRank = Ippl::Comm->rank();
-            int ranks = Ippl::Comm->size();
+            const int myRank = Ippl::Comm->rank();
+            const int ranks = Ippl::Comm->size();
 
             // 1st step: Define 8 domains corresponding to the different quadrants
             ippl::NDIndex<Dim> none; 
