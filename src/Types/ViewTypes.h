@@ -115,22 +115,22 @@ namespace ippl {
             return policy_type(begin, end);
         }
 
-#define CreateFunctor(contents)                                                          \
-    template <typename, typename>                                                        \
-    struct Functor;                                                                      \
-    template <typename... Idx, typename Acc>                                             \
-    struct Functor<std::tuple<Idx...>, Acc> {                                            \
-        static constexpr unsigned FunctorDim = sizeof...(Idx);                           \
-        using view_type = typename ::ippl::detail::ViewType<Acc, FunctorDim>::view_type; \
-        view_type view_m;                                                                \
-        KOKKOS_FUNCTION                                                                  \
-        Functor(view_type v)                                                             \
-            : view_m(v) {}                                                               \
-        contents                                                                         \
-    };
+        // https://stackoverflow.com/questions/50713214/familiar-template-syntax-for-generic-lambdas
+        template <typename, typename, typename, typename>
+        struct FunctorWrapper;
+        template <typename Functor, typename... T, typename Acc, typename R>
+        struct FunctorWrapper<Functor, std::tuple<T...>, Acc, R> {
+            Functor lambda;
 
-#define CreateTaggedFunctor(tag) \
-    KOKKOS_INLINE_FUNCTION void operator()(const tag&, const Idx... args, Acc& acc) const;
+            KOKKOS_INLINE_FUNCTION R operator()(T... x, Acc& res) const {
+                return lambda.template operator()<T...>(x..., res);
+            }
+        };
+
+        template <unsigned Dim, typename Acc, typename R = void, typename Functor>
+        auto functorize(const Functor& f) {
+            return FunctorWrapper<Functor, typename Coords<Dim>::type, Acc, R>{f};
+        }
 
         /*!
          * Empty function for general write.

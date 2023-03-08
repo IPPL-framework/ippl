@@ -217,14 +217,6 @@ namespace ippl {
 
         //! How the arrays are laid out.
         Layout_t* layout_m;
-
-        struct Sum {};
-        struct Max {};
-        struct Min {};
-        struct Prod {};
-
-        CreateFunctor(CreateTaggedFunctor(Sum) CreateTaggedFunctor(Max) CreateTaggedFunctor(Min)
-                          CreateTaggedFunctor(Prod))
     };
 
 }  // namespace ippl
