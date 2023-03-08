@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    int pt = 4;
+    int pt = 2048;
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
 
@@ -107,7 +107,10 @@ int main(int argc, char* argv[]) {
 
     Lap = 0.0;
 
+    static auto timer = IpplTimings::getTimer("laplace");
+    IpplTimings::startTimer(timer);
     Lap = laplace(field);
+    IpplTimings::stopTimer(timer);
 
     Lap = Lap - Lap_exact;
 
@@ -119,6 +122,7 @@ int main(int argc, char* argv[]) {
     if (Ippl::Comm->rank() == 0) {
         std::cout << "Error: " << error << std::endl;
     }
+    IpplTimings::print(std::string("timing.dat"));
 
     return 0;
 }
