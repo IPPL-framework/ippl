@@ -30,9 +30,9 @@ namespace ippl {
         auto view2 = f2.getView();
         Kokkos::parallel_reduce(
             "Field::innerProduct(Field&, Field&)", f1.getRangePolicy(),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
-                val += view1(i, j, k) * view2(i, j, k);
-            },
+            detail::functorize<Dim, T>(KOKKOS_LAMBDA<typename... Idx>(const Idx... args, T& val) {
+                val += view1(args...) * view2(args...);
+            }),
             Kokkos::Sum<T>(sum));
         T globalSum       = 0;
         MPI_Datatype type = get_mpi_datatype<T>(sum);
@@ -52,14 +52,14 @@ namespace ippl {
         auto view = field.getView();
         switch (p) {
             case 0: {
-                Kokkos::parallel_reduce(
-                    "Field::norm(0)", field.getRangePolicy(),
-                    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
-                        T myVal = std::abs(view(i, j, k));
-                        if (myVal > val)
-                            val = myVal;
-                    },
-                    Kokkos::Max<T>(local));
+                Kokkos::parallel_reduce("Field::norm(0)", field.getRangePolicy(),
+                                        detail::functorize<Dim, T>(KOKKOS_LAMBDA<typename... Idx>(
+                                            const Idx... args, T& val) {
+                                            T myVal = std::abs(view(args...));
+                                            if (myVal > val)
+                                                val = myVal;
+                                        }),
+                                        Kokkos::Max<T>(local));
                 T globalMax       = 0;
                 MPI_Datatype type = get_mpi_datatype<T>(local);
                 MPI_Allreduce(&local, &globalMax, 1, type, MPI_MAX, Ippl::getComm());
@@ -68,12 +68,12 @@ namespace ippl {
             case 2:
                 return std::sqrt(innerProduct(field, field));
             default: {
-                Kokkos::parallel_reduce(
-                    "Field::norm(int) general", field.getRangePolicy(),
-                    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& val) {
-                        val += std::pow(std::abs(view(i, j, k)), p);
-                    },
-                    Kokkos::Sum<T>(local));
+                Kokkos::parallel_reduce("Field::norm(int) general", field.getRangePolicy(),
+                                        detail::functorize<Dim, T>(KOKKOS_LAMBDA<typename... Idx>(
+                                            const Idx... args, T& val) {
+                                            val += std::pow(std::abs(view(args...)), p);
+                                        }),
+                                        Kokkos::Sum<T>(local));
                 T globalSum       = 0;
                 MPI_Datatype type = get_mpi_datatype<T>(local);
                 MPI_Allreduce(&local, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
