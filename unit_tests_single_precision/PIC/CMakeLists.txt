@@ -28,6 +28,13 @@ target_link_libraries (
     ${GTEST_BOTH_LIBRARIES}
 )
 
+add_executable ( ChargeComputation ChargeComputation.cpp )
+target_link_libraries (
+    ChargeComputation
+    ippl
+    ${MPI_CXX_LIBRARIES}
+)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
