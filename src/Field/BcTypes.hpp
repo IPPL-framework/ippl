@@ -73,13 +73,17 @@ namespace ippl {
         // non-periodic BC is local to apply.
         typename Field_t::view_type& view = field.getView();
         const int nghost                  = field.getNghost();
-        using mdrange_type                = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+        using mdrange_type                = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
         int src, dest;
 
         // It is not clear what it exactly means to do extrapolate
         // BC for nghost >1
         if (nghost > 1) {
             throw IpplException("ExtrapolateFace::apply", "nghost > 1 not supported");
+        }
+
+        if (d >= Dim) {
+            throw IpplException("ExtrapolateFace::apply", "face number wrong");
         }
 
         // If face & 1 is true, then it is an upper BC
@@ -90,38 +94,27 @@ namespace ippl {
             src  = 1;
             dest = src - 1;
         }
-        switch (d) {
-            case 0:
-                Kokkos::parallel_for(
-                    "Assign extrapolate BC X",
-                    mdrange_type({nghost, nghost},
-                                 {view.extent(1) - nghost, view.extent(2) - nghost}),
-                    KOKKOS_CLASS_LAMBDA(const size_t j, const size_t k) {
-                        view(dest, j, k) = slope_m * view(src, j, k) + offset_m;
-                    });
-                break;
 
-            case 1:
-                Kokkos::parallel_for(
-                    "Assign extrapolate BC Y",
-                    mdrange_type({nghost, nghost},
-                                 {view.extent(0) - nghost, view.extent(2) - nghost}),
-                    KOKKOS_CLASS_LAMBDA(const size_t i, const size_t k) {
-                        view(i, dest, k) = slope_m * view(i, src, k) + offset_m;
-                    });
-                break;
-            case 2:
-                Kokkos::parallel_for(
-                    "Assign extrapolate BC Z",
-                    mdrange_type({nghost, nghost},
-                                 {view.extent(0) - nghost, view.extent(1) - nghost}),
-                    KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j) {
-                        view(i, j, dest) = slope_m * view(i, j, src) + offset_m;
-                    });
-                break;
-            default:
-                throw IpplException("ExtrapolateFace::apply", "face number wrong");
+        Kokkos::Array<size_t, Dim> begin, end;
+        for (unsigned i = 0; i < Dim; i++) {
+            begin[i] = nghost;
+            end[i]   = view.extent(i) - nghost;
         }
+        begin[d] = src;
+        end[d]   = src + 1;
+        Kokkos::parallel_for(
+            "Assign extrapolate BC", mdrange_type(begin, end),
+            KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
+                using ippl::apply;
+
+                T value = view(args...);
+
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                index_type coords[Dim] = {args...};
+                coords[d]              = dest;
+
+                apply<Dim>(view, coords) = slope_m * value + offset_m;
+            });
     }
 
     template <typename T, unsigned Dim, class Mesh, class Cell>
@@ -308,51 +301,56 @@ namespace ippl {
             }
             // For all other processors do nothing
         } else {
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+            if (d >= Dim) {
+                throw IpplException("PeriodicFace::apply", "face number wrong");
+            }
+
+            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
             int N              = view.extent(d) - 1;
 
-            std::array<long, 3> ext;
+            Kokkos::Array<size_t, Dim> begin, end;
+
+            std::array<long, Dim> ext;
 
             for (size_t i = 0; i < Dim; ++i) {
-                ext[i] = view.extent(i) - nghost;
+                ext[i]   = view.extent(i) - nghost;
+                begin[i] = nghost;
+                end[i]   = ext[i];
             }
+            begin[d] = 0;
+            end[d]   = nghost;
 
-            switch (d) {
-                case 0:
-                    Kokkos::parallel_for(
-                        "Assign periodic field BC X",
-                        mdrange_type({0, nghost, nghost}, {(long)nghost, ext[1], ext[2]}),
-                        KOKKOS_CLASS_LAMBDA(const int i, const size_t j, const size_t k) {
-                            // The ghosts are filled starting from the inside of
-                            // the domain proceeding outwards for both lower and
-                            // upper faces. The extra brackets and explicit mention
-                            // of 0 is for better readability of the code
+            Kokkos::parallel_for(
+                "Assign periodic field BC", mdrange_type(begin, end),
+                KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
+                    // The ghosts are filled starting from the inside of
+                    // the domain proceeding outwards for both lower and
+                    // upper faces.
 
-                            view(0 + (nghost - 1) - i, j, k) = view(N - nghost - i, j, k);
-                            view(N - (nghost - 1) + i, j, k) = view(0 + nghost + i, j, k);
-                        });
-                    break;
-                case 1:
-                    Kokkos::parallel_for(
-                        "Assign periodic field BC Y",
-                        mdrange_type({nghost, 0, nghost}, {ext[0], (long)nghost, ext[2]}),
-                        KOKKOS_CLASS_LAMBDA(const size_t i, const int j, const size_t k) {
-                            view(i, 0 + (nghost - 1) - j, k) = view(i, N - nghost - j, k);
-                            view(i, N - (nghost - 1) + j, k) = view(i, 0 + nghost + j, k);
-                        });
-                    break;
-                case 2:
-                    Kokkos::parallel_for(
-                        "Assign periodic field BC Z",
-                        mdrange_type({nghost, nghost, 0}, {ext[0], ext[1], (long)nghost}),
-                        KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const int k) {
-                            view(i, j, 0 + (nghost - 1) - k) = view(i, j, N - nghost - k);
-                            view(i, j, N - (nghost - 1) + k) = view(i, j, 0 + nghost + k);
-                        });
-                    break;
-                default:
-                    throw IpplException("PeriodicFace::apply", "face number wrong");
-            }
+                    using ippl::apply;
+
+                    using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                    index_type coords[Dim] = {args...};
+
+                    // x -> nghost + x
+                    coords[d] += nghost;
+                    T left = apply<Dim>(view, coords);
+
+                    // nghost + x -> N - (nghost + x) = N - nghost - x
+                    coords[d] = N - coords[d];
+                    T right   = apply<Dim>(view, coords);
+
+                    // N - nghost - x -> nghost - 1 - x
+                    coords[d] += 2 * nghost - 1 - N;
+                    apply<Dim>(view, coords) = right;
+
+                    // nghost - 1 - x -> N - (nghost - 1 - x) = N - (nghost - x) + x
+                    coords[d]                = N - coords[d];
+                    apply<Dim>(view, coords) = left;
+
+                    // view(0+(nghost-1)-i, j, k) = view(N-nghost-i, j, k);
+                    // view(N-(nghost-1)+i, j, k) = view(0+nghost+i, j, k);
+                });
         }
     }
 }  // namespace ippl
