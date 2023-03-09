@@ -127,10 +127,10 @@ int main(int argc, char* argv[]) {
 
     if (Ippl::Comm->rank() == 0) {
         std::cout << "Error: " << error << std::endl;
-        std::stringstream ss;
-        ss << "timing_" << pt << "pt_" << iterations << "iterations.dat";
-        IpplTimings::print(ss.str());
     }
+    std::stringstream ss;
+    ss << "timing_" << pt << "pt_" << iterations << "iterations_" << Ippl::Comm->size() << "ranks.dat";
+    IpplTimings::print(ss.str());
 
     return 0;
 }
