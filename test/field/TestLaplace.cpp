@@ -3,6 +3,7 @@
 
 #include <array>
 #include <iostream>
+#include <sstream>
 #include <typeinfo>
 
 int main(int argc, char* argv[]) {
@@ -10,9 +11,11 @@ int main(int argc, char* argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    int pt = 2048;
+    int pt = std::stoi(argv[1]);
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
+
+    const int iterations = std::stoi(argv[2]);
 
     ippl::e_dim_tag decomp[dim];  // Specifies SERIAL, PARALLEL dims
     for (unsigned int d = 0; d < dim; d++)
@@ -108,9 +111,12 @@ int main(int argc, char* argv[]) {
     Lap = 0.0;
 
     static auto timer = IpplTimings::getTimer("laplace");
-    IpplTimings::startTimer(timer);
-    Lap = laplace(field);
-    IpplTimings::stopTimer(timer);
+    for (int i = 0; i < iterations; i++) {
+        IpplTimings::startTimer(timer);
+        Lap = laplace(field);
+        IpplTimings::stopTimer(timer);
+        Ippl::fence();
+    }
 
     Lap = Lap - Lap_exact;
 
@@ -121,8 +127,10 @@ int main(int argc, char* argv[]) {
 
     if (Ippl::Comm->rank() == 0) {
         std::cout << "Error: " << error << std::endl;
+        std::stringstream ss;
+        ss << "timing_" << pt << "pt_" << iterations << "iterations.dat";
+        IpplTimings::print(ss.str());
     }
-    IpplTimings::print(std::string("timing.dat"));
 
     return 0;
 }
