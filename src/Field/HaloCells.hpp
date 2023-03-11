@@ -350,63 +350,50 @@ namespace ippl {
             const auto& lDomains = layout->getHostLocalDomains();
             const auto& domain   = layout->getDomain();
             using mdrange_type   = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
-            std::array<long, Dim> ext;
+            Kokkos::Array<long, Dim> ext, begin, end;
 
             for (size_t i = 0; i < Dim; ++i) {
-                ext[i] = view.extent(i);
+                ext[i]   = view.extent(i);
+                begin[i] = 0;
             }
 
             Op op;
 
             for (unsigned d = 0; d < Dim; ++d) {
+                end    = ext;
+                end[d] = nghost;
+
                 if (lDomains[myRank][d].length() == domain[d].length()) {
                     int N = view.extent(d) - 1;
 
-                    switch (d) {
-                        case 0:
-                            Kokkos::parallel_for(
-                                "applyPeriodicSerialDim X",
-                                mdrange_type({0, 0, 0}, {(long)nghost, ext[1], ext[2]}),
-                                KOKKOS_LAMBDA(const int i, const size_t j, const size_t k) {
-                                    // The ghosts are filled starting from the inside of
-                                    // the domain proceeding outwards for both lower and
-                                    // upper faces. The extra brackets and explicit mention
-                                    // of 0 is for better readability of the code
+                    Kokkos::parallel_for(
+                        "applyPeriodicSerialDim", mdrange_type(begin, end),
+                        KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                            // The ghosts are filled starting from the inside of
+                            // the domain proceeding outwards for both lower and
+                            // upper faces. The extra brackets and explicit mention
 
-                                    op(view(0 + (nghost - 1) - i, j, k),
-                                       view(N - nghost - i, j, k));
-                                    op(view(N - (nghost - 1) + i, j, k),
-                                       view(0 + nghost + i, j, k));
-                                });
-                            Kokkos::fence();
-                            break;
-                        case 1:
-                            Kokkos::parallel_for(
-                                "applyPeriodicSerialDim Y",
-                                mdrange_type({0, 0, 0}, {ext[0], (long)nghost, ext[2]}),
-                                KOKKOS_LAMBDA(const size_t i, const int j, const size_t k) {
-                                    op(view(i, 0 + (nghost - 1) - j, k),
-                                       view(i, N - nghost - j, k));
-                                    op(view(i, N - (nghost - 1) + j, k),
-                                       view(i, 0 + nghost + j, k));
-                                });
-                            Kokkos::fence();
-                            break;
-                        case 2:
-                            Kokkos::parallel_for(
-                                "applyPeriodicSerialDim Z",
-                                mdrange_type({0, 0, 0}, {ext[0], ext[1], (long)nghost}),
-                                KOKKOS_LAMBDA(const size_t i, const size_t j, const int k) {
-                                    op(view(i, j, 0 + (nghost - 1) - k),
-                                       view(i, j, N - nghost - k));
-                                    op(view(i, j, N - (nghost - 1) + k),
-                                       view(i, j, 0 + nghost + k));
-                                });
-                            Kokkos::fence();
-                            break;
-                        default:
-                            throw IpplException("applyPeriodicSerialDim", "face number wrong");
-                    }
+                            using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                            index_type coords[Dim] = {args...};
+
+                            // nghost + i
+                            coords[d] += nghost;
+                            T left = apply<Dim>(view, coords);
+
+                            // N - nghost - i
+                            coords[d] = N - coords[d];
+                            T right   = apply<Dim>(view, coords);
+
+                            // nghost - 1 - i
+                            coords[d] += 2 * nghost - 1 - N;
+                            op(apply<Dim>(view, coords), right);
+
+                            // N - (nghost - 1 - i) = N - (nghost - 1) + i
+                            coords[d] = N - coords[d];
+                            op(apply<Dim>(view, coords), left);
+                        });
+
+                    Kokkos::fence();
                 }
             }
         }
