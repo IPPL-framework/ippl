@@ -104,9 +104,10 @@ namespace ippl {
         // Check that no plane was obtained in the repartition
         IpplTimings::startTimer(tbasicOp);
         for (unsigned int i = 0; i < domains.size(); i++) {
-            if (domains[i][0].length() == 1 || domains[i][1].length() == 1
-                || domains[i][2].length() == 1)
-                return false;
+            for (unsigned int d = 0; d < Dim; d++) {
+                if (domains[i][d].length() == 1)
+                    return false;
+            }
         }
 
         // Update FieldLayout with new indices
