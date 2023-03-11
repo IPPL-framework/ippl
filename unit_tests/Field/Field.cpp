@@ -29,7 +29,7 @@ public:
     typedef ippl::FieldLayout<dim> layout_type;
 
     FieldTest()
-        : nPoints(8) {
+        : nPoints(128) {
         setup();
     }
 
@@ -56,6 +56,16 @@ public:
     std::shared_ptr<layout_type> layout;
     size_t nPoints;
 };
+
+TEST_F(FieldTest, Sum) {
+    double val = 1.0;
+
+    *field = val;
+
+    double sum = field->sum();
+
+    ASSERT_DOUBLE_EQ(val * std::pow(nPoints, dim), sum);
+}
 
 TEST_F(FieldTest, Norm1) {
     double val = -1.5;
