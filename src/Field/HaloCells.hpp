@@ -378,11 +378,11 @@ namespace ippl {
 
                             // nghost + i
                             coords[d] += nghost;
-                            T left = apply<Dim>(view, coords);
+                            auto&& left = apply<Dim>(view, coords);
 
                             // N - nghost - i
-                            coords[d] = N - coords[d];
-                            T right   = apply<Dim>(view, coords);
+                            coords[d]    = N - coords[d];
+                            auto&& right = apply<Dim>(view, coords);
 
                             // nghost - 1 - i
                             coords[d] += 2 * nghost - 1 - N;

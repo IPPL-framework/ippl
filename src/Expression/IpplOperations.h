@@ -342,13 +342,13 @@ namespace ippl {
                 constexpr unsigned Dim = E::Mesh_t::Dimension;
                 for (unsigned d = 0; d < Dim; d++) {
                     index_type coords[Dim] = {args...};
-                    T center               = apply<Dim>(u_m, coords);
+                    auto&& center          = apply<Dim>(u_m, coords);
 
                     coords[d] -= 1;
-                    T left = apply<Dim>(u_m, coords);
+                    auto&& left = apply<Dim>(u_m, coords);
 
                     coords[d] += 2;
-                    T right = apply<Dim>(u_m, coords);
+                    auto&& right = apply<Dim>(u_m, coords);
 
                     res += hvector_m[d] * (left - 2 * center + right);
                 }
