@@ -157,56 +157,37 @@ namespace ippl {
         unsigned int arrayStart = 0;
         if (dom[cutAxis].first() < lDom[cutAxis].first())
             arrayStart = lDom[cutAxis].first() - dom[cutAxis].first();
-        // Face of domain has two directions: 1 and 2
-        int perpAxis1 = (cutAxis + 1) % Dim;
-        int perpAxis2 = (cutAxis + 2) % Dim;
-        // inf and sup bounds must be within the domain to reduce, if not no need to reduce
-        int inf1 = std::max(lDom[perpAxis1].first(), dom[perpAxis1].first())
-                   - lDom[perpAxis1].first() + nghost;
-        int inf2 = std::max(lDom[perpAxis2].first(), dom[perpAxis2].first())
-                   - lDom[perpAxis2].first() + nghost;
-        int sup1 = std::min(lDom[perpAxis1].last(), dom[perpAxis1].last()) - lDom[perpAxis1].first()
-                   + nghost;
-        int sup2 = std::min(lDom[perpAxis2].last(), dom[perpAxis2].last()) - lDom[perpAxis2].first()
-                   + nghost;
-        if (sup1 < inf1 || sup2 < inf2)
-            return;
-        // The +1 is for Kokkos loop
-        sup1++;
-        sup2++;
+
+        // Find all the perpendicular axes
+        Kokkos::Array<size_t, Dim> begin, end;
+        for (unsigned d = 0; d < Dim; d++) {
+            if (d == cutAxis)
+                continue;
+
+            size_t inf = std::max(lDom[d].first(), dom[d].first()) - lDom[d].first() + nghost;
+            size_t sup = std::min(lDom[d].last(), dom[d].last()) - lDom[d].first() + nghost;
+            // inf and sup bounds must be within the domain to reduce, if not no need to reduce
+            if (sup < inf)
+                return;
+
+            begin[d] = inf;
+            // The +1 is for Kokkos loop
+            end[d] = sup + 1;
+        }
 
         // Iterate along cutAxis
-        using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+        using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
         for (int i = cutAxisFirst; i <= cutAxisLast; i++) {
+            begin[cutAxis] = i;
+            end[cutAxis]   = i + 1;
+
             // Reducing over perpendicular plane defined by cutAxis
             T tempRes = T(0);
-            switch (cutAxis) {
-                default:
-                case 0:
-                    Kokkos::parallel_reduce(
-                        "ORB weight reduction (0)", mdrange_t({inf1, inf2}, {sup1, sup2}),
-                        KOKKOS_LAMBDA(const int j, const int k, T& weight) {
-                            weight += data(i, j, k);
-                        },
-                        tempRes);
-                    break;
-                case 1:
-                    Kokkos::parallel_reduce(
-                        "ORB weight reduction (1)", mdrange_t({inf2, inf1}, {sup2, sup1}),
-                        KOKKOS_LAMBDA(const int j, const int k, T& weight) {
-                            weight += data(j, i, k);
-                        },
-                        tempRes);
-                    break;
-                case 2:
-                    Kokkos::parallel_reduce(
-                        "ORB weight reduction (2)", mdrange_t({inf1, inf2}, {sup1, sup2}),
-                        KOKKOS_LAMBDA(const int j, const int k, T& weight) {
-                            weight += data(j, k, i);
-                        },
-                        tempRes);
-                    break;
-            }
+
+            Kokkos::parallel_reduce("ORB weight reduction", mdrange_t(begin, end),
+                                    detail::functorize<Dim, T>(KOKKOS_LAMBDA<typename... Idx>(
+                                        const Idx... args, T& weight) { weight += data(args...); }),
+                                    tempRes);
 
             Kokkos::fence();
 
