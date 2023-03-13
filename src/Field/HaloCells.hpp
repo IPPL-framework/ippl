@@ -307,9 +307,20 @@ namespace ippl {
 
             Kokkos::parallel_for(
                 "HaloCells::pack()", detail::getRangePolicy<Dim>(subview),
-                KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                    int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
-                    buffer(l) = subview(i, j, k);
+                KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
+                    int l = 0;
+
+                    using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                    index_type coords[Dim] = {args...};
+                    for (unsigned d1 = 0; d1 < Dim; d1++) {
+                        int next = coords[d1];
+                        for (unsigned d2 = 0; d2 < d1; d2++) {
+                            next *= subview.extent(d2);
+                        }
+                        l += next;
+                    }
+
+                    buffer(l) = subview(args...);
                 });
             Kokkos::fence();
         }
@@ -327,9 +338,20 @@ namespace ippl {
 
             Kokkos::parallel_for(
                 "HaloCells::unpack()", detail::getRangePolicy<Dim>(subview),
-                KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                    int l = i + j * subview.extent(0) + k * subview.extent(0) * subview.extent(1);
-                    op(subview(i, j, k), buffer(l));
+                KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
+                    int l = 0;
+
+                    using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                    index_type coords[Dim] = {args...};
+                    for (unsigned d1 = 0; d1 < Dim; d1++) {
+                        int next = coords[d1];
+                        for (unsigned d2 = 0; d2 < d1; d2++) {
+                            next *= subview.extent(d2);
+                        }
+                        l += next;
+                    }
+
+                    op(subview(args...), buffer(l));
                 });
             Kokkos::fence();
         }
