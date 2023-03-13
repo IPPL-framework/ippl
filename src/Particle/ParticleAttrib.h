@@ -142,7 +142,7 @@ namespace ippl {
 
     template <unsigned long Idx, typename T, unsigned Dim, typename IndexType = size_t>
     KOKKOS_INLINE_FUNCTION constexpr void scatter_point(
-        const typename detail::ViewType<T, Dim>::view_type& v, const Vector<T, Dim>& wlo,
+        const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
         const Vector<T, Dim>& whi, Vector<IndexType, Dim> args, T val = 1) {
         for (unsigned d = 0; d < Dim; d++) {
             if (Idx & (1 << d)) {
@@ -153,23 +153,56 @@ namespace ippl {
             }
         }
 
-        Kokkos::atomic_add(&apply<Dim>(v, args), val);
+        Kokkos::atomic_add(&apply<Dim>(view, args), val);
     }
 
     template <unsigned long... Idx, typename T, unsigned Dim, typename IndexType = size_t>
     KOKKOS_INLINE_FUNCTION constexpr void scatter_impl(
-        const typename detail::ViewType<T, Dim>::view_type& v, const Vector<T, Dim>& wlo,
+        const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
         const Vector<T, Dim>& whi, std::index_sequence<Idx...>, const Vector<IndexType, Dim>& args,
         T val = 1) {
-        (scatter_point<Idx>(v, wlo, whi, args, val), ...);
+        (scatter_point<Idx>(view, wlo, whi, args, val), ...);
     }
 
-    template <unsigned Dim, typename T, typename... Args, typename IndexType = size_t>
+    template <unsigned Dim, typename T, typename IndexType = size_t>
     KOKKOS_INLINE_FUNCTION constexpr void scatter_field(
-        const typename detail::ViewType<T, Dim>::view_type& v, const Vector<T, Dim>& wlo,
+        const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
         const Vector<T, Dim>& whi, const Vector<IndexType, Dim> args, T val = 1) {
         constexpr unsigned count = 1 << Dim;
-        scatter_impl(v, wlo, whi, std::make_index_sequence<count>{}, args, val);
+        scatter_impl(view, wlo, whi, std::make_index_sequence<count>{}, args, val);
+    }
+
+    template <unsigned long Idx, typename T, unsigned Dim, typename IndexType = size_t>
+    KOKKOS_INLINE_FUNCTION constexpr T gather_point(
+        const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
+        const Vector<T, Dim>& whi, Vector<IndexType, Dim> args) {
+        T val = 1;
+        for (unsigned d = 0; d < Dim; d++) {
+            if (Idx & (1 << d)) {
+                args[d]--;
+                val *= wlo[d];
+            } else {
+                val *= whi[d];
+            }
+        }
+
+        return val * apply<Dim>(view, args);
+    }
+
+    template <unsigned long... Idx, typename T, unsigned Dim, typename IndexType = size_t>
+    KOKKOS_INLINE_FUNCTION constexpr T gather_impl(
+        const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
+        const Vector<T, Dim>& whi, std::index_sequence<Idx...>,
+        const Vector<IndexType, Dim>& args) {
+        return (gather_point<Idx>(view, wlo, whi, args) + ...);
+    }
+
+    template <unsigned Dim, typename T, typename IndexType = size_t>
+    KOKKOS_INLINE_FUNCTION constexpr T gather_field(
+        const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
+        const Vector<T, Dim>& whi, const Vector<IndexType, Dim> args) {
+        constexpr unsigned count = 1 << Dim;
+        return gather_impl(view, wlo, whi, std::make_index_sequence<count>{}, args);
     }
 }  // namespace ippl
 
