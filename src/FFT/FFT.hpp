@@ -134,20 +134,13 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        Kokkos::View<Complex_t***, Kokkos::LayoutLeft> tempField(
-            "tempField", fview.extent(0) - 2 * nghost, fview.extent(1) - 2 * nghost,
-            fview.extent(2) - 2 * nghost);
-
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        auto tempField = detail::shrinkView<Dim, Complex_t>("tempField", fview, nghost);
 
         Kokkos::parallel_for(
-            "copy from Kokkos FFT",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                tempField(i - nghost, j - nghost, k - nghost).real(fview(i, j, k).real());
-                tempField(i - nghost, j - nghost, k - nghost).imag(fview(i, j, k).imag());
+            "copy from Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                tempField((args - nghost)...).real(fview(args...).real());
+                tempField((args - nghost)...).imag(fview(args...).imag());
             });
 
         if (direction == 1) {
@@ -161,13 +154,10 @@ namespace ippl {
         }
 
         Kokkos::parallel_for(
-            "copy to Kokkos FFT",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                fview(i, j, k).real() = tempField(i - nghost, j - nghost, k - nghost).real();
-                fview(i, j, k).imag() = tempField(i - nghost, j - nghost, k - nghost).imag();
+            "copy to Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                fview(args...).real() = tempField((args - nghost)...).real();
+                fview(args...).imag() = tempField((args - nghost)...).imag();
             });
     }
 
@@ -282,32 +272,19 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        Kokkos::View<T***, Kokkos::LayoutLeft> tempFieldf(
-            "tempFieldf", fview.extent(0) - 2 * nghostf, fview.extent(1) - 2 * nghostf,
-            fview.extent(2) - 2 * nghostf);
-
-        Kokkos::View<Complex_t***, Kokkos::LayoutLeft> tempFieldg(
-            "tempFieldg", gview.extent(0) - 2 * nghostg, gview.extent(1) - 2 * nghostg,
-            gview.extent(2) - 2 * nghostg);
-
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        auto tempFieldf = detail::shrinkView<Dim, T>("tempFieldf", fview, nghostf);
+        auto tempFieldg = detail::shrinkView<Dim, Complex_t>("tempFieldg", gview, nghostg);
 
         Kokkos::parallel_for(
-            "copy from Kokkos f field in FFT",
-            mdrange_type(
-                {nghostf, nghostf, nghostf},
-                {fview.extent(0) - nghostf, fview.extent(1) - nghostf, fview.extent(2) - nghostf}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                tempFieldf(i - nghostf, j - nghostf, k - nghostf) = fview(i, j, k);
+            "copy from Kokkos f field in FFT", detail::getRangePolicy<Dim>(fview, nghostf),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                tempFieldf((args - nghostf)...) = fview(args...);
             });
         Kokkos::parallel_for(
-            "copy from Kokkos g field in FFT",
-            mdrange_type(
-                {nghostg, nghostg, nghostg},
-                {gview.extent(0) - nghostg, gview.extent(1) - nghostg, gview.extent(2) - nghostg}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                tempFieldg(i - nghostg, j - nghostg, k - nghostg).real(gview(i, j, k).real());
-                tempFieldg(i - nghostg, j - nghostg, k - nghostg).imag(gview(i, j, k).imag());
+            "copy from Kokkos g field in FFT", detail::getRangePolicy<Dim>(gview, nghostg),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                tempFieldg((args - nghostg)...).real(gview(args...).real());
+                tempFieldg((args - nghostg)...).imag(gview(args...).imag());
             });
 
         if (direction == 1) {
@@ -321,22 +298,16 @@ namespace ippl {
         }
 
         Kokkos::parallel_for(
-            "copy to Kokkos f field FFT",
-            mdrange_type(
-                {nghostf, nghostf, nghostf},
-                {fview.extent(0) - nghostf, fview.extent(1) - nghostf, fview.extent(2) - nghostf}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                fview(i, j, k) = tempFieldf(i - nghostf, j - nghostf, k - nghostf);
+            "copy to Kokkos f field FFT", detail::getRangePolicy<Dim>(fview, nghostf),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                fview(args...) = tempFieldf((args - nghostf)...);
             });
 
         Kokkos::parallel_for(
-            "copy to Kokkos g field FFT",
-            mdrange_type(
-                {nghostg, nghostg, nghostg},
-                {gview.extent(0) - nghostg, gview.extent(1) - nghostg, gview.extent(2) - nghostg}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                gview(i, j, k).real() = tempFieldg(i - nghostg, j - nghostg, k - nghostg).real();
-                gview(i, j, k).imag() = tempFieldg(i - nghostg, j - nghostg, k - nghostg).imag();
+            "copy to Kokkos g field FFT", detail::getRangePolicy<Dim>(gview, nghostg),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                gview(args...).real() = tempFieldg((args - nghostg)...).real();
+                gview(args...).imag() = tempFieldg((args - nghostg)...).imag();
             });
     }
 
@@ -436,19 +407,12 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        Kokkos::View<T***, Kokkos::LayoutLeft> tempField("tempField", fview.extent(0) - 2 * nghost,
-                                                         fview.extent(1) - 2 * nghost,
-                                                         fview.extent(2) - 2 * nghost);
-
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        auto tempField = detail::shrinkView<Dim, T>("tempField", fview, nghost);
 
         Kokkos::parallel_for(
-            "copy from Kokkos FFT",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                tempField(i - nghost, j - nghost, k - nghost) = fview(i, j, k);
+            "copy from Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                tempField((args - nghost)...) = fview(args...);
             });
 
         if (direction == 1) {
@@ -462,12 +426,9 @@ namespace ippl {
         }
 
         Kokkos::parallel_for(
-            "copy to Kokkos FFT",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                fview(i, j, k) = tempField(i - nghost, j - nghost, k - nghost);
+            "copy to Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                fview(args...) = tempField((args - nghost)...);
             });
     }
 
@@ -567,19 +528,12 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        Kokkos::View<T***, Kokkos::LayoutLeft> tempField("tempField", fview.extent(0) - 2 * nghost,
-                                                         fview.extent(1) - 2 * nghost,
-                                                         fview.extent(2) - 2 * nghost);
-
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        auto tempField = detail::shrinkView<Dim, T>("tempField", fview, nghost);
 
         Kokkos::parallel_for(
-            "copy from Kokkos FFT",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                tempField(i - nghost, j - nghost, k - nghost) = fview(i, j, k);
+            "copy from Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                tempField((args - nghost)...) = fview(args...);
             });
 
         if (direction == 1) {
@@ -593,12 +547,9 @@ namespace ippl {
         }
 
         Kokkos::parallel_for(
-            "copy to Kokkos FFT",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                fview(i, j, k) = tempField(i - nghost, j - nghost, k - nghost);
+            "copy to Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                fview(args...) = tempField((args - nghost)...);
             });
     }
 }  // namespace ippl
