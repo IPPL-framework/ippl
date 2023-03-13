@@ -34,7 +34,13 @@ namespace ippl {
 
         NDIndex<Dim> domainComplex;
 
+        Vector<double, Dim> hComplex;
+        Vector<double, Dim> originComplex;
+
         for (unsigned d = 0; d < Dim; ++d) {
+            hComplex[d]      = 1.0;
+            originComplex[d] = 0.0;
+
             decomp[d] = layout_r.getRequestedDistribution(d);
             if (this->params_m.template get<int>("r2c_direction") == (int)d)
                 domainComplex[d] = Index(domain_m[d].length() / 2 + 1);
@@ -44,8 +50,6 @@ namespace ippl {
 
         layoutComplex_mp = std::make_shared<Layout_t>(domainComplex, decomp);
 
-        Vector<double, 3> hComplex      = {1.0, 1.0, 1.0};
-        Vector<double, 3> originComplex = {0.0, 0.0, 0.0};
         M meshComplex(domainComplex, hComplex, originComplex);
 
         fieldComplex_m.initialize(meshComplex, *layoutComplex_mp);
@@ -60,9 +64,8 @@ namespace ippl {
     void FFTPeriodicPoissonSolver<Tl, Tr, Dim, M, C>::solve() {
         fft_mp->transform(1, *this->rhs_mp, fieldComplex_m);
 
-        auto view          = fieldComplex_m.getView();
-        const int nghost   = fieldComplex_m.getNghost();
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
+        auto view        = fieldComplex_m.getView();
+        const int nghost = fieldComplex_m.getNghost();
 
         double pi                 = std::acos(-1.0);
         const M& mesh             = this->rhs_mp->get_mesh();
@@ -84,16 +87,13 @@ namespace ippl {
         switch (this->params_m.template get<int>("output_type")) {
             case Base::SOL: {
                 Kokkos::parallel_for(
-                    "Solution FFTPeriodicPoissonSolver",
-                    mdrange_type({nghost, nghost, nghost},
-                                 {view.extent(0) - nghost, view.extent(1) - nghost,
-                                  view.extent(2) - nghost}),
-                    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                        const int ig = i + lDomComplex[0].first() - nghost;
-                        const int jg = j + lDomComplex[1].first() - nghost;
-                        const int kg = k + lDomComplex[2].first() - nghost;
+                    "Solution FFTPeriodicPoissonSolver", detail::getRangePolicy<Dim>(view, nghost),
+                    KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                        Vector<int, Dim> iVec = {(int)(args - nghost)...};
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            iVec[d] += lDomComplex[d].first();
+                        }
 
-                        Vector<int, 3> iVec = {ig, jg, kg};
                         Vector_t kVec;
 
                         for (size_t d = 0; d < Dim; ++d) {
@@ -102,12 +102,15 @@ namespace ippl {
                             kVec[d]          = 2 * pi / Len * (iVec[d] - shift * N[d]);
                         }
 
-                        double Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
+                        double Dr = 0;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            Dr += kVec[d] * kVec[d];
+                        }
 
                         bool isNotZero = (Dr != 0.0);
                         double factor  = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
 
-                        view(i, j, k) *= factor;
+                        view(args...) *= factor;
                     });
 
                 fft_mp->transform(-1, *this->rhs_mp, fieldComplex_m);
@@ -127,15 +130,13 @@ namespace ippl {
                 for (size_t gd = 0; gd < Dim; ++gd) {
                     Kokkos::parallel_for(
                         "Gradient FFTPeriodicPoissonSolver",
-                        mdrange_type({nghost, nghost, nghost},
-                                     {view.extent(0) - nghost, view.extent(1) - nghost,
-                                      view.extent(2) - nghost}),
-                        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                            const int ig = i + lDomComplex[0].first() - nghost;
-                            const int jg = j + lDomComplex[1].first() - nghost;
-                            const int kg = k + lDomComplex[2].first() - nghost;
+                        detail::getRangePolicy<Dim>(view, nghost),
+                        KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                            Vector<int, Dim> iVec = {(int)(args - nghost)...};
+                            for (unsigned d = 0; d < Dim; ++d) {
+                                iVec[d] += lDomComplex[d].first();
+                            }
 
-                            Vector<int, 3> iVec = {ig, jg, kg};
                             Vector_t kVec;
 
                             for (size_t d = 0; d < Dim; ++d) {
@@ -147,25 +148,26 @@ namespace ippl {
                                 kVec[d] = notMid * 2 * pi / Len * (iVec[d] - shift * N[d]);
                             }
 
-                            double Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
+                            double Dr = 0;
+                            for (unsigned d = 0; d < Dim; ++d) {
+                                Dr += kVec[d] * kVec[d];
+                            }
 
-                            tempview(i, j, k) = view(i, j, k);
+                            tempview(args...) = view(args...);
 
                             bool isNotZero = (Dr != 0.0);
                             double factor  = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
 
-                            tempview(i, j, k) *= -(imag * kVec[gd] * factor);
+                            tempview(args...) *= -(imag * kVec[gd] * factor);
                         });
 
                     fft_mp->transform(-1, *this->rhs_mp, tempFieldComplex_m);
 
                     Kokkos::parallel_for(
                         "Assign Gradient FFTPeriodicPoissonSolver",
-                        mdrange_type({nghostL, nghostL, nghostL},
-                                     {viewLhs.extent(0) - nghostL, viewLhs.extent(1) - nghostL,
-                                      viewLhs.extent(2) - nghostL}),
-                        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                            viewLhs(i, j, k)[gd] = viewRhs(i, j, k);
+                        detail::getRangePolicy<Dim>(viewLhs, nghostL),
+                        KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                            viewLhs(args...)[gd] = viewRhs(args...);
                         });
                 }
 
