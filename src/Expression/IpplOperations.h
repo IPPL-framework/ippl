@@ -20,8 +20,6 @@
 
 #include <tuple>
 
-#include "Types/Vector.h"
-
 namespace ippl {
     /*!
      * @file IpplOperations.h

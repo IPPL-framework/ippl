@@ -139,6 +139,38 @@ namespace ippl {
     private:
         view_type dview_m;
     };
+
+    template <unsigned long Idx, typename T, unsigned Dim, typename IndexType = size_t>
+    KOKKOS_INLINE_FUNCTION constexpr void scatter_point(
+        const typename detail::ViewType<T, Dim>::view_type& v, const Vector<T, Dim>& wlo,
+        const Vector<T, Dim>& whi, Vector<IndexType, Dim> args, T val = 1) {
+        for (unsigned d = 0; d < Dim; d++) {
+            if (Idx & (1 << d)) {
+                args[d]--;
+                val *= wlo[d];
+            } else {
+                val *= whi[d];
+            }
+        }
+
+        Kokkos::atomic_add(&apply<Dim>(v, args), val);
+    }
+
+    template <unsigned long... Idx, typename T, unsigned Dim, typename IndexType = size_t>
+    KOKKOS_INLINE_FUNCTION constexpr void scatter_impl(
+        const typename detail::ViewType<T, Dim>::view_type& v, const Vector<T, Dim>& wlo,
+        const Vector<T, Dim>& whi, std::index_sequence<Idx...>, const Vector<IndexType, Dim>& args,
+        T val = 1) {
+        (scatter_point<Idx>(v, wlo, whi, args, val), ...);
+    }
+
+    template <unsigned Dim, typename T, typename... Args, typename IndexType = size_t>
+    KOKKOS_INLINE_FUNCTION constexpr void scatter_field(
+        const typename detail::ViewType<T, Dim>::view_type& v, const Vector<T, Dim>& wlo,
+        const Vector<T, Dim>& whi, const Vector<IndexType, Dim> args, T val = 1) {
+        constexpr unsigned count = 1 << Dim;
+        scatter_impl(v, wlo, whi, std::make_index_sequence<count>{}, args, val);
+    }
 }  // namespace ippl
 
 #include "Particle/ParticleAttrib.hpp"

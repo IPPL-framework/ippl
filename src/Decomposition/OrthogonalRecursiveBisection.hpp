@@ -270,24 +270,18 @@ namespace ippl {
         Kokkos::parallel_for(
             "ParticleAttrib::scatterR", r.getParticleCount(), KOKKOS_LAMBDA(const size_t idx) {
                 // Find nearest grid point
-                vector_type l           = (r(idx) - origin) * invdx + 0.5;
-                Vector<int, Dim> index  = l;
-                Vector<double, Dim> whi = l - index;
-                Vector<double, Dim> wlo = 1.0 - whi;
+                vector_type l          = (r(idx) - origin) * invdx + 0.5;
+                Vector<int, Dim> index = l;
+                Vector<T, Dim> whi     = l - index;
+                Vector<T, Dim> wlo     = 1.0 - whi;
 
-                const size_t i = index[0] - lDom[0].first() + nghost;
-                const size_t j = index[1] - lDom[1].first() + nghost;
-                const size_t k = index[2] - lDom[2].first() + nghost;
+                Vector<size_t, Dim> args;
+                for (unsigned d = 0; d < Dim; d++) {
+                    args[d] = index[d] - lDom[d].first() + nghost;
+                }
 
                 // Scatter
-                Kokkos::atomic_add(&view(i - 1, j - 1, k - 1), wlo[0] * wlo[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i - 1, j - 1, k), wlo[0] * wlo[1] * whi[2]);
-                Kokkos::atomic_add(&view(i - 1, j, k - 1), wlo[0] * whi[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i - 1, j, k), wlo[0] * whi[1] * whi[2]);
-                Kokkos::atomic_add(&view(i, j - 1, k - 1), whi[0] * wlo[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i, j - 1, k), whi[0] * wlo[1] * whi[2]);
-                Kokkos::atomic_add(&view(i, j, k - 1), whi[0] * whi[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i, j, k), whi[0] * whi[1] * whi[2]);
+                scatter_field(view, wlo, whi, args);
             });
 
         bf_m.accumulateHalo();
