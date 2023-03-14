@@ -36,16 +36,15 @@ namespace ippl {
 
     // ParticleAttrib class definition
     template <typename T, class... Properties>
-    class ParticleAttrib : public detail::ParticleAttribBase<Properties...>
-                         , public detail::Expression<
-                                        ParticleAttrib<T, Properties...>,
-                                        sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)
-                            >
-    {
+    class ParticleAttrib : public detail::ParticleAttribBase<Properties...>,
+                           public detail::Expression<
+                               ParticleAttrib<T, Properties...>,
+                               sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)> {
     public:
         typedef T value_type;
-        using boolean_view_type = typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
-        using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
+        using boolean_view_type =
+            typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
+        using view_type  = typename detail::ViewType<T, 1, Properties...>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
 
         using size_type = detail::size_type;
@@ -61,9 +60,8 @@ namespace ippl {
          * @param keepIndex List of indices of valid particles in the invalid region
          * @param invalidCount Number of invalid particles in the valid region
          */
-        void destroy(const Kokkos::View<int*>& deleteIndex,
-                  const Kokkos::View<int*>& keepIndex,
-                  size_type invalidCount) override;
+        void destroy(const Kokkos::View<int*>& deleteIndex, const Kokkos::View<int*>& keepIndex,
+                     size_type invalidCount) override;
 
         void pack(void*, const Kokkos::View<int*>&) const override;
 
@@ -78,22 +76,16 @@ namespace ippl {
         }
 
         virtual ~ParticleAttrib() = default;
-       
-        size_type size() const override {
-            return dview_m.extent(0);
-        }
+
+        size_type size() const override { return dview_m.extent(0); }
 
         size_type packedSize(const size_type count) const override {
             return count * sizeof(value_type);
         }
 
-        void resize(size_type n) {
-            Kokkos::resize(dview_m, n);
-        }
+        void resize(size_type n) { Kokkos::resize(dview_m, n); }
 
-        void realloc(size_type n) {
-            Kokkos::realloc(dview_m, n);
-        }
+        void realloc(size_type n) { Kokkos::realloc(dview_m, n); }
 
         void print() {
             HostMirror hview = Kokkos::create_mirror_view(dview_m);
@@ -103,31 +95,18 @@ namespace ippl {
             }
         }
 
+        KOKKOS_INLINE_FUNCTION T& operator()(const size_t i) const { return dview_m(i); }
 
-        KOKKOS_INLINE_FUNCTION
-        T& operator()(const size_t i) const {
-            return dview_m(i);
-        }
+        view_type& getView() { return dview_m; }
 
+        const view_type& getView() const { return dview_m; }
 
-        view_type& getView() {
-            return dview_m;
-        }
-
-        const view_type& getView() const{
-            return dview_m;
-        }
-
-
-        HostMirror getHostMirror() {
-            return Kokkos::create_mirror(dview_m);
-        }
-
+        HostMirror getHostMirror() { return Kokkos::create_mirror(dview_m); }
 
         /*!
          * Assign the same value to the whole attribute.
          */
-	//KOKKOS_INLINE_FUNCTION
+        // KOKKOS_INLINE_FUNCTION
         ParticleAttrib<T, Properties...>& operator=(T x);
 
         /*!
@@ -138,21 +117,18 @@ namespace ippl {
          * @param expr is the expression
          */
         template <typename E, size_t N>
-	//KOKKOS_INLINE_FUNCTION
+        // KOKKOS_INLINE_FUNCTION
         ParticleAttrib<T, Properties...>& operator=(detail::Expression<E, N> const& expr);
 
-
         //     // scatter the data from this attribute onto the given Field, using
-//     // the given Position attribute
+        //     // the given Position attribute
         template <unsigned Dim, class M, class C, typename P2>
-        void
-        scatter(Field<T, Dim, M, C>& f,
-                const ParticleAttrib<Vector<P2, Dim>, Properties... >& pp) const;
-        
+        void scatter(Field<T, Dim, M, C>& f,
+                     const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) const;
+
         template <unsigned Dim, class M, class C, typename P2>
-        void
-        gather(Field<T, Dim, M, C>& f,
-               const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
+        void gather(Field<T, Dim, M, C>& f,
+                    const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
 
         T sum();
         T max();
@@ -162,7 +138,7 @@ namespace ippl {
     private:
         view_type dview_m;
     };
-}
+}  // namespace ippl
 
 #include "Particle/ParticleAttrib.hpp"
 

@@ -1,0 +1,24 @@
+Language:        Cpp
+BasedOnStyle:  Google
+AccessModifierOffset: -4
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: true
+AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+AlignEscapedNewlines: Left
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Empty
+AllowShortLoopsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AttributeMacros: ['KOKKOS_INLINE_FUNCTION']
+BreakBeforeBinaryOperators: NonAssignment
+BreakConstructorInitializers: BeforeComma
+ColumnLimit:     100
+DerivePointerAlignment: false
+IndentWidth:     4
+IncludeBlocks: Preserve
+IndentGotoLabels: false
+NamespaceIndentation: All 
+PackConstructorInitializers: Never
+ReflowComments: true
+StatementMacros: ['DefineUnaryOperation', 'DefineBinaryOperation']

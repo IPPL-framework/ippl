@@ -43,18 +43,17 @@
 namespace ippl {
     namespace detail {
 
-        template <typename T, unsigned Dim, class Mesh> class RegionLayout;
+        template <typename T, unsigned Dim, class Mesh>
+        class RegionLayout;
         template <typename T, unsigned Dim, class Mesh>
         std::ostream& operator<<(std::ostream&, const RegionLayout<T, Dim, Mesh>&);
 
-        template <typename T, unsigned Dim, class Mesh/* = UniformCartesian<T, Dim> */>
-        class RegionLayout
-        {
+        template <typename T, unsigned Dim, class Mesh /* = UniformCartesian<T, Dim> */>
+        class RegionLayout {
         public:
-             using NDRegion_t = NDRegion<T, Dim>;
-             using view_type = typename ViewType<NDRegion_t, 1>::view_type;
-             using host_mirror_type = typename view_type::host_mirror_type;
-
+            using NDRegion_t       = NDRegion<T, Dim>;
+            using view_type        = typename ViewType<NDRegion_t, 1>::view_type;
+            using host_mirror_type = typename view_type::host_mirror_type;
 
             // Default constructor.  To make this class actually work, the user
             // will have to later call 'changeDomain' to set the proper Domain
@@ -76,7 +75,7 @@ namespace ippl {
 
             void write(std::ostream& = std::cout) const;
 
-            void changeDomain(const FieldLayout<Dim>&, const Mesh& mesh); // previously private...
+            void changeDomain(const FieldLayout<Dim>&, const Mesh& mesh);  // previously private...
 
         private:
             NDRegion_t convertNDIndex(const NDIndex<Dim>&, const Mesh& mesh) const;
@@ -99,10 +98,8 @@ namespace ippl {
             view_type subdomains_m;
         };
 
-
-
-    }
-}
+    }  // namespace detail
+}  // namespace ippl
 
 #include "Region/RegionLayout.hpp"
 

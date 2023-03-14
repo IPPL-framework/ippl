@@ -25,8 +25,8 @@
 #include <cstdlib>
 
 #include "Communicate/Archive.h"
-#include "Communicate/Tags.h"
 #include "Communicate/TagMaker.h"
+#include "Communicate/Tags.h"
 
 namespace ippl {
     /*!
@@ -34,13 +34,11 @@ namespace ippl {
      *
      * \remark Calling the plain *this pointer returns the MPI communicator, e.g. MPI_COMM_WORLD.
      */
-    class Communicate : public TagMaker
-    {
-
+    class Communicate : public TagMaker {
     public:
         // Attention: only works with default spaces
         using archive_type = detail::Archive<>;
-        using buffer_type = std::shared_ptr<archive_type>;
+        using buffer_type  = std::shared_ptr<archive_type>;
 
         using size_type = detail::size_type;
 
@@ -93,58 +91,38 @@ namespace ippl {
          */
         void deleteAllBuffers();
 
-        [[deprecated]]
-        int myNode() const noexcept {
-            return rank_m;
-        }
+        [[deprecated]] int myNode() const noexcept { return rank_m; }
 
-        [[deprecated]]
-        int getNodes() const noexcept {
-            return size_m;
-        }
+        [[deprecated]] int getNodes() const noexcept { return size_m; }
 
+        [[deprecated]] const char* name() const noexcept { return "MPI"; }
 
-        [[deprecated]]
-        const char *name() const noexcept {
-            return "MPI";
-        }
+        int size() const noexcept { return size_m; }
 
-        int size() const noexcept {
-            return size_m;
-        }
-
-        int rank() const noexcept {
-            return rank_m;
-        }
-
+        int rank() const noexcept { return rank_m; }
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer, archive_type& ar,
-                  size_type msize, size_type nrecvs);
+        void recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize,
+                  size_type nrecvs);
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
-        void isend(int dest, int tag, Buffer& buffer, archive_type&,
-                   MPI_Request&, size_type nsends);
+        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&,
+                   size_type nsends);
 
         /*!
          * \warning Only works with default spaces!
          */
         void irecv(int src, int tag, archive_type&, MPI_Request&, size_type msize);
 
+        MPI_Comm* getCommunicator() noexcept { return &comm_m; }
 
-        MPI_Comm* getCommunicator() noexcept {
-            return &comm_m;
-        }
-
-        void barrier() noexcept {
-            MPI_Barrier(comm_m);
-        }
+        void barrier() noexcept { MPI_Barrier(comm_m); }
 
     private:
         std::map<int, buffer_type> buffers_m;
@@ -155,11 +133,9 @@ namespace ippl {
         int rank_m;
     };
 
-
     template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar,
-                           size_type msize, size_type nrecvs)
-    {
+    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize,
+                           size_type nrecvs) {
         // Temporary fix. MPI communication seems to have problems when the
         // count argument exceeds the range of int, so large messages should
         // be split into smaller messages
@@ -168,25 +144,22 @@ namespace ippl {
             std::abort();
         }
         MPI_Status status;
-        MPI_Recv(ar.getBuffer(), msize,
-                MPI_BYTE, src, tag, comm_m, &status);
+        MPI_Recv(ar.getBuffer(), msize, MPI_BYTE, src, tag, comm_m, &status);
 
         buffer.deserialize(ar, nrecvs);
     }
 
     template <class Buffer>
-    void Communicate::isend(int dest, int tag, Buffer& buffer,
-                            archive_type& ar, MPI_Request& request, size_type nsends)
-    {
+    void Communicate::isend(int dest, int tag, Buffer& buffer, archive_type& ar,
+                            MPI_Request& request, size_type nsends) {
         if (ar.getSize() > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
             std::abort();
         }
         buffer.serialize(ar, nsends);
-        MPI_Isend(ar.getBuffer(), ar.getSize(),
-                  MPI_BYTE, dest, tag, comm_m, &request);
+        MPI_Isend(ar.getBuffer(), ar.getSize(), MPI_BYTE, dest, tag, comm_m, &request);
     }
-}
+}  // namespace ippl
 
 #include "Communicate/Buffers.hpp"
 

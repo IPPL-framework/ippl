@@ -37,32 +37,34 @@
 #ifndef IPPL_TIMINGS_H
 #define IPPL_TIMINGS_H
 
+#include "Utility/PAssert.h"
 #include "Utility/Timer.h"
 #include "Utility/my_auto_ptr.h"
-#include "Utility/PAssert.h"
 
+#include <limits>
+#include <map>
+#include <stack>
 #include <string>
 #include <vector>
-#include <map>
-#include <limits>
-#include <stack>
 
 #include <exception>
 
 // a simple class used to store timer values
-class IpplTimerInfo
-{
+class IpplTimerInfo {
 public:
     // typedef for reference to a timer
     typedef unsigned int TimerRef;
 
     // constructor
-    IpplTimerInfo() : name(""), wallTime(0.0), indx(std::numeric_limits<TimerRef>::max()) {
+    IpplTimerInfo()
+        : name("")
+        , wallTime(0.0)
+        , indx(std::numeric_limits<TimerRef>::max()) {
         clear();
     }
 
     // destructor
-    ~IpplTimerInfo() { }
+    ~IpplTimerInfo() {}
 
     // timer operations
     void start() {
@@ -104,8 +106,7 @@ public:
     TimerRef indx;
 };
 
-struct Timing
-{
+struct Timing {
     // typedef for reference to a timer
     typedef unsigned int TimerRef;
 
@@ -119,7 +120,7 @@ struct Timing
     ~Timing();
 
     // create a timer, or get one that already exists
-    TimerRef getTimer(const char *);
+    TimerRef getTimer(const char*);
 
     // start a timer
     void startTimer(TimerRef);
@@ -131,21 +132,17 @@ struct Timing
     void clearTimer(TimerRef);
 
     // return a TimerInfo struct by asking for the name
-    TimerInfo *infoTimer(const char *nm) {
-        return TimerMap[std::string(nm)];
-    }
+    TimerInfo* infoTimer(const char* nm) { return TimerMap[std::string(nm)]; }
 
     // print the results to standard out
     void print();
 
     // print the results to a file
-    void print(const std::string &fn,
-               const std::map<std::string, unsigned int> &problemSize);
-
+    void print(const std::string& fn, const std::map<std::string, unsigned int>& problemSize);
 
     // type of storage for list of TimerInfo
     typedef std::vector<my_auto_ptr<TimerInfo> > TimerList_t;
-    typedef std::map<std::string, TimerInfo *> TimerMap_t;
+    typedef std::map<std::string, TimerInfo*> TimerMap_t;
 
 private:
     // a list of timer info structs
@@ -155,10 +152,7 @@ private:
     TimerMap_t TimerMap;
 };
 
-
-
-class IpplTimings
-{
+class IpplTimings {
 public:
     // typedef for reference to a timer
     typedef Timing::TimerRef TimerRef;
@@ -167,38 +161,26 @@ public:
     typedef Timing::TimerInfo TimerInfo;
 
     // create a timer, or get one that already exists
-    static TimerRef getTimer(const char * nm) {
-        return instance->getTimer(nm);
-    }
+    static TimerRef getTimer(const char* nm) { return instance->getTimer(nm); }
 
     // start a timer
-    static void startTimer(TimerRef t) {
-        instance->startTimer(t);
-    }
+    static void startTimer(TimerRef t) { instance->startTimer(t); }
 
     // stop a timer, and accumulate it's values
-    static void stopTimer(TimerRef t) {
-        instance->stopTimer(t);
-    }
+    static void stopTimer(TimerRef t) { instance->stopTimer(t); }
 
     // clear a timer, by turning it off and throwing away its time
-    static void clearTimer(TimerRef t) {
-        instance->clearTimer(t);
-    }
+    static void clearTimer(TimerRef t) { instance->clearTimer(t); }
 
     // return a TimerInfo struct by asking for the name
-    static TimerInfo *infoTimer(const char *nm) {
-        return instance->infoTimer(nm);
-    }
+    static TimerInfo* infoTimer(const char* nm) { return instance->infoTimer(nm); }
 
     // print the results to standard out
-    static void print() {
-        instance->print();
-    }
+    static void print() { instance->print(); }
 
     // print the results to a file
-    static void print(std::string fn,
-                      const std::map<std::string, unsigned int> &problemSize = std::map<std::string, unsigned int>()) {
+    static void print(std::string fn, const std::map<std::string, unsigned int>& problemSize =
+                                          std::map<std::string, unsigned int>()) {
         instance->print(fn, problemSize);
     }
 
@@ -216,8 +198,7 @@ private:
     // Destructor - clear out the existing timers
     ~IpplTimings();
 
-
-    static Timing *instance;
+    static Timing* instance;
     static std::stack<Timing*> stashedInstance;
 };
 
