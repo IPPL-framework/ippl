@@ -89,14 +89,14 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, class Cell>
     detail::meta_grad<Field<T, Dim, Mesh, Cell>> grad(Field<T, Dim, Mesh, Cell>& u) {
         u.fillHalo();
-        BConds<T, Dim, M>& bcField = u.getFieldBC();
+        BConds<T, Dim, Mesh, Cell>& bcField = u.getFieldBC();
         bcField.apply(u);
-        M& mesh = u.get_mesh();
-        typename M::vector_type xvector(0);
+        Mesh& mesh = u.get_mesh();
+        typename Mesh::vector_type xvector(0);
         xvector[0] = 0.5 / mesh.getMeshSpacing(0);
-        typename M::vector_type yvector(0);
+        typename Mesh::vector_type yvector(0);
         yvector[1] = 0.5 / mesh.getMeshSpacing(1);
-        typename M::vector_type zvector(0);
+        typename Mesh::vector_type zvector(0);
         zvector[2] = 0.5 / mesh.getMeshSpacing(2);
         return detail::meta_grad<Field<T, Dim, Mesh, Cell>>(u, xvector, yvector, zvector);
     }
@@ -108,14 +108,14 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, class Cell>
     detail::meta_div<Field<T, Dim, Mesh, Cell>> div(Field<T, Dim, Mesh, Cell>& u) {
         u.fillHalo();
-        BConds<T, Dim, M>& bcField = u.getFieldBC();
+        BConds<T, Dim, Mesh, Cell>& bcField = u.getFieldBC();
         bcField.apply(u);
-        M& mesh = u.get_mesh();
-        typename M::vector_type xvector(0);
+        Mesh& mesh = u.get_mesh();
+        typename Mesh::vector_type xvector(0);
         xvector[0] = 0.5 / mesh.getMeshSpacing(0);
-        typename M::vector_type yvector(0);
+        typename Mesh::vector_type yvector(0);
         yvector[1] = 0.5 / mesh.getMeshSpacing(1);
-        typename M::vector_type zvector(0);
+        typename Mesh::vector_type zvector(0);
         zvector[2] = 0.5 / mesh.getMeshSpacing(2);
         return detail::meta_div<Field<T, Dim, Mesh, Cell>>(u, xvector, yvector, zvector);
     }
@@ -127,10 +127,10 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, class Cell>
     detail::meta_laplace<Field<T, Dim, Mesh, Cell>> laplace(Field<T, Dim, Mesh, Cell>& u) {
         u.fillHalo();
-        BConds<T, Dim, M>& bcField = u.getFieldBC();
+        BConds<T, Dim, Mesh, Cell>& bcField = u.getFieldBC();
         bcField.apply(u);
-        M& mesh = u.get_mesh();
-        typename M::vector_type hvector(0);
+        Mesh& mesh = u.get_mesh();
+        typename Mesh::vector_type hvector(0);
         hvector[0] = 1.0 / std::pow(mesh.getMeshSpacing(0), 2);
         hvector[1] = 1.0 / std::pow(mesh.getMeshSpacing(1), 2);
         hvector[2] = 1.0 / std::pow(mesh.getMeshSpacing(2), 2);
@@ -144,16 +144,16 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, class Cell>
     detail::meta_curl<Field<T, Dim, Mesh, Cell>> curl(Field<T, Dim, Mesh, Cell>& u) {
         u.fillHalo();
-        BConds<T, Dim, M>& bcField = u.getFieldBC();
+        BConds<T, Dim, Mesh, Cell>& bcField = u.getFieldBC();
         bcField.apply(u);
-        M& mesh = u.get_mesh();
-        typename M::vector_type xvector(0);
+        Mesh& mesh = u.get_mesh();
+        typename Mesh::vector_type xvector(0);
         xvector[0] = 1.0;
-        typename M::vector_type yvector(0);
+        typename Mesh::vector_type yvector(0);
         yvector[1] = 1.0;
-        typename M::vector_type zvector(0);
+        typename Mesh::vector_type zvector(0);
         zvector[2] = 1.0;
-        typename M::vector_type hvector(0);
+        typename Mesh::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
         return detail::meta_curl<Field<T, Dim, Mesh, Cell>>(u, xvector, yvector, zvector, hvector);
     }
@@ -165,16 +165,16 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, class Cell>
     detail::meta_hess<Field<T, Dim, Mesh, Cell>> hess(Field<T, Dim, Mesh, Cell>& u) {
         u.fillHalo();
-        BConds<T, Dim, M>& bcField = u.getFieldBC();
+        BConds<T, Dim, Mesh, Cell>& bcField = u.getFieldBC();
         bcField.apply(u);
-        M& mesh = u.get_mesh();
-        typename M::vector_type xvector(0);
+        Mesh& mesh = u.get_mesh();
+        typename Mesh::vector_type xvector(0);
         xvector[0] = 1.0;
-        typename M::vector_type yvector(0);
+        typename Mesh::vector_type yvector(0);
         yvector[1] = 1.0;
-        typename M::vector_type zvector(0);
+        typename Mesh::vector_type zvector(0);
         zvector[2] = 1.0;
-        typename M::vector_type hvector(0);
+        typename Mesh::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
         return detail::meta_hess<Field<T, Dim, Mesh, Cell>>(u, xvector, yvector, zvector, hvector);
     }
