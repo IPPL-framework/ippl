@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
                 const int kg = k + ldom[2].first() - nghost;
 
                 if ((ig == nr[0]/2 - 1) && (jg == nr[1]/2 - 1) && (kg == nr[2]/2 - 1))
-                    view_rho(i,j,k)[2] = gaussian(it, dt);
+                    view_rho(i,j,k) = gaussian(it, dt);
         });
   
         solver.solve();
