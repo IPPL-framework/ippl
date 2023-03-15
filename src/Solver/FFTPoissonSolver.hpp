@@ -130,8 +130,8 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M, class C>
-    FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::FFTPoissonSolver(rhs_type& rhs,
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
+    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Cell>::FFTPoissonSolver(rhs_type& rhs,
                                                               ParameterList& fftparams,
                                                               std::string alg)
         : mesh_mp(nullptr)
@@ -160,8 +160,8 @@ namespace ippl {
         IpplTimings::stopTimer(initialize);
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M, class C>
-    FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs,
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
+    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Cell>::FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs,
                                                               ParameterList& fftparams,
                                                               std::string alg, int sol)
         : mesh_mp(nullptr)
@@ -191,15 +191,15 @@ namespace ippl {
         IpplTimings::stopTimer(initialize);
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M, class C>
-    FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::~FFTPoissonSolver(){};
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
+    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Cell>::~FFTPoissonSolver(){};
 
     /////////////////////////////////////////////////////////////////////////
     // allows user to set gradient of phi = Efield instead of spectral
     // calculation of Efield (which uses FFTs)
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M, class C>
-    void FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::setGradFD() {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
+    void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Cell>::setGradFD() {
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
 
@@ -215,8 +215,8 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // initializeFields method, called in constructor
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M, class C>
-    void FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::initializeFields() {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
+    void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Cell>::initializeFields() {
         // first check if valid algorithm choice
         if ((alg_m != "VICO") && (alg_m != "HOCKNEY") && (alg_m != "BIHARMONIC")) {
             throw IpplException(
@@ -258,7 +258,7 @@ namespace ippl {
         }
 
         // create double sized mesh and layout objects using the previously defined domain2_m
-        mesh2_m   = std::unique_ptr<M>(new M(domain2_m, hr_m, origin));
+        mesh2_m   = std::unique_ptr<Mesh>(new M(domain2_m, hr_m, origin));
         layout2_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain2_m, decomp));
 
         // create the domain for the transformed (complex) fields
@@ -274,7 +274,7 @@ namespace ippl {
         }
 
         // create mesh and layout for the real to complex FFT transformed fields
-        meshComplex_m = std::unique_ptr<M>(new M(domainComplex_m, hr_m, origin));
+        meshComplex_m = std::unique_ptr<Mesh>(new M(domainComplex_m, hr_m, origin));
         layoutComplex_m =
             std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domainComplex_m, decomp));
 
@@ -305,7 +305,7 @@ namespace ippl {
             }
 
             // 4N grid
-            mesh4_m   = std::unique_ptr<M>(new M(domain4_m, hr_m, origin));
+            mesh4_m   = std::unique_ptr<Mesh>(new M(domain4_m, hr_m, origin));
             layout4_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain4_m, decomp));
 
             // initialize fields
@@ -424,8 +424,8 @@ namespace ippl {
 
     /////////////////////////////////////////////////////////////////////////
     // compute electric potential by solving Poisson's eq given a field rho and mesh spacings hr
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M, class C>
-    void FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::solve() {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
+    void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Cell>::solve() {
         // start a timer
         static IpplTimings::TimerRef solve = IpplTimings::getTimer("Solve");
         IpplTimings::startTimer(solve);
@@ -841,8 +841,8 @@ namespace ippl {
     ////////////////////////////////////////////////////////////////////////
     // calculate FFT of the Green's function
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M, class C>
-    void FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::greensFunction() {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
+    void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Cell>::greensFunction() {
         const double pi = std::acos(-1.0);
         grn_mr          = 0.0;
 
@@ -1061,8 +1061,8 @@ namespace ippl {
         IpplTimings::stopTimer(fftg);
     };
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M, class C>
-    void FFTPoissonSolver<Tlhs, Trhs, Dim, M, C>::communicateVico(
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
+    void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Cell>::communicateVico(
         Vector<int, Dim> size, typename CxField_t::view_type view_g,
         const ippl::NDIndex<Dim> ldom_g, const int nghost_g, typename Field_t::view_type view,
         const ippl::NDIndex<Dim> ldom, const int nghost) {

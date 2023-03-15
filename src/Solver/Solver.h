@@ -24,12 +24,11 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
-              class C = typename M::DefaultCentering>
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
     class Solver {
     public:
-        using lhs_type = Field<Tlhs, Dim, M, C>;
-        using rhs_type = Field<Trhs, Dim, M, C>;
+        using lhs_type = Field<Tlhs, Dim, Mesh, Cell>;
+        using rhs_type = Field<Trhs, Dim, Mesh, Cell>;
 
         /*!
          * Default constructor

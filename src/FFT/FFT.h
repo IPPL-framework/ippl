@@ -118,7 +118,7 @@ namespace ippl {
     /**
        Non-specialized FFT class.  We specialize based on Transform tag class
     */
-    template <class Transform, size_t Dim, class T, class M = UniformCartesian<double, Dim>>
+    template <class Transform, size_t Dim, class T, class M>
     class FFT {};
 
     /**

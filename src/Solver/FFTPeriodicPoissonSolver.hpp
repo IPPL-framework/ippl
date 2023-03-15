@@ -19,14 +19,14 @@
 
 namespace ippl {
 
-    template <typename Tl, typename Tr, unsigned Dim, class M, class C>
-    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, M, C>::setRhs(rhs_type& rhs) {
+    template <typename Tl, typename Tr, unsigned Dim, class Mesh, class Cell>
+    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, Mesh, Cell>::setRhs(rhs_type& rhs) {
         Base::setRhs(rhs);
         initialize();
     }
 
-    template <typename Tl, typename Tr, unsigned Dim, class M, class C>
-    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, M, C>::initialize() {
+    template <typename Tl, typename Tr, unsigned Dim, class Mesh, class Cell>
+    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, Mesh, Cell>::initialize() {
         const Layout_t& layout_r = this->rhs_mp->getLayout();
         domain_m                 = layout_r.getDomain();
 
@@ -56,8 +56,8 @@ namespace ippl {
         fft_mp = std::make_shared<FFT_t>(layout_r, *layoutComplex_mp, this->params_m);
     }
 
-    template <typename Tl, typename Tr, unsigned Dim, class M, class C>
-    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, M, C>::solve() {
+    template <typename Tl, typename Tr, unsigned Dim, class Mesh, class Cell>
+    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, Mesh, Cell>::solve() {
         fft_mp->transform(1, *this->rhs_mp, fieldComplex_m);
 
         auto view          = fieldComplex_m.getView();

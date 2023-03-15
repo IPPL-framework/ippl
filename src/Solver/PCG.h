@@ -24,10 +24,10 @@
 namespace ippl {
 
     template <typename Tlhs, typename Trhs, unsigned Dim, typename OpRet,
-              class M = UniformCartesian<double, Dim>, class C = typename M::DefaultCentering>
+              class Mesh, class Cell>
     class PCG : public SolverAlgorithm<Tlhs, Trhs, Dim> {
     public:
-        using Base = SolverAlgorithm<Tlhs, Trhs, Dim, M, C>;
+        using Base = SolverAlgorithm<Tlhs, Trhs, Dim, Mesh, Cell>;
         using typename Base::lhs_type;
         using typename Base::rhs_type;
         using operator_type = std::function<OpRet(lhs_type)>;

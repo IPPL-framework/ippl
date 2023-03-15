@@ -98,8 +98,7 @@ namespace ippl {
 
     }  // namespace detail
 
-    template <typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
-              class Cell = typename Mesh::DefaultCentering>
+    template <typename T, unsigned Dim, class Mesh, class Cell>
     class ExtrapolateFace : public detail::BCondBase<T, Dim, Mesh, Cell> {
     public:
         // Constructor takes zero, one, or two int's specifying components of
@@ -132,8 +131,7 @@ namespace ippl {
         T slope_m;
     };
 
-    template <typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
-              class Cell = typename Mesh::DefaultCentering>
+    template <typename T, unsigned Dim, class Mesh, class Cell>
     class NoBcFace : public detail::BCondBase<T, Dim, Mesh, Cell> {
     public:
         using Field_t = typename detail::BCondBase<T, Dim, Mesh, Cell>::Field_t;
@@ -146,8 +144,7 @@ namespace ippl {
         virtual void write(std::ostream& out) const;
     };
 
-    template <typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
-              class Cell = typename Mesh::DefaultCentering>
+    template <typename T, unsigned Dim, class Mesh, class Cell>
     class ConstantFace : public ExtrapolateFace<T, Dim, Mesh, Cell> {
     public:
         ConstantFace(unsigned int face, T constant)
@@ -158,8 +155,7 @@ namespace ippl {
         virtual void write(std::ostream& out) const;
     };
 
-    template <typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
-              class Cell = typename Mesh::DefaultCentering>
+    template <typename T, unsigned Dim, class Mesh, class Cell>
     class ZeroFace : public ConstantFace<T, Dim, Mesh, Cell> {
     public:
         ZeroFace(unsigned face)
@@ -170,8 +166,7 @@ namespace ippl {
         virtual void write(std::ostream& out) const;
     };
 
-    template <typename T, unsigned Dim, class Mesh = UniformCartesian<double, Dim>,
-              class Cell = typename Mesh::DefaultCentering>
+    template <typename T, unsigned Dim, class Mesh, class Cell>
     class PeriodicFace : public detail::BCondBase<T, Dim, Mesh, Cell> {
     public:
         using face_neighbor_type = std::array<std::vector<int>, 2 * Dim>;

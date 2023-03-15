@@ -28,9 +28,8 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
-              class C = typename M::DefaultCentering>
-    class FFTPeriodicPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, M, C> {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
+    class FFTPeriodicPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Cell> {
     public:
         using Field_t   = Field<Trhs, Dim>;
         using FFT_t     = FFT<RCTransform, Dim, Trhs>;
@@ -39,9 +38,9 @@ namespace ippl {
         using Layout_t  = FieldLayout<Dim>;
         using Vector_t  = Vector<Trhs, Dim>;
 
-        using Base     = Electrostatics<Tlhs, Trhs, Dim, M, C>;
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
+        using Base     = Electrostatics<Tlhs, Trhs, Dim, Mesh, Cell>;
+        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Cell>::lhs_type;
+        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Cell>::rhs_type;
 
         FFTPeriodicPoissonSolver()
             : Base() {

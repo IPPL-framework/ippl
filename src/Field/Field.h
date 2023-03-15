@@ -24,15 +24,14 @@
 
 namespace ippl {
 
-    template <typename T, unsigned Dim, class M = UniformCartesian<double, Dim>,
-              class C = typename M::DefaultCentering>
+    template <typename T, unsigned Dim, class Mesh, class Cell>
     class Field : public BareField<T, Dim> {
     public:
         typedef T type;
         static constexpr unsigned dimension = Dim;
 
-        using Mesh_t      = M;
-        using Centering_t = C;
+        using Mesh_t      = Mesh;
+        using Centering_t = Cell;
         using Layout_t    = FieldLayout<Dim>;
         using BareField_t = BareField<T, Dim>;
         using view_type   = typename BareField_t::view_type;
