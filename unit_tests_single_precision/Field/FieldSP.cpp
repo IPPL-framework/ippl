@@ -24,8 +24,8 @@ class FieldTest : public ::testing::Test {
 
 public:
     static constexpr size_t dim = 3;
-    typedef ippl::UniformCartesian<float, dim> mesh_type;
-    typedef ippl::Field<double, dim, mesh_type> field_type;
+    typedef ippl::UniformCartesian<double, dim> mesh_type;
+    typedef ippl::Field<float, dim> field_type;
     typedef ippl::FieldLayout<dim> layout_type;
 
     FieldTest()
@@ -44,9 +44,9 @@ public:
 
         layout = std::make_shared<layout_type>(owned, domDec);
 
-        float dx = 1.0 / float(nPoints);
-        ippl::Vector<float, dim> hx = {dx, dx, dx};
-        ippl::Vector<float, dim> origin = {0, 0, 0};
+        double dx = 1.0 / double(nPoints);
+        ippl::Vector<double, dim> hx = {dx, dx, dx};
+        ippl::Vector<double, dim> origin = {0, 0, 0};
         mesh = std::make_shared<mesh_type>(owned, hx, origin);
 
         field = std::make_unique<field_type>(*mesh, *layout);
@@ -135,20 +135,20 @@ TEST_F(FieldTest, VolumeIntegral) {
     }
     Kokkos::deep_copy(view, mirror);
 
-    ASSERT_NEAR(field->getVolumeIntegral(), 0., 1e-15);
+    ASSERT_NEAR(field->getVolumeIntegral(), 0., 1e-6);
 }
 
 TEST_F(FieldTest, VolumeIntegral2) {
     *field = 1.;
     float integral = field->getVolumeIntegral();
-    float volume = field->get_mesh().getMeshVolume();
+    double volume = field->get_mesh().getMeshVolume();
     ASSERT_FLOAT_EQ(integral, volume);
 }
 
 TEST_F(FieldTest, Grad) {
     *field = 1.;
 
-    ippl::Field<ippl::Vector<float, dim>, dim, mesh_type> vfield(*mesh, *layout);
+    ippl::Field<ippl::Vector<float, dim>, dim> vfield(*mesh, *layout);
     vfield = grad(*field);
 
     const int shift = vfield.getNghost();
@@ -209,7 +209,7 @@ TEST_F(FieldTest, Curl) {
 
     Kokkos::deep_copy(view_field, mirror);
 
-    ippl::Field<ippl::Vector<float, dim>, dim, mesh_type> result(*mesh, *layout);
+    ippl::Field<ippl::Vector<float, dim>, dim> result(*mesh, *layout);
     result = curl(vfield);
 
     const int shift = result.getNghost();
@@ -231,15 +231,15 @@ TEST_F(FieldTest, Curl) {
 TEST_F(FieldTest, Hessian) {
 
     typedef ippl::Vector<float, dim> Vector_t;
-    typedef ippl::Field<ippl::Vector<Vector_t,dim>, dim, mesh_type> MField_t;
+    typedef ippl::Field<ippl::Vector<Vector_t,dim>, dim> MField_t;
 
     ippl::Field<float, dim, mesh_type> field(*mesh, *layout);
     int nghost = field.getNghost();
     auto view_field = field.getView();
     
     auto lDom = this->layout->getLocalNDIndex();
-    ippl::Vector<float, dim> hx = this->mesh->getMeshSpacing();
-    ippl::Vector<float, dim> origin = this->mesh->getOrigin();   
+    ippl::Vector<double, dim> hx = this->mesh->getMeshSpacing();
+    ippl::Vector<double, dim> origin = this->mesh->getOrigin();   
 
     auto mirror = Kokkos::create_mirror_view(view_field);
     Kokkos::deep_copy(mirror, view_field);
@@ -253,9 +253,9 @@ TEST_F(FieldTest, Hessian) {
                     const int jg = j + lDom[1].first() - nghost;
                     const int kg = k + lDom[2].first() - nghost;
             
-                    float x = (ig + 0.5) * hx[0] + origin[0];
-                    float y = (jg + 0.5) * hx[1] + origin[1];
-                    float z = (kg + 0.5) * hx[2] + origin[2];
+                    double x = (ig + 0.5) * hx[0] + origin[0];
+                    double y = (jg + 0.5) * hx[1] + origin[1];
+                    double z = (kg + 0.5) * hx[2] + origin[2];
                 
                     mirror(i,j,k) = x*y*z;
             }
