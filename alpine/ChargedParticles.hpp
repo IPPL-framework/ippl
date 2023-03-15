@@ -25,7 +25,6 @@ constexpr unsigned Dim = 3;
 // some typedefs
 typedef ippl::ParticleSpatialLayout<double,Dim>   PLayout_t;
 typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
-typedef ippl::UniformCartesian<float, Dim>        Mesh_st;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
 typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t> ORB;
 
@@ -43,8 +42,8 @@ using ParticleAttrib = ippl::ParticleAttrib<T>;
 typedef Vector<double, Dim>  Vector_t;
 typedef Vector<float, Dim> Vector_st;
 typedef Field<double, Dim>   Field_t;
-typedef Field<Vector_st, Dim, Mesh_st> VField_t;
-typedef ippl::FFTPeriodicPoissonSolver<Vector_st, double, Dim, Mesh_st> Solver_t;
+typedef Field<Vector_st, Dim, Mesh_t> VField_t;
+typedef ippl::FFTPeriodicPoissonSolver<Vector_st, double, Dim, Mesh_t> Solver_t;
 
 const double pi = std::acos(-1.0);
 
@@ -454,45 +453,45 @@ public:
 
         const int nghostE = E_m.getNghost();
         auto Eview = E_m.getView();
-        double fieldEnergy, ExAmp;
+        float fieldEnergy, ExAmp;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-        double temp = 0.0;
+        float temp = 0.0;
         Kokkos::parallel_reduce("Ex inner product",
                                 mdrange_type({nghostE, nghostE, nghostE},
                                              {Eview.extent(0) - nghostE,
                                               Eview.extent(1) - nghostE,
                                               Eview.extent(2) - nghostE}),
                                 KOKKOS_LAMBDA(const size_t i, const size_t j,
-                                              const size_t k, double& valL)
+                                              const size_t k, float& valL)
                                 {
-                                    double myVal = std::pow(Eview(i, j, k)[0], 2);
+                                    float myVal = std::pow(Eview(i, j, k)[0], 2);
                                     valL += myVal;
-                                }, Kokkos::Sum<double>(temp));
-        double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+                                }, Kokkos::Sum<float>(temp));
+        float globaltemp = 0.0;
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_FLOAT, MPI_SUM, 0, Ippl::getComm());
         fieldEnergy = globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
 
-        double tempMax = 0.0;
+        float tempMax = 0.0;
         Kokkos::parallel_reduce("Ex max norm",
                                 mdrange_type({nghostE, nghostE, nghostE},
                                              {Eview.extent(0) - nghostE,
                                               Eview.extent(1) - nghostE,
                                               Eview.extent(2) - nghostE}),
                                 KOKKOS_LAMBDA(const size_t i, const size_t j,
-                                              const size_t k, double& valL)
+                                              const size_t k, float& valL)
                                 {
-                                    double myVal = std::fabs(Eview(i, j, k)[0]);
+                                    float myVal = std::fabs(Eview(i, j, k)[0]);
                                     if(myVal > valL) valL = myVal;
-                                }, Kokkos::Max<double>(tempMax));
+                                }, Kokkos::Max<float>(tempMax));
         ExAmp = 0.0;
-        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_FLOAT, MPI_MAX, 0, Ippl::getComm());
 
 
         if (Ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/FieldLandau_";
-            fname << Ippl::Comm->size();
+            fname << nr_m[0];
             fname << ".csv";
 
 
@@ -555,7 +554,7 @@ public:
         if (Ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/FieldBumponTail_";
-            fname << Ippl::Comm->size();
+            fname << nr_m[0];
             fname << ".csv";
 
 
