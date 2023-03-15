@@ -168,8 +168,8 @@ namespace ippl {
     }
 
     DefineReduction(Sum, sum, valL += myVal, MPI_SUM)
-        DefineReduction(Max, max, if (myVal > valL) valL = myVal, MPI_MAX)
-            DefineReduction(Min, min, if (myVal < valL) valL = myVal, MPI_MIN)
-                DefineReduction(Prod, prod, valL *= myVal, MPI_PROD)
+    DefineReduction(Max, max, if (myVal > valL) valL = myVal, MPI_MAX)
+    DefineReduction(Min, min, if (myVal < valL) valL = myVal, MPI_MIN)
+    DefineReduction(Prod, prod, valL *= myVal, MPI_PROD)
 
 }  // namespace ippl
