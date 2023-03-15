@@ -45,7 +45,7 @@ namespace ippl {
             using buffer_type = Communicate::buffer_type;
 
             // constructor and destructor
-            FDTDSolver(Field_t charge, VField_t current, double timestep = 0.0);
+            FDTDSolver(Field_t charge, VField_t current, VField_t E, VField_t B, double timestep = 0.05);
             ~FDTDSolver();
 
             // finite differences time domain solver for potentials (A and phi)
@@ -53,10 +53,6 @@ namespace ippl {
 
             // evaluates E and B fields using computed potentials
             void field_evaluation();
-
-            // get the electromagnetic fields
-            VField_t get_Efield() { return En_m; }
-            VField_t get_Bfield() { return Bn_m; }
 
             // initialization of FDTD solver
             void initialize();
@@ -90,8 +86,8 @@ namespace ippl {
             VField_t aNp1_m;
 
             // E and B fields
-            VField_t En_m;
-            VField_t Bn_m;
+            VField_t* En_mp;
+            VField_t* Bn_mp;
 
             // buffer for communication
             detail::FieldBufferData<Tfields> fd_m;

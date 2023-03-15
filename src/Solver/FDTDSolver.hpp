@@ -26,12 +26,17 @@
 namespace ippl {
 
     template <typename Tfields, unsigned Dim, class M, class C>
-    FDTDSolver<Tfields, Dim, M, C>::FDTDSolver(Field_t charge, VField_t current, double timestep) {
+    FDTDSolver<Tfields, Dim, M, C>::FDTDSolver(Field_t charge, VField_t current, 
+                                        VField_t E, VField_t B, double timestep) {
 
         // set the rho and J fields to be references to charge and current
         // since charge and current deposition will happen at each timestep
         rhoN_mp = &charge;
         JN_mp = &current;
+
+        // same for E and B fields
+        En_mp = &E;
+        Bn_mp = &B;
 
         // initialize the time-step size
         this->dt = timestep;
@@ -48,8 +53,8 @@ namespace ippl {
     void FDTDSolver<Tfields, Dim, M, C>::solve() { 
 
         // physical constant
-        double c = 299792458.0;
-        double mu0 = 1.25663706212e-6;
+        double c = 1.0; //299792458.0;
+        double mu0 = 1.0; //1.25663706212e-6;
         double epsilon0 = 1.0/(c * c * mu0);
 
         // finite differences constants
@@ -204,11 +209,11 @@ namespace ippl {
         
         // magnetic field is the curl of the vector potential
         // we take the average of the potential at N and N+1
-        Bn_m = 0.5 * (curl(aN_m) + curl(aNp1_m));
+        (*Bn_mp) = 0.5 * (curl(aN_m) + curl(aNp1_m));
 
         // electric field is the time derivative of the vector potential
         // minus the gradient of the scalar potential
-        En_m = -(aNp1_m - aN_m)/dt - grad(phiN_m);
+        (*En_mp) = -(aNp1_m - aN_m)/dt - grad(phiN_m);
     };
 
     template <typename Tfields, unsigned Dim, class M, class C>
@@ -233,9 +238,6 @@ namespace ippl {
         aN_m.initialize(*mesh_mp, *layout_mp);
         aNp1_m.initialize(*mesh_mp, *layout_mp);
 
-        En_m.initialize(*mesh_mp, *layout_mp);
-        Bn_m.initialize(*mesh_mp, *layout_mp);
-
         phiNm1_m = 0.0;
         phiN_m = 0.0;
         phiNp1_m = 0.0;
@@ -243,8 +245,5 @@ namespace ippl {
         aNm1_m = 0.0;
         aN_m = 0.0;
         aNp1_m = 0.0;
-
-        En_m = 0.0;
-        Bn_m = 0.0;
     };
 }
