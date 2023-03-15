@@ -118,18 +118,18 @@ namespace ippl {
     /**
        Non-specialized FFT class.  We specialize based on Transform tag class
     */
-    template <class Transform, size_t Dim, class T, class M>
+    template <class Transform, size_t Dim, class T, class Mesh, class Cell>
     class FFT {};
 
     /**
        complex-to-complex FFT class
     */
-    template <size_t Dim, class T, class M>
-    class FFT<CCTransform, Dim, T, M> {
+    template <size_t Dim, class T, class Mesh, class Cell>
+    class FFT<CCTransform, Dim, T, Mesh, Cell> {
     public:
         typedef FieldLayout<Dim> Layout_t;
         typedef Kokkos::complex<T> Complex_t;
-        typedef Field<Complex_t, Dim, M> ComplexField_t;
+        typedef Field<Complex_t, Dim, Mesh, Cell> ComplexField_t;
 
         using heffteBackend = typename detail::HeffteBackendType::backend;
         using workspace_t =
@@ -164,18 +164,18 @@ namespace ippl {
     /**
        real-to-complex FFT class
     */
-    template <size_t Dim, class T, class M>
-    class FFT<RCTransform, Dim, T, M> {
+    template <size_t Dim, class T, class Mesh, class Cell>
+    class FFT<RCTransform, Dim, T, Mesh, Cell> {
     public:
         typedef FieldLayout<Dim> Layout_t;
-        typedef Field<T, Dim, M> RealField_t;
+        typedef Field<T, Dim, Mesh, Cell> RealField_t;
 
         using heffteBackend = typename detail::HeffteBackendType::backend;
         typedef Kokkos::complex<T> Complex_t;
         using workspace_t =
             typename heffte::fft3d_r2c<heffteBackend>::template buffer_container<Complex_t>;
 
-        typedef Field<Complex_t, Dim, M> ComplexField_t;
+        typedef Field<Complex_t, Dim, Mesh, Cell> ComplexField_t;
 
         /** Create a new FFT object with the layout for the input and output Fields
          * and parameters for heffte.
@@ -208,11 +208,11 @@ namespace ippl {
     /**
        Sine transform class
     */
-    template <size_t Dim, class T, class M>
-    class FFT<SineTransform, Dim, T, M> {
+    template <size_t Dim, class T, class Mesh, class Cell>
+    class FFT<SineTransform, Dim, T, Mesh, Cell> {
     public:
         typedef FieldLayout<Dim> Layout_t;
-        typedef Field<T, Dim, M> Field_t;
+        typedef Field<T, Dim, Mesh, Cell> Field_t;
 
         using heffteBackend = typename detail::HeffteBackendType::backendSine;
         using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
@@ -243,11 +243,11 @@ namespace ippl {
     /**
        Cosine transform class
     */
-    template <size_t Dim, class T, class M>
-    class FFT<CosTransform, Dim, T, M> {
+    template <size_t Dim, class T, class Mesh, class Cell>
+    class FFT<CosTransform, Dim, T, Mesh, Cell> {
     public:
         typedef FieldLayout<Dim> Layout_t;
-        typedef Field<T, Dim, M> Field_t;
+        typedef Field<T, Dim, Mesh, Cell> Field_t;
 
         using heffteBackend = typename detail::HeffteBackendType::backendCos;
         using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
