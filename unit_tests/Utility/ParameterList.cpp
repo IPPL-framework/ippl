@@ -17,36 +17,30 @@
 //
 #include "Ippl.h"
 
-#include "Utility/ParameterList.h"
 #include "Utility/IpplException.h"
+#include "Utility/ParameterList.h"
 #include "gtest/gtest.h"
 
 class ParameterListTest : public ::testing::Test {
-
 public:
-
-    ParameterListTest() { }
+    ParameterListTest() {}
 };
 
-
 TEST_F(ParameterListTest, Add) {
-
     ippl::ParameterList p;
     p.add<double>("tolerance", 1.0e-8);
 
     bool isContained = false;
     try {
         p.add<double>("tolerance", 1.0e-9);
-    } catch(...) {
+    } catch (...) {
         isContained = true;
     }
 
     ASSERT_TRUE(isContained);
 }
 
-
 TEST_F(ParameterListTest, UpdateSingle) {
-
     double tol = 1.0e-6;
 
     ippl::ParameterList p;
@@ -56,20 +50,17 @@ TEST_F(ParameterListTest, UpdateSingle) {
 
     ASSERT_DOUBLE_EQ(p.get<double>("tolerance"), tol);
 
-
     bool isContained = true;
     try {
         p.update<bool>("enable", true);
-    } catch(...) {
+    } catch (...) {
         isContained = false;
     }
 
     ASSERT_FALSE(isContained);
 }
 
-
 TEST_F(ParameterListTest, Merge) {
-
     ippl::ParameterList p1;
     p1.add<double>("tolerance", 1.0e-8);
     p1.add<bool>("is enabled", false);
@@ -77,7 +68,7 @@ TEST_F(ParameterListTest, Merge) {
     ippl::ParameterList p2;
 
     double tol = 1.0e-12;
-    int size = 5;
+    int size   = 5;
 
     p2.add<int>("size", size);
     p2.add<double>("tolerance", tol);
@@ -89,9 +80,7 @@ TEST_F(ParameterListTest, Merge) {
     ASSERT_FALSE(p1.get<bool>("is enabled"));
 }
 
-
 TEST_F(ParameterListTest, Update) {
-
     ippl::ParameterList p1;
     p1.add<double>("tolerance", 1.0e-8);
     p1.add<bool>("is enabled", false);
@@ -107,14 +96,14 @@ TEST_F(ParameterListTest, Update) {
 
     // Update only modifies the values of the existing
     // parameters, does not add new parameters to p1,
-    // so "size" should not be contained in p1 
+    // so "size" should not be contained in p1
     // we try to get "size" from p1, which should not
     // run, so isContained should continue being false.
 
     bool isContained = false;
     try {
         isContained = p1.get<int>("size") == 5;
-    } catch(...) {
+    } catch (...) {
         // do nothing here
     }
 
@@ -123,9 +112,8 @@ TEST_F(ParameterListTest, Update) {
     ASSERT_FALSE(p1.get<bool>("is enabled"));
 }
 
-
-int main(int argc, char *argv[]) {
-    Ippl ippl(argc,argv);
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

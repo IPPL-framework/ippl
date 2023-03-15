@@ -18,17 +18,15 @@
 #ifndef IPPL_FIELD_H
 #define IPPL_FIELD_H
 
-#include "Field/BareField.h"
 #include "Field/BConds.h"
+#include "Field/BareField.h"
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {
 
-    template <typename T, unsigned Dim,
-              class M=UniformCartesian<double, Dim>,
-              class C=typename M::DefaultCentering >
-    class Field : public BareField<T, Dim>
-    {
+    template <typename T, unsigned Dim, class M = UniformCartesian<double, Dim>,
+              class C = typename M::DefaultCentering>
+    class Field : public BareField<T, Dim> {
     public:
         typedef T type;
         static constexpr unsigned dimension = Dim;
@@ -48,13 +46,12 @@ namespace ippl {
 
         virtual ~Field() = default;
 
-
         // Constructors including a Mesh object as argument:
         Field(Mesh_t&, Layout_t&, int nghost = 1);
 
         // Initialize the Field, also specifying a mesh
         void initialize(Mesh_t&, Layout_t&, int nghost = 1);
-        
+
         // ML
         void updateLayout(Layout_t&, int nghost = 1);
 
@@ -64,8 +61,7 @@ namespace ippl {
         }
 
         // Access to the mesh
-        KOKKOS_INLINE_FUNCTION
-        Mesh_t& get_mesh() const { return *mesh_m; }
+        KOKKOS_INLINE_FUNCTION Mesh_t& get_mesh() const { return *mesh_m; }
 
         /*!
          * Use the midpoint rule to calculate the field's volume integral
@@ -86,14 +82,13 @@ namespace ippl {
         Field(const Field&) = default;
 
     private:
-
         // The Mesh object, and a flag indicating if we constructed it
         Mesh_t* mesh_m;
 
         // The boundary conditions.
         BConds_t bc_m;
     };
-}
+}  // namespace ippl
 
 #include "Field/Field.hpp"
 #include "Field/FieldOperations.hpp"

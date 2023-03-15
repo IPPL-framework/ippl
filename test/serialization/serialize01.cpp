@@ -10,44 +10,37 @@ void send(int, int, BType&);
 template <class BType>
 void recv(int, int, BType&);
 
-
 class Archive {
-
 public:
     Archive(int size = 0)
         : writepos(0)
         , readpos(0)
-        , buffer_m("buffer", size)
-    { }
+        , buffer_m("buffer", size) {}
 
     template <typename T>
     void operator<<(const Kokkos::View<T*>& val) {
         int s = sizeof(T);
         Kokkos::resize(buffer_m, buffer_m.size() + s * val.size());
-        Kokkos::parallel_for("serialize", 10,
-                             KOKKOS_CLASS_LAMBDA(const int i) {
-                             std::memcpy(buffer_m.data() + i*s + writepos, val.data() + i, s);
-                             });
+        Kokkos::parallel_for(
+            "serialize", 10, KOKKOS_CLASS_LAMBDA(const int i) {
+                std::memcpy(buffer_m.data() + i * s + writepos, val.data() + i, s);
+            });
         writepos += s * val.size();
     }
 
     template <typename T>
     void operator>>(Kokkos::View<T*>& val) {
         int s = sizeof(T);
-        Kokkos::parallel_for("deserialize", 10,
-                             KOKKOS_CLASS_LAMBDA(const int i) {
-                             std::memcpy(val.data() + i, buffer_m.data() + i*s + readpos, s);
-                             });
+        Kokkos::parallel_for(
+            "deserialize", 10, KOKKOS_CLASS_LAMBDA(const int i) {
+                std::memcpy(val.data() + i, buffer_m.data() + i * s + readpos, s);
+            });
         readpos += s * val.size();
     }
 
-    void* getBuffer() const {
-        return buffer_m.data();
-    }
+    void* getBuffer() const { return buffer_m.data(); }
 
-    size_t getSize() const {
-        return buffer_m.size();
-    }
+    size_t getSize() const { return buffer_m.size(); }
 
     ~Archive() = default;
 
@@ -57,32 +50,22 @@ private:
     Kokkos::View<char*> buffer_m;
 };
 
-
-
-class BunchBase
-{
+class BunchBase {
 public:
     typedef Kokkos::View<double*> view_type;
 
-
     BunchBase(int n)
-    : mass_m("mass", n)
-    , id_m("id", n)
-    {
+        : mass_m("mass", n)
+        , id_m("id", n) {
         addAttribute(mass_m);
         addAttribute(id_m);
     };
 
     ~BunchBase() {}
 
-    void addAttribute(Kokkos::View<double*>& pa) {
-        attrib_m.push_back(&pa);
-    }
+    void addAttribute(Kokkos::View<double*>& pa) { attrib_m.push_back(&pa); }
 
-
-    view_type& getView(size_t i) {
-        return *attrib_m[i];
-    }
+    view_type& getView(size_t i) { return *attrib_m[i]; }
 
     template <class BType>
     void update() {
@@ -99,15 +82,13 @@ public:
             BType buffer(n);
 
             for (size_t j = 0; j < attrib_m.size(); ++j) {
-
                 auto& bview = buffer.getView(j);
 
                 auto& this_view = this->getView(j);
 
-                Kokkos::parallel_for("assign",
-                                     Kokkos::RangePolicy<size_t>(5, 15), KOKKOS_LAMBDA(const size_t i) {
-                    bview(i-5) = this_view(i);
-                });
+                Kokkos::parallel_for(
+                    "assign", Kokkos::RangePolicy<size_t>(5, 15),
+                    KOKKOS_LAMBDA(const size_t i) { bview(i - 5) = this_view(i); });
             }
 
             for (int i = 1; i < size; ++i) {
@@ -119,23 +100,18 @@ public:
 
             recv(0, 42 /*tag*/, buffer);
 
-
             for (size_t j = 0; j < attrib_m.size(); ++j) {
-
                 auto& bview = buffer.getView(j);
 
                 auto& this_view = this->getView(j);
 
                 Kokkos::resize(this_view, n);
 
-                Kokkos::parallel_for("assign",
-                                     n, KOKKOS_LAMBDA(const size_t i) {
-                    this_view(i) = bview(i);
-                });
+                Kokkos::parallel_for(
+                    "assign", n, KOKKOS_LAMBDA(const size_t i) { this_view(i) = bview(i); });
             }
         }
     }
-
 
     template <class Archive>
     void serialize(Archive& ar) {
@@ -151,7 +127,6 @@ public:
         }
     }
 
-
 public:
     view_type mass_m;
     view_type id_m;
@@ -160,38 +135,27 @@ private:
     std::vector<view_type*> attrib_m;
 };
 
-
-class BunchDerived : public BunchBase
-{
+class BunchDerived : public BunchBase {
 public:
-
     BunchDerived(int n)
-    : BunchBase(n)
-    , charge_m("charge", n)
-    {
+        : BunchBase(n)
+        , charge_m("charge", n) {
         addAttribute(charge_m);
     };
 
     ~BunchDerived() {}
-    void update() {
-        BunchBase::update<BunchDerived>();
-    }
-
+    void update() { BunchBase::update<BunchDerived>(); }
 
 public:
     view_type charge_m;
 };
 
-
-
 template <class BType>
 void send(int dest, int tag, BType& buffer) {
     Archive ar;
     buffer.serialize(ar);
-    MPI_Send(ar.getBuffer(), ar.getSize(),
-             MPI_BYTE, dest, tag, MPI_COMM_WORLD);
+    MPI_Send(ar.getBuffer(), ar.getSize(), MPI_BYTE, dest, tag, MPI_COMM_WORLD);
 }
-
 
 template <class BType>
 void recv(int src, int tag, BType& buffer) {
@@ -204,18 +168,15 @@ void recv(int src, int tag, BType& buffer) {
 
     Archive ar(msize);
 
-    MPI_Recv(ar.getBuffer(), ar.getSize(),
-             MPI_BYTE, src, tag, MPI_COMM_WORLD, &status);
+    MPI_Recv(ar.getBuffer(), ar.getSize(), MPI_BYTE, src, tag, MPI_COMM_WORLD, &status);
 
     buffer.deserialize(ar);
 }
 
-
-int main(int argc, char *argv[]) {
-
+int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
-    Kokkos::initialize(argc,argv);
+    Kokkos::initialize(argc, argv);
     {
         int rank = 0;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -232,20 +193,20 @@ int main(int argc, char *argv[]) {
         BunchDerived bunch(n);
 
         if (rank == 0) {
-
-            auto idView = bunch.id_m;
-            auto massView = bunch.mass_m;
+            auto idView     = bunch.id_m;
+            auto massView   = bunch.mass_m;
             auto chargeView = bunch.charge_m;
-            Kokkos::parallel_for("assign", 20, KOKKOS_LAMBDA(const size_t i) {
-                idView(i) = i;
-                massView(i) = i + 0.5;
-                chargeView(i) = 0.25;
-            });
+            Kokkos::parallel_for(
+                "assign", 20, KOKKOS_LAMBDA(const size_t i) {
+                    idView(i)     = i;
+                    massView(i)   = i + 0.5;
+                    chargeView(i) = 0.25;
+                });
         }
 
         bunch.update();
 
-        if ( rank > 0) {
+        if (rank > 0) {
             BunchBase::view_type::HostMirror h_id = Kokkos::create_mirror_view(bunch.id_m);
             Kokkos::deep_copy(h_id, bunch.id_m);
 

@@ -18,10 +18,9 @@
 #ifndef IPPL_CORE_H
 #define IPPL_CORE_H
 
-
+#include "Field/BConds.h"
 #include "Field/BareField.h"
 #include "Field/Field.h"
-#include "Field/BConds.h"
 
 // IPPL Utilities
 // #include "Utility/Timer.h"
@@ -36,7 +35,7 @@
 #include "FieldLayout/FieldLayout.h"
 
 #ifdef ENABLE_FFT
-    #include "FFT/FFT.h"
+#include "FFT/FFT.h"
 #endif
 
 // // IPPL Meshes
@@ -44,7 +43,6 @@
 
 #include "Particle/ParticleBase.h"
 #include "Particle/ParticleSpatialLayout.h"
-
 
 #include "Types/Vector.h"
 

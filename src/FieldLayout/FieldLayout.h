@@ -30,41 +30,42 @@
 
 namespace ippl {
 
-    template <unsigned Dim> class FieldLayout;
+    template <unsigned Dim>
+    class FieldLayout;
 
     template <unsigned Dim>
     std::ostream& operator<<(std::ostream&, const FieldLayout<Dim>&);
 
     // enumeration used to select serial or parallel axes
-    enum e_dim_tag { SERIAL=0, PARALLEL=1 } ;
+    enum e_dim_tag {
+        SERIAL   = 0,
+        PARALLEL = 1
+    };
 
-
-    template<unsigned Dim>
-    class FieldLayout
-    {
-
+    template <unsigned Dim>
+    class FieldLayout {
     public:
-        using NDIndex_t = NDIndex<Dim>;
-        using view_type = typename detail::ViewType<NDIndex_t, 1>::view_type;
-        using host_mirror_type = typename view_type::host_mirror_type;
-        using face_neighbor_type = std::array<std::vector<int>, 2 * Dim>;
-        using edge_neighbor_type = std::array<std::vector<int>, Dim * (1 << (Dim - 1))>;
+        using NDIndex_t            = NDIndex<Dim>;
+        using view_type            = typename detail::ViewType<NDIndex_t, 1>::view_type;
+        using host_mirror_type     = typename view_type::host_mirror_type;
+        using face_neighbor_type   = std::array<std::vector<int>, 2 * Dim>;
+        using edge_neighbor_type   = std::array<std::vector<int>, Dim * (1 << (Dim - 1))>;
         using vertex_neighbor_type = std::array<int, 2 << (Dim - 1)>;
-        using match_face_type = std::array<int, 2 * Dim>;
-        using match_edge_type = std::array<int, Dim * (1 << (Dim - 1))>;
-        using match_vertex_type = std::array<int, 2 << (Dim - 1)>;
-        
+        using match_face_type      = std::array<int, 2 * Dim>;
+        using match_edge_type      = std::array<int, Dim * (1 << (Dim - 1))>;
+        using match_vertex_type    = std::array<int, 2 << (Dim - 1)>;
+
         struct bound_type {
             // lower bounds (ordering: x, y, z)
             std::array<long, Dim> lo;
             // upper bounds (ordering x, y, z)
             std::array<long, Dim> hi;
         };
-        
-        using face_neighbor_range_type = std::array<std::vector<bound_type>, 2 * Dim>;
-        using edge_neighbor_range_type = std::array<std::vector<bound_type>, Dim * (1 << (Dim - 1))>;
-        using vertex_neighbor_range_type = std::array<bound_type, 2 << (Dim - 1)>;
 
+        using face_neighbor_range_type = std::array<std::vector<bound_type>, 2 * Dim>;
+        using edge_neighbor_range_type =
+            std::array<std::vector<bound_type>, Dim * (1 << (Dim - 1))>;
+        using vertex_neighbor_range_type = std::array<bound_type, 2 << (Dim - 1)>;
 
         /*!
          * Default constructor, which should only be used if you are going to
@@ -72,7 +73,7 @@ namespace ippl {
          */
         FieldLayout();
 
-        FieldLayout(const NDIndex<Dim>& domain, e_dim_tag *p=0, bool isAllPeriodic=false);
+        FieldLayout(const NDIndex<Dim>& domain, e_dim_tag* p = 0, bool isAllPeriodic = false);
 
         // Destructor: Everything deletes itself automatically ... the base
         // class destructors inform all the FieldLayoutUser's we're going away.
@@ -83,12 +84,11 @@ namespace ippl {
         // otherwise these are only called internally by the various non-default
         // FieldLayout constructors:
 
-        void initialize(const NDIndex<Dim>& domain, e_dim_tag *p=0, bool isAllPeriodic=false);
-
+        void initialize(const NDIndex<Dim>& domain, e_dim_tag* p = 0, bool isAllPeriodic = false);
 
         // Return the domain.
         const NDIndex<Dim>& getDomain() const { return gDomain_m; }
- 
+
         // Compare FieldLayouts to see if they represent the same domain; if
         // dimensionalities are different, the NDIndex operator==() will return
         // false:
@@ -109,16 +109,14 @@ namespace ippl {
         // SERIAL or PARALLEL
         e_dim_tag getDistribution(unsigned int d) const {
             e_dim_tag retval = PARALLEL;
-            if (minWidth_m[d] == (unsigned int) gDomain_m[d].length())
+            if (minWidth_m[d] == (unsigned int)gDomain_m[d].length())
                 retval = SERIAL;
             return retval;
         }
 
         // for the requested dimension, report if the distribution was requested to
         // be SERIAL or PARALLEL
-        e_dim_tag getRequestedDistribution(unsigned int d) const {
-            return requestedLayout_m[d];
-        }
+        e_dim_tag getRequestedDistribution(unsigned int d) const { return requestedLayout_m[d]; }
 
         const NDIndex_t& getLocalNDIndex(int rank = Ippl::Comm->rank()) const;
 
@@ -138,7 +136,7 @@ namespace ippl {
         const edge_neighbor_type& getEdgeNeighbors() const;
 
         const vertex_neighbor_type& getVertexNeighbors() const;
-        
+
         const face_neighbor_range_type& getFaceNeighborsSendRange() const;
 
         const edge_neighbor_range_type& getEdgeNeighborsSendRange() const;
@@ -152,26 +150,21 @@ namespace ippl {
         const vertex_neighbor_range_type& getVertexNeighborsRecvRange() const;
 
         const match_face_type& getMatchFace() const;
-        
+
         const match_edge_type& getMatchEdge() const;
-        
+
         const match_vertex_type& getMatchVertex() const;
 
         void findNeighbors(int nghost = 1);
 
-        void addNeighbors(NDIndex_t& gnd, 
-                          NDIndex_t& nd, 
-                          NDIndex_t& ndNeighbor, 
-                          NDIndex_t& intersect, 
-                          int nghost, 
-                          int rank);
+        void addNeighbors(NDIndex_t& gnd, NDIndex_t& nd, NDIndex_t& ndNeighbor,
+                          NDIndex_t& intersect, int nghost, int rank);
 
         void write(std::ostream& = std::cout) const;
-        
-        void updateLayout(const std::vector<NDIndex_t>& domains); 
+
+        void updateLayout(const std::vector<NDIndex_t>& domains);
 
         bool isAllPeriodic_m;
-
 
     private:
         /*!
@@ -179,13 +172,13 @@ namespace ippl {
          * @param inersect the intersection between grown and the remote domain
          * @param rank the rank of the remote domain
          */
-        void addVertex(const NDIndex_t& grown, const NDIndex_t& intersect, int rank, 
+        void addVertex(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
                        const bound_type& rangeSend, const bound_type& rangeRecv);
-        
+
         void addEdge(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
                      const bound_type& rangeSend, const bound_type& rangeRecv);
 
-        void addFace(const NDIndex_t& grown, const NDIndex_t& intersect, int rank, 
+        void addFace(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
                      const bound_type& rangeSend, const bound_type& rangeRecv);
 
         /*!
@@ -197,13 +190,10 @@ namespace ippl {
          * @param offset to map global to local grid point
          * @param nghost number of ghost cells per dimension
          */
-        bound_type getBounds(const NDIndex_t& nd1,
-                             const NDIndex_t& nd2,
-                             const NDIndex_t& offset,
+        bound_type getBounds(const NDIndex_t& nd1, const NDIndex_t& nd2, const NDIndex_t& offset,
                              int nghost);
 
         int getPeriodicOffset(const NDIndex_t& nd, const unsigned int d, const int k);
-
 
     private:
         //! Global domain
@@ -248,12 +238,12 @@ namespace ippl {
          * [(x high, y high, z low),  (x high, y high, z high)] --> edge 11
          */
         edge_neighbor_type edgeNeighbors_m;
-        
+
         match_edge_type matchedge_m;
 
         /*!
          * Neighboring ranks that have the vertex value (corner cell). The value
-         * is negative, i.e. -1, if the vertex is on a mesh boundary if it is 
+         * is negative, i.e. -1, if the vertex is on a mesh boundary if it is
          * non-periodic.
          * x low,  y low,  z low  --> vertex index 0
          * x high, y low,  z low  --> vertex index 1
@@ -273,18 +263,14 @@ namespace ippl {
         face_neighbor_range_type faceNeighborsSendRange_m, faceNeighborsRecvRange_m;
         edge_neighbor_range_type edgeNeighborsSendRange_m, edgeNeighborsRecvRange_m;
         vertex_neighbor_range_type vertexNeighborsSendRange_m, vertexNeighborsRecvRange_m;
-
     };
 
-
-    template<unsigned Dim>
-    inline
-    std::ostream& operator<<(std::ostream& out, const FieldLayout<Dim>& f) {
+    template <unsigned Dim>
+    inline std::ostream& operator<<(std::ostream& out, const FieldLayout<Dim>& f) {
         f.write(out);
         return out;
     }
-}
-
+}  // namespace ippl
 
 #include "FieldLayout/FieldLayout.hpp"
 

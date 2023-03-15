@@ -19,16 +19,14 @@
 #ifndef IPPL_SOLVER_ALGORITHM_H
 #define IPPL_SOLVER_ALGORITHM_H
 
-#include "Utility/ParameterList.h"
 #include <functional>
+#include "Utility/ParameterList.h"
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim,
-              class M=UniformCartesian<double, Dim>,
-              class C=typename M::DefaultCentering>
-    class SolverAlgorithm
-    {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
+              class C = typename M::DefaultCentering>
+    class SolverAlgorithm {
     public:
         using lhs_type = Field<Tlhs, Dim, M, C>;
         using rhs_type = Field<Trhs, Dim, M, C>;
@@ -43,6 +41,6 @@ namespace ippl {
         virtual void operator()(lhs_type& lhs, rhs_type& rhs, const ParameterList& params) = 0;
     };
 
-}
+}  // namespace ippl
 
 #endif

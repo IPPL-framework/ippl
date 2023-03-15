@@ -24,20 +24,17 @@ namespace ippl {
     namespace detail {
 
         template <unsigned Dim>
-        class Partitioner
-        {
+        class Partitioner {
         public:
-            Partitioner() = default;
+            Partitioner()  = default;
             ~Partitioner() = default;
 
             template <typename view_type>
-            void split(const NDIndex<Dim>& domain,
-                       view_type& view,
-                       e_dim_tag* decomp,
+            void split(const NDIndex<Dim>& domain, view_type& view, e_dim_tag* decomp,
                        int nSplits) const;
         };
-    }
-}
+    }  // namespace detail
+}  // namespace ippl
 
 #include "Partition/Partitioner.hpp"
 

@@ -26,8 +26,8 @@
 #define IPPL_ARCHIVE_H
 
 #include "Types/IpplTypes.h"
-#include "Types/ViewTypes.h"
 #include "Types/Vector.h"
+#include "Types/ViewTypes.h"
 
 namespace ippl {
     namespace detail {
@@ -38,9 +38,8 @@ namespace ippl {
          */
         template <class... Properties>
         class Archive {
-
         public:
-            using buffer_type = typename ViewType<char, 1, Properties...>::view_type;
+            using buffer_type  = typename ViewType<char, 1, Properties...>::view_type;
             using pointer_type = typename buffer_type::pointer_type;
 
             Archive(size_type size = 0);
@@ -84,36 +83,21 @@ namespace ippl {
             /*!
              * @returns a pointer to the data of the buffer
              */
-            pointer_type getBuffer() {
-                return buffer_m.data();
-            }
-
+            pointer_type getBuffer() { return buffer_m.data(); }
 
             /*!
              * @returns the size of the buffer
              */
-            size_type getSize() const {
-                return writepos_m;
-            }
+            size_type getSize() const { return writepos_m; }
 
-            size_type getBufferSize() const {
-                return buffer_m.size();
-            }
+            size_type getBufferSize() const { return buffer_m.size(); }
 
-            void resizeBuffer(size_type size) {
-                Kokkos::resize(buffer_m, size);
-            }
+            void resizeBuffer(size_type size) { Kokkos::resize(buffer_m, size); }
 
-            void reallocBuffer(size_type size) {
-                Kokkos::realloc(buffer_m, size);
-            }
-            
-            void resetWritePos() {
-                writepos_m = 0;
-            }
-            void resetReadPos() {
-                readpos_m = 0;
-            }
+            void reallocBuffer(size_type size) { Kokkos::realloc(buffer_m, size); }
+
+            void resetWritePos() { writepos_m = 0; }
+            void resetReadPos() { readpos_m = 0; }
 
             ~Archive() = default;
 
@@ -125,8 +109,8 @@ namespace ippl {
             //! serialized data
             buffer_type buffer_m;
         };
-    }
-}
+    }  // namespace detail
+}  // namespace ippl
 
 #include "Archive.hpp"
 

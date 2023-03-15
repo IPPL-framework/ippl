@@ -23,24 +23,23 @@
 
 #include <mpi.h>
 
-template<typename> struct is_ippl_mpi_datatype: std::false_type {};
+template <typename>
+struct is_ippl_mpi_datatype : std::false_type {};
 
-template <typename T> MPI_Datatype get_mpi_datatype(const T& /*x*/)
-{
-    static_assert(is_ippl_mpi_datatype<T>::value,
-                  "type isn't an MPI type");
+template <typename T>
+MPI_Datatype get_mpi_datatype(const T& /*x*/) {
+    static_assert(is_ippl_mpi_datatype<T>::value, "type isn't an MPI type");
     return get_mpi_datatype(T());
 }
 
-
-#define IPPL_MPI_DATATYPE(CppType, MPIType)                       \
-template<>                                                        \
-inline MPI_Datatype                                               \
-get_mpi_datatype< CppType >(const CppType&) { return MPIType; }   \
-                                                                  \
-template<>                                                        \
-struct is_ippl_mpi_datatype<CppType>: std::true_type {};
-
+#define IPPL_MPI_DATATYPE(CppType, MPIType)                         \
+    template <>                                                     \
+    inline MPI_Datatype get_mpi_datatype<CppType>(const CppType&) { \
+        return MPIType;                                             \
+    }                                                               \
+                                                                    \
+    template <>                                                     \
+    struct is_ippl_mpi_datatype<CppType> : std::true_type {};
 
 IPPL_MPI_DATATYPE(char, MPI_CHAR);
 
