@@ -21,29 +21,23 @@
 #include "gtest/gtest.h"
 
 class ParticleBaseTest : public ::testing::Test {
-
 public:
     static constexpr size_t dim = 3;
     typedef ippl::detail::ParticleLayout<double, dim> playout_type;
     typedef ippl::ParticleBase<playout_type> bunch_type;
 
-    ParticleBaseTest() {
-        setup();
-    }
+    ParticleBaseTest() { setup(); }
 
-    void setup() {
-        pbase = std::make_unique<bunch_type>(pl_m);
-    }
+    void setup() { pbase = std::make_unique<bunch_type>(pl_m); }
 
     playout_type pl_m;
     std::unique_ptr<bunch_type> pbase;
 };
 
-
-
 TEST_F(ParticleBaseTest, CreateAndDestroy) {
     if (Ippl::Comm->size() > 1) {
-        std::cerr << "ParticleBaseTest::CreateAndDestroy test only works for one MPI rank!" << std::endl;
+        std::cerr << "ParticleBaseTest::CreateAndDestroy test only works for one MPI rank!"
+                  << std::endl;
         return;
     }
     size_t nParticles = 1000;
@@ -68,7 +62,7 @@ TEST_F(ParticleBaseTest, CreateAndDestroy) {
     bool_type invalid("invalid", nParticles);
     auto mirror2 = Kokkos::create_mirror(invalid);
     for (size_t i = 0; i < 500; ++i) {
-        mirror2(2 * i) = false;
+        mirror2(2 * i)     = false;
         mirror2(2 * i + 1) = true;
     }
     Kokkos::deep_copy(invalid, mirror2);
@@ -86,7 +80,6 @@ TEST_F(ParticleBaseTest, CreateAndDestroy) {
 }
 
 TEST_F(ParticleBaseTest, AddAttribute) {
-
     using attrib_type = ippl::ParticleAttrib<double>;
 
     attrib_type Q;
@@ -97,7 +90,6 @@ TEST_F(ParticleBaseTest, AddAttribute) {
 
     EXPECT_EQ(size_t(3), nAttributes);
 }
-
 
 TEST(ParticleBase, Initialize1) {
     typedef ippl::detail::ParticleLayout<double, 3> playout_type;
@@ -110,7 +102,6 @@ TEST(ParticleBase, Initialize1) {
 
     EXPECT_EQ(size_t(0), localnum);
 }
-
 
 TEST(ParticleBase, Initialize2) {
     typedef ippl::detail::ParticleLayout<double, 3> playout_type;
@@ -126,11 +117,8 @@ TEST(ParticleBase, Initialize2) {
     EXPECT_EQ(size_t(0), localnum);
 }
 
-
-
-
-int main(int argc, char *argv[]) {
-    Ippl ippl(argc,argv);
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

@@ -54,31 +54,25 @@ namespace ippl {
     namespace detail {
         // ParticleLayout class definition.  Template parameters are the type
         // and dimension of the ParticlePos object used for the particles.
-        template<typename T, unsigned Dim>
+        template <typename T, unsigned Dim>
         class ParticleLayout {
-
         public:
-
-            typedef T                             value_type;
-            typedef std::int64_t                  index_type;
-            typedef Vector<T, Dim>                vector_type;
-            typedef ParticleAttrib<vector_type>   particle_position_type;
-            typedef std::array<BC, 2 * Dim>       bc_container_type;
-
+            typedef T value_type;
+            typedef std::int64_t index_type;
+            typedef Vector<T, Dim> vector_type;
+            typedef ParticleAttrib<vector_type> particle_position_type;
+            typedef std::array<BC, 2 * Dim> bc_container_type;
 
             static constexpr unsigned dim = Dim;
 
         public:
-            ParticleLayout()
-            {
-                bcs_m.fill(BC::NO);
-            };
+            ParticleLayout() { bcs_m.fill(BC::NO); };
 
             ~ParticleLayout() = default;
 
-            template<class PBase>
+            template <class PBase>
             void update(PBase&) {
-                //FIXME
+                // FIXME
                 std::cout << "TODO" << std::endl;
             }
 
@@ -86,18 +80,13 @@ namespace ippl {
              * Copy over the given boundary conditions.
              * @param bcs are the boundary conditions
              */
-            void setParticleBC(bc_container_type bcs) {
-                bcs_m = bcs;
-            }
+            void setParticleBC(bc_container_type bcs) { bcs_m = bcs; }
 
             /*!
              * Use the same boundary condition on each face
              * @param bcs are the boundary conditions
              */
-            void setParticleBC(BC bc) {
-                bcs_m.fill(bc);
-            }
-
+            void setParticleBC(BC bc) { bcs_m.fill(bc); }
 
             /*!
              * Apply the given boundary conditions to the current particle positions.
@@ -111,8 +100,8 @@ namespace ippl {
             //! the list of boundary conditions for this set of particles
             bc_container_type bcs_m;
         };
-    }
-}
+    }  // namespace detail
+}  // namespace ippl
 
 #include "Particle/ParticleLayout.hpp"
 

@@ -21,27 +21,26 @@
 #ifndef IPPL_MPI_OPERATIONS_H
 #define IPPL_MPI_OPERATIONS_H
 
-#include <functional>
 #include <mpi.h>
+#include <functional>
 
-template<class> struct is_ippl_mpi_type: std::false_type {};
+template <class>
+struct is_ippl_mpi_type : std::false_type {};
 
-template <class Op> MPI_Op get_mpi_op(Op op)
-{
-    static_assert(is_ippl_mpi_type<Op>::value,
-                  "type not supported");
-    return get_mpi_op( op );
+template <class Op>
+MPI_Op get_mpi_op(Op op) {
+    static_assert(is_ippl_mpi_type<Op>::value, "type not supported");
+    return get_mpi_op(op);
 }
 
-#define IPPL_MPI_OP(CppOp, MPIOp)                   \
-template <>                                         \
-inline MPI_Op                                       \
-get_mpi_op< CppOp >(CppOp) { return MPIOp; }        \
-                                                    \
-template<>                                          \
-struct is_ippl_mpi_type<CppOp>:                     \
-    std::true_type {};
-
+#define IPPL_MPI_OP(CppOp, MPIOp)            \
+    template <>                              \
+    inline MPI_Op get_mpi_op<CppOp>(CppOp) { \
+        return MPIOp;                        \
+    }                                        \
+                                             \
+    template <>                              \
+    struct is_ippl_mpi_type<CppOp> : std::true_type {};
 
 /* with C++14 we should be able
  * to simply write
@@ -64,7 +63,6 @@ IPPL_MPI_OP(std::plus<float>, MPI_SUM);
 IPPL_MPI_OP(std::plus<double>, MPI_SUM);
 IPPL_MPI_OP(std::plus<long double>, MPI_SUM);
 
-
 IPPL_MPI_OP(std::less<char>, MPI_MIN);
 IPPL_MPI_OP(std::less<short>, MPI_MIN);
 IPPL_MPI_OP(std::less<int>, MPI_MIN);
@@ -79,7 +77,6 @@ IPPL_MPI_OP(std::less<float>, MPI_MIN);
 IPPL_MPI_OP(std::less<double>, MPI_MIN);
 IPPL_MPI_OP(std::less<long double>, MPI_MIN);
 
-
 IPPL_MPI_OP(std::greater<char>, MPI_MAX);
 IPPL_MPI_OP(std::greater<short>, MPI_MAX);
 IPPL_MPI_OP(std::greater<int>, MPI_MAX);
@@ -93,7 +90,6 @@ IPPL_MPI_OP(std::greater<unsigned long long>, MPI_MAX);
 IPPL_MPI_OP(std::greater<float>, MPI_MAX);
 IPPL_MPI_OP(std::greater<double>, MPI_MAX);
 IPPL_MPI_OP(std::greater<long double>, MPI_MAX);
-
 
 IPPL_MPI_OP(std::logical_or<bool>, MPI_LOR);
 IPPL_MPI_OP(std::logical_and<bool>, MPI_LAND);
