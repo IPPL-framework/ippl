@@ -1,8 +1,9 @@
 // This program recreates the convergence test plot from the Budiardja et al. (2010) paper.
 // Gravitational potential of a sphere.
 
-#include "FFTPoissonSolver.h"
 #include "Ippl.h"
+
+#include "FFTPoissonSolver.h"
 
 KOKKOS_INLINE_FUNCTION double source(double x, double y, double z, double density = 1.0,
                                      double R = 1.0, double mu = 1.2) {

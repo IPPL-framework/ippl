@@ -21,11 +21,11 @@
 #ifndef IPPL_FIELD_BC_H
 #define IPPL_FIELD_BC_H
 
-#include "Field/BcTypes.h"
-
 #include <array>
 #include <iostream>
 #include <memory>
+
+#include "Field/BcTypes.h"
 
 namespace ippl {
     template <typename T, unsigned Dim, class Mesh, class Cell>

@@ -29,12 +29,13 @@
 #ifndef IPPL_FIELD_BC_TYPES_H
 #define IPPL_FIELD_BC_TYPES_H
 
+#include "Types/IpplTypes.h"
+#include "Types/ViewTypes.h"
+
 #include "Communicate/Archive.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Index/NDIndex.h"
 #include "Meshes/UniformCartesian.h"
-#include "Types/IpplTypes.h"
-#include "Types/ViewTypes.h"
 
 namespace ippl {
     template <typename T, unsigned Dim, class Mesh, class Cell>

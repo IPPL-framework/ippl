@@ -41,9 +41,9 @@
 #ifndef IPPL_MEMPRYUSAGE_H
 #define IPPL_MEMPRYUSAGE_H
 
-#include <memory>
 #include "Ippl.h"
 
+#include <memory>
 #include <sys/resource.h>
 #include <sys/time.h>  // not required but increases portability
 

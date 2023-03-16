@@ -38,9 +38,8 @@
 
 #include "Ippl.h"
 
-#include "Particle/IpplParticleBase.h"
-
 #include "AmrParticleLevelCounter.h"
+#include "Particle/IpplParticleBase.h"
 
 template <class PLayout>
 class AmrParticleBase : public IpplParticleBase<PLayout> {

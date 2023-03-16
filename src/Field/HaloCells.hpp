@@ -19,8 +19,9 @@
 #include <memory>
 #include <vector>
 
-#include "Communicate/Communicate.h"
 #include "Utility/IpplException.h"
+
+#include "Communicate/Communicate.h"
 
 namespace ippl {
     namespace detail {

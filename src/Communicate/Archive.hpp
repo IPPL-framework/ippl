@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Archive.h"
-
 #include <cstring>
+
+#include "Archive.h"
 
 namespace ippl {
     namespace detail {

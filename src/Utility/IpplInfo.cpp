@@ -15,15 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Utility/IpplInfo.h"
-
 #include "Ippl.h"
-
 #include "IpplVersions.h"
 
-#include <unistd.h>
+#include "Utility/IpplInfo.h"
+
 #include <csignal>
 #include <cstdio>
+#include <unistd.h>
 
 /////////////////////////////////////////////////////////////////////
 // printVersion: print out a version summary.  If the argument is true,

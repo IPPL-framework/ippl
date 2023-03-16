@@ -17,9 +17,11 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "Ippl.h"
-#include "Utility/IpplException.h"
 
 #include <cmath>
+
+#include "Utility/IpplException.h"
+
 #include "gtest/gtest.h"
 
 class FieldBCTest : public ::testing::Test {

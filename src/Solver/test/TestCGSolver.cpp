@@ -8,9 +8,10 @@
 #include <iostream>
 #include <typeinfo>
 
-#include "ElectrostaticsCG.h"
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
+
+#include "ElectrostaticsCG.h"
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);

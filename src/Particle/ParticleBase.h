@@ -64,10 +64,11 @@
 #ifndef IPPL_PARTICLE_BASE_H
 #define IPPL_PARTICLE_BASE_H
 
-#include "Particle/ParticleLayout.h"
+#include <vector>
+
 #include "Types/IpplTypes.h"
 
-#include <vector>
+#include "Particle/ParticleLayout.h"
 
 namespace ippl {
     /*!

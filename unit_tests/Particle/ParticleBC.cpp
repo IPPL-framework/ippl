@@ -18,6 +18,7 @@
 #include "Ippl.h"
 
 #include <cmath>
+
 #include "gtest/gtest.h"
 
 class ParticleBCTest : public ::testing::Test {

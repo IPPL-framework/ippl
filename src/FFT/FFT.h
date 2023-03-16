@@ -28,16 +28,18 @@
 #ifndef IPPL_FFT_FFT_H
 #define IPPL_FFT_FFT_H
 
+#include <array>
 #include <heffte_fft3d.h>
 #include <heffte_fft3d_r2c.h>
-#include <array>
 #include <memory>
 #include <type_traits>
 
-#include "Field/Field.h"
-#include "FieldLayout/FieldLayout.h"
 #include "Utility/IpplException.h"
 #include "Utility/ParameterList.h"
+
+#include "Field/Field.h"
+
+#include "FieldLayout/FieldLayout.h"
 
 namespace heffte {
 
