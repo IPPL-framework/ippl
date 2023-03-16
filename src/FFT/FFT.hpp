@@ -217,11 +217,11 @@ namespace ippl {
        setup performs the initialization.
     */
     template <size_t Dim, class T, class Mesh, class Cell>
-    void FFT<RCTransform, Dim, T, , Mesh, Cell>::setup(const std::array<long long, Dim>& lowInput,
-                                                       const std::array<long long, Dim>& highInput,
-                                                       const std::array<long long, Dim>& lowOutput,
-                                                       const std::array<long long, Dim>& highOutput,
-                                                       const ParameterList& params) {
+    void FFT<RCTransform, Dim, T, Mesh, Cell>::setup(const std::array<long long, Dim>& lowInput,
+                                                     const std::array<long long, Dim>& highInput,
+                                                     const std::array<long long, Dim>& lowOutput,
+                                                     const std::array<long long, Dim>& highOutput,
+                                                     const ParameterList& params) {
         heffte::box3d<long long> inbox  = {lowInput, highInput};
         heffte::box3d<long long> outbox = {lowOutput, highOutput};
 
@@ -472,7 +472,7 @@ namespace ippl {
     */
 
     template <size_t Dim, class T, class Mesh, class Cell>
-    FFT<CosTransform, Dim, T, , Mesh, Cell>::FFT(const Layout_t& layout, const ParameterList& params) {
+    FFT<CosTransform, Dim, T, Mesh, Cell>::FFT(const Layout_t& layout, const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -502,9 +502,9 @@ namespace ippl {
            setup performs the initialization necessary.
     */
     template <size_t Dim, class T, class Mesh, class Cell>
-    void FFT<CosTransform, Dim, T, , Mesh, Cell>::setup(const std::array<long long, Dim>& low,
-                                                        const std::array<long long, Dim>& high,
-                                                        const ParameterList& params) {
+    void FFT<CosTransform, Dim, T, Mesh, Cell>::setup(const std::array<long long, Dim>& low,
+                                                      const std::array<long long, Dim>& high,
+                                                      const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
 
@@ -543,7 +543,7 @@ namespace ippl {
     }
 
     template <size_t Dim, class T, class Mesh, class Cell>
-    void FFT<CosTransform, Dim, T, Mesh, Cell::transform(
+    void FFT<CosTransform, Dim, T, Mesh, Cell>::transform(
         int direction, typename FFT<CosTransform, Dim, T, Mesh, Cell>::Field_t& f) {
         auto fview       = f.getView();
         const int nghost = f.getNghost();

@@ -18,7 +18,6 @@
 #ifndef IPPL_CORE_H
 #define IPPL_CORE_H
 
-#include "Field/BConds.h"
 #include "Field/BareField.h"
 #include "Field/Field.h"
 

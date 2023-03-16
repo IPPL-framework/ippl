@@ -87,7 +87,7 @@ namespace ippl {
      * @param u field
      */
     template <typename T, unsigned Dim, class Mesh, class Cell>
-    detail::meta_grad<Field<T, Dim, Mesh, Cell>> grad(Field<T, Dim, Mesh, Cell>& u) {
+    detail::meta_grad<Field<T, Dim, Mesh, Cell> > grad(Field<T, Dim, Mesh, Cell>& u) {
         u.fillHalo();
         BConds<T, Dim, Mesh, Cell>& bcField = u.getFieldBC();
         bcField.apply(u);
@@ -98,7 +98,7 @@ namespace ippl {
         yvector[1] = 0.5 / mesh.getMeshSpacing(1);
         typename Mesh::vector_type zvector(0);
         zvector[2] = 0.5 / mesh.getMeshSpacing(2);
-        return detail::meta_grad<Field<T, Dim, Mesh, Cell>>(u, xvector, yvector, zvector);
+        return detail::meta_grad<Field<T, Dim, Mesh, Cell> >(u, xvector, yvector, zvector);
     }
 
     /*!
@@ -106,7 +106,7 @@ namespace ippl {
      * @param u field
      */
     template <typename T, unsigned Dim, class Mesh, class Cell>
-    detail::meta_div<Field<T, Dim, Mesh, Cell>> div(Field<T, Dim, Mesh, Cell>& u) {
+    detail::meta_div<Field<T, Dim, Mesh, Cell> > div(Field<T, Dim, Mesh, Cell>& u) {
         u.fillHalo();
         BConds<T, Dim, Mesh, Cell>& bcField = u.getFieldBC();
         bcField.apply(u);
@@ -117,7 +117,7 @@ namespace ippl {
         yvector[1] = 0.5 / mesh.getMeshSpacing(1);
         typename Mesh::vector_type zvector(0);
         zvector[2] = 0.5 / mesh.getMeshSpacing(2);
-        return detail::meta_div<Field<T, Dim, Mesh, Cell>>(u, xvector, yvector, zvector);
+        return detail::meta_div<Field<T, Dim, Mesh, Cell> >(u, xvector, yvector, zvector);
     }
 
     /*!
@@ -125,7 +125,7 @@ namespace ippl {
      * @param u field
      */
     template <typename T, unsigned Dim, class Mesh, class Cell>
-    detail::meta_laplace<Field<T, Dim, Mesh, Cell>> laplace(Field<T, Dim, Mesh, Cell>& u) {
+    detail::meta_laplace<Field<T, Dim, Mesh, Cell> > laplace(Field<T, Dim, Mesh, Cell>& u) {
         u.fillHalo();
         BConds<T, Dim, Mesh, Cell>& bcField = u.getFieldBC();
         bcField.apply(u);
@@ -134,7 +134,7 @@ namespace ippl {
         hvector[0] = 1.0 / std::pow(mesh.getMeshSpacing(0), 2);
         hvector[1] = 1.0 / std::pow(mesh.getMeshSpacing(1), 2);
         hvector[2] = 1.0 / std::pow(mesh.getMeshSpacing(2), 2);
-        return detail::meta_laplace<Field<T, Dim, Mesh, Cell>>(u, hvector);
+        return detail::meta_laplace<Field<T, Dim, Mesh, Cell> >(u, hvector);
     }
 
     /*!
@@ -142,7 +142,7 @@ namespace ippl {
      * @param u field
      */
     template <typename T, unsigned Dim, class Mesh, class Cell>
-    detail::meta_curl<Field<T, Dim, Mesh, Cell>> curl(Field<T, Dim, Mesh, Cell>& u) {
+    detail::meta_curl<Field<T, Dim, Mesh, Cell> > curl(Field<T, Dim, Mesh, Cell>& u) {
         u.fillHalo();
         BConds<T, Dim, Mesh, Cell>& bcField = u.getFieldBC();
         bcField.apply(u);
@@ -155,7 +155,7 @@ namespace ippl {
         zvector[2] = 1.0;
         typename Mesh::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
-        return detail::meta_curl<Field<T, Dim, Mesh, Cell>>(u, xvector, yvector, zvector, hvector);
+        return detail::meta_curl<Field<T, Dim, Mesh, Cell> >(u, xvector, yvector, zvector, hvector);
     }
 
     /*!
@@ -163,7 +163,7 @@ namespace ippl {
      * @param u field
      */
     template <typename T, unsigned Dim, class Mesh, class Cell>
-    detail::meta_hess<Field<T, Dim, Mesh, Cell>> hess(Field<T, Dim, Mesh, Cell>& u) {
+    detail::meta_hess<Field<T, Dim, Mesh, Cell> > hess(Field<T, Dim, Mesh, Cell>& u) {
         u.fillHalo();
         BConds<T, Dim, Mesh, Cell>& bcField = u.getFieldBC();
         bcField.apply(u);
@@ -176,6 +176,6 @@ namespace ippl {
         zvector[2] = 1.0;
         typename Mesh::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
-        return detail::meta_hess<Field<T, Dim, Mesh, Cell>>(u, xvector, yvector, zvector, hvector);
+        return detail::meta_hess<Field<T, Dim, Mesh, Cell> >(u, xvector, yvector, zvector, hvector);
     }
 }  // namespace ippl

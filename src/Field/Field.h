@@ -19,6 +19,7 @@
 #define IPPL_FIELD_H
 
 #include "Field/BConds.h"
+#include "Field/BcTypes.h"
 #include "Field/BareField.h"
 #include "Meshes/UniformCartesian.h"
 
