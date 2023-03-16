@@ -19,23 +19,29 @@ IndentWidth:     4
 IncludeBlocks: Regroup
 IncludeCategories:
     - Regex: 'Kokkos_Core'
-      Priority: 0
-      SortPriority: 0
+      Priority: -1
+      SortPriority: -2
+    - Regex: '^"Ippl'
+      Priority: -1
+      SortPriority: -1
     - Regex: '^<.*>$'
       Priority: 2
-      SortPriority: 2
-    - Regex: 'Types\.h'
+    - Regex: 'Types[^/]*"$'
       Priority: 10
-      SortPriority: 10
-    - Regex: 'Types\/'
+    - Regex: '^"Types'
       Priority: 20
-      SortPriority: 20
-    - Regex: 'Utility/'
+    - Regex: '^"Utility'
       Priority: 30
-      SortPriority: 30
-    - Regex: 'Expression\/'
+    - Regex: '^"Expression'
       Priority: 40
-      SortPriority: 40
+    - Regex: '.*Field.h"$'
+      Priority: 50
+    - Regex: 'BConds'
+      Priority: 50
+      SortPriority: 51
+    - Regex: 'BcTypes'
+      Priority: 50
+      SortPriority: 52
 IndentGotoLabels: false
 NamespaceIndentation: All 
 PackConstructorInitializers: Never

@@ -15,10 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Field/BareField.h"
-#include "Field/Field.h"
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
+
+#include "Field/BareField.h"
+#include "Field/Field.h"
 
 namespace ippl {
 

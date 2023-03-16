@@ -20,9 +20,11 @@
 
 #include <iostream>
 
-#include "Communicate/Communicate.h"
 #include "Types/IpplTypes.h"
+
 #include "Utility/Inform.h"
+
+#include "Communicate/Communicate.h"
 
 class Ippl;
 std::ostream& operator<<(std::ostream&, const Ippl&);

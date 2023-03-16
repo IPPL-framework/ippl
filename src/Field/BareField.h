@@ -20,19 +20,19 @@
 
 #include <Kokkos_Core.hpp>
 
-#include "Expression/IpplExpressions.h"
+#include <cstdlib>
+#include <iostream>
+
 #include "Types/IpplTypes.h"
 #include "Types/ViewTypes.h"
-
-#include "FieldLayout/FieldLayout.h"
 
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
 
-#include "Field/HaloCells.h"
+#include "Expression/IpplExpressions.h"
 
-#include <cstdlib>
-#include <iostream>
+#include "Field/HaloCells.h"
+#include "FieldLayout/FieldLayout.h"
 
 namespace ippl {
     class Index;

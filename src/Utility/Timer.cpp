@@ -19,9 +19,9 @@
 // You should have received a copy of the GNU General Public License
 // along with OPAL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Timer.h"
-
 #include "Kokkos_Core.hpp"
+
+#include "Timer.h"
 
 Timer::Timer() {
     this->clear();

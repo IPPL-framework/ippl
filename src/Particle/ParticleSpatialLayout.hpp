@@ -35,6 +35,7 @@
 #include <memory>
 #include <numeric>
 #include <vector>
+
 #include "Utility/IpplTimings.h"
 
 namespace ippl {

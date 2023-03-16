@@ -19,8 +19,9 @@
 #ifndef IPPL_SOLVER_H
 #define IPPL_SOLVER_H
 
-#include "Field/Field.h"
 #include "Utility/ParameterList.h"
+
+#include "Field/Field.h"
 
 namespace ippl {
 

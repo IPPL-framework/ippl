@@ -10,11 +10,14 @@
 // See heffte documentation for more information on these parameters:
 // https://mkstoyanov.bitbucket.io/heffte/
 
-#include <cstdlib>
-#include "FFTPoissonSolver.h"
 #include "Ippl.h"
+
+#include <cstdlib>
+
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
+
+#include "FFTPoissonSolver.h"
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {

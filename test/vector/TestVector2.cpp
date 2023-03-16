@@ -1,11 +1,9 @@
 #include <Kokkos_Core.hpp>
 
+#include <chrono>
 #include <initializer_list>
 #include <iostream>
-
 #include <typeinfo>
-
-#include <chrono>
 
 template <typename E>
 class Expression {

@@ -26,8 +26,10 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Communicate/DataTypes.h"
 #include "Ippl.h"
+
+#include "Communicate/DataTypes.h"
+
 #include "Utility/IpplTimings.h"
 
 namespace ippl {

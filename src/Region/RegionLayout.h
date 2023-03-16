@@ -36,9 +36,9 @@
 
 #include <array>
 
-#include "Region/NDRegion.h"
-
 #include "Types/ViewTypes.h"
+
+#include "Region/NDRegion.h"
 
 namespace ippl {
     namespace detail {

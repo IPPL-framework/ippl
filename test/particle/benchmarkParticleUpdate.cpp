@@ -15,14 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include <iostream>
-#include <set>
-#include <string>
-#include <vector>
 #include "Ippl.h"
 
 #include <chrono>
+#include <iostream>
 #include <random>
+#include <set>
+#include <string>
+#include <vector>
+
 #include "Utility/IpplTimings.h"
 
 // dimension of our positions

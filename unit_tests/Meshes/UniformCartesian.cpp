@@ -18,6 +18,7 @@
 #include "Ippl.h"
 
 #include <cmath>
+
 #include "gtest/gtest.h"
 
 class UniformCartesianTest : public ::testing::Test {

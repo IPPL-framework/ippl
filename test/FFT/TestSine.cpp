@@ -1,10 +1,11 @@
 #include "Ippl.h"
-#include "Utility/ParameterList.h"
 
 #include <array>
 #include <iostream>
 #include <random>
 #include <typeinfo>
+
+#include "Utility/ParameterList.h"
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);

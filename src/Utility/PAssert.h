@@ -6,11 +6,11 @@
 
 #ifndef PASSERT_H
 #define PASSERT_H
-#include "Utility/IpplInfo.h"
-
 #include <exception>
 #include <stdexcept>
 #include <string>
+
+#include "Utility/IpplInfo.h"
 //////////////////////////////////////////////////////////////////////
 //
 // This is a compile time assert.
