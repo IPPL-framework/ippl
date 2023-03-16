@@ -21,4 +21,4 @@ IndentGotoLabels: false
 NamespaceIndentation: All 
 PackConstructorInitializers: Never
 ReflowComments: true
-StatementMacros: ['DefineUnaryOperation', 'DefineBinaryOperation']
+StatementMacros: ['DefineUnaryOperation', 'DefineBinaryOperation', 'DefineReduction', 'DefineParticleReduction']

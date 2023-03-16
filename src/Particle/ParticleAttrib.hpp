@@ -252,7 +252,7 @@ namespace ippl {
     }
 
     DefineParticleReduction(Sum, sum, valL += myVal, MPI_SUM)
-        DefineParticleReduction(Max, max, if (myVal > valL) valL = myVal, MPI_MAX)
-            DefineParticleReduction(Min, min, if (myVal < valL) valL = myVal, MPI_MIN)
-                DefineParticleReduction(Prod, prod, valL *= myVal, MPI_PROD)
+    DefineParticleReduction(Max, max, if (myVal > valL) valL = myVal, MPI_MAX)
+    DefineParticleReduction(Min, min, if (myVal < valL) valL = myVal, MPI_MIN)
+    DefineParticleReduction(Prod, prod, valL *= myVal, MPI_PROD)
 }  // namespace ippl
