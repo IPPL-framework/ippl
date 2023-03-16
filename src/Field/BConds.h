@@ -28,19 +28,19 @@
 #include <memory>
 
 namespace ippl {
-    template <typename T, unsigned Dim, class Mesh, class Cell>
+    template <typename T, unsigned Dim, class Mesh, class Centering>
     class Field;
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
+    template <typename T, unsigned Dim, class Mesh, class Centering>
     class BConds;
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
-    std::ostream& operator<<(std::ostream&, const BConds<T, Dim, Mesh, Cell>&);
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    std::ostream& operator<<(std::ostream&, const BConds<T, Dim, Mesh, Centering>&);
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
+    template <typename T, unsigned Dim, class Mesh, class Centering>
     class BConds {
     public:
-        using bc_type        = detail::BCondBase<T, Dim, Mesh, Cell>;
+        using bc_type        = detail::BCondBase<T, Dim, Mesh, Centering>;
         using container      = std::array<std::shared_ptr<bc_type>, 2 * Dim>;
         using iterator       = typename container::iterator;
         using const_iterator = typename container::const_iterator;
@@ -48,8 +48,8 @@ namespace ippl {
         BConds()  = default;
         ~BConds() = default;
 
-        void findBCNeighbors(Field<T, Dim, Mesh, Cell>& field);
-        void apply(Field<T, Dim, Mesh, Cell>& field);
+        void findBCNeighbors(Field<T, Dim, Mesh, Centering>& field);
+        void apply(Field<T, Dim, Mesh, Centering>& field);
 
         bool changesPhysicalCells() const;
         virtual void write(std::ostream&) const;
@@ -62,8 +62,8 @@ namespace ippl {
         container bc_m;
     };
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
-    inline std::ostream& operator<<(std::ostream& os, const BConds<T, Dim, Mesh, Cell>& bc) {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    inline std::ostream& operator<<(std::ostream& os, const BConds<T, Dim, Mesh, Centering>& bc) {
         bc.write(os);
         return os;
     }

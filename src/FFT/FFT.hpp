@@ -44,8 +44,8 @@ namespace ippl {
        given layout and heffte parameters.
     */
 
-    template <size_t Dim, class T, class Mesh, class Cell>
-    FFT<CCTransform, Dim, T, Mesh, Cell>::FFT(const Layout_t& layout, const ParameterList& params) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    FFT<CCTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout, const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -74,8 +74,8 @@ namespace ippl {
     /**
            setup performs the initialization necessary.
     */
-    template <size_t Dim, class T, class Mesh, class Cell>
-    void FFT<CCTransform, Dim, T, Mesh, Cell>::setup(const std::array<long long, Dim>& low,
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<CCTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
                                                      const std::array<long long, Dim>& high,
                                                      const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
@@ -116,9 +116,9 @@ namespace ippl {
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
 
-    template <size_t Dim, class T, class Mesh, class Cell>
-    void FFT<CCTransform, Dim, T, Mesh, Cell>::transform(
-        int direction, typename FFT<CCTransform, Dim, T, Mesh, Cell>::ComplexField_t& f) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<CCTransform, Dim, T, Mesh, Centering>::transform(
+        int direction, typename FFT<CCTransform, Dim, T, Mesh, Centering>::ComplexField_t& f) {
         auto fview       = f.getView();
         const int nghost = f.getNghost();
 
@@ -175,8 +175,8 @@ namespace ippl {
      *layouts and heffte parameters.
      */
 
-    template <size_t Dim, class T, class Mesh, class Cell>
-    FFT<RCTransform, Dim, T, Mesh, Cell>::FFT(const Layout_t& layoutInput,
+    template <size_t Dim, class T, class Mesh, class Centering>
+    FFT<RCTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layoutInput,
                                               const Layout_t& layoutOutput,
                                               const ParameterList& params) {
         /**
@@ -216,8 +216,8 @@ namespace ippl {
     /**
        setup performs the initialization.
     */
-    template <size_t Dim, class T, class Mesh, class Cell>
-    void FFT<RCTransform, Dim, T, Mesh, Cell>::setup(const std::array<long long, Dim>& lowInput,
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<RCTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& lowInput,
                                                      const std::array<long long, Dim>& highInput,
                                                      const std::array<long long, Dim>& lowOutput,
                                                      const std::array<long long, Dim>& highOutput,
@@ -260,10 +260,10 @@ namespace ippl {
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
 
-    template <size_t Dim, class T, class Mesh, class Cell>
-    void FFT<RCTransform, Dim, T, Mesh, Cell>::transform(
-        int direction, typename FFT<RCTransform, Dim, T, Mesh, Cell>::RealField_t& f,
-        typename FFT<RCTransform, Dim, T, Mesh, Cell>::ComplexField_t& g) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<RCTransform, Dim, T, Mesh, Centering>::transform(
+        int direction, typename FFT<RCTransform, Dim, T, Mesh, Centering>::RealField_t& f,
+        typename FFT<RCTransform, Dim, T, Mesh, Centering>::ComplexField_t& g) {
         auto fview        = f.getView();
         auto gview        = g.getView();
         const int nghostf = f.getNghost();
@@ -343,8 +343,8 @@ namespace ippl {
        given layout and heffte parameters.
     */
 
-    template <size_t Dim, class T, class Mesh, class Cell>
-    FFT<SineTransform, Dim, T, Mesh, Cell>::FFT(const Layout_t& layout, const ParameterList& params) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    FFT<SineTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout, const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -373,8 +373,8 @@ namespace ippl {
     /**
            setup performs the initialization necessary.
     */
-    template <size_t Dim, class T, class Mesh, class Cell>
-    void FFT<SineTransform, Dim, T, Mesh, Cell>::setup(const std::array<long long, Dim>& low,
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<SineTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
                                               const std::array<long long, Dim>& high,
                                               const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
@@ -414,9 +414,9 @@ namespace ippl {
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
 
-    template <size_t Dim, class T, class Mesh, class Cell>
-    void FFT<SineTransform, Dim, T, Mesh, Cell>::transform(
-        int direction, typename FFT<SineTransform, Dim, T, Mesh, Cell>::Field_t& f) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<SineTransform, Dim, T, Mesh, Centering>::transform(
+        int direction, typename FFT<SineTransform, Dim, T, Mesh, Centering>::Field_t& f) {
         auto fview       = f.getView();
         const int nghost = f.getNghost();
 
@@ -471,8 +471,8 @@ namespace ippl {
        given layout and heffte parameters.
     */
 
-    template <size_t Dim, class T, class Mesh, class Cell>
-    FFT<CosTransform, Dim, T, Mesh, Cell>::FFT(const Layout_t& layout, const ParameterList& params) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    FFT<CosTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout, const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -501,8 +501,8 @@ namespace ippl {
     /**
            setup performs the initialization necessary.
     */
-    template <size_t Dim, class T, class Mesh, class Cell>
-    void FFT<CosTransform, Dim, T, Mesh, Cell>::setup(const std::array<long long, Dim>& low,
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<CosTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
                                                       const std::array<long long, Dim>& high,
                                                       const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
@@ -542,9 +542,9 @@ namespace ippl {
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
 
-    template <size_t Dim, class T, class Mesh, class Cell>
-    void FFT<CosTransform, Dim, T, Mesh, Cell>::transform(
-        int direction, typename FFT<CosTransform, Dim, T, Mesh, Cell>::Field_t& f) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<CosTransform, Dim, T, Mesh, Centering>::transform(
+        int direction, typename FFT<CosTransform, Dim, T, Mesh, Centering>::Field_t& f) {
         auto fview       = f.getView();
         const int nghost = f.getNghost();
 

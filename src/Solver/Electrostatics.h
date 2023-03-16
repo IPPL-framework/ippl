@@ -23,12 +23,12 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
-    class Electrostatics : public Solver<Tlhs, Trhs, Dim, Mesh, Cell> {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    class Electrostatics : public Solver<Tlhs, Trhs, Dim, Mesh, Centering> {
     public:
-        using grad_type = Field<Vector<Tlhs, Dim>, Dim, Mesh, Cell>;
-        using lhs_type  = typename Solver<Tlhs, Trhs, Dim, Mesh, Cell>::lhs_type;
-        using rhs_type  = typename Solver<Tlhs, Trhs, Dim, Mesh, Cell>::rhs_type;
+        using grad_type = Field<Vector<Tlhs, Dim>, Dim, Mesh, Centering>;
+        using lhs_type  = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
+        using rhs_type  = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
 
         /*!
          * Represents the types of fields that should
@@ -45,13 +45,13 @@ namespace ippl {
          * desired output type defaults to solution only
          */
         Electrostatics()
-            : Solver<Tlhs, Trhs, Dim, Mesh, Cell>()
+            : Solver<Tlhs, Trhs, Dim, Mesh, Centering>()
             , grad_mp(nullptr) {
             setDefaultParameters();
         }
 
         Electrostatics(lhs_type& lhs, rhs_type& rhs)
-            : Solver<Tlhs, Trhs, Dim, Mesh, Cell>(lhs, rhs)
+            : Solver<Tlhs, Trhs, Dim, Mesh, Centering>(lhs, rhs)
             , grad_mp(nullptr) {
             setDefaultParameters();
         }

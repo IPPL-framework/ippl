@@ -25,22 +25,22 @@
 #include "Types/Vector.h"
 
 namespace ippl {
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Cell>
-    class FFTPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Cell> {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    class FFTPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
     public:
         // types for LHS and RHS
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Cell>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Cell>::rhs_type;
+        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
+        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
 
         // type of output
-        using Base = Electrostatics<Tlhs, Trhs, Dim, Mesh, Cell>;
+        using Base = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
 
         // define a type for a 3 dimensional field (e.g. charge density field)
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
-        typedef Field<Trhs, Dim, Mesh, Cell> Field_t;
-        typedef Field<int, Dim, Mesh, Cell> IField_t;
-        typedef Field<Kokkos::complex<Trhs>, Dim, Mesh, Cell> CxField_t;
+        typedef Field<Trhs, Dim, Mesh, Centering> Field_t;
+        typedef Field<int, Dim, Mesh, Centering> IField_t;
+        typedef Field<Kokkos::complex<Trhs>, Dim, Mesh, Centering> CxField_t;
         typedef Vector<Trhs, Dim> Vector_t;
 
         // define type for field layout

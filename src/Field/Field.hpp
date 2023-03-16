@@ -19,8 +19,8 @@
 
 namespace ippl {
     namespace detail {
-        template <typename T, unsigned Dim, class Mesh, class Cell>
-        struct isExpression<Field<T, Dim, Mesh, Cell>> : std::true_type {};
+        template <typename T, unsigned Dim, class Mesh, class Centering>
+        struct isExpression<Field<T, Dim, Mesh, Centering>> : std::true_type {};
     }  // namespace detail
 
     //////////////////////////////////////////////////////////////////////////
@@ -28,47 +28,47 @@ namespace ippl {
     // 'initialize' function before doing anything else.  There are no special
     // checks in the rest of the Field methods to check that the Field has
     // been properly initialized
-    template <class T, unsigned Dim, class Mesh, class Cell>
-    Field<T, Dim, Mesh, Cell>::Field()
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    Field<T, Dim, Mesh, Centering>::Field()
         : BareField<T, Dim>()
         , mesh_m(nullptr)
         , bc_m() {}
 
     //////////////////////////////////////////////////////////////////////////
     // Constructors which include a Mesh object as argument
-    template <class T, unsigned Dim, class Mesh, class Cell>
-    Field<T, Dim, Mesh, Cell>::Field(Mesh_t& m, Layout_t& l, int nghost)
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    Field<T, Dim, Mesh, Centering>::Field(Mesh_t& m, Layout_t& l, int nghost)
         : BareField<T, Dim>(l, nghost)
         , mesh_m(&m) {
         for (unsigned int face = 0; face < 2 * Dim; ++face) {
-            bc_m[face] = std::make_shared<NoBcFace<T, Dim, Mesh, Cell> >(face);
+            bc_m[face] = std::make_shared<NoBcFace<T, Dim, Mesh, Centering> >(face);
         }
     }
 
     //////////////////////////////////////////////////////////////////////////
     // Initialize the Field, also specifying a mesh
-    template <class T, unsigned Dim, class Mesh, class Cell>
-    void Field<T, Dim, Mesh, Cell>::initialize(Mesh_t& m, Layout_t& l, int nghost) {
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    void Field<T, Dim, Mesh, Centering>::initialize(Mesh_t& m, Layout_t& l, int nghost) {
         BareField<T, Dim>::initialize(l, nghost);
         mesh_m = &m;
         for (unsigned int face = 0; face < 2 * Dim; ++face) {
-            bc_m[face] = std::make_shared<NoBcFace<T, Dim, Mesh, Cell> >(face);
+            bc_m[face] = std::make_shared<NoBcFace<T, Dim, Mesh, Centering> >(face);
         }
     }
 
-    template <class T, unsigned Dim, class Mesh, class Cell>
-    T Field<T, Dim, Mesh, Cell>::getVolumeIntegral() const {
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    T Field<T, Dim, Mesh, Centering>::getVolumeIntegral() const {
         typename Mesh::value_type dV = mesh_m->getCellVolume();
         return this->sum() * dV;
     }
 
-    template <class T, unsigned Dim, class Mesh, class Cell>
-    T Field<T, Dim, Mesh, Cell>::getVolumeAverage() const {
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    T Field<T, Dim, Mesh, Centering>::getVolumeAverage() const {
         return getVolumeIntegral() / mesh_m->getMeshVolume();
     }
 
-    template <class T, unsigned Dim, class Mesh, class Cell>
-    void Field<T, Dim, Mesh, Cell>::updateLayout(Layout_t& l, int nghost) {
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    void Field<T, Dim, Mesh, Centering>::updateLayout(Layout_t& l, int nghost) {
         BareField<T, Dim>::updateLayout(l, nghost);
     }
 
