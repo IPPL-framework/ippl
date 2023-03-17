@@ -24,19 +24,20 @@
 #include "Types/Vector.h"
 
 namespace ippl {
-    template<typename T, unsigned Dim>
+    template <typename T, unsigned Dim>
     class Mesh {
-
     public:
         typedef T value_type;
-        enum { Dimension = Dim };
+        enum {
+            Dimension = Dim
+        };
 
         typedef Vector<T, Dim> vector_type;
         typedef Vector<vector_type, Dim> matrix_type;
 
-        Mesh() {};
+        Mesh(){};
 
-        virtual ~Mesh() {};
+        virtual ~Mesh(){};
 
         // Get the origin of mesh vertex positions
         vector_type getOrigin() const;
@@ -61,10 +62,10 @@ namespace ippl {
         T getGridsize(size_t dim) const;
 
     protected:
-        vector_type origin_m;          // Origin of mesh coordinates (vertices)
-        vector_type gridSizes_m;       // Sizes (number of vertices)
+        vector_type origin_m;     // Origin of mesh coordinates (vertices)
+        vector_type gridSizes_m;  // Sizes (number of vertices)
     };
-}
+}  // namespace ippl
 
 #include "Meshes/Mesh.hpp"
 

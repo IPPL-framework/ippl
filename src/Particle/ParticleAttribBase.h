@@ -27,22 +27,22 @@
 #ifndef IPPL_PARTICLE_ATTRIB_BASE_H
 #define IPPL_PARTICLE_ATTRIB_BASE_H
 
-#include "Types/ViewTypes.h"
 #include "Types/IpplTypes.h"
+#include "Types/ViewTypes.h"
 
 #include "Communicate/Archive.h"
 
 namespace ippl {
     namespace detail {
-        template<class... Properties>
+        template <class... Properties>
         class ParticleAttribBase {
-
         public:
             typedef typename ViewType<bool, 1, Properties...>::view_type boolean_view_type;
 
             virtual void create(size_type) = 0;
 
-            virtual void destroy(const Kokkos::View<int*>&, const Kokkos::View<int*>&, size_type) = 0;
+            virtual void destroy(const Kokkos::View<int*>&, const Kokkos::View<int*>&,
+                                 size_type)                     = 0;
             virtual size_type packedSize(const size_type) const = 0;
 
             virtual void pack(void*, const Kokkos::View<int*>&) const = 0;
@@ -63,7 +63,7 @@ namespace ippl {
         protected:
             const size_type* localNum_mp;
         };
-    }
-}
+    }  // namespace detail
+}  // namespace ippl
 
 #endif

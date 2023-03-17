@@ -15,19 +15,20 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
+#include <Kokkos_Core.hpp>
 #include "Ippl.h"
-#include "Utility/IpplInfo.h"
-#include <cstring>
+
 #include <cstdlib>
+#include <cstring>
 #include <list>
 
-#include <Kokkos_Core.hpp>
+#include "Utility/IpplInfo.h"
 
 // public static members of IpplInfo, initialized to default values
-std::unique_ptr<ippl::Communicate>  Ippl::Comm = 0;
-std::unique_ptr<Inform> Ippl::Info = 0;
-std::unique_ptr<Inform> Ippl::Warn = 0;
-std::unique_ptr<Inform> Ippl::Error = 0;
+std::unique_ptr<ippl::Communicate> Ippl::Comm = 0;
+std::unique_ptr<Inform> Ippl::Info            = 0;
+std::unique_ptr<Inform> Ippl::Warn            = 0;
+std::unique_ptr<Inform> Ippl::Error           = 0;
 
 void Ippl::deleteGlobals() {
     Info.reset();
@@ -45,22 +46,18 @@ std::ostream& operator<<(std::ostream& o, const Ippl&) {
     return o;
 }
 
-
-Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
-{
-    Info = std::make_unique<Inform>("Ippl");
-    Warn = std::make_unique<Inform>("Warning", std::cerr);
+Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm) {
+    Info  = std::make_unique<Inform>("Ippl");
+    Warn  = std::make_unique<Inform>("Warning", std::cerr);
     Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
 
     Comm = std::make_unique<ippl::Communicate>(argc, argv, mpicomm);
 
-
     try {
         std::list<std::string> notparsed;
         int infoLevel = 0;
-        int nargs = 0;
+        int nargs     = 0;
         while (nargs < argc) {
-
             if (checkOption(argv[nargs], "--help", "-h")) {
                 if (Comm->myNode() == 0) {
                     IpplInfo::printHelp(argv);
@@ -78,10 +75,10 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
                 std::string header("Compile-time options: ");
                 while (options.length() > 58) {
                     std::string line = options.substr(0, 58);
-                    size_t n = line.find_last_of(' ');
+                    size_t n         = line.find_last_of(' ');
                     INFOMSG(header << line.substr(0, n) << "\n");
 
-                    header = std::string(22, ' ');
+                    header  = std::string(22, ' ');
                     options = options.substr(n + 1);
                 }
                 INFOMSG(header << options << endl);
@@ -102,7 +99,7 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
             }
         }
 
-    } catch(const std::exception& e) {
+    } catch (const std::exception& e) {
         if (Comm->myNode() == 0) {
             std::cerr << e.what() << std::endl;
         }
@@ -111,7 +108,6 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm)
 
     Kokkos::initialize(argc, argv);
 }
-
 
 bool Ippl::checkOption(const char* arg, const char* lstr, const char* sstr) {
     return (std::strcmp(arg, lstr) == 0) || (std::strcmp(arg, sstr) == 0);
@@ -128,7 +124,6 @@ int Ippl::getIntOption(const char* arg) {
     return std::atoi(arg);
 }
 
-
 /////////////////////////////////////////////////////////////////////
 // Destructor: need to delete comm library if this is the last IpplInfo
 Ippl::~Ippl() {
@@ -136,7 +131,7 @@ Ippl::~Ippl() {
     Kokkos::finalize();
 }
 
-void Ippl::abort(const char *msg) {
+void Ippl::abort(const char* msg) {
     // print out message, if one was provided
     if (msg != 0) {
         ERRORMSG(msg << endl);
@@ -145,7 +140,6 @@ void Ippl::abort(const char *msg) {
     // that's it, folks this error will be propperly catched in the main
     throw std::runtime_error("Error form IpplInfo::abort");
 }
-
 
 void Ippl::fence() {
     Kokkos::fence();

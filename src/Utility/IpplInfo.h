@@ -49,41 +49,40 @@
  */
 
 class IpplInfo {
-
 public:
-  // printVersion: print out a version summary.  If the argument is true,
-  // print out a detailed listing, otherwise a summary.
-  static void printVersion(void);
+    // printVersion: print out a version summary.  If the argument is true,
+    // print out a detailed listing, otherwise a summary.
+    static void printVersion(void);
 
-  static void printHelp(char** argv);
+    static void printHelp(char** argv);
 
-  // version: return the name of this version of Ippl, as a string
-  // (from IpplVersions.h)
-  static const char *version();
+    // version: return the name of this version of Ippl, as a string
+    // (from IpplVersions.h)
+    static const char* version();
 
-  // compileArch: return the architecture on which this library was built
-  // (from IpplVersions.h)
-  static const char *compileArch();
+    // compileArch: return the architecture on which this library was built
+    // (from IpplVersions.h)
+    static const char* compileArch();
 
-  // compileDate: return the date on which this library was prepared for
-  // compilation (from IpplVersions.h)
-  static const char *compileDate();
+    // compileDate: return the date on which this library was prepared for
+    // compilation (from IpplVersions.h)
+    static const char* compileDate();
 
-  // compileLine: return the compiler command used to compile each source file
-  // (from IpplVersions.h)
-  static const char *compileLine();
+    // compileLine: return the compiler command used to compile each source file
+    // (from IpplVersions.h)
+    static const char* compileLine();
 
-  // compileMachine: return the machine on which this library was
-  // compiled (from IpplVersions.h)
-  static const char *compileMachine();
+    // compileMachine: return the machine on which this library was
+    // compiled (from IpplVersions.h)
+    static const char* compileMachine();
 
-  // compileOptions: return the option list used to compile this library
-  // (from IpplVersions.h)
-  static const char *compileOptions();
+    // compileOptions: return the option list used to compile this library
+    // (from IpplVersions.h)
+    static const char* compileOptions();
 
-  // compileUser: return the username of the user who compiled this
-  // library (from IpplVersions.h)
-  static const char *compileUser();
+    // compileUser: return the username of the user who compiled this
+    // library (from IpplVersions.h)
+    static const char* compileUser();
 };
 
 #endif

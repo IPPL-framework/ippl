@@ -20,15 +20,14 @@
 #define IPPL_SOLVER_H
 
 #include "Utility/ParameterList.h"
+
 #include "Field/Field.h"
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim,
-              class M=UniformCartesian<double, Dim>,
-              class C=typename M::DefaultCentering>
-    class Solver
-    {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
+              class C = typename M::DefaultCentering>
+    class Solver {
     public:
         using lhs_type = Field<Tlhs, Dim, M, C>;
         using rhs_type = Field<Trhs, Dim, M, C>;
@@ -36,7 +35,7 @@ namespace ippl {
         /*!
          * Default constructor
          */
-        Solver() { }
+        Solver() {}
 
         /*!
          * Convenience constructor with LHS and RHS parameters
@@ -62,20 +61,17 @@ namespace ippl {
         /*!
          * Updates all solver parameters based on values in another parameter set
          * @param params Parameter list with updated values
-         * @throw IpplException Fails if the provided parameter list includes keys not already present
+         * @throw IpplException Fails if the provided parameter list includes keys not already
+         * present
          */
-        void updateParameters(const ParameterList& params) {
-            params_m.update(params);
-        }
+        void updateParameters(const ParameterList& params) { params_m.update(params); }
 
         /*!
          * Merges another parameter set into the solver's parameters, overwriting
          * existing parameters in case of conflict
          * @param params Parameter list with desired values
          */
-        void mergeParameters(const ParameterList& params) {
-            params_m.merge(params);
-        }
+        void mergeParameters(const ParameterList& params) { params_m.merge(params); }
 
         /*!
          * Set the problem LHS
@@ -101,6 +97,6 @@ namespace ippl {
          */
         virtual void setDefaultParameters() {}
     };
-}
+}  // namespace ippl
 
 #endif
