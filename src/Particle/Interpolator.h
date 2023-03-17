@@ -12,18 +12,20 @@
 #define INTERPOLATOR_H
 
 // include files
-#include "AppTypes/Vektor.h"
-#include "Field/BareField.h"
-#include "Field/CompressedBrickIterator.h"
-#include "Field/LField.h"
-#include "Index/NDIndex.h"
-#include "Utility/IpplException.h"
-#include "Utility/IpplInfo.h"
-
 #include <cmath>
 #include <iostream>
 #include <utility>
 #include <vector>
+
+#include "Utility/IpplException.h"
+#include "Utility/IpplInfo.h"
+
+#include "Field/BareField.h"
+#include "Field/LField.h"
+
+#include "AppTypes/Vektor.h"
+#include "Field/CompressedBrickIterator.h"
+#include "Index/NDIndex.h"
 
 // Helper class and functions for finding nearest grid point given centering
 

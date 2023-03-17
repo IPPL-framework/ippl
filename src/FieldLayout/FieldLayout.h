@@ -21,12 +21,13 @@
 #ifndef IPPL_FIELD_LAYOUT_H
 #define IPPL_FIELD_LAYOUT_H
 
-#include "Index/NDIndex.h"
-#include "Types/ViewTypes.h"
-
 #include <array>
 #include <iostream>
 #include <vector>
+
+#include "Types/ViewTypes.h"
+
+#include "Index/NDIndex.h"
 
 namespace ippl {
 

@@ -1,5 +1,6 @@
-#include <random>
 #include "Ippl.h"
+
+#include <random>
 
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {

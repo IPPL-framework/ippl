@@ -18,17 +18,17 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "FieldLayout/FieldLayout.h"
 #include "Ippl.h"
-#include "Utility/PAssert.h"
-
-#include "Partition/Partitioner.h"
-
-#include "Utility/IpplException.h"
-#include "Utility/IpplTimings.h"
 
 #include <cstdlib>
 #include <limits>
+
+#include "Utility/IpplException.h"
+#include "Utility/IpplTimings.h"
+#include "Utility/PAssert.h"
+
+#include "FieldLayout/FieldLayout.h"
+#include "Partition/Partitioner.h"
 
 namespace ippl {
 

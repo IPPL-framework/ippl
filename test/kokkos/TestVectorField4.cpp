@@ -1,6 +1,5 @@
-#include "Ippl.h"
-
 #include <Kokkos_Core.hpp>
+#include "Ippl.h"
 
 #include <initializer_list>
 #include <iostream>

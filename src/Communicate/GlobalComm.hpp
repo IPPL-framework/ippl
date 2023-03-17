@@ -24,13 +24,15 @@
  ***************************************************************************/
 
 // include files
+#include <algorithm>
+
 #include "Communicate/DataTypes.h"
+
+#include "Utility/IpplInfo.h"
+
 #include "Communicate/GlobalComm.h"
 #include "Communicate/Operations.h"
 #include "Communicate/Tags.h"
-#include "Utility/IpplInfo.h"
-
-#include <algorithm>
 
 ////////////////////////////////////////////////////////////////////////////
 // Reduce equally-sized arrays across the machine, by sending to node

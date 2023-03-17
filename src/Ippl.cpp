@@ -15,13 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
+#include <Kokkos_Core.hpp>
 #include "Ippl.h"
+
 #include <cstdlib>
 #include <cstring>
 #include <list>
-#include "Utility/IpplInfo.h"
 
-#include <Kokkos_Core.hpp>
+#include "Utility/IpplInfo.h"
 
 // public static members of IpplInfo, initialized to default values
 std::unique_ptr<ippl::Communicate> Ippl::Comm = 0;

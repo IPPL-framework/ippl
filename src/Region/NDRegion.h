@@ -19,9 +19,9 @@
 #ifndef IPPL_NDREGION_H
 #define IPPL_NDREGION_H
 
-#include "Region/PRegion.h"
-
 #include <initializer_list>
+
+#include "Region/PRegion.h"
 
 namespace ippl {
     template <typename T, unsigned Dim>

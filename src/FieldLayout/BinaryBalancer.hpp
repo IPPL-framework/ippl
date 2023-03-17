@@ -24,10 +24,12 @@
  ***************************************************************************/
 
 // include files
+#include "Utility/PAssert.h"
+
 #include "Field/BareField.h"
+
 #include "FieldLayout/BinaryBalancer.h"
 #include "FieldLayout/FieldLayout.h"
-#include "Utility/PAssert.h"
 
 //////////////////////////////////////////////////////////////////////
 

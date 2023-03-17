@@ -17,12 +17,14 @@
 #ifndef FFT_POISSON_SOLVER_H_
 #define FFT_POISSON_SOLVER_H_
 
+#include "Types/Vector.h"
+
+#include "Field/Field.h"
+
 #include "Electrostatics.h"
 #include "FFT/FFT.h"
-#include "Field/Field.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
-#include "Types/Vector.h"
 
 namespace ippl {
     template <typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,

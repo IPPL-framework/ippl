@@ -18,9 +18,9 @@
 #include "Ippl.h"
 
 #include <cmath>
-#include "gtest/gtest.h"
-
 #include <random>
+
+#include "gtest/gtest.h"
 
 class PICTest : public ::testing::Test {
 public:

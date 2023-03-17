@@ -44,11 +44,10 @@
 #ifndef IPPL_PARTICLE_LAYOUT_H
 #define IPPL_PARTICLE_LAYOUT_H
 
-#include "Particle/ParticleBC.h"
+#include <map>
 
 #include "Particle/ParticleAttrib.h"
-
-#include <map>
+#include "Particle/ParticleBC.h"
 
 namespace ippl {
     namespace detail {

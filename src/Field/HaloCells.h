@@ -19,11 +19,13 @@
 #define IPPL_HALO_CELLS_H
 
 #include <array>
+
+#include "Types/IpplTypes.h"
+#include "Types/ViewTypes.h"
+
 #include "Communicate/Archive.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Index/NDIndex.h"
-#include "Types/IpplTypes.h"
-#include "Types/ViewTypes.h"
 
 namespace ippl {
     namespace detail {

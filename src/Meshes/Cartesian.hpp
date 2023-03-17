@@ -27,15 +27,17 @@
 // Implementations for Cartesian mesh class (nonuniform spacings)
 
 // include files
-#include "Field/Assign.h"
-#include "Field/AssignDefs.h"
-#include "Field/BareField.h"
-#include "Field/BrickExpression.h"
-#include "Field/Field.h"
-#include "Field/LField.h"
 #include "Utility/IpplException.h"
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
+
+#include "Field/BareField.h"
+#include "Field/Field.h"
+#include "Field/LField.h"
+
+#include "Field/Assign.h"
+#include "Field/AssignDefs.h"
+#include "Field/BrickExpression.h"
 
 //-----------------------------------------------------------------------------
 // Setup chores common to all constructors:

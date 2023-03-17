@@ -34,14 +34,17 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Utility/IpplTimings.h"
+
 #include "Ippl.h"
-#include "Utility/Inform.h"
-#include "Utility/IpplInfo.h"
+
+#include "Utility/IpplTimings.h"
 
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+
+#include "Utility/Inform.h"
+#include "Utility/IpplInfo.h"
 
 Timing* IpplTimings::instance = new Timing();
 std::stack<Timing*> IpplTimings::stashedInstance;

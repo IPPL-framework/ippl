@@ -18,9 +18,9 @@
 #ifndef IPPL_Vector_H
 #define IPPL_Vector_H
 
-#include "Expression/IpplExpressions.h"
-
 #include <initializer_list>
+
+#include "Expression/IpplExpressions.h"
 
 namespace ippl {
     /*!

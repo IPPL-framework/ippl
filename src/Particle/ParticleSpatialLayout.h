@@ -35,12 +35,11 @@
 #ifndef IPPL_PARTICLE_SPATIAL_LAYOUT_H
 #define IPPL_PARTICLE_SPATIAL_LAYOUT_H
 
+#include "Types/IpplTypes.h"
+
 #include "FieldLayout/FieldLayout.h"
 #include "Particle/ParticleBase.h"
 #include "Particle/ParticleLayout.h"
-
-#include "Types/IpplTypes.h"
-
 #include "Region/RegionLayout.h"
 
 namespace ippl {
