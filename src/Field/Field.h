@@ -18,9 +18,9 @@
 #ifndef IPPL_FIELD_H
 #define IPPL_FIELD_H
 
-#include "Field/BConds.h"
-#include "Field/BcTypes.h"
 #include "Field/BareField.h"
+#include "Field/BConds.h"
+
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {

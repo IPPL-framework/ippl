@@ -17,8 +17,8 @@
 #ifndef IPPL_COMMUNICATE_H
 #define IPPL_COMMUNICATE_H
 
-#include <mpi.h>
 #include <map>
+#include <mpi.h>
 
 // For message size check; see below
 #include <climits>

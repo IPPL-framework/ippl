@@ -20,10 +20,10 @@
 #ifndef CARTESIAN_CENTERING_H
 #define CARTESIAN_CENTERING_H
 
-#include "Meshes/Centering.h"
-
 #include <iostream>
 #include <string>
+
+#include "Meshes/Centering.h"
 
 // Enumeration of basic 1D (one-component) centering types:
 // May add to this when unstructured comes in, and it means something to

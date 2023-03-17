@@ -20,11 +20,12 @@
 #ifndef IPPL_FFT_PERIODIC_POISSON_SOLVER_H
 #define IPPL_FFT_PERIODIC_POISSON_SOLVER_H
 
+#include "Types/ViewTypes.h"
+
 #include "Electrostatics.h"
 #include "FFT/FFT.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Index/NDIndex.h"
-#include "Types/ViewTypes.h"
 
 namespace ippl {
 

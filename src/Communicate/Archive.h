@@ -26,8 +26,9 @@
 #define IPPL_ARCHIVE_H
 
 #include "Types/IpplTypes.h"
-#include "Types/Vector.h"
 #include "Types/ViewTypes.h"
+
+#include "Types/Vector.h"
 
 namespace ippl {
     namespace detail {

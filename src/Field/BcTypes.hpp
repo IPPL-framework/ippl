@@ -27,8 +27,9 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "Field/HaloCells.h"
 #include "Utility/IpplException.h"
+
+#include "Field/HaloCells.h"
 
 namespace ippl {
     namespace detail {

@@ -17,8 +17,10 @@
 //
 #include "Ippl.h"
 
-#include "Utility/IpplException.h"
 #include "Utility/ParameterList.h"
+
+#include "Utility/IpplException.h"
+
 #include "gtest/gtest.h"
 
 class ParameterListTest : public ::testing::Test {

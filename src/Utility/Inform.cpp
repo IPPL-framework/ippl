@@ -24,9 +24,9 @@
  ***************************************************************************/
 
 // include files
-#include "Utility/Inform.h"
-
 #include "Ippl.h"
+
+#include "Utility/Inform.h"
 
 #include <cstring>
 #include <fstream>

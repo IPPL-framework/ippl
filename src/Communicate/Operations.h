@@ -21,8 +21,8 @@
 #ifndef IPPL_MPI_OPERATIONS_H
 #define IPPL_MPI_OPERATIONS_H
 
-#include <mpi.h>
 #include <functional>
+#include <mpi.h>
 
 template <class>
 struct is_ippl_mpi_type : std::false_type {};

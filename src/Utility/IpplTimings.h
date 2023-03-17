@@ -37,17 +37,16 @@
 #ifndef IPPL_TIMINGS_H
 #define IPPL_TIMINGS_H
 
-#include "Utility/PAssert.h"
-#include "Utility/Timer.h"
-#include "Utility/my_auto_ptr.h"
-
+#include <exception>
 #include <limits>
 #include <map>
 #include <stack>
 #include <string>
 #include <vector>
 
-#include <exception>
+#include "Utility/PAssert.h"
+#include "Utility/Timer.h"
+#include "Utility/my_auto_ptr.h"
 
 // a simple class used to store timer values
 class IpplTimerInfo {

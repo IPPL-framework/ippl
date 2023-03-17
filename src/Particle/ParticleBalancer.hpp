@@ -24,6 +24,8 @@
  ***************************************************************************/
 
 // include files
+#include "Utility/IpplInfo.h"
+
 #include "FieldLayout/BinaryBalancer.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Index/NDIndex.h"
@@ -33,7 +35,6 @@
 #include "Particle/ParticleBalancer.h"
 #include "Particle/ParticleSpatialLayout.h"
 #include "Region/RegionLayout.h"
-#include "Utility/IpplInfo.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // calculate a new RegionLayout for a given ParticleBase, and distribute the
