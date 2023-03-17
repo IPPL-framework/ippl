@@ -9,7 +9,7 @@
 #include <cstdlib>
 
 KOKKOS_INLINE_FUNCTION
-double gaussian(double n, double dt, double sigma = 0.03, double mu = 0.1) {
+double gaussian(double n, double dt, double sigma = 0.2, double mu = 0.0) {
     double r2 = (n*dt - mu)*(n*dt -mu);
     return exp(-r2/(sigma*sigma));
 }
@@ -129,12 +129,7 @@ int main(int argc, char *argv[]) {
     const int nghost = rho.getNghost();
     auto ldom = layout.getLocalNDIndex();
 
-    // time-loop
-    for (unsigned int it = 0; it < iterations; ++it) {
-
-        msg << "Timestep number = " << it << " , time = " << it*dt << endl;
-
-        Kokkos::parallel_for("Assign gaussian source at center",
+    Kokkos::parallel_for("Assign gaussian source at center",
             Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
                                                    {view_rho.extent(0) - nghost,
                                                     view_rho.extent(1) - nghost,
@@ -144,10 +139,19 @@ int main(int argc, char *argv[]) {
                 const int jg = j + ldom[1].first() - nghost;
                 const int kg = k + ldom[2].first() - nghost;
 
-                if ((ig == nr[0]/2 - 1) && (jg == nr[1]/2 - 1) && (kg == nr[2]/2 - 1))
-                    view_rho(i,j,k) = gaussian(it, dt);
-        });
-  
+                if ((ig == nr[0]/2 - 2) && (jg == nr[1]/2 - 2) && (kg == nr[2]/2 - 2))
+                    view_rho(i,j,k) = gaussian(0.0, dt);
+    });
+
+    msg << "Timestep number = " << 0 << " , time = " << 0 << endl;
+    solver.solve();
+    rho = 0.0;
+
+    // time-loop
+    for (unsigned int it = 1; it < iterations; ++it) {
+
+        msg << "Timestep number = " << it << " , time = " << it*dt << endl;
+
         solver.solve();
 
         dumpVTK(fieldE, nr[0], nr[1], nr[2], it, hr[0], hr[1], hr[2]);

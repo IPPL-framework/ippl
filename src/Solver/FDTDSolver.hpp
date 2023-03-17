@@ -213,7 +213,7 @@ namespace ippl {
 
         // electric field is the time derivative of the vector potential
         // minus the gradient of the scalar potential
-        (*En_mp) = -(aNp1_m - aN_m)/dt - grad(phiN_m);
+        (*En_mp) = -(aNp1_m - aN_m)/dt - grad(phiNp1_m);
     };
 
     template <typename Tfields, unsigned Dim, class M, class C>
