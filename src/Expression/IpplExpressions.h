@@ -20,8 +20,6 @@
 
 #include <type_traits>
 
-#include <Kokkos_Core.hpp>
-
 namespace ippl {
     namespace detail {
         /*!
