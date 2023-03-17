@@ -30,6 +30,7 @@
 #define IPPL_PARTICLE_ATTRIB_H
 
 #include "Expression/IpplExpressions.h"
+
 #include "Particle/ParticleAttribBase.h"
 
 namespace ippl {

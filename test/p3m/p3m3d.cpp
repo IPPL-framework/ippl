@@ -25,12 +25,14 @@
 // You should have received a copy of the GNU General Public License
 // along with OPAL. If not, see <https://www.gnu.org/licenses/>.
 //
+#include "Ippl.h"
+
 #include <cfloat>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
-#include "Ippl.h"
+
 #include "Particle/BoxParticleCachingPolicy.h"
 #include "Particle/PairBuilder/HashPairBuilder.h"
 #include "Particle/PairBuilder/PairConditions.h"

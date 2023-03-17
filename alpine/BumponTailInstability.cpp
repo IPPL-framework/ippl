@@ -34,18 +34,18 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
+#include <Kokkos_Random.hpp>
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <random>
 #include <set>
 #include <string>
 #include <vector>
-#include "ChargedParticles.hpp"
 
-#include <Kokkos_Random.hpp>
-
-#include <random>
 #include "Utility/IpplTimings.h"
+
+#include "ChargedParticles.hpp"
 
 template <typename T>
 struct Newton1D {

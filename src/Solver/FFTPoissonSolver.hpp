@@ -15,11 +15,13 @@
 //
 
 #include <algorithm>
+
+#include "Utility/IpplException.h"
+#include "Utility/IpplTimings.h"
+
 #include "Communicate/Archive.h"
 #include "FFTPoissonSolver.h"
 #include "Field/HaloCells.h"
-#include "Utility/IpplException.h"
-#include "Utility/IpplTimings.h"
 
 // Communication specific functions (pack and unpack).
 template <typename T>

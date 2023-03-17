@@ -15,12 +15,12 @@
 // Cartesian class - represents non-uniform-spacing cartesian meshes.
 
 // include files
+#include <map>
+
 #include "AppTypes/Vektor.h"
 #include "Meshes/CartesianCentering.h"
 #include "Meshes/Centering.h"
 #include "Meshes/Mesh.h"
-
-#include <map>
 
 // forward declarations
 template <class T, unsigned D>

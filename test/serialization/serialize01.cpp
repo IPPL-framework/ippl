@@ -1,8 +1,8 @@
-#include <iostream>
-#include <vector>
-
-#include <mpi.h>
 #include <Kokkos_Core.hpp>
+
+#include <iostream>
+#include <mpi.h>
+#include <vector>
 
 template <class BType>
 void send(int, int, BType&);

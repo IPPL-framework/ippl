@@ -23,25 +23,26 @@
 // You should have received a copy of the GNU General Public License
 // along with OPAL. If not, see <https://www.gnu.org/licenses/>.
 //
+#include "Ippl.h"
+
 #include <cfloat>
 #include <complex>
 #include <iomanip>
 #include <iostream>
+#include <random>
 #include <string>
 #include <vector>
+
+#include "Utility/PAssert.h"
+
+#include "ChargedParticleFactory.hpp"
 #include "H5hut.h"
-#include "Ippl.h"
 #include "Particle/BoxParticleCachingPolicy.h"
 #include "Particle/PairBuilder/HashPairBuilderPeriodic.h"
 #include "Particle/PairBuilder/HashPairBuilderPeriodicParallel.h"
 #include "Particle/PairBuilder/PairConditions.h"
-#include "Utility/PAssert.h"
-#include "math.h"
-
-#include <random>
-
-#include "ChargedParticleFactory.hpp"
 #include "VTKFieldWriterParallel.hpp"
+#include "math.h"
 
 // dimension of our positions
 const unsigned Dim = 3;
