@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
                 const int jg = j + ldom[1].first() - nghost;
                 const int kg = k + ldom[2].first() - nghost;
 
-                if ((ig == nr[0]/2 - 2) && (jg == nr[1]/2 - 2) && (kg == nr[2]/2 - 2))
+                if ((ig == nr[0]/2 - 1) && (jg == nr[1]/2 - 1) && (kg == nr[2]/2 - 1))
                     view_rho(i,j,k) = gaussian(0.0, dt);
     });
 
