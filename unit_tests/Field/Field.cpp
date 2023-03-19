@@ -228,6 +228,8 @@ TEST_F(FieldTest, Hessian) {
     field_type field(*mesh, *layout);
     int nghost      = field.getNghost();
     auto view_field = field.getView();
+    typedef ippl::Field<ippl::Vector<Vector_t, dim>, dim> matrix_field_type;
+
 
     auto lDom                        = this->layout->getLocalNDIndex();
     ippl::Vector<double, dim> hx     = this->mesh->getMeshSpacing();
@@ -255,7 +257,7 @@ TEST_F(FieldTest, Hessian) {
 
     Kokkos::deep_copy(view_field, mirror);
 
-    vector_field_type result(*mesh, *layout);
+    matrix_field_type result(*mesh, *layout);
     result = hess(field);
 
     nghost             = result.getNghost();
