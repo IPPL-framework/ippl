@@ -9,6 +9,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
+    using Mesh_t = ippl::UniformCartesian<double, 3>;
+    using Centering_t = Mesh_t::DefaultCentering;
 
     const int npts            = 7;
     std::array<int, npts> pts = {2, 4, 8, 16, 32, 64, 128};
@@ -35,18 +37,18 @@ int main(int argc, char* argv[]) {
         double dx                      = 2.0 / double(pt);
         ippl::Vector<double, 3> hx     = {dx, dx, dx};
         ippl::Vector<double, 3> origin = {-1.0, -1.0, -1.0};
-        ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+        Mesh_t mesh(owned, hx, origin);
 
         double pi = acos(-1.0);
 
-        typedef ippl::Field<double, dim> Field_t;
+        typedef ippl::Field<double, dim, Mesh_t, Centering_t> Field_t;
         typedef ippl::Vector<double, 3> Vector_t;
-        typedef ippl::Field<Vector_t, dim> VField_t;
+        typedef ippl::Field<Vector_t, dim, Mesh_t, Centering_t> VField_t;
 
         Field_t field;
         field.initialize(mesh, layout);
 
-        typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, dim> Solver_t;
+        typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, dim, Mesh_t, Centering_t> Solver_t;
 
         ippl::ParameterList params;
         params.add("output_type", Solver_t::SOL);

@@ -1,16 +1,16 @@
 #include "Utility/IpplTimings.h"
 namespace ippl {
 
-    template <class T, unsigned Dim, class M>
-    void OrthogonalRecursiveBisection<T, Dim, M>::initialize(FieldLayout<Dim>& fl,
-                                                             UniformCartesian<T, Dim>& mesh,
-                                                             const Field<T, Dim>& rho) {
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    void OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::initialize(FieldLayout<Dim>& fl,
+                                                                      UniformCartesian<T, Dim>& mesh,
+                                                                      const Field<T, Dim, Mesh, Centering>& rho) {
         bf_m.initialize(mesh, fl);
         bf_m = rho;
     }
 
-    template <class T, unsigned Dim, class M>
-    bool OrthogonalRecursiveBisection<T, Dim, M>::binaryRepartition(
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    bool OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::binaryRepartition(
         const ParticleAttrib<Vector<T, Dim>>& R, FieldLayout<Dim>& fl,
         const bool& isFirstRepartition) {
         // Timings
@@ -119,8 +119,8 @@ namespace ippl {
         return true;
     }
 
-    template <class T, unsigned Dim, class M>
-    int OrthogonalRecursiveBisection<T, Dim, M>::findCutAxis(NDIndex<Dim>& dom) {
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    int OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::findCutAxis(NDIndex<Dim>& dom) {
         int cutAxis            = 0;
         unsigned int maxLength = 0;
 
@@ -136,8 +136,8 @@ namespace ippl {
         return cutAxis;
     }
 
-    template <class T, unsigned Dim, class M>
-    void OrthogonalRecursiveBisection<T, Dim, M>::perpendicularReduction(
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    void OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::perpendicularReduction(
         std::vector<T>& rankWeights, unsigned int cutAxis, NDIndex<Dim>& dom) {
         // Check if domains overlap, if not no need for reduction
         NDIndex<Dim> lDom = bf_m.getOwned();
@@ -214,8 +214,8 @@ namespace ippl {
         }
     }
 
-    template <class T, unsigned Dim, class M>
-    int OrthogonalRecursiveBisection<T, Dim, M>::findMedian(std::vector<T>& w) {
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    int OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::findMedian(std::vector<T>& w) {
         // Special case when array must be cut in half in order to not have planes
         if (w.size() == 4)
             return 1;
@@ -250,10 +250,10 @@ namespace ippl {
         return w.size() - 3;
     }
 
-    template <class T, unsigned Dim, class M>
-    void OrthogonalRecursiveBisection<T, Dim, M>::cutDomain(std::vector<NDIndex<Dim>>& domains,
-                                                            std::vector<int>& procs, int it,
-                                                            int cutAxis, int median) {
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    void OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::cutDomain(std::vector<NDIndex<Dim>>& domains,
+                                                                     std::vector<int>& procs, int it,
+                                                                     int cutAxis, int median) {
         // Cut domains[it] in half at median along cutAxis
         NDIndex<Dim> leftDom, rightDom;
         domains[it].split(leftDom, rightDom, cutAxis, median + domains[it][cutAxis].first());
@@ -266,19 +266,19 @@ namespace ippl {
         procs.insert(procs.begin() + it + 1, 1, temp - procs[it]);
     }
 
-    template <class T, unsigned Dim, class M>
-    void OrthogonalRecursiveBisection<T, Dim, M>::scatterR(
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    void OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::scatterR(
         const ParticleAttrib<Vector<T, Dim>>& r) {
-        using vector_type = typename M::vector_type;
+        using vector_type = typename Mesh::vector_type;
 
         // Reset local field
         bf_m = 0.0;
         // Get local data
-        typename Field<T, Dim, M>::view_type view = bf_m.getView();
-        const M& mesh                             = bf_m.get_mesh();
-        const FieldLayout<Dim>& layout            = bf_m.getLayout();
-        const NDIndex<Dim>& lDom                  = layout.getLocalNDIndex();
-        const int nghost                          = bf_m.getNghost();
+        typename Field<T, Dim, Mesh, Centering>::view_type view = bf_m.getView();
+        const Mesh& mesh                                   = bf_m.get_mesh();
+        const FieldLayout<Dim>& layout                     = bf_m.getLayout();
+        const NDIndex<Dim>& lDom                           = layout.getLocalNDIndex();
+        const int nghost                                   = bf_m.getNghost();
 
         // Get spacings
         const vector_type& dx     = mesh.getMeshSpacing();

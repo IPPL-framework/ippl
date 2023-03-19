@@ -55,17 +55,21 @@ int main(int argc, char* argv[]) {
         for (unsigned int d = 0; d < 3; d++)
             decomp[d] = ippl::PARALLEL;
 
+        using Mesh_t = ippl::UniformCartesian<double, 3>;
+        using Centering_t = Mesh_t::DefaultCentering;
+        using Vector_t = ippl::Vector<double, 3>;
+
         // unit box
-        double dx                      = 2.4 / pt;
-        ippl::Vector<double, 3> hx     = {dx, dx, dx};
-        ippl::Vector<double, 3> origin = {0.0, 0.0, 0.0};
-        ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+        double dx       = 2.4 / pt;
+        Vector_t hx     = {dx, dx, dx};
+        Vector_t origin = {0.0, 0.0, 0.0};
+        Mesh_t mesh(owned, hx, origin);
 
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<3> layout(owned, decomp);
 
         // define the L (phi) and R (rho) fields
-        typedef ippl::Field<double, 3> field;
+        typedef ippl::Field<double, 3, Mesh_t, Centering_t> field;
         field rho;
         rho.initialize(mesh, layout);
 
@@ -126,8 +130,8 @@ int main(int argc, char* argv[]) {
         fftParams.add("comm", ippl::a2av);
         fftParams.add("r2c_direction", 0);
 
-        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3> FFTsolver(rho, fftParams,
-                                                                             algorithm);
+        ippl::FFTPoissonSolver<Vector_t, double, 3, Mesh_t, Centering_t> FFTsolver(rho, fftParams,
+                                                                                   algorithm);
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

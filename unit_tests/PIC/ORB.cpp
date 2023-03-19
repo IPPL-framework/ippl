@@ -26,11 +26,12 @@
 class ORBTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
-    typedef ippl::Field<double, dim> field_type;
-    typedef ippl::FieldLayout<dim> flayout_type;
-    typedef ippl::UniformCartesian<double, dim> mesh_type;
-    typedef ippl::ParticleSpatialLayout<double, dim> playout_type;
-    typedef ippl::OrthogonalRecursiveBisection<double, dim, mesh_type> ORB;
+    using Mesh_t = ippl::UniformCartesian<double, dim>;
+    using Centering_t = Mesh_t::DefaultCentering;
+    using Field_t = ippl::Field<double, dim, Mesh_t, Centering_t>;
+    using Flayout_t = ippl::FieldLayout<dim>;
+    using Playout_t = ippl::ParticleSpatialLayout<double, dim>;
+    using Orb_t = ippl::OrthogonalRecursiveBisection<double, dim, Mesh_t, Centering_t>;
 
     template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
@@ -44,13 +45,13 @@ public:
         typedef ippl::ParticleAttrib<double> charge_container_type;
         charge_container_type Q;
 
-        void updateLayout(flayout_type fl, mesh_type mesh) {
+        void updateLayout(Flayout_t fl, Mesh_t mesh) {
             PLayout& layout = this->getLayout();
             layout.updateLayout(fl, mesh);
         }
     };
 
-    typedef Bunch<playout_type> bunch_type;
+    typedef Bunch<Playout_t> bunch_type;
 
     ORBTest()
         // Original configuration 256^3 particles, 512^3 grid.
@@ -68,17 +69,17 @@ public:
             allParallel[d] = ippl::PARALLEL;
 
         const bool isAllPeriodic = true;
-        layout_m                 = flayout_type(owned, allParallel, isAllPeriodic);
+        layout_m                 = Flayout_t(owned, allParallel, isAllPeriodic);
 
         double dx                        = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx     = {dx, dx, dx};
         ippl::Vector<double, dim> origin = {0, 0, 0};
 
-        mesh_m = mesh_type(owned, hx, origin);
+        mesh_m = Mesh_t(owned, hx, origin);
 
-        field = std::make_unique<field_type>(mesh_m, layout_m);
+        field = std::make_unique<Field_t>(mesh_m, layout_m);
 
-        pl_m = playout_type(layout_m, mesh_m);
+        pl_m = Playout_t(layout_m, mesh_m);
 
         bunch = std::make_unique<bunch_type>(pl_m);
 
@@ -119,15 +120,15 @@ public:
 
     ippl::NDIndex<dim> getDomain() { return layout_m.getDomain(); }
 
-    std::unique_ptr<field_type> field;
+    std::unique_ptr<Field_t> field;
     std::unique_ptr<bunch_type> bunch;
     size_t nParticles;
     size_t nPoints;
 
-    flayout_type layout_m;
-    mesh_type mesh_m;
-    playout_type pl_m;
-    ORB orb;
+    Flayout_t layout_m;
+    Mesh_t mesh_m;
+    Playout_t pl_m;
+    Orb_t orb;
 };
 
 TEST_F(ORBTest, Volume) {

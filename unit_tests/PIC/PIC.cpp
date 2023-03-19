@@ -25,10 +25,11 @@
 class PICTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
-    typedef ippl::Field<double, dim> field_type;
-    typedef ippl::FieldLayout<dim> flayout_type;
-    typedef ippl::UniformCartesian<double, dim> mesh_type;
-    typedef ippl::ParticleSpatialLayout<double, dim> playout_type;
+    using Mesh_t = ippl::UniformCartesian<double, dim>;
+    using Centering_t = Mesh_t::DefaultCentering;
+    using Field_t = ippl::Field<double, dim, Mesh_t, Centering_t>;
+    using Flayout_t = ippl::FieldLayout<dim>;
+    using Playout_t = ippl::ParticleSpatialLayout<double, dim>;
 
     template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
@@ -43,7 +44,7 @@ public:
         charge_container_type Q;
     };
 
-    typedef Bunch<playout_type> bunch_type;
+    typedef Bunch<Playout_t> bunch_type;
 
     PICTest()
         : nParticles(std::pow(256, 3))
@@ -59,17 +60,17 @@ public:
         for (unsigned int d = 0; d < dim; d++)
             domDec[d] = ippl::PARALLEL;
 
-        layout_m = flayout_type(owned, domDec);
+        layout_m = Flayout_t(owned, domDec);
 
         double dx                        = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx     = {dx, dx, dx};
         ippl::Vector<double, dim> origin = {0, 0, 0};
 
-        mesh_m = mesh_type(owned, hx, origin);
+        mesh_m = Mesh_t(owned, hx, origin);
 
-        field = std::make_unique<field_type>(mesh_m, layout_m);
+        field = std::make_unique<Field_t>(mesh_m, layout_m);
 
-        pl = playout_type(layout_m, mesh_m);
+        pl = Playout_t(layout_m, mesh_m);
 
         bunch = std::make_unique<bunch_type>(pl);
 
@@ -99,15 +100,15 @@ public:
         Kokkos::deep_copy(bunch->R.getView(), R_host);
     }
 
-    std::unique_ptr<field_type> field;
+    std::unique_ptr<Field_t> field;
     std::unique_ptr<bunch_type> bunch;
     size_t nParticles;
     size_t nPoints;
-    playout_type pl;
+    Playout_t pl;
 
 private:
-    flayout_type layout_m;
-    mesh_type mesh_m;
+    Flayout_t layout_m;
+    Mesh_t mesh_m;
 };
 
 TEST_F(PICTest, Scatter) {

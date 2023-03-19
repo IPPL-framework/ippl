@@ -29,20 +29,19 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
-              class C = typename M::DefaultCentering>
-    class FFTPeriodicPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, M, C> {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    class FFTPeriodicPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
     public:
-        using Field_t   = Field<Trhs, Dim>;
-        using FFT_t     = FFT<RCTransform, Dim, Trhs>;
+        using Field_t   = Field<Trhs, Dim, Mesh, Centering>;
+        using FFT_t     = FFT<RCTransform, Dim, Trhs, Mesh, Centering>;
         using Complex_t = Kokkos::complex<Trhs>;
-        using CxField_t = Field<Complex_t, Dim>;
+        using CxField_t = Field<Complex_t, Dim, Mesh, Centering>;
         using Layout_t  = FieldLayout<Dim>;
         using Vector_t  = Vector<Trhs, Dim>;
 
-        using Base     = Electrostatics<Tlhs, Trhs, Dim, M, C>;
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
+        using Base     = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
+        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
+        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
 
         FFTPeriodicPoissonSolver()
             : Base() {

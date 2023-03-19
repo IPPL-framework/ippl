@@ -25,27 +25,28 @@ int main(int argc, char* argv[]) {
     ippl::Vector<double, 3> origin = {0, 0, 0};
 
     using Mesh_t = ippl::UniformCartesian<double, 3>;
+    using Centering_t = Mesh_t::DefaultCentering;
 
     Mesh_t mesh(owned, hx, origin);
 
-    typedef ippl::Field<double, dim> field_type;
+    typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
 
-    typedef ippl::BConds<double, dim> bc_type;
+    typedef ippl::BConds<double, dim, Mesh_t, Centering_t> bc_type;
 
     bc_type bcField;
 
     // X direction periodic BC
     for (unsigned int i = 0; i < 2; ++i) {
-        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
+        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim, Mesh_t, Centering_t>>(i);
     }
     ////Lower Y face
-    bcField[2] = std::make_shared<ippl::NoBcFace<double, dim>>(2);
+    bcField[2] = std::make_shared<ippl::NoBcFace<double, dim, Mesh_t, Centering_t>>(2);
     ////Higher Y face
-    bcField[3] = std::make_shared<ippl::ConstantFace<double, dim>>(3, 7.0);
+    bcField[3] = std::make_shared<ippl::ConstantFace<double, dim, Mesh_t, Centering_t>>(3, 7.0);
     ////Lower Z face
-    bcField[4] = std::make_shared<ippl::ZeroFace<double, dim>>(4);
+    bcField[4] = std::make_shared<ippl::ZeroFace<double, dim, Mesh_t, Centering_t>>(4);
     ////Higher Z face
-    bcField[5] = std::make_shared<ippl::ExtrapolateFace<double, dim>>(5, 0.0, 1.0);
+    bcField[5] = std::make_shared<ippl::ExtrapolateFace<double, dim, Mesh_t, Centering_t>>(5, 0.0, 1.0);
 
     // std::cout << bcField << std::endl;
     std::cout << layout << std::endl;
