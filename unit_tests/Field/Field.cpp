@@ -24,7 +24,7 @@
 class FieldTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, dime>;
+    using Mesh_t = ippl::UniformCartesian<double, dim>;
     using Centering_t = Mesh_t::DefaultCentering;
     using field_type = ippl::Field<double, dim, Mesh_t, Centering_t> ;
     using bc_type = ippl::BConds<double, dim, Mesh_t, Centering_t>;

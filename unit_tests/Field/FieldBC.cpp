@@ -27,7 +27,7 @@
 class FieldBCTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, dime>;
+    using Mesh_t = ippl::UniformCartesian<double, dim>;
     using Centering_t = Mesh_t::DefaultCentering;
     using field_type = ippl::Field<double, dim, Mesh_t, Centering_t> ;
     using bc_type = ippl::BConds<double, dim, Mesh_t, Centering_t>;
@@ -125,7 +125,7 @@ public:
 
 TEST_F(FieldBCTest, PeriodicBC) {
     for (size_t i = 0; i < 2 * dim; ++i) {
-        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
+        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim, Mesh_t, Centering_t>>(i);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
