@@ -24,9 +24,12 @@
 class FieldTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
-    typedef ippl::Field<double, dim> field_type;
-    typedef ippl::UniformCartesian<double, dim> mesh_type;
-    typedef ippl::FieldLayout<dim> layout_type;
+    using Mesh_t = ippl::UniformCartesian<double, dime>;
+    using Centering_t = Mesh_t::DefaultCentering;
+    using field_type = ippl::Field<double, dim, Mesh_t, Centering_t> ;
+    using bc_type = ippl::BConds<double, dim, Mesh_t, Centering_t>;
+    using vector_field_type = ippl::Field<ippl::Vector<double, dim>, dim, Mesh_t, Centering_t>;
+    using layout_type = ippl::FieldLayout<dim> ;
 
     FieldTest()
         : nPoints(8) {
@@ -46,13 +49,13 @@ public:
         double dx                        = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx     = {dx, dx, dx};
         ippl::Vector<double, dim> origin = {0, 0, 0};
-        mesh                             = std::make_shared<mesh_type>(owned, hx, origin);
+        mesh                             = std::make_shared<Mesh_t>(owned, hx, origin);
 
         field = std::make_unique<field_type>(*mesh, *layout);
     }
 
     std::unique_ptr<field_type> field;
-    std::shared_ptr<mesh_type> mesh;
+    std::shared_ptr<Mesh_t> mesh;
     std::shared_ptr<layout_type> layout;
     size_t nPoints;
 };
@@ -144,7 +147,7 @@ TEST_F(FieldTest, VolumeIntegral2) {
 TEST_F(FieldTest, Grad) {
     *field = 1.;
 
-    ippl::Field<ippl::Vector<double, dim>, dim> vfield(*mesh, *layout);
+    vector_field_type vfield(*mesh, *layout);
     vfield = grad(*field);
 
     const int shift = vfield.getNghost();
@@ -164,7 +167,7 @@ TEST_F(FieldTest, Grad) {
 }
 
 TEST_F(FieldTest, Curl) {
-    ippl::Field<ippl::Vector<double, dim>, dim> vfield(*mesh, *layout);
+    vector_field_type vfield(*mesh, *layout);
     const int nghost = vfield.getNghost();
     auto view_field  = vfield.getView();
 
@@ -200,7 +203,7 @@ TEST_F(FieldTest, Curl) {
 
     Kokkos::deep_copy(view_field, mirror);
 
-    ippl::Field<ippl::Vector<double, dim>, dim> result(*mesh, *layout);
+    vector_field_type result(*mesh, *layout);
     result = curl(vfield);
 
     const int shift = result.getNghost();
@@ -221,9 +224,8 @@ TEST_F(FieldTest, Curl) {
 
 TEST_F(FieldTest, Hessian) {
     typedef ippl::Vector<double, dim> Vector_t;
-    typedef ippl::Field<ippl::Vector<Vector_t, dim>, dim> MField_t;
 
-    ippl::Field<double, dim> field(*mesh, *layout);
+    field_type field(*mesh, *layout);
     int nghost      = field.getNghost();
     auto view_field = field.getView();
 
@@ -253,7 +255,7 @@ TEST_F(FieldTest, Hessian) {
 
     Kokkos::deep_copy(view_field, mirror);
 
-    MField_t result(*mesh, *layout);
+    vector_field_type result(*mesh, *layout);
     result = hess(field);
 
     nghost             = result.getNghost();
