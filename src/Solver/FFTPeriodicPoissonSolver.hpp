@@ -46,7 +46,7 @@ namespace ippl {
 
         Vector<double, 3> hComplex      = {1.0, 1.0, 1.0};
         Vector<double, 3> originComplex = {0.0, 0.0, 0.0};
-        M meshComplex(domainComplex, hComplex, originComplex);
+        Mesh meshComplex(domainComplex, hComplex, originComplex);
 
         fieldComplex_m.initialize(meshComplex, *layoutComplex_mp);
 
@@ -65,9 +65,9 @@ namespace ippl {
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
 
         double pi                 = std::acos(-1.0);
-        const M& mesh             = this->rhs_mp->get_mesh();
+        const Mesh& mesh          = this->rhs_mp->get_mesh();
         const auto& lDomComplex   = layoutComplex_mp->getLocalNDIndex();
-        using vector_type         = typename M::vector_type;
+        using vector_type         = typename Mesh::vector_type;
         const vector_type& origin = mesh.getOrigin();
         const vector_type& hx     = mesh.getMeshSpacing();
 

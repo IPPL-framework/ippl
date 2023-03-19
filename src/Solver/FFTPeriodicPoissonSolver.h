@@ -32,10 +32,10 @@ namespace ippl {
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     class FFTPeriodicPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
     public:
-        using Field_t   = Field<Trhs, Dim>;
-        using FFT_t     = FFT<RCTransform, Dim, Trhs>;
+        using Field_t   = Field<Trhs, Dim, Mesh, Centering>;
+        using FFT_t     = FFT<RCTransform, Dim, Trhs, Mesh, Centering>;
         using Complex_t = Kokkos::complex<Trhs>;
-        using CxField_t = Field<Complex_t, Dim>;
+        using CxField_t = Field<Complex_t, Dim, Mesh, Centering>;
         using Layout_t  = FieldLayout<Dim>;
         using Vector_t  = Vector<Trhs, Dim>;
 

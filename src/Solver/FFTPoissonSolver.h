@@ -49,7 +49,7 @@ namespace ippl {
         typedef FieldLayout<Dim> FieldLayout_t;
 
         // define a type for the 3 dimensional real to complex Fourier transform
-        typedef FFT<RCTransform, Dim, Trhs> FFT_t;
+        typedef FFT<RCTransform, Dim, Trhs, Mesh, Centering> FFT_t;
 
         // type for communication buffers
         using buffer_type = Communicate::buffer_type;
@@ -107,7 +107,7 @@ namespace ippl {
         std::unique_ptr<FFT_t> fft_m;
 
         // mesh and layout objects for rho_m (RHS)
-        M* mesh_mp;
+        Mesh* mesh_mp;
         FieldLayout_t* layout_mp;
 
         // mesh and layout objects for rho2_m
@@ -133,7 +133,7 @@ namespace ippl {
         // members for Vico-Greengard
         CxField_t grnL_m;
 
-        std::unique_ptr<FFT<CCTransform, Dim, double>> fft4n_m;
+        std::unique_ptr<FFT<CCTransform, Dim, double, Mesh, Centering>> fft4n_m;
 
         std::unique_ptr<Mesh> mesh4_m;
         std::unique_ptr<FieldLayout_t> layout4_m;

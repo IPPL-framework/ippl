@@ -26,8 +26,9 @@ constexpr unsigned Dim = 3;
 // some typedefs
 typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
 typedef ippl::UniformCartesian<double, Dim> Mesh_t;
+typedef Mesh_t::DefaultCentering Centering_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
-typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t> ORB;
+typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t, Centering_t> ORB;
 
 using size_type = ippl::detail::size_type;
 
@@ -35,7 +36,7 @@ template <typename T, unsigned Dim>
 using Vector = ippl::Vector<T, Dim>;
 
 template <typename T, unsigned Dim>
-using Field = ippl::Field<T, Dim>;
+using Field = ippl::Field<T, Dim, Mesh_t, Centering_t>;
 
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
@@ -43,7 +44,7 @@ using ParticleAttrib = ippl::ParticleAttrib<T>;
 typedef Vector<double, Dim> Vector_t;
 typedef Field<double, Dim> Field_t;
 typedef Field<Vector_t, Dim> VField_t;
-typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim> Solver_t;
+typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim, Mesh_t, Centering_t> Solver_t;
 
 const double pi = std::acos(-1.0);
 
