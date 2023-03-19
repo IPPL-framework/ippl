@@ -224,7 +224,7 @@ TEST_F(FieldTest, Curl) {
 
 TEST_F(FieldTest, Hessian) {
     typedef ippl::Vector<double, dim> Vector_t;
-    typedef ippl::Field<ippl::Vector<Vector_t, dim>, dim> matrix_field_type;
+    typedef ippl::Field<ippl::Vector<Vector_t, dim>, dim, Mesh_t, Centering_t> matrix_field_type;
 
     field_type field(*mesh, *layout);
     int nghost      = field.getNghost();
