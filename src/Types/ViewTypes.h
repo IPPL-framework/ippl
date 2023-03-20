@@ -80,6 +80,7 @@ namespace ippl {
         template <unsigned Dim, typename Tag = void>
         struct RangePolicy {
             typedef Kokkos::MDRangePolicy<Tag, Kokkos::Rank<Dim>> policy_type;
+            typedef typename policy_type::array_index_type index_type;
         };
 
         /*!
@@ -88,6 +89,7 @@ namespace ippl {
         template <typename Tag>
         struct RangePolicy<1, Tag> {
             typedef Kokkos::RangePolicy<Tag> policy_type;
+            typedef typename policy_type::index_type index_type;
         };
 
         /*!
@@ -106,13 +108,17 @@ namespace ippl {
         typename RangePolicy<Dim, Tag>::policy_type getRangePolicy(const View& view,
                                                                    int shift = 0) {
             using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
-            using index_type  = typename policy_type::array_index_type;
-            Kokkos::Array<index_type, Dim> begin, end;
-            for (unsigned int d = 0; d < Dim; d++) {
-                begin[d] = shift;
-                end[d]   = view.extent(d) - shift;
+            if constexpr (Dim == 1) {
+                return policy_type(shift, view.size() - shift);
+            } else {
+                using index_type = typename RangePolicy<Dim, Tag>::index_type;
+                Kokkos::Array<index_type, Dim> begin, end;
+                for (unsigned int d = 0; d < Dim; d++) {
+                    begin[d] = shift;
+                    end[d]   = view.extent(d) - shift;
+                }
+                return policy_type(begin, end);
             }
-            return policy_type(begin, end);
         }
 
         // https://stackoverflow.com/questions/50713214/familiar-template-syntax-for-generic-lambdas

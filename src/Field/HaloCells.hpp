@@ -26,9 +26,7 @@
 namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim>
-        HaloCells<T, Dim>::HaloCells() {
-            static_assert(Dim == 3, "Dimension must be 3!");
-        }
+        HaloCells<T, Dim>::HaloCells() {}
 
         template <typename T, unsigned Dim>
         void HaloCells<T, Dim>::accumulateHalo(view_type& view, const Layout_t* layout) {

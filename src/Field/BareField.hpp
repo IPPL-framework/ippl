@@ -65,18 +65,12 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::setup() {
-        static_assert(Dim == 3, "Only 3-dimensional fields supported at the momment!");
-
         owned_m = layout_m->getLocalNDIndex();
 
-        if constexpr (Dim == 1) {
-            this->resize(owned_m[0].length() + 2 * nghost_m);
-        } else if constexpr (Dim == 2) {
-            this->resize(owned_m[0].length() + 2 * nghost_m, owned_m[1].length() + 2 * nghost_m);
-        } else if constexpr (Dim == 3) {
-            this->resize(owned_m[0].length() + 2 * nghost_m, owned_m[1].length() + 2 * nghost_m,
-                         owned_m[2].length() + 2 * nghost_m);
-        }
+        auto resize = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
+            this->resize((owned_m[Idx].length() + 2 * nghost_m)...);
+        };
+        resize(std::make_index_sequence<Dim>{});
     }
 
     template <typename T, unsigned Dim>
