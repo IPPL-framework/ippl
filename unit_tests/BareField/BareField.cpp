@@ -17,9 +17,7 @@
 //
 #include "Ippl.h"
 
-#include <array>
 #include <cmath>
-#include <tuple>
 
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
@@ -141,16 +139,9 @@ TEST_F(BareFieldTest, ScalarMultiplication) {
         auto mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedLoop<Dim>(
-            [&](unsigned) {
-                return shift;
-            },
-            [&](unsigned d) {
-                return mirror.extent(d) - shift;
-            },
-            [&]<typename... Idx>(const Idx... args) {
-                ASSERT_DOUBLE_EQ(mirror(args...), 10.);
-            });
+        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+            ASSERT_DOUBLE_EQ(mirror(args...), 10.);
+        });
     };
 
     apply(check, fields);
@@ -168,16 +159,9 @@ TEST_F(BareFieldTest, DotProduct) {
         auto mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedLoop<Dim>(
-            [&](unsigned) {
-                return shift;
-            },
-            [&](unsigned d) {
-                return mirror.extent(d) - shift;
-            },
-            [&]<typename... Idx>(const Idx... args) {
-                ASSERT_DOUBLE_EQ(mirror(args...), 15.);
-            });
+        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+            ASSERT_DOUBLE_EQ(mirror(args...), 15.);
+        });
     };
 
     auto pair = zip(fields, vfields);
@@ -207,16 +191,9 @@ TEST_F(BareFieldTest, AllFuncs) {
         auto mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedLoop<Dim>(
-            [&](unsigned) {
-                return shift;
-            },
-            [&](unsigned d) {
-                return mirror.extent(d) - shift;
-            },
-            [&]<typename... Idx>(const Idx... args) {
-                ASSERT_DOUBLE_EQ(mirror(args...), beta);
-            });
+        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+            ASSERT_DOUBLE_EQ(mirror(args...), beta);
+        });
     };
 
     apply(check, fields);

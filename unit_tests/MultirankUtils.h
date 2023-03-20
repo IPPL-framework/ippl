@@ -19,6 +19,7 @@
 #ifndef MULTIRANK_UTILS_H
 #define MULTIRANK_UTILS_H
 
+#include <array>
 #include <tuple>
 
 template <unsigned... Dims>
@@ -103,6 +104,18 @@ public:
                 nestedLoop<Dim - 1>(begin, end, next);
             }
         }
+    }
+
+    template <unsigned Dim, typename View, class Functor>
+    constexpr void nestedViewLoop(View& view, int shift, Functor&& c) {
+        nestedLoop<Dim>(
+            [&](unsigned) {
+                return shift;
+            },
+            [&](unsigned d) {
+                return view.extent(d) - shift;
+            },
+            c);
     }
 };
 
