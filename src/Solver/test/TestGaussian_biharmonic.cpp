@@ -23,19 +23,24 @@ KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sig
                                         double mu = 0.5) {
     double pi = std::acos(-1.0);
     double r  = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
+    double r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return (1 / (4.0 * pi * r)) * std::erf(r / (std::sqrt(2.0) * sigma));
+    return (1 / (8.0 * pi))
+           * (sigma * std::sqrt(2.0 / pi) * exp(-r2 / (2 * sigma * sigma))
+              + std::erf(r / (std::sqrt(2.0) * sigma)) * (r + (sigma * sigma / r)));
 }
 
-KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_E(double x, double y, double z,
-                                                       double sigma = 0.05, double mu = 0.5) {
-    double pi     = std::acos(-1.0);
-    double r      = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
-    double factor = (1.0 / (4.0 * pi * r * r))
-                    * ((1.0 / r) * std::erf(r / (std::sqrt(2.0) * sigma))
-                       - std::sqrt(2.0 / pi) * (1.0 / sigma) * exp(-r * r / (2 * sigma * sigma)));
+KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_grad(double x, double y, double z,
+                                                          double sigma = 0.05, double mu = 0.5) {
+    double pi = std::acos(-1.0);
+    double r  = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
+    double r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
     ippl::Vector<double, 3> Efield = {(x - mu), (y - mu), (z - mu)};
+    double factor =
+        -(1.0 / r) * (1 / (8.0 * pi))
+        * ((sigma / r) * std::sqrt(2.0 / pi) * exp(-r2 / (2 * sigma * sigma))
+           + std::erf(r / (std::sqrt(2.0) * sigma)) * (1.0 - (sigma * sigma / (r * r))));
     return factor * Efield;
 }
 
@@ -88,7 +93,7 @@ int main(int argc, char* argv[]) {
     Inform msg("");
     Inform msg2all("", INFORM_ALL_NODES);
 
-    std::string algorithm = argv[1];
+    std::string algorithm = "BIHARMONIC";
 
     // start a timer to time the FFT Poisson solver
     static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
@@ -100,7 +105,7 @@ int main(int argc, char* argv[]) {
     // number of gridpoints to iterate over
     std::array<int, n> N = {4, 8, 16, 32, 64, 128};
 
-    msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
+    msg << "Spacing Error" << endl;
 
     for (int p = 0; p < n; ++p) {
         // domain
@@ -131,12 +136,11 @@ int main(int argc, char* argv[]) {
         field exact;
         exact.initialize(mesh, layout);
 
-        // define the Vector field E and the exact E field
+        // field for gradient and exact gradient
         typedef ippl::Field<ippl::Vector<double, 3>, 3> fieldV;
-
-        fieldV exactE, fieldE;
-        exactE.initialize(mesh, layout);
+        fieldV fieldE, exactE;
         fieldE.initialize(mesh, layout);
+        exactE.initialize(mesh, layout);
 
         // assign the rho field with a gaussian
         typename field::view_type view_rho = rho.getView();
@@ -183,15 +187,14 @@ int main(int argc, char* argv[]) {
                 view_exact(i, j, k) = exact_fct(x, y, z);
             });
 
-        // assign the exact E field
-        auto view_exactE = exactE.getView();
-
+        // assign the exact gradient field
+        auto view_grad = exactE.getView();
         Kokkos::parallel_for(
-            "Assign exact E-field",
+            "Assign exact field",
             Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
                 {nghost, nghost, nghost},
-                {view_exactE.extent(0) - nghost, view_exactE.extent(1) - nghost,
-                 view_exactE.extent(2) - nghost}),
+                {view_grad.extent(0) - nghost, view_grad.extent(1) - nghost,
+                 view_grad.extent(2) - nghost}),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;
@@ -201,10 +204,12 @@ int main(int argc, char* argv[]) {
                 double y = (jg + 0.5) * hx[1] + origin[1];
                 double z = (kg + 0.5) * hx[2] + origin[2];
 
-                view_exactE(i, j, k)[0] = exact_E(x, y, z)[0];
-                view_exactE(i, j, k)[1] = exact_E(x, y, z)[1];
-                view_exactE(i, j, k)[2] = exact_E(x, y, z)[2];
+                view_grad(i, j, k)[0] = exact_grad(x, y, z)[0];
+                view_grad(i, j, k)[1] = exact_grad(x, y, z)[1];
+                view_grad(i, j, k)[2] = exact_grad(x, y, z)[2];
             });
+
+        Kokkos::fence();
 
         // set the FFT parameters
         ippl::ParameterList fftParams;
@@ -232,12 +237,14 @@ int main(int argc, char* argv[]) {
 
         for (size_t d = 0; d < 3; ++d) {
             double temp = 0.0;
+
             Kokkos::parallel_reduce(
                 "Vector errorNr reduce",
                 Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
                     {nghost, nghost, nghost},
                     {view_fieldE.extent(0) - nghost, view_fieldE.extent(1) - nghost,
                      view_fieldE.extent(2) - nghost}),
+
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
                     double myVal = pow(view_fieldE(i, j, k)[d], 2);
                     valL += myVal;
@@ -249,14 +256,16 @@ int main(int argc, char* argv[]) {
             double errorNr = std::sqrt(globaltemp);
 
             temp = 0.0;
+
             Kokkos::parallel_reduce(
                 "Vector errorDr reduce",
                 Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
                     {nghost, nghost, nghost},
-                    {view_exactE.extent(0) - nghost, view_exactE.extent(1) - nghost,
-                     view_exactE.extent(2) - nghost}),
+                    {view_grad.extent(0) - nghost, view_grad.extent(1) - nghost,
+                     view_grad.extent(2) - nghost}),
+
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                    double myVal = pow(view_exactE(i, j, k)[d], 2);
+                    double myVal = pow(view_grad(i, j, k)[d], 2);
                     valL += myVal;
                 },
                 Kokkos::Sum<double>(temp));

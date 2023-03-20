@@ -18,19 +18,20 @@
 #include "Ippl.h"
 
 #include <cmath>
+
 #include "gtest/gtest.h"
 
 class ParticleBCTest : public ::testing::Test {
-
 public:
-    enum { dim = 3 };
+    enum {
+        dim = 3
+    };
     typedef ippl::detail::ParticleLayout<double, dim> playout_type;
     typedef ippl::ParticleBase<playout_type> bunch_type;
 
-    ParticleBCTest() : len(0.2)
-                     , nParticles(1000)
-    { }
-
+    ParticleBCTest()
+        : len(0.2)
+        , nParticles(1000) {}
 
     void setup(double pos) {
         bunch = std::make_unique<bunch_type>(pl_m);
@@ -47,7 +48,6 @@ public:
         // domain
         ippl::PRegion<double> region(0, len);
         nr = ippl::NDRegion<double, dim>(region, region, region);
-
     }
 
     void checkResult(const ippl::Vector<double, dim>& expected) {
@@ -63,11 +63,10 @@ public:
     std::unique_ptr<bunch_type> bunch;
     double len;
     int nParticles;
-    ippl::NDRegion<double, dim>  nr;
+    ippl::NDRegion<double, dim> nr;
     typename bunch_type::particle_position_type::HostMirror HostR;
     playout_type pl_m;
 };
-
 
 TEST_F(ParticleBCTest, UpperPeriodicBC) {
     double shift = 0.05;
@@ -79,7 +78,6 @@ TEST_F(ParticleBCTest, UpperPeriodicBC) {
 
     checkResult({shift, shift, shift});
 }
-
 
 TEST_F(ParticleBCTest, UpperNoBC) {
     double shift = 0.05;
@@ -94,7 +92,6 @@ TEST_F(ParticleBCTest, UpperNoBC) {
     checkResult({len + shift, len + shift, len + shift});
 }
 
-
 TEST_F(ParticleBCTest, UpperReflectiveBC) {
     double shift = 0.05;
     setup(len + shift);
@@ -105,7 +102,6 @@ TEST_F(ParticleBCTest, UpperReflectiveBC) {
 
     checkResult({len - shift, len - shift, len - shift});
 }
-
 
 TEST_F(ParticleBCTest, UpperSinkBC) {
     double shift = 0.05;
@@ -118,7 +114,6 @@ TEST_F(ParticleBCTest, UpperSinkBC) {
     checkResult({len, len, len});
 }
 
-
 TEST_F(ParticleBCTest, LowerPeriodicBC) {
     double shift = 0.05;
     setup(-shift);
@@ -129,7 +124,6 @@ TEST_F(ParticleBCTest, LowerPeriodicBC) {
 
     checkResult({len - shift, len - shift, len - shift});
 }
-
 
 TEST_F(ParticleBCTest, LowerNoBC) {
     double shift = 0.05;
@@ -142,7 +136,6 @@ TEST_F(ParticleBCTest, LowerNoBC) {
     checkResult({-shift, -shift, -shift});
 }
 
-
 TEST_F(ParticleBCTest, LowerReflectiveBC) {
     double shift = 0.05;
     setup(-shift);
@@ -153,7 +146,6 @@ TEST_F(ParticleBCTest, LowerReflectiveBC) {
 
     checkResult({shift, shift, shift});
 }
-
 
 TEST_F(ParticleBCTest, LowerSinkBC) {
     double shift = 0.05;
@@ -166,9 +158,8 @@ TEST_F(ParticleBCTest, LowerSinkBC) {
     checkResult({0, 0, 0});
 }
 
-
-int main(int argc, char *argv[]) {
-    Ippl ippl(argc,argv);
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

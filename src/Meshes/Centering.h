@@ -22,38 +22,34 @@
 // instead of this for cartesian meshes.
 // Keep this class around for backwards compatibility, and possibly for use
 // with non-cartesian meshes.
-class Centering
-{
+class Centering {
 public:
     static const char* CenteringEnum_Names[3];
 };
 
-class Cell
-{
+class Cell {
 public:
-  static const char* CenteringName;
-  static void print_Centerings(std::ostream&);
+    static const char* CenteringName;
+    static void print_Centerings(std::ostream&);
 };
 // Vertex-centered, all components, for all dimensions in cartesian-mesh case.
 // Recommendation: use CommonCartesianCenterings<D,NComponents,0U>::allVert
 // instead of this for cartesian meshes.
 // Keep this class around for backwards compatibility, and possibly for use
 // with non-cartesian meshes.
-class Vert
-{
-public:
-  static const char* CenteringName;
-  static void print_Centerings(std::ostream&);
-};
-
-class Edge
-{
+class Vert {
 public:
     static const char* CenteringName;
     static void print_Centerings(std::ostream&);
 };
 
-#endif // CENTERING_H
+class Edge {
+public:
+    static const char* CenteringName;
+    static void print_Centerings(std::ostream&);
+};
+
+#endif  // CENTERING_H
 
 /***************************************************************************
  * $RCSfile: Centering.h,v $   $Author: adelmann $
