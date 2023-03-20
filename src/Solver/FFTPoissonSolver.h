@@ -145,6 +145,7 @@ namespace ippl {
 
             // buffer for communication
             detail::FieldBufferData<Trhs> fd_m;
+              
 
         protected:
         
