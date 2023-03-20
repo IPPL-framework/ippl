@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
         allParallel[d] = ippl::PARALLEL;
 
     typedef ippl::FieldLayout<dim> Layout_t;
-    ippl::FieldLayout<dim> layout(owned, allParallel);
+    Layout_t layout(owned, allParallel);
 
     std::array<double, dim> dx = {
         1.0 / double(pt[0]),
@@ -42,38 +42,38 @@ int main(int argc, char* argv[]) {
 
     field_type field(mesh, layout);
 
-    field      = Ippl::Comm->rank();
+    field = Ippl::Comm->rank();
     int myRank = Ippl::Comm->rank();
     int nRanks = Ippl::Comm->size();
 
     for (int rank = 0; rank < nRanks; ++rank) {
         if (rank == Ippl::Comm->rank()) {
-            using face_neighbor_type                 = typename Layout_t::face_neighbor_type;
-            const face_neighbor_type& face_neighbors = layout.getFaceNeighbors();
-
-            for (size_t face = 0; face < face_neighbors.size(); ++face) {
-                for (size_t i = 0; i < face_neighbors[face].size(); ++i) {
-                    int rank = face_neighbors[face][i];
-                    std::cout << "My Rank: " << myRank << "face: " << face
-                              << "neighbor rank: " << rank << std::endl;
+            const auto& neighbors = layout.getNeighbors();
+            for (unsigned i = 0; i < neighbors.size(); i++) {
+                const auto& n = neighbors[i];
+                if (n.size() > 0) {
+                    unsigned dim = 0;
+                    for (unsigned idx = i; idx > 0; idx /= 3) {
+                        dim += idx % 3 == 2;
+                    }
+                    std::cout << "My Rank: " << myRank;
+                    switch (dim) {
+                    case 0:
+                        std::cout << " vertex: ";
+                        break;
+                    case 1:
+                        std::cout << " edge: ";
+                        break;
+                    case 2:
+                        std::cout << " face: ";
+                        break;
+                    }
+                    std::cout << i << " neighbors: ";
+                    for (const auto& nrank : n) {
+                        std::cout << nrank << ' ';
+                    }
+                    std::cout << std::endl;
                 }
-            }
-
-            using edge_neighbor_type                 = typename Layout_t::edge_neighbor_type;
-            const edge_neighbor_type& edge_neighbors = layout.getEdgeNeighbors();
-            for (size_t edge = 0; edge < edge_neighbors.size(); ++edge) {
-                for (size_t i = 0; i < edge_neighbors[edge].size(); ++i) {
-                    int rank = edge_neighbors[edge][i];
-                    std::cout << "My Rank: " << myRank << "edge: " << edge
-                              << "neighbor rank: " << rank << std::endl;
-                }
-            }
-            using vertex_neighbor_type                   = typename Layout_t::vertex_neighbor_type;
-            const vertex_neighbor_type& vertex_neighbors = layout.getVertexNeighbors();
-            for (size_t vertex = 0; vertex < vertex_neighbors.size(); ++vertex) {
-                int rank = vertex_neighbors[vertex];
-                std::cout << "My Rank: " << myRank << "vertex: " << vertex
-                          << "neighbor rank: " << rank << std::endl;
             }
         }
         Ippl::Comm->barrier();
@@ -82,23 +82,29 @@ int main(int argc, char* argv[]) {
     auto& domains = layout.getHostLocalDomains();
 
     for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-        if (rank == Ippl::Comm->rank()) {
-            auto& faces    = layout.getFaceNeighbors();
-            auto& edges    = layout.getEdgeNeighbors();
-            auto& vertices = layout.getVertexNeighbors();
+       if (rank == Ippl::Comm->rank()) {
+           auto& neighbors = layout.getNeighbors();
 
-            int nFaces = 0, nEdges = 0, nVertices = 0;
-            for (size_t i = 0; i < faces.size(); ++i) {
-                nFaces += faces[i].size();
-            }
-
-            for (size_t i = 0; i < edges.size(); ++i) {
-                nEdges += edges[i].size();
-            }
-
-            for (size_t i = 0; i < vertices.size(); ++i) {
-                nVertices += (vertices[i] > -1) ? 1 : 0;
-            }
+           int nFaces = 0, nEdges = 0, nVertices = 0;
+           for (unsigned i = 0; i < neighbors.size(); i++) {
+               if (neighbors[i].size() > 0) {
+                   unsigned dim = 0;
+                   for (unsigned idx = i; idx > 0; idx /= 3) {
+                       dim += idx % 3 == 2;
+                   }
+                   switch (dim) {
+                     case 0:
+                        nVertices++;
+                        break;
+                    case 1:
+                        nEdges++;
+                        break;
+                    case 2:
+                        nFaces++;
+                        break;
+                   }
+               }
+           }
 
             std::cout << "rank " << rank << ": " << std::endl
                       << " - domain:   " << domains[rank] << std::endl
@@ -106,11 +112,11 @@ int main(int argc, char* argv[]) {
                       << " - edges:    " << nEdges << std::endl
                       << " - vertices: " << nVertices << std::endl
                       << "--------------------------------------" << std::endl;
-        }
-        Ippl::Comm->barrier();
+       }
+       Ippl::Comm->barrier();
     }
 
-    int nsteps = 300;
+    int nsteps = 1;
 
     for (int nt = 0; nt < nsteps; ++nt) {
         static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");

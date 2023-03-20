@@ -43,30 +43,103 @@ namespace ippl {
         PARALLEL = 1
     };
 
+    enum e_cube_tag {
+        UPPER       = 0,
+        LOWER       = 1,
+        IS_PARALLEL = 2
+    };
+
+    namespace detail {
+        constexpr unsigned int countHypercubes(unsigned int dim) {
+            unsigned int ret = 1;
+            for (unsigned int d = 0; d < dim; d++)
+                ret *= 3;
+            return ret;
+        }
+
+        constexpr unsigned int factorial(unsigned x) {
+            return x == 0 ? 1 : x * factorial(x - 1);
+        }
+
+        constexpr unsigned int nCr(unsigned a, unsigned b) {
+            return factorial(a) / (factorial(b) * factorial(a - b));
+        }
+
+        template <unsigned Dim>
+        constexpr unsigned int countCubes(unsigned m) {
+            return (1 << (Dim - m)) * nCr(Dim, m);
+        }
+
+        bool isUpper(unsigned int face);
+
+        unsigned int getFaceDim(unsigned int face);
+
+        template <unsigned Dim>
+        unsigned int indexToFace(unsigned int index) {
+            // facets are group low/high by axis
+            unsigned int axis = index / 2;
+            // the digit to subtract is determined by whether the index describes an upper
+            // face (even index) or lower face (odd index) and that digit's position is
+            // determined by the axis of the face
+            unsigned int toRemove = (2 - index % 2) * countHypercubes(axis);
+            // start with all 2s (in base 3) and change the correct digit to get the encoded face
+            return countHypercubes(Dim) - 1 - toRemove;
+        }
+
+        template <
+            unsigned Dim, typename... CubeTags,
+            typename = std::enable_if_t<sizeof...(CubeTags) == Dim - 1>,
+            typename = std::enable_if_t<std::conjunction_v<std::is_same<e_cube_tag, CubeTags>...>>>
+        unsigned int getCube(e_cube_tag tag, CubeTags... tags) {
+            if constexpr (Dim == 1) {
+                return tag;
+            } else {
+                return tag + 3 * getCube<Dim - 1>(tags...);
+            }
+        }
+
+        template <size_t... Idx>
+        unsigned int getFace_impl(const std::array<e_cube_tag, sizeof...(Idx)>& args,
+                                  const std::index_sequence<Idx...>&) {
+            return getCube<sizeof...(Idx)>(args[Idx]...);
+        }
+
+        template <unsigned Dim>
+        unsigned int getFace(unsigned int axis, e_cube_tag side) {
+            std::array<e_cube_tag, Dim> args;
+            args.fill(IS_PARALLEL);
+            args[axis] = side;
+            return getFace_impl(args, std::make_index_sequence<Dim>{});
+        }
+    }  // namespace detail
+
     template <unsigned Dim>
     class FieldLayout {
     public:
-        using NDIndex_t            = NDIndex<Dim>;
-        using view_type            = typename detail::ViewType<NDIndex_t, 1>::view_type;
-        using host_mirror_type     = typename view_type::host_mirror_type;
-        using face_neighbor_type   = std::array<std::vector<int>, 2 * Dim>;
-        using edge_neighbor_type   = std::array<std::vector<int>, Dim * (1 << (Dim - 1))>;
-        using vertex_neighbor_type = std::array<int, 2 << (Dim - 1)>;
-        using match_face_type      = std::array<int, 2 * Dim>;
-        using match_edge_type      = std::array<int, Dim * (1 << (Dim - 1))>;
-        using match_vertex_type    = std::array<int, 2 << (Dim - 1)>;
+        using NDIndex_t        = NDIndex<Dim>;
+        using view_type        = typename detail::ViewType<NDIndex_t, 1>::view_type;
+        using host_mirror_type = typename view_type::host_mirror_type;
 
         struct bound_type {
-            // lower bounds (ordering: x, y, z)
+            // lower bounds (ordering: x, y, z, ...)
             std::array<long, Dim> lo;
-            // upper bounds (ordering x, y, z)
+            // upper bounds (ordering x, y, z, ...)
             std::array<long, Dim> hi;
+
+            long size() const {
+                long total = 1;
+                for (unsigned d = 0; d < Dim; d++) {
+                    total *= hi[d] - lo[d];
+                }
+                return total;
+            }
         };
 
-        using face_neighbor_range_type = std::array<std::vector<bound_type>, 2 * Dim>;
-        using edge_neighbor_range_type =
-            std::array<std::vector<bound_type>, Dim * (1 << (Dim - 1))>;
-        using vertex_neighbor_range_type = std::array<bound_type, 2 << (Dim - 1)>;
+        using rank_list   = std::vector<int>;
+        using bounds_list = std::vector<bound_type>;
+
+        using neighbor_list       = std::array<rank_list, detail::countHypercubes(Dim)>;
+        using neighbor_range_list = std::array<bounds_list, detail::countHypercubes(Dim)>;
 
         /*!
          * Default constructor, which should only be used if you are going to
@@ -99,20 +172,19 @@ namespace ippl {
         }
 
         bool operator==(const FieldLayout<Dim>& x) const {
-            bool result = true;
             for (unsigned int i = 0; i < Dim; ++i) {
-                result &= (hLocalDomains_m(Ippl::Comm->rank())[i] == x.getLocalNDIndex()[i]);
+                if (hLocalDomains_m(Ippl::Comm->rank())[i] != x.getLocalNDIndex()[i])
+                    return false;
             }
-            return result;
+            return true;
         }
 
         // for the requested dimension, report if the distribution is
         // SERIAL or PARALLEL
         e_dim_tag getDistribution(unsigned int d) const {
-            e_dim_tag retval = PARALLEL;
             if (minWidth_m[d] == (unsigned int)gDomain_m[d].length())
-                retval = SERIAL;
-            return retval;
+                return SERIAL;
+            return PARALLEL;
         }
 
         // for the requested dimension, report if the distribution was requested to
@@ -125,36 +197,11 @@ namespace ippl {
 
         const view_type getDeviceLocalDomains() const;
 
-        const face_neighbor_type& getFaceNeighbors() const;
+        const neighbor_list& getNeighbors() const;
+        const neighbor_range_list& getNeighborsSendRange() const;
+        const neighbor_range_list& getNeighborsRecvRange() const;
 
-        /*!
-         * Get the dimension of the face. It is based on the ordering:
-         * x low, x high, y low, y high, z low, z high
-         * @returns the dimension of the face
-         */
-        unsigned int getDimOfFace(unsigned int face) const { return face / 2; }
-
-        const edge_neighbor_type& getEdgeNeighbors() const;
-
-        const vertex_neighbor_type& getVertexNeighbors() const;
-
-        const face_neighbor_range_type& getFaceNeighborsSendRange() const;
-
-        const edge_neighbor_range_type& getEdgeNeighborsSendRange() const;
-
-        const vertex_neighbor_range_type& getVertexNeighborsSendRange() const;
-
-        const face_neighbor_range_type& getFaceNeighborsRecvRange() const;
-
-        const edge_neighbor_range_type& getEdgeNeighborsRecvRange() const;
-
-        const vertex_neighbor_range_type& getVertexNeighborsRecvRange() const;
-
-        const match_face_type& getMatchFace() const;
-
-        const match_edge_type& getMatchEdge() const;
-
-        const match_vertex_type& getMatchVertex() const;
+        static int getMatchingIndex(int index);
 
         void findNeighbors(int nghost = 1);
 
@@ -168,20 +215,6 @@ namespace ippl {
         bool isAllPeriodic_m;
 
     private:
-        /*!
-         * @param grown the grown domain of myRank
-         * @param inersect the intersection between grown and the remote domain
-         * @param rank the rank of the remote domain
-         */
-        void addVertex(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
-                       const bound_type& rangeSend, const bound_type& rangeRecv);
-
-        void addEdge(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
-                     const bound_type& rangeSend, const bound_type& rangeRecv);
-
-        void addFace(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
-                     const bound_type& rangeSend, const bound_type& rangeRecv);
-
         /*!
          * Obtain the bounds to send / receive. The second domain, i.e.,
          * nd2, is grown by nghost cells in each dimension in order to
@@ -210,60 +243,10 @@ namespace ippl {
 
         unsigned int minWidth_m[Dim];
 
-        /*!
-         * This container has length 2*Dim. Each index represents a face
-         * (ordering: x low, x high, y low, y high, z low, z high). Each
-         * index contains a vector (length is equal to the number of ranks
-         * it shares the face with). The values are the ranks sharing the face.
-         * An empty vector denotes a physical / mesh boundary.
-         */
-        face_neighbor_type faceNeighbors_m;
-
-        match_face_type matchface_m;
-
-        /*!
-         * Neighboring ranks that store the edge values.
-         * [(x low,  y low,  z low),  (x high, y low,  z low)]  --> edge 0
-         * [(x low,  y high, z low),  (x high, y high, z low)]  --> edge 1
-         * [(x low,  y low,  z high), (x high, y low,  z high)] --> edge 2
-         * [(x low,  y high, z high), (x high, y high, z high)] --> edge 3
-         *
-         * [(x low,  y low,  z low),  (x low,  y high, z low)]  --> edge 4
-         * [(x high, y low,  z low),  (x high, y high, z low)]  --> edge 5
-         * [(x low,  y low,  z high), (x low,  y high, z high)] --> edge 6
-         * [(x high, y low,  z high), (x high, y high, z high)] --> edge 7
-         *
-         * [(x low,  y low,  z low),  (x low,  y low,  z high)] --> edge 8
-         * [(x high, y low,  z low),  (x high, y low,  z high)] --> edge 9
-         * [(x low,  y high, z low),  (x low,  y high, z high)] --> edge 10
-         * [(x high, y high, z low),  (x high, y high, z high)] --> edge 11
-         */
-        edge_neighbor_type edgeNeighbors_m;
-
-        match_edge_type matchedge_m;
-
-        /*!
-         * Neighboring ranks that have the vertex value (corner cell). The value
-         * is negative, i.e. -1, if the vertex is on a mesh boundary if it is
-         * non-periodic.
-         * x low,  y low,  z low  --> vertex index 0
-         * x high, y low,  z low  --> vertex index 1
-         * x low,  y high, z low  --> vertex index 2
-         * x high, y high, z low  --> vertex index 3
-         * x low,  y low,  z high --> vertex index 4
-         * x high, y low,  z high --> vertex index 5
-         * x low,  y high, z high --> vertex index 6
-         * x high, y high, z high --> vertex index 7
-         */
-        vertex_neighbor_type vertexNeighbors_m;
-
-        match_vertex_type matchvertex_m;
+        neighbor_list neighbors_m;
+        neighbor_range_list neighborsSendRange_m, neighborsRecvRange_m;
 
         void calcWidths();
-
-        face_neighbor_range_type faceNeighborsSendRange_m, faceNeighborsRecvRange_m;
-        edge_neighbor_range_type edgeNeighborsSendRange_m, edgeNeighborsRecvRange_m;
-        vertex_neighbor_range_type vertexNeighborsSendRange_m, vertexNeighborsRecvRange_m;
     };
 
     template <unsigned Dim>

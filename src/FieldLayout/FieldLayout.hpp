@@ -33,59 +33,27 @@
 namespace ippl {
 
     template <unsigned Dim>
+    int FieldLayout<Dim>::getMatchingIndex(int index) {
+        // If we are touching another boundary component, that component must be parallel to us,
+        // so any 2s are unchanged. All other digits must be swapped because otherwise we would
+        // share a higher dimension boundary region with that other component and the digit
+        // would be 2
+        static const int digit_swap[3] = {1, 0, 2};
+        int match                      = 0;
+        for (unsigned d = 1; d < detail::countHypercubes(Dim); d *= 3) {
+            match += digit_swap[index % 3] * d;
+            index /= 3;
+        }
+        return match;
+    }
+
+    template <unsigned Dim>
     FieldLayout<Dim>::FieldLayout()
         : dLocalDomains_m("local domains (device)", 0)
         , hLocalDomains_m(Kokkos::create_mirror_view(dLocalDomains_m)) {
         for (unsigned int d = 0; d < Dim; ++d) {
             requestedLayout_m[d] = PARALLEL;
             minWidth_m[d]        = 0;
-        }
-
-        // We initialize matchface_m, matchedge_m, and matchvertex_m
-
-        /*!
-         * Matchface_m is a container of length 2*Dim. The index represents
-         * faces with the same ordering as above, and the value represents
-         * the corresponding matching face number from the neighbours.
-         *
-         * For Dim = 3, matchface_m represents the faces.
-         * For Dim = 2 and Dim = 1, the cells have no faces,
-         * so this array is useless.
-         */
-        if constexpr (Dim == 3) {
-            matchface_m = {1, 0, 3, 2, 5, 4};
-        }
-
-        /*!
-         * Matchedge_m is a container of length Dim*(2**(Dim-1)). The index
-         * represents edges with the same ordering as above, and the values
-         * are the corresponding matching edge number from the neighbours.
-         *
-         * For Dim = 3 and Dim = 2, marchedge_m represents the edges.
-         * For Dim = 1, it is useless, as there are no matching edges.
-         */
-        if constexpr (Dim == 2) {
-            matchedge_m = {1, 0, 3, 2};
-        } else if constexpr (Dim == 3) {
-            matchedge_m = {3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8};
-        }
-
-        /*!
-         * Matchvertex_m is a container of length 2*(2**(Dim-1)). The index
-         * represents vertices with the same ordering as above, and the values
-         * are the corresponding matching vertex number from the neighbour vertex.
-         * The neighbour vertex is the vertex which would exchange information to
-         * the neighboring rank if the computational cell is extended by 1 halo
-         * layer in all dimensions.
-         *
-         * For all Dim, matchvertex_m represents the vertices.
-         */
-        if constexpr (Dim == 1) {
-            matchvertex_m = {1, 0};
-        } else if constexpr (Dim == 2) {
-            matchvertex_m = {3, 2, 1, 0};
-        } else if constexpr (Dim == 3) {
-            matchvertex_m = {7, 6, 5, 4, 3, 2, 1, 0};
         }
     }
 
@@ -182,72 +150,20 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    const typename FieldLayout<Dim>::face_neighbor_type& FieldLayout<Dim>::getFaceNeighbors()
+    const typename FieldLayout<Dim>::neighbor_list& FieldLayout<Dim>::getNeighbors() const {
+        return neighbors_m;
+    }
+
+    template <unsigned Dim>
+    const typename FieldLayout<Dim>::neighbor_range_list& FieldLayout<Dim>::getNeighborsSendRange()
         const {
-        return faceNeighbors_m;
+        return neighborsSendRange_m;
     }
 
     template <unsigned Dim>
-    const typename FieldLayout<Dim>::edge_neighbor_type& FieldLayout<Dim>::getEdgeNeighbors()
+    const typename FieldLayout<Dim>::neighbor_range_list& FieldLayout<Dim>::getNeighborsRecvRange()
         const {
-        return edgeNeighbors_m;
-    }
-
-    template <unsigned Dim>
-    const typename FieldLayout<Dim>::vertex_neighbor_type& FieldLayout<Dim>::getVertexNeighbors()
-        const {
-        return vertexNeighbors_m;
-    }
-
-    template <unsigned Dim>
-    const typename FieldLayout<Dim>::face_neighbor_range_type&
-    FieldLayout<Dim>::getFaceNeighborsSendRange() const {
-        return faceNeighborsSendRange_m;
-    }
-
-    template <unsigned Dim>
-    const typename FieldLayout<Dim>::edge_neighbor_range_type&
-    FieldLayout<Dim>::getEdgeNeighborsSendRange() const {
-        return edgeNeighborsSendRange_m;
-    }
-
-    template <unsigned Dim>
-    const typename FieldLayout<Dim>::vertex_neighbor_range_type&
-    FieldLayout<Dim>::getVertexNeighborsSendRange() const {
-        return vertexNeighborsSendRange_m;
-    }
-
-    template <unsigned Dim>
-    const typename FieldLayout<Dim>::face_neighbor_range_type&
-    FieldLayout<Dim>::getFaceNeighborsRecvRange() const {
-        return faceNeighborsRecvRange_m;
-    }
-
-    template <unsigned Dim>
-    const typename FieldLayout<Dim>::edge_neighbor_range_type&
-    FieldLayout<Dim>::getEdgeNeighborsRecvRange() const {
-        return edgeNeighborsRecvRange_m;
-    }
-
-    template <unsigned Dim>
-    const typename FieldLayout<Dim>::vertex_neighbor_range_type&
-    FieldLayout<Dim>::getVertexNeighborsRecvRange() const {
-        return vertexNeighborsRecvRange_m;
-    }
-
-    template <unsigned Dim>
-    const typename FieldLayout<Dim>::match_face_type& FieldLayout<Dim>::getMatchFace() const {
-        return matchface_m;
-    }
-
-    template <unsigned Dim>
-    const typename FieldLayout<Dim>::match_edge_type& FieldLayout<Dim>::getMatchEdge() const {
-        return matchedge_m;
-    }
-
-    template <unsigned Dim>
-    const typename FieldLayout<Dim>::match_vertex_type& FieldLayout<Dim>::getMatchVertex() const {
-        return matchvertex_m;
+        return neighborsRecvRange_m;
     }
 
     template <unsigned Dim>
@@ -287,19 +203,11 @@ namespace ippl {
         /* We need to reset the neighbor list
          * and its ranges because of the repartitioner.
          */
-        for (size_t i = 0; i < faceNeighbors_m.size(); ++i) {
-            faceNeighbors_m[i].clear();
-            faceNeighborsSendRange_m[i].clear();
-            faceNeighborsRecvRange_m[i].clear();
+        for (size_t i = 0; i < detail::countHypercubes(Dim); i++) {
+            neighbors_m[i].clear();
+            neighborsSendRange_m[i].clear();
+            neighborsRecvRange_m[i].clear();
         }
-
-        for (size_t i = 0; i < edgeNeighbors_m.size(); ++i) {
-            edgeNeighbors_m[i].clear();
-            edgeNeighborsSendRange_m[i].clear();
-            edgeNeighborsRecvRange_m[i].clear();
-        }
-
-        vertexNeighbors_m.fill(-1);
 
         int myRank = Ippl::Comm->rank();
 
@@ -409,118 +317,25 @@ namespace ippl {
 
         rangeRecv = getBounds(ndNeighbor, nd, nd, nghost);
 
-        int nDim = 0;
-        for (unsigned int d = 0; d < Dim; ++d) {
-            const Index& index = intersect[d];
-            nDim += (index.length() > 1) ? 1 : 0;
-        }
-
-        switch (nDim) {
-            case 0:
-                addVertex(gnd, intersect, rank, rangeSend, rangeRecv);
-                break;
-            case 1:
-                addEdge(gnd, intersect, rank, rangeSend, rangeRecv);
-                break;
-            case 2:
-                addFace(gnd, intersect, rank, rangeSend, rangeRecv);
-                break;
-            default:
-                throw IpplException(
-                    "FieldLayout::addNeighbors()",
-                    "Failed to identify grid point. Neither a face, edge or vertex grid point.");
-        }
-    }
-
-    template <unsigned Dim>
-    void FieldLayout<Dim>::addVertex(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
-                                     const bound_type& rangeSend, const bound_type& rangeRecv) {
-        /* The following routine computes the correct index
-         * of the vertex.
-         *
-         * Example vertex 5: x high, y low, z high:
-         *
-         * 1st iteration: add = 1 --> index = 1
-         * 2nd iteration: add = 0 --> index += 0 --> index = 1
-         * 3rd iteration: add = 1 --> index += 4 --> index = 5
-         */
-        size_t index = 0;
-        for (size_t d = 0; d < Dim; ++d) {
-            /* if lower --> 0
-             * else upper --> 1
-             */
-            const bool isLower = (grown[d].first() == intersect[d].first());
-
-            int add = (isLower) ? 0 : 1;
-
-            index += (add << d);
-        }
-
-        PAssert(index < vertexNeighbors_m.size());
-
-        vertexNeighbors_m[index]          = rank;
-        vertexNeighborsSendRange_m[index] = rangeSend;
-        vertexNeighborsRecvRange_m[index] = rangeRecv;
-    }
-
-    template <unsigned Dim>
-    void FieldLayout<Dim>::addEdge(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
-                                   const bound_type& rangeSend, const bound_type& rangeRecv) {
-        int nEdgesPerDim = (1 << (Dim - 1));
-
-        size_t index = 0;
-
-        int num = 1;
-        for (size_t d = 0; d < Dim; ++d) {
+        int index = 0;
+        for (unsigned d = 0, digit = 1; d < Dim; d++, digit *= 3) {
+            // For each dimension, check what kind of intersection we have and construct
+            // an index for the component based on its base-3 representation with the
+            // following properties for each digit:
+            // 0 - touching the lower axis value
+            // 1 - touching the upper axis value
+            // 2 - parallel to the axis
             if (intersect[d].length() == 1) {
-                const bool isLower = (grown[d].first() == intersect[d].first());
-                index += (isLower) ? 0 : num;
-                ++num;
-                continue;
-            }
-
-            int jump = d * nEdgesPerDim;
-            index += jump;
-        }
-
-        PAssert(index < edgeNeighbors_m.size());
-
-        edgeNeighbors_m[index].push_back(rank);
-        edgeNeighborsSendRange_m[index].push_back(rangeSend);
-        edgeNeighborsRecvRange_m[index].push_back(rangeRecv);
-    }
-
-    template <unsigned Dim>
-    void FieldLayout<Dim>::addFace(const NDIndex_t& grown, const NDIndex_t& intersect, int rank,
-                                   const bound_type& rangeSend, const bound_type& rangeRecv) {
-        for (unsigned int d = 0; d < Dim; ++d) {
-            const Index& index = intersect[d];
-
-            if (index.length() == 1) {
-                /* We found the
-                 * intersecting dimension.
-                 * Now, we need to figure out which face
-                 * (upper or lower)
-                 */
-
-                /* if lower --> 0
-                 * else upper --> 1
-                 */
-                int inc = (grown[d].first() == index.first()) ? 0 : 1;
-
-                /* x low  --> 0
-                 * x high --> 1
-                 * y low  --> 2
-                 * y high --> 3
-                 * z low  --> 4
-                 * z high --> 5
-                 */
-                faceNeighbors_m[inc + 2 * d].push_back(rank);
-                faceNeighborsSendRange_m[inc + 2 * d].push_back(rangeSend);
-                faceNeighborsRecvRange_m[inc + 2 * d].push_back(rangeRecv);
-                break;
+                if (gnd[d].first() != intersect[d].first()) {
+                    index += digit;
+                }
+            } else {
+                index += 2 * digit;
             }
         }
+        neighbors_m[index].push_back(rank);
+        neighborsSendRange_m[index].push_back(rangeSend);
+        neighborsRecvRange_m[index].push_back(rangeRecv);
     }
 
     template <unsigned Dim>
@@ -548,23 +363,19 @@ namespace ippl {
     template <unsigned Dim>
     int FieldLayout<Dim>::getPeriodicOffset(const NDIndex_t& nd, const unsigned int d,
                                             const int k) {
-        int offset = 0;
         switch (k) {
             case 0:
                 if (nd[d].max() == gDomain_m[d].max())
-                    offset = -gDomain_m[d].length();
-
+                    return -gDomain_m[d].length();
                 break;
             case 1:
                 if (nd[d].min() == gDomain_m[d].min())
-                    offset = gDomain_m[d].length();
-
+                    return gDomain_m[d].length();
                 break;
             default:
                 throw IpplException("FieldLayout:getPeriodicOffset", "k  has to be either 0 or 1");
         }
-
-        return offset;
+        return 0;
     }
 
 }  // namespace ippl

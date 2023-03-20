@@ -105,6 +105,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Assign extrapolate BC", mdrange_type(begin, end),
             KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
+                // to avoid ambiguity with the member function
                 using ippl::apply;
 
                 T value = view(args...);
@@ -158,8 +159,8 @@ namespace ippl {
         const auto& lDomains   = layout.getHostLocalDomains();
         const auto& domain     = layout.getDomain();
 
-        for (size_t i = 0; i < faceNeighbors_m.size(); ++i) {
-            faceNeighbors_m[i].clear();
+        for (auto& neighbors : faceNeighbors_m) {
+            neighbors.clear();
         }
 
         if (lDomains[myRank][d].length() < domain[d].length()) {
@@ -240,16 +241,18 @@ namespace ippl {
                     matchtag   = Ippl::Comm->following_tag(BC_PARALLEL_PERIODIC_TAG);
                 }
 
+                auto& neighbors = faceNeighbors_m[face];
+
                 using buffer_type = Communicate::buffer_type;
-                std::vector<MPI_Request> requests(faceNeighbors_m[face].size());
+                std::vector<MPI_Request> requests(neighbors.size());
 
                 using HaloCells_t = detail::HaloCells<T, Dim>;
                 using range_t     = typename HaloCells_t::bound_type;
                 HaloCells_t& halo = field.getHalo();
                 std::vector<range_t> rangeNeighbors;
 
-                for (size_t i = 0; i < faceNeighbors_m[face].size(); ++i) {
-                    int rank = faceNeighbors_m[face][i];
+                for (size_t i = 0; i < neighbors.size(); ++i) {
+                    int rank = neighbors[i];
 
                     auto ndNeighbor = lDomains[rank];
                     ndNeighbor[d]   = ndNeighbor[d] - offset;
@@ -276,17 +279,15 @@ namespace ippl {
                     buf->resetWritePos();
                 }
 
-                for (size_t i = 0; i < faceNeighbors_m[face].size(); ++i) {
-                    int rank = faceNeighbors_m[face][i];
+                for (size_t i = 0; i < neighbors.size(); ++i) {
+                    int rank = neighbors[i];
 
                     range_t range = rangeNeighbors[i];
 
                     range.lo[d] = range.lo[d] + offsetRecv;
                     range.hi[d] = range.hi[d] + offsetRecv;
 
-                    detail::size_type nRecvs = (range.hi[0] - range.lo[0])
-                                               * (range.hi[1] - range.lo[1])
-                                               * (range.hi[2] - range.lo[2]);
+                    detail::size_type nRecvs = range.size();
 
                     buffer_type buf = Ippl::Comm->getBuffer<T>(IPPL_PERIODIC_BC_RECV + i, nRecvs);
                     Ippl::Comm->recv(rank, matchtag, haloData_m, *buf, nRecvs * sizeof(T), nRecvs);
@@ -327,6 +328,7 @@ namespace ippl {
                     // the domain proceeding outwards for both lower and
                     // upper faces.
 
+                    // to avoid ambiguity with the member function
                     using ippl::apply;
 
                     using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
@@ -347,9 +349,6 @@ namespace ippl {
                     // nghost - 1 - x -> N - (nghost - 1 - x) = N - (nghost - x) + x
                     coords[d]                = N - coords[d];
                     apply<Dim>(view, coords) = left;
-
-                    // view(0+(nghost-1)-i, j, k) = view(N-nghost-i, j, k);
-                    // view(N-(nghost-1)+i, j, k) = view(0+nghost+i, j, k);
                 });
         }
     }
