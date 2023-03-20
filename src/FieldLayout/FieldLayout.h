@@ -138,8 +138,8 @@ namespace ippl {
         using rank_list   = std::vector<int>;
         using bounds_list = std::vector<bound_type>;
 
-        using neighbor_list       = std::array<rank_list, detail::countHypercubes(Dim)>;
-        using neighbor_range_list = std::array<bounds_list, detail::countHypercubes(Dim)>;
+        using neighbor_list       = std::array<rank_list, detail::countHypercubes(Dim) - 1>;
+        using neighbor_range_list = std::array<bounds_list, detail::countHypercubes(Dim) - 1>;
 
         /*!
          * Default constructor, which should only be used if you are going to

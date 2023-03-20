@@ -203,7 +203,7 @@ namespace ippl {
         /* We need to reset the neighbor list
          * and its ranges because of the repartitioner.
          */
-        for (size_t i = 0; i < detail::countHypercubes(Dim); i++) {
+        for (size_t i = 0; i < detail::countHypercubes(Dim) - 1; i++) {
             neighbors_m[i].clear();
             neighborsSendRange_m[i].clear();
             neighborsRecvRange_m[i].clear();

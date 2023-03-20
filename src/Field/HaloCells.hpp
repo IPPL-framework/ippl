@@ -60,7 +60,7 @@ namespace ippl {
             std::vector<MPI_Request> requests(totalRequests);
 
             // sending loop
-            constexpr size_t cubeCount = detail::countHypercubes(Dim);
+            constexpr size_t cubeCount = detail::countHypercubes(Dim) - 1;
             size_t requestIndex        = 0;
             for (size_t index = 0; index < cubeCount; index++) {
                 int tag                        = HALO_TAG + index;
