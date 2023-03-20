@@ -34,8 +34,11 @@ class MultirankUtils {
 
     template <typename Functor, typename... Args, unsigned long... Idx>
     void apply_impl(Functor& f, std::tuple<Args...>& args, const std::index_sequence<Idx...>&) {
-        if constexpr (is_specialization<std::tuple_element_t<0, std::tuple<Args...>>,
-                                        std::tuple>::value) {
+        if constexpr (sizeof...(Args) == 0) {
+            // Dim == Idx + 1
+            (f.template operator()<Idx + 1>(), ...);
+        } else if constexpr (is_specialization<std::tuple_element_t<0, std::tuple<Args...>>,
+                                               std::tuple>::value) {
             (std::apply(f, std::get<Idx>(args)), ...);
         } else {
             (f(std::get<Idx>(args)), ...);
@@ -78,6 +81,12 @@ public:
 
     template <typename Functor, typename... Args>
     auto apply(Functor& f, std::tuple<Args...>& args) {
+        return apply_impl(f, args, std::make_index_sequence<sizeof...(Dims)>{});
+    }
+
+    template <typename Functor>
+    auto apply(Functor& f) {
+        auto args = std::tuple<>{};
         return apply_impl(f, args, std::make_index_sequence<sizeof...(Dims)>{});
     }
 

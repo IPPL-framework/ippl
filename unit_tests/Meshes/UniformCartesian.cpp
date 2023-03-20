@@ -19,113 +19,66 @@
 
 #include <cmath>
 
+#include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
-class UniformCartesianTest : public ::testing::Test {
+class UniformCartesianTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
     UniformCartesianTest() {}
 };
 
-TEST_F(UniformCartesianTest, Constructor1D) {
-    int pt = 10;
-    ippl::Index I(pt);
-    ippl::NDIndex<1> owned(I);
+TEST_F(UniformCartesianTest, Constructor) {
+    auto check = [&]<unsigned Dim>() {
+        int pt = 10;
+        ippl::Index I(pt);
+        std::array<ippl::Index, Dim> args;
+        args.fill(I);
+        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
-    double dx                      = 1.0 / double(pt);
-    ippl::Vector<double, 1> hx     = {dx};
-    ippl::Vector<double, 1> origin = {0};
-    ippl::UniformCartesian<double, 1> mesh(owned, hx, origin);
+        double dx = 1.0 / double(pt);
+        ippl::Vector<double, Dim> hx;
+        ippl::Vector<double, Dim> origin;
+        for (unsigned d = 0; d < Dim; d++) {
+            hx[d]     = dx;
+            origin[d] = 0;
+        }
+        ippl::UniformCartesian<double, Dim> mesh(owned, hx, origin);
 
-    double length = mesh.getCellVolume();
+        double length = mesh.getCellVolume();
 
-    ASSERT_DOUBLE_EQ(length, dx);
-    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
+        ASSERT_DOUBLE_EQ(length, pow(dx, Dim));
+        ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
+    };
+
+    apply(check);
 }
 
-TEST_F(UniformCartesianTest, Constructor2D) {
-    int pt = 10;
-    ippl::Index I(pt);
-    ippl::NDIndex<2> owned(I, I);
+TEST_F(UniformCartesianTest, Initialize) {
+    auto check = [&]<unsigned Dim>() {
+        int pt = 10;
+        ippl::Index I(pt);
+        std::array<ippl::Index, Dim> args;
+        args.fill(I);
+        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
-    double dx                      = 1.0 / double(pt);
-    ippl::Vector<double, 2> hx     = {dx, dx};
-    ippl::Vector<double, 2> origin = {0, 0};
-    ippl::UniformCartesian<double, 2> mesh(owned, hx, origin);
+        double dx = 1.0 / double(pt);
+        ippl::Vector<double, Dim> hx;
+        ippl::Vector<double, Dim> origin;
+        for (unsigned d = 0; d < Dim; d++) {
+            hx[d]     = dx;
+            origin[d] = 0;
+        }
 
-    double area = mesh.getCellVolume();
+        ippl::UniformCartesian<double, Dim> mesh;
+        mesh.initialize(owned, hx, origin);
 
-    ASSERT_DOUBLE_EQ(area, dx * dx);
-    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
-}
+        double volume = mesh.getCellVolume();
 
-TEST_F(UniformCartesianTest, Constructor3D) {
-    int pt = 10;
-    ippl::Index I(pt);
-    ippl::NDIndex<3> owned(I, I, I);
+        ASSERT_DOUBLE_EQ(volume, pow(dx, Dim));
+        ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
+    };
 
-    double dx                      = 1.0 / double(pt);
-    ippl::Vector<double, 3> hx     = {dx, dx, dx};
-    ippl::Vector<double, 3> origin = {0, 0, 0};
-    ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
-
-    double volume = mesh.getCellVolume();
-
-    ASSERT_DOUBLE_EQ(volume, dx * dx * dx);
-    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
-}
-
-TEST_F(UniformCartesianTest, Initialize1D) {
-    int pt = 10;
-    ippl::Index I(pt);
-    ippl::NDIndex<1> owned(I);
-
-    double dx                      = 1.0 / double(pt);
-    ippl::Vector<double, 1> hx     = {dx};
-    ippl::Vector<double, 1> origin = {0};
-    ippl::UniformCartesian<double, 1> mesh;
-
-    mesh.initialize(owned, hx, origin);
-
-    double length = mesh.getCellVolume();
-
-    ASSERT_DOUBLE_EQ(length, dx);
-    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
-}
-
-TEST_F(UniformCartesianTest, Initialize2D) {
-    int pt = 10;
-    ippl::Index I(pt);
-    ippl::NDIndex<2> owned(I, I);
-
-    double dx                      = 1.0 / double(pt);
-    ippl::Vector<double, 2> hx     = {dx, dx};
-    ippl::Vector<double, 2> origin = {0, 0};
-    ippl::UniformCartesian<double, 2> mesh;
-
-    mesh.initialize(owned, hx, origin);
-
-    double area = mesh.getCellVolume();
-
-    ASSERT_DOUBLE_EQ(area, dx * dx);
-    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
-}
-
-TEST_F(UniformCartesianTest, Initialize3D) {
-    int pt = 10;
-    ippl::Index I(pt);
-    ippl::NDIndex<3> owned(I, I, I);
-
-    double dx                      = 1.0 / double(pt);
-    ippl::Vector<double, 3> hx     = {dx, dx, dx};
-    ippl::Vector<double, 3> origin = {0, 0, 0};
-    ippl::UniformCartesian<double, 3> mesh;
-
-    mesh.initialize(owned, hx, origin);
-
-    double volume = mesh.getCellVolume();
-
-    ASSERT_DOUBLE_EQ(volume, dx * dx * dx);
-    ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
+    apply(check);
 }
 
 int main(int argc, char* argv[]) {
