@@ -20,6 +20,8 @@ int main(int argc, char* argv[]) {
 
     typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
     typedef Bunch<playout_type> bunch_type;
+    using Mesh_t = ippl::UniformCartesian<double, 3>;
+    using Centering_t = Mesh_t::DefaultCentering;
 
     int pt = 512;
     ippl::Index I(pt);
@@ -35,7 +37,7 @@ int main(int argc, char* argv[]) {
     double dx                      = 1.0 / double(pt);
     ippl::Vector<double, 3> hx     = {dx, dx, dx};
     ippl::Vector<double, 3> origin = {0, 0, 0};
-    ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+    Mesh_t mesh(owned, hx, origin);
 
     playout_type pl(layout, mesh);
 
@@ -60,7 +62,7 @@ int main(int argc, char* argv[]) {
     bunch_type buffer(pl);
     pl.update(bunch, buffer);
 
-    typedef ippl::Field<double, 3> field_type;
+    typedef ippl::Field<double, 3, Mesh_t, Centering_t> field_type;
 
     field_type field;
 

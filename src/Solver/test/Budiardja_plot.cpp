@@ -34,6 +34,9 @@ int main(int argc, char* argv[]) {
     // number of interations
     const int n = 5;
 
+    using Mesh_t = ippl::UniformCartesian<double, 3>;
+    using Centering_t = Mesh_t::DefaultCentering;
+
     // number of gridpoints to iterate over
     std::array<int, n> N = {48, 144, 288, 384, 576};
 
@@ -54,13 +57,13 @@ int main(int argc, char* argv[]) {
         double dx                      = 2.4 / pt;
         ippl::Vector<double, 3> hx     = {dx, dx, dx};
         ippl::Vector<double, 3> origin = {0.0, 0.0, 0.0};
-        ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+        Mesh_t mesh(owned, hx, origin);
 
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<3> layout(owned, decomp);
 
         // define the L (phi) and R (rho) fields
-        typedef ippl::Field<double, 3> field;
+        typedef ippl::Field<double, 3, Mesh_t, Centering_t> field;
         field rho;
         rho.initialize(mesh, layout);
 
@@ -122,8 +125,9 @@ int main(int argc, char* argv[]) {
         fftParams.add("r2c_direction", 0);
 
         // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3> FFTsolver(rho, fftParams,
-                                                                             "HOCKNEY");
+        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(rho,
+                                                                                                  fftParams,
+                                                                                                  "HOCKNEY");
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

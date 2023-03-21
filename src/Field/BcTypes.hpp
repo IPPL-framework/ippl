@@ -34,21 +34,21 @@
 namespace ippl {
     namespace detail {
 
-        template <typename T, unsigned Dim, class Mesh, class Cell>
-        BCondBase<T, Dim, Mesh, Cell>::BCondBase(unsigned int face)
+        template <typename T, unsigned Dim, class Mesh, class Centering>
+        BCondBase<T, Dim, Mesh, Centering>::BCondBase(unsigned int face)
             : face_m(face)
             , changePhysical_m(false) {}
 
-        template <typename T, unsigned Dim, class Mesh, class Cell>
-        inline std::ostream& operator<<(std::ostream& os, const BCondBase<T, Dim, Mesh, Cell>& bc) {
+        template <typename T, unsigned Dim, class Mesh, class Centering>
+        inline std::ostream& operator<<(std::ostream& os, const BCondBase<T, Dim, Mesh, Centering>& bc) {
             bc.write(os);
             return os;
         }
 
     }  // namespace detail
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
-    void ExtrapolateFace<T, Dim, Mesh, Cell>::apply(Field_t& field) {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    void ExtrapolateFace<T, Dim, Mesh, Centering>::apply(Field_t& field) {
         // We only support constant extrapolation for the moment, other
         // higher order extrapolation stuffs need to be added.
 
@@ -124,38 +124,38 @@ namespace ippl {
         }
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
-    void ExtrapolateFace<T, Dim, Mesh, Cell>::write(std::ostream& out) const {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    void ExtrapolateFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
         out << "Constant Extrapolation Face"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
-    void NoBcFace<T, Dim, Mesh, Cell>::write(std::ostream& out) const {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    void NoBcFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
         out << "NoBcFace"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
-    void ConstantFace<T, Dim, Mesh, Cell>::write(std::ostream& out) const {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    void ConstantFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
         out << "ConstantFace"
             << ", Face = " << this->face_m << ", Constant = " << this->offset_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
-    void ZeroFace<T, Dim, Mesh, Cell>::write(std::ostream& out) const {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    void ZeroFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
         out << "ZeroFace"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
-    void PeriodicFace<T, Dim, Mesh, Cell>::write(std::ostream& out) const {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    void PeriodicFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
         out << "PeriodicFace"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
-    void PeriodicFace<T, Dim, Mesh, Cell>::findBCNeighbors(Field_t& field) {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    void PeriodicFace<T, Dim, Mesh, Centering>::findBCNeighbors(Field_t& field) {
         // For cell centering only face neighbors are needed
         unsigned int face      = this->face_m;
         unsigned int d         = face / 2;
@@ -208,8 +208,8 @@ namespace ippl {
         }
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Cell>
-    void PeriodicFace<T, Dim, Mesh, Cell>::apply(Field_t& field) {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    void PeriodicFace<T, Dim, Mesh, Centering>::apply(Field_t& field) {
         unsigned int face                 = this->face_m;
         unsigned int d                    = face / 2;
         typename Field_t::view_type& view = field.getView();

@@ -14,6 +14,8 @@ int main(int argc, char* argv[]) {
     IpplTimings::startTimer(mainTimer);
 
     constexpr unsigned int dim = 3;
+    using Mesh_t = ippl::UniformCartesian<double, dim>;
+    using Centering_t = Mesh_t::DefaultCentering;
 
     //     std::array<int, dim> pt = {8, 7, 13};
     std::array<int, dim> pt = {4, 4, 4};
@@ -36,9 +38,9 @@ int main(int argc, char* argv[]) {
     };
     ippl::Vector<double, 3> hx     = {dx[0], dx[1], dx[2]};
     ippl::Vector<double, 3> origin = {0, 0, 0};
-    ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+    Mesh_t mesh(owned, hx, origin);
 
-    typedef ippl::Field<double, dim> field_type;
+    typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
 
     field_type field(mesh, layout);
 
