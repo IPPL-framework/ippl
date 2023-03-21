@@ -25,6 +25,12 @@ target_link_libraries (PIC3d ${IPPL_LIBS})
 add_executable (benchmarkParticleUpdate benchmarkParticleUpdate.cpp)
 target_link_libraries (benchmarkParticleUpdate ${IPPL_LIBS})
 
+add_executable (HoseInstability HoseInstability.cpp)
+target_link_libraries (HoseInstability ${IPPL_LIBS})
+
+add_executable (Hose_beam Hose_beam.cpp)
+target_link_libraries (Hose_beam ${IPPL_LIBS})
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
