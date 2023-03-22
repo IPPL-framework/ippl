@@ -24,7 +24,8 @@ namespace ippl {
      * @return Result of f1^T f2
      */
     template <typename T, unsigned Dim, class Mesh, class Centering>
-    T innerProduct(const Field<T, Dim, Mesh, Centering>& f1, const Field<T, Dim, Mesh, Centering>& f2) {
+    T innerProduct(const Field<T, Dim, Mesh, Centering>& f1,
+                   const Field<T, Dim, Mesh, Centering>& f2) {
         T sum      = 0;
         auto view1 = f1.getView();
         auto view2 = f2.getView();
@@ -125,7 +126,8 @@ namespace ippl {
      * @param u field
      */
     template <typename T, unsigned Dim, class Mesh, class Centering>
-    detail::meta_laplace<Field<T, Dim, Mesh, Centering> > laplace(Field<T, Dim, Mesh, Centering>& u) {
+    detail::meta_laplace<Field<T, Dim, Mesh, Centering> > laplace(
+        Field<T, Dim, Mesh, Centering>& u) {
         u.fillHalo();
         BConds<T, Dim, Mesh, Centering>& bcField = u.getFieldBC();
         bcField.apply(u);
@@ -155,7 +157,8 @@ namespace ippl {
         zvector[2] = 1.0;
         typename Mesh::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
-        return detail::meta_curl<Field<T, Dim, Mesh, Centering> >(u, xvector, yvector, zvector, hvector);
+        return detail::meta_curl<Field<T, Dim, Mesh, Centering> >(u, xvector, yvector, zvector,
+                                                                  hvector);
     }
 
     /*!
@@ -176,6 +179,7 @@ namespace ippl {
         zvector[2] = 1.0;
         typename Mesh::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
-        return detail::meta_hess<Field<T, Dim, Mesh, Centering> >(u, xvector, yvector, zvector, hvector);
+        return detail::meta_hess<Field<T, Dim, Mesh, Centering> >(u, xvector, yvector, zvector,
+                                                                  hvector);
     }
 }  // namespace ippl

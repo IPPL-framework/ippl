@@ -9,8 +9,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, dim>;
-    using Centering_t = Mesh_t::DefaultCentering;
+    using Mesh_t               = ippl::UniformCartesian<double, dim>;
+    using Centering_t          = Mesh_t::DefaultCentering;
 
     int pt = 4;
     ippl::Index I(pt);
@@ -41,7 +41,6 @@ int main(int argc, char* argv[]) {
     Field_t Lap(mesh, layout);
     Field_t Lap_exact(mesh, layout);
     vector_field_type vfield(mesh, layout);
-
 
     typename Field_t::view_type& view       = field.getView();
     typename Field_t::view_type& view_exact = Lap_exact.getView();

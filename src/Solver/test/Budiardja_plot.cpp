@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     // number of interations
     const int n = 5;
 
-    using Mesh_t = ippl::UniformCartesian<double, 3>;
+    using Mesh_t      = ippl::UniformCartesian<double, 3>;
     using Centering_t = Mesh_t::DefaultCentering;
 
     // number of gridpoints to iterate over
@@ -125,9 +125,8 @@ int main(int argc, char* argv[]) {
         fftParams.add("r2c_direction", 0);
 
         // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(rho,
-                                                                                                  fftParams,
-                                                                                                  "HOCKNEY");
+        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(
+            rho, fftParams, "HOCKNEY");
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

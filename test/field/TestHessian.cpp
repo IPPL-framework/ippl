@@ -43,8 +43,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, dim>;
-    using Centering_t = Mesh_t::DefaultCentering;
+    using Mesh_t               = ippl::UniformCartesian<double, dim>;
+    using Centering_t          = Mesh_t::DefaultCentering;
 
     int pt         = std::atoi(argv[1]);
     bool gauss_fct = std::atoi(argv[2]);

@@ -17,8 +17,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, 3>;
-    using Centering_t = Mesh_t::DefaultCentering;
+    using Mesh_t               = ippl::UniformCartesian<double, 3>;
+    using Centering_t          = Mesh_t::DefaultCentering;
 
     int pt = 4, ptY = 4;
     bool isWeak = false;

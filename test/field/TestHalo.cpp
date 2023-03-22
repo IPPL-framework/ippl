@@ -14,8 +14,8 @@ int main(int argc, char* argv[]) {
     IpplTimings::startTimer(mainTimer);
 
     constexpr unsigned int dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, dim>;
-    using Centering_t = Mesh_t::DefaultCentering;
+    using Mesh_t               = ippl::UniformCartesian<double, dim>;
+    using Centering_t          = Mesh_t::DefaultCentering;
 
     //     std::array<int, dim> pt = {8, 7, 13};
     std::array<int, dim> pt = {4, 4, 4};

@@ -47,7 +47,8 @@ namespace ippl {
     */
 
     template <size_t Dim, class T, class Mesh, class Centering>
-    FFT<CCTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout, const ParameterList& params) {
+    FFT<CCTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout,
+                                                   const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -78,8 +79,8 @@ namespace ippl {
     */
     template <size_t Dim, class T, class Mesh, class Centering>
     void FFT<CCTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
-                                                     const std::array<long long, Dim>& high,
-                                                     const ParameterList& params) {
+                                                          const std::array<long long, Dim>& high,
+                                                          const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
 
@@ -179,8 +180,8 @@ namespace ippl {
 
     template <size_t Dim, class T, class Mesh, class Centering>
     FFT<RCTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layoutInput,
-                                              const Layout_t& layoutOutput,
-                                              const ParameterList& params) {
+                                                   const Layout_t& layoutOutput,
+                                                   const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -219,11 +220,10 @@ namespace ippl {
        setup performs the initialization.
     */
     template <size_t Dim, class T, class Mesh, class Centering>
-    void FFT<RCTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& lowInput,
-                                                     const std::array<long long, Dim>& highInput,
-                                                     const std::array<long long, Dim>& lowOutput,
-                                                     const std::array<long long, Dim>& highOutput,
-                                                     const ParameterList& params) {
+    void FFT<RCTransform, Dim, T, Mesh, Centering>::setup(
+        const std::array<long long, Dim>& lowInput, const std::array<long long, Dim>& highInput,
+        const std::array<long long, Dim>& lowOutput, const std::array<long long, Dim>& highOutput,
+        const ParameterList& params) {
         heffte::box3d<long long> inbox  = {lowInput, highInput};
         heffte::box3d<long long> outbox = {lowOutput, highOutput};
 
@@ -346,7 +346,8 @@ namespace ippl {
     */
 
     template <size_t Dim, class T, class Mesh, class Centering>
-    FFT<SineTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout, const ParameterList& params) {
+    FFT<SineTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout,
+                                                     const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -377,8 +378,8 @@ namespace ippl {
     */
     template <size_t Dim, class T, class Mesh, class Centering>
     void FFT<SineTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
-                                              const std::array<long long, Dim>& high,
-                                              const ParameterList& params) {
+                                                            const std::array<long long, Dim>& high,
+                                                            const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
 
@@ -474,7 +475,8 @@ namespace ippl {
     */
 
     template <size_t Dim, class T, class Mesh, class Centering>
-    FFT<CosTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout, const ParameterList& params) {
+    FFT<CosTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout,
+                                                    const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -505,8 +507,8 @@ namespace ippl {
     */
     template <size_t Dim, class T, class Mesh, class Centering>
     void FFT<CosTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
-                                                      const std::array<long long, Dim>& high,
-                                                      const ParameterList& params) {
+                                                           const std::array<long long, Dim>& high,
+                                                           const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
 

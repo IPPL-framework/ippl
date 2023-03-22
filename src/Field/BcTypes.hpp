@@ -40,7 +40,8 @@ namespace ippl {
             , changePhysical_m(false) {}
 
         template <typename T, unsigned Dim, class Mesh, class Centering>
-        inline std::ostream& operator<<(std::ostream& os, const BCondBase<T, Dim, Mesh, Centering>& bc) {
+        inline std::ostream& operator<<(std::ostream& os,
+                                        const BCondBase<T, Dim, Mesh, Centering>& bc) {
             bc.write(os);
             return os;
         }

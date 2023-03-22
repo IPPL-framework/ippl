@@ -2,9 +2,9 @@
 namespace ippl {
 
     template <class T, unsigned Dim, class Mesh, class Centering>
-    void OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::initialize(FieldLayout<Dim>& fl,
-                                                                      UniformCartesian<T, Dim>& mesh,
-                                                                      const Field<T, Dim, Mesh, Centering>& rho) {
+    void OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::initialize(
+        FieldLayout<Dim>& fl, UniformCartesian<T, Dim>& mesh,
+        const Field<T, Dim, Mesh, Centering>& rho) {
         bf_m.initialize(mesh, fl);
         bf_m = rho;
     }
@@ -251,9 +251,9 @@ namespace ippl {
     }
 
     template <class T, unsigned Dim, class Mesh, class Centering>
-    void OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::cutDomain(std::vector<NDIndex<Dim>>& domains,
-                                                                     std::vector<int>& procs, int it,
-                                                                     int cutAxis, int median) {
+    void OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::cutDomain(
+        std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis,
+        int median) {
         // Cut domains[it] in half at median along cutAxis
         NDIndex<Dim> leftDom, rightDom;
         domains[it].split(leftDom, rightDom, cutAxis, median + domains[it][cutAxis].first());
@@ -275,10 +275,10 @@ namespace ippl {
         bf_m = 0.0;
         // Get local data
         typename Field<T, Dim, Mesh, Centering>::view_type view = bf_m.getView();
-        const Mesh& mesh                                   = bf_m.get_mesh();
-        const FieldLayout<Dim>& layout                     = bf_m.getLayout();
-        const NDIndex<Dim>& lDom                           = layout.getLocalNDIndex();
-        const int nghost                                   = bf_m.getNghost();
+        const Mesh& mesh                                        = bf_m.get_mesh();
+        const FieldLayout<Dim>& layout                          = bf_m.getLayout();
+        const NDIndex<Dim>& lDom                                = layout.getLocalNDIndex();
+        const int nghost                                        = bf_m.getNghost();
 
         // Get spacings
         const vector_type& dx     = mesh.getMeshSpacing();

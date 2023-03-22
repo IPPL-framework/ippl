@@ -27,10 +27,10 @@
 class FieldBCTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, dim>;
-    using Centering_t = Mesh_t::DefaultCentering;
-    using field_type = ippl::Field<double, dim, Mesh_t, Centering_t> ;
-    using bc_type = ippl::BConds<double, dim, Mesh_t, Centering_t>;
+    using Mesh_t                = ippl::UniformCartesian<double, dim>;
+    using Centering_t           = Mesh_t::DefaultCentering;
+    using field_type            = ippl::Field<double, dim, Mesh_t, Centering_t>;
+    using bc_type               = ippl::BConds<double, dim, Mesh_t, Centering_t>;
 
     FieldBCTest()
         : nPoints(8) {
@@ -156,7 +156,8 @@ TEST_F(FieldBCTest, ZeroBC) {
 TEST_F(FieldBCTest, ConstantBC) {
     double constant = 7.0;
     for (size_t i = 0; i < 2 * dim; ++i) {
-        bcField[i] = std::make_shared<ippl::ConstantFace<double, dim, Mesh_t, Centering_t>>(i, constant);
+        bcField[i] =
+            std::make_shared<ippl::ConstantFace<double, dim, Mesh_t, Centering_t>>(i, constant);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
@@ -166,7 +167,8 @@ TEST_F(FieldBCTest, ConstantBC) {
 
 TEST_F(FieldBCTest, ExtrapolateBC) {
     for (size_t i = 0; i < 2 * dim; ++i) {
-        bcField[i] = std::make_shared<ippl::ExtrapolateFace<double, dim, Mesh_t, Centering_t>>(i, 0.0, 1.0);
+        bcField[i] =
+            std::make_shared<ippl::ExtrapolateFace<double, dim, Mesh_t, Centering_t>>(i, 0.0, 1.0);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);

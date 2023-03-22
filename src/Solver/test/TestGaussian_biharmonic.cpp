@@ -10,8 +10,8 @@
 
 #include "FFTPoissonSolver.h"
 
-using Mesh_t = ippl::UniformCartesian<double, 3>;
-using Centering_t = Mesh_t::DefaultCentering;
+using Mesh_t        = ippl::UniformCartesian<double, 3>;
+using Centering_t   = Mesh_t::DefaultCentering;
 using ScalarField_t = ippl::Field<double, 3, Mesh_t, Centering_t>;
 using VectorField_t = ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t>;
 
@@ -50,8 +50,8 @@ KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_grad(double x, double y, do
 }
 
 // Define vtk dump function for plotting the fields
-void dumpVTK(std::string path, ScalarField_t& rho, int nx, int ny, int nz, int iteration,
-             double dx, double dy, double dz) {
+void dumpVTK(std::string path, ScalarField_t& rho, int nx, int ny, int nz, int iteration, double dx,
+             double dy, double dz) {
     typename ScalarField_t::view_type::host_mirror_type host_view = rho.getHostMirror();
     Kokkos::deep_copy(host_view, rho.getView());
     std::ofstream vtkout;
@@ -223,10 +223,8 @@ int main(int argc, char* argv[]) {
         fftParams.add("r2c_direction", 0);
 
         // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(fieldE,
-                                                                                                  rho,
-                                                                                                  fftParams,
-                                                                                                  algorithm);
+        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(
+            fieldE, rho, fftParams, algorithm);
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

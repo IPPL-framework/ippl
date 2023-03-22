@@ -9,8 +9,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, 3>;
-    using Centering_t = Mesh_t::DefaultCentering;
+    using Mesh_t               = ippl::UniformCartesian<double, 3>;
+    using Centering_t          = Mesh_t::DefaultCentering;
 
     const int npts            = 7;
     std::array<int, npts> pts = {2, 4, 8, 16, 32, 64, 128};

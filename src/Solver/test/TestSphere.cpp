@@ -55,9 +55,9 @@ int main(int argc, char* argv[]) {
         for (unsigned int d = 0; d < 3; d++)
             decomp[d] = ippl::PARALLEL;
 
-        using Mesh_t = ippl::UniformCartesian<double, 3>;
+        using Mesh_t      = ippl::UniformCartesian<double, 3>;
         using Centering_t = Mesh_t::DefaultCentering;
-        using Vector_t = ippl::Vector<double, 3>;
+        using Vector_t    = ippl::Vector<double, 3>;
 
         // unit box
         double dx       = 2.4 / pt;

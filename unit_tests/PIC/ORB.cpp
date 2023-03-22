@@ -26,11 +26,11 @@
 class ORBTest : public ::testing::Test {
 public:
     static constexpr size_t dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, dim>;
-    using Centering_t = Mesh_t::DefaultCentering;
-    using Field_t = ippl::Field<double, dim, Mesh_t, Centering_t>;
-    using Flayout_t = ippl::FieldLayout<dim>;
-    using Playout_t = ippl::ParticleSpatialLayout<double, dim>;
+    using Mesh_t                = ippl::UniformCartesian<double, dim>;
+    using Centering_t           = Mesh_t::DefaultCentering;
+    using Field_t               = ippl::Field<double, dim, Mesh_t, Centering_t>;
+    using Flayout_t             = ippl::FieldLayout<dim>;
+    using Playout_t             = ippl::ParticleSpatialLayout<double, dim>;
     using Orb_t = ippl::OrthogonalRecursiveBisection<double, dim, Mesh_t, Centering_t>;
 
     template <class PLayout>
