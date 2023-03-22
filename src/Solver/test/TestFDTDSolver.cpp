@@ -13,11 +13,15 @@ double sine(double n, double dt) {
     return 100*std::sin(n*dt);
 }
 
-void dumpVTK(ippl::Field<ippl::Vector<double, 3>, 3>& E, int nx, int ny, int nz, int iteration,
+void dumpVTK(ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>,
+             ippl::UniformCartesian<double, 3>::DefaultCentering>& E, int nx, int ny, int nz, int iteration,
              double dx, double dy, double dz) {
 
 
-    typename ippl::Field<ippl::Vector<double, 3>, 3>::view_type::host_mirror_type host_view = E.getHostMirror();
+    using Mesh_t = ippl::UniformCartesian<double, 3>;
+    using Centering_t = Mesh_t::DefaultCentering;
+    typedef ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t> VField_t;
+    typename VField_t::view_type::host_mirror_type host_view = E.getHostMirror();
 
     std::stringstream fname;
     fname << "data/ef_";
@@ -72,6 +76,11 @@ int main(int argc, char *argv[]) {
     // get the total simulation time from the user
     const unsigned int iterations = std::atof(argv[4]);
 
+    using Mesh_t = ippl::UniformCartesian<double, Dim>;
+    using Centering_t = Mesh_t::DefaultCentering;
+    typedef ippl::Field<double, Dim, Mesh_t, Centering_t> Field_t;
+    typedef ippl::Field<ippl::Vector<double, Dim>, Dim, Mesh_t, Centering_t> VField_t;
+
     // domain
     ippl::NDIndex<Dim> owned;
     for (unsigned i = 0; i< Dim; i++) {
@@ -90,7 +99,7 @@ int main(int argc, char *argv[]) {
     double dz = 1.0/nr[2];
     ippl::Vector<double, Dim> hr = {dx, dy, dz};
     ippl::Vector<double, Dim> origin = {0.0, 0.0, 0.0};
-    ippl::UniformCartesian<double, Dim> mesh(owned, hr, origin);
+    Mesh_t mesh(owned, hr, origin);
 
     // CFL condition lambda = c*dt/h < 1/sqrt(d) = 0.57 for d = 3
     // we set a more conservative limit by choosing lambda = 0.5
@@ -102,13 +111,11 @@ int main(int argc, char *argv[]) {
     ippl::FieldLayout<Dim> layout(owned, decomp);
 	
     // define the R (rho) field
-    typedef ippl::Field<double, Dim> Field_t;
     Field_t rho;
     rho.initialize(mesh, layout);
     rho = 0.0;
 
     // define the Vector field E (LHS)
-    typedef ippl::Field<ippl::Vector<double, Dim>, Dim> VField_t;
     VField_t fieldE, fieldB;
     fieldE.initialize(mesh, layout);
     fieldB.initialize(mesh, layout);
