@@ -23,10 +23,10 @@
 constexpr unsigned Dim = 3;
 
 // some typedefs
-typedef ippl::ParticleSpatialLayout<double,Dim>   PLayout_t;
 typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
+typedef ippl::ParticleSpatialLayout<float,Dim, Mesh_t>   PLayout_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
-typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t> ORB;
+typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t, float> ORB;
 
 using size_type = ippl::detail::size_type;
 

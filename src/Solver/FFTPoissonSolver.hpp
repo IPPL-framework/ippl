@@ -841,7 +841,7 @@ namespace ippl {
             
                 Vector_t l(hr_m * nr_m);
                 Vector_t hs_m;
-                double L_sum (0.0);                
+                Trhs L_sum (0.0);                
 
                 // compute length of the physical domain
                 // compute Fourier domain spacing
@@ -873,7 +873,7 @@ namespace ippl {
 
                 // Kokkos parallel for loop to assign analytic grnL_m
                 using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
+		
                 if (alg_m == "VICO") {
                     Kokkos::parallel_for("Initialize Green's function ",
                         mdrange_type({nghost_g, nghost_g, nghost_g},
@@ -886,15 +886,15 @@ namespace ippl {
                         const int kg = k + ldom_g[2].first() - nghost_g;
 
                         bool isOutside = (ig > 2*size[0]-1);
-                        double t = ig*hs_m[0] + isOutside*origin[0];
+                        Trhs t = ig*hs_m[0] + isOutside*origin[0];
 
                         isOutside = (jg > 2*size[1]-1);
-                        double u = jg*hs_m[1] + isOutside*origin[1];
+                        Trhs u = jg*hs_m[1] + isOutside*origin[1];
 
                         isOutside = (kg > 2*size[2]-1);
-                        double v = kg*hs_m[2] + isOutside*origin[2];
+                        Trhs v = kg*hs_m[2] + isOutside*origin[2];
 
-                        double s = (t*t) + (u*u) + (v*v);
+                        Trhs s = (t*t) + (u*u) + (v*v);
                         s = std::sqrt(s);
 
                         view_g(i,j,k) = -2*(std::sin(0.5*L_sum*s)/s)*(std::sin(0.5*L_sum*s)/s);
@@ -918,15 +918,15 @@ namespace ippl {
                         const int kg = k + ldom_g[2].first() - nghost_g;
 
                         bool isOutside = (ig > 2*size[0]-1);
-                        double t = ig*hs_m[0] + isOutside*origin[0];
+                        Trhs t = ig*hs_m[0] + isOutside*origin[0];
 
                         isOutside = (jg > 2*size[1]-1);
-                        double u = jg*hs_m[1] + isOutside*origin[1];
+                        Trhs u = jg*hs_m[1] + isOutside*origin[1];
 
                         isOutside = (kg > 2*size[2]-1);
-                        double v = kg*hs_m[2] + isOutside*origin[2];
+                        Trhs v = kg*hs_m[2] + isOutside*origin[2];
 
-                        double s = (t*t) + (u*u) + (v*v);
+                        Trhs s = (t*t) + (u*u) + (v*v);
                         s = std::sqrt(s);
 
                         view_g(i,j,k) = -((2-(L_sum*L_sum*s*s))*std::cos(L_sum*s) + 2*L_sum*s*std::sin(L_sum*s) - 2)/(2*s*s*s*s);
