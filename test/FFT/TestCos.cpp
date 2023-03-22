@@ -11,6 +11,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
+    using Mesh_t = ippl::UniformCartesian<double, dim>;
+    using Centering_t = Mesh_t::DefaultCentering;
 
     std::array<int, dim> pt = {32, 32, 32};
     ippl::Index I(pt[0]);
@@ -31,9 +33,9 @@ int main(int argc, char* argv[]) {
     };
     ippl::Vector<double, 3> hx     = {dx[0], dx[1], dx[2]};
     ippl::Vector<double, 3> origin = {0, 0, 0};
-    ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+    Mesh_t mesh(owned, hx, origin);
 
-    typedef ippl::Field<double, dim> field_type;
+    typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
 
     field_type field(mesh, layout);
 
@@ -44,7 +46,7 @@ int main(int argc, char* argv[]) {
     fftParams.add("use_gpu_aware", true);
     fftParams.add("comm", ippl::p2p_pl);
 
-    typedef ippl::FFT<ippl::CosTransform, 3, double> FFT_type;
+    typedef ippl::FFT<ippl::CosTransform, 3, double, Mesh_t, Centering_t> FFT_type;
 
     std::unique_ptr<FFT_type> fft;
 

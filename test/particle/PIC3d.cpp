@@ -41,13 +41,14 @@ constexpr unsigned Dim = 3;
 typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
 typedef ippl::UniformCartesian<double, Dim> Mesh_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
-typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t> ORB;
+typedef Mesh_t::DefaultCentering Centering_t;
+typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t, Centering_t> ORB;
 
 template <typename T, unsigned Dim>
 using Vector = ippl::Vector<T, Dim>;
 
 template <typename T, unsigned Dim>
-using Field = ippl::Field<T, Dim>;
+using Field = ippl::Field<T, Dim, Mesh_t, Centering_t>;
 
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;

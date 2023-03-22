@@ -27,30 +27,29 @@
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {
-    template <typename Tlhs, typename Trhs, unsigned Dim, class M = UniformCartesian<double, Dim>,
-              class C = typename M::DefaultCentering>
-    class FFTPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, M, C> {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    class FFTPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
     public:
         // types for LHS and RHS
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
+        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
+        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
 
         // type of output
-        using Base = Electrostatics<Tlhs, Trhs, Dim, M, C>;
+        using Base = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
 
         // define a type for a 3 dimensional field (e.g. charge density field)
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
-        typedef Field<Trhs, Dim, M> Field_t;
-        typedef Field<int, Dim, M> IField_t;
-        typedef Field<Kokkos::complex<Trhs>, Dim, M> CxField_t;
+        typedef Field<Trhs, Dim, Mesh, Centering> Field_t;
+        typedef Field<int, Dim, Mesh, Centering> IField_t;
+        typedef Field<Kokkos::complex<Trhs>, Dim, Mesh, Centering> CxField_t;
         typedef Vector<Trhs, Dim> Vector_t;
 
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
 
         // define a type for the 3 dimensional real to complex Fourier transform
-        typedef FFT<RCTransform, Dim, Trhs, M> FFT_t;
+        typedef FFT<RCTransform, Dim, Trhs, Mesh, Centering> FFT_t;
 
         // type for communication buffers
         using buffer_type = Communicate::buffer_type;
@@ -108,15 +107,15 @@ namespace ippl {
         std::unique_ptr<FFT_t> fft_m;
 
         // mesh and layout objects for rho_m (RHS)
-        M* mesh_mp;
+        Mesh* mesh_mp;
         FieldLayout_t* layout_mp;
 
         // mesh and layout objects for rho2_m
-        std::unique_ptr<M> mesh2_m;
+        std::unique_ptr<Mesh> mesh2_m;
         std::unique_ptr<FieldLayout_t> layout2_m;
 
         // mesh and layout objects for the Fourier transformed Complex fields
-        std::unique_ptr<M> meshComplex_m;
+        std::unique_ptr<Mesh> meshComplex_m;
         std::unique_ptr<FieldLayout_t> layoutComplex_m;
 
         // domains for the various fields
@@ -134,9 +133,9 @@ namespace ippl {
         // members for Vico-Greengard
         CxField_t grnL_m;
 
-        std::unique_ptr<FFT<CCTransform, Dim, Trhs, M>> fft4n_m;
+        std::unique_ptr<FFT<CCTransform, Dim, Trhs, Mesh, Centering>> fft4n_m;
 
-        std::unique_ptr<M> mesh4_m;
+        std::unique_ptr<Mesh> mesh4_m;
         std::unique_ptr<FieldLayout_t> layout4_m;
 
         NDIndex<Dim> domain4_m;
