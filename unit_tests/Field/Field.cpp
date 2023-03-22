@@ -19,168 +19,198 @@
 
 #include <cmath>
 
+#include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
-class FieldTest : public ::testing::Test {
+class FieldTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
-    static constexpr size_t dim = 3;
-    typedef ippl::Field<double, dim> field_type;
-    typedef ippl::UniformCartesian<double, dim> mesh_type;
-    typedef ippl::FieldLayout<dim> layout_type;
+    template <unsigned Dim>
+    using field_type = ippl::Field<double, Dim>;
+
+    template <unsigned Dim>
+    using mesh_type = ippl::UniformCartesian<double, Dim>;
+
+    template <unsigned Dim>
+    using layout_type = ippl::FieldLayout<Dim>;
 
     FieldTest()
-        : nPoints(128) {
-        setup();
+        : nPoints(8) {
+        setup(this);
     }
 
-    void setup() {
+    template <unsigned Idx, unsigned Dim>
+    void setupDim() {
         ippl::Index I(nPoints);
-        ippl::NDIndex<dim> owned(I, I, I);
+        std::array<ippl::Index, Dim> args;
+        args.fill(I);
+        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
-        ippl::e_dim_tag domDec[dim];  // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < dim; d++)
+        double dx = 1.0 / double(nPoints);
+        ippl::Vector<double, Dim> hx;
+        ippl::Vector<double, Dim> origin;
+
+        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        for (unsigned d = 0; d < Dim; d++) {
             domDec[d] = ippl::PARALLEL;
+            hx[d]     = dx;
+            origin[d] = 0;
+        }
 
-        layout = std::make_shared<layout_type>(owned, domDec);
+        auto layout            = std::make_shared<layout_type<Dim>>(owned, domDec);
+        std::get<Idx>(layouts) = layout;
 
-        double dx                        = 1.0 / double(nPoints);
-        ippl::Vector<double, dim> hx     = {dx, dx, dx};
-        ippl::Vector<double, dim> origin = {0, 0, 0};
-        mesh                             = std::make_shared<mesh_type>(owned, hx, origin);
+        std::get<Idx>(meshes) = std::make_shared<mesh_type<Dim>>(owned, hx, origin);
 
-        field = std::make_unique<field_type>(*mesh, *layout);
+        std::get<Idx>(fields) = std::make_unique<field_type<Dim>>(*std::get<Idx>(meshes), *layout);
     }
 
-    std::unique_ptr<field_type> field;
-    std::shared_ptr<mesh_type> mesh;
-    std::shared_ptr<layout_type> layout;
+    PtrCollection<std::shared_ptr, field_type> fields;
+    PtrCollection<std::shared_ptr, mesh_type> meshes;
+    PtrCollection<std::shared_ptr, layout_type> layouts;
     size_t nPoints;
 };
 
 TEST_F(FieldTest, Sum) {
     double val = 1.0;
 
-    *field = val;
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        *field = val;
 
-    double sum = field->sum();
+        double sum = field->sum();
 
-    ASSERT_DOUBLE_EQ(val * std::pow(nPoints, dim), sum);
+        ASSERT_DOUBLE_EQ(val * std::pow(nPoints, Dim), sum);
+    };
+
+    apply(check, fields);
 }
 
 TEST_F(FieldTest, Norm1) {
     double val = -1.5;
 
-    *field = val;
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        *field = val;
 
-    double norm1 = ippl::norm(*field, 1);
+        double norm1 = ippl::norm(*field, 1);
 
-    ASSERT_DOUBLE_EQ(-val * std::pow(nPoints, dim), norm1);
+        ASSERT_DOUBLE_EQ(-val * std::pow(nPoints, Dim), norm1);
+    };
+
+    apply(check, fields);
 }
 
 TEST_F(FieldTest, Norm2) {
     double val = 1.5;
 
-    *field = val;
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        *field = val;
 
-    double norm2 = ippl::norm(*field);
+        double norm2 = ippl::norm(*field);
 
-    ASSERT_DOUBLE_EQ(std::sqrt(val * val * std::pow(nPoints, dim)), norm2);
+        ASSERT_DOUBLE_EQ(std::sqrt(val * val * std::pow(nPoints, Dim)), norm2);
+    };
+
+    apply(check, fields);
 }
 
 TEST_F(FieldTest, NormInf) {
-    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
-    const int shift               = field->getNghost();
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
 
-    auto view   = field->getView();
-    auto mirror = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(mirror, view);
+        auto view = field->getView();
+        Kokkos::parallel_for(
+            "Set field", field->getRangePolicy(),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                double tot = (args + ...);
+                for (unsigned d = 0; d < Dim; d++)
+                    tot += lDom[d].first();
+                view(args...) = tot - 1;
+            });
 
-    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
-        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
-            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                const size_t ig = i + lDom[0].first();
-                const size_t jg = j + lDom[1].first();
-                const size_t kg = k + lDom[2].first();
+        double normInf = ippl::norm(*field, 0);
 
-                mirror(i, j, k) = -1.0 + (ig + jg + kg);
-            }
-        }
-    }
-    Kokkos::deep_copy(view, mirror);
+        double val = -1.0 + Dim * nPoints;
 
-    double normInf = ippl::norm(*field, 0);
+        ASSERT_DOUBLE_EQ(val, normInf);
+    };
 
-    double val = -1.0 + 3 * nPoints;
-
-    ASSERT_DOUBLE_EQ(val, normInf);
+    apply(check, fields);
 }
 
 TEST_F(FieldTest, VolumeIntegral) {
-    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
-    const int shift               = field->getNghost();
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
+        const int shift               = field->getNghost();
 
-    const double dx = 1. / nPoints;
-    auto view       = field->getView();
-    auto mirror     = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(mirror, view);
-    const double pi = acos(-1.0);
+        const double dx = 1. / nPoints;
+        auto view       = field->getView();
+        const double pi = acos(-1.0);
 
-    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
-        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
-            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                const size_t ig = i + lDom[0].first() - shift;
-                const size_t jg = j + lDom[1].first() - shift;
-                const size_t kg = k + lDom[2].first() - shift;
-                double x        = (ig + 0.5) * dx;
-                double y        = (jg + 0.5) * dx;
-                double z        = (kg + 0.5) * dx;
+        auto toCoords = KOKKOS_LAMBDA<size_t D>(size_t x)->double {
+            return (x + lDom[D].first() - shift + 0.5) * dx;
+        };
 
-                mirror(i, j, k) = sin(2 * pi * x) * sin(2 * pi * y) * sin(2 * pi * z);
-            }
-        }
-    }
-    Kokkos::deep_copy(view, mirror);
+        auto fieldVal = KOKKOS_LAMBDA<size_t... Dims, typename... Idx>(std::index_sequence<Dims...>,
+                                                                       const Idx... args) {
+            return ((sin(2 * pi * toCoords.template operator()<Dims>(args))) * ...);
+        };
 
-    ASSERT_NEAR(field->getVolumeIntegral(), 0., 1e-15);
+        Kokkos::parallel_for(
+            "Set field", field->getRangePolicy(),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                view(args...) = fieldVal(std::make_index_sequence<Dim>{}, args...);
+            });
+
+        ASSERT_NEAR(field->getVolumeIntegral(), 0., 1e-15);
+    };
+
+    apply(check, fields);
 }
 
 TEST_F(FieldTest, VolumeIntegral2) {
-    *field          = 1.;
-    double integral = field->getVolumeIntegral();
-    double volume   = field->get_mesh().getMeshVolume();
-    ASSERT_DOUBLE_EQ(integral, volume);
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        *field          = 1.;
+        double integral = field->getVolumeIntegral();
+        double volume   = field->get_mesh().getMeshVolume();
+        ASSERT_DOUBLE_EQ(integral, volume);
+    };
+
+    apply(check, fields);
 }
 
 TEST_F(FieldTest, Grad) {
-    *field = 1.;
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        *field = 1.;
 
-    ippl::Field<ippl::Vector<double, dim>, dim> vfield(*mesh, *layout);
-    vfield = grad(*field);
+        ippl::Field<ippl::Vector<double, Dim>, Dim> vfield(field->get_mesh(), field->getLayout());
+        vfield = grad(*field);
 
-    const int shift = vfield.getNghost();
-    auto view       = vfield.getView();
-    auto mirror     = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(mirror, view);
+        const int shift = vfield.getNghost();
+        auto view       = vfield.getView();
+        auto mirror     = Kokkos::create_mirror_view(view);
+        Kokkos::deep_copy(mirror, view);
 
-    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
-        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
-            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                for (size_t d = 0; d < dim; ++d) {
-                    ASSERT_DOUBLE_EQ(mirror(i, j, k)[d], 0.);
-                }
-            }
-        }
-    }
+        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+            for (size_t d = 0; d < Dim; d++)
+                ASSERT_DOUBLE_EQ(mirror(args...)[d], 0.);
+        });
+    };
+
+    apply(check, fields);
 }
 
 TEST_F(FieldTest, Curl) {
+    // Restrict to 3D case for now
+    auto mesh              = std::get<2>(meshes);
+    auto layout            = std::get<2>(layouts);
+    constexpr unsigned dim = 3;
+
     ippl::Field<ippl::Vector<double, dim>, dim> vfield(*mesh, *layout);
     const int nghost = vfield.getNghost();
     auto view_field  = vfield.getView();
 
-    auto lDom                        = this->layout->getLocalNDIndex();
-    ippl::Vector<double, dim> hx     = this->mesh->getMeshSpacing();
-    ippl::Vector<double, dim> origin = this->mesh->getOrigin();
+    auto lDom                        = layout->getLocalNDIndex();
+    ippl::Vector<double, dim> hx     = mesh->getMeshSpacing();
+    ippl::Vector<double, dim> origin = mesh->getOrigin();
 
     auto mirror = Kokkos::create_mirror_view(view_field);
     Kokkos::deep_copy(mirror, view_field);
@@ -230,6 +260,11 @@ TEST_F(FieldTest, Curl) {
 }
 
 TEST_F(FieldTest, Hessian) {
+    // Restrict to 3D case for now
+    auto mesh              = std::get<2>(meshes);
+    auto layout            = std::get<2>(layouts);
+    constexpr unsigned dim = 3;
+
     typedef ippl::Vector<double, dim> Vector_t;
     typedef ippl::Field<ippl::Vector<Vector_t, dim>, dim> MField_t;
 
@@ -237,9 +272,9 @@ TEST_F(FieldTest, Hessian) {
     int nghost      = field.getNghost();
     auto view_field = field.getView();
 
-    auto lDom                        = this->layout->getLocalNDIndex();
-    ippl::Vector<double, dim> hx     = this->mesh->getMeshSpacing();
-    ippl::Vector<double, dim> origin = this->mesh->getOrigin();
+    auto lDom                        = layout->getLocalNDIndex();
+    ippl::Vector<double, dim> hx     = mesh->getMeshSpacing();
+    ippl::Vector<double, dim> origin = mesh->getOrigin();
 
     auto mirror = Kokkos::create_mirror_view(view_field);
     Kokkos::deep_copy(mirror, view_field);
