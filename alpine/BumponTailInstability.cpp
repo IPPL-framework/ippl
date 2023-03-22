@@ -212,8 +212,8 @@ int main(int argc, char *argv[]){
         decomp[d] = ippl::PARALLEL;
     }
 
-    Vector_t kw;
-    double sigma, muBulk, muBeam, epsilon, delta;
+    Vector_st kw;
+    float sigma, muBulk, muBeam, epsilon, delta;
     
    
     if(std::strcmp(TestName,"TwoStreamInstability") == 0) {
@@ -320,10 +320,10 @@ int main(int argc, char *argv[]){
     IpplTimings::startTimer(particleCreation);
 
 
-    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
+    typedef ippl::detail::RegionLayout<float, Dim, Mesh_t> RegionLayout_t;
     const RegionLayout_t& RLayout = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_t Nr, Dr, minU, maxU;
+    Vector_st Nr, Dr, minU, maxU;
     int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d <Dim; ++d) {
         Nr[d] = CDF(Regions(myRank)[d].max(), delta, kw[d], d) - 
@@ -353,7 +353,7 @@ int main(int argc, char *argv[]){
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
 
     Kokkos::parallel_for(nloc,
-                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                         generate_random<Vector_st, Kokkos::Random_XorShift64_Pool<>, Dim>(
                          P->R.getView(), P->P.getView(), rand_pool64, delta, kw, sigma, muBulk, 
                          muBeam, nlocBulk, minU, maxU));
     Kokkos::fence();

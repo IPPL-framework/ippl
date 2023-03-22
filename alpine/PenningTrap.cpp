@@ -138,7 +138,7 @@ double CDF(const double& x, const double& mu, const double& sigma) {
 
 
 KOKKOS_FUNCTION
-double PDF(const Vector_t& xvec, const Vector_t&mu, 
+double PDF(const Vector_t& xvec, const Vector_t& mu, 
              const Vector_t& sigma, const unsigned Dim) {
     double pdf = 1.0;
     double pi = std::acos(-1.0);
@@ -231,7 +231,7 @@ int main(int argc, char *argv[]){
 
     Vector_t length = rmax - rmin;
 
-    Vector_t mu, sd;
+    Vector_st mu, sd;
 
     for (unsigned d = 0; d<Dim; d++) {
         mu[d] = 0.5 * length[d];
@@ -296,10 +296,10 @@ int main(int argc, char *argv[]){
     msg << "First domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
 
-    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
+    typedef ippl::detail::RegionLayout<float, Dim, Mesh_t> RegionLayout_t;
     const RegionLayout_t& RLayout = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_t Nr, Dr, minU, maxU;
+    Vector_st Nr, Dr, minU, maxU;
     int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d <Dim; ++d) {
         Nr[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d]) - 
@@ -324,7 +324,7 @@ int main(int argc, char *argv[]){
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
-                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                         generate_random<Vector_st, Kokkos::Random_XorShift64_Pool<>, Dim>(
                          P->R.getView(), P->P.getView(), rand_pool64, mu, sd, minU, maxU));
 
     Kokkos::fence();

@@ -28,7 +28,8 @@ namespace ippl {
               class M=UniformCartesian<double, Dim>,
               class C=typename M::DefaultCentering>
     class Solver
-    {
+    {   
+
     public:
         using lhs_type = Field<Tlhs, Dim, M, C>;
         using rhs_type = Field<Trhs, Dim, M, C>;

@@ -1,19 +1,19 @@
 #include "Utility/IpplTimings.h"
 namespace ippl {
 
-    template <class T, unsigned Dim, class M>
+    template <class Tf, unsigned Dim, class M, class Tp>
     void
-    OrthogonalRecursiveBisection<T,Dim,M>::initialize(FieldLayout<Dim>& fl, 
-                                                      UniformCartesian<T,Dim>& mesh,
-                                                      const Field<T,Dim, M>& rho) {
+    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::initialize(FieldLayout<Dim>& fl, 
+                                                     M& mesh,
+                                                      const Field<Tf,Dim, M>& rho) {
        bf_m.initialize(mesh, fl);
        bf_m = rho;
 
     }
 
-    template <class T, unsigned Dim, class M>
+    template <class Tf, unsigned Dim, class M, class Tp>
     bool 
-    OrthogonalRecursiveBisection<T,Dim,M>::binaryRepartition(const ParticleAttrib<Vector<T,Dim>>& R, 
+    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::binaryRepartition(const ParticleAttrib<Vector<Tp,Dim>>& R, 
                                                              FieldLayout<Dim>& fl,
                                                              const bool& isFirstRepartition) {
        // Timings
@@ -24,8 +24,8 @@ namespace ippl {
 
        //MPI datatype
        MPI_Datatype mpi_data= MPI_DATATYPE_NULL;
-       if constexpr ( std::is_same_v<T, float> ) mpi_data = MPI_FLOAT;
-       else if constexpr ( std::is_same_v<T, double> ) mpi_data = MPI_DOUBLE;
+       if constexpr ( std::is_same_v<Tp, float> ) mpi_data = MPI_FLOAT;
+       else if constexpr ( std::is_same_v<Tp, double> ) mpi_data = MPI_DOUBLE;
        
        // Scattering of particle positions in field
        // In case of first repartition we know the density from the
@@ -50,7 +50,7 @@ namespace ippl {
        std::vector<int> procs = {nprocs};
 
        // Arrays for reduction 
-       std::vector<T> reduced, reducedRank;
+       std::vector<Tp> reduced, reducedRank;
  
        // Start recursive repartition loop 
        unsigned int it = 0;
@@ -129,9 +129,9 @@ namespace ippl {
     }
 
     
-    template < class T, unsigned Dim, class M>
+    template < class Tf, unsigned Dim, class M, class Tp>
     int
-    OrthogonalRecursiveBisection<T,Dim,M>::findCutAxis(NDIndex<Dim>& dom) {
+    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::findCutAxis(NDIndex<Dim>& dom) {
        int cutAxis = 0;  
        unsigned int maxLength = 0;
        
@@ -148,10 +148,10 @@ namespace ippl {
     } 
 
     
-    template < class T, unsigned Dim, class M>
+    template < class Tf, unsigned Dim, class M, class Tp>
     void
-    OrthogonalRecursiveBisection<T,Dim,M>::perpendicularReduction(
-                                                         std::vector<T>& rankWeights, 
+    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::perpendicularReduction(
+                                                         std::vector<Tp>& rankWeights, 
                                                          unsigned int cutAxis, 
                                                          NDIndex<Dim>& dom) {
        // Check if domains overlap, if not no need for reduction
@@ -161,7 +161,7 @@ namespace ippl {
           return;
        // Get field's local weights
        int nghost = bf_m.getNghost();
-       const view_type data = bf_m.getView();
+       const field_view_type data = bf_m.getView();
        // Determine the iteration bounds of the reduction
        int cutAxisFirst = std::max(lDom[cutAxis].first(), dom[cutAxis].first())
                                                - lDom[cutAxis].first() + nghost;
@@ -192,27 +192,27 @@ namespace ippl {
        using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;       
        for (int i = cutAxisFirst; i <= cutAxisLast; i++) {  
           // Reducing over perpendicular plane defined by cutAxis
-          T tempRes = T(0);
+          Tp tempRes = Tp(0);
           switch (cutAxis) {
             default:
             case 0:
              Kokkos::parallel_reduce("ORB weight reduction (0)", 
                                      mdrange_t({inf1, inf2},{sup1, sup2}),
-                                     KOKKOS_LAMBDA(const int j, const int k, T& weight) {
+                                     KOKKOS_LAMBDA(const int j, const int k, Tp& weight) {
                 weight += data(i,j,k);
              }, tempRes);
              break;
             case 1:
              Kokkos::parallel_reduce("ORB weight reduction (1)", 
                                      mdrange_t({inf2, inf1},{sup2, sup1}),
-                                     KOKKOS_LAMBDA(const int j, const int k, T& weight) {
+                                     KOKKOS_LAMBDA(const int j, const int k, Tp& weight) {
                 weight += data(j,i,k);
              }, tempRes); 
              break;
             case 2:
              Kokkos::parallel_reduce("ORB weight reduction (2)", 
                                      mdrange_t({inf1, inf2},{sup1, sup2}),
-                                     KOKKOS_LAMBDA(const int j, const int k, T& weight) {
+                                     KOKKOS_LAMBDA(const int j, const int k, Tp& weight) {
                 weight += data(j,k,i);
              }, tempRes);
              break;
@@ -226,19 +226,19 @@ namespace ippl {
     }
   
 
-    template < class T, unsigned Dim, class M>
+    template < class Tf, unsigned Dim, class M, class Tp>
     int
-    OrthogonalRecursiveBisection<T,Dim,M>::findMedian(std::vector<T>& w) {
+    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::findMedian(std::vector<Tp>& w) {
        // Special case when array must be cut in half in order to not have planes
        if (w.size() == 4)
           return 1;
 
        // Get total sum of array
-       T tot = std::accumulate(w.begin(), w.end(), T(0));
+       Tp tot = std::accumulate(w.begin(), w.end(), Tp(0));
        
        // Find position of median as half of total in array
-       T half = 0.5 * tot;
-       T curr = T(0);
+       Tp half = 0.5 * tot;
+       Tp curr = Tp(0);
        // Do not need to iterate to full extent since it must not give planes
        for (unsigned int i = 0; i < w.size()-1; i++) {
           curr += w[i];
@@ -246,7 +246,7 @@ namespace ippl {
              // If all particles are in the first plane, cut at 1 so to have size 2
              if (i == 0)
                 return 1; 
-             T previous = curr - w[i];
+             Tp previous = curr - w[i];
              // curr - half < half - previous
              if ((curr + previous) <= tot && curr != half) {    // if true then take current i, otherwise i-1
                 if (i == w.size() - 2)
@@ -263,9 +263,9 @@ namespace ippl {
     }
 
 
-    template < class T, unsigned Dim, class M>
+    template < class Tf, unsigned Dim, class M, class Tp>
     void
-    OrthogonalRecursiveBisection<T,Dim,M>::cutDomain(std::vector<NDIndex<Dim>>& domains, 
+    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::cutDomain(std::vector<NDIndex<Dim>>& domains, 
                                            std::vector<int>& procs, int it, int cutAxis, int median) {
        // Cut domains[it] in half at median along cutAxis
        NDIndex<Dim> leftDom, rightDom;
@@ -280,15 +280,15 @@ namespace ippl {
     }
 
 
-    template < class T, unsigned Dim, class M>
+    template < class Tf, unsigned Dim, class M, class Tp>
     void 
-    OrthogonalRecursiveBisection<T,Dim,M>::scatterR(const ParticleAttrib<Vector<T, Dim>>& r) {
+    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::scatterR(const ParticleAttrib<Vector<Tp, Dim>>& r) {
         using vector_type = typename M::vector_type;
 
         // Reset local field
         bf_m = 0.0;
         // Get local data
-        typename Field<T, Dim, M>::view_type view = bf_m.getView();
+        typename Field<Tf, Dim, M>::view_type view = bf_m.getView();
         const M& mesh = bf_m.get_mesh();
         const FieldLayout<Dim>& layout = bf_m.getLayout(); 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
@@ -307,8 +307,8 @@ namespace ippl {
                 // Find nearest grid point
                 vector_type l = (r(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index = l;
-                Vector<T, Dim> whi = l - index;
-                Vector<T, Dim> wlo = 1.0 - whi;
+                Vector<Tp, Dim> whi = l - index;
+                Vector<Tp, Dim> wlo = 1.0 - whi;
 
                 const size_t i = index[0] - lDom[0].first() + nghost;
                 const size_t j = index[1] - lDom[1].first() + nghost;

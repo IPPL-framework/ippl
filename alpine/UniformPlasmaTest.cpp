@@ -157,7 +157,7 @@ int main(int argc, char *argv[]){
     P->create(nloc);
 
     const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-    Vector_t Rmin, Rmax;
+    Vector_st Rmin, Rmax;
     for (unsigned d = 0; d <Dim; ++d) {
         Rmin[d] = origin[d] + lDom[d].first() * hr[d];
         Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]){
 
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
-                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                         generate_random<Vector_st, Kokkos::Random_XorShift64_Pool<>, Dim>(
                          P->R.getView(), rand_pool64, Rmin, Rmax));
     Kokkos::fence();
     P->q = P->Q_m/totalP;
@@ -226,7 +226,7 @@ int main(int argc, char *argv[]){
 
         IpplTimings::startTimer(temp);
         Kokkos::parallel_for(P->getLocalNum(),
-                             generate_random<Vector_t, 
+                             generate_random<Vector_st, 
                              Kokkos::Random_XorShift64_Pool<>, Dim>(
                              P->P.getView(), rand_pool64, -hr, hr));
         Kokkos::fence();
