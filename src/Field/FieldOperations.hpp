@@ -23,8 +23,8 @@ namespace ippl {
      * @param f2 second field
      * @return Result of f1^T f2
      */
-    template <typename T, unsigned Dim, class M = UniformCartesian<double, Dim>>
-    T innerProduct(const Field<T, Dim, M>& f1, const Field<T, Dim, M>& f2) {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    T innerProduct(const Field<T, Dim, Mesh, Centering>& f1, const Field<T, Dim, Mesh, Centering>& f2) {
         T sum      = 0;
         auto view1 = f1.getView();
         auto view2 = f2.getView();
@@ -46,8 +46,8 @@ namespace ippl {
      * @param p desired norm (default 2)
      * @return The desired norm of the field
      */
-    template <typename T, unsigned Dim, class M, class C>
-    T norm(const Field<T, Dim, M, C>& field, int p = 2) {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    T norm(const Field<T, Dim, Mesh, Centering>& field, int p = 2) {
         T local   = 0;
         auto view = field.getView();
         switch (p) {
@@ -86,96 +86,96 @@ namespace ippl {
      * User interface of gradient in three dimensions.
      * @param u field
      */
-    template <typename T, unsigned Dim, class M, class C>
-    detail::meta_grad<Field<T, Dim, M, C>> grad(Field<T, Dim, M, C>& u) {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    detail::meta_grad<Field<T, Dim, Mesh, Centering> > grad(Field<T, Dim, Mesh, Centering>& u) {
         u.fillHalo();
-        BConds<T, Dim, M>& bcField = u.getFieldBC();
+        BConds<T, Dim, Mesh, Centering>& bcField = u.getFieldBC();
         bcField.apply(u);
-        M& mesh = u.get_mesh();
-        typename M::vector_type xvector(0);
+        Mesh& mesh = u.get_mesh();
+        typename Mesh::vector_type xvector(0);
         xvector[0] = 0.5 / mesh.getMeshSpacing(0);
-        typename M::vector_type yvector(0);
+        typename Mesh::vector_type yvector(0);
         yvector[1] = 0.5 / mesh.getMeshSpacing(1);
-        typename M::vector_type zvector(0);
+        typename Mesh::vector_type zvector(0);
         zvector[2] = 0.5 / mesh.getMeshSpacing(2);
-        return detail::meta_grad<Field<T, Dim, M, C>>(u, xvector, yvector, zvector);
+        return detail::meta_grad<Field<T, Dim, Mesh, Centering> >(u, xvector, yvector, zvector);
     }
 
     /*!
      * User interface of divergence in three dimensions.
      * @param u field
      */
-    template <typename T, unsigned Dim, class M, class C>
-    detail::meta_div<Field<T, Dim, M, C>> div(Field<T, Dim, M, C>& u) {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    detail::meta_div<Field<T, Dim, Mesh, Centering> > div(Field<T, Dim, Mesh, Centering>& u) {
         u.fillHalo();
-        BConds<T, Dim, M>& bcField = u.getFieldBC();
+        BConds<T, Dim, Mesh, Centering>& bcField = u.getFieldBC();
         bcField.apply(u);
-        M& mesh = u.get_mesh();
-        typename M::vector_type xvector(0);
+        Mesh& mesh = u.get_mesh();
+        typename Mesh::vector_type xvector(0);
         xvector[0] = 0.5 / mesh.getMeshSpacing(0);
-        typename M::vector_type yvector(0);
+        typename Mesh::vector_type yvector(0);
         yvector[1] = 0.5 / mesh.getMeshSpacing(1);
-        typename M::vector_type zvector(0);
+        typename Mesh::vector_type zvector(0);
         zvector[2] = 0.5 / mesh.getMeshSpacing(2);
-        return detail::meta_div<Field<T, Dim, M, C>>(u, xvector, yvector, zvector);
+        return detail::meta_div<Field<T, Dim, Mesh, Centering> >(u, xvector, yvector, zvector);
     }
 
     /*!
      * User interface of Laplacian in three dimensions.
      * @param u field
      */
-    template <typename T, unsigned Dim, class M, class C>
-    detail::meta_laplace<Field<T, Dim, M, C>> laplace(Field<T, Dim, M, C>& u) {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    detail::meta_laplace<Field<T, Dim, Mesh, Centering> > laplace(Field<T, Dim, Mesh, Centering>& u) {
         u.fillHalo();
-        BConds<T, Dim, M>& bcField = u.getFieldBC();
+        BConds<T, Dim, Mesh, Centering>& bcField = u.getFieldBC();
         bcField.apply(u);
-        M& mesh = u.get_mesh();
-        typename M::vector_type hvector(0);
+        Mesh& mesh = u.get_mesh();
+        typename Mesh::vector_type hvector(0);
         hvector[0] = 1.0 / std::pow(mesh.getMeshSpacing(0), 2);
         hvector[1] = 1.0 / std::pow(mesh.getMeshSpacing(1), 2);
         hvector[2] = 1.0 / std::pow(mesh.getMeshSpacing(2), 2);
-        return detail::meta_laplace<Field<T, Dim, M, C>>(u, hvector);
+        return detail::meta_laplace<Field<T, Dim, Mesh, Centering> >(u, hvector);
     }
 
     /*!
      * User interface of curl in three dimensions.
      * @param u field
      */
-    template <typename T, unsigned Dim, class M, class C>
-    detail::meta_curl<Field<T, Dim, M, C>> curl(Field<T, Dim, M, C>& u) {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    detail::meta_curl<Field<T, Dim, Mesh, Centering> > curl(Field<T, Dim, Mesh, Centering>& u) {
         u.fillHalo();
-        BConds<T, Dim, M>& bcField = u.getFieldBC();
+        BConds<T, Dim, Mesh, Centering>& bcField = u.getFieldBC();
         bcField.apply(u);
-        M& mesh = u.get_mesh();
-        typename M::vector_type xvector(0);
+        Mesh& mesh = u.get_mesh();
+        typename Mesh::vector_type xvector(0);
         xvector[0] = 1.0;
-        typename M::vector_type yvector(0);
+        typename Mesh::vector_type yvector(0);
         yvector[1] = 1.0;
-        typename M::vector_type zvector(0);
+        typename Mesh::vector_type zvector(0);
         zvector[2] = 1.0;
-        typename M::vector_type hvector(0);
+        typename Mesh::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
-        return detail::meta_curl<Field<T, Dim, M, C>>(u, xvector, yvector, zvector, hvector);
+        return detail::meta_curl<Field<T, Dim, Mesh, Centering> >(u, xvector, yvector, zvector, hvector);
     }
 
     /*!
      * User interface of Hessian in three dimensions.
      * @param u field
      */
-    template <typename T, unsigned Dim, class M, class C>
-    detail::meta_hess<Field<T, Dim, M, C>> hess(Field<T, Dim, M, C>& u) {
+    template <typename T, unsigned Dim, class Mesh, class Centering>
+    detail::meta_hess<Field<T, Dim, Mesh, Centering> > hess(Field<T, Dim, Mesh, Centering>& u) {
         u.fillHalo();
-        BConds<T, Dim, M>& bcField = u.getFieldBC();
+        BConds<T, Dim, Mesh, Centering>& bcField = u.getFieldBC();
         bcField.apply(u);
-        M& mesh = u.get_mesh();
-        typename M::vector_type xvector(0);
+        Mesh& mesh = u.get_mesh();
+        typename Mesh::vector_type xvector(0);
         xvector[0] = 1.0;
-        typename M::vector_type yvector(0);
+        typename Mesh::vector_type yvector(0);
         yvector[1] = 1.0;
-        typename M::vector_type zvector(0);
+        typename Mesh::vector_type zvector(0);
         zvector[2] = 1.0;
-        typename M::vector_type hvector(0);
+        typename Mesh::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
-        return detail::meta_hess<Field<T, Dim, M, C>>(u, xvector, yvector, zvector, hvector);
+        return detail::meta_hess<Field<T, Dim, Mesh, Centering> >(u, xvector, yvector, zvector, hvector);
     }
 }  // namespace ippl

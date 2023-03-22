@@ -37,13 +37,13 @@ namespace ippl {
      * @tparam Dim dimension
      * @tparam M mesh
      */
-    template <class T, unsigned Dim, class M>
+    template <class T, unsigned Dim, class Mesh, class Centering>
     class OrthogonalRecursiveBisection {
     public:
         using view_type = typename detail::ViewType<T, Dim>::view_type;
 
         // Weight for reduction
-        Field<T, Dim> bf_m;
+        Field<T, Dim, Mesh, Centering> bf_m;
 
         /*!
          * Initialize member field with mesh and field layout
@@ -52,7 +52,7 @@ namespace ippl {
          * @param rho Density field
          */
         void initialize(FieldLayout<Dim>& fl, UniformCartesian<T, Dim>& mesh,
-                        const Field<T, Dim>& rho);
+                        const Field<T, Dim, Mesh, Centering>& rho);
 
         /*!
          * Performs scatter operation of particle positions in field (weights) and

@@ -11,6 +11,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
+    using Mesh_t = ippl::UniformCartesian<double, dim>;
+    using Centering_t = Mesh_t::DefaultCentering;
 
     std::array<int, dim> pt = {64, 64, 64};
     ippl::Index Iinput(pt[0]);
@@ -33,8 +35,8 @@ int main(int argc, char* argv[]) {
     ippl::Vector<double, 3> origin = {0, 0, 0};
     ippl::UniformCartesian<double, 3> meshInput(ownedInput, hx, origin);
 
-    typedef ippl::Field<Kokkos::complex<double>, dim> field_type_complex;
-    typedef ippl::Field<double, dim> field_type_real;
+    typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t> field_type_complex;
+    typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type_real;
 
     field_type_real fieldInput(meshInput, layoutInput);
 
@@ -65,10 +67,10 @@ int main(int argc, char* argv[]) {
     }
     ippl::FieldLayout<dim> layoutOutput(ownedOutput, allParallel);
 
-    ippl::UniformCartesian<double, 3> meshOutput(ownedOutput, hx, origin);
+    Mesh_t meshOutput(ownedOutput, hx, origin);
     field_type_complex fieldOutput(meshOutput, layoutOutput);
 
-    typedef ippl::FFT<ippl::RCTransform, 3, double> FFT_type;
+    typedef ippl::FFT<ippl::RCTransform, 3, double, Mesh_t, Centering_t> FFT_type;
 
     std::unique_ptr<FFT_type> fft;
 
