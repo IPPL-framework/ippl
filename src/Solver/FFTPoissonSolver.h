@@ -26,6 +26,36 @@
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {
+    namespace detail {
+        /*!
+         * Access a view that either contains a vector field or a scalar field
+         * in such a way that the correct element access is determined at compile
+         * time, reducing the number of functions needed to achieve the same
+         * behavior for both kinds of fields
+         * @tparam isVec whether the field is a vector field
+         * @tparam - the view type
+         */
+        template <bool isVec, typename> struct ViewAccess;
+
+        template <typename View>
+        struct ViewAccess<true, View> {
+            KOKKOS_INLINE_FUNCTION
+            constexpr static auto& get(View&& view, unsigned dim,
+                                       size_t i, size_t j, size_t k) {
+                return view(i, j, k)[dim];
+            }
+        };
+
+        template<typename View>
+        struct ViewAccess<false, View> {
+            KOKKOS_INLINE_FUNCTION
+            constexpr static auto& get(View&& view, [[maybe_unused]] unsigned dim,
+                                       size_t i, size_t j, size_t k) {
+                return view(i, j, k);
+            }
+        };
+    }
+
     template <typename Tlhs, typename Trhs, unsigned Dim,
               class M=UniformCartesian<double, Dim>,
               class C=typename M::DefaultCentering>
@@ -145,7 +175,6 @@ namespace ippl {
 
             // buffer for communication
             detail::FieldBufferData<Trhs> fd_m;
-              
 
         protected:
         
