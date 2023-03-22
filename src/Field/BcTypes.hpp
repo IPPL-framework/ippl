@@ -73,7 +73,6 @@ namespace ippl {
         // non-periodic BC is local to apply.
         typename Field_t::view_type& view = field.getView();
         const int nghost                  = field.getNghost();
-        using mdrange_type                = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
         int src, dest;
 
         // It is not clear what it exactly means to do extrapolate
@@ -95,7 +94,8 @@ namespace ippl {
             dest = src - 1;
         }
 
-        Kokkos::Array<size_t, Dim> begin, end;
+        using index_type = typename detail::RangePolicy<Dim>::index_type;
+        Kokkos::Array<index_type, Dim> begin, end;
         for (unsigned i = 0; i < Dim; i++) {
             begin[i] = nghost;
             end[i]   = view.extent(i) - nghost;
@@ -103,7 +103,7 @@ namespace ippl {
         begin[d] = src;
         end[d]   = src + 1;
         Kokkos::parallel_for(
-            "Assign extrapolate BC", mdrange_type(begin, end),
+            "Assign extrapolate BC", detail::createRangePolicy<Dim>(begin, end),
             KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
                 // to avoid ambiguity with the member function
                 using ippl::apply;
@@ -306,10 +306,10 @@ namespace ippl {
                 throw IpplException("PeriodicFace::apply", "face number wrong");
             }
 
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
-            int N              = view.extent(d) - 1;
+            int N = view.extent(d) - 1;
 
-            Kokkos::Array<size_t, Dim> begin, end;
+            using index_type = typename detail::RangePolicy<Dim>::index_type;
+            Kokkos::Array<index_type, Dim> begin, end;
 
             std::array<long, Dim> ext;
 
@@ -322,7 +322,7 @@ namespace ippl {
             end[d]   = nghost;
 
             Kokkos::parallel_for(
-                "Assign periodic field BC", mdrange_type(begin, end),
+                "Assign periodic field BC", detail::createRangePolicy<Dim>(begin, end),
                 KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
                     // The ghosts are filled starting from the inside of
                     // the domain proceeding outwards for both lower and

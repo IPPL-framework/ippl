@@ -121,6 +121,30 @@ namespace ippl {
             }
         }
 
+        /*!
+         * Create a range policy for an index range given in the form of arrays
+         * (required because Kokkos doesn't allow the initialization of 1D range
+         * policies using arrays)
+         * @tparam Dim the dimension of the range
+         * @tparam Tag range policy tags
+         *
+         * @param begin the starting indices
+         * @param end the ending indices
+         *
+         * @return A (MD)RangePolicy spanning the given range
+         */
+        template <unsigned Dim, typename Tag = void>
+        typename RangePolicy<Dim, Tag>::policy_type createRangePolicy(
+            const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& begin,
+            const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& end) {
+            using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
+            if constexpr (Dim == 1) {
+                return policy_type(begin[0], end[0]);
+            } else {
+                return policy_type(begin, end);
+            }
+        }
+
         // https://stackoverflow.com/questions/50713214/familiar-template-syntax-for-generic-lambdas
         template <typename, typename, typename, typename>
         struct FunctorWrapper;

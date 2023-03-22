@@ -189,9 +189,13 @@ namespace ippl {
         template <typename T, unsigned Dim>
         auto HaloCells<T, Dim>::makeSubview(const view_type& view, const bound_type& intersect) {
             using Kokkos::make_pair;
-            return Kokkos::subview(view, make_pair(intersect.lo[0], intersect.hi[0]),
-                                   make_pair(intersect.lo[1], intersect.hi[1]),
-                                   make_pair(intersect.lo[2], intersect.hi[2]));
+            auto makePair = [&]<size_t d>() {
+                return make_pair(intersect.lo[d], intersect.hi[d]);
+            };
+            auto makeSub = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
+                return Kokkos::subview(view, makePair.template operator()<Idx>()...);
+            };
+            return makeSub(std::make_index_sequence<Dim>{});
         }
 
         template <typename T, unsigned Dim>
@@ -201,8 +205,8 @@ namespace ippl {
             int myRank           = Ippl::Comm->rank();
             const auto& lDomains = layout->getHostLocalDomains();
             const auto& domain   = layout->getDomain();
-            using mdrange_type   = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
-            Kokkos::Array<long, Dim> ext, begin, end;
+            using index_type     = typename detail::RangePolicy<Dim>::index_type;
+            Kokkos::Array<index_type, Dim> ext, begin, end;
 
             for (size_t i = 0; i < Dim; ++i) {
                 ext[i]   = view.extent(i);
@@ -219,7 +223,7 @@ namespace ippl {
                     int N = view.extent(d) - 1;
 
                     Kokkos::parallel_for(
-                        "applyPeriodicSerialDim", mdrange_type(begin, end),
+                        "applyPeriodicSerialDim", detail::createRangePolicy<Dim>(begin, end),
                         KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
                             // The ghosts are filled starting from the inside of
                             // the domain proceeding outwards for both lower and

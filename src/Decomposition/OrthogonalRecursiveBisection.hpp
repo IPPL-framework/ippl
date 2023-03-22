@@ -159,7 +159,8 @@ namespace ippl {
             arrayStart = lDom[cutAxis].first() - dom[cutAxis].first();
 
         // Find all the perpendicular axes
-        Kokkos::Array<size_t, Dim> begin, end;
+        using index_type = typename detail::RangePolicy<Dim>::index_type;
+        Kokkos::Array<index_type, Dim> begin, end;
         for (unsigned d = 0; d < Dim; d++) {
             if (d == cutAxis)
                 continue;
@@ -176,7 +177,6 @@ namespace ippl {
         }
 
         // Iterate along cutAxis
-        using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
         for (int i = cutAxisFirst; i <= cutAxisLast; i++) {
             begin[cutAxis] = i;
             end[cutAxis]   = i + 1;
@@ -184,7 +184,8 @@ namespace ippl {
             // Reducing over perpendicular plane defined by cutAxis
             T tempRes = T(0);
 
-            Kokkos::parallel_reduce("ORB weight reduction", mdrange_t(begin, end),
+            Kokkos::parallel_reduce("ORB weight reduction",
+                                    detail::createRangePolicy<Dim>(begin, end),
                                     detail::functorize<Dim, T>(KOKKOS_LAMBDA<typename... Idx>(
                                         const Idx... args, T& weight) { weight += data(args...); }),
                                     tempRes);
