@@ -55,6 +55,7 @@ namespace ippl {
         using hash_type   = typename ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>::hash_type;
         using locate_type = typename detail::ViewType<int, 1>::view_type;
         using bool_type   = typename detail::ViewType<bool, 1>::view_type;
+        using vector_type = typename detail::ParticleLayout<T, Dim>::vector_type;
         using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
         using Mesh_t         = UniformCartesian<double, Dim>;
 
