@@ -18,7 +18,7 @@
 
 namespace ippl {
     /*!
-     * User interface of gradient in three dimensions.
+     * User interface of gradient
      * @param u field
      */
     template <typename T, unsigned Dim, class M, class C>
@@ -26,14 +26,13 @@ namespace ippl {
         u.fillHalo();
         BConds<T, Dim, M>& bcField = u.getFieldBC();
         bcField.apply(u);
-        M& mesh = u.get_mesh();
-        typename M::vector_type xvector(0);
-        xvector[0] = 0.5 / mesh.getMeshSpacing(0);
-        typename M::vector_type yvector(0);
-        yvector[1] = 0.5 / mesh.getMeshSpacing(1);
-        typename M::vector_type zvector(0);
-        zvector[2] = 0.5 / mesh.getMeshSpacing(2);
-        return detail::meta_grad<Field<T, Dim, M, C>>(u, xvector, yvector, zvector);
+        M& mesh           = u.get_mesh();
+        using vector_type = typename M::vector_type;
+        vector_type vectors[Dim]{{0}};
+        for (unsigned d = 0; d < Dim; d++) {
+            vectors[d][d] = 0.5 / mesh.getMeshSpacing(d);
+        }
+        return detail::meta_grad<Field<T, Dim, M, C>>(u, vectors);
     }
 
     /*!
@@ -56,7 +55,7 @@ namespace ippl {
     }
 
     /*!
-     * User interface of Laplacian in three dimensions.
+     * User interface of Laplacian
      * @param u field
      */
     template <typename T, unsigned Dim, class M, class C>
