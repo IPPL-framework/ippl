@@ -160,7 +160,7 @@ TEST_F(BareFieldTest, DotProduct) {
         Kokkos::deep_copy(mirror, view);
 
         nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-            ASSERT_DOUBLE_EQ(mirror(args...), 15.);
+            ASSERT_DOUBLE_EQ(mirror(args...), 5 * Dim);
         });
     };
 

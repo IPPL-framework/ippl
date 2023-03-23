@@ -28,8 +28,9 @@ namespace ippl {
         bcField.apply(u);
         M& mesh           = u.get_mesh();
         using vector_type = typename M::vector_type;
-        vector_type vectors[Dim]{{0}};
+        vector_type vectors[Dim];
         for (unsigned d = 0; d < Dim; d++) {
+            vectors[d]    = 0;
             vectors[d][d] = 0.5 / mesh.getMeshSpacing(d);
         }
         return detail::meta_grad<Field<T, Dim, M, C>>(u, vectors);
