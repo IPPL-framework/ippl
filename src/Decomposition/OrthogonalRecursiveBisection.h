@@ -23,11 +23,11 @@
 #ifndef IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
 #define IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
 
-#include "Particle/ParticleSpatialLayout.h"
-#include "Particle/ParticleAttrib.h"
-#include "Index/NDIndex.h"
-#include "Index/Index.h"
 #include "FieldLayout/FieldLayout.h"
+#include "Index/Index.h"
+#include "Index/NDIndex.h"
+#include "Particle/ParticleAttrib.h"
+#include "Particle/ParticleSpatialLayout.h"
 #include "Region/NDRegion.h"
 
 namespace ippl {
@@ -37,14 +37,15 @@ namespace ippl {
      * @tparam Dim dimension
      * @tparam M mesh
      */
-    template<class Tf, unsigned Dim, class M, class Tp=Tf>
+
+    template<class Tf, unsigned Dim, class Mesh, class Centering, class Tp=Tf>
     class OrthogonalRecursiveBisection {
     public:
         using view_type = typename detail::ViewType<Tp, Dim>::view_type;
 	using field_view_type = typename detail::ViewType<Tf, Dim>::view_type;
 
         // Weight for reduction
-        Field<Tf,Dim,M> bf_m;
+        Field<Tf, Dim, Mesh, Centering> bf_m;
 
         /*!
          * Initialize member field with mesh and field layout
@@ -53,7 +54,7 @@ namespace ippl {
          * @param rho Density field
          */
         void initialize(FieldLayout<Dim>& fl, M& mesh,
-                        const Field<Tf,Dim,M>& rho);
+                        const Field<Tf,Dim,Mesh, Centering>& rho);
 
         /*!
          * Performs scatter operation of particle positions in field (weights) and
@@ -97,8 +98,8 @@ namespace ippl {
          * @param cutAxis Index of cut axis
          * @param median Median
          */
-        void cutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs,
-						           int it, int cutAxis, int median);
+        void cutDomain(std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it,
+                       int cutAxis, int median);
 
         /*!
          * Scattering of particle positions in field using a CIC method
@@ -106,12 +107,10 @@ namespace ippl {
          */
         void scatterR(const ParticleAttrib<Vector<Tp,Dim>>& r);
 
-    }; // class
+    };  // class
 
-} // namespace
-
+}  // namespace ippl
 
 #include "Decomposition/OrthogonalRecursiveBisection.hpp"
 
-#endif // IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
-
+#endif  // IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H

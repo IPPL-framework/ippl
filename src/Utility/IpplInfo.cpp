@@ -15,16 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "Utility/IpplInfo.h"
-
 #include "Ippl.h"
-
 #include "IpplVersions.h"
 
-#include <unistd.h>
-#include <cstdio>
-#include <csignal>
+#include "Utility/IpplInfo.h"
 
+#include <csignal>
+#include <cstdio>
+#include <unistd.h>
 
 /////////////////////////////////////////////////////////////////////
 // printVersion: print out a version summary.  If the argument is true,
@@ -35,7 +33,6 @@ void IpplInfo::printVersion(void) {
     std::cout << compileUser() << std::endl;
     std::cout << "Built for machine: " << compileMachine() << std::endl;
 }
-
 
 void IpplInfo::printHelp(char** argv) {
     std::cout << "Usage: " << argv[0] << " [<option> <option> ...]\n";
@@ -48,55 +45,48 @@ void IpplInfo::printHelp(char** argv) {
 /////////////////////////////////////////////////////////////////////
 // version: return the name of this version of Ippl, as a string
 // (from Versions.h)
-const char *IpplInfo::version() {
+const char* IpplInfo::version() {
     return ippl_version_name;
 }
-
-
 
 /////////////////////////////////////////////////////////////////////
 // compileArch: return the architecture on which this library was built
 // (from IpplVersions.h)
-const char *IpplInfo::compileArch() {
+const char* IpplInfo::compileArch() {
     return ippl_compile_arch;
 }
-
 
 /////////////////////////////////////////////////////////////////////
 // compileDate: return the date on which this library was prepared for
 // compilation (from IpplVersions.h)
-const char *IpplInfo::compileDate() {
+const char* IpplInfo::compileDate() {
     return ippl_compile_date;
 }
-
 
 /////////////////////////////////////////////////////////////////////
 // compileLine: return the compiler command used to compile each source file
 // (from IpplVersions.h)
-const char *IpplInfo::compileLine() {
+const char* IpplInfo::compileLine() {
     return ippl_compile_line;
 }
-
 
 /////////////////////////////////////////////////////////////////////
 // compileMachine: return the machine on which this library was
 // compiled (from IpplVersions.h)
-const char *IpplInfo::compileMachine() {
+const char* IpplInfo::compileMachine() {
     return ippl_compile_machine;
 }
-
 
 /////////////////////////////////////////////////////////////////////
 // compileOptions: return the option list used to compile this library
 // (from IpplVersions.h)
-const char *IpplInfo::compileOptions() {
+const char* IpplInfo::compileOptions() {
     return ippl_compile_options;
 }
-
 
 /////////////////////////////////////////////////////////////////////
 // compileUser: return the username of the user who compiled this
 // library (from IpplVersions.h)
-const char *IpplInfo::compileUser() {
+const char* IpplInfo::compileUser() {
     return ippl_compile_user;
 }

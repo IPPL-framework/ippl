@@ -2,7 +2,7 @@
 // Unit test FieldBC
 //   Test field boundary conditions.
 //
-// Copyright (c) 2020, Sriramkrishnan Muralikrishnan, 
+// Copyright (c) 2020, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -17,21 +17,23 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "Ippl.h"
-#include "Utility/IpplException.h"
 
 #include <cmath>
+
+#include "Utility/IpplException.h"
+
 #include "gtest/gtest.h"
 
 class FieldBCTest : public ::testing::Test {
-
 public:
     static constexpr size_t dim = 3;
-    typedef ippl::Field<double, dim> field_type;
-    typedef ippl::BConds<double, dim> bc_type; 
+    using Mesh_t = ippl::UniformCartesian<double, dim>;
+    using Centering_t = Mesh_t::DefaultCentering;
+    using field_type = ippl::Field<double, dim, Mesh_t, Centering_t> ;
+    using bc_type = ippl::BConds<double, dim, Mesh_t, Centering_t>;
 
     FieldBCTest()
-    : nPoints(8)
-    {
+        : nPoints(8) {
         setup();
     }
 
@@ -39,32 +41,32 @@ public:
         ippl::Index I(nPoints);
         ippl::NDIndex<dim> owned(I, I, I);
 
-        ippl::e_dim_tag domDec[dim];    // Specifies SERIAL, PARALLEL dims
+        ippl::e_dim_tag domDec[dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++)
             domDec[d] = ippl::PARALLEL;
 
         layout = ippl::FieldLayout<dim>(owned, domDec);
 
-        double dx = 1.0 / double(nPoints);
-        ippl::Vector<double, dim> hx = {dx, dx, dx};
+        double dx                        = 1.0 / double(nPoints);
+        ippl::Vector<double, dim> hx     = {dx, dx, dx};
         ippl::Vector<double, dim> origin = {0, 0, 0};
         ippl::UniformCartesian<double, dim> mesh(owned, hx, origin);
 
-        field = std::make_unique<field_type>(mesh, layout);
+        field  = std::make_unique<field_type>(mesh, layout);
         *field = 1.0;
         *field = (*field) * 10.0;
-        HostF = field->getHostMirror();
+        HostF  = field->getHostMirror();
     }
 
     void checkResult(const double expected) {
         const auto& lDomains = layout.getHostLocalDomains();
-        const auto& domain = layout.getDomain();
-        const int myRank = Ippl::Comm->rank();
+        const auto& domain   = layout.getDomain();
+        const int myRank     = Ippl::Comm->rank();
 
         Kokkos::deep_copy(HostF, field->getView());
 
         for (size_t face = 0; face < 2 * dim; ++face) {
-            size_t d = face / 2;
+            size_t d        = face / 2;
             bool checkUpper = lDomains[myRank][d].max() == domain[d].max();
             bool checkLower = lDomains[myRank][d].min() == domain[d].min();
             if (!checkUpper && !checkLower) {
@@ -76,41 +78,40 @@ public:
                     for (size_t j = 1; j < HostF.extent(1) - 1; ++j) {
                         for (size_t k = 1; k < HostF.extent(2) - 1; ++k) {
                             if (checkLower) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(0,j,k));
+                                EXPECT_DOUBLE_EQ(expected, HostF(0, j, k));
                             }
                             if (checkUpper) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(N-1,j,k));
+                                EXPECT_DOUBLE_EQ(expected, HostF(N - 1, j, k));
                             }
                         }
-                     }
+                    }
                     break;
                 case 1:
                     for (size_t i = 1; i < HostF.extent(0) - 1; ++i) {
                         for (size_t k = 1; k < HostF.extent(2) - 1; ++k) {
                             if (checkLower) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(i,0,k));
+                                EXPECT_DOUBLE_EQ(expected, HostF(i, 0, k));
                             }
                             if (checkUpper) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(i,N-1,k));
+                                EXPECT_DOUBLE_EQ(expected, HostF(i, N - 1, k));
                             }
                         }
-                     }
+                    }
                     break;
                 case 2:
                     for (size_t i = 1; i < HostF.extent(0) - 1; ++i) {
                         for (size_t j = 1; j < HostF.extent(1) - 1; ++j) {
                             if (checkLower) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(i,j,0));
+                                EXPECT_DOUBLE_EQ(expected, HostF(i, j, 0));
                             }
                             if (checkUpper) {
-                                EXPECT_DOUBLE_EQ(expected, HostF(i,j,N-1));
+                                EXPECT_DOUBLE_EQ(expected, HostF(i, j, N - 1));
                             }
                         }
-                     }
+                    }
                     break;
                 default:
-                    throw IpplException("FieldBCTest::checkResult", 
-                                         "face number wrong");
+                    throw IpplException("FieldBCTest::checkResult", "face number wrong");
             }
         }
     }
@@ -122,11 +123,9 @@ public:
     size_t nPoints;
 };
 
-
-
 TEST_F(FieldBCTest, PeriodicBC) {
-    for (size_t i=0; i < 2*dim; ++i) {
-        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
+    for (size_t i = 0; i < 2 * dim; ++i) {
+        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim, Mesh_t, Centering_t>>(i);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
@@ -135,8 +134,8 @@ TEST_F(FieldBCTest, PeriodicBC) {
 }
 
 TEST_F(FieldBCTest, NoBC) {
-    for (size_t i=0; i < 2*dim; ++i) {
-        bcField[i] = std::make_shared<ippl::NoBcFace<double, dim>>(i);
+    for (size_t i = 0; i < 2 * dim; ++i) {
+        bcField[i] = std::make_shared<ippl::NoBcFace<double, dim, Mesh_t, Centering_t>>(i);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
@@ -145,8 +144,8 @@ TEST_F(FieldBCTest, NoBC) {
 }
 
 TEST_F(FieldBCTest, ZeroBC) {
-    for (size_t i=0; i < 2*dim; ++i) {
-        bcField[i] = std::make_shared<ippl::ZeroFace<double, dim>>(i);
+    for (size_t i = 0; i < 2 * dim; ++i) {
+        bcField[i] = std::make_shared<ippl::ZeroFace<double, dim, Mesh_t, Centering_t>>(i);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
@@ -155,9 +154,9 @@ TEST_F(FieldBCTest, ZeroBC) {
 }
 
 TEST_F(FieldBCTest, ConstantBC) {
-    double constant = 7.0; 
-    for (size_t i=0; i < 2*dim; ++i) {
-        bcField[i] = std::make_shared<ippl::ConstantFace<double, dim>>(i, constant);
+    double constant = 7.0;
+    for (size_t i = 0; i < 2 * dim; ++i) {
+        bcField[i] = std::make_shared<ippl::ConstantFace<double, dim, Mesh_t, Centering_t>>(i, constant);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
@@ -166,8 +165,8 @@ TEST_F(FieldBCTest, ConstantBC) {
 }
 
 TEST_F(FieldBCTest, ExtrapolateBC) {
-    for (size_t i=0; i < 2*dim; ++i) {
-        bcField[i] = std::make_shared<ippl::ExtrapolateFace<double, dim>>(i, 0.0, 1.0);
+    for (size_t i = 0; i < 2 * dim; ++i) {
+        bcField[i] = std::make_shared<ippl::ExtrapolateFace<double, dim, Mesh_t, Centering_t>>(i, 0.0, 1.0);
     }
     bcField.findBCNeighbors(*field);
     bcField.apply(*field);
@@ -175,8 +174,8 @@ TEST_F(FieldBCTest, ExtrapolateBC) {
     checkResult(expected);
 }
 
-int main(int argc, char *argv[]) {
-    Ippl ippl(argc,argv);
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
