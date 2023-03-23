@@ -122,7 +122,7 @@ public:
                 return shift;
             },
             [&](unsigned d) {
-                return view.extent(d) - shift;
+                return view.extent(Dim - d) - shift;
             },
             c);
     }
