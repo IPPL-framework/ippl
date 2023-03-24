@@ -53,7 +53,7 @@ class MultirankUtils {
     // Tuple zipping
     // https://stackoverflow.com/a/47127033
     template <size_t Idx, typename... Tuples>
-    using zipped_element = std::tuple<std::tuple_element_t<Idx, std::decay_t<Tuples>>...>;
+    using zipped_element = std::tuple<std::tuple_element_t<Idx, std::decay_t<Tuples>>&...>;
 
     template <size_t Idx, typename... Tuples>
     zipped_element<Idx, Tuples...> zip_at(Tuples&&... ts) {
