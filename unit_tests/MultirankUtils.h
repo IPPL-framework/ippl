@@ -33,7 +33,8 @@ class MultirankUtils {
     struct is_specialization<Ref<Args...>, Ref> : std::true_type {};
 
     template <typename Functor, typename... Args, unsigned long... Idx>
-    void apply_impl(Functor& f, std::tuple<Args...>& args, const std::index_sequence<Idx...>&) {
+    static void apply_impl(Functor& f, std::tuple<Args...>& args,
+                           const std::index_sequence<Idx...>&) {
         if constexpr (sizeof...(Args) == 0) {
             // Dim == Idx + 1
             (f.template operator()<Idx + 1>(), ...);
@@ -56,13 +57,13 @@ class MultirankUtils {
     using zipped_element = std::tuple<std::tuple_element_t<Idx, std::decay_t<Tuples>>&...>;
 
     template <size_t Idx, typename... Tuples>
-    zipped_element<Idx, Tuples...> zip_at(Tuples&&... ts) {
+    static zipped_element<Idx, Tuples...> zip_at(Tuples&&... ts) {
         return {std::get<Idx>(std::forward<Tuples>(ts))...};
     }
 
     template <typename... Tuples, size_t... Idx>
-    std::tuple<zipped_element<Idx, Tuples...>...> zip_impl(Tuples&&... ts,
-                                                           const std::index_sequence<Idx...>&) {
+    static std::tuple<zipped_element<Idx, Tuples...>...> zip_impl(
+        Tuples&&... ts, const std::index_sequence<Idx...>&) {
         return {zip_at<Idx>(std::forward<Tuples>(ts)...)...};
     }
 
@@ -80,18 +81,18 @@ public:
     }
 
     template <typename Functor, typename... Args>
-    auto apply(Functor& f, std::tuple<Args...>& args) {
+    static auto apply(Functor& f, std::tuple<Args...>& args) {
         return apply_impl(f, args, std::make_index_sequence<sizeof...(Dims)>{});
     }
 
     template <typename Functor>
-    auto apply(Functor& f) {
+    static auto apply(Functor& f) {
         auto args = std::tuple<>{};
         return apply_impl(f, args, std::make_index_sequence<sizeof...(Dims)>{});
     }
 
     template <typename Tuple, typename... Tuples>
-    auto zip(Tuple&& t0, Tuples&&... ts) {
+    static auto zip(Tuple&& t0, Tuples&&... ts) {
         constexpr size_t size = std::tuple_size_v<std::decay_t<Tuple>>;
         static_assert(((std::tuple_size_v<std::decay_t<Tuples>> == size) && ...),
                       "Mismatched tuple sizes");
@@ -102,7 +103,7 @@ public:
 
     // https://stackoverflow.com/questions/34535795/n-dimensionally-nested-metaloops-with-templates
     template <unsigned Dim, class BeginFunctor, class EndFunctor, class Functor>
-    constexpr void nestedLoop(BeginFunctor&& begin, EndFunctor&& end, Functor&& c) {
+    static constexpr void nestedLoop(BeginFunctor&& begin, EndFunctor&& end, Functor&& c) {
         for (size_t i = begin(Dim); i < end(Dim); ++i) {
             if constexpr (Dim == 1) {
                 c(i);
@@ -116,7 +117,7 @@ public:
     }
 
     template <unsigned Dim, typename View, class Functor>
-    constexpr void nestedViewLoop(View& view, int shift, Functor&& c) {
+    static constexpr void nestedViewLoop(View& view, int shift, Functor&& c) {
         nestedLoop<Dim>(
             [&](unsigned) {
                 return shift;
