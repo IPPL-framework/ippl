@@ -28,13 +28,16 @@ public:
     using field_type = ippl::Field<double, Dim>;
 
     template <unsigned Dim>
+    using vfield_type = ippl::Field<ippl::Vector<double, Dim>, Dim>;
+
+    template <unsigned Dim>
     using mesh_type = ippl::UniformCartesian<double, Dim>;
 
     template <unsigned Dim>
     using layout_type = ippl::FieldLayout<Dim>;
 
     FieldTest()
-        : nPoints(8) {
+        : nPoints(16) {
         setup(this);
     }
 
@@ -145,10 +148,12 @@ TEST_F(FieldTest, VolumeIntegral) {
         auto view       = field->getView();
         const double pi = acos(-1.0);
 
-        auto toCoords = KOKKOS_LAMBDA<size_t D>(size_t x)->double {
+        // x_i (coordinate space) / dx = x_i (index space) + domain_i,0 - shift + 0.5
+        auto toCoords = KOKKOS_LAMBDA<size_t D>(size_t x) {
             return (x + lDom[D].first() - shift + 0.5) * dx;
         };
 
+        // sin(2 pi x) * sin(2 pi y) * ...
         auto fieldVal = KOKKOS_LAMBDA<size_t... Dims, typename... Idx>(std::index_sequence<Dims...>,
                                                                        const Idx... args) {
             return ((sin(2 * pi * toCoords.template operator()<Dims>(args))) * ...);
@@ -181,7 +186,7 @@ TEST_F(FieldTest, Grad) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
         *field = 1.;
 
-        ippl::Field<ippl::Vector<double, Dim>, Dim> vfield(field->get_mesh(), field->getLayout());
+        vfield_type<Dim> vfield(field->get_mesh(), field->getLayout());
         vfield = grad(*field);
 
         const int shift = vfield.getNghost();
@@ -198,13 +203,44 @@ TEST_F(FieldTest, Grad) {
     apply(check, fields);
 }
 
+TEST_F(FieldTest, Div) {
+    auto dx    = 1. / nPoints;
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        vfield_type<Dim> vfield(field->get_mesh(), field->getLayout());
+        auto view        = vfield.getView();
+        const int vshift = vfield.getNghost();
+
+        const ippl::NDIndex<Dim> lDom = vfield.getLayout().getLocalNDIndex();
+
+        Kokkos::parallel_for(
+            "Set field", vfield.getRangePolicy(vshift),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                view(args...) = {(double)args...};
+                for (unsigned d = 0; d < Dim; d++)
+                    view(args...)[d] = (view(args...)[d] + lDom[d].first() - vshift + 0.5) * dx;
+            });
+
+        *field = div(vfield);
+
+        const int shift = field->getNghost();
+        auto mirror     = Kokkos::create_mirror_view(field->getView());
+        Kokkos::deep_copy(mirror, field->getView());
+
+        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+            ASSERT_DOUBLE_EQ(mirror(args...), Dim);
+        });
+    };
+
+    apply(check, fields);
+}
+
 TEST_F(FieldTest, Curl) {
     // Restrict to 3D case for now
     auto mesh              = std::get<2>(meshes);
     auto layout            = std::get<2>(layouts);
     constexpr unsigned dim = 3;
 
-    ippl::Field<ippl::Vector<double, dim>, dim> vfield(*mesh, *layout);
+    vfield_type<dim> vfield(*mesh, *layout);
     const int nghost = vfield.getNghost();
     auto view_field  = vfield.getView();
 
