@@ -251,9 +251,9 @@ namespace ippl {
 
         template <typename E>
         struct meta_grad
-            : public Expression<meta_grad<E>, sizeof(E)
-                                                  + E::Mesh_t::Dimension
-                                                        * sizeof(typename E::Mesh_t::vector_type)> {
+            : public Expression<
+                  meta_grad<E>,
+                  sizeof(E) + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])> {
             KOKKOS_FUNCTION
             meta_grad(const E& u, const typename E::Mesh_t::vector_type vectors[])
                 : u_m(u) {
@@ -267,6 +267,7 @@ namespace ippl {
             template <typename... Idx>
             KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
                 using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
+
                 vector_type res(0);
                 for (unsigned d = 0; d < Dim; d++) {
                     index_type coords[Dim] = {args...};
@@ -304,33 +305,50 @@ namespace ippl {
          */
         template <typename E>
         struct meta_div
-            : public Expression<meta_div<E>,
-                                sizeof(E) + 3 * sizeof(typename E::Mesh_t::vector_type)> {
+            : public Expression<
+                  meta_div<E>,
+                  sizeof(E) + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])> {
             KOKKOS_FUNCTION
-            meta_div(const E& u, const typename E::Mesh_t::vector_type& xvector,
-                     const typename E::Mesh_t::vector_type& yvector,
-                     const typename E::Mesh_t::vector_type& zvector)
-                : u_m(u)
-                , xvector_m(xvector)
-                , yvector_m(yvector)
-                , zvector_m(zvector) {}
+            meta_div(const E& u, const typename E::Mesh_t::vector_type vectors[])
+                : u_m(u) {
+                for (unsigned d = 0; d < E::Mesh_t::Dimension; d++)
+                    this->vectors[d] = vectors[d];
+            }
 
             /*
-             * 3-dimensional div
+             * n-dimensional div
              */
-            KOKKOS_INLINE_FUNCTION auto operator()(size_t i, size_t j, size_t k) const {
+            template <typename... Idx>
+            KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
+                using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
+
+                typename E::Mesh_t::value_type res = 0;
+                for (unsigned d = 0; d < Dim; d++) {
+                    index_type coords[Dim] = {args...};
+
+                    coords[d] += 1;
+                    auto&& right = apply<Dim>(u_m, coords);
+
+                    coords[d] -= 2;
+                    auto&& left = apply<Dim>(u_m, coords);
+
+                    res += dot(vectors[d], right - left).apply();
+                }
+                return res;
+
+                /*
                 return dot(xvector_m, (u_m(i + 1, j, k) - u_m(i - 1, j, k))).apply()
                        + dot(yvector_m, (u_m(i, j + 1, k) - u_m(i, j - 1, k))).apply()
                        + dot(zvector_m, (u_m(i, j, k + 1) - u_m(i, j, k - 1))).apply();
+                       */
             }
 
         private:
-            using Mesh_t      = typename E::Mesh_t;
-            using vector_type = typename Mesh_t::vector_type;
+            constexpr static unsigned Dim = E::Mesh_t::Dimension;
+            using Mesh_t                  = typename E::Mesh_t;
+            using vector_type             = typename Mesh_t::vector_type;
             const E u_m;
-            const vector_type xvector_m;
-            const vector_type yvector_m;
-            const vector_type zvector_m;
+            vector_type vectors[Dim];
         };
 
         /*!
@@ -352,8 +370,9 @@ namespace ippl {
             KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
                 using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
                 using T                = typename E::Mesh_t::value_type;
-                T res                  = 0;
                 constexpr unsigned Dim = E::Mesh_t::Dimension;
+
+                T res = 0;
                 for (unsigned d = 0; d < Dim; d++) {
                     index_type coords[Dim] = {args...};
                     auto&& center          = apply<Dim>(u_m, coords);
