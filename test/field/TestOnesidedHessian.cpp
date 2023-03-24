@@ -102,7 +102,7 @@ double gaussian(double x, double y, double z, double sigma = 1.0, double mu = 0.
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
-    Inform msg(argv[0], "TestOnesidedHessian");
+    Inform msg("TestOnesidedHessian");
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
     constexpr unsigned int dim = 3;
@@ -229,7 +229,7 @@ int main(int argc, char* argv[]) {
     // Check if on physical boundary
     // const auto& domain        = layout.getDomain();
     // const auto& lDomains      = layout.getHostLocalDomains();
-    int myRank                = Ippl::Comm->rank();
+    // int myRank                = Ippl::Comm->rank();
     const auto& faceNeighbors = layout.getFaceNeighbors();
 
     // Assign initial values to subField
@@ -262,9 +262,9 @@ int main(int argc, char* argv[]) {
     // dumpVTKScalar(field, 0, dx, dx, dx);
     // Kokkos::fence();
 
-    msg2all << "Extents of view: (" << view.extent(0) << "," << view.extent(1) << ","
-            << view.extent(2) << ")" << endl;
-
+    // msg2all << "Extents of view: (" << view.extent(0) << "," << view.extent(1) << ","
+    //         << view.extent(2) << ")" << endl;
+    //
     // Test backwardHess on subField only
     // result = ippl::hess(field);
     // subResult = ippl::hess(subField);
@@ -282,45 +282,85 @@ int main(int argc, char* argv[]) {
     hessOp::GeneralizedHessOp<double, hessOp::DiffType::Centered, hessOp::DiffType::Centered, hessOp::DiffType::Centered>
         centerHess(field, hxInv);
 
+    
+
     // Check whether system boundaries are touched
-    const size_t stencilWidth = 3;
+    // const size_t onesidedStencilWidth = 3;
+    const size_t stencilWidth = 5;
+    const size_t halfStencilWidth = stencilWidth / 2;
     // const size_t nghostExt = nghost + stencilWidth;
     const size_t extents[dim] = {view.extent(0), view.extent(1), view.extent(2)};
-    ippl::NDIndex<dim> isSystemBoundary[2 * dim];
-    // ippl::NDIndex<dim> isCenterDomain = ippl::NDIndex<dim>(ippl::Index(nghostExt,
-    // extents[0] - nghostExt),
-    //                                                                  ippl::Index(nghostExt,
-    //                                                                  extents[1] - nghostExt),
-    //                                                                  ippl::Index(nghostExt,
-    //                                                                  extents[2] - nghostExt));
+    ippl::NDIndex<dim> systemBoundaries[2 * dim];
+    ippl::NDIndex<dim> centerDomain = ippl::NDIndex<dim>(ippl::Index(nghost, extents[0] - nghost),
+                                                           ippl::Index(nghost, extents[1] - nghost),
+                                                           ippl::Index(nghost, extents[2] - nghost));
+    // Container containing operators for each face
+    // std::vector<hessOp::BaseDiffOp<dim,double,> faceDiffOps(2*dim);
+    // for (size_t face = 0; face < 2 * dim; ++face) {
+    //     hessOp::DiffType diffArr[3] = {hessOp::DiffType::Centered, hessOp::DiffType::Centered, hessOp::DiffType::Centered};
+    //     size_t d = face / 2;
+    //     if (face & 1) {
+    //         diffArr[d] = hessOp::DiffType::Backward;
+    //     } else {  // Forward difference
+    //         diffArr[d] = hessOp::DiffType::Forward;
+    //     }
+    //     faceDiffOps[face] = ;
+    // }
+
+    // ippl::Index testIdx = {2, 10};
+    // msg << "IndexTest: " << testIdx << " + 1 =";
+    // msg << testIdx + 1 << endl;
+    // msg << "IndexTest: " << testIdx << ".grow(1) =";
+    // msg << ippl::Index(testIdx.first(), (testIdx+1).last()) << endl;
+    // msg << "IndexTest: " << testIdx << " - 1 =";
+    // msg << testIdx - 1 << endl;
 
     // Assign to each system boundary face a domain for which onesided differencing should be used
     for (size_t face = 0; face < 2 * dim; ++face) {
+        size_t d = face / 2;
+        // faceDiffOps[face] = [](){}
+
+        // System boundary case
         if (faceNeighbors[face].size() == 0) {
-            isSystemBoundary[face] = ippl::NDIndex<dim>(
-                ippl::Index(nghost, extents[0] - nghost), ippl::Index(nghost, extents[1] - nghost),
+            systemBoundaries[face] = ippl::NDIndex<dim>(
+                ippl::Index(nghost, extents[0] - nghost),
+                ippl::Index(nghost, extents[1] - nghost),
                 ippl::Index(nghost, extents[2] - nghost));
-            size_t d = face / 2;
 
             // Backward difference
             if (face & 1) {
-                isSystemBoundary[face][d] =
-                    ippl::Index(extents[d] - nghost - stencilWidth, extents[d] - nghost);
+                systemBoundaries[face][d] = ippl::Index(extents[d] - nghost - halfStencilWidth,
+                                                        extents[d] - nghost);
             } else {  // Forward difference
-                isSystemBoundary[face][d] = ippl::Index(nghost, nghost + stencilWidth);
+                systemBoundaries[face][d] = ippl::Index(nghost,
+                                                        nghost + halfStencilWidth);
+            }
+
+            size_t cLow = centerDomain[d].first();
+            size_t cHigh = centerDomain[d].last();
+            if (face % 2 == 0){
+                // msg << "arrived at " << face << "%2==0 >> (" << centerDomain[d].first()+halfStencilWidth << ", " << centerDomain[d].last() << ")" << endl;
+                centerDomain[d] = ippl::Index(cLow+halfStencilWidth, cHigh);
+            } else {
+                // msg << "arrived at" <<  face << "%2!=0 >> (" << centerDomain[d].first() << ", " << centerDomain[d].last() - halfStencilWidth << ")" << endl;
+                centerDomain[d] = ippl::Index(cLow, cHigh-halfStencilWidth);
             }
         }
+        msg << "centerDomain : " << centerDomain[0] << ", " << centerDomain[1] << ", " << centerDomain[2] << endl;
     }
 
-    if (myRank == 0) {
-        for (const auto& idxRange : isSystemBoundary) {
-            std::cout << idxRange << std::endl;
-        }
+    msg << "IdxRanges : " << endl;
+    for (const auto& idxRange : systemBoundaries) {
+        msg << idxRange << endl;
     }
+
+    msg << "centerDomain : " << centerDomain[0] << ", " << centerDomain[1] << ", " << centerDomain[2] << endl;
+
+
     // ippl::NDIndex testIndex = ippl::NDIndex<dim>(ippl::Index(4, 4+1),
     //                                                          ippl::Index(4, 4+1),
     //                                                          ippl::Index(1, 1+1));
-    // std::cout << "testIndex is center: " << isCenterDomain.contains(testIndex) << std::endl;
+    // msg << "testIndex is center: " << centerDomain.contains(testIndex) << endl;
 
     // for(size_t i = 1*nghost; i < view.extent(0) - 1*nghost; ++i){
     // for(size_t j = 1*nghost; j < view.extent(1) - 1*nghost; ++j){
@@ -328,62 +368,81 @@ int main(int argc, char* argv[]) {
     // ippl::NDIndex currNDIndex = ippl::NDIndex<dim>(ippl::Index(i, i+1),
     // ippl::Index(j, j+1),
     // ippl::Index(k, k+1));
-    ////std::cout << "(i,j,k) = " << "(" << i << "," << j << "," << k << ")" << std::endl;
-    // if (isSystemBoundary[0].contains(currNDIndex)){
-    // std::cout << currNDIndex << " || " << std::endl;
+    ////msg << "(i,j,k) = " << "(" << i << "," << j << "," << k << ")" << endl;
+    // if (systemBoundaries[0].contains(currNDIndex)){
+    // msg << currNDIndex << " || " << endl;
     //}
     // printf("(%lu, %lu, %lu)\n", i, j, k);
 
     //// Check all faces
     // view_result(i, j, k) =
-    // isCenterDomain.contains(currNDIndex) * centered_hess(i,j,k);
-    // isSystemBoundary[0].contains(currNDIndex) * forward_hess(i,j,k) +
-    // isSystemBoundary[1].contains(currNDIndex) * backward_hess(i,j,k) +
-    // isSystemBoundary[2].contains(currNDIndex) * forward_hess(i,j,k) +
-    // isSystemBoundary[3].contains(currNDIndex) * backward_hess(i,j,k) +
-    // isSystemBoundary[4].contains(currNDIndex) * forward_hess(i,j,k) +
-    // isSystemBoundary[5].contains(currNDIndex) * backward_hess(i,j,k);
+    // centerDomain.contains(currNDIndex) * centered_hess(i,j,k);
+    // systemBoundaries[0].contains(currNDIndex) * forward_hess(i,j,k) +
+    // systemBoundaries[1].contains(currNDIndex) * backward_hess(i,j,k) +
+    // systemBoundaries[2].contains(currNDIndex) * forward_hess(i,j,k) +
+    // systemBoundaries[3].contains(currNDIndex) * backward_hess(i,j,k) +
+    // systemBoundaries[4].contains(currNDIndex) * forward_hess(i,j,k) +
+    // systemBoundaries[5].contains(currNDIndex) * backward_hess(i,j,k);
 
     //}
     //}
     //}
 
     Kokkos::parallel_for(
-        "Onesided Hessian Loop",
+        "Onesided Hessian Loop [Center]",
         mdrange_type(
-            {2 * nghost, 2 * nghost, 2 * nghost},
-            {view.extent(0) - 2 * nghost, view.extent(1) - 2 * nghost,
-             view.extent(2) - 2 * nghost}),
+            // {2 * nghost, 2 * nghost, 2 * nghost},
+            // {view.extent(0) - 2 * nghost, view.extent(1) - 2 * nghost,
+            //  view.extent(2) - 2 * nghost}),
+            {centerDomain[0].first(), centerDomain[1].first(), centerDomain[2].first()},
+            {centerDomain[0].last(), centerDomain[1].last(), centerDomain[2].last()}),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             // Check which type of differencing is needed
             // ippl::NDIndex currNDIndex = ippl::NDIndex<dim>(ippl::Index(i, i+1),
             //                                                          ippl::Index(j, j+1),
             //                                                          ippl::Index(k, k+1));
 
-            // std::cout << "(i,j,k) = " << "(" << i << "," << j << "," << k << ")" << std::endl;
+            // msg << "(i,j,k) = " << "(" << i << "," << j << "," << k << ")" << endl;
 
             // if (myRank == 0){
             //     printf("(%d, %d, %d)\n", i, j, k);
             // }
-            // if (isSystemBoundary[0].contains(currNDIndex)){
-            //     std::cout << currNDIndex << " || " << std::endl;
+            // if (systemBoundaries[0].contains(currNDIndex)){
+            //     msg << currNDIndex << " || " << endl;
             // }
 
             view_result(i, j, k) = centerHess(i,j,k);
 
             // Check all faces
             // view_result(i, j, k) =
-            //                  isCenterDomain.contains(currNDIndex) * centered_hess(i,j,k) +
-            //                 isSystemBoundary[0].contains(currNDIndex) * forward_hess(i,j,k) +
-            //                 isSystemBoundary[1].contains(currNDIndex) * backward_hess(i,j,k) +
-            //                 isSystemBoundary[2].contains(currNDIndex) * forward_hess(i,j,k) +
-            //                 isSystemBoundary[3].contains(currNDIndex) * backward_hess(i,j,k) +
-            //                 isSystemBoundary[4].contains(currNDIndex) * forward_hess(i,j,k) +
-            //                 isSystemBoundary[5].contains(currNDIndex) * backward_hess(i,j,k);
+            //                  centerDomain.contains(currNDIndex) * centered_hess(i,j,k) +
+            //                 systemBoundaries[0].contains(currNDIndex) * forward_hess(i,j,k) +
+            //                 systemBoundaries[1].contains(currNDIndex) * backward_hess(i,j,k) +
+            //                 systemBoundaries[2].contains(currNDIndex) * forward_hess(i,j,k) +
+            //                 systemBoundaries[3].contains(currNDIndex) * backward_hess(i,j,k) +
+            //                 systemBoundaries[4].contains(currNDIndex) * forward_hess(i,j,k) +
+            //                 systemBoundaries[5].contains(currNDIndex) * backward_hess(i,j,k);
         });
 
-    pickHessianIdx<double,dim>(hessReductionField, result, 0, 1, 2);
-    dumpVTKScalar<double,dim>(hessReductionField, 0, dx, dx, dx);
+    // Loop through index ranges of all faces
+//
+    // for (size_t face = 0; face < 2 * dim; ++face) {
+    //     Kokkos::parallel_for(
+    //         "Onesided Hessian Loop [Center]",
+    //         mdrange_type(
+    //             // {2 * nghost, 2 * nghost, 2 * nghost},
+    //             // {view.extent(0) - 2 * nghost, view.extent(1) - 2 * nghost,
+    //             //  view.extent(2) - 2 * nghost}),
+    //             {systemBoundaries[face][0].first(), systemBoundaries[face][1].first(), systemBoundaries[face][2].first()},
+    //             {systemBoundaries[face][0].last(), systemBoundaries[face][1].last(), systemBoundaries[face][2].last()}),
+    //         KOKKOS_LAMBDA(const int i, const int j, const int k) {
+    //             // Check which type of differencing is needed
+    //             view_result(i, j, k) = centerHess(i,j,k);
+    //         });
+    // }
+
+    // pickHessianIdx<double,dim>(hessReductionField, result, 0, 1, 2);
+    // dumpVTKScalar<double,dim>(hessReductionField, 0, dx, dx, dx);
     // dumpVTKScalar(field, 0, dx, dx, dx);
 
     result = result - exact;
