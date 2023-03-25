@@ -81,6 +81,8 @@ namespace hessOp {
                 else if constexpr (Diff == DiffType::CenteredDeriv2) { return centered_stencil_deriv2<D,T,C>(hInvVector_m[D], F, i,j,k); }
             }
 
+            inline T operator()(size_type i, size_type j, size_type k) const;
+
         protected:
             const FView_t &view_m;
             Vector_t hInvVector_m;
@@ -121,36 +123,61 @@ namespace hessOp {
             }
     };
 
-    template<typename T, DiffType DiffX, DiffType DiffY, DiffType DiffZ>
-    class GeneralizedHessOp {
+    template<typename T, class ReturnType>
+    class GeneralDiffOpInterface {
         public:
             typedef ippl::Vector<T,dim> Vector_t;
             typedef ippl::Field<T,dim> Field_t;
-            typedef ippl::Vector<Vector_t,dim> Matrix_t;
+            typedef typename Field_t::view_type FView_t;
+
+            GeneralDiffOpInterface(GeneralDiffOpInterface<T,ReturnType>&& source) : view_m(std::move(source.view_m)), hInvVector_m(std::move(source.hInvVector_m)) {};
+
+            GeneralDiffOpInterface(const Field_t& field, Vector_t hInvVector) : 
+                                    view_m(field.getView()),
+                                    hInvVector_m(hInvVector) {}
+
+            virtual inline ReturnType operator()(size_type i, size_type j, size_type k) const = 0;
+        
+        protected:
+            const FView_t &view_m;
+            const Vector_t hInvVector_m;
+    };
+
+    template<typename T, class ReturnType, DiffType DiffX, DiffType DiffY, DiffType DiffZ>
+    class GeneralizedHessOp : public GeneralDiffOpInterface<T, ReturnType> {
+        public:
+            typedef ippl::Vector<T,dim> Vector_t;
+            typedef ippl::Field<T,dim> Field_t;
             typedef typename Field_t::view_type FView_t;
             
             // Define typedefs for innermost operators applied to Field<T> as they are identical on each row
             typedef DiffOpChain<Dim::X,T,DiffX,FView_t> colOpX_t;
             typedef DiffOpChain<Dim::Y,T,DiffY,FView_t> colOpY_t;
             typedef DiffOpChain<Dim::Z,T,DiffZ,FView_t> colOpZ_t;
+            // template<Dim D, DiffType Diff>
+            // using CompactDiffOp<D,T,Diff,Fview_t> = diagOp_t;
 
-            GeneralizedHessOp(const Field_t &field, Vector_t hInvVector) : view(field.getView()),
+            GeneralizedHessOp(GeneralizedHessOp<T,ReturnType,DiffX,DiffY,DiffZ>&& source) = default;
+
+            GeneralizedHessOp(const Field_t &field, Vector_t hInvVector) : 
+                                GeneralDiffOpInterface<T,ReturnType>(field, hInvVector),
                                 // Define Operators of each element of the 3x3 Hessian
-                                diff_xx(view, hInvVector), diff_xy(view, hInvVector), diff_xz(view, hInvVector),
-                                diff_yx(view, hInvVector), diff_yy(view, hInvVector), diff_yz(view, hInvVector),
-                                diff_zx(view, hInvVector), diff_zy(view, hInvVector), diff_zz(view, hInvVector) {}
+                                diff_xx(this->view_m, this->hInvVector_m), diff_xy(this->view_m, this->hInvVector_m), diff_xz(this->view_m, this->hInvVector_m),
+                                diff_yx(this->view_m, this->hInvVector_m), diff_yy(this->view_m, this->hInvVector_m), diff_yz(this->view_m, this->hInvVector_m),
+                                diff_zx(this->view_m, this->hInvVector_m), diff_zy(this->view_m, this->hInvVector_m), diff_zz(this->view_m, this->hInvVector_m){}
             
             // Compute Hessian of specific Index_t `idx`
-            inline Matrix_t operator()(size_type i, size_type j, size_type k) const {
-                Matrix_t hess_matrix;
+            inline ReturnType operator()(size_type i, size_type j, size_type k) const {
+                ReturnType hess_matrix;
                 hess_matrix[0] = {diff_xx(i,j,k), diff_xy(i,j,k), diff_xz(i,j,k)};
                 hess_matrix[1] = {diff_yx(i,j,k), diff_yy(i,j,k), diff_yz(i,j,k)};
                 hess_matrix[2] = {diff_zx(i,j,k), diff_zy(i,j,k), diff_zz(i,j,k)};
+
                 return hess_matrix;
             }
 
         private:
-            const FView_t &view;
+            // const FView_t &view;
 
             // Row 1
             DiffOpChain<Dim::X,T,DiffX,colOpX_t> diff_xx;
