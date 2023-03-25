@@ -296,62 +296,52 @@ TEST_F(FieldTest, Curl) {
 }
 
 TEST_F(FieldTest, Hessian) {
-    // Restrict to 3D case for now
-    auto mesh              = std::get<2>(meshes);
-    auto layout            = std::get<2>(layouts);
-    constexpr unsigned dim = 3;
+    auto check = [&]<unsigned Dim>(std::shared_ptr<mesh_type<Dim>>& mesh,
+                                   std::shared_ptr<layout_type<Dim>>& layout) {
+        typedef ippl::Vector<double, Dim> Vector_t;
+        typedef ippl::Field<ippl::Vector<Vector_t, Dim>, Dim> MField_t;
 
-    typedef ippl::Vector<double, dim> Vector_t;
-    typedef ippl::Field<ippl::Vector<Vector_t, dim>, dim> MField_t;
+        ippl::Field<double, Dim> field(*mesh, *layout);
+        int nghost      = field.getNghost();
+        auto view_field = field.getView();
 
-    ippl::Field<double, dim> field(*mesh, *layout);
-    int nghost      = field.getNghost();
-    auto view_field = field.getView();
+        auto lDom                        = layout->getLocalNDIndex();
+        ippl::Vector<double, Dim> hx     = mesh->getMeshSpacing();
+        ippl::Vector<double, Dim> origin = mesh->getOrigin();
 
-    auto lDom                        = layout->getLocalNDIndex();
-    ippl::Vector<double, dim> hx     = mesh->getMeshSpacing();
-    ippl::Vector<double, dim> origin = mesh->getOrigin();
+        auto toCoords = KOKKOS_LAMBDA<size_t D>(size_t x) {
+            return (0.5 + x + lDom[D].first() - nghost) * hx[D];
+        };
 
-    auto mirror = Kokkos::create_mirror_view(view_field);
-    Kokkos::deep_copy(mirror, view_field);
+        auto fieldVal = KOKKOS_LAMBDA<size_t... Dims, typename... Idx>(std::index_sequence<Dims...>,
+                                                                       const Idx... args) {
+            return ((toCoords.template operator()<Dims>(args)) * ...);
+        };
 
-    for (size_t i = 0; i < view_field.extent(0); ++i) {
-        for (size_t j = 0; j < view_field.extent(1); ++j) {
-            for (size_t k = 0; k < view_field.extent(2); ++k) {
-                // local to global index conversion
-                const int ig = i + lDom[0].first() - nghost;
-                const int jg = j + lDom[1].first() - nghost;
-                const int kg = k + lDom[2].first() - nghost;
+        Kokkos::parallel_for(
+            "Set field", field.getRangePolicy(nghost),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+                view_field(args...) = fieldVal(std::make_index_sequence<Dim>{}, args...);
+            });
 
-                double x = (ig + 0.5) * hx[0] + origin[0];
-                double y = (jg + 0.5) * hx[1] + origin[1];
-                double z = (kg + 0.5) * hx[2] + origin[2];
+        MField_t result(*mesh, *layout);
+        result = hess(field);
 
-                mirror(i, j, k) = x * y * z;
-            }
-        }
-    }
+        nghost             = result.getNghost();
+        auto view_result   = result.getView();
+        auto mirror_result = Kokkos::create_mirror_view(view_result);
+        Kokkos::deep_copy(mirror_result, view_result);
 
-    Kokkos::deep_copy(view_field, mirror);
+        nestedViewLoop<Dim>(mirror_result, nghost, [&]<typename... Idx>(const Idx... args) {
+            double det = 0;
+            for (unsigned d = 0; d < Dim; d++)
+                det += mirror_result(args...)[d][d];
+            ASSERT_DOUBLE_EQ(det, 0.);
+        });
+    };
 
-    MField_t result(*mesh, *layout);
-    result = hess(field);
-
-    nghost             = result.getNghost();
-    auto view_result   = result.getView();
-    auto mirror_result = Kokkos::create_mirror_view(view_result);
-    Kokkos::deep_copy(mirror_result, view_result);
-
-    for (size_t i = nghost; i < view_result.extent(0) - nghost; ++i) {
-        for (size_t j = nghost; j < view_result.extent(1) - nghost; ++j) {
-            for (size_t k = nghost; k < view_result.extent(2) - nghost; ++k) {
-                double det = mirror_result(i, j, k)[0][0] + mirror_result(i, j, k)[1][1]
-                             + mirror_result(i, j, k)[2][2];
-
-                ASSERT_DOUBLE_EQ(det, 0.);
-            }
-        }
-    }
+    auto pair = zip(meshes, layouts);
+    apply(check, pair);
 }
 
 int main(int argc, char* argv[]) {
