@@ -103,14 +103,15 @@ namespace ippl {
         BConds<T, Dim, M>& bcField = u.getFieldBC();
         bcField.apply(u);
         M& mesh = u.get_mesh();
-        typename M::vector_type xvector(0);
-        xvector[0] = 1.0;
-        typename M::vector_type yvector(0);
-        yvector[1] = 1.0;
-        typename M::vector_type zvector(0);
-        zvector[2] = 1.0;
-        typename M::vector_type hvector(0);
-        hvector = mesh.getMeshSpacing();
-        return detail::meta_hess<Field<T, Dim, M, C>>(u, xvector, yvector, zvector, hvector);
+
+        using vector_type = typename M::vector_type;
+        vector_type vectors[Dim];
+        for (unsigned d = 0; d < Dim; d++) {
+            vectors[d]    = 0;
+            vectors[d][d] = 1;
+        }
+        auto hvector = mesh.getMeshSpacing();
+
+        return detail::meta_hess<Field<T, Dim, M, C>>(u, vectors, hvector);
     }
 }  // namespace ippl

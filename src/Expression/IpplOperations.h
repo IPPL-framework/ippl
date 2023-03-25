@@ -456,73 +456,87 @@ namespace ippl {
         template <typename E>
         struct meta_hess
             : public Expression<meta_hess<E>,
-                                sizeof(E) + 4 * sizeof(typename E::Mesh_t::vector_type)> {
+                                sizeof(E)
+                                    + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])
+                                    + sizeof(typename E::Mesh_t::vector_type)> {
             KOKKOS_FUNCTION
-            meta_hess(const E& u, const typename E::Mesh_t::vector_type& xvector,
-                      const typename E::Mesh_t::vector_type& yvector,
-                      const typename E::Mesh_t::vector_type& zvector,
+            meta_hess(const E& u, const typename E::Mesh_t::vector_type vectors[],
                       const typename E::Mesh_t::vector_type& hvector)
                 : u_m(u)
-                , xvector_m(xvector)
-                , yvector_m(yvector)
-                , zvector_m(zvector)
-                , hvector_m(hvector) {}
+                , hvector_m(hvector) {
+                for (unsigned d = 0; d < E::Mesh_t::Dimension; d++)
+                    this->vectors[d] = vectors[d];
+            }
 
             /*
-             * 3-dimensional hessian (return Vector<Vector<T,3>,3>)
+             * n-dimensional hessian (return Vector<Vector<T,n>,n>)
              */
-            KOKKOS_INLINE_FUNCTION auto operator()(size_t i, size_t j, size_t k) const {
-                vector_type row_1, row_2, row_3;
-
-                row_1 = xvector_m
-                            * ((u_m(i + 1, j, k) - 2.0 * u_m(i, j, k) + u_m(i - 1, j, k))
-                               / (hvector_m[0] * hvector_m[0]))
-                        + yvector_m
-                              * ((u_m(i + 1, j + 1, k) - u_m(i - 1, j + 1, k) - u_m(i + 1, j - 1, k)
-                                  + u_m(i - 1, j - 1, k))
-                                 / (4.0 * hvector_m[0] * hvector_m[1]))
-                        + zvector_m
-                              * ((u_m(i + 1, j, k + 1) - u_m(i - 1, j, k + 1) - u_m(i + 1, j, k - 1)
-                                  + u_m(i - 1, j, k - 1))
-                                 / (4.0 * hvector_m[0] * hvector_m[2]));
-
-                row_2 = xvector_m
-                            * ((u_m(i + 1, j + 1, k) - u_m(i + 1, j - 1, k) - u_m(i - 1, j + 1, k)
-                                + u_m(i - 1, j - 1, k))
-                               / (4.0 * hvector_m[1] * hvector_m[0]))
-                        + yvector_m
-                              * ((u_m(i, j + 1, k) - 2.0 * u_m(i, j, k) + u_m(i, j - 1, k))
-                                 / (hvector_m[1] * hvector_m[1]))
-                        + zvector_m
-                              * ((u_m(i, j + 1, k + 1) - u_m(i, j - 1, k + 1) - u_m(i, j + 1, k - 1)
-                                  + u_m(i, j - 1, k - 1))
-                                 / (4.0 * hvector_m[1] * hvector_m[2]));
-
-                row_3 = xvector_m
-                            * ((u_m(i + 1, j, k + 1) - u_m(i + 1, j, k - 1) - u_m(i - 1, j, k + 1)
-                                + u_m(i - 1, j, k - 1))
-                               / (4.0 * hvector_m[2] * hvector_m[0]))
-                        + yvector_m
-                              * ((u_m(i, j + 1, k + 1) - u_m(i, j + 1, k - 1) - u_m(i, j - 1, k + 1)
-                                  + u_m(i, j - 1, k - 1))
-                                 / (4.0 * hvector_m[2] * hvector_m[1]))
-                        + zvector_m
-                              * ((u_m(i, j, k + 1) - 2.0 * u_m(i, j, k) + u_m(i, j, k - 1))
-                                 / (hvector_m[2] * hvector_m[2]));
-
-                matrix_type hessian = {row_1, row_2, row_3};
+            template <typename... Idx>
+            KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
+                matrix_type hessian;
+                computeHessian(std::make_index_sequence<Dim>{}, hessian, args...);
                 return hessian;
             }
 
         private:
+            constexpr static unsigned Dim = E::Mesh_t::Dimension;
+
             using Mesh_t      = typename E::Mesh_t;
             using vector_type = typename Mesh_t::vector_type;
             using matrix_type = typename Mesh_t::matrix_type;
+
             const E u_m;
-            const vector_type xvector_m;
-            const vector_type yvector_m;
-            const vector_type zvector_m;
+            vector_type vectors[Dim];
             const vector_type hvector_m;
+
+            template <size_t... row, typename... Idx>
+            KOKKOS_INLINE_FUNCTION void computeHessian(const std::index_sequence<row...>& is,
+                                                       matrix_type& hessian,
+                                                       const Idx... args) const {
+                (hessianRow<row>(is, hessian, args...), ...);
+            }
+
+            template <size_t row, size_t... col, typename... Idx>
+            KOKKOS_INLINE_FUNCTION void hessianRow(const std::index_sequence<col...>&,
+                                                   matrix_type& hessian, const Idx... args) const {
+                hessian[row] = 0;
+                (hessianEntry<row, col>(hessian, args...), ...);
+            }
+
+            template <size_t row, size_t col, typename... Idx>
+            KOKKOS_INLINE_FUNCTION void hessianEntry(matrix_type& hessian,
+                                                     const Idx... args) const {
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                index_type coords[Dim] = {args...};
+                if constexpr (row == col) {
+                    auto&& center = apply<Dim>(u_m, coords);
+
+                    coords[row] += 1;
+                    auto&& right = apply<Dim>(u_m, coords);
+
+                    coords[row] -= 2;
+                    auto&& left = apply<Dim>(u_m, coords);
+
+                    hessian[row] += vectors[row] * (right - 2. * center + left)
+                                    / (hvector_m[row] * hvector_m[row]);
+                } else {
+                    coords[row] += 1;
+                    coords[col] += 1;
+                    auto&& uu = apply<Dim>(u_m, coords);
+
+                    coords[col] -= 2;
+                    auto&& ud = apply<Dim>(u_m, coords);
+
+                    coords[row] -= 2;
+                    auto&& dd = apply<Dim>(u_m, coords);
+
+                    coords[col] += 2;
+                    auto&& du = apply<Dim>(u_m, coords);
+
+                    hessian[row] +=
+                        vectors[col] * (uu - du - ud + dd) / (4. * hvector_m[row] * hvector_m[col]);
+                }
+            }
         };
     }  // namespace detail
 }  // namespace ippl
