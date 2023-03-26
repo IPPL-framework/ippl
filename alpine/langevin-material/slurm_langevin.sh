@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --partition=hourly      # Using 'hourly' will grant higher priority, daily
-#SBATCH --time=01:00:00         # Define max time job will run // cant be more than one hour??
+#SBATCH --time=00:30:00         # Define max time job will run // cant be more than one hour??
 #SBATCH --exclusive
 #SBATCH --error=langevin.err    # Define your output file
 #SBATCH --output=langevin.out   # Define your output file
@@ -18,10 +18,10 @@
 ###########################
 
 ###########################
-NM=256
-NV=32
-# NM=16
-# NV=4
+#NM=256
+#NV=32
+NM=64
+NV=16
 
                  # 1=fixed spatial density factorC; 0=gather factor
 
@@ -33,7 +33,7 @@ VER=VMAX:6e4_DIFF:1e-7_DRAG:16e4
 
 ###########################
 OUT_DIR=data.${VER}
-COLLISION=1
+COLLISION=0
 DRAG_B=4e-7
 DIFF_B=16e4
 FCT=1
@@ -90,7 +90,17 @@ BEAMRADIUS=0.001774 #cm
 BOXL=0.01 #cm
 PRINT=1
 
-mkdir ${OUT_DIR}
+# Take first User argument as foldername if provided
+USER_OUT_DIR=$1
+USER_OUT_DIR="${USER_OUT_DIR:=langevin}"
+OUT_DIR=data/${USER_OUT_DIR}_$(date +%m%d_%H%M)
+
+# Create directory to write output data and this script
+mkdir -p ${OUT_DIR}
+# Copy this script to the data directory (follows symlinks)
+THIS_FILE="$(readlink -f "$0")"
+cp ${THIS_FILE} ${OUT_DIR}/jobscript.sh
+
 ###########################
 srun Langevin \
 FFT 1.0 2.0 \
