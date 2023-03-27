@@ -494,7 +494,7 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view1, fd_m, nghost1, ldom1, nsends);
+                    pack(intersection, view1, fd_m, nghost1, ldom1, nsends);
 
                     buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
 
@@ -521,7 +521,7 @@ namespace ippl {
                                      nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Mesh, Centering>(intersection, view2, fd_m, nghost2, ldom2);
+                    unpack(intersection, view2, fd_m, nghost2, ldom2);
                 }
             }
 
@@ -617,7 +617,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
 
                         Communicate::size_type nsends;
-                        pack<Mesh, Centering>(intersection, view2, fd_m, nghost2, ldom2, nsends);
+                        pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
 
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
 
@@ -642,7 +642,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
 
-                        unpack<Mesh, Centering>(intersection, view1, fd_m, nghost1, ldom1);
+                        unpack(intersection, view1, fd_m, nghost1, ldom1);
                     }
                 }
 
@@ -776,7 +776,7 @@ namespace ippl {
                             requests.resize(requests.size() + 1);
 
                             Communicate::size_type nsends;
-                            pack<Mesh, Centering>(intersection, view2, fd_m, nghost2, ldom2, nsends);
+                            pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
 
                             buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
 
@@ -802,7 +802,7 @@ namespace ippl {
                             Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                             buf->resetReadPos();
 
-                            unpack<Mesh, Centering>(intersection, viewL, gd, fd_m, nghostL, ldom1);
+                            unpack(intersection, viewL, gd, fd_m, nghostL, ldom1);
                         }
                     }
 
@@ -1123,7 +1123,7 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + i, nsends);
 
@@ -1150,7 +1150,7 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 8 + i, nsends);
 
@@ -1177,7 +1177,7 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
                         Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 2 * 8 + i, nsends);
@@ -1205,7 +1205,7 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
                         Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 3 * 8 + i, nsends);
@@ -1246,7 +1246,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+i, nsends);
     
@@ -1273,7 +1273,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+8+i, nsends);
     
@@ -1300,7 +1300,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+2*8+i, nsends);
     
@@ -1327,7 +1327,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+3*8+i, nsends);
     
@@ -1356,7 +1356,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+4*8+i, nsends);
     
@@ -1385,7 +1385,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+5*8+i, nsends);
     
@@ -1414,7 +1414,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+6*8+i, nsends);
     
@@ -1445,7 +1445,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+7*8+i, nsends);
     
@@ -1476,7 +1476,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom);
+                        unpack(intersection, view, fd_m, nghost, ldom);
                     }
                 }
                         
@@ -1508,7 +1508,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, false, false);
+                        unpack(intersection, view, fd_m, nghost, ldom, true, false, false);
                     }
                 }
     
@@ -1540,7 +1540,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, true, false);
+                        unpack(intersection, view, fd_m, nghost, ldom, false, true, false);
                     }
                 }
     
@@ -1572,7 +1572,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, false, true);
+                        unpack(intersection, view, fd_m, nghost, ldom, false, false, true);
                     }
                 }
     
@@ -1608,7 +1608,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, true, false);
+                        unpack(intersection, view, fd_m, nghost, ldom, true, true, false);
                     }
                 }
     
@@ -1644,7 +1644,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, true, true);
+                        unpack(intersection, view, fd_m, nghost, ldom, false, true, true);
                     }
                 }
     
@@ -1680,7 +1680,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, false, true);
+                        unpack(intersection, view, fd_m, nghost, ldom, true, false, true);
                     }
                 }
     
@@ -1720,7 +1720,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, true, true);
+                        unpack(intersection, view, fd_m, nghost, ldom, true, true, true);
                     }
 
                 }
@@ -1763,7 +1763,7 @@ namespace ippl {
                     Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, true, true);
+                    unpack(intersection, view, fd_m, nghost, ldom, true, true, true);
                 }
             }
         }
