@@ -319,7 +319,7 @@ namespace ippl {
             grnL_m.initialize(*mesh4_m, *layout4_m);
 
             // create a Complex-to-Complex FFT object to transform for layout4
-            fft4n_m = std::make_unique<FFT<CCTransform, Dim, double, Mesh, Centering>>(*layout4_m, this->params_m);
+            fft4n_m = std::make_unique<FFT<CCTransform, Dim, Trhs, Mesh, Centering>>(*layout4_m, this->params_m);
 
             IpplTimings::stopTimer(initialize_vico);
         }
@@ -496,7 +496,7 @@ namespace ippl {
                     Communicate::size_type nsends;
                     pack<Mesh, Centering>(intersection, view1, fd_m, nghost1, ldom1, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_SOLVER_SEND + i, nsends);
+                    buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
 
                     Ippl::Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
@@ -515,9 +515,9 @@ namespace ippl {
                     nrecvs = intersection.size();
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_SOLVER_RECV + myRank, nrecvs);
+                        Ippl::Comm->getBuffer<Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
 
-                    Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(double),
+                    Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
                                      nrecvs);
                     buf->resetReadPos();
 
@@ -896,13 +896,13 @@ namespace ippl {
                         const int kg = k + ldom_g[2].first() - nghost_g;
 
                         bool isOutside = (ig > 2 * size[0] - 1);
-                        const double t = ig * hs_m[0] + isOutside * origin[0];
+                        const Trhs t = ig * hs_m[0] + isOutside * origin[0];
 
                         isOutside      = (jg > 2 * size[1] - 1);
-                        const double u = jg * hs_m[1] + isOutside * origin[1];
+                        const Trhs u = jg * hs_m[1] + isOutside * origin[1];
 
                         isOutside      = (kg > 2 * size[2] - 1);
-                        const double v = kg * hs_m[2] + isOutside * origin[2];
+                        const Trhs v = kg * hs_m[2] + isOutside * origin[2];
 
                         double s = (t * t) + (u * u) + (v * v);
                         s        = std::sqrt(s);
@@ -911,8 +911,8 @@ namespace ippl {
                         // if (0,0,0), assign L^2/2 (analytical limit of sinc)
 
                         const bool isOrig        = ((ig == 0 && jg == 0 && kg == 0));
-                        const double analyticLim = -L_sum * L_sum * 0.5;
-                        const double value = -2.0 * (std::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
+                        const Trhs analyticLim = -L_sum * L_sum * 0.5;
+                        const Trhs value = -2.0 * (std::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
                                              * (std::sin(0.5 * L_sum * s) / (s + isOrig * 1.0));
 
                         view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
@@ -931,15 +931,15 @@ namespace ippl {
                         const int kg = k + ldom_g[2].first() - nghost_g;
 
                         bool isOutside = (ig > 2 * size[0] - 1);
-                        const double t = ig * hs_m[0] + isOutside * origin[0];
+                        const Trhs t = ig * hs_m[0] + isOutside * origin[0];
 
                         isOutside      = (jg > 2 * size[1] - 1);
-                        const double u = jg * hs_m[1] + isOutside * origin[1];
+                        const Trhs u = jg * hs_m[1] + isOutside * origin[1];
 
                         isOutside      = (kg > 2 * size[2] - 1);
-                        const double v = kg * hs_m[2] + isOutside * origin[2];
+                        const Trhs v = kg * hs_m[2] + isOutside * origin[2];
 
-                        double s = (t * t) + (u * u) + (v * v);
+                        Trhs s = (t * t) + (u * u) + (v * v);
                         s        = std::sqrt(s);
 
                         // assign value and replace with analytic limit at origin (0,0,0)
@@ -959,19 +959,12 @@ namespace ippl {
 
             IpplTimings::stopTimer(fft4);
 
-<<<<<<< HEAD
-                                buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
-
-                                Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
-                                buf->resetReadPos();
-=======
             // Restrict transformed grnL_m to 2N domain after precomputation step
 
             // get the field data first
             typename Field_t::view_type view = grn_mr.getView();
             const int nghost                 = grn_mr.getNghost();
             const auto& ldom                 = layout2_m->getLocalNDIndex();
->>>>>>> 310d6fe588b8707b97b68c6db6b95853de0efec3
 
             // start a timer
             static IpplTimings::TimerRef ifftshift = IpplTimings::getTimer("Vico shift loop");
@@ -1032,17 +1025,9 @@ namespace ippl {
 
             grn_mr = -1.0 / (4.0 * pi * sqrt(grn_mr));
 
-<<<<<<< HEAD
-            if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
-            
-                Vector_t l(hr_m * nr_m);
-                Vector_t hs_m;
-                Trhs L_sum (0.0);                
-=======
             typename Field_t::view_type view = grn_mr.getView();
             const int nghost                 = grn_mr.getNghost();
             const auto& ldom                 = layout2_m->getLocalNDIndex();
->>>>>>> 310d6fe588b8707b97b68c6db6b95853de0efec3
 
             // Kokkos parallel for loop to find (0,0,0) point and regularize
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
@@ -1073,33 +1058,6 @@ namespace ippl {
         IpplTimings::stopTimer(fftg);
     };
 
-<<<<<<< HEAD
-                // Kokkos parallel for loop to assign analytic grnL_m
-                using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-		
-                if (alg_m == "VICO") {
-                    Kokkos::parallel_for("Initialize Green's function ",
-                        mdrange_type({nghost_g, nghost_g, nghost_g},
-                        {view_g.extent(0)-nghost_g, view_g.extent(1)-nghost_g, view_g.extent(2)-nghost_g}),
-                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                  
-                        // go from local indices to global
-                        const int ig = i + ldom_g[0].first() - nghost_g;
-                        const int jg = j + ldom_g[1].first() - nghost_g;
-                        const int kg = k + ldom_g[2].first() - nghost_g;
-
-                        bool isOutside = (ig > 2*size[0]-1);
-                        Trhs t = ig*hs_m[0] + isOutside*origin[0];
-
-                        isOutside = (jg > 2*size[1]-1);
-                        Trhs u = jg*hs_m[1] + isOutside*origin[1];
-
-                        isOutside = (kg > 2*size[2]-1);
-                        Trhs v = kg*hs_m[2] + isOutside*origin[2];
-
-                        Trhs s = (t*t) + (u*u) + (v*v);
-                        s = std::sqrt(s);
-=======
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::communicateVico(
         Vector<int, Dim> size, typename CxField_t::view_type view_g,
@@ -1159,7 +1117,6 @@ namespace ippl {
 
             if (domain2.touches(none)) {
                 auto intersection = domain2.intersect(none);
->>>>>>> 310d6fe588b8707b97b68c6db6b95853de0efec3
 
                 if (ldom_g.touches(intersection)) {
                     intersection = intersection.intersect(ldom_g);
@@ -1170,19 +1127,6 @@ namespace ippl {
 
                     buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + i, nsends);
 
-<<<<<<< HEAD
-                        bool isOutside = (ig > 2*size[0]-1);
-                        Trhs t = ig*hs_m[0] + isOutside*origin[0];
-
-                        isOutside = (jg > 2*size[1]-1);
-                        Trhs u = jg*hs_m[1] + isOutside*origin[1];
-
-                        isOutside = (kg > 2*size[2]-1);
-                        Trhs v = kg*hs_m[2] + isOutside*origin[2];
-
-                        Trhs s = (t*t) + (u*u) + (v*v);
-                        s = std::sqrt(s);
-=======
                     int tag = VICO_SOLVER_TAG;
 
                     Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
@@ -1199,7 +1143,6 @@ namespace ippl {
                 domain4[0] = xdom;
                 domain4[1] = intersection[1];
                 domain4[2] = intersection[2];
->>>>>>> 310d6fe588b8707b97b68c6db6b95853de0efec3
 
                 if (ldom_g.touches(domain4)) {
                     intersection = ldom_g.intersect(domain4);
@@ -1291,7 +1234,6 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-<<<<<<< HEAD
             // 2nd step: send
             for (int i = 0; i < ranks; ++i) {
                 auto domain2 = lDomains2[i];
@@ -1304,7 +1246,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+i, nsends);
     
@@ -1331,7 +1273,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+8+i, nsends);
     
@@ -1358,7 +1300,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+2*8+i, nsends);
     
@@ -1385,7 +1327,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+3*8+i, nsends);
     
@@ -1414,7 +1356,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+4*8+i, nsends);
     
@@ -1443,7 +1385,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+5*8+i, nsends);
     
@@ -1472,7 +1414,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+6*8+i, nsends);
     
@@ -1503,7 +1445,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
     
                         Communicate::size_type nsends;
-                        pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                        pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
     
                         buffer_type buf = Ippl::Comm->getBuffer<Trhs>(IPPL_VICO_SEND+7*8+i, nsends);
     
@@ -1534,7 +1476,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack(intersection, view, fd_m, nghost, ldom);
+                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom);
                     }
                 }
                         
@@ -1566,7 +1508,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack(intersection, view, fd_m, nghost, ldom, true, false, false);
+                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, false, false);
                     }
                 }
     
@@ -1598,7 +1540,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack(intersection, view, fd_m, nghost, ldom, false, true, false);
+                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, true, false);
                     }
                 }
     
@@ -1630,7 +1572,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack(intersection, view, fd_m, nghost, ldom, false, false, true);
+                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, false, true);
                     }
                 }
     
@@ -1666,7 +1608,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack(intersection, view, fd_m, nghost, ldom, true, true, false);
+                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, true, false);
                     }
                 }
     
@@ -1702,7 +1644,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack(intersection, view, fd_m, nghost, ldom, false, true, true);
+                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, true, true);
                     }
                 }
     
@@ -1738,7 +1680,7 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack(intersection, view, fd_m, nghost, ldom, true, false, true);
+                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, false, true);
                     }
                 }
     
@@ -1778,346 +1720,9 @@ namespace ippl {
                         Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
     
-                        unpack(intersection, view, fd_m, nghost, ldom, true, true, true);
+                        unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, true, true);
                     }
-=======
-                    Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 4 * 8 + i, nsends);
-
-                    int tag = VICO_SOLVER_TAG + 4;
-
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
-                    buf->resetWritePos();
-                }
-            }
-
-            if (domain2.touches(yz)) {
-                auto intersection = domain2.intersect(yz);
-                auto ydom         = ippl::Index((2 * size[1] - intersection[1].first()),
-                                                (2 * size[1] - intersection[1].last()), -1);
-                auto zdom         = ippl::Index((2 * size[2] - intersection[2].first()),
-                                                (2 * size[2] - intersection[2].last()), -1);
-
-                ippl::NDIndex<Dim> domain4;
-                domain4[0] = intersection[0];
-                domain4[1] = ydom;
-                domain4[2] = zdom;
-
-                if (ldom_g.touches(domain4)) {
-                    intersection = ldom_g.intersect(domain4);
-
-                    requests.resize(requests.size() + 1);
-
-                    Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
-
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 5 * 8 + i, nsends);
-
-                    int tag = VICO_SOLVER_TAG + 5;
-
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
-                    buf->resetWritePos();
-                }
-            }
-
-            if (domain2.touches(xz)) {
-                auto intersection = domain2.intersect(xz);
-                auto xdom         = ippl::Index((2 * size[0] - intersection[0].first()),
-                                                (2 * size[0] - intersection[0].last()), -1);
-                auto zdom         = ippl::Index((2 * size[2] - intersection[2].first()),
-                                                (2 * size[2] - intersection[2].last()), -1);
-
-                ippl::NDIndex<Dim> domain4;
-                domain4[0] = xdom;
-                domain4[1] = intersection[1];
-                domain4[2] = zdom;
-
-                if (ldom_g.touches(domain4)) {
-                    intersection = ldom_g.intersect(domain4);
-
-                    requests.resize(requests.size() + 1);
-
-                    Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
-
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 6 * 8 + i, nsends);
-
-                    int tag = VICO_SOLVER_TAG + 6;
-
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
-                    buf->resetWritePos();
-                }
-            }
-
-            if (domain2.touches(xyz)) {
-                auto intersection = domain2.intersect(xyz);
-                auto xdom         = ippl::Index((2 * size[0] - intersection[0].first()),
-                                                (2 * size[0] - intersection[0].last()), -1);
-                auto ydom         = ippl::Index((2 * size[1] - intersection[1].first()),
-                                                (2 * size[1] - intersection[1].last()), -1);
-                auto zdom         = ippl::Index((2 * size[2] - intersection[2].first()),
-                                                (2 * size[2] - intersection[2].last()), -1);
-
-                ippl::NDIndex<Dim> domain4;
-                domain4[0] = xdom;
-                domain4[1] = ydom;
-                domain4[2] = zdom;
-
-                if (ldom_g.touches(domain4)) {
-                    intersection = ldom_g.intersect(domain4);
-
-                    requests.resize(requests.size() + 1);
-
-                    Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
-
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 7 * 8 + i, nsends);
-
-                    int tag = VICO_SOLVER_TAG + 7;
-
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
-                    buf->resetWritePos();
-                }
-            }
-        }
-
-        // 3rd step: receive
-        for (int i = 0; i < ranks; ++i) {
-            if (ldom.touches(none)) {
-                auto intersection = ldom.intersect(none);
-
-                if (lDomains4[i].touches(intersection)) {
-                    intersection = intersection.intersect(lDomains4[i]);
-
-                    Communicate::size_type nrecvs;
-                    nrecvs = intersection.size();
-
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + myRank, nrecvs);
-
-                    int tag = VICO_SOLVER_TAG;
-
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
-                    buf->resetReadPos();
-
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom);
-                }
-            }
-
-            if (ldom.touches(x)) {
-                auto intersection = ldom.intersect(x);
-
-                auto xdom = ippl::Index((2 * size[0] - intersection[0].first()),
-                                        (2 * size[0] - intersection[0].last()), -1);
-
-                ippl::NDIndex<Dim> domain4;
-                domain4[0] = xdom;
-                domain4[1] = intersection[1];
-                domain4[2] = intersection[2];
-
-                if (lDomains4[i].touches(domain4)) {
-                    domain4    = lDomains4[i].intersect(domain4);
-                    domain4[0] = ippl::Index(2 * size[0] - domain4[0].first(),
-                                             2 * size[0] - domain4[0].last(), -1);
-
-                    intersection = intersection.intersect(domain4);
-
-                    Communicate::size_type nrecvs;
-                    nrecvs = intersection.size();
-
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 + myRank, nrecvs);
-
-                    int tag = VICO_SOLVER_TAG + 1;
-
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
-                    buf->resetReadPos();
-
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, false, false);
-                }
-            }
-
-            if (ldom.touches(y)) {
-                auto intersection = ldom.intersect(y);
-
-                auto ydom = ippl::Index((2 * size[1] - intersection[1].first()),
-                                        (2 * size[1] - intersection[1].last()), -1);
-
-                ippl::NDIndex<Dim> domain4;
-                domain4[0] = intersection[0];
-                domain4[1] = ydom;
-                domain4[2] = intersection[2];
-
-                if (lDomains4[i].touches(domain4)) {
-                    domain4    = lDomains4[i].intersect(domain4);
-                    domain4[1] = ippl::Index(2 * size[1] - domain4[1].first(),
-                                             2 * size[1] - domain4[1].last(), -1);
-
-                    intersection = intersection.intersect(domain4);
-
-                    Communicate::size_type nrecvs;
-                    nrecvs = intersection.size();
-
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 * 2 + myRank, nrecvs);
-
-                    int tag = VICO_SOLVER_TAG + 2;
-
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
-                    buf->resetReadPos();
-
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, true, false);
-                }
-            }
-
-            if (ldom.touches(z)) {
-                auto intersection = ldom.intersect(z);
-
-                auto zdom = ippl::Index((2 * size[2] - intersection[2].first()),
-                                        (2 * size[2] - intersection[2].last()), -1);
-
-                ippl::NDIndex<Dim> domain4;
-                domain4[0] = intersection[0];
-                domain4[1] = intersection[1];
-                domain4[2] = zdom;
-
-                if (lDomains4[i].touches(domain4)) {
-                    domain4    = lDomains4[i].intersect(domain4);
-                    domain4[2] = ippl::Index(2 * size[2] - domain4[2].first(),
-                                             2 * size[2] - domain4[2].last(), -1);
-
-                    intersection = intersection.intersect(domain4);
-
-                    Communicate::size_type nrecvs;
-                    nrecvs = intersection.size();
-
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 * 3 + myRank, nrecvs);
-
-                    int tag = VICO_SOLVER_TAG + 3;
-
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
-                    buf->resetReadPos();
-
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, false, true);
-                }
-            }
-
-            if (ldom.touches(xy)) {
-                auto intersection = ldom.intersect(xy);
-
-                auto xdom = ippl::Index((2 * size[0] - intersection[0].first()),
-                                        (2 * size[0] - intersection[0].last()), -1);
-                auto ydom = ippl::Index((2 * size[1] - intersection[1].first()),
-                                        (2 * size[1] - intersection[1].last()), -1);
-
-                ippl::NDIndex<Dim> domain4;
-                domain4[0] = xdom;
-                domain4[1] = ydom;
-                domain4[2] = intersection[2];
-
-                if (lDomains4[i].touches(domain4)) {
-                    domain4    = lDomains4[i].intersect(domain4);
-                    domain4[0] = ippl::Index(2 * size[0] - domain4[0].first(),
-                                             2 * size[0] - domain4[0].last(), -1);
-                    domain4[1] = ippl::Index(2 * size[1] - domain4[1].first(),
-                                             2 * size[1] - domain4[1].last(), -1);
-
-                    intersection = intersection.intersect(domain4);
-
-                    Communicate::size_type nrecvs;
-                    nrecvs = intersection.size();
-
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 * 4 + myRank, nrecvs);
-
-                    int tag = VICO_SOLVER_TAG + 4;
-
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
-                    buf->resetReadPos();
-
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, true, false);
-                }
-            }
-
-            if (ldom.touches(yz)) {
-                auto intersection = ldom.intersect(yz);
-
-                auto ydom = ippl::Index((2 * size[1] - intersection[1].first()),
-                                        (2 * size[1] - intersection[1].last()), -1);
-                auto zdom = ippl::Index((2 * size[2] - intersection[2].first()),
-                                        (2 * size[2] - intersection[2].last()), -1);
-
-                ippl::NDIndex<Dim> domain4;
-                domain4[0] = intersection[0];
-                domain4[1] = ydom;
-                domain4[2] = zdom;
-
-                if (lDomains4[i].touches(domain4)) {
-                    domain4    = lDomains4[i].intersect(domain4);
-                    domain4[1] = ippl::Index(2 * size[1] - domain4[1].first(),
-                                             2 * size[1] - domain4[1].last(), -1);
-                    domain4[2] = ippl::Index(2 * size[2] - domain4[2].first(),
-                                             2 * size[2] - domain4[2].last(), -1);
-
-                    intersection = intersection.intersect(domain4);
-
-                    Communicate::size_type nrecvs;
-                    nrecvs = intersection.size();
-
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 * 5 + myRank, nrecvs);
-
-                    int tag = VICO_SOLVER_TAG + 5;
-
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
-                    buf->resetReadPos();
-
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, true, true);
-                }
-            }
-
-            if (ldom.touches(xz)) {
-                auto intersection = ldom.intersect(xz);
-
-                auto xdom = ippl::Index((2 * size[0] - intersection[0].first()),
-                                        (2 * size[0] - intersection[0].last()), -1);
-                auto zdom = ippl::Index((2 * size[2] - intersection[2].first()),
-                                        (2 * size[2] - intersection[2].last()), -1);
-
-                ippl::NDIndex<Dim> domain4;
-                domain4[0] = xdom;
-                domain4[1] = intersection[1];
-                domain4[2] = zdom;
-
-                if (lDomains4[i].touches(domain4)) {
-                    domain4    = lDomains4[i].intersect(domain4);
-                    domain4[0] = ippl::Index(2 * size[0] - domain4[0].first(),
-                                             2 * size[0] - domain4[0].last(), -1);
-                    domain4[2] = ippl::Index(2 * size[2] - domain4[2].first(),
-                                             2 * size[2] - domain4[2].last(), -1);
-
-                    intersection = intersection.intersect(domain4);
-
-                    Communicate::size_type nrecvs;
-                    nrecvs = intersection.size();
-
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 * 6 + myRank, nrecvs);
-
-                    int tag = VICO_SOLVER_TAG + 6;
-
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
-                    buf->resetReadPos();
-
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, false, true);
->>>>>>> 310d6fe588b8707b97b68c6db6b95853de0efec3
                 }
             }
 
