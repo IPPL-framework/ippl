@@ -199,6 +199,40 @@ namespace ippl {
     }
 
     template <unsigned Dim>
+    void FieldLayout<Dim>::findPeriodicNeighbors(const int nghost, const NDIndex<Dim>& localDomain,
+                                                 NDIndex<Dim>& grown, NDIndex<Dim>& neighborDomain,
+                                                 const int rank,
+                                                 std::map<unsigned int, int>& offsets, unsigned d0,
+                                                 unsigned codim) {
+        for (unsigned int d = d0; d < Dim; ++d) {
+            // 0 - check upper boundary
+            // 1 - check lower boundary
+            for (int k = 0; k < 2; ++k) {
+                auto offset = offsets[d] = getPeriodicOffset(localDomain, d, k);
+                if (offset == 0)
+                    continue;
+
+                grown[d] += offset;
+
+                if (grown.touches(neighborDomain)) {
+                    auto intersect = grown.intersect(neighborDomain);
+                    for (auto& [d, offset] : offsets)
+                        neighborDomain[d] -= offset;
+                    addNeighbors(grown, localDomain, neighborDomain, intersect, nghost, rank);
+                    for (auto& [d, offset] : offsets)
+                        neighborDomain[d] += offset;
+                }
+                if (codim + 1 < Dim)
+                    findPeriodicNeighbors(nghost, localDomain, grown, neighborDomain, rank, offsets,
+                                          d + 1, codim + 1);
+
+                grown[d] -= offset;
+                offsets.erase(d);
+            }
+        }
+    }
+
+    template <unsigned Dim>
     void FieldLayout<Dim>::findNeighbors(int nghost) {
         /* We need to reset the neighbor list
          * and its ranges because of the repartitioner.
@@ -238,80 +272,17 @@ namespace ippl {
 
             IpplTimings::startTimer(findPeriodicNeighborsTimer);
             if (isAllPeriodic_m) {
-                int offsetd0, offsetd1, offsetd2;
-                for (unsigned int d0 = 0; d0 < Dim; ++d0) {
-                    // The k loop is for checking whether our local
-                    // domain touches both min. and max. extents of the
-                    // global domain as this can happen in 1D, 2D decompositions
-                    // and also in less no. of cores (like <=4)
-                    for (int k0 = 0; k0 < 2; ++k0) {
-                        offsetd0 = getPeriodicOffset(nd, d0, k0);
-                        if (offsetd0 == 0)
-                            continue;
-
-                        gnd[d0] = gnd[d0] + offsetd0;
-                        if (gnd.touches(ndNeighbor)) {
-                            auto intersect = gnd.intersect(ndNeighbor);
-                            ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
-                            addNeighbors(gnd, nd, ndNeighbor, intersect, nghost, rank);
-                            ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
-                        }
-
-                        // The following loop is to find the periodic edge neighbors of
-                        // the domain in the physical boundary
-                        for (unsigned int d1 = d0 + 1; d1 < Dim; ++d1) {
-                            for (int k1 = 0; k1 < 2; ++k1) {
-                                offsetd1 = getPeriodicOffset(nd, d1, k1);
-                                if (offsetd1 == 0)
-                                    continue;
-
-                                gnd[d1] = gnd[d1] + offsetd1;
-                                if (gnd.touches(ndNeighbor)) {
-                                    auto intersect = gnd.intersect(ndNeighbor);
-                                    ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
-                                    ndNeighbor[d1] = ndNeighbor[d1] - offsetd1;
-                                    addNeighbors(gnd, nd, ndNeighbor, intersect, nghost, rank);
-                                    ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
-                                    ndNeighbor[d1] = ndNeighbor[d1] + offsetd1;
-                                }
-
-                                // The following loop is to find the vertex neighbors of
-                                // the domain in the physical boundary
-                                for (unsigned int d2 = d1 + 1; d2 < Dim; ++d2) {
-                                    for (int k2 = 0; k2 < 2; ++k2) {
-                                        offsetd2 = getPeriodicOffset(nd, d2, k2);
-                                        if (offsetd2 == 0)
-                                            continue;
-
-                                        gnd[d2] = gnd[d2] + offsetd2;
-                                        if (gnd.touches(ndNeighbor)) {
-                                            auto intersect = gnd.intersect(ndNeighbor);
-                                            ndNeighbor[d0] = ndNeighbor[d0] - offsetd0;
-                                            ndNeighbor[d1] = ndNeighbor[d1] - offsetd1;
-                                            ndNeighbor[d2] = ndNeighbor[d2] - offsetd2;
-                                            addNeighbors(gnd, nd, ndNeighbor, intersect, nghost,
-                                                         rank);
-                                            ndNeighbor[d0] = ndNeighbor[d0] + offsetd0;
-                                            ndNeighbor[d1] = ndNeighbor[d1] + offsetd1;
-                                            ndNeighbor[d2] = ndNeighbor[d2] + offsetd2;
-                                        }
-                                        gnd[d2] = gnd[d2] - offsetd2;
-                                    }
-                                }
-                                gnd[d1] = gnd[d1] - offsetd1;
-                            }
-                        }
-                        gnd[d0] = gnd[d0] - offsetd0;
-                    }
-                }
+                std::map<unsigned int, int> offsets;
+                findPeriodicNeighbors(nghost, nd, gnd, ndNeighbor, rank, offsets);
             }
             IpplTimings::stopTimer(findPeriodicNeighborsTimer);
         }
     }
 
     template <unsigned Dim>
-    void FieldLayout<Dim>::addNeighbors(NDIndex_t& gnd, NDIndex_t& nd, NDIndex_t& ndNeighbor,
-                                        NDIndex_t& intersect, int nghost, int rank) {
+    void FieldLayout<Dim>::addNeighbors(const NDIndex_t& gnd, const NDIndex_t& nd,
+                                        const NDIndex_t& ndNeighbor, const NDIndex_t& intersect,
+                                        int nghost, int rank) {
         bound_type rangeSend, rangeRecv;
         rangeSend = getBounds(nd, ndNeighbor, nd, nghost);
 

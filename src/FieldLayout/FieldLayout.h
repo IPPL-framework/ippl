@@ -23,6 +23,7 @@
 
 #include <array>
 #include <iostream>
+#include <map>
 #include <vector>
 
 #include "Types/ViewTypes.h"
@@ -203,10 +204,14 @@ namespace ippl {
 
         static int getMatchingIndex(int index);
 
+        void findPeriodicNeighbors(const int nghost, const NDIndex<Dim>& localDomain,
+                                   NDIndex<Dim>& grown, NDIndex<Dim>& neighborDomain,
+                                   const int rank, std::map<unsigned int, int>& offsets,
+                                   unsigned d0 = 0, unsigned codim = 0);
         void findNeighbors(int nghost = 1);
 
-        void addNeighbors(NDIndex_t& gnd, NDIndex_t& nd, NDIndex_t& ndNeighbor,
-                          NDIndex_t& intersect, int nghost, int rank);
+        void addNeighbors(const NDIndex_t& gnd, const NDIndex_t& nd, const NDIndex_t& ndNeighbor,
+                          const NDIndex_t& intersect, int nghost, int rank);
 
         void write(std::ostream& = std::cout) const;
 
