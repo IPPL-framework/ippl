@@ -1098,30 +1098,30 @@ m << "temperature" << endl;
 
             if(time_m == 0.0) {
         csvout  <<          
-                    "iteration, "           <<
-                    "time,   "              << 
+                    "iteration,"           <<
+                    "time,"              << 
                     // "E_X_field_energy, " << 
                     // "E_X_max_norm, "     << 
-                    "T_X,    "              <<
+                    "T_X,"              <<
                     "rvrms_X,"              <<
-                    "eps_X,  "              <<
+                    "eps_X,"              <<
                     "Neps_X,"              <<  
                     endl;
 
 		csvout2 <<  
                     "iteration,"            << 
-                    "vmaxX,vmaxY,vmaxZ,"    <<"                                        "<<
-                    "vminX,vminY,vminZ,"    <<"                                        "<<
-                    "rmaxX,rmaxY,rmaxZ,"    <<"                                        "<<
-                    "rminX,rminY,rminZ,"    <<"                                        "<<
-                    "vrmsX,vrmsY,vrmsZ,"    <<"                                        "<<
-                    "Tx,Ty,Tz,"             <<"                                        "<<
-                    "epsX,epsY,epsZ,"       <<"                                        "<<
-                    "epsX2,epsY2,epsZ2,"    <<"                                        "<<
-                    "rvrmsX,rvrmsY,rvrmsZ," <<"                                        "<<
-                    "rrmsX,rrmsY,rrmsZ,"    <<"                                        "<<
-                    "rmeanX,rmeanY,rmeanZ," <<"                                        "<<
-                    "vmeanX,vmeanY,vmeanZ," <<"                                        "<<
+                    "vmaxX,vmaxY,vmaxZ,"    <<
+                    "vminX,vminY,vminZ,"    <<
+                    "rmaxX,rmaxY,rmaxZ,"    <<
+                    "rminX,rminY,rminZ,"    <<
+                    "vrmsX,vrmsY,vrmsZ,"    <<
+                    "Tx,Ty,Tz,"             <<
+                    "epsX,epsY,epsZ,"       <<
+                    "epsX2,epsY2,epsZ2,"    <<
+                    "rvrmsX,rvrmsY,rvrmsZ," <<
+                    "rrmsX,rrmsY,rrmsZ,"    <<
+                    "rmeanX,rmeanY,rmeanZ," <<
+                    "vmeanX,vmeanY,vmeanZ," <<
                     "time,"                 <<
                     "Ex_field_energy,"      <<
                     "Ex_max_norm,"          <<
@@ -1141,18 +1141,18 @@ m << "temperature" << endl;
 
             csvout2<<   
                     iteration   <<","<<
-                            vmax[0]<<","<<        vmax[1]<<","<<        vmax[2]<<",     "<<
-                            vmin[0]<<","<<        vmin[1]<<","<<        vmin[2]<<",     "<<	
-                            rmax[0]<<","<<        rmax[1]<<","<<        rmax[2]<<",     "<<
-                            rmin[0]<<","<<        rmin[1]<<","<<        rmin[2]<<",     "<<	
-                    vrms        (0)<<","<<vrms        (1)<<","<<vrms        (2)<<",     "<<
-                    temperature (0)<<","<<temperature (1)<<","<<temperature (2)<<",     "<<
-                    eps         (0)<<","<<eps         (1)<<","<<eps         (2)<<",     "<<
-                    eps2        (0)<<","<<eps2        (1)<<","<<eps2        (2)<<",     "<<
-                    rvrms       (0)<<","<<rvrms       (1)<<","<<rvrms       (2)<<",     "<<	
-                    rrms        (0)<<","<<rrms        (1)<<","<<rrms        (2)<<",     "<<
-                    rmean       (0)<<","<<rmean       (1)<<","<<rmean       (2)<<",     "<<
-                    vmean       (0)<<","<<vmean       (1)<<","<<vmean       (2)<<",     "<<
+                            vmax[0]<<","<<        vmax[1]<<","<<        vmax[2]<<","<<
+                            vmin[0]<<","<<        vmin[1]<<","<<        vmin[2]<<","<<	
+                            rmax[0]<<","<<        rmax[1]<<","<<        rmax[2]<<","<<
+                            rmin[0]<<","<<        rmin[1]<<","<<        rmin[2]<<","<<	
+                    vrms        (0)<<","<<vrms        (1)<<","<<vrms        (2)<<","<<
+                    temperature (0)<<","<<temperature (1)<<","<<temperature (2)<<","<<
+                    eps         (0)<<","<<eps         (1)<<","<<eps         (2)<<","<<
+                    eps2        (0)<<","<<eps2        (1)<<","<<eps2        (2)<<","<<
+                    rvrms       (0)<<","<<rvrms       (1)<<","<<rvrms       (2)<<","<<	
+                    rrms        (0)<<","<<rrms        (1)<<","<<rrms        (2)<<","<<
+                    rmean       (0)<<","<<rmean       (1)<<","<<rmean       (2)<<","<<
+                    vmean       (0)<<","<<vmean       (1)<<","<<vmean       (2)<<","<<
                     time_m      <<","<< 
                     fieldEnergy <<","<< 
                     ExAmp       <<","<< 
