@@ -1,21 +1,16 @@
 #!/bin/bash
-
 #SBATCH --partition=hourly      # Using 'hourly' will grant higher priority, daily
-#SBATCH --time=00:30:00         # Define max time job will run // cant be more than one hour??
-#SBATCH --exclusive
+#SBATCH --time=00:59:00         # Define max time job will run // cant be more than one hour??
 #SBATCH --error=langevin.err    # Define your output file
 #SBATCH --output=langevin.out   # Define your output file
 #SBATCH --nodes=1               # number of nodes
 #SBATCH --ntasks=1              # Job will run 32 tasks
-#SBATCH --ntasks-per-core=1     # Force no Hyper-Threading, will run 1 task per core
+#SBATCH --ntasks-per-core=44     # Force no Hyper-Threading, will run 1 task per core
+##SBATCH --exclusive
 
-
-##SBATCH --cpus-per-task=1
-# set OMP_PROC_BIND=spread
-# set OMP_PLACES=threads
-
-###########################
-###########################
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
 
 ###########################
 #NM=256
@@ -23,13 +18,7 @@
 NM=64
 NV=16
 
-                 # 1=fixed spatial density factorC; 0=gather factor
-
-VMAX=6e4                 # cm / ms
-
-
-
-VER=VMAX:6e4_DIFF:1e-7_DRAG:16e4
+VMAX=9e4                 # cm / ms
 
 ###########################
 OUT_DIR=data.${VER}
@@ -39,40 +28,6 @@ DIFF_B=16e4
 FCT=1
 DRAG=1
 DIFF=1
-
-###########################
-# OUT_DIR=${VER}
-# COLLISION=1
-# DRAG=1
-# DIFF=1
-########################### 
-###########################
-# OUT_DIR=${VER}_dr
-# COLLISION=1
-# DRAG=1
-# DIFF=0
-########################### 
-###########################
-# OUT_DIR=${VER}_di
-# COLLISION=1
-# DRAG=0
-# DIFF=1
-########################### 
-###########################
-# OUT_DIR=${VER}_nc
-# COLLISION=0
-# DRAG=1
-# DIFF=0
-########################### 
-
-
-
-
-
-
-
-
-
 
 ###########################
 GADAPT=0                 #dont adaptive velocity mesh size doesn't work yet...
@@ -102,12 +57,10 @@ THIS_FILE="$(readlink -f "$0")"
 cp ${THIS_FILE} ${OUT_DIR}/jobscript.sh
 
 ###########################
-srun Langevin \
+srun Langevin --cpus-per-task=${SLURM_CPUS_PER_TASK} \
 FFT 1.0 2.0 \
 ${NM} ${BEAMRADIUS} ${BOXL} ${NP} ${DT} ${TT} ${PQ} ${PM} ${FOCUS} 1 \
 ${epsinv} ${NV} ${VMAX} ${REL_BUFFER} \
 ${GADAPT} 1 ${DRAG_B} ${DIFF_B}  ${FCT}  ${DRAG} ${DIFF} ${PRINT} ${COLLISION} ${OUT_DIR} \
 --info 5 \
 1>${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err  
-
- 
