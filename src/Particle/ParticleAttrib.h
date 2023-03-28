@@ -140,10 +140,10 @@ namespace ippl {
         view_type dview_m;
     };
 
-    template <unsigned long Idx, typename T, unsigned Dim, typename IndexType = size_t>
-    KOKKOS_INLINE_FUNCTION constexpr void scatter_point(
-        const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
-        const Vector<T, Dim>& whi, Vector<IndexType, Dim> args, T val = 1) {
+    template <unsigned Dim, unsigned long Idx, typename T, typename IndexType = size_t>
+    KOKKOS_INLINE_FUNCTION constexpr void scattergather_value(T& val, Vector<IndexType, Dim>& args,
+                                                              const Vector<T, Dim>& wlo,
+                                                              const Vector<T, Dim>& whi) {
         for (unsigned d = 0; d < Dim; d++) {
             if (Idx & (1 << d)) {
                 args[d]--;
@@ -152,8 +152,15 @@ namespace ippl {
                 val *= whi[d];
             }
         }
+    }
 
+    template <unsigned long Idx, typename T, unsigned Dim, typename IndexType = size_t>
+    KOKKOS_INLINE_FUNCTION constexpr int scatter_point(
+        const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
+        const Vector<T, Dim>& whi, Vector<IndexType, Dim> args, T val = 1) {
+        scattergather_value<Dim, Idx>(val, args, wlo, whi);
         Kokkos::atomic_add(&apply<Dim>(view, args), val);
+        return 0;
     }
 
     template <unsigned long... Idx, typename T, unsigned Dim, typename IndexType = size_t>
@@ -161,7 +168,7 @@ namespace ippl {
         const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
         const Vector<T, Dim>& whi, std::index_sequence<Idx...>, const Vector<IndexType, Dim>& args,
         T val = 1) {
-        (scatter_point<Idx>(view, wlo, whi, args, val), ...);
+        val = (scatter_point<Idx>(view, wlo, whi, args, val) ^ ...);
     }
 
     template <unsigned Dim, typename T, typename IndexType = size_t>
@@ -177,15 +184,7 @@ namespace ippl {
         const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
         const Vector<T, Dim>& whi, Vector<IndexType, Dim> args) {
         T val = 1;
-        for (unsigned d = 0; d < Dim; d++) {
-            if (Idx & (1 << d)) {
-                args[d]--;
-                val *= wlo[d];
-            } else {
-                val *= whi[d];
-            }
-        }
-
+        scattergather_value<Dim, Idx>(val, args, wlo, whi);
         return val * apply<Dim>(view, args);
     }
 
