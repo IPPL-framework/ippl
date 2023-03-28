@@ -514,10 +514,13 @@ namespace ippl {
              * @param args... the indices
              */
             template <size_t... row, typename... Idx>
-            KOKKOS_INLINE_FUNCTION void computeHessian(const std::index_sequence<row...>& is,
-                                                       matrix_type& hessian,
-                                                       const Idx... args) const {
-                (hessianRow<row>(is, hessian, args...), ...);
+            KOKKOS_INLINE_FUNCTION constexpr void computeHessian(
+                const std::index_sequence<row...>& is, matrix_type& hessian,
+                const Idx... args) const {
+                // The comma operator forces left-to-right evaluation order, which reduces
+                // performance; therefore we apply a dummy operation to dummy values and discard the
+                // result
+                [[maybe_unused]] auto _ = (hessianRow<row>(is, hessian, args...) ^ ...);
             }
 
             /*!
@@ -528,12 +531,15 @@ namespace ippl {
              * @tparam Idx... the indices at which to access the field view
              * @param hessian matrix in which to store the hessian
              * @param args... the indices
+             * @return An unused dummy value (required to allow use of a more performant fold
+             * expression)
              */
             template <size_t row, size_t... col, typename... Idx>
-            KOKKOS_INLINE_FUNCTION void hessianRow(const std::index_sequence<col...>&,
-                                                   matrix_type& hessian, const Idx... args) const {
+            KOKKOS_INLINE_FUNCTION constexpr int hessianRow(const std::index_sequence<col...>&,
+                                                            matrix_type& hessian,
+                                                            const Idx... args) const {
                 hessian[row] = 0;
-                (hessianEntry<row, col>(hessian, args...), ...);
+                return (hessianEntry<row, col>(hessian, args...) ^ ...);
             }
 
             /*!
@@ -544,10 +550,12 @@ namespace ippl {
              * @tparam Idx... the indices at which to access the field view
              * @param hessian matrix in which to store the hessian
              * @param args... the indices
+             * @return An unused dummy value (required to allow use of a more performant fold
+             * expression)
              */
             template <size_t row, size_t col, typename... Idx>
-            KOKKOS_INLINE_FUNCTION void hessianEntry(matrix_type& hessian,
-                                                     const Idx... args) const {
+            KOKKOS_INLINE_FUNCTION constexpr int hessianEntry(matrix_type& hessian,
+                                                              const Idx... args) const {
                 using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
                 index_type coords[Dim] = {args...};
                 if constexpr (row == col) {
@@ -582,6 +590,7 @@ namespace ippl {
                     hessian[row] +=
                         vectors[col] * (uu - du - ud + dd) / (4. * hvector_m[row] * hvector_m[col]);
                 }
+                return 0;
             }
         };
     }  // namespace detail
