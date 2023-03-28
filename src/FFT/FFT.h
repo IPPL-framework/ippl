@@ -279,6 +279,9 @@ namespace ippl {
     };
 
     namespace detail {
+        /*!
+         * Utility function for shrinkView
+         */
         template <unsigned Dim, typename T, size_t... Idx>
         constexpr decltype(auto) shrinkView_impl(std::string label,
                                                  const typename ViewType<T, Dim>::view_type& view,
@@ -287,6 +290,15 @@ namespace ippl {
                 label, (view.extent(Idx) - 2 * nghost)...);
         }
 
+        /*!
+         * Constructs a new view with size equal to that of the given view, minus the ghost cells
+         * @tparam Dim the view's rank
+         * @tparam T the view's value type
+         * @param label the new view's name
+         * @param view the view to shrink
+         * @param nghost the number of ghost cells on the view's boundary
+         * @return The shrunken view
+         */
         template <unsigned Dim, typename T>
         constexpr decltype(auto) shrinkView(std::string label,
                                             const typename ViewType<T, Dim>::view_type& view,

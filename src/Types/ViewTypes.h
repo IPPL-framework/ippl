@@ -49,6 +49,12 @@ namespace ippl {
             typedef T* type;
         };
 
+        /*!
+         * Recursively templated struct for defining tuples with arbitrary
+         * length
+         * @tparam Dim the length of the tuple
+         * @tparam T the data type to repeat (default size_t)
+         */
         template <unsigned Dim, typename T = size_t>
         struct Coords {
             // https://stackoverflow.com/a/53398815/2773311
@@ -145,18 +151,44 @@ namespace ippl {
             }
         }
 
-        // https://stackoverflow.com/questions/50713214/familiar-template-syntax-for-generic-lambdas
         template <typename, typename, typename, typename>
         struct FunctorWrapper;
+
+        /*!
+         * Wrapper struct for reduction kernels, since template deduction does not apply when
+         * the parameter pack isn't the last argument
+         * Source:
+         * https://stackoverflow.com/questions/50713214/familiar-template-syntax-for-generic-lambdas
+         * @tparam Functor functor type
+         * @tparam T... index types
+         * @tparam Acc accumulator data type
+         * @tparam R functor return type
+         */
         template <typename Functor, typename... T, typename Acc, typename R>
         struct FunctorWrapper<Functor, std::tuple<T...>, Acc, R> {
             Functor lambda;
 
+            /*!
+             * Inline operator forwarding to a specialized instantiation
+             * of the functor's own operator()
+             * @param x... the indices
+             * @param res the accumulator variable
+             * @return The functor's return value
+             */
             KOKKOS_INLINE_FUNCTION R operator()(T... x, Acc& res) const {
                 return lambda.template operator()<T...>(x..., res);
             }
         };
 
+        /*!
+         * Convenience function for wrapping a reduction functor with the wrapper struct. Only
+         * the first and second template parameters have to be explicitly specified.
+         * @tparam Dim the loop's rank
+         * @tparam Acc the accumulator type
+         * @tparam R the functor's return type (default void)
+         * @tparam Functor the functor type
+         * @return A wrapper containing the given functor
+         */
         template <unsigned Dim, typename Acc, typename R = void, typename Functor>
         auto functorize(const Functor& f) {
             return FunctorWrapper<Functor, typename Coords<Dim>::type, Acc, R>{f};

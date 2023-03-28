@@ -44,6 +44,8 @@ namespace ippl {
         PARALLEL = 1
     };
 
+    // enumeration used to describe a hypercube's relation to
+    // a particular axis in a given bounded domain
     enum e_cube_tag {
         UPPER       = 0,
         LOWER       = 1,
@@ -51,6 +53,11 @@ namespace ippl {
     };
 
     namespace detail {
+        /*!
+         * Counts the hypercubes in a given dimension
+         * @param dim the dimension
+         * @return 3^n
+         */
         constexpr unsigned int countHypercubes(unsigned int dim) {
             unsigned int ret = 1;
             for (unsigned int d = 0; d < dim; d++)
@@ -127,6 +134,10 @@ namespace ippl {
             // upper bounds (ordering x, y, z, ...)
             std::array<long, Dim> hi;
 
+            /*!
+             * Compute the size of the region described by the bounds
+             * @return Product of the axial dimensions of the region
+             */
             long size() const {
                 long total = 1;
                 for (unsigned d = 0; d < Dim; d++) {
@@ -198,18 +209,67 @@ namespace ippl {
 
         const view_type getDeviceLocalDomains() const;
 
+        /*!
+         * Get a list of all the neighbors, arranged by ternary encoding
+         * of the hypercubes
+         * @return List of list of neighbor ranks touching each boundary component
+         */
         const neighbor_list& getNeighbors() const;
+
+        /*!
+         * Get the domain ranges corresponding to regions that should be sent
+         * to neighbor ranks
+         * @return Ranges to send
+         */
         const neighbor_range_list& getNeighborsSendRange() const;
+
+        /*!
+         * Get the domain ranges corresponding to regions that should be received
+         * from neighbor ranks
+         * @return Ranges to receive
+         */
         const neighbor_range_list& getNeighborsRecvRange() const;
 
+        /*!
+         * Compute the index corresponding to the component opposite the component
+         * with the given index, as determined by the ternary encoding for hypercubes
+         * @param index index of the known component
+         * @return Index of the matching component
+         */
         static int getMatchingIndex(int index);
 
+        /*!
+         * Recursively finds neighbor ranks for layouts with all periodic boundary
+         * conditions
+         * @param nghost number of ghost cells
+         * @param localDomain the rank's local domain
+         * @param grown the local domain, grown by the number of ghost cells
+         * @param neighborDomain a candidate neighbor rank's domain
+         * @param rank the candidate neighbor's rank
+         * @param offsets a dictionary containing offsets along different dimensions
+         * @param d0 the dimension from which to start checking (default 0)
+         * @param codim the codimension of overlapping regions to check (default 0)
+         */
         void findPeriodicNeighbors(const int nghost, const NDIndex<Dim>& localDomain,
                                    NDIndex<Dim>& grown, NDIndex<Dim>& neighborDomain,
                                    const int rank, std::map<unsigned int, int>& offsets,
                                    unsigned d0 = 0, unsigned codim = 0);
+
+        /*!
+         * Finds all neighboring ranks based on the field layout
+         * @param nghost number of ghost cells (default 1)
+         */
         void findNeighbors(int nghost = 1);
 
+        /*!
+         * Adds a neighbor to the neighbor list
+         * @param gnd the local domain, including ghost cells
+         * @param nd the local domain
+         * @param ndNeighbor the neighbor rank's domain
+         * @param intersect the intersection of the domains
+         * @param nghost number of ghost cells
+         * @param rank the neighbor's rank
+         */
         void addNeighbors(const NDIndex_t& gnd, const NDIndex_t& nd, const NDIndex_t& ndNeighbor,
                           const NDIndex_t& intersect, int nghost, int rank);
 

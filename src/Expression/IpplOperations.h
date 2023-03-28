@@ -25,13 +25,28 @@ namespace ippl {
      * @file IpplOperations.h
      */
 
+    /*!
+     * Utility function for apply (see its docstring)
+     * @tparam Idx... indices of the elements to take (in practice, always the sequence of natural
+     * numbers up to the dimension of the view)
+     */
     template <typename View, typename Coords, size_t... Idx>
     KOKKOS_INLINE_FUNCTION constexpr decltype(auto) apply_impl(const View& view,
                                                                const Coords& coords,
-                                                               std::index_sequence<Idx...>) {
+                                                               const std::index_sequence<Idx...>&) {
         return view(coords[Idx]...);
     }
 
+    /*!
+     * Accesses the element of a view at the indices contained in an array-like structure
+     * instead of having the indices being separate arguments
+     * @tparam Dim the view's rank
+     * @tparam View the view type
+     * @tparam Coords an array-like container of indices
+     * @param view the view to access
+     * @param coords the indices
+     * @return The element in the view at the given location
+     */
     template <unsigned Dim, typename View, typename Coords>
     KOKKOS_INLINE_FUNCTION constexpr decltype(auto) apply(const View& view, const Coords& coords) {
         using Indices = std::make_index_sequence<Dim>;
@@ -489,6 +504,15 @@ namespace ippl {
             vector_type vectors[Dim];
             const vector_type hvector_m;
 
+            /*!
+             * Utility function for computing the Hessian. Computes the rows of the matrix
+             * one by one via fold expression.
+             * @tparam row... the row indices (in practice, the sequence 0...Dim - 1)
+             * @tparam Idx... the indices at which to access the field view
+             * @param is dummy index sequence parameter
+             * @param hessian matrix in which to store the Hessian
+             * @param args... the indices
+             */
             template <size_t... row, typename... Idx>
             KOKKOS_INLINE_FUNCTION void computeHessian(const std::index_sequence<row...>& is,
                                                        matrix_type& hessian,
@@ -496,6 +520,15 @@ namespace ippl {
                 (hessianRow<row>(is, hessian, args...), ...);
             }
 
+            /*!
+             * Utility function for computing the Hessian. Computes the entries in a single
+             * row of the matrix via fold expression.
+             * @tparam row the row index
+             * @tparam col... the column indices (in practice, the sequence 0...Dim - 1)
+             * @tparam Idx... the indices at which to access the field view
+             * @param hessian matrix in which to store the hessian
+             * @param args... the indices
+             */
             template <size_t row, size_t... col, typename... Idx>
             KOKKOS_INLINE_FUNCTION void hessianRow(const std::index_sequence<col...>&,
                                                    matrix_type& hessian, const Idx... args) const {
@@ -503,6 +536,15 @@ namespace ippl {
                 (hessianEntry<row, col>(hessian, args...), ...);
             }
 
+            /*!
+             * Utility function for computing the Hessian. Computes a single entry
+             * of the matrix
+             * @tparam row the row index
+             * @tparam col the column index
+             * @tparam Idx... the indices at which to access the field view
+             * @param hessian matrix in which to store the hessian
+             * @param args... the indices
+             */
             template <size_t row, size_t col, typename... Idx>
             KOKKOS_INLINE_FUNCTION void hessianEntry(matrix_type& hessian,
                                                      const Idx... args) const {
@@ -517,6 +559,8 @@ namespace ippl {
                     coords[row] -= 2;
                     auto&& left = apply<Dim>(u_m, coords);
 
+                    // The diagonal elements correspond to second derivatives w.r.t. a single
+                    // variable
                     hessian[row] += vectors[row] * (right - 2. * center + left)
                                     / (hvector_m[row] * hvector_m[row]);
                 } else {
@@ -533,6 +577,8 @@ namespace ippl {
                     coords[col] += 2;
                     auto&& du = apply<Dim>(u_m, coords);
 
+                    // The non-diagonal elements are mixed derivatives, whose finite difference form
+                    // is slightly different from above
                     hessian[row] +=
                         vectors[col] * (uu - du - ud + dd) / (4. * hvector_m[row] * hvector_m[col]);
                 }
