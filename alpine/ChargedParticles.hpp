@@ -900,11 +900,11 @@ m << "temperature" << endl;
 						
                         ){ 
                             // double c = 3e9; //(cm/ms) used most of the time...
-                            double c = 2.99792458e9;
+                            double c = 2.99792458e7;
                             double v2 =       pVMirror(k)[0]*pVMirror(k)[0]
                                             + pVMirror(k)[1]*pVMirror(k)[1]
                                             + pVMirror(k)[2]*pVMirror(k)[2];
-                            double lorentz = 1.0/(sqrt(1.0-v2/c));
+                            double lorentz = 1.0/(sqrt(1.0-v2/(c*c)));
 
 					double  part[2 * Dim];
 	            			part[0] = pRView(k)[0];
@@ -1117,6 +1117,7 @@ m << "temperature" << endl;
                     "vrmsX,vrmsY,vrmsZ,"    <<
                     "Tx,Ty,Tz,"             <<
                     "epsX,epsY,epsZ,"       <<
+                    "NepsX,NepsY,NepsZ,"       <<
                     "epsX2,epsY2,epsZ2,"    <<
                     "rvrmsX,rvrmsY,rvrmsZ," <<
                     "rrmsX,rrmsY,rrmsZ,"    <<
@@ -1148,6 +1149,7 @@ m << "temperature" << endl;
                     vrms        (0)<<","<<vrms        (1)<<","<<vrms        (2)<<","<<
                     temperature (0)<<","<<temperature (1)<<","<<temperature (2)<<","<<
                     eps         (0)<<","<<eps         (1)<<","<<eps         (2)<<","<<
+                    Neps        (0)<<","<<Neps        (1)<<","<<Neps        (2)<<","<<
                     eps2        (0)<<","<<eps2        (1)<<","<<eps2        (2)<<","<<
                     rvrms       (0)<<","<<rvrms       (1)<<","<<rvrms       (2)<<","<<	
                     rrms        (0)<<","<<rrms        (1)<<","<<rrms        (2)<<","<<
