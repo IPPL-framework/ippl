@@ -140,6 +140,17 @@ namespace ippl {
         view_type dview_m;
     };
 
+    /*!
+     * Utility function for scatter and gather operations. Interpolates the given value to the grid.
+     * @tparam Dim the number of dimensions
+     * @tparam Idx a number between 0 and 2^Dim - 1
+     * @tparam T the field data type
+     * @tparam IndexType the index type for accessing the field (default size_t)
+     * @param val the value to interpolate
+     * @param args the indices at which to access the field
+     * @param wlo lower weights for interpolation
+     * @param whi upper weights for interpolation
+     */
     template <unsigned Dim, unsigned long Idx, typename T, typename IndexType = size_t>
     KOKKOS_INLINE_FUNCTION constexpr void scattergather_value(T& val, Vector<IndexType, Dim>& args,
                                                               const Vector<T, Dim>& wlo,
@@ -154,6 +165,19 @@ namespace ippl {
         }
     }
 
+    /*!
+     * Scatters to a field at a single point
+     * @tparam Idx a number between 0 and 2^Dim - 1
+     * @tparam T the field data type
+     * @tparam Dim the number of dimensions
+     * @tparam IndexType the index type for accessing the field (default size_t)
+     * @param view the field view on which to scatter
+     * @param wlo lower weights for interpolation
+     * @param whi upper weights for interpolation
+     * @param args the indices at which to access the field
+     * @param val the value to interpolate
+     * @return An unused dummy value (required to allow use of a more performant fold expression)
+     */
     template <unsigned long Idx, typename T, unsigned Dim, typename IndexType = size_t>
     KOKKOS_INLINE_FUNCTION constexpr int scatter_point(
         const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
@@ -163,6 +187,10 @@ namespace ippl {
         return 0;
     }
 
+    /*!
+     * Utility function for scattering. Scatters to all neighboring points in the field
+     * via fold expression.
+     */
     template <unsigned long... Idx, typename T, unsigned Dim, typename IndexType = size_t>
     KOKKOS_INLINE_FUNCTION constexpr void scatter_impl(
         const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
@@ -171,6 +199,17 @@ namespace ippl {
         val = (scatter_point<Idx>(view, wlo, whi, args, val) ^ ...);
     }
 
+    /*!
+     * Scatters the particle attribute to the field
+     * @tparam Dim the number of dimensions
+     * @tparam T the field data type
+     * @tparam IndexType the index type for accessing the field (default size_t)
+     * @param view the field view on which to scatter
+     * @param wlo lower weights for interpolation
+     * @param whi upper weights for interpolation
+     * @param args the indices at which to access the field
+     * @param val the value to interpolate
+     */
     template <unsigned Dim, typename T, typename IndexType = size_t>
     KOKKOS_INLINE_FUNCTION constexpr void scatter_field(
         const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
@@ -179,6 +218,18 @@ namespace ippl {
         scatter_impl(view, wlo, whi, std::make_index_sequence<count>{}, args, val);
     }
 
+    /*!
+     * Gathers from a field at a single point
+     * @tparam Idx a number between 0 and 2^Dim - 1
+     * @tparam T the field data type
+     * @tparam Dim the number of dimensions
+     * @tparam IndexType the index type for accessing the field (default size_t)
+     * @param view the field view on which to scatter
+     * @param wlo lower weights for interpolation
+     * @param whi upper weights for interpolation
+     * @param args the indices at which to access the field
+     * @return The gathered value
+     */
     template <unsigned long Idx, typename T, unsigned Dim, typename IndexType = size_t>
     KOKKOS_INLINE_FUNCTION constexpr T gather_point(
         const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
@@ -188,6 +239,10 @@ namespace ippl {
         return val * apply<Dim>(view, args);
     }
 
+    /*!
+     * Utility function for gathering. Gathers from all neighboring points in the field
+     * via fold expression.
+     */
     template <unsigned long... Idx, typename T, unsigned Dim, typename IndexType = size_t>
     KOKKOS_INLINE_FUNCTION constexpr T gather_impl(
         const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
@@ -196,6 +251,16 @@ namespace ippl {
         return (gather_point<Idx>(view, wlo, whi, args) + ...);
     }
 
+    /*!
+     * Gathers the particle attribute from a field
+     * @tparam Dim the number of dimensions
+     * @tparam T the field data type
+     * @tparam IndexType the index type for accessing the field (default size_t)
+     * @param view the field view on which to scatter
+     * @param wlo lower weights for interpolation
+     * @param whi upper weights for interpolation
+     * @param args the indices at which to access the field
+     */
     template <unsigned Dim, typename T, typename IndexType = size_t>
     KOKKOS_INLINE_FUNCTION constexpr T gather_field(
         const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
