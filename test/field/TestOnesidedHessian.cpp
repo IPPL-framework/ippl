@@ -243,28 +243,14 @@ int main(int argc, char* argv[]) {
     hessOp::GeneralizedHessOp<double, Matrix_t, hessOp::DiffType::Centered, hessOp::DiffType::Centered, hessOp::DiffType::Centered>
         centerHess(field, hxInv);
 
-    
-
     // Check whether system boundaries are touched
-    // const size_t onesidedStencilWidth = 3;
     const size_t stencilWidth = 5;
     const size_t halfStencilWidth = stencilWidth / 2;
-    // const size_t nghostExt = nghost + stencilWidth;
     const size_t extents[dim] = {view.extent(0), view.extent(1), view.extent(2)};
-    // ippl::NDIndex<dim> systemBoundaries[2 * dim];
     std::vector<ippl::NDIndex<dim> > systemBoundaries;
-    // systemBoundaries.reserve(2*dim);
     ippl::NDIndex<dim> centerDomain = ippl::NDIndex<dim>(ippl::Index(nghost, extents[0] - nghost),
                                                            ippl::Index(nghost, extents[1] - nghost),
                                                            ippl::Index(nghost, extents[2] - nghost));
-
-    // ippl::Index testIdx = {2, 10};
-    // msg << "IndexTest: " << testIdx << " + 1 =";
-    // msg << testIdx + 1 << endl;
-    // msg << "IndexTest: " << testIdx << ".grow(1) =";
-    // msg << ippl::Index(testIdx.first(), (testIdx+1).last()) << endl;
-    // msg << "IndexTest: " << testIdx << " - 1 =";
-    // msg << testIdx - 1 << endl;
 
     // Container containing operators for each face
     std::vector<std::unique_ptr<hessOp::GeneralDiffOpInterface<double, Matrix_t>> > faceDiffOps;

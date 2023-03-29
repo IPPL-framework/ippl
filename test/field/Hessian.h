@@ -130,7 +130,7 @@ namespace hessOp {
             typedef ippl::Field<T,dim> Field_t;
             typedef typename Field_t::view_type FView_t;
 
-            GeneralDiffOpInterface(GeneralDiffOpInterface<T,ReturnType>&& source) : view_m(std::move(source.view_m)), hInvVector_m(std::move(source.hInvVector_m)) {};
+            // GeneralDiffOpInterface(GeneralDiffOpInterface<T,ReturnType>&& source) : view_m(std::move(source.view_m)), hInvVector_m(std::move(source.hInvVector_m)) {};
 
             GeneralDiffOpInterface(const Field_t& field, Vector_t hInvVector) : 
                                     view_m(field.getView()),
@@ -157,7 +157,7 @@ namespace hessOp {
             // template<Dim D, DiffType Diff>
             // using CompactDiffOp<D,T,Diff,Fview_t> = diagOp_t;
 
-            GeneralizedHessOp(GeneralizedHessOp<T,ReturnType,DiffX,DiffY,DiffZ>&& source) = default;
+            // GeneralizedHessOp(GeneralizedHessOp<T,ReturnType,DiffX,DiffY,DiffZ>&& source) = default;
 
             GeneralizedHessOp(const Field_t &field, Vector_t hInvVector) : 
                                 GeneralDiffOpInterface<T,ReturnType>(field, hInvVector),
