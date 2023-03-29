@@ -253,32 +253,32 @@ int main(int argc, char* argv[]) {
                                                            ippl::Index(nghost, extents[2] - nghost));
 
     // Container containing operators for each face
-    std::vector<std::unique_ptr<hessOp::GeneralDiffOpInterface<double, Matrix_t>> > faceDiffOps;
+    std::vector<std::shared_ptr<hessOp::GeneralDiffOpInterface<double, Matrix_t>> > faceDiffOps;
     faceDiffOps.reserve(14);
 
     // Allocate the operators manually [could be fully templated later on]
     // Also there it would not be necessary to create all operators if we run in parallel
     // Operator for faces
     { using namespace hessOp;
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Forward, DiffType::Centered, DiffType::Centered> >(field, hxInv));
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Backward, DiffType::Centered, DiffType::Centered> >(field, hxInv));
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Centered, DiffType::Forward, DiffType::Centered> >(field, hxInv));
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Centered, DiffType::Backward, DiffType::Centered> >(field, hxInv));
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Centered, DiffType::Centered, DiffType::Forward> >(field, hxInv));
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Centered, DiffType::Centered, DiffType::Backward> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Forward, DiffType::Centered, DiffType::Centered> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Backward, DiffType::Centered, DiffType::Centered> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Centered, DiffType::Forward, DiffType::Centered> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Centered, DiffType::Backward, DiffType::Centered> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Centered, DiffType::Centered, DiffType::Forward> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Centered, DiffType::Centered, DiffType::Backward> >(field, hxInv));
 
     // Operator for corners
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Forward, DiffType::Forward, DiffType::Forward> >(field, hxInv));
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Backward, DiffType::Forward, DiffType::Forward> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Forward, DiffType::Forward, DiffType::Forward> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Backward, DiffType::Forward, DiffType::Forward> >(field, hxInv));
 
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Forward, DiffType::Backward, DiffType::Forward> >(field, hxInv));
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Backward, DiffType::Backward, DiffType::Forward> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Forward, DiffType::Backward, DiffType::Forward> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Backward, DiffType::Backward, DiffType::Forward> >(field, hxInv));
 
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Forward, DiffType::Forward, DiffType::Backward> >(field, hxInv));
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Backward, DiffType::Forward, DiffType::Backward> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Forward, DiffType::Forward, DiffType::Backward> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Backward, DiffType::Forward, DiffType::Backward> >(field, hxInv));
 
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Forward, DiffType::Backward, DiffType::Backward> >(field, hxInv));
-    faceDiffOps.emplace_back(std::make_unique<GeneralizedHessOp<double,Matrix_t,DiffType::Backward, DiffType::Backward, DiffType::Backward> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Forward, DiffType::Backward, DiffType::Backward> >(field, hxInv));
+    faceDiffOps.emplace_back(std::make_shared<GeneralizedHessOp<double,Matrix_t,DiffType::Backward, DiffType::Backward, DiffType::Backward> >(field, hxInv));
     } // namespace hessOp
 
     // Assign to each system boundary face a domain for which onesided differencing should be used
@@ -305,25 +305,24 @@ int main(int argc, char* argv[]) {
                 ippl::Index(nghost, extents[1] - nghost),
                 ippl::Index(nghost, extents[2] - nghost)));
 
-            // Backward difference
-            if (face & 1) {
-                systemBoundaries[nSystemFaces][d] = ippl::Index(extents[d] - nghost - halfStencilWidth,
-                                                        extents[d] - nghost);
-            } else {  // Forward difference
+            // Forward difference
+            if (face % 2 == 0) {
                 systemBoundaries[nSystemFaces][d] = ippl::Index(nghost,
                                                         nghost + halfStencilWidth);
+            } else {  // Backward difference
+                systemBoundaries[nSystemFaces][d] = ippl::Index(extents[d] - nghost - halfStencilWidth,
+                                                        extents[d] - nghost);
             }
             nSystemFaces++;
 
             size_t cLow = centerDomain[d].first();
             size_t cHigh = centerDomain[d].last();
-            if (face % 2 == 0){
+            if (face % 2 == 0 ){
                 centerDomain[d] = ippl::Index(cLow+halfStencilWidth, cHigh);
             } else {
                 centerDomain[d] = ippl::Index(cLow, cHigh-halfStencilWidth);
             }
         }
-        msg << "centerDomain : " << centerDomain[0] << ", " << centerDomain[1] << ", " << centerDomain[2] << endl;
     }
 
     msg << "IdxRanges : " << endl;
@@ -343,26 +342,29 @@ int main(int argc, char* argv[]) {
             view_result(i, j, k) = centerHess(i,j,k);
         });
 
-    // Kokkos::parallel_for(
-    //     "Onesided Hessian Loop [Faces]",
-    //     mdrange_type(
-    //         {systemBoundaries[0][0].first(), systemBoundaries[0][1].first(), systemBoundaries[0][2].first()},
-    //         {systemBoundaries[0][0].last(), systemBoundaries[0][1].last(), systemBoundaries[0][2].last()}),
-    //     KOKKOS_LAMBDA(const int i, const int j, const int k) {
-    //         view_result(i, j, k) = faceDiffOps[0]->operator()(i,j,k);
-    //     });
+    for (size_t i = 0; i < 2*dim; ++i) {
+        msg << "apply operator on systemBoundaries[" << i << "] : " << endl;
+         Kokkos::parallel_for(
+             "Onesided Hessian Loop [Faces]",
+             mdrange_type(
+                 {systemBoundaries[i][0].first(), systemBoundaries[i][1].first(), systemBoundaries[i][2].first()},
+                 {systemBoundaries[i][0].last(), systemBoundaries[i][1].last(), systemBoundaries[i][2].last()}),
+             KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                 view_result(i, j, k) = faceDiffOps[i]->operator()(i,j,k);
+             });
+    }
 
-    Kokkos::parallel_for(
-        "Onesided Hessian Loop [Faces]",
-        mdrange_type(
-            {5, 5, 5},
-            {10,10,10}),
-        KOKKOS_LAMBDA(const int i, const int j, const int k) {
-            view_result(i, j, k) = faceDiffOps[0]->operator()(i,j,k);
-        });
-
-    msg << "Created " << faceDiffOps.size() << " DiffOps for faces." << endl;
-    view_result(20,20,20) = faceDiffOps[0]->operator()(20,20,20);
+    //Kokkos::parallel_for(
+        //"Onesided Hessian Loop [Faces]",
+        //mdrange_type(
+             //{systemBoundaries[1][0].first(), systemBoundaries[1][1].first(), systemBoundaries[1][2].first()},
+             //{systemBoundaries[1][0].last(), systemBoundaries[1][1].last(), systemBoundaries[1][2].last()}),
+            ////{5, 5, 5},
+            ////{10,10,10}),
+        //KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            //printf("i,j,k = %d, %d, %d\n", i, j, k);
+            //view_result(i, j, k) = faceDiffOps[1]->operator()(i,j,k);
+        //});
 
     // pickHessianIdx<double,dim>(hessReductionField, result, 0, 1, 2);
     // dumpVTKScalar<double,dim>(hessReductionField, 0, dx, dx, dx);
