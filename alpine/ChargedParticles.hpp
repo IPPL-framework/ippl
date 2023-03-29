@@ -44,7 +44,7 @@ using ParticleAttrib = ippl::ParticleAttrib<T>;
 typedef Vector<double, Dim>  Vector_t;
 typedef Vector<float, Dim> Vector_st;
 typedef Field<double, Dim>   Field_t;
-typedef Field<Vector_st, Dim, Mesh_t> VField_t;
+typedef Field<Vector_st, Dim> VField_t;
 typedef ippl::FFTPeriodicPoissonSolver<Vector_st, double, Dim, Mesh_t, Centering_t> Solver_t;
 
 const double pi = std::acos(-1.0);

@@ -48,7 +48,7 @@ namespace ippl {
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
 
-        // define a type for the 3 dimensional real to complex Fourier transform
+	// define a type for the 3 dimensional real to complex Fourier transform
         typedef FFT<RCTransform, Dim, Trhs, Mesh, Centering> FFT_t;
 
         // type for communication buffers

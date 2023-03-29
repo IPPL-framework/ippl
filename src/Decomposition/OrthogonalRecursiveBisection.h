@@ -53,7 +53,7 @@ namespace ippl {
          * @param mesh Mesh
          * @param rho Density field
          */
-        void initialize(FieldLayout<Dim>& fl, M& mesh,
+        void initialize(FieldLayout<Dim>& fl, Mesh& mesh,
                         const Field<Tf,Dim,Mesh, Centering>& rho);
 
         /*!

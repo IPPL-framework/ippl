@@ -1,10 +1,10 @@
 #include "Utility/IpplTimings.h"
 namespace ippl {
 
-    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp=Tf>
+    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
     void
     OrthogonalRecursiveBisection<Tf,Dim,Mesh,Centering,Tp>::initialize(FieldLayout<Dim>& fl, 
-                                                     M& mesh,
+                                                     Mesh& mesh,
                                                       const Field<Tf,Dim, Mesh, Centering>& rho) {
        bf_m.initialize(mesh, fl);
        bf_m = rho;
@@ -288,7 +288,7 @@ namespace ippl {
         bf_m = 0.0;
         // Get local data
         typename Field<Tf, Dim, Mesh, Centering>::view_type view = bf_m.getView();
-        const Mesj& mesh = bf_m.get_mesh();
+        const Mesh& mesh = bf_m.get_mesh();
         const FieldLayout<Dim>& layout = bf_m.getLayout(); 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
         const int nghost = bf_m.getNghost();
