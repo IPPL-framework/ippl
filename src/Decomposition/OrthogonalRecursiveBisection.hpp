@@ -1,19 +1,19 @@
 #include "Utility/IpplTimings.h"
 namespace ippl {
 
-    template <class Tf, unsigned Dim, class M, class Tp>
+    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
     void
-    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::initialize(FieldLayout<Dim>& fl, 
-                                                     M& mesh,
-                                                      const Field<Tf,Dim, M>& rho) {
+    OrthogonalRecursiveBisection<Tf,Dim,Mesh,Centering,Tp>::initialize(FieldLayout<Dim>& fl, 
+                                                     Mesh& mesh,
+                                                      const Field<Tf,Dim, Mesh, Centering>& rho) {
        bf_m.initialize(mesh, fl);
        bf_m = rho;
 
     }
 
-    template <class Tf, unsigned Dim, class M, class Tp>
+    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
     bool 
-    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::binaryRepartition(const ParticleAttrib<Vector<Tp,Dim>>& R, 
+    OrthogonalRecursiveBisection<Tf,Dim,Mesh,Centering,Tp>::binaryRepartition(const ParticleAttrib<Vector<Tp,Dim>>& R, 
                                                              FieldLayout<Dim>& fl,
                                                              const bool& isFirstRepartition) {
        // Timings
@@ -129,9 +129,9 @@ namespace ippl {
     }
 
     
-    template < class Tf, unsigned Dim, class M, class Tp>
+    template < class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
     int
-    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::findCutAxis(NDIndex<Dim>& dom) {
+    OrthogonalRecursiveBisection<Tf,Dim,Mesh,Centering,Tp>::findCutAxis(NDIndex<Dim>& dom) {
        int cutAxis = 0;  
        unsigned int maxLength = 0;
        
@@ -148,9 +148,9 @@ namespace ippl {
     } 
 
     
-    template < class Tf, unsigned Dim, class M, class Tp>
+    template < class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
     void
-    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::perpendicularReduction(
+    OrthogonalRecursiveBisection<Tf,Dim,Mesh,Centering,Tp>::perpendicularReduction(
                                                          std::vector<Tp>& rankWeights, 
                                                          unsigned int cutAxis, 
                                                          NDIndex<Dim>& dom) {
@@ -226,9 +226,9 @@ namespace ippl {
     }
   
 
-    template < class Tf, unsigned Dim, class M, class Tp>
+    template < class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
     int
-    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::findMedian(std::vector<Tp>& w) {
+    OrthogonalRecursiveBisection<Tf,Dim,Mesh,Centering,Tp>::findMedian(std::vector<Tp>& w) {
        // Special case when array must be cut in half in order to not have planes
        if (w.size() == 4)
           return 1;
@@ -263,9 +263,9 @@ namespace ippl {
     }
 
 
-    template < class Tf, unsigned Dim, class M, class Tp>
+    template < class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
     void
-    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::cutDomain(std::vector<NDIndex<Dim>>& domains, 
+    OrthogonalRecursiveBisection<Tf,Dim,Mesh,Centering,Tp>::cutDomain(std::vector<NDIndex<Dim>>& domains, 
                                            std::vector<int>& procs, int it, int cutAxis, int median) {
        // Cut domains[it] in half at median along cutAxis
        NDIndex<Dim> leftDom, rightDom;
@@ -279,31 +279,27 @@ namespace ippl {
        procs.insert(procs.begin() + it + 1, 1, temp - procs[it]);       
     }
 
-
-    template < class Tf, unsigned Dim, class M, class Tp>
+    template < class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
     void 
-    OrthogonalRecursiveBisection<Tf,Dim,M,Tp>::scatterR(const ParticleAttrib<Vector<Tp, Dim>>& r) {
-        using vector_type = typename M::vector_type;
+    OrthogonalRecursiveBisection<Tf,Dim,Mesh,Centering,Tp>::scatterR(const ParticleAttrib<Vector<Tp, Dim>>& r) {
+        using vector_type = typename Mesh::vector_type;
 
         // Reset local field
         bf_m = 0.0;
         // Get local data
-        typename Field<Tf, Dim, M>::view_type view = bf_m.getView();
-        const M& mesh = bf_m.get_mesh();
+        typename Field<Tf, Dim, Mesh, Centering>::view_type view = bf_m.getView();
+        const Mesh& mesh = bf_m.get_mesh();
         const FieldLayout<Dim>& layout = bf_m.getLayout(); 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
         const int nghost = bf_m.getNghost();
  
         // Get spacings
-        const vector_type& dx = mesh.getMeshSpacing();
+        const vector_type& dx     = mesh.getMeshSpacing();
         const vector_type& origin = mesh.getOrigin();
-        const vector_type invdx = 1.0 / dx;
+        const vector_type invdx   = 1.0 / dx;
 
         Kokkos::parallel_for(
-            "ParticleAttrib::scatterR",
-            r.getParticleCount(),
-            KOKKOS_LAMBDA(const size_t idx)
-            {
+            "ParticleAttrib::scatterR", r.getParticleCount(), KOKKOS_LAMBDA(const size_t idx) {
                 // Find nearest grid point
                 vector_type l = (r(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index = l;
@@ -315,18 +311,17 @@ namespace ippl {
                 const size_t k = index[2] - lDom[2].first() + nghost;
 
                 // Scatter
-                Kokkos::atomic_add(&view(i-1, j-1, k-1), wlo[0] * wlo[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i-1, j-1, k  ), wlo[0] * wlo[1] * whi[2]);
-                Kokkos::atomic_add(&view(i-1, j,   k-1), wlo[0] * whi[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i-1, j,   k  ), wlo[0] * whi[1] * whi[2]);
-                Kokkos::atomic_add(&view(i,   j-1, k-1), whi[0] * wlo[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i,   j-1, k  ), whi[0] * wlo[1] * whi[2]);
-                Kokkos::atomic_add(&view(i,   j,   k-1), whi[0] * whi[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2]);
-            }
-        );
-            
+                Kokkos::atomic_add(&view(i - 1, j - 1, k - 1), wlo[0] * wlo[1] * wlo[2]);
+                Kokkos::atomic_add(&view(i - 1, j - 1, k), wlo[0] * wlo[1] * whi[2]);
+                Kokkos::atomic_add(&view(i - 1, j, k - 1), wlo[0] * whi[1] * wlo[2]);
+                Kokkos::atomic_add(&view(i - 1, j, k), wlo[0] * whi[1] * whi[2]);
+                Kokkos::atomic_add(&view(i, j - 1, k - 1), whi[0] * wlo[1] * wlo[2]);
+                Kokkos::atomic_add(&view(i, j - 1, k), whi[0] * wlo[1] * whi[2]);
+                Kokkos::atomic_add(&view(i, j, k - 1), whi[0] * whi[1] * wlo[2]);
+                Kokkos::atomic_add(&view(i, j, k), whi[0] * whi[1] * whi[2]);
+            });
+
         bf_m.accumulateHalo();
     }
-    
-}  // namespace
+
+}  // namespace ippl
