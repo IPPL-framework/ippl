@@ -17,6 +17,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
+    using Mesh_t               = ippl::UniformCartesian<double, 3>;
+    using Centering_t          = Mesh_t::DefaultCentering;
 
     int pt = 4, ptY = 4;
     bool isWeak = false;
@@ -55,19 +57,19 @@ int main(int argc, char* argv[]) {
     double dy                      = 2.0 / double(ptY);
     ippl::Vector<double, 3> hx     = {dx, dy, dx};
     ippl::Vector<double, 3> origin = {-1, -1, -1};
-    ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+    Mesh_t mesh(owned, hx, origin);
 
     double pi = acos(-1.0);
 
-    typedef ippl::Field<double, dim> field_type;
+    typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
     field_type rhs(mesh, layout), lhs(mesh, layout), solution(mesh, layout);
 
-    typedef ippl::BConds<double, dim> bc_type;
+    typedef ippl::BConds<double, dim, Mesh_t, Centering_t> bc_type;
 
     bc_type bcField;
 
     for (unsigned int i = 0; i < 6; ++i) {
-        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
+        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim, Mesh_t, Centering_t>>(i);
     }
 
     lhs.setFieldBC(bcField);
@@ -113,7 +115,7 @@ int main(int argc, char* argv[]) {
                          * sin(sin(pi * z)));
         });
 
-    ippl::ElectrostaticsCG<double, double, dim> lapsolver;
+    ippl::ElectrostaticsCG<double, double, dim, Mesh_t, Centering_t> lapsolver;
 
     ippl::ParameterList params;
     params.add("max_iterations", 2000);

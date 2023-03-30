@@ -26,13 +26,16 @@
 class PICTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
     template <unsigned Dim>
-    using field_type = ippl::Field<double, Dim>;
+    using mesh_type = ippl::UniformCartesian<double, Dim>;
+
+    template <unsigned Dim>
+    using centering_type = typename mesh_type<Dim>::DefaultCentering;
+
+    template <unsigned Dim>
+    using field_type = ippl::Field<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
 
     template <unsigned Dim>
     using flayout_type = ippl::FieldLayout<Dim>;
-
-    template <unsigned Dim>
-    using mesh_type = ippl::UniformCartesian<double, Dim>;
 
     template <unsigned Dim>
     using playout_type = ippl::ParticleSpatialLayout<double, Dim>;

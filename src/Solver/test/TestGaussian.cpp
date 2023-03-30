@@ -56,6 +56,9 @@ int main(int argc, char* argv[]) {
 
     const unsigned int Dim = 3;
 
+    using Mesh_t      = ippl::UniformCartesian<double, 3>;
+    using Centering_t = Mesh_t::DefaultCentering;
+
     // start a timer
     static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
     IpplTimings::startTimer(allTimer);
@@ -94,19 +97,19 @@ int main(int argc, char* argv[]) {
     double dz                        = 1.0 / nr[2];
     ippl::Vector<double, Dim> hr     = {dx, dy, dz};
     ippl::Vector<double, Dim> origin = {0.0, 0.0, 0.0};
-    ippl::UniformCartesian<double, Dim> mesh(owned, hr, origin);
+    Mesh_t mesh(owned, hr, origin);
 
     // all parallel layout, standard domain, normal axis order
     ippl::FieldLayout<Dim> layout(owned, decomp);
 
     // define the R (rho) field
-    typedef ippl::Field<double, Dim> field;
+    typedef ippl::Field<double, Dim, Mesh_t, Centering_t> field;
     field exact, rho;
     exact.initialize(mesh, layout);
     rho.initialize(mesh, layout);
 
     // define the Vector field E (LHS)
-    typedef ippl::Field<ippl::Vector<double, Dim>, Dim> fieldV;
+    typedef ippl::Field<ippl::Vector<double, Dim>, Dim, Mesh_t, Centering_t> fieldV;
     fieldV exactE, fieldE;
     exactE.initialize(mesh, layout);
     fieldE.initialize(mesh, layout);
@@ -207,8 +210,8 @@ int main(int argc, char* argv[]) {
     fftParams.add("r2c_direction", 0);
 
     // define an FFTPoissonSolver object
-    ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, Dim> FFTsolver(fieldE, rho, fftParams,
-                                                                           algorithm);
+    ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, Dim, Mesh_t, Centering_t> FFTsolver(
+        fieldE, rho, fftParams, algorithm);
 
     // iterate over 5 timesteps
     for (int times = 0; times < 5; ++times) {

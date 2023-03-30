@@ -44,6 +44,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
+    using Mesh_t               = ippl::UniformCartesian<double, dim>;
+    using Centering_t          = Mesh_t::DefaultCentering;
 
     int pt         = std::atoi(argv[1]);
     bool gauss_fct = std::atoi(argv[2]);
@@ -61,10 +63,10 @@ int main(int argc, char* argv[]) {
     double dx                      = 1.0 / double(pt);
     ippl::Vector<double, 3> hx     = {dx, dx, dx};
     ippl::Vector<double, 3> origin = {0.0, 0.0, 0.0};
-    ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+    Mesh_t mesh(owned, hx, origin);
 
     typedef ippl::Vector<double, dim> Vector_t;
-    typedef ippl::Field<Vector_t, dim> Vfield_t;
+    typedef ippl::Field<Vector_t, dim, Mesh_t, Centering_t> Vfield_t;
 
     Vfield_t vfield(mesh, layout);
     Vfield_t result(mesh, layout);

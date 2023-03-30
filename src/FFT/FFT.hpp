@@ -46,8 +46,9 @@ namespace ippl {
        given layout and heffte parameters.
     */
 
-    template <size_t Dim, class T, class M>
-    FFT<CCTransform, Dim, T, M>::FFT(const Layout_t& layout, const ParameterList& params) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    FFT<CCTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout,
+                                                   const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -76,10 +77,10 @@ namespace ippl {
     /**
            setup performs the initialization necessary.
     */
-    template <size_t Dim, class T, class M>
-    void FFT<CCTransform, Dim, T, M>::setup(const std::array<long long, Dim>& low,
-                                            const std::array<long long, Dim>& high,
-                                            const ParameterList& params) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<CCTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
+                                                          const std::array<long long, Dim>& high,
+                                                          const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
 
@@ -118,9 +119,9 @@ namespace ippl {
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
 
-    template <size_t Dim, class T, class M>
-    void FFT<CCTransform, Dim, T, M>::transform(
-        int direction, typename FFT<CCTransform, Dim, T, M>::ComplexField_t& f) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<CCTransform, Dim, T, Mesh, Centering>::transform(
+        int direction, typename FFT<CCTransform, Dim, T, Mesh, Centering>::ComplexField_t& f) {
         static_assert(Dim <= 3, "heFFTe doesn't support Dim > 3 yet");
 
         auto fview       = f.getView();
@@ -133,13 +134,20 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempField = detail::shrinkView<Dim, Complex_t>("tempField", fview, nghost);
+        Kokkos::View<Complex_t***, Kokkos::LayoutLeft> tempField(
+            "tempField", fview.extent(0) - 2 * nghost, fview.extent(1) - 2 * nghost,
+            fview.extent(2) - 2 * nghost);
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         Kokkos::parallel_for(
-            "copy from Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                tempField((args - nghost)...).real(fview(args...).real());
-                tempField((args - nghost)...).imag(fview(args...).imag());
+            "copy from Kokkos FFT",
+            mdrange_type(
+                {nghost, nghost, nghost},
+                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                tempField(i - nghost, j - nghost, k - nghost).real(fview(i, j, k).real());
+                tempField(i - nghost, j - nghost, k - nghost).imag(fview(i, j, k).imag());
             });
 
         if (direction == 1) {
@@ -153,10 +161,13 @@ namespace ippl {
         }
 
         Kokkos::parallel_for(
-            "copy to Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                fview(args...).real() = tempField((args - nghost)...).real();
-                fview(args...).imag() = tempField((args - nghost)...).imag();
+            "copy to Kokkos FFT",
+            mdrange_type(
+                {nghost, nghost, nghost},
+                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                fview(i, j, k).real() = tempField(i - nghost, j - nghost, k - nghost).real();
+                fview(i, j, k).imag() = tempField(i - nghost, j - nghost, k - nghost).imag();
             });
     }
 
@@ -169,9 +180,10 @@ namespace ippl {
      *layouts and heffte parameters.
      */
 
-    template <size_t Dim, class T, class M>
-    FFT<RCTransform, Dim, T, M>::FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput,
-                                     const ParameterList& params) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    FFT<RCTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layoutInput,
+                                                   const Layout_t& layoutOutput,
+                                                   const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -209,12 +221,11 @@ namespace ippl {
     /**
        setup performs the initialization.
     */
-    template <size_t Dim, class T, class M>
-    void FFT<RCTransform, Dim, T, M>::setup(const std::array<long long, Dim>& lowInput,
-                                            const std::array<long long, Dim>& highInput,
-                                            const std::array<long long, Dim>& lowOutput,
-                                            const std::array<long long, Dim>& highOutput,
-                                            const ParameterList& params) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<RCTransform, Dim, T, Mesh, Centering>::setup(
+        const std::array<long long, Dim>& lowInput, const std::array<long long, Dim>& highInput,
+        const std::array<long long, Dim>& lowOutput, const std::array<long long, Dim>& highOutput,
+        const ParameterList& params) {
         heffte::box3d<long long> inbox  = {lowInput, highInput};
         heffte::box3d<long long> outbox = {lowOutput, highOutput};
 
@@ -253,10 +264,10 @@ namespace ippl {
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
 
-    template <size_t Dim, class T, class M>
-    void FFT<RCTransform, Dim, T, M>::transform(
-        int direction, typename FFT<RCTransform, Dim, T, M>::RealField_t& f,
-        typename FFT<RCTransform, Dim, T, M>::ComplexField_t& g) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<RCTransform, Dim, T, Mesh, Centering>::transform(
+        int direction, typename FFT<RCTransform, Dim, T, Mesh, Centering>::RealField_t& f,
+        typename FFT<RCTransform, Dim, T, Mesh, Centering>::ComplexField_t& g) {
         static_assert(Dim <= 3, "heFFTe doesn't support Dim > 3 yet");
 
         auto fview        = f.getView();
@@ -271,19 +282,32 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempFieldf = detail::shrinkView<Dim, T>("tempFieldf", fview, nghostf);
-        auto tempFieldg = detail::shrinkView<Dim, Complex_t>("tempFieldg", gview, nghostg);
+        Kokkos::View<T***, Kokkos::LayoutLeft> tempFieldf(
+            "tempFieldf", fview.extent(0) - 2 * nghostf, fview.extent(1) - 2 * nghostf,
+            fview.extent(2) - 2 * nghostf);
+
+        Kokkos::View<Complex_t***, Kokkos::LayoutLeft> tempFieldg(
+            "tempFieldg", gview.extent(0) - 2 * nghostg, gview.extent(1) - 2 * nghostg,
+            gview.extent(2) - 2 * nghostg);
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         Kokkos::parallel_for(
-            "copy from Kokkos f field in FFT", detail::getRangePolicy<Dim>(fview, nghostf),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                tempFieldf((args - nghostf)...) = fview(args...);
+            "copy from Kokkos f field in FFT",
+            mdrange_type(
+                {nghostf, nghostf, nghostf},
+                {fview.extent(0) - nghostf, fview.extent(1) - nghostf, fview.extent(2) - nghostf}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                tempFieldf(i - nghostf, j - nghostf, k - nghostf) = fview(i, j, k);
             });
         Kokkos::parallel_for(
-            "copy from Kokkos g field in FFT", detail::getRangePolicy<Dim>(gview, nghostg),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                tempFieldg((args - nghostg)...).real(gview(args...).real());
-                tempFieldg((args - nghostg)...).imag(gview(args...).imag());
+            "copy from Kokkos g field in FFT",
+            mdrange_type(
+                {nghostg, nghostg, nghostg},
+                {gview.extent(0) - nghostg, gview.extent(1) - nghostg, gview.extent(2) - nghostg}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                tempFieldg(i - nghostg, j - nghostg, k - nghostg).real(gview(i, j, k).real());
+                tempFieldg(i - nghostg, j - nghostg, k - nghostg).imag(gview(i, j, k).imag());
             });
 
         if (direction == 1) {
@@ -297,16 +321,22 @@ namespace ippl {
         }
 
         Kokkos::parallel_for(
-            "copy to Kokkos f field FFT", detail::getRangePolicy<Dim>(fview, nghostf),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                fview(args...) = tempFieldf((args - nghostf)...);
+            "copy to Kokkos f field FFT",
+            mdrange_type(
+                {nghostf, nghostf, nghostf},
+                {fview.extent(0) - nghostf, fview.extent(1) - nghostf, fview.extent(2) - nghostf}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                fview(i, j, k) = tempFieldf(i - nghostf, j - nghostf, k - nghostf);
             });
 
         Kokkos::parallel_for(
-            "copy to Kokkos g field FFT", detail::getRangePolicy<Dim>(gview, nghostg),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                gview(args...).real() = tempFieldg((args - nghostg)...).real();
-                gview(args...).imag() = tempFieldg((args - nghostg)...).imag();
+            "copy to Kokkos g field FFT",
+            mdrange_type(
+                {nghostg, nghostg, nghostg},
+                {gview.extent(0) - nghostg, gview.extent(1) - nghostg, gview.extent(2) - nghostg}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                gview(i, j, k).real() = tempFieldg(i - nghostg, j - nghostg, k - nghostg).real();
+                gview(i, j, k).imag() = tempFieldg(i - nghostg, j - nghostg, k - nghostg).imag();
             });
     }
 
@@ -319,8 +349,9 @@ namespace ippl {
        given layout and heffte parameters.
     */
 
-    template <size_t Dim, class T, class M>
-    FFT<SineTransform, Dim, T, M>::FFT(const Layout_t& layout, const ParameterList& params) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    FFT<SineTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout,
+                                                     const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -349,10 +380,10 @@ namespace ippl {
     /**
            setup performs the initialization necessary.
     */
-    template <size_t Dim, class T, class M>
-    void FFT<SineTransform, Dim, T, M>::setup(const std::array<long long, Dim>& low,
-                                              const std::array<long long, Dim>& high,
-                                              const ParameterList& params) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<SineTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
+                                                            const std::array<long long, Dim>& high,
+                                                            const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
 
@@ -390,9 +421,9 @@ namespace ippl {
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
 
-    template <size_t Dim, class T, class M>
-    void FFT<SineTransform, Dim, T, M>::transform(
-        int direction, typename FFT<SineTransform, Dim, T, M>::Field_t& f) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<SineTransform, Dim, T, Mesh, Centering>::transform(
+        int direction, typename FFT<SineTransform, Dim, T, Mesh, Centering>::Field_t& f) {
         static_assert(Dim <= 3, "heFFTe doesn't support Dim > 3 yet");
 
         auto fview       = f.getView();
@@ -405,12 +436,19 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempField = detail::shrinkView<Dim, T>("tempField", fview, nghost);
+        Kokkos::View<T***, Kokkos::LayoutLeft> tempField("tempField", fview.extent(0) - 2 * nghost,
+                                                         fview.extent(1) - 2 * nghost,
+                                                         fview.extent(2) - 2 * nghost);
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         Kokkos::parallel_for(
-            "copy from Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                tempField((args - nghost)...) = fview(args...);
+            "copy from Kokkos FFT",
+            mdrange_type(
+                {nghost, nghost, nghost},
+                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                tempField(i - nghost, j - nghost, k - nghost) = fview(i, j, k);
             });
 
         if (direction == 1) {
@@ -424,9 +462,12 @@ namespace ippl {
         }
 
         Kokkos::parallel_for(
-            "copy to Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                fview(args...) = tempField((args - nghost)...);
+            "copy to Kokkos FFT",
+            mdrange_type(
+                {nghost, nghost, nghost},
+                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                fview(i, j, k) = tempField(i - nghost, j - nghost, k - nghost);
             });
     }
 
@@ -439,8 +480,9 @@ namespace ippl {
        given layout and heffte parameters.
     */
 
-    template <size_t Dim, class T, class M>
-    FFT<CosTransform, Dim, T, M>::FFT(const Layout_t& layout, const ParameterList& params) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    FFT<CosTransform, Dim, T, Mesh, Centering>::FFT(const Layout_t& layout,
+                                                    const ParameterList& params) {
         /**
          * Heffte requires to pass a 3D array even for 2D and
          * 1D FFTs we just have to make the length in other
@@ -469,10 +511,10 @@ namespace ippl {
     /**
            setup performs the initialization necessary.
     */
-    template <size_t Dim, class T, class M>
-    void FFT<CosTransform, Dim, T, M>::setup(const std::array<long long, Dim>& low,
-                                             const std::array<long long, Dim>& high,
-                                             const ParameterList& params) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<CosTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
+                                                           const std::array<long long, Dim>& high,
+                                                           const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
 
@@ -510,9 +552,9 @@ namespace ippl {
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
 
-    template <size_t Dim, class T, class M>
-    void FFT<CosTransform, Dim, T, M>::transform(
-        int direction, typename FFT<CosTransform, Dim, T, M>::Field_t& f) {
+    template <size_t Dim, class T, class Mesh, class Centering>
+    void FFT<CosTransform, Dim, T, Mesh, Centering>::transform(
+        int direction, typename FFT<CosTransform, Dim, T, Mesh, Centering>::Field_t& f) {
         static_assert(Dim <= 3, "heFFTe doesn't support Dim > 3 yet");
 
         auto fview       = f.getView();
@@ -525,12 +567,19 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempField = detail::shrinkView<Dim, T>("tempField", fview, nghost);
+        Kokkos::View<T***, Kokkos::LayoutLeft> tempField("tempField", fview.extent(0) - 2 * nghost,
+                                                         fview.extent(1) - 2 * nghost,
+                                                         fview.extent(2) - 2 * nghost);
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         Kokkos::parallel_for(
-            "copy from Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                tempField((args - nghost)...) = fview(args...);
+            "copy from Kokkos FFT",
+            mdrange_type(
+                {nghost, nghost, nghost},
+                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                tempField(i - nghost, j - nghost, k - nghost) = fview(i, j, k);
             });
 
         if (direction == 1) {
@@ -544,9 +593,12 @@ namespace ippl {
         }
 
         Kokkos::parallel_for(
-            "copy to Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                fview(args...) = tempField((args - nghost)...);
+            "copy to Kokkos FFT",
+            mdrange_type(
+                {nghost, nghost, nghost},
+                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                fview(i, j, k) = tempField(i - nghost, j - nghost, k - nghost);
             });
     }
 }  // namespace ippl

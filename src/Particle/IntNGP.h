@@ -39,9 +39,9 @@ public:
     // gather/scatter functions
 
     // scatter particle data into Field using particle position and mesh
-    template <class FT, unsigned Dim, class M, class C, class PT>
-    static void scatter(const FT& pdata, Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos,
-                        const M& mesh) {
+    template <class FT, unsigned Dim, class Mesh, class Centering, class PT>
+    static void scatter(const FT& pdata, Field<FT, Dim, Mesh, Centering>& f,
+                        const Vektor<PT, Dim>& ppos, const Mesh& mesh) {
         // find nearest-grid-point for particle position, store in NDIndex obj
         NDIndex<Dim> ngp = FindNGP(mesh, ppos, CenteringTag<C>());
         // scatter data value to Field ... this assumes that the Field
@@ -55,9 +55,9 @@ public:
 
     // scatter particle data into Field using particle position and mesh
     // and cache mesh information for reuse
-    template <class FT, unsigned Dim, class M, class C, class PT>
-    static void scatter(const FT& pdata, Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos,
-                        const M& mesh, NDIndex<Dim>& ngp) {
+    template <class FT, unsigned Dim, class Mesh, class Centering, class PT>
+    static void scatter(const FT& pdata, Field<FT, Dim, Mesh, Centering>& f,
+                        const Vektor<PT, Dim>& ppos, const Mesh& mesh, NDIndex<Dim>& ngp) {
         // find nearest-grid-point for particle position, store in NDIndex obj
         ngp = FindNGP(mesh, ppos, CenteringTag<C>());
         // scatter data value to Field ... this assumes that the Field
@@ -70,8 +70,9 @@ public:
     }
 
     // scatter particle data into Field using cached mesh information
-    template <class FT, unsigned Dim, class M, class C>
-    static void scatter(const FT& pdata, Field<FT, Dim, M, C>& f, const NDIndex<Dim>& ngp) {
+    template <class FT, unsigned Dim, class Mesh, class Centering>
+    static void scatter(const FT& pdata, Field<FT, Dim, Mesh, Centering>& f,
+                        const NDIndex<Dim>& ngp) {
         // scatter data value to Field ... this assumes that the Field
         // data point is local to this processor, if not an error will be printed.
 
@@ -82,9 +83,9 @@ public:
     }
 
     // gather particle data from Field using particle position and mesh
-    template <class FT, unsigned Dim, class M, class C, class PT>
-    static void gather(FT& pdata, const Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos,
-                       const M& mesh) {
+    template <class FT, unsigned Dim, class Mesh, class Centering, class PT>
+    static void gather(FT& pdata, const Field<FT, Dim, Mesh, Centering>& f,
+                       const Vektor<PT, Dim>& ppos, const Mesh& mesh) {
         // find nearest-grid-point for particle position, store in NDIndex obj
         NDIndex<Dim> ngp = FindNGP(mesh, ppos, CenteringTag<C>());
         // gather Field value to particle data ... this assumes that the Field
@@ -98,9 +99,9 @@ public:
 
     // gather particle data from Field using particle position and mesh
     // and cache mesh information for reuse
-    template <class FT, unsigned Dim, class M, class C, class PT>
-    static void gather(FT& pdata, const Field<FT, Dim, M, C>& f, const Vektor<PT, Dim>& ppos,
-                       const M& mesh, NDIndex<Dim>& ngp) {
+    template <class FT, unsigned Dim, class Mesh, class Centering, class PT>
+    static void gather(FT& pdata, const Field<FT, Dim, Mesh, Centering>& f,
+                       const Vektor<PT, Dim>& ppos, const Mesh& mesh, NDIndex<Dim>& ngp) {
         // find nearest-grid-point for particle position, store in NDIndex obj
         ngp = FindNGP(mesh, ppos, CenteringTag<C>());
         // gather Field value to particle data ... this assumes that the Field
@@ -113,8 +114,9 @@ public:
     }
 
     // gather particle data from Field using cached mesh information
-    template <class FT, unsigned Dim, class M, class C>
-    static void gather(FT& pdata, const Field<FT, Dim, M, C>& f, const NDIndex<Dim>& ngp) {
+    template <class FT, unsigned Dim, class Mesh, class Centering>
+    static void gather(FT& pdata, const Field<FT, Dim, Mesh, Centering>& f,
+                       const NDIndex<Dim>& ngp) {
         // gather Field value to particle data ... this assumes that the Field
         // data point is local to this processor, if not an error will be printed.
 

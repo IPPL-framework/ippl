@@ -10,6 +10,11 @@
 
 #include "FFTPoissonSolver.h"
 
+using Mesh_t        = ippl::UniformCartesian<double, 3>;
+using Centering_t   = Mesh_t::DefaultCentering;
+using ScalarField_t = ippl::Field<double, 3, Mesh_t, Centering_t>;
+using VectorField_t = ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t>;
+
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {
     double pi        = std::acos(-1.0);
@@ -45,9 +50,9 @@ KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_grad(double x, double y, do
 }
 
 // Define vtk dump function for plotting the fields
-void dumpVTK(std::string path, ippl::Field<double, 3>& rho, int nx, int ny, int nz, int iteration,
-             double dx, double dy, double dz) {
-    typename ippl::Field<double, 3>::view_type::host_mirror_type host_view = rho.getHostMirror();
+void dumpVTK(std::string path, ScalarField_t& rho, int nx, int ny, int nz, int iteration, double dx,
+             double dy, double dz) {
+    typename ScalarField_t::view_type::host_mirror_type host_view = rho.getHostMirror();
     Kokkos::deep_copy(host_view, rho.getView());
     std::ofstream vtkout;
     vtkout.precision(10);
@@ -128,24 +133,22 @@ int main(int argc, char* argv[]) {
         ippl::FieldLayout<3> layout(owned, decomp);
 
         // define the R (rho) field
-        typedef ippl::Field<double, 3> field;
-        field rho;
+        ScalarField_t rho;
         rho.initialize(mesh, layout);
 
         // define the exact solution field
-        field exact;
+        ScalarField_t exact;
         exact.initialize(mesh, layout);
 
         // field for gradient and exact gradient
-        typedef ippl::Field<ippl::Vector<double, 3>, 3> fieldV;
-        fieldV fieldE, exactE;
+        VectorField_t fieldE, exactE;
         fieldE.initialize(mesh, layout);
         exactE.initialize(mesh, layout);
 
         // assign the rho field with a gaussian
-        typename field::view_type view_rho = rho.getView();
-        const int nghost                   = rho.getNghost();
-        const auto& ldom                   = layout.getLocalNDIndex();
+        typename ScalarField_t::view_type view_rho = rho.getView();
+        const int nghost                           = rho.getNghost();
+        const auto& ldom                           = layout.getLocalNDIndex();
 
         Kokkos::parallel_for(
             "Assign rho field", ippl::detail::getRangePolicy<3>(view_rho, nghost),
@@ -164,7 +167,7 @@ int main(int argc, char* argv[]) {
             });
 
         // assign the exact field with its values (erf function)
-        typename field::view_type view_exact = exact.getView();
+        typename ScalarField_t::view_type view_exact = exact.getView();
 
         Kokkos::parallel_for(
             "Assign exact field", ippl::detail::getRangePolicy<3>(view_exact, nghost),
@@ -209,8 +212,8 @@ int main(int argc, char* argv[]) {
         fftParams.add("r2c_direction", 0);
 
         // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3> FFTsolver(fieldE, rho, fftParams,
-                                                                             algorithm);
+        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(
+            fieldE, rho, fftParams, algorithm);
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

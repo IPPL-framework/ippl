@@ -19,14 +19,14 @@
 
 namespace ippl {
 
-    template <typename Tl, typename Tr, unsigned Dim, class M, class C>
-    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, M, C>::setRhs(rhs_type& rhs) {
+    template <typename Tl, typename Tr, unsigned Dim, class Mesh, class Centering>
+    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, Mesh, Centering>::setRhs(rhs_type& rhs) {
         Base::setRhs(rhs);
         initialize();
     }
 
-    template <typename Tl, typename Tr, unsigned Dim, class M, class C>
-    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, M, C>::initialize() {
+    template <typename Tl, typename Tr, unsigned Dim, class Mesh, class Centering>
+    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, Mesh, Centering>::initialize() {
         const Layout_t& layout_r = this->rhs_mp->getLayout();
         domain_m                 = layout_r.getDomain();
 
@@ -50,7 +50,7 @@ namespace ippl {
 
         layoutComplex_mp = std::make_shared<Layout_t>(domainComplex, decomp);
 
-        M meshComplex(domainComplex, hComplex, originComplex);
+        Mesh meshComplex(domainComplex, hComplex, originComplex);
 
         fieldComplex_m.initialize(meshComplex, *layoutComplex_mp);
 
@@ -60,17 +60,17 @@ namespace ippl {
         fft_mp = std::make_shared<FFT_t>(layout_r, *layoutComplex_mp, this->params_m);
     }
 
-    template <typename Tl, typename Tr, unsigned Dim, class M, class C>
-    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, M, C>::solve() {
+    template <typename Tl, typename Tr, unsigned Dim, class Mesh, class Centering>
+    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, Mesh, Centering>::solve() {
         fft_mp->transform(1, *this->rhs_mp, fieldComplex_m);
 
         auto view        = fieldComplex_m.getView();
         const int nghost = fieldComplex_m.getNghost();
 
         double pi                 = std::acos(-1.0);
-        const M& mesh             = this->rhs_mp->get_mesh();
+        const Mesh& mesh          = this->rhs_mp->get_mesh();
         const auto& lDomComplex   = layoutComplex_mp->getLocalNDIndex();
-        using vector_type         = typename M::vector_type;
+        using vector_type         = typename Mesh::vector_type;
         const vector_type& origin = mesh.getOrigin();
         const vector_type& hx     = mesh.getMeshSpacing();
 

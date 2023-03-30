@@ -23,11 +23,11 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, typename OpRet,
-              class M = UniformCartesian<double, Dim>, class C = typename M::DefaultCentering>
-    class PCG : public SolverAlgorithm<Tlhs, Trhs, Dim> {
+    template <typename Tlhs, typename Trhs, unsigned Dim, typename OpRet, class Mesh,
+              class Centering>
+    class PCG : public SolverAlgorithm<Tlhs, Trhs, Dim, Mesh, Centering> {
     public:
-        using Base = SolverAlgorithm<Tlhs, Trhs, Dim, M, C>;
+        using Base = SolverAlgorithm<Tlhs, Trhs, Dim, Mesh, Centering>;
         using typename Base::lhs_type;
         using typename Base::rhs_type;
         using operator_type = std::function<OpRet(lhs_type)>;
@@ -58,7 +58,7 @@ namespace ippl {
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
             lhs_type r(mesh, layout), d(mesh, layout);
 
-            using bc_type  = BConds<T, lhs_type::dimension>;
+            using bc_type  = BConds<T, lhs_type::dimension, Mesh, Centering>;
             bc_type lhsBCs = lhs.getFieldBC();
             bc_type bc;
 
@@ -67,11 +67,12 @@ namespace ippl {
                 FieldBC bcType = lhsBCs[i]->getBCType();
                 if (bcType == PERIODIC_FACE) {
                     // If the LHS has periodic BCs, so does the residue
-                    bc[i] = std::make_shared<PeriodicFace<T, lhs_type::dimension>>(i);
+                    bc[i] =
+                        std::make_shared<PeriodicFace<T, lhs_type::dimension, Mesh, Centering>>(i);
                 } else if (bcType & CONSTANT_FACE) {
                     // If the LHS has constant BCs, the residue is zero on the BCs
                     // Bitwise AND with CONSTANT_FACE will succeed for ZeroFace or ConstantFace
-                    bc[i]            = std::make_shared<ZeroFace<T, lhs_type::dimension>>(i);
+                    bc[i] = std::make_shared<ZeroFace<T, lhs_type::dimension, Mesh, Centering>>(i);
                     allFacesPeriodic = false;
                 } else {
                     throw IpplException("PCG::operator()",

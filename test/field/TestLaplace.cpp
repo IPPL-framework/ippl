@@ -10,6 +10,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
+    using Mesh_t               = ippl::UniformCartesian<double, dim>;
+    using Centering_t          = Mesh_t::DefaultCentering;
 
     int pt = std::stoi(argv[1]);
     ippl::Index I(pt);
@@ -29,34 +31,32 @@ int main(int argc, char* argv[]) {
     double dx                      = 2.0 / double(pt);
     ippl::Vector<double, 3> hx     = {dx, dx, dx};
     ippl::Vector<double, 3> origin = {-1.0, -1.0, -1.0};
-    ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+    Mesh_t mesh(owned, hx, origin);
 
     double pi = acos(-1.0);
 
-    typedef ippl::Field<double, dim> field_type;
-    typedef ippl::Field<ippl::Vector<double, dim>, dim> vector_field_type;
+    typedef ippl::Field<double, dim, Mesh_t, Centering_t> Field_t;
+    typedef ippl::Field<ippl::Vector<double, dim>, dim, Mesh_t, Centering_t> vector_field_type;
 
     typedef ippl::Vector<double, dim> Vector_t;
 
-    field_type field(mesh, layout);
-    field_type Lap(mesh, layout);
-    field_type Lap_exact(mesh, layout);
+    Field_t field(mesh, layout);
+    Field_t Lap(mesh, layout);
+    Field_t Lap_exact(mesh, layout);
     vector_field_type vfield(mesh, layout);
-
-    typedef ippl::Field<double, dim> Field_t;
 
     typename Field_t::view_type& view       = field.getView();
     typename Field_t::view_type& view_exact = Lap_exact.getView();
-    typedef ippl::BConds<double, dim> bc_type;
-    typedef ippl::BConds<Vector_t, dim> vbc_type;
+    typedef ippl::BConds<double, dim, Mesh_t, Centering_t> bc_type;
+    typedef ippl::BConds<Vector_t, dim, Mesh_t, Centering_t> vbc_type;
 
     bc_type bcField;
     vbc_type vbcField;
 
     // X direction periodic BC
     for (unsigned int i = 0; i < 6; ++i) {
-        bcField[i]  = std::make_shared<ippl::PeriodicFace<double, dim>>(i);
-        vbcField[i] = std::make_shared<ippl::PeriodicFace<Vector_t, dim>>(i);
+        bcField[i]  = std::make_shared<ippl::PeriodicFace<double, dim, Mesh_t, Centering_t>>(i);
+        vbcField[i] = std::make_shared<ippl::PeriodicFace<Vector_t, dim, Mesh_t, Centering_t>>(i);
     }
     ////Lower Y face
     // bcField[2] = std::make_shared<ippl::NoBcFace<double, dim>>(2);
@@ -129,7 +129,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Error: " << error << std::endl;
     }
     std::stringstream ss;
-    ss << "timing_" << pt << "pt_" << iterations << "iterations_" << Ippl::Comm->size() << "ranks.dat";
+    ss << "timing_" << pt << "pt_" << iterations << "iterations_" << Ippl::Comm->size()
+       << "ranks.dat";
     IpplTimings::print(ss.str());
 
     return 0;

@@ -25,13 +25,17 @@
 class FieldTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
     template <unsigned Dim>
-    using field_type = ippl::Field<double, Dim>;
-
-    template <unsigned Dim>
-    using vfield_type = ippl::Field<ippl::Vector<double, Dim>, Dim>;
-
-    template <unsigned Dim>
     using mesh_type = ippl::UniformCartesian<double, Dim>;
+
+    template <unsigned Dim>
+    using centering_type = typename mesh_type<Dim>::DefaultCentering;
+
+    template <unsigned Dim>
+    using field_type = ippl::Field<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
+
+    template <unsigned Dim>
+    using vfield_type =
+        ippl::Field<ippl::Vector<double, Dim>, Dim, mesh_type<Dim>, centering_type<Dim>>;
 
     template <unsigned Dim>
     using layout_type = ippl::FieldLayout<Dim>;
@@ -276,7 +280,7 @@ TEST_F(FieldTest, Curl) {
 
     Kokkos::deep_copy(view_field, mirror);
 
-    ippl::Field<ippl::Vector<double, dim>, dim> result(*mesh, *layout);
+    vfield_type<dim> result(*mesh, *layout);
     result = curl(vfield);
 
     const int shift = result.getNghost();
@@ -299,9 +303,10 @@ TEST_F(FieldTest, Hessian) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<mesh_type<Dim>>& mesh,
                                    std::shared_ptr<layout_type<Dim>>& layout) {
         typedef ippl::Vector<double, Dim> Vector_t;
-        typedef ippl::Field<ippl::Vector<Vector_t, Dim>, Dim> MField_t;
+        typedef ippl::Field<ippl::Vector<Vector_t, Dim>, Dim, mesh_type<Dim>, centering_type<Dim>>
+            MField_t;
 
-        ippl::Field<double, Dim> field(*mesh, *layout);
+        field_type<Dim> field(*mesh, *layout);
         int nghost      = field.getNghost();
         auto view_field = field.getView();
 
