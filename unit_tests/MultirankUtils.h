@@ -19,6 +19,7 @@
 #ifndef MULTIRANK_UTILS_H
 #define MULTIRANK_UTILS_H
 
+#include <algorithm>
 #include <array>
 #include <tuple>
 
@@ -103,6 +104,8 @@ protected:
      */
     template <template <typename> class Pointer, template <unsigned Dim> class Type>
     using PtrCollection = std::tuple<Pointer<Type<Dims>>...>;
+
+    constexpr static unsigned MaxDim = std::max({Dims...});
 
 public:
     /*!
