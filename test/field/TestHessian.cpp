@@ -135,8 +135,13 @@ int main(int argc, char* argv[]) {
             }
         });
 
-    result = {0.0, 0.0, 0.0};
-    result = hess(field);
+    result     = {0.0, 0.0, 0.0};
+    auto timer = IpplTimings::getTimer("Hessian");
+    IpplTimings::startTimer(timer);
+    for (int i = 0; i < 100; i++) {
+        result = hess(field);
+    }
+    IpplTimings::stopTimer(timer);
 
     result = result - exact;
 
@@ -199,6 +204,8 @@ int main(int argc, char* argv[]) {
     // print total error (average of each matrix entry)
     avg /= 9.0;
     std::cout << std::setprecision(16) << "Average error = " << avg;
+
+    IpplTimings::print();
 
     return 0;
 }
