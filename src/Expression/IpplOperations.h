@@ -520,7 +520,7 @@ namespace ippl {
                 // The comma operator forces left-to-right evaluation order, which reduces
                 // performance; therefore we apply a dummy operation to dummy values and discard the
                 // result
-                [[maybe_unused]] auto _ = (hessianRow<row>(is, hessian, args...) ^ ...);
+                [[maybe_unused]] auto _ = (hessianRow<row>(is, hessian, args...) + ...);
             }
 
             /*!
@@ -538,8 +538,8 @@ namespace ippl {
             KOKKOS_INLINE_FUNCTION constexpr int hessianRow(const std::index_sequence<col...>&,
                                                             matrix_type& hessian,
                                                             const Idx... args) const {
-                hessian[row] = 0;
-                return (hessianEntry<row, col>(hessian, args...) ^ ...);
+                hessian[row] = (hessianEntry<row, col>(args...) + ...);
+                return 0;
             }
 
             /*!
@@ -548,14 +548,11 @@ namespace ippl {
              * @tparam row the row index
              * @tparam col the column index
              * @tparam Idx... the indices at which to access the field view
-             * @param hessian matrix in which to store the hessian
              * @param args... the indices
-             * @return An unused dummy value (required to allow use of a more performant fold
-             * expression)
+             * @return The entry of the Hessian at the given row and column
              */
             template <size_t row, size_t col, typename... Idx>
-            KOKKOS_INLINE_FUNCTION constexpr int hessianEntry(matrix_type& hessian,
-                                                              const Idx... args) const {
+            KOKKOS_INLINE_FUNCTION constexpr vector_type hessianEntry(const Idx... args) const {
                 using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
                 index_type coords[Dim] = {args...};
                 if constexpr (row == col) {
@@ -569,8 +566,8 @@ namespace ippl {
 
                     // The diagonal elements correspond to second derivatives w.r.t. a single
                     // variable
-                    hessian[row] += vectors[row] * (right - 2. * center + left)
-                                    / (hvector_m[row] * hvector_m[row]);
+                    return vectors[row] * (right - 2. * center + left)
+                           / (hvector_m[row] * hvector_m[row]);
                 } else {
                     coords[row] += 1;
                     coords[col] += 1;
@@ -587,10 +584,9 @@ namespace ippl {
 
                     // The non-diagonal elements are mixed derivatives, whose finite difference form
                     // is slightly different from above
-                    hessian[row] +=
-                        vectors[col] * (uu - du - ud + dd) / (4. * hvector_m[row] * hvector_m[col]);
+                    return vectors[col] * (uu - du - ud + dd)
+                           / (4. * hvector_m[row] * hvector_m[col]);
                 }
-                return 0;
             }
         };
     }  // namespace detail
