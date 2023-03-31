@@ -712,7 +712,7 @@ int main(int argc, char *argv[]){
 // TEST TIMERS
     
     P->scatterCIC(nP, 0, hr);
-    P->solver_mp2->solve();
+    P->solver_mp->solve();
     P->E_m = P->E_m * eps_inv;
     P->gatherCIC();
 
@@ -767,7 +767,7 @@ int main(int argc, char *argv[]){
         
         P->scatterCIC(nP, it+1, hr); 
         P->rho_m = P->rho_m * eps_inv;
-        P->solver_mp2->solve(); // automatically return negative gradient to E_m
+        P->solver_mp->solve(); // automatically return negative gradient to E_m
         P->gatherCIC();
 // =================MYSTUFF::CONSTANT_FOCUSING======================
         msg << "constant Focusing" << endl;
