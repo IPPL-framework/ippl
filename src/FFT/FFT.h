@@ -156,7 +156,7 @@ namespace ippl {
         /**
            setup performs the initialization necessary.
         */
-        void setup(const std::array<long long, Dim>& low, const std::array<long long, Dim>& high,
+        void setup(const std::array<long long, 3>& low, const std::array<long long, 3>& high,
                    const ParameterList& params);
 
         std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
@@ -198,10 +198,10 @@ namespace ippl {
            setup performs the initialization necessary after the transform
            directions have been specified.
         */
-        void setup(const std::array<long long, Dim>& lowInput,
-                   const std::array<long long, Dim>& highInput,
-                   const std::array<long long, Dim>& lowOutput,
-                   const std::array<long long, Dim>& highOutput, const ParameterList& params);
+        void setup(const std::array<long long, 3>& lowInput,
+                   const std::array<long long, 3>& highInput,
+                   const std::array<long long, 3>& lowOutput,
+                   const std::array<long long, 3>& highOutput, const ParameterList& params);
 
         std::shared_ptr<heffte::fft3d_r2c<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
@@ -236,7 +236,7 @@ namespace ippl {
         /**
            setup performs the initialization necessary.
         */
-        void setup(const std::array<long long, Dim>& low, const std::array<long long, Dim>& high,
+        void setup(const std::array<long long, 3>& low, const std::array<long long, 3>& high,
                    const ParameterList& params);
 
         std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
@@ -271,7 +271,7 @@ namespace ippl {
         /**
            setup performs the initialization necessary.
         */
-        void setup(const std::array<long long, Dim>& low, const std::array<long long, Dim>& high,
+        void setup(const std::array<long long, 3>& low, const std::array<long long, 3>& high,
                    const ParameterList& params);
 
         std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;

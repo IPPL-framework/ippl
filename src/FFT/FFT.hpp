@@ -54,8 +54,8 @@ namespace ippl {
          * 1D FFTs we just have to make the length in other
          * dimensions to be 1.
          */
-        std::array<long long, Dim> low;
-        std::array<long long, Dim> high;
+        std::array<long long, 3> low;
+        std::array<long long, 3> high;
 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
 
@@ -78,8 +78,8 @@ namespace ippl {
            setup performs the initialization necessary.
     */
     template <size_t Dim, class T, class Mesh, class Centering>
-    void FFT<CCTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
-                                                          const std::array<long long, Dim>& high,
+    void FFT<CCTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, 3>& low,
+                                                          const std::array<long long, 3>& high,
                                                           const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
@@ -213,8 +213,8 @@ namespace ippl {
     */
     template <size_t Dim, class T, class Mesh, class Centering>
     void FFT<RCTransform, Dim, T, Mesh, Centering>::setup(
-        const std::array<long long, Dim>& lowInput, const std::array<long long, Dim>& highInput,
-        const std::array<long long, Dim>& lowOutput, const std::array<long long, Dim>& highOutput,
+        const std::array<long long, 3>& lowInput, const std::array<long long, 3>& highInput,
+        const std::array<long long, 3>& lowOutput, const std::array<long long, 3>& highOutput,
         const ParameterList& params) {
         heffte::box3d<long long> inbox  = {lowInput, highInput};
         heffte::box3d<long long> outbox = {lowOutput, highOutput};
@@ -328,8 +328,8 @@ namespace ippl {
          * 1D FFTs we just have to make the length in other
          * dimensions to be 1.
          */
-        std::array<long long, Dim> low;
-        std::array<long long, Dim> high;
+        std::array<long long, 3> low;
+        std::array<long long, 3> high;
 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
 
@@ -352,8 +352,8 @@ namespace ippl {
            setup performs the initialization necessary.
     */
     template <size_t Dim, class T, class Mesh, class Centering>
-    void FFT<SineTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
-                                                            const std::array<long long, Dim>& high,
+    void FFT<SineTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, 3>& low,
+                                                            const std::array<long long, 3>& high,
                                                             const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
@@ -449,8 +449,8 @@ namespace ippl {
          * 1D FFTs we just have to make the length in other
          * dimensions to be 1.
          */
-        std::array<long long, Dim> low;
-        std::array<long long, Dim> high;
+        std::array<long long, 3> low;
+        std::array<long long, 3> high;
 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
 
@@ -473,8 +473,8 @@ namespace ippl {
            setup performs the initialization necessary.
     */
     template <size_t Dim, class T, class Mesh, class Centering>
-    void FFT<CosTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, Dim>& low,
-                                                           const std::array<long long, Dim>& high,
+    void FFT<CosTransform, Dim, T, Mesh, Centering>::setup(const std::array<long long, 3>& low,
+                                                           const std::array<long long, 3>& high,
                                                            const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
