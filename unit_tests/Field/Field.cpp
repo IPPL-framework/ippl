@@ -68,7 +68,7 @@ public:
 
         std::get<Idx>(meshes) = std::make_shared<mesh_type<Dim>>(owned, hx, origin);
 
-        std::get<Idx>(fields) = std::make_unique<field_type<Dim>>(*std::get<Idx>(meshes), *layout);
+        std::get<Idx>(fields) = std::make_shared<field_type<Dim>>(*std::get<Idx>(meshes), *layout);
     }
 
     PtrCollection<std::shared_ptr, field_type> fields;

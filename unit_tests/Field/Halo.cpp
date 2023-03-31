@@ -1,0 +1,247 @@
+//
+// Unit test Halo
+//   Test halo cell functionality and communication, as well as field layout neighbor finding
+//
+// Copyright (c) 2023, Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
+#include "Ippl.h"
+
+#include <cmath>
+
+#include "MultirankUtils.h"
+#include "gtest/gtest.h"
+
+class HaloTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
+public:
+    template <unsigned Dim>
+    using mesh_type = ippl::UniformCartesian<double, Dim>;
+
+    template <unsigned Dim>
+    using centering_type = typename mesh_type<Dim>::DefaultCentering;
+
+    template <unsigned Dim>
+    using field_type = ippl::Field<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
+
+    template <unsigned Dim>
+    using layout_type = ippl::FieldLayout<Dim>;
+
+    HaloTest()
+        : nPoints(16) {
+        setup(this);
+    }
+
+    template <unsigned Idx, unsigned Dim>
+    void setupDim() {
+        ippl::Index I(nPoints);
+        std::array<ippl::Index, Dim> args;
+        args.fill(I);
+        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
+
+        double dx = 1.0 / double(nPoints);
+        ippl::Vector<double, Dim> hx;
+        ippl::Vector<double, Dim> origin;
+
+        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        for (unsigned d = 0; d < Dim; d++) {
+            domDec[d] = ippl::PARALLEL;
+            hx[d]     = dx;
+            origin[d] = 0;
+        }
+
+        auto& layout = std::get<Idx>(layouts) = layout_type<Dim>(owned, domDec);
+
+        auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
+
+        std::get<Idx>(fields) = std::make_shared<field_type<Dim>>(mesh, layout);
+    }
+
+    Collection<mesh_type> meshes;
+    Collection<layout_type> layouts;
+    PtrCollection<std::shared_ptr, field_type> fields;
+    size_t nPoints;
+};
+
+TEST_F(HaloTest, CheckNeighbors) {
+    auto check = [&]<unsigned Dim>(const layout_type<Dim>& layout) {
+        int myRank = Ippl::Comm->rank();
+        int nRanks = Ippl::Comm->size();
+
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (rank == myRank) {
+                const auto& neighbors = layout.getNeighbors();
+                for (unsigned i = 0; i < neighbors.size(); i++) {
+                    const auto& n = neighbors[i];
+                    if (n.size() > 0) {
+                        unsigned dim = 0;
+                        for (unsigned idx = i; idx > 0; idx /= 3) {
+                            dim += idx % 3 == 2;
+                        }
+                        std::cout << "My rank is " << myRank << " and my neighbors at the";
+                        switch (dim) {
+                            case 0:
+                                std::cout << " vertex ";
+                                break;
+                            case 1:
+                                std::cout << " edge ";
+                                break;
+                            case 2:
+                                std::cout << " face ";
+                                break;
+                            case 3:
+                                std::cout << " cube ";
+                                break;
+                            default:
+                                std::cout << ' ' << dim << "-cube ";
+                                break;
+                        }
+                        std::cout << "with index " << i << " in " << Dim << " dimensions are: ";
+                        for (const auto& nrank : n) {
+                            std::cout << nrank << ' ';
+                        }
+                        std::cout << std::endl;
+                    }
+                }
+            }
+            Ippl::Comm->barrier();
+        }
+    };
+
+    apply(check, layouts);
+}
+
+TEST_F(HaloTest, CheckCubes) {
+    auto check = [&]<unsigned Dim>(const layout_type<Dim>& layout) {
+        const auto& domains = layout.getHostLocalDomains();
+
+        for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
+            if (rank == Ippl::Comm->rank()) {
+                const auto& neighbors = layout.getNeighbors();
+
+                constexpr static const char* cubes[6] = {"vertices", "edges",      "faces",
+                                                         "cubes",    "tesseracts", "peteracts"};
+                int boundaryCounts[Dim]               = {};
+                for (unsigned i = 0; i < neighbors.size(); i++) {
+                    if (neighbors[i].size() > 0) {
+                        unsigned dim = 0;
+                        for (unsigned idx = i; idx > 0; idx /= 3) {
+                            dim += idx % 3 == 2;
+                        }
+                        boundaryCounts[dim]++;
+                    }
+                }
+
+                std::cout << "Rank " << rank << "'s domain and neighbor components:" << std::endl
+                          << " - domain:\t" << domains[rank] << std::endl;
+                for (unsigned d = 0; d < Dim; d++) {
+                    std::cout << " - " << cubes[d] << ":\t" << boundaryCounts[d] << std::endl;
+                }
+                std::cout << "--------------------------------------" << std::endl;
+            }
+            Ippl::Comm->barrier();
+        }
+    };
+
+    apply(check, layouts);
+}
+
+TEST_F(HaloTest, FillHalo) {
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        *field = 1;
+        field->fillHalo();
+
+        auto view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
+        nestedViewLoop<Dim>(view, 0, [&]<typename... Idx>(const Idx... args) {
+            ASSERT_DOUBLE_EQ(view(args...), 1);
+        });
+    };
+
+    apply(check, fields);
+}
+
+TEST_F(HaloTest, AccumulateHalo) {
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field,
+                                   const layout_type<Dim>& layout) {
+        *field      = 1;
+        auto mirror = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
+        const unsigned int nghost = field->getNghost();
+
+        if (Ippl::Comm->size() > 1) {
+            auto& neighbors = layout.getNeighbors();
+            auto lDom       = layout.getLocalNDIndex();
+
+            auto arrayToCube = []<size_t... Dims>(const std::index_sequence<Dims...>&,
+                                                  const std::array<ippl::e_cube_tag, Dim>& tags) {
+                return ippl::detail::getCube<Dim>(tags[Dims]...);
+            };
+            auto indexToTags = [&]<size_t... Dims, typename... Tag>(
+                const std::index_sequence<Dims...>&, Tag... tags) {
+                return std::array<ippl::e_cube_tag, Dim>{(tags == nghost ? ippl::LOWER
+                                                          : tags == lDom[Dims].length() + nghost - 1
+                                                              ? ippl::UPPER
+                                                              : ippl::IS_PARALLEL)...};
+            };
+
+            nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+                auto encoding = indexToTags(std::make_index_sequence<Dim>{}, args...);
+                auto cube     = arrayToCube(std::make_index_sequence<Dim>{}, encoding);
+
+                // ignore all interior points
+                if (cube == ippl::detail::countHypercubes(Dim) - 1)
+                    return;
+
+                unsigned int n = 0;
+                nestedLoop<Dim>(
+                    [&](unsigned dl) -> size_t {
+                        auto d1 = Dim - dl;
+                        return encoding[d1] == ippl::IS_PARALLEL ? 0 : (encoding[d1] + 1) * 10;
+                    },
+                    [&](unsigned dl) -> size_t {
+                        auto d1 = Dim - dl;
+                        return encoding[d1] == ippl::IS_PARALLEL ? 1 : (encoding[d1] + 1) * 10 + 2;
+                    },
+                    [&]<typename... Flag>(const Flag... flags) {
+                        auto adjacent = ippl::detail::getCube<Dim>(
+                            (flags == 0   ? ippl::IS_PARALLEL
+                             : flags < 20 ? (flags & 1 ? ippl::LOWER : ippl::IS_PARALLEL)
+                                          : (flags & 1 ? ippl::UPPER : ippl::IS_PARALLEL))...);
+                        if (adjacent == ippl::detail::countHypercubes(Dim) - 1)
+                            return;
+                        n += neighbors[adjacent].size();
+                    });
+
+                if (n > 0)
+                    mirror(args...) = 1. / (n + 1);
+            });
+            Kokkos::deep_copy(field->getView(), mirror);
+        }
+
+        field->fillHalo();
+        field->accumulateHalo();
+
+        Kokkos::deep_copy(mirror, field->getView());
+
+        nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+            ASSERT_DOUBLE_EQ(mirror(args...), 1);
+        });
+    };
+
+    auto pair = zip(fields, layouts);
+    apply(check, pair);
+}
+
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
