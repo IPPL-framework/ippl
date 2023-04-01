@@ -509,9 +509,6 @@ int main(int argc, char *argv[]){
     auto start = std::chrono::high_resolution_clock::now();
 
 
-    // const double interactionRadius  = std::atof(argv[8]);
-    // const double alpha              = std::atof(argv[9]);
-
     //1 -> solvertype = FFT...1
     //2 -> loadbalancethreshold2
     //3 -> default overallocation3
