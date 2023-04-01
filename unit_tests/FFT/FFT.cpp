@@ -23,8 +23,8 @@
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
-// Restrict testing to 3 dimensions since this is what heFFTe supports
-class FFTTest : public ::testing::Test, public MultirankUtils<3> {
+// Restrict testing to 2 and 3 dimensions since this is what heFFTe supports
+class FFTTest : public ::testing::Test, public MultirankUtils<2, 3> {
 public:
     template <unsigned Dim>
     using mesh_type = ippl::UniformCartesian<double, Dim>;
