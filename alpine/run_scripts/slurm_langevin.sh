@@ -29,7 +29,7 @@ PARTICLE_MASS=1         # [m_e]
 FOCUS_FORCE=1.0         # Scaling factor of constant focusing force
 EPS_INV=3.182609e3      # [\frac{cm^3 m_e}{ms^2 q_e^2}] Inverse Vacuum Permittivity
 PRINT=10                # How often to print status to `langevin.out`
-DUMP_INTERVAL=20       # How often to dump beamstatistics to ${OUT_DIR}
+DUMP_INTERVAL=20        # How often to dump beamstatistics to ${OUT_DIR}
 
 # Collisional Parameters
 NV=32                   # Number of gridpoints on the velocity grid (along each dim.)
@@ -63,5 +63,4 @@ ${BOXL} ${NP} ${DT} ${NT} ${PARTICLE_CHARGE} ${PARTICLE_MASS} \
 ${FOCUS_FORCE} ${DUMP_INTERVAL} ${EPS_INV} ${NV} ${VMAX} \
 ${REL_BUFFER} ${VMESH_ADAPT_B} ${SCATTER_PHASE_B} ${DRAG_B} \
 ${DIFF_B} ${FCT} ${DRAG_FCT_B} ${DIFF_FCT_B} ${PRINT} ${COLLISION} ${OUT_DIR} \
---info 5 \
-#1>${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err  
+--info 5 1>${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err  
