@@ -140,6 +140,26 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim>
+    typename Vector<T, Dim>::iterator Vector<T, Dim>::begin() {
+        return data_m;
+    }
+
+    template <typename T, unsigned Dim>
+    typename Vector<T, Dim>::iterator Vector<T, Dim>::end() {
+        return data_m + Dim;
+    }
+
+    template <typename T, unsigned Dim>
+    typename Vector<T, Dim>::iterator Vector<T, Dim>::cbegin() const {
+        return data_m;
+    }
+
+    template <typename T, unsigned Dim>
+    typename Vector<T, Dim>::iterator Vector<T, Dim>::cend() const {
+        return data_m + Dim;
+    }
+
+    template <typename T, unsigned Dim>
     inline std::ostream& operator<<(std::ostream& out, const Vector<T, Dim>& v) {
         std::streamsize sw = out.width();
         out << std::setw(1);
