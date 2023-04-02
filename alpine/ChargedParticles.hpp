@@ -1137,7 +1137,7 @@ m << "temperature" << endl;
                     temperature[0]  <<","<< 
                     rvrms[0]        <<","<<
                     eps[0]          <<","<<
-                    Neps[0]          <<","<<
+                    Neps[0]         <<
     	 	endl;	
 
             csvout2<<   
@@ -1157,7 +1157,7 @@ m << "temperature" << endl;
                     vmean       (0)<<","<<vmean       (1)<<","<<vmean       (2)<<","<<
                     time_m      <<","<< 
                     fieldEnergy <<","<< 
-                    ExAmp       <<","<< 
+                    ExAmp       <<
 		endl;
         }
         
