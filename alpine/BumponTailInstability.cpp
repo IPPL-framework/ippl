@@ -47,6 +47,8 @@
 
 #include "ChargedParticles.hpp"
 
+constexpr unsigned Dim = 3;
+
 template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
@@ -148,7 +150,7 @@ double CDF(const double& x, const double& delta, const double& k, const unsigned
 }
 
 KOKKOS_FUNCTION
-double PDF(const Vector_t& xvec, const double& delta, const Vector_t& kw) {
+double PDF(const Vector_t<Dim>& xvec, const double& delta, const Vector_t<Dim>& kw) {
     double pdf = 1.0 * 1.0 * (1.0 + delta * std::cos(kw[Dim - 1] * xvec[Dim - 1]));
     return pdf;
 }
@@ -187,7 +189,7 @@ int main(int argc, char* argv[]) {
 
     msg << TestName << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-    using bunch_type = ChargedParticles<PLayout_t>;
+    using bunch_type = ChargedParticles<PLayout_t<Dim>, Dim>;
 
     std::unique_ptr<bunch_type> P;
 
@@ -201,7 +203,7 @@ int main(int argc, char* argv[]) {
         decomp[d] = ippl::PARALLEL;
     }
 
-    Vector_t kw;
+    Vector_t<Dim> kw;
     double sigma, muBulk, muBeam, epsilon, delta;
 
     if (std::strcmp(TestName, "TwoStreamInstability") == 0) {
@@ -230,20 +232,20 @@ int main(int argc, char* argv[]) {
         delta   = 0.01;
     }
 
-    Vector_t rmin(0.0);
-    Vector_t rmax = 2 * pi / kw;
+    Vector_t<Dim> rmin(0.0);
+    Vector_t<Dim> rmax = 2 * pi / kw;
     double dx     = rmax[0] / nr[0];
     double dy     = rmax[1] / nr[1];
     double dz     = rmax[2] / nr[2];
 
-    Vector_t hr     = {dx, dy, dz};
-    Vector_t origin = {rmin[0], rmin[1], rmin[2]};
+    Vector_t<Dim> hr     = {dx, dy, dz};
+    Vector_t<Dim> origin = {rmin[0], rmin[1], rmin[2]};
     const double dt = 0.5 * dx;  // 0.05
 
     const bool isAllPeriodic = true;
-    Mesh_t mesh(domain, hr, origin);
-    FieldLayout_t FL(domain, decomp, isAllPeriodic);
-    PLayout_t PL(FL, mesh);
+    Mesh_t<Dim> mesh(domain, hr, origin);
+    FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
+    PLayout_t<Dim> PL(FL, mesh);
 
     // Q = -\int\int f dx dv
     double Q = -rmax[0] * rmax[1] * rmax[2];
@@ -286,7 +288,7 @@ int main(int argc, char* argv[]) {
                 double y        = (jg + 0.5) * hr[1] + origin[1];
                 double z        = (kg + 0.5) * hr[2] + origin[2];
 
-                Vector_t xvec = {x, y, z};
+                Vector_t<Dim> xvec = {x, y, z};
 
                 rhoview(i, j, k) = PDF(xvec, delta, kw);
             });
@@ -301,10 +303,10 @@ int main(int argc, char* argv[]) {
     msg << "First domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
 
-    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
+    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> RegionLayout_t;
     const RegionLayout_t& RLayout                           = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_t Nr, Dr, minU, maxU;
+    Vector_t<Dim> Nr, Dr, minU, maxU;
     int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d < Dim; ++d) {
         Nr[d] = CDF(Regions(myRank)[d].max(), delta, kw[d], d)
@@ -332,7 +334,7 @@ int main(int argc, char* argv[]) {
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
 
-    Kokkos::parallel_for(nloc, generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+    Kokkos::parallel_for(nloc, generate_random<Vector_t<Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
                                    P->R.getView(), P->P.getView(), rand_pool64, delta, kw, sigma,
                                    muBulk, muBeam, nlocBulk, minU, maxU));
     Kokkos::fence();
