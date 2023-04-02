@@ -89,7 +89,7 @@ TEST_F(ParticleBCTest, UpperPeriodicBC) {
     double shift = 0.05;
     auto check   = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
                                    ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = Dim - 1;
+        constexpr unsigned Idx = dimToIndex(Dim);
         setup<Idx, Dim>(len + shift);
 
         bunch->setParticleBC(ippl::BC::PERIODIC);
@@ -109,7 +109,7 @@ TEST_F(ParticleBCTest, UpperNoBC) {
     double shift = 0.05;
     auto check   = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
                                    ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = Dim - 1;
+        constexpr unsigned Idx = dimToIndex(Dim);
         setup<Idx, Dim>(len + shift);
 
         bunch->setParticleBC(ippl::BC::NO);
@@ -129,7 +129,7 @@ TEST_F(ParticleBCTest, UpperReflectiveBC) {
     double shift = 0.05;
     auto check   = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
                                    ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = Dim - 1;
+        constexpr unsigned Idx = dimToIndex(Dim);
         setup<Idx, Dim>(len + shift);
 
         bunch->setParticleBC(ippl::BC::REFLECTIVE);
@@ -149,7 +149,7 @@ TEST_F(ParticleBCTest, UpperSinkBC) {
     double shift = 0.05;
     auto check   = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
                                    ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = Dim - 1;
+        constexpr unsigned Idx = dimToIndex(Dim);
         setup<Idx, Dim>(len + shift);
 
         bunch->setParticleBC(ippl::BC::SINK);
@@ -169,7 +169,7 @@ TEST_F(ParticleBCTest, LowerPeriodicBC) {
     double shift = 0.05;
     auto check   = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
                                    ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = Dim - 1;
+        constexpr unsigned Idx = dimToIndex(Dim);
         setup<Idx, Dim>(-shift);
 
         bunch->setParticleBC(ippl::BC::PERIODIC);
@@ -189,7 +189,7 @@ TEST_F(ParticleBCTest, LowerNoBC) {
     double shift = 0.05;
     auto check   = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
                                    ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = Dim - 1;
+        constexpr unsigned Idx = dimToIndex(Dim);
         setup<Idx, Dim>(-shift);
 
         bunch->setParticleBC(ippl::BC::NO);
@@ -209,7 +209,7 @@ TEST_F(ParticleBCTest, LowerReflectiveBC) {
     double shift = 0.05;
     auto check   = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
                                    ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = Dim - 1;
+        constexpr unsigned Idx = dimToIndex(Dim);
         setup<Idx, Dim>(-shift);
 
         bunch->setParticleBC(ippl::BC::REFLECTIVE);
@@ -229,7 +229,7 @@ TEST_F(ParticleBCTest, LowerSinkBC) {
     double shift = 0.05;
     auto check   = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
                                    ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = Dim - 1;
+        constexpr unsigned Idx = dimToIndex(Dim);
         setup<Idx, Dim>(-shift);
 
         bunch->setParticleBC(ippl::BC::SINK);

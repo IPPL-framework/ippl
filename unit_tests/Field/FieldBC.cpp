@@ -74,7 +74,7 @@ public:
 
     template <unsigned Dim>
     void checkResult(const double expected) {
-        constexpr unsigned Idx = Dim - 1;
+        constexpr unsigned Idx = dimToIndex(Dim);
 
         auto& layout = std::get<Idx>(layouts);
         auto& HostF  = std::get<Idx>(HostFs);

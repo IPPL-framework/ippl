@@ -135,7 +135,7 @@ public:
     void repartition() {
         bool fromAnalyticDensity = false;
 
-        constexpr unsigned Idx = Dim - 1;
+        constexpr unsigned Idx = dimToIndex(Dim);
 
         auto bunch   = std::get<Idx>(bunches);
         auto field   = std::get<Idx>(fields);
@@ -150,7 +150,7 @@ public:
 
     template <unsigned Dim>
     ippl::NDIndex<Dim> getDomain() {
-        return std::get<Dim - 1>(layouts).getDomain();
+        return std::get<dimToIndex(Dim)>(layouts).getDomain();
     }
 
     PtrCollection<std::shared_ptr, field_type> fields;

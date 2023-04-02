@@ -107,7 +107,11 @@ protected:
 
     constexpr static unsigned MaxDim = std::max({Dims...});
 
-public:
+    constexpr static unsigned dimToIndex(unsigned dim) {
+        constexpr std::array<unsigned, sizeof...(Dims)> dims = {Dims...};
+        return std::distance(dims.begin(), std::find(dims.begin(), dims.end(), dim));
+    }
+
     /*!
      * Set up the testing environment using a given class. Requires that the tester
      * has a function named setupDim with two unsigned integers as template arguments.
@@ -120,6 +124,7 @@ public:
         setup_impl(t, std::make_index_sequence<sizeof...(Dims)>{});
     }
 
+public:
     /*!
      * Runs a function with some arguments
      * @tparam Functor the functor type
