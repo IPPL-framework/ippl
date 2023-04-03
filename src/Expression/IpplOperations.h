@@ -273,7 +273,7 @@ namespace ippl {
             meta_grad(const E& u, const typename E::Mesh_t::vector_type vectors[])
                 : u_m(u) {
                 for (unsigned d = 0; d < E::Mesh_t::Dimension; d++)
-                    this->vectors[d] = vectors[d];
+                    vectors_m[d] = vectors[d];
             }
 
             /*
@@ -293,7 +293,7 @@ namespace ippl {
                     coords[d] -= 2;
                     auto&& left = apply<Dim>(u_m, coords);
 
-                    res += vectors[d] * (right - left);
+                    res += vectors_m[d] * (right - left);
                 }
                 return res;
 
@@ -309,7 +309,7 @@ namespace ippl {
             using Mesh_t                  = typename E::Mesh_t;
             using vector_type             = typename Mesh_t::vector_type;
             const E u_m;
-            vector_type vectors[Dim];
+            vector_type vectors_m[Dim];
         };
     }  // namespace detail
 
@@ -327,7 +327,7 @@ namespace ippl {
             meta_div(const E& u, const typename E::Mesh_t::vector_type vectors[])
                 : u_m(u) {
                 for (unsigned d = 0; d < E::Mesh_t::Dimension; d++)
-                    this->vectors[d] = vectors[d];
+                    vectors_m[d] = vectors[d];
             }
 
             /*
@@ -347,7 +347,7 @@ namespace ippl {
                     coords[d] -= 2;
                     auto&& left = apply<Dim>(u_m, coords);
 
-                    res += dot(vectors[d], right - left).apply();
+                    res += dot(vectors_m[d], right - left).apply();
                 }
                 return res;
 
@@ -363,7 +363,7 @@ namespace ippl {
             using Mesh_t                  = typename E::Mesh_t;
             using vector_type             = typename Mesh_t::vector_type;
             const E u_m;
-            vector_type vectors[Dim];
+            vector_type vectors_m[Dim];
         };
 
         /*!
@@ -480,7 +480,7 @@ namespace ippl {
                 : u_m(u)
                 , hvector_m(hvector) {
                 for (unsigned d = 0; d < E::Mesh_t::Dimension; d++)
-                    this->vectors[d] = vectors[d];
+                    vectors_m[d] = vectors[d];
             }
 
             /*
@@ -501,7 +501,7 @@ namespace ippl {
             using matrix_type = typename Mesh_t::matrix_type;
 
             const E u_m;
-            vector_type vectors[Dim];
+            vector_type vectors_m[Dim];
             const vector_type hvector_m;
 
             /*!
@@ -566,7 +566,7 @@ namespace ippl {
 
                     // The diagonal elements correspond to second derivatives w.r.t. a single
                     // variable
-                    return vectors[row] * (right - 2. * center + left)
+                    return vectors_m[row] * (right - 2. * center + left)
                            / (hvector_m[row] * hvector_m[row]);
                 } else {
                     coords[row] += 1;
@@ -584,7 +584,7 @@ namespace ippl {
 
                     // The non-diagonal elements are mixed derivatives, whose finite difference form
                     // is slightly different from above
-                    return vectors[col] * (uu - du - ud + dd)
+                    return vectors_m[col] * (uu - du - ud + dd)
                            / (4. * hvector_m[row] * hvector_m[col]);
                 }
             }
