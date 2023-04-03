@@ -1005,6 +1005,7 @@ m << "temperature" << endl;
    	    	     tmpry = Nrrms(i) * Nvrms(i);
    	    	     Nfac(i) = (tmpry == 0.0) ? zero : 1.0/tmpry;
    	    	}
+        rvrms = rvsum * fac;
         Nrvrms = Nrvsum * Nfac;
 
 
@@ -1105,7 +1106,7 @@ m << "temperature" << endl;
                     "T_X,"              <<
                     "rvrms_X,"              <<
                     "eps_X,"              <<
-                    "Neps_X,"              <<  
+                    "Neps_X"              <<  
                     endl;
 
 		csvout2 <<  
@@ -1125,7 +1126,7 @@ m << "temperature" << endl;
                     "vmeanX,vmeanY,vmeanZ," <<
                     "time,"                 <<
                     "Ex_field_energy,"      <<
-                    "Ex_max_norm,"          <<
+                    "Ex_max_norm"          <<
                     endl;
 	    }     
 
