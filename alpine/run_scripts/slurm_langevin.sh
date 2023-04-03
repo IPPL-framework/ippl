@@ -1,19 +1,16 @@
 #!/bin/bash
-
-#SBATCH --partition=hourly      # Using 'hourly' will grant higher priority, daily
-#SBATCH --time=00:05:00         # Define max time job will run // cant be more than one hour??
-#SBATCH --exclusive
-#SBATCH --error=langevin.err    # Define your output file
-#SBATCH --output=langevin.out   # Define your output file
+#SBATCH --partition=daily      # Using 'hourly' will grant higher priority, `daily` for jobs longer than 1h
+#SBATCH --time=03:59:00
 #SBATCH --nodes=1               # number of nodes
-#SBATCH --ntasks=1              # Job will run 32 tasks
-#SBATCH --ntasks-per-core=1     # Force no Hyper-Threading, will run 1 task per core
+#SBATCH --ntasks=1              # Job will run on 1 MPI rank
+#SBATCH --cpus-per-task=44      # Shared Memory Parallelism doesn't work on Severin's branch
+#SBATCH --error=langevin.err
+#SBATCH --output=langevin.out
+#SBATCH --exclusive
 
-# Shared Memory Parallelism doesn't work on Severin's branch
-#SBATCH --cpus-per-task=1
-# set OMP_NUM_THREADS=
-# set OMP_PROC_BIND=spread
-# set OMP_PLACES=threads
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
 
 # General Solver Parameters
 MPI_OVERALLOC=2.0
@@ -36,6 +33,7 @@ NV=32                   # Number of gridpoints on the velocity grid (along each 
 VMAX=9e4                # [cm / ms] Extent of velocity grid ([-VMAX, VMAX] in each dim.)
 REL_BUFFER=1.03         # Relative allocated buffer zone for adaptive velocity
 VMESH_ADAPT_B=0         # Adapt velocity mesh size dynamiccally (doesn't work yet)
+SCATTER_PHASE_B=0       # Scatter full phase space before computing collisional terms
 
 COLLISION=0             # Boolean defining whether to introduce collisional terms in solver
 FCT=1                   # Factor by which to scale the spatial density
@@ -55,12 +53,11 @@ mkdir -p ${OUT_DIR}
 THIS_FILE="$(readlink -f "$0")"
 cp ${THIS_FILE} ${OUT_DIR}/jobscript.sh
 
-mkdir -p ${OUT_DIR}
-
 srun --cpus-per-task=${SLURM_CPUS_PER_TASK} ./Langevin \
 FFT ${LB_THRESHOLD} ${MPI_OVERALLOC} ${NR} ${BEAM_RADIUS} \
 ${BOXL} ${NP} ${DT} ${NT} ${PARTICLE_CHARGE} ${PARTICLE_MASS} \
 ${FOCUS_FORCE} ${DUMP_INTERVAL} ${EPS_INV} ${NV} ${VMAX} \
 ${REL_BUFFER} ${VMESH_ADAPT_B} ${SCATTER_PHASE_B} ${DRAG_B} \
-${DIFF_B} ${FCT} ${DRAG_FCT_B} ${DIFF_FCT_B} ${PRINT} ${COLLISION} ${OUT_DIR} \
---info 5 1>${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err  
+${DIFF_B} ${FCT} ${DRAG_FCT_B} ${DIFF_FCT_B} ${PRINT} ${COLLISION} \
+${OUT_DIR} --info 5 \
+1>${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err
