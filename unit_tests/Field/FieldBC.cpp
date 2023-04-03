@@ -99,7 +99,7 @@ public:
                     return 1;
                 },
                 [&](unsigned dim) {
-                    return dim == Dim - d ? 2 : HostF.extent(Dim - dim) - 1;
+                    return dim == d ? 2 : HostF.extent(dim) - 1;
                 },
                 [&]<typename... Idx>(const Idx... args) {
                     // to avoid ambiguity with MultirankUtils::apply

@@ -203,12 +203,10 @@ TEST_F(HaloTest, AccumulateHalo) {
                 unsigned int n = 0;
                 nestedLoop<Dim>(
                     [&](unsigned dl) -> size_t {
-                        auto d1 = Dim - dl;
-                        return encoding[d1] == ippl::IS_PARALLEL ? 0 : (encoding[d1] + 1) * 10;
+                        return encoding[dl] == ippl::IS_PARALLEL ? 0 : (encoding[dl] + 1) * 10;
                     },
                     [&](unsigned dl) -> size_t {
-                        auto d1 = Dim - dl;
-                        return encoding[d1] == ippl::IS_PARALLEL ? 1 : (encoding[d1] + 1) * 10 + 2;
+                        return encoding[dl] == ippl::IS_PARALLEL ? 1 : (encoding[dl] + 1) * 10 + 2;
                     },
                     [&]<typename... Flag>(const Flag... flags) {
                         auto adjacent = ippl::detail::getCube<Dim>(

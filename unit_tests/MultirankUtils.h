@@ -176,16 +176,17 @@ public:
      * @param end a functor that returns the ending index (exclusive) for each level of the loop
      * @param c a functor to be called in each iteration of the loop with the indices as arguments
      */
-    template <unsigned Dim, class BeginFunctor, class EndFunctor, class Functor>
+    template <unsigned Dim, unsigned Current = 0, class BeginFunctor, class EndFunctor,
+              class Functor>
     static constexpr void nestedLoop(BeginFunctor&& begin, EndFunctor&& end, Functor&& c) {
-        for (size_t i = begin(Dim); i < end(Dim); ++i) {
-            if constexpr (Dim == 1) {
+        for (size_t i = begin(Current); i < end(Current); ++i) {
+            if constexpr (Dim - 1 == Current) {
                 c(i);
             } else {
                 auto next = [i, &c](auto... args) {
                     c(i, args...);
                 };
-                nestedLoop<Dim - 1>(begin, end, next);
+                nestedLoop<Dim, Current + 1>(begin, end, next);
             }
         }
     }
@@ -206,7 +207,7 @@ public:
                 return shift;
             },
             [&](unsigned d) {
-                return view.extent(Dim - d) - shift;
+                return view.extent(d) - shift;
             },
             c);
     }
