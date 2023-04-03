@@ -1,9 +1,8 @@
 // Bump on Tail Instability/Two-stream Instability Test
 //   Usage:
-//     srun ./BumponTailInstability <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
+//     srun ./BumponTailInstability <nx> [<ny>...] <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
-//     ny       = No. cell-centered points in the y-direction
-//     nz       = No. cell-centered points in the z-direction
+//     ny...    = No. cell-centered points in the y-, z-, ...-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
 //     stype    = Field solver type e.g., FFT
@@ -163,13 +162,12 @@ int main(int argc, char* argv[]) {
     Inform msg(TestName);
     Inform msg2all(TestName, INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
+    int arg = 1;
 
-    auto start                = std::chrono::high_resolution_clock::now();
-    ippl::Vector<int, Dim> nr = {
-        std::atoi(argv[1]),
-        std::atoi(argv[2]),
-        std::atoi(argv[3]),
+    auto start = std::chrono::high_resolution_clock::now();
+    ippl::Vector<int, Dim> nr;
+    for (unsigned d = 0; d < Dim; d++) {
+        nr[d] = std::atoi(argv[arg++]);
     };
 
     static IpplTimings::TimerRef mainTimer           = IpplTimings::getTimer("total");
@@ -184,8 +182,8 @@ int main(int argc, char* argv[]) {
 
     IpplTimings::startTimer(mainTimer);
 
-    const size_type totalP = std::atoll(argv[4]);
-    const unsigned int nt  = std::atoi(argv[5]);
+    const size_type totalP = std::atoll(argv[arg++]);
+    const unsigned int nt  = std::atoi(argv[arg++]);
 
     msg << TestName << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
@@ -209,14 +207,14 @@ int main(int argc, char* argv[]) {
     if (std::strcmp(TestName, "TwoStreamInstability") == 0) {
         // Parameters for two stream instability as in
         //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
-        kw      = {0.5, 0.5, 0.5};
+        kw      = 0.5;
         sigma   = 0.1;
         epsilon = 0.5;
         muBulk  = -pi / 2.0;
         muBeam  = pi / 2.0;
         delta   = 0.01;
     } else if (std::strcmp(TestName, "BumponTailInstability") == 0) {
-        kw      = {0.21, 0.21, 0.21};
+        kw      = 0.21;
         sigma   = 1.0 / std::sqrt(2.0);
         epsilon = 0.1;
         muBulk  = 0.0;
@@ -224,7 +222,7 @@ int main(int argc, char* argv[]) {
         delta   = 0.01;
     } else {
         // Default value is two stream instability
-        kw      = {0.5, 0.5, 0.5};
+        kw      = 0.5;
         sigma   = 0.1;
         epsilon = 0.5;
         muBulk  = -pi / 2.0;
@@ -234,13 +232,12 @@ int main(int argc, char* argv[]) {
 
     Vector_t<Dim> rmin(0.0);
     Vector_t<Dim> rmax = 2 * pi / kw;
-    double dx     = rmax[0] / nr[0];
-    double dy     = rmax[1] / nr[1];
-    double dz     = rmax[2] / nr[2];
 
-    Vector_t<Dim> hr     = {dx, dy, dz};
-    Vector_t<Dim> origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.5 * dx;  // 0.05
+    Vector_t<Dim> hr;
+    for (unsigned d = 0; d < Dim; d++)
+        hr[d] = rmax[d] / nr[d];
+    Vector_t<Dim> origin = rmin;
+    const double dt      = 0.5 * hr[0];  // 0.05
 
     const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);
@@ -248,8 +245,10 @@ int main(int argc, char* argv[]) {
     PLayout_t<Dim> PL(FL, mesh);
 
     // Q = -\int\int f dx dv
-    double Q = -rmax[0] * rmax[1] * rmax[2];
-    P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+    double Q = -1;
+    for (const auto& r : rmax)
+        Q *= r;
+    P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
 
     P->nr_m = nr;
 
@@ -258,10 +257,12 @@ int main(int argc, char* argv[]) {
 
     bunch_type bunchBuffer(PL);
 
-    P->stype_m = argv[6];
+    P->stype_m = argv[arg++];
     P->initSolver();
     P->time_m                 = 0.0;
-    P->loadbalancethreshold_m = std::atof(argv[7]);
+    P->loadbalancethreshold_m = std::atof(argv[arg++]);
+
+    Ippl::Comm->setDefaultOverallocation(std::atof(argv[arg++]));
 
     bool isFirstRepartition;
 
@@ -271,26 +272,17 @@ int main(int argc, char* argv[]) {
         isFirstRepartition             = true;
         const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
         const int nghost               = P->rho_m.getNghost();
-        using mdrange_type             = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         auto rhoview                   = P->rho_m.getView();
 
         Kokkos::parallel_for(
-            "Assign initial rho based on PDF",
-            mdrange_type({nghost, nghost, nghost},
-                         {rhoview.extent(0) - nghost, rhoview.extent(1) - nghost,
-                          rhoview.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            "Assign initial rho based on PDF", ippl::detail::getRangePolicy<Dim>(rhoview, nghost),
+            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
                 // local to global index conversion
-                const size_t ig = i + lDom[0].first() - nghost;
-                const size_t jg = j + lDom[1].first() - nghost;
-                const size_t kg = k + lDom[2].first() - nghost;
-                double x        = (ig + 0.5) * hr[0] + origin[0];
-                double y        = (jg + 0.5) * hr[1] + origin[1];
-                double z        = (kg + 0.5) * hr[2] + origin[2];
+                Vector_t<Dim> xvec = {(double)args...};
+                for (unsigned d = 0; d < Dim; d++)
+                    xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
 
-                Vector_t<Dim> xvec = {x, y, z};
-
-                rhoview(i, j, k) = PDF(xvec, delta, kw);
+                rhoview(args...) = PDF(xvec, delta, kw);
             });
 
         Kokkos::fence();
@@ -316,7 +308,9 @@ int main(int argc, char* argv[]) {
         maxU[d] = CDF(Regions(myRank)[d].max(), delta, kw[d], d);
     }
 
-    double factorConf         = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
+    double factorConf = 1;
+    for (unsigned d = 0; d < Dim; d++)
+        factorConf *= Nr[d] / Dr[d];
     double factorVelBulk      = 1.0 - epsilon;
     double factorVelBeam      = 1.0 - factorVelBulk;
     size_type nlocBulk        = (size_type)(factorConf * factorVelBulk * totalP);
@@ -334,9 +328,10 @@ int main(int argc, char* argv[]) {
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
 
-    Kokkos::parallel_for(nloc, generate_random<Vector_t<Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                                   P->R.getView(), P->P.getView(), rand_pool64, delta, kw, sigma,
-                                   muBulk, muBeam, nlocBulk, minU, maxU));
+    Kokkos::parallel_for(
+        nloc, generate_random<Vector_t<Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                  P->R.getView(), P->P.getView(), rand_pool64, delta, kw, sigma, muBulk, muBeam,
+                  nlocBulk, minU, maxU));
     Kokkos::fence();
     Ippl::Comm->barrier();
     IpplTimings::stopTimer(particleCreation);

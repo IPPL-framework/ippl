@@ -1,9 +1,8 @@
 // Landau Damping Test
 //   Usage:
-//     srun ./LandauDamping <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
+//     srun ./LandauDamping <nx> [<ny>...] <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
-//     ny       = No. cell-centered points in the y-direction
-//     nz       = No. cell-centered points in the z-direction
+//     ny...    = No. cell-centered points in the y-, z-, ...-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
 //     stype    = Field solver type e.g., FFT
