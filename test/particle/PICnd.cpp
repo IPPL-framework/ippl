@@ -1,5 +1,5 @@
-// Test PIC3d
-//   This test program sets up a simple sine-wave electric field in 3D,
+// Test PICnd
+//   This test program sets up a simple sine-wave electric field in N dimensions,
 //   creates a population of particles with random positions and and velocities,
 //   and then tracks their motions in the static
 //   electric field using cloud-in-cell interpolation and periodic particle BCs.
@@ -8,7 +8,7 @@
 //   based on an ORB.
 //
 //   Usage:
-//     srun ./PIC3d 128 128 128 10000 10 --info 10
+//     srun ./PICnd 128 128 128 10000 10 --info 10
 //
 // Copyright (c) 2020, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -36,6 +36,7 @@
 
 // dimension of our positions
 constexpr unsigned Dim = 3;
+#define PROG_NAME "PIC3d"
 
 // some typedefs
 typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
@@ -407,7 +408,7 @@ private:
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
-    Inform msg("PIC3d");
+    Inform msg(PROG_NAME);
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
     Ippl::Comm->setDefaultOverallocation(3.0);
@@ -431,7 +432,7 @@ int main(int argc, char* argv[]) {
     const unsigned int totalP = std::atoi(argv[arg++]);
     const unsigned int nt     = std::atoi(argv[arg++]);
 
-    msg << "Particle test PIC3d " << endl
+    msg << "Particle test " PROG_NAME << endl
         << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
     using bunch_type = ChargedParticles<PLayout_t>;
@@ -571,7 +572,7 @@ int main(int argc, char* argv[]) {
         P->gatherStatistics(totalP);
     }
 
-    msg << "Particle test PIC3d: End." << endl;
+    msg << "Particle test " PROG_NAME ": End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing" + std::to_string(Ippl::Comm->size()) + "r_"
