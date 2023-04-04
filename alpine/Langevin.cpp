@@ -69,12 +69,12 @@ const char* TestName = "LangevinCollsion";
 
 
 double mydotpr(Vector_t a, Vector_t b){return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
-double mynorm(Vector_t a){return sqrt(mydotpr(a,a)); }
+double mynorm(Vector_t a){return std::sqrt(mydotpr(a,a)); }
 	// auto mydotpr = [](Vector_t a, Vector_t b)   {
 	// 	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; 
 	// };
     // auto mynorm = [](Vector_t a){
-	// 	return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); 
+	// 	return std::sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); 
 	// };
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -147,7 +147,7 @@ Vector_t compAvgSCForce(bunch& P, const size_type N, double beamRadius ) {
 		Kokkos::parallel_reduce("get local EField sum", 
 					 P.getLocalNum(),
 					 KOKKOS_LAMBDA(const int i, double& lefsum){   
-              		                    lefsum += fabs(pEView(i)[d]);
+              		                    lefsum += std::fabs(pEView(i)[d]);
                                 	 },                    			
 					  Kokkos::Sum<double>(locEFsum[d])
 					);
@@ -252,7 +252,7 @@ bool setVmaxmin( bunch& P, double& ext, const double& relb){
     double max, min, next;
     max = std::max(std::max(vmax[0], vmax[1]), vmax[2]);
     min = std::min(std::min(vmin[0], vmin[1]), vmin[2]);
-    next = std::max(fabs(min), fabs(max));
+    next = std::max(std::fabs(min), std::fabs(max));
 
     if(next>ext){
         ext = relb*next;
@@ -348,35 +348,35 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
         // (*D[0])(1) = (*D[1])(0) = ((*D[0])(1)+(*D[1])(0)) *0.5;
         // (*D[0])(2) = (*D[2])(0) = ((*D[0])(2)+(*D[2])(0)) *0.5;
         // (*D[1])(2) = (*D[2])(1) = ((*D[1])(2)+(*D[2])(1)) *0.5; 
-        // assert(     (fabs((*D[0])(1)-(*D[1])(0))) <= epszero &&
-        //             (fabs((*D[0])(2)-(*D[2])(0))) <= epszero &&
-        //             (fabs((*D[1])(2)-(*D[2])(1))) <= epszero 
+        // assert(     (std::fabs((*D[0])(1)-(*D[1])(0))) <= epszero &&
+        //             (std::fabs((*D[0])(2)-(*D[2])(0))) <= epszero &&
+        //             (std::fabs((*D[1])(2)-(*D[2])(1))) <= epszero 
         // );
 
         auto finish_LL = [&](const unsigned i0, const unsigned i1, const unsigned i2){
-                // LL(0)(0) = sqrt(*D[i0])(i0));
+                // LL(0)(0) = std::sqrt(*D[i0])(i0));
                 // LL(0)(1) = *D[i0])(i1)/LL(i0)(i0);
                 LL(i0)(i2) = (*D[i0])(i2)/LL(i0)(i0);
                 LL(i1)(i0) = 0.0;
-                // LL(1)(1) = sqrt(*D[i1])(i1)- pow(LL(i0)(i1), 2));
+                // LL(1)(1) = std::sqrt(*D[i1])(i1)- pow(LL(i0)(i1), 2));
                 LL(i1)(i2) = ((*D[i1])(i2) - LL(i0)(i1)*LL(i0)(i2))/LL(i1)(i1);
                 LL(i2)(i0) = 0.0;
                 LL(i2)(i1) = 0.0;
-                LL(i2)(i2) = sqrt( (*D[i2])(i2) - pow(LL(i0)(i2), 2) - pow(LL(i1)(i2), 2)) ;
+                LL(i2)(i2) = std::sqrt( (*D[i2])(i2) - pow(LL(i0)(i2), 2) - pow(LL(i1)(i2), 2)) ;
         };
 
         auto get_2_diag = [&](const unsigned i0, const unsigned i1){//, const unsigned i2){
-            return sqrt((*D[i1])(i1)- pow( LL(i0)(i1)=(*D[i0])(i1)/LL(i0)(i0), 2));
+            return std::sqrt((*D[i1])(i1)- pow( LL(i0)(i1)=(*D[i0])(i1)/LL(i0)(i0), 2));
         };
 
             bool alternative = false;
 
-            if     (( epszero <=fabs(LL(0)(0)=sqrt(d0(0)))      )&&(    epszero <= fabs( LL(1)(1) = get_2_diag(0,1/*,2*/) )       ))finish_LL(0, 1, 2);
-            else if(( epszero <=fabs(LL(0)(0))                  )&&(    epszero <= fabs( LL(2)(2) = get_2_diag(0,2/*,1*/) )       ))finish_LL(0, 2, 1);
-            else if(( epszero <=fabs(LL(1)(1)=sqrt(d1(1)))      )&&(    epszero <= fabs( LL(0)(0) = get_2_diag(1,0/*,2*/) )       ))finish_LL(1, 0, 2);
-            else if(( epszero <=fabs(LL(1)(1))                  )&&(    epszero <= fabs( LL(2)(2) = get_2_diag(1,2/*,0*/) )       ))finish_LL(1, 2, 0);
-            else if(( epszero <=fabs(LL(2)(2)=sqrt(d2(2)))      )&&(    epszero <= fabs( LL(1)(1) = get_2_diag(2,1/*,0*/) )       ))finish_LL(2, 1, 0);
-            else if(( epszero <=fabs(LL(2)(2))                  )&&(    epszero <= fabs( LL(0)(0) = get_2_diag(2,0/*,1*/) )       ))finish_LL(2, 0, 1);
+            if     (( epszero <=std::fabs(LL(0)(0)=std::sqrt(d0(0)))      )&&(    epszero <= std::fabs( LL(1)(1) = get_2_diag(0,1/*,2*/) )       ))finish_LL(0, 1, 2);
+            else if(( epszero <=std::fabs(LL(0)(0))                  )&&(    epszero <= std::fabs( LL(2)(2) = get_2_diag(0,2/*,1*/) )       ))finish_LL(0, 2, 1);
+            else if(( epszero <=std::fabs(LL(1)(1)=std::sqrt(d1(1)))      )&&(    epszero <= std::fabs( LL(0)(0) = get_2_diag(1,0/*,2*/) )       ))finish_LL(1, 0, 2);
+            else if(( epszero <=std::fabs(LL(1)(1))                  )&&(    epszero <= std::fabs( LL(2)(2) = get_2_diag(1,2/*,0*/) )       ))finish_LL(1, 2, 0);
+            else if(( epszero <=std::fabs(LL(2)(2)=std::sqrt(d2(2)))      )&&(    epszero <= std::fabs( LL(1)(1) = get_2_diag(2,1/*,0*/) )       ))finish_LL(2, 1, 0);
+            else if(( epszero <=std::fabs(LL(2)(2))                  )&&(    epszero <= std::fabs( LL(0)(0) = get_2_diag(2,0/*,1*/) )       ))finish_LL(2, 0, 1);
             else{
                 // how often assoon as they leave their orig cell...
                 // std::cout << "no cholesky for: " << std::endl;
@@ -407,7 +407,7 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
                 //1
                 // for(unsigned di = 0; di<Dim; ++di){
                 // for(unsigned dj = 0; dj<Dim; ++dj){
-                //     LL(di)(dj)=sqrt(fabs((*D[di])(dj)));
+                //     LL(di)(dj)=std::sqrt(std::fabs((*D[di])(dj)));
                 // }} 
 
 
@@ -416,7 +416,7 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
                 for(int dj : da){
                     LL(di)(dj)=0.0;
                 }}
-                for(int di : da)   LL(di)(di) = sqrt(fabs((*D[di])(di)));
+                for(int di : da)   LL(di)(di) = std::sqrt(std::fabs((*D[di])(di)));
 
             }
 
@@ -435,15 +435,15 @@ Matrix_t cholesky( V& d0, V& d1, V& d2){
 // template<typename M, typename V>
 // void cholesky(M& LL, const V& d0, const V& d1, const V& d2){
     
-//         LL[0][0] = sqrt(d0[0]);
+//         LL[0][0] = std::sqrt(d0[0]);
 //         LL[0][1] = d0[1]/LL[0][0];
 //         LL[0][2] = d0[2]/LL[0][0];
 //         LL[1][0] = 0.0;
-//         LL[1][1] = sqrt(d1[1]- pow(LL[0][1], 2));
+//         LL[1][1] = std::sqrt(d1[1]- pow(LL[0][1], 2));
 //         LL[1][2] = (d1[2] - LL[0][1]*LL[0][2])/LL[1][1];
 //         LL[2][0] = 0.0;
 //         LL[2][1] = 0.0;
-//         LL[2][2]= sqrt( d2[2] - pow(LL[0][1], 2) - pow(LL[0][2], 2));
+//         LL[2][2]= std::sqrt( d2[2] - pow(LL[0][1], 2) - pow(LL[0][2], 2));
 // }
 
 Vector_t  GeMV_t(const Matrix_t& M, const Vector_t V){return V[0]*M[0]+V[1]*M[1]+V[2]*M[2];}
