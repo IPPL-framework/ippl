@@ -415,11 +415,16 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if (time_m == 0.0) {
-                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2" << endl;
+                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2";
+                for (unsigned d = 0; d < Dim; d++)
+                    csvout << "E" << d << "norm2, ";
+                csvout << endl;
             }
 
-            csvout << time_m << " " << gEnergy << " " << rhoNorm_m << " " << normE[0] << " "
-                   << normE[1] << " " << normE[2] << endl;
+            csvout << time_m << " " << gEnergy << " " << rhoNorm_m << " ";
+            for (unsigned d = 0; d < Dim; d++)
+                csvout << normE[d] << " ";
+            csvout << endl;
         }
 
         Ippl::Comm->barrier();
@@ -545,8 +550,11 @@ public:
         pcsvout.setf(std::ios::scientific, std::ios::floatfield);
         pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
         for (size_type i = 0; i < this->getLocalNum(); i++) {
-            pcsvout << R_host(i)[0] << " " << R_host(i)[1] << " " << R_host(i)[2] << " "
-                    << P_host(i)[0] << " " << P_host(i)[1] << " " << P_host(i)[2] << endl;
+            for (unsigned d = 0; d < Dim; d++)
+                pcsvout << R_host(i)[d] << " ";
+            for (unsigned d = 0; d < Dim; d++)
+                pcsvout << P_host(i)[d] << " ";
+            pcsvout << endl;
         }
         Ippl::Comm->barrier();
     }
@@ -557,12 +565,9 @@ public:
             std::ofstream myfile;
             myfile.open("data/domains" + std::to_string(step) + ".txt");
             for (unsigned int i = 0; i < domains.size(); ++i) {
-                myfile << domains[i][0].first() << " " << domains[i][1].first() << " "
-                       << domains[i][2].first() << " " << domains[i][0].first() << " "
-                       << domains[i][1].last() << " " << domains[i][2].first() << " "
-                       << domains[i][0].last() << " " << domains[i][1].first() << " "
-                       << domains[i][2].first() << " " << domains[i][0].first() << " "
-                       << domains[i][1].first() << " " << domains[i][2].last() << "\n";
+                for (unsigned d = 0; d < Dim; d++)
+                    myfile << domains[i][d].first() << " " << domains[i][d].last() << " ";
+                myfile << "\n";
             }
             myfile.close();
         }

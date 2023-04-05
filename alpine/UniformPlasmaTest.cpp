@@ -1,9 +1,8 @@
 // Uniform Plasma Test
 //   Usage:
-//     srun ./UniformPlasmaTest <nx> <ny> <nz> <Np> <Nt> <stype> <lbfreq> <ovfactor> --info 10
+//     srun ./UniformPlasmaTest <nx> [<ny>...] <Np> <Nt> <stype> <lbfreq> <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
-//     ny       = No. cell-centered points in the y-direction
-//     nz       = No. cell-centered points in the z-direction
+//     ny...    = No. cell-centered points in the y-, z-, ...direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
 //     stype    = Field solver type e.g., FFT
@@ -81,10 +80,12 @@ int main(int argc, char* argv[]) {
     Inform msg("UniformPlasmaTest");
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
+    auto start = std::chrono::high_resolution_clock::now();
+    int arg    = 1;
 
-    auto start                = std::chrono::high_resolution_clock::now();
-    ippl::Vector<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
+    ippl::Vector<int, Dim> nr;
+    for (unsigned d = 0; d < Dim; d++)
+        nr[d] = std::atoi(argv[arg++]);
 
     static IpplTimings::TimerRef mainTimer           = IpplTimings::getTimer("total");
     static IpplTimings::TimerRef particleCreation    = IpplTimings::getTimer("particlesCreation");
@@ -99,8 +100,8 @@ int main(int argc, char* argv[]) {
 
     IpplTimings::startTimer(mainTimer);
 
-    const size_type totalP = std::atoll(argv[4]);
-    const unsigned int nt  = std::atoi(argv[5]);
+    const size_type totalP = std::atoll(argv[arg++]);
+    const unsigned int nt  = std::atoi(argv[arg++]);
 
     msg << "Uniform Plasma Test" << endl
         << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
@@ -114,21 +115,19 @@ int main(int argc, char* argv[]) {
         domain[i] = ippl::Index(nr[i]);
     }
 
-    ippl::e_dim_tag decomp[Dim];
-    for (unsigned d = 0; d < Dim; ++d) {
-        decomp[d] = ippl::PARALLEL;
-    }
-
     // create mesh and layout objects for this problem domain
     Vector_t<Dim> rmin(0.0);
     Vector_t<Dim> rmax(20.0);
-    double dx = rmax[0] / nr[0];
-    double dy = rmax[1] / nr[1];
-    double dz = rmax[2] / nr[2];
 
-    Vector_t<Dim> hr     = {dx, dy, dz};
-    Vector_t<Dim> origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 1.0;
+    Vector_t<Dim> hr;
+    Vector_t<Dim> origin = rmin;
+    const double dt      = 1.0;
+
+    ippl::e_dim_tag decomp[Dim];
+    for (unsigned d = 0; d < Dim; ++d) {
+        decomp[d] = ippl::PARALLEL;
+        hr[d]     = rmax[d] / nr[d];
+    }
 
     const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);
@@ -157,8 +156,9 @@ int main(int argc, char* argv[]) {
     }
 
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
-    Kokkos::parallel_for(nloc, generate_random<Vector_t<Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                                   P->R.getView(), rand_pool64, Rmin, Rmax));
+    Kokkos::parallel_for(nloc,
+                         generate_random<Vector_t<Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                             P->R.getView(), rand_pool64, Rmin, Rmax));
     Kokkos::fence();
     P->q = P->Q_m / totalP;
     P->P = 0.0;
@@ -175,10 +175,12 @@ int main(int argc, char* argv[]) {
 
     msg << "particles created and initial conditions assigned " << endl;
 
-    P->stype_m = argv[6];
+    P->stype_m = argv[arg++];
     P->initSolver();
     P->time_m            = 0.0;
-    P->loadbalancefreq_m = std::atoi(argv[7]);
+    P->loadbalancefreq_m = std::atoi(argv[arg++]);
+
+    Ippl::Comm->setDefaultOverallocation(std::atof(argv[arg++]));
 
     IpplTimings::startTimer(DummySolveTimer);
     P->rho_m = 0.0;
