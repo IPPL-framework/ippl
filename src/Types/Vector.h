@@ -85,11 +85,12 @@ namespace ippl {
         template <typename E, size_t N>
         KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator/=(const detail::Expression<E, N>& expr);
 
-        using iterator = T*;
+        using iterator       = T*;
+        using const_iterator = const T*;
         iterator begin();
         iterator end();
-        iterator cbegin() const;
-        iterator cend() const;
+        const_iterator begin() const;
+        const_iterator end() const;
 
     private:
         T data_m[Dim];

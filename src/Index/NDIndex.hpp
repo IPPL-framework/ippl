@@ -151,4 +151,24 @@ namespace ippl {
             }
         return split(l, r, max_dim);
     }
+
+    template <unsigned Dim>
+    typename NDIndex<Dim>::iterator NDIndex<Dim>::begin() {
+        return indices_m;
+    }
+
+    template <unsigned Dim>
+    typename NDIndex<Dim>::iterator NDIndex<Dim>::end() {
+        return indices_m + Dim;
+    }
+
+    template <unsigned Dim>
+    typename NDIndex<Dim>::const_iterator NDIndex<Dim>::begin() const {
+        return indices_m;
+    }
+
+    template <unsigned Dim>
+    typename NDIndex<Dim>::const_iterator NDIndex<Dim>::end() const {
+        return indices_m + Dim;
+    }
 }  // namespace ippl

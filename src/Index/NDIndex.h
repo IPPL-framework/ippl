@@ -83,6 +83,13 @@ namespace ippl {
 
         KOKKOS_INLINE_FUNCTION bool split(NDIndex<Dim>& l, NDIndex<Dim>& r) const;
 
+        using iterator       = Index*;
+        using const_iterator = const Index*;
+        iterator begin();
+        iterator end();
+        const_iterator begin() const;
+        const_iterator end() const;
+
     private:
         KOKKOS_FUNCTION
         NDIndex(std::initializer_list<Index> indices);

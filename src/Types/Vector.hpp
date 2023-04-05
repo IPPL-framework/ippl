@@ -150,12 +150,12 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim>
-    typename Vector<T, Dim>::iterator Vector<T, Dim>::cbegin() const {
+    typename Vector<T, Dim>::const_iterator Vector<T, Dim>::begin() const {
         return data_m;
     }
 
     template <typename T, unsigned Dim>
-    typename Vector<T, Dim>::iterator Vector<T, Dim>::cend() const {
+    typename Vector<T, Dim>::const_iterator Vector<T, Dim>::end() const {
         return data_m + Dim;
     }
 
