@@ -103,9 +103,9 @@ namespace ippl {
 
         // Check that no plane was obtained in the repartition
         IpplTimings::startTimer(tbasicOp);
-        for (unsigned int i = 0; i < domains.size(); i++) {
-            for (unsigned int d = 0; d < Dim; d++) {
-                if (domains[i][d].length() == 1)
+        for (const auto& domain : domains) {
+            for (const auto& axis : domain) {
+                if (axis.length() == 1)
                     return false;
             }
         }
@@ -122,19 +122,10 @@ namespace ippl {
 
     template <class T, unsigned Dim, class Mesh, class Centering>
     int OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::findCutAxis(NDIndex<Dim>& dom) {
-        int cutAxis            = 0;
-        unsigned int maxLength = 0;
-
-        // Iterate along all the dimensions
-        for (unsigned int d = 0; d < Dim; d++) {
-            // Find longest domain size
-            if (dom[d].length() > maxLength) {
-                maxLength = dom[d].length();
-                cutAxis   = d;
-            }
-        }
-
-        return cutAxis;
+        return std::distance(dom.begin(), std::max_element(dom.begin(), dom.end(),
+                                                           [&](const Index& a, const Index& b) {
+                                                               return a.length() < b.length();
+                                                           }));
     }
 
     template <class T, unsigned Dim, class Mesh, class Centering>
@@ -165,8 +156,8 @@ namespace ippl {
             if (d == cutAxis)
                 continue;
 
-            size_t inf = std::max(lDom[d].first(), dom[d].first()) - lDom[d].first() + nghost;
-            size_t sup = std::min(lDom[d].last(), dom[d].last()) - lDom[d].first() + nghost;
+            int inf = std::max(lDom[d].first(), dom[d].first()) - lDom[d].first() + nghost;
+            int sup = std::min(lDom[d].last(), dom[d].last()) - lDom[d].first() + nghost;
             // inf and sup bounds must be within the domain to reduce, if not no need to reduce
             if (sup < inf)
                 return;
@@ -192,8 +183,7 @@ namespace ippl {
 
             Kokkos::fence();
 
-            rankWeights[arrayStart] = tempRes;
-            arrayStart++;
+            rankWeights[arrayStart++] = tempRes;
         }
     }
 
@@ -241,12 +231,12 @@ namespace ippl {
         NDIndex<Dim> leftDom, rightDom;
         domains[it].split(leftDom, rightDom, cutAxis, median + domains[it][cutAxis].first());
         domains[it] = leftDom;
-        domains.insert(domains.begin() + it + 1, 1, rightDom);
+        domains.insert(domains.begin() + it + 1, rightDom);
 
         // Cut procs in half
         int temp  = procs[it];
         procs[it] = procs[it] / 2;
-        procs.insert(procs.begin() + it + 1, 1, temp - procs[it]);
+        procs.insert(procs.begin() + it + 1, temp - procs[it]);
     }
 
     template <class T, unsigned Dim, class Mesh, class Centering>
