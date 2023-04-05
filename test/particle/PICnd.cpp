@@ -34,9 +34,13 @@
 
 #include "Utility/IpplTimings.h"
 
+#define str(x)  #x
+#define xstr(x) str(x)
+
 // dimension of our positions
-constexpr unsigned Dim = 3;
-#define PROG_NAME "PICnd"
+#define DIM     2
+constexpr unsigned Dim          = DIM;
+constexpr const char* PROG_NAME = "PIC" xstr(DIM) "d";
 
 // some typedefs
 typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
@@ -432,7 +436,7 @@ int main(int argc, char* argv[]) {
     const unsigned int totalP = std::atoi(argv[arg++]);
     const unsigned int nt     = std::atoi(argv[arg++]);
 
-    msg << "Particle test " PROG_NAME << endl
+    msg << "Particle test " << PROG_NAME << endl
         << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
     using bunch_type = ChargedParticles<PLayout_t>;
@@ -572,7 +576,7 @@ int main(int argc, char* argv[]) {
         P->gatherStatistics(totalP);
     }
 
-    msg << "Particle test " PROG_NAME ": End." << endl;
+    msg << "Particle test " << PROG_NAME << ": End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing" + std::to_string(Ippl::Comm->size()) + "r_"
