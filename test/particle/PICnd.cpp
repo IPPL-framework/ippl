@@ -36,7 +36,7 @@
 
 // dimension of our positions
 constexpr unsigned Dim = 3;
-#define PROG_NAME "PIC3d"
+#define PROG_NAME "PICnd"
 
 // some typedefs
 typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
