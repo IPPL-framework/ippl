@@ -46,7 +46,7 @@
 
 #include "ChargedParticles.hpp"
 
-constexpr unsigned Dim = 3;
+constexpr unsigned Dim = 2;
 
 template <typename T>
 struct Newton1D {
@@ -157,6 +157,44 @@ double PDF(const Vector_t<Dim>& xvec, const double& delta, const Vector_t<Dim>& 
 // const char* TestName = "BumponTailInstability";
 const char* TestName = "TwoStreamInstability";
 
+struct PhaseDump {
+    PhaseDump(double size, ippl::e_dim_tag decomp[]) {
+        const size_t len = 32;
+        ippl::Index I(len);
+        ippl::NDIndex<2> owned(I, I);
+        layout = FieldLayout_t<2>(owned, decomp);
+
+        ippl::Vector<double, 2> hx     = {size / len, size / len};
+        ippl::Vector<double, 2> origin = 0;
+
+        mesh       = Mesh_t<2>(owned, hx, origin);
+        phaseSpace = Field_t<2>(mesh, layout);
+    }
+
+    void dump(int it, auto P) {
+        std::stringstream fname;
+        for (unsigned d = 0; d < Dim; d++) {
+            fname.str({});
+            fname << "PhaseSpace_t=" << it << "_d=" << d << ".csv";
+            auto& phase = P->phaseCoords;
+            auto& Ri    = P->R;
+            auto& Pi    = P->P;
+            Kokkos::parallel_for(
+                "Copy phase space", P->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
+                    phase(i) = {Ri(i)[d], Pi(i)[d]};
+                });
+            scatter(P->q, phaseSpace, phase);
+            Inform out("Output", fname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+            phaseSpace.write(out);
+        }
+    }
+
+private:
+    FieldLayout_t<2> layout;
+    Mesh_t<2> mesh;
+    Field_t<2> phaseSpace;
+};
+
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
     Inform msg(TestName);
@@ -248,7 +286,7 @@ int main(int argc, char* argv[]) {
     double Q = -1;
     for (const auto& r : rmax)
         Q *= r;
-    P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+    P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, true);
 
     P->nr_m = nr;
 
@@ -326,6 +364,9 @@ int main(int argc, char* argv[]) {
         ++nloc;
 
     P->create(nloc);
+
+    PhaseDump phase(rmax[0], decomp);
+
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
 
     Kokkos::parallel_for(
@@ -337,7 +378,6 @@ int main(int argc, char* argv[]) {
     IpplTimings::stopTimer(particleCreation);
 
     P->q = P->Q_m / totalP;
-    // P->dumpParticleData();
     msg << "particles created and initial conditions assigned " << endl;
     isFirstRepartition = false;
     // The update after the particle creation is not needed as the
@@ -418,6 +458,8 @@ int main(int argc, char* argv[]) {
         P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
+
+        phase.dump(it, P.get());
     }
 
     msg << TestName << ": End." << endl;
