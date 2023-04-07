@@ -211,16 +211,17 @@ namespace ippl {
 
         int myRank = Ippl::Comm->rank();
 
-        auto positionInRegion = KOKKOS_LAMBDA<size_t... Idx>(
-            const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region) {
+        auto positionInRegion =
+            KOKKOS_LAMBDA<size_t... Idx>(const std::index_sequence<Idx...>&, const vector_type& pos,
+                                         const region_type& region) constexpr {
             return ((pos[Idx] >= region[Idx].min() && pos[Idx] <= region[Idx].max()) && ...);
         };
+        const auto is = std::make_index_sequence<Dim>{};
         Kokkos::parallel_for(
             "ParticleSpatialLayout::locateParticles()",
             mdrange_type({0, 0}, {ranks.extent(0), Regions.extent(0)}),
             KOKKOS_LAMBDA(const size_t i, const view_size_t j) {
-                bool xyz_bool =
-                    positionInRegion(std::make_index_sequence<Dim>{}, positions(i), Regions(j));
+                bool xyz_bool = positionInRegion(is, positions(i), Regions(j));
                 if (xyz_bool) {
                     ranks(i)   = j;
                     invalid(i) = (myRank != ranks(i));

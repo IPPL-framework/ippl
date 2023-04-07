@@ -196,7 +196,7 @@ namespace ippl {
         const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
         const Vector<T, Dim>& whi, std::index_sequence<Idx...>, const Vector<IndexType, Dim>& args,
         T val = 1) {
-        val = (scatter_point<Idx>(view, wlo, whi, args, val) ^ ...);
+        [[maybe_unused]] auto _ = (scatter_point<Idx>(view, wlo, whi, args, val) ^ ...);
     }
 
     /*!
