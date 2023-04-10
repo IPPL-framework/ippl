@@ -82,6 +82,12 @@ namespace ippl {
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
 
+        using region_type = typename RegionLayout_t::view_type::value_type;
+
+        template <size_t... Idx>
+        constexpr bool positionInRegion(const std::index_sequence<Idx...>&, const vector_type& pos,
+                                        const region_type& region) const;
+
     public:
         void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
                              locate_type& ranks, bool_type& invalid) const;

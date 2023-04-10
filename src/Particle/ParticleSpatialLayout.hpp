@@ -199,23 +199,25 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, class Mesh>
+    template <size_t... Idx>
+    constexpr bool ParticleSpatialLayout<T, Dim, Mesh>::positionInRegion(
+        const std::index_sequence<Idx...>&, const vector_type& pos,
+        const region_type& region) const {
+        return ((pos[Idx] >= region[Idx].min() && pos[Idx] <= region[Idx].max()) && ...);
+    };
+
+    template <typename T, unsigned Dim, class Mesh>
     void ParticleSpatialLayout<T, Dim, Mesh>::locateParticles(
         const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata, locate_type& ranks,
         bool_type& invalid) const {
         auto& positions                            = pdata.R.getView();
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
 
-        using region_type  = typename RegionLayout_t::view_type::value_type;
         using view_size_t  = typename RegionLayout_t::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
 
         int myRank = Ippl::Comm->rank();
 
-        auto positionInRegion =
-            KOKKOS_LAMBDA<size_t... Idx>(const std::index_sequence<Idx...>&, const vector_type& pos,
-                                         const region_type& region) constexpr {
-            return ((pos[Idx] >= region[Idx].min() && pos[Idx] <= region[Idx].max()) && ...);
-        };
         const auto is = std::make_index_sequence<Dim>{};
         Kokkos::parallel_for(
             "ParticleSpatialLayout::locateParticles()",
