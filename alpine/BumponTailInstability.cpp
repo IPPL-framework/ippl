@@ -157,6 +157,7 @@ double PDF(const Vector_t<Dim>& xvec, const double& delta, const Vector_t<Dim>& 
 // const char* TestName = "BumponTailInstability";
 const char* TestName = "TwoStreamInstability";
 
+template <typename Bunch>
 struct PhaseDump {
     PhaseDump(double size, ippl::e_dim_tag decomp[]) {
         const size_t len = 32;
@@ -171,7 +172,7 @@ struct PhaseDump {
         phaseSpace = Field_t<2>(mesh, layout);
     }
 
-    void dump(int it, auto P) {
+    void dump(int it, std::shared_ptr<Bunch> P) {
         std::stringstream fname;
         for (unsigned d = 0; d < Dim; d++) {
             fname.str({});
@@ -227,7 +228,7 @@ int main(int argc, char* argv[]) {
 
     using bunch_type = ChargedParticles<PLayout_t<Dim>, Dim>;
 
-    std::unique_ptr<bunch_type> P;
+    std::shared_ptr<bunch_type> P;
 
     ippl::NDIndex<Dim> domain;
     for (unsigned i = 0; i < Dim; i++) {
@@ -286,7 +287,7 @@ int main(int argc, char* argv[]) {
     double Q = -1;
     for (const auto& r : rmax)
         Q *= r;
-    P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, true);
+    P = std::make_shared<bunch_type>(PL, hr, rmin, rmax, decomp, Q, true);
 
     P->nr_m = nr;
 
@@ -367,7 +368,7 @@ int main(int argc, char* argv[]) {
 
     P->create(nloc);
 
-    PhaseDump phase(rmax[0], decomp);
+    PhaseDump<bunch_type> phase(rmax[0], decomp);
 
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
 
@@ -461,7 +462,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
-        phase.dump(it, P.get());
+        phase.dump(it, P);
     }
 
     msg << TestName << ": End." << endl;
