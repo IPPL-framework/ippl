@@ -101,22 +101,21 @@ namespace ippl {
             begin[i] = nghost;
             end[i]   = view.extent(i) - nghost;
         }
-        begin[d] = src;
-        end[d]   = src + 1;
+        begin[d]               = src;
+        end[d]                 = src + 1;
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
         Kokkos::parallel_for(
             "Assign extrapolate BC", detail::createRangePolicy<Dim>(begin, end),
-            KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
+            detail::functorize<detail::FOR, Dim>(KOKKOS_CLASS_LAMBDA(index_array_type & args) {
                 // to avoid ambiguity with the member function
                 using ippl::apply;
 
-                T value = view(args...);
+                T value = apply<Dim>(view, args);
 
-                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
-                index_type coords[Dim] = {args...};
-                coords[d]              = dest;
+                args[d] = dest;
 
-                apply<Dim>(view, coords) = slope_m * value + offset_m;
-            });
+                apply<Dim>(view, args) = slope_m * value + offset_m;
+            }));
     }
 
     template <typename T, unsigned Dim, class Mesh, class Centering>
@@ -322,35 +321,35 @@ namespace ippl {
             begin[d] = 0;
             end[d]   = nghost;
 
-            Kokkos::parallel_for(
-                "Assign periodic field BC", detail::createRangePolicy<Dim>(begin, end),
-                KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
-                    // The ghosts are filled starting from the inside of
-                    // the domain proceeding outwards for both lower and
-                    // upper faces.
+            using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+            Kokkos::parallel_for("Assign periodic field BC",
+                                 detail::createRangePolicy<Dim>(begin, end),
+                                 detail::functorize<detail::FOR, Dim>(
+                                     KOKKOS_CLASS_LAMBDA(index_array_type & coords) {
+                                         // The ghosts are filled starting from the inside of
+                                         // the domain proceeding outwards for both lower and
+                                         // upper faces.
 
-                    // to avoid ambiguity with the member function
-                    using ippl::apply;
+                                         // to avoid ambiguity with the member function
+                                         using ippl::apply;
 
-                    using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
-                    index_type coords[Dim] = {args...};
+                                         // x -> nghost + x
+                                         coords[d] += nghost;
+                                         auto&& left = apply<Dim>(view, coords);
 
-                    // x -> nghost + x
-                    coords[d] += nghost;
-                    auto&& left = apply<Dim>(view, coords);
+                                         // nghost + x -> N - (nghost + x) = N - nghost - x
+                                         coords[d]    = N - coords[d];
+                                         auto&& right = apply<Dim>(view, coords);
 
-                    // nghost + x -> N - (nghost + x) = N - nghost - x
-                    coords[d]    = N - coords[d];
-                    auto&& right = apply<Dim>(view, coords);
+                                         // N - nghost - x -> nghost - 1 - x
+                                         coords[d] += 2 * nghost - 1 - N;
+                                         apply<Dim>(view, coords) = right;
 
-                    // N - nghost - x -> nghost - 1 - x
-                    coords[d] += 2 * nghost - 1 - N;
-                    apply<Dim>(view, coords) = right;
-
-                    // nghost - 1 - x -> N - (nghost - 1 - x) = N - (nghost - x) + x
-                    coords[d]                = N - coords[d];
-                    apply<Dim>(view, coords) = left;
-                });
+                                         // nghost - 1 - x -> N - (nghost - 1 - x) = N - (nghost -
+                                         // x) + x
+                                         coords[d]                = N - coords[d];
+                                         apply<Dim>(view, coords) = left;
+                                     }));
         }
     }
 }  // namespace ippl

@@ -136,12 +136,13 @@ namespace ippl {
          */
         auto tempField = detail::shrinkView<Dim, Complex_t>("tempField", fview, nghost);
 
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
         Kokkos::parallel_for(
             "copy from Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                tempField((args - nghost)...).real(fview(args...).real());
-                tempField((args - nghost)...).imag(fview(args...).imag());
-            });
+            detail::functorize<detail::FOR, Dim>(KOKKOS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(tempField, args - nghost).real(apply<Dim>(fview, args).real());
+                apply<Dim>(tempField, args - nghost).imag(apply<Dim>(fview, args).imag());
+            }));
 
         if (direction == 1) {
             heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
@@ -155,10 +156,10 @@ namespace ippl {
 
         Kokkos::parallel_for(
             "copy to Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                fview(args...).real() = tempField((args - nghost)...).real();
-                fview(args...).imag() = tempField((args - nghost)...).imag();
-            });
+            detail::functorize<detail::FOR, Dim>(KOKKOS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(fview, args).real() = apply<Dim>(tempField, args - nghost).real();
+                apply<Dim>(fview, args).imag() = apply<Dim>(tempField, args - nghost).imag();
+            }));
     }
 
     //========================================================================
@@ -275,17 +276,18 @@ namespace ippl {
         auto tempFieldf = detail::shrinkView<Dim, T>("tempFieldf", fview, nghostf);
         auto tempFieldg = detail::shrinkView<Dim, Complex_t>("tempFieldg", gview, nghostg);
 
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
         Kokkos::parallel_for(
             "copy from Kokkos f field in FFT", detail::getRangePolicy<Dim>(fview, nghostf),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                tempFieldf((args - nghostf)...) = fview(args...);
-            });
+            detail::functorize<detail::FOR, Dim>(KOKKOS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(tempFieldf, args - nghostf) = apply<Dim>(fview, args);
+            }));
         Kokkos::parallel_for(
             "copy from Kokkos g field in FFT", detail::getRangePolicy<Dim>(gview, nghostg),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                tempFieldg((args - nghostg)...).real(gview(args...).real());
-                tempFieldg((args - nghostg)...).imag(gview(args...).imag());
-            });
+            detail::functorize<detail::FOR, Dim>(KOKKOS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(tempFieldg, args - nghostg).real(apply<Dim>(gview, args).real());
+                apply<Dim>(tempFieldg, args - nghostg).imag(apply<Dim>(gview, args).imag());
+            }));
 
         if (direction == 1) {
             heffte_m->forward(tempFieldf.data(), tempFieldg.data(), workspace_m.data(),
@@ -299,16 +301,16 @@ namespace ippl {
 
         Kokkos::parallel_for(
             "copy to Kokkos f field FFT", detail::getRangePolicy<Dim>(fview, nghostf),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                fview(args...) = tempFieldf((args - nghostf)...);
-            });
+            detail::functorize<detail::FOR, Dim>(KOKKOS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(fview, args) = apply<Dim>(tempFieldf, args - nghostf);
+            }));
 
         Kokkos::parallel_for(
             "copy to Kokkos g field FFT", detail::getRangePolicy<Dim>(gview, nghostg),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                gview(args...).real() = tempFieldg((args - nghostg)...).real();
-                gview(args...).imag() = tempFieldg((args - nghostg)...).imag();
-            });
+            detail::functorize<detail::FOR, Dim>(KOKKOS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(gview, args).real() = apply<Dim>(tempFieldg, args - nghostg).real();
+                apply<Dim>(gview, args).imag() = apply<Dim>(tempFieldg, args - nghostg).imag();
+            }));
     }
 
     //=========================================================================
@@ -409,11 +411,12 @@ namespace ippl {
          */
         auto tempField = detail::shrinkView<Dim, T>("tempField", fview, nghost);
 
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
         Kokkos::parallel_for(
             "copy from Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                tempField((args - nghost)...) = fview(args...);
-            });
+            detail::functorize<detail::FOR, Dim>(KOKKOS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(tempField, args - nghost) = apply<Dim>(fview, args);
+            }));
 
         if (direction == 1) {
             heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
@@ -427,9 +430,9 @@ namespace ippl {
 
         Kokkos::parallel_for(
             "copy to Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                fview(args...) = tempField((args - nghost)...);
-            });
+            detail::functorize<detail::FOR, Dim>(KOKKOS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(fview, args) = apply<Dim>(tempField, args - nghost);
+            }));
     }
 
     //=========================================================================
@@ -530,11 +533,12 @@ namespace ippl {
          */
         auto tempField = detail::shrinkView<Dim, T>("tempField", fview, nghost);
 
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
         Kokkos::parallel_for(
             "copy from Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                tempField((args - nghost)...) = fview(args...);
-            });
+            detail::functorize<detail::FOR, Dim>(KOKKOS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(tempField, args - nghost) = apply<Dim>(fview, args);
+            }));
 
         if (direction == 1) {
             heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
@@ -548,9 +552,9 @@ namespace ippl {
 
         Kokkos::parallel_for(
             "copy to Kokkos FFT", detail::getRangePolicy<Dim>(fview, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                fview(args...) = tempField((args - nghost)...);
-            });
+            detail::functorize<detail::FOR, Dim>(KOKKOS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(fview, args) = apply<Dim>(tempField, args - nghost);
+            }));
     }
 }  // namespace ippl
 

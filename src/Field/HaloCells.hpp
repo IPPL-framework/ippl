@@ -135,23 +135,22 @@ namespace ippl {
                 Kokkos::realloc(buffer, size * overalloc);
             }
 
-            Kokkos::parallel_for(
-                "HaloCells::pack()", detail::getRangePolicy<Dim>(subview),
-                KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
-                    int l = 0;
+            using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+            Kokkos::parallel_for("HaloCells::pack()", detail::getRangePolicy<Dim>(subview),
+                                 detail::functorize<detail::FOR, Dim>(
+                                     KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                                         int l = 0;
 
-                    using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
-                    index_type coords[Dim] = {args...};
-                    for (unsigned d1 = 0; d1 < Dim; d1++) {
-                        int next = coords[d1];
-                        for (unsigned d2 = 0; d2 < d1; d2++) {
-                            next *= subview.extent(d2);
-                        }
-                        l += next;
-                    }
+                                         for (unsigned d1 = 0; d1 < Dim; d1++) {
+                                             int next = args[d1];
+                                             for (unsigned d2 = 0; d2 < d1; d2++) {
+                                                 next *= subview.extent(d2);
+                                             }
+                                             l += next;
+                                         }
 
-                    buffer(l) = subview(args...);
-                });
+                                         buffer(l) = apply<Dim>(subview, args);
+                                     }));
             Kokkos::fence();
         }
 
@@ -166,23 +165,22 @@ namespace ippl {
             // https://stackoverflow.com/questions/3735398/operator-as-template-parameter
             Op op;
 
-            Kokkos::parallel_for(
-                "HaloCells::unpack()", detail::getRangePolicy<Dim>(subview),
-                KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
-                    int l = 0;
+            using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+            Kokkos::parallel_for("HaloCells::unpack()", detail::getRangePolicy<Dim>(subview),
+                                 detail::functorize<detail::FOR, Dim>(
+                                     KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                                         int l = 0;
 
-                    using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
-                    index_type coords[Dim] = {args...};
-                    for (unsigned d1 = 0; d1 < Dim; d1++) {
-                        int next = coords[d1];
-                        for (unsigned d2 = 0; d2 < d1; d2++) {
-                            next *= subview.extent(d2);
-                        }
-                        l += next;
-                    }
+                                         for (unsigned d1 = 0; d1 < Dim; d1++) {
+                                             int next = args[d1];
+                                             for (unsigned d2 = 0; d2 < d1; d2++) {
+                                                 next *= subview.extent(d2);
+                                             }
+                                             l += next;
+                                         }
 
-                    op(subview(args...), buffer(l));
-                });
+                                         op(apply<Dim>(subview, args), buffer(l));
+                                     }));
             Kokkos::fence();
         }
 
@@ -222,32 +220,32 @@ namespace ippl {
                 if (lDomains[myRank][d].length() == domain[d].length()) {
                     int N = view.extent(d) - 1;
 
-                    Kokkos::parallel_for(
-                        "applyPeriodicSerialDim", detail::createRangePolicy<Dim>(begin, end),
-                        KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                            // The ghosts are filled starting from the inside of
-                            // the domain proceeding outwards for both lower and
-                            // upper faces. The extra brackets and explicit mention
+                    using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+                    Kokkos::parallel_for("applyPeriodicSerialDim",
+                                         detail::createRangePolicy<Dim>(begin, end),
+                                         detail::functorize<detail::FOR, Dim>(
+                                             KOKKOS_LAMBDA(index_array_type & coords) {
+                                                 // The ghosts are filled starting from the inside
+                                                 // of the domain proceeding outwards for both lower
+                                                 // and upper faces. The extra brackets and explicit
+                                                 // mention
 
-                            using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
-                            index_type coords[Dim] = {args...};
+                                                 // nghost + i
+                                                 coords[d] += nghost;
+                                                 auto&& left = apply<Dim>(view, coords);
 
-                            // nghost + i
-                            coords[d] += nghost;
-                            auto&& left = apply<Dim>(view, coords);
+                                                 // N - nghost - i
+                                                 coords[d]    = N - coords[d];
+                                                 auto&& right = apply<Dim>(view, coords);
 
-                            // N - nghost - i
-                            coords[d]    = N - coords[d];
-                            auto&& right = apply<Dim>(view, coords);
+                                                 // nghost - 1 - i
+                                                 coords[d] += 2 * nghost - 1 - N;
+                                                 op(apply<Dim>(view, coords), right);
 
-                            // nghost - 1 - i
-                            coords[d] += 2 * nghost - 1 - N;
-                            op(apply<Dim>(view, coords), right);
-
-                            // N - (nghost - 1 - i) = N - (nghost - 1) + i
-                            coords[d] = N - coords[d];
-                            op(apply<Dim>(view, coords), left);
-                        });
+                                                 // N - (nghost - 1 - i) = N - (nghost - 1) + i
+                                                 coords[d] = N - coords[d];
+                                                 op(apply<Dim>(view, coords), left);
+                                             }));
 
                     Kokkos::fence();
                 }

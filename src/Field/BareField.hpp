@@ -103,23 +103,25 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
-        Kokkos::parallel_for(
-            "BareField::operator=(T)", detail::getRangePolicy<Dim>(dview_m),
-            KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) { dview_m(args...) = x; });
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+        Kokkos::parallel_for("BareField::operator=(T)", detail::getRangePolicy<Dim>(dview_m),
+                             detail::functorize<detail::FOR, Dim>(KOKKOS_CLASS_LAMBDA(
+                                 const index_array_type& args) { apply<Dim>(dview_m, args) = x; }));
         return *this;
     }
 
     template <typename T, unsigned Dim>
     template <typename E, size_t N>
     BareField<T, Dim>& BareField<T, Dim>::operator=(const detail::Expression<E, N>& expr) {
-        using capture_type = detail::CapturedExpression<E, N>;
-        capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
+        using capture_type     = detail::CapturedExpression<E, N>;
+        capture_type expr_     = reinterpret_cast<const capture_type&>(expr);
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
         Kokkos::parallel_for(
             "BareField::operator=(const Expression&)",
             detail::getRangePolicy<Dim>(dview_m, nghost_m),
-            KOKKOS_CLASS_LAMBDA<typename... Idx>(const Idx... args) {
-                dview_m(args...) = expr_(args...);
-            });
+            detail::functorize<detail::FOR, Dim>(KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(dview_m, args) = apply<Dim>(expr_, args);
+            }));
         return *this;
     }
 
@@ -138,13 +140,14 @@ namespace ippl {
     template <typename T, unsigned Dim>                                                          \
     T BareField<T, Dim>::name(int nghost) const {                                                \
         PAssert_LE(nghost, nghost_m);                                                            \
-        T temp = 0.0;                                                                            \
+        T temp                 = 0.0;                                                            \
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;            \
         Kokkos::parallel_reduce("fun", detail::getRangePolicy<Dim>(dview_m, nghost_m - nghost),  \
-                                detail::functorize<Dim, T>(KOKKOS_CLASS_LAMBDA<typename... Idx>( \
-                                    const Idx... args, T& valL) {                                \
-                                    T myVal = dview_m(args...);                                  \
-                                    op;                                                          \
-                                }),                                                              \
+                                detail::functorize<detail::REDUCE, Dim, T>(                      \
+                                    KOKKOS_CLASS_LAMBDA(const index_array_type& args, T& valL) { \
+                                        T myVal = apply<Dim>(dview_m, args);                     \
+                                        op;                                                      \
+                                    }),                                                          \
                                 Kokkos::fun<T>(temp));                                           \
         T globaltemp      = 0.0;                                                                 \
         MPI_Datatype type = get_mpi_datatype<T>(temp);                                           \

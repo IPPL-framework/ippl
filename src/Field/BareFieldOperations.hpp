@@ -25,15 +25,16 @@ namespace ippl {
      */
     template <typename T, unsigned Dim>
     T innerProduct(const BareField<T, Dim>& f1, const BareField<T, Dim>& f2) {
-        T sum      = 0;
-        auto view1 = f1.getView();
-        auto view2 = f2.getView();
-        Kokkos::parallel_reduce(
-            "Field::innerProduct(Field&, Field&)", f1.getRangePolicy(),
-            detail::functorize<Dim, T>(KOKKOS_LAMBDA<typename... Idx>(const Idx... args, T& val) {
-                val += view1(args...) * view2(args...);
-            }),
-            Kokkos::Sum<T>(sum));
+        T sum                  = 0;
+        auto view1             = f1.getView();
+        auto view2             = f2.getView();
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+        Kokkos::parallel_reduce("Field::innerProduct(Field&, Field&)", f1.getRangePolicy(),
+                                detail::functorize<detail::REDUCE, Dim, T>(
+                                    KOKKOS_LAMBDA(const index_array_type& args, T& val) {
+                                        val += apply<Dim>(view1, args) * apply<Dim>(view2, args);
+                                    }),
+                                Kokkos::Sum<T>(sum));
         T globalSum       = 0;
         MPI_Datatype type = get_mpi_datatype<T>(sum);
         MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
@@ -48,17 +49,18 @@ namespace ippl {
      */
     template <typename T, unsigned Dim>
     T norm(const BareField<T, Dim>& field, int p = 2) {
-        T local   = 0;
-        auto view = field.getView();
+        T local                = 0;
+        auto view              = field.getView();
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
         switch (p) {
             case 0: {
                 Kokkos::parallel_reduce("Field::norm(0)", field.getRangePolicy(),
-                                        detail::functorize<Dim, T>(KOKKOS_LAMBDA<typename... Idx>(
-                                            const Idx... args, T& val) {
-                                            T myVal = std::abs(view(args...));
-                                            if (myVal > val)
-                                                val = myVal;
-                                        }),
+                                        detail::functorize<detail::REDUCE, Dim, T>(
+                                            KOKKOS_LAMBDA(const index_array_type& args, T& val) {
+                                                T myVal = std::abs(apply<Dim>(view, args));
+                                                if (myVal > val)
+                                                    val = myVal;
+                                            }),
                                         Kokkos::Max<T>(local));
                 T globalMax       = 0;
                 MPI_Datatype type = get_mpi_datatype<T>(local);
@@ -69,9 +71,9 @@ namespace ippl {
                 return std::sqrt(innerProduct(field, field));
             default: {
                 Kokkos::parallel_reduce("Field::norm(int) general", field.getRangePolicy(),
-                                        detail::functorize<Dim, T>(KOKKOS_LAMBDA<typename... Idx>(
-                                            const Idx... args, T& val) {
-                                            val += std::pow(std::abs(view(args...)), p);
+                                        detail::functorize<detail::REDUCE, Dim, T>(KOKKOS_LAMBDA(
+                                            const index_array_type& args, T& val) {
+                                            val += std::pow(std::abs(apply<Dim>(view, args)), p);
                                         }),
                                         Kokkos::Sum<T>(local));
                 T globalSum       = 0;

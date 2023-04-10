@@ -22,6 +22,8 @@
 
 #include <tuple>
 
+#include "Types/Vector.h"
+
 namespace ippl {
     /**
      * @file ViewTypes.h
@@ -90,6 +92,7 @@ namespace ippl {
                                        Kokkos::MDRangePolicy<Tag, Kokkos::Rank<Dim>>>
                 policy_type;
             typedef typename policy_type::array_index_type index_type;
+            typedef ::ippl::Vector<index_type, Dim> index_array_type;
         };
 
         /*!
@@ -101,6 +104,7 @@ namespace ippl {
                                        Kokkos::RangePolicy<Tag>>
                 policy_type;
             typedef typename policy_type::index_type index_type;
+            typedef ::ippl::Vector<index_type, 1> index_array_type;
         };
 
         /*!
@@ -156,12 +160,17 @@ namespace ippl {
             }
         }
 
-        template <typename, typename, typename, typename>
+        enum e_functor_type {
+            FOR,
+            REDUCE,
+            SCAN
+        };
+
+        template <e_functor_type, typename, typename, typename>
         struct FunctorWrapper;
 
         /*!
-         * Wrapper struct for reduction kernels, since template deduction does not apply when
-         * the parameter pack isn't the last argument
+         * Wrapper struct for reduction kernels
          * Source:
          * https://stackoverflow.com/questions/50713214/familiar-template-syntax-for-generic-lambdas
          * @tparam Functor functor type
@@ -169,9 +178,9 @@ namespace ippl {
          * @tparam Acc accumulator data type
          * @tparam R functor return type
          */
-        template <typename Functor, typename... T, typename Acc, typename R>
-        struct FunctorWrapper<Functor, std::tuple<T...>, Acc, R> {
-            Functor lambda;
+        template <typename Functor, typename... T, typename Acc>
+        struct FunctorWrapper<REDUCE, Functor, std::tuple<T...>, Acc> {
+            Functor f;
 
             /*!
              * Inline operator forwarding to a specialized instantiation
@@ -180,23 +189,34 @@ namespace ippl {
              * @param res the accumulator variable
              * @return The functor's return value
              */
-            KOKKOS_INLINE_FUNCTION R operator()(T... x, Acc& res) const {
-                return lambda.template operator()<T...>(x..., res);
+            KOKKOS_INLINE_FUNCTION void operator()(T... x, Acc& res) const {
+                using index_type = typename RangePolicy<sizeof...(T)>::index_type;
+                typename RangePolicy<sizeof...(T)>::index_array_type args = {(index_type)x...};
+                f(args, res);
+            }
+        };
+
+        template <typename Functor, typename... T>
+        struct FunctorWrapper<FOR, Functor, std::tuple<T...>, void> {
+            Functor f;
+
+            KOKKOS_INLINE_FUNCTION void operator()(T... x) const {
+                using index_type = typename RangePolicy<sizeof...(T)>::index_type;
+                typename RangePolicy<sizeof...(T)>::index_array_type args = {(index_type)x...};
+                f(args);
             }
         };
 
         /*!
-         * Convenience function for wrapping a reduction functor with the wrapper struct. Only
-         * the first and second template parameters have to be explicitly specified.
+         * Convenience function for wrapping a functor with the wrapper struct.
          * @tparam Dim the loop's rank
          * @tparam Acc the accumulator type
-         * @tparam R the functor's return type (default void)
          * @tparam Functor the functor type
          * @return A wrapper containing the given functor
          */
-        template <unsigned Dim, typename Acc, typename R = void, typename Functor>
+        template <e_functor_type Type, unsigned Dim, typename Acc = void, typename Functor>
         auto functorize(const Functor& f) {
-            return FunctorWrapper<Functor, typename Coords<Dim>::type, Acc, R>{f};
+            return FunctorWrapper<Type, Functor, typename Coords<Dim>::type, Acc>{f};
         }
 
         /*!

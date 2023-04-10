@@ -283,9 +283,9 @@ namespace ippl {
          * Utility function for shrinkView
          */
         template <unsigned Dim, typename T, size_t... Idx>
-        constexpr decltype(auto) shrinkView_impl(std::string label,
-                                                 const typename ViewType<T, Dim>::view_type& view,
-                                                 int nghost, const std::index_sequence<Idx...>&) {
+        decltype(auto) shrinkView_impl(std::string label,
+                                       const typename ViewType<T, Dim>::view_type& view, int nghost,
+                                       const std::index_sequence<Idx...>&) {
             return Kokkos::View<typename NPtr<T, Dim>::type, Kokkos::LayoutLeft>(
                 label, (view.extent(Idx) - 2 * nghost)...);
         }
@@ -300,9 +300,8 @@ namespace ippl {
          * @return The shrunken view
          */
         template <unsigned Dim, typename T>
-        constexpr decltype(auto) shrinkView(std::string label,
-                                            const typename ViewType<T, Dim>::view_type& view,
-                                            int nghost) {
+        decltype(auto) shrinkView(std::string label,
+                                  const typename ViewType<T, Dim>::view_type& view, int nghost) {
             return shrinkView_impl<Dim, T>(label, view, nghost, std::make_index_sequence<Dim>{});
         }
     }  // namespace detail

@@ -395,13 +395,14 @@ public:
         auto Eview        = E_m.getView();
         Vector_t<Dim> normE;
 
+        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
         for (unsigned d = 0; d < Dim; ++d) {
             double temp = 0.0;
             Kokkos::parallel_reduce(
                 "Vector E reduce", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
-                ippl::detail::functorize<Dim, double>(
-                    KOKKOS_LAMBDA<typename... Idx>(const Idx... args, double& valL) {
-                        double myVal = std::pow(Eview(args...)[d], 2);
+                ippl::detail::functorize<ippl::detail::REDUCE, Dim, double>(
+                    KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                        double myVal = std::pow(ippl::apply<Dim>(Eview, args)[d], 2);
                         valL += myVal;
                     }),
                 Kokkos::Sum<double>(temp));
@@ -441,12 +442,13 @@ public:
         auto Eview        = E_m.getView();
         double fieldEnergy, ExAmp;
 
-        double temp = 0.0;
+        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+        double temp            = 0.0;
         Kokkos::parallel_reduce(
             "Ex inner product", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
-            ippl::detail::functorize<Dim, double>(
-                KOKKOS_LAMBDA<typename... Idx>(const Idx... args, double& valL) {
-                    double myVal = std::pow(Eview(args...)[0], 2);
+            ippl::detail::functorize<ippl::detail::REDUCE, Dim, double>(
+                KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                    double myVal = std::pow(ippl::apply<Dim>(Eview, args)[0], 2);
                     valL += myVal;
                 }),
             Kokkos::Sum<double>(temp));
@@ -457,15 +459,14 @@ public:
             fieldEnergy *= h;
 
         double tempMax = 0.0;
-        Kokkos::parallel_reduce(
-            "Ex max norm", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
-            ippl::detail::functorize<Dim, double>(
-                KOKKOS_LAMBDA<typename... Idx>(const Idx... args, double& valL) {
-                    double myVal = std::fabs(Eview(args...)[0]);
-                    if (myVal > valL)
-                        valL = myVal;
-                }),
-            Kokkos::Max<double>(tempMax));
+        Kokkos::parallel_reduce("Ex max norm", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
+                                ippl::detail::functorize<ippl::detail::REDUCE, Dim, double>(
+                                    KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                                        double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[0]);
+                                        if (myVal > valL)
+                                            valL = myVal;
+                                    }),
+                                Kokkos::Max<double>(tempMax));
         ExAmp = 0.0;
         MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 
@@ -494,12 +495,13 @@ public:
         auto Eview        = E_m.getView();
         double fieldEnergy, EzAmp;
 
-        double temp = 0.0;
+        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+        double temp            = 0.0;
         Kokkos::parallel_reduce(
             "Ex inner product", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
-            ippl::detail::functorize<Dim, double>(
-                KOKKOS_LAMBDA<typename... Idx>(const Idx... args, double& valL) {
-                    double myVal = std::pow(Eview(args...)[2], 2);
+            ippl::detail::functorize<ippl::detail::REDUCE, Dim, double>(
+                KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                    double myVal = std::pow(ippl::apply<Dim>(Eview, args)[2], 2);
                     valL += myVal;
                 }),
             Kokkos::Sum<double>(temp));
@@ -510,15 +512,14 @@ public:
             fieldEnergy *= h;
 
         double tempMax = 0.0;
-        Kokkos::parallel_reduce(
-            "Ex max norm", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
-            ippl::detail::functorize<Dim, double>(
-                KOKKOS_LAMBDA<typename... Idx>(const Idx... args, double& valL) {
-                    double myVal = std::fabs(Eview(args...)[2]);
-                    if (myVal > valL)
-                        valL = myVal;
-                }),
-            Kokkos::Max<double>(tempMax));
+        Kokkos::parallel_reduce("Ex max norm", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
+                                ippl::detail::functorize<ippl::detail::REDUCE, Dim, double>(
+                                    KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                                        double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[2]);
+                                        if (myVal > valL)
+                                            valL = myVal;
+                                    }),
+                                Kokkos::Max<double>(tempMax));
         EzAmp = 0.0;
         MPI_Reduce(&tempMax, &EzAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 

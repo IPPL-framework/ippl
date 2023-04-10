@@ -84,34 +84,36 @@ namespace ippl {
         // Based on output_type calculate either solution
         // or gradient
 
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
         switch (this->params_m.template get<int>("output_type")) {
             case Base::SOL: {
                 Kokkos::parallel_for(
                     "Solution FFTPeriodicPoissonSolver", detail::getRangePolicy<Dim>(view, nghost),
-                    KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                        Vector<int, Dim> iVec = {(int)(args - nghost)...};
-                        for (unsigned d = 0; d < Dim; ++d) {
-                            iVec[d] += lDomComplex[d].first();
-                        }
+                    detail::functorize<detail::FOR, Dim>(
+                        KOKKOS_LAMBDA(const index_array_type& args) {
+                            Vector<int, Dim> iVec = args - nghost;
+                            for (unsigned d = 0; d < Dim; ++d) {
+                                iVec[d] += lDomComplex[d].first();
+                            }
 
-                        Vector_t kVec;
+                            Vector_t kVec;
 
-                        for (size_t d = 0; d < Dim; ++d) {
-                            const double Len = rmax[d] - origin[d];
-                            bool shift       = (iVec[d] > (N[d] / 2));
-                            kVec[d]          = 2 * pi / Len * (iVec[d] - shift * N[d]);
-                        }
+                            for (size_t d = 0; d < Dim; ++d) {
+                                const double Len = rmax[d] - origin[d];
+                                bool shift       = (iVec[d] > (N[d] / 2));
+                                kVec[d]          = 2 * pi / Len * (iVec[d] - shift * N[d]);
+                            }
 
-                        double Dr = 0;
-                        for (unsigned d = 0; d < Dim; ++d) {
-                            Dr += kVec[d] * kVec[d];
-                        }
+                            double Dr = 0;
+                            for (unsigned d = 0; d < Dim; ++d) {
+                                Dr += kVec[d] * kVec[d];
+                            }
 
-                        bool isNotZero = (Dr != 0.0);
-                        double factor  = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
+                            bool isNotZero = (Dr != 0.0);
+                            double factor  = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
 
-                        view(args...) *= factor;
-                    });
+                            apply<Dim>(view, args) *= factor;
+                        }));
 
                 fft_mp->transform(-1, *this->rhs_mp, fieldComplex_m);
 
@@ -131,44 +133,46 @@ namespace ippl {
                     Kokkos::parallel_for(
                         "Gradient FFTPeriodicPoissonSolver",
                         detail::getRangePolicy<Dim>(view, nghost),
-                        KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                            Vector<int, Dim> iVec = {(int)(args - nghost)...};
-                            for (unsigned d = 0; d < Dim; ++d) {
-                                iVec[d] += lDomComplex[d].first();
-                            }
+                        detail::functorize<detail::FOR, Dim>(
+                            KOKKOS_LAMBDA(const index_array_type& args) {
+                                Vector<int, Dim> iVec = args - nghost;
+                                for (unsigned d = 0; d < Dim; ++d) {
+                                    iVec[d] += lDomComplex[d].first();
+                                }
 
-                            Vector_t kVec;
+                                Vector_t kVec;
 
-                            for (size_t d = 0; d < Dim; ++d) {
-                                const double Len = rmax[d] - origin[d];
-                                bool shift       = (iVec[d] > (N[d] / 2));
-                                bool notMid      = (iVec[d] != (N[d] / 2));
-                                // For the noMid part see
-                                // https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 1
-                                kVec[d] = notMid * 2 * pi / Len * (iVec[d] - shift * N[d]);
-                            }
+                                for (size_t d = 0; d < Dim; ++d) {
+                                    const double Len = rmax[d] - origin[d];
+                                    bool shift       = (iVec[d] > (N[d] / 2));
+                                    bool notMid      = (iVec[d] != (N[d] / 2));
+                                    // For the noMid part see
+                                    // https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 1
+                                    kVec[d] = notMid * 2 * pi / Len * (iVec[d] - shift * N[d]);
+                                }
 
-                            double Dr = 0;
-                            for (unsigned d = 0; d < Dim; ++d) {
-                                Dr += kVec[d] * kVec[d];
-                            }
+                                double Dr = 0;
+                                for (unsigned d = 0; d < Dim; ++d) {
+                                    Dr += kVec[d] * kVec[d];
+                                }
 
-                            tempview(args...) = view(args...);
+                                apply<Dim>(tempview, args) = apply<Dim>(view, args);
 
-                            bool isNotZero = (Dr != 0.0);
-                            double factor  = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
+                                bool isNotZero = (Dr != 0.0);
+                                double factor  = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
 
-                            tempview(args...) *= -(imag * kVec[gd] * factor);
-                        });
+                                apply<Dim>(tempview, args) *= -(imag * kVec[gd] * factor);
+                            }));
 
                     fft_mp->transform(-1, *this->rhs_mp, tempFieldComplex_m);
 
-                    Kokkos::parallel_for(
-                        "Assign Gradient FFTPeriodicPoissonSolver",
-                        detail::getRangePolicy<Dim>(viewLhs, nghostL),
-                        KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                            viewLhs(args...)[gd] = viewRhs(args...);
-                        });
+                    Kokkos::parallel_for("Assign Gradient FFTPeriodicPoissonSolver",
+                                         detail::getRangePolicy<Dim>(viewLhs, nghostL),
+                                         detail::functorize<detail::FOR, Dim>(
+                                             KOKKOS_LAMBDA(const index_array_type& args) {
+                                                 apply<Dim>(viewLhs, args)[gd] =
+                                                     apply<Dim>(viewRhs, args);
+                                             }));
                 }
 
                 break;

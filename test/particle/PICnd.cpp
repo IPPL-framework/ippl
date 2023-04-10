@@ -226,11 +226,14 @@ public:
         ParticleAttrib<double>::view_type viewqm = this->qm.getView();
         int nghost                               = this->EFDMag_m.getNghost();
 
-        Kokkos::parallel_reduce(
-            "Particle Charge", ippl::detail::getRangePolicy<Dim>(viewRho, nghost),
-            ippl::detail::functorize<Dim, double>(KOKKOS_LAMBDA<typename... Idx>(
-                const Idx... args, double& val) { val += viewRho(args...); }),
-            lq);
+        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+        Kokkos::parallel_reduce("Particle Charge",
+                                ippl::detail::getRangePolicy<Dim>(viewRho, nghost),
+                                ippl::detail::functorize<ippl::detail::REDUCE, Dim, double>(
+                                    KOKKOS_LAMBDA(const index_array_type& args, double& val) {
+                                        val += ippl::apply<Dim>(viewRho, args);
+                                    }),
+                                lq);
         Kokkos::parallel_reduce(
             "Particle QM", viewqm.extent(0),
             KOKKOS_LAMBDA(const int i, double& val) { val += viewqm(i); }, lqm);
@@ -258,23 +261,25 @@ public:
         const ippl::NDIndex<Dim>& lDom     = layout.getLocalNDIndex();
         const int nghost                   = EFD_m.getNghost();
 
+        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
         Kokkos::parallel_for(
             "Assign EFD_m", ippl::detail::getRangePolicy<Dim>(view, nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
+            ippl::detail::functorize<ippl::detail::FOR, Dim>(KOKKOS_LAMBDA(
+                const index_array_type& args) {
                 // local to global index conversion
-                Vector_t vec = {(double)args...};
+                Vector_t vec = args;
                 for (unsigned d = 0; d < Dim; d++)
                     vec[d] = (vec[d] + lDom[d].first() - nghost + 0.5) * hr[d];
 
-                view(args...)[0] = -scale_fact * 2.0 * pi * phi0;
+                ippl::apply<Dim>(view, args)[0] = -scale_fact * 2.0 * pi * phi0;
                 for (unsigned d1 = 0; d1 < Dim; d1++)
-                    view(args...)[0] *= cos(2 * ((d1 + 1) % 3) * pi * vec[d1]);
+                    ippl::apply<Dim>(view, args)[0] *= cos(2 * ((d1 + 1) % 3) * pi * vec[d1]);
                 for (unsigned d = 1; d < Dim; d++) {
-                    view(args...)[d] = scale_fact * 4.0 * pi * phi0;
+                    ippl::apply<Dim>(view, args)[d] = scale_fact * 4.0 * pi * phi0;
                     for (unsigned d1 = 0; d1 < Dim - 1; d1++)
-                        view(args...)[d] *= sin(2 * ((d1 + 1) % 3) * pi * vec[d1]);
+                        ippl::apply<Dim>(view, args)[d] *= sin(2 * ((d1 + 1) % 3) * pi * vec[d1]);
                 }
-            });
+            }));
 
         EFDMag_m = dot(EFD_m, EFD_m);
         EFDMag_m = sqrt(EFDMag_m);
@@ -355,22 +360,22 @@ public:
             }
             end[0] /= size;
             // Loops over particles
-            Kokkos::parallel_for(
-                "initPositions", ippl::detail::createRangePolicy<Dim>(begin, end),
-                KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                    Vector_t vec = {(double)args...};
-                    int l        = 0;
-                    for (unsigned d1 = 0; d1 < Dim; d1++) {
-                        int next = vec[d1];
-                        for (unsigned d2 = 0; d2 < d1; d2++) {
-                            next *= N;
-                        }
-                        l += next / size;
-                    }
-                    for (unsigned d = 0; d < Dim; d++) {
-                        R_host(l)[d] = (vec[d] + lDom[d].first() + 0.5) * hr[d];
-                    }
-                });
+            using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+            Kokkos::parallel_for("initPositions", ippl::detail::createRangePolicy<Dim>(begin, end),
+                                 ippl::detail::functorize<ippl::detail::FOR, Dim>(KOKKOS_LAMBDA(
+                                     const index_array_type& args) {
+                                     int l = 0;
+                                     for (unsigned d1 = 0; d1 < Dim; d1++) {
+                                         int next = args[d1];
+                                         for (unsigned d2 = 0; d2 < d1; d2++) {
+                                             next *= N;
+                                         }
+                                         l += next / size;
+                                     }
+                                     for (unsigned d = 0; d < Dim; d++) {
+                                         R_host(l)[d] = (args[d] + lDom[d].first() + 0.5) * hr[d];
+                                     }
+                                 }));
 
         } else if (tag == 1) {
             m << "Positions follow normal distribution" << endl;
