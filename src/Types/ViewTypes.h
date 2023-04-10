@@ -85,7 +85,10 @@ namespace ippl {
          */
         template <unsigned Dim, typename Tag = void>
         struct RangePolicy {
-            typedef Kokkos::MDRangePolicy<Tag, Kokkos::Rank<Dim>> policy_type;
+            typedef std::conditional_t<std::is_void_v<Tag>,
+                                       Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>,
+                                       Kokkos::MDRangePolicy<Tag, Kokkos::Rank<Dim>>>
+                policy_type;
             typedef typename policy_type::array_index_type index_type;
         };
 
@@ -94,7 +97,9 @@ namespace ippl {
          */
         template <typename Tag>
         struct RangePolicy<1, Tag> {
-            typedef Kokkos::RangePolicy<Tag> policy_type;
+            typedef std::conditional_t<std::is_void_v<Tag>, Kokkos::RangePolicy<>,
+                                       Kokkos::RangePolicy<Tag>>
+                policy_type;
             typedef typename policy_type::index_type index_type;
         };
 
