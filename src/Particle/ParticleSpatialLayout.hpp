@@ -200,9 +200,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh>
     template <size_t... Idx>
-    constexpr bool ParticleSpatialLayout<T, Dim, Mesh>::positionInRegion(
-        const std::index_sequence<Idx...>&, const vector_type& pos,
-        const region_type& region) const {
+    KOKKOS_INLINE_FUNCTION constexpr bool ParticleSpatialLayout<T, Dim, Mesh>::positionInRegion(
+        const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region) {
         return ((pos[Idx] >= region[Idx].min() && pos[Idx] <= region[Idx].max()) && ...);
     };
 

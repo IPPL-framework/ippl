@@ -85,8 +85,8 @@ namespace ippl {
         using region_type = typename RegionLayout_t::view_type::value_type;
 
         template <size_t... Idx>
-        constexpr bool positionInRegion(const std::index_sequence<Idx...>&, const vector_type& pos,
-                                        const region_type& region) const;
+        KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(
+            const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region);
 
     public:
         void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
