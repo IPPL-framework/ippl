@@ -52,7 +52,6 @@ namespace ippl {
 
 	// define a type for the 3 dimensional real to complex Fourier transform
         typedef FFT<RCTransform, Dim, Trhs, Mesh, Centering> FFT_t;
-        typedef FFT<RCTransform, Dim, Tg, Mesh, Centering> FFT_gt;
 
         // type for communication buffers
         using buffer_type = Communicate::buffer_type;
@@ -80,18 +79,17 @@ namespace ippl {
         // communication used for multi-rank Vico-Greengard's Green's function
         void communicateVico(Vector<int, Dim> size, typename CxField_gt::view_type view_g,
                              const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
-                             typename Field_gt::view_type view, const ippl::NDIndex<Dim> ldom,
+                             typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
                              const int nghost);
 
     private:
         // create a field to use as temporary storage
         // references to it can be created to make the code where it is used readable
         Field_t storage_field;
-        Field_gt storage_field_g;
 
         Field_t& rho2_mr =
             storage_field;  // the charge-density field with mesh doubled in each dimension
-        Field_gt& grn_mr = storage_field_g;  // the Green's function
+        Field_t& grn_mr = storage_field;  // the Green's function
 
         // rho2tr_m is the Fourier transformed charge-density field
         // domain3_m and mesh3_m are used
@@ -99,7 +97,7 @@ namespace ippl {
 
         // grntr_m is the Fourier transformed Green's function
         // domain3_m and mesh3_m are used
-        CxField_gt grntr_m;
+        CxField_t grntr_m;
 
         // temp_m field for the E-field computation
         CxField_t temp_m;
@@ -109,7 +107,6 @@ namespace ippl {
 
         // the FFT object
         std::unique_ptr<FFT_t> fft_m;
-        std::unique_ptr<FFT_gt> fft_gm;
 
         // mesh and layout objects for rho_m (RHS)
         Mesh* mesh_mp;
@@ -150,7 +147,6 @@ namespace ippl {
 
         // buffer for communication
         detail::FieldBufferData<Trhs> fd_m;
-	detail::FieldBufferData<Tg> fs_m;
     protected:
         virtual void setDefaultParameters() override {
             using heffteBackend       = typename FFT_t::heffteBackend;
