@@ -282,8 +282,8 @@ namespace ippl {
                     }
                     const value_type& val = dview_m(idx);
 
-                    innerReduce += Sk * (Kokkos::Experimental::cos(arg) 
-                                - imag * Kokkos::Experimental::sin(arg)) * val;
+                    innerReduce += Sk * (Kokkos::numbers::cos(arg) 
+                                - imag * Kokkos::numbers::sin(arg)) * val;
                 }, Kokkos::Sum<FT>(reducedValue));
 
                 if(teamMember.team_rank() == 0) {
@@ -450,10 +450,10 @@ namespace ippl {
                         
                         //Inverse Fourier transform when the lhs is real. Use when 
                         //we choose k \in [0 K) instead of from [-K/2+1 K/2] 
-                        //Ex[d] = 2.0 * (Ek.real() * Kokkos::Experimental::cos(arg) 
-                        //        - Ek.imag() * Kokkos::Experimental::sin(arg));
-                        Ek *= Sk * (Kokkos::Experimental::cos(arg) 
-                                + imag * Kokkos::Experimental::sin(arg));
+                        //Ex[d] = 2.0 * (Ek.real() * Kokkos::numbers::cos(arg) 
+                        //        - Ek.imag() * Kokkos::numbers::sin(arg));
+                        Ek *= Sk * (Kokkos::numbers::cos(arg) 
+                                + imag * Kokkos::numbers::sin(arg));
                         Ex[d] = Ek.real();
                     }
                     
