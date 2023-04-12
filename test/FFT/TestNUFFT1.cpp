@@ -200,8 +200,8 @@ int main(int argc, char *argv[]) {
                }
                const double& val = Qview(idx);
 
-               innerReduce += (Kokkos::Experimental::cos(arg) 
-                           - imag * Kokkos::Experimental::sin(arg)) * val;
+               innerReduce += (Kokkos::cos(arg) 
+                           - imag * Kokkos::sin(arg)) * val;
            }, Kokkos::Sum<Kokkos::complex<double>>(reducedValue));
 
            if(teamMember.team_rank() == 0) {
@@ -254,8 +254,8 @@ int main(int argc, char *argv[]) {
                                     arg += kVec[d]*Rview(idx)[d];
                                 }
 
-                                valL += (Kokkos::Experimental::cos(arg) 
-                                - imag * Kokkos::Experimental::sin(arg)) * Qview(idx);
+                                valL += (Kokkos::cos(arg) 
+                                - imag * Kokkos::sin(arg)) * Qview(idx);
                             }, Kokkos::Sum<Kokkos::complex<double>>(reducedValue));
     
     double abs_error_real = std::fabs(reducedValue.real() - field_result(iInd, jInd, kInd).real());

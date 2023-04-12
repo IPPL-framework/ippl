@@ -242,7 +242,7 @@ int main(int argc, char *argv[]){
 
     //Q = -\int\int f dx dv
     double Q = -rmax[0] * rmax[1] * rmax[2];
-    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
+    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q,totalP);
 
     P->nr_m = nr;
 

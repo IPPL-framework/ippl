@@ -204,8 +204,8 @@ int main(int argc, char *argv[]) {
                                     arg += (iVec[d] - (pt[d]/2)) * Rview(idx)[d];
                                 }
 
-                                valL += (Kokkos::Experimental::cos(arg) 
-                                + imag * Kokkos::Experimental::sin(arg)) * fview(i + nghost, j + nghost, k + nghost);
+                                valL += (Kokkos::cos(arg) 
+                                + imag * Kokkos::sin(arg)) * fview(i + nghost, j + nghost, k + nghost);
                             }, Kokkos::Sum<Kokkos::complex<double>>(reducedValue));
     
     double abs_error_real = std::fabs(reducedValue.real() - Q_result(idx));

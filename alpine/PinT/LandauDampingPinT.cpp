@@ -7,7 +7,7 @@
 // 
 //  Usage:
 //     srun ./LandauDampingPinT <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> 
-//          <Niter> <ShapeType> <degree> --info 5
+//          <nCycles> <ShapeType> <degree> --info 5
 //     nmx       = No. of Fourier modes in the x-direction
 //     nmy       = No. of Fourier modes in the y-direction
 //     nmz       = No. of Fourier modes in the z-direction
@@ -15,10 +15,11 @@
 //     ny       = No. of grid points in the y-direction
 //     nz       = No. of grid points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
+//     nCycles = No. of Parareal blocks/cycles
 //     ShapeType = Shape function type B-spline only for the moment
 //     degree = B-spline degree (-1 for delta function)
 //     Example:
-//     srun ./LandauDampingPinT 32 32 32 32 32 32 655360 20.0 0.05 0.05 1e-5 100 B-spline 1 --info 5
+//     srun ./LandauDampingPinT 32 32 32 32 32 32 655360 20.0 0.05 0.05 1e-5 4 B-spline 1 --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
 // Jülich Supercomputing Centre, Jülich, Germany.
@@ -404,33 +405,18 @@ int main(int argc, char *argv[]){
 
     const size_type totalP = std::atoll(argv[7]);
     const double tEnd = std::atof(argv[8]);
-    const double dtSlice = tEnd / Ippl::Comm->size();
+    const unsigned int nCycles = std::atoi(argv[12]);
+    double tEndCycle = tEnd / nCycles;
+    const double dtSlice = tEndCycle / Ippl::Comm->size();
     const double dtFine = std::atof(argv[9]);
     const double dtCoarse = std::atof(argv[10]);
     const unsigned int ntFine = std::ceil(dtSlice / dtFine);
     const unsigned int ntCoarse = std::ceil(dtSlice / dtCoarse);
     const double tol = std::atof(argv[11]);
-    const unsigned int maxIter = std::atoi(argv[12]);
 
-    const double tStartMySlice = Ippl::Comm->rank() * dtSlice; 
+    //const double tStartMySlice = Ippl::Comm->rank() * dtSlice; 
     //const double tEndMySlice = (Ippl::Comm->rank() + 1) * dtSlice; 
 
-    msg << "Parareal "
-        << TestName
-        << endl
-        << "Slice dT: " << dtSlice
-        << endl
-        << "No. of fine time steps: " << ntFine 
-        << endl
-        << "No. of coarse time steps: " << ntCoarse
-        << endl
-        << "Tolerance: " << tol
-        << " Max. iterations: " << maxIter
-        << endl
-        << "Np= " << totalP 
-        << " Fourier modes = " << nmPIF
-        << " Grid points = " << nrPIC
-        << endl;
 
     using bunch_type = ChargedParticlesPinT<PLayout_t>;
     using states_begin_type = StatesBeginSlice<PLayout_t>;
@@ -498,7 +484,6 @@ int main(int argc, char *argv[]){
     //Pcoarse->EfieldPICprevIter_m.initialize(meshPIC, FLPIC);
 
     Pcoarse->initFFTSolver();
-    Pcoarse->time_m = tStartMySlice;
 
     IpplTimings::startTimer(particleCreation);
 
@@ -506,8 +491,6 @@ int main(int argc, char *argv[]){
     for (unsigned d = 0; d <Dim; ++d) {
         minU[d] = CDF(rmin[d], alpha[d], kw[d]);
         maxU[d]   = CDF(rmax[d], alpha[d], kw[d]);
-        //minU[d] = rmin[d];
-        //maxU[d] = rmax[d];
     }
 
 
@@ -520,33 +503,68 @@ int main(int argc, char *argv[]){
 #ifdef KOKKOS_ENABLE_CUDA
     //If we don't do the following even with the same seed the initial 
     //condition is not the same on different GPUs
+    //tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+    //if(Ippl::Comm->rank() == 0) {
+    //    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
+    //    Kokkos::parallel_for(nloc,
+    //                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+    //                         Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+
+    //    Kokkos::fence();
+    //    size_type bufSize = Pbegin->packedSize(nloc);
+    //    std::vector<MPI_Request> requests(0);
+    //    int sends = 0;
+    //    for(int rank = 1; rank < Ippl::Comm->size(); ++rank) {
+    //        buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND + sends, bufSize);
+    //        requests.resize(requests.size() + 1);
+    //        Ippl::Comm->isend(rank, tag, *Pbegin, *buf, requests.back(), nloc);
+    //        buf->resetWritePos();
+    //        ++sends;
+    //    }
+    //    MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+    //}
+    //else {
+    //    size_type bufSize = Pbegin->packedSize(nloc);
+    //    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
+    //    Ippl::Comm->recv(0, tag, *Pbegin, *buf, bufSize, nloc);
+    //    buf->resetReadPos();
+    //}
+    //Ippl::Comm->barrier();
+    //IpplTimings::startTimer(deepCopy);
+    //Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
+    //Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
+    //IpplTimings::stopTimer(deepCopy);
+    
+
     tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+
     if(Ippl::Comm->rank() == 0) {
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
         Kokkos::parallel_for(nloc,
                              generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
                              Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
+
         Kokkos::fence();
-        size_type bufSize = Pbegin->packedSize(nloc);
-        std::vector<MPI_Request> requests(0);
-        int sends = 0;
-        for(int rank = 1; rank < Ippl::Comm->size(); ++rank) {
-            buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND + sends, bufSize);
-            requests.resize(requests.size() + 1);
-            Ippl::Comm->isend(rank, tag, *Pbegin, *buf, requests.back(), nloc);
-            buf->resetWritePos();
-            ++sends;
-        }
-        MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
     }
     else {
         size_type bufSize = Pbegin->packedSize(nloc);
         buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
-        Ippl::Comm->recv(0, tag, *Pbegin, *buf, bufSize, nloc);
+        Ippl::Comm->recv(Ippl::Comm->rank()-1, tag, *Pbegin, *buf, bufSize, nloc);
         buf->resetReadPos();
     }
-    Ippl::Comm->barrier();
+
+    
+    if(Ippl::Comm->rank() < Ippl::Comm->size()-1) {
+        size_type bufSize = Pbegin->packedSize(nloc);
+        buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
+        MPI_Request request;
+        Ippl::Comm->isend(Ippl::Comm->rank()+1, tag, *Pbegin, *buf, request, nloc);
+        buf->resetWritePos();
+        MPI_Wait(&request, MPI_STATUS_IGNORE);
+    }
+
+    //Ippl::Comm->barrier();
     IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
     Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
@@ -561,6 +579,23 @@ int main(int argc, char *argv[]){
     Ippl::Comm->barrier();
 #endif
 
+    msg << "Parareal "
+        << TestName
+        << endl
+        << "Slice dT: " << dtSlice
+        << endl
+        << "No. of fine time steps: " << ntFine 
+        << endl
+        << "No. of coarse time steps: " << ntCoarse
+        << endl
+        << "Tolerance: " << tol
+        << " No. of cycles: " << nCycles
+        << endl
+        << "Np= " << totalP 
+        << " Fourier modes = " << nmPIF
+        << " Grid points = " << nrPIC
+        << endl;
+
 
     Pcoarse->q = Pcoarse->Q_m/nloc;
     IpplTimings::stopTimer(particleCreation);                                                    
@@ -568,54 +603,56 @@ int main(int argc, char *argv[]){
     msg << "particles created and initial conditions assigned " << endl;
 
     //Copy initial conditions as they are needed later
-    IpplTimings::startTimer(deepCopy);
-    Kokkos::deep_copy(Pcoarse->R0.getView(), Pcoarse->R.getView());
-    Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
-    IpplTimings::stopTimer(deepCopy);
+    //IpplTimings::startTimer(deepCopy);
+    //Kokkos::deep_copy(Pcoarse->R0.getView(), Pcoarse->R.getView());
+    //Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
+    //IpplTimings::stopTimer(deepCopy);
 
 
-    //Get initial guess for ranks other than 0 by propagating the coarse solver
-    IpplTimings::startTimer(coarsePropagator);
-    if (Ippl::Comm->rank() > 0) {
-        Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice); 
-    }
-    
-    Ippl::Comm->barrier();
-    
-    IpplTimings::stopTimer(coarsePropagator);
+    ////Get initial guess for ranks other than 0 by propagating the coarse solver
+    //IpplTimings::startTimer(coarsePropagator);
+    //if (Ippl::Comm->rank() > 0) {
+    //    Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice); 
+    //}
+    //
+    //Ippl::Comm->barrier();
+    //
+    //IpplTimings::stopTimer(coarsePropagator);
 
-    msg << "First Leap frog PIC done " << endl;
+    //msg << "First Leap frog PIC done " << endl;
 
-    
-    IpplTimings::startTimer(deepCopy);
-    Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
-    Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
-    IpplTimings::stopTimer(deepCopy);
-
-
-    //Run the coarse integrator to get the values at the end of the time slice 
-    IpplTimings::startTimer(coarsePropagator);
-    Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
-    IpplTimings::stopTimer(coarsePropagator);
-    msg << "Second Leap frog PIC done " << endl;
+    //
+    //IpplTimings::startTimer(deepCopy);
+    //Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
+    //Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
+    //IpplTimings::stopTimer(deepCopy);
 
 
-    //The following might not be needed
-    IpplTimings::startTimer(deepCopy);
-    Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
-    Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
-    IpplTimings::stopTimer(deepCopy);
+    ////Run the coarse integrator to get the values at the end of the time slice 
+    //IpplTimings::startTimer(coarsePropagator);
+    //Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
+    //IpplTimings::stopTimer(coarsePropagator);
+    //msg << "Second Leap frog PIC done " << endl;
 
 
-    msg << "Starting parareal iterations ..." << endl;
-    bool isConverged = false;
-    bool isPreviousDomainConverged;
-    if(Ippl::Comm->rank() == 0) {
-        isPreviousDomainConverged = true;
-    }
-    else {
-        isPreviousDomainConverged = false;
-    }
+    ////The following might not be needed
+    //IpplTimings::startTimer(deepCopy);
+    //Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
+    //Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
+    //IpplTimings::stopTimer(deepCopy);
+
+
+    //msg << "Starting parareal iterations ..." << endl;
+    //bool isConverged = false;
+    //bool isPreviousDomainConverged;
+    //if(Ippl::Comm->rank() == 0) {
+    //    isPreviousDomainConverged = true;
+    //}
+    //else {
+    //    isPreviousDomainConverged = false;
+    //}
+
+    bool isConverged, isPreviousDomainConverged;
 
     Pcoarse->shapetype_m = argv[13];
     Pcoarse->shapedegree_m = std::atoi(argv[14]); 
@@ -625,113 +662,135 @@ int main(int argc, char *argv[]){
 
     Pcoarse->initNUFFT(FLPIF);
     
-    //Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R0.getView());
-    //Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P0.getView());
-    //Pcoarse->LeapFrogPIF(Pcoarse->RprevIter, Pcoarse->PprevIter, (Ippl::Comm->rank()+1)*ntFine, 
-    //                     dtFine, isConverged, tStartMySlice, 0);
-    //Ippl::Comm->barrier();
+    for (unsigned int nc=0; nc < nCycles; nc++) {
+        double tStartMySlice = (nc * tEndCycle) + (Ippl::Comm->rank() * dtSlice); 
+        Pcoarse->time_m = tStartMySlice;
+        Pcoarse->initializeParareal(Pbegin->R, Pbegin->P, isConverged,
+                                    isPreviousDomainConverged, ntCoarse,
+                                    dtCoarse, tStartMySlice);
+        unsigned int it = 0;
+        while (!isConverged) { 
+            //Run fine integrator in parallel
+            IpplTimings::startTimer(finePropagator);
+            Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice, nc+1, it+1);
+            IpplTimings::stopTimer(finePropagator);
     
-    //unsigned int maxIterRank;
-    for (unsigned int it=0; it<maxIter; it++) {
 
-        //Run fine integrator in parallel
-        IpplTimings::startTimer(finePropagator);
-        Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice, it+1);
-        IpplTimings::stopTimer(finePropagator);
-    
+            //Difference = Fine - Coarse
+            Pend->R = Pbegin->R - Pcoarse->R;
+            Pend->P = Pbegin->P - Pcoarse->P;
 
-        //Difference = Fine - Coarse
-        Pend->R = Pbegin->R - Pcoarse->R;
-        Pend->P = Pbegin->P - Pcoarse->P;
-
-        IpplTimings::startTimer(deepCopy);
-        Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R.getView());
-        Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P.getView());
-        IpplTimings::stopTimer(deepCopy);
-        
-        IpplTimings::startTimer(timeCommunication);
-        tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
-        int tagbool = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
-        
-        if((Ippl::Comm->rank() > 0) && (!isPreviousDomainConverged)) {
-            size_type bufSize = Pbegin->packedSize(nloc);
-            buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
-            Ippl::Comm->recv(Ippl::Comm->rank()-1, tag, *Pbegin, *buf, bufSize, nloc);
-            buf->resetReadPos();
-            MPI_Recv(&isPreviousDomainConverged, 1, MPI_C_BOOL, Ippl::Comm->rank()-1, tagbool, 
-                    Ippl::getComm(), MPI_STATUS_IGNORE);
             IpplTimings::startTimer(deepCopy);
-            Kokkos::deep_copy(Pcoarse->R0.getView(), Pbegin->R.getView());
-            Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
+            Kokkos::deep_copy(Pcoarse->RprevIter.getView(), Pcoarse->R.getView());
+            Kokkos::deep_copy(Pcoarse->PprevIter.getView(), Pcoarse->P.getView());
+            IpplTimings::stopTimer(deepCopy);
+            
+            IpplTimings::startTimer(timeCommunication);
+            tag = 1100;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+            int tagbool = 1300;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+            
+            if((Ippl::Comm->rank() > 0) && (!isPreviousDomainConverged)) {
+                size_type bufSize = Pbegin->packedSize(nloc);
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
+                Ippl::Comm->recv(Ippl::Comm->rank()-1, tag, *Pbegin, *buf, bufSize, nloc);
+                buf->resetReadPos();
+                MPI_Recv(&isPreviousDomainConverged, 1, MPI_C_BOOL, Ippl::Comm->rank()-1, tagbool, 
+                        Ippl::getComm(), MPI_STATUS_IGNORE);
+                IpplTimings::startTimer(deepCopy);
+                Kokkos::deep_copy(Pcoarse->R0.getView(), Pbegin->R.getView());
+                Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
+                IpplTimings::stopTimer(deepCopy);
+            }
+            IpplTimings::stopTimer(timeCommunication);
+
+            IpplTimings::startTimer(deepCopy);
+            Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R0.getView());
+            Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P0.getView());
+            Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
+            Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
+            IpplTimings::stopTimer(deepCopy);
+
+            IpplTimings::startTimer(coarsePropagator);
+            Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
+            IpplTimings::stopTimer(coarsePropagator);
+
+            Pend->R = Pend->R + Pcoarse->R;
+            Pend->P = Pend->P + Pcoarse->P;
+
+            PL.applyBC(Pend->R, PL.getRegionLayout().getDomain());
+            IpplTimings::startTimer(computeErrors);
+            double localRerror, localPerror;
+            double Rerror = computeRL2Error(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror, length);
+            double Perror = computePL2Error(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
+    
+            //double Rerror = computeRL2Error(Pend->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror, length);
+            //double Perror = computePL2Error(Pend->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
+            //double EfieldError = 0;
+            //if(it > 0) {
+            //    EfieldError = computeFieldError(Pcoarse->rhoPIF_m, Pcoarse->rhoPIFprevIter_m);
+            //}
+            IpplTimings::stopTimer(computeErrors);
+
+            
+            if((Rerror <= tol) && (Perror <= tol) && isPreviousDomainConverged) {
+                isConverged = true;
+            }
+            
+            IpplTimings::startTimer(timeCommunication);
+            if(Ippl::Comm->rank() < Ippl::Comm->size()-1) {
+                size_type bufSize = Pend->packedSize(nloc);
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
+                MPI_Request request;
+                Ippl::Comm->isend(Ippl::Comm->rank()+1, tag, *Pend, *buf, request, nloc);
+                buf->resetWritePos();
+                MPI_Wait(&request, MPI_STATUS_IGNORE);
+                MPI_Send(&isConverged, 1, MPI_C_BOOL, Ippl::Comm->rank()+1, tagbool, Ippl::getComm());
+            }
+            IpplTimings::stopTimer(timeCommunication);
+
+            
+            msg << "Finished iteration: " << it+1 
+                << " in cycle: " << nc+1
+                << " Rerror: " << Rerror 
+                << " Perror: " << Perror
+                << endl;
+
+            IpplTimings::startTimer(dumpData);
+            //Pcoarse->writeError(Rerror, Perror, it+1);
+            Pcoarse->writelocalError(localRerror, localPerror, nc+1, it+1);
+            IpplTimings::stopTimer(dumpData);
+
+            it += 1;
+        }
+        
+        Ippl::Comm->barrier();
+        if((nCycles > 1) && (nc < (nCycles - 1))) {  
+            IpplTimings::startTimer(timeCommunication);
+            tag = 1000;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+            
+            if(Ippl::Comm->rank() < Ippl::Comm->size()-1) {
+                size_type bufSize = Pend->packedSize(nloc);
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
+                Ippl::Comm->recv(Ippl::Comm->rank()+1, tag, *Pend, *buf, bufSize, nloc);
+                buf->resetReadPos();
+            }
+            if(Ippl::Comm->rank() > 0) {
+                size_type bufSize = Pend->packedSize(nloc);
+                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
+                MPI_Request request;
+                Ippl::Comm->isend(Ippl::Comm->rank()-1, tag, *Pend, *buf, request, nloc);
+                buf->resetWritePos();
+                MPI_Wait(&request, MPI_STATUS_IGNORE);
+            }
+            IpplTimings::stopTimer(timeCommunication);
+            
+            IpplTimings::startTimer(deepCopy);
+            Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
+            Kokkos::deep_copy(Pcoarse->P.getView(), Pend->P.getView());
             IpplTimings::stopTimer(deepCopy);
         }
-        IpplTimings::stopTimer(timeCommunication);
-
-        IpplTimings::startTimer(deepCopy);
-        Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R0.getView());
-        Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P0.getView());
-        Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
-        Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
-        IpplTimings::stopTimer(deepCopy);
-
-        IpplTimings::startTimer(coarsePropagator);
-        Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
-        IpplTimings::stopTimer(coarsePropagator);
-
-        Pend->R = Pend->R + Pcoarse->R;
-        Pend->P = Pend->P + Pcoarse->P;
-
-        PL.applyBC(Pend->R, PL.getRegionLayout().getDomain());
-        IpplTimings::startTimer(computeErrors);
-        double localRerror, localPerror;
-        double Rerror = computeRL2Error(Pcoarse->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror, length);
-        double Perror = computePL2Error(Pcoarse->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
-    
-        //double Rerror = computeRL2Error(Pend->R, Pcoarse->RprevIter, it+1, Ippl::Comm->rank(), localRerror, length);
-        //double Perror = computePL2Error(Pend->P, Pcoarse->PprevIter, it+1, Ippl::Comm->rank(), localPerror);
-        //double EfieldError = 0;
-        //if(it > 0) {
-        //    EfieldError = computeFieldError(Pcoarse->rhoPIF_m, Pcoarse->rhoPIFprevIter_m);
-        //}
-        IpplTimings::stopTimer(computeErrors);
-
-        if((Rerror <= tol) && (Perror <= tol)) {
-            isConverged = true;
-        }
-        
-        
-        IpplTimings::startTimer(timeCommunication);
-        if(Ippl::Comm->rank() < Ippl::Comm->size()-1) {
-            size_type bufSize = Pend->packedSize(nloc);
-            buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
-            MPI_Request request;
-            Ippl::Comm->isend(Ippl::Comm->rank()+1, tag, *Pend, *buf, request, nloc);
-            buf->resetWritePos();
-            MPI_Wait(&request, MPI_STATUS_IGNORE);
-            MPI_Send(&isConverged, 1, MPI_C_BOOL, Ippl::Comm->rank()+1, tagbool, Ippl::getComm());
-        }
-        IpplTimings::stopTimer(timeCommunication);
-
-        
-        msg << "Finished iteration: " << it+1 
-            << " Rerror: " << Rerror 
-            << " Perror: " << Perror
-            << endl;
-
-        IpplTimings::startTimer(dumpData);
-        //Pcoarse->writeError(Rerror, Perror, it+1);
-        Pcoarse->writelocalError(localRerror, localPerror, it+1);
-        IpplTimings::stopTimer(dumpData);
-
-        if(isConverged && isPreviousDomainConverged) {
-            //maxIterRank = it+1;
-            break;
-        }
-
     }
 
-    //std::cout << "Rank " << Ippl::Comm->rank() << " is out of the loop in iteration: " << maxIterRank << std::endl;
-    Ippl::Comm->barrier();
     msg << TestName << " Parareal: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();

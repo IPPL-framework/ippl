@@ -525,7 +525,7 @@ public:
                     double kh = kVec[d] * dx[d];
                     bool isNotZero = (kh != 0.0);
                     double factor = (1.0 / (kh + ((!isNotZero) * 1.0)));
-                    double arg = isNotZero * (Kokkos::Experimental::sin(kh) * factor) + 
+                    double arg = isNotZero * (Kokkos::sin(kh) * factor) + 
                                  (!isNotZero) * 1.0;
                     //Fourier transform of CIC
                     Sk *= std::pow(arg, order);

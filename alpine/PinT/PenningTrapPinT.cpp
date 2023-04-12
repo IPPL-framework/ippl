@@ -19,7 +19,7 @@
 //     ShapeType = Shape function type B-spline only for the moment
 //     degree = B-spline degree (-1 for delta function)
 //     Example:
-//     srun ./PenningTrapPinT 32 32 32 32 32 32 655360 20.0 0.05 0.05 1e-5 100 B-spline 1 --info 5
+//     srun ./PenningTrapPinT 32 32 32 32 32 32 655360 20.0 0.05 0.05 1e-5 4 B-spline 1 --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
 // Jülich Supercomputing Centre, Jülich, Germany.

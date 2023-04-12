@@ -209,7 +209,7 @@ int main(int argc, char *argv[]){
 
     double Q = -1562.5;
     double Bext = 5.0;
-    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
+    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q,totalP);
 
     P->nr_m = nr;
 
