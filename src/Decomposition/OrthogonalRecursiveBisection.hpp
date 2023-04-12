@@ -267,10 +267,7 @@ namespace ippl {
                 Vector<T, Dim> whi     = l - index;
                 Vector<T, Dim> wlo     = 1.0 - whi;
 
-                Vector<size_t, Dim> args;
-                for (unsigned d = 0; d < Dim; d++) {
-                    args[d] = index[d] - lDom[d].first() + nghost;
-                }
+                Vector<size_t, Dim> args = index - lDom.first() + nghost;
 
                 // Scatter
                 scatter_field(view, wlo, whi, args);

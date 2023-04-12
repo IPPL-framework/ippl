@@ -267,9 +267,7 @@ public:
             ippl::detail::functorize<ippl::detail::FOR, Dim>(KOKKOS_LAMBDA(
                 const index_array_type& args) {
                 // local to global index conversion
-                Vector_t vec = args;
-                for (unsigned d = 0; d < Dim; d++)
-                    vec[d] = (vec[d] + lDom[d].first() - nghost + 0.5) * hr[d];
+                Vector_t vec = (0.5 + args + lDom.first() - nghost) * hr;
 
                 ippl::apply<Dim>(view, args)[0] = -scale_fact * 2.0 * pi * phi0;
                 for (unsigned d1 = 0; d1 < Dim; d1++)
@@ -372,9 +370,7 @@ public:
                                          }
                                          l += next / size;
                                      }
-                                     for (unsigned d = 0; d < Dim; d++) {
-                                         R_host(l)[d] = (args[d] + lDom[d].first() + 0.5) * hr[d];
-                                     }
+                                     R_host(l) = (0.5 + args + lDom.first()) * hr;
                                  }));
 
         } else if (tag == 1) {

@@ -22,6 +22,7 @@
 #include <initializer_list>
 
 #include "Index/Index.h"
+#include "Types/Vector.h"
 
 namespace ippl {
     /*!
@@ -82,6 +83,9 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION bool split(NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d) const;
 
         KOKKOS_INLINE_FUNCTION bool split(NDIndex<Dim>& l, NDIndex<Dim>& r) const;
+
+        KOKKOS_INLINE_FUNCTION Vector<int, Dim> first() const;
+        KOKKOS_INLINE_FUNCTION Vector<int, Dim> last() const;
 
         using iterator       = Index*;
         using const_iterator = const Index*;

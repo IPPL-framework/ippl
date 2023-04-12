@@ -153,6 +153,24 @@ namespace ippl {
     }
 
     template <unsigned Dim>
+    KOKKOS_INLINE_FUNCTION
+    Vector<int, Dim> NDIndex<Dim>::first() const {
+        auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
+            return Vector<int, Dim>{indices_m[Idx].first()...};
+        };
+        return construct(std::make_index_sequence<Dim>{});
+    }
+
+    template <unsigned Dim>
+    KOKKOS_INLINE_FUNCTION
+    Vector<int, Dim> NDIndex<Dim>::last() const {
+        auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
+            return Vector<int, Dim>{indices_m[Idx].last()...};
+        };
+        return construct(std::make_index_sequence<Dim>{});
+    }
+
+    template <unsigned Dim>
     typename NDIndex<Dim>::iterator NDIndex<Dim>::begin() {
         return indices_m;
     }
