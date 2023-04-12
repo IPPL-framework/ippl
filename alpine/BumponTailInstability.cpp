@@ -186,7 +186,12 @@ struct PhaseDump {
                 });
             scatter(P->q, phaseSpace, phase);
             Inform out("Output", fname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
-            phaseSpace.write(out);
+            for (int r = 0; r < Ippl::Comm->size(); r++) {
+                if (r == Ippl::Comm->rank()) {
+                    phaseSpace.write(out);
+                }
+                Ippl::Comm->barrier();
+            }
         }
     }
 
@@ -294,7 +299,7 @@ int main(int argc, char* argv[]) {
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
 
-    bunch_type bunchBuffer(PL);
+    bunch_type bunchBuffer(PL, true);
 
     P->stype_m = argv[arg++];
     P->initSolver();
