@@ -123,15 +123,16 @@ TEST_F(FieldTest, NormInf) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
         const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
 
-        auto view = field->getView();
-        Kokkos::parallel_for(
-            "Set field", field->getRangePolicy(),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                double tot = (args + ...);
-                for (unsigned d = 0; d < Dim; d++)
-                    tot += lDom[d].first();
-                view(args...) = tot - 1;
-            });
+        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+        auto view              = field->getView();
+        Kokkos::parallel_for("Set field", field->getRangePolicy(),
+                             ippl::detail::functorize<ippl::detail::FOR, Dim>(
+                                 KOKKOS_LAMBDA(const index_array_type& args) {
+                                     double tot = 0;
+                                     for (unsigned d = 0; d < Dim; d++)
+                                         tot += args[d] + lDom[d].first();
+                                     ippl::apply<Dim>(view, args) = tot - 1;
+                                 }));
 
         double normInf = ippl::norm(*field, 0);
 
@@ -152,22 +153,16 @@ TEST_F(FieldTest, VolumeIntegral) {
         auto view       = field->getView();
         const double pi = acos(-1.0);
 
-        // x_i (coordinate space) / dx = x_i (index space) + domain_i,0 - shift + 0.5
-        auto toCoords = KOKKOS_LAMBDA<size_t D>(size_t x) {
-            return (x + lDom[D].first() - shift + 0.5) * dx;
-        };
-
-        // sin(2 pi x) * sin(2 pi y) * ...
-        auto fieldVal = KOKKOS_LAMBDA<size_t... Dims, typename... Idx>(std::index_sequence<Dims...>,
-                                                                       const Idx... args) {
-            return ((sin(2 * pi * toCoords.template operator()<Dims>(args))) * ...);
-        };
-
-        Kokkos::parallel_for(
-            "Set field", field->getRangePolicy(),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                view(args...) = fieldVal(std::make_index_sequence<Dim>{}, args...);
-            });
+        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+        Kokkos::parallel_for("Set field", field->getRangePolicy(),
+                             ippl::detail::functorize<ippl::detail::FOR, Dim>(
+                                 KOKKOS_LAMBDA(const index_array_type& args) {
+                                     ippl::Vector<double, Dim> coords =
+                                         (0.5 + args + lDom.first() - shift) * dx;
+                                     ippl::apply<Dim>(view, args) = 1;
+                                     for (const auto& x : coords)
+                                         ippl::apply<Dim>(view, args) *= sin(2 * pi * x);
+                                 }));
 
         ASSERT_NEAR(field->getVolumeIntegral(), 0., 1e-15);
     };
@@ -216,13 +211,12 @@ TEST_F(FieldTest, Div) {
 
         const ippl::NDIndex<Dim> lDom = vfield.getLayout().getLocalNDIndex();
 
-        Kokkos::parallel_for(
-            "Set field", vfield.getRangePolicy(vshift),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                view(args...) = {(double)args...};
-                for (unsigned d = 0; d < Dim; d++)
-                    view(args...)[d] = (view(args...)[d] + lDom[d].first() - vshift + 0.5) * dx;
-            });
+        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+        Kokkos::parallel_for("Set field", vfield.getRangePolicy(vshift),
+                             ippl::detail::functorize<ippl::detail::FOR, Dim>(KOKKOS_LAMBDA(
+                                 const index_array_type& args) {
+                                 ippl::apply<Dim>(view, args) = (0.5 + args + lDom.first()) * dx;
+                             }));
 
         *field = div(vfield);
 
@@ -314,20 +308,16 @@ TEST_F(FieldTest, Hessian) {
         ippl::Vector<double, Dim> hx     = mesh->getMeshSpacing();
         ippl::Vector<double, Dim> origin = mesh->getOrigin();
 
-        auto toCoords = KOKKOS_LAMBDA<size_t D>(size_t x) {
-            return (0.5 + x + lDom[D].first() - nghost) * hx[D];
-        };
-
-        auto fieldVal = KOKKOS_LAMBDA<size_t... Dims, typename... Idx>(std::index_sequence<Dims...>,
-                                                                       const Idx... args) {
-            return ((toCoords.template operator()<Dims>(args)) * ...);
-        };
-
-        Kokkos::parallel_for(
-            "Set field", field.getRangePolicy(nghost),
-            KOKKOS_LAMBDA<typename... Idx>(const Idx... args) {
-                view_field(args...) = fieldVal(std::make_index_sequence<Dim>{}, args...);
-            });
+        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+        Kokkos::parallel_for("Set field", field.getRangePolicy(nghost),
+                             ippl::detail::functorize<ippl::detail::FOR, Dim>(
+                                 KOKKOS_LAMBDA(const index_array_type& args) {
+                                     ippl::Vector<double, Dim> coords =
+                                         (0.5 + args + lDom.first() - nghost) * hx;
+                                     ippl::apply<Dim>(view_field, args) = 1;
+                                     for (const auto& x : coords)
+                                         ippl::apply<Dim>(view_field, args) *= x;
+                                 }));
 
         MField_t result(*mesh, *layout);
         result = hess(field);

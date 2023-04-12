@@ -127,27 +127,21 @@ public:
         bunch->Q                    = 1.0;
         RegionLayout_t<Dim> RLayout = pl.getRegionLayout();
 
-        using vector_type = typename playout_type<Dim>::vector_type;
-        auto& positions   = bunch->R.getView();
+        using region_view  = typename RegionLayout_t<Dim>::view_type;
+        using size_type    = typename RegionLayout_t<Dim>::view_type::size_type;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
 
-        using region_view = typename RegionLayout_t<Dim>::view_type;
-        using region_type = typename region_view::value_type;
-
+        auto& positions     = bunch->R.getView();
         region_view Regions = RLayout.getdLocalRegions();
-        using size_type     = typename RegionLayout_t<Dim>::view_type::size_type;
-        using mdrange_type  = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
         ER_t::view_type ER  = bunch->expectedRank.getView();
-
-        auto positionInRegion = KOKKOS_LAMBDA<size_t... D>(
-            const std::index_sequence<D...>&, const vector_type& pos, const region_type& region) {
-            return ((pos[D] >= region[D].min() && pos[D] <= region[D].max()) && ...);
-        };
 
         Kokkos::parallel_for(
             "Expected Rank", mdrange_type({0, 0}, {ER.extent(0), Regions.extent(0)}),
             KOKKOS_LAMBDA(const size_t i, const size_type j) {
-                bool xyz_bool =
-                    positionInRegion(std::make_index_sequence<Dim>{}, positions(i), Regions(j));
+                bool xyz_bool = true;
+                for (unsigned d = 0; d < Dim; d++)
+                    xyz_bool &= positions(i)[d] <= Regions(j)[d].max()
+                                && positions(i)[d] >= Regions(j)[d].min();
                 if (xyz_bool) {
                     ER(i) = j;
                 }
