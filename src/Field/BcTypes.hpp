@@ -345,8 +345,8 @@ namespace ippl {
                                          coords[d] += 2 * nghost - 1 - N;
                                          apply<Dim>(view, coords) = right;
 
-                                         // nghost - 1 - x -> N - (nghost - 1 - x) = N - (nghost -
-                                         // x) + x
+                                         // nghost - 1 - x -> N - (nghost - 1 - x)
+                                         //     = N - (nghost - 1) + x
                                          coords[d]                = N - coords[d];
                                          apply<Dim>(view, coords) = left;
                                      }));
