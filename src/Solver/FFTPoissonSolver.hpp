@@ -288,6 +288,7 @@ namespace ippl {
         // initialize fields
         storage_field.initialize(*mesh2_m, *layout2_m);
 	rho2tr_m.initialize(*meshComplex_m, *layoutComplex_m);
+	grntr_m.initialize(*meshComplex_m, *layoutComplex_m);
 
         int out = this->params_m.template get<int>("output_type");
         if (((out == Base::GRAD) || (out == Base::SOL_AND_GRAD)) && (!isGradFD_m)) {
