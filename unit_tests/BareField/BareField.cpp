@@ -62,8 +62,8 @@ public:
 
 template <unsigned Dim>
 struct FieldVal {
-    const typename BareFieldTest::field_type<Dim>::view_type& view;
-    const ippl::NDIndex<Dim>& lDom;
+    const typename BareFieldTest::field_type<Dim>::view_type view;
+    const ippl::NDIndex<Dim> lDom;
 
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Idx... args) const {

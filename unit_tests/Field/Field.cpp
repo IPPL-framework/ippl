@@ -81,31 +81,41 @@ template <unsigned Dim>
 struct FieldVal {
     using field_view_type  = typename FieldTest::field_type<Dim>::view_type;
     using vfield_view_type = typename FieldTest::vfield_type<Dim>::view_type;
-    std::variant<field_view_type, vfield_view_type> view;
+    union {
+        const field_view_type* view;
+        const vfield_view_type* vview;
+    };
 
     const ippl::NDIndex<Dim>& lDom;
 
     using vector_type = ippl::Vector<double, Dim>;
-    std::variant<vector_type, double> dx;
+    union {
+        vector_type hx;
+        double dx;
+    };
     int shift;
+
+    ~FieldVal() {}
 
     FieldVal(const field_view_type& view, const ippl::NDIndex<Dim>& lDom, double hx = 0,
              int shift = 0)
-        : view(view)
+        : view(&view)
         , lDom(lDom)
         , dx(hx)
         , shift(shift) {}
+
     FieldVal(const vfield_view_type& view, const ippl::NDIndex<Dim>& lDom, double hx = 0,
              int shift = 0)
-        : view(view)
+        : vview(&view)
         , lDom(lDom)
         , dx(hx)
         , shift(shift) {}
+
     FieldVal(const field_view_type& view, const ippl::NDIndex<Dim>& lDom,
              ippl::Vector<double, Dim> hx, int shift = 0)
-        : view(view)
+        : view(&view)
         , lDom(lDom)
-        , dx(hx)
+        , hx(hx)
         , shift(shift) {}
 
     // range policy tags
@@ -118,41 +128,34 @@ struct FieldVal {
 
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Norm&, const Idx... args) const {
-        const auto& view = std::get<field_view_type>(this->view);
-        double tot       = (args + ...);
+        double tot = (args + ...);
         for (unsigned d = 0; d < Dim; d++)
             tot += lDom[d].first();
-        view(args...) = tot - 1;
+        (*view)(args...) = tot - 1;
     }
 
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Integral&, const Idx... args) const {
-        const auto& view                 = std::get<field_view_type>(this->view);
-        auto dx                          = std::get<double>(this->dx);
         ippl::Vector<double, Dim> coords = {(double)args...};
         coords                           = (0.5 + coords + lDom.first() - shift) * dx;
-        view(args...)                    = 1;
+        (*view)(args...)                 = 1;
         for (const auto& x : coords)
-            view(args...) *= sin(2 * pi * x);
+            (*view)(args...) *= sin(2 * pi * x);
     }
 
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Div&, const Idx... args) const {
-        const auto& view                 = std::get<vfield_view_type>(this->view);
-        auto dx                          = std::get<double>(this->dx);
         ippl::Vector<double, Dim> coords = {(double)args...};
-        view(args...)                    = (0.5 + coords + lDom.first()) * dx;
+        (*vview)(args...)                = (0.5 + coords + lDom.first()) * dx;
     }
 
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Hessian&, const Idx... args) const {
-        const auto& view                 = std::get<field_view_type>(this->view);
-        auto hx                          = std::get<vector_type>(this->dx);
         ippl::Vector<double, Dim> coords = {(double)args...};
         coords                           = (0.5 + coords + lDom.first() - shift) * hx;
-        view(args...)                    = 1;
+        (*view)(args...)                 = 1;
         for (const auto& x : coords)
-            view(args...) *= x;
+            (*view)(args...) *= x;
     }
 };
 
