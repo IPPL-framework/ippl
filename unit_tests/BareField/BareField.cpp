@@ -60,6 +60,20 @@ public:
     size_t nPoints;
 };
 
+template <unsigned Dim>
+struct FieldVal {
+    const typename BareFieldTest::field_type<Dim>::view_type& view;
+    const ippl::NDIndex<Dim>& lDom;
+
+    template <typename... Idx>
+    KOKKOS_INLINE_FUNCTION void operator()(const Idx... args) const {
+        double tot = (args + ...);
+        for (unsigned d = 0; d < Dim; d++)
+            tot += lDom[d].first();
+        view(args...) = tot - 1;
+    }
+};
+
 TEST_F(BareFieldTest, Sum) {
     double val = 1.0;
 
@@ -77,15 +91,7 @@ TEST_F(BareFieldTest, Min) {
         const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
         auto view                     = field->getView();
 
-        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
-        Kokkos::parallel_for("Set field", field->getRangePolicy(),
-                             ippl::detail::functorize<ippl::detail::FOR, Dim>(
-                                 KOKKOS_LAMBDA(const index_array_type& args) {
-                                     double tot = 0;
-                                     for (unsigned d = 0; d < Dim; d++)
-                                         tot += args[d] + lDom[d].first();
-                                     ippl::apply<Dim>(view, args) = tot - 1;
-                                 }));
+        Kokkos::parallel_for("Set field", field->getRangePolicy(), FieldVal<Dim>{view, lDom});
         Kokkos::fence();
 
         double min = field->min();
@@ -101,15 +107,7 @@ TEST_F(BareFieldTest, Max) {
         const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
         auto view                     = field->getView();
 
-        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
-        Kokkos::parallel_for("Set field", field->getRangePolicy(),
-                             ippl::detail::functorize<ippl::detail::FOR, Dim>(
-                                 KOKKOS_LAMBDA(const index_array_type& args) {
-                                     double tot = 0;
-                                     for (unsigned d = 0; d < Dim; d++)
-                                         tot += args[d] + lDom[d].first();
-                                     ippl::apply<Dim>(view, args) = tot - 1;
-                                 }));
+        Kokkos::parallel_for("Set field", field->getRangePolicy(), FieldVal<Dim>{view, lDom});
         Kokkos::fence();
 
         double max      = field->max();

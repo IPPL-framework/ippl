@@ -60,9 +60,10 @@ namespace ippl {
         using Domain_t = NDIndex<Dim>;
 
         //! View type storing the data
-        using view_type   = typename detail::ViewType<T, Dim>::view_type;
-        using HostMirror  = typename view_type::host_mirror_type;
-        using policy_type = typename detail::RangePolicy<Dim>::policy_type;
+        using view_type  = typename detail::ViewType<T, Dim>::view_type;
+        using HostMirror = typename view_type::host_mirror_type;
+        template <typename Tag = void>
+        using policy_type = typename detail::RangePolicy<Dim, Tag>::policy_type;
 
         /*! A default constructor, which should be used only if the user calls the
          * 'initialize' function before doing anything else.  There are no special
@@ -172,13 +173,15 @@ namespace ippl {
         /*!
          * Generate the 3D range policy for iterating over the field,
          * excluding ghost layers
+         * @tparam Tag an optional tag for the range policy
          * @param nghost Number of ghost layers to include in the range policy (default 0)
          * @return Range policy for iterating over the field and nghost of the ghost layers
          */
-        policy_type getRangePolicy(const int nghost = 0) const {
+        template <typename Tag = void>
+        policy_type<Tag> getRangePolicy(const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
             const size_t shift = nghost_m - nghost;
-            return detail::getRangePolicy<Dim>(dview_m, shift);
+            return detail::getRangePolicy<Dim, Tag>(dview_m, shift);
         }
 
         /*!
