@@ -48,7 +48,7 @@ class MultirankUtils {
     static void apply_impl(const std::index_sequence<Idx...>&, Functor& f, Args&&... args) {
         if constexpr (sizeof...(Args) == 0) {
             // Dim == Idx + 1
-            (f.template operator()<Idx + 1>(), ...);
+            (f.template operator()<indexToDim(Idx)>(), ...);
         } else {
             (arg_impl<Idx>(f, args...), ...);
         }
@@ -82,6 +82,11 @@ protected:
     constexpr static unsigned dimToIndex(unsigned dim) {
         constexpr std::array<unsigned, sizeof...(Dims)> dims = {Dims...};
         return std::distance(dims.begin(), std::find(dims.begin(), dims.end(), dim));
+    }
+
+    constexpr static unsigned indexToDim(unsigned idx) {
+        constexpr std::array<unsigned, sizeof...(Dims)> dims = {Dims...};
+        return dims[idx];
     }
 
     /*!
