@@ -144,8 +144,7 @@ TEST_F(FieldBCTest, PeriodicBC) {
         checkResult<Dim>(expected);
     };
 
-    auto pair = zip(fields, bcFields);
-    apply(check, pair);
+    apply(check, fields, bcFields);
 }
 
 TEST_F(FieldBCTest, NoBC) {
@@ -161,8 +160,7 @@ TEST_F(FieldBCTest, NoBC) {
         checkResult<Dim>(expected);
     };
 
-    auto pair = zip(fields, bcFields);
-    apply(check, pair);
+    apply(check, fields, bcFields);
 }
 
 TEST_F(FieldBCTest, ZeroBC) {
@@ -178,8 +176,7 @@ TEST_F(FieldBCTest, ZeroBC) {
         checkResult<Dim>(expected);
     };
 
-    auto pair = zip(fields, bcFields);
-    apply(check, pair);
+    apply(check, fields, bcFields);
 }
 
 TEST_F(FieldBCTest, ConstantBC) {
@@ -194,8 +191,7 @@ TEST_F(FieldBCTest, ConstantBC) {
         checkResult<Dim>(constant);
     };
 
-    auto pair = zip(fields, bcFields);
-    apply(check, pair);
+    apply(check, fields, bcFields);
 }
 
 TEST_F(FieldBCTest, ExtrapolateBC) {
@@ -211,8 +207,7 @@ TEST_F(FieldBCTest, ExtrapolateBC) {
         checkResult<Dim>(expected);
     };
 
-    auto pair = zip(fields, bcFields);
-    apply(check, pair);
+    apply(check, fields, bcFields);
 }
 
 int main(int argc, char* argv[]) {

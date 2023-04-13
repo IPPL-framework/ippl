@@ -101,8 +101,7 @@ TEST_F(ParticleBCTest, UpperPeriodicBC) {
         checkResult<Idx, Dim>(expected);
     };
 
-    auto pair = zip(bunches, nrs);
-    apply(check, pair);
+    apply(check, bunches, nrs);
 }
 
 TEST_F(ParticleBCTest, UpperNoBC) {
@@ -121,8 +120,7 @@ TEST_F(ParticleBCTest, UpperNoBC) {
         checkResult<Idx, Dim>(expected);
     };
 
-    auto pair = zip(bunches, nrs);
-    apply(check, pair);
+    apply(check, bunches, nrs);
 }
 
 TEST_F(ParticleBCTest, UpperReflectiveBC) {
@@ -141,8 +139,7 @@ TEST_F(ParticleBCTest, UpperReflectiveBC) {
         checkResult<Idx, Dim>(expected);
     };
 
-    auto pair = zip(bunches, nrs);
-    apply(check, pair);
+    apply(check, bunches, nrs);
 }
 
 TEST_F(ParticleBCTest, UpperSinkBC) {
@@ -161,8 +158,7 @@ TEST_F(ParticleBCTest, UpperSinkBC) {
         checkResult<Idx, Dim>(expected);
     };
 
-    auto pair = zip(bunches, nrs);
-    apply(check, pair);
+    apply(check, bunches, nrs);
 }
 
 TEST_F(ParticleBCTest, LowerPeriodicBC) {
@@ -181,8 +177,7 @@ TEST_F(ParticleBCTest, LowerPeriodicBC) {
         checkResult<Idx, Dim>(expected);
     };
 
-    auto pair = zip(bunches, nrs);
-    apply(check, pair);
+    apply(check, bunches, nrs);
 }
 
 TEST_F(ParticleBCTest, LowerNoBC) {
@@ -201,8 +196,7 @@ TEST_F(ParticleBCTest, LowerNoBC) {
         checkResult<Idx, Dim>(expected);
     };
 
-    auto pair = zip(bunches, nrs);
-    apply(check, pair);
+    apply(check, bunches, nrs);
 }
 
 TEST_F(ParticleBCTest, LowerReflectiveBC) {
@@ -221,8 +215,7 @@ TEST_F(ParticleBCTest, LowerReflectiveBC) {
         checkResult<Idx, Dim>(expected);
     };
 
-    auto pair = zip(bunches, nrs);
-    apply(check, pair);
+    apply(check, bunches, nrs);
 }
 
 TEST_F(ParticleBCTest, LowerSinkBC) {
@@ -241,8 +234,7 @@ TEST_F(ParticleBCTest, LowerSinkBC) {
         checkResult<Idx, Dim>(expected);
     };
 
-    auto pair = zip(bunches, nrs);
-    apply(check, pair);
+    apply(check, bunches, nrs);
 }
 
 int main(int argc, char* argv[]) {

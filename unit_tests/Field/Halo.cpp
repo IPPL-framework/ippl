@@ -234,8 +234,7 @@ TEST_F(HaloTest, AccumulateHalo) {
         });
     };
 
-    auto pair = zip(fields, layouts);
-    apply(check, pair);
+    apply(check, fields, layouts);
 }
 
 int main(int argc, char* argv[]) {

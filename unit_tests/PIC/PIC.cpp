@@ -145,8 +145,7 @@ TEST_F(PICTest, Scatter) {
         ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0, 1e-13);
     };
 
-    auto args = zip(fields, bunches, playouts);
-    apply(check, args);
+    apply(check, fields, bunches, playouts);
 }
 
 TEST_F(PICTest, Gather) {
@@ -164,8 +163,7 @@ TEST_F(PICTest, Gather) {
         ASSERT_DOUBLE_EQ((nParticles - bunch->Q.sum()) / nParticles, 0.0);
     };
 
-    auto args = zip(fields, bunches, playouts);
-    apply(check, args);
+    apply(check, fields, bunches, playouts);
 }
 
 int main(int argc, char* argv[]) {

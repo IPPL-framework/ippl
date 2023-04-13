@@ -166,8 +166,7 @@ TEST_F(BareFieldTest, DotProduct) {
         });
     };
 
-    auto pair = zip(fields, vfields);
-    apply(check, pair);
+    apply(check, fields, vfields);
 }
 
 TEST_F(BareFieldTest, AllFuncs) {

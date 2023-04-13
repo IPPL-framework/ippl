@@ -160,8 +160,7 @@ TEST_F(FFTTest, Cos) {
         testTrig<ippl::CosTransform, Dim>(field, layout);
     };
 
-    auto pair = zip(realFields, layouts);
-    apply(check, pair);
+    apply(check, realFields, layouts);
 }
 
 TEST_F(FFTTest, Sin) {
@@ -170,8 +169,7 @@ TEST_F(FFTTest, Sin) {
         testTrig<ippl::SineTransform, Dim>(field, layout);
     };
 
-    auto pair = zip(realFields, layouts);
-    apply(check, pair);
+    apply(check, realFields, layouts);
 }
 
 TEST_F(FFTTest, RC) {
@@ -216,8 +214,7 @@ TEST_F(FFTTest, RC) {
         verifyResult<Dim>(nghost, field_result, input_host);
     };
 
-    auto args = zip(realFields, layouts, meshes);
-    apply(check, args);
+    apply(check, realFields, layouts, meshes);
 }
 
 TEST_F(FFTTest, CC) {
@@ -265,8 +262,7 @@ TEST_F(FFTTest, CC) {
         ASSERT_NEAR(max_error.imag(), 0, 1e-13);
     };
 
-    auto args = zip(compFields, layouts);
-    apply(check, args);
+    apply(check, compFields, layouts);
 }
 
 int main(int argc, char* argv[]) {

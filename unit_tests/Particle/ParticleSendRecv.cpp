@@ -184,8 +184,7 @@ TEST_F(ParticleSendRecv, SendAndRecieve) {
         }
     };
 
-    auto pair = zip(bunches, playouts);
-    apply(check, pair);
+    apply(check, bunches, playouts);
 }
 
 int main(int argc, char* argv[]) {

@@ -180,8 +180,7 @@ TEST_F(ORBTest, Volume) {
         ASSERT_DOUBLE_EQ(dom.size(), ndom.size());
     };
 
-    auto pair = zip(playouts, bunches);
-    apply(check, pair);
+    apply(check, playouts, bunches);
 }
 
 TEST_F(ORBTest, Charge) {
@@ -207,8 +206,7 @@ TEST_F(ORBTest, Charge) {
         ASSERT_NEAR((nParticles * charge - totalCharge) / totalCharge, 0., 1e-13);
     };
 
-    auto args = zip(fields, bunches, playouts);
-    apply(check, args);
+    apply(check, fields, bunches, playouts);
 }
 
 int main(int argc, char* argv[]) {

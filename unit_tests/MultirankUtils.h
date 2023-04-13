@@ -25,34 +25,32 @@
 
 template <unsigned... Dims>
 class MultirankUtils {
-    // Checking for specialization; inherits from true_type
-    // if one template parameter is a specialization of the other
-    // https://stackoverflow.com/a/28796458
-    template <typename, template <typename...> class>
-    struct is_specialization : std::false_type {};
-
-    template <template <typename...> class Ref, typename... Args>
-    struct is_specialization<Ref<Args...>, Ref> : std::true_type {};
+    /*!
+     * Utility function for apply. Calls the function with one argument stemming from each argument
+     * tuple.
+     * @tparam Idx the index of the elements to pass
+     * @param f the function
+     * @param args the argument tuples
+     */
+    template <unsigned long Idx, typename Functor, typename... Args>
+    static void arg_impl(Functor& f, Args&&... args) {
+        f(std::get<Idx>(args)...);
+    }
 
     /*!
      * Utility function for apply. If there are no arguments, run the function
-     * once for each dimension. If the arguments are tuples, run the function
-     * with the tuple elements as arguments for each tuple provided. Otherwise,
-     * assume a single argument and run the function with that argument for each dimension.
+     * once for each dimension. Otherwise, assume the arguments are tuples and run the function
+     * with the tuple elements as arguments for each tuple provided.
      * @param f the function
      * @param args the arguments for the function for each dimension
      */
-    template <typename Functor, typename... Args, unsigned long... Idx>
-    static void apply_impl(Functor& f, std::tuple<Args...>& args,
-                           const std::index_sequence<Idx...>&) {
+    template <typename Functor, unsigned long... Idx, typename... Args>
+    static void apply_impl(const std::index_sequence<Idx...>&, Functor& f, Args&&... args) {
         if constexpr (sizeof...(Args) == 0) {
             // Dim == Idx + 1
             (f.template operator()<Idx + 1>(), ...);
-        } else if constexpr (is_specialization<std::tuple_element_t<0, std::tuple<Args...>>,
-                                               std::tuple>::value) {
-            (std::apply(f, std::get<Idx>(args)), ...);
         } else {
-            (f(std::get<Idx>(args)), ...);
+            (arg_impl<Idx>(f, args...), ...);
         }
     }
 
@@ -62,32 +60,6 @@ class MultirankUtils {
     template <typename Tester, size_t... Idx>
     void setup_impl(Tester&& t, const std::index_sequence<Idx...>&) {
         ((t->template setupDim<Idx, Dims>()), ...);
-    }
-
-    // Tuple zipping
-    // https://stackoverflow.com/a/47127033
-    template <size_t Idx, typename... Tuples>
-    using zipped_element = std::tuple<std::tuple_element_t<Idx, std::decay_t<Tuples>>&...>;
-
-    /*!
-     * Constructs a new tuple consisting of the elements of other tuples at a given index
-     * @tparam Idx the index at which to zip
-     * @tparam Tuples.. the tuple types
-     * @param ts... the tuples to zip
-     * @return A new tuple containing references to the original tuples' elements at the given index
-     */
-    template <size_t Idx, typename... Tuples>
-    static zipped_element<Idx, Tuples...> zip_at(Tuples&&... ts) {
-        return {std::get<Idx>(std::forward<Tuples>(ts))...};
-    }
-
-    /*!
-     * Utility function for tuple zipping
-     */
-    template <typename... Tuples, size_t... Idx>
-    static std::tuple<zipped_element<Idx, Tuples...>...> zip_impl(
-        Tuples&&... ts, const std::index_sequence<Idx...>&) {
-        return {zip_at<Idx>(std::forward<Tuples>(ts)...)...};
     }
 
 protected:
@@ -133,35 +105,8 @@ public:
      * @param args arguments for the function
      */
     template <typename Functor, typename... Args>
-    static auto apply(Functor& f, std::tuple<Args...>& args) {
-        apply_impl(f, args, std::make_index_sequence<sizeof...(Dims)>{});
-    }
-
-    /*!
-     * Runs a function with no arguments for each rank
-     */
-    template <typename Functor>
-    static auto apply(Functor& f) {
-        auto args = std::tuple<>{};
-        apply_impl(f, args, std::make_index_sequence<sizeof...(Dims)>{});
-    }
-
-    /*!
-     * Zips a set of tuples together
-     * @tparam Tuple the first tuple type
-     * @tparam Tuples... the remaining tuple types
-     * @param t0 the first tuple
-     * @param ts the other tuples
-     * @return A new tuple containing references to the original tuple elements
-     */
-    template <typename Tuple, typename... Tuples>
-    static auto zip(Tuple&& t0, Tuples&&... ts) {
-        constexpr size_t size = std::tuple_size_v<std::decay_t<Tuple>>;
-        static_assert(((std::tuple_size_v<std::decay_t<Tuples>> == size) && ...),
-                      "Mismatched tuple sizes");
-
-        return zip_impl<Tuple, Tuples...>(std::forward<Tuple>(t0), std::forward<Tuples>(ts)...,
-                                          std::make_index_sequence<size>{});
+    static auto apply(Functor& f, Args&&... args) {
+        apply_impl(std::make_index_sequence<sizeof...(Dims)>{}, f, args...);
     }
 
     /*!

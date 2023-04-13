@@ -335,8 +335,7 @@ TEST_F(FieldTest, Hessian) {
         });
     };
 
-    auto pair = zip(meshes, layouts);
-    apply(check, pair);
+    apply(check, meshes, layouts);
 }
 
 int main(int argc, char* argv[]) {
