@@ -41,7 +41,7 @@ public:
     using layout_type = ippl::FieldLayout<Dim>;
 
     FieldTest()
-        : nPoints(16) {
+        : nPoints(8) {
         setup(this);
     }
 
@@ -78,42 +78,51 @@ public:
 };
 
 template <unsigned Dim>
-struct FieldVal {
-    using field_view_type  = typename FieldTest::field_type<Dim>::view_type;
+struct VFieldVal {
     using vfield_view_type = typename FieldTest::vfield_type<Dim>::view_type;
-    union {
-        const field_view_type* view;
-        const vfield_view_type* vview;
-    };
+    const vfield_view_type vview;
+    const ippl::NDIndex<Dim> lDom;
 
-    const ippl::NDIndex<Dim>& lDom;
+    double dx;
+    int shift;
 
-    using vector_type = ippl::Vector<double, Dim>;
-    union {
-        vector_type hx;
-        double dx;
-    };
+    VFieldVal(const vfield_view_type& view, const ippl::NDIndex<Dim>& lDom, double hx = 0,
+              int shift = 0)
+        : vview(view)
+        , lDom(lDom)
+        , dx(hx)
+        , shift(shift) {}
+
+    template <typename... Idx>
+    KOKKOS_INLINE_FUNCTION void operator()(const Idx... args) const {
+        ippl::Vector<double, Dim> coords = {(double)args...};
+        vview(args...)                   = (0.5 + coords + lDom.first()) * dx;
+    }
+};
+
+template <unsigned Dim>
+struct FieldVal {
+    using field_view_type = typename FieldTest::field_type<Dim>::view_type;
+    const field_view_type view;
+
+    const ippl::NDIndex<Dim> lDom;
+
+    ippl::Vector<double, Dim> hx = 0;
+    double dx                    = 0;
     int shift;
 
     ~FieldVal() {}
 
     FieldVal(const field_view_type& view, const ippl::NDIndex<Dim>& lDom, double hx = 0,
              int shift = 0)
-        : view(&view)
-        , lDom(lDom)
-        , dx(hx)
-        , shift(shift) {}
-
-    FieldVal(const vfield_view_type& view, const ippl::NDIndex<Dim>& lDom, double hx = 0,
-             int shift = 0)
-        : vview(&view)
+        : view(view)
         , lDom(lDom)
         , dx(hx)
         , shift(shift) {}
 
     FieldVal(const field_view_type& view, const ippl::NDIndex<Dim>& lDom,
              ippl::Vector<double, Dim> hx, int shift = 0)
-        : view(&view)
+        : view(view)
         , lDom(lDom)
         , hx(hx)
         , shift(shift) {}
@@ -121,7 +130,6 @@ struct FieldVal {
     // range policy tags
     struct Norm {};
     struct Integral {};
-    struct Div {};
     struct Hessian {};
 
     const double pi = acos(-1.0);
@@ -131,31 +139,25 @@ struct FieldVal {
         double tot = (args + ...);
         for (unsigned d = 0; d < Dim; d++)
             tot += lDom[d].first();
-        (*view)(args...) = tot - 1;
+        view(args...) = tot - 1;
     }
 
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Integral&, const Idx... args) const {
         ippl::Vector<double, Dim> coords = {(double)args...};
         coords                           = (0.5 + coords + lDom.first() - shift) * dx;
-        (*view)(args...)                 = 1;
+        view(args...)                    = 1;
         for (const auto& x : coords)
-            (*view)(args...) *= sin(2 * pi * x);
-    }
-
-    template <typename... Idx>
-    KOKKOS_INLINE_FUNCTION void operator()(const Div&, const Idx... args) const {
-        ippl::Vector<double, Dim> coords = {(double)args...};
-        (*vview)(args...)                = (0.5 + coords + lDom.first()) * dx;
+            view(args...) *= sin(2 * pi * x);
     }
 
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Hessian&, const Idx... args) const {
         ippl::Vector<double, Dim> coords = {(double)args...};
         coords                           = (0.5 + coords + lDom.first() - shift) * hx;
-        (*view)(args...)                 = 1;
+        view(args...)                    = 1;
         for (const auto& x : coords)
-            (*view)(args...) *= x;
+            view(args...) *= x;
     }
 };
 
@@ -279,9 +281,8 @@ TEST_F(FieldTest, Div) {
 
         const ippl::NDIndex<Dim> lDom = vfield.getLayout().getLocalNDIndex();
 
-        FieldVal<Dim> fv(view, lDom, dx, vshift);
-        Kokkos::parallel_for(
-            "Set field", vfield.template getRangePolicy<typename FieldVal<Dim>::Div>(vshift), fv);
+        VFieldVal<Dim> fv(view, lDom, dx, vshift);
+        Kokkos::parallel_for("Set field", vfield.getRangePolicy(vshift), fv);
 
         *field = div(vfield);
 
