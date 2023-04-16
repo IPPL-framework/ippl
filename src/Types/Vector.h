@@ -87,10 +87,10 @@ namespace ippl {
 
         using iterator       = T*;
         using const_iterator = const T*;
-        KOKKOS_INLINE_FUNCTION iterator begin();
-        KOKKOS_INLINE_FUNCTION iterator end();
-        KOKKOS_INLINE_FUNCTION const_iterator begin() const;
-        KOKKOS_INLINE_FUNCTION const_iterator end() const;
+        KOKKOS_INLINE_FUNCTION constexpr iterator begin();
+        KOKKOS_INLINE_FUNCTION constexpr iterator end();
+        KOKKOS_INLINE_FUNCTION constexpr const_iterator begin() const;
+        KOKKOS_INLINE_FUNCTION constexpr const_iterator end() const;
 
     private:
         T data_m[Dim];

@@ -47,7 +47,7 @@ namespace ippl {
 
             const neighbor_list& neighbors = layout->getNeighbors();
             const range_list &sendRanges   = layout->getNeighborsSendRange(),
-                             recvRanges    = layout->getNeighborsRecvRange();
+                             &recvRanges   = layout->getNeighborsRecvRange();
 
             size_t totalRequests = 0;
             for (const auto& componentNeighbors : neighbors) {

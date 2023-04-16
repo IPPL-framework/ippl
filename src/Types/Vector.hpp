@@ -140,22 +140,24 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim>
-    KOKKOS_INLINE_FUNCTION typename Vector<T, Dim>::iterator Vector<T, Dim>::begin() {
+    KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::iterator Vector<T, Dim>::begin() {
         return data_m;
     }
 
     template <typename T, unsigned Dim>
-    KOKKOS_INLINE_FUNCTION typename Vector<T, Dim>::iterator Vector<T, Dim>::end() {
+    KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::iterator Vector<T, Dim>::end() {
         return data_m + Dim;
     }
 
     template <typename T, unsigned Dim>
-    KOKKOS_INLINE_FUNCTION typename Vector<T, Dim>::const_iterator Vector<T, Dim>::begin() const {
+    KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::const_iterator Vector<T, Dim>::begin()
+        const {
         return data_m;
     }
 
     template <typename T, unsigned Dim>
-    KOKKOS_INLINE_FUNCTION typename Vector<T, Dim>::const_iterator Vector<T, Dim>::end() const {
+    KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::const_iterator Vector<T, Dim>::end()
+        const {
         return data_m + Dim;
     }
 

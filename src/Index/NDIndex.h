@@ -21,8 +21,9 @@
 
 #include <initializer_list>
 
-#include "Index/Index.h"
 #include "Types/Vector.h"
+
+#include "Index/Index.h"
 
 namespace ippl {
     /*!
@@ -89,10 +90,10 @@ namespace ippl {
 
         using iterator       = Index*;
         using const_iterator = const Index*;
-        iterator begin();
-        iterator end();
-        const_iterator begin() const;
-        const_iterator end() const;
+        KOKKOS_INLINE_FUNCTION constexpr iterator begin();
+        KOKKOS_INLINE_FUNCTION constexpr iterator end();
+        KOKKOS_INLINE_FUNCTION constexpr const_iterator begin() const;
+        KOKKOS_INLINE_FUNCTION constexpr const_iterator end() const;
 
     private:
         KOKKOS_FUNCTION

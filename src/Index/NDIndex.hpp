@@ -153,8 +153,7 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    KOKKOS_INLINE_FUNCTION
-    Vector<int, Dim> NDIndex<Dim>::first() const {
+    KOKKOS_INLINE_FUNCTION Vector<int, Dim> NDIndex<Dim>::first() const {
         auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
             return Vector<int, Dim>{indices_m[Idx].first()...};
         };
@@ -162,8 +161,7 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    KOKKOS_INLINE_FUNCTION
-    Vector<int, Dim> NDIndex<Dim>::last() const {
+    KOKKOS_INLINE_FUNCTION Vector<int, Dim> NDIndex<Dim>::last() const {
         auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
             return Vector<int, Dim>{indices_m[Idx].last()...};
         };
@@ -171,22 +169,24 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    typename NDIndex<Dim>::iterator NDIndex<Dim>::begin() {
+    KOKKOS_INLINE_FUNCTION constexpr typename NDIndex<Dim>::iterator NDIndex<Dim>::begin() {
         return indices_m;
     }
 
     template <unsigned Dim>
-    typename NDIndex<Dim>::iterator NDIndex<Dim>::end() {
+    KOKKOS_INLINE_FUNCTION constexpr typename NDIndex<Dim>::iterator NDIndex<Dim>::end() {
         return indices_m + Dim;
     }
 
     template <unsigned Dim>
-    typename NDIndex<Dim>::const_iterator NDIndex<Dim>::begin() const {
+    KOKKOS_INLINE_FUNCTION constexpr typename NDIndex<Dim>::const_iterator NDIndex<Dim>::begin()
+        const {
         return indices_m;
     }
 
     template <unsigned Dim>
-    typename NDIndex<Dim>::const_iterator NDIndex<Dim>::end() const {
+    KOKKOS_INLINE_FUNCTION constexpr typename NDIndex<Dim>::const_iterator NDIndex<Dim>::end()
+        const {
         return indices_m + Dim;
     }
 }  // namespace ippl
