@@ -838,6 +838,9 @@ namespace ippl {
                                         ParticleAttrib<PT2, Properties... >& Q,
                                         typename FFT<NUFFTransform,Dim,T>::ComplexField_t& f)
     {
+        
+        //Inform m("FFT ");
+        
         auto fview = f.getView();
         auto Rview = R.getView();
         auto Qview = Q.getView();
@@ -915,6 +918,7 @@ namespace ippl {
                      NULL, NULL, NULL, plan_m);
 
         ier_m = nufft_m.execute(tempQ.data(), tempField.data(), plan_m);
+        Kokkos::fence();
 
 
         if(type_m == 1) { 

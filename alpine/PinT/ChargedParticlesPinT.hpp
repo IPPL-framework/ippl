@@ -555,7 +555,6 @@ public:
             valL += myVal;
 
         }, Kokkos::Sum<double>(temp));
-        
 
         double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
         potentialEnergy = 0.5 * temp * volume;
@@ -1113,7 +1112,7 @@ public:
                                 - P2view(j)[0] * Bext - alpha * Bext * E2view(j)[0]) );
                 P2view(j)[2] += alpha * E2view(j)[2];
             });
-    
+
             time_m += dt;
             
             IpplTimings::startTimer(dumpData);
