@@ -839,7 +839,6 @@ namespace ippl {
                                         typename FFT<NUFFTransform,Dim,T>::ComplexField_t& f)
     {
         
-        //Inform m("FFT ");
         
         auto fview = f.getView();
         auto Rview = R.getView();
