@@ -750,6 +750,7 @@ namespace ippl {
     }
 
 
+#ifdef ENABLE_NUFFT
 #ifdef KOKKOS_ENABLE_CUDA
     //=========================================================================
     // FFT NUFFTransform Constructors
@@ -953,6 +954,7 @@ namespace ippl {
         ier_m = nufft_m.destroy(plan_m);
 
     }
+#endif
 #endif
 }
 

@@ -30,7 +30,9 @@
 
 #include <heffte_fft3d.h>
 #include <heffte_fft3d_r2c.h>
-#include <cufinufft.h>
+#ifdef ENABLE_NUFFT
+    #include <cufinufft.h>
+#endif
 #include <array>
 #include <memory>
 #include <functional>
@@ -69,11 +71,13 @@ namespace ippl {
        Tag classes for Cosine transforms
     */
     class CosTransform {};
+#ifdef ENABLE_NUFFT
 #ifdef KOKKOS_ENABLE_CUDA
     /**
        Tag classes for Non-uniform type of Fourier transforms
     */
     class NUFFTransform {};
+#endif
 #endif
 
     enum FFTComm {
@@ -123,6 +127,7 @@ namespace ippl {
 #endif
 #endif
 
+#ifdef ENABLE_NUFFT
 #ifdef KOKKOS_ENABLE_CUDA
         template <class T>
         struct CufinufftType {};
@@ -152,6 +157,7 @@ namespace ippl {
             using complexType = cuDoubleComplex;
             using plan_t      = cufinufft_plan;
         };
+#endif
 #endif
     }
 
@@ -338,6 +344,7 @@ namespace ippl {
     };
 
 
+#ifdef ENABLE_NUFFT
 #ifdef KOKKOS_ENABLE_CUDA
     /**
        Non-uniform FFT class
@@ -387,6 +394,7 @@ namespace ippl {
 
 
 }
+#endif
 #endif
 #include "FFT/FFT.hpp"
 #endif // IPPL_FFT_FFT_H
