@@ -219,8 +219,21 @@ namespace ippl {
             return FunctorWrapper<Type, Functor, typename Coords<Dim>::type, Acc>{f};
         }
 
+        template <unsigned Dim, unsigned Current = 0, typename View, typename... Args>
+        static constexpr void printLoop(const View& view, std::ostream& out, Args&&... args) {
+            for (size_t i = 0; i < view.extent(Dim - Current - 1); ++i) {
+                if constexpr (Dim - 1 == Current) {
+                    out << view(i, args...) << " ";
+                } else {
+                    printLoop<Dim, Current + 1>(view, out, i, args...);
+                }
+            }
+            if (Current + 1 >= 2 || Current == 0)
+                out << std::endl;
+        }
+
         /*!
-         * Empty function for general write.
+         * Writes a view to an output stream
          * @tparam T view data type
          * @tparam Dim view dimension
          * @tparam Properties further template parameters of Kokkos
@@ -230,59 +243,12 @@ namespace ippl {
          */
         template <typename T, unsigned Dim, class... Properties>
         void write(const typename ViewType<T, Dim, Properties...>::view_type& view,
-                   std::ostream& out = std::cout);
-
-        /*!
-         * Specialized write function for one-dimensional views.
-         */
-        template <typename T, class... Properties>
-        void write(const typename ViewType<T, 1, Properties...>::view_type& view,
                    std::ostream& out = std::cout) {
-            using view_type = typename ViewType<T, 1, Properties...>::view_type;
+            using view_type = typename ViewType<T, Dim, Properties...>::view_type;
             typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
             Kokkos::deep_copy(hview, view);
-            for (std::size_t i = 0; i < hview.extent(0); ++i) {
-                out << hview(i) << " ";
-            }
-            out << std::endl;
-        }
 
-        /*!
-         * Specialized write function for two-dimensional views.
-         */
-        template <typename T, class... Properties>
-        void write(const typename ViewType<T, 2, Properties...>::view_type& view,
-                   std::ostream& out = std::cout) {
-            using view_type = typename ViewType<T, 2, Properties...>::view_type;
-            typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
-            Kokkos::deep_copy(hview, view);
-            for (std::size_t j = 0; j < hview.extent(1); ++j) {
-                for (std::size_t i = 0; i < hview.extent(0); ++i) {
-                    out << hview(i, j) << " ";
-                }
-                out << std::endl;
-            }
-        }
-
-        /*!
-         * Specialized write function for three-dimensional views.
-         */
-        template <typename T, class... Properties>
-        void write(const typename ViewType<T, 3, Properties...>::view_type& view,
-                   std::ostream& out = std::cout) {
-            using view_type = typename ViewType<T, 3, Properties...>::view_type;
-            typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
-            Kokkos::deep_copy(hview, view);
-            for (std::size_t k = 0; k < hview.extent(2); ++k) {
-                for (std::size_t j = 0; j < hview.extent(1); ++j) {
-                    for (std::size_t i = 0; i < hview.extent(0); ++i) {
-                        out << hview(i, j, k) << " ";
-                    }
-                    out << std::endl;
-                }
-                if (k < view.extent(2) - 1)
-                    out << std::endl;
-            }
+            printLoop<Dim>(hview, out);
         }
     }  // namespace detail
 }  // namespace ippl
