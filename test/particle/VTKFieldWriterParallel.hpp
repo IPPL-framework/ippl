@@ -291,6 +291,52 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
 }
                         }
 
+        template<typename ParticleType>
+                        void writeAvgPotential(const ParticleType & p,int iteration) {
+        if(Ippl::myNode()==0) {
+                                std::ofstream csvout;
+                                csvout.precision(10);
+                                csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+                                std::stringstream fname;
+                                fname << "data/AvgPotential";
+                                fname << ".csv";
+
+                                // open a new data file for this iteration
+                                // and start with header
+                                csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+                                if (iteration==0){
+                                        csvout << "it,avgPotential" << std::endl;
+                                }
+                                csvout << iteration << "," << p->avgPot << std::endl;
+                                // close the output file for this iteration:
+                                csvout.close();
+}
+                        }
+
+        template<typename ParticleType>
+                        void writeAvgEfield(const ParticleType & p,int iteration) {
+        if(Ippl::myNode()==0) {
+                                std::ofstream csvout;
+                                csvout.precision(10);
+                                csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+                                std::stringstream fname;
+                                fname << "data/AvgEfield";
+                                fname << ".csv";
+
+                                // open a new data file for this iteration
+                                // and start with header
+                                csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
+                                if (iteration==0){
+                                        csvout << "it,avgEfield_x,avgEfield_y,avgEfield_z" << std::endl;
+                                }
+                                csvout << iteration << "," << p->currAvgEF[0] << "," << p->currAvgEF[1] << "," << p->currAvgEF[2] << std::endl;
+                                // close the output file for this iteration:
+                                csvout.close();
+}
+                        }
+
 
                 template<typename ParticleType>
                         void writezcoordCSV( const ParticleType & p) {

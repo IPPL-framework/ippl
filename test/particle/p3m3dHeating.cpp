@@ -353,8 +353,19 @@ public:
         AmplitudeEFz=max(sqrt(dot(eg_m,eg_m)));
     }
 
-    void computeAvgSpaceChargeForces() {
+    double computeAvgSpaceChargePotential() {
+        Inform m("computeAvgSpaceChargePotential ");
+        const double mesh_volume = hr_m[0]*nr_m[0]*
+                                   hr_m[1]*nr_m[1]*
+                                   hr_m[2]*nr_m[2];
+        const double cell_volume = this->getMesh().get_volume();
+        return sum(phi_m) * cell_volume / mesh_volume;
+    }
+
+    Vektor<double,Dim> computeAvgSpaceChargeForces() {
         Inform m("computeAvgSpaceChargeForces ");
+        double globSumEF[Dim];
+        Vektor<double,Dim> resultVektor;
 
         const double N =  static_cast<double>(this->getTotalNum());
         double locAvgEF[Dim]={};
@@ -370,14 +381,15 @@ public:
 
         m << "globSumEF = " << globSumEF[0] << "\t" << globSumEF[1] << "\t" << globSumEF[2] << endl;
 
-        avgEF[0]=globSumEF[0]/N;
-        avgEF[1]=globSumEF[1]/N;
-        avgEF[2]=globSumEF[2]/N;
+        resultVektor[0]=globSumEF[0]/N;
+        resultVektor[1]=globSumEF[1]/N;
+        resultVektor[2]=globSumEF[2]/N;
 
+        return resultVektor;
     }
 
     void applyConstantFocusing(double f,double beam_radius) {
-        double focusingForce=sqrt(dot(avgEF,avgEF));
+        double focusingForce=sqrt(dot(initialAvgEF,initialAvgEF));
         for (unsigned i=0; i<this->getLocalNum(); ++i) {
             EF[i]+=this->R[i]/beam_radius*f*focusingForce;
         }
@@ -561,8 +573,9 @@ public:
     Vector_t rvrms_m;
 
 
-    Vektor<double,Dim> avgEF;
-    double globSumEF[Dim];
+    double avgPot;
+    Vektor<double,Dim> initialAvgEF;
+    Vektor<double,Dim> currAvgEF;
 
 };
 
@@ -709,10 +722,14 @@ int main(int argc, char *argv[]){
         //P->compute_temperature();
         // calculate initial space charge forces
         P->calculateGridForces(interaction_radius,alpha,0,0,0);
+        P->avgPot = P->computeAvgSpaceChargePotential();
+        writeAvgPotential(P,0);
         P->calculatePairForces(interaction_radius,eps,alpha);
 
         //avg space charge forces for constant focusing
-        P->computeAvgSpaceChargeForces();
+        // Kept the same throughout the simulation
+        P->initialAvgEF = P->computeAvgSpaceChargeForces();
+        writeAvgEfield(P,0);
 
         //dumpVTKVector(P->eg_m, P,0,"EFieldAfterPMandPP");
 
@@ -757,6 +774,9 @@ int main(int argc, char *argv[]){
             IpplTimings::startTimer(gridTimer);
             P->calculateGridForces(interaction_radius,alpha,0,it+1,0);
             IpplTimings::stopTimer(gridTimer);
+            
+            P->avgPot = P->computeAvgSpaceChargePotential();
+            writeAvgPotential(P,it+1);
 
             IpplTimings::startTimer(particleTimer);
             P->calculatePairForces(interaction_radius,eps,alpha);
@@ -765,9 +785,8 @@ int main(int argc, char *argv[]){
             //P->update();
 
             //second part of leapfrog: advance velocitites
-            //P->computeAvgSpaceChargeForces();
-            //if (Ippl::myNode()==0)
-            //std::cout <<"avg E-Field = " << P->avgEF << std::endl;
+            P->currAvgEF = P->computeAvgSpaceChargeForces();
+            writeAvgEfield(P,it+1);
 
             P->applyConstantFocusing(focusingForce,beam_radius);
 
