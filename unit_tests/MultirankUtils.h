@@ -77,7 +77,8 @@ protected:
     template <template <typename> class Pointer, template <unsigned Dim> class Type>
     using PtrCollection = std::tuple<Pointer<Type<Dims>>...>;
 
-    constexpr static unsigned MaxDim = std::max({Dims...});
+    constexpr static unsigned MaxDim   = std::max({Dims...});
+    constexpr static unsigned DimCount = sizeof...(Dims);
 
     constexpr static unsigned dimToIndex(unsigned dim) {
         constexpr std::array<unsigned, sizeof...(Dims)> dims = {Dims...};

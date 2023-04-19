@@ -30,16 +30,18 @@ public:
     template <unsigned Dim>
     using vfield_type = ippl::BareField<ippl::Vector<double, Dim>, Dim>;
 
-    BareFieldTest()
-        : nPoints(8) {
+    BareFieldTest() {
+        for (unsigned d = 0; d < DimCount; d++)
+            nPoints[d] = 1 << (DimCount - 1 - d);
         setup(this);
     }
 
     template <size_t Idx, unsigned Dim>
     void setupDim() {
-        ippl::Index I(nPoints);
         std::array<ippl::Index, Dim> indices;
-        indices.fill(I);
+        for (unsigned d = 0; d < Dim; d++) {
+            indices[d] = ippl::Index(nPoints[d]);
+        }
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(indices);
 
         ippl::e_dim_tag domDec[Dim];
@@ -57,7 +59,7 @@ public:
 
     PtrCollection<std::shared_ptr, field_type> fields;
     PtrCollection<std::shared_ptr, vfield_type> vfields;
-    size_t nPoints;
+    size_t nPoints[DimCount];
 };
 
 template <unsigned Dim>
@@ -75,12 +77,16 @@ struct FieldVal {
 };
 
 TEST_F(BareFieldTest, Sum) {
-    double val = 1.0;
+    double val                = 1.0;
+    double expected[DimCount] = {val * nPoints[0]};
+    for (unsigned d = 1; d < DimCount; d++) {
+        expected[d] = expected[d - 1] * nPoints[d];
+    }
 
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
         *field     = val;
         double sum = field->sum();
-        ASSERT_DOUBLE_EQ(val * std::pow(nPoints, Dim), sum);
+        ASSERT_DOUBLE_EQ(expected[dimToIndex(Dim)], sum);
     };
 
     apply(check, fields);
@@ -103,6 +109,10 @@ TEST_F(BareFieldTest, Min) {
 }
 
 TEST_F(BareFieldTest, Max) {
+    double expected[DimCount] = {nPoints[0] - 1.};
+    for (unsigned d = 1; d < DimCount; d++) {
+        expected[d] = expected[d - 1] + nPoints[d];
+    }
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
         const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
         auto view                     = field->getView();
@@ -110,19 +120,22 @@ TEST_F(BareFieldTest, Max) {
         Kokkos::parallel_for("Set field", field->getRangePolicy(), FieldVal<Dim>{view, lDom});
         Kokkos::fence();
 
-        double max      = field->max();
-        double expected = -1. + nPoints * Dim;
-        ASSERT_DOUBLE_EQ(max, expected);
+        double max = field->max();
+        ASSERT_DOUBLE_EQ(max, expected[dimToIndex(Dim)]);
     };
 
     apply(check, fields);
 }
 
 TEST_F(BareFieldTest, Prod) {
+    double sizes[DimCount] = {(double)nPoints[0]};
+    for (unsigned d = 1; d < DimCount; d++) {
+        sizes[d] = sizes[d - 1] * nPoints[d];
+    }
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
         *field     = 2.;
         double val = field->prod();
-        ASSERT_DOUBLE_EQ(val, pow(2, pow(nPoints, Dim)));
+        ASSERT_DOUBLE_EQ(val, pow(2, sizes[dimToIndex(Dim)]));
     };
 
     apply(check, fields);
