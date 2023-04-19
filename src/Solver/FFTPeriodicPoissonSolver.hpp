@@ -44,8 +44,8 @@ namespace ippl {
 
         layoutComplex_mp = std::make_shared<Layout_t>(domainComplex, decomp);
 
-        Vector<double, 3> hComplex      = {1.0, 1.0, 1.0};
-        Vector<double, 3> originComplex = {0.0, 0.0, 0.0};
+        Vector<mesh_type, 3> hComplex      = {1.0, 1.0, 1.0};
+        Vector<mesh_type, 3> originComplex = {0.0, 0.0, 0.0};
         Mesh meshComplex(domainComplex, hComplex, originComplex);
 
         fieldComplex_m.initialize(meshComplex, *layoutComplex_mp);
@@ -64,7 +64,7 @@ namespace ippl {
         const int nghost   = fieldComplex_m.getNghost();
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
 
-        double pi                 = std::acos(-1.0);
+        mesh_type pi                 = std::acos(-1.0);
         const Mesh& mesh          = this->rhs_mp->get_mesh();
         const auto& lDomComplex   = layoutComplex_mp->getLocalNDIndex();
         using vector_type         = typename Mesh::vector_type;
@@ -97,12 +97,12 @@ namespace ippl {
                         Vector_t kVec;
 
                         for (size_t d = 0; d < Dim; ++d) {
-                            const double Len = rmax[d] - origin[d];
+                            const mesh_type Len = rmax[d] - origin[d];
                             bool shift       = (iVec[d] > (N[d] / 2));
                             kVec[d]          = 2 * pi / Len * (iVec[d] - shift * N[d]);
                         }
 
-                        double Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
+                        mesh_type Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
 
                         // It would be great if we can remove this conditional
                         if (Dr != 0.0)
@@ -119,7 +119,7 @@ namespace ippl {
                 // Compute gradient in Fourier space and then
                 // take inverse FFT.
 
-                Kokkos::complex<double> imag = {0.0, 1.0};
+                Complex_t imag = {0.0, 1.0};
                 auto tempview                = tempFieldComplex_m.getView();
                 auto viewRhs                 = this->rhs_mp->getView();
                 auto viewLhs                 = this->lhs_mp->getView();
@@ -140,13 +140,13 @@ namespace ippl {
                             Vector_t kVec;
 
                             for (size_t d = 0; d < Dim; ++d) {
-                                const double Len = rmax[d] - origin[d];
+                                const mesh_type Len = rmax[d] - origin[d];
                                 bool shift       = (iVec[d] > (N[d] / 2));
                                 bool notMid      = (iVec[d] != (N[d] / 2));
                                 kVec[d]          = notMid * 2 * pi / Len * (iVec[d] - shift * N[d]);
                             }
 
-                            double Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
+                            mesh_type Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
 
                             tempview(i, j, k) = view(i, j, k);
 
