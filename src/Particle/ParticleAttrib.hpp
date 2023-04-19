@@ -141,8 +141,8 @@ namespace ippl {
                 // find nearest grid point
                 vector_type l           = (pp(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index  = l;
-                Vector<double, Dim> whi = l - index;
-                Vector<double, Dim> wlo = 1.0 - whi;
+                vector_type whi = l - index;
+                vector_type wlo = 1.0 - whi;
 
                 const size_t i = index[0] - lDom[0].first() + nghost;
                 const size_t j = index[1] - lDom[1].first() + nghost;
@@ -198,8 +198,8 @@ namespace ippl {
                 // find nearest grid point
                 vector_type l           = (pp(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index  = l;
-                Vector<double, Dim> whi = l - index;
-                Vector<double, Dim> wlo = 1.0 - whi;
+                vector_type whi = l - index;
+                vector_type wlo = 1.0 - whi;
 
                 const size_t i = index[0] - lDom[0].first() + nghost;
                 const size_t j = index[1] - lDom[1].first() + nghost;

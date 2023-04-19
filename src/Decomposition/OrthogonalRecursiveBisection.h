@@ -33,9 +33,10 @@
 namespace ippl {
     /*
      * @class OrthogonalRecursiveBisection
-     * @tparam T
+     * @tparam Tf type of field 
      * @tparam Dim dimension
      * @tparam M mesh
+     * @tparam Tp type of particle position. If not specified, it will be equal to the field's type
      */
 
     template<class Tf, unsigned Dim, class Mesh, class Centering, class Tp=Tf>
