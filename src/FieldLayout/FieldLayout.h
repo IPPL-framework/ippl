@@ -131,7 +131,7 @@ namespace ippl {
         struct bound_type {
             // lower bounds (ordering: x, y, z, ...)
             std::array<long, Dim> lo;
-            // upper bounds (ordering x, y, z, ...)
+            // upper bounds (ordering: x, y, z, ...)
             std::array<long, Dim> hi;
 
             /*!
