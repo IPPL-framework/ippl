@@ -102,6 +102,18 @@ protected:
         setup_impl(t, std::make_index_sequence<sizeof...(Dims)>{});
     }
 
+    /*!
+     * Computes axis lengths for heterogeneous mesh dimensions
+     * @param nr Array in which to store the axis lengths (must be of length DimCount or greater)
+     */
+    void computeGridSizes(size_t nr[]) {
+        for (unsigned d = 0; d < DimCount; d++)
+            if (DimCount > 1 + d)
+                nr[d] = 1 << (DimCount - 1 - d);
+            else
+                nr[d] = 2;
+    }
+
 public:
     /*!
      * Runs a function with some arguments

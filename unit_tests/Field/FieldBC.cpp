@@ -39,26 +39,29 @@ public:
     template <unsigned Dim>
     using bc_type = ippl::BConds<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
 
-    FieldBCTest()
-        : nPoints(8) {
+    FieldBCTest() {
+        computeGridSizes(nPoints);
+        for (unsigned d = 0; d < DimCount; d++) {
+            domain[d] = nPoints[d] / 10;
+        }
         setup(this);
     }
 
     template <unsigned Idx, unsigned Dim>
     void setupDim() {
-        ippl::Index I(nPoints);
-        std::array<ippl::Index, Dim> args;
-        args.fill(I);
-        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
+        std::array<ippl::Index, Dim> indices;
+        for (unsigned d = 0; d < Dim; d++) {
+            indices[d] = ippl::Index(nPoints[d]);
+        }
+        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(indices);
 
-        double dx = 1.0 / double(nPoints);
         ippl::Vector<double, Dim> hx;
         ippl::Vector<double, Dim> origin;
 
         ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < Dim; d++) {
             domDec[d] = ippl::PARALLEL;
-            hx[d]     = dx;
+            hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
@@ -129,7 +132,8 @@ public:
     using mirror_type = typename field_type<Dim>::view_type::host_mirror_type;
     Collection<mirror_type> HostFs;
 
-    size_t nPoints;
+    size_t nPoints[DimCount];
+    double domain[DimCount];
 };
 
 TEST_F(FieldBCTest, PeriodicBC) {

@@ -36,26 +36,29 @@ public:
     template <unsigned Dim>
     using layout_type = ippl::FieldLayout<Dim>;
 
-    HaloTest()
-        : nPoints(16) {
+    HaloTest() {
+        computeGridSizes(nPoints);
+        for (unsigned d = 0; d < DimCount; d++) {
+            domain[d] = nPoints[d] / 10;
+        }
         setup(this);
     }
 
     template <unsigned Idx, unsigned Dim>
     void setupDim() {
-        ippl::Index I(nPoints);
-        std::array<ippl::Index, Dim> args;
-        args.fill(I);
-        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
+        std::array<ippl::Index, Dim> indices;
+        for (unsigned d = 0; d < Dim; d++) {
+            indices[d] = ippl::Index(nPoints[d]);
+        }
+        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(indices);
 
-        double dx = 1.0 / double(nPoints);
         ippl::Vector<double, Dim> hx;
         ippl::Vector<double, Dim> origin;
 
         ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned d = 0; d < Dim; d++) {
             domDec[d] = ippl::PARALLEL;
-            hx[d]     = dx;
+            hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
@@ -69,7 +72,8 @@ public:
     Collection<mesh_type> meshes;
     Collection<layout_type> layouts;
     PtrCollection<std::shared_ptr, field_type> fields;
-    size_t nPoints;
+    size_t nPoints[DimCount];
+    double domain[DimCount];
 };
 
 TEST_F(HaloTest, CheckNeighbors) {

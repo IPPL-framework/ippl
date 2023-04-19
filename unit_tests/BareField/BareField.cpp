@@ -31,8 +31,7 @@ public:
     using vfield_type = ippl::BareField<ippl::Vector<double, Dim>, Dim>;
 
     BareFieldTest() {
-        for (unsigned d = 0; d < DimCount; d++)
-            nPoints[d] = 1 << (DimCount - 1 - d);
+        computeGridSizes(nPoints);
         setup(this);
     }
 
