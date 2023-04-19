@@ -55,6 +55,10 @@ namespace ippl {
 
         // type for communication buffers
         using buffer_type = Communicate::buffer_type;
+	
+	//types of mesh and mesh spacing
+	using vector_type = typename Mesh::vector_type;
+	using mesh_type = typename Mesh::value_type;
 
         // constructor and destructor
         FFTPoissonSolver(rhs_type& rhs, ParameterList& fftparams, std::string alg);
@@ -126,7 +130,7 @@ namespace ippl {
         NDIndex<Dim> domainComplex_m;  // field for the complex values of the RC transformation
 
         // mesh spacing and mesh size
-        Vector_t hr_m;
+        vector_type hr_m;
         Vector<int, Dim> nr_m;
 
         // string specifying algorithm: Hockney or Vico-Greengard
