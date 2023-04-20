@@ -68,26 +68,27 @@ public:
 
     ORBTest()
         // Original configuration 256^3 particles, 512^3 grid.
-        : nParticles(128)
-        , nPoints(16) {
+        : nParticles(128) {
+        computeGridSizes(nPoints);
+        for (unsigned d = 0; d < MaxDim; d++)
+            domain[d] = nPoints[d] / 32.;
         setup(this);
     }
 
     template <unsigned Idx, unsigned Dim>
     void setupDim() {
-        ippl::Index I(nPoints);
         std::array<ippl::Index, Dim> args;
-        args.fill(I);
+        for (unsigned d = 0; d < Dim; d++)
+            args[d] = ippl::Index(nPoints[d]);
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
-        double dx = 1.0 / double(nPoints);
         ippl::Vector<double, Dim> hx;
         ippl::Vector<double, Dim> origin;
 
         ippl::e_dim_tag allParallel[Dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < Dim; d++) {
             allParallel[d] = ippl::PARALLEL;
-            hx[d]          = dx;
+            hx[d]          = domain[d] / nPoints[d];
             origin[d]      = 0;
         }
 
@@ -122,7 +123,7 @@ public:
         auto R_host = bunch->R.getHostMirror();
         for (size_t i = 0; i < nloc; ++i) {
             for (unsigned d = 0; d < Dim; d++) {
-                R_host(i)[d] = unif(eng);
+                R_host(i)[d] = unif(eng) * domain[d];
             }
         }
 
@@ -156,7 +157,8 @@ public:
     PtrCollection<std::shared_ptr, field_type> fields;
     PtrCollection<std::shared_ptr, bunch_type> bunches;
     size_t nParticles;
-    size_t nPoints;
+    size_t nPoints[MaxDim];
+    double domain[MaxDim];
 
     Collection<flayout_type> layouts;
     Collection<mesh_type> meshes;

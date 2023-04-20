@@ -57,26 +57,27 @@ public:
     using bunch_type = Bunch<playout_type<Dim>>;
 
     PICTest()
-        : nParticles(32)
-        , nPoints(16) {
+        : nParticles(32) {
+        computeGridSizes(nPoints);
+        for (unsigned d = 0; d < MaxDim; d++)
+            domain[d] = nPoints[d] / 16.;
         setup(this);
     }
 
     template <unsigned Idx, unsigned Dim>
     void setupDim() {
-        ippl::Index I(nPoints);
         std::array<ippl::Index, Dim> args;
-        args.fill(I);
+        for (unsigned d = 0; d < Dim; d++)
+            args[d] = ippl::Index(nPoints[d]);
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
-        double dx = 1.0 / double(nPoints);
         ippl::Vector<double, Dim> hx;
         ippl::Vector<double, Dim> origin;
 
         ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < Dim; d++) {
             domDec[d] = ippl::PARALLEL;
-            hx[d]     = dx;
+            hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
@@ -103,11 +104,11 @@ public:
         std::mt19937_64 eng;
         eng.seed(42);
         eng.discard(nloc * Ippl::Comm->rank());
-        std::uniform_real_distribution<double> unif(hx[0] / 2, 1 - (hx[0] / 2));
 
         auto R_host = bunch->R.getHostMirror();
         for (size_t i = 0; i < nloc; ++i) {
             for (unsigned d = 0; d < Dim; d++) {
+                std::uniform_real_distribution<double> unif(hx[0] / 2, domain[d] - (hx[0] / 2));
                 R_host(i)[d] = unif(eng);
             }
         }
@@ -118,7 +119,8 @@ public:
     PtrCollection<std::shared_ptr, field_type> fields;
     PtrCollection<std::shared_ptr, bunch_type> bunches;
     size_t nParticles;
-    size_t nPoints;
+    size_t nPoints[MaxDim];
+    double domain[MaxDim];
     Collection<playout_type> playouts;
 
 private:
