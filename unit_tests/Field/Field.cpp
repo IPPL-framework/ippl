@@ -40,26 +40,29 @@ public:
     template <unsigned Dim>
     using layout_type = ippl::FieldLayout<Dim>;
 
-    FieldTest()
-        : nPoints(8) {
+    FieldTest() {
+        computeGridSizes(nPoints);
+        for (unsigned d = 0; d < DimCount; d++) {
+            domain[d] = nPoints[d] / 32.;
+        }
         setup(this);
     }
 
     template <unsigned Idx, unsigned Dim>
     void setupDim() {
-        ippl::Index I(nPoints);
-        std::array<ippl::Index, Dim> args;
-        args.fill(I);
-        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
+        std::array<ippl::Index, Dim> indices;
+        for (unsigned d = 0; d < Dim; d++) {
+            indices[d] = ippl::Index(nPoints[d]);
+        }
+        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(indices);
 
-        double dx = 1.0 / double(nPoints);
         ippl::Vector<double, Dim> hx;
         ippl::Vector<double, Dim> origin;
 
         ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned d = 0; d < Dim; d++) {
             domDec[d] = ippl::PARALLEL;
-            hx[d]     = dx;
+            hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
@@ -74,7 +77,8 @@ public:
     PtrCollection<std::shared_ptr, field_type> fields;
     PtrCollection<std::shared_ptr, mesh_type> meshes;
     PtrCollection<std::shared_ptr, layout_type> layouts;
-    size_t nPoints;
+    size_t nPoints[DimCount];
+    double domain[DimCount];
 };
 
 template <unsigned Dim>
@@ -83,11 +87,11 @@ struct VFieldVal {
     const vfield_view_type vview;
     const ippl::NDIndex<Dim> lDom;
 
-    double dx;
+    ippl::Vector<double, Dim> dx;
     int shift;
 
-    VFieldVal(const vfield_view_type& view, const ippl::NDIndex<Dim>& lDom, double hx = 0,
-              int shift = 0)
+    VFieldVal(const vfield_view_type& view, const ippl::NDIndex<Dim>& lDom,
+              ippl::Vector<double, Dim> hx, int shift = 0)
         : vview(view)
         , lDom(lDom)
         , dx(hx)
@@ -108,17 +112,7 @@ struct FieldVal {
     const ippl::NDIndex<Dim> lDom;
 
     ippl::Vector<double, Dim> hx = 0;
-    double dx                    = 0;
     int shift;
-
-    ~FieldVal() {}
-
-    FieldVal(const field_view_type& view, const ippl::NDIndex<Dim>& lDom, double hx = 0,
-             int shift = 0)
-        : view(view)
-        , lDom(lDom)
-        , dx(hx)
-        , shift(shift) {}
 
     FieldVal(const field_view_type& view, const ippl::NDIndex<Dim>& lDom,
              ippl::Vector<double, Dim> hx, int shift = 0)
@@ -145,10 +139,10 @@ struct FieldVal {
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Integral&, const Idx... args) const {
         ippl::Vector<double, Dim> coords = {(double)args...};
-        coords                           = (0.5 + coords + lDom.first() - shift) * dx;
+        coords                           = (0.5 + coords + lDom.first() - shift) * hx;
         view(args...)                    = 1;
         for (const auto& x : coords)
-            view(args...) *= sin(2 * pi * x);
+            view(args...) *= sin(200 * pi * x);
     }
 
     template <typename... Idx>
@@ -162,61 +156,77 @@ struct FieldVal {
 };
 
 TEST_F(FieldTest, Sum) {
-    double val = 1.0;
+    double val                = 1.0;
+    double expected[DimCount] = {val * nPoints[0]};
+    for (unsigned d = 1; d < DimCount; d++) {
+        expected[d] = expected[d - 1] * nPoints[d];
+    }
 
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
         *field = val;
 
         double sum = field->sum();
 
-        ASSERT_DOUBLE_EQ(val * std::pow(nPoints, Dim), sum);
+        ASSERT_DOUBLE_EQ(expected[dimToIndex(Dim)], sum);
     };
 
     apply(check, fields);
 }
 
 TEST_F(FieldTest, Norm1) {
-    double val = -1.5;
+    double val                = -1.5;
+    double expected[DimCount] = {-val * nPoints[0]};
+    for (unsigned d = 1; d < DimCount; d++) {
+        expected[d] = expected[d - 1] * nPoints[d];
+    }
 
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
         *field = val;
 
         double norm1 = ippl::norm(*field, 1);
 
-        ASSERT_DOUBLE_EQ(-val * std::pow(nPoints, Dim), norm1);
+        ASSERT_DOUBLE_EQ(expected[dimToIndex(Dim)], norm1);
     };
 
     apply(check, fields);
 }
 
 TEST_F(FieldTest, Norm2) {
-    double val = 1.5;
+    double val               = 1.5;
+    double squared[DimCount] = {val * val * nPoints[0]};
+    for (unsigned d = 1; d < DimCount; d++) {
+        squared[d] = squared[d - 1] * nPoints[d];
+    }
 
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
         *field = val;
 
         double norm2 = ippl::norm(*field);
 
-        ASSERT_DOUBLE_EQ(std::sqrt(val * val * std::pow(nPoints, Dim)), norm2);
+        ASSERT_DOUBLE_EQ(std::sqrt(squared[dimToIndex(Dim)]), norm2);
     };
 
     apply(check, fields);
 }
 
 TEST_F(FieldTest, NormInf) {
+    double expected[DimCount] = {nPoints[0] - 1.};
+    for (unsigned d = 1; d < DimCount; d++) {
+        expected[d] = expected[d - 1] + nPoints[d];
+    }
+
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
         const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
 
-        auto view = field->getView();
-        FieldVal<Dim> fv(view, lDom);
+        auto view     = field->getView();
+        const auto dx = field->get_mesh().getMeshSpacing();
+        FieldVal<Dim> fv(view, lDom, dx);
         Kokkos::parallel_for("Set field",
                              field->template getRangePolicy<typename FieldVal<Dim>::Norm>(), fv);
 
         double normInf = ippl::norm(*field, 0);
 
-        double val = -1.0 + Dim * nPoints;
-
-        ASSERT_DOUBLE_EQ(val, normInf);
+        ASSERT_DOUBLE_EQ(expected[dimToIndex(Dim)], normInf);
     };
 
     apply(check, fields);
@@ -227,14 +237,14 @@ TEST_F(FieldTest, VolumeIntegral) {
         const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
         const int shift               = field->getNghost();
 
-        const double dx = 1. / nPoints;
-        auto view       = field->getView();
+        const auto dx = field->get_mesh().getMeshSpacing();
+        auto view     = field->getView();
 
         FieldVal<Dim> fv(view, lDom, dx, shift);
         Kokkos::parallel_for(
             "Set field", field->template getRangePolicy<typename FieldVal<Dim>::Integral>(), fv);
 
-        ASSERT_NEAR(field->getVolumeIntegral(), 0., 1e-15);
+        ASSERT_NEAR(field->getVolumeIntegral(), 0., 5e-15);
     };
 
     apply(check, fields);
@@ -273,7 +283,6 @@ TEST_F(FieldTest, Grad) {
 }
 
 TEST_F(FieldTest, Div) {
-    auto dx    = 1. / nPoints;
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
         vfield_type<Dim> vfield(field->get_mesh(), field->getLayout());
         auto view        = vfield.getView();
@@ -281,6 +290,7 @@ TEST_F(FieldTest, Div) {
 
         const ippl::NDIndex<Dim> lDom = vfield.getLayout().getLocalNDIndex();
 
+        const auto dx = vfield.get_mesh().getMeshSpacing();
         VFieldVal<Dim> fv(view, lDom, dx, vshift);
         Kokkos::parallel_for("Set field", vfield.getRangePolicy(vshift), fv);
 
@@ -300,9 +310,10 @@ TEST_F(FieldTest, Div) {
 
 TEST_F(FieldTest, Curl) {
     // Restrict to 3D case for now
-    auto mesh              = std::get<2>(meshes);
-    auto layout            = std::get<2>(layouts);
     constexpr unsigned dim = 3;
+    constexpr unsigned Idx = dimToIndex(dim);
+    auto mesh              = std::get<Idx>(meshes);
+    auto layout            = std::get<Idx>(layouts);
 
     vfield_type<dim> vfield(*mesh, *layout);
     const int nghost = vfield.getNghost();
