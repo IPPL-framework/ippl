@@ -57,8 +57,9 @@ template <unsigned Dim = 3>
 using VField_t = Field<Vector_t<Dim>, Dim>;
 
 template <unsigned Dim = 3>
-using Solver_t =
-    ippl::FFTPeriodicPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+using Solver_t = std::conditional_t<
+    Dim == 1, ippl::ElectrostaticsCG<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>,
+    ippl::FFTPeriodicPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>;
 
 const double pi = std::acos(-1.0);
 
@@ -344,8 +345,27 @@ public:
         Inform m("solver ");
         if (stype_m == "FFT")
             initFFTSolver();
+        else if (stype_m == "CG")
+            initCGSolver();
         else
             m << "No solver matches the argument" << endl;
+    }
+
+    void initSolver(const ippl::ParameterList& sp) {
+        solver_mp = std::make_shared<Solver_t<Dim>>();
+
+        solver_mp->mergeParameters(sp);
+
+        solver_mp->setRhs(rho_m);
+
+        solver_mp->setLhs(E_m);
+    }
+
+    void initCGSolver() {
+        ippl::ParameterList sp;
+        sp.add("output_type", Solver_t<Dim>::GRAD);
+
+        initSolver(sp);
     }
 
     void initFFTSolver() {
@@ -358,13 +378,7 @@ public:
         sp.add("comm", ippl::p2p_pl);
         sp.add("r2c_direction", 0);
 
-        solver_mp = std::make_shared<Solver_t<Dim>>();
-
-        solver_mp->mergeParameters(sp);
-
-        solver_mp->setRhs(rho_m);
-
-        solver_mp->setLhs(E_m);
+        initSolver(sp);
     }
 
     void dumpData() {
