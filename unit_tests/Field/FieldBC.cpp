@@ -41,7 +41,7 @@ public:
 
     FieldBCTest() {
         computeGridSizes(nPoints);
-        for (unsigned d = 0; d < DimCount; d++) {
+        for (unsigned d = 0; d < MaxDim; d++) {
             domain[d] = nPoints[d] / 10;
         }
         setup(this);
@@ -132,8 +132,8 @@ public:
     using mirror_type = typename field_type<Dim>::view_type::host_mirror_type;
     Collection<mirror_type> HostFs;
 
-    size_t nPoints[DimCount];
-    double domain[DimCount];
+    size_t nPoints[MaxDim];
+    double domain[MaxDim];
 };
 
 TEST_F(FieldBCTest, PeriodicBC) {

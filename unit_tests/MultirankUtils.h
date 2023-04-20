@@ -77,8 +77,7 @@ protected:
     template <template <typename> class Pointer, template <unsigned Dim> class Type>
     using PtrCollection = std::tuple<Pointer<Type<Dims>>...>;
 
-    constexpr static unsigned MaxDim   = std::max({Dims...});
-    constexpr static unsigned DimCount = sizeof...(Dims);
+    constexpr static unsigned MaxDim = std::max({Dims...});
 
     constexpr static unsigned dimToIndex(unsigned dim) {
         constexpr std::array<unsigned, sizeof...(Dims)> dims = {Dims...};
@@ -104,12 +103,13 @@ protected:
 
     /*!
      * Computes axis lengths for heterogeneous mesh dimensions
-     * @param nr Array in which to store the axis lengths (must be of length DimCount or greater)
+     * @param nr Array in which to store the axis lengths (must be of length MaxDim or greater)
      */
     void computeGridSizes(size_t nr[]) {
-        for (unsigned d = 0; d < DimCount; d++)
-            if (DimCount > 1 + d)
-                nr[d] = 1 << (DimCount - 1 - d);
+        const unsigned max = std::max(6u, MaxDim);
+        for (unsigned d = 0; d < MaxDim; d++)
+            if (max > 1 + d)
+                nr[d] = 1 << (max - 1 - d);
             else
                 nr[d] = 2;
     }

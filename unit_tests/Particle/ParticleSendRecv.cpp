@@ -65,26 +65,27 @@ public:
     using bunch_type = Bunch<playout_type<Dim>>;
 
     ParticleSendRecv()
-        : nParticles(128)
-        , nPoints(16) {
+        : nParticles(128) {
+	computeGridSizes(nPoints);
+	for (unsigned d = 0; d < MaxDim; d++) {
+		domain[d] = nPoints[d] / 16.;
+	}
         setup(this);
     }
 
     template <unsigned Idx, unsigned Dim>
     void setupDim() {
-        ippl::Index I(nPoints);
         std::array<ippl::Index, Dim> args;
-        args.fill(I);
+	for (unsigned d = 0; d < Dim; d++) args[d] = ippl::Index(nPoints[d]);
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
-        double dx = 1.0 / double(nPoints);
         ippl::Vector<double, Dim> hx;
         ippl::Vector<double, Dim> origin;
 
         ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < Dim; d++) {
             domDec[d] = ippl::PARALLEL;
-            hx[d]     = dx;
+            hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
@@ -119,7 +120,7 @@ public:
         for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
             ippl::Vector<double, Dim> r;
             for (unsigned d = 0; d < Dim; d++)
-                r[d] = unif(eng);
+                r[d] = unif(eng) * domain[d];
             R_host(i) = r;
         }
 
@@ -151,7 +152,8 @@ public:
 
     PtrCollection<std::shared_ptr, bunch_type> bunches;
     unsigned int nParticles;
-    size_t nPoints;
+    size_t nPoints[MaxDim];
+    double domain[MaxDim];
     Collection<playout_type> playouts;
 
 private:

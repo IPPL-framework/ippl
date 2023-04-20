@@ -24,30 +24,44 @@
 
 class UniformCartesianTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
-    UniformCartesianTest() {}
+    UniformCartesianTest() { computeGridSizes(nPoints); }
+
+    template <unsigned Dim>
+    ippl::NDIndex<Dim> createMesh(ippl::Vector<double, Dim>& hx, ippl::Vector<double, Dim>& origin,
+                                  double& cellVol, double& meshVol) {
+        std::array<ippl::Index, Dim> args;
+        for (unsigned d = 0; d < Dim; d++)
+            args[d] = ippl::Index(nPoints[d]);
+        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
+
+        cellVol = 1;
+        meshVol = 1;
+        for (unsigned d = 0; d < Dim; d++) {
+            hx[d] = (d + 1.) / nPoints[d];
+            meshVol *= d + 1;
+            cellVol *= hx[d];
+            origin[d] = 0;
+        }
+
+        return owned;
+    }
+
+    size_t nPoints[MaxDim];
 };
 
 TEST_F(UniformCartesianTest, Constructor) {
     auto check = [&]<unsigned Dim>() {
-        int pt = 10;
-        ippl::Index I(pt);
-        std::array<ippl::Index, Dim> args;
-        args.fill(I);
-        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
-
-        double dx = 1.0 / double(pt);
         ippl::Vector<double, Dim> hx;
         ippl::Vector<double, Dim> origin;
-        for (unsigned d = 0; d < Dim; d++) {
-            hx[d]     = dx;
-            origin[d] = 0;
-        }
+        double cellVol, meshVol;
+
+        auto owned = createMesh(hx, origin, cellVol, meshVol);
         ippl::UniformCartesian<double, Dim> mesh(owned, hx, origin);
 
         double length = mesh.getCellVolume();
 
-        ASSERT_DOUBLE_EQ(length, pow(dx, Dim));
-        ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
+        ASSERT_DOUBLE_EQ(length, cellVol);
+        ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
     };
 
     apply(check);
@@ -55,27 +69,17 @@ TEST_F(UniformCartesianTest, Constructor) {
 
 TEST_F(UniformCartesianTest, Initialize) {
     auto check = [&]<unsigned Dim>() {
-        int pt = 10;
-        ippl::Index I(pt);
-        std::array<ippl::Index, Dim> args;
-        args.fill(I);
-        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
-
-        double dx = 1.0 / double(pt);
         ippl::Vector<double, Dim> hx;
         ippl::Vector<double, Dim> origin;
-        for (unsigned d = 0; d < Dim; d++) {
-            hx[d]     = dx;
-            origin[d] = 0;
-        }
+        double cellVol, meshVol;
+
+        auto owned = createMesh(hx, origin, cellVol, meshVol);
 
         ippl::UniformCartesian<double, Dim> mesh;
         mesh.initialize(owned, hx, origin);
 
-        double volume = mesh.getCellVolume();
-
-        ASSERT_DOUBLE_EQ(volume, pow(dx, Dim));
-        ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), 1.);
+        ASSERT_DOUBLE_EQ(mesh.getCellVolume(), cellVol);
+        ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
     };
 
     apply(check);

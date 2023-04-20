@@ -46,7 +46,13 @@ public:
     using FFT_type = ippl::FFT<Transform, Dim, double, mesh_type<Dim>,
                                typename mesh_type<Dim>::DefaultCentering>;
 
-    FFTTest() { setup(this); }
+    FFTTest() {
+        computeGridSizes(pt);
+        const double pi = acos(-1);
+        for (unsigned d = 0; d < MaxDim; d++)
+            len[d] = pt[d] * pi / 16;
+        setup(this);
+    }
 
     template <unsigned Idx, unsigned Dim>
     void setupDim() {
@@ -59,7 +65,7 @@ public:
         for (unsigned d = 0; d < Dim; d++) {
             domDec[d]  = ippl::PARALLEL;
             domains[d] = ippl::Index(pt[d]);
-            hx[d]      = 1. / pt[d];
+            hx[d]      = len[d] / pt[d];
             origin[d]  = 0;
         }
 
@@ -151,7 +157,8 @@ public:
     PtrCollection<std::shared_ptr, field_type_real> realFields;
     PtrCollection<std::shared_ptr, field_type_complex> compFields;
 
-    constexpr static std::array<int, MaxDim> pt = {32, 32, 32};
+    size_t pt[MaxDim];
+    double len[MaxDim];
 };
 
 TEST_F(FFTTest, Cos) {

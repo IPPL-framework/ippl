@@ -42,7 +42,7 @@ public:
 
     FieldTest() {
         computeGridSizes(nPoints);
-        for (unsigned d = 0; d < DimCount; d++) {
+        for (unsigned d = 0; d < MaxDim; d++) {
             domain[d] = nPoints[d] / 32.;
         }
         setup(this);
@@ -77,8 +77,8 @@ public:
     PtrCollection<std::shared_ptr, field_type> fields;
     PtrCollection<std::shared_ptr, mesh_type> meshes;
     PtrCollection<std::shared_ptr, layout_type> layouts;
-    size_t nPoints[DimCount];
-    double domain[DimCount];
+    size_t nPoints[MaxDim];
+    double domain[MaxDim];
 };
 
 template <unsigned Dim>
@@ -156,9 +156,9 @@ struct FieldVal {
 };
 
 TEST_F(FieldTest, Sum) {
-    double val                = 1.0;
-    double expected[DimCount] = {val * nPoints[0]};
-    for (unsigned d = 1; d < DimCount; d++) {
+    double val              = 1.0;
+    double expected[MaxDim] = {val * nPoints[0]};
+    for (unsigned d = 1; d < MaxDim; d++) {
         expected[d] = expected[d - 1] * nPoints[d];
     }
 
@@ -174,9 +174,9 @@ TEST_F(FieldTest, Sum) {
 }
 
 TEST_F(FieldTest, Norm1) {
-    double val                = -1.5;
-    double expected[DimCount] = {-val * nPoints[0]};
-    for (unsigned d = 1; d < DimCount; d++) {
+    double val              = -1.5;
+    double expected[MaxDim] = {-val * nPoints[0]};
+    for (unsigned d = 1; d < MaxDim; d++) {
         expected[d] = expected[d - 1] * nPoints[d];
     }
 
@@ -192,9 +192,9 @@ TEST_F(FieldTest, Norm1) {
 }
 
 TEST_F(FieldTest, Norm2) {
-    double val               = 1.5;
-    double squared[DimCount] = {val * val * nPoints[0]};
-    for (unsigned d = 1; d < DimCount; d++) {
+    double val             = 1.5;
+    double squared[MaxDim] = {val * val * nPoints[0]};
+    for (unsigned d = 1; d < MaxDim; d++) {
         squared[d] = squared[d - 1] * nPoints[d];
     }
 
@@ -210,8 +210,8 @@ TEST_F(FieldTest, Norm2) {
 }
 
 TEST_F(FieldTest, NormInf) {
-    double expected[DimCount] = {nPoints[0] - 1.};
-    for (unsigned d = 1; d < DimCount; d++) {
+    double expected[MaxDim] = {nPoints[0] - 1.};
+    for (unsigned d = 1; d < MaxDim; d++) {
         expected[d] = expected[d - 1] + nPoints[d];
     }
 

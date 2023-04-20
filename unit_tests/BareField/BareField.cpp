@@ -58,7 +58,7 @@ public:
 
     PtrCollection<std::shared_ptr, field_type> fields;
     PtrCollection<std::shared_ptr, vfield_type> vfields;
-    size_t nPoints[DimCount];
+    size_t nPoints[MaxDim];
 };
 
 template <unsigned Dim>
@@ -76,9 +76,9 @@ struct FieldVal {
 };
 
 TEST_F(BareFieldTest, Sum) {
-    double val                = 1.0;
-    double expected[DimCount] = {val * nPoints[0]};
-    for (unsigned d = 1; d < DimCount; d++) {
+    double val              = 1.0;
+    double expected[MaxDim] = {val * nPoints[0]};
+    for (unsigned d = 1; d < MaxDim; d++) {
         expected[d] = expected[d - 1] * nPoints[d];
     }
 
@@ -108,8 +108,8 @@ TEST_F(BareFieldTest, Min) {
 }
 
 TEST_F(BareFieldTest, Max) {
-    double expected[DimCount] = {nPoints[0] - 1.};
-    for (unsigned d = 1; d < DimCount; d++) {
+    double expected[MaxDim] = {nPoints[0] - 1.};
+    for (unsigned d = 1; d < MaxDim; d++) {
         expected[d] = expected[d - 1] + nPoints[d];
     }
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
@@ -127,8 +127,8 @@ TEST_F(BareFieldTest, Max) {
 }
 
 TEST_F(BareFieldTest, Prod) {
-    double sizes[DimCount] = {(double)nPoints[0]};
-    for (unsigned d = 1; d < DimCount; d++) {
+    double sizes[MaxDim] = {(double)nPoints[0]};
+    for (unsigned d = 1; d < MaxDim; d++) {
         sizes[d] = sizes[d - 1] * nPoints[d];
     }
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
