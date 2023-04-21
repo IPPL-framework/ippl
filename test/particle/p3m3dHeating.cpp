@@ -355,11 +355,12 @@ public:
 
     double computeAvgSpaceChargePotential() {
         Inform m("computeAvgSpaceChargePotential ");
-        const double mesh_volume = hr_m[0]*nr_m[0]*
-                                   hr_m[1]*nr_m[1]*
-                                   hr_m[2]*nr_m[2];
-        const double cell_volume = this->getMesh().get_volume();
-        return sum(phi_m) * cell_volume / mesh_volume;
+        //const double mesh_volume = hr_m[0]*nr_m[0]*
+                                   //hr_m[1]*nr_m[1]*
+                                   //hr_m[2]*nr_m[2];
+        //const double cell_volume = this->getMesh().get_volume();
+        //return sum(phi_m) * cell_volume / mesh_volume;
+        return sum(phi_m) / (nr_m[0] * nr_m[1] * nr_m[2]);
     }
 
     Vektor<double,Dim> computeAvgSpaceChargeForces() {
@@ -398,13 +399,13 @@ public:
 
     void calculatePairForces(double interaction_radius, double eps, double alpha);
 
-    void calculateGridForces(double /*interaction_radius*/, double alpha, double eps, int /*it*/=0, bool /*normalizeSphere*/=0) {
+    void calculateGridForces(double /*interaction_radius*/, double alpha, double eps, int it=0, bool /*normalizeSphere*/=0) {
         // (1) scatter charge to charge density grid and transform to fourier space
         //this->Q.scatter(this->rho_m, this->R, IntrplTSC_t());
         rho_m[domain_m]=0; //!!!!!! there has to be a better way than setting rho to 0 every time
         this->Q.scatter(this->rho_m, this->R, IntrplCIC_t());
         //this->Q.scatter(this->rho_m, this->R, IntrplNGP_t());
-        //dumpVTKScalar(rho_m,this,it,"RhoInterpol");
+        dumpVTKScalar(rho_m,this,it,"RhoInterpol");
 
         //rhocmpl_m[domain_m] = rho_m[domain_m];
         rhocmpl_m[domain_m] = rho_m[domain_m]/(hr_m[0]*hr_m[1]*hr_m[2]);
@@ -459,7 +460,8 @@ public:
 
         //take only the real part and store in phi_m (has periodic bc instead of interpolation bc)
         phi_m = real(rhocmpl_m)*hr_m[0]*hr_m[1]*hr_m[2];
-        //dumpVTKScalar( phi_m, this,it, "Phi_m") ;
+        std::cout << "Inside calculateGridForces (0): " << std::setprecision(16) <<phi_m[10][10][10] << std::endl;
+        dumpVTKScalar( phi_m, this, it, "Phi_m") ;
 
         //compute Electric field on the grid by -Grad(Phi) store in eg_m
         eg_m = -Grad1Ord(phi_m, eg_m);
@@ -468,6 +470,7 @@ public:
         EF.gather(eg_m, this->R,  IntrplCIC_t());
         //interpolate electrostatic potenital to the particle positions
         Phi.gather(phi_m, this->R, IntrplCIC_t());
+        std::cout << "Inside calculateGridForces (1): " << std::setprecision(16) << phi_m[10][10][10] << std::endl;
     }
 
 
@@ -721,6 +724,7 @@ int main(int argc, char *argv[]){
         msg << "Starting iterations ..." << endl;
         //P->compute_temperature();
         // calculate initial space charge forces
+        std::cout << "Phi after Initialization: " << std::setprecision(16) << P->phi_m[10][10][10] << std::endl;
         P->calculateGridForces(interaction_radius,alpha,0,0,0);
         P->avgPot = P->computeAvgSpaceChargePotential();
         writeAvgPotential(P,0);
@@ -774,6 +778,7 @@ int main(int argc, char *argv[]){
             IpplTimings::startTimer(gridTimer);
             P->calculateGridForces(interaction_radius,alpha,0,it+1,0);
             IpplTimings::stopTimer(gridTimer);
+            std::cout << "Phi in Loop: " << std::setprecision(16) << P->phi_m[10][10][10] << std::endl;
             
             P->avgPot = P->computeAvgSpaceChargePotential();
             writeAvgPotential(P,it+1);
@@ -810,6 +815,7 @@ int main(int argc, char *argv[]){
                 writeTemperature(P,it+1);
 
                 //dumpH5partVelocity(P,printid++);
+                dumpParticlesOPAL(P,it+1);
             }
 
             msg << "Finished iteration " << it << endl;
