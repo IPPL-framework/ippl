@@ -189,9 +189,9 @@ namespace ippl {
         template <unsigned long ScatterPoint, unsigned long... Index, typename T, unsigned Dim,
                   typename IndexType = size_t>
         KOKKOS_INLINE_FUNCTION constexpr int scatter_point(
-            std::index_sequence<Index...>, const typename detail::ViewType<T, Dim>::view_type& view,
-            const Vector<T, Dim>& wlo, const Vector<T, Dim>& whi, Vector<IndexType, Dim> args,
-            T val) {
+            const std::index_sequence<Index...>&,
+            const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
+            const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args, const T& val) {
             Kokkos::atomic_add(&view(scattergather_arg<ScatterPoint, Index>(args)...),
                                val * (scattergather_weight<ScatterPoint, Index>(wlo, whi) * ...));
             return 0;
@@ -205,8 +205,8 @@ namespace ippl {
                   typename IndexType = size_t>
         KOKKOS_INLINE_FUNCTION constexpr void scatter_impl(
             const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
-            const Vector<T, Dim>& whi, std::index_sequence<ScatterPoint...>,
-            const Vector<IndexType, Dim>& args, T val = 1) {
+            const Vector<T, Dim>& whi, const std::index_sequence<ScatterPoint...>&,
+            const Vector<IndexType, Dim>& args, const T& val) {
             // The number of indices is Dim
             [[maybe_unused]] auto _ = (scatter_point<ScatterPoint>(std::make_index_sequence<Dim>{},
                                                                    view, wlo, whi, args, val)
@@ -227,7 +227,7 @@ namespace ippl {
         template <unsigned Dim, typename T, typename IndexType = size_t>
         KOKKOS_INLINE_FUNCTION constexpr void scatter_field(
             const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
-            const Vector<T, Dim>& whi, const Vector<IndexType, Dim> args, T val = 1) {
+            const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args, T val = 1) {
             // The number of points to which we scatter values is 2^Dim
             constexpr unsigned count = 1 << Dim;
             scatter_impl(view, wlo, whi, std::make_index_sequence<count>{}, args, val);
@@ -249,8 +249,9 @@ namespace ippl {
         template <unsigned long GatherPoint, unsigned long... Index, typename T, unsigned Dim,
                   typename IndexType = size_t>
         KOKKOS_INLINE_FUNCTION constexpr T gather_point(
-            std::index_sequence<Index...>, const typename detail::ViewType<T, Dim>::view_type& view,
-            const Vector<T, Dim>& wlo, const Vector<T, Dim>& whi, Vector<IndexType, Dim> args) {
+            const std::index_sequence<Index...>&,
+            const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
+            const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args) {
             return (scattergather_weight<GatherPoint, Index>(wlo, whi) * ...)
                    * view(scattergather_arg<GatherPoint, Index>(args)...);
         }
@@ -264,7 +265,7 @@ namespace ippl {
                   typename IndexType = size_t>
         KOKKOS_INLINE_FUNCTION constexpr T gather_impl(
             const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
-            const Vector<T, Dim>& whi, std::index_sequence<GatherPoint...>,
+            const Vector<T, Dim>& whi, const std::index_sequence<GatherPoint...>&,
             const Vector<IndexType, Dim>& args) {
             // The number of indices is Dim
             return (gather_point<GatherPoint>(std::make_index_sequence<Dim>{}, view, wlo, whi, args)
@@ -284,7 +285,7 @@ namespace ippl {
         template <unsigned Dim, typename T, typename IndexType = size_t>
         KOKKOS_INLINE_FUNCTION constexpr T gather_field(
             const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
-            const Vector<T, Dim>& whi, const Vector<IndexType, Dim> args) {
+            const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args) {
             // The number of points from which we gather field values is 2^Dim
             constexpr unsigned count = 1 << Dim;
             return gather_impl(view, wlo, whi, std::make_index_sequence<count>{}, args);

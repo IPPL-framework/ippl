@@ -121,7 +121,8 @@ namespace ippl {
         Field<T, Dim, M, C>& f, const ParticleAttrib<Vector<PT, Dim>, Properties...>& pp) const {
         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
         IpplTimings::startTimer(scatterTimer);
-        typename Field<T, Dim, M, C>::view_type view = f.getView();
+        using view_type = typename Field<T, Dim, M, C>::view_type;
+        view_type view  = f.getView();
 
         const M& mesh = f.get_mesh();
 
