@@ -148,7 +148,7 @@ namespace ippl {
 
                 // scatter
                 const value_type& val = dview_m(idx);
-                scatter_field(view, wlo, whi, args, val);
+                detail::scatter_field(view, wlo, whi, args, val);
             });
         IpplTimings::stopTimer(scatterTimer);
 
@@ -194,7 +194,7 @@ namespace ippl {
                 Vector<size_t, Dim> args = index - lDom.first() + nghost;
 
                 // gather
-                dview_m(idx) = gather_field(view, wlo, whi, args);
+                dview_m(idx) = detail::gather_field(view, wlo, whi, args);
             });
         IpplTimings::stopTimer(gatherTimer);
     }
