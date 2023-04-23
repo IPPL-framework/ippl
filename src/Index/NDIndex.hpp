@@ -155,8 +155,8 @@ namespace ippl {
 #if __cplusplus < 202002L
     namespace detail {
         template <bool first, size_t... Idx>
-        Vector<int, sizeof...(Idx)> constructIndexVector(const Index indices[],
-                                                         const std::index_sequence<Idx...>&) {
+        KOKKOS_INLINE_FUNCTION Vector<int, sizeof...(Idx)> constructIndexVector(
+            const Index indices[], const std::index_sequence<Idx...>&) {
             if constexpr (first)
                 return Vector<int, sizeof...(Idx)>{indices[Idx].first()...};
             else
