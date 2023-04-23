@@ -31,11 +31,17 @@ option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
 message (STATUS "Build type is: " ${CMAKE_BUILD_TYPE})
 
 # Select flags.
-set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "-O3")
 set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
+
+
+if (${CMAKE_CXX_COMPILER} MATCHES "GNU")
+    set (CMAKE_CXX_STANDARD 20)
+endif ()
+
 
 # Resolve all library dependencies
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")

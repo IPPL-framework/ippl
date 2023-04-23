@@ -184,16 +184,26 @@ namespace ippl {
             Kokkos::fence();
         }
 
+#if __cplusplus < 202002L
+        template <typename View, typename Bounds, size_t... Idx>
+        auto makeSubview_impl(const View& view, const Bounds& intersect,
+                              const std::index_sequence<Idx...>&) {
+            return Kokkos::subview(view,
+                                   Kokkos::make_pair(intersect.lo[Idx], intersect.hi[Idx])...);
+        };
+#endif
+
         template <typename T, unsigned Dim>
         auto HaloCells<T, Dim>::makeSubview(const view_type& view, const bound_type& intersect) {
-            using Kokkos::make_pair;
-            auto makePair = [&]<size_t d>() {
-                return make_pair(intersect.lo[d], intersect.hi[d]);
-            };
+#if __cplusplus < 202002L
+            return makeSubview_impl(view, intersect, std::make_index_sequence<Dim>{});
+#else
             auto makeSub = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
-                return Kokkos::subview(view, makePair.template operator()<Idx>()...);
+                return Kokkos::subview(view,
+                                       Kokkos::make_pair(intersect.lo[Idx], intersect.hi[Idx])...);
             };
             return makeSub(std::make_index_sequence<Dim>{});
+#endif
         }
 
         template <typename T, unsigned Dim>

@@ -63,14 +63,28 @@ namespace ippl {
         setup();
     }
 
+#if __cplusplus < 202002L
+    namespace detail {
+        template <typename T, unsigned Dim, size_t... Idx>
+        void resizeBareField(BareField<T, Dim>& bf, const NDIndex<Dim>& owned, const int nghost,
+                             const std::index_sequence<Idx...>&) {
+            bf.resize((owned[Idx].length() + 2 * nghost)...);
+        };
+    }  // namespace detail
+#endif
+
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::setup() {
         owned_m = layout_m->getLocalNDIndex();
 
+#if __cplusplus < 202002L
+        detail::resizeBareField(*this, owned_m, nghost_m, std::make_index_sequence<Dim>{});
+#else
         auto resize = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
             this->resize((owned_m[Idx].length() + 2 * nghost_m)...);
         };
         resize(std::make_index_sequence<Dim>{});
+#endif
     }
 
     template <typename T, unsigned Dim>
