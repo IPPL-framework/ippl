@@ -174,24 +174,20 @@ public:
     typename ippl::ParticleBase<PLayout>::particle_position_type
         E;  // electric field at particle position
 
-    ParticleAttrib<Vector<double, 2>> phaseCoords;  // phase space coordinates
-
     /*
       This constructor is mandatory for all derived classes from
       ParticleBase as the bunch buffer uses this
     */
-    ChargedParticles(PLayout& pl, bool trackPhase = false)
+    ChargedParticles(PLayout& pl)
         : ippl::ParticleBase<PLayout>(pl) {
         // register the particle attributes
         this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
-        if (trackPhase)
-            this->addAttribute(phaseCoords);
     }
 
     ChargedParticles(PLayout& pl, Vector_t<Dim> hr, Vector_t<Dim> rmin, Vector_t<Dim> rmax,
-                     ippl::e_dim_tag decomp[Dim], double Q, bool trackPhase = false)
+                     ippl::e_dim_tag decomp[Dim], double Q)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
@@ -201,11 +197,9 @@ public:
         this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
-        setupBCs();
         for (unsigned int i = 0; i < Dim; i++)
             decomp_m[i] = decomp[i];
-        if (trackPhase)
-            this->addAttribute(phaseCoords);
+        setupBCs();
     }
 
     ~ChargedParticles() {}

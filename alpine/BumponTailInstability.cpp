@@ -160,38 +160,39 @@ const char* TestName = "TwoStreamInstability";
 template <typename Bunch>
 struct PhaseDump {
     PhaseDump(double size, ippl::e_dim_tag decomp[]) {
-        const size_t len = 32;
+        const size_t len = 128;
         ippl::Index I(len);
         ippl::NDIndex<2> owned(I, I);
         layout = FieldLayout_t<2>(owned, decomp);
 
-        ippl::Vector<double, 2> hx     = {size / len, size / len};
-        ippl::Vector<double, 2> origin = 0;
+        ippl::Vector<double, 2> hx = {size / len, size / len};
+        ippl::Vector<double, 2> origin{0, -8};
 
         mesh       = Mesh_t<2>(owned, hx, origin);
         phaseSpace = Field_t<2>(mesh, layout);
+        std::cout << Ippl::Comm->rank() << ": " << phaseSpace.getOwned() << std::endl;
     }
 
     void dump(int it, std::shared_ptr<Bunch> P) {
+        const auto pcount = P->getLocalNum();
+        phase.realloc(pcount);
+        auto& Ri = P->R;
+        auto& Pi = P->P;
         std::stringstream fname;
         for (unsigned d = 0; d < Dim; d++) {
             fname.str({});
-            fname << "PhaseSpace_t=" << it << "_d=" << d << ".csv";
-            auto& phase = P->phaseCoords;
-            auto& Ri    = P->R;
-            auto& Pi    = P->P;
+            fname << "PhaseSpace_t=" << it << "_d=" << d << "_r=" << Ippl::Comm->rank() << ".csv";
+
             Kokkos::parallel_for(
-                "Copy phase space", P->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
+                "Copy phase space", pcount, KOKKOS_CLASS_LAMBDA(const size_t i) {
                     phase(i) = {Ri(i)[d], Pi(i)[d]};
                 });
+            phaseSpace = 0;
+            Kokkos::fence();
             scatter(P->q, phaseSpace, phase);
-            Inform out("Output", fname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
-            for (int r = 0; r < Ippl::Comm->size(); r++) {
-                if (r == Ippl::Comm->rank()) {
-                    phaseSpace.write(out);
-                }
-                Ippl::Comm->barrier();
-            }
+            Inform out("Phase Dump", fname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+            phaseSpace.write(out);
+            Ippl::Comm->barrier();
         }
     }
 
@@ -199,6 +200,7 @@ private:
     FieldLayout_t<2> layout;
     Mesh_t<2> mesh;
     Field_t<2> phaseSpace;
+    ippl::ParticleAttrib<Vector<double, 2>> phase;
 };
 
 int main(int argc, char* argv[]) {
@@ -292,14 +294,14 @@ int main(int argc, char* argv[]) {
     double Q = -1;
     for (const auto& r : rmax)
         Q *= r;
-    P = std::make_shared<bunch_type>(PL, hr, rmin, rmax, decomp, Q, true);
+    P = std::make_shared<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
 
     P->nr_m = nr;
 
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);
 
-    bunch_type bunchBuffer(PL, true);
+    bunch_type bunchBuffer(PL);
 
     P->stype_m = argv[arg++];
     P->initSolver();
@@ -319,17 +321,16 @@ int main(int argc, char* argv[]) {
         auto rhoview                   = P->rho_m.getView();
 
         using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
-        Kokkos::parallel_for(
+        ippl::parallel_for(
             "Assign initial rho based on PDF", ippl::detail::getRangePolicy<Dim>(rhoview, nghost),
-            ippl::detail::functorize<ippl::detail::FOR, Dim>(
-                KOKKOS_LAMBDA(const index_array_type& args) {
-                    // local to global index conversion
-                    Vector_t<Dim> xvec = args;
-                    for (unsigned d = 0; d < Dim; d++)
-                        xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                // local to global index conversion
+                Vector_t<Dim> xvec = args;
+                for (unsigned d = 0; d < Dim; d++)
+                    xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
 
-                    ippl::apply<Dim>(rhoview, args) = PDF(xvec, delta, kw);
-                }));
+                ippl::apply<Dim>(rhoview, args) = PDF(xvec, delta, kw);
+            });
 
         Kokkos::fence();
 
