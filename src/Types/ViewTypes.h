@@ -250,7 +250,46 @@ namespace ippl {
 
             printLoop<Dim>(hview, out);
         }
+
+        template <typename>
+        struct ExtractRank;
+        template <typename... T>
+        struct ExtractRank<Kokkos::RangePolicy<T...>> {
+            static constexpr int rank = 1;
+        };
+        template <typename... T>
+        struct ExtractRank<Kokkos::MDRangePolicy<T...>> {
+            static constexpr int rank = Kokkos::MDRangePolicy<T...>::rank;
+        };
     }  // namespace detail
+
+    template <class ExecPolicy, class FunctorType>
+    void parallel_for(const std::string& name, const ExecPolicy& policy,
+                      const FunctorType& functor) {
+        Kokkos::parallel_for(
+            name, policy,
+            detail::functorize<detail::FOR, detail::ExtractRank<ExecPolicy>::rank>(functor));
+    }
+
+    template <class ExecPolicy, class FunctorType, class... ReducerArgument>
+    void parallel_reduce(const std::string& name, const ExecPolicy& policy,
+                         const FunctorType& functor, ReducerArgument&... reducer) {
+        Kokkos::parallel_reduce(
+            name, policy,
+            detail::functorize<detail::REDUCE, detail::ExtractRank<ExecPolicy>::rank,
+                               typename ReducerArgument::value_type...>(functor),
+            reducer...);
+    }
+
+    template <class ExecPolicy, class FunctorType, class... ReducerArgument>
+    void parallel_reduce(const std::string& name, const ExecPolicy& policy,
+                         const FunctorType& functor, const ReducerArgument&... reducer) {
+        Kokkos::parallel_reduce(
+            name, policy,
+            detail::functorize<detail::REDUCE, detail::ExtractRank<ExecPolicy>::rank,
+                               typename ReducerArgument::value_type...>(functor),
+            reducer...);
+    }
 }  // namespace ippl
 
 #endif

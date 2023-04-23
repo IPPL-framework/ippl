@@ -176,11 +176,12 @@ namespace ippl {
             T tempRes = T(0);
 
             using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
-            Kokkos::parallel_reduce(
+            ippl::parallel_reduce(
                 "ORB weight reduction", detail::createRangePolicy<Dim>(begin, end),
-                detail::functorize<detail::REDUCE, Dim, T>(KOKKOS_LAMBDA(
-                    const index_array_type& args, T& weight) { weight += apply<Dim>(data, args); }),
-                tempRes);
+                KOKKOS_LAMBDA(const index_array_type& args, T& weight) {
+                    weight += apply<Dim>(data, args);
+                },
+                Kokkos::Sum<T>(tempRes));
 
             Kokkos::fence();
 

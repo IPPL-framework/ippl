@@ -119,9 +119,9 @@ namespace ippl {
     template <typename T, unsigned Dim>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
         using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
-        Kokkos::parallel_for("BareField::operator=(T)", detail::getRangePolicy<Dim>(dview_m),
-                             detail::functorize<detail::FOR, Dim>(KOKKOS_CLASS_LAMBDA(
-                                 const index_array_type& args) { apply<Dim>(dview_m, args) = x; }));
+        ippl::parallel_for(
+            "BareField::operator=(T)", detail::getRangePolicy<Dim>(dview_m),
+            KOKKOS_CLASS_LAMBDA(const index_array_type& args) { apply<Dim>(dview_m, args) = x; });
         return *this;
     }
 
@@ -131,12 +131,12 @@ namespace ippl {
         using capture_type     = detail::CapturedExpression<E, N>;
         capture_type expr_     = reinterpret_cast<const capture_type&>(expr);
         using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
-        Kokkos::parallel_for(
+        ippl::parallel_for(
             "BareField::operator=(const Expression&)",
             detail::getRangePolicy<Dim>(dview_m, nghost_m),
-            detail::functorize<detail::FOR, Dim>(KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+            KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
                 apply<Dim>(dview_m, args) = apply<Dim>(expr_, args);
-            }));
+            });
         return *this;
     }
 
@@ -151,23 +151,23 @@ namespace ippl {
         write(inf.getDestination());
     }
 
-#define DefineReduction(fun, name, op, MPI_Op)                                                   \
-    template <typename T, unsigned Dim>                                                          \
-    T BareField<T, Dim>::name(int nghost) const {                                                \
-        PAssert_LE(nghost, nghost_m);                                                            \
-        T temp                 = 0.0;                                                            \
-        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;            \
-        Kokkos::parallel_reduce("fun", detail::getRangePolicy<Dim>(dview_m, nghost_m - nghost),  \
-                                detail::functorize<detail::REDUCE, Dim, T>(                      \
-                                    KOKKOS_CLASS_LAMBDA(const index_array_type& args, T& valL) { \
-                                        T myVal = apply<Dim>(dview_m, args);                     \
-                                        op;                                                      \
-                                    }),                                                          \
-                                Kokkos::fun<T>(temp));                                           \
-        T globaltemp      = 0.0;                                                                 \
-        MPI_Datatype type = get_mpi_datatype<T>(temp);                                           \
-        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());                     \
-        return globaltemp;                                                                       \
+#define DefineReduction(fun, name, op, MPI_Op)                                        \
+    template <typename T, unsigned Dim>                                               \
+    T BareField<T, Dim>::name(int nghost) const {                                     \
+        PAssert_LE(nghost, nghost_m);                                                 \
+        T temp                 = 0.0;                                                 \
+        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type; \
+        ippl::parallel_reduce(                                                        \
+            "fun", detail::getRangePolicy<Dim>(dview_m, nghost_m - nghost),           \
+            KOKKOS_CLASS_LAMBDA(const index_array_type& args, T& valL) {              \
+                T myVal = apply<Dim>(dview_m, args);                                  \
+                op;                                                                   \
+            },                                                                        \
+            Kokkos::fun<T>(temp));                                                    \
+        T globaltemp      = 0.0;                                                      \
+        MPI_Datatype type = get_mpi_datatype<T>(temp);                                \
+        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());          \
+        return globaltemp;                                                            \
     }
 
     DefineReduction(Sum, sum, valL += myVal, MPI_SUM)
