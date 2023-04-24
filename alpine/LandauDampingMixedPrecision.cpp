@@ -1,6 +1,6 @@
-// Bump on Tail Instability/Two-stream Instability Test
+// Landau Damping Test, variant with mixed precision.
 //   Usage:
-//     srun ./BumponTailInstability <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
+//     srun ./LandauDamping <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
 //     ny       = No. cell-centered points in the y-direction
 //     nz       = No. cell-centered points in the z-direction
@@ -14,10 +14,7 @@
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./BumponTailInstability 128 128 128 10000 10 FFT 0.01 2.0 --info 10
-//     Change the TestName to TwoStreamInstability or BumponTailInstability
-//     in order to simulate the Two stream instability or bump on tail instability
-//     cases
+//     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 2.0 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -45,7 +42,7 @@
 
 #include "Utility/IpplTimings.h"
 
-#include "ChargedParticles.hpp"
+#include "ChargedParticlesMixedPrecision.hpp"
 
 template <typename T>
 struct Newton1D {
@@ -53,26 +50,26 @@ struct Newton1D {
     int max_iter = 20;
     double pi    = std::acos(-1.0);
 
-    T k, delta, u;
+    T k, alpha, u;
 
     KOKKOS_INLINE_FUNCTION Newton1D() {}
 
-    KOKKOS_INLINE_FUNCTION Newton1D(const T& k_, const T& delta_, const T& u_)
+    KOKKOS_INLINE_FUNCTION Newton1D(const T& k_, const T& alpha_, const T& u_)
         : k(k_)
-        , delta(delta_)
+        , alpha(alpha_)
         , u(u_) {}
 
     KOKKOS_INLINE_FUNCTION ~Newton1D() {}
 
     KOKKOS_INLINE_FUNCTION T f(T& x) {
         T F;
-        F = x + (delta * (std::sin(k * x) / k)) - u;
+        F = x + (alpha * (std::sin(k * x) / k)) - u;
         return F;
     }
 
     KOKKOS_INLINE_FUNCTION T fprime(T& x) {
         T Fprime;
-        Fprime = 1 + (delta * std::cos(k * x));
+        Fprime = 1 + (alpha * std::cos(k * x));
         return Fprime;
     }
 
@@ -96,23 +93,17 @@ struct generate_random {
     // The GeneratorPool
     GeneratorPool rand_pool;
 
-    value_type delta, sigma, muBulk, muBeam;
-    size_type nlocBulk;
+    value_type alpha;
 
     T k, minU, maxU;
 
     // Initialize all members
-    generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, value_type& delta_, T& k_,
-                    value_type& sigma_, value_type& muBulk_, value_type& muBeam_,
-                    size_type& nlocBulk_, T& minU_, T& maxU_)
+    generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, value_type& alpha_, T& k_,
+                    T& minU_, T& maxU_)
         : x(x_)
         , v(v_)
         , rand_pool(rand_pool_)
-        , delta(delta_)
-        , sigma(sigma_)
-        , muBulk(muBulk_)
-        , muBeam(muBeam_)
-        , nlocBulk(nlocBulk_)
+        , alpha(alpha_)
         , k(k_)
         , minU(minU_)
         , maxU(maxU_) {}
@@ -121,54 +112,47 @@ struct generate_random {
         // Get a random number state from the pool for the active thread
         typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-        bool isBeam = (i >= nlocBulk);
-
-        value_type muZ = (value_type)(((!isBeam) * muBulk) + (isBeam * muBeam));
-
-        for (unsigned d = 0; d < Dim - 1; ++d) {
-            x(i)[d] = rand_gen.drand(minU[d], maxU[d]);
-            v(i)[d] = rand_gen.normal(0.0, sigma);
+        value_type u;
+        for (unsigned d = 0; d < Dim; ++d) {
+            u       = rand_gen.drand(minU[d], maxU[d]);
+            x(i)[d] = u / (1 + alpha);
+            Newton1D<value_type> solver(k[d], alpha, u);
+            solver.solve(x(i)[d]);
+            v(i)[d] = rand_gen.normal(0.0, 1.0);
         }
-        v(i)[Dim - 1] = rand_gen.normal(muZ, sigma);
-
-        value_type u  = rand_gen.drand(minU[Dim - 1], maxU[Dim - 1]);
-        x(i)[Dim - 1] = u / (1 + delta);
-        Newton1D<value_type> solver(k[Dim - 1], delta, u);
-        solver.solve(x(i)[Dim - 1]);
 
         // Give the state back, which will allow another thread to acquire it
         rand_pool.free_state(rand_gen);
     }
 };
 
-double CDF(const double& x, const double& delta, const double& k, const unsigned& dim) {
-    bool isDimZ = (dim == (Dim - 1));
-    double cdf  = x + (double)(isDimZ * ((delta / k) * std::sin(k * x)));
+double CDF(const double& x, const double& alpha, const double& k) {
+    double cdf = x + (alpha / k) * std::sin(k * x);
     return cdf;
 }
 
 KOKKOS_FUNCTION
-double PDF(const Vector_t& xvec, const double& delta, const Vector_t& kw) {
-    double pdf = 1.0 * 1.0 * (1.0 + delta * std::cos(kw[Dim - 1] * xvec[Dim - 1]));
+double PDF(const Vector_t& xvec, const double& alpha, const Vector_t& kw, const unsigned Dim) {
+    double pdf = 1.0;
+
+    for (unsigned d = 0; d < Dim; ++d) {
+        pdf *= (1.0 + alpha * std::cos(kw[d] * xvec[d]));
+    }
     return pdf;
 }
 
-// const char* TestName = "BumponTailInstability";
-const char* TestName = "TwoStreamInstability";
+const char* TestName = "LandauDamping";
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
-    Inform msg(TestName);
-    Inform msg2all(TestName, INFORM_ALL_NODES);
+
+    Inform msg("LandauDamping");
+    Inform msg2all("LandauDamping", INFORM_ALL_NODES);
 
     Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
     auto start                = std::chrono::high_resolution_clock::now();
-    ippl::Vector<int, Dim> nr = {
-        std::atoi(argv[1]),
-        std::atoi(argv[2]),
-        std::atoi(argv[3]),
-    };
+    ippl::Vector<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
 
     static IpplTimings::TimerRef mainTimer           = IpplTimings::getTimer("total");
     static IpplTimings::TimerRef particleCreation    = IpplTimings::getTimer("particlesCreation");
@@ -185,7 +169,7 @@ int main(int argc, char* argv[]) {
     const size_type totalP = std::atoll(argv[4]);
     const unsigned int nt  = std::atoi(argv[5]);
 
-    msg << TestName << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
+    msg << "Landau damping" << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
     using bunch_type = ChargedParticles<PLayout_t>;
 
@@ -201,35 +185,9 @@ int main(int argc, char* argv[]) {
         decomp[d] = ippl::PARALLEL;
     }
 
-    Vector_t kw;
-    double sigma, muBulk, muBeam, epsilon, delta;
-
-    if (std::strcmp(TestName, "TwoStreamInstability") == 0) {
-        // Parameters for two stream instability as in
-        //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
-        kw      = {0.5, 0.5, 0.5};
-        sigma   = 0.1;
-        epsilon = 0.5;
-        muBulk  = -pi / 2.0;
-        muBeam  = pi / 2.0;
-        delta   = 0.01;
-    } else if (std::strcmp(TestName, "BumponTailInstability") == 0) {
-        kw      = {0.21, 0.21, 0.21};
-        sigma   = 1.0 / std::sqrt(2.0);
-        epsilon = 0.1;
-        muBulk  = 0.0;
-        muBeam  = 4.0;
-        delta   = 0.01;
-    } else {
-        // Default value is two stream instability
-        kw      = {0.5, 0.5, 0.5};
-        sigma   = 0.1;
-        epsilon = 0.5;
-        muBulk  = -pi / 2.0;
-        muBeam  = pi / 2.0;
-        delta   = 0.01;
-    }
-
+    // create mesh and layout objects for this problem domain
+    Vector_st kw = {0.5, 0.5, 0.5};
+    float alpha = 0.05;
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw;
     double dx     = rmax[0] / nr[0];
@@ -238,7 +196,7 @@ int main(int argc, char* argv[]) {
 
     Vector_t hr     = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.5 * dx;  // 0.05
+    const double dt = 0.05;
 
     const bool isAllPeriodic = true;
     Mesh_t mesh(domain, hr, origin);
@@ -288,7 +246,7 @@ int main(int argc, char* argv[]) {
 
                 Vector_t xvec = {x, y, z};
 
-                rhoview(i, j, k) = PDF(xvec, delta, kw);
+                rhoview(i, j, k) = PDF(xvec, alpha, kw, Dim);
             });
 
         Kokkos::fence();
@@ -301,25 +259,21 @@ int main(int argc, char* argv[]) {
     msg << "First domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
 
-    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
-    const RegionLayout_t& RLayout                           = PL.getRegionLayout();
+    typedef ippl::detail::RegionLayout<float, Dim, Mesh_t> RegionLayout_t;
+    const RegionLayout_t& RLayout = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_t Nr, Dr, minU, maxU;
+    Vector_st Nr, Dr, minU, maxU;
     int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d < Dim; ++d) {
-        Nr[d] = CDF(Regions(myRank)[d].max(), delta, kw[d], d)
-                - CDF(Regions(myRank)[d].min(), delta, kw[d], d);
-        Dr[d]   = CDF(rmax[d], delta, kw[d], d) - CDF(rmin[d], delta, kw[d], d);
-        minU[d] = CDF(Regions(myRank)[d].min(), delta, kw[d], d);
-        maxU[d] = CDF(Regions(myRank)[d].max(), delta, kw[d], d);
+        Nr[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d])
+                - CDF(Regions(myRank)[d].min(), alpha, kw[d]);
+        Dr[d]   = CDF(rmax[d], alpha, kw[d]) - CDF(rmin[d], alpha, kw[d]);
+        minU[d] = CDF(Regions(myRank)[d].min(), alpha, kw[d]);
+        maxU[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d]);
     }
 
-    double factorConf         = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
-    double factorVelBulk      = 1.0 - epsilon;
-    double factorVelBeam      = 1.0 - factorVelBulk;
-    size_type nlocBulk        = (size_type)(factorConf * factorVelBulk * totalP);
-    size_type nlocBeam        = (size_type)(factorConf * factorVelBeam * totalP);
-    size_type nloc            = nlocBulk + nlocBeam;
+    double factor             = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
+    size_type nloc            = (size_type)(factor * totalP);
     size_type Total_particles = 0;
 
     MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
@@ -331,16 +285,15 @@ int main(int argc, char* argv[]) {
 
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
+    Kokkos::parallel_for(nloc,
+                         generate_random<Vector_st, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                         P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
-    Kokkos::parallel_for(nloc, generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                                   P->R.getView(), P->P.getView(), rand_pool64, delta, kw, sigma,
-                                   muBulk, muBeam, nlocBulk, minU, maxU));
     Kokkos::fence();
     Ippl::Comm->barrier();
     IpplTimings::stopTimer(particleCreation);
 
     P->q = P->Q_m / totalP;
-    // P->dumpParticleData();
     msg << "particles created and initial conditions assigned " << endl;
     isFirstRepartition = false;
     // The update after the particle creation is not needed as the
@@ -360,7 +313,7 @@ int main(int argc, char* argv[]) {
     P->gatherCIC();
 
     IpplTimings::startTimer(dumpDataTimer);
-    P->dumpBumponTail();
+    P->dumpLandau();
     P->gatherStatistics(totalP);
     // P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
@@ -417,13 +370,13 @@ int main(int argc, char* argv[]) {
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpBumponTail();
+        P->dumpLandau();
         P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
     }
 
-    msg << TestName << ": End." << endl;
+    msg << "LandauDamping: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
