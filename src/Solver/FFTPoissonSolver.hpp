@@ -51,7 +51,7 @@ void pack(const ippl::NDIndex<3> intersect, Kokkos::View<Tf***>& view,
     //intel compilers
     Kokkos::parallel_for("pack()", mdrange_type({first0, first1, first2},
                                                 {(long int)last0, 
-                                                 (long int)last1, 
+                                                 (long int)last1,
                                                  (long int)last2}),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                 const int ig = i - first0;
@@ -68,13 +68,13 @@ void pack(const ippl::NDIndex<3> intersect, Kokkos::View<Tf***>& view,
     Kokkos::fence();
 }
 
-template <typename Tb, typename Tf> 
-void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
+template <bool isVec, typename Tb, typename Tf>
+void unpack_impl(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
             ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
-            bool x=false, bool y=false, bool z=false) {
+            size_t dim=0, bool x=false, bool y=false, bool z=false) {
 
     Kokkos::View<Tb*>& buffer = fd.buffer;
- 
+
     int first0 = intersect[0].first() + nghost - ldom[0].first();
     int first1 = intersect[1].first() + nghost - ldom[1].first();
     int first2 = intersect[2].first() + nghost - ldom[2].first();
@@ -84,52 +84,37 @@ void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
     const int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
 
     using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-    Kokkos::parallel_for(
-        "pack()", mdrange_type({first0, first1, first2}, {last0, last1, last2}),
-        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-            int ig = i - first0;
-            int jg = j - first1;
-            int kg = k - first2;
+    Kokkos::parallel_for("pack()", mdrange_type({first0, first1, first2},
+                                                {last0, last1, last2}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
 
-            ig = x * (intersect[0].length() - 2 * ig - 1) + ig;
-            jg = y * (intersect[1].length() - 2 * jg - 1) + jg;
-            kg = z * (intersect[2].length() - 2 * kg - 1) + kg;
+                int ig = i - first0;
+                int jg = j - first1;
+                int kg = k - first2;
 
-            const int l = ig + jg * intersect[0].length()
-                          + kg * intersect[1].length() * intersect[0].length();
+                ig = x * (intersect[0].length() - 2*ig - 1) + ig;
+                jg = y * (intersect[1].length() - 2*jg - 1) + jg;
+                kg = z * (intersect[2].length() - 2*kg - 1) + kg;
 
-            view(i, j, k) = buffer(l);
-        });
+                int l = ig + jg * intersect[0].length() +
+                        kg * intersect[1].length() * intersect[0].length();
+
+                ippl::detail::ViewAccess<isVec, decltype(view)>::get(view, dim, i, j, k) = buffer(l);
+    });
     Kokkos::fence();
+}
+
+template <typename Tb, typename Tf>
+void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
+            ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
+            bool x=false, bool y=false, bool z=false) {
+    unpack_impl<false, Tb, Tf>(intersect, view, fd, nghost, ldom, 0, x, y, z);
 }
 
 template <typename Tb, typename Tf> 
 void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<ippl::Vector<Tf,3>***>& view,
             size_t dim, ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom) {
-
-    Kokkos::View<Tb*>& buffer = fd.buffer;
-
-    const int first0 = intersect[0].first() + nghost - ldom[0].first();
-    const int first1 = intersect[1].first() + nghost - ldom[1].first();
-    const int first2 = intersect[2].first() + nghost - ldom[2].first();
-
-    const int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
-    const int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
-    const int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
-
-    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-    Kokkos::parallel_for(
-        "pack()", mdrange_type({first0, first1, first2}, {last0, last1, last2}),
-        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-            const int ig = i - first0;
-            const int jg = j - first1;
-            const int kg = k - first2;
-
-            const int l = ig + jg * intersect[0].length()
-                          + kg * intersect[1].length() * intersect[0].length();
-            view(i, j, k)[dim] = buffer(l);
-        });
-    Kokkos::fence();
+    unpack_impl<true, Tb, ippl::Vector<Tf, 3>>(intersect, view, fd, nghost, ldom, dim);
 }
 
 namespace ippl {
@@ -704,7 +689,7 @@ namespace ippl {
             const Kokkos::complex<Trhs> I = {0.0, 1.0};
 
             // define some member variables in local scope for the parallel_for
-            Vector_t hsize     = hr_m;
+            vector_type hsize     = hr_m;
             Vector<int, Dim> N = nr_m;
 
             // loop over each component (E = vector field)
@@ -844,7 +829,7 @@ namespace ippl {
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::greensFunction() {
-        const double pi = std::acos(-1.0);
+        const mesh_type pi = std::acos(-1.0);
         grn_mr          = 0.0;
 
         if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
@@ -904,7 +889,7 @@ namespace ippl {
                         isOutside      = (kg > 2 * size[2] - 1);
                         const Tg v = kg * hs_m[2] + isOutside * origin[2];
 
-                        double s = (t * t) + (u * u) + (v * v);
+                        Tg s = (t * t) + (u * u) + (v * v);
                         s        = std::sqrt(s);
 
                         // assign the green's function value
@@ -939,7 +924,7 @@ namespace ippl {
                         isOutside      = (kg > 2 * size[2] - 1);
                         const Tg v = kg * hs_m[2] + isOutside * origin[2];
 
-                        Trhs s = (t * t) + (u * u) + (v * v);
+                        Tg s = (t * t) + (u * u) + (v * v);
                         s        = std::sqrt(s);
 
                         // assign value and replace with analytic limit at origin (0,0,0)
