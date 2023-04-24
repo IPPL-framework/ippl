@@ -12,59 +12,59 @@ link_directories (
 
 set (IPPL_LIBS ippl)
 
-add_executable (TestSolverDesignSP TestSolverDesign.cpp)
+add_executable (TestSolverDesignMP TestSolverDesign.cpp)
 target_link_libraries (
-    TestSolverDesignSP
+    TestSolverDesignMP
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
 
-add_executable (TestCGSolverSP TestCGSolver.cpp)
+add_executable (TestCGSolverMP TestCGSolver.cpp)
 target_link_libraries (
-    TestCGSolverSP
+    TestCGSolverMP
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
 
 if (ENABLE_FFT)
-    add_executable (TestGaussian_convergenceSP TestGaussian_convergence.cpp)
+    add_executable (TestGaussian_convergenceMP TestGaussian_convergence.cpp)
     target_link_libraries (
-        TestGaussian_convergenceSP
+        TestGaussian_convergenceMP
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
 
-    add_executable (TestSphereSP TestSphere.cpp)
+    add_executable (TestSphereMP TestSphere.cpp)
     target_link_libraries (
-        TestSphereSP
+        TestSphereMP
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
 
-    add_executable (Budiardja_plotSP Budiardja_plot.cpp)
+    add_executable (Budiardja_plotMP Budiardja_plot.cpp)
     target_link_libraries (
-        Budiardja_plotSP
+        Budiardja_plotMP
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
 
-    add_executable (TestGaussianSP TestGaussian.cpp)
+    add_executable (TestGaussianMP TestGaussian.cpp)
     target_link_libraries (
-        TestGaussianSP
+        TestGaussianMP
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
 
-    add_executable (TestFFTPeriodicPoissonSolverSP TestFFTPeriodicPoissonSolver.cpp)
+    add_executable (TestFFTPeriodicPoissonSolverMP TestFFTPeriodicPoissonSolver.cpp)
     target_link_libraries (
-        TestFFTPeriodicPoissonSolverSP
+        TestFFTPeriodicPoissonSolverMP
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
 
-    add_executable (TestGaussian_biharmonicSP TestGaussian_biharmonic.cpp)
+    add_executable (TestGaussian_biharmonicMP TestGaussian_biharmonic.cpp)
     target_link_libraries (
-        TestGaussian_biharmonicSP
+        TestGaussian_biharmonicMP
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
