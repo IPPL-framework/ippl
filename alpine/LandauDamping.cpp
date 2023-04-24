@@ -186,8 +186,8 @@ int main(int argc, char* argv[]) {
     }
 
     // create mesh and layout objects for this problem domain
-    Vector_st kw = {0.5, 0.5, 0.5};
-    float alpha = 0.05;
+    Vector_t kw  = {0.5, 0.5, 0.5};
+    double alpha = 0.05;
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw;
     double dx     = rmax[0] / nr[0];
@@ -196,7 +196,7 @@ int main(int argc, char* argv[]) {
 
     Vector_t hr     = {dx, dy, dz};
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
-    const double dt = 0.05;
+    const double dt = 0.5 * dx;
 
     const bool isAllPeriodic = true;
     Mesh_t mesh(domain, hr, origin);
@@ -259,10 +259,10 @@ int main(int argc, char* argv[]) {
     msg << "First domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
 
-    typedef ippl::detail::RegionLayout<float, Dim, Mesh_t> RegionLayout_t;
-    const RegionLayout_t& RLayout = PL.getRegionLayout();
+    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
+    const RegionLayout_t& RLayout                           = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_st Nr, Dr, minU, maxU;
+    Vector_t Nr, Dr, minU, maxU;
     int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d < Dim; ++d) {
         Nr[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d])
@@ -286,8 +286,8 @@ int main(int argc, char* argv[]) {
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
-                         generate_random<Vector_st, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                             P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
     Kokkos::fence();
     Ippl::Comm->barrier();

@@ -1,6 +1,8 @@
-// ChargedParticles header file
-//   Defines a particle attribute for charged particles to be used in
-//   test programs
+// ChargedParticlesMixedPrecision header file
+//   Slightly modified version of ChargedParticles, used in the
+//   mixed precision version of Landau Damping test.
+//   Provides the scalar field, charge and mesh in double precision,
+//   and the vector field, position and velocity in single precision.
 //
 // Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
@@ -24,11 +26,11 @@
 constexpr unsigned Dim = 3;
 
 // some typedefs
-typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
-typedef ippl::UniformCartesian<double, Dim> Mesh_t;
+typedef ippl::UniformCartesian<double, Dim>        Mesh_t;
+typedef ippl::ParticleSpatialLayout<float,Dim, Mesh_t>   PLayout_t;
 typedef Mesh_t::DefaultCentering Centering_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
-typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t, Centering_t> ORB;
+typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t, Centering_t, float> ORB;
 
 using size_type = ippl::detail::size_type;
 
@@ -41,10 +43,11 @@ using Field = ippl::Field<T, Dim, Mesh_t, Centering_t>;
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
 
-typedef Vector<double, Dim> Vector_t;
-typedef Field<double, Dim> Field_t;
-typedef Field<Vector_t, Dim> VField_t;
-typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim, Mesh_t, Centering_t> Solver_t;
+typedef Vector<double, Dim>  Vector_t;
+typedef Vector<float, Dim> Vector_st;
+typedef Field<double, Dim>   Field_t;
+typedef Field<Vector_st, Dim> VField_t;
+typedef ippl::FFTPeriodicPoissonSolver<Vector_st, double, Dim, Mesh_t, Centering_t> Solver_t;
 
 const double pi = std::acos(-1.0);
 
@@ -55,7 +58,9 @@ void dumpVTK(VField_t& E, int nx, int ny, int nz, int iteration, double dx, doub
     typename VField_t::view_type::host_mirror_type host_view = E.getHostMirror();
 
     std::stringstream fname;
-    fname << "data/ef_";
+    fname << "data/";
+    fname << nx+3;
+    fname << "/ef_";
     fname << std::setw(4) << std::setfill('0') << iteration;
     fname << ".vtk";
 
@@ -155,8 +160,7 @@ public:
 public:
     ParticleAttrib<double> q;                                        // charge
     typename ippl::ParticleBase<PLayout>::particle_position_type P;  // particle velocity
-    typename ippl::ParticleBase<PLayout>::particle_position_type
-        E;  // electric field at particle position
+    typename ippl::ParticleBase<PLayout>::particle_position_type E;  // electric field at particle position
 
     /*
       This constructor is mandatory for all derived classes from
@@ -364,31 +368,33 @@ public:
         MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
         const int nghostE = E_m.getNghost();
-        auto Eview        = E_m.getView();
-        Vector_t normE;
+        auto Eview = E_m.getView();
+        Vector_st normE;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-        for (unsigned d = 0; d < Dim; ++d) {
-            double temp = 0.0;
-            Kokkos::parallel_reduce(
-                "Vector E reduce",
-                mdrange_type({nghostE, nghostE, nghostE},
-                             {Eview.extent(0) - nghostE, Eview.extent(1) - nghostE,
-                              Eview.extent(2) - nghostE}),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                    double myVal = std::pow(Eview(i, j, k)[d], 2);
-                    valL += myVal;
-                },
-                Kokkos::Sum<double>(temp));
-            double globaltemp = 0.0;
-            MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        for (unsigned d=0; d<Dim; ++d) {
+
+        float temp = 0.0;
+        Kokkos::parallel_reduce("Vector E reduce",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, float& valL)
+                                {
+                                    float myVal = std::pow(Eview(i, j, k)[d], 2);
+                                    valL += myVal;
+                                }, Kokkos::Sum<float>(temp));
+            float globaltemp = 0.0;
+            MPI_Reduce(&temp, &globaltemp, 1, MPI_FLOAT, MPI_SUM, 0, Ippl::getComm());
             normE[d] = std::sqrt(globaltemp);
         }
 
         if (Ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/ParticleField_";
-            fname << Ippl::Comm->size();
+            fname << nr_m[0];
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
@@ -408,44 +414,45 @@ public:
 
     void dumpLandau() {
         const int nghostE = E_m.getNghost();
-        auto Eview        = E_m.getView();
-        double fieldEnergy, ExAmp;
+        auto Eview = E_m.getView();
+        float fieldEnergy, ExAmp;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-        double temp = 0.0;
-        Kokkos::parallel_reduce(
-            "Ex inner product",
-            mdrange_type(
-                {nghostE, nghostE, nghostE},
-                {Eview.extent(0) - nghostE, Eview.extent(1) - nghostE, Eview.extent(2) - nghostE}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                double myVal = std::pow(Eview(i, j, k)[0], 2);
-                valL += myVal;
-            },
-            Kokkos::Sum<double>(temp));
-        double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        float temp = 0.0;
+        Kokkos::parallel_reduce("Ex inner product",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, float& valL)
+                                {
+                                    float myVal = std::pow(Eview(i, j, k)[0], 2);
+                                    valL += myVal;
+                                }, Kokkos::Sum<float>(temp));
+        float globaltemp = 0.0;
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_FLOAT, MPI_SUM, 0, Ippl::getComm());
         fieldEnergy = globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
 
-        double tempMax = 0.0;
-        Kokkos::parallel_reduce(
-            "Ex max norm",
-            mdrange_type(
-                {nghostE, nghostE, nghostE},
-                {Eview.extent(0) - nghostE, Eview.extent(1) - nghostE, Eview.extent(2) - nghostE}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                double myVal = std::fabs(Eview(i, j, k)[0]);
-                if (myVal > valL)
-                    valL = myVal;
-            },
-            Kokkos::Max<double>(tempMax));
+        float tempMax = 0.0;
+        Kokkos::parallel_reduce("Ex max norm",
+                                mdrange_type({nghostE, nghostE, nghostE},
+                                             {Eview.extent(0) - nghostE,
+                                              Eview.extent(1) - nghostE,
+                                              Eview.extent(2) - nghostE}),
+                                KOKKOS_LAMBDA(const size_t i, const size_t j,
+                                              const size_t k, float& valL)
+                                {
+                                    float myVal = std::fabs(Eview(i, j, k)[0]);
+                                    if(myVal > valL) valL = myVal;
+                                }, Kokkos::Max<float>(tempMax));
         ExAmp = 0.0;
-        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_FLOAT, MPI_MAX, 0, Ippl::getComm());
 
         if (Ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/FieldLandau_";
-            fname << Ippl::Comm->size();
+            fname << nr_m[0];
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
@@ -501,7 +508,7 @@ public:
         if (Ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/FieldBumponTail_";
-            fname << Ippl::Comm->size();
+            fname << nr_m[0];
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
@@ -525,7 +532,7 @@ public:
         Kokkos::deep_copy(P_host, P.getView());
         std::stringstream pname;
         pname << "data/ParticleIC_";
-        pname << Ippl::Comm->rank();
+        pname <<  Ippl::Comm->rank();
         pname << ".csv";
         Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
         pcsvout.precision(10);

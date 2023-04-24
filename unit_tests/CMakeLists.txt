@@ -1,19 +1,9 @@
-macro(list_subdirectories retval curdir)
-  file(GLOB sub-dir RELATIVE ${curdir} *)
-  set(list_of_dirs "")
-  foreach(dir ${sub-dir})
-    if(IS_DIRECTORY ${curdir}/${dir})
-      set(list_of_dirs ${list_of_dirs} ${dir})
-    endif()
-  endforeach()
-  set(${retval} ${list_of_dirs})
-endmacro()
+add_subdirectory(single_precision)
+message ("User info: PIC tests only available in double precision")
 
-list_subdirectories("UNIT_TESTS" ${CMAKE_CURRENT_SOURCE_DIR})
-foreach (test ${UNIT_TESTS})
-  add_subdirectory (${test})
-endforeach()
+add_subdirectory(double_precision)
 
+add_subdirectory(Utility)
 
 # vi: set et ts=4 sw=4 sts=4:
   
