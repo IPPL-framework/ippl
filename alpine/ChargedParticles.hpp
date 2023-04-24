@@ -495,7 +495,7 @@ public:
             "Ex inner product", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
             ippl::detail::functorize<ippl::detail::REDUCE, Dim, double>(
                 KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                    double myVal = std::pow(ippl::apply<Dim>(Eview, args)[2], 2);
+                    double myVal = std::pow(ippl::apply<Dim>(Eview, args)[Dim - 1], 2);
                     valL += myVal;
                 }),
             Kokkos::Sum<double>(temp));
@@ -509,7 +509,7 @@ public:
         Kokkos::parallel_reduce("Ex max norm", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
                                 ippl::detail::functorize<ippl::detail::REDUCE, Dim, double>(
                                     KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                                        double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[2]);
+                                        double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[Dim - 1]);
                                         if (myVal > valL)
                                             valL = myVal;
                                     }),
