@@ -405,10 +405,12 @@ public:
         rho_m[domain_m]=0; //!!!!!! there has to be a better way than setting rho to 0 every time
         this->Q.scatter(this->rho_m, this->R, IntrplCIC_t());
         //this->Q.scatter(this->rho_m, this->R, IntrplNGP_t());
-        dumpVTKScalar(rho_m,this,it,"RhoInterpol");
 
-        //rhocmpl_m[domain_m] = rho_m[domain_m];
+
+        // Normalize per grid-cell
         rhocmpl_m[domain_m] = rho_m[domain_m]/(hr_m[0]*hr_m[1]*hr_m[2]);
+        rhocmpl_m[domain_m] = rhocmpl_m[domain_m] - (total_charge/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
+        //dumpVTKScalar(rhocmpl_m,this,it,"RhoInterpol");
         RhoSum=sum(real(rhocmpl_m));
 
         //std::cout << "total charge in densitty field before ion subtraction is" << sum(real(rhocmpl_m))<< std::endl;
