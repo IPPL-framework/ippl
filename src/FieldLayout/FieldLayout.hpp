@@ -99,6 +99,7 @@ namespace ippl {
         }
 
         // If the user did not specify parallel/serial flags then make all parallel.
+        bool allSerial   = true;
         long totparelems = 1;
         for (unsigned d = 0; d < Dim; ++d) {
             if (userflags == 0)
@@ -108,6 +109,7 @@ namespace ippl {
 
             if (requestedLayout_m[d] == PARALLEL) {
                 totparelems *= domain[d].length();
+                allSerial = false;
             }
         }
 
@@ -126,7 +128,8 @@ namespace ippl {
 
         partition.split(domain, hLocalDomains_m, requestedLayout_m, nRanks);
 
-        findNeighbors();
+        if (!allSerial)
+            findNeighbors();
 
         Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
 
@@ -135,7 +138,11 @@ namespace ippl {
 
     template <unsigned Dim>
     const typename FieldLayout<Dim>::NDIndex_t& FieldLayout<Dim>::getLocalNDIndex(int rank) const {
-        return hLocalDomains_m(rank);
+        if (rank < hLocalDomains_m.size())
+            return hLocalDomains_m(rank);
+        else
+            // assume just one domain
+            return hLocalDomains_m(0);
     }
 
     template <unsigned Dim>

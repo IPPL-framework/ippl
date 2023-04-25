@@ -159,17 +159,18 @@ const char* TestName = "TwoStreamInstability";
 
 template <typename Bunch>
 struct PhaseDump {
-    PhaseDump(double size, ippl::e_dim_tag decomp[]) {
-        const size_t len = 128;
-        ippl::Index I(len);
+    PhaseDump(size_t nr, double domain) {
+        ippl::Index I(nr);
         ippl::NDIndex<2> owned(I, I);
-        layout = FieldLayout_t<2>(owned, decomp);
+        layout = FieldLayout_t<2>(owned, serial);
 
-        ippl::Vector<double, 2> hx = {size / len, size / len};
-        ippl::Vector<double, 2> origin{0, -8};
+        ippl::Vector<double, 2> hx = {domain / nr, 8. / nr};
+        ippl::Vector<double, 2> origin{0, -4};
 
-        mesh       = Mesh_t<2>(owned, hx, origin);
-        phaseSpace = Field_t<2>(mesh, layout);
+        mesh = Mesh_t<2>(owned, hx, origin);
+        phaseSpace.initialize(mesh, layout);
+        if (Ippl::Comm->rank() == 0)
+            phaseSpaceBuf.initialize(mesh, layout);
         std::cout << Ippl::Comm->rank() << ": " << phaseSpace.getOwned() << std::endl;
     }
 
@@ -190,16 +191,22 @@ struct PhaseDump {
             phaseSpace = 0;
             Kokkos::fence();
             scatter(P->q, phaseSpace, phase);
-            Inform out("Phase Dump", fname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
-            phaseSpace.write(out);
+            auto& view = phaseSpace.getView();
+            MPI_Reduce(view.data(), phaseSpaceBuf.getView().data(), view.size(), MPI_DOUBLE,
+                       MPI_SUM, 0, Ippl::getComm());
+            if (Ippl::Comm->rank() == 0) {
+                Inform out("Phase Dump", fname.str().c_str(), Inform::OVERWRITE, 0);
+                phaseSpaceBuf.write(out);
+            }
             Ippl::Comm->barrier();
         }
     }
 
 private:
+    ippl::e_dim_tag serial[2] = {ippl::SERIAL, ippl::SERIAL};
     FieldLayout_t<2> layout;
     Mesh_t<2> mesh;
-    Field_t<2> phaseSpace;
+    Field_t<2> phaseSpace, phaseSpaceBuf;
     ippl::ParticleAttrib<Vector<double, 2>> phase;
 };
 
@@ -374,7 +381,8 @@ int main(int argc, char* argv[]) {
 
     P->create(nloc);
 
-    PhaseDump<bunch_type> phase(rmax[0], decomp);
+    PhaseDump<bunch_type> phase(*std::max_element(nr.begin(), nr.end()),
+                                *std::max_element(rmax.begin(), rmax.end()));
 
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
 
