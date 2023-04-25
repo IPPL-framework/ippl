@@ -157,6 +157,7 @@ double PDF(const Vector_t<Dim>& xvec, const double& delta, const Vector_t<Dim>& 
 // const char* TestName = "BumponTailInstability";
 const char* TestName = "TwoStreamInstability";
 
+#ifdef PHASE_DUMP
 template <typename Bunch>
 struct PhaseDump {
     PhaseDump(size_t nr, double domain) {
@@ -164,8 +165,8 @@ struct PhaseDump {
         ippl::NDIndex<2> owned(I, I);
         layout = FieldLayout_t<2>(owned, serial);
 
-        ippl::Vector<double, 2> hx = {domain / nr, 8. / nr};
-        ippl::Vector<double, 2> origin{0, -4};
+        ippl::Vector<double, 2> hx = {domain / nr, 16. / nr};
+        ippl::Vector<double, 2> origin{0, -8};
 
         mesh = Mesh_t<2>(owned, hx, origin);
         phaseSpace.initialize(mesh, layout);
@@ -174,16 +175,12 @@ struct PhaseDump {
         std::cout << Ippl::Comm->rank() << ": " << phaseSpace.getOwned() << std::endl;
     }
 
-    void dump(int it, std::shared_ptr<Bunch> P) {
+    void dump(int it, std::shared_ptr<Bunch> P, bool allDims = false) {
         const auto pcount = P->getLocalNum();
         phase.realloc(pcount);
         auto& Ri = P->R;
         auto& Pi = P->P;
-        std::stringstream fname;
-        for (unsigned d = 0; d < Dim; d++) {
-            fname.str({});
-            fname << "PhaseSpace_t=" << it << "_d=" << d << "_r=" << Ippl::Comm->rank() << ".csv";
-
+        for (unsigned d = allDims ? 0 : Dim - 1; d < Dim; d++) {
             Kokkos::parallel_for(
                 "Copy phase space", pcount, KOKKOS_CLASS_LAMBDA(const size_t i) {
                     phase(i) = {Ri(i)[d], Pi(i)[d]};
@@ -195,12 +192,24 @@ struct PhaseDump {
             MPI_Reduce(view.data(), phaseSpaceBuf.getView().data(), view.size(), MPI_DOUBLE,
                        MPI_SUM, 0, Ippl::getComm());
             if (Ippl::Comm->rank() == 0) {
+                std::stringstream fname;
+                fname << "PhaseSpace_t=" << it << "_d=" << d << ".csv";
+
                 Inform out("Phase Dump", fname.str().c_str(), Inform::OVERWRITE, 0);
                 phaseSpaceBuf.write(out);
             }
+            auto max = phaseSpace.max();
+            auto min = phaseSpace.min();
+            if (max > maxValue)
+                maxValue = max;
+            if (min < minValue)
+                minValue = min;
             Ippl::Comm->barrier();
         }
     }
+
+    double maxRecorded() const { return maxValue; }
+    double minRecorded() const { return minValue; }
 
 private:
     ippl::e_dim_tag serial[2] = {ippl::SERIAL, ippl::SERIAL};
@@ -208,7 +217,10 @@ private:
     Mesh_t<2> mesh;
     Field_t<2> phaseSpace, phaseSpaceBuf;
     ippl::ParticleAttrib<Vector<double, 2>> phase;
+
+    double maxValue = 0, minValue = 0;
 };
+#endif
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
@@ -381,8 +393,10 @@ int main(int argc, char* argv[]) {
 
     P->create(nloc);
 
+#ifdef PHASE_DUMP
     PhaseDump<bunch_type> phase(*std::max_element(nr.begin(), nr.end()),
                                 *std::max_element(rmax.begin(), rmax.end()));
+#endif
 
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
 
@@ -476,7 +490,9 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
+#ifdef PHASE_DUMP
         phase.dump(it, P);
+#endif
     }
 
     msg << TestName << ": End." << endl;
@@ -488,6 +504,23 @@ int main(int argc, char* argv[]) {
     std::chrono::duration<double> time_chrono =
         std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
+
+#ifdef PHASE_DUMP
+    // clang-format off
+    if (Ippl::Comm->rank() == 0) {
+        std::cout
+            << "--- Phase Space Parameters ---\n"
+            << "Resolution: " << *std::max_element(nr.begin(), nr.end()) << "\n"
+            << "Domain: " << rmax[Dim - 1] << "\n"
+            << "Phase space axis: " << (Dim - 1)
+                << "; range: [" << phase.minRecorded() << ", " << phase.maxRecorded() << "]\n"
+            << "Particle count: " << totalP << "\n"
+            << "Ranks: " << Ippl::Comm->size() << "\n"
+            << "Timestep: " << dt << "\n"
+            << "------------------------------" << std::endl;
+    }
+// clang-format on
+#endif
 
     return 0;
 }
