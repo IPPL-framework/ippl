@@ -261,6 +261,20 @@ int main(int argc, char *argv[]){
     P->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
 
+    ippl::ParameterList fftParams;
+
+    fftParams.add("gpu_method", 1);
+    fftParams.add("gpu_sort", 1);
+    fftParams.add("gpu_kerevalmeth", 1);
+    fftParams.add("tolerance", 1e-4);
+
+    fftParams.add("use_cufinufft_defaults", false);
+
+
+    P->fft = std::make_shared<FFT_type>(FL, 1, fftParams);
+
+    P->q.initializeNUFFT(FL, 1, fftParams);
+    P->E.initializeNUFFT(FL, 2, fftParams);
 
     P->scatter();
 
