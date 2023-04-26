@@ -89,7 +89,7 @@ namespace ippl {
 	
 	//types of mesh and mesh spacing
 	using vector_type = typename Mesh::vector_type;
-	using mesh_type = typename Mesh::value_type;
+	using scalar_type = typename Mesh::value_type;
 
         // constructor and destructor
         FFTPoissonSolver(rhs_type& rhs, ParameterList& fftparams, std::string alg);

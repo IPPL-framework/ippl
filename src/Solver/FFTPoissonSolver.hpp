@@ -225,7 +225,7 @@ namespace ippl {
 
         // get origin
         vector_type origin  = mesh_mp->getOrigin();
-        const mesh_type sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
+        const scalar_type sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
 
         // origin should always be 0 for Green's function computation to work...
         if (sum != 0.0) {
@@ -685,7 +685,7 @@ namespace ippl {
             auto view_g = temp_m.getView();
 
             // define some constants
-            const mesh_type pi                 = std::acos(-1.0);
+            const scalar_type pi                 = std::acos(-1.0);
             const Kokkos::complex<Trhs> I = {0.0, 1.0};
 
             // define some member variables in local scope for the parallel_for
@@ -710,14 +710,14 @@ namespace ippl {
                         Vector_t kVec;
 
                         for (size_t d = 0; d < Dim; ++d) {
-                            const mesh_type Len  = N[d] * hsize[d];
+                            const scalar_type Len  = N[d] * hsize[d];
                             const bool shift  = (iVec[d] > N[d]);
                             const bool notMid = (iVec[d] != N[d]);
 
                             kVec[d] = notMid * (pi / Len) * (iVec[d] - shift * 2 * N[d]);
                         }
 
-                        const mesh_type Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
+                        const scalar_type Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
 
                         const bool isNotZero = (Dr != 0.0);
                         view_g(i, j, k)      = -isNotZero * (I * kVec[gd]) * viewR(i, j, k);
@@ -829,13 +829,13 @@ namespace ippl {
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::greensFunction() {
-        const mesh_type pi = std::acos(-1.0);
+        const scalar_type pi = std::acos(-1.0);
         grn_mr          = 0.0;
 
         if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
             vector_type l(hr_m * nr_m);
             vector_type hs_m;
-            mesh_type L_sum(0.0);
+            scalar_type L_sum(0.0);
 
             // compute length of the physical domain
             // compute Fourier domain spacing

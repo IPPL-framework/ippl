@@ -42,7 +42,7 @@ namespace ippl {
         using Base     = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
         using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
         using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
-	using mesh_type = typename Mesh::value_type;
+	using scalar_type = typename Mesh::value_type;
 
         FFTPeriodicPoissonSolver()
             : Base() {
