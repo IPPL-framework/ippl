@@ -241,17 +241,16 @@ int main(int argc, char* argv[]) {
         auto rhoview                   = P->rho_m.getView();
 
         using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
-        Kokkos::parallel_for(
+        ippl::parallel_for(
             "Assign initial rho based on PDF", ippl::detail::getRangePolicy<Dim>(rhoview, nghost),
-            ippl::detail::functorize<ippl::detail::FOR, Dim>(
-                KOKKOS_LAMBDA(const index_array_type& args) {
-                    // local to global index conversion
-                    Vector_t<Dim> xvec = args;
-                    for (unsigned d = 0; d < Dim; d++)
-                        xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                // local to global index conversion
+                Vector_t<Dim> xvec = args;
+                for (unsigned d = 0; d < Dim; d++)
+                    xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
 
-                    ippl::apply<Dim>(rhoview, args) = PDF(xvec, alpha, kw, Dim);
-                }));
+                ippl::apply<Dim>(rhoview, args) = PDF(xvec, alpha, kw, Dim);
+            });
 
         Kokkos::fence();
 

@@ -227,13 +227,12 @@ public:
         int nghost                               = this->EFDMag_m.getNghost();
 
         using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
-        Kokkos::parallel_reduce("Particle Charge",
-                                ippl::detail::getRangePolicy<Dim>(viewRho, nghost),
-                                ippl::detail::functorize<ippl::detail::REDUCE, Dim, double>(
-                                    KOKKOS_LAMBDA(const index_array_type& args, double& val) {
-                                        val += ippl::apply<Dim>(viewRho, args);
-                                    }),
-                                lq);
+        ippl::parallel_reduce(
+            "Particle Charge", ippl::detail::getRangePolicy<Dim>(viewRho, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args, double& val) {
+                val += ippl::apply<Dim>(viewRho, args);
+            },
+            lq);
         Kokkos::parallel_reduce(
             "Particle QM", viewqm.extent(0),
             KOKKOS_LAMBDA(const int i, double& val) { val += viewqm(i); }, lqm);
@@ -262,10 +261,9 @@ public:
         const int nghost                   = EFD_m.getNghost();
 
         using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
-        Kokkos::parallel_for(
+        ippl::parallel_for(
             "Assign EFD_m", ippl::detail::getRangePolicy<Dim>(view, nghost),
-            ippl::detail::functorize<ippl::detail::FOR, Dim>(KOKKOS_LAMBDA(
-                const index_array_type& args) {
+            KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
                 Vector_t vec = (0.5 + args + lDom.first() - nghost) * hr;
 
@@ -277,7 +275,7 @@ public:
                     for (unsigned d1 = 0; d1 < Dim - 1; d1++)
                         ippl::apply<Dim>(view, args)[d] *= sin(2 * ((d1 + 1) % 3) * pi * vec[d1]);
                 }
-            }));
+            });
 
         EFDMag_m = dot(EFD_m, EFD_m);
         EFDMag_m = sqrt(EFDMag_m);
@@ -359,19 +357,19 @@ public:
             end[0] /= size;
             // Loops over particles
             using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
-            Kokkos::parallel_for("initPositions", ippl::detail::createRangePolicy<Dim>(begin, end),
-                                 ippl::detail::functorize<ippl::detail::FOR, Dim>(KOKKOS_LAMBDA(
-                                     const index_array_type& args) {
-                                     int l = 0;
-                                     for (unsigned d1 = 0; d1 < Dim; d1++) {
-                                         int next = args[d1];
-                                         for (unsigned d2 = 0; d2 < d1; d2++) {
-                                             next *= N;
-                                         }
-                                         l += next / size;
-                                     }
-                                     R_host(l) = (0.5 + args + lDom.first()) * hr;
-                                 }));
+            ippl::parallel_for(
+                "initPositions", ippl::detail::createRangePolicy<Dim>(begin, end),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    int l = 0;
+                    for (unsigned d1 = 0; d1 < Dim; d1++) {
+                        int next = args[d1];
+                        for (unsigned d2 = 0; d2 < d1; d2++) {
+                            next *= N;
+                        }
+                        l += next / size;
+                    }
+                    R_host(l) = (0.5 + args + lDom.first()) * hr;
+                });
 
         } else if (tag == 1) {
             m << "Positions follow normal distribution" << endl;
