@@ -78,28 +78,30 @@ namespace ippl {
 
     /// @cond
 
-    DefineUnaryOperation(UnaryMinus, operator-, -u_m[i], -u_m(args...))
-    DefineUnaryOperation(UnaryPlus, operator+, +u_m[i], +u_m(args...))
-    DefineUnaryOperation(BitwiseNot, operator~, ~u_m[i], ~u_m(args...))
-    DefineUnaryOperation(Not, operator!, !u_m[i], !u_m(args...))
+    // clang-format off
+    DefineUnaryOperation(UnaryMinus, operator-, -u_m[i],  -u_m(args...))
+    DefineUnaryOperation(UnaryPlus,  operator+, +u_m[i],  +u_m(args...))
+    DefineUnaryOperation(BitwiseNot, operator~, ~u_m[i],  ~u_m(args...))
+    DefineUnaryOperation(Not,        operator!, !u_m[i],  !u_m(args...))
 
-    DefineUnaryOperation(ArcCos, acos, acos(u_m[i]), acos(u_m(args...)))
-    DefineUnaryOperation(ArcSin, asin, asin(u_m[i]), asin(u_m(args...)))
-    DefineUnaryOperation(ArcTan, atan, atan(u_m[i]), atan(u_m(args...)))
-    DefineUnaryOperation(Ceil, ceil, ceil(u_m[i]), ceil(u_m(args...)))
-    DefineUnaryOperation(Cos, cos, cos(u_m[i]), cos(u_m(args...)))
-    DefineUnaryOperation(HypCos, cosh, cosh(u_m[i]), cosh(u_m(args...)))
-    DefineUnaryOperation(Exp, exp, exp(u_m[i]), exp(u_m(args...)))
-    DefineUnaryOperation(Fabs, fabs, fabs(u_m[i]), fabs(u_m(args...)))
-    DefineUnaryOperation(Floor, floor, floor(u_m[i]), floor(u_m(args...)))
-    DefineUnaryOperation(Log, log, log(u_m[i]), log(u_m(args...)))
-    DefineUnaryOperation(Log10, log10, log10(u_m[i]), log10(u_m(args...)))
-    DefineUnaryOperation(Sin, sin, sin(u_m[i]), sin(u_m(args...)))
-    DefineUnaryOperation(HypSin, sinh, sinh(u_m[i]), sinh(u_m(args...)))
-    DefineUnaryOperation(Sqrt, sqrt, sqrt(u_m[i]), sqrt(u_m(args...)))
-    DefineUnaryOperation(Tan, tan, tan(u_m[i]), tan(u_m(args...)))
-    DefineUnaryOperation(HypTan, tanh, tanh(u_m[i]), tanh(u_m(args...)))
-    DefineUnaryOperation(Erf, erf, erf(u_m[i]), erf(u_m(args...)))
+    DefineUnaryOperation(ArcCos, acos,  acos(u_m[i]),  acos(u_m(args...)))
+    DefineUnaryOperation(ArcSin, asin,  asin(u_m[i]),  asin(u_m(args...)))
+    DefineUnaryOperation(ArcTan, atan,  atan(u_m[i]),  atan(u_m(args...)))
+    DefineUnaryOperation(Ceil,   ceil,  ceil(u_m[i]),  ceil(u_m(args...)))
+    DefineUnaryOperation(Cos,    cos,   cos(u_m[i]),   cos(u_m(args...)))
+    DefineUnaryOperation(HypCos, cosh,  cosh(u_m[i]),  cosh(u_m(args...)))
+    DefineUnaryOperation(Exp,    exp,   exp(u_m[i]),   exp(u_m(args...)))
+    DefineUnaryOperation(Fabs,   fabs,  fabs(u_m[i]),  fabs(u_m(args...)))
+    DefineUnaryOperation(Floor,  floor, floor(u_m[i]), floor(u_m(args...)))
+    DefineUnaryOperation(Log,    log,   log(u_m[i]),   log(u_m(args...)))
+    DefineUnaryOperation(Log10,  log10, log10(u_m[i]), log10(u_m(args...)))
+    DefineUnaryOperation(Sin,    sin,   sin(u_m[i]),   sin(u_m(args...)))
+    DefineUnaryOperation(HypSin, sinh,  sinh(u_m[i]),  sinh(u_m(args...)))
+    DefineUnaryOperation(Sqrt,   sqrt,  sqrt(u_m[i]),  sqrt(u_m(args...)))
+    DefineUnaryOperation(Tan,    tan,   tan(u_m[i]),   tan(u_m(args...)))
+    DefineUnaryOperation(HypTan, tanh,  tanh(u_m[i]),  tanh(u_m(args...)))
+    DefineUnaryOperation(Erf,    erf,   erf(u_m[i]),   erf(u_m(args...)))
+// clang-format on
 /// @endcond
 
 /*!
@@ -150,23 +152,25 @@ namespace ippl {
     }
 
     /// @cond
-    DefineBinaryOperation(Add, operator+, u_m[i] + v_m[i], u_m(args...) + v_m(args...))
-    DefineBinaryOperation(Subtract, operator-, u_m[i] - v_m[i], u_m(args...) - v_m(args...))
-    DefineBinaryOperation(Multiply, operator*, u_m[i] * v_m[i], u_m(args...) * v_m(args...))
-    DefineBinaryOperation(Divide, operator/, u_m[i] / v_m[i], u_m(args...) / v_m(args...))
-    DefineBinaryOperation(Mod, operator%, u_m[i] % v_m[i], u_m(args...) % v_m(args...))
-    DefineBinaryOperation(LT, operator<, u_m[i] < v_m[i], u_m(args...) < v_m(args...))
-    DefineBinaryOperation(LE, operator<=, u_m[i] <= v_m[i], u_m(args...) <= v_m(args...))
-    DefineBinaryOperation(GT, operator>, u_m[i] > v_m[i], u_m(args...) > v_m(args...))
-    DefineBinaryOperation(GE, operator>=, u_m[i] >= v_m[i], u_m(args...) >= v_m(args...))
-    DefineBinaryOperation(EQ, operator==, u_m[i] == v_m[i], u_m(args...) == v_m(args...))
-    DefineBinaryOperation(NEQ, operator!=, u_m[i] != v_m[i], u_m(args...) != v_m(args...))
-    DefineBinaryOperation(And, operator&&, u_m[i] && v_m[i], u_m(args...) && v_m(args...))
-    DefineBinaryOperation(Or, operator||, u_m[i] || v_m[i], u_m(args...) || v_m(args...))
+    // clang-format off
+    DefineBinaryOperation(Add,      operator+,  u_m[i] + v_m[i],  u_m(args...) + v_m(args...))
+    DefineBinaryOperation(Subtract, operator-,  u_m[i] - v_m[i],  u_m(args...) - v_m(args...))
+    DefineBinaryOperation(Multiply, operator*,  u_m[i] * v_m[i],  u_m(args...) * v_m(args...))
+    DefineBinaryOperation(Divide,   operator/,  u_m[i] / v_m[i],  u_m(args...) / v_m(args...))
+    DefineBinaryOperation(Mod,      operator%,  u_m[i] % v_m[i],  u_m(args...) % v_m(args...))
+    DefineBinaryOperation(LT,       operator<,  u_m[i] < v_m[i],  u_m(args...) < v_m(args...))
+    DefineBinaryOperation(LE,       operator<=, u_m[i] <= v_m[i], u_m(args...) <= v_m(args...))
+    DefineBinaryOperation(GT,       operator>,  u_m[i] > v_m[i],  u_m(args...) > v_m(args...))
+    DefineBinaryOperation(GE,       operator>=, u_m[i] >= v_m[i], u_m(args...) >= v_m(args...))
+    DefineBinaryOperation(EQ,       operator==, u_m[i] == v_m[i], u_m(args...) == v_m(args...))
+    DefineBinaryOperation(NEQ,      operator!=, u_m[i] != v_m[i], u_m(args...) != v_m(args...))
+    DefineBinaryOperation(And,      operator&&, u_m[i] && v_m[i], u_m(args...) && v_m(args...))
+    DefineBinaryOperation(Or,       operator||, u_m[i] || v_m[i], u_m(args...) || v_m(args...))
 
     DefineBinaryOperation(BitwiseAnd, operator&, u_m[i] & v_m[i], u_m(args...) & v_m(args...))
-    DefineBinaryOperation(BitwiseOr, operator|, u_m[i] | v_m[i], u_m(args...) | v_m(args...))
+    DefineBinaryOperation(BitwiseOr,  operator|, u_m[i] | v_m[i], u_m(args...) | v_m(args...))
     DefineBinaryOperation(BitwiseXor, operator^, u_m[i] ^ v_m[i], u_m(args...) ^ v_m(args...))
+    // clang-format on
 
     DefineBinaryOperation(Copysign, copysign, copysign(u_m[i], v_m[i]),
                           copysign(u_m(args...), v_m(args...)))

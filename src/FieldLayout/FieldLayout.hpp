@@ -138,7 +138,7 @@ namespace ippl {
 
     template <unsigned Dim>
     const typename FieldLayout<Dim>::NDIndex_t& FieldLayout<Dim>::getLocalNDIndex(int rank) const {
-        if (rank < hLocalDomains_m.size())
+        if (rank < (int)hLocalDomains_m.size())
             return hLocalDomains_m(rank);
         else
             // assume just one domain
