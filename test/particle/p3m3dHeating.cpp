@@ -460,10 +460,11 @@ public:
         //compute electrostatic potential Phi in real space by FFT PhiHat -> Phi and store it in rhocmpl_m
         fft_m->transform("forward", rhocmpl_m);
 
+        //phi_m = real(rhocmpl_m) / max(abs(real(rhocmpl_m)));
         //take only the real part and store in phi_m (has periodic bc instead of interpolation bc)
         phi_m = real(rhocmpl_m)*hr_m[0]*hr_m[1]*hr_m[2];
+        dumpVTKScalar(phi_m, this, it, "normalizedPhiOutput") ;
         std::cout << "Inside calculateGridForces (0): " << std::setprecision(16) <<phi_m[10][10][10] << std::endl;
-        dumpVTKScalar( phi_m, this, it, "Phi_m") ;
 
         //compute Electric field on the grid by -Grad(Phi) store in eg_m
         eg_m = -Grad1Ord(phi_m, eg_m);
@@ -695,6 +696,7 @@ int main(int argc, char *argv[]){
         Vektor<double,Dim> Vmax(6,6,6);
         P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r);
         createParticleDistributionHeating(P,extend_l,extend_r,beam_radius, Nparticle,charge_per_part,mass_per_part);
+        //P->R[0]={0.0,0.0,0.0};
 
         /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -729,13 +731,13 @@ int main(int argc, char *argv[]){
         std::cout << "Phi after Initialization: " << std::setprecision(16) << P->phi_m[10][10][10] << std::endl;
         P->calculateGridForces(interaction_radius,alpha,0,0,0);
         P->avgPot = P->computeAvgSpaceChargePotential();
-        writeAvgPotential(P,0);
+        //writeAvgPotential(P,0);
         P->calculatePairForces(interaction_radius,eps,alpha);
 
         //avg space charge forces for constant focusing
         // Kept the same throughout the simulation
         P->initialAvgEF = P->computeAvgSpaceChargeForces();
-        writeAvgEfield(P,0);
+        //writeAvgEfield(P,0);
 
         //dumpVTKVector(P->eg_m, P,0,"EFieldAfterPMandPP");
 
@@ -762,7 +764,7 @@ int main(int argc, char *argv[]){
         //COmpute and write temperature
         P->compute_temperature();
         writeTemperature(P,0);
-        dumpParticlesOPAL(P,0);
+        //dumpParticlesOPAL(P,0);
         for (int it=0; it<iterations; it++) {
           
           
@@ -783,7 +785,7 @@ int main(int argc, char *argv[]){
             std::cout << "Phi in Loop: " << std::setprecision(16) << P->phi_m[10][10][10] << std::endl;
             
             P->avgPot = P->computeAvgSpaceChargePotential();
-            writeAvgPotential(P,it+1);
+            //writeAvgPotential(P,it+1);
 
             IpplTimings::startTimer(particleTimer);
             P->calculatePairForces(interaction_radius,eps,alpha);
@@ -793,7 +795,7 @@ int main(int argc, char *argv[]){
 
             //second part of leapfrog: advance velocitites
             P->currAvgEF = P->computeAvgSpaceChargeForces();
-            writeAvgEfield(P,it+1);
+            //writeAvgEfield(P,it+1);
 
             P->applyConstantFocusing(focusingForce,beam_radius);
 
@@ -807,17 +809,17 @@ int main(int argc, char *argv[]){
                 P->computeBeamStatistics();
                 writeBeamStatisticsVelocity(P,it+1);
 
-                P->calc_field_energy();
-                P->calc_kinetic_energy();
-                P->calc_potential_energy();
-                writeEnergy(P,it+1);
+                //P->calc_field_energy();
+                //P->calc_kinetic_energy();
+                //P->calc_potential_energy();
+                //writeEnergy(P,it+1);
                 //dumpConservedQuantities(P,printid);
                 
-                P->compute_temperature();
-                writeTemperature(P,it+1);
+                //P->compute_temperature();
+                //writeTemperature(P,it+1);
 
                 //dumpH5partVelocity(P,printid++);
-                dumpParticlesOPAL(P,it+1);
+                //dumpParticlesOPAL(P,it+1);
             }
 
             msg << "Finished iteration " << it << endl;
