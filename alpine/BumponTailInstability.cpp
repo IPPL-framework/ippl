@@ -48,6 +48,8 @@
 
 constexpr unsigned Dim = 2;
 
+constexpr bool ENABLE_PHASE_DUMP = false;
+
 template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
@@ -157,10 +159,9 @@ double PDF(const Vector_t<Dim>& xvec, const double& delta, const Vector_t<Dim>& 
 // const char* TestName = "BumponTailInstability";
 const char* TestName = "TwoStreamInstability";
 
-#ifdef PHASE_DUMP
 template <typename Bunch>
 struct PhaseDump {
-    PhaseDump(size_t nr, double domain) {
+    void initialize(size_t nr, double domain) {
         ippl::Index I(nr);
         ippl::NDIndex<2> owned(I, I);
         layout = FieldLayout_t<2>(owned, serial);
@@ -220,7 +221,6 @@ private:
 
     double maxValue = 0, minValue = 0;
 };
-#endif
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
@@ -393,10 +393,10 @@ int main(int argc, char* argv[]) {
 
     P->create(nloc);
 
-#ifdef PHASE_DUMP
-    PhaseDump<bunch_type> phase(*std::max_element(nr.begin(), nr.end()),
-                                *std::max_element(rmax.begin(), rmax.end()));
-#endif
+    PhaseDump<bunch_type> phase;
+    if constexpr (ENABLE_PHASE_DUMP)
+        phase.initialize(*std::max_element(nr.begin(), nr.end()),
+                         *std::max_element(rmax.begin(), rmax.end()));
 
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
 
@@ -490,9 +490,8 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
-#ifdef PHASE_DUMP
-        phase.dump(it, P);
-#endif
+        if constexpr (ENABLE_PHASE_DUMP)
+            phase.dump(it, P);
     }
 
     msg << TestName << ": End." << endl;
@@ -505,22 +504,21 @@ int main(int argc, char* argv[]) {
         std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
 
-#ifdef PHASE_DUMP
-    // clang-format off
-    if (Ippl::Comm->rank() == 0) {
-        std::cout
-            << "--- Phase Space Parameters ---\n"
-            << "Resolution: " << *std::max_element(nr.begin(), nr.end()) << "\n"
-            << "Domain: " << rmax[Dim - 1] << "\n"
-            << "Phase space axis: " << (Dim - 1)
-                << "; range: [" << phase.minRecorded() << ", " << phase.maxRecorded() << "]\n"
-            << "Particle count: " << totalP << "\n"
-            << "Ranks: " << Ippl::Comm->size() << "\n"
-            << "Timestep: " << dt << "\n"
-            << "------------------------------" << std::endl;
-    }
-// clang-format on
-#endif
+    if constexpr (ENABLE_PHASE_DUMP)
+        // clang-format off
+        if (Ippl::Comm->rank() == 0) {
+            std::cout
+                << "--- Phase Space Parameters ---\n"
+                << "Resolution: " << *std::max_element(nr.begin(), nr.end()) << "\n"
+                << "Domain: " << rmax[Dim - 1] << "\n"
+                << "Phase space axis: " << (Dim - 1)
+                    << "; range: [" << phase.minRecorded() << ", " << phase.maxRecorded() << "]\n"
+                << "Particle count: " << totalP << "\n"
+                << "Ranks: " << Ippl::Comm->size() << "\n"
+                << "Timestep: " << dt << "\n"
+                << "------------------------------" << std::endl;
+        }
+    // clang-format on
 
     return 0;
 }
