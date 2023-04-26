@@ -97,20 +97,19 @@ void dumpVTKScalar( FieldType & f, const ParticleType & p,int iteration = 0, std
         vtkout << "toyfdtd" << std::endl;
         vtkout << "ASCII" << std::endl;
         vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-        vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << std::endl;
-        //vtkout << "DIMENSIONS " << lDom[0].length()  << " " <<  lDom[1].length()  << " " <<  lDom[2].length()  << std::endl;
-        //vtkout << "ORIGIN 0 0 0" << std::endl;
-        vtkout << "ORIGIN "<< p->extend_l[0]+.5*dx+lDom[0].first()*dx <<" " << p->extend_l[1]+.5*dy+lDom[1].first()*dy << " " << p->extend_l[2]+.5*dy+lDom[2].first()*dz << std::endl;
-        //vtkout << "ORIGIN "<< p->rmin_m[0]<<" " << p->rmin_m[1] << " " << p->rmin_m[2] << std::endl;
+        vtkout << "DIMENSIONS " << nx+1 << " " << ny+1 << " " << nz+1 << std::endl;
+        vtkout << "ORIGIN "<< p->rmin_m[0] << " "
+                           << p->rmin_m[1] << " "
+                           << p->rmin_m[2] << std::endl;
         vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-        vtkout << "POINT_DATA " << nx*ny*nz << std::endl;
-        vtkout << "SCALARS Scalar_Value float" << std::endl;
+        vtkout << "CELL_DATA " << nx*ny*nz << std::endl;
+        vtkout << "SCALARS " << label << " float" << std::endl;
         vtkout << "LOOKUP_TABLE default" << std::endl;
-        for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
-                for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
-                        for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
+        for (int z=1; z<nz+1; z++) {
+                for (int y=1; y<ny+1; y++) {
+                        for (int x=1; x<nx+1; x++) {
                                 std::complex<double> tmp = f[x][y][z].get();
-                                vtkout << real(tmp) << std::endl;
+                                vtkout << 1e-6*real(tmp) << std::endl;
                         }
                 }
         }

@@ -463,7 +463,7 @@ public:
         //phi_m = real(rhocmpl_m) / max(abs(real(rhocmpl_m)));
         //take only the real part and store in phi_m (has periodic bc instead of interpolation bc)
         phi_m = real(rhocmpl_m)*hr_m[0]*hr_m[1]*hr_m[2];
-        dumpVTKScalar(phi_m, this, it, "normalizedPhiOutput") ;
+        dumpVTKScalar(phi_m, this, it, "Phi_P3M") ;
         std::cout << "Inside calculateGridForces (0): " << std::setprecision(16) <<phi_m[10][10][10] << std::endl;
 
         //compute Electric field on the grid by -Grad(Phi) store in eg_m
