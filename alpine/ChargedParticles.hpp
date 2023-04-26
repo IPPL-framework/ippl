@@ -18,6 +18,7 @@
 
 #include "Ippl.h"
 
+#include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
 
 // some typedefs
@@ -58,7 +59,7 @@ using VField_t = Field<Vector_t<Dim>, Dim>;
 
 template <unsigned Dim = 3>
 using Solver_t = std::conditional_t<
-    Dim == 1, ippl::ElectrostaticsCG<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>,
+    Dim == 1, ippl::ElectrostaticsCG<double, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>,
     ippl::FFTPeriodicPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>;
 
 const double pi = std::acos(-1.0);
@@ -143,6 +144,10 @@ class ChargedParticles : public ippl::ParticleBase<PLayout> {
 public:
     VField_t<Dim> E_m;
     Field_t<Dim> rho_m;
+    Field_t<Dim> phi_m;
+
+    typedef ippl::BConds<double, Dim, Mesh_t<Dim>, Centering_t<Dim>> bc_type;
+    bc_type allPeriodic;
 
     // ORB
     ORB<Dim> orb;
@@ -181,10 +186,8 @@ public:
     */
     ChargedParticles(PLayout& pl)
         : ippl::ParticleBase<PLayout>(pl) {
-        // register the particle attributes
-        this->addAttribute(q);
-        this->addAttribute(P);
-        this->addAttribute(E);
+        registerAttributes();
+        setPotentialBCs();
     }
 
     ChargedParticles(PLayout& pl, Vector_t<Dim> hr, Vector_t<Dim> rmin, Vector_t<Dim> rmax,
@@ -194,13 +197,26 @@ public:
         , rmin_m(rmin)
         , rmax_m(rmax)
         , Q_m(Q) {
+        registerAttributes();
+        for (unsigned int i = 0; i < Dim; i++)
+            decomp_m[i] = decomp[i];
+        setupBCs();
+        setPotentialBCs();
+    }
+
+    void setPotentialBCs() {
+        if constexpr (Dim == 1)
+            for (unsigned int i = 0; i < 2 * Dim; ++i) {
+                allPeriodic[i] = std::make_shared<
+                    ippl::PeriodicFace<double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
+            }
+    }
+
+    void registerAttributes() {
         // register the particle attributes
         this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
-        for (unsigned int i = 0; i < Dim; i++)
-            decomp_m[i] = decomp[i];
-        setupBCs();
     }
 
     ~ChargedParticles() {}
@@ -214,6 +230,10 @@ public:
         IpplTimings::startTimer(tupdateLayout);
         this->E_m.updateLayout(fl);
         this->rho_m.updateLayout(fl);
+        if constexpr (Dim == 1) {
+            this->phi_m.updateLayout(fl);
+            phi_m.setFieldBC(allPeriodic);
+        }
 
         // Update layout with new FieldLayout
         PLayout& layout = this->getLayout();
@@ -225,6 +245,15 @@ public:
             layout.update(*this, buffer);
         }
         IpplTimings::stopTimer(tupdatePLayout);
+    }
+
+    void initializeFields(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& fl) {
+        E_m.initialize(mesh, fl);
+        rho_m.initialize(mesh, fl);
+        if constexpr (Dim == 1) {
+            phi_m.initialize(mesh, fl);
+            phi_m.setFieldBC(allPeriodic);
+        }
     }
 
     void initializeORB(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh) {
@@ -358,7 +387,12 @@ public:
 
         solver_mp->setRhs(rho_m);
 
-        solver_mp->setLhs(E_m);
+        if constexpr (Dim == 1) {
+            solver_mp->setLhs(phi_m);
+            solver_mp->setGradient(E_m);
+        } else {
+            solver_mp->setLhs(E_m);
+        }
     }
 
     void initCGSolver() {
@@ -523,7 +557,8 @@ public:
         Kokkos::parallel_reduce("Ex max norm", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
                                 ippl::detail::functorize<ippl::detail::REDUCE, Dim, double>(
                                     KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                                        double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[Dim - 1]);
+                                        double myVal =
+                                            std::fabs(ippl::apply<Dim>(Eview, args)[Dim - 1]);
                                         if (myVal > valL)
                                             valL = myVal;
                                     }),

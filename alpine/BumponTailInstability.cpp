@@ -46,7 +46,7 @@
 
 #include "ChargedParticles.hpp"
 
-constexpr unsigned Dim = 2;
+constexpr unsigned Dim = 1;
 
 constexpr bool ENABLE_PHASE_DUMP = false;
 
@@ -317,8 +317,7 @@ int main(int argc, char* argv[]) {
 
     P->nr_m = nr;
 
-    P->E_m.initialize(mesh, FL);
-    P->rho_m.initialize(mesh, FL);
+    P->initializeFields(mesh, FL);
 
     bunch_type bunchBuffer(PL);
 
