@@ -101,6 +101,7 @@ struct SpecializedGreensFunction<3> {
                     }
                     else
                         grn.localElement(elem) = ke*std::complex<double>(std::erf(alpha*r)/(r+eps));
+                        //grn.localElement(elem) = std::complex<double>(std::erf(alpha*r)/(r+eps));
                 }
             }
         }
@@ -353,6 +354,28 @@ public:
         AmplitudeEFz=max(sqrt(dot(eg_m,eg_m)));
     }
 
+    void calc_avg_EField(){
+        // Avg E-Field from the actual Field Datastructure
+        Vektor<double,Dim> local_avgEF;
+        NDIndex<3> lDom = eg_m.getLayout().getLocalNDIndex();
+        this->avgEF = {0.0, 0.0, 0.0};
+        double normFactor = 1.0 / static_cast<double>((nr_m[0]*nr_m[1]*nr_m[2]));
+                                                      //(hr_m[0]*hr_m[1]*hr_m[2]));
+        //std::cout << "normFactor = " << normFactor << std::endl;
+        for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
+                for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
+                        for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
+                            local_avgEF[0]+=fabs(eg_m[x][y][z].get()(0))*normFactor;
+                            local_avgEF[1]+=fabs(eg_m[x][y][z].get()(1))*normFactor;
+                            local_avgEF[2]+=fabs(eg_m[x][y][z].get()(2))*normFactor;
+                        }
+                }
+        }
+
+        reduce(&(local_avgEF[0]), &(local_avgEF[0]) + Dim,
+               &(this->avgEF[0]), OpAddAssign());
+    }
+
     double computeAvgSpaceChargePotential() {
         Inform m("computeAvgSpaceChargePotential ");
         //const double mesh_volume = hr_m[0]*nr_m[0]*
@@ -365,32 +388,32 @@ public:
 
     Vektor<double,Dim> computeAvgSpaceChargeForces() {
         Inform m("computeAvgSpaceChargeForces ");
-        double globSumEF[Dim];
+        double globSumEF_particle[Dim];
         Vektor<double,Dim> resultVektor;
 
         const double N =  static_cast<double>(this->getTotalNum());
-        double locAvgEF[Dim]={};
+        double locAvgEF_particle[Dim]={};
         for (unsigned i=0; i<this->getLocalNum(); ++i) {
-            locAvgEF[0]+=fabs(EF[i](0));
-            locAvgEF[1]+=fabs(EF[i](1));
-            locAvgEF[2]+=fabs(EF[i](2));
+            locAvgEF_particle[0]+=fabs(EF[i](0));
+            locAvgEF_particle[1]+=fabs(EF[i](1));
+            locAvgEF_particle[2]+=fabs(EF[i](2));
         }
 
-        reduce(&(locAvgEF[0]), &(locAvgEF[0]) + Dim,
-               &(globSumEF[0]), OpAddAssign());
+        reduce(&(locAvgEF_particle[0]), &(locAvgEF_particle[0]) + Dim,
+               &(globSumEF_particle[0]), OpAddAssign());
 
 
-        m << "globSumEF = " << globSumEF[0] << "\t" << globSumEF[1] << "\t" << globSumEF[2] << endl;
+        m << "globSumEF_particle = " << globSumEF_particle[0] << "\t" << globSumEF_particle[1] << "\t" << globSumEF_particle[2] << endl;
 
-        resultVektor[0]=globSumEF[0]/N;
-        resultVektor[1]=globSumEF[1]/N;
-        resultVektor[2]=globSumEF[2]/N;
+        resultVektor[0]=globSumEF_particle[0]/N;
+        resultVektor[1]=globSumEF_particle[1]/N;
+        resultVektor[2]=globSumEF_particle[2]/N;
 
         return resultVektor;
     }
 
     void applyConstantFocusing(double f,double beam_radius) {
-        double focusingForce=sqrt(dot(initialAvgEF,initialAvgEF));
+        double focusingForce=sqrt(dot(initialAvgEF_particle,initialAvgEF_particle));
         for (unsigned i=0; i<this->getLocalNum(); ++i) {
             EF[i]+=this->R[i]/beam_radius*f*focusingForce;
         }
@@ -410,7 +433,10 @@ public:
         // Normalize per grid-cell
         rhocmpl_m[domain_m] = rho_m[domain_m]/(hr_m[0]*hr_m[1]*hr_m[2]);
         rhocmpl_m[domain_m] = rhocmpl_m[domain_m] - (total_charge/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
-        //dumpVTKScalar(rhocmpl_m,this,it,"RhoInterpol");
+
+        //dumpVTKScalar(rhocmpl_m,this,it, 1.0, "Rho_P3M");
+        // Use variable otherwise compiler complains
+        it += 1;
         RhoSum=sum(real(rhocmpl_m));
 
         //std::cout << "total charge in densitty field before ion subtraction is" << sum(real(rhocmpl_m))<< std::endl;
@@ -461,10 +487,10 @@ public:
         fft_m->transform("forward", rhocmpl_m);
 
         //phi_m = real(rhocmpl_m) / max(abs(real(rhocmpl_m)));
+
         //take only the real part and store in phi_m (has periodic bc instead of interpolation bc)
         phi_m = real(rhocmpl_m)*hr_m[0]*hr_m[1]*hr_m[2];
-        dumpVTKScalar(phi_m, this, it, "Phi_P3M") ;
-        std::cout << "Inside calculateGridForces (0): " << std::setprecision(16) <<phi_m[10][10][10] << std::endl;
+        //dumpVTKScalar(phi_m, this, it, 1e-6, "Phi_P3M") ;
 
         //compute Electric field on the grid by -Grad(Phi) store in eg_m
         eg_m = -Grad1Ord(phi_m, eg_m);
@@ -473,7 +499,6 @@ public:
         EF.gather(eg_m, this->R,  IntrplCIC_t());
         //interpolate electrostatic potenital to the particle positions
         Phi.gather(phi_m, this->R, IntrplCIC_t());
-        std::cout << "Inside calculateGridForces (1): " << std::setprecision(16) << phi_m[10][10][10] << std::endl;
     }
 
 
@@ -580,8 +605,11 @@ public:
 
 
     double avgPot;
-    Vektor<double,Dim> initialAvgEF;
-    Vektor<double,Dim> currAvgEF;
+    // Average E-Field computed from the field `eg_m`
+    Vektor<double,Dim> avgEF;
+    // Average E-Field computed with the particle attributes gathered from the field `eg_m`
+    Vektor<double,Dim> initialAvgEF_particle;
+    Vektor<double,Dim> currAvgEF_particle;
 
 };
 
@@ -695,7 +723,35 @@ int main(int argc, char *argv[]){
 
         Vektor<double,Dim> Vmax(6,6,6);
         P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r);
+        P->update();
+        
+        /////////////////////////////////////////////////////////////////
+        // Fill Field with physical positions (for debugging purposes) //
+        /////////////////////////////////////////////////////////////////
+
+        //NDIndex<3> lDom = P->eg_m.getLayout().getLocalNDIndex();
+        //double dx=P->hr_m[0]; double dy=P->hr_m[1]; double dz=P->hr_m[2];
+        //for (int k=lDom[2].first(); k<=lDom[2].last(); k++) {
+                //for (int j=lDom[1].first(); j<=lDom[1].last(); j++) {
+                        //for (int i=lDom[0].first(); i<=lDom[0].last(); i++) {
+                            //const int ig = i + lDom[0].first(); //- nghost;
+                            //const int jg = j + lDom[1].first(); //- nghost;
+                            //const int kg = k + lDom[2].first(); //- nghost;
+
+                            //double x = (ig + 0.5) * dx + extend_l[0];
+                            //double y = (jg + 0.5) * dy + extend_l[1];
+                            //double z = (kg + 0.5) * dz + extend_l[2];
+                            //Vektor<double, 3> position(x,y,z);
+                        //}
+                //}
+        //}
+
         createParticleDistributionHeating(P,extend_l,extend_r,beam_radius, Nparticle,charge_per_part,mass_per_part);
+        
+        //////////////////////////////////////////
+        // Test Scatter-Gather with one particle//
+        //////////////////////////////////////////
+        
         //P->R[0]={0.0,0.0,0.0};
 
         /////////////////////////////////////////////////////////////////////////////////////////////
@@ -728,7 +784,6 @@ int main(int argc, char *argv[]){
         msg << "Starting iterations ..." << endl;
         //P->compute_temperature();
         // calculate initial space charge forces
-        std::cout << "Phi after Initialization: " << std::setprecision(16) << P->phi_m[10][10][10] << std::endl;
         P->calculateGridForces(interaction_radius,alpha,0,0,0);
         P->avgPot = P->computeAvgSpaceChargePotential();
         //writeAvgPotential(P,0);
@@ -736,10 +791,11 @@ int main(int argc, char *argv[]){
 
         //avg space charge forces for constant focusing
         // Kept the same throughout the simulation
-        P->initialAvgEF = P->computeAvgSpaceChargeForces();
-        //writeAvgEfield(P,0);
+        P->calc_avg_EField();
+        P->initialAvgEF_particle = P->computeAvgSpaceChargeForces();
+        writeAvgEField(P,0);
 
-        //dumpVTKVector(P->eg_m, P,0,"EFieldAfterPMandPP");
+        //dumpVTKVector(P->eg_m, P,0, 1e-2,"EField_P3M");
 
         //compute quantities to check correctness:
         /*
@@ -759,7 +815,7 @@ int main(int argc, char *argv[]){
         P->calc_field_energy();
         P->calc_kinetic_energy();
         P->calc_potential_energy();
-        writeEnergy(P,0);
+        //writeEnergy(P,0);
         
         //COmpute and write temperature
         P->compute_temperature();
@@ -782,7 +838,6 @@ int main(int argc, char *argv[]){
             IpplTimings::startTimer(gridTimer);
             P->calculateGridForces(interaction_radius,alpha,0,it+1,0);
             IpplTimings::stopTimer(gridTimer);
-            std::cout << "Phi in Loop: " << std::setprecision(16) << P->phi_m[10][10][10] << std::endl;
             
             P->avgPot = P->computeAvgSpaceChargePotential();
             //writeAvgPotential(P,it+1);
@@ -794,8 +849,10 @@ int main(int argc, char *argv[]){
             //P->update();
 
             //second part of leapfrog: advance velocitites
-            P->currAvgEF = P->computeAvgSpaceChargeForces();
-            //writeAvgEfield(P,it+1);
+            P->calc_avg_EField();
+            P->currAvgEF_particle = P->computeAvgSpaceChargeForces();
+            writeAvgEField(P, it+1);
+            //dumpVTKVector(P->eg_m, P, it+1,1e-2,"EField_P3M");
 
             P->applyConstantFocusing(focusingForce,beam_radius);
 
@@ -816,7 +873,7 @@ int main(int argc, char *argv[]){
                 //dumpConservedQuantities(P,printid);
                 
                 //P->compute_temperature();
-                //writeTemperature(P,it+1);
+                writeTemperature(P,it+1);
 
                 //dumpH5partVelocity(P,printid++);
                 //dumpParticlesOPAL(P,it+1);

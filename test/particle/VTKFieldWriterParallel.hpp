@@ -25,7 +25,7 @@
 #include <H5hut.h>
 
 template<typename FieldType, typename ParticleType>
-void dumpVTKVector( FieldType & f, const ParticleType & p,int iteration = 0, std::string label="EField") {
+void dumpVTKVector( FieldType & f, const ParticleType & p,int iteration = 0, double scalingFactor = 1.0, std::string label="EField") {
         if(Ippl::myNode()==0) {
         NDIndex<3> lDom = f.getLayout().getLocalNDIndex();
         int nx =lDom[0].length() ; int ny = lDom[1].length(); int nz=lDom[2].length() ;
@@ -49,20 +49,20 @@ void dumpVTKVector( FieldType & f, const ParticleType & p,int iteration = 0, std
         vtkout << "toyfdtd" << std::endl;
         vtkout << "ASCII" << std::endl;
         vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-        vtkout << "DIMENSIONS " << nx << " " << ny << " " << nz << std::endl;
-        //vtkout << "ORIGIN 0 0 0" << std::endl;
-        //vtkout << "ORIGIN "<< p->extend_l[0]+.5*dx <<" " << p->extend_l[1]+.5*dy << " " << p->extend_l[2]+.5*dy << std::endl;
-        vtkout << "ORIGIN "<< p->extend_l[0]+.5*dx+lDom[0].first()*dx <<" " << p->extend_l[1]+.5*dy+lDom[1].first()*dy << " " << p->extend_l[2]+.5*dy+lDom[2].first()*dz << std::endl;
+        vtkout << "DIMENSIONS " << nx+1 << " " << ny+1 << " " << nz+1 << std::endl;
+        vtkout << "ORIGIN "<< p->rmin_m[0] << " "
+                           << p->rmin_m[1] << " "
+                           << p->rmin_m[2] << std::endl;
         vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-        vtkout << "POINT_DATA " << nx*ny*nz << std::endl;
-        vtkout << "VECTORS Vector_Value float" << std::endl;
+        vtkout << "CELL_DATA " << nx*ny*nz << std::endl;
+        vtkout << "VECTORS label float" << std::endl;
         for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
                 for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
                         for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
                                 Vektor<double, 3> tmp = f[x][y][z].get();
-                                vtkout << tmp(0) << "\t"
-                                        << tmp(1) << "\t"
-                                        << tmp(2) << std::endl;
+                                vtkout << scalingFactor*tmp(0) << "\t"
+                                        << scalingFactor*tmp(1) << "\t"
+                                        << scalingFactor*tmp(2) << std::endl;
 
                         }
                 }
@@ -74,7 +74,7 @@ void dumpVTKVector( FieldType & f, const ParticleType & p,int iteration = 0, std
 }
 
 template<typename FieldType, typename ParticleType>
-void dumpVTKScalar( FieldType & f, const ParticleType & p,int iteration = 0, std::string label="RhoField") {
+void dumpVTKScalar( FieldType & f, const ParticleType & p,int iteration = 0, double scalingFactor = 1.0, std::string label="RhoField") {
         NDIndex<3> lDom = f.getLayout().getLocalNDIndex();
         int nx =lDom[0].length() ; int ny = lDom[1].length(); int nz=lDom[2].length() ;
         double dx=p->hr_m[0]; double dy=p->hr_m[1]; double dz=p->hr_m[2];
@@ -105,11 +105,11 @@ void dumpVTKScalar( FieldType & f, const ParticleType & p,int iteration = 0, std
         vtkout << "CELL_DATA " << nx*ny*nz << std::endl;
         vtkout << "SCALARS " << label << " float" << std::endl;
         vtkout << "LOOKUP_TABLE default" << std::endl;
-        for (int z=1; z<nz+1; z++) {
-                for (int y=1; y<ny+1; y++) {
-                        for (int x=1; x<nx+1; x++) {
+        for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
+                for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
+                        for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
                                 std::complex<double> tmp = f[x][y][z].get();
-                                vtkout << 1e-6*real(tmp) << std::endl;
+                                vtkout << scalingFactor*real(tmp) << std::endl;
                         }
                 }
         }
@@ -314,7 +314,7 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
                         }
 
         template<typename ParticleType>
-                        void writeAvgEfield(const ParticleType & p,int iteration) {
+                        void writeAvgEField(const ParticleType & p,int iteration) {
         if(Ippl::myNode()==0) {
                                 std::ofstream csvout;
                                 csvout.precision(10);
@@ -328,9 +328,15 @@ void dumpParticlesCSVp( const ParticleType & p, int iteration=0) {
                                 // and start with header
                                 csvout.open(fname.str().c_str(), std::ios::out | std::ofstream::app);
                                 if (iteration==0){
-                                        csvout << "it,avgEfield_x,avgEfield_y,avgEfield_z" << std::endl;
+                                        csvout << "it,avgEfield_x,avgEfield_y,avgEfield_z,avgEfield_particle_x,avgEfield_particle_y,avgEfield_particle_z" << std::endl;
                                 }
-                                csvout << iteration << "," << p->currAvgEF[0] << "," << p->currAvgEF[1] << "," << p->currAvgEF[2] << std::endl;
+                                csvout << iteration << ","
+                                        << p->avgEF[0] << ","
+                                        << p->avgEF[1] << ","
+                                        << p->avgEF[2] << ","
+                                        << p->currAvgEF_particle[0] << ","
+                                        << p->currAvgEF_particle[1] << ","
+                                        << p->currAvgEF_particle[2] << std::endl;
                                 // close the output file for this iteration:
                                 csvout.close();
 }
