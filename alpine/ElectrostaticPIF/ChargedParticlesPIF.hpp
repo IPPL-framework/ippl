@@ -42,7 +42,6 @@ typedef Field<double, Dim>   Field_t;
 typedef Field<Kokkos::complex<double>, Dim>   CxField_t;
 typedef Field<Vector_t, Dim> VField_t;
 
-typedef ippl::FFT<ippl::NUFFTransform, 3, double> FFT_type;
 
 const double pi = std::acos(-1.0);
 
@@ -76,7 +75,6 @@ public:
 
     int shapedegree_m;
 
-    std::shared_ptr<FFT_type> fft;
 
 public:
     ParticleAttrib<double>     q; // charge
@@ -126,6 +124,20 @@ public:
         setBCAllPeriodic();
     }
 
+    void initNUFFT(FieldLayout_t& FL) {
+        ippl::ParameterList fftParams;
+
+        fftParams.add("gpu_method", 1);
+        fftParams.add("gpu_sort", 1);
+        fftParams.add("gpu_kerevalmeth", 1);
+        fftParams.add("tolerance", 1e-6);
+
+        fftParams.add("use_cufinufft_defaults", false);
+
+        q.initializeNUFFT(FL, 1, fftParams);
+        E.initializeNUFFT(FL, 2, fftParams);
+    }
+
     void gather() {
 
         gatherPIFNUFFT(this->E, rho_m, Sk_m, this->R, this->q);
@@ -142,15 +154,12 @@ public:
         Inform m("scatter ");
         rho_m = {0.0, 0.0};
         scatterPIFNUFFT(q, rho_m, Sk_m, this->R);
-        //fft->transform(this->R, q, rho_m);
         //rhoDFT_m = {0.0, 0.0};
         //scatterPIFNUDFT(q, rho_m, Sk_m, this->R);
 
         //dumpFieldData();
 
         rho_m = rho_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
-        //rhoDFT_m = rhoDFT_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
-
     }
 
 

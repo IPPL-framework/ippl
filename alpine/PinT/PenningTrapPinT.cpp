@@ -402,6 +402,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
     static IpplTimings::TimerRef computeErrors = IpplTimings::getTimer("computeErrors");
     static IpplTimings::TimerRef initializeShapeFunctionPIF = IpplTimings::getTimer("initializeShapeFunctionPIF");
+    static IpplTimings::TimerRef initializeCycles = IpplTimings::getTimer("initializeCycles");
 
     IpplTimings::startTimer(mainTimer);
 
@@ -585,7 +586,7 @@ int main(int argc, char *argv[]){
                          minU, maxU));
 
     Kokkos::fence();
-    Ippl::Comm->barrier();
+    //Ippl::Comm->barrier();
 #endif
 
 
@@ -676,9 +677,11 @@ int main(int argc, char *argv[]){
     for (unsigned int nc=0; nc < nCycles; nc++) {
         double tStartMySlice = (nc * tEndCycle) + (Ippl::Comm->rank() * dtSlice); 
         Pcoarse->time_m = tStartMySlice;
+        IpplTimings::startTimer(initializeCycles);
         Pcoarse->initializeParareal(Pbegin->R, Pbegin->P, isConverged,
                                     isPreviousDomainConverged, ntCoarse,
                                     dtCoarse, tStartMySlice, Bext);
+        IpplTimings::stopTimer(initializeCycles);
         unsigned int it = 0;
         while (!isConverged) { 
         //while ((!isPreviousDomainConverged) || (!isConverged)) { 
