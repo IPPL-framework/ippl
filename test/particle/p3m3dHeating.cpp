@@ -360,8 +360,6 @@ public:
         NDIndex<3> lDom = eg_m.getLayout().getLocalNDIndex();
         this->avgEF = {0.0, 0.0, 0.0};
         double normFactor = 1.0 / static_cast<double>((nr_m[0]*nr_m[1]*nr_m[2]));
-                                                      //(hr_m[0]*hr_m[1]*hr_m[2]));
-        //std::cout << "normFactor = " << normFactor << std::endl;
         for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
                 for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
                         for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
@@ -434,7 +432,7 @@ public:
         rhocmpl_m[domain_m] = rho_m[domain_m]/(hr_m[0]*hr_m[1]*hr_m[2]);
         rhocmpl_m[domain_m] = rhocmpl_m[domain_m] - (total_charge/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
 
-        //dumpVTKScalar(rhocmpl_m,this,it, 1.0, "Rho_P3M");
+        dumpVTKScalar(rhocmpl_m,this,it, 1.0, "Rho_P3M");
         // Use variable otherwise compiler complains
         it += 1;
         RhoSum=sum(real(rhocmpl_m));
@@ -490,7 +488,7 @@ public:
 
         //take only the real part and store in phi_m (has periodic bc instead of interpolation bc)
         phi_m = real(rhocmpl_m)*hr_m[0]*hr_m[1]*hr_m[2];
-        //dumpVTKScalar(phi_m, this, it, 1e-6, "Phi_P3M") ;
+        dumpVTKScalar(phi_m, this, it, 1.0, "Phi_P3M") ;
 
         //compute Electric field on the grid by -Grad(Phi) store in eg_m
         eg_m = -Grad1Ord(phi_m, eg_m);
@@ -795,7 +793,7 @@ int main(int argc, char *argv[]){
         P->initialAvgEF_particle = P->computeAvgSpaceChargeForces();
         writeAvgEField(P,0);
 
-        //dumpVTKVector(P->eg_m, P,0, 1e-2,"EField_P3M");
+        dumpVTKVector(P->eg_m, P,0, 1.0,"EField_P3M");
 
         //compute quantities to check correctness:
         /*
@@ -852,7 +850,7 @@ int main(int argc, char *argv[]){
             P->calc_avg_EField();
             P->currAvgEF_particle = P->computeAvgSpaceChargeForces();
             writeAvgEField(P, it+1);
-            //dumpVTKVector(P->eg_m, P, it+1,1e-2,"EField_P3M");
+            dumpVTKVector(P->eg_m, P, it+1,1.0,"EField_P3M");
 
             P->applyConstantFocusing(focusingForce,beam_radius);
 
