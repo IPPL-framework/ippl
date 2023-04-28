@@ -55,7 +55,7 @@ void dumpVTKVector( FieldType & f, const ParticleType & p,int iteration = 0, dou
                            << p->rmin_m[2] << std::endl;
         vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
         vtkout << "CELL_DATA " << nx*ny*nz << std::endl;
-        vtkout << "VECTORS label float" << std::endl;
+        vtkout << "VECTORS " << label << " float" << std::endl;
         for (int z=lDom[2].first(); z<=lDom[2].last(); z++) {
                 for (int y=lDom[1].first(); y<=lDom[1].last(); y++) {
                         for (int x=lDom[0].first(); x<=lDom[0].last(); x++) {
