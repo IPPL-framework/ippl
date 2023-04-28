@@ -34,6 +34,12 @@ namespace ippl {
         , mesh_m(nullptr)
         , bc_m() {}
 
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    Field<T, Dim, Mesh, Centering>::Field(const Field<T, Dim, Mesh, Centering>& other)
+        : BareField<T, Dim>(other)
+        , mesh_m(other.mesh_m)
+        , bc_m(other.bc_m) {}
+
     //////////////////////////////////////////////////////////////////////////
     // Constructors which include a Mesh object as argument
     template <class T, unsigned Dim, class Mesh, class Centering>

@@ -79,7 +79,7 @@ namespace ippl {
         // Assignment from constants and other arrays.
         using BareField<T, Dim>::operator=;
 
-        Field(const Field&) = default;
+        Field(const Field&);
 
     private:
         // The Mesh object, and a flag indicating if we constructed it

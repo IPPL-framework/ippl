@@ -78,7 +78,7 @@ namespace ippl {
          */
         BareField(Layout_t& l, int nghost = 1);
 
-        BareField(const BareField&) = default;
+        BareField(const BareField&);
 
         // Destroy the BareField.
         ~BareField() = default;
