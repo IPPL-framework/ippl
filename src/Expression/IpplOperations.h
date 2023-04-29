@@ -276,8 +276,9 @@ namespace ippl {
             KOKKOS_FUNCTION
             meta_grad(const E& u, const typename E::Mesh_t::vector_type vectors[])
                 : u_m(u) {
-                for (unsigned d = 0; d < E::Mesh_t::Dimension; d++)
+                for (unsigned d = 0; d < E::Mesh_t::Dimension; d++) {
                     vectors_m[d] = vectors[d];
+                }
             }
 
             /*
@@ -330,8 +331,9 @@ namespace ippl {
             KOKKOS_FUNCTION
             meta_div(const E& u, const typename E::Mesh_t::vector_type vectors[])
                 : u_m(u) {
-                for (unsigned d = 0; d < E::Mesh_t::Dimension; d++)
+                for (unsigned d = 0; d < E::Mesh_t::Dimension; d++) {
                     vectors_m[d] = vectors[d];
+                }
             }
 
             /*
@@ -483,8 +485,9 @@ namespace ippl {
                       const typename E::Mesh_t::vector_type& hvector)
                 : u_m(u)
                 , hvector_m(hvector) {
-                for (unsigned d = 0; d < E::Mesh_t::Dimension; d++)
+                for (unsigned d = 0; d < E::Mesh_t::Dimension; d++) {
                     vectors_m[d] = vectors[d];
+                }
             }
 
             /*

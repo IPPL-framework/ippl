@@ -198,18 +198,20 @@ public:
         , rmax_m(rmax)
         , Q_m(Q) {
         registerAttributes();
-        for (unsigned int i = 0; i < Dim; i++)
+        for (unsigned int i = 0; i < Dim; i++) {
             decomp_m[i] = decomp[i];
+        }
         setupBCs();
         setPotentialBCs();
     }
 
     void setPotentialBCs() {
-        if constexpr (Dim == 1)
+        if constexpr (Dim == 1) {
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
                 allPeriodic[i] = std::make_shared<
                     ippl::PeriodicFace<double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
             }
+        }
     }
 
     void registerAttributes() {
@@ -282,13 +284,15 @@ public:
             std::vector<int> res(Ippl::Comm->size());
             double equalPart = (double)totalP / Ippl::Comm->size();
             double dev       = std::abs((double)this->getLocalNum() - equalPart) / totalP;
-            if (dev > loadbalancethreshold_m)
+            if (dev > loadbalancethreshold_m) {
                 local = 1;
+            }
             MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
 
             for (unsigned int i = 0; i < res.size(); i++) {
-                if (res[i] == 1)
+                if (res[i] == 1) {
                     return true;
+                }
             }
             return false;
         }
@@ -354,8 +358,9 @@ public:
         }
 
         double h = 1;
-        for (const auto& hr : hrField)
+        for (const auto& hr : hrField) {
             h *= hr;
+        }
         rho_m = rho_m / h;
 
         rhoNorm_m = norm(rho_m);
@@ -365,19 +370,21 @@ public:
 
         // rho = rho_e - rho_i
         double size = 1;
-        for (unsigned d = 0; d < Dim; d++)
+        for (unsigned d = 0; d < Dim; d++) {
             size *= rmax_m[d] - rmin_m[d];
+        }
         rho_m = rho_m - (Q_m / size);
     }
 
     void initSolver() {
         Inform m("solver ");
-        if (stype_m == "FFT")
+        if (stype_m == "FFT") {
             initFFTSolver();
-        else if (stype_m == "CG")
+        } else if (stype_m == "CG") {
             initCGSolver();
-        else
+        } else {
             m << "No solver matches the argument" << endl;
+        }
     }
 
     void initSolver(const ippl::ParameterList& sp) {
@@ -464,14 +471,16 @@ public:
 
             if (time_m == 0.0) {
                 csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2";
-                for (unsigned d = 0; d < Dim; d++)
+                for (unsigned d = 0; d < Dim; d++) {
                     csvout << "E" << d << "norm2, ";
+                }
                 csvout << endl;
             }
 
             csvout << time_m << " " << gEnergy << " " << rhoNorm_m << " ";
-            for (unsigned d = 0; d < Dim; d++)
+            for (unsigned d = 0; d < Dim; d++) {
                 csvout << normE[d] << " ";
+            }
             csvout << endl;
         }
 
@@ -495,16 +504,18 @@ public:
         double globaltemp = 0.0;
         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
         fieldEnergy = globaltemp;
-        for (const auto& h : hr_m)
+        for (const auto& h : hr_m) {
             fieldEnergy *= h;
+        }
 
         double tempMax = 0.0;
         ippl::parallel_reduce(
             "Ex max norm", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
                 double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[0]);
-                if (myVal > valL)
+                if (myVal > valL) {
                     valL = myVal;
+                }
             },
             Kokkos::Max<double>(tempMax));
         ExAmp = 0.0;
@@ -547,16 +558,18 @@ public:
         double globaltemp = 0.0;
         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
         fieldEnergy = globaltemp;
-        for (const auto& h : hr_m)
+        for (const auto& h : hr_m) {
             fieldEnergy *= h;
+        }
 
         double tempMax = 0.0;
         ippl::parallel_reduce(
             "Ex max norm", ippl::detail::getRangePolicy<Dim>(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
                 double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[Dim - 1]);
-                if (myVal > valL)
+                if (myVal > valL) {
                     valL = myVal;
+                }
             },
             Kokkos::Max<double>(tempMax));
         EzAmp = 0.0;
@@ -596,10 +609,12 @@ public:
         pcsvout.setf(std::ios::scientific, std::ios::floatfield);
         pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
         for (size_type i = 0; i < this->getLocalNum(); i++) {
-            for (unsigned d = 0; d < Dim; d++)
+            for (unsigned d = 0; d < Dim; d++) {
                 pcsvout << R_host(i)[d] << " ";
-            for (unsigned d = 0; d < Dim; d++)
+            }
+            for (unsigned d = 0; d < Dim; d++) {
                 pcsvout << P_host(i)[d] << " ";
+            }
             pcsvout << endl;
         }
         Ippl::Comm->barrier();
@@ -611,8 +626,9 @@ public:
             std::ofstream myfile;
             myfile.open("data/domains" + std::to_string(step) + ".txt");
             for (unsigned int i = 0; i < domains.size(); ++i) {
-                for (unsigned d = 0; d < Dim; d++)
+                for (unsigned d = 0; d < Dim; d++) {
                     myfile << domains[i][d].first() << " " << domains[i][d].last() << " ";
+                }
                 myfile << "\n";
             }
             myfile.close();

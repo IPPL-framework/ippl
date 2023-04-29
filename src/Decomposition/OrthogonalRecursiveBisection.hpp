@@ -105,8 +105,9 @@ namespace ippl {
         IpplTimings::startTimer(tbasicOp);
         for (const auto& domain : domains) {
             for (const auto& axis : domain) {
-                if (axis.length() == 1)
+                if (axis.length() == 1) {
                     return false;
+                }
             }
         }
 
@@ -134,8 +135,9 @@ namespace ippl {
         // Check if domains overlap, if not no need for reduction
         NDIndex<Dim> lDom = bf_m.getOwned();
         if (lDom[cutAxis].first() > dom[cutAxis].last()
-            || lDom[cutAxis].last() < dom[cutAxis].first())
+            || lDom[cutAxis].last() < dom[cutAxis].first()) {
             return;
+        }
         // Get field's local weights
         int nghost           = bf_m.getNghost();
         const view_type data = bf_m.getView();
@@ -146,21 +148,24 @@ namespace ippl {
             std::min(lDom[cutAxis].last(), dom[cutAxis].last()) - lDom[cutAxis].first() + nghost;
         // Set iterator for where to write in the reduced array
         unsigned int arrayStart = 0;
-        if (dom[cutAxis].first() < lDom[cutAxis].first())
+        if (dom[cutAxis].first() < lDom[cutAxis].first()) {
             arrayStart = lDom[cutAxis].first() - dom[cutAxis].first();
+        }
 
         // Find all the perpendicular axes
         using index_type = typename detail::RangePolicy<Dim>::index_type;
         Kokkos::Array<index_type, Dim> begin, end;
         for (unsigned d = 0; d < Dim; d++) {
-            if (d == cutAxis)
+            if (d == cutAxis) {
                 continue;
+            }
 
             int inf = std::max(lDom[d].first(), dom[d].first()) - lDom[d].first() + nghost;
             int sup = std::min(lDom[d].last(), dom[d].last()) - lDom[d].first() + nghost;
             // inf and sup bounds must be within the domain to reduce, if not no need to reduce
-            if (sup < inf)
+            if (sup < inf) {
                 return;
+            }
 
             begin[d] = inf;
             // The +1 is for Kokkos loop
@@ -192,8 +197,9 @@ namespace ippl {
     template <class T, unsigned Dim, class Mesh, class Centering>
     int OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::findMedian(std::vector<T>& w) {
         // Special case when array must be cut in half in order to not have planes
-        if (w.size() == 4)
+        if (w.size() == 4) {
             return 1;
+        }
 
         // Get total sum of array
         T tot = std::accumulate(w.begin(), w.end(), T(0));
@@ -206,16 +212,18 @@ namespace ippl {
             curr += w[i];
             if (curr >= half) {
                 // If all particles are in the first plane, cut at 1 so to have size 2
-                if (i == 0)
+                if (i == 0) {
                     return 1;
+                }
                 T previous = curr - w[i];
                 // curr - half < half - previous
                 if ((curr + previous) <= tot
                     && curr != half) {  // if true then take current i, otherwise i-1
-                    if (i == w.size() - 2)
+                    if (i == w.size() - 2) {
                         return (i - 1);
-                    else
+                    } else {
                         return i;
+                    }
                 } else {
                     return (i > 1) ? (i - 1) : 1;
                 }

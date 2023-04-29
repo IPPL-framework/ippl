@@ -193,8 +193,9 @@ int main(int argc, char* argv[]) {
 
     // create mesh and layout objects for this problem domain
     Vector_t<Dim> kw;
-    for (auto& k : kw)
+    for (auto& k : kw) {
         k = 0.5;
+    }
     double alpha = 0.05;
     Vector_t<Dim> rmin(0.0);
     Vector_t<Dim> rmax = 2 * pi / kw;
@@ -246,8 +247,9 @@ int main(int argc, char* argv[]) {
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
                 Vector_t<Dim> xvec = args;
-                for (unsigned d = 0; d < Dim; d++)
+                for (unsigned d = 0; d < Dim; d++) {
                     xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
+                }
 
                 ippl::apply<Dim>(rhoview, args) = PDF(xvec, alpha, kw, Dim);
             });
@@ -284,8 +286,9 @@ int main(int argc, char* argv[]) {
 
     int rest = (int)(totalP - Total_particles);
 
-    if (Ippl::Comm->rank() < rest)
+    if (Ippl::Comm->rank() < rest) {
         ++nloc;
+    }
 
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));

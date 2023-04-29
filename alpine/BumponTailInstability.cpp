@@ -171,8 +171,9 @@ struct PhaseDump {
 
         mesh = Mesh_t<2>(owned, hx, origin);
         phaseSpace.initialize(mesh, layout);
-        if (Ippl::Comm->rank() == 0)
+        if (Ippl::Comm->rank() == 0) {
             phaseSpaceBuf.initialize(mesh, layout);
+        }
         std::cout << Ippl::Comm->rank() << ": " << phaseSpace.getOwned() << std::endl;
     }
 
@@ -201,10 +202,12 @@ struct PhaseDump {
             }
             auto max = phaseSpace.max();
             auto min = phaseSpace.min();
-            if (max > maxValue)
+            if (max > maxValue) {
                 maxValue = max;
-            if (min < minValue)
+            }
+            if (min < minValue) {
                 minValue = min;
+            }
             Ippl::Comm->barrier();
         }
     }
@@ -299,8 +302,9 @@ int main(int argc, char* argv[]) {
     Vector_t<Dim> rmax = 2 * pi / kw;
 
     Vector_t<Dim> hr;
-    for (unsigned d = 0; d < Dim; d++)
+    for (unsigned d = 0; d < Dim; d++) {
         hr[d] = rmax[d] / nr[d];
+    }
     Vector_t<Dim> origin = rmin;
     const double dt      = 0.5 * hr[0];  // 0.05
 
@@ -311,8 +315,9 @@ int main(int argc, char* argv[]) {
 
     // Q = -\int\int f dx dv
     double Q = -1;
-    for (const auto& r : rmax)
+    for (const auto& r : rmax) {
         Q *= r;
+    }
     P = std::make_shared<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
 
     P->nr_m = nr;
@@ -344,8 +349,9 @@ int main(int argc, char* argv[]) {
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
                 Vector_t<Dim> xvec = args;
-                for (unsigned d = 0; d < Dim; d++)
+                for (unsigned d = 0; d < Dim; d++) {
                     xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
+                }
 
                 ippl::apply<Dim>(rhoview, args) = PDF(xvec, delta, kw);
             });
@@ -374,8 +380,9 @@ int main(int argc, char* argv[]) {
     }
 
     double factorConf = 1;
-    for (unsigned d = 0; d < Dim; d++)
+    for (unsigned d = 0; d < Dim; d++) {
         factorConf *= Nr[d] / Dr[d];
+    }
     double factorVelBulk      = 1.0 - epsilon;
     double factorVelBeam      = 1.0 - factorVelBulk;
     size_type nlocBulk        = (size_type)(factorConf * factorVelBulk * totalP);
@@ -387,15 +394,17 @@ int main(int argc, char* argv[]) {
 
     int rest = (int)(totalP - Total_particles);
 
-    if (Ippl::Comm->rank() < rest)
+    if (Ippl::Comm->rank() < rest) {
         ++nloc;
+    }
 
     P->create(nloc);
 
     PhaseDump<bunch_type> phase;
-    if constexpr (ENABLE_PHASE_DUMP)
+    if constexpr (ENABLE_PHASE_DUMP) {
         phase.initialize(*std::max_element(nr.begin(), nr.end()),
                          *std::max_element(rmax.begin(), rmax.end()));
+    }
 
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
 
@@ -489,8 +498,9 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
-        if constexpr (ENABLE_PHASE_DUMP)
+        if constexpr (ENABLE_PHASE_DUMP) {
             phase.dump(it, P);
+        }
     }
 
     msg << TestName << ": End." << endl;
@@ -503,9 +513,9 @@ int main(int argc, char* argv[]) {
         std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
 
-    if constexpr (ENABLE_PHASE_DUMP)
-        // clang-format off
+    if constexpr (ENABLE_PHASE_DUMP) {
         if (Ippl::Comm->rank() == 0) {
+            // clang-format off
             std::cout
                 << "--- Phase Space Parameters ---\n"
                 << "Resolution: " << *std::max_element(nr.begin(), nr.end()) << "\n"
@@ -516,8 +526,9 @@ int main(int argc, char* argv[]) {
                 << "Ranks: " << Ippl::Comm->size() << "\n"
                 << "Timestep: " << dt << "\n"
                 << "------------------------------" << std::endl;
+            // clang-format on
         }
-    // clang-format on
+    }
 
     return 0;
 }
