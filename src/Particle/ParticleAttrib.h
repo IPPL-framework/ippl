@@ -214,7 +214,14 @@ namespace ippl {
         }
 
         /*!
-         * Scatters the particle attribute to the field
+         * Scatters the particle attribute to the field.
+         *
+         * The coordinates to which an attribute must be scattered is given by 2^n,
+         * where n is the number of dimensions. Example: the point (x, y) is scattered
+         * to (x, y), (x - 1, y), (x, y - 1), and (x - 1, y - 1). In other words,
+         * for each coordinate, we choose between the unchanged coordinate and a neighboring
+         * value. We can identify each point to which the attribute is scattered by
+         * interpreting this set of choices as a binary number.
          * @tparam Dim the number of dimensions
          * @tparam T the field data type
          * @tparam IndexType the index type for accessing the field (default size_t)
@@ -273,7 +280,7 @@ namespace ippl {
         }
 
         /*!
-         * Gathers the particle attribute from a field
+         * Gathers the particle attribute from a field (see scatter_field for more details)
          * @tparam Dim the number of dimensions
          * @tparam T the field data type
          * @tparam IndexType the index type for accessing the field (default size_t)
