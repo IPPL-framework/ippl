@@ -1,9 +1,8 @@
 // Landau Damping Test
 //   Usage:
-//     srun ./LandauDamping <nx> [<ny>...] <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
-//     nx       = No. cell-centered points in the x-direction
-//     ny...    = No. cell-centered points in the y-, z-, ...-direction
-//     Np       = Total no. of macro-particles in the simulation
+//     srun ./LandauDamping <nx> [<ny>...] <Np> <Nt> <stype> <lbthres> --overallocate <ovfactor>
+//     --info 10 nx       = No. cell-centered points in the x-direction ny...    = No. cell-centered
+//     points in the y-, z-, ...-direction Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
 //     stype    = Field solver type e.g., FFT
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
@@ -221,8 +220,6 @@ int main(int argc, char* argv[]) {
     P->initSolver();
     P->time_m                 = 0.0;
     P->loadbalancethreshold_m = std::atof(argv[arg++]);
-
-    Ippl::Comm->setDefaultOverallocation(std::atof(argv[arg++]));
 
     bool isFirstRepartition;
 

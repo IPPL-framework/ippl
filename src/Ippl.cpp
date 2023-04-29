@@ -70,7 +70,7 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm) {
                 if (nargs >= argc) {
                     throw std::runtime_error("Missing info level value!");
                 }
-                infoLevel = getIntOption(argv[nargs]);
+                infoLevel = getNumericalOption<int>(argv[nargs]);
             } else if (checkOption(argv[nargs], "--version", "-v")) {
                 IpplInfo::printVersion();
                 std::string options = IpplInfo::compileOptions();
@@ -85,6 +85,13 @@ Ippl::Ippl(int& argc, char**& argv, MPI_Comm mpicomm) {
                 }
                 INFOMSG(header << options << endl);
                 std::exit(0);
+            } else if (checkOption(argv[nargs], "--overallocate", "-b")) {
+                ++nargs;
+                if (nargs >= argc) {
+                    throw std::runtime_error("Missing overallocation factor value!");
+                }
+                auto factor = getNumericalOption<double>(argv[nargs]);
+                Comm->setDefaultOverallocation(factor);
             } else if (nargs > 0 && std::strstr(argv[nargs], "--kokkos") == nullptr) {
                 notparsed.push_back(argv[nargs]);
             }
@@ -115,15 +122,28 @@ bool Ippl::checkOption(const char* arg, const char* lstr, const char* sstr) {
     return (std::strcmp(arg, lstr) == 0) || (std::strcmp(arg, sstr) == 0);
 }
 
-int Ippl::getIntOption(const char* arg) {
-    std::string sarg = arg;
-
-    // 21. Dec. 2021
-    // https://stackoverflow.com/questions/8888748/how-to-check-if-given-c-string-or-char-contains-only-digits
-    if (!std::all_of(sarg.begin(), sarg.end(), ::isdigit)) {
-        throw std::runtime_error("Missing integer command line argument!");
+template <typename T, typename>
+T Ippl::getNumericalOption(const char* arg) {
+    constexpr bool isInt = std::is_integral_v<T>;
+    std::string sarg     = arg;
+    try {
+        T ret;
+        size_t parsed;
+        if constexpr (isInt) {
+            ret = std::stoll(sarg, &parsed);
+        } else {
+            ret = std::stold(sarg, &parsed);
+        }
+        if (parsed != sarg.length())
+            throw std::invalid_argument("Failed to parse");
+        return ret;
+    } catch (std::invalid_argument& e) {
+        if constexpr (isInt) {
+            throw std::runtime_error("Expected integer argument!");
+        } else {
+            throw std::runtime_error("Expected floating point argument!");
+        }
     }
-    return std::atoi(arg);
 }
 
 /////////////////////////////////////////////////////////////////////
