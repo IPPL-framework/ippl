@@ -402,6 +402,10 @@ int main(int argc, char* argv[]) {
 
     PhaseDump<bunch_type> phase;
     if constexpr (ENABLE_PHASE_DUMP) {
+        if (Ippl::Comm->size() != 1) {
+            msg << "Phase dump only supported on one rank" << endl;
+            std::abort();
+        }
         phase.initialize(*std::max_element(nr.begin(), nr.end()),
                          *std::max_element(rmax.begin(), rmax.end()));
     }
