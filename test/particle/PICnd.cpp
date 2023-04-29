@@ -38,7 +38,7 @@
 #define xstr(x) str(x)
 
 // dimension of our positions
-#define DIM     2
+#define DIM     3
 constexpr unsigned Dim          = DIM;
 constexpr const char* PROG_NAME = "PIC" xstr(DIM) "d";
 
@@ -457,7 +457,7 @@ int main(int argc, char* argv[]) {
 
     Vector_t origin = rmin;
 
-    // const double dt = 0.5 * dx; // size of timestep
+    const double dt = 0.5 * hr[0];  // size of timestep
 
     const bool isAllPeriodic = true;
     Mesh_t mesh(domain, hr, origin);
@@ -530,15 +530,13 @@ int main(int argc, char* argv[]) {
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0.0, 1.0);
 
-    double dr = 0.0;
-    P->P      = 1.0;
+    P->P = 1.0;
 
     msg << "Starting iterations ..." << endl;
     for (unsigned int it = 0; it < nt; it++) {
-        dr                                  = dis(gen) * hr[0];
         static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");
         IpplTimings::startTimer(RTimer);
-        P->R = P->R + dr * P->P;
+        P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);
 
         IpplTimings::startTimer(UpdateTimer);
@@ -563,10 +561,10 @@ int main(int argc, char* argv[]) {
         P->gatherCIC();
 
         // advance the particle velocities
-        // static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");
-        // IpplTimings::startTimer(PTimer);
-        // P->P = P->P + dt * P->qm * P->E;
-        // IpplTimings::stopTimer(PTimer);
+        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");
+        IpplTimings::startTimer(PTimer);
+        P->P = P->P + dt * P->qm * P->E;
+        IpplTimings::stopTimer(PTimer);
 
         P->dumpData(it);
 
