@@ -104,11 +104,11 @@ namespace ippl {
 
             if (requestedLayout_m[d] == PARALLEL) {
                 totparelems *= domain[d].length();
-                isAllSerial = false;
+                isAllSerial_m = false;
             }
         }
 
-        if (nRanks < 2 || isAllSerial) {
+        if (nRanks < 2 || isAllSerial_m) {
             Kokkos::resize(dLocalDomains_m, nRanks);
             Kokkos::resize(hLocalDomains_m, nRanks);
             for (int r = 0; r < nRanks; r++) {
@@ -141,8 +141,8 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    bool FieldLayout<Dim>::layoutIsAllSerial() const {
-        return isAllSerial;
+    bool FieldLayout<Dim>::isAllSerial() const {
+        return isAllSerial_m;
     }
 
     template <unsigned Dim>

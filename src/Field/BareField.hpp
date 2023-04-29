@@ -102,7 +102,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::fillHalo() {
-        if (Comm->size() > 1 && !layout_m->layoutIsAllSerial()) {
+        if (Comm->size() > 1 && !layout_m->isAllSerial()) {
             halo_m.fillHalo(dview_m, layout_m);
         }
         if (layout_m->isAllPeriodic_m) {
@@ -113,7 +113,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::accumulateHalo() {
-        if (Comm->size() > 1 && !layout_m->layoutIsAllSerial()) {
+        if (Comm->size() > 1 && !layout_m->isAllSerial()) {
             halo_m.accumulateHalo(dview_m, layout_m);
         }
         if (layout_m->isAllPeriodic_m) {
@@ -157,23 +157,26 @@ namespace ippl {
         write(inf.getDestination());
     }
 
-#define DefineReduction(fun, name, op, MPI_Op)                                       \
-    template <typename T, unsigned Dim, class... ViewArgs>                           \
-    T BareField<T, Dim, ViewArgs...>::name(int nghost) const {                       \
-        PAssert_LE(nghost, nghost_m);                                                \
-        T temp                 = 0.0;                                                \
-        using index_array_type = typename RangePolicy<Dim>::index_array_type;        \
-        ippl::parallel_reduce(                                                       \
-            "fun", getRangePolicy(dview_m, nghost_m - nghost),                       \
-            KOKKOS_CLASS_LAMBDA(const index_array_type& args, T& valL) {             \
-                T myVal = apply(dview_m, args);                                      \
-                op;                                                                  \
-            },                                                                       \
-            Kokkos::fun<T>(temp));                                                   \
-        T globaltemp      = 0.0;                                                     \
-        MPI_Datatype type = get_mpi_datatype<T>(temp);                               \
-        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Comm->getCommunicator()); \
-        return globaltemp;                                                           \
+#define DefineReduction(fun, name, op, MPI_Op)                                    \
+    template <typename T, unsigned Dim, class... ViewArgs>                        \
+    T BareField<T, Dim, ViewArgs...>::name(int nghost) const {                    \
+        PAssert_LE(nghost, nghost_m);                                             \
+        T local                = 0.0;                                             \
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;     \
+        ippl::parallel_reduce(                                                    \
+            "fun", getRangePolicy(dview_m, nghost_m - nghost),                    \
+            KOKKOS_CLASS_LAMBDA(const index_array_type& args, T& valL) {          \
+                T myVal = apply(dview_m, args);                                   \
+                op;                                                               \
+            },                                                                    \
+            Kokkos::fun<T>(local));                                               \
+        if (layout_m->isAllSerial()) {                                            \
+            return local;                                                         \
+        }                                                                         \
+        T global          = 0.0;                                                  \
+        MPI_Datatype type = get_mpi_datatype<T>(local);                           \
+        MPI_Allreduce(&local, &global, 1, type, MPI_Op, Comm->getCommunicator()); \
+        return global;                                                            \
     }
 
     DefineReduction(Sum, sum, valL += myVal, MPI_SUM)
