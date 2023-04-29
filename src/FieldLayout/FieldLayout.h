@@ -352,7 +352,7 @@ namespace ippl {
 
         bool isAllPeriodic_m;
 
-        bool layoutIsAllSerial() const;
+        bool isAllSerial() const;
 
     private:
         /*!
@@ -379,7 +379,7 @@ namespace ippl {
         host_mirror_type hLocalDomains_m;
 
         //! Whether the field is entirely stored on one rank
-        bool isAllSerial = false;
+        bool isAllSerial_m = false;
 
         e_dim_tag requestedLayout_m[Dim];
 
