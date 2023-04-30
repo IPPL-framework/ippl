@@ -175,23 +175,20 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION bool Index::split(Index& l, Index& r) const {
         PAssert_EQ(stride_m, 1);
         PAssert_GT(length_m, 1);
-        int first  = first_m;
-        int length = length_m;
-        int mid    = first + length / 2 - 1;
-        l          = Index(first, mid);
-        r          = Index(mid + 1, first + length - 1);
+        auto mid = first_m + length_m / 2 - 1;
+        l        = Index(first_m, mid);
+        r        = Index(mid + 1, first_m + length_m - 1);
         return true;
     }
 
     KOKKOS_INLINE_FUNCTION bool Index::split(Index& l, Index& r, int i) const {
         PAssert_EQ(stride_m, 1);
         PAssert_GT(length_m, 1);
-        int first  = first_m;
-        int length = length_m;
-        if (i >= (first + length))
+        if (i >= first_m + (int)length_m) {
             return false;
-        l = Index(first, i);
-        r = Index(i + 1, first + length - 1);
+        }
+        l = Index(first_m, i);
+        r = Index(i + 1, first_m + length_m - 1);
         return true;
     }
 
@@ -200,11 +197,9 @@ namespace ippl {
         PAssert_GT(length_m, 1);
         PAssert_LT(a, 1.0);
         PAssert_GT(a, 0.0);
-        int first  = first_m;
-        int length = length_m;
-        int mid    = first + static_cast<int>(length * a + 0.5) - 1;
-        l          = Index(first, mid);
-        r          = Index(mid + 1, first + length - 1);
+        int mid = first_m + (int)(length_m * a + 0.5) - 1;
+        l       = Index(first_m, mid);
+        r       = Index(mid + 1, first_m + length_m - 1);
         return true;
     }
 
