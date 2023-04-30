@@ -17,8 +17,6 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
-
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
@@ -30,8 +28,9 @@ public:
     ippl::NDIndex<Dim> createMesh(ippl::Vector<double, Dim>& hx, ippl::Vector<double, Dim>& origin,
                                   double& cellVol, double& meshVol) {
         std::array<ippl::Index, Dim> args;
-        for (unsigned d = 0; d < Dim; d++)
+        for (unsigned d = 0; d < Dim; d++) {
             args[d] = ippl::Index(nPoints[d]);
+        }
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
         cellVol = 1;

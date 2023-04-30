@@ -1,5 +1,7 @@
 #include "Ippl.h"
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
 #include <iostream>
 #include <typeinfo>
 
@@ -39,7 +41,7 @@ int main(int argc, char* argv[]) {
         ippl::Vector<double, 3> origin = {-1.0, -1.0, -1.0};
         Mesh_t mesh(owned, hx, origin);
 
-        double pi = acos(-1.0);
+        double pi = Kokkos::numbers::pi_v<double>;
 
         typedef ippl::Field<double, dim, Mesh_t, Centering_t> Field_t;
         typedef ippl::Vector<double, 3> Vector_t;
@@ -68,6 +70,8 @@ int main(int argc, char* argv[]) {
         const ippl::NDIndex<dim>& lDom   = layout.getLocalNDIndex();
         const int nghost                 = field.getNghost();
         typename Field_t::view_type view = field.getView();
+
+        using Kokkos::pow, Kokkos::cos, Kokkos::sin, Kokkos::sqrt;
 
         switch (params.template get<int>("output_type")) {
             case Solver_t::SOL: {

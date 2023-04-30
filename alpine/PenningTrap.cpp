@@ -32,9 +32,10 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
 #include <Kokkos_Random.hpp>
 #include <chrono>
-#include <cmath>
 #include <iostream>
 #include <random>
 #include <set>
@@ -51,7 +52,7 @@ template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
     int max_iter = 20;
-    double pi    = std::acos(-1.0);
+    double pi    = Kokkos::numbers::pi_v<double>;
 
     T mu, sigma, u;
 
@@ -66,21 +67,21 @@ struct Newton1D {
 
     KOKKOS_INLINE_FUNCTION T f(T& x) {
         T F;
-        F = std::erf((x - mu) / (sigma * std::sqrt(2.0))) - 2 * u + 1;
+        F = Kokkos::erf((x - mu) / (sigma * Kokkos::sqrt(2.0))) - 2 * u + 1;
         return F;
     }
 
     KOKKOS_INLINE_FUNCTION T fprime(T& x) {
         T Fprime;
-        Fprime =
-            (1 / sigma) * std::sqrt(2 / pi) * std::exp(-0.5 * (std::pow(((x - mu) / sigma), 2)));
+        Fprime = (1 / sigma) * Kokkos::sqrt(2 / pi)
+                 * Kokkos::exp(-0.5 * (Kokkos::pow(((x - mu) / sigma), 2)));
         return Fprime;
     }
 
     KOKKOS_FUNCTION
     void solve(T& x) {
         int iterations = 0;
-        while ((iterations < max_iter) && (std::fabs(f(x)) > tol)) {
+        while ((iterations < max_iter) && (Kokkos::fabs(f(x)) > tol)) {
             x = x - (f(x) / fprime(x));
             iterations += 1;
         }
@@ -99,7 +100,7 @@ struct generate_random {
 
     T mu, sigma, minU, maxU;
 
-    double pi = std::acos(-1.0);
+    double pi = Kokkos::acos(-1.0);
 
     // Initialize all members
     generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, T& mu_, T& sigma_,
@@ -119,7 +120,7 @@ struct generate_random {
         value_type u;
         for (unsigned d = 0; d < Dim; ++d) {
             u       = rand_gen.drand(minU[d], maxU[d]);
-            x(i)[d] = (std::sqrt(pi / 2) * (2 * u - 1)) * sigma[d] + mu[d];
+            x(i)[d] = (Kokkos::sqrt(pi / 2) * (2 * u - 1)) * sigma[d] + mu[d];
             Newton1D<value_type> solver(mu[d], sigma[d], u);
             solver.solve(x(i)[d]);
             v(i)[d] = rand_gen.normal(0.0, 1.0);
@@ -131,7 +132,7 @@ struct generate_random {
 };
 
 double CDF(const double& x, const double& mu, const double& sigma) {
-    double cdf = 0.5 * (1.0 + std::erf((x - mu) / (sigma * std::sqrt(2))));
+    double cdf = 0.5 * (1.0 + Kokkos::erf((x - mu) / (sigma * Kokkos::sqrt(2))));
     return cdf;
 }
 
@@ -139,11 +140,11 @@ KOKKOS_FUNCTION
 double PDF(const Vector_t<Dim>& xvec, const Vector_t<Dim>& mu, const Vector_t<Dim>& sigma,
            const unsigned Dim) {
     double pdf = 1.0;
-    double pi  = std::acos(-1.0);
+    double pi  = Kokkos::numbers::pi_v<double>;
 
     for (unsigned d = 0; d < Dim; ++d) {
-        pdf *= (1.0 / (sigma[d] * std::sqrt(2 * pi)))
-               * std::exp(-0.5 * std::pow((xvec[d] - mu[d]) / sigma[d], 2));
+        pdf *= (1.0 / (sigma[d] * Kokkos::sqrt(2 * pi)))
+               * Kokkos::exp(-0.5 * Kokkos::pow((xvec[d] - mu[d]) / sigma[d], 2));
     }
     return pdf;
 }
@@ -350,9 +351,11 @@ int main(int argc, char* argv[]) {
         double V0  = 30 * rmax[2];
         Kokkos::parallel_for(
             "Kick1", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-                double Eext_x = -(Rview(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * std::pow(rmax[2], 2)));
-                double Eext_y = -(Rview(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * std::pow(rmax[2], 2)));
-                double Eext_z = (Rview(j)[2] - 0.5 * rmax[2]) * (V0 / (std::pow(rmax[2], 2)));
+                double Eext_x =
+                    -(Rview(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
+                double Eext_y =
+                    -(Rview(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
+                double Eext_z = (Rview(j)[2] - 0.5 * rmax[2]) * (V0 / (Kokkos::pow(rmax[2], 2)));
 
                 Eview(j)[0] += Eext_x;
                 Eview(j)[1] += Eext_y;
@@ -403,9 +406,11 @@ int main(int argc, char* argv[]) {
         auto E2view = P->E.getView();
         Kokkos::parallel_for(
             "Kick2", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-                double Eext_x = -(R2view(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * std::pow(rmax[2], 2)));
-                double Eext_y = -(R2view(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * std::pow(rmax[2], 2)));
-                double Eext_z = (R2view(j)[2] - 0.5 * rmax[2]) * (V0 / (std::pow(rmax[2], 2)));
+                double Eext_x =
+                    -(R2view(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
+                double Eext_y =
+                    -(R2view(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
+                double Eext_z = (R2view(j)[2] - 0.5 * rmax[2]) * (V0 / (Kokkos::pow(rmax[2], 2)));
 
                 E2view(j)[0] += Eext_x;
                 E2view(j)[1] += Eext_y;

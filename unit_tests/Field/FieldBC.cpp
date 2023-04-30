@@ -18,8 +18,6 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
-
 #include "Utility/IpplException.h"
 
 #include "MultirankUtils.h"

@@ -1,5 +1,6 @@
 #include <Kokkos_Core.hpp>
 
+#include <Kokkos_MathematicalFunctions.hpp>
 #include <initializer_list>
 #include <iostream>
 
