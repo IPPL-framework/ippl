@@ -519,7 +519,7 @@ namespace ippl {
              * one by one via fold expression.
              * @tparam row... the row indices (in practice, the sequence 0...Dim - 1)
              * @tparam Idx... the indices at which to access the field view
-             * @param is dummy index sequence parameter
+             * @param is index sequence (reused for row computation)
              * @param hessian matrix in which to store the Hessian
              * @param args... the indices
              */
