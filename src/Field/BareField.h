@@ -24,10 +24,10 @@
 #include <iostream>
 
 #include "Types/IpplTypes.h"
-#include "Types/ViewTypes.h"
 
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
+#include "Utility/ViewUtils.h"
 
 #include "Expression/IpplExpressions.h"
 

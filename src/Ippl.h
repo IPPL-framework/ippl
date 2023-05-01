@@ -23,6 +23,7 @@
 #include "Types/IpplTypes.h"
 
 #include "Utility/Inform.h"
+#include "Utility/ParallelDispatch.h"
 
 #include "Communicate/Communicate.h"
 
