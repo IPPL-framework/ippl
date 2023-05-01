@@ -122,7 +122,7 @@ namespace ippl {
     template <size_t Dim, class T, class Mesh, class Centering>
     void FFT<CCTransform, Dim, T, Mesh, Centering>::transform(
         int direction, typename FFT<CCTransform, Dim, T, Mesh, Centering>::ComplexField_t& f) {
-        static_assert(Dim <= 3, "heFFTe doesn't support Dim > 3 yet");
+        static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
         auto fview       = f.getView();
         const int nghost = f.getNghost();
@@ -259,7 +259,7 @@ namespace ippl {
     void FFT<RCTransform, Dim, T, Mesh, Centering>::transform(
         int direction, typename FFT<RCTransform, Dim, T, Mesh, Centering>::RealField_t& f,
         typename FFT<RCTransform, Dim, T, Mesh, Centering>::ComplexField_t& g) {
-        static_assert(Dim <= 3, "heFFTe doesn't support Dim > 3 yet");
+        static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
         auto fview        = f.getView();
         auto gview        = g.getView();
@@ -397,7 +397,7 @@ namespace ippl {
     template <size_t Dim, class T, class Mesh, class Centering>
     void FFT<SineTransform, Dim, T, Mesh, Centering>::transform(
         int direction, typename FFT<SineTransform, Dim, T, Mesh, Centering>::Field_t& f) {
-        static_assert(Dim <= 3, "heFFTe doesn't support Dim > 3 yet");
+        static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
         auto fview       = f.getView();
         const int nghost = f.getNghost();
@@ -519,7 +519,7 @@ namespace ippl {
     template <size_t Dim, class T, class Mesh, class Centering>
     void FFT<CosTransform, Dim, T, Mesh, Centering>::transform(
         int direction, typename FFT<CosTransform, Dim, T, Mesh, Centering>::Field_t& f) {
-        static_assert(Dim <= 3, "heFFTe doesn't support Dim > 3 yet");
+        static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
         auto fview       = f.getView();
         const int nghost = f.getNghost();
