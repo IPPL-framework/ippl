@@ -237,10 +237,12 @@ namespace ippl {
              */
             KOKKOS_INLINE_FUNCTION auto apply() const {
                 typename E1::value_type res = 0.0;
+                // Equivalent computation in 3D:
+                // u_m[0] * v_m[0] + u_m[1] * v_m[1] + u_m[2] * v_m[2]
                 for (size_t i = 0; i < E1::dim; ++i) {
                     res += u_m[i] * v_m[i];
                 }
-                return res;  // u_m[0] * v_m[0] + u_m[1] * v_m[1] + u_m[2] * v_m[2];
+                return res;
             }
 
             /*
@@ -288,6 +290,13 @@ namespace ippl {
             KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
                 using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
 
+                /*
+                 * Equivalent computation in 3D:
+                 *     xvector_m * (u_m(i + 1, j, k) - u_m(i - 1, j, k))
+                 *   + yvector_m * (u_m(i, j + 1, k) - u_m(i, j - 1, k))
+                 *   + zvector_m * (u_m(i, j, k + 1) - u_m(i, j, k - 1))
+                 */
+
                 vector_type res(0);
                 for (unsigned d = 0; d < Dim; d++) {
                     index_type coords[Dim] = {args...};
@@ -301,12 +310,6 @@ namespace ippl {
                     res += vectors_m[d] * (right - left);
                 }
                 return res;
-
-                /*
-                return xvector_m * (u_m(i + 1, j, k) - u_m(i - 1, j, k))
-                       + yvector_m * (u_m(i, j + 1, k) - u_m(i, j - 1, k))
-                       + zvector_m * (u_m(i, j, k + 1) - u_m(i, j, k - 1));
-                       */
             }
 
         private:
@@ -343,6 +346,12 @@ namespace ippl {
             KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
                 using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
 
+                /*
+                 * Equivalent computation in 3D:
+                 *     dot(xvector_m, (u_m(i + 1, j, k) - u_m(i - 1, j, k))).apply()
+                 *   + dot(yvector_m, (u_m(i, j + 1, k) - u_m(i, j - 1, k))).apply()
+                 *   + dot(zvector_m, (u_m(i, j, k + 1) - u_m(i, j, k - 1))).apply()
+                 */
                 typename E::Mesh_t::value_type res = 0;
                 for (unsigned d = 0; d < Dim; d++) {
                     index_type coords[Dim] = {args...};
@@ -356,12 +365,6 @@ namespace ippl {
                     res += dot(vectors_m[d], right - left).apply();
                 }
                 return res;
-
-                /*
-                return dot(xvector_m, (u_m(i + 1, j, k) - u_m(i - 1, j, k))).apply()
-                       + dot(yvector_m, (u_m(i, j + 1, k) - u_m(i, j - 1, k))).apply()
-                       + dot(zvector_m, (u_m(i, j, k + 1) - u_m(i, j, k - 1))).apply();
-                       */
             }
 
         private:
@@ -393,6 +396,12 @@ namespace ippl {
                 using T                = typename E::Mesh_t::value_type;
                 constexpr unsigned Dim = E::Mesh_t::Dimension;
 
+                /*
+                 * Equivalent computation in 3D:
+                 *     hvector_m[0] * (u_m(i+1, j,   k)   - 2 * u_m(i, j, k) + u_m(i-1, j,   k  ))
+                 *   + hvector_m[1] * (u_m(i  , j+1, k)   - 2 * u_m(i, j, k) + u_m(i  , j-1, k  ))
+                 *   + hvector_m[2] * (u_m(i  , j  , k+1) - 2 * u_m(i, j, k) + u_m(i  , j  , k-1))
+                 */
                 T res = 0;
                 for (unsigned d = 0; d < Dim; d++) {
                     index_type coords[Dim] = {args...};
@@ -407,12 +416,6 @@ namespace ippl {
                     res += hvector_m[d] * (left - 2 * center + right);
                 }
                 return res;
-
-                /*
-                return hvector_m[0] * (u_m(i+1, j,   k)   - 2 * u_m(i, j, k) + u_m(i-1, j,   k  )) +
-                       hvector_m[1] * (u_m(i  , j+1, k)   - 2 * u_m(i, j, k) + u_m(i  , j-1, k  )) +
-                       hvector_m[2] * (u_m(i  , j  , k+1) - 2 * u_m(i, j, k) + u_m(i  , j  , k-1));
-                       */
             }
 
         private:
