@@ -273,7 +273,7 @@ public:
                 }
                 for (unsigned d = 1; d < Dim; d++) {
                     ippl::apply<Dim>(view, args)[d] = scale_fact * 4.0 * pi * phi0;
-                    for (unsigned d1 = 0; d1 < Dim - 1; d1++) {
+                    for (int d1 = 0; d1 < (int)Dim - 1; d1++) {
                         ippl::apply<Dim>(view, args)[d] *= sin(2 * ((d1 + 1) % 3) * pi * vec[d1]);
                     }
                 }
