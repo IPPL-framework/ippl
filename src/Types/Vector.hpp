@@ -165,10 +165,11 @@ namespace ippl {
     inline std::ostream& operator<<(std::ostream& out, const Vector<T, Dim>& v) {
         std::streamsize sw = out.width();
         out << std::setw(1);
-        if (Dim >= 1) {
+        if constexpr (Dim > 1) {
             out << "( ";
-            for (unsigned int i = 0; i < Dim - 1; i++)
+            for (unsigned int i = 0; i < Dim - 1; i++) {
                 out << std::setw(sw) << v[i] << " , ";
+            }
             out << std::setw(sw) << v[Dim - 1] << " )";
         } else {
             out << "( " << std::setw(sw) << v[0] << " )";

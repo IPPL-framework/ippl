@@ -128,9 +128,11 @@ struct generate_random {
 
         value_type muZ = (value_type)(((!isBeam) * muBulk) + (isBeam * muBeam));
 
-        for (unsigned d = 0; d < Dim - 1; ++d) {
-            x(i)[d] = rand_gen.drand(minU[d], maxU[d]);
-            v(i)[d] = rand_gen.normal(0.0, sigma);
+        if constexpr (Dim > 1) {
+            for (unsigned d = 0; d < Dim - 1; ++d) {
+                x(i)[d] = rand_gen.drand(minU[d], maxU[d]);
+                v(i)[d] = rand_gen.normal(0.0, sigma);
+            }
         }
         v(i)[Dim - 1] = rand_gen.normal(muZ, sigma);
 
