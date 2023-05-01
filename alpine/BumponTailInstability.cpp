@@ -48,7 +48,7 @@
 
 constexpr unsigned Dim = 1;
 
-constexpr bool ENABLE_PHASE_DUMP = false;
+constexpr bool EnablePhaseDump = false;
 
 template <typename T>
 struct Newton1D {
@@ -403,7 +403,7 @@ int main(int argc, char* argv[]) {
     P->create(nloc);
 
     PhaseDump<bunch_type> phase;
-    if constexpr (ENABLE_PHASE_DUMP) {
+    if constexpr (EnablePhaseDump) {
         if (Ippl::Comm->size() != 1) {
             msg << "Phase dump only supported on one rank" << endl;
             std::abort();
@@ -504,7 +504,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
-        if constexpr (ENABLE_PHASE_DUMP) {
+        if constexpr (EnablePhaseDump) {
             phase.dump(it, P);
         }
     }
@@ -519,7 +519,7 @@ int main(int argc, char* argv[]) {
         std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
 
-    if constexpr (ENABLE_PHASE_DUMP) {
+    if constexpr (EnablePhaseDump) {
         if (Ippl::Comm->rank() == 0) {
             // clang-format off
             std::cout

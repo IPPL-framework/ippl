@@ -171,7 +171,7 @@ namespace ippl {
         HostMirror getHostMirror() { return Kokkos::create_mirror(dview_m); }
 
         /*!
-         * Generate the 3D range policy for iterating over the field,
+         * Generate the range policy for iterating over the field,
          * excluding ghost layers
          * @tparam Tag an optional tag for the range policy
          * @param nghost Number of ghost layers to include in the range policy (default 0)
