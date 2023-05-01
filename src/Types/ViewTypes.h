@@ -24,6 +24,8 @@
 
 #include "Types/Vector.h"
 
+#include "Utility/IpplException.h"
+
 namespace ippl {
     /**
      * @file ViewTypes.h
@@ -134,6 +136,7 @@ namespace ippl {
                 }
                 return policy_type(begin, end);
             }
+            throw IpplException("detail::getRangePolicy", "Unreachable state");
         }
 
         /*!
@@ -158,6 +161,7 @@ namespace ippl {
             } else {
                 return policy_type(begin, end);
             }
+            throw IpplException("detail::getRangePolicy", "Unreachable state");
         }
 
         enum e_functor_type {

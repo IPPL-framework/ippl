@@ -186,8 +186,8 @@ namespace ippl {
 
 #if __cplusplus < 202002L
         template <typename View, typename Bounds, size_t... Idx>
-        KOKKOS_INLINE_FUNCTION auto makeSubview_impl(const View& view, const Bounds& intersect,
-                                                     const std::index_sequence<Idx...>&) {
+        auto makeSubview_impl(const View& view, const Bounds& intersect,
+                              const std::index_sequence<Idx...>&) {
             return Kokkos::subview(view,
                                    Kokkos::make_pair(intersect.lo[Idx], intersect.hi[Idx])...);
         };

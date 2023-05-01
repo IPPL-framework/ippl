@@ -148,13 +148,17 @@ namespace ippl {
          * @param wlo lower weights for interpolation
          * @param whi upper weights for interpolation
          */
-        template <unsigned long Point, unsigned long Index, typename Vector>
-        KOKKOS_INLINE_FUNCTION constexpr auto scattergather_weight(const Vector& wlo,
-                                                                   const Vector& whi) {
-            if constexpr (Point & (1 << Index))
+        template <unsigned long Point, unsigned long Index, typename T, unsigned Dim>
+        KOKKOS_INLINE_FUNCTION constexpr T scattergather_weight(const Vector<T, Dim>& wlo,
+                                                                const Vector<T, Dim>& whi) {
+            if constexpr (Point & (1 << Index)) {
                 return wlo[Index];
-            else
+            } else {
                 return whi[Index];
+            }
+            // device code cannot throw exceptions, but we need a
+            // dummy return to silence the warning
+            return 0;
         }
 
         /*!
@@ -163,12 +167,17 @@ namespace ippl {
          * @tparam Index index of the axis
          * @param args the indices of the source point
          */
-        template <unsigned long Point, unsigned long Index, typename Vector>
-        KOKKOS_INLINE_FUNCTION constexpr auto scattergather_arg(const Vector& args) {
-            if constexpr (Point & (1 << Index))
+        template <unsigned long Point, unsigned long Index, typename IndexType, unsigned Dim>
+        KOKKOS_INLINE_FUNCTION constexpr IndexType scattergather_arg(
+            const Vector<IndexType, Dim>& args) {
+            if constexpr (Point & (1 << Index)) {
                 return args[Index] - 1;
-            else
+            } else {
                 return args[Index];
+            }
+            // device code cannot throw exceptions, but we need a
+            // dummy return to silence the warning
+            return 0;
         }
 
         /*!
