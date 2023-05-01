@@ -138,7 +138,7 @@ namespace ippl {
             using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
                 "HaloCells::pack()", detail::getRangePolicy<Dim>(subview),
-                KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                KOKKOS_LAMBDA(const index_array_type& args) {
                     int l = 0;
 
                     for (unsigned d1 = 0; d1 < Dim; d1++) {
@@ -168,7 +168,7 @@ namespace ippl {
             using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
                 "HaloCells::unpack()", detail::getRangePolicy<Dim>(subview),
-                KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                KOKKOS_LAMBDA(const index_array_type& args) {
                     int l = 0;
 
                     for (unsigned d1 = 0; d1 < Dim; d1++) {
