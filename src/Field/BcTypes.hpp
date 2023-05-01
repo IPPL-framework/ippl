@@ -306,7 +306,7 @@ namespace ippl {
                 throw IpplException("PeriodicFace::apply", "face number wrong");
             }
 
-            int N = view.extent(d) - 1;
+            auto N = view.extent(d) - 1;
 
             using index_type = typename detail::RangePolicy<Dim>::index_type;
             Kokkos::Array<index_type, Dim> begin, end;
