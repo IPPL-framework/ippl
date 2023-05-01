@@ -136,6 +136,7 @@ namespace ippl {
                 }
                 return policy_type(begin, end);
             }
+            // Silences incorrect nvcc warning: missing return statement at end of non-void function
             throw IpplException("detail::getRangePolicy", "Unreachable state");
         }
 
@@ -161,6 +162,7 @@ namespace ippl {
             } else {
                 return policy_type(begin, end);
             }
+            // Silences incorrect nvcc warning: missing return statement at end of non-void function
             throw IpplException("detail::getRangePolicy", "Unreachable state");
         }
 

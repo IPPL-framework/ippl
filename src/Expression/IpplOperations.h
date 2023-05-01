@@ -594,7 +594,8 @@ namespace ippl {
                     return vectors_m[col] * (uu - du - ud + dd)
                            / (4. * hvector_m[row] * hvector_m[col]);
                 }
-                // dummy return to silence nvcc warning about missing return
+                // Silences incorrect nvcc warning: missing return statement at end of non-void
+                // function
                 return vector_type{};
             }
         };
