@@ -77,9 +77,9 @@ namespace ippl {
         /*!
          * Create a range policy that spans an entire Kokkos view, excluding
          * a specifiable number of ghost cells at the extremes.
-         * @tparam T view data type
          * @tparam Dim view dimension
-         * @tparam Properties further template parameters of Kokkos
+         * @tparam Tag range policy tag
+         * @tparam View the view type
          *
          * @param view to span
          * @param shift number of ghost cells
@@ -147,7 +147,6 @@ namespace ippl {
          * @tparam Functor functor type
          * @tparam T... index types
          * @tparam Acc accumulator data type
-         * @tparam R functor return type
          */
         template <typename Functor, typename... T, typename Acc>
         struct FunctorWrapper<REDUCE, Functor, std::tuple<T...>, Acc> {
@@ -180,6 +179,7 @@ namespace ippl {
 
         /*!
          * Convenience function for wrapping a functor with the wrapper struct.
+         * @tparam Type the parallel dispatch type
          * @tparam Dim the loop's rank
          * @tparam Acc the accumulator type
          * @tparam Functor the functor type
@@ -204,6 +204,8 @@ namespace ippl {
         };
     }  // namespace detail
 
+    // Wrappers for Kokkos' parallel dispatch functions that use
+    // the IPPL functor wrapper
     template <class ExecPolicy, class FunctorType>
     void parallel_for(const std::string& name, const ExecPolicy& policy,
                       const FunctorType& functor) {

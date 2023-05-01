@@ -68,11 +68,13 @@ namespace ippl {
 
     template <unsigned Dim>
     void FieldLayout<Dim>::updateLayout(const std::vector<NDIndex<Dim>>& domains) {
-        if (domains.empty())
+        if (domains.empty()) {
             return;
+        }
 
-        for (unsigned int i = 0; i < domains.size(); i++)
+        for (unsigned int i = 0; i < domains.size(); i++) {
             hLocalDomains_m(i) = domains[i];
+        }
 
         findNeighbors();
 
@@ -101,10 +103,11 @@ namespace ippl {
         // If the user did not specify parallel/serial flags then make all parallel.
         long totparelems = 1;
         for (unsigned d = 0; d < Dim; ++d) {
-            if (userflags == 0)
+            if (userflags == 0) {
                 requestedLayout_m[d] = PARALLEL;
-            else
+            } else {
                 requestedLayout_m[d] = userflags[d];
+            }
 
             if (requestedLayout_m[d] == PARALLEL) {
                 totparelems *= domain[d].length();
@@ -192,8 +195,9 @@ namespace ippl {
         for (size_type i = 0; i < hLocalDomains_m.size(); ++i) {
             const NDIndex_t& dom = hLocalDomains_m(i);
             for (unsigned int d = 0; d < Dim; ++d) {
-                if ((unsigned int)dom[d].length() < minWidth_m[d])
+                if ((unsigned int)dom[d].length() < minWidth_m[d]) {
                     minWidth_m[d] = dom[d].length();
+                }
             }
         }
     }
@@ -209,22 +213,26 @@ namespace ippl {
             // 1 - check lower boundary
             for (int k = 0; k < 2; ++k) {
                 auto offset = offsets[d] = getPeriodicOffset(localDomain, d, k);
-                if (offset == 0)
+                if (offset == 0) {
                     continue;
+                }
 
                 grown[d] += offset;
 
                 if (grown.touches(neighborDomain)) {
                     auto intersect = grown.intersect(neighborDomain);
-                    for (auto& [d, offset] : offsets)
+                    for (auto& [d, offset] : offsets) {
                         neighborDomain[d] -= offset;
+                    }
                     addNeighbors(grown, localDomain, neighborDomain, intersect, nghost, rank);
-                    for (auto& [d, offset] : offsets)
+                    for (auto& [d, offset] : offsets) {
                         neighborDomain[d] += offset;
+                    }
                 }
-                if (codim + 1 < Dim)
+                if (codim + 1 < Dim) {
                     findPeriodicNeighbors(nghost, localDomain, grown, neighborDomain, rank, offsets,
                                           d + 1, codim + 1);
+                }
 
                 grown[d] -= offset;
                 offsets.erase(d);
@@ -336,12 +344,14 @@ namespace ippl {
                                             const int k) {
         switch (k) {
             case 0:
-                if (nd[d].max() == gDomain_m[d].max())
+                if (nd[d].max() == gDomain_m[d].max()) {
                     return -gDomain_m[d].length();
+                }
                 break;
             case 1:
-                if (nd[d].min() == gDomain_m[d].min())
+                if (nd[d].min() == gDomain_m[d].min()) {
                     return gDomain_m[d].length();
+                }
                 break;
             default:
                 throw IpplException("FieldLayout:getPeriodicOffset", "k  has to be either 0 or 1");

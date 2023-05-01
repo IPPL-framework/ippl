@@ -60,8 +60,9 @@ namespace ippl {
          */
         constexpr unsigned int countHypercubes(unsigned int dim) {
             unsigned int ret = 1;
-            for (unsigned int d = 0; d < dim; d++)
+            for (unsigned int d = 0; d < dim; d++) {
                 ret *= 3;
+            }
             return ret;
         }
 
@@ -185,8 +186,9 @@ namespace ippl {
 
         bool operator==(const FieldLayout<Dim>& x) const {
             for (unsigned int i = 0; i < Dim; ++i) {
-                if (hLocalDomains_m(Ippl::Comm->rank())[i] != x.getLocalNDIndex()[i])
+                if (hLocalDomains_m(Ippl::Comm->rank())[i] != x.getLocalNDIndex()[i]) {
                     return false;
+                }
             }
             return true;
         }
@@ -194,8 +196,9 @@ namespace ippl {
         // for the requested dimension, report if the distribution is
         // SERIAL or PARALLEL
         e_dim_tag getDistribution(unsigned int d) const {
-            if (minWidth_m[d] == (unsigned int)gDomain_m[d].length())
+            if (minWidth_m[d] == (unsigned int)gDomain_m[d].length()) {
                 return SERIAL;
+            }
             return PARALLEL;
         }
 
@@ -231,8 +234,21 @@ namespace ippl {
         const neighbor_range_list& getNeighborsRecvRange() const;
 
         /*!
-         * Compute the index corresponding to the component opposite the component
-         * with the given index, as determined by the ternary encoding for hypercubes
+         * Given the index of a hypercube, find the index of the opposite hypercube,
+         * i.e. the component with the same codimension belonging to a neighboring domain
+         * that touches the hypercube with the given index, as determined by the
+         * ternary encoding for hypercubes.
+         *
+         * For neighbor communication, the opposite component is the one that receives
+         * sent data or sends us data to receive for a given component.
+         *
+         * The matching index is given by swapping alls 1s for 0s and vice versa in
+         * the ternary encoding, while keeping the 2s unchanged. This can be understood
+         * from the fact that if the local component is on the upper boundary of the local
+         * domain, the neighbor component must be on the lower boundary of its local domain,
+         * and vice versa. The 2s are unchanged because both the local component and the
+         * neighbor component must be parallel to the same axes, otherwise their intersection
+         * would have lower or higher dimension than the components themselves.
          * @param index index of the known component
          * @return Index of the matching component
          */
