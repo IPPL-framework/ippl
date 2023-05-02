@@ -229,9 +229,9 @@ public:
         ParticleAttrib<double>::view_type viewqm = this->qm.getView();
         int nghost                               = this->EFDMag_m.getNghost();
 
-        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_reduce(
-            "Particle Charge", ippl::detail::getRangePolicy<Dim>(viewRho, nghost),
+            "Particle Charge", ippl::getRangePolicy<Dim>(viewRho, nghost),
             KOKKOS_LAMBDA(const index_array_type& args, double& val) {
                 val += ippl::apply<Dim>(viewRho, args);
             },
@@ -264,9 +264,9 @@ public:
         const ippl::NDIndex<Dim>& lDom     = layout.getLocalNDIndex();
         const int nghost                   = EFD_m.getNghost();
 
-        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
-            "Assign EFD_m", ippl::detail::getRangePolicy<Dim>(view, nghost),
+            "Assign EFD_m", ippl::getRangePolicy<Dim>(view, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
                 Vector_t vec = (0.5 + args + lDom.first() - nghost) * hr;
@@ -355,7 +355,7 @@ public:
             int N = fl.getDomain()[0].length();  // this only works for boxes
             const ippl::NDIndex<Dim>& lDom = fl.getLocalNDIndex();
             int size                       = Ippl::Comm->size();
-            using index_type               = typename ippl::detail::RangePolicy<Dim>::index_type;
+            using index_type               = typename ippl::RangePolicy<Dim>::index_type;
             Kokkos::Array<index_type, Dim> begin, end;
             for (unsigned d = 0; d < Dim; d++) {
                 begin[d] = 0;
@@ -363,9 +363,9 @@ public:
             }
             end[0] /= size;
             // Loops over particles
-            using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
-                "initPositions", ippl::detail::createRangePolicy<Dim>(begin, end),
+                "initPositions", ippl::createRangePolicy<Dim>(begin, end),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     int l = 0;
                     for (unsigned d1 = 0; d1 < Dim; d1++) {

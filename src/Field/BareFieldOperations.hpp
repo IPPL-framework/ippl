@@ -28,9 +28,9 @@ namespace ippl {
         T sum                  = 0;
         auto view1             = f1.getView();
         auto view2             = f2.getView();
-        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_reduce(
-            "Field::innerProduct(Field&, Field&)", f1.getRangePolicy(),
+            "Field::innerProduct(Field&, Field&)", f1.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const index_array_type& args, T& val) {
                 val += apply<Dim>(view1, args) * apply<Dim>(view2, args);
             },
@@ -51,11 +51,11 @@ namespace ippl {
     T norm(const BareField<T, Dim>& field, int p = 2) {
         T local                = 0;
         auto view              = field.getView();
-        using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
         switch (p) {
             case 0: {
                 ippl::parallel_reduce(
-                    "Field::norm(0)", field.getRangePolicy(),
+                    "Field::norm(0)", field.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args, T& val) {
                         T myVal = std::abs(apply<Dim>(view, args));
                         if (myVal > val)
@@ -71,7 +71,7 @@ namespace ippl {
                 return std::sqrt(innerProduct(field, field));
             default: {
                 ippl::parallel_reduce(
-                    "Field::norm(int) general", field.getRangePolicy(),
+                    "Field::norm(int) general", field.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args, T& val) {
                         val += std::pow(std::abs(apply<Dim>(view, args)), p);
                     },

@@ -154,7 +154,7 @@ namespace ippl {
         }
 
         // Find all the perpendicular axes
-        using index_type = typename detail::RangePolicy<Dim>::index_type;
+        using index_type = typename RangePolicy<Dim>::index_type;
         Kokkos::Array<index_type, Dim> begin, end;
         for (unsigned d = 0; d < Dim; d++) {
             if (d == cutAxis) {
@@ -181,9 +181,9 @@ namespace ippl {
             // Reducing over perpendicular plane defined by cutAxis
             T tempRes = T(0);
 
-            using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+            using index_array_type = typename RangePolicy<Dim>::index_array_type;
             ippl::parallel_reduce(
-                "ORB weight reduction", detail::createRangePolicy<Dim>(begin, end),
+                "ORB weight reduction", createRangePolicy<Dim>(begin, end),
                 KOKKOS_LAMBDA(const index_array_type& args, T& weight) {
                     weight += apply<Dim>(data, args);
                 },

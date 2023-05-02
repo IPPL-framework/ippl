@@ -221,8 +221,8 @@ TEST_F(FieldTest, NormInf) {
         auto view     = field->getView();
         const auto dx = field->get_mesh().getMeshSpacing();
         FieldVal<Dim> fv(view, lDom, dx);
-        Kokkos::parallel_for("Set field",
-                             field->template getRangePolicy<typename FieldVal<Dim>::Norm>(), fv);
+        Kokkos::parallel_for(
+            "Set field", field->template getFieldRangePolicy<typename FieldVal<Dim>::Norm>(), fv);
 
         double normInf = ippl::norm(*field, 0);
 
@@ -242,7 +242,8 @@ TEST_F(FieldTest, VolumeIntegral) {
 
         FieldVal<Dim> fv(view, lDom, dx, shift);
         Kokkos::parallel_for(
-            "Set field", field->template getRangePolicy<typename FieldVal<Dim>::Integral>(), fv);
+            "Set field", field->template getFieldRangePolicy<typename FieldVal<Dim>::Integral>(),
+            fv);
 
         ASSERT_NEAR(field->getVolumeIntegral(), 0., 5e-15);
     };
@@ -292,7 +293,7 @@ TEST_F(FieldTest, Div) {
 
         const auto dx = vfield.get_mesh().getMeshSpacing();
         VFieldVal<Dim> fv(view, lDom, dx, vshift);
-        Kokkos::parallel_for("Set field", vfield.getRangePolicy(vshift), fv);
+        Kokkos::parallel_for("Set field", vfield.getFieldRangePolicy(vshift), fv);
 
         *field = div(vfield);
 
@@ -386,9 +387,9 @@ TEST_F(FieldTest, Hessian) {
         ippl::Vector<double, Dim> origin = mesh->getOrigin();
 
         FieldVal<Dim> fv(view_field, lDom, hx, nghost);
-        Kokkos::parallel_for("Set field",
-                             field.template getRangePolicy<typename FieldVal<Dim>::Hessian>(nghost),
-                             fv);
+        Kokkos::parallel_for(
+            "Set field",
+            field.template getFieldRangePolicy<typename FieldVal<Dim>::Hessian>(nghost), fv);
 
         MField_t result(*mesh, *layout);
         result = hess(field);

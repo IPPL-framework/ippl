@@ -342,9 +342,9 @@ int main(int argc, char* argv[]) {
         const int nghost               = P->rho_m.getNghost();
         auto rhoview                   = P->rho_m.getView();
 
-        using index_array_type = typename ippl::detail::RangePolicy<Dim>::index_array_type;
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
-            "Assign initial rho based on PDF", ippl::detail::getRangePolicy<Dim>(rhoview, nghost),
+            "Assign initial rho based on PDF", ippl::getRangePolicy<Dim>(rhoview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
                 Vector_t<Dim> xvec = args;

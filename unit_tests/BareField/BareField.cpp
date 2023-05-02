@@ -96,7 +96,7 @@ TEST_F(BareFieldTest, Min) {
         const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
         auto view                     = field->getView();
 
-        Kokkos::parallel_for("Set field", field->getRangePolicy(), FieldVal<Dim>{view, lDom});
+        Kokkos::parallel_for("Set field", field->getFieldRangePolicy(), FieldVal<Dim>{view, lDom});
         Kokkos::fence();
 
         double min = field->min();
@@ -116,7 +116,7 @@ TEST_F(BareFieldTest, Max) {
         const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
         auto view                     = field->getView();
 
-        Kokkos::parallel_for("Set field", field->getRangePolicy(), FieldVal<Dim>{view, lDom});
+        Kokkos::parallel_for("Set field", field->getFieldRangePolicy(), FieldVal<Dim>{view, lDom});
         Kokkos::fence();
 
         double max = field->max();

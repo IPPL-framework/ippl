@@ -135,9 +135,9 @@ namespace ippl {
                 Kokkos::realloc(buffer, size * overalloc);
             }
 
-            using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+            using index_array_type = typename RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
-                "HaloCells::pack()", detail::getRangePolicy<Dim>(subview),
+                "HaloCells::pack()", getRangePolicy<Dim>(subview),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     int l = 0;
 
@@ -165,9 +165,9 @@ namespace ippl {
             // https://stackoverflow.com/questions/3735398/operator-as-template-parameter
             Op op;
 
-            using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+            using index_array_type = typename RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
-                "HaloCells::unpack()", detail::getRangePolicy<Dim>(subview),
+                "HaloCells::unpack()", getRangePolicy<Dim>(subview),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     int l = 0;
 
@@ -213,7 +213,7 @@ namespace ippl {
             int myRank           = Ippl::Comm->rank();
             const auto& lDomains = layout->getHostLocalDomains();
             const auto& domain   = layout->getDomain();
-            using index_type     = typename detail::RangePolicy<Dim>::index_type;
+            using index_type     = typename RangePolicy<Dim>::index_type;
             Kokkos::Array<index_type, Dim> ext, begin, end;
 
             for (size_t i = 0; i < Dim; ++i) {
@@ -230,9 +230,9 @@ namespace ippl {
                 if (lDomains[myRank][d].length() == domain[d].length()) {
                     int N = view.extent(d) - 1;
 
-                    using index_array_type = typename detail::RangePolicy<Dim>::index_array_type;
+                    using index_array_type = typename RangePolicy<Dim>::index_array_type;
                     ippl::parallel_for(
-                        "applyPeriodicSerialDim", detail::createRangePolicy<Dim>(begin, end),
+                        "applyPeriodicSerialDim", createRangePolicy<Dim>(begin, end),
                         KOKKOS_LAMBDA(index_array_type & coords) {
                             // The ghosts are filled starting from the inside
                             // of the domain proceeding outwards for both lower

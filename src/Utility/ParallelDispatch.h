@@ -28,6 +28,86 @@
 #include "Utility/IpplException.h"
 
 namespace ippl {
+    /*!
+     * Multidimensional range policies.
+     */
+    template <unsigned Dim, typename Tag = void>
+    struct RangePolicy {
+        typedef std::conditional_t<std::is_void_v<Tag>, Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>,
+                                   Kokkos::MDRangePolicy<Tag, Kokkos::Rank<Dim>>>
+            policy_type;
+        typedef typename policy_type::array_index_type index_type;
+        typedef ::ippl::Vector<index_type, Dim> index_array_type;
+    };
+
+    /*!
+     * Specialized range policy for one dimension.
+     */
+    template <typename Tag>
+    struct RangePolicy<1, Tag> {
+        typedef std::conditional_t<std::is_void_v<Tag>, Kokkos::RangePolicy<>,
+                                   Kokkos::RangePolicy<Tag>>
+            policy_type;
+        typedef typename policy_type::index_type index_type;
+        typedef ::ippl::Vector<index_type, 1> index_array_type;
+    };
+
+    /*!
+     * Create a range policy that spans an entire Kokkos view, excluding
+     * a specifiable number of ghost cells at the extremes.
+     * @tparam Dim view dimension
+     * @tparam Tag range policy tag
+     * @tparam View the view type
+     *
+     * @param view to span
+     * @param shift number of ghost cells
+     *
+     * @return A (MD)RangePolicy that spans the desired elements of the given view
+     */
+    template <unsigned Dim, typename Tag = void, typename View>
+    typename RangePolicy<Dim, Tag>::policy_type getRangePolicy(const View& view, int shift = 0) {
+        using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
+        if constexpr (Dim == 1) {
+            return policy_type(shift, view.size() - shift);
+        } else {
+            using index_type = typename RangePolicy<Dim, Tag>::index_type;
+            Kokkos::Array<index_type, Dim> begin, end;
+            for (unsigned int d = 0; d < Dim; d++) {
+                begin[d] = shift;
+                end[d]   = view.extent(d) - shift;
+            }
+            return policy_type(begin, end);
+        }
+        // Silences incorrect nvcc warning: missing return statement at end of non-void function
+        throw IpplException("detail::getRangePolicy", "Unreachable state");
+    }
+
+    /*!
+     * Create a range policy for an index range given in the form of arrays
+     * (required because Kokkos doesn't allow the initialization of 1D range
+     * policies using arrays)
+     * @tparam Dim the dimension of the range
+     * @tparam Tag range policy tags
+     *
+     * @param begin the starting indices
+     * @param end the ending indices
+     *
+     * @return A (MD)RangePolicy spanning the given range
+     */
+    template <unsigned Dim, typename Tag = void>
+    typename RangePolicy<Dim, Tag>::policy_type createRangePolicy(
+        const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& begin,
+        const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& end) {
+        using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
+        if constexpr (Dim == 1) {
+            return policy_type(begin[0], end[0]);
+        } else {
+            return policy_type(begin, end);
+        }
+        // Silences incorrect nvcc warning: missing return statement at end of non-void function
+        throw IpplException("detail::getRangePolicy", "Unreachable state");
+    }
+
     namespace detail {
         /*!
          * Recursively templated struct for defining tuples with arbitrary
@@ -48,88 +128,6 @@ namespace ippl {
         struct Coords<1, T> {
             typedef std::tuple<T> type;
         };
-
-        /*!
-         * Multidimensional range policies.
-         */
-        template <unsigned Dim, typename Tag = void>
-        struct RangePolicy {
-            typedef std::conditional_t<std::is_void_v<Tag>,
-                                       Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>,
-                                       Kokkos::MDRangePolicy<Tag, Kokkos::Rank<Dim>>>
-                policy_type;
-            typedef typename policy_type::array_index_type index_type;
-            typedef ::ippl::Vector<index_type, Dim> index_array_type;
-        };
-
-        /*!
-         * Specialized range policy for one dimension.
-         */
-        template <typename Tag>
-        struct RangePolicy<1, Tag> {
-            typedef std::conditional_t<std::is_void_v<Tag>, Kokkos::RangePolicy<>,
-                                       Kokkos::RangePolicy<Tag>>
-                policy_type;
-            typedef typename policy_type::index_type index_type;
-            typedef ::ippl::Vector<index_type, 1> index_array_type;
-        };
-
-        /*!
-         * Create a range policy that spans an entire Kokkos view, excluding
-         * a specifiable number of ghost cells at the extremes.
-         * @tparam Dim view dimension
-         * @tparam Tag range policy tag
-         * @tparam View the view type
-         *
-         * @param view to span
-         * @param shift number of ghost cells
-         *
-         * @return A (MD)RangePolicy that spans the desired elements of the given view
-         */
-        template <unsigned Dim, typename Tag = void, typename View>
-        typename RangePolicy<Dim, Tag>::policy_type getRangePolicy(const View& view,
-                                                                   int shift = 0) {
-            using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
-            if constexpr (Dim == 1) {
-                return policy_type(shift, view.size() - shift);
-            } else {
-                using index_type = typename RangePolicy<Dim, Tag>::index_type;
-                Kokkos::Array<index_type, Dim> begin, end;
-                for (unsigned int d = 0; d < Dim; d++) {
-                    begin[d] = shift;
-                    end[d]   = view.extent(d) - shift;
-                }
-                return policy_type(begin, end);
-            }
-            // Silences incorrect nvcc warning: missing return statement at end of non-void function
-            throw IpplException("detail::getRangePolicy", "Unreachable state");
-        }
-
-        /*!
-         * Create a range policy for an index range given in the form of arrays
-         * (required because Kokkos doesn't allow the initialization of 1D range
-         * policies using arrays)
-         * @tparam Dim the dimension of the range
-         * @tparam Tag range policy tags
-         *
-         * @param begin the starting indices
-         * @param end the ending indices
-         *
-         * @return A (MD)RangePolicy spanning the given range
-         */
-        template <unsigned Dim, typename Tag = void>
-        typename RangePolicy<Dim, Tag>::policy_type createRangePolicy(
-            const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& begin,
-            const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& end) {
-            using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
-            if constexpr (Dim == 1) {
-                return policy_type(begin[0], end[0]);
-            } else {
-                return policy_type(begin, end);
-            }
-            // Silences incorrect nvcc warning: missing return statement at end of non-void function
-            throw IpplException("detail::getRangePolicy", "Unreachable state");
-        }
 
         enum e_functor_type {
             FOR,
