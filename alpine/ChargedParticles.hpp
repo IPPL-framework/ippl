@@ -57,6 +57,7 @@ using Field_t = Field<double, Dim>;
 template <unsigned Dim = 3>
 using VField_t = Field<Vector_t<Dim>, Dim>;
 
+// heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
 template <unsigned Dim = 3>
 using Solver_t = std::conditional_t<
     Dim == 1, ippl::ElectrostaticsCG<double, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>,
@@ -206,6 +207,8 @@ public:
     }
 
     void setPotentialBCs() {
+        // CG requires explicit periodic boundary conditions while the periodic Poisson solver
+        // simply assumes them
         if constexpr (Dim == 1) {
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
                 allPeriodic[i] = std::make_shared<
@@ -357,8 +360,9 @@ public:
             }
         }
 
-        double h = std::reduce(hrField.begin(), hrField.end(), 1., std::multiplies<double>());
-        rho_m    = rho_m / h;
+        double cellVolume =
+            std::reduce(hrField.begin(), hrField.end(), 1., std::multiplies<double>());
+        rho_m = rho_m / cellVolume;
 
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
@@ -392,9 +396,13 @@ public:
         solver_mp->setRhs(rho_m);
 
         if constexpr (Dim == 1) {
+            // The CG solver computes the potential directly and
+            // uses this to get the electric field
             solver_mp->setLhs(phi_m);
             solver_mp->setGradient(E_m);
         } else {
+            // The periodic Poisson solver computes the electric
+            // field directly
             solver_mp->setLhs(E_m);
         }
     }
