@@ -113,8 +113,9 @@ public:
         this->addAttribute(P);
         this->addAttribute(E);
         setupBCs();
-        for (unsigned int i = 0; i < Dim; i++)
+        for (unsigned int i = 0; i < Dim; i++) {
             decomp_m[i] = decomp[i];
+        }
     }
 
     void setupBCs() { setBCAllPeriodic(); }
@@ -159,13 +160,15 @@ public:
         double threshold = 1.0;
         double equalPart = (double)totalP / Ippl::Comm->size();
         double dev       = std::abs((double)this->getLocalNum() - equalPart) / totalP;
-        if (dev > threshold)
+        if (dev > threshold) {
             local = 1;
+        }
         MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
 
         for (unsigned int i = 0; i < res.size(); i++) {
-            if (res[i] == 1)
+            if (res[i] == 1) {
                 return true;
+            }
         }
         return false;
     }
@@ -245,8 +248,9 @@ public:
 
         ippl::NDIndex<Dim> domain = EFD_m.getDomain();
 
-        for (unsigned int i = 0; i < Dim; i++)
+        for (unsigned int i = 0; i < Dim; i++) {
             nr_m[i] = domain[i].length();
+        }
 
         double phi0 = 0.1;
         double pi   = acos(-1.0);
@@ -334,8 +338,9 @@ public:
 
         auto dom                = fl.getDomain();
         unsigned int gridpoints = 1;
-        for (unsigned d = 0; d < Dim; d++)
+        for (unsigned d = 0; d < Dim; d++) {
             gridpoints *= dom[d].length();
+        }
         if (tag == 0 && nloc * Ippl::Comm->size() != gridpoints) {
             if (Ippl::Comm->rank() == 0) {
                 std::cerr << "Particle count must match gridpoint count to use gridpoint "
@@ -398,9 +403,11 @@ public:
             double rmin = 0.0, rmax = 1.0;
             m << "Positions follow uniform distribution U(" << rmin << "," << rmax << ")" << endl;
             std::uniform_real_distribution<double> unif(rmin, rmax);
-            for (unsigned long int i = 0; i < nloc; i++)
-                for (unsigned d = 0; d < Dim; d++)
+            for (unsigned long int i = 0; i < nloc; i++) {
+                for (unsigned d = 0; d < Dim; d++) {
                     R_host(i)[d] = unif(eng[d]);
+                }
+            }
         }
 
         // Copy to device
@@ -427,10 +434,11 @@ int main(int argc, char* argv[]) {
     }
 
     // Each rank must have a minimal volume of 8
-    if (volume < 8 * Ippl::Comm->size())
+    if (volume < 8 * Ippl::Comm->size()) {
         msg << "!!! Ranks have not enough volume for proper working !!! (Minimal volume per rank: "
                "8)"
             << endl;
+    }
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     IpplTimings::startTimer(mainTimer);
@@ -477,8 +485,9 @@ int main(int argc, char* argv[]) {
 
     int rest = (int)(totalP - nloc * Ippl::Comm->size());
 
-    if (Ippl::Comm->rank() < rest)
+    if (Ippl::Comm->rank() < rest) {
         ++nloc;
+    }
 
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
     IpplTimings::startTimer(particleCreation);
