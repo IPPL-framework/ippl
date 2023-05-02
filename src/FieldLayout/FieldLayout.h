@@ -66,23 +66,63 @@ namespace ippl {
             return ret;
         }
 
+        /*!
+         * Compile-time evaluation of x!
+         * @param x input value
+         * @return x factorial
+         */
         constexpr unsigned int factorial(unsigned x) {
             return x == 0 ? 1 : x * factorial(x - 1);
         }
 
-        constexpr unsigned int nCr(unsigned a, unsigned b) {
+        /*!
+         * Compile-time evaluation of binomial coefficients, aka
+         * elements of Pascal's triangle, aka choices from combinatorics, etc
+         * @param a number of options
+         * @param b number of choices
+         * @return a choose b
+         */
+        constexpr unsigned int binomialCoefficient(unsigned a, unsigned b) {
             return factorial(a) / (factorial(b) * factorial(a - b));
         }
 
+        /*!
+         * Compile-time evaluation of the number of hypercubes of dimension m in a hypercube
+         * of dimension Dim
+         * @tparam Dim parent hypercube dimension
+         * @param m sub-hypercube dimension
+         * @return The number of m-cubes in an n-cube
+         */
         template <unsigned Dim>
         constexpr unsigned int countCubes(unsigned m) {
-            return (1 << (Dim - m)) * nCr(Dim, m);
+            return (1 << (Dim - m)) * binomialCoefficient(Dim, m);
         }
 
+        /*!
+         * Determines whether a facet is on the upper boundary
+         * of its domain. For lower dimension hypercubes, determines
+         * whether the component is on the upper boundary of
+         * the domain along at least one axis
+         * @param face the hypercube's index
+         * @return Whether it touches any upper boundary
+         */
         bool isUpper(unsigned int face);
 
+        /*!
+         * Determine the axis perpendicular to a given facet
+         * (throws an exception if the index does not correspond
+         * to a facet)
+         * @param face the facet's index
+         * @return The index of the axis perpendicular to that facet
+         */
         unsigned int getFaceDim(unsigned int face);
 
+        /*!
+         * Converts between ternary encoding and face set indexing
+         * @tparam Dim the number of dimensions
+         * @param index the ternary-encoded index of a facet in [0, 3^Dim)
+         * @return The index of that facet in a set of faces in [0, 2*Dim)
+         */
         template <unsigned Dim>
         unsigned int indexToFace(unsigned int index) {
             // facets are group low/high by axis
@@ -95,6 +135,13 @@ namespace ippl {
             return countHypercubes(Dim) - 1 - toRemove;
         }
 
+        /*!
+         * Computes the ternary-encoded index of a hypercube
+         * @tparam Dim the number of dimensions in the full hypercube
+         * @tparam CubeTags... variadic argument list, must be all e_cube_tag
+         * @param tag(s...) the tags describing the hypercube of interest
+         * @return The index of the desired hypercube
+         */
         template <
             unsigned Dim, typename... CubeTags,
             typename = std::enable_if_t<sizeof...(CubeTags) == Dim - 1>,
@@ -107,12 +154,22 @@ namespace ippl {
             }
         }
 
+        /*!
+         * Utility function for getFace
+         */
         template <size_t... Idx>
         unsigned int getFace_impl(const std::array<e_cube_tag, sizeof...(Idx)>& args,
                                   const std::index_sequence<Idx...>&) {
             return getCube<sizeof...(Idx)>(args[Idx]...);
         }
 
+        /*!
+         * Convenience alias for getCube for getting facets
+         * @tparam Dim the number of dimensions in the parent hypercube
+         * @param axis the axis perpendicular to the facet
+         * @param side whether the facet is an upper or lower facet
+         * @return The index of the facet
+         */
         template <unsigned Dim>
         unsigned int getFace(unsigned int axis, e_cube_tag side) {
             std::array<e_cube_tag, Dim> args;
