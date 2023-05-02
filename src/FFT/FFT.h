@@ -154,7 +154,8 @@ namespace ippl {
         // using long long = detail::long long;
 
         /**
-           setup performs the initialization necessary.
+           setup performs the initialization necessary. heFFTe expects 3 sets of bounds,
+           so the arrays are zeroed and filled up to the given dimension.
         */
         void setup(const std::array<long long, 3>& low, const std::array<long long, 3>& high,
                    const ParameterList& params);
@@ -196,7 +197,8 @@ namespace ippl {
 
         /**
            setup performs the initialization necessary after the transform
-           directions have been specified.
+           directions have been specified. heFFTe expects 3 sets of bounds,
+           so the arrays are zeroed and filled up to the given dimension.
         */
         void setup(const std::array<long long, 3>& lowInput,
                    const std::array<long long, 3>& highInput,
@@ -234,7 +236,8 @@ namespace ippl {
 
     private:
         /**
-           setup performs the initialization necessary.
+           setup performs the initialization necessary. heFFTe expects 3 sets of bounds,
+           so the arrays are zeroed and filled up to the given dimension.
         */
         void setup(const std::array<long long, 3>& low, const std::array<long long, 3>& high,
                    const ParameterList& params);
@@ -269,7 +272,8 @@ namespace ippl {
 
     private:
         /**
-           setup performs the initialization necessary.
+           setup performs the initialization necessary. heFFTe expects 3 sets of bounds,
+           so the arrays are zeroed and filled up to the given dimension.
         */
         void setup(const std::array<long long, 3>& low, const std::array<long long, 3>& high,
                    const ParameterList& params);
