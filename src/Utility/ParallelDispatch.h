@@ -216,16 +216,6 @@ namespace ippl {
 
     template <class ExecPolicy, class FunctorType, class... ReducerArgument>
     void parallel_reduce(const std::string& name, const ExecPolicy& policy,
-                         const FunctorType& functor, ReducerArgument&... reducer) {
-        Kokkos::parallel_reduce(
-            name, policy,
-            detail::functorize<detail::REDUCE, detail::ExtractRank<ExecPolicy>::rank,
-                               typename ReducerArgument::value_type...>(functor),
-            reducer...);
-    }
-
-    template <class ExecPolicy, class FunctorType, class... ReducerArgument>
-    void parallel_reduce(const std::string& name, const ExecPolicy& policy,
                          const FunctorType& functor, const ReducerArgument&... reducer) {
         Kokkos::parallel_reduce(
             name, policy,
