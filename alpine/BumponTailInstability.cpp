@@ -520,20 +520,17 @@ int main(int argc, char* argv[]) {
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
 
     if constexpr (EnablePhaseDump) {
-        if (Ippl::Comm->rank() == 0) {
-            // clang-format off
-            std::cout
-                << "--- Phase Space Parameters ---\n"
-                << "Resolution: " << *std::max_element(nr.begin(), nr.end()) << "\n"
-                << "Domain: " << rmax[Dim - 1] << "\n"
-                << "Phase space axis: " << (Dim - 1)
-                    << "; range: [" << phase.minRecorded() << ", " << phase.maxRecorded() << "]\n"
-                << "Particle count: " << totalP << "\n"
-                << "Ranks: " << Ippl::Comm->size() << "\n"
-                << "Timestep: " << dt << "\n"
-                << "------------------------------" << std::endl;
-            // clang-format on
-        }
+        // clang-format off
+        msg << "--- Phase Space Parameters ---\n"
+            << "Resolution: " << *std::max_element(nr.begin(), nr.end()) << "\n"
+            << "Domain: " << rmax[Dim - 1] << "\n"
+            << "Phase space axis: " << (Dim - 1)
+                << "; range: [" << phase.minRecorded() << ", " << phase.maxRecorded() << "]\n"
+            << "Particle count: " << totalP << "\n"
+            << "Ranks: " << Ippl::Comm->size() << "\n"
+            << "Timestep: " << dt << "\n"
+            << "------------------------------" << endl;
+        // clang-format on
     }
 
     return 0;

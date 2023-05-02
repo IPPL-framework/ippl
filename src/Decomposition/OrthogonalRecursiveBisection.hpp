@@ -123,6 +123,7 @@ namespace ippl {
 
     template <class T, unsigned Dim, class Mesh, class Centering>
     int OrthogonalRecursiveBisection<T, Dim, Mesh, Centering>::findCutAxis(NDIndex<Dim>& dom) {
+        // Find longest domain size
         return std::distance(dom.begin(), std::max_element(dom.begin(), dom.end(),
                                                            [&](const Index& a, const Index& b) {
                                                                return a.length() < b.length();

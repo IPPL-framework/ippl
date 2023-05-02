@@ -311,12 +311,12 @@ namespace ippl {
             using index_type = typename detail::RangePolicy<Dim>::index_type;
             Kokkos::Array<index_type, Dim> begin, end;
 
-            std::array<long, Dim> ext;
-
+            // For the axis along which BCs are being applied, iterate
+            // through only the ghost cells. For all other axes, iterate
+            // through all internal cells.
             for (size_t i = 0; i < Dim; ++i) {
-                ext[i]   = view.extent(i) - nghost;
+                end[i]   = view.extent(i) - nghost;
                 begin[i] = nghost;
-                end[i]   = ext[i];
             }
             begin[d] = 0;
             end[d]   = nghost;
