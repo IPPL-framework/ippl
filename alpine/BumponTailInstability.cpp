@@ -316,11 +316,8 @@ int main(int argc, char* argv[]) {
     PLayout_t<Dim> PL(FL, mesh);
 
     // Q = -\int\int f dx dv
-    double Q = -1;
-    for (const auto& r : rmax) {
-        Q *= r;
-    }
-    P = std::make_shared<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+    double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
+    P        = std::make_shared<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
 
     P->nr_m = nr;
 

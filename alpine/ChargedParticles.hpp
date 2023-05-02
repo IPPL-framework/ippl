@@ -357,11 +357,8 @@ public:
             }
         }
 
-        double h = 1;
-        for (const auto& hr : hrField) {
-            h *= hr;
-        }
-        rho_m = rho_m / h;
+        double h = std::reduce(hrField.begin(), hrField.end(), 1., std::multiplies<double>());
+        rho_m    = rho_m / h;
 
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
@@ -503,10 +500,7 @@ public:
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        fieldEnergy = globaltemp;
-        for (const auto& h : hr_m) {
-            fieldEnergy *= h;
-        }
+        fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double tempMax = 0.0;
         ippl::parallel_reduce(
@@ -557,10 +551,7 @@ public:
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        fieldEnergy = globaltemp;
-        for (const auto& h : hr_m) {
-            fieldEnergy *= h;
-        }
+        fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double tempMax = 0.0;
         ippl::parallel_reduce(

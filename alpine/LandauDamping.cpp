@@ -192,21 +192,14 @@ int main(int argc, char* argv[]) {
     }
 
     // create mesh and layout objects for this problem domain
-    Vector_t<Dim> kw;
-    for (auto& k : kw) {
-        k = 0.5;
-    }
-    double alpha = 0.05;
+    Vector_t<Dim> kw = 0.5;
+    double alpha     = 0.05;
     Vector_t<Dim> rmin(0.0);
     Vector_t<Dim> rmax = 2 * pi / kw;
 
-    Vector_t<Dim> hr;
+    Vector_t<Dim> hr = rmax / nr;
     // Q = -\int\int f dx dv
-    double Q = -1;
-    for (unsigned d = 0; d < Dim; d++) {
-        hr[d] = rmax[d] / nr[d];
-        Q *= rmax[d];
-    }
+    double Q             = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
     Vector_t<Dim> origin = rmin;
     const double dt      = 0.5 * hr[0];
 

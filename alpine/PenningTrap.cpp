@@ -134,7 +134,8 @@ double CDF(const double& x, const double& mu, const double& sigma) {
 }
 
 KOKKOS_FUNCTION
-double PDF(const Vector_t<Dim>& xvec, const Vector_t<Dim>& mu, const Vector_t<Dim>& sigma, const unsigned Dim) {
+double PDF(const Vector_t<Dim>& xvec, const Vector_t<Dim>& mu, const Vector_t<Dim>& sigma,
+           const unsigned Dim) {
     double pdf = 1.0;
     double pi  = std::acos(-1.0);
 
@@ -175,7 +176,7 @@ int main(int argc, char* argv[]) {
     msg << "Penning Trap " << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
     using bunch_type = ChargedParticles<PLayout_t<Dim>, Dim>;
-    
+
     std::unique_ptr<bunch_type> P;
 
     ippl::NDIndex<Dim> domain;
@@ -189,17 +190,14 @@ int main(int argc, char* argv[]) {
     }
 
     // create mesh and layout objects for this problem domain
-    Vector_t<Dim> rmin(0.0);
-    Vector_t<Dim> rmax(20.0);
-    double dx = rmax[0] / nr[0];
-    double dy = rmax[1] / nr[1];
-    double dz = rmax[2] / nr[2];
+    Vector_t<Dim> rmin = 0;
+    Vector_t<Dim> rmax = 20;
 
-    Vector_t<Dim> hr        = {dx, dy, dz};
-    Vector_t<Dim> origin    = {rmin[0], rmin[1], rmin[2]};
-    unsigned int nrMax = 2048;  // Max grid size in our studies
-    double dxFinest    = rmax[0] / nrMax;
-    const double dt    = 0.5 * dxFinest;  // size of timestep
+    Vector_t<Dim> hr     = rmax / nr;
+    Vector_t<Dim> origin = rmin;
+    unsigned int nrMax   = 2048;  // Max grid size in our studies
+    double dxFinest      = rmax[0] / nrMax;
+    const double dt      = 0.5 * dxFinest;  // size of timestep
 
     const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);
