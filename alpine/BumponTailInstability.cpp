@@ -46,7 +46,7 @@
 
 #include "ChargedParticles.hpp"
 
-constexpr unsigned Dim = 1;
+constexpr unsigned Dim = 3;
 
 constexpr bool EnablePhaseDump = false;
 

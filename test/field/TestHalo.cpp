@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
         Ippl::Comm->barrier();
     }
 
-    int nsteps = 1;
+    int nsteps = 300;
 
     for (int nt = 0; nt < nsteps; ++nt) {
         static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");

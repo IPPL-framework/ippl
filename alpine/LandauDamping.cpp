@@ -43,7 +43,7 @@
 
 #include "ChargedParticles.hpp"
 
-constexpr unsigned Dim = 2;
+constexpr unsigned Dim = 3;
 
 template <typename T>
 struct Newton1D {
