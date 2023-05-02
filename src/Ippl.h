@@ -25,6 +25,8 @@
 #include "Utility/Inform.h"
 #include "Utility/ParallelDispatch.h"
 
+void IpplAbort(const char* = nullptr, int = 1);
+
 #include "Communicate/Communicate.h"
 
 class Ippl;
@@ -63,10 +65,7 @@ public:
     // Destructor.
     ~Ippl();
 
-    static MPI_Comm getComm() { return *Ippl::Comm->getCommunicator(); }
-
-    // Kill the communication and throw runtime error exception.
-    static void abort(const char* = 0);
+    static MPI_Comm getComm();
 
     static void fence();
 

@@ -353,7 +353,7 @@ public:
                 m << "Total particles in the sim. " << totalP << " "
                   << "after update: " << Total_particles << endl;
                 m << "Rel. error in charge conservation: " << rel_error << endl;
-                std::abort();
+                IpplAbort();
             }
         }
 
