@@ -1,6 +1,8 @@
 // Penning Trap
 //   Usage:
-//     srun ./PenningTrap <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
+//     srun ./PenningTrap
+//                  <nx> [<ny>...] <Np> <Nt> <stype>
+//                  <lbthres> --overallocate <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
 //     ny       = No. cell-centered points in the y-direction
 //     nz       = No. cell-centered points in the z-direction
@@ -152,8 +154,6 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
     Inform msg("PenningTrap");
     Inform msg2all("PenningTrap", INFORM_ALL_NODES);
-
-    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
     auto start                = std::chrono::high_resolution_clock::now();
     ippl::Vector<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};

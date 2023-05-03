@@ -1,6 +1,8 @@
 // Uniform Plasma Test
 //   Usage:
-//     srun ./UniformPlasmaTest <nx> [<ny>...] <Np> <Nt> <stype> <lbfreq> <ovfactor> --info 10
+//     srun ./UniformPlasmaTest
+//                  <nx> [<ny>...] <Np> <Nt> <stype>
+//                  <lbthres> --overallocate <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
 //     ny...    = No. cell-centered points in the y-, z-, ...direction
 //     Np       = Total no. of macro-particles in the simulation
@@ -179,8 +181,6 @@ int main(int argc, char* argv[]) {
     P->initSolver();
     P->time_m            = 0.0;
     P->loadbalancefreq_m = std::atoi(argv[arg++]);
-
-    Ippl::Comm->setDefaultOverallocation(std::atof(argv[arg++]));
 
     IpplTimings::startTimer(DummySolveTimer);
     P->rho_m = 0.0;
