@@ -24,11 +24,13 @@
 constexpr unsigned Dim = 3;
 
 // some typedefs
-typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
 typedef ippl::UniformCartesian<double, Dim> Mesh_t;
+template<typename T=double>
+using PLayout_t=ippl::ParticleSpatialLayout<T, Dim, Mesh_t>;
 typedef Mesh_t::DefaultCentering Centering_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
-typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t, Centering_t> ORB;
+template<typename T=double>
+using ORB=ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t, Centering_t, T>; 
 
 using size_type = ippl::detail::size_type;
 
@@ -41,18 +43,22 @@ using Field = ippl::Field<T, Dim, Mesh_t, Centering_t>;
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
 
-typedef Vector<double, Dim> Vector_t;
+template<typename T=double>
+using Vector_t=Vector<T, Dim>; 
 typedef Field<double, Dim> Field_t;
-typedef Field<Vector_t, Dim> VField_t;
-typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim, Mesh_t, Centering_t> Solver_t;
+template<typename T=double>
+using VField_t=Field<Vector_t<T>, Dim>;
+template<typename T=double>
+using Solver_t=ippl::FFTPeriodicPoissonSolver<Vector_t<T>, double, Dim, Mesh_t, Centering_t>;
 
 const double pi = std::acos(-1.0);
 
 // Test programs have to define this variable for VTK dump purposes
 extern const char* TestName;
 
-void dumpVTK(VField_t& E, int nx, int ny, int nz, int iteration, double dx, double dy, double dz) {
-    typename VField_t::view_type::host_mirror_type host_view = E.getHostMirror();
+template<typename T>
+void dumpVTK(VField_t<T>& E, int nx, int ny, int nz, int iteration, double dx, double dy, double dz) {
+    typename VField_t<T>::view_type::host_mirror_type host_view = E.getHostMirror();
 
     std::stringstream fname;
     fname << "data/ef_";
@@ -86,6 +92,7 @@ void dumpVTK(VField_t& E, int nx, int ny, int nz, int iteration, double dx, doub
     }
 }
 
+template<typename T>
 void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration, double dx, double dy, double dz) {
     typename Field_t::view_type::host_mirror_type host_view = rho.getHostMirror();
 
@@ -121,28 +128,28 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration, double dx, dou
     }
 }
 
-template <class PLayout>
+template <class PLayout, typename T>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
 public:
-    VField_t E_m;
+    VField_t<T> E_m;
     Field_t rho_m;
 
     // ORB
-    ORB orb;
+    ORB<T> orb;
 
     Vector<int, Dim> nr_m;
 
     ippl::e_dim_tag decomp_m[Dim];
 
-    Vector_t hr_m;
-    Vector_t rmin_m;
-    Vector_t rmax_m;
+    Vector_t<> hr_m;
+    Vector_t<> rmin_m;
+    Vector_t<> rmax_m;
 
     double Q_m;
 
     std::string stype_m;
 
-    std::shared_ptr<Solver_t> solver_mp;
+    std::shared_ptr<Solver_t<T>> solver_mp;
 
     double time_m;
 
@@ -170,7 +177,7 @@ public:
         this->addAttribute(E);
     }
 
-    ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
+    ChargedParticles(PLayout& pl, Vector_t<> hr, Vector_t<> rmin, Vector_t<> rmax,
                      ippl::e_dim_tag decomp[Dim], double Q)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
@@ -190,7 +197,7 @@ public:
 
     void setupBCs() { setBCAllPeriodic(); }
 
-    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer,
+    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout, T>& buffer,
                       bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
@@ -212,7 +219,7 @@ public:
 
     void initializeORB(FieldLayout_t& fl, Mesh_t& mesh) { orb.initialize(fl, mesh, rho_m); }
 
-    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer,
+    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout, T>& buffer,
                      bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
@@ -276,7 +283,7 @@ public:
 
     void gatherCIC() { gather(this->E, E_m, this->R); }
 
-    void scatterCIC(size_type totalP, unsigned int iteration, Vector_t& hrField) {
+    void scatterCIC(size_type totalP, unsigned int iteration, Vector_t<>& hrField) {
         Inform m("scatter ");
 
         rho_m = 0.0;
@@ -328,7 +335,7 @@ public:
 
     void initFFTSolver() {
         ippl::ParameterList sp;
-        sp.add("output_type", Solver_t::GRAD);
+        sp.add("output_type", Solver_t<T>::GRAD);
         sp.add("use_heffte_defaults", false);
         sp.add("use_pencils", true);
         sp.add("use_reorder", false);
@@ -336,7 +343,7 @@ public:
         sp.add("comm", ippl::p2p_pl);
         sp.add("r2c_direction", 0);
 
-        solver_mp = std::make_shared<Solver_t>();
+        solver_mp = std::make_shared<Solver_t<T>>();
 
         solver_mp->mergeParameters(sp);
 
@@ -361,27 +368,31 @@ public:
         Energy *= 0.5;
         double gEnergy = 0.0;
 
+	
+
         MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
-        Vector_t normE;
+        Vector_t<T> normE;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
+
         for (unsigned d = 0; d < Dim; ++d) {
-            double temp = 0.0;
+            T temp = 0.0;
             Kokkos::parallel_reduce(
                 "Vector E reduce",
                 mdrange_type({nghostE, nghostE, nghostE},
                              {Eview.extent(0) - nghostE, Eview.extent(1) - nghostE,
                               Eview.extent(2) - nghostE}),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                    double myVal = std::pow(Eview(i, j, k)[d], 2);
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) {
+                    T myVal = std::pow(Eview(i, j, k)[d], 2);
                     valL += myVal;
                 },
-                Kokkos::Sum<double>(temp));
-            double globaltemp = 0.0;
-            MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+                Kokkos::Sum<T>(temp));
+            T globaltemp = 0.0;
+	    MPI_Datatype mpi_type = get_mpi_datatype<T>(temp); 
+            MPI_Reduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, 0, Ippl::getComm());
             normE[d] = std::sqrt(globaltemp);
         }
 
@@ -519,8 +530,8 @@ public:
     }
 
     void dumpParticleData() {
-        typename ParticleAttrib<Vector_t>::HostMirror R_host = this->R.getHostMirror();
-        typename ParticleAttrib<Vector_t>::HostMirror P_host = this->P.getHostMirror();
+        typename ParticleAttrib<Vector_t<T>>::HostMirror R_host = this->R.getHostMirror();
+        typename ParticleAttrib<Vector_t<T>>::HostMirror P_host = this->P.getHostMirror();
         Kokkos::deep_copy(R_host, this->R.getView());
         Kokkos::deep_copy(P_host, P.getView());
         std::stringstream pname;
