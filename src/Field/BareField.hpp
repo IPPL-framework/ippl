@@ -66,9 +66,9 @@ namespace ippl {
 #if __cplusplus < 202002L
     namespace detail {
         template <typename T, unsigned Dim, size_t... Idx>
-        KOKKOS_INLINE_FUNCTION void resizeBareField(BareField<T, Dim>& bf,
-                                                    const NDIndex<Dim>& owned, const int nghost,
-                                                    const std::index_sequence<Idx...>&) {
+        void resizeBareField(BareField<T, Dim>& bf,
+                            const NDIndex<Dim>& owned, const int nghost,
+                            const std::index_sequence<Idx...>&) {
             bf.resize((owned[Idx].length() + 2 * nghost)...);
         };
     }  // namespace detail
