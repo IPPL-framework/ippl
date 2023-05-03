@@ -120,16 +120,16 @@ int main(int argc, char* argv[]) {
 
     int nsteps = 300;
 
+    static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
+    IpplTimings::startTimer(fillHaloTimer);
     for (int nt = 0; nt < nsteps; ++nt) {
-        static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
-        IpplTimings::startTimer(fillHaloTimer);
         field.accumulateHalo();
         Ippl::Comm->barrier();
         field.fillHalo();
         Ippl::Comm->barrier();
-        IpplTimings::stopTimer(fillHaloTimer);
         msg << "Update: " << nt + 1 << endl;
     }
+    IpplTimings::stopTimer(fillHaloTimer);
 
     for (int rank = 0; rank < nRanks; ++rank) {
         if (rank == Ippl::Comm->rank()) {
