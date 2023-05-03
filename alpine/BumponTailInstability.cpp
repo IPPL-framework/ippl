@@ -201,17 +201,21 @@ struct PhaseDump {
 
                 Inform out("Phase Dump", fname.str().c_str(), Inform::OVERWRITE, 0);
                 phaseSpaceBuf.write(out);
-            }
-            auto max = phaseSpace.max();
-            auto min = phaseSpace.min();
-            if (max > maxValue) {
-                maxValue = max;
-            }
-            if (min < minValue) {
-                minValue = min;
+
+                auto max = phaseSpaceBuf.max();
+                auto min = phaseSpaceBuf.min();
+                if (max > maxValue) {
+                    maxValue = max;
+                }
+                if (min < minValue) {
+                    minValue = min;
+                }
             }
             Ippl::Comm->barrier();
         }
+
+        MPI_Bcast(&maxValue, 1, MPI_DOUBLE, 0, Ippl::getComm());
+        MPI_Bcast(&minValue, 1, MPI_DOUBLE, 0, Ippl::getComm());
     }
 
     double maxRecorded() const { return maxValue; }
