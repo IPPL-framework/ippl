@@ -1,11 +1,15 @@
 // Penning Trap
 //   Usage:
-//     srun ./PenningTrap <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> --overallocate <ovfactor>
-//     --info 10 nx       = No. cell-centered points in the x-direction ny       = No. cell-centered
-//     points in the y-direction nz       = No. cell-centered points in the z-direction Np       =
-//     Total no. of macro-particles in the simulation Nt       = Number of time steps stype    =
-//     Field solver type e.g., FFT lbthres  = Load balancing threshold i.e., lbthres*100 is the
-//     maximum load imbalance
+//     srun ./PenningTrap
+//                  <nx> [<ny>...] <Np> <Nt> <stype>
+//                  <lbthres> --overallocate <ovfactor> --info 10
+//     nx       = No. cell-centered points in the x-direction
+//     ny       = No. cell-centered points in the y-direction
+//     nz       = No. cell-centered points in the z-direction
+//     Np       = Total no. of macro-particles in the simulation
+//     Nt       = Number of time steps
+//     stype    = Field solver type e.g., FFT
+//     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
 //                particle load balancing occurs. A value of 0.01 is good for many typical
 //                simulations.

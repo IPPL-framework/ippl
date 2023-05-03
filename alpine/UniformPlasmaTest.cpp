@@ -1,8 +1,11 @@
 // Uniform Plasma Test
 //   Usage:
-//     srun ./UniformPlasmaTest <nx> [<ny>...] <Np> <Nt> <stype> <lbfreq> --overallocate <ovfactor>
-//     --info 10 nx       = No. cell-centered points in the x-direction ny...    = No. cell-centered
-//     points in the y-, z-, ...direction Np       = Total no. of macro-particles in the simulation
+//     srun ./UniformPlasmaTest
+//                  <nx> [<ny>...] <Np> <Nt> <stype>
+//                  <lbthres> --overallocate <ovfactor> --info 10
+//     nx       = No. cell-centered points in the x-direction
+//     ny...    = No. cell-centered points in the y-, z-, ...direction
+//     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
 //     stype    = Field solver type e.g., FFT
 //     lbfreq   = Load balancing frequency i.e., Number of time steps after which particle

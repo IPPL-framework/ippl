@@ -1,8 +1,11 @@
 // Landau Damping Test
 //   Usage:
-//     srun ./LandauDamping <nx> [<ny>...] <Np> <Nt> <stype> <lbthres> --overallocate <ovfactor>
-//     --info 10 nx       = No. cell-centered points in the x-direction ny...    = No. cell-centered
-//     points in the y-, z-, ...-direction Np       = Total no. of macro-particles in the simulation
+//     srun ./LandauDamping
+//                  <nx> [<ny>...] <Np> <Nt> <stype>
+//                  <lbthres> --overallocate <ovfactor> --info 10
+//     nx       = No. cell-centered points in the x-direction
+//     ny...    = No. cell-centered points in the y-, z-, ...-direction
+//     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
 //     stype    = Field solver type e.g., FFT
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
