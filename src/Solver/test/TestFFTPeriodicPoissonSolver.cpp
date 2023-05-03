@@ -9,8 +9,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, 3>;
-    using Centering_t = Mesh_t::DefaultCentering;
+    using Mesh_t               = ippl::UniformCartesian<double, 3>;
+    using Centering_t          = Mesh_t::DefaultCentering;
 
     const int npts            = 7;
     std::array<int, npts> pts = {2, 4, 8, 16, 32, 64, 128};
@@ -67,7 +67,6 @@ int main(int argc, char* argv[]) {
 
         const ippl::NDIndex<dim>& lDom   = layout.getLocalNDIndex();
         const int nghost                 = field.getNghost();
-        using mdrange_type               = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         typename Field_t::view_type view = field.getView();
 
         switch (params.template get<int>("output_type")) {
@@ -77,10 +76,7 @@ int main(int argc, char* argv[]) {
                 auto view_exact = phifield_exact.getView();
 
                 Kokkos::parallel_for(
-                    "Assign rhs",
-                    mdrange_type({nghost, nghost, nghost},
-                                 {view.extent(0) - nghost, view.extent(1) - nghost,
-                                  view.extent(2) - nghost}),
+                    "Assign rhs", ippl::getRangePolicy<3>(view, nghost),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // local to global index conversion
                         const size_t ig = i + lDom[0].first() - nghost;
@@ -133,10 +129,7 @@ int main(int argc, char* argv[]) {
                 auto Eview_exact = Efield_exact.getView();
 
                 Kokkos::parallel_for(
-                    "Assign rhs",
-                    mdrange_type({nghost, nghost, nghost},
-                                 {view.extent(0) - nghost, view.extent(1) - nghost,
-                                  view.extent(2) - nghost}),
+                    "Assign rhs", ippl::getRangePolicy<3>(view, nghost),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // local to global index conversion
                         const size_t ig = i + lDom[0].first() - nghost;
@@ -177,11 +170,7 @@ int main(int argc, char* argv[]) {
                 for (size_t d = 0; d < dim; ++d) {
                     double temp = 0.0;
                     Kokkos::parallel_reduce(
-                        "Vector errorNr reduce",
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                            {nghost, nghost, nghost},
-                            {view.extent(0) - nghost, view.extent(1) - nghost,
-                             view.extent(2) - nghost}),
+                        "Vector errorNr reduce", ippl::getRangePolicy<3>(view, nghost),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
                                       double& valL) {
                             double myVal = pow(Eview(i, j, k)[d], 2);
@@ -194,11 +183,7 @@ int main(int argc, char* argv[]) {
 
                     temp = 0.0;
                     Kokkos::parallel_reduce(
-                        "Vector errorDr reduce",
-                        Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                            {nghost, nghost, nghost},
-                            {view.extent(0) - nghost, view.extent(1) - nghost,
-                             view.extent(2) - nghost}),
+                        "Vector errorDr reduce", ippl::getRangePolicy<3>(view, nghost),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
                                       double& valL) {
                             double myVal = pow(Eview_exact(i, j, k)[d], 2);

@@ -43,8 +43,8 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, dim>;
-    using Centering_t = Mesh_t::DefaultCentering;
+    using Mesh_t               = ippl::UniformCartesian<double, dim>;
+    using Centering_t          = Mesh_t::DefaultCentering;
 
     int pt         = std::atoi(argv[1]);
     bool gauss_fct = std::atoi(argv[2]);
@@ -137,8 +137,13 @@ int main(int argc, char* argv[]) {
             }
         });
 
-    result = {0.0, 0.0, 0.0};
-    result = hess(field);
+    result     = {0.0, 0.0, 0.0};
+    auto timer = IpplTimings::getTimer("Hessian");
+    IpplTimings::startTimer(timer);
+    for (int i = 0; i < 100; i++) {
+        result = hess(field);
+    }
+    IpplTimings::stopTimer(timer);
 
     result = result - exact;
 
@@ -201,6 +206,8 @@ int main(int argc, char* argv[]) {
     // print total error (average of each matrix entry)
     avg /= 9.0;
     std::cout << std::setprecision(16) << "Average error = " << avg;
+
+    IpplTimings::print();
 
     return 0;
 }

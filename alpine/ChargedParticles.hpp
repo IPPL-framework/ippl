@@ -18,41 +18,59 @@
 
 #include "Ippl.h"
 
+#include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
 
-// dimension of our positions
-constexpr unsigned Dim = 3;
-
 // some typedefs
-typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
-typedef ippl::UniformCartesian<double, Dim> Mesh_t;
-typedef Mesh_t::DefaultCentering Centering_t;
-typedef ippl::FieldLayout<Dim> FieldLayout_t;
-typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t, Centering_t> ORB;
+template <unsigned Dim = 3>
+using PLayout_t = ippl::ParticleSpatialLayout<double, Dim>;
+
+template <unsigned Dim = 3>
+using Mesh_t = ippl::UniformCartesian<double, Dim>;
+
+template <unsigned Dim = 3>
+using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
+
+template <unsigned Dim = 3>
+using FieldLayout_t = ippl::FieldLayout<Dim>;
+
+template <unsigned Dim = 3>
+using ORB = ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
 using size_type = ippl::detail::size_type;
 
-template <typename T, unsigned Dim>
+template <typename T, unsigned Dim = 3>
 using Vector = ippl::Vector<T, Dim>;
 
-template <typename T, unsigned Dim>
-using Field = ippl::Field<T, Dim, Mesh_t, Centering_t>;
+template <typename T, unsigned Dim = 3>
+using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
 
-typedef Vector<double, Dim> Vector_t;
-typedef Field<double, Dim> Field_t;
-typedef Field<Vector_t, Dim> VField_t;
-typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim, Mesh_t, Centering_t> Solver_t;
+template <unsigned Dim = 3>
+using Vector_t = Vector<double, Dim>;
+
+template <unsigned Dim = 3>
+using Field_t = Field<double, Dim>;
+
+template <unsigned Dim = 3>
+using VField_t = Field<Vector_t<Dim>, Dim>;
+
+// heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
+template <unsigned Dim = 3>
+using Solver_t = std::conditional_t<
+    Dim == 1, ippl::ElectrostaticsCG<double, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>,
+    ippl::FFTPeriodicPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>;
 
 const double pi = std::acos(-1.0);
 
 // Test programs have to define this variable for VTK dump purposes
 extern const char* TestName;
 
-void dumpVTK(VField_t& E, int nx, int ny, int nz, int iteration, double dx, double dy, double dz) {
-    typename VField_t::view_type::host_mirror_type host_view = E.getHostMirror();
+void dumpVTK(VField_t<3>& E, int nx, int ny, int nz, int iteration, double dx, double dy,
+             double dz) {
+    typename VField_t<3>::view_type::host_mirror_type host_view = E.getHostMirror();
 
     std::stringstream fname;
     fname << "data/ef_";
@@ -86,8 +104,9 @@ void dumpVTK(VField_t& E, int nx, int ny, int nz, int iteration, double dx, doub
     }
 }
 
-void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration, double dx, double dy, double dz) {
-    typename Field_t::view_type::host_mirror_type host_view = rho.getHostMirror();
+void dumpVTK(Field_t<3>& rho, int nx, int ny, int nz, int iteration, double dx, double dy,
+             double dz) {
+    typename Field_t<3>::view_type::host_mirror_type host_view = rho.getHostMirror();
 
     std::stringstream fname;
     fname << "data/scalar_";
@@ -121,28 +140,32 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration, double dx, dou
     }
 }
 
-template <class PLayout>
+template <class PLayout, unsigned Dim = 3>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
 public:
-    VField_t E_m;
-    Field_t rho_m;
+    VField_t<Dim> E_m;
+    Field_t<Dim> rho_m;
+    Field_t<Dim> phi_m;
+
+    typedef ippl::BConds<double, Dim, Mesh_t<Dim>, Centering_t<Dim>> bc_type;
+    bc_type allPeriodic;
 
     // ORB
-    ORB orb;
+    ORB<Dim> orb;
 
     Vector<int, Dim> nr_m;
 
     ippl::e_dim_tag decomp_m[Dim];
 
-    Vector_t hr_m;
-    Vector_t rmin_m;
-    Vector_t rmax_m;
+    Vector_t<Dim> hr_m;
+    Vector_t<Dim> rmin_m;
+    Vector_t<Dim> rmax_m;
 
     double Q_m;
 
     std::string stype_m;
 
-    std::shared_ptr<Solver_t> solver_mp;
+    std::shared_ptr<Solver_t<Dim>> solver_mp;
 
     double time_m;
 
@@ -164,39 +187,58 @@ public:
     */
     ChargedParticles(PLayout& pl)
         : ippl::ParticleBase<PLayout>(pl) {
-        // register the particle attributes
-        this->addAttribute(q);
-        this->addAttribute(P);
-        this->addAttribute(E);
+        registerAttributes();
+        setPotentialBCs();
     }
 
-    ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
+    ChargedParticles(PLayout& pl, Vector_t<Dim> hr, Vector_t<Dim> rmin, Vector_t<Dim> rmax,
                      ippl::e_dim_tag decomp[Dim], double Q)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
         , Q_m(Q) {
+        registerAttributes();
+        for (unsigned int i = 0; i < Dim; i++) {
+            decomp_m[i] = decomp[i];
+        }
+        setupBCs();
+        setPotentialBCs();
+    }
+
+    void setPotentialBCs() {
+        // CG requires explicit periodic boundary conditions while the periodic Poisson solver
+        // simply assumes them
+        if constexpr (Dim == 1) {
+            for (unsigned int i = 0; i < 2 * Dim; ++i) {
+                allPeriodic[i] = std::make_shared<
+                    ippl::PeriodicFace<double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
+            }
+        }
+    }
+
+    void registerAttributes() {
         // register the particle attributes
         this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
-        setupBCs();
-        for (unsigned int i = 0; i < Dim; i++)
-            decomp_m[i] = decomp[i];
     }
 
     ~ChargedParticles() {}
 
     void setupBCs() { setBCAllPeriodic(); }
 
-    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer,
-                      bool& isFirstRepartition) {
+    void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
+                      ChargedParticles<PLayout, Dim>& buffer, bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
         this->E_m.updateLayout(fl);
         this->rho_m.updateLayout(fl);
+        if constexpr (Dim == 1) {
+            this->phi_m.updateLayout(fl);
+            phi_m.setFieldBC(allPeriodic);
+        }
 
         // Update layout with new FieldLayout
         PLayout& layout = this->getLayout();
@@ -210,10 +252,21 @@ public:
         IpplTimings::stopTimer(tupdatePLayout);
     }
 
-    void initializeORB(FieldLayout_t& fl, Mesh_t& mesh) { orb.initialize(fl, mesh, rho_m); }
+    void initializeFields(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& fl) {
+        E_m.initialize(mesh, fl);
+        rho_m.initialize(mesh, fl);
+        if constexpr (Dim == 1) {
+            phi_m.initialize(mesh, fl);
+            phi_m.setFieldBC(allPeriodic);
+        }
+    }
 
-    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer,
-                     bool& isFirstRepartition) {
+    void initializeORB(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh) {
+        orb.initialize(fl, mesh, rho_m);
+    }
+
+    void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
+                     ChargedParticles<PLayout, Dim>& buffer, bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
 
@@ -234,13 +287,15 @@ public:
             std::vector<int> res(Ippl::Comm->size());
             double equalPart = (double)totalP / Ippl::Comm->size();
             double dev       = std::abs((double)this->getLocalNum() - equalPart) / totalP;
-            if (dev > loadbalancethreshold_m)
+            if (dev > loadbalancethreshold_m) {
                 local = 1;
+            }
             MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
 
             for (unsigned int i = 0; i < res.size(); i++) {
-                if (res[i] == 1)
+                if (res[i] == 1) {
                     return true;
+                }
             }
             return false;
         }
@@ -276,7 +331,7 @@ public:
 
     void gatherCIC() { gather(this->E, E_m, this->R); }
 
-    void scatterCIC(size_type totalP, unsigned int iteration, Vector_t& hrField) {
+    void scatterCIC(size_type totalP, unsigned int iteration, Vector_t<Dim>& hrField) {
         Inform m("scatter ");
 
         rho_m = 0.0;
@@ -301,11 +356,13 @@ public:
                 m << "Total particles in the sim. " << totalP << " "
                   << "after update: " << Total_particles << endl;
                 m << "Rel. error in charge conservation: " << rel_error << endl;
-                std::abort();
+                IpplAbort();
             }
         }
 
-        rho_m = rho_m / (hrField[0] * hrField[1] * hrField[2]);
+        double cellVolume =
+            std::reduce(hrField.begin(), hrField.end(), 1., std::multiplies<double>());
+        rho_m = rho_m / cellVolume;
 
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
@@ -313,22 +370,53 @@ public:
         // dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
 
         // rho = rho_e - rho_i
-        rho_m =
-            rho_m
-            - (Q_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
+        double size = 1;
+        for (unsigned d = 0; d < Dim; d++) {
+            size *= rmax_m[d] - rmin_m[d];
+        }
+        rho_m = rho_m - (Q_m / size);
     }
 
     void initSolver() {
         Inform m("solver ");
-        if (stype_m == "FFT")
+        if (stype_m == "FFT") {
             initFFTSolver();
-        else
+        } else if (stype_m == "CG") {
+            initCGSolver();
+        } else {
             m << "No solver matches the argument" << endl;
+        }
+    }
+
+    void initSolver(const ippl::ParameterList& sp) {
+        solver_mp = std::make_shared<Solver_t<Dim>>();
+
+        solver_mp->mergeParameters(sp);
+
+        solver_mp->setRhs(rho_m);
+
+        if constexpr (Dim == 1) {
+            // The CG solver computes the potential directly and
+            // uses this to get the electric field
+            solver_mp->setLhs(phi_m);
+            solver_mp->setGradient(E_m);
+        } else {
+            // The periodic Poisson solver computes the electric
+            // field directly
+            solver_mp->setLhs(E_m);
+        }
+    }
+
+    void initCGSolver() {
+        ippl::ParameterList sp;
+        sp.add("output_type", Solver_t<Dim>::GRAD);
+
+        initSolver(sp);
     }
 
     void initFFTSolver() {
         ippl::ParameterList sp;
-        sp.add("output_type", Solver_t::GRAD);
+        sp.add("output_type", Solver_t<Dim>::GRAD);
         sp.add("use_heffte_defaults", false);
         sp.add("use_pencils", true);
         sp.add("use_reorder", false);
@@ -336,13 +424,7 @@ public:
         sp.add("comm", ippl::p2p_pl);
         sp.add("r2c_direction", 0);
 
-        solver_mp = std::make_shared<Solver_t>();
-
-        solver_mp->mergeParameters(sp);
-
-        solver_mp->setRhs(rho_m);
-
-        solver_mp->setLhs(E_m);
+        initSolver(sp);
     }
 
     void dumpData() {
@@ -365,18 +447,17 @@ public:
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
-        Vector_t normE;
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        Vector_t<Dim> normE;
 
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         for (unsigned d = 0; d < Dim; ++d) {
             double temp = 0.0;
-            Kokkos::parallel_reduce(
-                "Vector E reduce",
-                mdrange_type({nghostE, nghostE, nghostE},
-                             {Eview.extent(0) - nghostE, Eview.extent(1) - nghostE,
-                              Eview.extent(2) - nghostE}),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                    double myVal = std::pow(Eview(i, j, k)[d], 2);
+            ippl::parallel_reduce(
+                "Vector E reduce", ippl::getRangePolicy<Dim>(Eview, nghostE),
+                KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                    // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                    // reference; see src/Expression/IpplOperations.h
+                    double myVal = std::pow(ippl::apply<Dim>(Eview, args)[d], 2);
                     valL += myVal;
                 },
                 Kokkos::Sum<double>(temp));
@@ -396,11 +477,18 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if (time_m == 0.0) {
-                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2" << endl;
+                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2";
+                for (unsigned d = 0; d < Dim; d++) {
+                    csvout << "E" << d << "norm2, ";
+                }
+                csvout << endl;
             }
 
-            csvout << time_m << " " << gEnergy << " " << rhoNorm_m << " " << normE[0] << " "
-                   << normE[1] << " " << normE[2] << endl;
+            csvout << time_m << " " << gEnergy << " " << rhoNorm_m << " ";
+            for (unsigned d = 0; d < Dim; d++) {
+                csvout << normE[d] << " ";
+            }
+            csvout << endl;
         }
 
         Ippl::Comm->barrier();
@@ -410,33 +498,32 @@ public:
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
         double fieldEnergy, ExAmp;
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-        double temp = 0.0;
-        Kokkos::parallel_reduce(
-            "Ex inner product",
-            mdrange_type(
-                {nghostE, nghostE, nghostE},
-                {Eview.extent(0) - nghostE, Eview.extent(1) - nghostE, Eview.extent(2) - nghostE}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                double myVal = std::pow(Eview(i, j, k)[0], 2);
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        double temp            = 0.0;
+        ippl::parallel_reduce(
+            "Ex inner product", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
+                double myVal = std::pow(ippl::apply<Dim>(Eview, args)[0], 2);
                 valL += myVal;
             },
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        fieldEnergy = globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
+        fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double tempMax = 0.0;
-        Kokkos::parallel_reduce(
-            "Ex max norm",
-            mdrange_type(
-                {nghostE, nghostE, nghostE},
-                {Eview.extent(0) - nghostE, Eview.extent(1) - nghostE, Eview.extent(2) - nghostE}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                double myVal = std::fabs(Eview(i, j, k)[0]);
-                if (myVal > valL)
+        ippl::parallel_reduce(
+            "Ex max norm", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
+                double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[0]);
+                if (myVal > valL) {
                     valL = myVal;
+                }
             },
             Kokkos::Max<double>(tempMax));
         ExAmp = 0.0;
@@ -466,33 +553,32 @@ public:
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
         double fieldEnergy, EzAmp;
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-        double temp = 0.0;
-        Kokkos::parallel_reduce(
-            "Ex inner product",
-            mdrange_type(
-                {nghostE, nghostE, nghostE},
-                {Eview.extent(0) - nghostE, Eview.extent(1) - nghostE, Eview.extent(2) - nghostE}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                double myVal = std::pow(Eview(i, j, k)[2], 2);
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        double temp            = 0.0;
+        ippl::parallel_reduce(
+            "Ex inner product", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
+                double myVal = std::pow(ippl::apply<Dim>(Eview, args)[Dim - 1], 2);
                 valL += myVal;
             },
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        fieldEnergy = globaltemp * hr_m[0] * hr_m[1] * hr_m[2];
+        fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double tempMax = 0.0;
-        Kokkos::parallel_reduce(
-            "Ex max norm",
-            mdrange_type(
-                {nghostE, nghostE, nghostE},
-                {Eview.extent(0) - nghostE, Eview.extent(1) - nghostE, Eview.extent(2) - nghostE}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                double myVal = std::fabs(Eview(i, j, k)[2]);
-                if (myVal > valL)
+        ippl::parallel_reduce(
+            "Ex max norm", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
+                double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[Dim - 1]);
+                if (myVal > valL) {
                     valL = myVal;
+                }
             },
             Kokkos::Max<double>(tempMax));
         EzAmp = 0.0;
@@ -519,8 +605,8 @@ public:
     }
 
     void dumpParticleData() {
-        typename ParticleAttrib<Vector_t>::HostMirror R_host = this->R.getHostMirror();
-        typename ParticleAttrib<Vector_t>::HostMirror P_host = this->P.getHostMirror();
+        typename ParticleAttrib<Vector_t<Dim>>::HostMirror R_host = this->R.getHostMirror();
+        typename ParticleAttrib<Vector_t<Dim>>::HostMirror P_host = this->P.getHostMirror();
         Kokkos::deep_copy(R_host, this->R.getView());
         Kokkos::deep_copy(P_host, P.getView());
         std::stringstream pname;
@@ -532,24 +618,27 @@ public:
         pcsvout.setf(std::ios::scientific, std::ios::floatfield);
         pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
         for (size_type i = 0; i < this->getLocalNum(); i++) {
-            pcsvout << R_host(i)[0] << " " << R_host(i)[1] << " " << R_host(i)[2] << " "
-                    << P_host(i)[0] << " " << P_host(i)[1] << " " << P_host(i)[2] << endl;
+            for (unsigned d = 0; d < Dim; d++) {
+                pcsvout << R_host(i)[d] << " ";
+            }
+            for (unsigned d = 0; d < Dim; d++) {
+                pcsvout << P_host(i)[d] << " ";
+            }
+            pcsvout << endl;
         }
         Ippl::Comm->barrier();
     }
 
-    void dumpLocalDomains(const FieldLayout_t& fl, const unsigned int step) {
+    void dumpLocalDomains(const FieldLayout_t<Dim>& fl, const unsigned int step) {
         if (Ippl::Comm->rank() == 0) {
-            const typename FieldLayout_t::host_mirror_type domains = fl.getHostLocalDomains();
+            const typename FieldLayout_t<Dim>::host_mirror_type domains = fl.getHostLocalDomains();
             std::ofstream myfile;
             myfile.open("data/domains" + std::to_string(step) + ".txt");
             for (unsigned int i = 0; i < domains.size(); ++i) {
-                myfile << domains[i][0].first() << " " << domains[i][1].first() << " "
-                       << domains[i][2].first() << " " << domains[i][0].first() << " "
-                       << domains[i][1].last() << " " << domains[i][2].first() << " "
-                       << domains[i][0].last() << " " << domains[i][1].first() << " "
-                       << domains[i][2].first() << " " << domains[i][0].first() << " "
-                       << domains[i][1].first() << " " << domains[i][2].last() << "\n";
+                for (unsigned d = 0; d < Dim; d++) {
+                    myfile << domains[i][d].first() << " " << domains[i][d].last() << " ";
+                }
+                myfile << "\n";
             }
             myfile.close();
         }

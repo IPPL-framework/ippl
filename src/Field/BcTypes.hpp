@@ -40,7 +40,8 @@ namespace ippl {
             , changePhysical_m(false) {}
 
         template <typename T, unsigned Dim, class Mesh, class Centering>
-        inline std::ostream& operator<<(std::ostream& os, const BCondBase<T, Dim, Mesh, Centering>& bc) {
+        inline std::ostream& operator<<(std::ostream& os,
+                                        const BCondBase<T, Dim, Mesh, Centering>& bc) {
             bc.write(os);
             return os;
         }
@@ -73,13 +74,16 @@ namespace ippl {
         // non-periodic BC is local to apply.
         typename Field_t::view_type& view = field.getView();
         const int nghost                  = field.getNghost();
-        using mdrange_type                = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
         int src, dest;
 
         // It is not clear what it exactly means to do extrapolate
         // BC for nghost >1
         if (nghost > 1) {
             throw IpplException("ExtrapolateFace::apply", "nghost > 1 not supported");
+        }
+
+        if (d >= Dim) {
+            throw IpplException("ExtrapolateFace::apply", "face number wrong");
         }
 
         // If face & 1 is true, then it is an upper BC
@@ -90,38 +94,28 @@ namespace ippl {
             src  = 1;
             dest = src - 1;
         }
-        switch (d) {
-            case 0:
-                Kokkos::parallel_for(
-                    "Assign extrapolate BC X",
-                    mdrange_type({nghost, nghost},
-                                 {view.extent(1) - nghost, view.extent(2) - nghost}),
-                    KOKKOS_CLASS_LAMBDA(const size_t j, const size_t k) {
-                        view(dest, j, k) = slope_m * view(src, j, k) + offset_m;
-                    });
-                break;
 
-            case 1:
-                Kokkos::parallel_for(
-                    "Assign extrapolate BC Y",
-                    mdrange_type({nghost, nghost},
-                                 {view.extent(0) - nghost, view.extent(2) - nghost}),
-                    KOKKOS_CLASS_LAMBDA(const size_t i, const size_t k) {
-                        view(i, dest, k) = slope_m * view(i, src, k) + offset_m;
-                    });
-                break;
-            case 2:
-                Kokkos::parallel_for(
-                    "Assign extrapolate BC Z",
-                    mdrange_type({nghost, nghost},
-                                 {view.extent(0) - nghost, view.extent(1) - nghost}),
-                    KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j) {
-                        view(i, j, dest) = slope_m * view(i, j, src) + offset_m;
-                    });
-                break;
-            default:
-                throw IpplException("ExtrapolateFace::apply", "face number wrong");
+        using index_type = typename RangePolicy<Dim>::index_type;
+        Kokkos::Array<index_type, Dim> begin, end;
+        for (unsigned i = 0; i < Dim; i++) {
+            begin[i] = nghost;
+            end[i]   = view.extent(i) - nghost;
         }
+        begin[d]               = src;
+        end[d]                 = src + 1;
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+        ippl::parallel_for(
+            "Assign extrapolate BC", createRangePolicy<Dim>(begin, end),
+            KOKKOS_CLASS_LAMBDA(index_array_type & args) {
+                // to avoid ambiguity with the member function
+                using ippl::apply;
+
+                T value = apply<Dim>(view, args);
+
+                args[d] = dest;
+
+                apply<Dim>(view, args) = slope_m * value + offset_m;
+            });
     }
 
     template <typename T, unsigned Dim, class Mesh, class Centering>
@@ -165,8 +159,8 @@ namespace ippl {
         const auto& lDomains   = layout.getHostLocalDomains();
         const auto& domain     = layout.getDomain();
 
-        for (size_t i = 0; i < faceNeighbors_m.size(); ++i) {
-            faceNeighbors_m[i].clear();
+        for (auto& neighbors : faceNeighbors_m) {
+            neighbors.clear();
         }
 
         if (lDomains[myRank][d].length() < domain[d].length()) {
@@ -247,16 +241,18 @@ namespace ippl {
                     matchtag   = Ippl::Comm->following_tag(BC_PARALLEL_PERIODIC_TAG);
                 }
 
+                auto& neighbors = faceNeighbors_m[face];
+
                 using buffer_type = Communicate::buffer_type;
-                std::vector<MPI_Request> requests(faceNeighbors_m[face].size());
+                std::vector<MPI_Request> requests(neighbors.size());
 
                 using HaloCells_t = detail::HaloCells<T, Dim>;
                 using range_t     = typename HaloCells_t::bound_type;
                 HaloCells_t& halo = field.getHalo();
                 std::vector<range_t> rangeNeighbors;
 
-                for (size_t i = 0; i < faceNeighbors_m[face].size(); ++i) {
-                    int rank = faceNeighbors_m[face][i];
+                for (size_t i = 0; i < neighbors.size(); ++i) {
+                    int rank = neighbors[i];
 
                     auto ndNeighbor = lDomains[rank];
                     ndNeighbor[d]   = ndNeighbor[d] - offset;
@@ -283,17 +279,15 @@ namespace ippl {
                     buf->resetWritePos();
                 }
 
-                for (size_t i = 0; i < faceNeighbors_m[face].size(); ++i) {
-                    int rank = faceNeighbors_m[face][i];
+                for (size_t i = 0; i < neighbors.size(); ++i) {
+                    int rank = neighbors[i];
 
                     range_t range = rangeNeighbors[i];
 
                     range.lo[d] = range.lo[d] + offsetRecv;
                     range.hi[d] = range.hi[d] + offsetRecv;
 
-                    detail::size_type nRecvs = (range.hi[0] - range.lo[0])
-                                               * (range.hi[1] - range.lo[1])
-                                               * (range.hi[2] - range.lo[2]);
+                    detail::size_type nRecvs = range.size();
 
                     buffer_type buf = Ippl::Comm->getBuffer<T>(IPPL_PERIODIC_BC_RECV + i, nRecvs);
                     Ippl::Comm->recv(rank, matchtag, haloData_m, *buf, nRecvs * sizeof(T), nRecvs);
@@ -308,51 +302,53 @@ namespace ippl {
             }
             // For all other processors do nothing
         } else {
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-            int N              = view.extent(d) - 1;
+            if (d >= Dim) {
+                throw IpplException("PeriodicFace::apply", "face number wrong");
+            }
 
-            std::array<long, 3> ext;
+            auto N = view.extent(d) - 1;
 
+            using index_type = typename RangePolicy<Dim>::index_type;
+            Kokkos::Array<index_type, Dim> begin, end;
+
+            // For the axis along which BCs are being applied, iterate
+            // through only the ghost cells. For all other axes, iterate
+            // through all internal cells.
             for (size_t i = 0; i < Dim; ++i) {
-                ext[i] = view.extent(i) - nghost;
+                end[i]   = view.extent(i) - nghost;
+                begin[i] = nghost;
             }
+            begin[d] = 0;
+            end[d]   = nghost;
 
-            switch (d) {
-                case 0:
-                    Kokkos::parallel_for(
-                        "Assign periodic field BC X",
-                        mdrange_type({0, nghost, nghost}, {(long)nghost, ext[1], ext[2]}),
-                        KOKKOS_CLASS_LAMBDA(const int i, const size_t j, const size_t k) {
-                            // The ghosts are filled starting from the inside of
-                            // the domain proceeding outwards for both lower and
-                            // upper faces. The extra brackets and explicit mention
-                            // of 0 is for better readability of the code
+            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            ippl::parallel_for(
+                "Assign periodic field BC", createRangePolicy<Dim>(begin, end),
+                KOKKOS_CLASS_LAMBDA(index_array_type & coords) {
+                    // The ghosts are filled starting from the inside of
+                    // the domain proceeding outwards for both lower and
+                    // upper faces.
 
-                            view(0 + (nghost - 1) - i, j, k) = view(N - nghost - i, j, k);
-                            view(N - (nghost - 1) + i, j, k) = view(0 + nghost + i, j, k);
-                        });
-                    break;
-                case 1:
-                    Kokkos::parallel_for(
-                        "Assign periodic field BC Y",
-                        mdrange_type({nghost, 0, nghost}, {ext[0], (long)nghost, ext[2]}),
-                        KOKKOS_CLASS_LAMBDA(const size_t i, const int j, const size_t k) {
-                            view(i, 0 + (nghost - 1) - j, k) = view(i, N - nghost - j, k);
-                            view(i, N - (nghost - 1) + j, k) = view(i, 0 + nghost + j, k);
-                        });
-                    break;
-                case 2:
-                    Kokkos::parallel_for(
-                        "Assign periodic field BC Z",
-                        mdrange_type({nghost, nghost, 0}, {ext[0], ext[1], (long)nghost}),
-                        KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const int k) {
-                            view(i, j, 0 + (nghost - 1) - k) = view(i, j, N - nghost - k);
-                            view(i, j, N - (nghost - 1) + k) = view(i, j, 0 + nghost + k);
-                        });
-                    break;
-                default:
-                    throw IpplException("PeriodicFace::apply", "face number wrong");
-            }
+                    // to avoid ambiguity with the member function
+                    using ippl::apply;
+
+                    // x -> nghost + x
+                    coords[d] += nghost;
+                    auto&& left = apply<Dim>(view, coords);
+
+                    // nghost + x -> N - (nghost + x) = N - nghost - x
+                    coords[d]    = N - coords[d];
+                    auto&& right = apply<Dim>(view, coords);
+
+                    // N - nghost - x -> nghost - 1 - x
+                    coords[d] += 2 * nghost - 1 - N;
+                    apply<Dim>(view, coords) = right;
+
+                    // nghost - 1 - x -> N - (nghost - 1 - x)
+                    //     = N - (nghost - 1) + x
+                    coords[d]                = N - coords[d];
+                    apply<Dim>(view, coords) = left;
+                });
         }
     }
 }  // namespace ippl

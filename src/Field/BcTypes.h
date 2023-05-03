@@ -81,7 +81,7 @@ namespace ippl {
 
             virtual void findBCNeighbors(Field<T, Dim, Mesh, Centering>& field) = 0;
             virtual void apply(Field<T, Dim, Mesh, Centering>& field)           = 0;
-            virtual void write(std::ostream&) const                        = 0;
+            virtual void write(std::ostream&) const                             = 0;
 
             // Return face on which BC applies
             unsigned int getFace() const { return face_m; }

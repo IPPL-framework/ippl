@@ -131,7 +131,7 @@ namespace ippl {
 
         private:
             /*!
-             * Exchange the data of faces.
+             * Exchange the data of halo cells.
              * @param view is the original field data
              * @param layout the field layout storing the domain decomposition
              * @param order the data send orientation
@@ -139,29 +139,7 @@ namespace ippl {
              * unpack function call
              */
             template <class Op>
-            void exchangeFaces(view_type& view, const Layout_t* layout, SendOrder order);
-
-            /*!
-             * Exchange the data of edges.
-             * @param view is the original field data
-             * @param layout the field layout storing the domain decomposition
-             * @param order the data send orientation
-             * @tparam Op the data assigment operator of the
-             * unpack function call
-             */
-            template <class Op>
-            void exchangeEdges(view_type& view, const Layout_t* layout, SendOrder order);
-
-            /*!
-             * Exchange the data of vertices.
-             * @param view is the original field data
-             * @param layout the field layout storing the domain decomposition
-             * @param order the data send orientation
-             * @tparam Op the data assigment operator of the
-             * unpack function call
-             */
-            template <class Op>
-            void exchangeVertices(view_type& view, const Layout_t* layout, SendOrder order);
+            void exchangeBoundaries(view_type& view, const Layout_t* layout, SendOrder order);
 
             /*!
              * Extract the subview of the original data. This does not copy.

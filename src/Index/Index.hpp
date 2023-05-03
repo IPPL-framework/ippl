@@ -114,6 +114,16 @@ namespace ippl {
         return (stride_m >= 0) ? first_m + stride_m * (length_m - 1) : first_m;
     }
 
+    KOKKOS_INLINE_FUNCTION Index& Index::operator+=(int off) {
+        first_m += off;
+        return *this;
+    }
+
+    KOKKOS_INLINE_FUNCTION Index& Index::operator-=(int off) {
+        first_m -= off;
+        return *this;
+    }
+
     KOKKOS_INLINE_FUNCTION Index operator+(const Index& i, int off) {
         return Index(1, off, i);
     }

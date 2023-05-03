@@ -141,7 +141,7 @@ namespace ippl {
         // be split into smaller messages
         if (msize > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
-            std::abort();
+            IpplAbort();
         }
         MPI_Status status;
         MPI_Recv(ar.getBuffer(), msize, MPI_BYTE, src, tag, comm_m, &status);
@@ -154,7 +154,7 @@ namespace ippl {
                             MPI_Request& request, size_type nsends) {
         if (ar.getSize() > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
-            std::abort();
+            IpplAbort();
         }
         buffer.serialize(ar, nsends);
         MPI_Isend(ar.getBuffer(), ar.getSize(), MPI_BYTE, dest, tag, comm_m, &request);

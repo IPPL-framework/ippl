@@ -8,8 +8,8 @@
 #include "Electrostatics.h"
 
 constexpr unsigned int dim = 3;
-using Mesh_t = ippl::UniformCartesian<double, dim>;
-using Centering_t = Mesh_t::DefaultCentering;
+using Mesh_t               = ippl::UniformCartesian<double, dim>;
+using Centering_t          = Mesh_t::DefaultCentering;
 
 class TestSolver : public ippl::Electrostatics<double, double, dim, Mesh_t, Centering_t> {
 public:

@@ -23,8 +23,8 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, typename OpRet,
-              class Mesh, class Centering>
+    template <typename Tlhs, typename Trhs, unsigned Dim, typename OpRet, class Mesh,
+              class Centering>
     class PCG : public SolverAlgorithm<Tlhs, Trhs, Dim, Mesh, Centering> {
     public:
         using Base = SolverAlgorithm<Tlhs, Trhs, Dim, Mesh, Centering>;
@@ -67,11 +67,12 @@ namespace ippl {
                 FieldBC bcType = lhsBCs[i]->getBCType();
                 if (bcType == PERIODIC_FACE) {
                     // If the LHS has periodic BCs, so does the residue
-                    bc[i] = std::make_shared<PeriodicFace<T, lhs_type::dimension, Mesh, Centering>>(i);
+                    bc[i] =
+                        std::make_shared<PeriodicFace<T, lhs_type::dimension, Mesh, Centering>>(i);
                 } else if (bcType & CONSTANT_FACE) {
                     // If the LHS has constant BCs, the residue is zero on the BCs
                     // Bitwise AND with CONSTANT_FACE will succeed for ZeroFace or ConstantFace
-                    bc[i]            = std::make_shared<ZeroFace<T, lhs_type::dimension, Mesh, Centering>>(i);
+                    bc[i] = std::make_shared<ZeroFace<T, lhs_type::dimension, Mesh, Centering>>(i);
                     allFacesPeriodic = false;
                 } else {
                     throw IpplException("PCG::operator()",
