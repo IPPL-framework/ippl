@@ -44,8 +44,9 @@ public:
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(indices);
 
         ippl::e_dim_tag domDec[Dim];
-        for (auto& tag : domDec)
+        for (auto& tag : domDec) {
             tag = ippl::PARALLEL;
+        }
 
         std::get<Idx>(layouts) = ippl::FieldLayout<Dim>(owned, domDec);
         auto& layout           = std::get<Idx>(layouts);
@@ -69,8 +70,9 @@ struct FieldVal {
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Idx... args) const {
         double tot = (args + ...);
-        for (unsigned d = 0; d < Dim; d++)
+        for (unsigned d = 0; d < Dim; d++) {
             tot += lDom[d].first();
+        }
         view(args...) = tot - 1;
     }
 };
@@ -100,7 +102,7 @@ TEST_F(BareFieldTest, Min) {
         Kokkos::fence();
 
         double min = field->min();
-        // minimum value -1 + nghost + nghost + nghost
+        // minimum value in 3D: -1 + nghost + nghost + nghost
         ASSERT_DOUBLE_EQ(min, field->getNghost() * Dim - 1);
     };
 
