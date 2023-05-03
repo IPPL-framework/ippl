@@ -73,7 +73,9 @@ public:
 
 private:
     bool checkOption(const char* arg, const char* lstr, const char* sstr);
-    int getIntOption(const char* arg);
+
+    template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
+    T getNumericalOption(const char* arg);
 };
 
 // macros used to print out messages to the console or a directed file
