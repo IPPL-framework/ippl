@@ -144,6 +144,8 @@ T Ippl::getNumericalOption(const char* arg) {
             throw std::runtime_error("Expected floating point argument!");
         }
     }
+    // Silence nvcc warning: missing return statement at end of non-void function
+    throw std::runtime_error("Unreachable state");
 }
 
 /////////////////////////////////////////////////////////////////////
