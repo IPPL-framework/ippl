@@ -47,7 +47,7 @@ namespace ippl {
         }
 
         template <unsigned long ScatterPoint, unsigned long... Index, typename T, unsigned Dim,
-                  typename IndexType = size_t>
+                  typename IndexType>
         KOKKOS_INLINE_FUNCTION constexpr int scatterToPoint(
             const std::index_sequence<Index...>&,
             const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
@@ -57,8 +57,7 @@ namespace ippl {
             return 0;
         }
 
-        template <unsigned long... ScatterPoint, typename T, unsigned Dim,
-                  typename IndexType = size_t>
+        template <unsigned long... ScatterPoint, typename T, unsigned Dim, typename IndexType>
         KOKKOS_INLINE_FUNCTION constexpr void scatterToField(
             const std::index_sequence<ScatterPoint...>&,
             const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
@@ -70,7 +69,7 @@ namespace ippl {
         }
 
         template <unsigned long GatherPoint, unsigned long... Index, typename T, unsigned Dim,
-                  typename IndexType = size_t>
+                  typename IndexType>
         KOKKOS_INLINE_FUNCTION constexpr T gatherFromPoint(
             const std::index_sequence<Index...>&,
             const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
@@ -79,8 +78,7 @@ namespace ippl {
                    * view(interpolationIndex<GatherPoint, Index>(args)...);
         }
 
-        template <unsigned long... GatherPoint, typename T, unsigned Dim,
-                  typename IndexType = size_t>
+        template <unsigned long... GatherPoint, typename T, unsigned Dim, typename IndexType>
         KOKKOS_INLINE_FUNCTION constexpr T gatherFromField(
             const std::index_sequence<GatherPoint...>&,
             const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
