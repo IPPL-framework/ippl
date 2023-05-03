@@ -77,13 +77,25 @@ protected:
     template <template <typename> class Pointer, template <unsigned Dim> class Type>
     using PtrCollection = std::tuple<Pointer<Type<Dims>>...>;
 
+    // The highest rank being tested
     constexpr static unsigned MaxDim = std::max({Dims...});
 
+    /*!
+     * Compile-time conversion from a rank to its index in the parameter pack
+     * (requires C++20)
+     * @param dim the rank
+     * @return The index of that rank in this class's parameter pack
+     */
     constexpr static unsigned dimToIndex(unsigned dim) {
         constexpr std::array<unsigned, sizeof...(Dims)> dims = {Dims...};
         return std::distance(dims.begin(), std::find(dims.begin(), dims.end(), dim));
     }
 
+    /*!
+     * Compile-time conversion from an index to the corresponding rank in the parameter pack
+     * @param idx the index
+     * @return The corresponding rank
+     */
     constexpr static unsigned indexToDim(unsigned idx) {
         constexpr std::array<unsigned, sizeof...(Dims)> dims = {Dims...};
         return dims[idx];
@@ -107,11 +119,13 @@ protected:
      */
     void computeGridSizes(size_t nr[]) {
         const unsigned max = std::max(6u, MaxDim);
-        for (unsigned d = 0; d < MaxDim; d++)
-            if (max > 1 + d)
+        for (unsigned d = 0; d < MaxDim; d++) {
+            if (max > 1 + d) {
                 nr[d] = 1 << (max - 1 - d);
-            else
+            } else {
                 nr[d] = 2;
+            }
+        }
     }
 
 public:

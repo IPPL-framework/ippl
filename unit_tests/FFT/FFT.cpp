@@ -49,8 +49,9 @@ public:
     FFTTest() {
         computeGridSizes(pt);
         const double pi = acos(-1);
-        for (unsigned d = 0; d < MaxDim; d++)
+        for (unsigned d = 0; d < MaxDim; d++) {
             len[d] = pt[d] * pi / 16;
+        }
         setup(this);
     }
 
@@ -78,6 +79,10 @@ public:
         std::get<Idx>(compFields) = std::make_shared<field_type_complex<Dim>>(mesh, layout);
     }
 
+    /*!
+     * Gets the parameters used for trigonometric FFT transforms
+     * (sine and cosine)
+     */
     ippl::ParameterList getTrigParams() const {
         ippl::ParameterList fftParams;
 
@@ -90,6 +95,12 @@ public:
         return fftParams;
     }
 
+    /*!
+     * Fill a real-valued field with random values
+     * @tparam Dim field rank
+     * @param nghost number of ghost cells
+     * @param mirror the field view's host mirror
+     */
     template <unsigned Dim>
     void randomizeRealField(int nghost, typename field_type_real<Dim>::HostMirror& mirror) {
         std::mt19937_64 eng(42 + Ippl::Comm->rank());
@@ -100,6 +111,12 @@ public:
         });
     }
 
+    /*!
+     * Fill a complex-valued field with random values
+     * @tparam Dim field rank
+     * @param nghost number of ghost cells
+     * @param mirror the field view's host mirror
+     */
     template <unsigned Dim>
     void randomizeComplexField(int nghost, typename field_type_complex<Dim>::HostMirror& mirror) {
         std::mt19937_64 engReal(42 + Ippl::Comm->rank());
@@ -114,14 +131,24 @@ public:
         });
     }
 
+    /*!
+     * Verify the contents of a computation
+     * @tparam Dim view rank
+     * @tparam MirrorA the type of the computed view
+     * @tparam MirrorB the type of the expected view
+     * @param nghost number of ghost cells
+     * @param computed the computed result
+     * @param expected the expected result
+     */
     template <unsigned Dim, typename MirrorA, typename MirrorB>
     void verifyResult(int nghost, const MirrorA& computed, const MirrorB& expected) {
         double max_error_local = 0.0;
         nestedViewLoop<Dim>(computed, nghost, [&]<typename... Idx>(const Idx... args) {
             double error = std::fabs(expected(args...) - computed(args...));
 
-            if (error > max_error_local)
+            if (error > max_error_local) {
                 max_error_local = error;
+            }
 
             ASSERT_NEAR(error, 0, 1e-13);
         });
@@ -131,6 +158,13 @@ public:
         ASSERT_NEAR(max_error, 0, 1e-13);
     }
 
+    /*!
+     * Tests the trigonometric FFT transforms
+     * @tparam Transform either SineTransform or CosTransform
+     * @tparam Dim the field rank
+     * @param field a pointer to the field
+     * @param layout a pointer to the layout
+     */
     template <typename Transform, unsigned Dim>
     void testTrig(std::shared_ptr<field_type_real<Dim>>& field, const layout_type<Dim>& layout) {
         auto fft        = std::make_unique<FFT_type<Transform, Dim>>(layout, getTrigParams());
@@ -252,11 +286,13 @@ TEST_F(FFTTest, CC) {
                 std::fabs(field_host(args...).real() - field_result(args...).real()),
                 std::fabs(field_host(args...).imag() - field_result(args...).imag()));
 
-            if (error.real() > max_error_local.real())
+            if (error.real() > max_error_local.real()) {
                 max_error_local.real() = error.real();
+            }
 
-            if (error.imag() > max_error_local.imag())
+            if (error.imag() > max_error_local.imag()) {
                 max_error_local.imag() = error.imag();
+            }
 
             ASSERT_NEAR(error.real(), 0, 1e-13);
             ASSERT_NEAR(error.imag(), 0, 1e-13);
