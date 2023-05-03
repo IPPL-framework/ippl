@@ -201,8 +201,9 @@ TEST_F(HaloTest, AccumulateHalo) {
                 auto cube     = arrayToCube(std::make_index_sequence<Dim>{}, encoding);
 
                 // ignore all interior points
-                if (cube == ippl::detail::countHypercubes(Dim) - 1)
+                if (cube == ippl::detail::countHypercubes(Dim) - 1) {
                     return;
+                }
 
                 unsigned int n = 0;
                 nestedLoop<Dim>(
@@ -217,13 +218,15 @@ TEST_F(HaloTest, AccumulateHalo) {
                             (flags == 0   ? ippl::IS_PARALLEL
                              : flags < 20 ? (flags & 1 ? ippl::LOWER : ippl::IS_PARALLEL)
                                           : (flags & 1 ? ippl::UPPER : ippl::IS_PARALLEL))...);
-                        if (adjacent == ippl::detail::countHypercubes(Dim) - 1)
+                        if (adjacent == ippl::detail::countHypercubes(Dim) - 1) {
                             return;
+                        }
                         n += neighbors[adjacent].size();
                     });
 
-                if (n > 0)
+                if (n > 0) {
                     mirror(args...) = 1. / (n + 1);
+                }
             });
             Kokkos::deep_copy(field->getView(), mirror);
         }

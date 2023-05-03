@@ -131,8 +131,9 @@ struct FieldVal {
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Norm&, const Idx... args) const {
         double tot = (args + ...);
-        for (unsigned d = 0; d < Dim; d++)
+        for (unsigned d = 0; d < Dim; d++) {
             tot += lDom[d].first();
+        }
         view(args...) = tot - 1;
     }
 
@@ -141,8 +142,9 @@ struct FieldVal {
         ippl::Vector<double, Dim> coords = {(double)args...};
         coords                           = (0.5 + coords + lDom.first() - shift) * hx;
         view(args...)                    = 1;
-        for (const auto& x : coords)
+        for (const auto& x : coords) {
             view(args...) *= sin(200 * pi * x);
+        }
     }
 
     template <typename... Idx>
@@ -150,8 +152,9 @@ struct FieldVal {
         ippl::Vector<double, Dim> coords = {(double)args...};
         coords                           = (0.5 + coords + lDom.first() - shift) * hx;
         view(args...)                    = 1;
-        for (const auto& x : coords)
+        for (const auto& x : coords) {
             view(args...) *= x;
+        }
     }
 };
 
@@ -275,8 +278,9 @@ TEST_F(FieldTest, Grad) {
         Kokkos::deep_copy(mirror, view);
 
         nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-            for (size_t d = 0; d < Dim; d++)
+            for (size_t d = 0; d < Dim; d++) {
                 ASSERT_DOUBLE_EQ(mirror(args...)[d], 0.);
+            }
         });
     };
 
@@ -401,8 +405,9 @@ TEST_F(FieldTest, Hessian) {
 
         nestedViewLoop<Dim>(mirror_result, nghost, [&]<typename... Idx>(const Idx... args) {
             double det = 0;
-            for (unsigned d = 0; d < Dim; d++)
+            for (unsigned d = 0; d < Dim; d++) {
                 det += mirror_result(args...)[d][d];
+            }
             ASSERT_DOUBLE_EQ(det, 0.);
         });
     };
