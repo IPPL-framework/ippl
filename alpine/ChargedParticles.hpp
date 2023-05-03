@@ -455,6 +455,8 @@ public:
             ippl::parallel_reduce(
                 "Vector E reduce", ippl::getRangePolicy<Dim>(Eview, nghostE),
                 KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                    // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                    // reference; see src/Expression/IpplOperations.h
                     double myVal = std::pow(ippl::apply<Dim>(Eview, args)[d], 2);
                     valL += myVal;
                 },
@@ -502,6 +504,8 @@ public:
         ippl::parallel_reduce(
             "Ex inner product", ippl::getRangePolicy<Dim>(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
                 double myVal = std::pow(ippl::apply<Dim>(Eview, args)[0], 2);
                 valL += myVal;
             },
@@ -514,6 +518,8 @@ public:
         ippl::parallel_reduce(
             "Ex max norm", ippl::getRangePolicy<Dim>(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
                 double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[0]);
                 if (myVal > valL) {
                     valL = myVal;
@@ -553,6 +559,8 @@ public:
         ippl::parallel_reduce(
             "Ex inner product", ippl::getRangePolicy<Dim>(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
                 double myVal = std::pow(ippl::apply<Dim>(Eview, args)[Dim - 1], 2);
                 valL += myVal;
             },
@@ -565,6 +573,8 @@ public:
         ippl::parallel_reduce(
             "Ex max norm", ippl::getRangePolicy<Dim>(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
                 double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[Dim - 1]);
                 if (myVal > valL) {
                     valL = myVal;

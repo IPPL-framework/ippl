@@ -244,6 +244,8 @@ int main(int argc, char* argv[]) {
                     xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
                 }
 
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
                 ippl::apply<Dim>(rhoview, args) = PDF(xvec, alpha, kw, Dim);
             });
 
