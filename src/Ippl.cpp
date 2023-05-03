@@ -24,6 +24,8 @@
 
 #include "Utility/IpplInfo.h"
 
+#include "Communicate/Communicate.h"
+
 // public static members of IpplInfo, initialized to default values
 std::unique_ptr<ippl::Communicate> Ippl::Comm = 0;
 std::unique_ptr<Inform> Ippl::Info            = 0;
@@ -131,14 +133,15 @@ Ippl::~Ippl() {
     Kokkos::finalize();
 }
 
-void Ippl::abort(const char* msg) {
-    // print out message, if one was provided
-    if (msg != 0) {
+MPI_Comm Ippl::getComm() {
+    return *Ippl::Comm->getCommunicator();
+}
+
+void IpplAbort(const char* msg, int code) {
+    if (msg) {
         ERRORMSG(msg << endl);
     }
-
-    // that's it, folks this error will be propperly catched in the main
-    throw std::runtime_error("Error form IpplInfo::abort");
+    MPI_Abort(*(Ippl::Comm->getCommunicator()), code);
 }
 
 void Ippl::fence() {

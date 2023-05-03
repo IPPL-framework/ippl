@@ -199,25 +199,31 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, class Mesh>
+    template <size_t... Idx>
+    KOKKOS_INLINE_FUNCTION constexpr bool ParticleSpatialLayout<T, Dim, Mesh>::positionInRegion(
+        const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region) {
+        return ((pos[Idx] >= region[Idx].min()) && ...)
+            && ((pos[Idx] <= region[Idx].max()) && ...);
+    };
+
+    template <typename T, unsigned Dim, class Mesh>
     void ParticleSpatialLayout<T, Dim, Mesh>::locateParticles(
         const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata, locate_type& ranks,
         bool_type& invalid) const {
         auto& positions                            = pdata.R.getView();
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
-        using view_size_t                          = typename RegionLayout_t::view_type::size_type;
-        using mdrange_type                         = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-        int myRank                                 = Ippl::Comm->rank();
+
+        using view_size_t  = typename RegionLayout_t::view_type::size_type;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+
+        int myRank = Ippl::Comm->rank();
+
+        const auto is = std::make_index_sequence<Dim>{};
         Kokkos::parallel_for(
             "ParticleSpatialLayout::locateParticles()",
             mdrange_type({0, 0}, {ranks.extent(0), Regions.extent(0)}),
             KOKKOS_LAMBDA(const size_t i, const view_size_t j) {
-                bool xyz_bool = false;
-                xyz_bool      = ((positions(i)[0] >= Regions(j)[0].min())
-                            && (positions(i)[0] <= Regions(j)[0].max())
-                            && (positions(i)[1] >= Regions(j)[1].min())
-                            && (positions(i)[1] <= Regions(j)[1].max())
-                            && (positions(i)[2] >= Regions(j)[2].min())
-                            && (positions(i)[2] <= Regions(j)[2].max()));
+                bool xyz_bool = positionInRegion(is, positions(i), Regions(j));
                 if (xyz_bool) {
                     ranks(i)   = j;
                     invalid(i) = (myRank != ranks(i));

@@ -189,6 +189,10 @@ namespace ippl {
          */
         KOKKOS_INLINE_FUNCTION bool empty() const noexcept;
 
+        KOKKOS_INLINE_FUNCTION Index& operator+=(int);
+
+        KOKKOS_INLINE_FUNCTION Index& operator-=(int);
+
         // Additive operations.
         KOKKOS_INLINE_FUNCTION friend Index operator+(const Index&, int);
 

@@ -1,5 +1,5 @@
-// Test PIC3d
-//   This test program sets up a simple sine-wave electric field in 3D,
+// Test PICnd
+//   This test program sets up a simple sine-wave electric field in N dimensions,
 //   creates a population of particles with random positions and and velocities,
 //   and then tracks their motions in the static
 //   electric field using cloud-in-cell interpolation and periodic particle BCs.
@@ -8,7 +8,7 @@
 //   based on an ORB.
 //
 //   Usage:
-//     srun ./PIC3d 128 128 128 10000 10 --info 10
+//     srun ./PICnd 128 128 128 10000 10 --info 10
 //
 // Copyright (c) 2020, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -34,8 +34,13 @@
 
 #include "Utility/IpplTimings.h"
 
+#define str(x)  #x
+#define xstr(x) str(x)
+
 // dimension of our positions
-constexpr unsigned Dim = 3;
+#define DIM     3
+constexpr unsigned Dim          = DIM;
+constexpr const char* PROG_NAME = "PIC" xstr(DIM) "d";
 
 // some typedefs
 typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
@@ -108,8 +113,9 @@ public:
         this->addAttribute(P);
         this->addAttribute(E);
         setupBCs();
-        for (unsigned int i = 0; i < Dim; i++)
+        for (unsigned int i = 0; i < Dim; i++) {
             decomp_m[i] = decomp[i];
+        }
     }
 
     void setupBCs() { setBCAllPeriodic(); }
@@ -154,13 +160,15 @@ public:
         double threshold = 1.0;
         double equalPart = (double)totalP / Ippl::Comm->size();
         double dev       = std::abs((double)this->getLocalNum() - equalPart) / totalP;
-        if (dev > threshold)
+        if (dev > threshold) {
             local = 1;
+        }
         MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
 
         for (unsigned int i = 0; i < res.size(); i++) {
-            if (res[i] == 1)
+            if (res[i] == 1) {
                 return true;
+            }
         }
         return false;
     }
@@ -221,14 +229,11 @@ public:
         ParticleAttrib<double>::view_type viewqm = this->qm.getView();
         int nghost                               = this->EFDMag_m.getNghost();
 
-        using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-        Kokkos::parallel_reduce(
-            "Particle Charge",
-            mdrange_t({nghost, nghost, nghost},
-                      {viewRho.extent(0) - nghost, viewRho.extent(1) - nghost,
-                       viewRho.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const int i, const int j, const int k, double& val) {
-                val += viewRho(i, j, k);
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        ippl::parallel_reduce(
+            "Particle Charge", ippl::getRangePolicy<Dim>(viewRho, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args, double& val) {
+                val += ippl::apply<Dim>(viewRho, args);
             },
             lq);
         Kokkos::parallel_reduce(
@@ -243,8 +248,9 @@ public:
 
         ippl::NDIndex<Dim> domain = EFD_m.getDomain();
 
-        for (unsigned int i = 0; i < Dim; i++)
+        for (unsigned int i = 0; i < Dim; i++) {
             nr_m[i] = domain[i].length();
+        }
 
         double phi0 = 0.1;
         double pi   = acos(-1.0);
@@ -257,50 +263,24 @@ public:
         const FieldLayout_t& layout        = EFD_m.getLayout();
         const ippl::NDIndex<Dim>& lDom     = layout.getLocalNDIndex();
         const int nghost                   = EFD_m.getNghost();
-        using mdrange_type                 = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-        Kokkos::parallel_for(
-            "Assign EFD_m[0]",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        ippl::parallel_for(
+            "Assign EFD_m", ippl::getRangePolicy<Dim>(view, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
-                const size_t ig = i + lDom[0].first() - nghost;
-                const size_t jg = j + lDom[1].first() - nghost;
-                const size_t kg = k + lDom[2].first() - nghost;
+                Vector_t vec = (0.5 + args + lDom.first() - nghost) * hr;
 
-                view(i, j, k)[0] =
-                    -scale_fact * 2.0 * pi * phi0 * cos(2.0 * pi * (ig + 0.5) * hr[0])
-                    * cos(4.0 * pi * (jg + 0.5) * hr[1]) * cos(pi * (kg + 0.5) * hr[2]);
-            });
-
-        Kokkos::parallel_for(
-            "Assign EFD_m[1]",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                // local to global index conversion
-                const size_t ig = i + lDom[0].first() - nghost;
-                const size_t jg = j + lDom[1].first() - nghost;
-
-                view(i, j, k)[1] = scale_fact * 4.0 * pi * phi0 * sin(2.0 * pi * (ig + 0.5) * hr[0])
-                                   * sin(4.0 * pi * (jg + 0.5) * hr[1]);
-            });
-
-        Kokkos::parallel_for(
-            "Assign EFD_m[2]",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                // local to global index conversion
-                const size_t ig = i + lDom[0].first() - nghost;
-                const size_t jg = j + lDom[1].first() - nghost;
-
-                view(i, j, k)[2] = scale_fact * 4.0 * pi * phi0 * sin(2.0 * pi * (ig + 0.5) * hr[0])
-                                   * sin(4.0 * pi * (jg + 0.5) * hr[1]);
+                ippl::apply<Dim>(view, args)[0] = -scale_fact * 2.0 * pi * phi0;
+                for (unsigned d1 = 0; d1 < Dim; d1++) {
+                    ippl::apply<Dim>(view, args)[0] *= cos(2 * ((d1 + 1) % 3) * pi * vec[d1]);
+                }
+                for (unsigned d = 1; d < Dim; d++) {
+                    ippl::apply<Dim>(view, args)[d] = scale_fact * 4.0 * pi * phi0;
+                    for (int d1 = 0; d1 < (int)Dim - 1; d1++) {
+                        ippl::apply<Dim>(view, args)[d] *= sin(2 * ((d1 + 1) % 3) * pi * vec[d1]);
+                    }
+                }
             });
 
         EFDMag_m = dot(EFD_m, EFD_m);
@@ -357,7 +337,10 @@ public:
         }
 
         auto dom                = fl.getDomain();
-        unsigned int gridpoints = dom[0].length() * dom[1].length() * dom[2].length();
+        unsigned int gridpoints = 1;
+        for (unsigned d = 0; d < Dim; d++) {
+            gridpoints *= dom[d].length();
+        }
         if (tag == 0 && nloc * Ippl::Comm->size() != gridpoints) {
             if (Ippl::Comm->rank() == 0) {
                 std::cerr << "Particle count must match gridpoint count to use gridpoint "
@@ -371,38 +354,37 @@ public:
             m << "Positions are set on grid points" << endl;
             int N = fl.getDomain()[0].length();  // this only works for boxes
             const ippl::NDIndex<Dim>& lDom = fl.getLocalNDIndex();
-            using mdrange_type             = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             int size                       = Ippl::Comm->size();
+            using index_type               = typename ippl::RangePolicy<Dim>::index_type;
+            Kokkos::Array<index_type, Dim> begin, end;
+            for (unsigned d = 0; d < Dim; d++) {
+                begin[d] = 0;
+                end[d]   = N;
+            }
+            end[0] /= size;
             // Loops over particles
-            Kokkos::parallel_for(
-                "initPositions", mdrange_type({0, 0, 0}, {N / size, N, N}),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                    const size_t ig =
-                        i + lDom[0].first();  // index i doesn't sweep through the required size
-                    const size_t jg = j + lDom[1].first();
-                    const size_t kg = k + lDom[2].first();
-
-                    // int l = i + j * N + k * N * N;
-                    int l        = i + j * N / size + k * N * N / size;
-                    R_host(l)[0] = (ig + 0.5) * hr[0];
-                    R_host(l)[1] = (jg + 0.5) * hr[1];
-                    R_host(l)[2] = (kg + 0.5) * hr[2];
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+            ippl::parallel_for(
+                "initPositions", ippl::createRangePolicy<Dim>(begin, end),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    int l = 0;
+                    for (unsigned d1 = 0; d1 < Dim; d1++) {
+                        int next = args[d1];
+                        for (unsigned d2 = 0; d2 < d1; d2++) {
+                            next *= N;
+                        }
+                        l += next / size;
+                    }
+                    R_host(l) = (0.5 + args + lDom.first()) * hr;
                 });
 
         } else if (tag == 1) {
             m << "Positions follow normal distribution" << endl;
-            std::vector<double> mu(Dim);
-            std::vector<double> sd(Dim);
+            std::vector<double> mu = {0.5, 0.6, 0.2, 0.5, 0.6, 0.2};
+            std::vector<double> sd = {0.75, 0.3, 0.2, 0.75, 0.3, 0.2};
             std::vector<double> states(Dim);
 
-            Vector_t length = {1.0, 1.0, 1.0};
-
-            mu[0] = 0.5;
-            sd[0] = 0.75;
-            mu[1] = 0.6;
-            sd[1] = 0.3;
-            mu[2] = 0.2;
-            sd[2] = 0.2;
+            Vector_t length = 1;
 
             std::uniform_real_distribution<double> dist_uniform(0.0, 1.0);
 
@@ -421,9 +403,11 @@ public:
             double rmin = 0.0, rmax = 1.0;
             m << "Positions follow uniform distribution U(" << rmin << "," << rmax << ")" << endl;
             std::uniform_real_distribution<double> unif(rmin, rmax);
-            for (unsigned long int i = 0; i < nloc; i++)
-                for (int d = 0; d < 3; d++)
+            for (unsigned long int i = 0; i < nloc; i++) {
+                for (unsigned d = 0; d < Dim; d++) {
                     R_host(i)[d] = unif(eng[d]);
+                }
+            }
         }
 
         // Copy to device
@@ -436,52 +420,54 @@ private:
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
-    Inform msg("PIC3d");
+    Inform msg(PROG_NAME);
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
     Ippl::Comm->setDefaultOverallocation(3.0);
 
-    ippl::Vector<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
+    int arg = 1;
+
+    int volume = 1;
+    ippl::Vector<int, Dim> nr;
+    for (unsigned d = 0; d < Dim; d++) {
+        volume *= nr[d] = std::atoi(argv[arg++]);
+    }
 
     // Each rank must have a minimal volume of 8
-    if (nr[0] * nr[1] * nr[2] < 8 * Ippl::Comm->size())
+    if (volume < 8 * Ippl::Comm->size()) {
         msg << "!!! Ranks have not enough volume for proper working !!! (Minimal volume per rank: "
                "8)"
             << endl;
+    }
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
     IpplTimings::startTimer(mainTimer);
-    const unsigned int totalP = std::atoi(argv[4]);
-    const unsigned int nt     = std::atoi(argv[5]);
+    const unsigned int totalP = std::atoi(argv[arg++]);
+    const unsigned int nt     = std::atoi(argv[arg++]);
 
-    msg << "Particle test PIC3d " << endl
+    msg << "Particle test " << PROG_NAME << endl
         << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
     using bunch_type = ChargedParticles<PLayout_t>;
 
     std::unique_ptr<bunch_type> P;
 
-    ippl::NDIndex<Dim> domain;
-    for (unsigned i = 0; i < Dim; i++) {
-        domain[i] = ippl::Index(nr[i]);
-    }
-
-    ippl::e_dim_tag decomp[Dim];
-    for (unsigned d = 0; d < Dim; ++d) {
-        decomp[d] = ippl::PARALLEL;
-    }
-
-    // create mesh and layout objects for this problem domain
     Vector_t rmin(0.0);
     Vector_t rmax(1.0);
-    double dx = rmax[0] / nr[0];
-    double dy = rmax[1] / nr[1];
-    double dz = rmax[2] / nr[2];
+    // create mesh and layout objects for this problem domain
+    Vector_t hr;
 
-    Vector_t hr     = {dx, dy, dz};
-    Vector_t origin = {rmin[0], rmin[1], rmin[2]};
+    ippl::NDIndex<Dim> domain;
+    ippl::e_dim_tag decomp[Dim];
+    for (unsigned d = 0; d < Dim; d++) {
+        domain[d] = ippl::Index(nr[d]);
+        decomp[d] = ippl::PARALLEL;
+        hr[d]     = rmax[d] / nr[d];
+    }
 
-    // const double dt = 0.5 * dx; // size of timestep
+    Vector_t origin = rmin;
+
+    const double dt = 0.5 * hr[0];  // size of timestep
 
     const bool isAllPeriodic = true;
     Mesh_t mesh(domain, hr, origin);
@@ -499,8 +485,9 @@ int main(int argc, char* argv[]) {
 
     int rest = (int)(totalP - nloc * Ippl::Comm->size());
 
-    if (Ippl::Comm->rank() < rest)
+    if (Ippl::Comm->rank() < rest) {
         ++nloc;
+    }
 
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
     IpplTimings::startTimer(particleCreation);
@@ -554,15 +541,13 @@ int main(int argc, char* argv[]) {
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0.0, 1.0);
 
-    double dr = 0.0;
-    P->P      = 1.0;
+    P->P = 1.0;
 
     msg << "Starting iterations ..." << endl;
     for (unsigned int it = 0; it < nt; it++) {
-        dr                                  = dis(gen) * hr[0];
         static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");
         IpplTimings::startTimer(RTimer);
-        P->R = P->R + dr * P->P;
+        P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);
 
         IpplTimings::startTimer(UpdateTimer);
@@ -587,10 +572,10 @@ int main(int argc, char* argv[]) {
         P->gatherCIC();
 
         // advance the particle velocities
-        // static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");
-        // IpplTimings::startTimer(PTimer);
-        // P->P = P->P + dt * P->qm * P->E;
-        // IpplTimings::stopTimer(PTimer);
+        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");
+        IpplTimings::startTimer(PTimer);
+        P->P = P->P + dt * P->qm * P->E;
+        IpplTimings::stopTimer(PTimer);
 
         P->dumpData(it);
 
@@ -599,7 +584,7 @@ int main(int argc, char* argv[]) {
         P->gatherStatistics(totalP);
     }
 
-    msg << "Particle test PIC3d: End." << endl;
+    msg << "Particle test " << PROG_NAME << ": End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing" + std::to_string(Ippl::Comm->size()) + "r_"

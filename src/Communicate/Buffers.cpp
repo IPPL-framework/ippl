@@ -33,6 +33,8 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
+#include "Ippl.h"
+
 #include "Communicate.h"
 
 namespace ippl {

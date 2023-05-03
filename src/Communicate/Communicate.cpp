@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
+#include "Ippl.h"
+
 #include "Communicate.h"
 
 namespace ippl {
@@ -35,7 +37,7 @@ namespace ippl {
                             size_type msize) {
         if (msize > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
-            std::abort();
+            IpplAbort();
         }
         MPI_Irecv(ar.getBuffer(), msize, MPI_BYTE, src, tag, comm_m, &request);
     }

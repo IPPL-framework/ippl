@@ -121,7 +121,8 @@ namespace ippl {
         Field<T, Dim, M, C>& f, const ParticleAttrib<Vector<PT, Dim>, Properties...>& pp) const {
         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
         IpplTimings::startTimer(scatterTimer);
-        typename Field<T, Dim, M, C>::view_type view = f.getView();
+        using view_type = typename Field<T, Dim, M, C>::view_type;
+        view_type view  = f.getView();
 
         const M& mesh = f.get_mesh();
 
@@ -139,25 +140,17 @@ namespace ippl {
         Kokkos::parallel_for(
             "ParticleAttrib::scatter", *(this->localNum_mp), KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l           = (pp(idx) - origin) * invdx + 0.5;
-                Vector<int, Dim> index  = l;
-                Vector<double, Dim> whi = l - index;
-                Vector<double, Dim> wlo = 1.0 - whi;
+                vector_type l          = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Dim> index = l;
+                Vector<T, Dim> whi     = l - index;
+                Vector<T, Dim> wlo     = 1.0 - whi;
 
-                const size_t i = index[0] - lDom[0].first() + nghost;
-                const size_t j = index[1] - lDom[1].first() + nghost;
-                const size_t k = index[2] - lDom[2].first() + nghost;
+                Vector<size_t, Dim> args = index - lDom.first() + nghost;
 
                 // scatter
                 const value_type& val = dview_m(idx);
-                Kokkos::atomic_add(&view(i - 1, j - 1, k - 1), wlo[0] * wlo[1] * wlo[2] * val);
-                Kokkos::atomic_add(&view(i - 1, j - 1, k), wlo[0] * wlo[1] * whi[2] * val);
-                Kokkos::atomic_add(&view(i - 1, j, k - 1), wlo[0] * whi[1] * wlo[2] * val);
-                Kokkos::atomic_add(&view(i - 1, j, k), wlo[0] * whi[1] * whi[2] * val);
-                Kokkos::atomic_add(&view(i, j - 1, k - 1), whi[0] * wlo[1] * wlo[2] * val);
-                Kokkos::atomic_add(&view(i, j - 1, k), whi[0] * wlo[1] * whi[2] * val);
-                Kokkos::atomic_add(&view(i, j, k - 1), whi[0] * whi[1] * wlo[2] * val);
-                Kokkos::atomic_add(&view(i, j, k), whi[0] * whi[1] * whi[2] * val);
+                detail::scatterToField(std::make_index_sequence<1 << Dim>{}, view, wlo, whi, args,
+                                       val);
             });
         IpplTimings::stopTimer(scatterTimer);
 
@@ -183,7 +176,6 @@ namespace ippl {
         const M& mesh = f.get_mesh();
 
         using vector_type = typename M::vector_type;
-        using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
 
         const vector_type& dx     = mesh.getMeshSpacing();
         const vector_type& origin = mesh.getOrigin();
@@ -196,25 +188,16 @@ namespace ippl {
         Kokkos::parallel_for(
             "ParticleAttrib::gather", *(this->localNum_mp), KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l           = (pp(idx) - origin) * invdx + 0.5;
-                Vector<int, Dim> index  = l;
-                Vector<double, Dim> whi = l - index;
-                Vector<double, Dim> wlo = 1.0 - whi;
+                vector_type l          = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Dim> index = l;
+                Vector<T, Dim> whi     = l - index;
+                Vector<T, Dim> wlo     = 1.0 - whi;
 
-                const size_t i = index[0] - lDom[0].first() + nghost;
-                const size_t j = index[1] - lDom[1].first() + nghost;
-                const size_t k = index[2] - lDom[2].first() + nghost;
+                Vector<size_t, Dim> args = index - lDom.first() + nghost;
 
                 // gather
-                value_type& val = dview_m(idx);
-                val             = wlo[0] * wlo[1] * wlo[2] * view(i - 1, j - 1, k - 1)
-                      + wlo[0] * wlo[1] * whi[2] * view(i - 1, j - 1, k)
-                      + wlo[0] * whi[1] * wlo[2] * view(i - 1, j, k - 1)
-                      + wlo[0] * whi[1] * whi[2] * view(i - 1, j, k)
-                      + whi[0] * wlo[1] * wlo[2] * view(i, j - 1, k - 1)
-                      + whi[0] * wlo[1] * whi[2] * view(i, j - 1, k)
-                      + whi[0] * whi[1] * wlo[2] * view(i, j, k - 1)
-                      + whi[0] * whi[1] * whi[2] * view(i, j, k);
+                dview_m(idx) = detail::gatherFromField(std::make_index_sequence<1 << Dim>{}, view,
+                                                       wlo, whi, args);
             });
         IpplTimings::stopTimer(gatherTimer);
     }

@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     ippl::Vector<double, 3> hx     = {dx, dx, dx};
     ippl::Vector<double, 3> origin = {0, 0, 0};
 
-    using Mesh_t = ippl::UniformCartesian<double, 3>;
+    using Mesh_t      = ippl::UniformCartesian<double, 3>;
     using Centering_t = Mesh_t::DefaultCentering;
 
     Mesh_t mesh(owned, hx, origin);
@@ -46,7 +46,8 @@ int main(int argc, char* argv[]) {
     ////Lower Z face
     bcField[4] = std::make_shared<ippl::ZeroFace<double, dim, Mesh_t, Centering_t>>(4);
     ////Higher Z face
-    bcField[5] = std::make_shared<ippl::ExtrapolateFace<double, dim, Mesh_t, Centering_t>>(5, 0.0, 1.0);
+    bcField[5] =
+        std::make_shared<ippl::ExtrapolateFace<double, dim, Mesh_t, Centering_t>>(5, 0.0, 1.0);
 
     // std::cout << bcField << std::endl;
     std::cout << layout << std::endl;

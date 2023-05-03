@@ -29,119 +29,34 @@ namespace ippl {
      */
     namespace detail {
         /*!
-         * Empty struct for the specialized view types.
+         * Recursively templated struct for defining pointers with arbitrary
+         * indirection depth.
+         * @tparam T data type
+         * @tparam N indirection level
+         */
+        template <typename T, int N>
+        struct NPtr {
+            typedef typename NPtr<T, N - 1>::type* type;
+        };
+
+        /*!
+         * Base case template specialization for a simple pointer.
+         */
+        template <typename T>
+        struct NPtr<T, 1> {
+            typedef T* type;
+        };
+
+        /*!
+         * View type for an arbitrary number of dimensions.
          * @tparam T view data type
          * @tparam Dim view dimension
          * @tparam Properties further template parameters of Kokkos
          */
         template <typename T, unsigned Dim, class... Properties>
-        struct ViewType {};
-
-        /*!
-         * Specialized view type for one dimension.
-         */
-        template <typename T, class... Properties>
-        struct ViewType<T, 1, Properties...> {
-            typedef Kokkos::View<T*, Properties...> view_type;
+        struct ViewType {
+            typedef Kokkos::View<typename NPtr<T, Dim>::type, Properties...> view_type;
         };
-
-        /*!
-         * Specialized view type for two dimensions.
-         */
-        template <typename T, class... Properties>
-        struct ViewType<T, 2, Properties...> {
-            typedef Kokkos::View<T**, Properties...> view_type;
-        };
-
-        /*!
-         * Specialized view type for thee dimensions.
-         */
-        template <typename T, class... Properties>
-        struct ViewType<T, 3, Properties...> {
-            typedef Kokkos::View<T***, Properties...> view_type;
-        };
-
-        /*!
-         * Multidimensional range policies.
-         */
-        template <unsigned Dim>
-        struct RangePolicy {
-            typedef Kokkos::MDRangePolicy<Kokkos::Rank<Dim>> policy_type;
-        };
-
-        /*!
-         * Specialized range policy for one dimension.
-         */
-        template <>
-        struct RangePolicy<1> {
-            typedef Kokkos::RangePolicy<> policy_type;
-        };
-
-        /*!
-         * Empty function for general write.
-         * @tparam T view data type
-         * @tparam Dim view dimension
-         * @tparam Properties further template parameters of Kokkos
-         *
-         * @param view to write
-         * @param out stream
-         */
-        template <typename T, unsigned Dim, class... Properties>
-        void write(const typename ViewType<T, Dim, Properties...>::view_type& view,
-                   std::ostream& out = std::cout);
-
-        /*!
-         * Specialized write function for one-dimensional views.
-         */
-        template <typename T, class... Properties>
-        void write(const typename ViewType<T, 1, Properties...>::view_type& view,
-                   std::ostream& out = std::cout) {
-            using view_type = typename ViewType<T, 1, Properties...>::view_type;
-            typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
-            Kokkos::deep_copy(hview, view);
-            for (std::size_t i = 0; i < hview.extent(0); ++i) {
-                out << hview(i) << " ";
-            }
-            out << std::endl;
-        }
-
-        /*!
-         * Specialized write function for two-dimensional views.
-         */
-        template <typename T, class... Properties>
-        void write(const typename ViewType<T, 2, Properties...>::view_type& view,
-                   std::ostream& out = std::cout) {
-            using view_type = typename ViewType<T, 2, Properties...>::view_type;
-            typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
-            Kokkos::deep_copy(hview, view);
-            for (std::size_t j = 0; j < hview.extent(1); ++j) {
-                for (std::size_t i = 0; i < hview.extent(0); ++i) {
-                    out << hview(i, j) << " ";
-                }
-                out << std::endl;
-            }
-        }
-
-        /*!
-         * Specialized write function for three-dimensional views.
-         */
-        template <typename T, class... Properties>
-        void write(const typename ViewType<T, 3, Properties...>::view_type& view,
-                   std::ostream& out = std::cout) {
-            using view_type = typename ViewType<T, 3, Properties...>::view_type;
-            typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
-            Kokkos::deep_copy(hview, view);
-            for (std::size_t k = 0; k < hview.extent(2); ++k) {
-                for (std::size_t j = 0; j < hview.extent(1); ++j) {
-                    for (std::size_t i = 0; i < hview.extent(0); ++i) {
-                        out << hview(i, j, k) << " ";
-                    }
-                    out << std::endl;
-                }
-                if (k < view.extent(2) - 1)
-                    out << std::endl;
-            }
-        }
     }  // namespace detail
 }  // namespace ippl
 

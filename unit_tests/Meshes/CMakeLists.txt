@@ -3,6 +3,7 @@ message (STATUS "Adding unit tests found in ${_relPath}")
 
 include_directories (
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${GTEST_INCLUDE_DIRS}
 )
 

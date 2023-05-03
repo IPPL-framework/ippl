@@ -20,16 +20,25 @@
 #include <cmath>
 #include <random>
 
+#include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
-class PICTest : public ::testing::Test {
+class PICTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
-    static constexpr size_t dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, dim>;
-    using Centering_t = Mesh_t::DefaultCentering;
-    using Field_t = ippl::Field<double, dim, Mesh_t, Centering_t>;
-    using Flayout_t = ippl::FieldLayout<dim>;
-    using Playout_t = ippl::ParticleSpatialLayout<double, dim>;
+    template <unsigned Dim>
+    using mesh_type = ippl::UniformCartesian<double, Dim>;
+
+    template <unsigned Dim>
+    using centering_type = typename mesh_type<Dim>::DefaultCentering;
+
+    template <unsigned Dim>
+    using field_type = ippl::Field<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
+
+    template <unsigned Dim>
+    using flayout_type = ippl::FieldLayout<Dim>;
+
+    template <unsigned Dim>
+    using playout_type = ippl::ParticleSpatialLayout<double, Dim>;
 
     template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
@@ -44,35 +53,44 @@ public:
         charge_container_type Q;
     };
 
-    typedef Bunch<Playout_t> bunch_type;
+    template <unsigned Dim>
+    using bunch_type = Bunch<playout_type<Dim>>;
 
     PICTest()
-        : nParticles(std::pow(256, 3))
-        , nPoints(512) {
-        setup();
+        : nParticles(32) {
+        computeGridSizes(nPoints);
+        for (unsigned d = 0; d < MaxDim; d++) {
+            domain[d] = nPoints[d] / 16.;
+        }
+        setup(this);
     }
 
-    void setup() {
-        ippl::Index I(nPoints);
-        ippl::NDIndex<dim> owned(I, I, I);
+    template <unsigned Idx, unsigned Dim>
+    void setupDim() {
+        std::array<ippl::Index, Dim> args;
+        for (unsigned d = 0; d < Dim; d++) {
+            args[d] = ippl::Index(nPoints[d]);
+        }
+        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
-        ippl::e_dim_tag domDec[dim];  // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < dim; d++)
+        ippl::Vector<double, Dim> hx;
+        ippl::Vector<double, Dim> origin;
+
+        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        for (unsigned int d = 0; d < Dim; d++) {
             domDec[d] = ippl::PARALLEL;
+            hx[d]     = domain[d] / nPoints[d];
+            origin[d] = 0;
+        }
 
-        layout_m = Flayout_t(owned, domDec);
+        auto& layout = std::get<Idx>(layouts) = flayout_type<Dim>(owned, domDec);
+        auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
 
-        double dx                        = 1.0 / double(nPoints);
-        ippl::Vector<double, dim> hx     = {dx, dx, dx};
-        ippl::Vector<double, dim> origin = {0, 0, 0};
+        std::get<Idx>(fields) = std::make_unique<field_type<Dim>>(mesh, layout);
 
-        mesh_m = Mesh_t(owned, hx, origin);
+        auto& pl = std::get<Idx>(playouts) = playout_type<Dim>(layout, mesh);
 
-        field = std::make_unique<Field_t>(mesh_m, layout_m);
-
-        pl = Playout_t(layout_m, mesh_m);
-
-        bunch = std::make_unique<bunch_type>(pl);
+        auto& bunch = std::get<Idx>(bunches) = std::make_unique<bunch_type<Dim>>(pl);
 
         int nRanks = Ippl::Comm->size();
         if (nParticles % nRanks > 0) {
@@ -88,11 +106,11 @@ public:
         std::mt19937_64 eng;
         eng.seed(42);
         eng.discard(nloc * Ippl::Comm->rank());
-        std::uniform_real_distribution<double> unif(hx[0] / 2, 1 - (hx[0] / 2));
 
-        typename bunch_type::particle_position_type::HostMirror R_host = bunch->R.getHostMirror();
+        auto R_host = bunch->R.getHostMirror();
         for (size_t i = 0; i < nloc; ++i) {
-            for (int d = 0; d < 3; d++) {
+            for (unsigned d = 0; d < Dim; d++) {
+                std::uniform_real_distribution<double> unif(hx[0] / 2, domain[d] - (hx[0] / 2));
                 R_host(i)[d] = unif(eng);
             }
         }
@@ -100,45 +118,56 @@ public:
         Kokkos::deep_copy(bunch->R.getView(), R_host);
     }
 
-    std::unique_ptr<Field_t> field;
-    std::unique_ptr<bunch_type> bunch;
+    PtrCollection<std::shared_ptr, field_type> fields;
+    PtrCollection<std::shared_ptr, bunch_type> bunches;
     size_t nParticles;
-    size_t nPoints;
-    Playout_t pl;
+    size_t nPoints[MaxDim];
+    double domain[MaxDim];
+    Collection<playout_type> playouts;
 
 private:
-    Flayout_t layout_m;
-    Mesh_t mesh_m;
+    Collection<flayout_type> layouts;
+    Collection<mesh_type> meshes;
 };
 
 TEST_F(PICTest, Scatter) {
-    *field = 0.0;
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field,
+                                   std::shared_ptr<bunch_type<Dim>>& bunch, playout_type<Dim>& pl) {
+        *field = 0.0;
 
-    double charge = 0.5;
+        double charge = 0.5;
 
-    bunch->Q = charge;
+        bunch->Q = charge;
 
-    bunch_type bunchBuffer(pl);
-    pl.update(*bunch, bunchBuffer);
+        bunch_type<Dim> bunchBuffer(pl);
+        pl.update(*bunch, bunchBuffer);
 
-    scatter(bunch->Q, *field, bunch->R);
+        scatter(bunch->Q, *field, bunch->R);
 
-    double totalcharge = field->sum();
+        double totalcharge = field->sum();
 
-    ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0, 1e-13);
+        ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0, 1e-13);
+    };
+
+    apply(check, fields, bunches, playouts);
 }
 
 TEST_F(PICTest, Gather) {
-    *field = 1.0;
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field,
+                                   std::shared_ptr<bunch_type<Dim>>& bunch, playout_type<Dim>& pl) {
+        *field = 1.0;
 
-    bunch->Q = 0.0;
+        bunch->Q = 0.0;
 
-    bunch_type bunchBuffer(pl);
-    pl.update(*bunch, bunchBuffer);
+        bunch_type<Dim> bunchBuffer(pl);
+        pl.update(*bunch, bunchBuffer);
 
-    gather(bunch->Q, *field, bunch->R);
+        gather(bunch->Q, *field, bunch->R);
 
-    ASSERT_DOUBLE_EQ((nParticles - bunch->Q.sum()) / nParticles, 0.0);
+        ASSERT_DOUBLE_EQ((nParticles - bunch->Q.sum()) / nParticles, 0.0);
+    };
+
+    apply(check, fields, bunches, playouts);
 }
 
 int main(int argc, char* argv[]) {

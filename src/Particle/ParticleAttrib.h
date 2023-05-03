@@ -31,6 +31,7 @@
 
 #include "Expression/IpplExpressions.h"
 
+#include "Interpolation/CIC.h"
 #include "Particle/ParticleAttribBase.h"
 
 namespace ippl {
