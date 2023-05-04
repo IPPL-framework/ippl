@@ -38,6 +38,31 @@ namespace ippl {
         , layout_m(nullptr) {}
 
     template <typename T, unsigned Dim>
+    BareField<T, Dim>::BareField(const BareField<T, Dim>& other)
+        : nghost_m(other.nghost_m)
+        , owned_m(other.owned_m)
+        , layout_m(other.layout_m) {
+        setup();
+        Kokkos::deep_copy(dview_m, other.dview_m);
+    }
+
+    template <typename T, unsigned Dim>
+    BareField<T, Dim>& BareField<T, Dim>::operator=(const BareField<T, Dim>& other) {
+        BareField<T, Dim> copy(other);
+        swap(copy);
+
+        return *this;
+    }
+
+    template <typename T, unsigned Dim>
+    void BareField<T, Dim>::swap(BareField<T, Dim>& other) {
+        nghost_m = other.nghost_m;
+        owned_m  = other.owned_m;
+        layout_m = other.layout_m;
+        std::swap(dview_m, other.dview_m);
+    }
+
+    template <typename T, unsigned Dim>
     BareField<T, Dim>::BareField(Layout_t& l, int nghost)
         : nghost_m(nghost)
         //     , owned_m(0)

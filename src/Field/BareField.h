@@ -78,7 +78,9 @@ namespace ippl {
          */
         BareField(Layout_t& l, int nghost = 1);
 
-        BareField(const BareField&) = default;
+        BareField(const BareField&);
+
+        BareField& operator=(const BareField&);
 
         // Destroy the BareField.
         ~BareField() = default;
@@ -200,6 +202,9 @@ namespace ippl {
         T max(int nghost = 0) const;
         T min(int nghost = 0) const;
         T prod(int nghost = 0) const;
+
+    protected:
+        virtual void swap(BareField& other);
 
     private:
         //! Number of ghost layers on each field boundary
