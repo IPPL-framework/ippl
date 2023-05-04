@@ -49,10 +49,10 @@ namespace ippl {
      * @warning The implementation currently only supports 3-dimensional fields. The reason are
      * runtime issues with "if constrexpr" in the assignment operator when running on GPU.
      */
-    template <typename T, unsigned Dim>
-    class BareField
-        : public detail::Expression<BareField<T, Dim>,
-                                    sizeof(typename detail::ViewType<T, Dim>::view_type)> {
+    template <typename T, unsigned Dim, class... ViewArgs>
+    class BareField : public detail::Expression<
+                          BareField<T, Dim, ViewArgs...>,
+                          sizeof(typename detail::ViewType<T, Dim, ViewArgs...>::view_type)> {
     public:
         using Layout_t = FieldLayout<Dim>;
 
@@ -60,7 +60,7 @@ namespace ippl {
         using Domain_t = NDIndex<Dim>;
 
         //! View type storing the data
-        using view_type  = typename detail::ViewType<T, Dim>::view_type;
+        using view_type  = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
         template <class... PolicyArgs>
         using policy_type = typename RangePolicy<Dim, PolicyArgs...>::policy_type;
@@ -149,7 +149,7 @@ namespace ippl {
         detail::HaloCells<T, Dim>& getHalo() { return halo_m; }
 
         // Assignment from a constant.
-        BareField<T, Dim>& operator=(T x);
+        BareField& operator=(T x);
 
         /*!
          * Assign an arbitrary BareField expression
@@ -159,7 +159,7 @@ namespace ippl {
          * @param expr is the expression
          */
         template <typename E, size_t N>
-        BareField<T, Dim>& operator=(const detail::Expression<E, N>& expr);
+        BareField& operator=(const detail::Expression<E, N>& expr);
 
         /*!
          * Assign another field.
@@ -220,7 +220,7 @@ namespace ippl {
         //! Domain of the data
         Domain_t owned_m;
 
-        detail::HaloCells<T, Dim> halo_m;
+        detail::HaloCells<T, Dim, ViewArgs...> halo_m;
 
         /*!
          * Allocate field.

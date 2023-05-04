@@ -32,9 +32,9 @@ namespace ippl {
         /*!
          * Helper class to send / receive field data.
          */
-        template <typename T>
+        template <typename T, class... ViewArgs>
         struct FieldBufferData {
-            using view_type = typename detail::ViewType<T, 1>::view_type;
+            using view_type = typename detail::ViewType<T, 1, ViewArgs...>::view_type;
 
             void serialize(Archive<>& ar, size_type nsends) { ar.serialize(buffer, nsends); }
 
@@ -47,10 +47,10 @@ namespace ippl {
          * This class provides the functionality to do field halo exchange.
          * @file HaloCells.h
          */
-        template <typename T, unsigned Dim>
+        template <typename T, unsigned Dim, class... ViewArgs>
         class HaloCells {
         public:
-            using view_type  = typename detail::ViewType<T, Dim>::view_type;
+            using view_type  = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
             using Layout_t   = FieldLayout<Dim>;
             using bound_type = typename Layout_t::bound_type;
 
@@ -149,7 +149,7 @@ namespace ippl {
              */
             auto makeSubview(const view_type& view, const bound_type& intersect);
 
-            FieldBufferData<T> haloData_m;
+            FieldBufferData<T, ViewArgs...> haloData_m;
         };
     }  // namespace detail
 }  // namespace ippl
