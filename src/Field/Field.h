@@ -44,6 +44,10 @@ namespace ippl {
         // been properly initialized.
         Field();
 
+        Field(const Field&);
+
+        Field& operator=(const Field&);
+
         virtual ~Field() = default;
 
         // Constructors including a Mesh object as argument:
@@ -79,7 +83,8 @@ namespace ippl {
         // Assignment from constants and other arrays.
         using BareField<T, Dim>::operator=;
 
-        Field(const Field&);
+    protected:
+        virtual void swap(Field& other);
 
     private:
         // The Mesh object, and a flag indicating if we constructed it
