@@ -84,7 +84,7 @@ namespace ippl {
         using BareField<T, Dim>::operator=;
 
     protected:
-        virtual void swap(Field& other);
+        void swap(Field& other);
 
     private:
         // The Mesh object, and a flag indicating if we constructed it

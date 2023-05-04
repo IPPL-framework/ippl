@@ -204,7 +204,7 @@ namespace ippl {
         T prod(int nghost = 0) const;
 
     protected:
-        virtual void swap(BareField& other);
+        void swap(BareField& other);
 
     private:
         //! Number of ghost layers on each field boundary
