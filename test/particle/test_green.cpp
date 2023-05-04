@@ -107,6 +107,22 @@ void write(Field<T, Dim, Mesh_t, Center_t>& field) {
     }
 }
 
+template<typename T>
+void write(Field<Vektor<T, 3>, Dim, Mesh_t, Center_t>& vfield) {
+    NDIndex<3> myidx = (vfield.getLayout()).getLocalNDIndex();
+    for (int z = myidx[2].first() - 1; z <= myidx[2].last() + 1; z++) {
+        for (int y = myidx[1].first() - 1; y <= myidx[1].last() + 1; y++) {
+            for (int x = myidx[0].first() - 1; x <= myidx[0].last() + 1; x++) {
+                std::cout << vfield[x][y][z].get() << " ";
+            }
+            std::cout << std::endl;
+        }
+        if (z < myidx[2].last() + 1) {
+            std::cout << std::endl;
+        }
+    }
+}
+
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
@@ -147,7 +163,7 @@ int main(int argc, char *argv[]){
     mesh->set_origin(extend_l);
 
     //initialize the FFT
-    FFT_t* fft = new FFT_t(domain,true);
+    FFT_t* fft = new FFT_t(FL->getDomain(),true);
 
     fft->setDirectionName(+1, "forward");
     fft->setDirectionName(-1, "inverse");
@@ -157,35 +173,26 @@ int main(int argc, char *argv[]){
     VField_t efield;
     CxField_t rhocmpl, grncmpl;
 
-    // boundary conditions
-    BConds<double, Dim, Mesh_t, Center_t> bc_m;
-    BConds<double, Dim, Mesh_t, Center_t> bcp_m;
-    BConds<Vector_t, Dim, Mesh_t, Center_t> vbc_m;
-
-    for (unsigned int i = 0; i < 2 * Dim; ++i) {
-        if (Ippl::getNodes()>1) {
-            bc_m[i] = new ParallelInterpolationFace<double, Dim, Mesh_t, Center_t>(i);
-            vbc_m[i] = new ParallelPeriodicFace<Vector_t, Dim, Mesh_t, Center_t>(i);
-            bcp_m[i] = new ParallelPeriodicFace<double, Dim, Mesh_t, Center_t>(i);
-        } else {
-            bc_m[i] = new InterpolationFace<double, Dim, Mesh_t, Center_t>(i);
-            vbc_m[i] = new PeriodicFace<Vector_t, Dim, Mesh_t, Center_t>(i);
-            bcp_m[i] = new PeriodicFace<double, Dim, Mesh_t, Center_t>(i);
-        }
-    }
-
     rhocmpl.initialize(*mesh, *FL, GuardCellSizes<Dim>(1));
     grncmpl.initialize(*mesh, *FL, GuardCellSizes<Dim>(1));
-    rho.initialize(*mesh, *FL, GuardCellSizes<Dim>(1), bc_m);
-    phi.initialize(*mesh, *FL, GuardCellSizes<Dim>(1), bcp_m);
-    efield.initialize(*mesh, *FL, GuardCellSizes<Dim>(1), vbc_m);
+    rho.initialize(*mesh, *FL, GuardCellSizes<Dim>(1));
+    phi.initialize(*mesh, *FL, GuardCellSizes<Dim>(1));
+    efield.initialize(*mesh, *FL, GuardCellSizes<Dim>(1));
 
-    rho[domain] = 0.0;
+    // set rho to 2.0
+    NDIndex<3> myidx = (rho.getLayout()).getLocalNDIndex();
+    for (int z = myidx[2].first() - 1; z <= myidx[2].last() + 1; z++) {
+        for (int y = myidx[1].first() - 1; y <= myidx[1].last() + 1; y++) {
+            for (int x = myidx[0].first() - 1; x <= myidx[0].last() + 1; x++) {
+                rho[x][y][z] = 2.0;
+            }
+        }
+    }
 
     std::cout << "Rho: " << std::endl;
     write(rho);
 
-    rhocmpl[domain] = rho[domain];
+    rhocmpl[FL->getDomain()] = rho[FL->getDomain()];
 
     fft->transform("inverse", rhocmpl);
 
@@ -196,16 +203,13 @@ int main(int argc, char *argv[]){
 
     for (int i = 0; i < 3; ++i) {
         grnIField[i].initialize(*mesh, *FL);
-        grnIField[i][domain] = where(lt(domain[i], nr[i]/2),
-                                        domain[i] * domain[i],
-                                        (nr[i]-domain[i]) *
-                                        (nr[i]-domain[i]));
+        grnIField[i][FL->getDomain()] = where(lt(FL->getDomain()[i], nr[i]/2),
+                                        FL->getDomain()[i] * FL->getDomain()[i],
+                                        (nr[i]-FL->getDomain()[i]) *
+                                        (nr[i]-FL->getDomain()[i]));
     }
     Vector_t hrsq(hr_m * hr_m);
     SpecializedGreensFunction<3>::calculate(hrsq, grncmpl, grnIField);
-
-    std::cout << "Green: " << std::endl;
-    write(grncmpl);
 
     std::cout << "Green: " << std::endl;
     write(grncmpl);
@@ -225,12 +229,16 @@ int main(int argc, char *argv[]){
     std::cout << "Inverse fft: " << std::endl;
     write(rhocmpl);
 
+    phi = 0.0;
     phi = real(rhocmpl)*hr_m[0]*hr_m[1]*hr_m[2];
 
     std::cout << "Computed phi: " << std::endl;
     write(phi);
 
     efield = -Grad1Ord(phi, efield);
+
+    std::cout << "Efield: " << std::endl;
+    write(efield);
 
     return 0;
 }
