@@ -54,7 +54,7 @@ namespace ippl {
         // constructor and destructor
         P3MSolver(rhs_type& rhs, ParameterList& fftparams);
         P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams,
-                         int sol = Base::SOL_AND_GRAD);
+                  int sol = Base::SOL_AND_GRAD);
         ~P3MSolver();
 
         // solve the Poisson equation
@@ -74,7 +74,6 @@ namespace ippl {
                              const int nghost);
 
     private:
-
         Field_t grn_m;  // the Green's function
 
         CxField_t rhotr_m;
