@@ -133,14 +133,10 @@ namespace ippl {
             const int size = nr_m[d];
 
             // Kokkos parallel for loop to initialize grnIField[d]
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             switch (d) {
                 case 0:
                     Kokkos::parallel_for(
-                        "Helper index Green field initialization",
-                        mdrange_type({nghost, nghost, nghost},
-                                     {view.extent(0) - nghost, view.extent(1) - nghost,
-                                      view.extent(2) - nghost}),
+                        "Helper index Green field initialization", ippl::getRangePolicy<3>(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int ig = i + ldom[0].first() - nghost;
@@ -159,10 +155,7 @@ namespace ippl {
                 break;
                 case 1:
                     Kokkos::parallel_for(
-                        "Helper index Green field initialization",
-                        mdrange_type({nghost, nghost, nghost},
-                                     {view.extent(0) - nghost, view.extent(1) - nghost,
-                                      view.extent(2) - nghost}),
+                        "Helper index Green field initialization", ippl::getRangePolicy<3>(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 // go from local indices to global
                             const int jg = j + ldom[1].first() - nghost;
@@ -175,10 +168,7 @@ namespace ippl {
                     break;
                 case 2:
                     Kokkos::parallel_for(
-                        "Helper index Green field initialization",
-                        mdrange_type({nghost, nghost, nghost},
-                                     {view.extent(0) - nghost, view.extent(1) - nghost,
-                                      view.extent(2) - nghost}),
+                        "Helper index Green field initialization", ippl::getRangePolicy<3>(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int kg = k + ldom[2].first() - nghost;
@@ -227,9 +217,6 @@ namespace ippl {
         rhotr_m = 0.0;
         fft_m->transform(+1, *(this->rhs_mp), rhotr_m);
 
-        std::cout << "Rho trans: " << std::endl;
-        rhotr_m.write();
-
         // call greensFunction to recompute if the mesh spacing has changed
         if (green) {
             greensFunction();
@@ -239,17 +226,11 @@ namespace ippl {
         // convolution becomes multiplication in FFT
         rhotr_m = rhotr_m * grntr_m;
 
-        std::cout << "Convolution: " << std::endl;
-        rhotr_m.write();
-
         // if output_type is SOL or SOL_AND_GRAD, we caculate solution
         if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
             // inverse FFT of the product and store the electrostatic potential in rho2_mr
             fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
         }
-
-        std::cout << "Inverse fft: " << std::endl;
-        this->rhs_mp->write();
 
         // normalization is double counted due to 2 transforms
         *(this->rhs_mp) = *(this->rhs_mp) * nr_m[0] * nr_m[1] * nr_m[2];
@@ -270,7 +251,6 @@ namespace ippl {
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::greensFunction() {
 
-        //const double pi = std::acos(-1.0);
         grn_m          = 0.0;
         double alpha   = 1e6;
 
@@ -291,10 +271,7 @@ namespace ippl {
         // Kokkos parallel for loop to find (0,0,0) point and regularize
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         Kokkos::parallel_for(
-            "Regularize Green's function ",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
+            "Assign Green's function ", ippl::getRangePolicy<3>(view, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // go from local indices to global
                 const int ig = i + ldom[0].first() - nghost;
@@ -308,14 +285,8 @@ namespace ippl {
                 
         });
 
-        std::cout << "green: " << std::endl;
-        grn_m.write();
-
         // perform the FFT of the Green's function for the convolution
         fft_m->transform(+1, grn_m, grntr_m);
-
-        std::cout << "Green trans: " << std::endl;
-        grntr_m.write();
     };
 
 }  // namespace ippl

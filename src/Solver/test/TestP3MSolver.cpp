@@ -58,7 +58,15 @@ int main(int argc, char* argv[]) {
     params.add("comm", ippl::a2av);
     params.add("r2c_direction", 0);
 
-    field = 0.0;
+    // assign the rho field with 2.0
+    typename Field_t::view_type view_rho = field.getView();
+    const int nghost                     = field.getNghost();
+
+    Kokkos::parallel_for(
+        "Assign rho field", ippl::getRangePolicy<3>(view_rho, nghost),
+        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            view_rho(i, j, k) = 2.0;
+    });
 
     std::cout << "Rho: " << std::endl;
     field.write();
@@ -69,6 +77,9 @@ int main(int argc, char* argv[]) {
     
     std::cout << "Computed phi: " << std::endl;
     field.write();
+
+    std::cout << "Efield: " << std::endl;
+    efield.write();
 
     return 0;
 }
