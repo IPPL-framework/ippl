@@ -83,7 +83,7 @@ namespace ippl {
 
             r = rhs - op_m(lhs);
 
-            lhs_type d(r);
+            lhs_type d = r.deepCopy();
             d.setFieldBC(bc);
 
             T delta1          = innerProduct(r, r);

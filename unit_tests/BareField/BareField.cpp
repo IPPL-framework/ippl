@@ -77,28 +77,9 @@ struct FieldVal {
     }
 };
 
-TEST_F(BareFieldTest, CopyConstruction) {
+TEST_F(BareFieldTest, DeepCopy) {
     auto check = []<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
-        field_type<Dim> copy(*field);
-
-        auto mirrorA = field->getHostMirror();
-        auto mirrorB = copy.getHostMirror();
-
-        Kokkos::deep_copy(mirrorA, field->getView());
-        Kokkos::deep_copy(mirrorB, copy.getView());
-
-        nestedViewLoop<Dim>(mirrorA, 0, [&]<typename... Idx>(const Idx... args) {
-            ASSERT_DOUBLE_EQ(mirrorA(args...), mirrorB(args...));
-        });
-    };
-
-    apply(check, fields);
-}
-
-TEST_F(BareFieldTest, CopyAssignment) {
-    auto check = []<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
-        field_type<Dim> copy;
-        copy = *field;
+        field_type<Dim> copy = field->deepCopy();
 
         auto mirrorA = field->getHostMirror();
         auto mirrorB = copy.getHostMirror();
