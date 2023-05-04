@@ -82,6 +82,14 @@ target_link_libraries (
     boost_timer
 )
 
+add_executable (test_green test_green.cpp)
+target_link_libraries (
+    test_green
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+    boost_timer
+)
+
 add_executable (chsr-1 chsr-1.cpp)
 target_link_libraries (chsr-1 ${IPPL_LIBS} ${MPI_CXX_LIBRARIES} boost_timer)
 
