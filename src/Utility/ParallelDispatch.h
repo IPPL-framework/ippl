@@ -29,25 +29,26 @@
 
 namespace ippl {
     /*!
-     * Multidimensional range policies.
+     * Wrapper type for Kokkos range policies with some convenience aliases
+     * @tparam Dim range policy rank
+     * @tparam PolicyArgs... additional template parameters for the range policy
      */
-    template <unsigned Dim, typename Tag = void>
+    template <unsigned Dim, class... PolicyArgs>
     struct RangePolicy {
-        typedef std::conditional_t<std::is_void_v<Tag>, Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>,
-                                   Kokkos::MDRangePolicy<Tag, Kokkos::Rank<Dim>>>
-            policy_type;
+        // The range policy type
+        typedef Kokkos::MDRangePolicy<PolicyArgs..., Kokkos::Rank<Dim>> policy_type;
+        // The index type used by the range policy
         typedef typename policy_type::array_index_type index_type;
+        // A vector type containing the index type
         typedef ::ippl::Vector<index_type, Dim> index_array_type;
     };
 
     /*!
      * Specialized range policy for one dimension.
      */
-    template <typename Tag>
-    struct RangePolicy<1, Tag> {
-        typedef std::conditional_t<std::is_void_v<Tag>, Kokkos::RangePolicy<>,
-                                   Kokkos::RangePolicy<Tag>>
-            policy_type;
+    template <class... PolicyArgs>
+    struct RangePolicy<1, PolicyArgs...> {
+        typedef Kokkos::RangePolicy<PolicyArgs...> policy_type;
         typedef typename policy_type::index_type index_type;
         typedef ::ippl::Vector<index_type, 1> index_array_type;
     };
@@ -63,15 +64,15 @@ namespace ippl {
      *
      * @return A (MD)RangePolicy that spans the desired elements of the given view
      */
-    template <typename Tag = void, typename View>
-    typename RangePolicy<View::rank, Tag>::policy_type getRangePolicy(const View& view,
-                                                                      int shift = 0) {
+    template <class... PolicyArgs, typename View>
+    typename RangePolicy<View::rank, PolicyArgs...>::policy_type getRangePolicy(const View& view,
+                                                                         int shift = 0) {
         constexpr unsigned Dim = View::rank;
-        using policy_type      = typename RangePolicy<Dim, Tag>::policy_type;
+        using policy_type = typename RangePolicy<Dim, PolicyArgs...>::policy_type;
         if constexpr (Dim == 1) {
             return policy_type(shift, view.size() - shift);
         } else {
-            using index_type = typename RangePolicy<Dim, Tag>::index_type;
+            using index_type = typename RangePolicy<Dim, PolicyArgs...>::index_type;
             Kokkos::Array<index_type, Dim> begin, end;
             for (unsigned int d = 0; d < Dim; d++) {
                 begin[d] = shift;
@@ -88,18 +89,18 @@ namespace ippl {
      * (required because Kokkos doesn't allow the initialization of 1D range
      * policies using arrays)
      * @tparam Dim the dimension of the range
-     * @tparam Tag range policy tags
+     * @tparam PolicyArgs... additional template parameters for the range policy
      *
      * @param begin the starting indices
      * @param end the ending indices
      *
      * @return A (MD)RangePolicy spanning the given range
      */
-    template <size_t Dim, typename Tag = void>
-    typename RangePolicy<Dim, Tag>::policy_type createRangePolicy(
-        const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& begin,
-        const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& end) {
-        using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
+    template <size_t Dim, class... PolicyArgs>
+    typename RangePolicy<Dim, PolicyArgs...>::policy_type createRangePolicy(
+        const Kokkos::Array<typename RangePolicy<Dim, PolicyArgs...>::index_type, Dim>& begin,
+        const Kokkos::Array<typename RangePolicy<Dim, PolicyArgs...>::index_type, Dim>& end) {
+        using policy_type = typename RangePolicy<Dim, PolicyArgs...>::policy_type;
         if constexpr (Dim == 1) {
             return policy_type(begin[0], end[0]);
         } else {

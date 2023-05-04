@@ -62,8 +62,8 @@ namespace ippl {
         //! View type storing the data
         using view_type  = typename detail::ViewType<T, Dim>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
-        template <typename Tag = void>
-        using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
+        template <class... PolicyArgs>
+        using policy_type = typename RangePolicy<Dim, PolicyArgs...>::policy_type;
 
         using value_type              = T;
         constexpr static unsigned dim = Dim;
@@ -182,12 +182,12 @@ namespace ippl {
         /*!
          * Generate the range policy for iterating over the field,
          * excluding ghost layers
-         * @tparam Tag an optional tag for the range policy
+         * @tparam PolicyArgs... additional template parameters for the range policy
          * @param nghost Number of ghost layers to include in the range policy (default 0)
          * @return Range policy for iterating over the field and nghost of the ghost layers
          */
-        template <typename Tag = void>
-        policy_type<Tag> getFieldRangePolicy(const int nghost = 0) const {
+        template <class... PolicyArgs>
+        policy_type<PolicyArgs...> getFieldRangePolicy(const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
             const size_t shift = nghost_m - nghost;
             return getRangePolicy(dview_m, shift);
