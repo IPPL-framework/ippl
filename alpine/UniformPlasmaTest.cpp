@@ -166,8 +166,7 @@ int main(int argc, char* argv[]) {
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);
 
-    P->E_m.initialize(mesh, FL);
-    P->rho_m.initialize(mesh, FL);
+    P->initializeFields(mesh, FL);
 
     bunch_type bunchBuffer(PL);
 

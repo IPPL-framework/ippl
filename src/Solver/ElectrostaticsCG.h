@@ -57,7 +57,7 @@ namespace ippl {
 
             int output = this->params_m.template get<int>("output_type");
             if (output & Base::GRAD) {
-                *(this->grad_mp) = grad(*(this->lhs_mp));
+                *(this->grad_mp) = -grad(*(this->lhs_mp));
             }
         }
 
