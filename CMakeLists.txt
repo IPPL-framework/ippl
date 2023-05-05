@@ -38,7 +38,7 @@ set (CMAKE_CXX_FLAGS_RELEASE "-O3")
 set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 
 # Compile using C++20 for CPU builds
-if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+if (${CMAKE_CXX_COMPILER} MATCHES ".*mpicxx")
     set (CMAKE_CXX_STANDARD 20)
 endif ()
 
