@@ -125,7 +125,8 @@ namespace ippl {
 
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::pack(const bound_type& range, const view_type& view,
-                                                  FieldBufferData<T>& fd, size_type& nsends) {
+                                                  FieldBufferData<T, ViewArgs...>& fd,
+                                                  size_type& nsends) {
             auto subview = makeSubview(view, range);
 
             auto& buffer = fd.buffer;
@@ -159,7 +160,7 @@ namespace ippl {
         template <typename T, unsigned Dim, class... ViewArgs>
         template <typename Op>
         void HaloCells<T, Dim, ViewArgs...>::unpack(const bound_type& range, const view_type& view,
-                                                    FieldBufferData<T>& fd) {
+                                                    FieldBufferData<T, ViewArgs...>& fd) {
             auto subview = makeSubview(view, range);
             auto buffer  = fd.buffer;
 

@@ -60,7 +60,8 @@ namespace ippl {
         using Domain_t = NDIndex<Dim>;
 
         //! View type storing the data
-        using view_type  = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
+        using view_type = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
+        typedef typename view_type::execution_space execution_space;
         using HostMirror = typename view_type::host_mirror_type;
         template <class... PolicyArgs>
         using policy_type = typename RangePolicy<Dim, PolicyArgs...>::policy_type;
@@ -146,7 +147,7 @@ namespace ippl {
         const Index& getIndex(unsigned d) const { return getLayout().getDomain()[d]; }
         const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
 
-        detail::HaloCells<T, Dim>& getHalo() { return halo_m; }
+        detail::HaloCells<T, Dim, ViewArgs...>& getHalo() { return halo_m; }
 
         // Assignment from a constant.
         BareField& operator=(T x);
@@ -187,7 +188,8 @@ namespace ippl {
          * @return Range policy for iterating over the field and nghost of the ghost layers
          */
         template <class... PolicyArgs>
-        policy_type<PolicyArgs...> getFieldRangePolicy(const int nghost = 0) const {
+        policy_type<execution_space, PolicyArgs...> getFieldRangePolicy(
+            const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
             const size_t shift = nghost_m - nghost;
             return getRangePolicy(dview_m, shift);

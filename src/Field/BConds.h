@@ -41,6 +41,7 @@ namespace ippl {
         using container      = std::array<std::shared_ptr<bc_type>, 2 * Dim>;
         using iterator       = typename container::iterator;
         using const_iterator = typename container::const_iterator;
+        using field_type     = Field<T, Dim, Mesh, Centering, ViewArgs...>;
 
         BConds()  = default;
         ~BConds() = default;

@@ -65,10 +65,10 @@ namespace ippl {
      * @return A (MD)RangePolicy that spans the desired elements of the given view
      */
     template <class... PolicyArgs, typename View>
-    typename RangePolicy<View::rank, typename View::memory_space::execution_space, PolicyArgs...>::policy_type getRangePolicy(const View& view,
+    typename RangePolicy<View::rank, typename View::execution_space, PolicyArgs...>::policy_type getRangePolicy(const View& view,
                                                                          int shift = 0) {
         constexpr unsigned Dim = View::rank;
-        using exec_space  = typename View::memory_space::execution_space;
+        using exec_space  = typename View::execution_space;
         using policy_type = typename RangePolicy<Dim, exec_space, PolicyArgs...>::policy_type;
         if constexpr (Dim == 1) {
             return policy_type(shift, view.size() - shift);

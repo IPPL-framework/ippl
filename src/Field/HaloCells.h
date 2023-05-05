@@ -83,8 +83,8 @@ namespace ippl {
              * @param view the original view
              * @param fd the buffer to pack into
              */
-            void pack(const bound_type& range, const view_type& view, FieldBufferData<T>& fd,
-                      size_type& nsends);
+            void pack(const bound_type& range, const view_type& view,
+                      FieldBufferData<T, ViewArgs...>& fd, size_type& nsends);
 
             /*!
              * Unpack the received field data and assign it.
@@ -94,7 +94,8 @@ namespace ippl {
              * @tparam Op the data assigment operator
              */
             template <typename Op>
-            void unpack(const bound_type& range, const view_type& view, FieldBufferData<T>& fd);
+            void unpack(const bound_type& range, const view_type& view,
+                        FieldBufferData<T, ViewArgs...>& fd);
 
             /*!
              * Operator for the unpack function.

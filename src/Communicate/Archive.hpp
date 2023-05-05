@@ -29,8 +29,9 @@ namespace ippl {
             , buffer_m("buffer", size) {}
 
         template <class... Properties>
-        template <typename T>
-        void Archive<Properties...>::serialize(const Kokkos::View<T*>& view, size_type nsends) {
+        template <typename T, class... ViewArgs>
+        void Archive<Properties...>::serialize(const Kokkos::View<T*, ViewArgs...>& view,
+                                               size_type nsends) {
             size_t size = sizeof(T);
             Kokkos::parallel_for(
                 "Archive::serialize()", nsends, KOKKOS_CLASS_LAMBDA(const size_type i) {
@@ -41,9 +42,9 @@ namespace ippl {
         }
 
         template <class... Properties>
-        template <typename T, unsigned Dim>
-        void Archive<Properties...>::serialize(const Kokkos::View<Vector<T, Dim>*>& view,
-                                               size_type nsends) {
+        template <typename T, unsigned Dim, class... ViewArgs>
+        void Archive<Properties...>::serialize(
+            const Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view, size_type nsends) {
             size_t size = sizeof(T);
             // Default index type for range policies is int64,
             // so we have to explicitly specify size_type (uint64)
@@ -64,8 +65,9 @@ namespace ippl {
         }
 
         template <class... Properties>
-        template <typename T>
-        void Archive<Properties...>::deserialize(Kokkos::View<T*>& view, size_type nrecvs) {
+        template <typename T, class... ViewArgs>
+        void Archive<Properties...>::deserialize(Kokkos::View<T*, ViewArgs...>& view,
+                                                 size_type nrecvs) {
             size_t size = sizeof(T);
             if (nrecvs > view.extent(0)) {
                 Kokkos::realloc(view, nrecvs);
@@ -81,8 +83,8 @@ namespace ippl {
         }
 
         template <class... Properties>
-        template <typename T, unsigned Dim>
-        void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*>& view,
+        template <typename T, unsigned Dim, class... ViewArgs>
+        void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view,
                                                  size_type nrecvs) {
             size_t size = sizeof(T);
             if (nrecvs > view.extent(0)) {

@@ -94,7 +94,8 @@ namespace ippl {
             dest = src - 1;
         }
 
-        using index_type = typename RangePolicy<Dim>::index_type;
+        using exec_space = typename Field_t::execution_space;
+        using index_type = typename RangePolicy<Dim, exec_space>::index_type;
         Kokkos::Array<index_type, Dim> begin, end;
         for (unsigned i = 0; i < Dim; i++) {
             begin[i] = nghost;
@@ -102,9 +103,9 @@ namespace ippl {
         }
         begin[d]               = src;
         end[d]                 = src + 1;
-        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+        using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
         ippl::parallel_for(
-            "Assign extrapolate BC", createRangePolicy<Dim>(begin, end),
+            "Assign extrapolate BC", createRangePolicy<Dim, exec_space>(begin, end),
             KOKKOS_CLASS_LAMBDA(index_array_type & args) {
                 // to avoid ambiguity with the member function
                 using ippl::apply;
@@ -245,7 +246,7 @@ namespace ippl {
                 using buffer_type = Communicate::buffer_type;
                 std::vector<MPI_Request> requests(neighbors.size());
 
-                using HaloCells_t = detail::HaloCells<T, Dim>;
+                using HaloCells_t = detail::HaloCells<T, Dim, ViewArgs...>;
                 using range_t     = typename HaloCells_t::bound_type;
                 HaloCells_t& halo = field.getHalo();
                 std::vector<range_t> rangeNeighbors;
@@ -307,7 +308,8 @@ namespace ippl {
 
             auto N = view.extent(d) - 1;
 
-            using index_type = typename RangePolicy<Dim>::index_type;
+            using exec_space = typename Field_t::execution_space;
+            using index_type = typename RangePolicy<Dim, exec_space>::index_type;
             Kokkos::Array<index_type, Dim> begin, end;
 
             // For the axis along which BCs are being applied, iterate
@@ -320,9 +322,9 @@ namespace ippl {
             begin[d] = 0;
             end[d]   = nghost;
 
-            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
             ippl::parallel_for(
-                "Assign periodic field BC", createRangePolicy<Dim>(begin, end),
+                "Assign periodic field BC", createRangePolicy<Dim, exec_space>(begin, end),
                 KOKKOS_CLASS_LAMBDA(index_array_type & coords) {
                     // The ghosts are filled starting from the inside of
                     // the domain proceeding outwards for both lower and

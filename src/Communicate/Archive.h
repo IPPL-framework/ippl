@@ -49,8 +49,8 @@ namespace ippl {
              * Serialize.
              * @param view to take data from.
              */
-            template <typename T>
-            void serialize(const Kokkos::View<T*>& view, size_type nsends);
+            template <typename T, class... ViewArgs>
+            void serialize(const Kokkos::View<T*, ViewArgs...>& view, size_type nsends);
 
             /*!
              * Serialize vector attributes
@@ -60,15 +60,16 @@ namespace ippl {
              *
              * @param view to take data from.
              */
-            template <typename T, unsigned Dim>
-            void serialize(const Kokkos::View<Vector<T, Dim>*>& view, size_type nsends);
+            template <typename T, unsigned Dim, class... ViewArgs>
+            void serialize(const Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view,
+                           size_type nsends);
 
             /*!
              * Deserialize.
              * @param view to put data to
              */
-            template <typename T>
-            void deserialize(Kokkos::View<T*>& view, size_type nrecvs);
+            template <typename T, class... ViewArgs>
+            void deserialize(Kokkos::View<T*, ViewArgs...>& view, size_type nrecvs);
 
             /*!
              * Deserialize vector attributes
@@ -78,8 +79,8 @@ namespace ippl {
              *
              * @param view to put data to
              */
-            template <typename T, unsigned Dim>
-            void deserialize(Kokkos::View<Vector<T, Dim>*>& view, size_type nrecvs);
+            template <typename T, unsigned Dim, class... ViewArgs>
+            void deserialize(Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view, size_type nrecvs);
 
             /*!
              * @returns a pointer to the data of the buffer

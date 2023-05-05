@@ -38,7 +38,7 @@
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {
-    template <typename T, unsigned Dim, class Mesh, class Centering>
+    template <typename T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
     class Field;
 
     /*
@@ -189,7 +189,7 @@ namespace ippl {
 
     private:
         face_neighbor_type faceNeighbors_m;
-        detail::FieldBufferData<T> haloData_m;
+        detail::FieldBufferData<T, ViewArgs...> haloData_m;
     };
 }  // namespace ippl
 
