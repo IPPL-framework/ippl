@@ -124,8 +124,8 @@ namespace ippl {
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::FFTPoissonSolver(rhs_type& rhs,
-                                                              ParameterList& fftparams,
-                                                              std::string alg)
+                                                                         ParameterList& fftparams,
+                                                                         std::string alg)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
@@ -153,9 +153,10 @@ namespace ippl {
     }
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs,
-                                                              ParameterList& fftparams,
-                                                              std::string alg, int sol)
+    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::FFTPoissonSolver(lhs_type& lhs,
+                                                                         rhs_type& rhs,
+                                                                         ParameterList& fftparams,
+                                                                         std::string alg, int sol)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)

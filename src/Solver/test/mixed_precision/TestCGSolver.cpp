@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
 
     int shift1     = solution.getNghost();
-    auto policySol = solution.getRangePolicy();
+    auto policySol = solution.getFieldRangePolicy();
     Kokkos::parallel_for(
         "Assign solution", policySol, KOKKOS_LAMBDA(const int i, const int j, const int k) {
             const size_t ig = i + lDom[0].first() - shift1;
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
         });
 
     const int shift2 = rhs.getNghost();
-    auto policyRHS   = rhs.getRangePolicy();
+    auto policyRHS   = rhs.getFieldRangePolicy();
     Kokkos::parallel_for(
         "Assign rhs", policyRHS, KOKKOS_LAMBDA(const int i, const int j, const int k) {
             const size_t ig = i + lDom[0].first() - shift2;

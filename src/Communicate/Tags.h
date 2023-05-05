@@ -39,10 +39,8 @@
 // Field<T,Dim> tags
 namespace ippl {
     namespace detail {
-#define HALO_FACE_TAG   20000
-#define HALO_EDGE_TAG   30000
-#define HALO_VERTEX_TAG 40000
-#define HALO_TAG_CYCLE  1000
+#define HALO_TAG       100000
+#define HALO_TAG_CYCLE 100000
     }  // namespace detail
 }  // namespace ippl
 
@@ -104,14 +102,8 @@ namespace ippl {
 #define IPPL_PERIODIC_BC_RECV   2000
 
 // Halo cells
-#define IPPL_HALO_FACE_SEND     3000
-#define IPPL_HALO_FACE_RECV     4000
-
-#define IPPL_HALO_EDGE_SEND     5000
-#define IPPL_HALO_EDGE_RECV     6000
-
-#define IPPL_HALO_VERTEX_SEND   7000
-#define IPPL_HALO_VERTEX_RECV   8000
+#define IPPL_HALO_SEND          100000
+#define IPPL_HALO_RECV          200000
 
 // Particle spatial layout
 #define IPPL_PARTICLE_SEND      9000

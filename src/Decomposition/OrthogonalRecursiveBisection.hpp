@@ -132,19 +132,11 @@ namespace ippl {
     template < class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
     int
     OrthogonalRecursiveBisection<Tf,Dim,Mesh,Centering,Tp>::findCutAxis(NDIndex<Dim>& dom) {
-       int cutAxis = 0;  
-       unsigned int maxLength = 0;
-       
-       // Iterate along all the dimensions
-       for (unsigned int d = 0; d < Dim; d++) {
-          // Find longest domain size
-          if (dom[d].length() > maxLength) {
-             maxLength = dom[d].length();
-             cutAxis = d;
-          }
-       }
-
-       return cutAxis;
+       // Find longest domain size
+        return std::distance(dom.begin(), std::max_element(dom.begin(), dom.end(),
+                                                           [&](const Index& a, const Index& b) {
+                                                               return a.length() < b.length();
+                                                           }));
     } 
 
     
@@ -159,65 +151,58 @@ namespace ippl {
        if (lDom[cutAxis].first() > dom[cutAxis].last() || 
            lDom[cutAxis].last() < dom[cutAxis].first())
           return;
+
        // Get field's local weights
        int nghost = bf_m.getNghost();
        const field_view_type data = bf_m.getView();
+
        // Determine the iteration bounds of the reduction
        int cutAxisFirst = std::max(lDom[cutAxis].first(), dom[cutAxis].first())
                                                - lDom[cutAxis].first() + nghost;
        int cutAxisLast = std::min(lDom[cutAxis].last(), dom[cutAxis].last())
                                             - lDom[cutAxis].first() + nghost;
+
        // Set iterator for where to write in the reduced array
        unsigned int arrayStart = 0;
        if (dom[cutAxis].first() < lDom[cutAxis].first()) 
           arrayStart = lDom[cutAxis].first() - dom[cutAxis].first();
-       // Face of domain has two directions: 1 and 2 
-       int perpAxis1 = (cutAxis+1) % Dim;
-       int perpAxis2 = (cutAxis+2) % Dim;
-       // inf and sup bounds must be within the domain to reduce, if not no need to reduce
-       int inf1 = std::max(lDom[perpAxis1].first(), dom[perpAxis1].first())
-                                         - lDom[perpAxis1].first() + nghost;
-       int inf2 = std::max(lDom[perpAxis2].first(), dom[perpAxis2].first())
-                                         - lDom[perpAxis2].first() + nghost;
-       int sup1 = std::min(lDom[perpAxis1].last(), dom[perpAxis1].last()) 
-                                       - lDom[perpAxis1].first() + nghost;
-       int sup2 = std::min(lDom[perpAxis2].last(), dom[perpAxis2].last()) 
-                                       - lDom[perpAxis2].first() + nghost;
-       if (sup1 < inf1 || sup2 < inf2)  
-          return;
-       // The +1 is for Kokkos loop
-       sup1++; sup2++;
+
+       // Find all the perpendicular axes
+       using index_type = typename RangePolicy<Dim>::index_type;
+       Kokkos::Array<index_type, Dim> begin, end;
+       for (unsigned d = 0; d < Dim; d++) {
+            if (d == cutAxis) {
+                continue;
+            }
+
+            int inf = std::max(lDom[d].first(), dom[d].first()) - lDom[d].first() + nghost;
+            int sup = std::min(lDom[d].last(), dom[d].last()) - lDom[d].first() + nghost;
+            // inf and sup bounds must be within the domain to reduce, if not no need to reduce
+            if (sup < inf) {
+                return;
+            }
+
+            begin[d] = inf;
+            // The +1 is for Kokkos loop
+            end[d] = sup + 1;
+        }
 
        // Iterate along cutAxis
-       using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;       
-       for (int i = cutAxisFirst; i <= cutAxisLast; i++) {  
-          // Reducing over perpendicular plane defined by cutAxis
-          Tp tempRes = Tp(0);
-          switch (cutAxis) {
-            default:
-            case 0:
-             Kokkos::parallel_reduce("ORB weight reduction (0)", 
-                                     mdrange_t({inf1, inf2},{sup1, sup2}),
-                                     KOKKOS_LAMBDA(const int j, const int k, Tp& weight) {
-                weight += data(i,j,k);
-             }, tempRes);
-             break;
-            case 1:
-             Kokkos::parallel_reduce("ORB weight reduction (1)", 
-                                     mdrange_t({inf2, inf1},{sup2, sup1}),
-                                     KOKKOS_LAMBDA(const int j, const int k, Tp& weight) {
-                weight += data(j,i,k);
-             }, tempRes); 
-             break;
-            case 2:
-             Kokkos::parallel_reduce("ORB weight reduction (2)", 
-                                     mdrange_t({inf1, inf2},{sup1, sup2}),
-                                     KOKKOS_LAMBDA(const int j, const int k, Tp& weight) {
-                weight += data(j,k,i);
-             }, tempRes);
-             break;
-          }
-          
+       for (int i = cutAxisFirst; i <= cutAxisLast; i++) {
+            begin[cutAxis] = i;
+            end[cutAxis]   = i + 1;
+
+            // Reducing over perpendicular plane defined by cutAxis
+            Tp tempRes = Tp(0);
+
+            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            ippl::parallel_reduce(
+                "ORB weight reduction", createRangePolicy<Dim>(begin, end),
+                KOKKOS_LAMBDA(const index_array_type& args, Tp& weight) {
+                    weight += apply<Dim>(data, args);
+                },
+                Kokkos::Sum<Tp>(tempRes));
+         
           Kokkos::fence();
           
           rankWeights[arrayStart] = tempRes; 
@@ -244,15 +229,17 @@ namespace ippl {
           curr += w[i];
           if (curr >= half) {
              // If all particles are in the first plane, cut at 1 so to have size 2
-             if (i == 0)
-                return 1; 
+             if (i == 0){
+                return 1;
+	     } 
              Tp previous = curr - w[i];
              // curr - half < half - previous
              if ((curr + previous) <= tot && curr != half) {    // if true then take current i, otherwise i-1
-                if (i == w.size() - 2)
+                if (i == w.size() - 2){
                    return (i-1);
-                else
+              } else {
                    return i;
+		 }
              } else {
                 return (i > 1) ? (i-1) : 1;
              }
@@ -264,9 +251,9 @@ namespace ippl {
 
 
     template < class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
-    void
-    OrthogonalRecursiveBisection<Tf,Dim,Mesh,Centering,Tp>::cutDomain(std::vector<NDIndex<Dim>>& domains, 
-                                           std::vector<int>& procs, int it, int cutAxis, int median) {
+    void OrthogonalRecursiveBisection<Tf,Dim,Mesh,Centering,Tp>::cutDomain(
+	std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis,
+	int median) {
        // Cut domains[it] in half at median along cutAxis
        NDIndex<Dim> leftDom, rightDom;
        domains[it].split(leftDom, rightDom, cutAxis, median + domains[it][cutAxis].first()); 
@@ -288,11 +275,11 @@ namespace ippl {
         bf_m = 0.0;
         // Get local data
         typename Field<Tf, Dim, Mesh, Centering>::view_type view = bf_m.getView();
-        const Mesh& mesh = bf_m.get_mesh();
-        const FieldLayout<Dim>& layout = bf_m.getLayout(); 
-        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
-        const int nghost = bf_m.getNghost();
- 
+        const Mesh& mesh                                        = bf_m.get_mesh();
+        const FieldLayout<Dim>& layout                          = bf_m.getLayout();
+        const NDIndex<Dim>& lDom                                = layout.getLocalNDIndex();
+        const int nghost                                        = bf_m.getNghost();
+
         // Get spacings
         const vector_type& dx     = mesh.getMeshSpacing();
         const vector_type& origin = mesh.getOrigin();
@@ -301,24 +288,15 @@ namespace ippl {
         Kokkos::parallel_for(
             "ParticleAttrib::scatterR", r.getParticleCount(), KOKKOS_LAMBDA(const size_t idx) {
                 // Find nearest grid point
-                vector_type l = (r(idx) - origin) * invdx + 0.5;
+                vector_type l          = (r(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index = l;
-                Vector<Tp, Dim> whi = l - index;
-                Vector<Tp, Dim> wlo = 1.0 - whi;
+                Vector<Tp, Dim> whi     = l - index;
+                Vector<Tp, Dim> wlo     = 1.0 - whi;
 
-                const size_t i = index[0] - lDom[0].first() + nghost;
-                const size_t j = index[1] - lDom[1].first() + nghost;
-                const size_t k = index[2] - lDom[2].first() + nghost;
+                Vector<size_t, Dim> args = index - lDom.first() + nghost;
 
                 // Scatter
-                Kokkos::atomic_add(&view(i - 1, j - 1, k - 1), wlo[0] * wlo[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i - 1, j - 1, k), wlo[0] * wlo[1] * whi[2]);
-                Kokkos::atomic_add(&view(i - 1, j, k - 1), wlo[0] * whi[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i - 1, j, k), wlo[0] * whi[1] * whi[2]);
-                Kokkos::atomic_add(&view(i, j - 1, k - 1), whi[0] * wlo[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i, j - 1, k), whi[0] * wlo[1] * whi[2]);
-                Kokkos::atomic_add(&view(i, j, k - 1), whi[0] * whi[1] * wlo[2]);
-                Kokkos::atomic_add(&view(i, j, k), whi[0] * whi[1] * whi[2]);
+                scatterToField(std::make_index_sequence<1 << Dim>{}, view, wlo, whi, args);
             });
 
         bf_m.accumulateHalo();

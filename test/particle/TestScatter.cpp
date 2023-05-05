@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
 
     typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
     typedef Bunch<playout_type> bunch_type;
-    using Mesh_t = ippl::UniformCartesian<double, 3>;
+    using Mesh_t      = ippl::UniformCartesian<double, 3>;
     using Centering_t = Mesh_t::DefaultCentering;
 
     int pt = 512;

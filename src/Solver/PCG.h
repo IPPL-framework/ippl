@@ -23,8 +23,8 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, typename OpRet,
-              class Mesh, class Centering>
+    template <typename Tlhs, typename Trhs, unsigned Dim, typename OpRet, class Mesh,
+              class Centering>
     class PCG : public SolverAlgorithm<Tlhs, Trhs, Dim, Mesh, Centering> {
     public:
         using Base = SolverAlgorithm<Tlhs, Trhs, Dim, Mesh, Centering>;
@@ -56,7 +56,7 @@ namespace ippl {
 
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
-            lhs_type r(mesh, layout), d(mesh, layout);
+            lhs_type r(mesh, layout);
 
             using bc_type  = BConds<T, lhs_type::dimension, Mesh, Centering>;
             bc_type lhsBCs = lhs.getFieldBC();
@@ -67,11 +67,12 @@ namespace ippl {
                 FieldBC bcType = lhsBCs[i]->getBCType();
                 if (bcType == PERIODIC_FACE) {
                     // If the LHS has periodic BCs, so does the residue
-                    bc[i] = std::make_shared<PeriodicFace<T, lhs_type::dimension, Mesh, Centering>>(i);
+                    bc[i] =
+                        std::make_shared<PeriodicFace<T, lhs_type::dimension, Mesh, Centering>>(i);
                 } else if (bcType & CONSTANT_FACE) {
                     // If the LHS has constant BCs, the residue is zero on the BCs
                     // Bitwise AND with CONSTANT_FACE will succeed for ZeroFace or ConstantFace
-                    bc[i]            = std::make_shared<ZeroFace<T, lhs_type::dimension, Mesh, Centering>>(i);
+                    bc[i] = std::make_shared<ZeroFace<T, lhs_type::dimension, Mesh, Centering>>(i);
                     allFacesPeriodic = false;
                 } else {
                     throw IpplException("PCG::operator()",
@@ -79,14 +80,11 @@ namespace ippl {
                     return;
                 }
             }
-            d.setFieldBC(bc);
 
             r = rhs - op_m(lhs);
-            // The d field should be a copy of the r field, but deep copies have
-            // not yet been implemented for fields, so we need a dummy operation
-            // to get an expression, which is then copyable
-            // https://gitlab.psi.ch/OPAL/Libraries/ippl/-/issues/80
-            d = r * 1;
+
+            lhs_type d(r);
+            d.setFieldBC(bc);
 
             T delta1          = innerProduct(r, r);
             T rNorm           = std::sqrt(delta1);
