@@ -65,14 +65,15 @@ namespace ippl {
      * @return A (MD)RangePolicy that spans the desired elements of the given view
      */
     template <class... PolicyArgs, typename View>
-    typename RangePolicy<View::rank, PolicyArgs...>::policy_type getRangePolicy(const View& view,
+    typename RangePolicy<View::rank, typename View::memory_space::execution_space, PolicyArgs...>::policy_type getRangePolicy(const View& view,
                                                                          int shift = 0) {
         constexpr unsigned Dim = View::rank;
-        using policy_type = typename RangePolicy<Dim, PolicyArgs...>::policy_type;
+        using exec_space  = typename View::memory_space::execution_space;
+        using policy_type = typename RangePolicy<Dim, exec_space, PolicyArgs...>::policy_type;
         if constexpr (Dim == 1) {
             return policy_type(shift, view.size() - shift);
         } else {
-            using index_type = typename RangePolicy<Dim, PolicyArgs...>::index_type;
+            using index_type = typename RangePolicy<Dim, exec_space, PolicyArgs...>::index_type;
             Kokkos::Array<index_type, Dim> begin, end;
             for (unsigned int d = 0; d < Dim; d++) {
                 begin[d] = shift;

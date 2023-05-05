@@ -235,8 +235,9 @@ namespace ippl {
                     int N = view.extent(d) - 1;
 
                     using index_array_type = typename RangePolicy<Dim>::index_array_type;
+                    using exec_space       = view_type::memory_space::execution_space;
                     ippl::parallel_for(
-                        "applyPeriodicSerialDim", createRangePolicy<Dim>(begin, end),
+                        "applyPeriodicSerialDim", createRangePolicy<Dim, exec_space>(begin, end),
                         KOKKOS_LAMBDA(index_array_type & coords) {
                             // The ghosts are filled starting from the inside
                             // of the domain proceeding outwards for both lower
