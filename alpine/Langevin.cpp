@@ -1,7 +1,6 @@
 #include "LangevinParticles.hpp"
 
 const char* TestName = "LangevinDIH";
-constexpr unsigned Dim = 3;
 
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
@@ -50,7 +49,7 @@ int main(int argc, char *argv[]){
     // const bool COLLISION         = std::atoi(argv[26]);
     const std::string OUT_DIR    = argv[27];
 
-    using bunch_type = LangevinParticles<PLayout_t>;
+    using bunch_type = LangevinParticles<PLayout_t<Dim>>;
 
     /////////////////////////
     // CONFIGURATION SPACE //
@@ -65,10 +64,10 @@ int main(int argc, char *argv[]){
     const VectorD_t configSpaceOrigin({-L,-L,-L});
     VectorD_t hr({BOXL / NR, BOXL / NR, BOXL / NR});  // spacing
 
-    Mesh_t configSpaceMesh(configSpaceDomain, hr, configSpaceOrigin);
+    Mesh_t<Dim> configSpaceMesh(configSpaceDomain, hr, configSpaceOrigin);
     const bool isAllPeriodic = true;
-    FieldLayout_t configSpaceFieldLayout(configSpaceDomain, configSpaceDecomp, isAllPeriodic);
-    PLayout_t PL(configSpaceFieldLayout, configSpaceMesh);
+    FieldLayout_t<Dim> configSpaceFieldLayout(configSpaceDomain, configSpaceDecomp, isAllPeriodic);
+    PLayout_t<Dim> PL(configSpaceFieldLayout, configSpaceMesh);
 
     const double Q = NP * PARTICLE_CHARGE;
 
@@ -90,11 +89,11 @@ int main(int argc, char *argv[]){
     P->time_m = 0.0;
 
     // Set Periodic BCs for rho
-    typedef ippl::BConds<double, Dim> bc_type;
+    typedef ippl::BConds<double, Dim, Mesh_t<Dim>, Centering_t<Dim>> bc_type;
 
     bc_type bcField;
     for (unsigned int i=0; i < 6; ++i) {
-        bcField[i] = std::make_shared<ippl::PeriodicFace<double, Dim>>(i);
+        bcField[i] = std::make_shared<ippl::PeriodicFace<double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
     }
     P->rho_m.setFieldBC(bcField);
 

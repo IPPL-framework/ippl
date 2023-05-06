@@ -24,28 +24,16 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "Ippl.h"
-#include "ChargedParticles.hpp"
-#include "Solver/FFTPeriodicPoissonSolver.h"
-#include "Solver/FFTPoissonSolver.h"
-
 #include <Kokkos_Random.hpp>
 
 #include "LangevinHelpers.hpp"
 
-typedef Field<double, Dim>   Field_t;
-typedef Field<VectorD_t, Dim> VField_t;
-typedef ippl::FFTPeriodicPoissonSolver<VectorD_t, double, Dim> Solver_t;
-typedef ippl::FFTPoissonSolver<VectorD_t, double, Dim> VSolver_t;
-
 typedef Field<MatrixD_t, Dim> MField_t;
-
 
 template<class PLayout>
 class LangevinParticles : public ChargedParticles<PLayout> {
 
-    typedef Solver_t PeriodicSolver_t;
-    typedef ippl::FFTPoissonSolver<VectorD_t, double, Dim> OpenSolver_t;
+    typedef Solver_t<Dim> PeriodicSolver_t;
     typedef Kokkos::Random_XorShift64_Pool<> KokkosRNG_t;
 
     // View types (of particle attributes)
@@ -91,7 +79,7 @@ public:
     void initSpaceChargeSolver() {
         // Initializing the solvers defined by the ChargedParticles Class
         // [Hockney Periodic Poisson Solver]
-        ChargedParticles<PLayout>::initSolver(Solver_t::GRAD);
+        ChargedParticles<PLayout>::initSolver();
     }
 
     size_type getGlobParticleNum() const { return globalNum_m; }

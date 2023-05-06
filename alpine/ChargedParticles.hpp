@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
+#ifndef CHARGEDPARTICLES_HPP
+#define CHARGEDPARTICLES_HPP
 
 #include "Ippl.h"
 
@@ -813,3 +815,5 @@ public:
 private:
     void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
 };
+
+#endif /* CHARGEDPARTICLES_HPP */

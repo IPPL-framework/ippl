@@ -3,12 +3,24 @@
 
 #include "Utility/PAssert.h"
 
+#include "ChargedParticles.hpp"
+
 constexpr unsigned Dim = 3;
 
-typedef Vector<double, Dim>  VectorD_t;
-typedef Vector<double, 2*Dim>  Vector2D_t;
-typedef Vector<VectorD_t, Dim> MatrixD_t;
-typedef Vector<Vector2D_t, 2*Dim> Matrix2D_t;
+template <typename T>
+using VectorD = Vector<T, Dim>;
+
+template <typename T>
+using Vector2D = Vector<T, 2*Dim>;
+
+using VectorD_t = VectorD<double>;
+
+using Vector2D_t = Vector2D<double>;
+
+using MatrixD_t = VectorD<VectorD<double>>;
+
+using Matrix2D_t = Vector2D<Vector2D<double>>;
+
 
 template<typename T>
 KOKKOS_INLINE_FUNCTION
@@ -59,14 +71,14 @@ struct GenerateBoxMuller {
 // Works only if ranks == 1
 // TODO Allow dumping from multiple ranks
 template<class Bunch>
-void dumpVTKScalar(Field& F, std::shared_ptr<Bunch> P, int iteration, 
+void dumpVTKScalar(Field_t<Dim>& F, std::shared_ptr<Bunch> P, int iteration, 
                   double scalingFactor, std::string out_dir, std::string label) {
 
   int nx = P->hr_m[0];
   int ny = P->hr_m[1];
   int nz = P->hr_m[2];
   
-  typename Field::view_type::host_mirror_type host_view = F.getHostMirror();
+  typename Field_t<Dim>::view_type::host_mirror_type host_view = F.getHostMirror();
 
   std::stringstream fname;
   fname << out_dir;
@@ -107,14 +119,14 @@ void dumpVTKScalar(Field& F, std::shared_ptr<Bunch> P, int iteration,
 
 
 template<class Bunch>
-void dumpVTKVector(VField_t& F, std::shared_ptr<Bunch> P, int iteration, 
+void dumpVTKVector(VField_t<Dim>& F, std::shared_ptr<Bunch> P, int iteration, 
                   double scalingFactor, std::string out_dir, std::string label) {
 
   int nx = P->hr_m[0];
   int ny = P->hr_m[1];
   int nz = P->hr_m[2];
   
-  typename VField_t::view_type::host_mirror_type host_view = F.getHostMirror();
+  typename VField_t<Dim>::view_type::host_mirror_type host_view = F.getHostMirror();
 
   std::stringstream fname;
   fname << out_dir;
