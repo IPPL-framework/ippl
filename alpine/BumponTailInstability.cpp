@@ -314,7 +314,7 @@ int main(int argc, char* argv[]) {
         hr[d] = rmax[d] / nr[d];
     }
     Vector_t<Dim> origin = rmin;
-    const double dt      = 0.5 * hr[0];  // 0.05
+    const double dt      = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
 
     const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);

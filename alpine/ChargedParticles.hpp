@@ -410,6 +410,8 @@ public:
     void initCGSolver() {
         ippl::ParameterList sp;
         sp.add("output_type", Solver_t<Dim>::GRAD);
+        // Increase tolerance in the 1D case
+        sp.add("tolerance", 1e-10);
 
         initSolver(sp);
     }

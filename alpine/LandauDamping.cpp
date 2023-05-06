@@ -203,7 +203,7 @@ int main(int argc, char* argv[]) {
     // Q = -\int\int f dx dv
     double Q             = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
     Vector_t<Dim> origin = rmin;
-    const double dt      = 0.5 * hr[0];
+    const double dt      = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
 
     const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);
