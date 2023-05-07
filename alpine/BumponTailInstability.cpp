@@ -7,7 +7,7 @@
 //     ny...    = No. cell-centered points in the y-, z-, ...-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
-//     stype    = Field solver type e.g., FFT
+//     stype    = Field solver type (FFT and CG supported)
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
 //                particle load balancing occurs. A value of 0.01 is good for many typical
@@ -322,8 +322,9 @@ int main(int argc, char* argv[]) {
     PLayout_t<Dim> PL(FL, mesh);
 
     // Q = -\int\int f dx dv
-    double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
-    P        = std::make_shared<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+    double Q           = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
+    std::string solver = argv[arg++];
+    P                  = std::make_shared<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
     P->nr_m = nr;
 
@@ -331,7 +332,6 @@ int main(int argc, char* argv[]) {
 
     bunch_type bunchBuffer(PL);
 
-    P->stype_m = argv[arg++];
     P->initSolver();
     P->time_m                 = 0.0;
     P->loadbalancethreshold_m = std::atof(argv[arg++]);
@@ -433,13 +433,13 @@ int main(int argc, char* argv[]) {
 
     IpplTimings::startTimer(DummySolveTimer);
     P->rho_m = 0.0;
-    P->solver_mp->solve();
+    P->runSolver();
     IpplTimings::stopTimer(DummySolveTimer);
 
     P->scatterCIC(totalP, 0, hr);
 
     IpplTimings::startTimer(SolveTimer);
-    P->solver_mp->solve();
+    P->runSolver();
     IpplTimings::stopTimer(SolveTimer);
 
     P->gatherCIC();
@@ -489,7 +489,7 @@ int main(int argc, char* argv[]) {
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
-        P->solver_mp->solve();
+        P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
         // gather E field
