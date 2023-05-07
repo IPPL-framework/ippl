@@ -66,7 +66,9 @@ using FFTSolver_t =
     ippl::FFTPeriodicPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
 template <unsigned Dim = 3>
-using Solver_t = std::variant<CGSolver_t<Dim>, FFTSolver_t<Dim>>;
+using Solver_t =
+    std::conditional_t<Dim == 2 || Dim == 3, std::variant<CGSolver_t<Dim>, FFTSolver_t<Dim>>,
+                       std::variant<CGSolver_t<Dim>>>;
 
 const double pi = std::acos(-1.0);
 
@@ -284,8 +286,10 @@ public:
         }
         // Update
         this->updateLayout(fl, mesh, buffer, isFirstRepartition);
-        if (stype_m == "FFT") {
-            std::get<FFTSolver_t<Dim>>(solver_m).setRhs(rho_m);
+        if constexpr (Dim == 2 || Dim == 3) {
+            if (stype_m == "FFT") {
+                std::get<FFTSolver_t<Dim>>(solver_m).setRhs(rho_m);
+            }
         }
     }
 
@@ -418,7 +422,9 @@ public:
             }
             Ippl::Comm->barrier();
         } else if (stype_m == "FFT") {
-            std::get<FFTSolver_t<Dim>>(solver_m).solve();
+            if constexpr (Dim == 2 || Dim == 3) {
+                std::get<FFTSolver_t<Dim>>(solver_m).solve();
+            }
         } else {
             throw std::runtime_error("Unknown solver type");
         }
@@ -455,19 +461,20 @@ public:
     }
 
     void initFFTSolver() {
-        if constexpr (Dim == 1) {
-            throw std::runtime_error("1D FFT solver not supported");
-        }
-        ippl::ParameterList sp;
-        sp.add("output_type", FFTSolver_t<Dim>::GRAD);
-        sp.add("use_heffte_defaults", false);
-        sp.add("use_pencils", true);
-        sp.add("use_reorder", false);
-        sp.add("use_gpu_aware", true);
-        sp.add("comm", ippl::p2p_pl);
-        sp.add("r2c_direction", 0);
+        if constexpr (Dim == 2 || Dim == 3) {
+            ippl::ParameterList sp;
+            sp.add("output_type", FFTSolver_t<Dim>::GRAD);
+            sp.add("use_heffte_defaults", false);
+            sp.add("use_pencils", true);
+            sp.add("use_reorder", false);
+            sp.add("use_gpu_aware", true);
+            sp.add("comm", ippl::p2p_pl);
+            sp.add("r2c_direction", 0);
 
-        initSolverWithParams<FFTSolver_t<Dim>>(sp);
+            initSolverWithParams<FFTSolver_t<Dim>>(sp);
+        } else {
+            throw std::runtime_error("Unsupported dimensionality for FFT solver");
+        }
     }
 
     void dumpData() {
