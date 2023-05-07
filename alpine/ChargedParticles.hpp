@@ -414,11 +414,15 @@ public:
                 fname << ".csv";
 
                 Inform log(NULL, fname.str().c_str(), Inform::APPEND);
-                if (time_m == 0) {
+                int iterations = solver.getIterationCount();
+                // Assume the dummy solve is the first call
+                if (time_m == 0 && iterations == 0) {
                     log << "time,residue,iterations" << endl;
                 }
-                log << time_m << "," << solver.getResidue() << "," << solver.getIterationCount()
-                    << endl;
+                // Don't print the dummy solve
+                if (time_m > 0 || iterations > 0) {
+                    log << time_m << "," << solver.getResidue() << "," << iterations << endl;
+                }
             }
             Ippl::Comm->barrier();
         } else if (stype_m == "FFT") {
