@@ -15,7 +15,7 @@
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./BumponTailInstability 128 128 128 10000 10 FFT 0.01 2.0 --info 10
+//     srun ./BumponTailInstability 128 128 128 10000 10 FFT 0.01 --overallocate 2.0 --info 10
 //     Change the TestName to TwoStreamInstability or BumponTailInstability
 //     in order to simulate the Two stream instability or bump on tail instability
 //     cases

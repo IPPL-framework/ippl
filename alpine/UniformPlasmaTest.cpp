@@ -13,7 +13,7 @@
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT 10 1.0 --info 10
+//     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT 10 --overallocate 1.0 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland

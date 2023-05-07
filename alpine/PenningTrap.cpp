@@ -16,7 +16,7 @@
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./PenningTrap 128 128 128 10000 300 FFT 0.01 1.0 --info 10
+//     srun ./PenningTrap 128 128 128 10000 300 FFT 0.01 --overallocate 1.0 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -151,6 +151,7 @@ double PDF(const Vector_t<Dim>& xvec, const Vector_t<Dim>& mu, const Vector_t<Di
 const char* TestName = "PenningTrap";
 
 int main(int argc, char* argv[]) {
+    static_assert(Dim == 3, "Penning trap must be 3D");
     Ippl ippl(argc, argv);
     Inform msg("PenningTrap");
     Inform msg2all("PenningTrap", INFORM_ALL_NODES);
