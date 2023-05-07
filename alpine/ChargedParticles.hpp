@@ -403,12 +403,20 @@ public:
             CGSolver_t<Dim>& solver = std::get<CGSolver_t<Dim>>(solver_m);
             solver.solve();
 
-            Inform log("CG Log", "cg.csv", Inform::APPEND);
-            if (time_m == 0) {
-                log << "time,residue,iterations" << endl;
+            if (Ippl::Comm->rank() == 0) {
+                std::stringstream fname;
+                fname << "data/CG_";
+                fname << Ippl::Comm->size();
+                fname << ".csv";
+
+                Inform log(NULL, fname.str().c_str(), Inform::APPEND);
+                if (time_m == 0) {
+                    log << "time,residue,iterations" << endl;
+                }
+                log << time_m << "," << solver.getResidue() << "," << solver.getIterationCount()
+                    << endl;
             }
-            log << time_m << "," << solver.getResidue() << "," << solver.getIterationCount()
-                << endl;
+            Ippl::Comm->barrier();
         } else if (stype_m == "FFT") {
             std::get<FFTSolver_t<Dim>>(solver_m).solve();
         } else {

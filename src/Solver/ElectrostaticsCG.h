@@ -68,6 +68,12 @@ namespace ippl {
          */
         int getIterationCount() { return algo_m.getIterationCount(); }
 
+        /*!
+         * Query the residue
+         * @return Residue norm from last solve
+         */
+        Tlhs getResidue() const { return algo_m.getResidue(); }
+
     protected:
         algo algo_m = algo();
 
