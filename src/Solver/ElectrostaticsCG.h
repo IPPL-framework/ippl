@@ -57,7 +57,7 @@ namespace ippl {
 
             int output = this->params_m.template get<int>("output_type");
             if (output & Base::GRAD) {
-                *(this->grad_mp) = grad(*(this->lhs_mp));
+                *(this->grad_mp) = -grad(*(this->lhs_mp));
             }
         }
 
@@ -67,6 +67,12 @@ namespace ippl {
          * @return Iteration count of last solve
          */
         int getIterationCount() { return algo_m.getIterationCount(); }
+
+        /*!
+         * Query the residue
+         * @return Residue norm from last solve
+         */
+        Tlhs getResidue() const { return algo_m.getResidue(); }
 
     protected:
         algo algo_m = algo();

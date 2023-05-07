@@ -26,8 +26,10 @@ namespace ippl {
     template <typename Tlhs, typename Trhs, unsigned Dim, typename OpRet, class Mesh,
               class Centering>
     class PCG : public SolverAlgorithm<Tlhs, Trhs, Dim, Mesh, Centering> {
-    public:
         using Base = SolverAlgorithm<Tlhs, Trhs, Dim, Mesh, Centering>;
+        typedef typename Base::lhs_type::type T;
+
+    public:
         using typename Base::lhs_type;
         using typename Base::rhs_type;
         using operator_type = std::function<OpRet(lhs_type)>;
@@ -46,8 +48,6 @@ namespace ippl {
         int getIterationCount() { return iterations_m; }
 
         void operator()(lhs_type& lhs, rhs_type& rhs, const ParameterList& params) override {
-            typedef typename lhs_type::type T;
-
             typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
             typename lhs_type::Layout_t layout = lhs.getLayout();
 
@@ -83,16 +83,16 @@ namespace ippl {
 
             r = rhs - op_m(lhs);
 
-            lhs_type d(r);
+            lhs_type d = r.deepCopy();
             d.setFieldBC(bc);
 
             T delta1          = innerProduct(r, r);
-            T rNorm           = std::sqrt(delta1);
+            residueNorm       = std::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
             lhs_type q(mesh, layout);
 
-            while (iterations_m < maxIterations && rNorm > tolerance) {
+            while (iterations_m < maxIterations && residueNorm > tolerance) {
                 q       = op_m(d);
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
@@ -110,7 +110,7 @@ namespace ippl {
                 delta1   = innerProduct(r, r);
                 T beta   = delta1 / delta0;
 
-                rNorm = std::sqrt(delta1);
+                residueNorm = std::sqrt(delta1);
 
                 d = r + beta * d;
 
@@ -123,8 +123,11 @@ namespace ippl {
             }
         }
 
+        T getResidue() const { return residueNorm; }
+
     protected:
         operator_type op_m;
+        T residueNorm    = 0;
         int iterations_m = 0;
     };
 
