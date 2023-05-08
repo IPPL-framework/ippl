@@ -8,18 +8,18 @@
 MPI_OVERALLOC=2.0
 SOLVER_T=FFT            # Solver Type to solve for the electrostatic potential
 LB_THRESHOLD=1.0        # Load Balancing Threshold
-NR=16                  # Number of gridpoints on the spatial grid (along each dim.)
+NR=256                  # Number of gridpoints on the spatial grid (along each dim.)
 BEAM_RADIUS=0.001774    # [cm]
 BOXL=0.01               # [cm]
-NP=10               # Number of particles
-DT=2.15623e-10                # [ms] Timestep
-NT=4                 # Number of timesteps
+NP=156055               # Number of particles
+DT=2.15623e-13          # [s] Timestep
+NT=1200                 # Number of timesteps
 PARTICLE_CHARGE=-1      # [e]
 PARTICLE_MASS=1         # [m_e]
-EPS_INV=3.182609e3      # [\frac{cm^3 m_e}{ms^2 q_e^2}] Inverse Vacuum Permittivity
+EPS_INV=3.182609e9      # [\frac{cm^3 m_e}{s^2 q_e^2}] Inverse Vacuum Permittivity
 FOCUS_FORCE=1.5         # Scaling factor of constant focusing force
 PRINT=1                 # How often to print status to `langevin.out`
-PRINT_INTERVAL=1       # How often to dump beamstatistics to ${OUT_DIR}
+PRINT_INTERVAL=1        # How often to dump beamstatistics to ${OUT_DIR}
 
 # Collisional Parameters
 NV=4                   # Number of gridpoints on the velocity grid (along each dim.)
