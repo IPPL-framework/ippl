@@ -79,7 +79,7 @@ int main(int argc, char *argv[]){
 
     std::shared_ptr P = std::make_shared<bunch_type>(PL, hr,
                                           configSpaceLowerBound, configSpaceUpperBound, configSpaceDecomp,
-                                          PARTICLE_CHARGE, PARTICLE_MASS, Q, NP, DT);
+                                          SOLVER_T, PARTICLE_CHARGE, PARTICLE_MASS, Q, NP, DT);
 
     // Initialize Particle Fields in Particles Class
     P->nr_m = {int(NR), int(NR), int(NR)};
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]){
     P->scatterCIC(NP, 0, hr);
     dumpVTKScalar(P->rho_m, P, 0, 1.0, OUT_DIR, "Rho");
     P->rho_m = EPS_INV * P->rho_m;
-    P->solver_mp->solve();
+    P->runSolver();
     //P->E_m = - grad(P->rho_m);
     P->gatherCIC();
 
@@ -155,7 +155,7 @@ int main(int argc, char *argv[]){
         // Field Solve
         P->scatterCIC(NP, it, hr);
         P->rho_m = EPS_INV * P->rho_m;
-        P->solver_mp->solve();
+        P->runSolver();
         //P->E_m = - grad(P->rho_m);
         P->gatherCIC();
 
