@@ -85,8 +85,8 @@ namespace ippl {
         //! The FieldLayout containing information on nearest neighbors
         FieldLayout_t flayout_m;
          
-		using region_view_type  = typename RegionLayout_t::view_type
-        using region_type 		= region_view_type::value_type;
+	using region_view_type  = typename RegionLayout_t::view_type;
+        using region_type 	= typename region_view_type::value_type;
 
         template <size_t... Idx>
         KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(

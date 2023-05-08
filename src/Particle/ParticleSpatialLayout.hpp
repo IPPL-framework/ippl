@@ -219,22 +219,22 @@ namespace ippl {
         region_view_type Regions = rlayout_m.getdLocalRegions();
 
         using view_size_t  = typename RegionLayout_t::view_type::size_type;
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-		using neighbor_list = typename FieldLayout_t::neighbor_list;
+	    using neighbor_list = typename FieldLayout_t::neighbor_list;
 
         int myRank = Ippl::Comm->rank();
 
         const auto is = std::make_index_sequence<Dim>{};
 
-		const neighbor_list neighbors = flayout_m.getNeighbors();
+	    const neighbor_list neighbors = flayout_m.getNeighbors();
 
-		//container of particles that travelled more than one cell
-   		locate_type notfound("Not found", size_type(0.1*pdata.getLocalNum()));
-		//Now: dimension hard-coded, for future implementations maybe make it as a run parameter.
-		bool_type found("Found", pdata.getLocalNum());
-		size_t nLeft;
+        //container of particles that travelled more than one cell
+        locate_type notFoundIds("Not found", size_type(0.1*pdata.getLocalNum()));
+        //Now: dimension hard-coded, for future implementations maybe make it as a run parameter.
+        bool_type found("Found", pdata.getLocalNum());
+        size_t nLeft=0;
+        const size_t neighborSize = 16*neighbors.size();
 
-    	ippl::Vector<int, 16*neighbor_list.size()> neighbors_v(neighbors_list);
+    	ippl::Vector<int, neighborSize> neighbors_v(neighbor_list);
 		
 		/*Begin Kokkos loop:
 		 *Step 1: search in current rank
@@ -243,7 +243,7 @@ namespace ippl {
 		 *Step 4: run additional loop on non-located particles */
 
 		Kokkos::parallel_scan(
-			"ParticleSpatialLayout::faceNeighbors",
+			"ParticleSpatialLayout::locateParticles()",
 			Kokkos::RangePolicy<size_t>(0, ranks.extent(0)),
 			KOKKOS_LAMBDA(const size_t i, size_t& idx, const bool final) {
 
@@ -253,9 +253,9 @@ namespace ippl {
 			xyz_bool = positionInRegion(is, positions(i), Regions(myRank));
 		
 			if(xyz_bool){
-			ranks(i) = myRank;
-			invalid(i) = false;
-			found(i) = true;
+                ranks(i) = myRank;
+                invalid(i) = false;
+                found(i) = true;
 			}
 			//Step 2
 			else{ 
@@ -267,18 +267,18 @@ namespace ippl {
 					xyz_bool = positionInRegion(is, positions(i), Regions(myRank));
 								
 						if(xyz_bool){
-							ranks(i) = rank;
-							invalid(i) = true;
-							found(i) = true;
-							break;	
+                            ranks(i) = rank;
+                            invalid(i) = true;
+                            found(i) = true;
+                            break;	
 						}
 				}
 			}
 		
 			//Step 3
 			if( final && !found(i) ){
-				notfound(idx)=i;
-				}
+				notFoundIds(idx)=i;
+            }
 
 			if(!found(i)) idx+=1;
 
@@ -287,10 +287,30 @@ namespace ippl {
 		Kokkos::fence();
 		
 		//Step 4
-		static IpplTimings::TimerRef nonNeighboringParticles = IpplTimings::getTimer("nonNeighboringParticles");
-
 		if(nLeft > 0) {
-			left_particles(nLeft, notFound, Regions);
+	        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+            static IpplTimings::TimerRef nonNeighboringParticles = IpplTimings::getTimer("nonNeighboringParticles");
+            IpplTimings::startTimer(nonNeighboringParticles);
+
+            Kokkos::parallel_for(
+            "ParticleSpatialLayout::leftParticles()",
+            mdrange_type({0, 0},
+                {nLeft, Regions.extent(0)}),
+                KOKKOS_LAMBDA(const size_t i, const size_t j) {
+
+                size_t pId = notFoundIds(i);
+                bool xyz_bool = positionInRegion(is, positions(pId), Regions(j));
+
+                if(xyz_bool){
+                ranks(pId) = j;
+                invalid(pId) = true;
+                }
+
+                });
+            Kokkos::fence();
+
+            IpplTimings::stopTimer(nonNeighboringParticles);
+
 		}
 
 	}
@@ -326,33 +346,5 @@ namespace ippl {
         Kokkos::fence();
         return nSends;
     }
-
-
-	template <typename T, unsigned Dim, class Mesh>
-	void ParticleSpatialLayout<T, Dim, Mesh>::leftParticles(size_t nLeft, bool_type& notFound, const region_view_type& Regions){
-
-		IpplTimings::startTimer(nonNeighboringParticles);
-
-		Kokkos::parallel_for(
-			"ParticleSpatialLayout::locateParticles()",
-		 	mdrange_type({0, 0},
-						{nLeft, Regions.extent(0)}),
-					KOKKOS_LAMBDA(const size_t i, const size_t j) {
-
-				size_t pId = notfound(i);
-			    bool xyz_bool = positionInRegion(is, positions(pId), Regions(j));
-
-					if(xyz_bool){
-					ranks(pId) = j;
-					invalid(pId) = true;
-					}
-
-					});
-			Kokkos::fence();
-
-            IpplTimings::stopTimer(nonNeighboringParticles);
-
-            }
-
-	}
+    
 }  // namespace ippl
