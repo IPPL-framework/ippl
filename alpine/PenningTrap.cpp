@@ -8,7 +8,7 @@
 //     nz       = No. cell-centered points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
-//     stype    = Field solver type e.g., FFT
+//     stype    = Field solver type (FFT and CG supported)
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
 //                particle load balancing occurs. A value of 0.01 is good for many typical 
@@ -16,7 +16,7 @@
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./PenningTrap 128 128 128 10000 300 FFT 0.01 1.0 --info 10
+//     srun ./PenningTrap 128 128 128 10000 300 FFT 0.01 --overallocate 1.0 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan, 
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -158,7 +158,8 @@ double PDF(const Vector_t<Dim>& xvec, const Vector_t<Dim>& mu, const Vector_t<Di
 
 const char* TestName = "PenningTrap";
 
-int main(int argc, char *argv[]){
+int main(int argc, char* argv[]) {
+    static_assert(Dim == 3, "Penning trap must be 3D");
     Ippl ippl(argc, argv);
     Inform msg("PenningTrap");
     Inform msg2all("PenningTrap",INFORM_ALL_NODES);
@@ -219,9 +220,10 @@ int main(int argc, char *argv[]){
     FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
     PLayout_t<Dim> PL(FL, mesh);
 
-    double Q = -1562.5;
-    double Bext = 5.0;
-    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
+    double Q           = -1562.5;
+    double Bext        = 5.0;
+    std::string solver = argv[6];
+    P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
     P->nr_m = nr;
 
@@ -236,13 +238,10 @@ int main(int argc, char *argv[]){
     sd[1] = 0.05*length[1];
     sd[2] = 0.20*length[2];
 
-    P->E_m.initialize(mesh, FL);
-    P->rho_m.initialize(mesh, FL);
+    P->initializeFields(mesh, FL);
 
     bunch_type bunchBuffer(PL);
 
-
-    P->stype_m = argv[6];
     P->initSolver();
     P->time_m = 0.0;
     P->loadbalancethreshold_m = std::atof(argv[7]);
@@ -331,13 +330,13 @@ int main(int argc, char *argv[]){
     
     IpplTimings::startTimer(DummySolveTimer);
     P->rho_m = 0.0;
-    P->solver_mp->solve();
+    P->runSolver();
     IpplTimings::stopTimer(DummySolveTimer);
     
     P->scatterCIC(totalP, 0, hr);
 
     IpplTimings::startTimer(SolveTimer);
-    P->solver_mp->solve();
+    P->runSolver();
     IpplTimings::stopTimer(SolveTimer);
 
     P->gatherCIC();
@@ -409,7 +408,7 @@ int main(int argc, char *argv[]){
 
         //Field solve
         IpplTimings::startTimer(SolveTimer);
-        P->solver_mp->solve();
+        P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
         // gather E field

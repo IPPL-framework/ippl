@@ -35,25 +35,11 @@ namespace ippl {
         , bc_m() {}
 
     template <class T, unsigned Dim, class Mesh, class Centering>
-    Field<T, Dim, Mesh, Centering>::Field(const Field<T, Dim, Mesh, Centering>& other)
-        : BareField<T, Dim>(other)
-        , mesh_m(other.mesh_m)
-        , bc_m(other.bc_m) {}
+    Field<T, Dim, Mesh, Centering> Field<T, Dim, Mesh, Centering>::deepCopy() const {
+        Field<T, Dim, Mesh, Centering> copy(*mesh_m, this->getLayout(), this->getNghost());
+        Kokkos::deep_copy(copy.getView(), this->getView());
 
-    template <class T, unsigned Dim, class Mesh, class Centering>
-    Field<T, Dim, Mesh, Centering>& Field<T, Dim, Mesh, Centering>::operator=(
-        const Field<T, Dim, Mesh, Centering>& other) {
-        Field<T, Dim, Mesh, Centering> copy(other);
-        swap(copy);
-
-        return *this;
-    }
-
-    template <class T, unsigned Dim, class Mesh, class Centering>
-    void Field<T, Dim, Mesh, Centering>::swap(Field<T, Dim, Mesh, Centering>& other) {
-        BareField<T, Dim>::swap(other);
-        mesh_m = other.mesh_m;
-        std::swap(bc_m, other.bc_m);
+        return copy;
     }
 
     //////////////////////////////////////////////////////////////////////////

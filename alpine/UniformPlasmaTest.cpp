@@ -7,13 +7,13 @@
 //     ny...    = No. cell-centered points in the y-, z-, ...direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
-//     stype    = Field solver type e.g., FFT
+//     stype    = Field solver type (FFT and CG supported)
 //     lbfreq   = Load balancing frequency i.e., Number of time steps after which particle
 //                load balancing should happen
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT 10 1.0 --info 10
+//     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT 10 --overallocate 1.0 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -141,8 +141,9 @@ int main(int argc, char *argv[]){
     FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
     PLayout_t<Dim> PL(FL, mesh);
 
-    double Q = -1562.5;
-    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q);
+    double Q           = -1562.5;
+    std::string solver = argv[arg++];
+    P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
     P->nr_m = nr;
     size_type nloc = totalP / Ippl::Comm->size();
@@ -171,8 +172,7 @@ int main(int argc, char *argv[]){
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);
 
-    P->E_m.initialize(mesh, FL);
-    P->rho_m.initialize(mesh, FL);
+    P->initializeFields(mesh, FL);
 
     bunch_type bunchBuffer(PL);
 
@@ -182,14 +182,13 @@ int main(int argc, char *argv[]){
 
     msg << "particles created and initial conditions assigned " << endl;
 
-    P->stype_m = argv[arg++];
     P->initSolver();
     P->time_m            = 0.0;
     P->loadbalancefreq_m = std::atoi(argv[arg++]);
 
     IpplTimings::startTimer(DummySolveTimer);
     P->rho_m = 0.0;
-    P->solver_mp->solve();
+    P->runSolver();
     IpplTimings::stopTimer(DummySolveTimer);
 
 
@@ -198,7 +197,7 @@ int main(int argc, char *argv[]){
     bool fromAnalyticDensity = false;
 
     IpplTimings::startTimer(SolveTimer);
-    P->solver_mp->solve();
+    P->runSolver();
     IpplTimings::stopTimer(SolveTimer);
 
     P->gatherCIC();
@@ -254,7 +253,7 @@ int main(int argc, char *argv[]){
 
         //Field solve
         IpplTimings::startTimer(SolveTimer);
-        P->solver_mp->solve();
+        P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
         // gather E field
