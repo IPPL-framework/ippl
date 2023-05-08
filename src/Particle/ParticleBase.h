@@ -64,10 +64,11 @@
 #ifndef IPPL_PARTICLE_BASE_H
 #define IPPL_PARTICLE_BASE_H
 
-#include "Particle/ParticleLayout.h"
+#include <vector>
+
 #include "Types/IpplTypes.h"
 
-#include <vector>
+#include "Particle/ParticleLayout.h"
 
 namespace ippl {
     /*!
@@ -77,11 +78,10 @@ namespace ippl {
      */
     template <class PLayout, class... Properties>
     class ParticleBase {
-
     public:
         using vector_type            = typename PLayout::vector_type;
         using index_type             = typename PLayout::index_type;
-        using particle_position_type = typename PLayout::particle_position_type ;
+        using particle_position_type = typename PLayout::particle_position_type;
         using particle_index_type    = ParticleAttrib<index_type>;
 
         using Layout_t              = PLayout;
@@ -118,14 +118,15 @@ namespace ippl {
          */
         ParticleBase(Layout_t& layout);
 
-
         /* cannot use '= default' since we get a
          * compiler warning otherwise:
-         * warning: calling a __host__ function("std::vector< ::ippl::detail::ParticleAttribBase *, ::std::allocator<
-         * ::ippl::detail::ParticleAttribBase *> > ::~vector") from a __host__ __device__ function("ippl::ParticleBase<
+         * warning: calling a __host__ function("std::vector< ::ippl::detail::ParticleAttribBase *,
+         * ::std::allocator<
+         * ::ippl::detail::ParticleAttribBase *> > ::~vector") from a __host__ __device__
+         * function("ippl::ParticleBase<
          * ::ippl::ParticleLayout<double, (unsigned int)3u> > ::~ParticleBase") is not allowed
          */
-        ~ParticleBase() {} // = default; //{ }
+        ~ParticleBase() {}  // = default; //{ }
 
         /*!
          * Initialize the particle layout. Needs to be called
@@ -138,8 +139,7 @@ namespace ippl {
          * @returns processor local number of particles
          */
         size_type getLocalNum() const { return localNum_m; }
-        
-        
+
         void setLocalNum(size_type size) { localNum_m = size; }
 
         /*!
@@ -151,23 +151,18 @@ namespace ippl {
          * @returns particle layout
          */
         const Layout_t& getLayout() const { return *layout_m; }
- 
+
         /*!
          * Set all boundary conditions
          * @param bc the boundary conditions
          */
-        void setParticleBC(const bc_container_type& bcs) {
-            layout_m->setParticleBC(bcs);
-        }
+        void setParticleBC(const bc_container_type& bcs) { layout_m->setParticleBC(bcs); }
 
         /*!
          * Set all boundary conditions to this BC
          * @param bc the boundary conditions
          */
-        void setParticleBC(BC bc) {
-            layout_m->setParticleBC(bc);
-        }
-
+        void setParticleBC(BC bc) { layout_m->setParticleBC(bc); }
 
         /*!
          * Add particle attribute
@@ -175,16 +170,12 @@ namespace ippl {
          */
         void addAttribute(detail::ParticleAttribBase<Properties...>& pa);
 
-
         /*!
          * Get particle attribute
          * @param i attribute number in container
          * @returns a pointer to the attribute
          */
-        attribute_type* getAttribute(size_t i) {
-            return attributes_m[i];
-        }
-
+        attribute_type* getAttribute(size_t i) { return attributes_m[i]; }
 
         /*!
          * @returns the number of attributes
@@ -192,7 +183,6 @@ namespace ippl {
         typename attribute_container_t::size_type getAttributeNum() const {
             return attributes_m.size();
         }
-
 
         /*!
          * Create nLocal processor local particles
@@ -227,7 +217,6 @@ namespace ippl {
          */
         void serialize(detail::Archive<Properties...>& ar, size_type nsends);
 
-
         /*!
          * Deserialize to do MPI calls.
          * @param ar archive
@@ -241,7 +230,7 @@ namespace ippl {
          */
         size_type packedSize(const size_type count) const;
 
-//     protected:
+        //     protected:
 
         /*!
          * Fill attributes of buffer.
@@ -281,7 +270,7 @@ namespace ippl {
         hash_type deleteIndex_m;
         hash_type keepIndex_m;
     };
-}
+}  // namespace ippl
 
 #include "Particle/ParticleBase.hpp"
 

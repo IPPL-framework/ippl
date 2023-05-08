@@ -20,20 +20,19 @@
 
 #include <Kokkos_Core.hpp>
 
-#include "Expression/IpplExpressions.h"
-#include "Types/ViewTypes.h"
-#include "Types/IpplTypes.h"
+#include <cstdlib>
+#include <iostream>
 
-#include "FieldLayout/FieldLayout.h"
+#include "Types/IpplTypes.h"
 
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
+#include "Utility/ViewUtils.h"
+
+#include "Expression/IpplExpressions.h"
 
 #include "Field/HaloCells.h"
-
-#include <iostream>
-#include <cstdlib>
-
+#include "FieldLayout/FieldLayout.h"
 
 namespace ippl {
     class Index;
@@ -47,13 +46,13 @@ namespace ippl {
      * @class BareField
      * @tparam T data type
      * @tparam Dim field dimension
-     * @warning The implementation currently only supports 3-dimensional fields. The reason are runtime issues
-     * with "if constrexpr" in the assignment operator when running on GPU.
+     * @warning The implementation currently only supports 3-dimensional fields. The reason are
+     * runtime issues with "if constrexpr" in the assignment operator when running on GPU.
      */
-    template<typename T,  unsigned Dim>
-    class BareField : public detail::Expression<BareField<T, Dim>, sizeof(typename detail::ViewType<T, Dim>::view_type)>
-    {
-
+    template <typename T, unsigned Dim>
+    class BareField
+        : public detail::Expression<BareField<T, Dim>,
+                                    sizeof(typename detail::ViewType<T, Dim>::view_type)> {
     public:
         using Layout_t = FieldLayout<Dim>;
 
@@ -61,10 +60,10 @@ namespace ippl {
         using Domain_t = NDIndex<Dim>;
 
         //! View type storing the data
-        using view_type = typename detail::ViewType<T, Dim>::view_type;
+        using view_type  = typename detail::ViewType<T, Dim>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
-        using policy_type = typename detail::RangePolicy<Dim>::policy_type;
-
+        template <typename Tag = void>
+        using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
 
         /*! A default constructor, which should be used only if the user calls the
          * 'initialize' function before doing anything else.  There are no special
@@ -79,7 +78,9 @@ namespace ippl {
          */
         BareField(Layout_t& l, int nghost = 1);
 
-        BareField(const BareField&) = default;
+        BareField(const BareField&);
+
+        BareField& operator=(const BareField&);
 
         // Destroy the BareField.
         ~BareField() = default;
@@ -89,9 +90,8 @@ namespace ippl {
          * @tparam Args... variadic template specifying the individiual
          * dimension arguments
          */
-        template<typename ...Args>
+        template <typename... Args>
         void resize(Args... args);
-
 
         /*!
          * Initialize the field, if it was constructed from the default constructor.
@@ -112,7 +112,6 @@ namespace ippl {
          */
         detail::size_type size(unsigned d) const { return owned_m[d].length(); }
 
-
         /*!
          * Index domain of the local field.
          * @returns the index domain.
@@ -123,9 +122,7 @@ namespace ippl {
          * Index domain of the allocated field.
          * @returns the allocated index domain (including ghost cells)
          */
-        const Domain_t getAllocated() const {
-            return owned_m.grow(nghost_m);
-        }
+        const Domain_t getAllocated() const { return owned_m.grow(nghost_m); }
 
         int getNghost() const { return nghost_m; }
 
@@ -133,16 +130,13 @@ namespace ippl {
 
         void accumulateHalo();
 
-
         // Access to the layout.
-        Layout_t &getLayout() const
-        {
+        Layout_t& getLayout() const {
             PAssert(layout_m != 0);
             return *layout_m;
         }
 
-
-        const Index& getIndex(unsigned d) const {return getLayout().getDomain()[d];}
+        const Index& getIndex(unsigned d) const { return getLayout().getDomain()[d]; }
         const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
 
         detail::HaloCells<T, Dim>& getHalo() { return halo_m; }
@@ -167,39 +161,29 @@ namespace ippl {
          * @param args view indices
          * @returns a view element
          */
-        template<typename ...Args>
-        KOKKOS_INLINE_FUNCTION
-        T operator() (Args... args) const {
+        template <typename... Args>
+        KOKKOS_INLINE_FUNCTION T operator()(Args... args) const {
             return dview_m(args...);
         }
 
+        view_type& getView() { return dview_m; }
 
-        view_type& getView() {
-            return dview_m;
-        }
+        const view_type& getView() const { return dview_m; }
 
-
-        const view_type& getView() const {
-            return dview_m;
-        }
-
-        HostMirror getHostMirror() {
-            return Kokkos::create_mirror(dview_m);
-        }
+        HostMirror getHostMirror() { return Kokkos::create_mirror(dview_m); }
 
         /*!
-         * Generate the 3D range policy for iterating over the field,
+         * Generate the range policy for iterating over the field,
          * excluding ghost layers
+         * @tparam Tag an optional tag for the range policy
          * @param nghost Number of ghost layers to include in the range policy (default 0)
          * @return Range policy for iterating over the field and nghost of the ghost layers
          */
-        policy_type getRangePolicy(const int nghost = 0) const {
+        template <typename Tag = void>
+        policy_type<Tag> getFieldRangePolicy(const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
             const size_t shift = nghost_m - nghost;
-            return policy_type({shift, shift, shift},
-                               {dview_m.extent(0) - shift,
-                                dview_m.extent(1) - shift,
-                                dview_m.extent(2) - shift});
+            return getRangePolicy<Dim, Tag>(dview_m, shift);
         }
 
         /*!
@@ -219,6 +203,8 @@ namespace ippl {
         T min(int nghost = 0) const;
         T prod(int nghost = 0) const;
 
+    protected:
+        virtual void swap(BareField& other);
 
     private:
         //! Number of ghost layers on each field boundary
@@ -240,8 +226,10 @@ namespace ippl {
         //! How the arrays are laid out.
         Layout_t* layout_m;
     };
-}
+
+}  // namespace ippl
 
 #include "Field/BareField.hpp"
+#include "Field/BareFieldOperations.hpp"
 
 #endif

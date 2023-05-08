@@ -23,24 +23,21 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim,
-              class M=UniformCartesian<double, Dim>,
-              class C=typename M::DefaultCentering>
-    class Electrostatics : public Solver<Tlhs, Trhs, Dim, M, C>
-    {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    class Electrostatics : public Solver<Tlhs, Trhs, Dim, Mesh, Centering> {
     public:
-        using grad_type = Field<Vector<Tlhs, Dim>, Dim, M, C>;
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
+        using grad_type = Field<Vector<Tlhs, Dim>, Dim, Mesh, Centering>;
+        using lhs_type  = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
+        using rhs_type  = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
 
         /*!
          * Represents the types of fields that should
          * be output by the solver
          */
         enum OutputType {
-            SOL             = 0b01,
-            GRAD            = 0b10,
-            SOL_AND_GRAD    = 0b11
+            SOL          = 0b01,
+            GRAD         = 0b10,
+            SOL_AND_GRAD = 0b11
         };
 
         /*!
@@ -48,16 +45,14 @@ namespace ippl {
          * desired output type defaults to solution only
          */
         Electrostatics()
-            : Solver<Tlhs, Trhs, Dim, M, C>()
-            , grad_mp(nullptr)
-        {
+            : Solver<Tlhs, Trhs, Dim, Mesh, Centering>()
+            , grad_mp(nullptr) {
             setDefaultParameters();
         }
 
         Electrostatics(lhs_type& lhs, rhs_type& rhs)
-            : Solver<Tlhs, Trhs, Dim, M, C>(lhs, rhs)
-            , grad_mp(nullptr)
-        {
+            : Solver<Tlhs, Trhs, Dim, Mesh, Centering>(lhs, rhs)
+            , grad_mp(nullptr) {
             setDefaultParameters();
         }
 
@@ -74,15 +69,13 @@ namespace ippl {
          */
         virtual void solve() = 0;
 
-        virtual ~Electrostatics() { }
+        virtual ~Electrostatics() {}
 
     protected:
         grad_type* grad_mp;
 
-        virtual void setDefaultParameters() override {
-            this->params_m.add("output_type", SOL);
-        }
+        virtual void setDefaultParameters() override { this->params_m.add("output_type", SOL); }
     };
-}
+}  // namespace ippl
 
 #endif

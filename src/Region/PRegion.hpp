@@ -35,118 +35,88 @@
 
 namespace ippl {
     template <typename T>
-    KOKKOS_FUNCTION
-    PRegion<T>::PRegion()
-    : PRegion(0, 1)
-    { }
-
+    KOKKOS_FUNCTION PRegion<T>::PRegion()
+        : PRegion(0, 1) {}
 
     template <typename T>
-    KOKKOS_FUNCTION
-    PRegion<T>::PRegion(T b)
-    : PRegion(0, b)
-    { }
-
+    KOKKOS_FUNCTION PRegion<T>::PRegion(T b)
+        : PRegion(0, b) {}
 
     template <typename T>
-    KOKKOS_FUNCTION
-    PRegion<T>::PRegion(T a, T b)
-    : a_m(a)
-    , b_m(b)
-    {
+    KOKKOS_FUNCTION PRegion<T>::PRegion(T a, T b)
+        : a_m(a)
+        , b_m(b) {
         PAssert(a_m < b_m);
     }
 
-
     template <typename T>
-    KOKKOS_FUNCTION
-    PRegion<T>::PRegion(const PRegion<T>& pregion) {
+    KOKKOS_FUNCTION PRegion<T>::PRegion(const PRegion<T>& pregion) {
         a_m = pregion.a_m;
         b_m = pregion.b_m;
     }
 
-
     template <typename T>
-    KOKKOS_INLINE_FUNCTION
-    PRegion<T>& PRegion<T>::operator=(const PRegion<T>& pregion) {
+    KOKKOS_INLINE_FUNCTION PRegion<T>& PRegion<T>::operator=(const PRegion<T>& pregion) {
         a_m = pregion.a_m;
         b_m = pregion.b_m;
         return *this;
     }
 
-
     template <typename T>
-    KOKKOS_INLINE_FUNCTION
-    T PRegion<T>::min() const noexcept {
+    KOKKOS_INLINE_FUNCTION T PRegion<T>::min() const noexcept {
         return a_m;
     }
 
-
     template <typename T>
-    KOKKOS_INLINE_FUNCTION
-    T PRegion<T>::max() const noexcept {
+    KOKKOS_INLINE_FUNCTION T PRegion<T>::max() const noexcept {
         return b_m;
     }
 
-
     template <typename T>
-    KOKKOS_INLINE_FUNCTION
-    T PRegion<T>::length() const noexcept {
+    KOKKOS_INLINE_FUNCTION T PRegion<T>::length() const noexcept {
         return b_m - a_m;
     }
 
-
     template <typename T>
-    KOKKOS_INLINE_FUNCTION
-    bool PRegion<T>::empty() const noexcept {
+    KOKKOS_INLINE_FUNCTION bool PRegion<T>::empty() const noexcept {
         return (a_m == b_m);
     }
 
-
     template <typename T>
-    KOKKOS_INLINE_FUNCTION
-    PRegion<T>& PRegion<T>::operator+=(T t) noexcept {
+    KOKKOS_INLINE_FUNCTION PRegion<T>& PRegion<T>::operator+=(T t) noexcept {
         a_m += t;
         b_m += t;
         return *this;
     }
 
-
     template <typename T>
-    KOKKOS_INLINE_FUNCTION
-    PRegion<T>& PRegion<T>::operator-=(T t) noexcept {
+    KOKKOS_INLINE_FUNCTION PRegion<T>& PRegion<T>::operator-=(T t) noexcept {
         a_m -= t;
         b_m -= t;
         return *this;
     }
 
-
     template <typename T>
-    KOKKOS_INLINE_FUNCTION
-    PRegion<T>& PRegion<T>::operator*=(T t) noexcept {
+    KOKKOS_INLINE_FUNCTION PRegion<T>& PRegion<T>::operator*=(T t) noexcept {
         a_m *= t;
         b_m *= t;
         return *this;
     }
 
-
     template <typename T>
-    KOKKOS_INLINE_FUNCTION
-    PRegion<T>& PRegion<T>::operator/=(T t) noexcept {
+    KOKKOS_INLINE_FUNCTION PRegion<T>& PRegion<T>::operator/=(T t) noexcept {
         if (t != 0) {
-        a_m /= t;
-        b_m /= t;
+            a_m /= t;
+            b_m /= t;
         }
         return *this;
     }
 
-
     template <typename T>
-    inline
-    std::ostream& operator<<(std::ostream& out, const PRegion<T>& r) {
+    inline std::ostream& operator<<(std::ostream& out, const PRegion<T>& r) {
         out << '[' << r.min();
         out << ',' << r.max();
         out << ')';
         return out;
     }
-}
+}  // namespace ippl

@@ -2,17 +2,17 @@
 #include "Ippl.h"
 
 #include <iostream>
-#include <typeinfo>
 #include <string>
+#include <typeinfo>
 
 #include "Electrostatics.h"
 
 constexpr unsigned int dim = 3;
+using Mesh_t               = ippl::UniformCartesian<double, dim>;
+using Centering_t          = Mesh_t::DefaultCentering;
 
-class TestSolver : public ippl::Electrostatics<double, double, dim>
-{
+class TestSolver : public ippl::Electrostatics<double, double, dim, Mesh_t, Centering_t> {
 public:
-
     void solve() override {
         *rhs_mp = *lhs_mp + *rhs_mp;
 
@@ -22,32 +22,30 @@ public:
     }
 };
 
-int main(int argc, char *argv[]) {
-
-    Ippl ippl(argc,argv);
-
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
 
     int pt = 4;
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
 
-    ippl::e_dim_tag allParallel[dim];    // Specifies SERIAL, PARALLEL dims
-    for (unsigned int d=0; d<dim; d++)
+    ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
+    for (unsigned int d = 0; d < dim; d++)
         allParallel[d] = ippl::SERIAL;
 
     // all parallel layout, standard domain, normal axis order
-    ippl::FieldLayout<dim> layout(owned,allParallel);
+    ippl::FieldLayout<dim> layout(owned, allParallel);
 
-    //Unit box
-    double dx = 1.0 / double(pt);
-    ippl::Vector<double, dim> hx = {dx, dx, dx};
+    // Unit box
+    double dx                        = 1.0 / double(pt);
+    ippl::Vector<double, dim> hx     = {dx, dx, dx};
     ippl::Vector<double, dim> origin = {0, 0, 0};
-    ippl::UniformCartesian<double, dim> mesh(owned, hx, origin);
+    Mesh_t mesh(owned, hx, origin);
 
-    typedef ippl::Field<double, dim> field_type;
+    typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
     field_type lhs(mesh, layout), rhs(mesh, layout);
 
-    typedef ippl::Field<ippl::Vector<double, dim>, dim> vfield_type;
+    typedef ippl::Field<ippl::Vector<double, dim>, dim, Mesh_t, Centering_t> vfield_type;
     vfield_type grad(mesh, layout);
 
     lhs = 1.0;

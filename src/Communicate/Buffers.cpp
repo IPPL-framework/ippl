@@ -33,20 +33,22 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
+#include "Ippl.h"
+
 #include "Communicate.h"
 
 namespace ippl {
 
-        void Communicate::setDefaultOverallocation(double factor) {
-            defaultOveralloc_m = factor;
-        }
+    void Communicate::setDefaultOverallocation(double factor) {
+        defaultOveralloc_m = factor;
+    }
 
-        void Communicate::deleteBuffer(int id) {
-            buffers_m.erase(id);
-        }
+    void Communicate::deleteBuffer(int id) {
+        buffers_m.erase(id);
+    }
 
-        void Communicate::deleteAllBuffers() {
-            buffers_m.clear();
-        }
+    void Communicate::deleteAllBuffers() {
+        buffers_m.clear();
+    }
 
-}
+}  // namespace ippl

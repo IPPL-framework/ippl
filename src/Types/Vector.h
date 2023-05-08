@@ -18,9 +18,9 @@
 #ifndef IPPL_Vector_H
 #define IPPL_Vector_H
 
-#include "Expression/IpplExpressions.h"
-
 #include <initializer_list>
+
+#include "Expression/IpplExpressions.h"
 
 namespace ippl {
     /*!
@@ -32,19 +32,18 @@ namespace ippl {
      * @tparam T intrinsic vector data type
      * @tparam Dim vector dimension
      */
-    template<typename T, unsigned Dim>
+    template <typename T, unsigned Dim>
     class Vector : public detail::Expression<Vector<T, Dim>, sizeof(T) * Dim> {
     public:
         typedef T value_type;
         static constexpr unsigned dim = Dim;
 
         KOKKOS_FUNCTION
-        Vector() : Vector(value_type(0)) { }
+        Vector()
+            : Vector(value_type(0)) {}
 
-
-        template<typename E, size_t N>
-        KOKKOS_FUNCTION
-        Vector(const detail::Expression<E, N>& expr);
+        template <typename E, size_t N>
+        KOKKOS_FUNCTION Vector(const detail::Expression<E, N>& expr);
 
         KOKKOS_DEFAULTED_FUNCTION
         Vector(const Vector<T, Dim>& v) = default;
@@ -64,51 +63,48 @@ namespace ippl {
         Vector(const std::initializer_list<T>& list);
 
         KOKKOS_FUNCTION
-        ~Vector() { }
-
+        ~Vector() {}
 
         // Get and Set Operations
-        KOKKOS_INLINE_FUNCTION
-        value_type& operator[](unsigned int i);
+        KOKKOS_INLINE_FUNCTION value_type& operator[](unsigned int i);
 
-        KOKKOS_INLINE_FUNCTION
-        value_type operator[](unsigned int i) const;
+        KOKKOS_INLINE_FUNCTION value_type operator[](unsigned int i) const;
 
-        KOKKOS_INLINE_FUNCTION
-        value_type& operator()(unsigned int i);
+        KOKKOS_INLINE_FUNCTION value_type& operator()(unsigned int i);
 
-        KOKKOS_INLINE_FUNCTION
-        value_type operator()(unsigned int i) const;
+        KOKKOS_INLINE_FUNCTION value_type operator()(unsigned int i) const;
 
 	KOKKOS_INLINE_FUNCTION
 	size_t size() const;
 
         // Assignment Operators
-        template<typename E, size_t N>
-        KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator=(const detail::Expression<E, N>& expr);
+        template <typename E, size_t N>
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator=(const detail::Expression<E, N>& expr);
 
-        template<typename E, size_t N>
-        KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator+=(const detail::Expression<E, N>& expr);
+        template <typename E, size_t N>
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator+=(const detail::Expression<E, N>& expr);
 
-        template<typename E, size_t N>
-        KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator-=(const detail::Expression<E, N>& expr);
+        template <typename E, size_t N>
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator-=(const detail::Expression<E, N>& expr);
 
-        template<typename E, size_t N>
-        KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator*=(const detail::Expression<E, N>& expr);
+        template <typename E, size_t N>
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator*=(const detail::Expression<E, N>& expr);
 
-        template<typename E, size_t N>
-        KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& operator/=(const detail::Expression<E, N>& expr);
+        template <typename E, size_t N>
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator/=(const detail::Expression<E, N>& expr);
+
+        using iterator       = T*;
+        using const_iterator = const T*;
+        KOKKOS_INLINE_FUNCTION constexpr iterator begin();
+        KOKKOS_INLINE_FUNCTION constexpr iterator end();
+        KOKKOS_INLINE_FUNCTION constexpr const_iterator begin() const;
+        KOKKOS_INLINE_FUNCTION constexpr const_iterator end() const;
 
     private:
         T data_m[Dim];
 	size_t size_m = Dim;
     };
-}
+}  // namespace ippl
 
 #include "Vector.hpp"
 

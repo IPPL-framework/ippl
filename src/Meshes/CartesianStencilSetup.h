@@ -2,7 +2,7 @@
 /***************************************************************************
  *
  * The IPPL Framework
- * 
+ *
  *
  * Visit http://people.web.psi.ch/adelmann/ for more details
  *
@@ -22,8 +22,10 @@
 // what kind of operation is to be done.
 //
 //----------------------------------------------------------------------
-template<unsigned Dim> struct Divergence {};
-template<unsigned Dim> struct Gradient   {};
+template <unsigned Dim>
+struct Divergence {};
+template <unsigned Dim>
+struct Gradient {};
 
 //----------------------------------------------------------------------
 //
@@ -36,23 +38,20 @@ template<unsigned Dim> struct Gradient   {};
 //
 //----------------------------------------------------------------------
 
-template<unsigned Dim, class Mesh, class From, class To>
-struct CenteredDivergence
-{
-  typedef Divergence<Dim> operator_type;
+template <unsigned Dim, class Mesh, class From, class To>
+struct CenteredDivergence {
+    typedef Divergence<Dim> operator_type;
 };
 
-template<unsigned Dim, class Mesh, class From, class To>
-class CenteredGradient
-{
-  typedef Gradient<Dim> operator_type;
+template <unsigned Dim, class Mesh, class From, class To>
+class CenteredGradient {
+    typedef Gradient<Dim> operator_type;
 };
 
-#endif // CARTESIAN_STENCIL_SETUP_H
+#endif  // CARTESIAN_STENCIL_SETUP_H
 
 /***************************************************************************
  * $RCSfile: CartesianStencilSetup.h,v $   $Author: adelmann $
  * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:28 $
- * IPPL_VERSION_ID: $Id: CartesianStencilSetup.h,v 1.1.1.1 2003/01/23 07:40:28 adelmann Exp $ 
+ * IPPL_VERSION_ID: $Id: CartesianStencilSetup.h,v 1.1.1.1 2003/01/23 07:40:28 adelmann Exp $
  ***************************************************************************/
-

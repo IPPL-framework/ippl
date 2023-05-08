@@ -24,35 +24,30 @@
 
 namespace ippl {
 
-    // Expands to a lambda that acts as a wrapper for a differential operator
-    // fun: the function for which to create the wrapper, such as ippl::laplace
-    // type: the argument type, which should match the LHS type for the solver
-    #define IPPL_SOLVER_OPERATOR_WRAPPER(fun, type)    \
-    [] (type arg) {                                    \
-        return fun(arg);                               \
+// Expands to a lambda that acts as a wrapper for a differential operator
+// fun: the function for which to create the wrapper, such as ippl::laplace
+// type: the argument type, which should match the LHS type for the solver
+#define IPPL_SOLVER_OPERATOR_WRAPPER(fun, type) \
+    [](type arg) {                              \
+        return fun(arg);                        \
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim,
-              class M=UniformCartesian<double, Dim>,
-              class C=typename M::DefaultCentering>
-    class ElectrostaticsCG : public Electrostatics<Tlhs, Trhs, Dim, M, C>
-    {
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    class ElectrostaticsCG : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
     public:
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
-        using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;
-        using algo = PCG<Tlhs, Trhs, Dim, OpRet, M, C>;
-        using Base = Electrostatics<Tlhs, Trhs, Dim, M, C>;
+        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
+        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
+        using OpRet    = UnaryMinus<detail::meta_laplace<lhs_type>>;
+        using algo     = PCG<Tlhs, Trhs, Dim, OpRet, Mesh, Centering>;
+        using Base     = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
 
         ElectrostaticsCG()
-            : Base()
-        {
+            : Base() {
             setDefaultParameters();
         }
 
         ElectrostaticsCG(lhs_type& lhs, rhs_type& rhs)
-            : Base(lhs, rhs)
-        {
+            : Base(lhs, rhs) {
             setDefaultParameters();
         }
 
@@ -71,9 +66,7 @@ namespace ippl {
          * the last time this solver was used
          * @return Iteration count of last solve
          */
-        int getIterationCount() {
-            return algo_m.getIterationCount();
-        }
+        int getIterationCount() { return algo_m.getIterationCount(); }
 
     protected:
         algo algo_m = algo();
@@ -84,6 +77,6 @@ namespace ippl {
         }
     };
 
-}
+}  // namespace ippl
 
 #endif
