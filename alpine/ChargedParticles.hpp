@@ -59,9 +59,16 @@ using VField_t = Field<Vector_t<Dim>, Dim>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
 template <unsigned Dim = 3>
-using Solver_t = std::conditional_t<
-    Dim == 1, ippl::ElectrostaticsCG<double, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>,
-    ippl::FFTPeriodicPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>;
+using CGSolver_t = ippl::ElectrostaticsCG<double, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+
+template <unsigned Dim = 3>
+using FFTSolver_t =
+    ippl::FFTPeriodicPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+
+template <unsigned Dim = 3>
+using Solver_t =
+    std::conditional_t<Dim == 2 || Dim == 3, std::variant<CGSolver_t<Dim>, FFTSolver_t<Dim>>,
+                       std::variant<CGSolver_t<Dim>>>;
 
 const double pi = std::acos(-1.0);
 
@@ -161,12 +168,14 @@ public:
     Vector_t<Dim> rmin_m;
     Vector_t<Dim> rmax_m;
 
-    double Q_m;
-
     std::string stype_m;
 
-    std::shared_ptr<Solver_t<Dim>> solver_mp;
+    double Q_m;
 
+private:
+    Solver_t<Dim> solver_m;
+
+public:
     double time_m;
 
     double rhoNorm_m;
@@ -192,11 +201,12 @@ public:
     }
 
     ChargedParticles(PLayout& pl, Vector_t<Dim> hr, Vector_t<Dim> rmin, Vector_t<Dim> rmax,
-                     ippl::e_dim_tag decomp[Dim], double Q)
+                     ippl::e_dim_tag decomp[Dim], double Q, std::string solver)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
+        , stype_m(solver)
         , Q_m(Q) {
         registerAttributes();
         for (unsigned int i = 0; i < Dim; i++) {
@@ -209,7 +219,7 @@ public:
     void setPotentialBCs() {
         // CG requires explicit periodic boundary conditions while the periodic Poisson solver
         // simply assumes them
-        if constexpr (Dim == 1) {
+        if (stype_m == "CG") {
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
                 allPeriodic[i] = std::make_shared<
                     ippl::PeriodicFace<double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
@@ -235,7 +245,7 @@ public:
         IpplTimings::startTimer(tupdateLayout);
         this->E_m.updateLayout(fl);
         this->rho_m.updateLayout(fl);
-        if constexpr (Dim == 1) {
+        if (stype_m == "CG") {
             this->phi_m.updateLayout(fl);
             phi_m.setFieldBC(allPeriodic);
         }
@@ -255,7 +265,7 @@ public:
     void initializeFields(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& fl) {
         E_m.initialize(mesh, fl);
         rho_m.initialize(mesh, fl);
-        if constexpr (Dim == 1) {
+        if (stype_m == "CG") {
             phi_m.initialize(mesh, fl);
             phi_m.setFieldBC(allPeriodic);
         }
@@ -276,7 +286,11 @@ public:
         }
         // Update
         this->updateLayout(fl, mesh, buffer, isFirstRepartition);
-        this->solver_mp->setRhs(rho_m);
+        if constexpr (Dim == 2 || Dim == 3) {
+            if (stype_m == "FFT") {
+                std::get<FFTSolver_t<Dim>>(solver_m).setRhs(rho_m);
+            }
+        }
     }
 
     bool balance(size_type totalP, const unsigned int nstep) {
@@ -388,43 +402,83 @@ public:
         }
     }
 
-    void initSolver(const ippl::ParameterList& sp) {
-        solver_mp = std::make_shared<Solver_t<Dim>>();
+    void runSolver() {
+        if (stype_m == "CG") {
+            CGSolver_t<Dim>& solver = std::get<CGSolver_t<Dim>>(solver_m);
+            solver.solve();
 
-        solver_mp->mergeParameters(sp);
+            if (Ippl::Comm->rank() == 0) {
+                std::stringstream fname;
+                fname << "data/CG_";
+                fname << Ippl::Comm->size();
+                fname << ".csv";
 
-        solver_mp->setRhs(rho_m);
+                Inform log(NULL, fname.str().c_str(), Inform::APPEND);
+                int iterations = solver.getIterationCount();
+                // Assume the dummy solve is the first call
+                if (time_m == 0 && iterations == 0) {
+                    log << "time,residue,iterations" << endl;
+                }
+                // Don't print the dummy solve
+                if (time_m > 0 || iterations > 0) {
+                    log << time_m << "," << solver.getResidue() << "," << iterations << endl;
+                }
+            }
+            Ippl::Comm->barrier();
+        } else if (stype_m == "FFT") {
+            if constexpr (Dim == 2 || Dim == 3) {
+                std::get<FFTSolver_t<Dim>>(solver_m).solve();
+            }
+        } else {
+            throw std::runtime_error("Unknown solver type");
+        }
+    }
 
-        if constexpr (Dim == 1) {
+    template <typename Solver>
+    void initSolverWithParams(const ippl::ParameterList& sp) {
+        solver_m       = Solver();
+        Solver& solver = std::get<Solver>(solver_m);
+
+        solver.mergeParameters(sp);
+
+        solver.setRhs(rho_m);
+
+        if constexpr (std::is_same_v<Solver, CGSolver_t<Dim>>) {
             // The CG solver computes the potential directly and
             // uses this to get the electric field
-            solver_mp->setLhs(phi_m);
-            solver_mp->setGradient(E_m);
-        } else {
+            solver.setLhs(phi_m);
+            solver.setGradient(E_m);
+        } else if constexpr (std::is_same_v<Solver, FFTSolver_t<Dim>>) {
             // The periodic Poisson solver computes the electric
             // field directly
-            solver_mp->setLhs(E_m);
+            solver.setLhs(E_m);
         }
     }
 
     void initCGSolver() {
         ippl::ParameterList sp;
-        sp.add("output_type", Solver_t<Dim>::GRAD);
+        sp.add("output_type", CGSolver_t<Dim>::GRAD);
+        // Increase tolerance in the 1D case
+        sp.add("tolerance", 1e-10);
 
-        initSolver(sp);
+        initSolverWithParams<CGSolver_t<Dim>>(sp);
     }
 
     void initFFTSolver() {
-        ippl::ParameterList sp;
-        sp.add("output_type", Solver_t<Dim>::GRAD);
-        sp.add("use_heffte_defaults", false);
-        sp.add("use_pencils", true);
-        sp.add("use_reorder", false);
-        sp.add("use_gpu_aware", true);
-        sp.add("comm", ippl::p2p_pl);
-        sp.add("r2c_direction", 0);
+        if constexpr (Dim == 2 || Dim == 3) {
+            ippl::ParameterList sp;
+            sp.add("output_type", FFTSolver_t<Dim>::GRAD);
+            sp.add("use_heffte_defaults", false);
+            sp.add("use_pencils", true);
+            sp.add("use_reorder", false);
+            sp.add("use_gpu_aware", true);
+            sp.add("comm", ippl::p2p_pl);
+            sp.add("r2c_direction", 0);
 
-        initSolver(sp);
+            initSolverWithParams<FFTSolver_t<Dim>>(sp);
+        } else {
+            throw std::runtime_error("Unsupported dimensionality for FFT solver");
+        }
     }
 
     void dumpData() {

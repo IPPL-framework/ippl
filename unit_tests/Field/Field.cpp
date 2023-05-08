@@ -158,6 +158,26 @@ struct FieldVal {
     }
 };
 
+TEST_F(FieldTest, DeepCopy) {
+    auto check = []<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        *field               = 0;
+        field_type<Dim> copy = field->deepCopy();
+        copy                 = copy + 1.;
+
+        auto mirrorA = field->getHostMirror();
+        auto mirrorB = copy.getHostMirror();
+
+        Kokkos::deep_copy(mirrorA, field->getView());
+        Kokkos::deep_copy(mirrorB, copy.getView());
+
+        nestedViewLoop<Dim>(mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
+            ASSERT_DOUBLE_EQ(mirrorA(args...) + 1, mirrorB(args...));
+        });
+    };
+
+    apply(check, fields);
+}
+
 TEST_F(FieldTest, Sum) {
     double val              = 1.0;
     double expected[MaxDim] = {val * nPoints[0]};

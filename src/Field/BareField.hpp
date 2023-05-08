@@ -38,6 +38,13 @@ namespace ippl {
         , layout_m(nullptr) {}
 
     template <typename T, unsigned Dim>
+    BareField<T, Dim> BareField<T, Dim>::deepCopy() const {
+        BareField<T, Dim> copy(*layout_m, nghost_m);
+        Kokkos::deep_copy(copy.dview_m, dview_m);
+        return copy;
+    }
+
+    template <typename T, unsigned Dim>
     BareField<T, Dim>::BareField(Layout_t& l, int nghost)
         : nghost_m(nghost)
         //     , owned_m(0)
@@ -66,9 +73,8 @@ namespace ippl {
 #if __cplusplus < 202002L
     namespace detail {
         template <typename T, unsigned Dim, size_t... Idx>
-        KOKKOS_INLINE_FUNCTION void resizeBareField(BareField<T, Dim>& bf,
-                                                    const NDIndex<Dim>& owned, const int nghost,
-                                                    const std::index_sequence<Idx...>&) {
+        void resizeBareField(BareField<T, Dim>& bf, const NDIndex<Dim>& owned, const int nghost,
+                             const std::index_sequence<Idx...>&) {
             bf.resize((owned[Idx].length() + 2 * nghost)...);
         };
     }  // namespace detail

@@ -72,13 +72,19 @@ namespace ippl {
          */
         BareField();
 
+        BareField(const BareField&) = default;
+
         /*! Constructor for a BareField. The default constructor is deleted.
          * @param l of field
          * @param nghost number of ghost layers
          */
         BareField(Layout_t& l, int nghost = 1);
 
-        BareField(const BareField&) = default;
+        /*!
+         * Creates a new BareField with the same properties and contents
+         * @return A deep copy of the field
+         */
+        BareField deepCopy() const;
 
         // Destroy the BareField.
         ~BareField() = default;

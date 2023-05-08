@@ -34,6 +34,14 @@ namespace ippl {
         , mesh_m(nullptr)
         , bc_m() {}
 
+    template <class T, unsigned Dim, class Mesh, class Centering>
+    Field<T, Dim, Mesh, Centering> Field<T, Dim, Mesh, Centering>::deepCopy() const {
+        Field<T, Dim, Mesh, Centering> copy(*mesh_m, this->getLayout(), this->getNghost());
+        Kokkos::deep_copy(copy.getView(), this->getView());
+
+        return copy;
+    }
+
     //////////////////////////////////////////////////////////////////////////
     // Constructors which include a Mesh object as argument
     template <class T, unsigned Dim, class Mesh, class Centering>
