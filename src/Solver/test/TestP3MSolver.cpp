@@ -8,6 +8,11 @@
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
+    Inform msg(argv[0]);
+    Inform msg2all(argv[0], INFORM_ALL_NODES);
+
+    int myRank = Ippl::Comm->rank();
+
     constexpr unsigned int dim = 3;
 
     using Mesh_t      = ippl::UniformCartesian<double, 3>;
@@ -65,18 +70,24 @@ int main(int argc, char* argv[]) {
         "Assign rho field", ippl::getRangePolicy<3>(view_rho, nghost),
         KOKKOS_LAMBDA(const int i, const int j, const int k) { view_rho(i, j, k) = 2.0; });
 
-    std::cout << "Rho: " << std::endl;
-    field.write();
+    msg << "Rho: " << endl;
+    if (myRank == 0) {
+        field.write();
+    }
 
-    Solver_t solver(efield, field, params);
+    Solver_t solver(efield, field, params, 2);
 
     solver.solve();
 
-    std::cout << "Computed phi: " << std::endl;
-    field.write();
+    msg << "Computed phi: " << endl;
+    if (myRank == 0) {
+        field.write();
+    }
 
-    std::cout << "Efield: " << std::endl;
-    efield.write();
+    msg << "Efield: " << endl;
+    if (myRank == 0) {
+        efield.write();
+    }
 
     return 0;
 }
