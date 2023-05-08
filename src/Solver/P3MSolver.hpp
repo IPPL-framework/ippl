@@ -261,7 +261,6 @@ namespace ippl {
         const double ke = 2.532638e8;
 
         // Kokkos parallel for loop to find (0,0,0) point and regularize
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         Kokkos::parallel_for(
             "Assign Green's function ", ippl::getRangePolicy<3>(view, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
