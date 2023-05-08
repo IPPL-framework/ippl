@@ -14,8 +14,8 @@
 ////
 //
 
-#include <algorithm>
 #include <Kokkos_MathematicalFunctions.hpp>
+#include <algorithm>
 
 #include "Utility/IpplException.h"
 
