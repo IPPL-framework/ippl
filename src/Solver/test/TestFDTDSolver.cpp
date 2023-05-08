@@ -136,10 +136,7 @@ int main(int argc, char *argv[]) {
     auto ldom = layout.getLocalNDIndex();
 
     Kokkos::parallel_for("Assign gaussian source at center",
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
-                                                   {view_rho.extent(0) - nghost,
-                                                    view_rho.extent(1) - nghost,
-                                                    view_rho.extent(2) - nghost}),
+            ippl::getRangePolicy<3>(view_rho, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k){
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;
@@ -163,10 +160,7 @@ int main(int argc, char *argv[]) {
         msg << "Timestep number = " << it << " , time = " << it*dt << endl;
 
         Kokkos::parallel_for("Assign gaussian source at center",
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>({nghost, nghost, nghost},
-                                                   {view_rho.extent(0) - nghost,
-                                                    view_rho.extent(1) - nghost,
-                                                    view_rho.extent(2) - nghost}),
+            ippl::getRangePolicy<3>(view_rho, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k){
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;

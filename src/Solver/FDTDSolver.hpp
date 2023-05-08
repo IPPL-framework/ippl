@@ -88,12 +88,9 @@ namespace ippl {
         const int nghost_a = aN_m.getNghost();
         const auto& ldom = layout_mp->getLocalNDIndex(); 
 
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
         // compute scalar potential at next time-step using Finite Differences
         Kokkos::parallel_for("Scalar potential update",
-                mdrange_type({nghost_phi, nghost_phi, nghost_phi},
-                {view_phiN.extent(0)-nghost_phi, view_phiN.extent(1)-nghost_phi, view_phiN.extent(2)-nghost_phi}),
+                ippl::getRangePolicy<3>(view_phiN, nghost_phi),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
 
                 // global indices
@@ -144,8 +141,7 @@ namespace ippl {
         // compute vector potential at next time-step
         for (size_t gd = 0; gd < Dim; ++gd) {
             Kokkos::parallel_for("Vector potential update",
-                    mdrange_type({nghost_a, nghost_a, nghost_a},
-                    {view_aN.extent(0)-nghost_a, view_aN.extent(1)-nghost_a, view_aN.extent(2)-nghost_a}),
+                ippl::getRangePolicy<3>(view_aN, nghost_a),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
 
                     // global indices
