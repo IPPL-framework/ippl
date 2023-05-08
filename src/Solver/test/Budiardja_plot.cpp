@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     // number of interations
     const int n = 5;
 
-    using Mesh_t = ippl::UniformCartesian<double, 3>;
+    using Mesh_t      = ippl::UniformCartesian<double, 3>;
     using Centering_t = Mesh_t::DefaultCentering;
 
     // number of gridpoints to iterate over
@@ -77,10 +77,7 @@ int main(int argc, char* argv[]) {
         const auto& ldom                   = layout.getLocalNDIndex();
 
         Kokkos::parallel_for(
-            "Assign rho field",
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                {nghost, nghost, nghost}, {view_rho.extent(0) - nghost, view_rho.extent(1) - nghost,
-                                           view_rho.extent(2) - nghost}),
+            "Assign rho field", ippl::getRangePolicy<3>(view_rho, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // go from local to global indices
                 const int ig = i + ldom[0].first() - nghost;
@@ -99,11 +96,7 @@ int main(int argc, char* argv[]) {
         typename field::view_type view_exact = exact.getView();
 
         Kokkos::parallel_for(
-            "Assign exact field",
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                {nghost, nghost, nghost},
-                {view_exact.extent(0) - nghost, view_exact.extent(1) - nghost,
-                 view_exact.extent(2) - nghost}),
+            "Assign exact field", ippl::getRangePolicy<3>(view_exact, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;
@@ -125,9 +118,8 @@ int main(int argc, char* argv[]) {
         fftParams.add("r2c_direction", 0);
 
         // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(rho,
-                                                                                                  fftParams,
-                                                                                                  "HOCKNEY");
+        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(
+            rho, fftParams, "HOCKNEY");
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

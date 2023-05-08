@@ -38,6 +38,13 @@ namespace ippl {
         , layout_m(nullptr) {}
 
     template <typename T, unsigned Dim>
+    BareField<T, Dim> BareField<T, Dim>::deepCopy() const {
+        BareField<T, Dim> copy(*layout_m, nghost_m);
+        Kokkos::deep_copy(copy.dview_m, dview_m);
+        return copy;
+    }
+
+    template <typename T, unsigned Dim>
     BareField<T, Dim>::BareField(Layout_t& l, int nghost)
         : nghost_m(nghost)
         //     , owned_m(0)
@@ -63,20 +70,28 @@ namespace ippl {
         setup();
     }
 
+#if __cplusplus < 202002L
+    namespace detail {
+        template <typename T, unsigned Dim, size_t... Idx>
+        void resizeBareField(BareField<T, Dim>& bf, const NDIndex<Dim>& owned, const int nghost,
+                             const std::index_sequence<Idx...>&) {
+            bf.resize((owned[Idx].length() + 2 * nghost)...);
+        };
+    }  // namespace detail
+#endif
+
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::setup() {
-        static_assert(Dim == 3, "Only 3-dimensional fields supported at the momment!");
-
         owned_m = layout_m->getLocalNDIndex();
 
-        if constexpr (Dim == 1) {
-            this->resize(owned_m[0].length() + 2 * nghost_m);
-        } else if constexpr (Dim == 2) {
-            this->resize(owned_m[0].length() + 2 * nghost_m, owned_m[1].length() + 2 * nghost_m);
-        } else if constexpr (Dim == 3) {
-            this->resize(owned_m[0].length() + 2 * nghost_m, owned_m[1].length() + 2 * nghost_m,
-                         owned_m[2].length() + 2 * nghost_m);
-        }
+#if __cplusplus < 202002L
+        detail::resizeBareField(*this, owned_m, nghost_m, std::make_index_sequence<Dim>{});
+#else
+        auto resize = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
+            this->resize((owned_m[Idx].length() + 2 * nghost_m)...);
+        };
+        resize(std::make_index_sequence<Dim>{});
+#endif
     }
 
     template <typename T, unsigned Dim>
@@ -109,29 +124,23 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-        Kokkos::parallel_for(
-            "BareField::operator=(T)",
-            mdrange_type({0, 0, 0}, {dview_m.extent(0), dview_m.extent(1), dview_m.extent(2)}),
-            KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                dview_m(i, j, k) = x;
-            });
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+        ippl::parallel_for(
+            "BareField::operator=(T)", getRangePolicy<Dim>(dview_m),
+            KOKKOS_CLASS_LAMBDA(const index_array_type& args) { apply<Dim>(dview_m, args) = x; });
         return *this;
     }
 
     template <typename T, unsigned Dim>
     template <typename E, size_t N>
     BareField<T, Dim>& BareField<T, Dim>::operator=(const detail::Expression<E, N>& expr) {
-        using capture_type = detail::CapturedExpression<E, N>;
-        capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-        Kokkos::parallel_for(
-            "BareField::operator=(const Expression&)",
-            mdrange_type({nghost_m, nghost_m, nghost_m},
-                         {dview_m.extent(0) - nghost_m, dview_m.extent(1) - nghost_m,
-                          dview_m.extent(2) - nghost_m}),
-            KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                dview_m(i, j, k) = expr_(i, j, k);
+        using capture_type     = detail::CapturedExpression<E, N>;
+        capture_type expr_     = reinterpret_cast<const capture_type&>(expr);
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+        ippl::parallel_for(
+            "BareField::operator=(const Expression&)", getRangePolicy<Dim>(dview_m, nghost_m),
+            KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(dview_m, args) = apply<Dim>(expr_, args);
             });
         return *this;
     }
@@ -139,7 +148,7 @@ namespace ippl {
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::write(std::ostream& out) const {
         Kokkos::fence();
-        detail::write<T>(dview_m, out);
+        detail::write<T, Dim>(dview_m, out);
     }
 
     template <typename T, unsigned Dim>
@@ -147,26 +156,23 @@ namespace ippl {
         write(inf.getDestination());
     }
 
-#define DefineReduction(fun, name, op, MPI_Op)                                                \
-    template <typename T, unsigned Dim>                                                       \
-    T BareField<T, Dim>::name(int nghost) const {                                             \
-        PAssert_LE(nghost, nghost_m);                                                         \
-        T temp             = 0.0;                                                             \
-        const size_t shift = nghost_m - nghost;                                               \
-        Kokkos::parallel_reduce(                                                              \
-            "fun",                                                                            \
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(                                           \
-                {shift, shift, shift}, {dview_m.extent(0) - shift, dview_m.extent(1) - shift, \
-                                        dview_m.extent(2) - shift}),                          \
-            KOKKOS_CLASS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) {    \
-                T myVal = dview_m(i, j, k);                                                   \
-                op;                                                                           \
-            },                                                                                \
-            Kokkos::fun<T>(temp));                                                            \
-        T globaltemp      = 0.0;                                                              \
-        MPI_Datatype type = get_mpi_datatype<T>(temp);                                        \
-        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());                  \
-        return globaltemp;                                                                    \
+#define DefineReduction(fun, name, op, MPI_Op)                                \
+    template <typename T, unsigned Dim>                                       \
+    T BareField<T, Dim>::name(int nghost) const {                             \
+        PAssert_LE(nghost, nghost_m);                                         \
+        T temp                 = 0.0;                                         \
+        using index_array_type = typename RangePolicy<Dim>::index_array_type; \
+        ippl::parallel_reduce(                                                \
+            "fun", getRangePolicy<Dim>(dview_m, nghost_m - nghost),           \
+            KOKKOS_CLASS_LAMBDA(const index_array_type& args, T& valL) {      \
+                T myVal = apply<Dim>(dview_m, args);                          \
+                op;                                                           \
+            },                                                                \
+            Kokkos::fun<T>(temp));                                            \
+        T globaltemp      = 0.0;                                              \
+        MPI_Datatype type = get_mpi_datatype<T>(temp);                        \
+        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Ippl::getComm());  \
+        return globaltemp;                                                    \
     }
 
     DefineReduction(Sum, sum, valL += myVal, MPI_SUM)

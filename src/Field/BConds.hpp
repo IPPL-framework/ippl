@@ -33,8 +33,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh, class Centering>
     void BConds<T, Dim, Mesh, Centering>::findBCNeighbors(Field<T, Dim, Mesh, Centering>& field) {
-        for (iterator it = bc_m.begin(); it != bc_m.end(); ++it) {
-            (*it)->findBCNeighbors(field);
+        for (auto& bc : bc_m) {
+            bc->findBCNeighbors(field);
         }
         Kokkos::fence();
         Ippl::Comm->barrier();
@@ -42,8 +42,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh, class Centering>
     void BConds<T, Dim, Mesh, Centering>::apply(Field<T, Dim, Mesh, Centering>& field) {
-        for (iterator it = bc_m.begin(); it != bc_m.end(); ++it) {
-            (*it)->apply(field);
+        for (auto& bc : bc_m) {
+            bc->apply(field);
         }
         Kokkos::fence();
         Ippl::Comm->barrier();
@@ -51,10 +51,10 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh, class Centering>
     bool BConds<T, Dim, Mesh, Centering>::changesPhysicalCells() const {
-        bool doesChange = false;
-        for (const_iterator it = bc_m.begin(); it != bc_m.end(); ++it) {
-            doesChange |= (*it)->changesPhysicalCells();
+        for (const auto& bc : bc_m) {
+            if (bc->changesPhysicalCells())
+                return true;
         }
-        return doesChange;
+        return false;
     }
 }  // namespace ippl

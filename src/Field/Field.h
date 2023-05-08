@@ -44,6 +44,14 @@ namespace ippl {
         // been properly initialized.
         Field();
 
+        Field(const Field&) = default;
+
+        /*!
+         * Creates a new Field with the same properties and contents
+         * @return A deep copy of the field
+         */
+        Field deepCopy() const;
+
         virtual ~Field() = default;
 
         // Constructors including a Mesh object as argument:
@@ -78,8 +86,6 @@ namespace ippl {
         BConds_t& getFieldBC() { return bc_m; }
         // Assignment from constants and other arrays.
         using BareField<T, Dim>::operator=;
-
-        Field(const Field&) = default;
 
     private:
         // The Mesh object, and a flag indicating if we constructed it

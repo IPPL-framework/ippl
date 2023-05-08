@@ -3,18 +3,21 @@
 
 #include <array>
 #include <iostream>
+#include <sstream>
 #include <typeinfo>
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
-    using Mesh_t = ippl::UniformCartesian<double, dim>;
-    using Centering_t = Mesh_t::DefaultCentering;
+    using Mesh_t               = ippl::UniformCartesian<double, dim>;
+    using Centering_t          = Mesh_t::DefaultCentering;
 
-    int pt = 4;
+    int pt = std::stoi(argv[1]);
     ippl::Index I(pt);
     ippl::NDIndex<dim> owned(I, I, I);
+
+    const int iterations = std::stoi(argv[2]);
 
     ippl::e_dim_tag decomp[dim];  // Specifies SERIAL, PARALLEL dims
     for (unsigned int d = 0; d < dim; d++)
@@ -41,7 +44,6 @@ int main(int argc, char* argv[]) {
     Field_t Lap(mesh, layout);
     Field_t Lap_exact(mesh, layout);
     vector_field_type vfield(mesh, layout);
-
 
     typename Field_t::view_type& view       = field.getView();
     typename Field_t::view_type& view_exact = Lap_exact.getView();
@@ -108,7 +110,13 @@ int main(int argc, char* argv[]) {
 
     Lap = 0.0;
 
-    Lap = laplace(field);
+    static auto timer = IpplTimings::getTimer("laplace");
+    for (int i = 0; i < iterations; i++) {
+        IpplTimings::startTimer(timer);
+        Lap = laplace(field);
+        IpplTimings::stopTimer(timer);
+        Ippl::fence();
+    }
 
     Lap = Lap - Lap_exact;
 
@@ -120,6 +128,10 @@ int main(int argc, char* argv[]) {
     if (Ippl::Comm->rank() == 0) {
         std::cout << "Error: " << error << std::endl;
     }
+    std::stringstream ss;
+    ss << "timing_" << pt << "pt_" << iterations << "iterations_" << Ippl::Comm->size()
+       << "ranks.dat";
+    IpplTimings::print(ss.str());
 
     return 0;
 }

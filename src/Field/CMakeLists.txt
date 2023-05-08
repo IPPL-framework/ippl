@@ -4,6 +4,7 @@ set (_SRCS
 set (_HDRS
     BareField.hpp
     BareField.h
+    BareFieldOperations.hpp
     BConds.h
     BConds.hpp
     BcTypes.h

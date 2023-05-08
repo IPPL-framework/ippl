@@ -1,12 +1,14 @@
 // Penning Trap
 //   Usage:
-//     srun ./PenningTrap <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
+//     srun ./PenningTrap
+//                  <nx> [<ny>...] <Np> <Nt> <stype>
+//                  <lbthres> --overallocate <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
 //     ny       = No. cell-centered points in the y-direction
 //     nz       = No. cell-centered points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
-//     stype    = Field solver type e.g., FFT
+//     stype    = Field solver type (FFT and CG supported)
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
 //                particle load balancing occurs. A value of 0.01 is good for many typical
@@ -14,7 +16,7 @@
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./PenningTrap 128 128 128 10000 300 FFT 0.01 1.0 --info 10
+//     srun ./PenningTrap 128 128 128 10000 300 FFT 0.01 --overallocate 1.0 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -42,6 +44,8 @@
 #include "Utility/IpplTimings.h"
 
 #include "ChargedParticles.hpp"
+
+constexpr unsigned Dim = 3;
 
 template <typename T>
 struct Newton1D {
@@ -132,7 +136,8 @@ double CDF(const double& x, const double& mu, const double& sigma) {
 }
 
 KOKKOS_FUNCTION
-double PDF(const Vector_t& xvec, const Vector_t& mu, const Vector_t& sigma, const unsigned Dim) {
+double PDF(const Vector_t<Dim>& xvec, const Vector_t<Dim>& mu, const Vector_t<Dim>& sigma,
+           const unsigned Dim) {
     double pdf = 1.0;
     double pi  = std::acos(-1.0);
 
@@ -146,11 +151,10 @@ double PDF(const Vector_t& xvec, const Vector_t& mu, const Vector_t& sigma, cons
 const char* TestName = "PenningTrap";
 
 int main(int argc, char* argv[]) {
+    static_assert(Dim == 3, "Penning trap must be 3D");
     Ippl ippl(argc, argv);
     Inform msg("PenningTrap");
     Inform msg2all("PenningTrap", INFORM_ALL_NODES);
-
-    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
     auto start                = std::chrono::high_resolution_clock::now();
     ippl::Vector<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
@@ -172,7 +176,7 @@ int main(int argc, char* argv[]) {
 
     msg << "Penning Trap " << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-    using bunch_type = ChargedParticles<PLayout_t>;
+    using bunch_type = ChargedParticles<PLayout_t<Dim>, Dim>;
 
     std::unique_ptr<bunch_type> P;
 
@@ -187,32 +191,30 @@ int main(int argc, char* argv[]) {
     }
 
     // create mesh and layout objects for this problem domain
-    Vector_t rmin(0.0);
-    Vector_t rmax(20.0);
-    double dx = rmax[0] / nr[0];
-    double dy = rmax[1] / nr[1];
-    double dz = rmax[2] / nr[2];
+    Vector_t<Dim> rmin = 0;
+    Vector_t<Dim> rmax = 20;
 
-    Vector_t hr        = {dx, dy, dz};
-    Vector_t origin    = {rmin[0], rmin[1], rmin[2]};
-    unsigned int nrMax = 2048;  // Max grid size in our studies
-    double dxFinest    = rmax[0] / nrMax;
-    const double dt    = 0.5 * dxFinest;  // size of timestep
+    Vector_t<Dim> hr     = rmax / nr;
+    Vector_t<Dim> origin = rmin;
+    unsigned int nrMax   = 2048;  // Max grid size in our studies
+    double dxFinest      = rmax[0] / nrMax;
+    const double dt      = 0.5 * dxFinest;  // size of timestep
 
     const bool isAllPeriodic = true;
-    Mesh_t mesh(domain, hr, origin);
-    FieldLayout_t FL(domain, decomp, isAllPeriodic);
-    PLayout_t PL(FL, mesh);
+    Mesh_t<Dim> mesh(domain, hr, origin);
+    FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
+    PLayout_t<Dim> PL(FL, mesh);
 
-    double Q    = -1562.5;
-    double Bext = 5.0;
-    P           = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+    double Q           = -1562.5;
+    double Bext        = 5.0;
+    std::string solver = argv[6];
+    P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
     P->nr_m = nr;
 
-    Vector_t length = rmax - rmin;
+    Vector_t<Dim> length = rmax - rmin;
 
-    Vector_t mu, sd;
+    Vector_t<Dim> mu, sd;
 
     for (unsigned d = 0; d < Dim; d++) {
         mu[d] = 0.5 * length[d];
@@ -221,12 +223,10 @@ int main(int argc, char* argv[]) {
     sd[1] = 0.05 * length[1];
     sd[2] = 0.20 * length[2];
 
-    P->E_m.initialize(mesh, FL);
-    P->rho_m.initialize(mesh, FL);
+    P->initializeFields(mesh, FL);
 
     bunch_type bunchBuffer(PL);
 
-    P->stype_m = argv[6];
     P->initSolver();
     P->time_m                 = 0.0;
     P->loadbalancethreshold_m = std::atof(argv[7]);
@@ -256,7 +256,7 @@ int main(int argc, char* argv[]) {
                 double y        = (jg + 0.5) * hr[1] + origin[1];
                 double z        = (kg + 0.5) * hr[2] + origin[2];
 
-                Vector_t xvec = {x, y, z};
+                Vector_t<Dim> xvec = {x, y, z};
 
                 rhoview(i, j, k) = PDF(xvec, mu, sd, Dim);
             });
@@ -271,10 +271,10 @@ int main(int argc, char* argv[]) {
     msg << "First domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
 
-    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
+    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> RegionLayout_t;
     const RegionLayout_t& RLayout                           = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_t Nr, Dr, minU, maxU;
+    Vector_t<Dim> Nr, Dr, minU, maxU;
     int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d < Dim; ++d) {
         Nr[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d])
@@ -298,7 +298,7 @@ int main(int argc, char* argv[]) {
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
     Kokkos::parallel_for(nloc,
-                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                         generate_random<Vector_t<Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
                              P->R.getView(), P->P.getView(), rand_pool64, mu, sd, minU, maxU));
 
     Kokkos::fence();
@@ -313,13 +313,13 @@ int main(int argc, char* argv[]) {
 
     IpplTimings::startTimer(DummySolveTimer);
     P->rho_m = 0.0;
-    P->solver_mp->solve();
+    P->runSolver();
     IpplTimings::stopTimer(DummySolveTimer);
 
     P->scatterCIC(totalP, 0, hr);
 
     IpplTimings::startTimer(SolveTimer);
-    P->solver_mp->solve();
+    P->runSolver();
     IpplTimings::stopTimer(SolveTimer);
 
     P->gatherCIC();
@@ -390,7 +390,7 @@ int main(int argc, char* argv[]) {
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
-        P->solver_mp->solve();
+        P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
         // gather E field

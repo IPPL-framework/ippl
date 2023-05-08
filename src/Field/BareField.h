@@ -24,10 +24,10 @@
 #include <iostream>
 
 #include "Types/IpplTypes.h"
-#include "Types/ViewTypes.h"
 
 #include "Utility/IpplInfo.h"
 #include "Utility/PAssert.h"
+#include "Utility/ViewUtils.h"
 
 #include "Expression/IpplExpressions.h"
 
@@ -60,9 +60,10 @@ namespace ippl {
         using Domain_t = NDIndex<Dim>;
 
         //! View type storing the data
-        using view_type   = typename detail::ViewType<T, Dim>::view_type;
-        using HostMirror  = typename view_type::host_mirror_type;
-        using policy_type = typename detail::RangePolicy<Dim>::policy_type;
+        using view_type  = typename detail::ViewType<T, Dim>::view_type;
+        using HostMirror = typename view_type::host_mirror_type;
+        template <typename Tag = void>
+        using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
 
         /*! A default constructor, which should be used only if the user calls the
          * 'initialize' function before doing anything else.  There are no special
@@ -71,13 +72,19 @@ namespace ippl {
          */
         BareField();
 
+        BareField(const BareField&) = default;
+
         /*! Constructor for a BareField. The default constructor is deleted.
          * @param l of field
          * @param nghost number of ghost layers
          */
         BareField(Layout_t& l, int nghost = 1);
 
-        BareField(const BareField&) = default;
+        /*!
+         * Creates a new BareField with the same properties and contents
+         * @return A deep copy of the field
+         */
+        BareField deepCopy() const;
 
         // Destroy the BareField.
         ~BareField() = default;
@@ -170,17 +177,17 @@ namespace ippl {
         HostMirror getHostMirror() { return Kokkos::create_mirror(dview_m); }
 
         /*!
-         * Generate the 3D range policy for iterating over the field,
+         * Generate the range policy for iterating over the field,
          * excluding ghost layers
+         * @tparam Tag an optional tag for the range policy
          * @param nghost Number of ghost layers to include in the range policy (default 0)
          * @return Range policy for iterating over the field and nghost of the ghost layers
          */
-        policy_type getRangePolicy(const int nghost = 0) const {
+        template <typename Tag = void>
+        policy_type<Tag> getFieldRangePolicy(const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
             const size_t shift = nghost_m - nghost;
-            return policy_type(
-                {shift, shift, shift},
-                {dview_m.extent(0) - shift, dview_m.extent(1) - shift, dview_m.extent(2) - shift});
+            return getRangePolicy<Dim, Tag>(dview_m, shift);
         }
 
         /*!
@@ -220,8 +227,10 @@ namespace ippl {
         //! How the arrays are laid out.
         Layout_t* layout_m;
     };
+
 }  // namespace ippl
 
 #include "Field/BareField.hpp"
+#include "Field/BareFieldOperations.hpp"
 
 #endif
