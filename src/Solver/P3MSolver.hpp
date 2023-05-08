@@ -15,6 +15,7 @@
 //
 
 #include <algorithm>
+#include <Kokkos_MathematicalFunctions.hpp>
 
 #include "Utility/IpplException.h"
 
@@ -271,8 +272,8 @@ namespace ippl {
 
                 const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
 
-                double r      = std::real(std::sqrt(view(i, j, k)));
-                view(i, j, k) = (!isOrig) * ke * (std::erf(alpha * r) / r);
+                double r      = Kokkos::real(Kokkos::sqrt(view(i, j, k)));
+                view(i, j, k) = (!isOrig) * ke * (Kokkos::erf(alpha * r) / r);
             });
 
         // perform the FFT of the Green's function for the convolution
