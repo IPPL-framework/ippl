@@ -264,7 +264,7 @@ namespace ippl {
         const int nghost                 = grn_m.getNghost();
         const auto& ldom                 = layout_mp->getLocalNDIndex();
 
-        const double ke = 2.532638e8;
+        constexpr double ke = 2.532638e8;
 
         // Kokkos parallel for loop to find (0,0,0) point and regularize
         Kokkos::parallel_for(
