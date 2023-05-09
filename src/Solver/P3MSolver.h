@@ -61,6 +61,12 @@ namespace ippl {
         // more specifically, compute the scalar potential given a density field rho
         void solve() override;
 
+        // function called in the constructor to initialize the fields
+        void initializeFields();
+
+        // compute standard Green's function
+        void greensFunction();
+
     private:
         Field_t grn_m;  // the Green's function
 
@@ -88,12 +94,6 @@ namespace ippl {
         // mesh spacing and mesh size
         Vector_t hr_m;
         Vector<int, Dim> nr_m;
-
-        // function called in the constructor to initialize the fields
-        void initializeFields();
-
-        // compute standard Green's function
-        void greensFunction();
 
     protected:
         virtual void setDefaultParameters() override {
