@@ -67,6 +67,8 @@ namespace ippl {
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::initializeFields() {
+        static_assert(Dim == 3, "Dimension other than 3 not supported in P3MSolver!");
+
         // get layout and mesh
         layout_mp = &(this->rhs_mp->getLayout());
         mesh_mp   = &(this->rhs_mp->get_mesh());
