@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
     Inform msg(argv[0]);
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
-    int myRank = Ippl::Comm->rank();
+    int ranks = Ippl::Comm->size();
 
     constexpr unsigned int dim = 3;
 
@@ -70,8 +70,8 @@ int main(int argc, char* argv[]) {
         "Assign rho field", ippl::getRangePolicy<3>(view_rho, nghost),
         KOKKOS_LAMBDA(const int i, const int j, const int k) { view_rho(i, j, k) = 2.0; });
 
-    msg << "Rho: " << endl;
-    if (myRank == 0) {
+    if (ranks == 1) {
+        msg << "Rho: " << endl;
         field.write();
     }
 
@@ -79,15 +79,17 @@ int main(int argc, char* argv[]) {
 
     solver.solve();
 
-    msg << "Computed phi: " << endl;
-    if (myRank == 0) {
+    if (ranks == 1) {
+        msg << "Computed phi: " << endl;
         field.write();
     }
 
-    msg << "Efield: " << endl;
-    if (myRank == 0) {
+    if (ranks == 1) {
+        msg << "Efield: " << endl;
         efield.write();
     }
+
+    msg << "End of test" << endl;
 
     return 0;
 }
