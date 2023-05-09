@@ -1,7 +1,6 @@
 #include "Ippl.h"
 
 #include <iostream>
-#include <typeinfo>
 
 #include "P3MSolver.h"
 
