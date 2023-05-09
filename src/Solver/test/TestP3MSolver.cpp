@@ -15,11 +15,11 @@ int main(int argc, char* argv[]) {
 
     constexpr unsigned int dim = 3;
 
-    using Mesh_t      = ippl::UniformCartesian<double, 3>;
+    using Mesh_t      = ippl::UniformCartesian<double, dim>;
     using Centering_t = Mesh_t::DefaultCentering;
 
     typedef ippl::Field<double, dim, Mesh_t, Centering_t> Field_t;
-    typedef ippl::Vector<double, 3> Vector_t;
+    typedef ippl::Vector<double, dim> Vector_t;
     typedef ippl::Field<Vector_t, dim, Mesh_t, Centering_t> VField_t;
     typedef ippl::P3MSolver<Vector_t, double, dim, Mesh_t, Centering_t> Solver_t;
 
