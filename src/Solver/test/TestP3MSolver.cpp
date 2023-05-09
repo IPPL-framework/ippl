@@ -1,0 +1,100 @@
+// This program tests the P3MSolver with a constant source rho = 2.
+// This is for comparison purposes with a reference implementation in ippl_orig.
+// I/O output is only enabled when running serially.
+// The problem size must be given by the user.
+// Usage:
+//   srun ./TestP3MSolver 16 16 16 --info 5
+
+#include "Ippl.h"
+
+#include <iostream>
+
+#include "P3MSolver.h"
+
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
+
+    Inform msg(argv[0]);
+    Inform msg2all(argv[0], INFORM_ALL_NODES);
+
+    int ranks = Ippl::Comm->size();
+
+    constexpr unsigned int dim = 3;
+
+    using Mesh_t      = ippl::UniformCartesian<double, dim>;
+    using Centering_t = Mesh_t::DefaultCentering;
+
+    typedef ippl::Field<double, dim, Mesh_t, Centering_t> Field_t;
+    typedef ippl::Vector<double, dim> Vector_t;
+    typedef ippl::Field<Vector_t, dim, Mesh_t, Centering_t> VField_t;
+    typedef ippl::P3MSolver<Vector_t, double, dim, Mesh_t, Centering_t> Solver_t;
+
+    // get the gridsize from the user
+    ippl::Vector<int, dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
+
+    // domain
+    ippl::NDIndex<dim> owned;
+    for (unsigned i = 0; i < dim; i++) {
+        owned[i] = ippl::Index(nr[i]);
+    }
+
+    // specifies decomposition; here all dimensions are parallel
+    ippl::e_dim_tag decomp[dim];
+    for (unsigned int d = 0; d < dim; d++) {
+        decomp[d] = ippl::PARALLEL;
+    }
+
+    // unit box
+    double dx       = 1.0 / nr[0];
+    double dy       = 1.0 / nr[1];
+    double dz       = 1.0 / nr[2];
+    Vector_t hr     = {dx, dy, dz};
+    Vector_t origin = {-0.5, -0.5, -0.5};
+
+    Mesh_t mesh(owned, hr, origin);
+    ippl::FieldLayout<dim> layout(owned, decomp);
+
+    Field_t field;
+    field.initialize(mesh, layout);
+
+    VField_t efield;
+    efield.initialize(mesh, layout);
+
+    ippl::ParameterList params;
+    params.add("use_heffte_defaults", false);
+    params.add("use_pencils", true);
+    // params.add("use_reorder", false);
+    params.add("use_gpu_aware", true);
+    params.add("comm", ippl::a2av);
+    params.add("r2c_direction", 0);
+
+    // assign the rho field with 2.0
+    typename Field_t::view_type view_rho = field.getView();
+
+    Kokkos::parallel_for(
+        "Assign rho field", field.getFieldRangePolicy(),
+        KOKKOS_LAMBDA(const int i, const int j, const int k) { view_rho(i, j, k) = 2.0; });
+
+    if (ranks == 1) {
+        msg << "Rho: " << endl;
+        field.write();
+    }
+
+    Solver_t solver(efield, field, params, Solver_t::SOL_AND_GRAD);
+
+    solver.solve();
+
+    if (ranks == 1) {
+        msg << "Computed phi: " << endl;
+        field.write();
+    }
+
+    if (ranks == 1) {
+        msg << "Efield: " << endl;
+        efield.write();
+    }
+
+    msg << "End of test" << endl;
+
+    return 0;
+}
