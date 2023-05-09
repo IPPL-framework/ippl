@@ -63,10 +63,9 @@ int main(int argc, char* argv[]) {
 
     // assign the rho field with 2.0
     typename Field_t::view_type view_rho = field.getView();
-    const int nghost                     = field.getNghost();
 
     Kokkos::parallel_for(
-        "Assign rho field", ippl::getRangePolicy<3>(view_rho, nghost),
+        "Assign rho field", field.getFieldRangePolicy(),
         KOKKOS_LAMBDA(const int i, const int j, const int k) { view_rho(i, j, k) = 2.0; });
 
     if (ranks == 1) {
