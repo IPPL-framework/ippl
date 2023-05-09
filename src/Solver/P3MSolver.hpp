@@ -243,7 +243,13 @@ namespace ippl {
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::greensFunction() {
-        grn_m        = 0.0;
+        grn_m = 0.0;
+
+        // This alpha parameter is a choice for the Green's function
+        // it controls the "range" of the Green's function (e.g.
+        // for the P3M collision modelling method, it indicates
+        // the splitting between Particle-Particle interactions
+        // and the Particle-Mesh computations).
         double alpha = 1e6;
 
         // calculate square of the mesh spacing for each dimension
