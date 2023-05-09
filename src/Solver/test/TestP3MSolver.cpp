@@ -1,3 +1,10 @@
+// This program tests the P3MSolver with a constant source rho = 2.
+// This is for comparison purposes with a reference implementation in ippl_orig.
+// I/O output is only enabled when running serially.
+// The problem size must be given by the user.
+// Usage:
+//   srun ./TestP3MSolver 16 16 16 --info 5
+
 #include "Ippl.h"
 
 #include <iostream>
