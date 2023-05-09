@@ -67,12 +67,6 @@ namespace ippl {
         // function called in the constructor to initialize the fields
         void initializeFields();
 
-        // communication used for multi-rank Vico-Greengard's Green's function
-        void communicateVico(Vector<int, Dim> size, typename CxField_t::view_type view_g,
-                             const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
-                             typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
-                             const int nghost);
-
     private:
         Field_t grn_m;  // the Green's function
 
