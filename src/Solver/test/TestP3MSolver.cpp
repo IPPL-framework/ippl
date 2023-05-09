@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
         field.write();
     }
 
-    Solver_t solver(efield, field, params, 2);
+    Solver_t solver(efield, field, params, Solver_t::SOL_AND_GRAD);
 
     solver.solve();
 
