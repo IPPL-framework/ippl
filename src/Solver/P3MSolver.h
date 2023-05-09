@@ -88,8 +88,8 @@ namespace ippl {
         std::unique_ptr<FieldLayout_t> layoutComplex_m;
 
         // domains for the various fields
-        NDIndex<Dim> domain_m;         // original domain, gridsize
-        NDIndex<Dim> domainComplex_m;  // field for the complex values of the RC transformation
+        NDIndex<Dim> domain_m;         // physical domain
+        NDIndex<Dim> domainComplex_m;  // Fourier domain
 
         // mesh spacing and mesh size
         Vector_t hr_m;
