@@ -55,7 +55,7 @@ namespace ippl {
         P3MSolver(rhs_type& rhs, ParameterList& fftparams);
         P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams,
                   int sol = Base::SOL_AND_GRAD);
-        ~P3MSolver();
+        ~P3MSolver() = default;
 
         // solve the Poisson equation
         // more specifically, compute the scalar potential given a density field rho

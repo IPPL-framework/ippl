@@ -59,9 +59,6 @@ namespace ippl {
         initializeFields();
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::~P3MSolver(){};
-
     /////////////////////////////////////////////////////////////////////////
     // initializeFields method, called in constructor
 
