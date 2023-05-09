@@ -31,6 +31,7 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
+#include "ChargedParticles.hpp"
 #include <Kokkos_Random.hpp>
 #include <chrono>
 #include <cmath>
@@ -40,9 +41,12 @@
 #include <string>
 #include <vector>
 
+#include<Kokkos_Random.hpp>
+
+#include <random>
 #include "Utility/IpplTimings.h"
 
-#include "ChargedParticles.hpp"
+constexpr unsigned Dim = 3;
 
 template <typename T>
 struct Newton1D {
@@ -132,7 +136,7 @@ double CDF(const double& x, const double& alpha, const double& k) {
 }
 
 KOKKOS_FUNCTION
-double PDF(const Vector_t<Dim>& xvec, const double& alpha, const Vector_t<>& kw, const unsigned Dim) {
+double PDF(const Vector_t<Dim>& xvec, const double& alpha, const Vector_t<Dim>& kw, const unsigned Dim) {
     double pdf = 1.0;
 
     for (unsigned d = 0; d < Dim; ++d) {
@@ -207,20 +211,19 @@ int main(int argc, char* argv[]) {
     const double dt      = 0.5 * hr[0];
 
     const bool isAllPeriodic = true;
-    Mesh_t mesh(domain, hr, origin);
+    Mesh_t<Dim> mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t<Dim, float> PL(FL, mesh);
 
-    P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+    std::string solver = argv[arg++];
+    P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
     P->nr_m = nr;
 
-    P->E_m.initialize(mesh, FL);
-    P->rho_m.initialize(mesh, FL);
+    P->initializeFields(mesh, FL);
 
     bunch_type bunchBuffer(PL);
 
-    P->stype_m = argv[6];
     P->initSolver();
     P->time_m                 = 0.0;
     P->loadbalancethreshold_m = std::atof(argv[arg++]);
@@ -260,7 +263,7 @@ int main(int argc, char* argv[]) {
     msg << "First domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
 
-    typedef ippl::detail::RegionLayout<float, Dim, Mesh_t> RegionLayout_t;
+    typedef ippl::detail::RegionLayout<float, Dim, Mesh_t<Dim>> RegionLayout_t;
     const RegionLayout_t& RLayout = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
     Vector_t<Dim, float> Nr, Dr, minU, maxU;
@@ -304,13 +307,13 @@ int main(int argc, char* argv[]) {
 
     IpplTimings::startTimer(DummySolveTimer);
     P->rho_m = 0.0;
-    P->solver_mp->solve();
+    P->runSolver();
     IpplTimings::stopTimer(DummySolveTimer);
 
     P->scatterCIC(totalP, 0, hr);
 
     IpplTimings::startTimer(SolveTimer);
-    P->solver_mp->solve();
+    P->runSolver();
     IpplTimings::stopTimer(SolveTimer);
 
     P->gatherCIC();
@@ -360,7 +363,7 @@ int main(int argc, char* argv[]) {
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
-        P->solver_mp->solve();
+        P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
         // gather E field

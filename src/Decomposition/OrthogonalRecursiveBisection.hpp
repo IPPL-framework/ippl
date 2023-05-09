@@ -290,8 +290,8 @@ namespace ippl {
                 // Find nearest grid point
                 vector_type l          = (r(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index = l;
-                Vector<Tp, Dim> whi     = l - index;
-                Vector<Tp, Dim> wlo     = 1.0 - whi;
+                Vector<Tf, Dim> whi     = l - index;
+                Vector<Tf, Dim> wlo     = 1.0 - whi;
 
                 Vector<size_t, Dim> args = index - lDom.first() + nghost;
 

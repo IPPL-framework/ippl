@@ -142,8 +142,8 @@ namespace ippl {
                 // find nearest grid point
                 vector_type l           = (pp(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index  = l;
-                vector_type whi         = l - index;
-                vector_type wlo         = 1.0 - whi;
+                Vector<T, Dim> whi         = l - index;
+                Vector<T, Dim> wlo         = 1.0 - whi;
 
                 Vector<size_t, Dim> args = index - lDom.first() + nghost;
 
@@ -190,8 +190,8 @@ namespace ippl {
                 // find nearest grid point
                 vector_type l           = (pp(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index  = l;
-                vector_type whi		= l - index;
-                vector_type wlo		= 1.0 - whi;
+                Vector<T,Dim> whi		= l - index;
+                Vector<T,Dim> wlo		= 1.0 - whi;
 
                 Vector<size_t, Dim> args = index - lDom.first() + nghost;
 
@@ -207,8 +207,8 @@ namespace ippl {
      *
      */
 
-    template <typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
-    inline void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
+    template <typename P1, typename Tf, unsigned Dim, class M, class C, typename P2, class... Properties>
+    inline void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<Tf, Dim, M, C>& f,
                         const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) {
         attrib.scatter(f, pp);
     }
