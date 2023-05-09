@@ -35,8 +35,8 @@ int main(int argc, char *argv[]){
     const double FOCUS_FORCE     = std::atof(argv[12]);
     const int PRINT_INTERVAL     = std::atoi(argv[13]);
     const double EPS_INV         = std::atof(argv[14]);
-    //const size_t NV              = std::atoi(argv[15]);
-    //const double VMAX            = std::atof(argv[16]);
+    const size_t NV              = std::atoi(argv[15]);
+    const double VMAX            = std::atof(argv[16]);
     // const double REL_BUFF        = std::atof(argv[17]);
     // const bool VMESH_ADAPT_B     = std::atoi(argv[18]);
     // const bool SCATTER_PHASE_B   = std::atoi(argv[19]);
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]){
     // const bool COLLISION         = std::atoi(argv[26]);
     const std::string OUT_DIR    = argv[27];
 
-    using bunch_type = LangevinParticles<PLayout_t<Dim>>;
+    using bunch_type = LangevinParticles<PLayout_t<Dim>, Dim>;
 
     /////////////////////////
     // CONFIGURATION SPACE //
@@ -73,13 +73,25 @@ int main(int argc, char *argv[]){
 
     msg << "Initialized Configuration Space" << endl;
 
+    /////////////////////////
+    // CONFIGURATION SPACE //
+    /////////////////////////
+
+    const ippl::NDIndex<Dim> velocitySpaceDomain(NV, NV, NV);
+
+    const VectorD_t velocitySpaceUpperBound({VMAX,VMAX,VMAX});
+    const VectorD_t velocitySpaceLowerBound(-velocitySpaceUpperBound);
+    const VectorD_t velocitySpaceOrigin(-velocitySpaceUpperBound);
+    VectorD_t hv({BOXL / NR, BOXL / NR, BOXL / NR});
+
     ////////////////////////
     // PARTICLE CONTAINER //
     ////////////////////////
 
     std::shared_ptr P = std::make_shared<bunch_type>(PL, hr,
                                           configSpaceLowerBound, configSpaceUpperBound, configSpaceDecomp,
-                                          SOLVER_T, PARTICLE_CHARGE, PARTICLE_MASS, Q, NP, DT);
+                                          SOLVER_T, PARTICLE_CHARGE, PARTICLE_MASS, EPS_INV, Q, NP, DT,
+                                          hv, velocitySpaceLowerBound, velocitySpaceUpperBound);
 
     // Initialize Particle Fields in Particles Class
     P->nr_m = {int(NR), int(NR), int(NR)};
@@ -98,8 +110,8 @@ int main(int argc, char *argv[]){
     P->rho_m.setFieldBC(bcField);
 
     bunch_type bunchBuffer(PL);
-
-    P->initAllSolvers();
+    std::string frictionSolverName = "HOCKNEY";
+    P->initAllSolvers(frictionSolverName);
 
     P->time_m                 = 0.0;
     P->loadbalancethreshold_m = LB_THRESHOLD;
