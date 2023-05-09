@@ -66,17 +66,18 @@ public:
 
     ParticleSendRecv()
         : nParticles(128) {
-	computeGridSizes(nPoints);
-	for (unsigned d = 0; d < MaxDim; d++) {
-		domain[d] = nPoints[d] / 16.;
-	}
+        computeGridSizes(nPoints);
+        for (unsigned d = 0; d < MaxDim; d++) {
+            domain[d] = nPoints[d] / 16.;
+        }
         setup(this);
     }
 
     template <unsigned Idx, unsigned Dim>
     void setupDim() {
         std::array<ippl::Index, Dim> args;
-	for (unsigned d = 0; d < Dim; d++) args[d] = ippl::Index(nPoints[d]);
+        for (unsigned d = 0; d < Dim; d++)
+            args[d] = ippl::Index(nPoints[d]);
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
         ippl::Vector<double, Dim> hx;
