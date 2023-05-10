@@ -134,9 +134,11 @@ int main(int argc, char *argv[]){
     PL.update(*P, bunchBuffer);
 
     P->scatterCIC(NP, 0, hr);
+
     dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "Rho");
+
     P->runSpaceChargeSolver();
-    //P->E_m = - grad(P->rho_m);
+
     P->gatherCIC();
 
     P->runFrictionSolver();
@@ -152,20 +154,28 @@ int main(int argc, char *argv[]){
         // Drift
         P->R = P->R + DT * P->P;
 
+        //P->R = P->R + 0.5 * DT * P->P;
+        //P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
+
         // Field Solve
         P->scatterCIC(NP, it, hr);
         P->runSpaceChargeSolver();
-        //P->E_m = - grad(P->rho_m);
         P->gatherCIC();
 
         // Add constant focusing term
-        // TODO Make this more concise (maybe possible in a oneliner)
         P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
         // Kick
         P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
 
         P->runFrictionSolver();
+        
+        P->P = P->P + DT * P->p_F_m;
+
+        //// Add Friction
+        //P->P = P->P + DT * P->p_F_m;
+        //P->R = P->R + 0.5 * DT * P->P;
+        //P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
 
         if (it == NT-1) {
             dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F");
