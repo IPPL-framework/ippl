@@ -55,4 +55,4 @@ ${NT} ${PARTICLE_CHARGE} ${PARTICLE_MASS} \
 ${FOCUS_FORCE} ${PRINT_INTERVAL} ${EPS_INV} ${NV} ${VMAX} ${REL_BUFFER} \
 ${VMESH_ADAPT_B} ${SCATTER_PHASE_B} ${FCT} ${DRAG_FCT_B} ${DIFF_FCT_B} \
 ${DRAG_B} ${DIFFUSION_B} ${PRINT} ${COLLISION} ${OUT_DIR} \
---info 5 1>${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err 
+--info 5 1>&1 | tee ${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err 
