@@ -195,12 +195,14 @@ public:
 
     void runSolver() { throw IpplException("LangevinParticles::runSolver", "Not implemented. Run `runSpaceChargeSolver` or `runFrictionSolver` instead."); }
 
-    void runSpaceChargeSolver() {
+    void runSpaceChargeSolver(size_t iteration) {
+        Base::scatterCIC(this->getGlobParticleNum(), iteration, this->hr_m);
         // Multiply by inverse vacuum permittivity
         // (due to differential formulation of Green's function)
         this->rho_m = this->rho_m * epsInv_m;
         // Call SpaceCharge Solver of `ChargeParticles.hpp`
         Base::runSolver();
+        Base::gatherCIC();
     }
     
     void velocityParticleCheck(){
@@ -219,15 +221,19 @@ public:
                           double& loc_minVelComponent, double& loc_maxVelComponent,
                           double& loc_minVel, double& loc_maxVel) {
                 double velNorm = L2Norm(pP_view[i]);
+                double velX = pP_view[i][0];
+                double velY = pP_view[i][1];
+                double velZ = pP_view[i][2];
+
                 loc_avgVel += velNorm;
 
-                loc_minVelComponent = pP_view[i][0] < loc_minVelComponent ? velNorm : loc_minVelComponent;
-                loc_minVelComponent = pP_view[i][1] < loc_minVelComponent ? velNorm : loc_minVelComponent;
-                loc_minVelComponent = pP_view[i][2] < loc_minVelComponent ? velNorm : loc_minVelComponent;
+                loc_minVelComponent = velX < loc_minVelComponent ? velX : loc_minVelComponent;
+                loc_minVelComponent = velY < loc_minVelComponent ? velY : loc_minVelComponent;
+                loc_minVelComponent = velZ < loc_minVelComponent ? velZ : loc_minVelComponent;
 
-                loc_maxVelComponent = pP_view[i][0] > loc_maxVelComponent ? velNorm : loc_maxVelComponent;
-                loc_maxVelComponent = pP_view[i][1] > loc_maxVelComponent ? velNorm : loc_maxVelComponent;
-                loc_maxVelComponent = pP_view[i][2] > loc_maxVelComponent ? velNorm : loc_maxVelComponent;
+                loc_maxVelComponent = velX > loc_maxVelComponent ? velX : loc_maxVelComponent;
+                loc_maxVelComponent = velY > loc_maxVelComponent ? velY : loc_maxVelComponent;
+                loc_maxVelComponent = velZ > loc_maxVelComponent ? velZ : loc_maxVelComponent;
 
                 loc_minVel = velNorm < loc_minVel ? velNorm : loc_minVel;
                 loc_maxVel = velNorm > loc_maxVel ? velNorm : loc_maxVel;
@@ -258,6 +264,7 @@ public:
         // Normalize with dV
         double cellVolume =
             std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
+        msg << "cellVolume = " << cellVolume << endl;
         fv_m = fv_m / cellVolume;
 
         // Multiply with prefactors defined in RHS of Rosenbluth equations

@@ -133,19 +133,15 @@ int main(int argc, char *argv[]){
     // Distribute Particles to respective Processor according to SpatialLayout
     PL.update(*P, bunchBuffer);
 
-    P->scatterCIC(NP, 0, hr);
+    P->runSpaceChargeSolver(0);
+    VectorD_t avgEF(P->compAvgSCForce(BEAM_RADIUS));
+
+    P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
     dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "Rho");
-
-    P->runSpaceChargeSolver();
-
-    P->gatherCIC();
-
-    P->runFrictionSolver();
-
     dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
 
-    VectorD_t avgEF(P->compAvgSCForce(BEAM_RADIUS));
+
     P->dumpBeamStatistics(0, OUT_DIR);
     
     for(size_t it = 1; it < NT; ++it){
@@ -158,9 +154,7 @@ int main(int argc, char *argv[]){
         //P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
 
         // Field Solve
-        P->scatterCIC(NP, it, hr);
-        P->runSpaceChargeSolver();
-        P->gatherCIC();
+        P->runSpaceChargeSolver(it);
 
         // Add constant focusing term
         P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
@@ -177,13 +171,11 @@ int main(int argc, char *argv[]){
         //P->R = P->R + 0.5 * DT * P->P;
         //P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
 
-        if (it == NT-1) {
-            dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F");
-        }
-
         // Dump Statistics every PRINT_INTERVAL iteration
         if (it%PRINT_INTERVAL == 0){
             P->dumpBeamStatistics(it, OUT_DIR);
+            dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F");
+
             msg << "Finished iteration " << it << endl;
             auto end = std::chrono::high_resolution_clock::now();
 
