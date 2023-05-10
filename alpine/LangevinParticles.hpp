@@ -53,8 +53,8 @@ class LangevinParticles : public ChargedParticles<PLayout> {
         attr_Dmirror_t;  // D-dimensional particle attributes
 
     // View types (of Fields)
-    typedef ippl::detail::ViewType<double, Dim>::view_type field_view_t;  // Scalar Fields
-    typedef ippl::detail::ViewType<VectorD_t, Dim>::view_type
+    typedef typename ippl::detail::ViewType<double, Dim>::view_type field_view_t;  // Scalar Fields
+    typedef typename ippl::detail::ViewType<VectorD_t, Dim>::view_type
         field_Dview_t;  // D-dimensional Fields
 
 public:
