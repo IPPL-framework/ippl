@@ -22,7 +22,7 @@ NR=256                  # Number of gridpoints on the spatial grid (along each d
 BEAM_RADIUS=0.001774    # [cm]
 BOXL=0.01               # [cm]
 NP=156055               # Number of particles
-NT=2000                 # Number of timesteps
+NT=1200                 # Number of timesteps
 DT=2.15623e-13          # [s] Timestep
 PARTICLE_CHARGE=-1      # [e]
 PARTICLE_MASS=1         # [m_e]
@@ -33,7 +33,7 @@ PRINT_INTERVAL=5       # How often to dump beamstatistics to ${OUT_DIR}
 
 # Collisional Parameters
 NV=32                   # Number of gridpoints on the velocity grid (along each dim.)
-VMAX=9e4                # [cm / ms] Extent of velocity grid ([-VMAX, VMAX] in each dim.)
+VMAX=9.28345e6          # [cm / s] Extent of velocity grid ([-VMAX, VMAX] in each dim.); $VMAX = 5\sigma_v$ of Boltzmann distribution
 REL_BUFFER=1.03         # Relative allocated buffer zone for adaptive velocity
 VMESH_ADAPT_B=0         # Adapt velocity mesh size dynamiccally (doesn't work yet)
 SCATTER_PHASE_B=0       # Scatter full phasespace before computing collisions \
@@ -50,6 +50,8 @@ USER_OUT_DIR=$1
 USER_OUT_DIR="${USER_OUT_DIR:=langevin}"
 OUT_DIR=data/${USER_OUT_DIR}_$(date +%m%d_%H%M)
 
+echo "Output directory: ${OUT_DIR}"
+
 # Create directory to write output data and this script
 mkdir -p ${OUT_DIR}
 # Copy this script to the data directory (follows symlinks)
@@ -63,4 +65,4 @@ ${NT} ${PARTICLE_CHARGE} ${PARTICLE_MASS} \
 ${FOCUS_FORCE} ${PRINT_INTERVAL} ${EPS_INV} ${NV} ${VMAX} ${REL_BUFFER} \
 ${VMESH_ADAPT_B} ${SCATTER_PHASE_B} ${FCT} ${DRAG_FCT_B} ${DIFF_FCT_B} \
 ${DRAG_B} ${DIFFUSION_B} ${PRINT} ${COLLISION} ${OUT_DIR} \
---info 5 1>${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err 
+--info 5 1>&1 | tee ${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err 
