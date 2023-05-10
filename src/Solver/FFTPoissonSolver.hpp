@@ -136,6 +136,9 @@ namespace ippl {
         , mesh4_m(nullptr)
         , layout4_m(nullptr)
         , isGradFD_m(false) {
+	    using T = typename Tlhs::value_type;
+        static_assert( std::is_floating_point<T>::value, "Not a floating point type");
+
         std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
         setDefaultParameters();
         this->setRhs(rhs);
@@ -167,6 +170,9 @@ namespace ippl {
         , mesh4_m(nullptr)
         , layout4_m(nullptr)
         , isGradFD_m(false) {
+ 	    using T = typename Tlhs::value_type;
+        static_assert( std::is_floating_point<T>::value, "Not a floating point type");
+
         std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
         setDefaultParameters();
         this->setRhs(rhs);

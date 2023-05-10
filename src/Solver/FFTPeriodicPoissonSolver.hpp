@@ -21,6 +21,7 @@ namespace ippl {
 
     template <typename Tl, typename Tr, unsigned Dim, class Mesh, class Centering>
     void FFTPeriodicPoissonSolver<Tl, Tr, Dim, Mesh, Centering>::setRhs(rhs_type& rhs) {
+
         Base::setRhs(rhs);
         initialize();
     }

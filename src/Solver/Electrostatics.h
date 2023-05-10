@@ -47,12 +47,14 @@ namespace ippl {
         Electrostatics()
             : Solver<Tlhs, Trhs, Dim, Mesh, Centering>()
             , grad_mp(nullptr) {
+        	static_assert( std::is_floating_point<Trhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
 
         Electrostatics(lhs_type& lhs, rhs_type& rhs)
             : Solver<Tlhs, Trhs, Dim, Mesh, Centering>(lhs, rhs)
             , grad_mp(nullptr) {
+        	static_assert( std::is_floating_point<Trhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
 
@@ -69,8 +71,7 @@ namespace ippl {
          */
         virtual void solve() = 0;
 
-        virtual ~Electrostatics() {}
-
+        virtual ~Electrostatics() {} 
     protected:
         grad_type* grad_mp;
 
