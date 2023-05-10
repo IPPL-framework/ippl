@@ -55,7 +55,7 @@ int main(int argc, char *argv[]){
     // CONFIGURATION SPACE //
     /////////////////////////
 
-    const ippl::NDIndex<Dim> configSpaceDomain(NR, NR, NR);
+    const ippl::NDIndex<Dim> configSpaceIdxDomain(NR, NR, NR);
     ippl::e_dim_tag configSpaceDecomp[Dim] = {ippl::PARALLEL, ippl::PARALLEL, ippl::PARALLEL};
 
     const double L = BOXL * 0.5;
@@ -63,26 +63,16 @@ int main(int argc, char *argv[]){
     const VectorD_t configSpaceUpperBound({L,L,L});
     const VectorD_t configSpaceOrigin({-L,-L,-L});
     VectorD_t hr({BOXL / NR, BOXL / NR, BOXL / NR});  // spacing
+    VectorD<size_t> nr({NR, NR, NR});
 
-    Mesh_t<Dim> configSpaceMesh(configSpaceDomain, hr, configSpaceOrigin);
+    Mesh_t<Dim> configSpaceMesh(configSpaceIdxDomain, hr, configSpaceOrigin);
     const bool isAllPeriodic = true;
-    FieldLayout_t<Dim> configSpaceFieldLayout(configSpaceDomain, configSpaceDecomp, isAllPeriodic);
+    FieldLayout_t<Dim> configSpaceFieldLayout(configSpaceIdxDomain, configSpaceDecomp, isAllPeriodic);
     PLayout_t<Dim> PL(configSpaceFieldLayout, configSpaceMesh);
 
     const double Q = NP * PARTICLE_CHARGE;
 
     msg << "Initialized Configuration Space" << endl;
-
-    /////////////////////////
-    // CONFIGURATION SPACE //
-    /////////////////////////
-
-    const ippl::NDIndex<Dim> velocitySpaceDomain(NV, NV, NV);
-
-    const VectorD_t velocitySpaceUpperBound({VMAX,VMAX,VMAX});
-    const VectorD_t velocitySpaceLowerBound(-velocitySpaceUpperBound);
-    const VectorD_t velocitySpaceOrigin(-velocitySpaceUpperBound);
-    VectorD_t hv({BOXL / NR, BOXL / NR, BOXL / NR});
 
     ////////////////////////
     // PARTICLE CONTAINER //
@@ -91,14 +81,12 @@ int main(int argc, char *argv[]){
     std::shared_ptr P = std::make_shared<bunch_type>(PL, hr,
                                           configSpaceLowerBound, configSpaceUpperBound, configSpaceDecomp,
                                           SOLVER_T, PARTICLE_CHARGE, PARTICLE_MASS, EPS_INV, Q, NP, DT,
-                                          hv, velocitySpaceLowerBound, velocitySpaceUpperBound);
+                                          NV, VMAX);
 
     // Initialize Particle Fields in Particles Class
     P->nr_m = {int(NR), int(NR), int(NR)};
     P->E_m.initialize(configSpaceMesh, configSpaceFieldLayout);
     P->rho_m.initialize(configSpaceMesh, configSpaceFieldLayout);
-    P->stype_m = SOLVER_T;
-    P->time_m = 0.0;
 
     // Set Periodic BCs for rho
     typedef ippl::BConds<double, Dim, Mesh_t<Dim>, Centering_t<Dim>> bc_type;
@@ -113,7 +101,6 @@ int main(int argc, char *argv[]){
     std::string frictionSolverName = "HOCKNEY";
     P->initAllSolvers(frictionSolverName);
 
-    P->time_m                 = 0.0;
     P->loadbalancethreshold_m = LB_THRESHOLD;
 
     msg << "Initialized Particle Bunch" << endl;
@@ -147,13 +134,14 @@ int main(int argc, char *argv[]){
     PL.update(*P, bunchBuffer);
 
     P->scatterCIC(NP, 0, hr);
-    dumpVTKScalar(P->rho_m, P, 0, 1.0, OUT_DIR, "Rho");
-    P->rho_m = EPS_INV * P->rho_m;
-    P->runSolver();
+    dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "Rho");
+    P->runSpaceChargeSolver();
     //P->E_m = - grad(P->rho_m);
     P->gatherCIC();
 
-    dumpVTKVector(P->E_m, P, 0, 1.0, OUT_DIR, "E");
+    P->runFrictionSolver();
+
+    dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
 
     VectorD_t avgEF(P->compAvgSCForce(BEAM_RADIUS));
     P->dumpBeamStatistics(0, OUT_DIR);
@@ -166,8 +154,7 @@ int main(int argc, char *argv[]){
 
         // Field Solve
         P->scatterCIC(NP, it, hr);
-        P->rho_m = EPS_INV * P->rho_m;
-        P->runSolver();
+        P->runSpaceChargeSolver();
         //P->E_m = - grad(P->rho_m);
         P->gatherCIC();
 
@@ -177,6 +164,12 @@ int main(int argc, char *argv[]){
 
         // Kick
         P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
+
+        P->runFrictionSolver();
+
+        if (it == NT-1) {
+            dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F");
+        }
 
         // Dump Statistics every PRINT_INTERVAL iteration
         if (it%PRINT_INTERVAL == 0){

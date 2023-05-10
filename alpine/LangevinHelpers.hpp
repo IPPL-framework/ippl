@@ -70,13 +70,12 @@ struct GenerateBoxMuller {
 
 // Works only if ranks == 1
 // TODO Allow dumping from multiple ranks
-template<class Bunch>
-void dumpVTKScalar(Field_t<Dim>& F, std::shared_ptr<Bunch> P, int iteration, 
-                  double scalingFactor, std::string out_dir, std::string label) {
+void dumpVTKScalar(Field_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCells, VectorD_t origin,
+                   int iteration, double scalingFactor, std::string out_dir, std::string label) {
 
-  int nx = P->hr_m[0];
-  int ny = P->hr_m[1];
-  int nz = P->hr_m[2];
+  int nx = nCells[0];
+  int ny = nCells[1];
+  int nz = nCells[2];
   
   typename Field_t<Dim>::view_type::host_mirror_type host_view = F.getHostMirror();
 
@@ -100,13 +99,13 @@ void dumpVTKScalar(Field_t<Dim>& F, std::shared_ptr<Bunch> P, int iteration,
   vtkout << "ASCII" << endl;
   vtkout << "DATASET STRUCTURED_POINTS" << endl;
   vtkout << "DIMENSIONS " << nx+1 << " " << ny+1 << " " << nz+1 << endl;
-  vtkout << "ORIGIN " << P->rmin_m[0] << " " 
-                      << P->rmin_m[1] << " " 
-                      << P->rmin_m[2] << endl;
-  vtkout << "SPACING " << nx << " "
-                       << ny << " "
-                       << nz << endl;
-  vtkout << "CELL_DATA " << P->nr_m[0] * P->nr_m[1] * P->nr_m[2] << endl;
+  vtkout << "ORIGIN " << origin[0] << " " 
+                      << origin[1] << " " 
+                      << origin[2] << endl;
+  vtkout << "SPACING " << cellSpacing[0] << " "
+                       << cellSpacing[1] << " "
+                       << cellSpacing[2] << endl;
+  vtkout << "CELL_DATA " << nx * ny * nz << endl;
   vtkout << "SCALARS " << label << " float" << endl;
   for (int z=1; z<nz+1; z++) {
     for (int y=1; y<ny+1; y++) {
@@ -118,13 +117,12 @@ void dumpVTKScalar(Field_t<Dim>& F, std::shared_ptr<Bunch> P, int iteration,
 }
 
 
-template<class Bunch>
-void dumpVTKVector(VField_t<Dim>& F, std::shared_ptr<Bunch> P, int iteration, 
-                  double scalingFactor, std::string out_dir, std::string label) {
+void dumpVTKVector(VField_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCells, VectorD_t origin,
+                   int iteration, double scalingFactor, std::string out_dir, std::string label) {
 
-  int nx = P->hr_m[0];
-  int ny = P->hr_m[1];
-  int nz = P->hr_m[2];
+  int nx = nCells[0];
+  int ny = nCells[1];
+  int nz = nCells[2];
   
   typename VField_t<Dim>::view_type::host_mirror_type host_view = F.getHostMirror();
 
@@ -148,13 +146,13 @@ void dumpVTKVector(VField_t<Dim>& F, std::shared_ptr<Bunch> P, int iteration,
   vtkout << "ASCII" << endl;
   vtkout << "DATASET STRUCTURED_POINTS" << endl;
   vtkout << "DIMENSIONS " << nx+1 << " " << ny+1 << " " << nz+1 << endl;
-  vtkout << "ORIGIN " << P->rmin_m[0] << " " 
-                      << P->rmin_m[1] << " " 
-                      << P->rmin_m[2] << endl;
-  vtkout << "SPACING " << nx << " "
-                       << ny << " "
-                       << nz << endl;
-  vtkout << "CELL_DATA " << P->nr_m[0] * P->nr_m[1] * P->nr_m[2] << endl;
+  vtkout << "ORIGIN " << origin[0] << " " 
+                      << origin[1] << " " 
+                      << origin[2] << endl;
+  vtkout << "SPACING " << cellSpacing[0] << " "
+                       << cellSpacing[1] << " "
+                       << cellSpacing[2] << endl;
+  vtkout << "CELL_DATA " << nx * ny * nz << endl;
   vtkout << "VECTORS " << label << " float" << endl;
   for (int z=1; z<nz+1; z++) {
     for (int y=1; y<ny+1; y++) {

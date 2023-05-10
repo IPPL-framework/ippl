@@ -37,9 +37,7 @@ typedef Field<MatrixD_t, Dim> MField_t;
 
 template <class PLayout, unsigned Dim = 3>
 class LangevinParticles : public ChargedParticles<PLayout> {
-    // using SpaceChargeSolver_t =
-    //     ippl::FFTPeriodicPoissonSolver<VectorD_t <Dim>, double, Dim, Mesh_t<Dim>,
-    //     Centering_t<Dim>>;
+    using Base = ChargedParticles<PLayout, Dim>;
     using FrictionSolver_t =
         ippl::FFTPoissonSolver<VectorD_t, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
     using DiffusionSolver_t =
@@ -66,29 +64,36 @@ public:
     */
     LangevinParticles(PLayout& pl)
         : ChargedParticles<PLayout>(pl) {
-        registerLangevinAttributes();
+        // registerLangevinAttributes();
         setPotentialBCs();
     }
 
     LangevinParticles(PLayout& pl, VectorD_t hr, VectorD_t rmin, VectorD_t rmax,
                       ippl::e_dim_tag configSpaceDecomp[Dim], std::string solver, double pCharge,
                       double pMass, double epsInv, double Q, size_t globalNumParticles, double dt,
-                      VectorD_t hv, VectorD_t vmin, VectorD_t vmax)
+                      size_t nv, double vmax)
         : ChargedParticles<PLayout>(pl, hr, rmin, rmax, configSpaceDecomp, Q, solver)
         , pCharge_m(pCharge)
         , pMass_m(pMass)
         , epsInv_m(epsInv)
-        , globalNum_m(globalNumParticles)
+        , globParticleNum_m(globalNumParticles)
         , dt_m(dt)
-        , hv_m(hv)
-        , vmin_m(vmin)
-        , vmax_m(vmax) {
+        , nv_m(nv)
+        , hv_m(2*vmax / nv)
+        , vmin_m(-vmax)
+        , vmax_m(vmax)
+        , velocitySpaceIdxDomain_m(nv,nv,nv)
+        , velocitySpaceMesh_m(velocitySpaceIdxDomain_m, hv_m, 0.0)
+        , velocitySpaceFieldLayout_m(velocitySpaceIdxDomain_m, configSpaceDecomp, false) {
         // Compute $\Gamma$ prefactor for Friction and Diffusion coefficients
         double q4          = pCharge_m * pCharge_m * pCharge_m * pCharge_m;
         double eps2Inv     = epsInv_m * epsInv_m;
         double m2_e        = pMass_m * pMass_m;
         double coulomb_log = 10.0;
         gamma_m            = coulomb_log * q4 * eps2Inv / (4.0 * pi * m2_e);
+
+        setupVelocitySpace();
+        registerLangevinAttributes();
     }
 
     void setPotentialBCs() {
@@ -100,6 +105,15 @@ public:
     void registerLangevinAttributes() {
         // Register particle attributes used to compute Langevin term
         // TODO
+        this->addAttribute(p_fv_m);
+        this->addAttribute(p_F_m);
+    }
+
+    void setupVelocitySpace() {
+        Inform msg("setupVelocitySpace");
+        fv_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
+        F_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
+        msg << "Initialized Velocity Space" << endl;
     }
 
     void initAllSolvers(std::string frictionSolverName) {
@@ -127,10 +141,10 @@ public:
         sp.add("r2c_direction", 0);
 
         frictionSolver_mp =
-            std::make_unique<FrictionSolver_t>(F_m, fv_m, sp, solverName, FrictionSolver_t::GRAD);
+            std::make_shared<FrictionSolver_t>(F_m, fv_m, sp, solverName, FrictionSolver_t::GRAD);
     }
 
-    size_type getGlobParticleNum() const { return globalNum_m; }
+    size_type getGlobParticleNum() const { return globParticleNum_m; }
 
     VectorD_t compAvgSCForce(double beamRadius) {
         Inform m("computeAvgSpaceChargeForces ");
@@ -179,35 +193,84 @@ public:
         return avgEF;
     }
 
-    void runSolver() { throw IpplException("LangevinParticles::runSolver", "Not implemented."); }
+    void runSolver() { throw IpplException("LangevinParticles::runSolver", "Not implemented. Run `runSpaceChargeSolver` or `runFrictionSolver` instead."); }
 
     void runSpaceChargeSolver() {
         // Multiply by inverse vacuum permittivity
         // (due to differential formulation of Green's function)
         this->rho_m = this->rho_m * epsInv_m;
         // Call SpaceCharge Solver of `ChargeParticles.hpp`
-        this->runSolver();
+        Base::runSolver();
+    }
+    
+    void velocityParticleCheck(){
+        Inform msg("velocityParticleStats");
+        attr_Dview_t pP_view = this->P.getView();
+
+        double avgVel = 0.0;
+        double minVelComponent = std::numeric_limits<double>::max();
+        double maxVelComponent = std::numeric_limits<double>::min();
+        double minVel = std::numeric_limits<double>::max();
+        double maxVel = std::numeric_limits<double>::min();
+
+        Kokkos::parallel_reduce(
+            "check charge", this->getLocalNum(),
+            KOKKOS_LAMBDA(const int i, double& loc_avgVel,
+                          double& loc_minVelComponent, double& loc_maxVelComponent,
+                          double& loc_minVel, double& loc_maxVel) {
+                double velNorm = L2Norm(pP_view[i]);
+                loc_avgVel += velNorm;
+
+                loc_minVelComponent = pP_view[i][0] < loc_minVelComponent ? velNorm : loc_minVelComponent;
+                loc_minVelComponent = pP_view[i][1] < loc_minVelComponent ? velNorm : loc_minVelComponent;
+                loc_minVelComponent = pP_view[i][2] < loc_minVelComponent ? velNorm : loc_minVelComponent;
+
+                loc_maxVelComponent = pP_view[i][0] > loc_maxVelComponent ? velNorm : loc_maxVelComponent;
+                loc_maxVelComponent = pP_view[i][1] > loc_maxVelComponent ? velNorm : loc_maxVelComponent;
+                loc_maxVelComponent = pP_view[i][2] > loc_maxVelComponent ? velNorm : loc_maxVelComponent;
+
+                loc_minVel = velNorm < loc_minVel ? velNorm : loc_minVel;
+                loc_maxVel = velNorm > loc_maxVel ? velNorm : loc_maxVel;
+            },
+            Kokkos::Sum<double>(avgVel),
+            Kokkos::Min<double>(minVelComponent),
+            Kokkos::Max<double>(maxVelComponent),
+            Kokkos::Min<double>(minVel),
+            Kokkos::Max<double>(maxVel));
+        avgVel /= this->getGlobParticleNum();
+        msg << "avgVel = " << avgVel << endl;
+        msg << "minVelComponent = " << minVelComponent << endl;
+        msg << "maxVelComponent = " << maxVelComponent << endl;
+        msg << "minVel = " << minVel << endl;
+        msg << "maxVel = " << maxVel << endl;
     }
 
-    // void runFrictionSolver() {
-    //     // Scatter velocity density on grid
-    //     fv_m = 0.0;
-    //     scatter(p_fv_m, fv_m, this->P);
-    //     // Normalize with dV
-    //     double cellVolume =
-    //         std::reduce(hvField.begin(), hvField.end(), 1., std::multiplies<double>());
-    //     fv_m = fv_m / cellVolume;
-    //
-    //     // Multiply with $\Gamma$ prefactor
-    //     // FFTPoissonSolver already returns $- \nabla H(\vec v)$, so `-` was omitted here
-    //     fv_m = 8.0 * pi_m * gamma_m * fv_m;
-    //
-    //     // Solve for $\nabla H(\vec v)$, is stored in `F_m`
-    //     frictionSolver_mp->solve();
-    //
-    //     // Gather Friction coefficients to particles attribute
-    //     // gather(p_fv_m, )
-    // }
+    void runFrictionSolver() {
+        Inform msg("runFrictionSolver");
+
+        velocityParticleCheck();
+
+        // Scatter velocity density on grid
+        fv_m = 0.0;
+        // Scattered quantity should be a density ($\sum_i fv_i = 1$)
+        p_fv_m = 1.0 / globParticleNum_m;
+        scatter(p_fv_m, fv_m, this->P);
+        // Normalize with dV
+        double cellVolume =
+            std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
+        fv_m = fv_m / cellVolume;
+
+        // Multiply with prefactors defined in RHS of Rosenbluth equations
+        // FFTPoissonSolver already returns $- \nabla H(\vec v)$, so `-` was omitted here
+        fv_m = 8.0 * pi_m * gamma_m * fv_m;
+
+        // Solve for $\nabla H(\vec v)$, is stored in `F_m`
+        frictionSolver_mp->solve();
+
+        // Gather Friction coefficients to particles attribute
+        gather(p_F_m, F_m, this->P);
+        msg << "Friction computation done." << endl;
+    }
 
     void applyConstantFocusing(const double focus_fct, const double beamRadius,
                                const VectorD_t avgEF) {
@@ -289,12 +352,6 @@ public:
         double globaltemp = 0.0;
         MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
         double fieldEnergy = globaltemp * this->hr_m[0] * this->hr_m[1] * this->hr_m[2];
-
-        // TODO Remove
-        m << fieldEnergy << endl;
-        m << iteration << endl;
-        m << folder << endl;
-        m << pN_glob << endl;
 
         /////////////////////////////////////////////
         // Gather E-Field amplitude in x-direction //
@@ -690,8 +747,9 @@ public:
 
     // Velocity density
     ParticleAttrib<double> p_fv_m;
+    ParticleAttrib<VectorD_t> p_F_m;
 
-private:
+public:
     // Particle Charge
     double pCharge_m;
     // Mass of the individual particles
@@ -699,32 +757,38 @@ private:
     // $\frac{1}{\epsilon_0}$ Inverse vacuum permittivity
     double epsInv_m;
     // Total number of global particles
-    double globalNum_m;
-    // Timestep (used during timestepping in Diffusion term)
+    double globParticleNum_m;
+    // Simulation timestep, used to dump the time in `dumpBeamStatistics()`
     double dt_m;
 
     ////////////////////////////////////////////
     // MEMBERS USED FOR LANGEVIN RELATED CODE //
     ////////////////////////////////////////////
 
+    // Number of cells per dim in velocity space
+    Vector<size_t> nv_m;
     // Mesh-Spacing of velocity space grid `fv_m`
-    const VectorD_t hv_m;
+    VectorD_t hv_m;
 
     // Extents of velocity space grid `fv_m`
-    const VectorD_t vmin_m;
-    const VectorD_t vmax_m;
+    VectorD_t vmin_m;
+    VectorD_t vmax_m;
+
+    ippl::NDIndex<Dim> velocitySpaceIdxDomain_m;
+    Mesh_t<Dim> velocitySpaceMesh_m;
+    FieldLayout_t<Dim> velocitySpaceFieldLayout_m;
 
     // $\Gamma$ prefactor for Friction and Diffusion coefficients
     double gamma_m;
     // Speed of light in [cm/s]
-    const double c_m = 2.99792458e10;
+    double c_m = 2.99792458e10;
     // $\pi$ needed for Rosenbluth potentials
-    const double pi_m = std::acos(-1.0);
+    double pi_m = std::acos(-1.0);
 
     // Solver in velocity space
     // Solves $\Delta H(\vec v) = -8 \pi f(\vec v)$ and
     // directly stores $ - \nabla H(\vec v)$ in-place
-    std::unique_ptr<FrictionSolver_t> frictionSolver_mp;
+    std::shared_ptr<FrictionSolver_t> frictionSolver_mp;
 };
 
 #endif /* LANGEVINPARTICLES_HPP */
