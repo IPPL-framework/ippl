@@ -668,32 +668,17 @@ public:
         //// Write to output file //
         ////////////////////////////
         if (Ippl::Comm->rank() == 0) {
-            // std::string folder2 = folder;
+
             std::stringstream fname;
-            fname << "/FieldLangevin_";
-            fname << Ippl::Comm->size();
+            fname << "/All_FieldLangevin_";
+            fname << Ippl::Comm->rank();
             fname << ".csv";
             Inform csvout(NULL, (folder + fname.str()).c_str(), Inform::APPEND);
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-            std::stringstream fname2;
-            fname2 << "/All_FieldLangevin_";
-            fname2 << Ippl::Comm->size();
-            fname2 << ".csv";
-            Inform csvout2(NULL, (folder + fname2.str()).c_str(), Inform::APPEND);
-            csvout2.precision(10);
-            csvout2.setf(std::ios::scientific, std::ios::floatfield);
-
             if (iteration == 0) {
                 csvout << "iteration,"
-                       << "time,"
-                       << "T_X,"
-                       << "rvrms_X,"
-                       << "eps_X,"
-                       << "Neps_X" << endl;
-
-                csvout2 << "iteration,"
                         << "vmaxX,vmaxY,vmaxZ,"
                         << "vminX,vminY,vminZ,"
                         << "rmaxX,rmaxY,rmaxZ,"
@@ -711,36 +696,40 @@ public:
                         << "Ex_field_energy,"
                         << "Ex_max_norm,"
                         << "lorentz_avg,"
-                        << "lorentz_max," <<
-                    //"avgPotential,"         <<
-                    //"avgEfield_x,"          <<
-                    //"avgEfield_y,"          <<
-                    //"avgEfield_z,"           <<
-                    "avgEfield_particle_x,"
+                        << "lorentz_max,"
+                        //<< "avgPotential,"         <<
+                        //<< "avgEfield_x,"          <<
+                        //<< "avgEfield_y,"          <<
+                        //<< "avgEfield_z,"          <<
+                        << "avgEfield_particle_x,"
                         << "avgEfield_particle_y,"
                         << "avgEfield_particle_z" << endl;
             }
 
-            csvout << iteration << "," << iteration * dt_m << "," << temperature[0] << ","
-                   << rvrms[0] << "," << eps[0] << "," << Neps[0] << endl;
-
-            csvout2 << iteration << "," << vmax[0] << "," << vmax[1] << "," << vmax[2] << ","
+            // clang-format off
+            csvout << iteration << "," << vmax[0] << "," << vmax[1] << "," << vmax[2] << ","
                     << vmin[0] << "," << vmin[1] << "," << vmin[2] << "," << rmax[0] << ","
                     << rmax[1] << "," << rmax[2] << "," << rmin[0] << "," << rmin[1] << ","
                     << rmin[2] << "," << vrms(0) << "," << vrms(1) << "," << vrms(2) << ","
                     << temperature(0) << "," << temperature(1) << "," << temperature(2) << ","
-                    << eps(0) << "," << eps(1) << "," << eps(2) << "," << Neps(0) << "," << Neps(1)
-                    << "," << Neps(2) << "," << eps2(0) << "," << eps2(1) << "," << eps2(2) << ","
-                    << rvrms(0) << "," << rvrms(1) << "," << rvrms(2) << "," << rrms(0) << ","
-                    << rrms(1) << "," << rrms(2) << "," << rmean(0) << "," << rmean(1) << ","
-                    << rmean(2) << "," << vmean(0) << "," << vmean(1) << "," << vmean(2) << ","
-                    << iteration * dt_m << "," << fieldEnergy << "," << ExAmp << "," << lorentzAvg
-                    << "," << lorentzMax << "," <<
-                // avgPot      <<","<<
-                // avgEF[0]    <<","<<
-                // avgEF[1]    <<","<<
-                // avgEF[2]    <<","<<
-                avgEF_particle[0] << "," << avgEF_particle[1] << "," << avgEF_particle[2] << endl;
+                    << eps(0) << "," << eps(1) << "," << eps(2) << ","
+                    << Neps(0) << "," << Neps(1) << "," << Neps(2) << ","
+                    << eps2(0) << "," << eps2(1) << "," << eps2(2) << ","
+                    << rvrms(0) << "," << rvrms(1) << "," << rvrms(2) << ","
+                    << rrms(0) << "," << rrms(1) << "," << rrms(2) << ","
+                    << rmean(0) << "," << rmean(1) << "," << rmean(2) << ","
+                    << vmean(0) << "," << vmean(1) << "," << vmean(2) << ","
+                    << iteration * dt_m << ","
+                    << fieldEnergy << ","
+                    << ExAmp << ","
+                    << lorentzAvg << ","
+                    << lorentzMax << ","
+                    // avgPot      <<","<<
+                    // avgEF[0]    <<","<<
+                    // avgEF[1]    <<","<<
+                    // avgEF[2]    <<","<<
+                    << avgEF_particle[0] << "," << avgEF_particle[1] << "," << avgEF_particle[2] << endl;
+            // clang-format on
         }
 
         Ippl::Comm->barrier();
