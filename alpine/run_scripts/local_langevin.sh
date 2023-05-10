@@ -22,8 +22,8 @@ PRINT=1                 # How often to print status to `langevin.out`
 PRINT_INTERVAL=1        # How often to dump beamstatistics to ${OUT_DIR}
 
 # Collisional Parameters
-NV=4                   # Number of gridpoints on the velocity grid (along each dim.)
-VMAX=9e4                # [cm / ms] Extent of velocity grid ([-VMAX, VMAX] in each dim.)
+NV=32                   # Number of gridpoints on the velocity grid (along each dim.)
+VMAX=9.28345e6          # [cm / s] Extent of velocity grid ([-VMAX, VMAX] in each dim.); $VMAX = 5\sigma_v$ of Boltzmann distribution
 REL_BUFFER=1.03         # Relative allocated buffer zone for adaptive velocity
 VMESH_ADAPT_B=0         # Adapt velocity mesh size dynamiccally (doesn't work yet)
 SCATTER_PHASE_B=0       # Scatter full phasespace before computing collisions \
