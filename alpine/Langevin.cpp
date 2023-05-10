@@ -141,17 +141,16 @@ int main(int argc, char *argv[]){
     dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "Rho");
     dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
 
-
     P->dumpBeamStatistics(0, OUT_DIR);
     
     for(size_t it = 1; it < NT; ++it){
         // Kick
-        P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
-        // Drift
-        P->R = P->R + DT * P->P;
-
-        //P->R = P->R + 0.5 * DT * P->P;
         //P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
+        //// Drift
+        //P->R = P->R + DT * P->P;
+
+        P->R = P->R + 0.5 * DT * P->P;
+        P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
 
         // Field Solve
         P->runSpaceChargeSolver(it);
@@ -160,21 +159,23 @@ int main(int argc, char *argv[]){
         P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
         // Kick
-        P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
+        //P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
 
         P->runFrictionSolver();
         
-        P->P = P->P + DT * P->p_F_m;
+        //P->P = P->P + DT * P->p_F_m;
 
         //// Add Friction
-        //P->P = P->P + DT * P->p_F_m;
-        //P->R = P->R + 0.5 * DT * P->P;
-        //P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
+        P->P = P->P + DT * P->p_F_m;
+        P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
+        P->R = P->R + 0.5 * DT * P->P;
 
         // Dump Statistics every PRINT_INTERVAL iteration
         if (it%PRINT_INTERVAL == 0){
             P->dumpBeamStatistics(it, OUT_DIR);
-            dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F");
+            if (it%50 == 0){
+                dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F");
+            }
 
             msg << "Finished iteration " << it << endl;
             auto end = std::chrono::high_resolution_clock::now();
