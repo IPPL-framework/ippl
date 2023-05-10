@@ -264,8 +264,14 @@ public:
         // FFTPoissonSolver already returns $- \nabla H(\vec v)$, so `-` was omitted here
         fv_m = 8.0 * pi_m * gamma_m * fv_m;
 
+        // Set origin of velocity space mesh to zero (for FFT)
+        velocitySpaceMesh_m.setOrigin(0.0);
+
         // Solve for $\nabla H(\vec v)$, is stored in `F_m`
         frictionSolver_mp->solve();
+
+        // Set origin of velocity space mesh to vmin (for scatter / gather)
+        velocitySpaceMesh_m.setOrigin(vmin_m);
 
         // Gather Friction coefficients to particles attribute
         gather(p_F_m, F_m, this->P);
@@ -787,7 +793,7 @@ public:
 
     // Solver in velocity space
     // Solves $\Delta H(\vec v) = -8 \pi f(\vec v)$ and
-    // directly stores $ - \nabla H(\vec v)$ in-place
+    // directly stores $ - \nabla H(\vec v)$ in-place in LHS
     std::shared_ptr<FrictionSolver_t> frictionSolver_mp;
 };
 
