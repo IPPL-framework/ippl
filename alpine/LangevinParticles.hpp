@@ -245,7 +245,7 @@ public:
             Kokkos::Min<double>(minVel),
             Kokkos::Max<double>(maxVel));
 
-        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &avgVel;, &avgVel,
+        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &avgVel, &avgVel,
                    1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
         MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &minVelComponent, &minVelComponent,
                    1, MPI_DOUBLE, MPI_MIN, 0, Ippl::getComm());
@@ -277,7 +277,6 @@ public:
         // Normalize with dV
         double cellVolume =
             std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
-        msg << "cellVolume = " << cellVolume << endl;
         fv_m = fv_m / cellVolume;
 
         // Multiply with prefactors defined in RHS of Rosenbluth equations
@@ -295,6 +294,11 @@ public:
 
         // Gather Friction coefficients to particles attribute
         gather(p_F_m, F_m, this->P);
+
+        // Multiply with prob. density in configuration space $f(\vec r)$
+        // Can be done as we use normalized particle charge $q = -1$
+        p_F_m = p_F_m * (-1.0 *this->q / this->Q_m);
+
         msg << "Friction computation done." << endl;
     }
 
