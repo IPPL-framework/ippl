@@ -236,7 +236,7 @@ namespace ippl {
                     int N = view.extent(d) - 1;
 
                     using index_array_type = typename RangePolicy<Dim>::index_array_type;
-                    using exec_space       = view_type::memory_space::execution_space;
+                    using exec_space       = typename view_type::execution_space;
                     ippl::parallel_for(
                         "applyPeriodicSerialDim", createRangePolicy<Dim, exec_space>(begin, end),
                         KOKKOS_LAMBDA(index_array_type & coords) {
