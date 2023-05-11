@@ -12,6 +12,8 @@
 
 #include "Ippl.h"
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
 #include <cstdlib>
 
 #include "Utility/IpplException.h"
@@ -21,8 +23,8 @@
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {
-    double pi        = std::acos(-1.0);
-    double prefactor = (1 / std::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
+    double pi        = Kokkos::numbers::pi_v<double>;
+    double prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
     return -prefactor * exp(-r2 / (2 * sigma * sigma));
@@ -30,19 +32,20 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
 
 KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sigma = 0.05,
                                         double mu = 0.5) {
-    double pi = std::acos(-1.0);
-    double r  = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
+    double pi = Kokkos::numbers::pi_v<double>;
+    double r  = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
 
-    return (1 / (4.0 * pi * r)) * std::erf(r / (std::sqrt(2.0) * sigma));
+    return (1 / (4.0 * pi * r)) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma));
 }
 
 KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_E(double x, double y, double z,
                                                        double sigma = 0.05, double mu = 0.5) {
-    double pi     = std::acos(-1.0);
-    double r      = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
-    double factor = (1.0 / (4.0 * pi * r * r))
-                    * ((1.0 / r) * std::erf(r / (std::sqrt(2.0) * sigma))
-                       - std::sqrt(2.0 / pi) * (1.0 / sigma) * exp(-r * r / (2 * sigma * sigma)));
+    double pi = Kokkos::numbers::pi_v<double>;
+    double r  = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
+    double factor =
+        (1.0 / (4.0 * pi * r * r))
+        * ((1.0 / r) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma))
+           - Kokkos::sqrt(2.0 / pi) * (1.0 / sigma) * exp(-r * r / (2 * sigma * sigma)));
 
     ippl::Vector<double, 3> Efield = {(x - mu), (y - mu), (z - mu)};
     return factor * Efield;

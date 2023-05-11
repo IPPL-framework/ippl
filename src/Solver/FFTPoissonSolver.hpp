@@ -1,19 +1,21 @@
 //
-//// Class FFTPoissonSolver
-////   FFT-based Poisson Solver class.
-////
-//// This file is part of IPPL.
-////
-//// IPPL is free software: you can redistribute it and/or modify
-//// it under the terms of the GNU General Public License as published by
-//// the Free Software Foundation, either version 3 of the License, or
-//// (at your option) any later version.
-////
-//// You should have received a copy of the GNU General Public License
-//// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-////
+// Class FFTPoissonSolver
+//   FFT-based Poisson Solver class.
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 //
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
 #include <algorithm>
 
 #include "Utility/IpplException.h"
@@ -705,7 +707,7 @@ namespace ippl {
             auto view_g = temp_m.getView();
 
             // define some constants
-            const double pi                 = std::acos(-1.0);
+            const double pi                 = Kokkos::numbers::pi_v<double>;
             const Kokkos::complex<double> I = {0.0, 1.0};
 
             // define some member variables in local scope for the parallel_for
@@ -853,7 +855,7 @@ namespace ippl {
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::greensFunction() {
-        const double pi = std::acos(-1.0);
+        const double pi = Kokkos::numbers::pi_v<double>;
         grn_mr          = 0.0;
 
         if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
@@ -914,15 +916,16 @@ namespace ippl {
                         const double v = kg * hs_m[2] + isOutside * origin[2];
 
                         double s = (t * t) + (u * u) + (v * v);
-                        s        = std::sqrt(s);
+                        s        = Kokkos::sqrt(s);
 
                         // assign the green's function value
                         // if (0,0,0), assign L^2/2 (analytical limit of sinc)
 
                         const bool isOrig        = ((ig == 0 && jg == 0 && kg == 0));
                         const double analyticLim = -L_sum * L_sum * 0.5;
-                        const double value = -2.0 * (std::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
-                                             * (std::sin(0.5 * L_sum * s) / (s + isOrig * 1.0));
+                        const double value       = -2.0
+                                             * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
+                                             * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0));
 
                         view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
                     });
@@ -949,15 +952,16 @@ namespace ippl {
                         const double v = kg * hs_m[2] + isOutside * origin[2];
 
                         double s = (t * t) + (u * u) + (v * v);
-                        s        = std::sqrt(s);
+                        s        = Kokkos::sqrt(s);
 
                         // assign value and replace with analytic limit at origin (0,0,0)
 
                         const bool isOrig        = ((ig == 0 && jg == 0 && kg == 0));
                         const double analyticLim = -L_sum * L_sum * L_sum * L_sum / 8.0;
-                        const double value = -((2 - (L_sum * L_sum * s * s)) * std::cos(L_sum * s)
-                                               + 2 * L_sum * s * std::sin(L_sum * s) - 2)
-                                             / (2 * s * s * s * s + isOrig * 1.0);
+                        const double value =
+                            -((2 - (L_sum * L_sum * s * s)) * Kokkos::cos(L_sum * s)
+                              + 2 * L_sum * s * Kokkos::sin(L_sum * s) - 2)
+                            / (2 * s * s * s * s + isOrig * 1.0);
 
                         view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
                     });
