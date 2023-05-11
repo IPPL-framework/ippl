@@ -17,7 +17,6 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
 #include <random>
 
 #include "MultirankUtils.h"

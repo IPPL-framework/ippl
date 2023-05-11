@@ -18,6 +18,7 @@
 #ifndef IPPL_OPERATIONS_H
 #define IPPL_OPERATIONS_H
 
+#include <Kokkos_MathematicalFunctions.hpp>
 #include <tuple>
 
 namespace ippl {
@@ -84,23 +85,23 @@ namespace ippl {
     DefineUnaryOperation(BitwiseNot, operator~, ~u_m[i],  ~u_m(args...))
     DefineUnaryOperation(Not,        operator!, !u_m[i],  !u_m(args...))
 
-    DefineUnaryOperation(ArcCos, acos,  acos(u_m[i]),  acos(u_m(args...)))
-    DefineUnaryOperation(ArcSin, asin,  asin(u_m[i]),  asin(u_m(args...)))
-    DefineUnaryOperation(ArcTan, atan,  atan(u_m[i]),  atan(u_m(args...)))
-    DefineUnaryOperation(Ceil,   ceil,  ceil(u_m[i]),  ceil(u_m(args...)))
-    DefineUnaryOperation(Cos,    cos,   cos(u_m[i]),   cos(u_m(args...)))
-    DefineUnaryOperation(HypCos, cosh,  cosh(u_m[i]),  cosh(u_m(args...)))
-    DefineUnaryOperation(Exp,    exp,   exp(u_m[i]),   exp(u_m(args...)))
-    DefineUnaryOperation(Fabs,   fabs,  fabs(u_m[i]),  fabs(u_m(args...)))
-    DefineUnaryOperation(Floor,  floor, floor(u_m[i]), floor(u_m(args...)))
-    DefineUnaryOperation(Log,    log,   log(u_m[i]),   log(u_m(args...)))
-    DefineUnaryOperation(Log10,  log10, log10(u_m[i]), log10(u_m(args...)))
-    DefineUnaryOperation(Sin,    sin,   sin(u_m[i]),   sin(u_m(args...)))
-    DefineUnaryOperation(HypSin, sinh,  sinh(u_m[i]),  sinh(u_m(args...)))
-    DefineUnaryOperation(Sqrt,   sqrt,  sqrt(u_m[i]),  sqrt(u_m(args...)))
-    DefineUnaryOperation(Tan,    tan,   tan(u_m[i]),   tan(u_m(args...)))
-    DefineUnaryOperation(HypTan, tanh,  tanh(u_m[i]),  tanh(u_m(args...)))
-    DefineUnaryOperation(Erf,    erf,   erf(u_m[i]),   erf(u_m(args...)))
+    DefineUnaryOperation(ArcCos, acos,  Kokkos::acos(u_m[i]),  Kokkos::acos(u_m(args...)))
+    DefineUnaryOperation(ArcSin, asin,  Kokkos::asin(u_m[i]),  Kokkos::asin(u_m(args...)))
+    DefineUnaryOperation(ArcTan, atan,  Kokkos::atan(u_m[i]),  Kokkos::atan(u_m(args...)))
+    DefineUnaryOperation(Ceil,   ceil,  Kokkos::ceil(u_m[i]),  Kokkos::ceil(u_m(args...)))
+    DefineUnaryOperation(Cos,    cos,   Kokkos::cos(u_m[i]),   Kokkos::cos(u_m(args...)))
+    DefineUnaryOperation(HypCos, cosh,  Kokkos::cosh(u_m[i]),  Kokkos::cosh(u_m(args...)))
+    DefineUnaryOperation(Exp,    exp,   Kokkos::exp(u_m[i]),   Kokkos::exp(u_m(args...)))
+    DefineUnaryOperation(Fabs,   fabs,  Kokkos::fabs(u_m[i]),  Kokkos::fabs(u_m(args...)))
+    DefineUnaryOperation(Floor,  floor, Kokkos::floor(u_m[i]), Kokkos::floor(u_m(args...)))
+    DefineUnaryOperation(Log,    log,   Kokkos::log(u_m[i]),   Kokkos::log(u_m(args...)))
+    DefineUnaryOperation(Log10,  log10, Kokkos::log10(u_m[i]), Kokkos::log10(u_m(args...)))
+    DefineUnaryOperation(Sin,    sin,   Kokkos::sin(u_m[i]),   Kokkos::sin(u_m(args...)))
+    DefineUnaryOperation(HypSin, sinh,  Kokkos::sinh(u_m[i]),  Kokkos::sinh(u_m(args...)))
+    DefineUnaryOperation(Sqrt,   sqrt,  Kokkos::sqrt(u_m[i]),  Kokkos::sqrt(u_m(args...)))
+    DefineUnaryOperation(Tan,    tan,   Kokkos::tan(u_m[i]),   Kokkos::tan(u_m(args...)))
+    DefineUnaryOperation(HypTan, tanh,  Kokkos::tanh(u_m[i]),  Kokkos::tanh(u_m(args...)))
+    DefineUnaryOperation(Erf,    erf,   Kokkos::erf(u_m[i]),   Kokkos::erf(u_m(args...)))
 // clang-format on
 /// @endcond
 
@@ -172,12 +173,16 @@ namespace ippl {
     DefineBinaryOperation(BitwiseXor, operator^, u_m[i] ^ v_m[i], u_m(args...) ^ v_m(args...))
     // clang-format on
 
-    DefineBinaryOperation(Copysign, copysign, copysign(u_m[i], v_m[i]),
-                          copysign(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(Copysign, copysign, Kokkos::copysign(u_m[i], v_m[i]),
+                          Kokkos::copysign(u_m(args...), v_m(args...)))
+    // ldexp not provided by Kokkos
     DefineBinaryOperation(Ldexp, ldexp, ldexp(u_m[i], v_m[i]), ldexp(u_m(args...), v_m(args...)))
-    DefineBinaryOperation(Fmod, fmod, fmod(u_m[i], v_m[i]), fmod(u_m(args...), v_m(args...)))
-    DefineBinaryOperation(Pow, pow, pow(u_m[i], v_m[i]), pow(u_m(args...), v_m(args...)))
-    DefineBinaryOperation(ArcTan2, atan2, atan2(u_m[i], v_m[i]), atan2(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(Fmod, fmod, Kokkos::fmod(u_m[i], v_m[i]),
+                          Kokkos::fmod(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(Pow, pow, Kokkos::pow(u_m[i], v_m[i]),
+                          Kokkos::pow(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(ArcTan2, atan2, Kokkos::atan2(u_m[i], v_m[i]),
+                          Kokkos::atan2(u_m(args...), v_m(args...)))
     /// @endcond
 
     namespace detail {

@@ -28,7 +28,6 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include <algorithm>
-#include <cmath>
 #include <iostream>
 
 #include "Utility/PAssert.h"

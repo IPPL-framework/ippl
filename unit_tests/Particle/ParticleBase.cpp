@@ -17,8 +17,6 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
-
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 

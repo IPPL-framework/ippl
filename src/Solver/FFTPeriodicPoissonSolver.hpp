@@ -68,7 +68,7 @@ namespace ippl {
         auto view        = fieldComplex_m.getView();
         const int nghost = fieldComplex_m.getNghost();
 
-        scalar_type pi                 = std::acos(-1.0);
+        scalar_type pi                 = Kokkos::numbers::pi_v<scalar_type>;
         const Mesh& mesh          = this->rhs_mp->get_mesh();
         const auto& lDomComplex   = layoutComplex_mp->getLocalNDIndex();
         const vector_type& origin = mesh.getOrigin();

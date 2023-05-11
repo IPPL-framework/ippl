@@ -7,6 +7,9 @@
 
 #include "Ippl.h"
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
+
 #include "Utility/IpplTimings.h"
 #include "Utility/IpplException.h"
 
@@ -27,8 +30,8 @@ using VectorField_t = typename ippl::Field<ippl::Vector<T, 3>, 3, Mesh_t<T>, Cen
 template<typename T>
 KOKKOS_INLINE_FUNCTION T gaussian(T x, T y, T z, T sigma = 0.05,
                                        T mu = 0.5) {
-    T pi        = std::acos(-1.0);
-    T prefactor = (1 / std::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
+    T pi        = Kokkos::numbers::pi_v<T>;
+    T prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     T r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
     return -prefactor * exp(-r2 / (2 * sigma * sigma));
@@ -37,20 +40,21 @@ KOKKOS_INLINE_FUNCTION T gaussian(T x, T y, T z, T sigma = 0.05,
 template<typename T>
 KOKKOS_INLINE_FUNCTION T exact_fct(T x, T y, T z, T sigma = 0.05,
                                         T mu = 0.5) {
-    T pi = std::acos(-1.0);
+    T pi = Kokkos::numbers::pi_v<T>;
+
     T r  = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
 
-    return (1 / (4.0 * pi * r)) * std::erf(r / (std::sqrt(2.0) * sigma));
+    return (1 / (4.0 * pi * r)) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma));
 }
 
-template<typename T>
 KOKKOS_INLINE_FUNCTION ippl::Vector<T, 3> exact_E(T x, T y, T z,
                                                        T sigma = 0.05, T mu = 0.5) {
-    T pi     = std::acos(-1.0);
-    T r      = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
-    T factor = (1.0 / (4.0 * pi * r * r))
-                    * ((1.0 / r) * std::erf(r / (std::sqrt(2.0) * sigma))
-                       - std::sqrt(2.0 / pi) * (1.0 / sigma) * exp(-r * r / (2 * sigma * sigma)));
+    T pi     = Kokkos::numbers::pi_v<T>;
+    T r      = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
+    T factor =
+        (1.0 / (4.0 * pi * r * r))
+        * ((1.0 / r) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma))
+           - Kokkos::sqrt(2.0 / pi) * (1.0 / sigma) * exp(-r * r / (2 * sigma * sigma)));
 
     ippl::Vector<T, 3> Efield = {(x - mu), (y - mu), (z - mu)};
     return factor * Efield;

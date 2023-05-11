@@ -17,8 +17,6 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
-
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
@@ -32,10 +30,12 @@ public:
 
     ParticleBCTest()
         : nParticles(1000) {
-        for (unsigned d = 0; d < MaxDim; d++)
+        for (unsigned d = 0; d < MaxDim; d++) {
             len[d] = (d + 1) * 0.2;
-        for (unsigned d = 0; d < MaxDim; d++)
+        }
+        for (unsigned d = 0; d < MaxDim; d++) {
             shift[d] = 0.01 * (d + 1);
+        }
     }
 
     template <unsigned Idx, unsigned Dim>
@@ -47,15 +47,17 @@ public:
 
         auto& HostR = std::get<Idx>(mirrors) = bunch->R.getHostMirror();
 
-        for (int i = 0; i < nParticles; ++i)
+        for (int i = 0; i < nParticles; ++i) {
             HostR(i) = pos;
+        }
 
         Kokkos::deep_copy(bunch->R.getView(), HostR);
 
         // domain
         std::array<ippl::PRegion<double>, Dim> args;
-        for (unsigned d = 0; d < Dim; d++)
+        for (unsigned d = 0; d < Dim; d++) {
             args[d] = ippl::PRegion<double>(0, len[d]);
+        }
         std::get<Idx>(nrs) = std::make_from_tuple<ippl::NDRegion<double, Dim>>(args);
     }
 
@@ -76,8 +78,9 @@ public:
     template <unsigned Dim>
     ippl::Vector<double, Dim> truncate(const ippl::Vector<double, MaxDim>& vec) {
         ippl::Vector<double, Dim> res;
-        for (unsigned d = 0; d < Dim; d++)
+        for (unsigned d = 0; d < Dim; d++) {
             res[d] = vec[d];
+        }
         return res;
     }
 

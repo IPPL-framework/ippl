@@ -70,7 +70,7 @@ using Solver_t =
     std::conditional_t<Dim == 2 || Dim == 3, std::variant<CGSolver_t<Dim, T>, FFTSolver_t<Dim, T>>,
                        std::variant<CGSolver_t<Dim, T>>>;
 
-const double pi = std::acos(-1.0);
+const double pi = Kokkos::numbers::pi_v<double>;
 
 // Test programs have to define this variable for VTK dump purposes
 extern const char* TestName;
