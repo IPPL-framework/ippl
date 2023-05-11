@@ -42,7 +42,10 @@ using ORB = ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t<Dim>, Centeri
 using size_type = ippl::detail::size_type;
 
 template <typename T, unsigned Dim = 3>
-using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+using Vector = ippl::Vector<T, Dim>;
+
+template <typename T, unsigned Dim = 3, class... ViewArgs>
+using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>, ViewArgs...>;
 
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
@@ -50,11 +53,11 @@ using ParticleAttrib = ippl::ParticleAttrib<T>;
 template <typename T, unsigned Dim = 3>
 using Vector_t = ippl::Vector<T, Dim>;
 
-template <unsigned Dim = 3>
-using Field_t = Field<double, Dim>;
+template <unsigned Dim = 3, class... ViewArgs>
+using Field_t = Field<double, Dim, ViewArgs...>;
 
-template <typename T = double, unsigned Dim = 3>
-using VField_t = Field<Vector_t<T, Dim>, Dim>;
+template <typename T = double, unsigned Dim = 3, class... ViewArgs>
+using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
 template <typename T = double, unsigned Dim = 3>
@@ -279,8 +282,8 @@ public:
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
-        this->E_m.updateLayout(fl);
-        this->rho_m.updateLayout(fl);
+        E_m.updateLayout(fl);
+        rho_m.updateLayout(fl);
         if (stype_m == "CG") {
             this->phi_m.updateLayout(fl);
             phi_m.setFieldBC(allPeriodic);
@@ -587,7 +590,9 @@ public:
 
     void dumpLandau() {
         const int nghostE = E_m.getNghost();
-        auto Eview        = E_m.getView();
+        auto deviceView   = E_m.getView();
+        auto Eview        = E_m.getHostMirror();
+        Kokkos::deep_copy(Eview, deviceView);
         double fieldEnergy, ExAmp;
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
