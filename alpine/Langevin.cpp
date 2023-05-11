@@ -174,7 +174,7 @@ int main(int argc, char *argv[]){
         if (it%PRINT_INTERVAL == 0){
             P->dumpBeamStatistics(it, OUT_DIR);
             if (it%50 == 0){
-                dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F");
+                dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F_d");
             }
 
             msg << "Finished iteration " << it << endl;
