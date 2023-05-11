@@ -79,41 +79,47 @@ namespace ippl {
     namespace detail {
 
 #ifdef Heffte_ENABLE_FFTW
-        struct HeffteBackendType {
+        struct HeffteBackendTypeFFTW {
             using backend     = heffte::backend::fftw;
             using backendSine = heffte::backend::fftw_sin;
             using backendCos  = heffte::backend::fftw_cos;
         };
 #endif
 #ifdef Heffte_ENABLE_MKL
-        struct HeffteBackendType {
+        struct HeffteBackendTypeMKL {
             using backend     = heffte::backend::mkl;
             using backendSine = heffte::backend::mkl_sin;
             using backendCos  = heffte::backend::mkl_cos;
         };
 #endif
-#ifdef Heffte_ENABLE_CUDA
-#ifdef KOKKOS_ENABLE_CUDA
-        struct HeffteBackendType {
+#if defined(Heffte_ENABLE_CUDA) && defined(KOKKOS_ENABLE_CUDA)
+        struct HeffteBackendTypeCUFFT {
             using backend     = heffte::backend::cufft;
             using backendSine = heffte::backend::cufft_sin;
             using backendCos  = heffte::backend::cufft_cos;
         };
 #endif
-#endif
 
-#ifndef KOKKOS_ENABLE_CUDA
-#if !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
+#if !defined(KOKKOS_ENABLE_CUDA) && !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
          * vendor specific or optimized backend is found
          */
-        struct HeffteBackendType {
+        struct HeffteBackendTypeStock {
             using backend     = heffte::backend::stock;
             using backendSine = heffte::backend::stock_sin;
             using backendCos  = heffte::backend::stock_cos;
         };
 #endif
+
+#if defined(Heffte_ENABLE_CUDA) && defined(KOKKOS_ENABLE_CUDA)
+        typedef HeffteBackendTypeCUFFT HeffteBackendType;
+#elif defined(Heffte_ENABLE_FFTW)
+        typedef HeffteBackendTypeFFTW HeffteBackendType;
+#elif defined(Heffte_ENABLE_MKL)
+        typedef HeffteBackendTypeMKL HeffteBackendType;
+#else
+        typedef HeffteBackendTypeStock HeffteBackendType;
 #endif
     }  // namespace detail
 
