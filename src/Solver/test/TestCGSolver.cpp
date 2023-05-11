@@ -4,8 +4,6 @@
 //      TestCGSolver [size [scaling_type]]
 #include "Ippl.h"
 
-#include <Kokkos_MathematicalConstants.hpp>
-#include <Kokkos_MathematicalFunctions.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <typeinfo>
@@ -61,7 +59,7 @@ int main(int argc, char* argv[]) {
     ippl::Vector<double, 3> origin = {-1, -1, -1};
     Mesh_t mesh(owned, hx, origin);
 
-    double pi = Kokkos::numbers::pi_v<double>;
+    double pi = acos(-1.0);
 
     typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
     field_type rhs(mesh, layout), lhs(mesh, layout), solution(mesh, layout);
@@ -79,8 +77,6 @@ int main(int argc, char* argv[]) {
     typename field_type::view_type &viewRHS = rhs.getView(), viewSol = solution.getView();
 
     const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
-
-    using Kokkos::pow, Kokkos::sin, Kokkos::cos;
 
     int shift1     = solution.getNghost();
     auto policySol = solution.getFieldRangePolicy();

@@ -1,8 +1,5 @@
-// This programs solves the Poisson equation:
-//   The source is a constant term which is 0 outside a certain radius,
-//   and the exact solution is the gravitational potential of a sphere.
-// The algorithm can be chosen by the user ("HOCKNEY" or "VICO"). Example:
-//   srun ./TestSphere HOCKNEY --info 10
+// This program recreates the convergence test plot from the Budiardja et al. (2010) paper.
+// Gravitational potential of a sphere.
 
 #include "Ippl.h"
 
@@ -34,13 +31,14 @@ KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double den
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
-    std::string algorithm = argv[1];
-
     // number of interations
-    const int n = 4;
+    const int n = 5;
 
-    // gridpoints to iterate over
-    std::array<int, n> N = {16, 32, 64, 128};
+    using Mesh_t      = ippl::UniformCartesian<double, 3>;
+    using Centering_t = Mesh_t::DefaultCentering;
+
+    // number of gridpoints to iterate over
+    std::array<int, n> N = {48, 144, 288, 384, 576};
 
     std::cout << "Spacing Error" << std::endl;
 
@@ -55,14 +53,10 @@ int main(int argc, char* argv[]) {
         for (unsigned int d = 0; d < 3; d++)
             decomp[d] = ippl::PARALLEL;
 
-        using Mesh_t = ippl::UniformCartesian<double, 3>;
-        using Centering_t = Mesh_t::DefaultCentering;
-        using Vector_t = ippl::Vector<double, 3>;
-
-        // unit box
-        double dx       = 2.4 / pt;
-        Vector_t hx     = {dx, dx, dx};
-        Vector_t origin = {0.0, 0.0, 0.0};
+        // define computational box of side 2.4
+        double dx                      = 2.4 / pt;
+        ippl::Vector<double, 3> hx     = {dx, dx, dx};
+        ippl::Vector<double, 3> origin = {0.0, 0.0, 0.0};
         Mesh_t mesh(owned, hx, origin);
 
         // all parallel layout, standard domain, normal axis order
@@ -83,10 +77,7 @@ int main(int argc, char* argv[]) {
         const auto& ldom                   = layout.getLocalNDIndex();
 
         Kokkos::parallel_for(
-            "Assign rho field",
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                {nghost, nghost, nghost}, {view_rho.extent(0) - nghost, view_rho.extent(1) - nghost,
-                                           view_rho.extent(2) - nghost}),
+            "Assign rho field", ippl::getRangePolicy<3>(view_rho, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // go from local to global indices
                 const int ig = i + ldom[0].first() - nghost;
@@ -105,11 +96,7 @@ int main(int argc, char* argv[]) {
         typename field::view_type view_exact = exact.getView();
 
         Kokkos::parallel_for(
-            "Assign exact field",
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                {nghost, nghost, nghost},
-                {view_exact.extent(0) - nghost, view_exact.extent(1) - nghost,
-                 view_exact.extent(2) - nghost}),
+            "Assign exact field", ippl::getRangePolicy<3>(view_exact, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;
@@ -130,18 +117,18 @@ int main(int argc, char* argv[]) {
         fftParams.add("comm", ippl::a2av);
         fftParams.add("r2c_direction", 0);
 
-        ippl::FFTPoissonSolver<ippl::Vector<float,3>, double, 3, Mesh_t, Centering_t> FFTsolver(rho, fftParams,
-                                                                                   algorithm);
+        // define an FFTPoissonSolver object
+        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(
+            rho, fftParams, "HOCKNEY");
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();
 
-        // compute the relative error norm
-        rho        = rho - exact;
-        double err = norm(rho) / norm(exact);
+        // compute the L1 error
+        rho        = (rho - exact);
+        double err = norm(rho, 1) / norm(exact, 1);
 
-        std::cout << std::setprecision(16) << dx << " " << err << std::endl;
+        std::cout << dx << " " << err << std::endl;
     }
-
     return 0;
 }

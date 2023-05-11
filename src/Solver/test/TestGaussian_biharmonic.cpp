@@ -10,10 +10,10 @@
 
 #include "FFTPoissonSolver.h"
 
-using Mesh_t = ippl::UniformCartesian<double, 3>;
-using Centering_t = Mesh_t::DefaultCentering;
+using Mesh_t        = ippl::UniformCartesian<double, 3>;
+using Centering_t   = Mesh_t::DefaultCentering;
 using ScalarField_t = ippl::Field<double, 3, Mesh_t, Centering_t>;
-using VectorField_t = ippl::Field<ippl::Vector<float, 3>, 3, Mesh_t, Centering_t>;
+using VectorField_t = ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t>;
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {
@@ -35,14 +35,14 @@ KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sig
               + std::erf(r / (std::sqrt(2.0) * sigma)) * (r + (sigma * sigma / r)));
 }
 
-KOKKOS_INLINE_FUNCTION ippl::Vector<float, 3> exact_grad(float x, float y, float z,
-                                                          float sigma = 0.05, float mu = 0.5) {
-    float pi = std::acos(-1.0);
-    float r  = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
-    float r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
+KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_grad(double x, double y, double z,
+                                                          double sigma = 0.05, double mu = 0.5) {
+    double pi = std::acos(-1.0);
+    double r  = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
+    double r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    ippl::Vector<float, 3> Efield = {(x - mu), (y - mu), (z - mu)};
-    float factor =
+    ippl::Vector<double, 3> Efield = {(x - mu), (y - mu), (z - mu)};
+    double factor =
         -(1.0 / r) * (1 / (8.0 * pi))
         * ((sigma / r) * std::sqrt(2.0 / pi) * exp(-r2 / (2 * sigma * sigma))
            + std::erf(r / (std::sqrt(2.0) * sigma)) * (1.0 - (sigma * sigma / (r * r))));
@@ -50,8 +50,8 @@ KOKKOS_INLINE_FUNCTION ippl::Vector<float, 3> exact_grad(float x, float y, float
 }
 
 // Define vtk dump function for plotting the fields
-void dumpVTK(std::string path, ScalarField_t& rho, int nx, int ny, int nz, int iteration,
-             double dx, double dy, double dz) {
+void dumpVTK(std::string path, ScalarField_t& rho, int nx, int ny, int nz, int iteration, double dx,
+             double dy, double dz) {
     typename ScalarField_t::view_type::host_mirror_type host_view = rho.getHostMirror();
     Kokkos::deep_copy(host_view, rho.getView());
     std::ofstream vtkout;
@@ -151,10 +151,7 @@ int main(int argc, char* argv[]) {
         const auto& ldom                           = layout.getLocalNDIndex();
 
         Kokkos::parallel_for(
-            "Assign rho field",
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                {nghost, nghost, nghost}, {view_rho.extent(0) - nghost, view_rho.extent(1) - nghost,
-                                           view_rho.extent(2) - nghost}),
+            "Assign rho field", ippl::getRangePolicy<3>(view_rho, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // go from local to global indices
                 const int ig = i + ldom[0].first() - nghost;
@@ -173,11 +170,7 @@ int main(int argc, char* argv[]) {
         typename ScalarField_t::view_type view_exact = exact.getView();
 
         Kokkos::parallel_for(
-            "Assign exact field",
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                {nghost, nghost, nghost},
-                {view_exact.extent(0) - nghost, view_exact.extent(1) - nghost,
-                 view_exact.extent(2) - nghost}),
+            "Assign exact field", ippl::getRangePolicy<3>(view_exact, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;
@@ -193,19 +186,15 @@ int main(int argc, char* argv[]) {
         // assign the exact gradient field
         auto view_grad = exactE.getView();
         Kokkos::parallel_for(
-            "Assign exact field",
-            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                {nghost, nghost, nghost},
-                {view_grad.extent(0) - nghost, view_grad.extent(1) - nghost,
-                 view_grad.extent(2) - nghost}),
+            "Assign exact field", ippl::getRangePolicy<3>(view_grad, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;
                 const int kg = k + ldom[2].first() - nghost;
 
-                float x = (ig + 0.5) * float( hx[0] + origin[0] ) ;
-                float y = (jg + 0.5) * float( hx[1] + origin[1] );
-                float z = (kg + 0.5) * float( hx[2] + origin[2] );
+                double x = (ig + 0.5) * hx[0] + origin[0];
+                double y = (jg + 0.5) * hx[1] + origin[1];
+                double z = (kg + 0.5) * hx[2] + origin[2];
 
                 view_grad(i, j, k)[0] = exact_grad(x, y, z)[0];
                 view_grad(i, j, k)[1] = exact_grad(x, y, z)[1];
@@ -223,10 +212,8 @@ int main(int argc, char* argv[]) {
         fftParams.add("r2c_direction", 0);
 
         // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<ippl::Vector<float, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(fieldE,
-                                                                                                  rho,
-                                                                                                  fftParams,
-                                                                                                  algorithm);
+        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(
+            fieldE, rho, fftParams, algorithm);
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();
@@ -236,53 +223,45 @@ int main(int argc, char* argv[]) {
         double err = norm(rho) / norm(exact);
 
         // compute relative error norm for the E-field components
-        ippl::Vector<float, 3> errE{0.0, 0.0, 0.0};
+        ippl::Vector<double, 3> errE{0.0, 0.0, 0.0};
         fieldE           = fieldE - exactE;
         auto view_fieldE = fieldE.getView();
 
         for (size_t d = 0; d < 3; ++d) {
-            float temp = 0.0;
+            double temp = 0.0;
 
             Kokkos::parallel_reduce(
-                "Vector errorNr reduce",
-                Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                    {nghost, nghost, nghost},
-                    {view_fieldE.extent(0) - nghost, view_fieldE.extent(1) - nghost,
-                     view_fieldE.extent(2) - nghost}),
+                "Vector errorNr reduce", ippl::getRangePolicy<3>(view_fieldE, nghost),
 
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, float& valL) {
-                    float myVal = pow(view_fieldE(i, j, k)[d], 2);
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
+                    double myVal = pow(view_fieldE(i, j, k)[d], 2);
                     valL += myVal;
                 },
-                Kokkos::Sum<float>(temp));
+                Kokkos::Sum<double>(temp));
 
-            float globaltemp = 0.0;
+            double globaltemp = 0.0;
             MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-            float errorNr = std::sqrt(globaltemp);
+            double errorNr = std::sqrt(globaltemp);
 
             temp = 0.0;
 
             Kokkos::parallel_reduce(
-                "Vector errorDr reduce",
-                Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
-                    {nghost, nghost, nghost},
-                    {view_grad.extent(0) - nghost, view_grad.extent(1) - nghost,
-                     view_grad.extent(2) - nghost}),
+                "Vector errorDr reduce", ippl::getRangePolicy<3>(view_grad, nghost),
 
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, float& valL) {
-                    float myVal = pow(view_grad(i, j, k)[d], 2);
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
+                    double myVal = pow(view_grad(i, j, k)[d], 2);
                     valL += myVal;
                 },
-                Kokkos::Sum<float>(temp));
+                Kokkos::Sum<double>(temp));
 
             globaltemp = 0.0;
             MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-            float errorDr = std::sqrt(globaltemp);
+            double errorDr = std::sqrt(globaltemp);
 
             errE[d] = errorNr / errorDr;
         }
 
-        msg << std::setprecision(7) << dx << " " << err << " " << errE[0] << " " << errE[1] << " "
+        msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1] << " "
             << errE[2] << endl;
     }
 

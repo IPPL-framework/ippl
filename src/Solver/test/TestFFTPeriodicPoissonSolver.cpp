@@ -1,7 +1,5 @@
 #include "Ippl.h"
 
-#include <Kokkos_MathematicalConstants.hpp>
-#include <Kokkos_MathematicalFunctions.hpp>
 #include <iostream>
 #include <typeinfo>
 
@@ -41,7 +39,7 @@ int main(int argc, char* argv[]) {
         ippl::Vector<double, 3> origin = {-1.0, -1.0, -1.0};
         Mesh_t mesh(owned, hx, origin);
 
-        double pi = Kokkos::numbers::pi_v<double>;
+        double pi = acos(-1.0);
 
         typedef ippl::Field<double, dim, Mesh_t, Centering_t> Field_t;
         typedef ippl::Vector<double, 3> Vector_t;
@@ -80,7 +78,6 @@ int main(int argc, char* argv[]) {
                 Kokkos::parallel_for(
                     "Assign rhs", ippl::getRangePolicy<3>(view, nghost),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                        using Kokkos::pow, Kokkos::cos, Kokkos::sin;
                         // local to global index conversion
                         const size_t ig = i + lDom[0].first() - nghost;
                         const size_t jg = j + lDom[1].first() - nghost;
@@ -134,7 +131,6 @@ int main(int argc, char* argv[]) {
                 Kokkos::parallel_for(
                     "Assign rhs", ippl::getRangePolicy<3>(view, nghost),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                        using Kokkos::pow, Kokkos::cos, Kokkos::sin;
                         // local to global index conversion
                         const size_t ig = i + lDom[0].first() - nghost;
                         const size_t jg = j + lDom[1].first() - nghost;
@@ -177,26 +173,26 @@ int main(int argc, char* argv[]) {
                         "Vector errorNr reduce", ippl::getRangePolicy<3>(view, nghost),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
                                       double& valL) {
-                            double myVal = Kokkos::pow(Eview(i, j, k)[d], 2);
+                            double myVal = pow(Eview(i, j, k)[d], 2);
                             valL += myVal;
                         },
                         Kokkos::Sum<double>(temp));
                     double globaltemp = 0.0;
                     MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-                    errorNr[d] = std::sqrt(globaltemp);
+                    errorNr[d] = sqrt(globaltemp);
 
                     temp = 0.0;
                     Kokkos::parallel_reduce(
                         "Vector errorDr reduce", ippl::getRangePolicy<3>(view, nghost),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
                                       double& valL) {
-                            double myVal = Kokkos::pow(Eview_exact(i, j, k)[d], 2);
+                            double myVal = pow(Eview_exact(i, j, k)[d], 2);
                             valL += myVal;
                         },
                         Kokkos::Sum<double>(temp));
                     globaltemp = 0.0;
                     MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-                    errorDr[d] = std::sqrt(globaltemp);
+                    errorDr[d] = sqrt(globaltemp);
 
                     error_norm2[d] = errorNr[d] / errorDr[d];
                 }
