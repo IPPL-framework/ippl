@@ -18,7 +18,6 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
 #include <random>
 
 #include "MultirankUtils.h"
@@ -120,8 +119,9 @@ public:
         auto R_host = bunch->R.getHostMirror();
         for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
             ippl::Vector<double, Dim> r;
-            for (unsigned d = 0; d < Dim; d++)
+            for (unsigned d = 0; d < Dim; d++) {
                 r[d] = unif(eng) * domain[d];
+            }
             R_host(i) = r;
         }
 
@@ -141,9 +141,10 @@ public:
             "Expected Rank", mdrange_type({0, 0}, {ER.extent(0), Regions.extent(0)}),
             KOKKOS_LAMBDA(const size_t i, const size_type j) {
                 bool xyz_bool = true;
-                for (unsigned d = 0; d < Dim; d++)
+                for (unsigned d = 0; d < Dim; d++) {
                     xyz_bool &= positions(i)[d] <= Regions(j)[d].max()
                                 && positions(i)[d] >= Regions(j)[d].min();
+                }
                 if (xyz_bool) {
                     ER(i) = j;
                 }

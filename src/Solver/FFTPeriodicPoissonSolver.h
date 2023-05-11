@@ -20,6 +20,8 @@
 #ifndef IPPL_FFT_PERIODIC_POISSON_SOLVER_H
 #define IPPL_FFT_PERIODIC_POISSON_SOLVER_H
 
+#include <Kokkos_MathematicalConstants.hpp>
+
 #include "Types/ViewTypes.h"
 
 #include "Electrostatics.h"
