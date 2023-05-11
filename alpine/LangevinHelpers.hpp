@@ -63,6 +63,37 @@ struct GenerateBoxMuller {
   }
 };
 
+// Generate random numbers in Sphere given by `beamRadius`, centered at the origin
+template <typename T, class GeneratorPool>
+struct GenerateRandomBoxPositions {
+
+  using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
+  using value_type  = typename T::value_type;
+  // Output View for the random positions in the sphere
+  view_type r;
+  const value_type halfBoxL;
+
+  // The GeneratorPool
+  GeneratorPool pool;
+
+  // Initialize all members
+  GenerateRandomBoxPositions(view_type r_, value_type boxL_, GeneratorPool pool_) :
+                    r(r_), halfBoxL(0.5*boxL_), pool(pool_) {}
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const size_t i) const {
+    // Get a random number state from the pool for the active thread
+    typename GeneratorPool::generator_type rand_gen = pool.get_state();
+
+    r(i) = {rand_gen.drand(-halfBoxL, halfBoxL),
+            rand_gen.drand(-halfBoxL, halfBoxL),
+            rand_gen.drand(-halfBoxL, halfBoxL)};
+
+    // Give the state back, which will allow another thread to acquire it
+    pool.free_state(rand_gen);
+  }
+};
+
 
 ///////////////////////
 // DUMPING FUNCTIONS //
