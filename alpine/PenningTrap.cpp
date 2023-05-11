@@ -100,7 +100,7 @@ struct generate_random {
 
     T mu, sigma, minU, maxU;
 
-    double pi = Kokkos::acos(-1.0);
+    double pi = Kokkos::numbers::pi_v<double>;
 
     // Initialize all members
     generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, T& mu_, T& sigma_,
@@ -132,7 +132,7 @@ struct generate_random {
 };
 
 double CDF(const double& x, const double& mu, const double& sigma) {
-    double cdf = 0.5 * (1.0 + Kokkos::erf((x - mu) / (sigma * Kokkos::sqrt(2))));
+    double cdf = 0.5 * (1.0 + std::erf((x - mu) / (sigma * std::sqrt(2))));
     return cdf;
 }
 

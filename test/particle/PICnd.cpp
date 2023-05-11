@@ -161,7 +161,7 @@ public:
         std::vector<int> res(Ippl::Comm->size());
         double threshold = 1.0;
         double equalPart = (double)totalP / Ippl::Comm->size();
-        double dev       = Kokkos::abs((double)this->getLocalNum() - equalPart) / totalP;
+        double dev       = std::abs((double)this->getLocalNum() - equalPart) / totalP;
         if (dev > threshold) {
             local = 1;
         }
@@ -208,7 +208,7 @@ public:
         MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
                    Ippl::getComm());
 
-        double rel_error = Kokkos::fabs((Q_m - Q_grid) / Q_m);
+        double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
         m << "Rel. error in charge conservation = " << rel_error << endl;
 
         if (Ippl::Comm->rank() == 0) {
@@ -275,12 +275,14 @@ public:
 
                 ippl::apply<Dim>(view, args)[0] = -scale_fact * 2.0 * pi * phi0;
                 for (unsigned d1 = 0; d1 < Dim; d1++) {
-                    ippl::apply<Dim>(view, args)[0] *= Kokkos::cos(2 * ((d1 + 1) % 3) * pi * vec[d1]);
+                    ippl::apply<Dim>(view, args)[0] *=
+                        Kokkos::cos(2 * ((d1 + 1) % 3) * pi * vec[d1]);
                 }
                 for (unsigned d = 1; d < Dim; d++) {
                     ippl::apply<Dim>(view, args)[d] = scale_fact * 4.0 * pi * phi0;
                     for (int d1 = 0; d1 < (int)Dim - 1; d1++) {
-                        ippl::apply<Dim>(view, args)[d] *= Kokkos::sin(2 * ((d1 + 1) % 3) * pi * vec[d1]);
+                        ippl::apply<Dim>(view, args)[d] *=
+                            Kokkos::sin(2 * ((d1 + 1) % 3) * pi * vec[d1]);
                     }
                 }
             });
@@ -396,9 +398,8 @@ public:
                     double u1 = dist_uniform(engN[d * 2]);
                     double u2 = dist_uniform(engN[d * 2 + 1]);
                     states[d] =
-                        sd[d] * Kokkos::sqrt(-2.0 * Kokkos::log(u1)) * Kokkos::cos(2.0 * pi * u2)
-                        + mu[d];
-                    R_host(i)[d] = Kokkos::fabs(Kokkos::fmod(states[d], length[d]));
+                        sd[d] * std::sqrt(-2.0 * std::log(u1)) * std::cos(2.0 * pi * u2) + mu[d];
+                    R_host(i)[d] = std::fabs(std::fmod(states[d], length[d]));
                     sum_coord += R_host(i)[d];
                 }
             }

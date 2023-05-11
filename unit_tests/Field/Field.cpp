@@ -144,7 +144,7 @@ struct FieldVal {
         coords                           = (0.5 + coords + lDom.first() - shift) * hx;
         view(args...)                    = 1;
         for (const auto& x : coords) {
-            view(args...) *= Kokkos::sin(200 * pi * x);
+            view(args...) *= std::sin(200 * pi * x);
         }
     }
 

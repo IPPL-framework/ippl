@@ -131,7 +131,7 @@ struct generate_random {
 };
 
 double CDF(const double& x, const double& alpha, const double& k) {
-    double cdf = x + (alpha / k) * Kokkos::sin(k * x);
+    double cdf = x + (alpha / k) * std::sin(k * x);
     return cdf;
 }
 

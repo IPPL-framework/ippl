@@ -151,7 +151,7 @@ struct generate_random {
 
 double CDF(const double& x, const double& delta, const double& k, const unsigned& dim) {
     bool isDimZ = (dim == (Dim - 1));
-    double cdf  = x + (double)(isDimZ * ((delta / k) * Kokkos::sin(k * x)));
+    double cdf  = x + (double)(isDimZ * ((delta / k) * std::sin(k * x)));
     return cdf;
 }
 
@@ -292,7 +292,7 @@ int main(int argc, char* argv[]) {
         delta   = 0.01;
     } else if (std::strcmp(TestName, "BumponTailInstability") == 0) {
         kw      = 0.21;
-        sigma   = 1.0 / Kokkos::sqrt(2.0);
+        sigma   = 1.0 / std::sqrt(2.0);
         epsilon = 0.1;
         muBulk  = 0.0;
         muBeam  = 4.0;

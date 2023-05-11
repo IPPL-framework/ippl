@@ -243,7 +243,7 @@ namespace ippl {
 
         // get origin
         Vector_t origin  = mesh_mp->getOrigin();
-        const double sum = Kokkos::abs(origin[0]) + Kokkos::abs(origin[1]) + Kokkos::abs(origin[2]);
+        const double sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
 
         // origin should always be 0 for Green's function computation to work...
         if (sum != 0.0) {
@@ -881,7 +881,7 @@ namespace ippl {
             mesh4_m->setMeshSpacing(hs_m);
 
             // size of truncation window
-            L_sum = Kokkos::sqrt(L_sum);
+            L_sum = std::sqrt(L_sum);
             L_sum = 1.1 * L_sum;
 
             // initialize grnL_m
