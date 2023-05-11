@@ -297,7 +297,7 @@ public:
 
         // Multiply with prob. density in configuration space $f(\vec r)$
         // Can be done as we use normalized particle charge $q = -1$
-        p_F_m = p_F_m * (-1.0 *this->q / this->Q_m);
+        p_F_m = p_F_m * (this->q / this->Q_m);
 
         msg << "Friction computation done." << endl;
     }
