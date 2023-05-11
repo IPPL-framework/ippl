@@ -73,6 +73,7 @@ public:
                       double pMass, double epsInv, double Q, size_t globalNumParticles, double dt,
                       size_t nv, double vmax)
         : ChargedParticles<PLayout>(pl, hr, rmin, rmax, configSpaceDecomp, Q, solver)
+        , rank_m(Ippl::Comm->rank())
         , pCharge_m(pCharge)
         , pMass_m(pMass)
         , epsInv_m(epsInv)
@@ -243,6 +244,18 @@ public:
             Kokkos::Max<double>(maxVelComponent),
             Kokkos::Min<double>(minVel),
             Kokkos::Max<double>(maxVel));
+
+        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &avgVel;, &avgVel,
+                   1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &minVelComponent, &minVelComponent,
+                   1, MPI_DOUBLE, MPI_MIN, 0, Ippl::getComm());
+        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &maxVelComponent, &maxVelComponent,
+                   1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &minVel, &minVel,
+                   1, MPI_DOUBLE, MPI_MIN, 0, Ippl::getComm());
+        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &maxVel, &maxVel,
+                   1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+
         avgVel /= this->getGlobParticleNum();
         msg << "avgVel = " << avgVel << endl;
         msg << "minVelComponent = " << minVelComponent << endl;
@@ -752,6 +765,9 @@ public:
     ParticleAttrib<VectorD_t> p_F_m;
 
 public:
+    // MPI Rank
+    int rank_m;
+
     // Particle Charge
     double pCharge_m;
     // Mass of the individual particles
