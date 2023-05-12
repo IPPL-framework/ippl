@@ -31,16 +31,18 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, class Centering>
     class Field;
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
+    template <typename Field>
     class BConds;
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    std::ostream& operator<<(std::ostream&, const BConds<T, Dim, Mesh, Centering>&);
+    template <typename Field>
+    std::ostream& operator<<(std::ostream&, const BConds<Field>&);
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
+    template <typename Field>
     class BConds {
+        constexpr static unsigned Dim = Field::dim;
+
     public:
-        using bc_type        = detail::BCondBase<T, Dim, Mesh, Centering>;
+        using bc_type        = detail::BCondBase<Field>;
         using container      = std::array<std::shared_ptr<bc_type>, 2 * Dim>;
         using iterator       = typename container::iterator;
         using const_iterator = typename container::const_iterator;
@@ -48,8 +50,8 @@ namespace ippl {
         BConds()  = default;
         ~BConds() = default;
 
-        void findBCNeighbors(Field<T, Dim, Mesh, Centering>& field);
-        void apply(Field<T, Dim, Mesh, Centering>& field);
+        void findBCNeighbors(Field& field);
+        void apply(Field& field);
 
         bool changesPhysicalCells() const;
         virtual void write(std::ostream&) const;
@@ -62,8 +64,8 @@ namespace ippl {
         container bc_m;
     };
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    inline std::ostream& operator<<(std::ostream& os, const BConds<T, Dim, Mesh, Centering>& bc) {
+    template <typename Field>
+    inline std::ostream& operator<<(std::ostream& os, const BConds<Field>& bc) {
         bc.write(os);
         return os;
     }
