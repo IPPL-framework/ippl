@@ -61,6 +61,7 @@ namespace ippl {
 
         //! View type storing the data
         using view_type = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
+        typedef typename view_type::memory_space memory_space;
         typedef typename view_type::execution_space execution_space;
         using HostMirror = typename view_type::host_mirror_type;
         template <class... PolicyArgs>

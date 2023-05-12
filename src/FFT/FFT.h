@@ -78,22 +78,31 @@ namespace ippl {
 
     namespace detail {
 
+        /*!
+         * Wrapper type for heFFTe backends, templated
+         * on the Kokkos memory space
+         */
+        template <typename> struct HeffteBackendType;
+
 #ifdef Heffte_ENABLE_FFTW
-        struct HeffteBackendTypeFFTW {
+        template <>
+        struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::fftw;
             using backendSine = heffte::backend::fftw_sin;
             using backendCos  = heffte::backend::fftw_cos;
         };
 #endif
 #ifdef Heffte_ENABLE_MKL
-        struct HeffteBackendTypeMKL {
+        template <>
+        struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::mkl;
             using backendSine = heffte::backend::mkl_sin;
             using backendCos  = heffte::backend::mkl_cos;
         };
 #endif
 #if defined(Heffte_ENABLE_CUDA) && defined(KOKKOS_ENABLE_CUDA)
-        struct HeffteBackendTypeCUFFT {
+        template <>
+        struct HeffteBackendType<Kokkos::CudaSpace> {
             using backend     = heffte::backend::cufft;
             using backendSine = heffte::backend::cufft_sin;
             using backendCos  = heffte::backend::cufft_cos;
@@ -105,21 +114,12 @@ namespace ippl {
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
          * vendor specific or optimized backend is found
          */
-        struct HeffteBackendTypeStock {
+        template <>
+        struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::stock;
             using backendSine = heffte::backend::stock_sin;
             using backendCos  = heffte::backend::stock_cos;
         };
-#endif
-
-#if defined(Heffte_ENABLE_CUDA) && defined(KOKKOS_ENABLE_CUDA)
-        typedef HeffteBackendTypeCUFFT HeffteBackendType;
-#elif defined(Heffte_ENABLE_FFTW)
-        typedef HeffteBackendTypeFFTW HeffteBackendType;
-#elif defined(Heffte_ENABLE_MKL)
-        typedef HeffteBackendTypeMKL HeffteBackendType;
-#else
-        typedef HeffteBackendTypeStock HeffteBackendType;
 #endif
     }  // namespace detail
 
@@ -140,7 +140,7 @@ namespace ippl {
         typedef FieldLayout<Dim> Layout_t;
         typedef typename ComplexField::value_type Complex_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backend;
+        using heffteBackend = typename detail::HeffteBackendType<typename ComplexField_t::memory_space>::backend;
         using workspace_t =
             typename heffte::fft3d<heffteBackend>::template buffer_container<Complex_t>;
 
@@ -229,7 +229,7 @@ namespace ippl {
     public:
         typedef FieldLayout<Dim> Layout_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backendSine;
+        using heffteBackend = typename detail::HeffteBackendType<typename Field_t::memory_space>::backendSine;
         using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
@@ -267,7 +267,7 @@ namespace ippl {
     public:
         typedef FieldLayout<Dim> Layout_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backendCos;
+        using heffteBackend = typename detail::HeffteBackendType<typename Field_t::memory_space>::backendCos;
         using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
