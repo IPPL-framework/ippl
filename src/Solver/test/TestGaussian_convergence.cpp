@@ -47,6 +47,7 @@ KOKKOS_INLINE_FUNCTION T exact_fct(T x, T y, T z, T sigma = 0.05,
     return (1 / (4.0 * pi * r)) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma));
 }
 
+template<typename T>
 KOKKOS_INLINE_FUNCTION ippl::Vector<T, 3> exact_E(T x, T y, T z,
                                                        T sigma = 0.05, T mu = 0.5) {
     T pi     = Kokkos::numbers::pi_v<T>;
