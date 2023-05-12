@@ -58,11 +58,10 @@ using VField_t = Field<Vector_t<T, Dim>, Dim>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
 template <typename T = double, unsigned Dim = 3>
-using CGSolver_t = ippl::ElectrostaticsCG<T, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+using CGSolver_t = ippl::ElectrostaticsCG<Field<T, Dim>, Field<T, Dim>>;
 
 template <typename T = double, unsigned Dim = 3>
-using FFTSolver_t =
-    ippl::FFTPeriodicPoissonSolver<Vector_t<T, Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+using FFTSolver_t = ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field<T, Dim>>;
 
 template <typename T = double, unsigned Dim = 3>
 using Solver_t =
@@ -191,7 +190,7 @@ public:
     Field_t<Dim> rho_m;
     Field<T, Dim> phi_m;
 
-    typedef ippl::BConds<T, Dim, Mesh_t<Dim>, Centering_t<Dim>> bc_type;
+    typedef ippl::BConds<Field<T, Dim>> bc_type;
     bc_type allPeriodic;
 
     // ORB
@@ -259,8 +258,7 @@ public:
         // simply assumes them
         if (stype_m == "CG") {
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                allPeriodic[i] =
-                    std::make_shared<ippl::PeriodicFace<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
+                allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
             }
         }
     }

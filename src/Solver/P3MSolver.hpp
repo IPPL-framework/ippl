@@ -27,8 +27,8 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver(rhs_type& rhs, ParameterList& fftparams)
+    template <typename FieldLHS, typename FieldRHS>
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(rhs_type& rhs, ParameterList& fftparams)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
@@ -42,9 +42,9 @@ namespace ippl {
         initializeFields();
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver(lhs_type& lhs, rhs_type& rhs,
-                                                           ParameterList& fftparams, int sol)
+    template <typename FieldLHS, typename FieldRHS>
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams,
+                                             int sol)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
@@ -62,8 +62,8 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // initializeFields method, called in constructor
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::initializeFields() {
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::initializeFields() {
         static_assert(Dim == 3, "Dimension other than 3 not supported in P3MSolver!");
 
         // get layout and mesh
@@ -186,8 +186,8 @@ namespace ippl {
 
     /////////////////////////////////////////////////////////////////////////
     // compute electric potential by solving Poisson's eq given a field rho and mesh spacings hr
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::solve() {
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::solve() {
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
 
@@ -241,8 +241,8 @@ namespace ippl {
     ////////////////////////////////////////////////////////////////////////
     // calculate FFT of the Green's function
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::greensFunction() {
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::greensFunction() {
         grn_m = 0.0;
 
         // This alpha parameter is a choice for the Green's function

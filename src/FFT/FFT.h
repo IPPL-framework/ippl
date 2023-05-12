@@ -172,11 +172,11 @@ namespace ippl {
     class FFT<RCTransform, RealField> {
         constexpr static unsigned Dim = RealField::dim;
         typedef typename RealField::value_type Real_t;
+
+    public:
         typedef Kokkos::complex<Real_t> Complex_t;
         using ComplexField =
             Field<Complex_t, Dim, typename RealField::Mesh_t, typename RealField::Centering_t>;
-
-    public:
         typedef FieldLayout<Dim> Layout_t;
 
         using heffteBackend = typename detail::HeffteBackendType::backend;

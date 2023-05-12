@@ -23,12 +23,17 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    class Electrostatics : public Solver<Tlhs, Trhs, Dim, Mesh, Centering> {
+    template <typename FieldLHS, typename FieldRHS>
+    class Electrostatics : public Solver<FieldLHS, FieldRHS> {
+        constexpr static unsigned Dim = FieldLHS::dim;
+        using Tlhs                    = typename FieldLHS::value_type;
+        using Trhs = typename FieldRHS::value_type;
+        using Base                    = Solver<FieldLHS, FieldRHS>;
+
     public:
-        using grad_type = Field<Vector<Tlhs, Dim>, Dim, Mesh, Centering>;
-        using lhs_type  = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
-        using rhs_type  = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
+        using grad_type = Field<Vector<Tlhs, Dim>, Dim, typename FieldLHS::Mesh_t,
+                                typename FieldLHS::Centering_t>;
+        using typename Base::lhs_type, typename Base::rhs_type;
 
         /*!
          * Represents the types of fields that should
@@ -45,14 +50,14 @@ namespace ippl {
          * desired output type defaults to solution only
          */
         Electrostatics()
-            : Solver<Tlhs, Trhs, Dim, Mesh, Centering>()
+            : Base()
             , grad_mp(nullptr) {
             static_assert(std::is_floating_point<Trhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
 
         Electrostatics(lhs_type& lhs, rhs_type& rhs)
-            : Solver<Tlhs, Trhs, Dim, Mesh, Centering>(lhs, rhs)
+            : Base(lhs, rhs)
             , grad_mp(nullptr) {
             static_assert(std::is_floating_point<Trhs>::value, "Not a floating point type");
             setDefaultParameters();
