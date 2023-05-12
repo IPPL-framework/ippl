@@ -58,12 +58,6 @@ namespace ippl {
 
     namespace detail {
         template <typename Field>
-        class BCondBase;
-
-        template <typename Field>
-        std::ostream& operator<<(std::ostream&, const BCondBase<Field>&);
-
-        template <typename Field>
         class BCondBase {
             constexpr static unsigned Dim = Field::dim;
 
@@ -97,6 +91,9 @@ namespace ippl {
             // True if this boundary condition changes physical cells.
             bool changePhysical_m;
         };
+
+        template <typename Field>
+        std::ostream& operator<<(std::ostream&, const BCondBase<Field>&);
 
     }  // namespace detail
 

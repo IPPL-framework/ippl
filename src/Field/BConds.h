@@ -28,15 +28,6 @@
 #include "Field/BcTypes.h"
 
 namespace ippl {
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    class Field;
-
-    template <typename Field>
-    class BConds;
-
-    template <typename Field>
-    std::ostream& operator<<(std::ostream&, const BConds<Field>&);
-
     template <typename Field>
     class BConds {
         constexpr static unsigned Dim = Field::dim;
