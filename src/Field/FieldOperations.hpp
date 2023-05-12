@@ -26,7 +26,7 @@ namespace ippl {
         constexpr unsigned Dim = Field::dim;
 
         u.fillHalo();
-        BConds<Field>& bcField = u.getFieldBC();
+        BConds<Field, Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
 
         using mesh_type   = typename Field::Mesh_t;
@@ -50,7 +50,7 @@ namespace ippl {
         constexpr unsigned Dim = Field::dim;
 
         u.fillHalo();
-        BConds<Field>& bcField = u.getFieldBC();
+        BConds<Field, Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
 
         using mesh_type   = typename Field::Mesh_t;
@@ -74,7 +74,7 @@ namespace ippl {
         constexpr unsigned Dim = Field::dim;
 
         u.fillHalo();
-        BConds<Field>& bcField = u.getFieldBC();
+        BConds<Field, Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
 
         using mesh_type = typename Field::Mesh_t;
@@ -92,8 +92,10 @@ namespace ippl {
      */
     template <typename Field>
     detail::meta_curl<Field> curl(Field& u) {
+        constexpr unsigned Dim = Field::dim;
+
         u.fillHalo();
-        BConds<Field>& bcField = u.getFieldBC();
+        BConds<Field, Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
 
         using mesh_type = typename Field::Mesh_t;
@@ -118,7 +120,7 @@ namespace ippl {
         constexpr unsigned Dim = Field::dim;
 
         u.fillHalo();
-        BConds<Field>& bcField = u.getFieldBC();
+        BConds<Field, Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
 
         using mesh_type   = typename Field::Mesh_t;

@@ -35,7 +35,7 @@ public:
     using field_type = ippl::Field<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
 
     template <unsigned Dim>
-    using bc_type = ippl::BConds<field_type<Dim>>;
+    using bc_type = ippl::BConds<field_type<Dim>, Dim>;
 
     FieldBCTest() {
         computeGridSizes(nPoints);

@@ -33,7 +33,7 @@ namespace ippl {
         using Layout_t    = FieldLayout<Dim>;
         using BareField_t = BareField<T, Dim>;
         using view_type   = typename BareField_t::view_type;
-        using BConds_t    = BConds<Field<T, Dim, Mesh, Centering>>;
+        using BConds_t    = BConds<Field<T, Dim, Mesh, Centering>, Dim>;
 
         // A default constructor, which should be used only if the user calls the
         // 'initialize' function before doing anything else.  There are no special

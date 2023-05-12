@@ -58,7 +58,7 @@ namespace ippl {
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
             lhs_type r(mesh, layout);
 
-            using bc_type  = BConds<lhs_type>;
+            using bc_type  = BConds<lhs_type, Dim>;
             bc_type lhsBCs = lhs.getFieldBC();
             bc_type bc;
 

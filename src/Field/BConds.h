@@ -28,10 +28,14 @@
 #include "Field/BcTypes.h"
 
 namespace ippl {
-    template <typename Field>
+    /*!
+     * A container for boundary conditions
+     * @tparam Field the type of the field to which the boundary conditions will be applied
+     * @tparam Dim the rank of the field (redundant parameter required to avoid a circular
+     * dependency loop between Field and BConds)
+     */
+    template <typename Field, unsigned Dim>
     class BConds {
-        constexpr static unsigned Dim = Field::dim;
-
     public:
         using bc_type        = detail::BCondBase<Field>;
         using container      = std::array<std::shared_ptr<bc_type>, 2 * Dim>;
@@ -55,8 +59,8 @@ namespace ippl {
         container bc_m;
     };
 
-    template <typename Field>
-    inline std::ostream& operator<<(std::ostream& os, const BConds<Field>& bc) {
+    template <typename Field, unsigned Dim>
+    inline std::ostream& operator<<(std::ostream& os, const BConds<Field, Dim>& bc) {
         bc.write(os);
         return os;
     }
