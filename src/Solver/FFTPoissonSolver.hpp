@@ -251,8 +251,9 @@ namespace ippl {
         }
 
         // create double sized mesh and layout objects using the previously defined domain2_m
-        mesh2_m   = std::unique_ptr<mesh_type>(new mesh_type(domain2_m, hr_m, origin));
-        layout2_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain2_m, decomp));
+        using mesh_type = typename lhs_type::Mesh_t;
+        mesh2_m         = std::unique_ptr<mesh_type>(new mesh_type(domain2_m, hr_m, origin));
+        layout2_m       = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain2_m, decomp));
 
         // create the domain for the transformed (complex) fields
         // since we use HeFFTe for the transforms it doesn't require permuting to the right
@@ -298,8 +299,9 @@ namespace ippl {
             }
 
             // 4N grid
-            mesh4_m   = std::unique_ptr<mesh_type>(new mesh_type(domain4_m, hr_m, origin));
-            layout4_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain4_m, decomp));
+            using mesh_type = typename lhs_type::Mesh_t;
+            mesh4_m         = std::unique_ptr<mesh_type>(new mesh_type(domain4_m, hr_m, origin));
+            layout4_m       = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain4_m, decomp));
 
             // initialize fields
             grnL_m.initialize(*mesh4_m, *layout4_m);
