@@ -29,7 +29,8 @@ namespace ippl {
         typedef typename Base::lhs_type::value_type T;
 
     public:
-        using typename Base::lhs_type, typename Base::rhs_type;
+        using lhs_type      = typename Base::lhs_type;
+        using rhs_type      = typename Base::rhs_type;
         using operator_type = std::function<OpRet(lhs_type)>;
 
         /*!

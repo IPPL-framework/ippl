@@ -100,7 +100,7 @@ namespace ippl {
     template <typename Field>
     class ExtrapolateFace : public detail::BCondBase<Field> {
         constexpr static unsigned Dim = Field::dim;
-        using T                       = Field::value_type;
+        using T                       = typename Field::value_type;
 
     public:
         // Constructor takes zero, one, or two int's specifying components of
@@ -146,7 +146,7 @@ namespace ippl {
 
     template <typename Field>
     class ConstantFace : public ExtrapolateFace<Field> {
-        using T = Field::value_type;
+        using T = typename Field::value_type;
 
     public:
         ConstantFace(unsigned int face, T constant)
@@ -171,7 +171,7 @@ namespace ippl {
     template <typename Field>
     class PeriodicFace : public detail::BCondBase<Field> {
         constexpr static unsigned Dim = Field::dim;
-        using T                       = Field::value_type;
+        using T                       = typename Field::value_type;
 
     public:
         using face_neighbor_type = std::array<std::vector<int>, 2 * Dim>;
