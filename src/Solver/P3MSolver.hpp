@@ -103,7 +103,8 @@ namespace ippl {
         }
 
         // create mesh and layout for the real to complex FFT transformed fields
-        meshComplex_m = std::unique_ptr<Mesh>(new Mesh(domainComplex_m, hr_m, origin));
+        using mesh_type = typename lhs_type::Mesh_t;
+        meshComplex_m   = std::unique_ptr<mesh_type>(new mesh_type(domainComplex_m, hr_m, origin));
         layoutComplex_m =
             std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domainComplex_m, decomp));
 

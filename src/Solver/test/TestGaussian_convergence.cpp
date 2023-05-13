@@ -203,7 +203,7 @@ void compute_convergence(std::string algorithm, int pt) {
     fftParams.add("comm", ippl::a2av);
     fftParams.add("r2c_direction", 0);
     // define an FFTPoissonSolver object
-    ippl::FFTPoissonSolver<ippl::Vector<T, 3>, T, 3, Mesh_t<T>, Centering_t<T>> FFTsolver(
+    ippl::FFTPoissonSolver<VectorField_t<T>, ScalarField_t<T>> FFTsolver(
         fieldE, rho, fftParams, algorithm);
 
     // solve the Poisson equation -> rho contains the solution (phi) now

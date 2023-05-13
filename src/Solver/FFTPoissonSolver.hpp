@@ -260,10 +260,11 @@ namespace ippl {
         // the dimension is given by the user via r2c_direction
         unsigned int RCDirection = this->params_m.template get<int>("r2c_direction");
         for (unsigned int i = 0; i < Dim; ++i) {
-            if (i == RCDirection)
+            if (i == RCDirection) {
                 domainComplex_m[RCDirection] = Index(nr_m[RCDirection] + 1);
-            else
+            } else {
                 domainComplex_m[i] = Index(2 * nr_m[i]);
+            }
         }
 
         // create mesh and layout for the real to complex FFT transformed fields

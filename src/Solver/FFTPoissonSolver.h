@@ -174,9 +174,7 @@ namespace ippl {
         // members for Vico-Greengard
         CxField_gt grnL_m;
 
-        std::unique_ptr<
-            FFT<CCTransform, Field<Tg, Dim, mesh_type, typename FieldLHS::Centering_t>>>
-            fft4n_m;
+        std::unique_ptr<FFT<CCTransform, CxField_gt>> fft4n_m;
 
         std::unique_ptr<mesh_type> mesh4_m;
         std::unique_ptr<FieldLayout_t> layout4_m;

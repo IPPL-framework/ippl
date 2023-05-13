@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
 
     fftParams.add("use_heffte_defaults", true);
 
-    typedef ippl::FFT<ippl::CCTransform, 3, double, Mesh_t, Centering_t> FFT_type;
+    typedef ippl::FFT<ippl::CCTransform, field_type> FFT_type;
 
     std::unique_ptr<FFT_type> fft;
 

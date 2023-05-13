@@ -48,17 +48,18 @@ int main(int argc, char* argv[]) {
     ippl::NDIndex<dim> owned(I, Iy, I);
 
     ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
-    for (unsigned int d = 0; d < dim; d++)
+    for (unsigned int d = 0; d < dim; d++) {
         allParallel[d] = ippl::PARALLEL;
+    }
 
     // all parallel layout, standard domain, normal axis order
     ippl::FieldLayout<dim> layout(owned, allParallel);
 
     // Unit box
-    double dx                      = 2.0 / double(pt);
-    double dy                      = 2.0 / double(ptY);
-    ippl::Vector<double, 3> hx     = {dx, dy, dx};
-    ippl::Vector<double, 3> origin = {-1, -1, -1};
+    double dx                        = 2.0 / double(pt);
+    double dy                        = 2.0 / double(ptY);
+    ippl::Vector<double, dim> hx     = {dx, dy, dx};
+    ippl::Vector<double, dim> origin = -1;
     Mesh_t mesh(owned, hx, origin);
 
     double pi = Kokkos::numbers::pi_v<double>;
@@ -66,12 +67,12 @@ int main(int argc, char* argv[]) {
     typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
     field_type rhs(mesh, layout), lhs(mesh, layout), solution(mesh, layout);
 
-    typedef ippl::BConds<double, dim, Mesh_t, Centering_t> bc_type;
+    typedef ippl::BConds<field_type, dim> bc_type;
 
     bc_type bcField;
 
     for (unsigned int i = 0; i < 6; ++i) {
-        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim, Mesh_t, Centering_t>>(i);
+        bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
     }
 
     lhs.setFieldBC(bcField);
@@ -119,7 +120,7 @@ int main(int argc, char* argv[]) {
                          * sin(sin(pi * z)));
         });
 
-    ippl::ElectrostaticsCG<double, double, dim, Mesh_t, Centering_t> lapsolver;
+    ippl::ElectrostaticsCG<field_type, field_type> lapsolver;
 
     ippl::ParameterList params;
     params.add("max_iterations", 2000);
