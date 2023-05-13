@@ -31,7 +31,7 @@ namespace ippl {
         T sum                  = 0;
         auto view1             = f1.getView();
         auto view2             = f2.getView();
-        using exec_space       = typename BareField<T, Dim, ViewArgs...>::execution_space;
+        using exec_space       = typename BareField::execution_space;
         using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
         ippl::parallel_reduce(
             "Field::innerProduct(Field&, Field&)", f1.getFieldRangePolicy(),
@@ -58,7 +58,7 @@ namespace ippl {
 
         T local                = 0;
         auto view              = field.getView();
-        using exec_space       = typename BareField<T, Dim, ViewArgs...>::execution_space;
+        using exec_space       = typename BareField::execution_space;
         using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
         switch (p) {
             case 0: {

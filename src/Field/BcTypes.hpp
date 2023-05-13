@@ -94,7 +94,7 @@ namespace ippl {
             dest = src - 1;
         }
 
-        using exec_space = typename Field_t::execution_space;
+        using exec_space = typename Field::execution_space;
         using index_type = typename RangePolicy<Dim, exec_space>::index_type;
         Kokkos::Array<index_type, Dim> begin, end;
         for (unsigned i = 0; i < Dim; i++) {
@@ -246,7 +246,7 @@ namespace ippl {
                 using buffer_type = Communicate::buffer_type;
                 std::vector<MPI_Request> requests(neighbors.size());
 
-                using HaloCells_t = detail::HaloCells<T, Dim, ViewArgs...>;
+                using HaloCells_t = typename Field::halo_type;
                 using range_t     = typename HaloCells_t::bound_type;
                 HaloCells_t& halo = field.getHalo();
                 std::vector<range_t> rangeNeighbors;
@@ -308,7 +308,7 @@ namespace ippl {
 
             auto N = view.extent(d) - 1;
 
-            using exec_space = typename Field_t::execution_space;
+            using exec_space = typename Field::execution_space;
             using index_type = typename RangePolicy<Dim, exec_space>::index_type;
             Kokkos::Array<index_type, Dim> begin, end;
 

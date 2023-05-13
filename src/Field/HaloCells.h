@@ -50,9 +50,10 @@ namespace ippl {
         template <typename T, unsigned Dim, class... ViewArgs>
         class HaloCells {
         public:
-            using view_type  = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
-            using Layout_t   = FieldLayout<Dim>;
-            using bound_type = typename Layout_t::bound_type;
+            using view_type       = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
+            using Layout_t        = FieldLayout<Dim>;
+            using bound_type      = typename Layout_t::bound_type;
+            using databuffer_type = FieldBufferData<T, ViewArgs...>;
 
             enum SendOrder {
                 HALO_TO_INTERNAL,
@@ -83,8 +84,8 @@ namespace ippl {
              * @param view the original view
              * @param fd the buffer to pack into
              */
-            void pack(const bound_type& range, const view_type& view,
-                      FieldBufferData<T, ViewArgs...>& fd, size_type& nsends);
+            void pack(const bound_type& range, const view_type& view, databuffer_type& fd,
+                      size_type& nsends);
 
             /*!
              * Unpack the received field data and assign it.
@@ -94,8 +95,7 @@ namespace ippl {
              * @tparam Op the data assigment operator
              */
             template <typename Op>
-            void unpack(const bound_type& range, const view_type& view,
-                        FieldBufferData<T, ViewArgs...>& fd);
+            void unpack(const bound_type& range, const view_type& view, databuffer_type& fd);
 
             /*!
              * Operator for the unpack function.
@@ -150,7 +150,7 @@ namespace ippl {
              */
             auto makeSubview(const view_type& view, const bound_type& intersect);
 
-            FieldBufferData<T, ViewArgs...> haloData_m;
+            databuffer_type haloData_m;
         };
     }  // namespace detail
 }  // namespace ippl

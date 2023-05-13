@@ -67,6 +67,8 @@ namespace ippl {
         template <class... PolicyArgs>
         using policy_type = typename RangePolicy<Dim, PolicyArgs...>::policy_type;
 
+        using halo_type = detail::HaloCells<T, Dim, ViewArgs...>;
+
         using value_type              = T;
         constexpr static unsigned dim = Dim;
 
@@ -148,7 +150,7 @@ namespace ippl {
         const Index& getIndex(unsigned d) const { return getLayout().getDomain()[d]; }
         const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
 
-        detail::HaloCells<T, Dim, ViewArgs...>& getHalo() { return halo_m; }
+        halo_type& getHalo() { return halo_m; }
 
         // Assignment from a constant.
         BareField& operator=(T x);
@@ -223,7 +225,7 @@ namespace ippl {
         //! Domain of the data
         Domain_t owned_m;
 
-        detail::HaloCells<T, Dim, ViewArgs...> halo_m;
+        halo_type halo_m;
 
         /*!
          * Allocate field.

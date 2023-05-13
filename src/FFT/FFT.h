@@ -82,7 +82,8 @@ namespace ippl {
          * Wrapper type for heFFTe backends, templated
          * on the Kokkos memory space
          */
-        template <typename> struct HeffteBackendType;
+        template <typename>
+        struct HeffteBackendType;
 
 #ifdef Heffte_ENABLE_FFTW
         template <>
@@ -140,7 +141,8 @@ namespace ippl {
         typedef FieldLayout<Dim> Layout_t;
         typedef typename ComplexField::value_type Complex_t;
 
-        using heffteBackend = typename detail::HeffteBackendType<typename ComplexField_t::memory_space>::backend;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename ComplexField::memory_space>::backend;
         using workspace_t =
             typename heffte::fft3d<heffteBackend>::template buffer_container<Complex_t>;
 
@@ -185,7 +187,8 @@ namespace ippl {
             Field<Complex_t, Dim, typename RealField::Mesh_t, typename RealField::Centering_t>;
         typedef FieldLayout<Dim> Layout_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backend;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename RealField::memory_space>::backend;
         using workspace_t =
             typename heffte::fft3d_r2c<heffteBackend>::template buffer_container<Complex_t>;
 
@@ -229,8 +232,9 @@ namespace ippl {
     public:
         typedef FieldLayout<Dim> Layout_t;
 
-        using heffteBackend = typename detail::HeffteBackendType<typename Field_t::memory_space>::backendSine;
-        using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename Field::memory_space>::backendSine;
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
@@ -267,8 +271,9 @@ namespace ippl {
     public:
         typedef FieldLayout<Dim> Layout_t;
 
-        using heffteBackend = typename detail::HeffteBackendType<typename Field_t::memory_space>::backendCos;
-        using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename Field::memory_space>::backendCos;
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
