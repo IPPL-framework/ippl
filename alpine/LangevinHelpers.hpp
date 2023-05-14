@@ -186,7 +186,6 @@ void dumpVTKVector(VField_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCel
                        << cellSpacing[2] << endl;
   vtkout << "CELL_DATA " << nx * ny * nz << endl;
   vtkout << "VECTORS " << label << " float" << endl;
-  vtkout << "LOOKUP_TABLE default" << endl;
   for (int z=1; z<nz+1; z++) {
     for (int y=1; y<ny+1; y++) {
       for (int x=1; x<nx+1; x++) {
