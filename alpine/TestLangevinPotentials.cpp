@@ -1,13 +1,21 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include "LangevinParticles.hpp"
 
+#include <cmath>
+
 const char* TestName = "LangevinPotentials";
 
 KOKKOS_FUNCTION
-double maxwellianPDF(const VectorD_t &v, const double numberDensity, const double vth) {
+double maxwellianPDF(const VectorD_t &v, const double& numberDensity, const double& vth) {
     double vNorm = L2Norm(v);
-    double expTerm = Kokkos::exp(-vNorm*vNorm/(2*vth));
-    return (numberDensity / Kokkos::pow(2*Kokkos::numbers::pi_v<double>*vth, 1.5)) * expTerm;
+    double expTerm = Kokkos::exp(-vNorm*vNorm/(2.0*vth));
+    return (numberDensity / Kokkos::pow(2.0*Kokkos::numbers::pi_v<double>*vth, 1.5)) * expTerm;
+}
+
+KOKKOS_FUNCTION
+double HexactDistribution(const VectorD_t& v, const double& numberDensity, const double& vth) {
+    double vNorm = L2Norm(v);
+    return (2.0*numberDensity / vNorm) * Kokkos::erf(vNorm/(Kokkos::sqrt(2.0)*vth));
 }
 
 int main(int argc, char *argv[]){
@@ -22,7 +30,6 @@ int main(int argc, char *argv[]){
 
     int rank = Ippl::Comm->rank();
     int comm_size = Ippl::Comm->size();
-    msg << "Running on " << comm_size << " MPI ranks" << endl;
 
     ///////////////////////
     // Read Cmdline Args //
@@ -63,7 +70,8 @@ int main(int argc, char *argv[]){
     // CONSTANTS FOR MAXELLIAN //
     /////////////////////////////
     double vth = 1.0;
-    double numberDensity = NP / (BOXL*BOXL*BOXL);
+    double numberDensity = 1.0;
+    //double numberDensity = NP / (BOXL*BOXL*BOXL);
 
     /////////////////////////
     // CONFIGURATION SPACE //
@@ -88,9 +96,9 @@ int main(int argc, char *argv[]){
 
     msg << "Initialized Configuration Space" << endl;
 
-    ////////////////////////
-    // PARTICLE CONTAINER //
-    ////////////////////////
+    /////////////////////////////////
+    // LANGEVIN PARTICLE CONTAINER //
+    /////////////////////////////////
 
     std::shared_ptr P = std::make_shared<bunch_type>(PL, hr,
                                           configSpaceLowerBound, configSpaceUpperBound, configSpaceDecomp,
@@ -118,6 +126,13 @@ int main(int argc, char *argv[]){
     P->loadbalancethreshold_m = LB_THRESHOLD;
 
     msg << "Initialized Particle Bunch" << endl;
+
+    //////////////////////////////////////////////
+    // REFERENCE SOLUTION FIELDS FOR MAXWELLIAN //
+    //////////////////////////////////////////////
+
+    // Create scalar Field for first Rosenbluth Potential
+    auto HfieldExact = P->fv_m.deepCopy();
     
     //////////////////////////////////////////////
     // PARTICLE CREATION & INITIAL SPACE CHARGE //
@@ -143,43 +158,68 @@ int main(int argc, char *argv[]){
     Ippl::Comm->barrier();
 
     // Initialize Maxwellian Velocity Distribution
-
     const ippl::NDIndex<Dim>& lDom = P->velocitySpaceFieldLayout_m.getLocalNDIndex();
     const int nghost               = P->fv_m.getNghost();
-    auto fvView                   = P->fv_m.getView();
-    VectorD_t vOrigin = P->vmin_m;
+    auto fvView                    = P->fv_m.getView();
+    auto HviewExact                = HfieldExact.getView();
+
+    VectorD_t vOrigin              = P->vmin_m;
 
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     ippl::parallel_for(
-            "Assign initial rho based on PDF", ippl::getRangePolicy<Dim>(P->fv_m, nghost),
+            "Assign initial velocity PDF and reference solution for H", ippl::getRangePolicy<Dim>(fvView, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
             // local to global index conversion
             Vector_t<Dim> xvec = args;
             for (unsigned d = 0; d < Dim; d++) {
-            xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + vOrigin[d];
+            xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * P->hv_m[d] + vOrigin[d];
             }
 
             // ippl::apply<unsigned> accesses the view at the given indices and obtains a
             // reference; see src/Expression/IpplOperations.h
             ippl::apply<Dim>(fvView, args) = maxwellianPDF(xvec, numberDensity, vth);
+            ippl::apply<Dim>(HviewExact, args) = HexactDistribution(xvec, numberDensity, vth);
             });
 
     Kokkos::fence();
 
-    msg << "Created " << NP << " Particles" << endl;
+    dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "fvInit");
     
-    /*
-    // Distribute Particles to respective Processor according to SpatialLayout
-    PL.update(*P, bunchBuffer);
+    ///////////////////////////////////
+    // COMPUTE ROSENBLUTH POTENTIALS //
+    ///////////////////////////////////
 
-    P->runFrictionSolver();
+    // Need to scatter rho as we use it as $f(\vec r)$
+    P->runSpaceChargeSolver(0);
 
-    dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "Rho");
-    dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
+    // Multiply with prefactor
+    P->fv_m = - 8.0 * M_PI * P->fv_m;
 
-    P->dumpBeamStatistics(0, OUT_DIR);
-    */
-    
+    // Set origin of velocity space mesh to zero (for FFT)
+    P->velocitySpaceMesh_m.setOrigin(0.0);
+
+    // Solve for $\nabla_v H(\vec v)$, is stored in `F_m`
+    // $H(\vec v)$, is stored in `fv_m`
+    P->frictionSolver_mp->solve();
+
+    // Set origin of velocity space mesh to vmin (for scatter / gather)
+    P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
+
+    // Dump resulting Fields
+    dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Happr");
+    dumpVTKScalar(HfieldExact, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Hexact");
+    dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "gradHappr");
+    auto Hdiff = P->fv_m.deepCopy();
+    Hdiff = Hdiff - HfieldExact;
+    dumpVTKScalar(Hdiff, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Hdiff");
+
+    ////////////////////////////
+    // COMPUTE RELATIVE ERROR //
+    ////////////////////////////
+
+    double HrelError = norm(Hdiff) / norm(HfieldExact);
+    msg << "Rel. Error (" << NV << "^3)" << ": " << HrelError << endl;
+
     msg << "LangevinPotentials: End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
