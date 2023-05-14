@@ -142,7 +142,7 @@ public:
         sp.add("r2c_direction", 0);
 
         frictionSolver_mp =
-            std::make_shared<FrictionSolver_t>(F_m, fv_m, sp, solverName, FrictionSolver_t::GRAD);
+            std::make_shared<FrictionSolver_t>(F_m, fv_m, sp, solverName, FrictionSolver_t::SOL_AND_GRAD);
     }
 
     size_type getGlobParticleNum() const { return globParticleNum_m; }
@@ -264,11 +264,7 @@ public:
         msg << "maxVel = " << maxVel << endl;
     }
 
-    void runFrictionSolver() {
-        Inform msg("runFrictionSolver");
-
-        velocityParticleCheck();
-
+    void scatterVelSpace() {
         // Scatter velocity density on grid
         fv_m = 0.0;
         // Scattered quantity should be a density ($\sum_i fv_i = 1$)
@@ -278,6 +274,19 @@ public:
         double cellVolume =
             std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
         fv_m = fv_m / cellVolume;
+    }
+
+    void gatherFd() {
+        // Gather Friction coefficients to particles attribute
+        gather(p_F_m, F_m, this->P);
+    }
+
+    void runFrictionSolver() {
+        Inform msg("runFrictionSolver");
+
+        //velocityParticleCheck();
+
+        scatterVelSpace();
 
         // Multiply with prefactors defined in RHS of Rosenbluth equations
         // FFTPoissonSolver already returns $- \nabla H(\vec v)$, so `-` was omitted here
@@ -286,14 +295,13 @@ public:
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
 
-        // Solve for $\nabla H(\vec v)$, is stored in `F_m`
+        // Solve for $\nabla_v H(\vec v)$, is stored in `F_m`
         frictionSolver_mp->solve();
 
         // Set origin of velocity space mesh to vmin (for scatter / gather)
         velocitySpaceMesh_m.setOrigin(vmin_m);
 
-        // Gather Friction coefficients to particles attribute
-        gather(p_F_m, F_m, this->P);
+        gatherFd();
 
         // Multiply with prob. density in configuration space $f(\vec r)$
         // Can be done as we use normalized particle charge $q = -1$
@@ -476,7 +484,6 @@ public:
         //// Calculate Moments of R and V //
         ////////////////////////////////////
 
-        m << "Moments" << endl;
         const double zero = 0.0;
 
         double centroid[2 * Dim]         = {};
