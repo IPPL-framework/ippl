@@ -56,7 +56,8 @@ namespace ippl {
                 totalRequests += componentNeighbors.size();
             }
 
-            using buffer_type = Communicate::buffer_type<>;
+            using memory_space = typename view_type::memory_space;
+            using buffer_type  = Communicate::buffer_type<memory_space>;
             std::vector<MPI_Request> requests(totalRequests);
 
             // sending loop
@@ -83,8 +84,8 @@ namespace ippl {
                     size_type nsends;
                     pack(range, view, haloData_m, nsends);
 
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<T>(IPPL_HALO_SEND + i * cubeCount + index, nsends);
+                    buffer_type buf = Ippl::Comm->getBuffer<T, memory_space>(
+                        IPPL_HALO_SEND + i * cubeCount + index, nsends);
 
                     Ippl::Comm->isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++],
                                       nsends);
@@ -108,8 +109,8 @@ namespace ippl {
 
                     size_type nrecvs = range.size();
 
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<T>(IPPL_HALO_RECV + i * cubeCount + index, nrecvs);
+                    buffer_type buf = Ippl::Comm->getBuffer<T, memory_space>(
+                        IPPL_HALO_RECV + i * cubeCount + index, nrecvs);
 
                     Ippl::Comm->recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
