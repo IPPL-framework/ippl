@@ -34,11 +34,12 @@ namespace ippl {
          */
         template <typename T, class... ViewArgs>
         struct FieldBufferData {
-            using view_type = typename detail::ViewType<T, 1, ViewArgs...>::view_type;
+            using view_type    = typename detail::ViewType<T, 1, ViewArgs...>::view_type;
+            using archive_type = Archive<typename view_type::memory_space>;
 
-            void serialize(Archive<>& ar, size_type nsends) { ar.serialize(buffer, nsends); }
+            void serialize(archive_type& ar, size_type nsends) { ar.serialize(buffer, nsends); }
 
-            void deserialize(Archive<>& ar, size_type nrecvs) { ar.deserialize(buffer, nrecvs); }
+            void deserialize(archive_type& ar, size_type nrecvs) { ar.deserialize(buffer, nrecvs); }
 
             view_type buffer;
         };

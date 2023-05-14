@@ -56,7 +56,7 @@ namespace ippl {
                 totalRequests += componentNeighbors.size();
             }
 
-            using buffer_type = Communicate::buffer_type;
+            using buffer_type = Communicate::buffer_type<>;
             std::vector<MPI_Request> requests(totalRequests);
 
             // sending loop

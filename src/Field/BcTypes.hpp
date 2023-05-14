@@ -243,7 +243,7 @@ namespace ippl {
 
                 auto& neighbors = faceNeighbors_m[face];
 
-                using buffer_type = Communicate::buffer_type;
+                using buffer_type = Communicate::buffer_type<>;
                 std::vector<MPI_Request> requests(neighbors.size());
 
                 using HaloCells_t = typename Field::halo_type;

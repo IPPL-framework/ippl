@@ -89,7 +89,7 @@ namespace ippl {
         typedef FieldLayout<Dim> FieldLayout_t;
 
         // type for communication buffers
-        using buffer_type = Communicate::buffer_type;
+        using buffer_type = Communicate::buffer_type<>;
 
         // types of mesh and mesh spacing
         using vector_type = typename mesh_type::vector_type;

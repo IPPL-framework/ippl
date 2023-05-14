@@ -23,6 +23,9 @@
 // For message size check; see below
 #include <climits>
 #include <cstdlib>
+#include <variant>
+
+#include "Utility/TypeUtils.h"
 
 #include "Communicate/Archive.h"
 #include "Communicate/TagMaker.h"
@@ -36,9 +39,27 @@ namespace ippl {
      */
     class Communicate : public TagMaker {
     public:
-        // Attention: only works with default spaces
-        using archive_type = detail::Archive<>;
-        using buffer_type  = std::shared_ptr<archive_type>;
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        using archive_type = detail::Archive<MemorySpace>;
+
+    private:
+        template <typename Space>
+        using ptr_type = std::shared_ptr<archive_type<Space>>;
+
+        template <typename... Spaces>
+        using archive_types = typename detail::WrapUnique<ptr_type, Spaces...>::type;
+
+        using buffer_types =
+            archive_types<Kokkos::HostSpace, Kokkos::SharedSpace, Kokkos::SharedHostPinnedSpace
+#ifdef KOKKOS_ENABLE_CUDA
+                          ,
+                          Kokkos::CudaSpace, Kokkos::CudaHostPinnedSpace, Kokkos::CudaUVMSpace
+#endif
+                          >;
+
+    public:
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        using buffer_type = std::shared_ptr<archive_type<MemorySpace>>;
 
         using size_type = detail::size_type;
 
@@ -66,6 +87,7 @@ namespace ippl {
          * @tparam T The datatype to be stored in the buffer; in particular, the size
          *           is scaled by the size of the data type (default char for when
          *           the size is already in bytes)
+         * @tparam MemorySpace The Kokkos memory space for which to allocate the buffer
          * @param id The numerical ID with which the buffer is associated (allows buffer reuse)
          * @param size The minimum size of the buffer, measured in number of elements
          *             of the provided datatype (if the size is in bytes, the default
@@ -77,14 +99,20 @@ namespace ippl {
          *                       is used
          * @return A shared pointer to the buffer with the requested properties
          */
-        template <typename T = char>
-        buffer_type getBuffer(int id, size_type size, double overallocation = 1.0);
+        template <typename T           = char,
+                  typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        buffer_type<MemorySpace> getBuffer(int id, size_type size, double overallocation = 1.0);
 
         /**
          * Deletes a buffer
          * @param id Buffer ID
          */
-        void deleteBuffer(int id);
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        void deleteBuffer(int id) {
+            std::string space = MemorySpace().name();
+            auto key          = std::make_pair(space, id);
+            buffers_m.erase(key);
+        }
 
         /**
          * Deletes all buffers created by the buffer factory
@@ -101,31 +129,28 @@ namespace ippl {
 
         int rank() const noexcept { return rank_m; }
 
-        /*!
-         * \warning Only works with default spaces!
-         */
-        template <class Buffer>
-        void recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize,
-                  size_type nrecvs);
+        template <class Buffer, typename Archive>
+        void recv(int src, int tag, Buffer& buffer, Archive& ar, size_type msize, size_type nrecvs);
+
+        template <class Buffer, typename Archive>
+        void isend(int dest, int tag, Buffer& buffer, Archive&, MPI_Request&, size_type nsends);
 
         /*!
          * \warning Only works with default spaces!
          */
-        template <class Buffer>
-        void isend(int dest, int tag, Buffer& buffer, archive_type&, MPI_Request&,
-                   size_type nsends);
-
-        /*!
-         * \warning Only works with default spaces!
-         */
-        void irecv(int src, int tag, archive_type&, MPI_Request&, size_type msize);
+        void irecv(int src, int tag, archive_type<>&, MPI_Request&, size_type msize);
 
         MPI_Comm* getCommunicator() noexcept { return &comm_m; }
 
         void barrier() noexcept { MPI_Barrier(comm_m); }
 
     private:
-        std::map<int, buffer_type> buffers_m;
+        /*!
+         * A map of existing buffers
+         * Key: (execution space name, buffer ID)
+         * Value: buffer for the given execution space with the given ID
+         */
+        std::map<std::pair<std::string, int>, buffer_types> buffers_m;
         double defaultOveralloc_m = 1.0;
 
         MPI_Comm comm_m;
@@ -133,8 +158,8 @@ namespace ippl {
         int rank_m;
     };
 
-    template <class Buffer>
-    void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize,
+    template <class Buffer, typename Archive>
+    void Communicate::recv(int src, int tag, Buffer& buffer, Archive& ar, size_type msize,
                            size_type nrecvs) {
         // Temporary fix. MPI communication seems to have problems when the
         // count argument exceeds the range of int, so large messages should
@@ -149,9 +174,9 @@ namespace ippl {
         buffer.deserialize(ar, nrecvs);
     }
 
-    template <class Buffer>
-    void Communicate::isend(int dest, int tag, Buffer& buffer, archive_type& ar,
-                            MPI_Request& request, size_type nsends) {
+    template <class Buffer, typename Archive>
+    void Communicate::isend(int dest, int tag, Buffer& buffer, Archive& ar, MPI_Request& request,
+                            size_type nsends) {
         if (ar.getSize() > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
             IpplAbort();

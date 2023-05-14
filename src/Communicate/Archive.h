@@ -37,10 +37,12 @@ namespace ippl {
          * Serialize and desesrialize particle attributes.
          * @tparam Properties variadic template for Kokkos::View
          */
-        template <class... Properties>
+
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space,
+                  class... Properties>
         class Archive {
         public:
-            using buffer_type  = typename ViewType<char, 1, Properties...>::view_type;
+            using buffer_type  = typename ViewType<char, 1, MemorySpace, Properties...>::view_type;
             using pointer_type = typename buffer_type::pointer_type;
 
             Archive(size_type size = 0);

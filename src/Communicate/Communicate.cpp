@@ -33,7 +33,7 @@ namespace ippl {
         MPI_Finalize();
     }
 
-    void Communicate::irecv(int src, int tag, archive_type& ar, MPI_Request& request,
+    void Communicate::irecv(int src, int tag, archive_type<>& ar, MPI_Request& request,
                             size_type msize) {
         if (msize > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
