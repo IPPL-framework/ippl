@@ -144,10 +144,6 @@ int main(int argc, char *argv[]){
     P->dumpBeamStatistics(0, OUT_DIR);
     
     for(size_t it = 1; it < NT; ++it){
-        // Kick
-        //P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
-        //// Drift
-        //P->R = P->R + DT * P->P;
 
         P->R = P->R + 0.5 * DT * P->P;
         P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
@@ -158,15 +154,11 @@ int main(int argc, char *argv[]){
         // Add constant focusing term
         P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
-        // Kick
-        //P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
-
         P->runFrictionSolver();
         
-        //P->P = P->P + DT * P->p_F_m;
-
         //// Add Friction
         P->P = P->P + DT * P->p_F_m;
+
         P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
         P->R = P->R + 0.5 * DT * P->P;
 
@@ -175,6 +167,7 @@ int main(int argc, char *argv[]){
             P->dumpBeamStatistics(it, OUT_DIR);
             if (it%50 == 0){
                 dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F_d");
+                dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "H(v)");
             }
 
             msg << "Finished iteration " << it << endl;
