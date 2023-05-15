@@ -33,29 +33,33 @@
 #include "LangevinHelpers.hpp"
 #include "Solver/FFTPoissonSolver.h"
 
-typedef Field<MatrixD_t, Dim> MField_t;
+template<unsigned Dim = 3>
+using MField_t = Field<MatrixD_t, Dim>;
 
 template <class PLayout, unsigned Dim = 3>
 class LangevinParticles : public ChargedParticles<PLayout> {
     using Base = ChargedParticles<PLayout, Dim>;
+
+    // Solver types acting on Fields in velocity space
     using FrictionSolver_t =
         ippl::FFTPoissonSolver<VectorD_t, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
     using DiffusionSolver_t =
         ippl::FFTPoissonSolver<VectorD_t, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
-    using KokkosRNG_t = Kokkos::Random_XorShift64_Pool<>;
+    // Kokkos Random Number Generator types (for stochastic diffusion coefficients)
+    using KokkosRNGPool_t = Kokkos::Random_XorShift64_Pool<>;
+    using KokkosRNG_t = KokkosRNGPool_t::generator_type;
 
     // View types (of particle attributes)
-    typedef ParticleAttrib<double>::view_type attr_view_t;      // Scalar particle attributes
-    typedef ParticleAttrib<VectorD_t>::view_type attr_Dview_t;  // D-dimensional particle attributes
-    typedef ParticleAttrib<double>::HostMirror attr_mirror_t;   // Scalar particle attributes
-    typedef ParticleAttrib<VectorD_t>::HostMirror
-        attr_Dmirror_t;  // D-dimensional particle attributes
+    typedef ParticleAttrib<double>::view_type     attr_view_t;
+    typedef ParticleAttrib<VectorD_t>::view_type  attr_Dview_t;
+    typedef ParticleAttrib<double>::HostMirror    attr_mirror_t;
+    typedef ParticleAttrib<VectorD_t>::HostMirror attr_Dmirror_t;
 
     // View types (of Fields)
-    typedef typename ippl::detail::ViewType<double, Dim>::view_type field_view_t;  // Scalar Fields
-    typedef typename ippl::detail::ViewType<VectorD_t, Dim>::view_type
-        field_Dview_t;  // D-dimensional Fields
+    typedef typename ippl::detail::ViewType<double, Dim>::view_type     Field_view_t;
+    typedef typename ippl::detail::ViewType<VectorD_t, Dim>::view_type  VField_view_t;
+    typedef typename ippl::detail::ViewType<MatrixD_t, Dim>::view_type  MField_view_t;
 
 public:
     /*
@@ -64,7 +68,7 @@ public:
     */
     LangevinParticles(PLayout& pl)
         : ChargedParticles<PLayout>(pl) {
-        // registerLangevinAttributes();
+         registerLangevinAttributes();
         setPotentialBCs();
     }
 
@@ -85,7 +89,8 @@ public:
         , vmax_m(vmax)
         , velocitySpaceIdxDomain_m(nv,nv,nv)
         , velocitySpaceMesh_m(velocitySpaceIdxDomain_m, hv_m, 0.0)
-        , velocitySpaceFieldLayout_m(velocitySpaceIdxDomain_m, configSpaceDecomp, false) {
+        , velocitySpaceFieldLayout_m(velocitySpaceIdxDomain_m, configSpaceDecomp, false)
+        , randPool_m((size_type)(42 + 100*rank_m)) {
         // Compute $\Gamma$ prefactor for Friction and Diffusion coefficients
         double q4          = pCharge_m * pCharge_m * pCharge_m * pCharge_m;
         double eps2Inv     = epsInv_m * epsInv_m;
@@ -105,21 +110,36 @@ public:
 
     void registerLangevinAttributes() {
         // Register particle attributes used to compute Langevin term
-        // TODO
         this->addAttribute(p_fv_m);
         this->addAttribute(p_F_m);
+        this->addAttribute(p_D0_m);
+        this->addAttribute(p_D1_m);
+        this->addAttribute(p_D2_m);
+        this->addAttribute(p_QdW_m);
     }
 
     void setupVelocitySpace() {
         Inform msg("setupVelocitySpace");
+        // Velocity density (with open boundaries)
         fv_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
+
+        // Velocity friction coefficient
         F_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
-        msg << "Initialized Velocity Space" << endl;
+
+        // Diffusion Coefficients
+        D_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
+        D0_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
+        D1_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
+        D2_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
+        msg << "Finished velocity space setup." << endl;
     }
 
     void initAllSolvers(std::string frictionSolverName) {
+        Inform msg("initAllSolvers");
         initSpaceChargeSolver();
         initFrictionSolver(frictionSolverName);
+        initDiffusionSolver();
+        msg << "Finished solver setup." << endl;
     }
 
     void initSpaceChargeSolver() {
@@ -143,6 +163,24 @@ public:
 
         frictionSolver_mp =
             std::make_shared<FrictionSolver_t>(F_m, fv_m, sp, solverName, FrictionSolver_t::SOL_AND_GRAD);
+    }
+    
+    // Setup Diffusion Solver ["BIHARMONIC"]
+    void initDiffusionSolver() {
+        // Initializing the open-boundary solver for the G potential used
+        // to compute the diffusion coefficient $D$
+
+        ippl::ParameterList sp;
+        sp.add("use_heffte_defaults", false);
+        sp.add("use_pencils", true);
+        sp.add("use_reorder", false);
+        sp.add("use_gpu_aware", true);
+        sp.add("comm", ippl::p2p_pl);
+        sp.add("r2c_direction", 0);
+
+        // Saves the potential $g(\vec v)$ in `fv_m`
+        diffusionSolver_mp =
+            std::make_shared<DiffusionSolver_t>(fv_m, sp, "BIHARMONIC");
     }
 
     size_type getGlobParticleNum() const { return globParticleNum_m; }
@@ -281,6 +319,74 @@ public:
         gather(p_F_m, F_m, this->P);
     }
 
+    void extractRows(MField_t<Dim>& M,
+                    VField_t<Dim>& V0,
+                    VField_t<Dim>& V1,
+                    VField_t<Dim>& V2) {
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        const int nghost = M.getNghost();
+        MField_view_t Mview = M.getView();
+        VField_view_t V0view = V0.getView();
+        VField_view_t V1view = V1.getView();
+        VField_view_t V2view = V2.getView();
+        ippl::parallel_for(
+                "Extract rows into separate Fields", getRangePolicy<Dim>(Mview, nghost),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                apply<Dim>(V0view, args) = apply<Dim>(Mview, args)[0];
+                apply<Dim>(V1view, args) = apply<Dim>(Mview, args)[1];
+                apply<Dim>(V2view, args) = apply<Dim>(Mview, args)[2];
+                });
+    }
+
+    void gatherHessian() {
+        extractRows(D_m, D0_m, D1_m, D2_m);
+        gather(p_D0_m, D0_m, this->P);
+        gather(p_D1_m, D1_m, this->P);
+        gather(p_D2_m, D2_m, this->P);
+    }
+
+    KOKKOS_FUNCTION
+    MatrixD_t cholesky3x3(MatrixD_t M) {
+        MatrixD_t L;
+        L[0][0] = sqrt(M[0][0]);
+        L[1][0] = M[1][0] / L[0][0];
+        L[1][1] = sqrt(M[1][1] - L[1][0] * L[1][0]);
+        L[2][0] = M[2][0] / L[0][0];
+        L[2][1] = (M[2][1] - L[2][0] * L[1][0]) / L[1][1];
+        L[2][2] = sqrt(M[2][2] - L[2][0] * L[2][0] - L[2][1] * L[2][1]);
+        return L;
+    }
+
+    KOKKOS_FUNCTION
+    VectorD_t matrixVectorMul3x3(MatrixD_t& M, VectorD_t& v) {
+        VectorD_t res;
+        res[0] = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2];
+        res[1] = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2];
+        res[2] = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2];
+        return res;
+    }
+
+    void choleskyMultiply() {
+        attr_Dview_t pD0_view = p_D0_m.getView();
+        attr_Dview_t pD1_view = p_D1_m.getView();
+        attr_Dview_t pD2_view = p_D2_m.getView();
+        attr_Dview_t pQdW_view = p_QdW_m.getView();
+
+        // First compute cholesky decomposition of D: $Q^T Q = D$
+        // Then multiply with Gaussian noise vector $dW$ to get $Q \cdot dW$
+        Kokkos::parallel_for(
+            "Apply Constant Focusing", this->getLocalNum(),
+            KOKKOS_LAMBDA(const int i) {
+            KokkosRNG_t rand_gen = randPool_m.get_state();
+            MatrixD_t Q = cholesky3x3(MatrixD_t({pD0_view(i), pD1_view(i), pD2_view(i)}));
+            VectorD_t dW = VectorD_t({rand_gen.normal(0.0, dt_m),
+                                      rand_gen.normal(0.0, dt_m),
+                                      rand_gen.normal(0.0, dt_m)});
+            pQdW_view(i) = matrixVectorMul3x3(Q, dW);
+            });
+        Kokkos::fence();
+    }
+
     void runFrictionSolver() {
         Inform msg("runFrictionSolver");
 
@@ -308,6 +414,43 @@ public:
         p_F_m = p_F_m * (this->q / this->Q_m);
 
         msg << "Friction computation done." << endl;
+    }
+
+    void runDiffusionSolver() {
+        Inform msg("runDiffusionSolver");
+
+        scatterVelSpace();
+        
+        // Multiply with prefactors defined in RHS of Rosenbluth equations
+        // FFTPoissonSolver returns $ \Delta_v \Delta_v G(\vec v)$ in `fv_m`
+        fv_m = -8.0 * pi_m * gamma_m * fv_m;
+
+        // Set origin of velocity space mesh to zero (for FFT)
+        velocitySpaceMesh_m.setOrigin(0.0);
+
+        // Solve for $\Delta_v \Delta_v G(\vec v)$, is stored in `fv_m`
+        frictionSolver_mp->solve();
+
+        // Set origin of velocity space mesh to vmin (for scatter / gather)
+        velocitySpaceMesh_m.setOrigin(vmin_m);
+
+        // Compute Hessian of $g(\vec v)$
+        D_m = hess(fv_m);
+
+        // Gather Hessian to particle attributes
+        gatherHessian();
+
+        // Multiply with prob. density in configuration space $f(\vec r)$
+        // Can be done as we use normalized particle charge $q = -1$
+        p_D0_m = p_D0_m * (this->q / this->Q_m);
+        p_D1_m = p_D1_m * (this->q / this->Q_m);
+        p_D2_m = p_D2_m * (this->q / this->Q_m);
+
+        // Do Cholesky decomposition of $D$ 
+        // and directly multiply with Gaussian random vector
+        choleskyMultiply();
+
+        msg << "Diffusion computation done." << endl;
     }
 
     void applyConstantFocusing(const double focus_fct, const double beamRadius,
@@ -343,7 +486,7 @@ public:
         // Kokkos::deep_copy(pR_mirror, pR_view);
 
         // Views/Mirrors for Fields
-        field_Dview_t E_view = this->E_m.getView();
+        VField_view_t E_view = this->E_m.getView();
 
         ////////////////////////////////////////////////////////////
         // Gather E-field in x-direction (via particle attribute) //
@@ -767,13 +910,26 @@ public:
     }
 
 public:
-    // Friction Coefficient
     Field_t<Dim> fv_m;
+    // Friction Coefficients
     VField_t<Dim> F_m;
+    // Diffusion Coefficients
+    MField_t<Dim> D_m;
+    // Separate rows, as gathering of Matrices is not yet possible
+    VField_t<Dim> D0_m;
+    VField_t<Dim> D1_m;
+    VField_t<Dim> D2_m;
 
     // Velocity density
     ParticleAttrib<double> p_fv_m;
+    // Friction Coefficient
     ParticleAttrib<VectorD_t> p_F_m;
+    // Rows of Diffusion Coefficient
+    ParticleAttrib<VectorD_t> p_D0_m;
+    ParticleAttrib<VectorD_t> p_D1_m;
+    ParticleAttrib<VectorD_t> p_D2_m;
+    // Diffusion coefficient multiplied with Gaussian random vectors
+    ParticleAttrib<VectorD_t> p_QdW_m;
 
 public:
     // MPI Rank
@@ -787,7 +943,8 @@ public:
     double epsInv_m;
     // Total number of global particles
     double globParticleNum_m;
-    // Simulation timestep, used to dump the time in `dumpBeamStatistics()`
+    // Simulation timestep
+    // Used to dump the time in `choleskyMultiply()` and `dumpBeamStatistics()`
     double dt_m;
 
     ////////////////////////////////////////////
@@ -813,11 +970,20 @@ public:
     double c_m = 2.99792458e10;
     // $\pi$ needed for Rosenbluth potentials
     double pi_m = std::acos(-1.0);
+    
+    // Random number generator for random gaussians that are multiplied with $Q$
+    KokkosRNGPool_t randPool_m;
 
-    // Solver in velocity space
-    // Solves $\Delta H(\vec v) = -8 \pi f(\vec v)$ and
+    ///////////////////////////////
+    // SOLVERS IN VELOCITY SPACE //
+    ///////////////////////////////
+    
+    // Solves $\Delta_v H(\vec v) = -8 \pi f(\vec v)$ and
     // directly stores $ - \nabla H(\vec v)$ in-place in LHS
     std::shared_ptr<FrictionSolver_t> frictionSolver_mp;
+
+    // Solves $\Delta_v \Delta_v G(\vec v) = -8 \pi f(\vec v)$
+    std::shared_ptr<DiffusionSolver_t> diffusionSolver_mp;
 };
 
 #endif /* LANGEVINPARTICLES_HPP */

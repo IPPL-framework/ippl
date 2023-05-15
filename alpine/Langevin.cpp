@@ -155,9 +155,15 @@ int main(int argc, char *argv[]){
         P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
         P->runFrictionSolver();
+
+        P->runDiffusionSolver();
         
-        //// Add Friction
-        P->P = P->P + DT * P->p_F_m;
+        // Add dynamic friction & stochastic diffusion coefficients
+        P->P = P->P + DT * P->p_F_m + P->p_QdW_m;
+        // Add friction contribution
+        //P->P = P->P + DT * P->p_F_m;
+        //// Add velocity Diffusion contribution
+        //P->P = P->P + P->p_QdW_m;
 
         P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
         P->R = P->R + 0.5 * DT * P->P;
