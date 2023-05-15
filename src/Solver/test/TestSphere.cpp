@@ -6,14 +6,17 @@
 
 #include "Ippl.h"
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
+
 #include "FFTPoissonSolver.h"
 
 KOKKOS_INLINE_FUNCTION double source(double x, double y, double z, double density = 1.0,
                                      double R = 1.0, double mu = 1.2) {
-    double pi = std::acos(-1.0);
+    double pi = std::Kokkos::numbers::pi_v<double>;
     double G  = 6.674e-11;
 
-    double r         = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
+    double r = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
     bool checkInside = (r <= R);
 
     return double(checkInside) * 4.0 * pi * G * density;
@@ -21,10 +24,10 @@ KOKKOS_INLINE_FUNCTION double source(double x, double y, double z, double densit
 
 KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double density = 1.0,
                                         double R = 1.0, double mu = 1.2) {
-    double pi = std::acos(-1.0);
+    double pi = std::Kokkos::numbers::pi_v<double>;
     double G  = 6.674e-11;
 
-    double r = std::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
+    double r = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
 
     bool checkInside = (r <= R);
     return -(double(checkInside) * (2.0 / 3.0) * pi * G * density * (3 * R * R - r * r))
