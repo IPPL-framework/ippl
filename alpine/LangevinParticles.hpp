@@ -307,9 +307,10 @@ public:
         gather(p_Fd_m, Fd_m, this->P);
 
         double L2vec;
+        double L2Fd;
         VectorD_t vVec;
         VField_view_t FdView = Fd_m.getView();
-        const int nghost = FdView.getNghost();
+        const int nghost = Fd_m.getNghost();
         const ippl::NDIndex<Dim>& lDom = velocitySpaceFieldLayout_m.getLocalNDIndex();
 
         typename VField_view_t::host_mirror_type hostView = Fd_m.getHostMirror();
@@ -326,20 +327,21 @@ public:
         csvout.setf(std::ios::scientific, std::ios::floatfield);
 
         // Write header
-        csvout << "v,Fd/v";
+        csvout << "v,Fd,Fd/v" << endl;
 
         // Compute $||F_d(\vec v)||^2 / ||\vec{v}||^2$
         // And dump into file
-        for (int z=nghost; z<nv_m[2]+nghost; z++) {
-            for (int y=nghost; y<nv_m[1]+nghost; y++) {
-                for (int x=nghost; x<nv_m[0]+nghost; x++) {
-                    vVec = {x,y,z};
+        for (unsigned z=nghost; z<nv_m[2]+nghost; z++) {
+            for (unsigned y=nghost; y<nv_m[1]+nghost; y++) {
+                for (unsigned x=nghost; x<nv_m[0]+nghost; x++) {
+                    vVec = {double(x),double(y),double(z)};
                     // Construct velocity vector at this cell
                     for (unsigned d = 0; d < Dim; d++) {
                         vVec[d] = (vVec[d] + lDom[d].first() - nghost + 0.5) * hv_m[d] + vmin_m[d];
                     }
                     L2vec = L2Norm(vVec);
-                    csvout << L2vec << "," << L2Norm(FdView(x,y,z)) / L2vec;
+                    L2Fd = L2Norm(FdView(x,y,z));
+                    csvout << L2vec << "," << L2Fd << "," << L2Fd / L2vec << endl;
                 }
             }
         }
