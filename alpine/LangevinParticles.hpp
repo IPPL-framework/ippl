@@ -340,7 +340,7 @@ public:
                         vVec[d] = (vVec[d] + lDom[d].first() - nghost + 0.5) * hv_m[d] + vmin_m[d];
                     }
                     L2vec = L2Norm(vVec);
-                    L2Fd = L2Norm(FdView(x,y,z));
+                    L2Fd = L2Norm(hostView(x,y,z));
                     csvout << L2vec << "," << L2Fd << "," << L2Fd / L2vec << endl;
                 }
             }
