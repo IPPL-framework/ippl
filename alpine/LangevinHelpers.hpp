@@ -249,4 +249,25 @@ struct BeamStatistics{
     VectorD_t Neps2;
 };
 
+KOKKOS_INLINE_FUNCTION
+MatrixD_t cholesky3x3(MatrixD_t M) {
+  MatrixD_t L;
+  L[0][0] = sqrt(M[0][0]);
+  L[1][0] = M[1][0] / L[0][0];
+  L[1][1] = sqrt(M[1][1] - L[1][0] * L[1][0]);
+  L[2][0] = M[2][0] / L[0][0];
+  L[2][1] = (M[2][1] - L[2][0] * L[1][0]) / L[1][1];
+  L[2][2] = sqrt(M[2][2] - L[2][0] * L[2][0] - L[2][1] * L[2][1]);
+  return L;
+}
+
+KOKKOS_INLINE_FUNCTION
+VectorD_t matrixVectorMul3x3(MatrixD_t& M, VectorD_t& v) {
+  VectorD_t res;
+  res[0] = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2];
+  res[1] = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2];
+  res[2] = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2];
+  return res;
+}
+
 #endif /* LANGEVINHELPERS_HPP */

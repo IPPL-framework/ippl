@@ -330,11 +330,11 @@ public:
         VField_view_t V1view = V1.getView();
         VField_view_t V2view = V2.getView();
         ippl::parallel_for(
-                "Extract rows into separate Fields", getRangePolicy<Dim>(Mview, nghost),
+                "Extract rows into separate Fields", ippl::getRangePolicy<Dim>(Mview, nghost),
                 KOKKOS_LAMBDA(const index_array_type& args) {
-                apply<Dim>(V0view, args) = apply<Dim>(Mview, args)[0];
-                apply<Dim>(V1view, args) = apply<Dim>(Mview, args)[1];
-                apply<Dim>(V2view, args) = apply<Dim>(Mview, args)[2];
+                ippl::apply<Dim>(V0view, args) = ippl::apply<Dim>(Mview, args)[0];
+                ippl::apply<Dim>(V1view, args) = ippl::apply<Dim>(Mview, args)[1];
+                ippl::apply<Dim>(V2view, args) = ippl::apply<Dim>(Mview, args)[2];
                 });
     }
 
@@ -345,43 +345,27 @@ public:
         gather(p_D2_m, D2_m, this->P);
     }
 
-    KOKKOS_FUNCTION
-    MatrixD_t cholesky3x3(MatrixD_t M) {
-        MatrixD_t L;
-        L[0][0] = sqrt(M[0][0]);
-        L[1][0] = M[1][0] / L[0][0];
-        L[1][1] = sqrt(M[1][1] - L[1][0] * L[1][0]);
-        L[2][0] = M[2][0] / L[0][0];
-        L[2][1] = (M[2][1] - L[2][0] * L[1][0]) / L[1][1];
-        L[2][2] = sqrt(M[2][2] - L[2][0] * L[2][0] - L[2][1] * L[2][1]);
-        return L;
-    }
-
-    KOKKOS_FUNCTION
-    VectorD_t matrixVectorMul3x3(MatrixD_t& M, VectorD_t& v) {
-        VectorD_t res;
-        res[0] = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2];
-        res[1] = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2];
-        res[2] = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2];
-        return res;
-    }
-
     void choleskyMultiply() {
         attr_Dview_t pD0_view = p_D0_m.getView();
         attr_Dview_t pD1_view = p_D1_m.getView();
         attr_Dview_t pD2_view = p_D2_m.getView();
         attr_Dview_t pQdW_view = p_QdW_m.getView();
 
+        // Have to create references
+        // as we want to avoid passing member variables to Kokkos kernels
+        KokkosRNGPool_t& randPoolRef = randPool_m;
+        double dt = dt_m;
+
         // First compute cholesky decomposition of D: $Q^T Q = D$
         // Then multiply with Gaussian noise vector $dW$ to get $Q \cdot dW$
         Kokkos::parallel_for(
             "Apply Constant Focusing", this->getLocalNum(),
             KOKKOS_LAMBDA(const int i) {
-            KokkosRNG_t rand_gen = randPool_m.get_state();
+            KokkosRNG_t rand_gen = randPoolRef.get_state();
             MatrixD_t Q = cholesky3x3(MatrixD_t({pD0_view(i), pD1_view(i), pD2_view(i)}));
-            VectorD_t dW = VectorD_t({rand_gen.normal(0.0, dt_m),
-                                      rand_gen.normal(0.0, dt_m),
-                                      rand_gen.normal(0.0, dt_m)});
+            VectorD_t dW = VectorD_t({rand_gen.normal(0.0, dt),
+                                      rand_gen.normal(0.0, dt),
+                                      rand_gen.normal(0.0, dt)});
             pQdW_view(i) = matrixVectorMul3x3(Q, dW);
             });
         Kokkos::fence();
@@ -390,7 +374,7 @@ public:
     void runFrictionSolver() {
         Inform msg("runFrictionSolver");
 
-        //velocityParticleCheck();
+        velocityParticleCheck();
 
         scatterVelSpace();
 
@@ -401,7 +385,7 @@ public:
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
 
-        // Solve for $\nabla_v H(\vec v)$, is stored in `F_m`
+        // Solve for $\Delta_v H(\vec v)$, is stored in `F_m`
         frictionSolver_mp->solve();
 
         // Set origin of velocity space mesh to vmin (for scatter / gather)
