@@ -216,7 +216,7 @@ namespace ippl {
 
     template <typename Tp1, typename Tf, unsigned Dim, class M, class C, typename Tp2,
               class... Properties>
-    inline void gather(ParticleAttrib<P1, Properties...>& attrib, Field<Tf, Dim, M, C>& f,
+    inline void gather(ParticleAttrib<Tp1, Properties...>& attrib, Field<Tf, Dim, M, C>& f,
                        const ParticleAttrib<Vector<Tp2, Dim>, Properties...>& pp) {
         attrib.gather(f, pp);
     }

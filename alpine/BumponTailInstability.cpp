@@ -229,7 +229,7 @@ private:
     FieldLayout_t<2> layout;
     Mesh_t<2> mesh;
     Field_t<2> phaseSpace, phaseSpaceBuf;
-    ippl::ParticleAttrib<Vector<double, 2>> phase;
+    ippl::ParticleAttrib<Vector<2, double>> phase;
 
     double maxValue = 0, minValue = 0;
 };

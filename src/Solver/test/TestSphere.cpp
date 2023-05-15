@@ -13,7 +13,7 @@
 
 KOKKOS_INLINE_FUNCTION double source(double x, double y, double z, double density = 1.0,
                                      double R = 1.0, double mu = 1.2) {
-    double pi = std::Kokkos::numbers::pi_v<double>;
+    double pi = Kokkos::numbers::pi_v<double>;
     double G  = 6.674e-11;
 
     double r = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
@@ -24,7 +24,7 @@ KOKKOS_INLINE_FUNCTION double source(double x, double y, double z, double densit
 
 KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double density = 1.0,
                                         double R = 1.0, double mu = 1.2) {
-    double pi = std::Kokkos::numbers::pi_v<double>;
+    double pi = Kokkos::numbers::pi_v<double>;
     double G  = 6.674e-11;
 
     double r = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));

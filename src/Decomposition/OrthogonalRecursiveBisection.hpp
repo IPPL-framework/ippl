@@ -185,7 +185,7 @@ namespace ippl {
             end[cutAxis]   = i + 1;
 
             // Reducing over perpendicular plane defined by cutAxis
-            Tf tempRes = Tf(0);
+            Tp tempRes = Tp(0);
 
             using index_array_type = typename RangePolicy<Dim>::index_array_type;
             ippl::parallel_reduce(
