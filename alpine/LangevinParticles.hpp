@@ -419,8 +419,6 @@ public:
     void runFrictionSolver() {
         Inform msg("runFrictionSolver");
 
-        velocityParticleCheck();
-
         scatterVelSpace();
 
         // Multiply with prefactors defined in RHS of Rosenbluth equations
@@ -458,7 +456,7 @@ public:
         velocitySpaceMesh_m.setOrigin(0.0);
 
         // Solve for $\Delta_v \Delta_v G(\vec v)$, is stored in `fv_m`
-        frictionSolver_mp->solve();
+        diffusionSolver_mp->solve();
 
         // Set origin of velocity space mesh to vmin (for scatter / gather)
         velocitySpaceMesh_m.setOrigin(vmin_m);
