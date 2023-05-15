@@ -156,12 +156,12 @@ int main(int argc, char *argv[]){
 
         P->runFrictionSolver();
 
-        P->runDiffusionSolver();
+        //P->runDiffusionSolver();
         
         // Add dynamic friction & stochastic diffusion coefficients
-        P->P = P->P + DT * P->p_F_m + P->p_QdW_m;
+        //P->P = P->P + DT * P->p_Fd_m + P->p_QdW_m;
         // Add friction contribution
-        //P->P = P->P + DT * P->p_F_m;
+        P->P = P->P + DT * P->p_Fd_m;
         //// Add velocity Diffusion contribution
         //P->P = P->P + P->p_QdW_m;
 
