@@ -138,8 +138,8 @@ int main(int argc, char *argv[]){
 
     P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
-    dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "Rho");
-    dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
+    //dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "Rho");
+    //dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
 
     P->dumpBeamStatistics(0, OUT_DIR);
     
@@ -154,16 +154,16 @@ int main(int argc, char *argv[]){
         // Add constant focusing term
         P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
-        P->runFrictionSolver();
+        //P->runFrictionSolver();
 
-        //P->runDiffusionSolver();
+        P->runDiffusionSolver();
         
         // Add dynamic friction & stochastic diffusion coefficients
         //P->P = P->P + DT * P->p_Fd_m + P->p_QdW_m;
         // Add friction contribution
-        P->P = P->P + DT * P->p_Fd_m;
+        //P->P = P->P + DT * P->p_Fd_m;
         //// Add velocity Diffusion contribution
-        //P->P = P->P + P->p_QdW_m;
+        P->P = P->P + P->p_QdW_m;
 
         P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
         P->R = P->R + 0.5 * DT * P->P;
@@ -171,9 +171,12 @@ int main(int argc, char *argv[]){
         // Dump Statistics every PRINT_INTERVAL iteration
         if (it%PRINT_INTERVAL == 0){
             P->dumpBeamStatistics(it, OUT_DIR);
-            if (it%50 == 0){
-                dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F_d");
-                dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "H(v)");
+            P->velocityParticleCheck();
+
+            if (it%200 == 0){
+                //dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F_d");
+                //dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "H(v)");
+                P->dumpFdStatistics(it, OUT_DIR);
             }
 
             msg << "Finished iteration " << it << endl;
