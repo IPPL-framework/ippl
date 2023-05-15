@@ -111,7 +111,7 @@ public:
     void registerLangevinAttributes() {
         // Register particle attributes used to compute Langevin term
         this->addAttribute(p_fv_m);
-        this->addAttribute(p_F_m);
+        this->addAttribute(p_Fd_m);
         this->addAttribute(p_D0_m);
         this->addAttribute(p_D1_m);
         this->addAttribute(p_D2_m);
@@ -124,7 +124,7 @@ public:
         fv_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
 
         // Velocity friction coefficient
-        F_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
+        Fd_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
 
         // Diffusion Coefficients
         D_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
@@ -162,7 +162,7 @@ public:
         sp.add("r2c_direction", 0);
 
         frictionSolver_mp =
-            std::make_shared<FrictionSolver_t>(F_m, fv_m, sp, solverName, FrictionSolver_t::SOL_AND_GRAD);
+            std::make_shared<FrictionSolver_t>(Fd_m, fv_m, sp, solverName, FrictionSolver_t::SOL_AND_GRAD);
     }
     
     // Setup Diffusion Solver ["BIHARMONIC"]
@@ -302,6 +302,49 @@ public:
         msg << "maxVel = " << maxVel << endl;
     }
 
+    void dumpFdStatistics(unsigned int iteration, std::string folder) {
+        // Gather from particle attributes
+        gather(p_Fd_m, Fd_m, this->P);
+
+        double L2vec;
+        VectorD_t vVec;
+        VField_view_t FdView = Fd_m.getView();
+        const int nghost = FdView.getNghost();
+        const ippl::NDIndex<Dim>& lDom = velocitySpaceFieldLayout_m.getLocalNDIndex();
+
+        typename VField_view_t::host_mirror_type hostView = Fd_m.getHostMirror();
+        Kokkos::deep_copy(hostView, FdView);
+
+        std::stringstream fname;
+        fname << folder;
+        fname << "/FdNorm_it";
+        fname << std::setw(4) << std::setfill('0') << iteration;
+        fname << ".csv";
+
+        Inform csvout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+        csvout.precision(10);
+        csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+        // Write header
+        csvout << "v,Fd/v";
+
+        // Compute $||F_d(\vec v)||^2 / ||\vec{v}||^2$
+        // And dump into file
+        for (int z=nghost; z<nv_m[2]+nghost; z++) {
+            for (int y=nghost; y<nv_m[1]+nghost; y++) {
+                for (int x=nghost; x<nv_m[0]+nghost; x++) {
+                    vVec = {x,y,z};
+                    // Construct velocity vector at this cell
+                    for (unsigned d = 0; d < Dim; d++) {
+                        vVec[d] = (vVec[d] + lDom[d].first() - nghost + 0.5) * hv_m[d] + vmin_m[d];
+                    }
+                    L2vec = L2Norm(vVec);
+                    csvout << L2vec << "," << L2Norm(FdView(x,y,z)) / L2vec;
+                }
+            }
+        }
+    }
+
     void scatterVelSpace() {
         // Scatter velocity density on grid
         fv_m = 0.0;
@@ -316,7 +359,7 @@ public:
 
     void gatherFd() {
         // Gather Friction coefficients to particles attribute
-        gather(p_F_m, F_m, this->P);
+        gather(p_Fd_m, Fd_m, this->P);
     }
 
     void extractRows(MField_t<Dim>& M,
@@ -385,7 +428,7 @@ public:
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
 
-        // Solve for $\Delta_v H(\vec v)$, is stored in `F_m`
+        // Solve for $\Delta_v H(\vec v)$, is stored in `Fd_m`
         frictionSolver_mp->solve();
 
         // Set origin of velocity space mesh to vmin (for scatter / gather)
@@ -395,7 +438,7 @@ public:
 
         // Multiply with prob. density in configuration space $f(\vec r)$
         // Can be done as we use normalized particle charge $q = -1$
-        p_F_m = p_F_m * (this->q / this->Q_m);
+        p_Fd_m = p_Fd_m * (this->q / this->Q_m);
 
         msg << "Friction computation done." << endl;
     }
@@ -896,7 +939,7 @@ public:
 public:
     Field_t<Dim> fv_m;
     // Friction Coefficients
-    VField_t<Dim> F_m;
+    VField_t<Dim> Fd_m;
     // Diffusion Coefficients
     MField_t<Dim> D_m;
     // Separate rows, as gathering of Matrices is not yet possible
@@ -907,7 +950,7 @@ public:
     // Velocity density
     ParticleAttrib<double> p_fv_m;
     // Friction Coefficient
-    ParticleAttrib<VectorD_t> p_F_m;
+    ParticleAttrib<VectorD_t> p_Fd_m;
     // Rows of Diffusion Coefficient
     ParticleAttrib<VectorD_t> p_D0_m;
     ParticleAttrib<VectorD_t> p_D1_m;
