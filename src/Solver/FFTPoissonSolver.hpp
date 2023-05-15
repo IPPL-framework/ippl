@@ -414,10 +414,7 @@ namespace ippl {
         // for all timesteps (green's fct will only change if mesh size changes)
         static IpplTimings::TimerRef ginit = IpplTimings::getTimer("Green Init");
         IpplTimings::startTimer(ginit);
-        Inform msg("");
-        msg << "init done" << endl;
         greensFunction();
-        msg << "Green done" << endl;
         IpplTimings::stopTimer(ginit);
     };
 
