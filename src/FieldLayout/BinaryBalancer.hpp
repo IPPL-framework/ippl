@@ -171,7 +171,7 @@ static RandomIterator FindMedian(int nprocs, RandomIterator begin, RandomIterato
 // Reduce over a 3 dimensional BrickIterator
 // given the axis not to reduce on
 // and where in that dimension to reduce.
-template<class T>
+template <class T>
 static inline T PerpReduce(BrickIterator<T, 3>& data, int i, int cutAxis) {
     double r = 0;
     if (cutAxis == 0) {
@@ -202,7 +202,7 @@ static inline T PerpReduce(BrickIterator<T, 3>& data, int i, int cutAxis) {
 // Reduce over a 2 dimensional BrickIterator
 // given the axis not to reduce on
 // and where in that dimension to reduce.
-template<class T>
+template <class T>
 static inline T PerpReduce(BrickIterator<T, 2>& data, int i, int cutAxis) {
     double r = 0;
     if (cutAxis == 0) {
@@ -273,7 +273,7 @@ static void SendReduce(IndexIterator domainsBegin, IndexIterator domainsEnd,
                 // Find the intersection with this LField.
                 NDIndex<Dim> intersection = (*dp).intersect((*lf_p).second->getOwned());
                 // Allocate the accumulation buffer.
-                int length      = intersection[cutAxis].length();
+                int length = intersection[cutAxis].length();
                 T* reduced = new T[length];
                 // Reduce into the local buffer.
                 /*out << "LocalReduce " << intersection << endl;*/
@@ -292,8 +292,8 @@ static void SendReduce(IndexIterator domainsBegin, IndexIterator domainsEnd,
             // The number of reduced domains is the first thing in the message.
             mess->put(nrdomains);
             // Loop over the reduced domains, storing in the message each time.
-            std::vector<Index>::iterator dbp   = domainBuffer.begin();
-            std::vector<T*>::iterator rbp = reducedBuffer.begin();
+            std::vector<Index>::iterator dbp = domainBuffer.begin();
+            std::vector<T*>::iterator rbp    = reducedBuffer.begin();
             for (int i = 0; i < nrdomains; ++i, ++dbp, ++rbp) {
                 // First store the domain.
                 /*out << "putMessage " << *dbp << endl;*/
@@ -391,8 +391,8 @@ static void ReceiveReduce(NDIndex<Dim>& domain, BareField<T, Dim>& weights, int 
     }
 
     // Get the median.
-    cutLoc = FindMedian(nprocs, reduced.begin(), reduced.begin() + length, T())
-             - reduced.begin() + domain[cutAxis].first();
+    cutLoc = FindMedian(nprocs, reduced.begin(), reduced.begin() + length, T()) - reduced.begin()
+             + domain[cutAxis].first();
     /*out << "ReceiveReduce, cutLoc=" << cutLoc << endl;*/
 }
 
