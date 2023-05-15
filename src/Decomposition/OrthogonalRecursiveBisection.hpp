@@ -185,15 +185,15 @@ namespace ippl {
             end[cutAxis]   = i + 1;
 
             // Reducing over perpendicular plane defined by cutAxis
-            Tp tempRes = Tp(0);
+            Tf tempRes = Tf(0);
 
             using index_array_type = typename RangePolicy<Dim>::index_array_type;
             ippl::parallel_reduce(
                 "ORB weight reduction", createRangePolicy<Dim>(begin, end),
-                KOKKOS_LAMBDA(const index_array_type& args, Tp& weight) {
+                KOKKOS_LAMBDA(const index_array_type& args, Tf& weight) {
                     weight += apply<Dim>(data, args);
                 },
-                Kokkos::Sum<Tp>(tempRes));
+                Kokkos::Sum<Tf>(tempRes));
 
             Kokkos::fence();
 
