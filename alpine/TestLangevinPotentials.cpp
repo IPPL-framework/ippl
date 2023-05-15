@@ -5,14 +5,14 @@
 
 const char* TestName = "LangevinPotentials";
 
-KOKKOS_FUNCTION
+KOKKOS_INLINE_FUNCTION
 double maxwellianPDF(const VectorD_t &v, const double& numberDensity, const double& vth) {
     double vNorm = L2Norm(v);
     double expTerm = Kokkos::exp(-vNorm*vNorm/(2.0*vth));
     return (numberDensity / Kokkos::pow(2.0*Kokkos::numbers::pi_v<double>*vth, 1.5)) * expTerm;
 }
 
-KOKKOS_FUNCTION
+KOKKOS_INLINE_FUNCTION
 double HexactDistribution(const VectorD_t& v, const double& numberDensity, const double& vth) {
     double vNorm = L2Norm(v);
     return (2.0*numberDensity / vNorm) * Kokkos::erf(vNorm/(Kokkos::sqrt(2.0)*vth));
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]){
     const int nghost               = P->fv_m.getNghost();
     auto fvView                    = P->fv_m.getView();
     auto HviewExact                = HfieldExact.getView();
-
+    VectorD_t hv                   = P->hv_m;
     VectorD_t vOrigin              = P->vmin_m;
 
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
@@ -172,7 +172,7 @@ int main(int argc, char *argv[]){
             // local to global index conversion
             Vector_t<Dim> xvec = args;
             for (unsigned d = 0; d < Dim; d++) {
-            xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * P->hv_m[d] + vOrigin[d];
+                xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hv[d] + vOrigin[d];
             }
 
             // ippl::apply<unsigned> accesses the view at the given indices and obtains a
@@ -198,7 +198,7 @@ int main(int argc, char *argv[]){
     // Set origin of velocity space mesh to zero (for FFT)
     P->velocitySpaceMesh_m.setOrigin(0.0);
 
-    // Solve for $\nabla_v H(\vec v)$, is stored in `F_m`
+    // Solve for $\nabla_v H(\vec v)$, is stored in `Fd_m`
     // $H(\vec v)$, is stored in `fv_m`
     P->frictionSolver_mp->solve();
 
@@ -208,7 +208,7 @@ int main(int argc, char *argv[]){
     // Dump resulting Fields
     dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Happr");
     dumpVTKScalar(HfieldExact, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Hexact");
-    dumpVTKVector(P->F_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "gradHappr");
+    dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "gradHappr");
     auto Hdiff = P->fv_m.deepCopy();
     Hdiff = Hdiff - HfieldExact;
     dumpVTKScalar(Hdiff, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Hdiff");
