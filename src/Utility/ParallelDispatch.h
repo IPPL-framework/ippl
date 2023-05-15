@@ -138,7 +138,7 @@ namespace ippl {
             SCAN
         };
 
-        template <e_functor_type, typename, typename, typename>
+        template <e_functor_type, typename, typename, typename...>
         struct FunctorWrapper;
 
         /*!
@@ -149,8 +149,8 @@ namespace ippl {
          * @tparam T... index types
          * @tparam Acc accumulator data type
          */
-        template <typename Functor, typename... T, typename Acc>
-        struct FunctorWrapper<REDUCE, Functor, std::tuple<T...>, Acc> {
+        template <typename Functor, typename... T, typename... Acc>
+        struct FunctorWrapper<REDUCE, Functor, std::tuple<T...>, Acc...> {
             Functor f;
 
             /*!
@@ -160,15 +160,15 @@ namespace ippl {
              * @param res the accumulator variable
              * @return The functor's return value
              */
-            KOKKOS_INLINE_FUNCTION void operator()(T... x, Acc& res) const {
+            KOKKOS_INLINE_FUNCTION void operator()(T... x, Acc&... res) const {
                 using index_type = typename RangePolicy<sizeof...(T)>::index_type;
                 typename RangePolicy<sizeof...(T)>::index_array_type args = {(index_type)x...};
-                f(args, res);
+                f(args, res...);
             }
         };
 
         template <typename Functor, typename... T>
-        struct FunctorWrapper<FOR, Functor, std::tuple<T...>, void> {
+        struct FunctorWrapper<FOR, Functor, std::tuple<T...>> {
             Functor f;
 
             KOKKOS_INLINE_FUNCTION void operator()(T... x) const {
@@ -180,15 +180,15 @@ namespace ippl {
 
         /*!
          * Convenience function for wrapping a functor with the wrapper struct.
+         * @tparam Functor the functor type
          * @tparam Type the parallel dispatch type
          * @tparam Dim the loop's rank
-         * @tparam Acc the accumulator type
-         * @tparam Functor the functor type
+         * @tparam Acc... the accumulator type(s)
          * @return A wrapper containing the given functor
          */
-        template <e_functor_type Type, unsigned Dim, typename Acc = void, typename Functor>
+        template <e_functor_type Type, unsigned Dim, typename... Acc, typename Functor>
         auto functorize(const Functor& f) {
-            return FunctorWrapper<Type, Functor, typename Coords<Dim>::type, Acc>{f};
+            return FunctorWrapper<Type, Functor, typename Coords<Dim>::type, Acc...>{f};
         }
 
         // Extracts the rank of a Kokkos range policy

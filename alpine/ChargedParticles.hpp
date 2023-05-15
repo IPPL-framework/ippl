@@ -588,42 +588,39 @@ public:
         Ippl::Comm->barrier();
     }
 
-    void dumpLandau() {
+    void collectLandau(double& localEx2, double& localExNorm) {
         const int nghostE = E_m.getNghost();
         auto deviceView   = E_m.getView();
         auto Eview        = E_m.getHostMirror();
         Kokkos::deep_copy(Eview, deviceView);
-        double fieldEnergy, ExAmp;
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        double temp            = 0.0;
+        localEx2 = localExNorm = 0.0;
         ippl::parallel_reduce(
-            "Ex inner product", ippl::getRangePolicy(Eview, nghostE),
-            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply accesses the view at the given indices and obtains a
+            "Ex stats", ippl::getRangePolicy(Eview, nghostE),
+            KOKKOS_LAMBDA(const index_array_type& args, double& E2, double& ENorm) {
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::pow(ippl::apply(Eview, args)[0], 2);
-                valL += myVal;
-            },
-            Kokkos::Sum<double>(temp));
-        double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
+                double val = ippl::apply(Eview, args)[0];
+                double e2  = std::pow(val, 2);
+                E2 += e2;
 
-        double tempMax = 0.0;
-        ippl::parallel_reduce(
-            "Ex max norm", ippl::getRangePolicy(Eview, nghostE),
-            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply accesses the view at the given indices and obtains a
-                // reference; see src/Expression/IpplOperations.h
-                double myVal = std::fabs(ippl::apply(Eview, args)[0]);
-                if (myVal > valL) {
-                    valL = myVal;
+                double norm = std::fabs(ippl::apply(Eview, args)[0]);
+                if (norm > ENorm) {
+                    ENorm = norm;
                 }
             },
-            Kokkos::Max<double>(tempMax));
-        ExAmp = 0.0;
-        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+            Kokkos::Sum<double>(localEx2), Kokkos::Max<double>(localExNorm));
+    }
+
+    void dumpLandau(double& localEx2, double& localExNorm) {
+        double globaltemp = 0.0;
+        MPI_Reduce(&localEx2, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        double fieldEnergy =
+            std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
+
+        double ExAmp = 0.0;
+        MPI_Reduce(&localExNorm, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
 
         if (Ippl::Comm->rank() == 0) {
             std::stringstream fname;
