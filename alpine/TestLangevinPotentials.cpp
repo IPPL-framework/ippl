@@ -8,8 +8,8 @@ const char* TestName = "LangevinPotentials";
 KOKKOS_INLINE_FUNCTION
 double maxwellianPDF(const VectorD_t &v, const double& numberDensity, const double& vth) {
     double vNorm = L2Norm(v);
-    double expTerm = Kokkos::exp(-vNorm*vNorm/(2.0*vth));
-    return (numberDensity / Kokkos::pow(2.0*Kokkos::numbers::pi_v<double>*vth, 1.5)) * expTerm;
+    double expTerm = Kokkos::exp(-vNorm*vNorm/(2.0*vth*vth));
+    return (numberDensity / Kokkos::pow(2.0*Kokkos::numbers::pi_v<double>*vth*vth, 1.5)) * expTerm;
 }
 
 KOKKOS_INLINE_FUNCTION
