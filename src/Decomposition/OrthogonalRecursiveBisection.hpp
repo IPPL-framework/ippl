@@ -20,9 +20,9 @@ namespace ippl {
 
         // MPI datatype
         MPI_Datatype mpi_data = MPI_DATATYPE_NULL;
-        if constexpr (std::is_same_v<Tp, float>) {
+        if constexpr (std::is_same_v<Tf, float>) {
             mpi_data = MPI_FLOAT;
-        } else if constexpr (std::is_same_v<Tp, double>) {
+        } else if constexpr (std::is_same_v<Tf, double>) {
             mpi_data = MPI_DOUBLE;
         }
 
@@ -49,7 +49,7 @@ namespace ippl {
         std::vector<int> procs            = {nprocs};
 
         // Arrays for reduction
-        std::vector<Tp> reduced, reducedRank;
+        std::vector<Tf> reduced, reducedRank;
 
         // Start recursive repartition loop
         unsigned int it = 0;
@@ -112,8 +112,9 @@ namespace ippl {
         IpplTimings::startTimer(tbasicOp);
         for (unsigned int i = 0; i < domains.size(); i++) {
             if (domains[i][0].length() == 1 || domains[i][1].length() == 1
-                || domains[i][2].length() == 1)
+                || domains[i][2].length() == 1) {
                 return false;
+            }
         }
 
         // Update FieldLayout with new indices
@@ -137,12 +138,13 @@ namespace ippl {
 
     template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
     void OrthogonalRecursiveBisection<Tf, Dim, Mesh, Centering, Tp>::perpendicularReduction(
-        std::vector<Tp>& rankWeights, unsigned int cutAxis, NDIndex<Dim>& dom) {
+        std::vector<Tf>& rankWeights, unsigned int cutAxis, NDIndex<Dim>& dom) {
         // Check if domains overlap, if not no need for reduction
         NDIndex<Dim> lDom = bf_m.getOwned();
         if (lDom[cutAxis].first() > dom[cutAxis].last()
-            || lDom[cutAxis].last() < dom[cutAxis].first())
+            || lDom[cutAxis].last() < dom[cutAxis].first()) {
             return;
+        }
 
         // Get field's local weights
         int nghost                 = bf_m.getNghost();
@@ -156,8 +158,9 @@ namespace ippl {
 
         // Set iterator for where to write in the reduced array
         unsigned int arrayStart = 0;
-        if (dom[cutAxis].first() < lDom[cutAxis].first())
+        if (dom[cutAxis].first() < lDom[cutAxis].first()) {
             arrayStart = lDom[cutAxis].first() - dom[cutAxis].first();
+        }
 
         // Find all the perpendicular axes
         using index_type = typename RangePolicy<Dim>::index_type;
@@ -203,17 +206,17 @@ namespace ippl {
     }
 
     template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
-    int OrthogonalRecursiveBisection<Tf, Dim, Mesh, Centering, Tp>::findMedian(std::vector<Tp>& w) {
+    int OrthogonalRecursiveBisection<Tf, Dim, Mesh, Centering, Tp>::findMedian(std::vector<Tf>& w) {
         // Special case when array must be cut in half in order to not have planes
-        if (w.size() == 4)
+        if (w.size() == 4) {
             return 1;
-
+        }
         // Get total sum of array
-        Tp tot = std::accumulate(w.begin(), w.end(), Tp(0));
+        Tf tot = std::accumulate(w.begin(), w.end(), Tf(0));
 
         // Find position of median as half of total in array
-        Tp half = 0.5 * tot;
-        Tp curr = Tp(0);
+        Tf half = 0.5 * tot;
+        Tf curr = Tf(0);
         // Do not need to iterate to full extent since it must not give planes
         for (unsigned int i = 0; i < w.size() - 1; i++) {
             curr += w[i];
@@ -222,7 +225,7 @@ namespace ippl {
                 if (i == 0) {
                     return 1;
                 }
-                Tp previous = curr - w[i];
+                Tf previous = curr - w[i];
                 // curr - half < half - previous
                 if ((curr + previous) <= tot
                     && curr != half) {  // if true then take current i, otherwise i-1
@@ -248,12 +251,12 @@ namespace ippl {
         NDIndex<Dim> leftDom, rightDom;
         domains[it].split(leftDom, rightDom, cutAxis, median + domains[it][cutAxis].first());
         domains[it] = leftDom;
-        domains.insert(domains.begin() + it + 1, 1, rightDom);
+        domains.insert(domains.begin() + it + 1, rightDom);
 
         // Cut procs in half
         int temp  = procs[it];
         procs[it] = procs[it] / 2;
-        procs.insert(procs.begin() + it + 1, 1, temp - procs[it]);
+        procs.insert(procs.begin() + it + 1, temp - procs[it]);
     }
 
     template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
@@ -264,11 +267,11 @@ namespace ippl {
         // Reset local field
         bf_m = 0.0;
         // Get local data
-        typename Field<Tf, Dim, Mesh, Centering>::view_type view = bf_m.getView();
-        const Mesh& mesh                                         = bf_m.get_mesh();
-        const FieldLayout<Dim>& layout                           = bf_m.getLayout();
-        const NDIndex<Dim>& lDom                                 = layout.getLocalNDIndex();
-        const int nghost                                         = bf_m.getNghost();
+        field_view_type view           = bf_m.getView();
+        const Mesh& mesh               = bf_m.get_mesh();
+        const FieldLayout<Dim>& layout = bf_m.getLayout();
+        const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
+        const int nghost               = bf_m.getNghost();
 
         // Get spacings
         const vector_type& dx     = mesh.getMeshSpacing();
@@ -278,7 +281,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "ParticleAttrib::scatterR", r.getParticleCount(), KOKKOS_LAMBDA(const size_t idx) {
                 // Find nearest grid point
-                vector_type l          = (r(idx) - origin) * invdx + 0.5;
+                Vector<Tp, Dim> l      = (r(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index = l;
                 Vector<Tf, Dim> whi    = l - index;
                 Vector<Tf, Dim> wlo    = 1.0 - whi;

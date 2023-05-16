@@ -42,7 +42,6 @@ namespace ippl {
     template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp = Tf>
     class OrthogonalRecursiveBisection {
     public:
-        using view_type       = typename detail::ViewType<Tp, Dim>::view_type;
         using field_view_type = typename detail::ViewType<Tf, Dim>::view_type;
 
         // Weight for reduction
@@ -80,13 +79,13 @@ namespace ippl {
          * @param dom Domain to reduce
          * @param cutAxis Index of cut axis
          */
-        void perpendicularReduction(std::vector<Tp>& res, unsigned int cutAxis, NDIndex<Dim>& dom);
+        void perpendicularReduction(std::vector<Tf>& res, unsigned int cutAxis, NDIndex<Dim>& dom);
 
         /*!
          * Find median of array
          * @param w Array of real numbers
          */
-        int findMedian(std::vector<Tp>& w);
+        int findMedian(std::vector<Tf>& w);
 
         /*!
          * Splits the domain given by the iterator along the cut axis at the median,
