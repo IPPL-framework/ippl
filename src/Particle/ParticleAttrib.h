@@ -48,8 +48,13 @@ namespace ippl {
 
         using boolean_view_type =
             typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
+        using int_view_type = typename detail::ViewType<int, 1, Properties...>::view_type;
+
         using view_type  = typename detail::ViewType<T, 1, Properties...>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
+
+        using memory_space    = typename view_type::memory_space;
+        using execution_space = typename view_type::execution_space;
 
         using size_type = detail::size_type;
 
@@ -64,10 +69,10 @@ namespace ippl {
          * @param keepIndex List of indices of valid particles in the invalid region
          * @param invalidCount Number of invalid particles in the valid region
          */
-        void destroy(const Kokkos::View<int*>& deleteIndex, const Kokkos::View<int*>& keepIndex,
+        void destroy(const int_view_type& deleteIndex, const int_view_type& keepIndex,
                      size_type invalidCount) override;
 
-        void pack(void*, const Kokkos::View<int*>&) const override;
+        void pack(void*, const int_view_type&) const override;
 
         void unpack(void*, size_type) override;
 

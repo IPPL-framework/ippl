@@ -44,20 +44,21 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::destroy(const Kokkos::View<int*>& deleteIndex,
-                                                   const Kokkos::View<int*>& keepIndex,
+    void ParticleAttrib<T, Properties...>::destroy(const int_view_type& deleteIndex,
+                                                   const int_view_type& keepIndex,
                                                    size_type invalidCount) {
         // Replace all invalid particles in the valid region with valid
         // particles in the invalid region
+        using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
-            "ParticleAttrib::destroy()", invalidCount, KOKKOS_CLASS_LAMBDA(const size_t i) {
+            "ParticleAttrib::destroy()", policy_type(0, invalidCount),
+            KOKKOS_CLASS_LAMBDA(const size_t i) {
                 dview_m(deleteIndex(i)) = dview_m(keepIndex(i));
             });
     }
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::pack(void* buffer,
-                                                const Kokkos::View<int*>& hash) const {
+    void ParticleAttrib<T, Properties...>::pack(void* buffer, const int_view_type& hash) const {
         using this_type     = ParticleAttrib<T, Properties...>;
         this_type* buffer_p = static_cast<this_type*>(buffer);
         auto& view          = buffer_p->dview_m;
