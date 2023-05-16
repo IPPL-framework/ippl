@@ -29,18 +29,17 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#include "ChargedParticles.hpp"
-
+#include <Kokkos_Random.hpp>
+#include <chrono>
+#include <iostream>
+#include <random>
+#include <set>
 #include <string>
 #include <vector>
-#include <iostream>
-#include <set>
-#include <chrono>
 
-#include<Kokkos_Random.hpp>
-
-#include <random>
 #include "Utility/IpplTimings.h"
+
+#include "ChargedParticles.hpp"
 
 constexpr unsigned Dim = 3;
 
@@ -48,41 +47,40 @@ const char* TestName = "UniformPlasmaTest";
 
 template <typename T, class GeneratorPool, unsigned Dim>
 struct generate_random {
+    using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
+    // Output View for the random numbers
+    view_type vals;
 
-  using view_type = typename ippl::detail::ViewType<T, 1>::view_type;
-  // Output View for the random numbers
-  view_type vals;
+    // The GeneratorPool
+    GeneratorPool rand_pool;
 
-  // The GeneratorPool
-  GeneratorPool rand_pool;
+    T start, end;
 
-  T start, end;
+    // Initialize all members
+    generate_random(view_type vals_, GeneratorPool rand_pool_, T start_, T end_)
+        : vals(vals_)
+        , rand_pool(rand_pool_)
+        , start(start_)
+        , end(end_) {}
 
-  // Initialize all members
-  generate_random(view_type vals_, GeneratorPool rand_pool_, 
-                  T start_, T end_)
-      : vals(vals_), rand_pool(rand_pool_), 
-        start(start_), end(end_) {}
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+        // Get a random number state from the pool for the active thread
+        typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-  KOKKOS_INLINE_FUNCTION
-  void operator()(const size_t i) const {
-    // Get a random number state from the pool for the active thread
-    typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+        // Draw samples numbers from the pool as double in the range [start, end)
+        for (unsigned d = 0; d < Dim; ++d) {
+            vals(i)[d] = rand_gen.drand(start[d], end[d]);
+        }
 
-    // Draw samples numbers from the pool as double in the range [start, end)
-    for (unsigned d = 0; d < Dim; ++d) {
-      vals(i)[d] = rand_gen.drand(start[d], end[d]);
+        // Give the state back, which will allow another thread to acquire it
+        rand_pool.free_state(rand_gen);
     }
-
-    // Give the state back, which will allow another thread to acquire it
-    rand_pool.free_state(rand_gen);
-  }
 };
 
-int main(int argc, char *argv[]){
+int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
     Inform msg("UniformPlasmaTest");
-    Inform msg2all(argv[0],INFORM_ALL_NODES);
+    Inform msg2all(argv[0], INFORM_ALL_NODES);
 
     auto start = std::chrono::high_resolution_clock::now();
     int arg    = 1;
@@ -107,18 +105,15 @@ int main(int argc, char *argv[]){
     const size_type totalP = std::atoll(argv[arg++]);
     const unsigned int nt  = std::atoi(argv[arg++]);
 
-    msg << "Uniform Plasma Test"
-        << endl
-        << "nt " << nt << " Np= "
-        << totalP << " grid = " << nr
-        << endl;
+    msg << "Uniform Plasma Test" << endl
+        << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
     using bunch_type = ChargedParticles<PLayout_t<Dim>, Dim, double>;
 
-    std::unique_ptr<bunch_type>  P;
+    std::unique_ptr<bunch_type> P;
 
     ippl::NDIndex<Dim> domain;
-    for (unsigned i = 0; i< Dim; i++) {
+    for (unsigned i = 0; i < Dim; i++) {
         domain[i] = ippl::Index(nr[i]);
     }
 
@@ -136,7 +131,7 @@ int main(int argc, char *argv[]){
         hr[d]     = rmax[d] / nr[d];
     }
 
-   const bool isAllPeriodic = true;
+    const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);
     FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
     PLayout_t<Dim> PL(FL, mesh);
@@ -145,12 +140,12 @@ int main(int argc, char *argv[]){
     std::string solver = argv[arg++];
     P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
-    P->nr_m = nr;
+    P->nr_m        = nr;
     size_type nloc = totalP / Ippl::Comm->size();
 
-    int rest = (int) (totalP - nloc * Ippl::Comm->size());
+    int rest = (int)(totalP - nloc * Ippl::Comm->size());
 
-    if ( Ippl::Comm->rank() < rest )
+    if (Ippl::Comm->rank() < rest)
         ++nloc;
 
     IpplTimings::startTimer(particleCreation);
@@ -168,7 +163,7 @@ int main(int argc, char *argv[]){
                          generate_random<Vector_t<Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
                              P->R.getView(), rand_pool64, Rmin, Rmax));
     Kokkos::fence();
-    P->q = P->Q_m/totalP;
+    P->q = P->Q_m / totalP;
     P->P = 0.0;
     IpplTimings::stopTimer(particleCreation);
 
@@ -176,7 +171,7 @@ int main(int argc, char *argv[]){
 
     bunch_type bunchBuffer(PL);
 
-	IpplTimings::startTimer(updateTimer);
+    IpplTimings::startTimer(updateTimer);
     PL.update(*P, bunchBuffer);
     IpplTimings::stopTimer(updateTimer);
 
@@ -190,7 +185,6 @@ int main(int argc, char *argv[]){
     P->rho_m = 0.0;
     P->runSolver();
     IpplTimings::stopTimer(DummySolveTimer);
-
 
     P->scatterCIC(totalP, 0, hr);
     P->initializeORB(FL, mesh);
@@ -207,12 +201,10 @@ int main(int argc, char *argv[]){
     P->gatherStatistics(totalP);
     IpplTimings::stopTimer(dumpDataTimer);
 
-
     // begin main timestep loop
     msg << "Starting iterations ..." << endl;
-    //P->gatherStatistics(totalP);
-    for (unsigned int it=0; it<nt; it++) {
-
+    // P->gatherStatistics(totalP);
+    for (unsigned int it = 0; it < nt; it++) {
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
         // Here, we assume a constant charge-to-mass ratio of -1 for
         // all the particles hence eliminating the need to store mass as
@@ -229,29 +221,28 @@ int main(int argc, char *argv[]){
         Kokkos::fence();
         IpplTimings::stopTimer(temp);
 
-        //drift
+        // drift
         IpplTimings::startTimer(RTimer);
         P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);
 
-        //Since the particles have moved spatially update them to correct processors
-	    IpplTimings::startTimer(updateTimer);
+        // Since the particles have moved spatially update them to correct processors
+        IpplTimings::startTimer(updateTimer);
         PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(updateTimer);
 
-
         // Domain Decomposition
-        if (P->balance(totalP, it+1)) {
-           msg << "Starting repartition" << endl;
-           IpplTimings::startTimer(domainDecomposition);
-           P->repartition(FL, mesh, bunchBuffer, fromAnalyticDensity);
-           IpplTimings::stopTimer(domainDecomposition);
+        if (P->balance(totalP, it + 1)) {
+            msg << "Starting repartition" << endl;
+            IpplTimings::startTimer(domainDecomposition);
+            P->repartition(FL, mesh, bunchBuffer, fromAnalyticDensity);
+            IpplTimings::stopTimer(domainDecomposition);
         }
 
-        //scatter the charge onto the underlying grid
-        P->scatterCIC(totalP, it+1, hr);
+        // scatter the charge onto the underlying grid
+        P->scatterCIC(totalP, it + 1, hr);
 
-        //Field solve
+        // Field solve
         IpplTimings::startTimer(SolveTimer);
         P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
@@ -259,7 +250,7 @@ int main(int argc, char *argv[]){
         // gather E field
         P->gatherCIC();
 
-        //kick
+        // kick
         IpplTimings::startTimer(PTimer);
         P->P = P->P - 0.5 * dt * P->E;
         IpplTimings::stopTimer(PTimer);
@@ -269,7 +260,7 @@ int main(int argc, char *argv[]){
         P->dumpData();
         P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
-        msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
+        msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
     }
 
     msg << "Uniform Plasma Test: End." << endl;
@@ -278,7 +269,8 @@ int main(int argc, char *argv[]){
     IpplTimings::print(std::string("timing.dat"));
     auto end = std::chrono::high_resolution_clock::now();
 
-    std::chrono::duration<double> time_chrono = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    std::chrono::duration<double> time_chrono =
+        std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
 
     return 0;
