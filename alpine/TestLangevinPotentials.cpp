@@ -133,6 +133,7 @@ int main(int argc, char *argv[]){
 
     // Create scalar Field for first Rosenbluth Potential
     auto HfieldExact = P->fv_m.deepCopy();
+    auto GfieldExact = P->fv_m.deepCopy();
     
     //////////////////////////////////////////////
     // PARTICLE CREATION & INITIAL SPACE CHARGE //
@@ -185,9 +186,9 @@ int main(int argc, char *argv[]){
 
     dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "fvInit");
     
-    ///////////////////////////////////
-    // COMPUTE ROSENBLUTH POTENTIALS //
-    ///////////////////////////////////
+    //////////////////////////////////////
+    // COMPUTE 1st ROSENBLUTH POTENTIAL //
+    //////////////////////////////////////
 
     // Need to scatter rho as we use it as $f(\vec r)$
     P->runSpaceChargeSolver(0);
@@ -204,6 +205,7 @@ int main(int argc, char *argv[]){
 
     // Set origin of velocity space mesh to vmin (for scatter / gather)
     P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
+    
 
     // Dump resulting Fields
     dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Happr");
@@ -212,6 +214,14 @@ int main(int argc, char *argv[]){
     auto Hdiff = P->fv_m.deepCopy();
     Hdiff = Hdiff - HfieldExact;
     dumpVTKScalar(Hdiff, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Hdiff");
+
+    P->gatherFd();
+
+    // Multiply with prob. density in configuration space $f(\vec r)$
+    // Can be done as we use normalized particle charge $q = -1$
+    P->p_Fd_m = P->p_Fd_m * (P->q / P->Q_m);
+
+    P->dumpFdStatistics(0, OUT_DIR);
 
     ////////////////////////////
     // COMPUTE RELATIVE ERROR //
