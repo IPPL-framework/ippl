@@ -18,6 +18,16 @@ double HexactDistribution(const VectorD_t& v, const double& numberDensity, const
     return (2.0*numberDensity / vNorm) * Kokkos::erf(vNorm/(Kokkos::sqrt(2.0)*vth));
 }
 
+KOKKOS_INLINE_FUNCTION
+double GexactDistribution(const VectorD_t& v, const double& numberDensity, const double& vth) {
+    double vNorm = L2Norm(v);
+    double sqrt2 = Kokkos::sqrt(2.0);
+    double expTerm = Kokkos::exp(-vNorm*vNorm/(2.0*vth*vth)) / Kokkos::sqrt(Kokkos::numbers::pi_v<double>);
+    double erfTerm = Kokkos::erf(vNorm/(sqrt2*vth));
+    double erfFactor = (vth / (sqrt2*vNorm)) + (vNorm / (sqrt2*vth));
+    return sqrt2*numberDensity*vth * (expTerm + erfTerm * erfFactor);
+}
+
 int main(int argc, char *argv[]){
     Ippl ippl(argc, argv);
     
@@ -131,7 +141,7 @@ int main(int argc, char *argv[]){
     // REFERENCE SOLUTION FIELDS FOR MAXWELLIAN //
     //////////////////////////////////////////////
 
-    // Create scalar Field for first Rosenbluth Potential
+    // Create scalar Field for Rosenbluth Potential
     auto HfieldExact = P->fv_m.deepCopy();
     auto GfieldExact = P->fv_m.deepCopy();
     
@@ -163,6 +173,7 @@ int main(int argc, char *argv[]){
     const int nghost               = P->fv_m.getNghost();
     auto fvView                    = P->fv_m.getView();
     auto HviewExact                = HfieldExact.getView();
+    auto GviewExact                = GfieldExact.getView();
     VectorD_t hv                   = P->hv_m;
     VectorD_t vOrigin              = P->vmin_m;
 
@@ -180,6 +191,7 @@ int main(int argc, char *argv[]){
             // reference; see src/Expression/IpplOperations.h
             ippl::apply<Dim>(fvView, args) = maxwellianPDF(xvec, numberDensity, vth);
             ippl::apply<Dim>(HviewExact, args) = HexactDistribution(xvec, numberDensity, vth);
+            ippl::apply<Dim>(GviewExact, args) = GexactDistribution(xvec, numberDensity, vth);
             });
 
     Kokkos::fence();
@@ -194,7 +206,7 @@ int main(int argc, char *argv[]){
     P->runSpaceChargeSolver(0);
 
     // Multiply with prefactor
-    P->fv_m = - 8.0 * M_PI * P->fv_m;
+    P->fv_m = - 8.0 * P->pi_m * P->fv_m;
 
     // Set origin of velocity space mesh to zero (for FFT)
     P->velocitySpaceMesh_m.setOrigin(0.0);
@@ -219,16 +231,46 @@ int main(int argc, char *argv[]){
 
     // Multiply with prob. density in configuration space $f(\vec r)$
     // Can be done as we use normalized particle charge $q = -1$
-    P->p_Fd_m = P->p_Fd_m * (P->q / P->Q_m);
+    P->p_Fd_m = P->p_Fd_m * P->gamma_m * (P->q / P->Q_m);
 
     P->dumpFdStatistics(0, OUT_DIR);
+    
+    //////////////////////////////////////
+    // COMPUTE 2nd ROSENBLUTH POTENTIAL //
+    //////////////////////////////////////
+    
+    // Need to scatter rho as we use it as $f(\vec r)$
+    P->runSpaceChargeSolver(0);
+
+    P->scatterVelSpace();
+
+    // Multiply with prefactors defined in RHS of Rosenbluth equations
+    // FFTPoissonSolver returns $ \Delta_v \Delta_v G(\vec v)$ in `fv_m`
+    P->fv_m = -8.0 * P->pi_m * P->fv_m;
+
+    // Set origin of velocity space mesh to zero (for FFT)
+    P->velocitySpaceMesh_m.setOrigin(0.0);
+
+    // Solve for $\Delta_v \Delta_v G(\vec v)$, is stored in `fv_m`
+    P->diffusionSolver_mp->solve();
+
+    // Set origin of velocity space mesh to vmin (for scatter / gather)
+    P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
+
+    dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Gappr");
+    dumpVTKScalar(GfieldExact, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Gexact");
+    auto Gdiff = P->fv_m.deepCopy();
+    Gdiff = Gdiff - GfieldExact;
+    dumpVTKScalar(Gdiff, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Gdiff");
 
     ////////////////////////////
     // COMPUTE RELATIVE ERROR //
     ////////////////////////////
 
     double HrelError = norm(Hdiff) / norm(HfieldExact);
-    msg << "Rel. Error (" << NV << "^3)" << ": " << HrelError << endl;
+    double GrelError = norm(Gdiff) / norm(GfieldExact);
+    msg << "h(v) rel. error (" << NV << "^3)" << ": " << HrelError << endl;
+    msg << "g(v) rel. error (" << NV << "^3)" << ": " << GrelError << endl;
 
     msg << "LangevinPotentials: End." << endl;
     IpplTimings::stopTimer(mainTimer);
