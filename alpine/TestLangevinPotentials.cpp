@@ -191,7 +191,6 @@ int main(int argc, char *argv[]){
             // reference; see src/Expression/IpplOperations.h
             ippl::apply<Dim>(fvView, args) = maxwellianPDF(xvec, numberDensity, vth);
             ippl::apply<Dim>(HviewExact, args) = HexactDistribution(xvec, numberDensity, vth);
-            ippl::apply<Dim>(GviewExact, args) = GexactDistribution(xvec, numberDensity, vth);
             });
 
     Kokkos::fence();
@@ -238,11 +237,25 @@ int main(int argc, char *argv[]){
     //////////////////////////////////////
     // COMPUTE 2nd ROSENBLUTH POTENTIAL //
     //////////////////////////////////////
+
+    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+    ippl::parallel_for(
+            "Assign initial velocity PDF and reference solution for H", ippl::getRangePolicy<Dim>(fvView, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+            // local to global index conversion
+            Vector_t<Dim> xvec = args;
+            for (unsigned d = 0; d < Dim; d++) {
+                xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hv[d] + vOrigin[d];
+            }
+
+            // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+            // reference; see src/Expression/IpplOperations.h
+            ippl::apply<Dim>(fvView, args) = maxwellianPDF(xvec, numberDensity, vth);
+            ippl::apply<Dim>(GviewExact, args) = GexactDistribution(xvec, numberDensity, vth);
+            });
     
     // Need to scatter rho as we use it as $f(\vec r)$
     P->runSpaceChargeSolver(0);
-
-    P->scatterVelSpace();
 
     // Multiply with prefactors defined in RHS of Rosenbluth equations
     // FFTPoissonSolver returns $ \Delta_v \Delta_v G(\vec v)$ in `fv_m`
