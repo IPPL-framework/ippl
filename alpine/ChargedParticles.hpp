@@ -25,7 +25,9 @@
 template <unsigned Dim = 3>
 using Mesh_t = ippl::UniformCartesian<double, Dim>;
 
-template <unsigned Dim = 3, typename T=double>
+// this template "inversion" is needed since we only change T in the mixed precision version of
+// Landau Damping
+template <unsigned Dim = 3, typename T = double>
 using PLayout_t = typename ippl::ParticleSpatialLayout<T, Dim, Mesh_t<Dim>>;
 
 template <unsigned Dim = 3>
@@ -34,38 +36,38 @@ using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
 template <unsigned Dim = 3>
 using FieldLayout_t = ippl::FieldLayout<Dim>;
 
-template <unsigned Dim = 3, typename T=double>
+template <unsigned Dim = 3, typename T = double>
 using ORB = ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t<Dim>, Centering_t<Dim>, T>;
 
 using size_type = ippl::detail::size_type;
 
-template <unsigned Dim = 3, typename T=double>
+template <unsigned Dim = 3, typename T = double>
 using Vector = ippl::Vector<T, Dim>;
 
-template <unsigned Dim = 3, typename T=double>
+template <unsigned Dim = 3, typename T = double>
 using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
 
-template <unsigned Dim = 3, typename T=double>
+template <unsigned Dim = 3, typename T = double>
 using Vector_t = Vector<Dim, T>;
 
-template <unsigned Dim = 3, typename T=double>
+template <unsigned Dim = 3, typename T = double>
 using Field_t = Field<Dim, T>;
 
-template <unsigned Dim = 3, typename T=double>
+template <unsigned Dim = 3, typename T = double>
 using VField_t = Field<Dim, Vector_t<Dim, T>>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
-template <unsigned Dim = 3, typename T=double>
+template <unsigned Dim = 3, typename T = double>
 using CGSolver_t = ippl::ElectrostaticsCG<T, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
-template <unsigned Dim = 3, typename T=double>
+template <unsigned Dim = 3, typename T = double>
 using FFTSolver_t =
     ippl::FFTPeriodicPoissonSolver<Vector_t<Dim, T>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
-template <unsigned Dim = 3, typename T=double>
+template <unsigned Dim = 3, typename T = double>
 using Solver_t =
     std::conditional_t<Dim == 2 || Dim == 3, std::variant<CGSolver_t<Dim, T>, FFTSolver_t<Dim, T>>,
                        std::variant<CGSolver_t<Dim, T>>>;
@@ -75,7 +77,7 @@ const double pi = Kokkos::numbers::pi_v<double>;
 // Test programs have to define this variable for VTK dump purposes
 extern const char* TestName;
 
-template<typename T>
+template <typename T>
 void dumpVTK(VField_t<3, T>& E, int nx, int ny, int nz, int iteration, double dx, double dy,
              double dz) {
     typename VField_t<3, T>::view_type::host_mirror_type host_view = E.getHostMirror();
@@ -222,8 +224,8 @@ public:
         // simply assumes them
         if (stype_m == "CG") {
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                allPeriodic[i] = std::make_shared<
-                    ippl::PeriodicFace<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
+                allPeriodic[i] =
+                    std::make_shared<ippl::PeriodicFace<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
             }
         }
     }
@@ -462,13 +464,13 @@ public:
         // Increase tolerance in the 1D case
         sp.add("tolerance", 1e-10);
 
-        initSolverWithParams<CGSolver_t<Dim,T>>(sp);
+        initSolverWithParams<CGSolver_t<Dim, T>>(sp);
     }
 
     void initFFTSolver() {
         if constexpr (Dim == 2 || Dim == 3) {
             ippl::ParameterList sp;
-            sp.add("output_type", FFTSolver_t<Dim,T>::GRAD);
+            sp.add("output_type", FFTSolver_t<Dim, T>::GRAD);
             sp.add("use_heffte_defaults", false);
             sp.add("use_pencils", true);
             sp.add("use_reorder", false);
@@ -476,7 +478,7 @@ public:
             sp.add("comm", ippl::p2p_pl);
             sp.add("r2c_direction", 0);
 
-            initSolverWithParams<FFTSolver_t<Dim,T>>(sp);
+            initSolverWithParams<FFTSolver_t<Dim, T>>(sp);
         } else {
             throw std::runtime_error("Unsupported dimensionality for FFT solver");
         }
@@ -498,8 +500,6 @@ public:
         Energy *= 0.5;
         double gEnergy = 0.0;
 
-	
-
         MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
         const int nghostE = E_m.getNghost();
@@ -518,8 +518,8 @@ public:
                     valL += myVal;
                 },
                 Kokkos::Sum<T>(temp));
-            T globaltemp = 0.0;
-	    MPI_Datatype mpi_type = get_mpi_datatype<T>(temp); 
+            T globaltemp          = 0.0;
+            MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
             MPI_Reduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, 0, Ippl::getComm());
             normE[d] = std::sqrt(globaltemp);
         }
