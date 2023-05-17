@@ -142,6 +142,7 @@ int main(int argc, char *argv[]){
     //dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
 
     P->dumpBeamStatistics(0, OUT_DIR);
+    P->dumpCollisionStatistics(0, OUT_DIR);
     
     for(size_t it = 1; it < NT; ++it){
 
@@ -154,16 +155,18 @@ int main(int argc, char *argv[]){
         // Add constant focusing term
         P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
-        //P->runFrictionSolver();
+        P->runFrictionSolver();
 
         P->runDiffusionSolver();
+
+        P->dumpCollisionStatistics(it, OUT_DIR);
         
         // Add dynamic friction & stochastic diffusion coefficients
-        //P->P = P->P + DT * P->p_Fd_m + P->p_QdW_m;
+        P->P = P->P + DT * P->p_Fd_m + P->p_QdW_m;
         // Add friction contribution
         //P->P = P->P + DT * P->p_Fd_m;
         //// Add velocity Diffusion contribution
-        P->P = P->P + P->p_QdW_m;
+        //P->P = P->P + P->p_QdW_m;
 
         P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
         P->R = P->R + 0.5 * DT * P->P;
@@ -176,7 +179,7 @@ int main(int argc, char *argv[]){
             if (it%200 == 0){
                 //dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F_d");
                 //dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "H(v)");
-                P->dumpFdStatistics(it, OUT_DIR);
+                //P->dumpFdStatistics(it, OUT_DIR);
             }
 
             msg << "Finished iteration " << it << endl;
@@ -186,6 +189,7 @@ int main(int argc, char *argv[]){
             std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
         }
     }
+    P->dumpFdStatistics(NT-1, OUT_DIR);
 
     msg << "LangevinDIH: End." << endl;
     IpplTimings::stopTimer(mainTimer);
