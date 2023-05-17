@@ -144,8 +144,9 @@ namespace ippl {
         const size_t rank = Ippl::Comm->myNode();
 
         size_type rest = nTotal - nLocal * rank;
-        if (rank < rest)
+        if (rank < rest) {
             ++nLocal;
+        }
 
         create(nLocal);
     }
@@ -156,8 +157,9 @@ namespace ippl {
         PAssert(destroyNum <= localNum_m);
 
         // If there aren't any particles to delete, do nothing
-        if (destroyNum == 0)
+        if (destroyNum == 0) {
             return;
+        }
 
         // If we're deleting all the particles, there's no point in doing
         // anything because the valid region will be empty; we only need to
@@ -184,10 +186,12 @@ namespace ippl {
         Kokkos::parallel_scan(
             "Scan in ParticleBase::destroy()", localNum_m - destroyNum,
             KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
-                if (final && invalid(i))
+                if (final && invalid(i)) {
                     locDeleteIndex(idx) = i;
-                if (invalid(i))
+                }
+                if (invalid(i)) {
                     idx += 1;
+                }
             });
         Kokkos::fence();
 
@@ -196,8 +200,9 @@ namespace ippl {
         Kokkos::parallel_reduce(
             "Reduce in ParticleBase::destroy()", destroyNum,
             KOKKOS_LAMBDA(const size_t i, size_t& maxIdx) {
-                if (locDeleteIndex(i) >= 0 && i > maxIdx)
+                if (locDeleteIndex(i) >= 0 && i > maxIdx) {
                     maxIdx = i;
+                }
             },
             Kokkos::Max<size_type>(maxDeleteIndex));
 
@@ -206,10 +211,12 @@ namespace ippl {
             "Second scan in ParticleBase::destroy()",
             Kokkos::RangePolicy<size_type>(localNum_m - destroyNum, localNum_m),
             KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
-                if (final && !invalid(i))
+                if (final && !invalid(i)) {
                     locKeepIndex(idx) = i;
-                if (!invalid(i))
+                }
+                if (!invalid(i)) {
                     idx += 1;
+                }
             });
 
         Kokkos::fence();
