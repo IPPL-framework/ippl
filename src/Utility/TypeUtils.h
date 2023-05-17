@@ -144,25 +144,9 @@ namespace ippl {
         using VariantFromConditionalTypes =
             typename ConstructVariant<std::variant<Types...>, std::variant<>, IsEnabled>::type;
 
-        /*!
-         * Constructs a variant type that allows all of the provided types, but wrapped in
-         * another templated type. This is a convenient shorthand for a variant of pointers to
-         * different types, for example.
-         *
-         * Example:
-         * ```
-         * WrapUnique<shared_ptr, int, float, int>::type == std::variant<shared_ptr<int>,
-         * shared_ptr<float>>
-         * ```
-         *
-         * @tparam Wrapper the wrapper type
-         * @tparam Types... the types to be wrapped and included in the variant
-         */
-        template <template <typename> class Wrapper, typename... Types>
-        struct WrapUnique {
-            typedef typename ConstructVariant<std::variant<Wrapper<Types>...>, std::variant<>>::type
-                type;
-        };
+        template <template <typename...> class Verifier, typename... Types>
+        using VariantWithVerifier =
+            typename ConstructVariant<std::variant<Types...>, std::variant<>, Verifier>::type;
     }  // namespace detail
 }  // namespace ippl
 

@@ -44,11 +44,27 @@ namespace ippl {
         using archive_type = detail::Archive<MemorySpace>;
 
     private:
-        template <typename Space>
-        using ptr_type = std::shared_ptr<archive_type<Space>>;
+        /*!
+         * Variant verification struct (see Utility/ViewUtils.h)
+         * Forwards the provided types to an archive behind a shared pointer and
+         * adds this to a variant only if the archive type haven't already been added. This is
+         * useful for aliases for Kokkos memory spaces, since these can have different names but
+         * still refer to the same underlying type and variants cannot have duplicate
+         * types.
+         *
+         * Constructing a variant with this verifier will map, for example:
+         * <Kokkos::HostSpace, Kokkos::CudaSpace> => std::variant<
+         *          std::shared_ptr<archive_type<Kokkos::HostSpace>>,
+         *          std::shared_ptr<archive_type<Kokkos::CudaSpace>>>
+         */
+        template <typename Space, typename... ExistingSpaces>
+        struct WrapUniqueArchives {
+            constexpr static bool enable = detail::IsPresent<Space, ExistingSpaces...>::enable;
+            typedef std::shared_ptr<archive_type<Space>> type;
+        };
 
         template <typename... Spaces>
-        using archive_types = typename detail::WrapUnique<ptr_type, Spaces...>::type;
+        using archive_types = detail::VariantWithVerifier<WrapUniqueArchives, Spaces...>;
 
         using buffer_types = detail::TypesForAllSpaces<archive_types>;
 
