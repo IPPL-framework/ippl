@@ -37,6 +37,18 @@ namespace ippl {
      *
      * \remark Calling the plain *this pointer returns the MPI communicator, e.g. MPI_COMM_WORLD.
      */
+
+    namespace detail {
+        template <template <typename...> class Type>
+        using TypesForAllSpaces =
+            Type<Kokkos::HostSpace, Kokkos::SharedSpace, Kokkos::SharedHostPinnedSpace
+#ifdef KOKKOS_ENABLE_CUDA
+                 ,
+                 Kokkos::CudaSpace, Kokkos::CudaHostPinnedSpace, Kokkos::CudaUVMSpace
+#endif
+                 >;
+    }  // namespace detail
+
     class Communicate : public TagMaker {
     public:
         template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
@@ -49,13 +61,7 @@ namespace ippl {
         template <typename... Spaces>
         using archive_types = typename detail::WrapUnique<ptr_type, Spaces...>::type;
 
-        using buffer_types =
-            archive_types<Kokkos::HostSpace, Kokkos::SharedSpace, Kokkos::SharedHostPinnedSpace
-#ifdef KOKKOS_ENABLE_CUDA
-                          ,
-                          Kokkos::CudaSpace, Kokkos::CudaHostPinnedSpace, Kokkos::CudaUVMSpace
-#endif
-                          >;
+        using buffer_types = detail::TypesForAllSpaces<archive_types>;
 
     public:
         template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
