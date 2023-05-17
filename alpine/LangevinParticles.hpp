@@ -455,7 +455,7 @@ public:
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
 
-        // Solve for $\Delta_v \Delta_v G(\vec v)$, is stored in `fv_m`
+        // Solve for $\Delta_v \Delta_v G(\vec v)$ and store it in `fv_m`
         diffusionSolver_mp->solve();
 
         // Set origin of velocity space mesh to vmin (for scatter / gather)
@@ -502,7 +502,49 @@ public:
                 },
                 Kokkos::Sum<double>(FdAvg(d)));
         }
+
         FdAvg = FdAvg / globParticleNum_m;
+
+        //////////////////////
+        // Calculate D Avg //
+        //////////////////////
+
+        attr_Dview_t pD0_view = this->p_D0_m.getView();
+        attr_Dview_t pD1_view = this->p_D1_m.getView();
+        attr_Dview_t pD2_view = this->p_D2_m.getView();
+
+        attr_Dview_t pQdW_view = this->p_QdW_m.getView();
+
+        VectorD_t D0Avg;
+        VectorD_t D1Avg;
+        VectorD_t D2Avg;
+        VectorD_t QdWAvg;
+
+        for (unsigned d = 0; d < Dim; ++d) {
+            Kokkos::parallel_reduce(
+                "rel max", this->getLocalNum(),
+                KOKKOS_LAMBDA(const int i,
+                              double& D0Loc,
+                              double& D1Loc,
+                              double& D2Loc,
+                              double& QdWLoc) {
+                    D0Loc += pD0_view(i)[d];
+                    D1Loc += pD1_view(i)[d];
+                    D2Loc += pD2_view(i)[d];
+                    QdWLoc += pQdW_view(i)[d];
+                },
+                Kokkos::Sum<double>(D0Avg(d)),
+                Kokkos::Sum<double>(D1Avg(d)),
+                Kokkos::Sum<double>(D2Avg(d)),
+                Kokkos::Sum<double>(QdWAvg(d))
+                );
+        }
+
+        FdAvg  = FdAvg  / globParticleNum_m;
+        D0Avg  = D0Avg  / globParticleNum_m;
+        D1Avg  = D1Avg  / globParticleNum_m;
+        D2Avg  = D2Avg  / globParticleNum_m;
+        QdWAvg = QdWAvg / globParticleNum_m;
 
         if (Ippl::Comm->rank() == 0) {
 
@@ -514,14 +556,22 @@ public:
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
+            // clang-format off
             if (iteration == 0) {
                 csvout << "iteration,"
-                       << "FdAvg_x," << "FdAvg_y," << "FdAvg_z," << endl;
+                       << "FdAvg_x,"  << "FdAvg_y,"  << "FdAvg_z," << ","
+                       << "D0Avg_x,"  << "D0Avg_y,"  << "D0Avg_z," << ","
+                       << "D1Avg_x,"  << "D1Avg_y,"  << "D1Avg_z," << ","
+                       << "D2Avg_x,"  << "D2Avg_y,"  << "D2Avg_z," << ","
+                       << "QdWAvg_x," << "QdWAvg_y," << "QdWAvg_z" << endl;
             }
 
-            // clang-format off
             csvout << iteration << ","
-                   << FdAvg(0) << "," << FdAvg(1) << "," << FdAvg(2) << endl;
+                   << FdAvg(0)  << "," << FdAvg(1)  << "," << FdAvg(2)  << ","
+                   << D0Avg(0)  << "," << D0Avg(1)  << "," << D0Avg(2)  << ","
+                   << D1Avg(0)  << "," << D1Avg(1)  << "," << D1Avg(2)  << ","
+                   << D2Avg(0)  << "," << D2Avg(1)  << "," << D2Avg(2)  << ","
+                   << QdWAvg(0) << "," << QdWAvg(1) << "," << QdWAvg(2) << endl;
             // clang-format on
         }
     }
