@@ -215,13 +215,15 @@ namespace ippl {
          * Serialize to do MPI calls.
          * @param ar archive
          */
-        void serialize(detail::Archive<Properties...>& ar, size_type nsends);
+        template <typename Archive>
+        void serialize(Archive& ar, size_type nsends);
 
         /*!
          * Deserialize to do MPI calls.
          * @param ar archive
          */
-        void deserialize(detail::Archive<Properties...>& ar, size_type nrecvs);
+        template <typename Archive>
+        void deserialize(Archive& ar, size_type nrecvs);
 
         /*!
          * Determine the total space necessary to store a certain number of particles

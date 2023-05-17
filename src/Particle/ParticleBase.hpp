@@ -230,8 +230,8 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::serialize(detail::Archive<Properties...>& ar,
-                                                         size_type nsends) {
+    template <typename Archive>
+    void ParticleBase<PLayout, Properties...>::serialize(Archive& ar, size_type nsends) {
         using size_type = typename attribute_container_t::size_type;
         for (size_type i = 0; i < attributes_m.size(); ++i) {
             attributes_m[i]->serialize(ar, nsends);
@@ -239,8 +239,8 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::deserialize(detail::Archive<Properties...>& ar,
-                                                           size_type nrecvs) {
+    template <typename Archive>
+    void ParticleBase<PLayout, Properties...>::deserialize(Archive& ar, size_type nrecvs) {
         using size_type = typename attribute_container_t::size_type;
         for (size_type i = 0; i < attributes_m.size(); ++i) {
             attributes_m[i]->deserialize(ar, nrecvs);
