@@ -20,6 +20,8 @@
 
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
+#include "Solver/FFTPoissonSolver.h"
+#include "Solver/P3MSolver.h"
 
 // some typedefs
 template <unsigned Dim = 3>
@@ -66,9 +68,19 @@ using FFTSolver_t =
     ippl::FFTPeriodicPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
 template <unsigned Dim = 3>
-using Solver_t =
-    std::conditional_t<Dim == 2 || Dim == 3, std::variant<CGSolver_t<Dim>, FFTSolver_t<Dim>>,
-                       std::variant<CGSolver_t<Dim>>>;
+using P3MSolver_t = ippl::P3MSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+
+template <unsigned Dim = 3>
+using OpenSolver_t =
+    ippl::FFTPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+
+// For now, added the Open and P3M Solvers in the (Dim == 2 || Dim == 3) variant, but
+// these solvers are only supported for Dim = 3 currently.
+template <unsigned Dim = 3>
+using Solver_t = std::conditional_t<
+    Dim == 2 || Dim == 3,
+    std::variant<CGSolver_t<Dim>, FFTSolver_t<Dim>, P3MSolver_t<Dim>, OpenSolver_t<Dim>>,
+    std::variant<CGSolver_t<Dim>>>;
 
 const double pi = std::acos(-1.0);
 
@@ -290,6 +302,12 @@ public:
             if (stype_m == "FFT") {
                 std::get<FFTSolver_t<Dim>>(solver_m).setRhs(rho_m);
             }
+        } else if constexpr (Dim == 3) {
+            if (stype_m == "P3M") {
+                std::get<P3MSolver_t<Dim>>(solver_m).setRhs(rho_m);
+            } else if (stype_m == "OPEN") {
+                std::get<OpenSolver_t<Dim>>(solver_m).setRhs(rho_m);
+            }
         }
     }
 
@@ -397,6 +415,10 @@ public:
             initFFTSolver();
         } else if (stype_m == "CG") {
             initCGSolver();
+        } else if (stype_m == "P3M") {
+            initP3MSolver();
+        } else if (stype_m == "OPEN") {
+            initOpenSolver();
         } else {
             m << "No solver matches the argument" << endl;
         }
@@ -429,6 +451,14 @@ public:
             if constexpr (Dim == 2 || Dim == 3) {
                 std::get<FFTSolver_t<Dim>>(solver_m).solve();
             }
+        } else if (stype_m == "P3M") {
+            if constexpr (Dim == 3) {
+                std::get<P3MSolver_t<Dim>>(solver_m).solve();
+            }
+        } else if (stype_m == "OPEN") {
+            if constexpr (Dim == 3) {
+                std::get<OpenSolver_t<Dim>>(solver_m).solve();
+            }
         } else {
             throw std::runtime_error("Unknown solver type");
         }
@@ -448,9 +478,9 @@ public:
             // uses this to get the electric field
             solver.setLhs(phi_m);
             solver.setGradient(E_m);
-        } else if constexpr (std::is_same_v<Solver, FFTSolver_t<Dim>>) {
-            // The periodic Poisson solver computes the electric
-            // field directly
+        } else {
+            // The periodic Poisson solver, Open boundaries solver,
+            // and the P3M solver compute the electric field directly
             solver.setLhs(E_m);
         }
     }
@@ -478,6 +508,41 @@ public:
             initSolverWithParams<FFTSolver_t<Dim>>(sp);
         } else {
             throw std::runtime_error("Unsupported dimensionality for FFT solver");
+        }
+    }
+
+    void initP3MSolver() {
+        if constexpr (Dim == 3) {
+            ippl::ParameterList sp;
+            sp.add("output_type", P3MSolver_t<Dim>::GRAD);
+            sp.add("use_heffte_defaults", false);
+            sp.add("use_pencils", true);
+            sp.add("use_reorder", false);
+            sp.add("use_gpu_aware", true);
+            sp.add("comm", ippl::p2p_pl);
+            sp.add("r2c_direction", 0);
+
+            initSolverWithParams<P3MSolver_t<Dim>>(sp);
+        } else {
+            throw std::runtime_error("Unsupported dimensionality for P3M solver");
+        }
+    }
+
+    void initOpenSolver() {
+        if constexpr (Dim == 3) {
+            ippl::ParameterList sp;
+            sp.add("output_type", OpenSolver_t<Dim>::GRAD);
+            sp.add("use_heffte_defaults", false);
+            sp.add("use_pencils", true);
+            sp.add("use_reorder", false);
+            sp.add("use_gpu_aware", true);
+            sp.add("comm", ippl::p2p_pl);
+            sp.add("r2c_direction", 0);
+            sp.add("algorithm", "HOCKNEY");
+
+            initSolverWithParams<OpenSolver_t<Dim>>(sp);
+        } else {
+            throw std::runtime_error("Unsupported dimensionality for OPEN solver");
         }
     }
 
