@@ -22,16 +22,16 @@
 namespace ippl {
     namespace detail {
 
-        template <typename MemorySpace, class... Properties>
-        Archive<MemorySpace, Properties...>::Archive(size_type size)
+        template <class... Properties>
+        Archive<Properties...>::Archive(size_type size)
             : writepos_m(0)
             , readpos_m(0)
             , buffer_m("buffer", size) {}
 
-        template <typename MemorySpace, class... Properties>
+        template <class... Properties>
         template <typename T, class... ViewArgs>
-        void Archive<MemorySpace, Properties...>::serialize(
-            const Kokkos::View<T*, ViewArgs...>& view, size_type nsends) {
+        void Archive<Properties...>::serialize(const Kokkos::View<T*, ViewArgs...>& view,
+                                               size_type nsends) {
             using exec_space  = typename Kokkos::View<T*, ViewArgs...>::execution_space;
             using policy_type = Kokkos::RangePolicy<exec_space>;
 
@@ -45,9 +45,9 @@ namespace ippl {
             writepos_m += size * nsends;
         }
 
-        template <typename MemorySpace, class... Properties>
+        template <class... Properties>
         template <typename T, unsigned Dim, class... ViewArgs>
-        void Archive<MemorySpace, Properties...>::serialize(
+        void Archive<Properties...>::serialize(
             const Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view, size_type nsends) {
             using exec_space = typename Kokkos::View<T*, ViewArgs...>::execution_space;
 
@@ -71,10 +71,10 @@ namespace ippl {
             writepos_m += Dim * size * nsends;
         }
 
-        template <typename MemorySpace, class... Properties>
+        template <class... Properties>
         template <typename T, class... ViewArgs>
-        void Archive<MemorySpace, Properties...>::deserialize(Kokkos::View<T*, ViewArgs...>& view,
-                                                              size_type nrecvs) {
+        void Archive<Properties...>::deserialize(Kokkos::View<T*, ViewArgs...>& view,
+                                                 size_type nrecvs) {
             using exec_space  = typename Kokkos::View<T*, ViewArgs...>::execution_space;
             using policy_type = Kokkos::RangePolicy<exec_space>;
 
@@ -93,10 +93,10 @@ namespace ippl {
             readpos_m += size * nrecvs;
         }
 
-        template <typename MemorySpace, class... Properties>
+        template <class... Properties>
         template <typename T, unsigned Dim, class... ViewArgs>
-        void Archive<MemorySpace, Properties...>::deserialize(
-            Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view, size_type nrecvs) {
+        void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view,
+                                                 size_type nrecvs) {
             using exec_space = typename Kokkos::View<T*, ViewArgs...>::execution_space;
 
             size_t size = sizeof(T);
