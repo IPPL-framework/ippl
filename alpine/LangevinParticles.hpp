@@ -419,11 +419,13 @@ public:
     void runFrictionSolver() {
         Inform msg("runFrictionSolver");
 
+        double configSpaceIntegral = double(globParticleNum_m);
+
         scatterVelSpace();
 
-        // Multiply with prefactors defined in RHS of Rosenbluth equations
-        // FFTPoissonSolver already returns $- \nabla H(\vec v)$, so `-` was omitted here
-        fv_m = 8.0 * pi_m * gamma_m * fv_m;
+        // Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
+        // Multiply with prob. density in configuration space $f(\vec r)$
+        fv_m = - 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral;
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
@@ -436,21 +438,19 @@ public:
 
         gatherFd();
 
-        // Multiply with prob. density in configuration space $f(\vec r)$
-        // Can be done as we use normalized particle charge $q = -1$
-        p_Fd_m = p_Fd_m * (this->q / this->Q_m);
-
         msg << "Friction computation done." << endl;
     }
 
     void runDiffusionSolver() {
         Inform msg("runDiffusionSolver");
 
+        double configSpaceIntegral = double(globParticleNum_m);
+
         scatterVelSpace();
         
         // Multiply with prefactors defined in RHS of Rosenbluth equations
         // FFTPoissonSolver returns $ \Delta_v \Delta_v G(\vec v)$ in `fv_m`
-        fv_m = -8.0 * pi_m * gamma_m * fv_m;
+        fv_m = - 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral;
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
@@ -466,12 +466,6 @@ public:
 
         // Gather Hessian to particle attributes
         gatherHessian();
-
-        // Multiply with prob. density in configuration space $f(\vec r)$
-        // Can be done as we use normalized particle charge $q = -1$
-        p_D0_m = p_D0_m * (this->q / this->Q_m);
-        p_D1_m = p_D1_m * (this->q / this->Q_m);
-        p_D2_m = p_D2_m * (this->q / this->Q_m);
 
         // Do Cholesky decomposition of $D$ 
         // and directly multiply with Gaussian random vector
@@ -489,6 +483,47 @@ public:
             "Apply Constant Focusing", this->getLocalNum(),
             KOKKOS_LAMBDA(const int i) { pE_view(i) += pR_view(i) * focusingEnergy; });
         Kokkos::fence();
+    }
+
+    void dumpCollisionStatistics(unsigned int iteration, std::string folder) {
+        Inform m("dumpCollisionStatistics");
+
+        //////////////////////
+        // Calculate Fd Avg //
+        //////////////////////
+
+        attr_Dview_t pFd_view = this->p_Fd_m.getView();
+        VectorD_t FdAvg;
+        for (unsigned d = 0; d < Dim; ++d) {
+            Kokkos::parallel_reduce(
+                "rel max", this->getLocalNum(),
+                KOKKOS_LAMBDA(const int i, double& FdLoc) {
+                    FdLoc += pFd_view(i)[d];
+                },
+                Kokkos::Sum<double>(FdAvg(d)));
+        }
+        FdAvg = FdAvg / globParticleNum_m;
+
+        if (Ippl::Comm->rank() == 0) {
+
+            std::stringstream fname;
+            fname << "/collision_statistics_";
+            fname << Ippl::Comm->rank();
+            fname << ".csv";
+            Inform csvout(NULL, (folder + fname.str()).c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if (iteration == 0) {
+                csvout << "iteration,"
+                       << "FdAvg_x," << "FdAvg_y," << "FdAvg_z," << endl;
+            }
+
+            // clang-format off
+            csvout << iteration << ","
+                   << FdAvg(0) << "," << FdAvg(1) << "," << FdAvg(2) << endl;
+            // clang-format on
+        }
     }
 
     void dumpBeamStatistics(unsigned int iteration, std::string folder) {
@@ -864,7 +899,7 @@ public:
         Kokkos::fence();
         MPI_Allreduce(rmax_loc, rmax, Dim, MPI_DOUBLE, MPI_MAX, Ippl::getComm());
         MPI_Allreduce(rmin_loc, rmin, Dim, MPI_DOUBLE, MPI_MIN, Ippl::getComm());
-
+        
         ////////////////////////////
         //// Write to output file //
         ////////////////////////////
