@@ -230,6 +230,41 @@ namespace ippl {
     }
 
     template <class PLayout, class... Properties>
+    template <typename BufferType>
+    void ParticleBase<PLayout, Properties...>::sendToRank(int rank, int tag, int& sendNum,
+                                                          std::vector<MPI_Request>& requests,
+                                                          const hash_type& hash,
+                                                          BufferType& buffer) {
+        size_type nSends = hash.size();
+        requests.resize(requests.size() + 1);
+
+        pack(buffer, hash);
+        size_type bufSize = packedSize(nSends);
+
+        auto buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sendNum, bufSize);
+
+        Ippl::Comm->isend(rank, tag, buffer, *buf, requests.back(), nSends);
+        buf->resetWritePos();
+
+        ++sendNum;
+    }
+
+    template <class PLayout, class... Properties>
+    template <typename BufferType>
+    void ParticleBase<PLayout, Properties...>::recvFromRank(int rank, int tag, int& recvNum,
+                                                            size_type nRecvs, BufferType& buffer) {
+        size_type bufSize = packedSize(nRecvs);
+        auto buf          = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvNum, bufSize);
+
+        Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs);
+        buf->resetReadPos();
+
+        unpack(buffer, nRecvs);
+
+        ++recvNum;
+    }
+
+    template <class PLayout, class... Properties>
     template <typename Archive>
     void ParticleBase<PLayout, Properties...>::serialize(Archive& ar, size_type nsends) {
         using size_type = typename attribute_container_t::size_type;

@@ -211,6 +211,13 @@ namespace ippl {
          */
         void destroy(const Kokkos::View<bool*>& invalid, const size_type destroyNum);
 
+        template <typename BufferType>
+        void sendToRank(int rank, int tag, int& sendNum, std::vector<MPI_Request>& requests,
+                        const hash_type& hash, BufferType& buffer);
+
+        template <typename BufferType>
+        void recvFromRank(int rank, int tag, int& recvNum, size_type nRecvs, BufferType& buffer);
+
         /*!
          * Serialize to do MPI calls.
          * @param ar archive

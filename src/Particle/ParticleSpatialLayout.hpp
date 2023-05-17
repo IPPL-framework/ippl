@@ -123,8 +123,6 @@ namespace ippl {
         // send
         std::vector<MPI_Request> requests(0);
 
-        using buffer_type = Communicate::buffer_type<>;
-
         int tag = Ippl::Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
 
         int sends = 0;
@@ -133,17 +131,7 @@ namespace ippl {
                 hash_type hash("hash", nSends[rank]);
                 fillHash(rank, ranks, hash);
 
-                requests.resize(requests.size() + 1);
-
-                pdata.pack(buffer, hash);
-                size_type bufSize = pdata.packedSize(nSends[rank]);
-
-                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
-
-                Ippl::Comm->isend(rank, tag, buffer, *buf, requests.back(), nSends[rank]);
-                buf->resetWritePos();
-
-                ++sends;
+                pdata.sendToRank(rank, tag, sends, requests, hash, buffer);
             }
         }
         IpplTimings::stopTimer(sendTimer);
@@ -175,15 +163,7 @@ namespace ippl {
         int recvs = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
-                size_type bufSize = pdata.packedSize(nRecvs[rank]);
-                buffer_type buf   = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
-
-                Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
-                buf->resetReadPos();
-
-                pdata.unpack(buffer, nRecvs[rank]);
-
-                ++recvs;
+                pdata.recvFromRank(rank, tag, recvs, nRecvs[rank], buffer);
             }
         }
         IpplTimings::stopTimer(recvTimer);
