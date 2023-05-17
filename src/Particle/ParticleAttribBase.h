@@ -38,6 +38,7 @@ namespace ippl {
         class ParticleAttribBase {
         public:
             typedef typename ViewType<bool, 1, Properties...>::view_type boolean_view_type;
+            using memory_space = typename boolean_view_type::memory_space;
 
             virtual void create(size_type) = 0;
 
@@ -49,9 +50,9 @@ namespace ippl {
 
             virtual void unpack(void*, size_type) = 0;
 
-            virtual void serialize(Archive<Properties...>& ar, size_type nsends) = 0;
+            virtual void serialize(Archive<memory_space>& ar, size_type nsends) = 0;
 
-            virtual void deserialize(Archive<Properties...>& ar, size_type nrecvs) = 0;
+            virtual void deserialize(Archive<memory_space>& ar, size_type nrecvs) = 0;
 
             virtual size_type size() const = 0;
 

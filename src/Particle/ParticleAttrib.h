@@ -76,11 +76,11 @@ namespace ippl {
 
         void unpack(void*, size_type) override;
 
-        void serialize(detail::Archive<Properties...>& ar, size_type nsends) override {
+        void serialize(detail::Archive<memory_space>& ar, size_type nsends) override {
             ar.serialize(dview_m, nsends);
         }
 
-        void deserialize(detail::Archive<Properties...>& ar, size_type nrecvs) override {
+        void deserialize(detail::Archive<memory_space>& ar, size_type nrecvs) override {
             ar.deserialize(dview_m, nrecvs);
         }
 
