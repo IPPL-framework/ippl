@@ -425,6 +425,9 @@ public:
                                           rand_gen.normal(0.0, dt),
                                           rand_gen.normal(0.0, dt)});
             pQdW_view(i) = matrixVectorMul3x3(Q, dW);
+            
+            // Give the state back, which will allow another thread to acquire it
+            randPoolRef.free_state(rand_gen);
             });
         Kokkos::fence();
     }
@@ -541,32 +544,26 @@ public:
 
         for (unsigned d = 0; d < Dim; ++d) {
             Kokkos::parallel_reduce(
-                "gather D statistics", this->getLocalNum(),
+                "gather `D` and `Q` statistics", this->getLocalNum(),
                 KOKKOS_LAMBDA(const int i,
                               double& D0Loc,
                               double& D1Loc,
-                              double& D2Loc) {
-                    D0Loc += pD0_view(i)[d];
-                    D1Loc += pD1_view(i)[d];
-                    D2Loc += pD2_view(i)[d];
-                },
-                Kokkos::Sum<double>(D0Avg(d)),
-                Kokkos::Sum<double>(D1Avg(d)),
-                Kokkos::Sum<double>(D2Avg(d))
-                );
-            Kokkos::fence();
-            Kokkos::parallel_reduce(
-                "gather Q statistics", this->getLocalNum(),
-                KOKKOS_LAMBDA(const int i,
+                              double& D2Loc,
                               double& Q0Loc,
                               double& Q1Loc,
                               double& Q2Loc,
                               double& QdWLoc) {
+                    D0Loc += pD0_view(i)[d];
+                    D1Loc += pD1_view(i)[d];
+                    D2Loc += pD2_view(i)[d];
                     Q0Loc += pQ0_view(i)[d];
                     Q1Loc += pQ1_view(i)[d];
                     Q2Loc += pQ2_view(i)[d];
                     QdWLoc += pQdW_view(i)[d];
                 },
+                Kokkos::Sum<double>(D0Avg(d)),
+                Kokkos::Sum<double>(D1Avg(d)),
+                Kokkos::Sum<double>(D2Avg(d)),
                 Kokkos::Sum<double>(Q0Avg(d)),
                 Kokkos::Sum<double>(Q1Avg(d)),
                 Kokkos::Sum<double>(Q2Avg(d)),
