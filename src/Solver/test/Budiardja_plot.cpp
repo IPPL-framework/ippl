@@ -39,6 +39,8 @@ int main(int argc, char* argv[]) {
 
     using Mesh_t      = ippl::UniformCartesian<double, 3>;
     using Centering_t = Mesh_t::DefaultCentering;
+    using Solver_t =
+        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t>;
 
     // number of gridpoints to iterate over
     std::array<int, n> N = {48, 144, 288, 384, 576};
@@ -112,17 +114,21 @@ int main(int argc, char* argv[]) {
                 view_exact(i, j, k) = exact_fct(x, y, z);
             });
 
+        // parameters for solver
+        ippl::ParameterList params;
+
         // set FFT parameters
-        ippl::ParameterList fftParams;
-        fftParams.add("use_heffte_defaults", false);
-        fftParams.add("use_pencils", true);
-        fftParams.add("use_gpu_aware", true);
-        fftParams.add("comm", ippl::a2av);
-        fftParams.add("r2c_direction", 0);
+        params.add("use_heffte_defaults", false);
+        params.add("use_pencils", true);
+        params.add("use_gpu_aware", true);
+        params.add("comm", ippl::a2av);
+        params.add("r2c_direction", 0);
+
+        // choose Hockney algorithm for Open BCs solver
+        params.add("algorithm", Solver_t::HOCKNEY);
 
         // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(
-            rho, fftParams, "HOCKNEY");
+        Solver_t FFTsolver(rho, params);
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

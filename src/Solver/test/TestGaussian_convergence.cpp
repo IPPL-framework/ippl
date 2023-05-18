@@ -17,6 +17,7 @@ using Mesh_t        = ippl::UniformCartesian<double, 3>;
 using Centering_t   = Mesh_t::DefaultCentering;
 using ScalarField_t = ippl::Field<double, 3, Mesh_t, Centering_t>;
 using VectorField_t = ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t>;
+using Solver_t = ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t>;
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {
@@ -201,17 +202,31 @@ int main(int argc, char* argv[]) {
                 view_exactE(i, j, k)[2] = exact_E(x, y, z)[2];
             });
 
-        // set the FFT parameters
+        // set the solver parameters
+        ippl::ParameterList params;
 
-        ippl::ParameterList fftParams;
-        fftParams.add("use_heffte_defaults", false);
-        fftParams.add("use_pencils", true);
-        fftParams.add("use_gpu_aware", true);
-        fftParams.add("comm", ippl::a2av);
-        fftParams.add("r2c_direction", 0);
+        // set the FFT parameters
+        params.add("use_heffte_defaults", false);
+        params.add("use_pencils", true);
+        params.add("use_gpu_aware", true);
+        params.add("comm", ippl::a2av);
+        params.add("r2c_direction", 0);
+
+        // set the algorithm
+        if (algorithm == "HOCKNEY") {
+            params.add("algorithm", Solver_t::HOCKNEY);
+        } else if (algorithm == "VICO") {
+            params.add("algorithm", Solver_t::VICO);
+        } else {
+            throw IpplException("TestGaussian_convergence.cpp main()",
+                                "Unrecognized algorithm type");
+        }
+
+        // add output type
+        params.add("output_type", Solver_t::SOL_AND_GRAD);
+
         // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(
-            fieldE, rho, fftParams, algorithm);
+        Solver_t FFTsolver(fieldE, rho, params);
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

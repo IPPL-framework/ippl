@@ -61,6 +61,8 @@ int main(int argc, char* argv[]) {
 
     using Mesh_t      = ippl::UniformCartesian<double, 3>;
     using Centering_t = Mesh_t::DefaultCentering;
+    using Solver_t =
+        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, Dim, Mesh_t, Centering_t>;
 
     // start a timer
     static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
@@ -179,42 +181,55 @@ int main(int argc, char* argv[]) {
             view_exactE(i, j, k)[2] = exact_E(x, y, z)[2];
         });
 
+    // Parameter List to pass to solver
+    ippl::ParameterList params;
+
     // set the FFT parameters
-    ippl::ParameterList fftParams;
     if (reshape == "pencils") {
-        fftParams.add("use_pencils", true);
+        params.add("use_pencils", true);
     } else if (reshape == "slabs") {
-        fftParams.add("use_pencils", false);
+        params.add("use_pencils", false);
     } else {
         throw IpplException("TestGaussian.cpp main()", "Unrecognized heffte parameter");
     }
 
     if (communication == "a2a") {
-        fftParams.add("comm", ippl::a2a);
+        params.add("comm", ippl::a2a);
     } else if (communication == "a2av") {
-        fftParams.add("comm", ippl::a2av);
+        params.add("comm", ippl::a2av);
     } else if (communication == "p2p") {
-        fftParams.add("comm", ippl::p2p);
+        params.add("comm", ippl::p2p);
     } else if (communication == "p2p_pl") {
-        fftParams.add("comm", ippl::p2p_pl);
+        params.add("comm", ippl::p2p_pl);
     } else {
         throw IpplException("TestGaussian.cpp main()", "Unrecognized heffte parameter");
     }
 
     if (reordering == "reorder") {
-        fftParams.add("use_reorder", true);
+        params.add("use_reorder", true);
     } else if (reordering == "no-reorder") {
-        fftParams.add("use_reorder", false);
+        params.add("use_reorder", false);
     } else {
         throw IpplException("TestGaussian.cpp main()", "Unrecognized heffte parameter");
     }
-    fftParams.add("use_heffte_defaults", false);
-    fftParams.add("use_gpu_aware", true);
-    fftParams.add("r2c_direction", 0);
+    params.add("use_heffte_defaults", false);
+    params.add("use_gpu_aware", true);
+    params.add("r2c_direction", 0);
+
+    // set the algorithm
+    if (algorithm == "HOCKNEY") {
+        params.add("algorithm", Solver_t::HOCKNEY);
+    } else if (algorithm == "VICO") {
+        params.add("algorithm", Solver_t::VICO);
+    } else {
+        throw IpplException("TestGaussian.cpp main()", "Unrecognized algorithm type");
+    }
+
+    // add output type
+    params.add("output_type", Solver_t::SOL_AND_GRAD);
 
     // define an FFTPoissonSolver object
-    ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, Dim, Mesh_t, Centering_t> FFTsolver(
-        fieldE, rho, fftParams, algorithm);
+    Solver_t FFTsolver(fieldE, rho, params);
 
     // iterate over 5 timesteps
     for (int times = 0; times < 5; ++times) {
