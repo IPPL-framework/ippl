@@ -153,9 +153,7 @@ namespace ippl {
         , isGradFD_m(false) {
         setDefaultParameters();
         this->params_m.merge(params);
-        alg_m = this->params_m.get("algorithm");
-
-        // std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
+        this->params_m.update("output_type", Base::SOL);
 
         this->setRhs(rhs);
 
@@ -183,9 +181,6 @@ namespace ippl {
         , isGradFD_m(false) {
         setDefaultParameters();
         this->params_m.merge(params);
-        alg_m = this->params_m.get("algorithm");
-
-        // std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
 
         this->setRhs(rhs);
         this->setLhs(lhs);
@@ -225,11 +220,14 @@ namespace ippl {
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::initializeFields() {
+        const int alg = this->params_m.template get<int>("algorithm");
+
         // first check if valid algorithm choice
-        if ((alg_m != "VICO") && (alg_m != "HOCKNEY") && (alg_m != "BIHARMONIC")) {
+        if ((alg != Algorithm::VICO) && (alg != Algorithm::HOCKNEY)
+            && (alg != Algorithm::BIHARMONIC)) {
             throw IpplException(
                 "FFTPoissonSolver::initializeFields()",
-                "Currently only Hockney and Vico algorithms are supported for open BCs");
+                "Currently only Hockney, Vico, and Biharmonic are supported for open BCs");
         }
 
         // get layout and mesh
@@ -302,7 +300,7 @@ namespace ippl {
         // if Vico, also need to create mesh and layout for 4N Fourier domain
         // on this domain, the truncated Green's function is defined
         // also need to create the 4N complex grid, on which precomputation step done
-        if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
+        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
             // start a timer
             static IpplTimings::TimerRef initialize_vico =
                 IpplTimings::getTimer("Initialize: extra Vico");
@@ -327,7 +325,7 @@ namespace ippl {
         }
 
         // these are fields that are used for calculating the Green's function for Hockney
-        if (alg_m == "HOCKNEY") {
+        if (alg == Algorithm::HOCKNEY) {
             // start a timer
             static IpplTimings::TimerRef initialize_hockney =
                 IpplTimings::getTimer("Initialize: extra Hockney");
@@ -410,7 +408,7 @@ namespace ippl {
         IpplTimings::startTimer(warmup);
 
         fft_m->transform(+1, rho2_mr, rho2tr_m);
-        if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
+        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
             fft4n_m->transform(+1, grnL_m);
         }
 
@@ -441,6 +439,9 @@ namespace ippl {
 
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
+
+        // get the algorithm (hockney, vico, or biharmonic)
+        const int alg = this->params_m.template get<int>("algorithm");
 
         // set the mesh & spacing, which may change each timestep
         mesh_mp = &(this->rhs_mp->get_mesh());
@@ -591,7 +592,7 @@ namespace ippl {
             // Vico: need to multiply by normalization factor of 1/4N^3,
             // since only backward transform was performed on the 4N grid
             for (unsigned int i = 0; i < Dim; ++i) {
-                if ((alg_m == "VICO") || (alg_m == "BIHARMONIC"))
+                if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
                     rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                 else
                     rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
@@ -754,7 +755,7 @@ namespace ippl {
 
                 // apply proper normalization
                 for (unsigned int i = 0; i < Dim; ++i) {
-                    if ((alg_m == "VICO") || (alg_m == "BIHARMONIC"))
+                    if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
                         rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                     else
                         rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
@@ -856,7 +857,9 @@ namespace ippl {
         const double pi = Kokkos::numbers::pi_v<double>;
         grn_mr          = 0.0;
 
-        if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
+        const int alg = this->params_m.template get<int>("algorithm");
+
+        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
             Vector_t l(hr_m * nr_m);
             Vector_t hs_m;
             double L_sum(0.0);
@@ -892,7 +895,7 @@ namespace ippl {
             // Kokkos parallel for loop to assign analytic grnL_m
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-            if (alg_m == "VICO") {
+            if (alg == Algorithm::VICO) {
                 Kokkos::parallel_for(
                     "Initialize Green's function ",
                     mdrange_type({nghost_g, nghost_g, nghost_g},
@@ -928,7 +931,7 @@ namespace ippl {
                         view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
                     });
 
-            } else if (alg_m == "BIHARMONIC") {
+            } else if (alg == Algorithm::BIHARMONIC) {
                 Kokkos::parallel_for(
                     "Initialize Green's function ",
                     mdrange_type({nghost_g, nghost_g, nghost_g},

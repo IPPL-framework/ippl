@@ -37,6 +37,13 @@ namespace ippl {
         // type of output
         using Base = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
 
+        // enum type for the algorithm
+        enum Algorithm {
+            HOCKNEY    = 0b01,
+            VICO       = 0b10,
+            BIHARMONIC = 0b11
+        };
+
         // define a type for a 3 dimensional field (e.g. charge density field)
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
@@ -176,8 +183,7 @@ namespace ippl {
                                         "Unrecognized heffte communication type");
             }
 
-            this->params_m.add("algorithm", "HOCKNEY");
-            this->params_m.add("output_type", Base::SOL);
+            this->params_m.add("algorithm", HOCKNEY);
         }
     };
 }  // namespace ippl
