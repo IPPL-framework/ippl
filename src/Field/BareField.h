@@ -187,7 +187,7 @@ namespace ippl {
         policy_type<Tag> getFieldRangePolicy(const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
             const size_t shift = nghost_m - nghost;
-            return getRangePolicy<Dim, Tag>(dview_m, shift);
+            return getRangePolicy(dview_m, shift);
         }
 
         /*!

@@ -353,7 +353,7 @@ int main(int argc, char* argv[]) {
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
-            "Assign initial rho based on PDF", ippl::getRangePolicy<Dim>(rhoview, nghost),
+            "Assign initial rho based on PDF", ippl::getRangePolicy(rhoview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
                 Vector_t<double, Dim> xvec = args;

@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
                 auto view_exact = phifield_exact.getView();
 
                 Kokkos::parallel_for(
-                    "Assign rhs", ippl::getRangePolicy<3>(view, nghost),
+                    "Assign rhs", ippl::getRangePolicy(view, nghost),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         using Kokkos::pow, Kokkos::cos, Kokkos::sin;
                         // local to global index conversion
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
                 auto Eview_exact = Efield_exact.getView();
 
                 Kokkos::parallel_for(
-                    "Assign rhs", ippl::getRangePolicy<3>(view, nghost),
+                    "Assign rhs", ippl::getRangePolicy(view, nghost),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         using Kokkos::pow, Kokkos::cos, Kokkos::sin;
                         // local to global index conversion
@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
                 for (size_t d = 0; d < dim; ++d) {
                     double temp = 0.0;
                     Kokkos::parallel_reduce(
-                        "Vector errorNr reduce", ippl::getRangePolicy<3>(view, nghost),
+                        "Vector errorNr reduce", ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
                                       double& valL) {
                             double myVal = Kokkos::pow(Eview(i, j, k)[d], 2);
@@ -187,7 +187,7 @@ int main(int argc, char* argv[]) {
 
                     temp = 0.0;
                     Kokkos::parallel_reduce(
-                        "Vector errorDr reduce", ippl::getRangePolicy<3>(view, nghost),
+                        "Vector errorDr reduce", ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
                                       double& valL) {
                             double myVal = Kokkos::pow(Eview_exact(i, j, k)[d], 2);

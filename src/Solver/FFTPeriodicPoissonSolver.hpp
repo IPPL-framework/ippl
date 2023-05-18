@@ -87,7 +87,7 @@ namespace ippl {
         switch (this->params_m.template get<int>("output_type")) {
             case Base::SOL: {
                 ippl::parallel_for(
-                    "Solution FFTPeriodicPoissonSolver", getRangePolicy<Dim>(view, nghost),
+                    "Solution FFTPeriodicPoissonSolver", getRangePolicy(view, nghost),
                     KOKKOS_LAMBDA(const index_array_type& args) {
                         Vector<int, Dim> iVec = args - nghost;
                         for (unsigned d = 0; d < Dim; ++d) {
@@ -129,7 +129,7 @@ namespace ippl {
 
                 for (size_t gd = 0; gd < Dim; ++gd) {
                     ippl::parallel_for(
-                        "Gradient FFTPeriodicPoissonSolver", getRangePolicy<Dim>(view, nghost),
+                        "Gradient FFTPeriodicPoissonSolver", getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const index_array_type& args) {
                             Vector<int, Dim> iVec = args - nghost;
                             for (unsigned d = 0; d < Dim; ++d) {
@@ -164,7 +164,7 @@ namespace ippl {
 
                     ippl::parallel_for(
                         "Assign Gradient FFTPeriodicPoissonSolver",
-                        getRangePolicy<Dim>(viewLhs, nghostL),
+                        getRangePolicy(viewLhs, nghostL),
                         KOKKOS_LAMBDA(const index_array_type& args) {
                             apply<Dim>(viewLhs, args)[gd] = apply<Dim>(viewRhs, args);
                         });

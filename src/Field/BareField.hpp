@@ -126,7 +126,7 @@ namespace ippl {
     BareField<T, Dim>& BareField<T, Dim>::operator=(T x) {
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
-            "BareField::operator=(T)", getRangePolicy<Dim>(dview_m),
+            "BareField::operator=(T)", getRangePolicy(dview_m),
             KOKKOS_CLASS_LAMBDA(const index_array_type& args) { apply<Dim>(dview_m, args) = x; });
         return *this;
     }
@@ -138,7 +138,7 @@ namespace ippl {
         capture_type expr_     = reinterpret_cast<const capture_type&>(expr);
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
-            "BareField::operator=(const Expression&)", getRangePolicy<Dim>(dview_m, nghost_m),
+            "BareField::operator=(const Expression&)", getRangePolicy(dview_m, nghost_m),
             KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
                 apply<Dim>(dview_m, args) = apply<Dim>(expr_, args);
             });
@@ -163,7 +163,7 @@ namespace ippl {
         T temp                 = 0.0;                                         \
         using index_array_type = typename RangePolicy<Dim>::index_array_type; \
         ippl::parallel_reduce(                                                \
-            "fun", getRangePolicy<Dim>(dview_m, nghost_m - nghost),           \
+            "fun", getRangePolicy(dview_m, nghost_m - nghost),                \
             KOKKOS_CLASS_LAMBDA(const index_array_type& args, T& valL) {      \
                 T myVal = apply<Dim>(dview_m, args);                          \
                 op;                                                           \

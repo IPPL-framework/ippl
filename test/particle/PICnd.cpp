@@ -233,7 +233,7 @@ public:
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_reduce(
-            "Particle Charge", ippl::getRangePolicy<Dim>(viewRho, nghost),
+            "Particle Charge", ippl::getRangePolicy(viewRho, nghost),
             KOKKOS_LAMBDA(const index_array_type& args, double& val) {
                 val += ippl::apply<Dim>(viewRho, args);
             },
@@ -268,7 +268,7 @@ public:
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
-            "Assign EFD_m", ippl::getRangePolicy<Dim>(view, nghost),
+            "Assign EFD_m", ippl::getRangePolicy(view, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
                 Vector_t vec = (0.5 + args + lDom.first() - nghost) * hr;
@@ -369,7 +369,7 @@ public:
             // Loops over particles
             using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
-                "initPositions", ippl::createRangePolicy<Dim>(begin, end),
+                "initPositions", ippl::createRangePolicy(begin, end),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     int l = 0;
                     for (unsigned d1 = 0; d1 < Dim; d1++) {
