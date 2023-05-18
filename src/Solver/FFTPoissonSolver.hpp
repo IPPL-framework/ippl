@@ -139,24 +139,23 @@ namespace ippl {
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::FFTPoissonSolver(rhs_type& rhs,
-                                                                         ParameterList& fftparams,
-                                                                         std::string alg)
+                                                                         ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
         , layout2_m(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr)
-        , alg_m(alg)
         , mesh4_m(nullptr)
         , layout4_m(nullptr)
         , isGradFD_m(false) {
-        std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
         setDefaultParameters();
-        this->setRhs(rhs);
+        this->params_m.merge(params);
+        alg_m = this->params_m.get("algorithm");
 
-        this->params_m.merge(fftparams);
-        this->params_m.update("output_type", Base::SOL);
+        // std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
+
+        this->setRhs(rhs);
 
         // start a timer
         static IpplTimings::TimerRef initialize = IpplTimings::getTimer("Initialize");
@@ -170,25 +169,24 @@ namespace ippl {
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::FFTPoissonSolver(lhs_type& lhs,
                                                                          rhs_type& rhs,
-                                                                         ParameterList& fftparams,
-                                                                         std::string alg, int sol)
+                                                                         ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
         , layout2_m(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr)
-        , alg_m(alg)
         , mesh4_m(nullptr)
         , layout4_m(nullptr)
         , isGradFD_m(false) {
-        std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
         setDefaultParameters();
+        this->params_m.merge(params);
+        alg_m = this->params_m.get("algorithm");
+
+        // std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
+
         this->setRhs(rhs);
         this->setLhs(lhs);
-
-        this->params_m.merge(fftparams);
-        this->params_m.update("output_type", sol);
 
         // start a timer
         static IpplTimings::TimerRef initialize = IpplTimings::getTimer("Initialize");

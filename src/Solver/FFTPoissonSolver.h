@@ -55,9 +55,12 @@ namespace ippl {
         using buffer_type = Communicate::buffer_type;
 
         // constructor and destructor
-        FFTPoissonSolver(rhs_type& rhs, ParameterList& fftparams, std::string alg);
-        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams, std::string alg,
-                         int sol = Base::SOL_AND_GRAD);
+        FFTPoissonSolver()
+            : Base() {
+            setDefaultParameters();
+        }
+        FFTPoissonSolver(rhs_type& rhs, ParameterList& params);
+        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
         ~FFTPoissonSolver();
 
         // allows user to set gradient of phi = Efield instead of spectral
@@ -172,6 +175,9 @@ namespace ippl {
                     throw IpplException("FFTPoissonSolver::setDefaultParameters",
                                         "Unrecognized heffte communication type");
             }
+
+            this->params_m.add("algorithm", "HOCKNEY");
+            this->params_m.add("output_type", Base::SOL);
         }
     };
 }  // namespace ippl
