@@ -1,6 +1,8 @@
 #ifndef LANGEVINHELPERS_HPP
 #define LANGEVINHELPERS_HPP
 
+#include <cmath>
+
 #include "Utility/PAssert.h"
 
 #include "ChargedParticles.hpp"
@@ -258,6 +260,27 @@ MatrixD_t cholesky3x3(const MatrixD_t& M) {
   L[2][0] = M[2][0] / L[0][0];
   L[2][1] = (M[2][1] - L[2][0] * L[1][0]) / L[1][1];
   L[2][2] = sqrt(M[2][2] - L[2][0] * L[2][0] - L[2][1] * L[2][1]);
+
+  // Check that there has been no NaN computed
+  bool foundNaN = false;
+  for(int i = 0; i < 3; ++i) {
+    for(int j = 0; j <= i; ++j) {
+      if(isnan(L[i][j])){
+        foundNaN = true;
+      }
+    }
+  }
+
+  // Print input Matrix M
+  if(foundNaN) {
+    for(int i = 0; i < 3; ++i) {
+      for(int j = 0; j < 3; ++j) {
+        std::cout << M[i][j] << ' ';
+      }
+      std::cout << '\n';
+    }
+  }
+  PAssert(foundNaN == false);
   return L;
 }
 
