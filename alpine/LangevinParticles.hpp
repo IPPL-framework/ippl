@@ -53,6 +53,7 @@ class LangevinParticles : public ChargedParticles<PLayout> {
     // View types (of particle attributes)
     typedef ParticleAttrib<double>::view_type     attr_view_t;
     typedef ParticleAttrib<VectorD_t>::view_type  attr_Dview_t;
+    typedef ParticleAttrib<MatrixD_t>::view_type  attr_DMatrixView_t;
     typedef ParticleAttrib<double>::HostMirror    attr_mirror_t;
     typedef ParticleAttrib<VectorD_t>::HostMirror attr_Dmirror_t;
 
@@ -394,6 +395,11 @@ public:
         attr_Dview_t pD0_view = p_D0_m.getView();
         attr_Dview_t pD1_view = p_D1_m.getView();
         attr_Dview_t pD2_view = p_D2_m.getView();
+
+        attr_Dview_t pQ0_view = p_Q0_m.getView();
+        attr_Dview_t pQ1_view = p_Q1_m.getView();
+        attr_Dview_t pQ2_view = p_Q2_m.getView();
+
         attr_Dview_t pQdW_view = p_QdW_m.getView();
 
         // Have to create references
@@ -408,9 +414,12 @@ public:
             KOKKOS_LAMBDA(const int i) {
             KokkosRNG_t rand_gen = randPoolRef.get_state();
             MatrixD_t Q = cholesky3x3(MatrixD_t({pD0_view(i), pD1_view(i), pD2_view(i)}));
+            pQ0_view(i) = Q[0];
+            pQ1_view(i) = Q[1];
+            pQ2_view(i) = Q[2];
             VectorD_t dW = VectorD_t({rand_gen.normal(0.0, dt),
-                                      rand_gen.normal(0.0, dt),
-                                      rand_gen.normal(0.0, dt)});
+                                          rand_gen.normal(0.0, dt),
+                                          rand_gen.normal(0.0, dt)});
             pQdW_view(i) = matrixVectorMul3x3(Q, dW);
             });
         Kokkos::fence();
@@ -494,6 +503,7 @@ public:
 
         attr_Dview_t pFd_view = this->p_Fd_m.getView();
         VectorD_t FdAvg;
+
         for (unsigned d = 0; d < Dim; ++d) {
             Kokkos::parallel_reduce(
                 "rel max", this->getLocalNum(),
@@ -509,33 +519,53 @@ public:
         // Calculate D Avg //
         //////////////////////
 
-        attr_Dview_t pD0_view = this->p_D0_m.getView();
-        attr_Dview_t pD1_view = this->p_D1_m.getView();
-        attr_Dview_t pD2_view = this->p_D2_m.getView();
+        // Get views on the particle attributes
+        attr_Dview_t pD0_view = p_D0_m.getView();
+        attr_Dview_t pD1_view = p_D1_m.getView();
+        attr_Dview_t pD2_view = p_D2_m.getView();
 
-        attr_Dview_t pQdW_view = this->p_QdW_m.getView();
+        attr_Dview_t pQ0_view = p_Q0_m.getView();
+        attr_Dview_t pQ1_view = p_Q1_m.getView();
+        attr_Dview_t pQ2_view = p_Q2_m.getView();
 
-        VectorD_t D0Avg;
-        VectorD_t D1Avg;
-        VectorD_t D2Avg;
+        attr_Dview_t pQdW_view = p_QdW_m.getView();
+
+        // Vectors to store the avg statistics in
+        VectorD_t D0Avg, D1Avg, D2Avg;
+        VectorD_t Q0Avg, Q1Avg, Q2Avg;
         VectorD_t QdWAvg;
 
         for (unsigned d = 0; d < Dim; ++d) {
             Kokkos::parallel_reduce(
-                "rel max", this->getLocalNum(),
+                "gather D statistics", this->getLocalNum(),
                 KOKKOS_LAMBDA(const int i,
                               double& D0Loc,
                               double& D1Loc,
-                              double& D2Loc,
-                              double& QdWLoc) {
+                              double& D2Loc) {
                     D0Loc += pD0_view(i)[d];
                     D1Loc += pD1_view(i)[d];
                     D2Loc += pD2_view(i)[d];
-                    QdWLoc += pQdW_view(i)[d];
                 },
                 Kokkos::Sum<double>(D0Avg(d)),
                 Kokkos::Sum<double>(D1Avg(d)),
-                Kokkos::Sum<double>(D2Avg(d)),
+                Kokkos::Sum<double>(D2Avg(d))
+                );
+            Kokkos::fence();
+            Kokkos::parallel_reduce(
+                "gather Q statistics", this->getLocalNum(),
+                KOKKOS_LAMBDA(const int i,
+                              double& Q0Loc,
+                              double& Q1Loc,
+                              double& Q2Loc,
+                              double& QdWLoc) {
+                    Q0Loc += pQ0_view(i)[d];
+                    Q1Loc += pQ1_view(i)[d];
+                    Q2Loc += pQ2_view(i)[d];
+                    QdWLoc += pQdW_view(i)[d];
+                },
+                Kokkos::Sum<double>(Q0Avg(d)),
+                Kokkos::Sum<double>(Q1Avg(d)),
+                Kokkos::Sum<double>(Q2Avg(d)),
                 Kokkos::Sum<double>(QdWAvg(d))
                 );
         }
@@ -544,6 +574,9 @@ public:
         D0Avg  = D0Avg  / globParticleNum_m;
         D1Avg  = D1Avg  / globParticleNum_m;
         D2Avg  = D2Avg  / globParticleNum_m;
+        Q0Avg  = Q0Avg  / globParticleNum_m;
+        Q1Avg  = Q1Avg  / globParticleNum_m;
+        Q2Avg  = Q2Avg  / globParticleNum_m;
         QdWAvg = QdWAvg / globParticleNum_m;
 
         if (Ippl::Comm->rank() == 0) {
@@ -563,6 +596,9 @@ public:
                        << "D0Avg_x,"  << "D0Avg_y,"  << "D0Avg_z,"
                        << "D1Avg_x,"  << "D1Avg_y,"  << "D1Avg_z,"
                        << "D2Avg_x,"  << "D2Avg_y,"  << "D2Avg_z,"
+                       << "Q0Avg_x,"  << "Q0Avg_y,"  << "Q0Avg_z,"
+                       << "Q1Avg_x,"  << "Q1Avg_y,"  << "Q1Avg_z,"
+                       << "Q2Avg_x,"  << "Q2Avg_y,"  << "Q2Avg_z,"
                        << "QdWAvg_x," << "QdWAvg_y," << "QdWAvg_z" << endl;
             }
 
@@ -571,6 +607,9 @@ public:
                    << D0Avg(0)  << "," << D0Avg(1)  << "," << D0Avg(2)  << ","
                    << D1Avg(0)  << "," << D1Avg(1)  << "," << D1Avg(2)  << ","
                    << D2Avg(0)  << "," << D2Avg(1)  << "," << D2Avg(2)  << ","
+                   << Q0Avg(0)  << "," << Q0Avg(1)  << "," << Q0Avg(2)  << ","
+                   << Q1Avg(0)  << "," << Q1Avg(1)  << "," << Q1Avg(2)  << ","
+                   << Q2Avg(0)  << "," << Q2Avg(1)  << "," << Q2Avg(2)  << ","
                    << QdWAvg(0) << "," << QdWAvg(1) << "," << QdWAvg(2) << endl;
             // clang-format on
         }
@@ -1040,6 +1079,10 @@ public:
     ParticleAttrib<VectorD_t> p_D0_m;
     ParticleAttrib<VectorD_t> p_D1_m;
     ParticleAttrib<VectorD_t> p_D2_m;
+    // Cholesky decomposition of `D` TODO Remove as it can be stored as a temporary matrix in the diffusion kernel
+    ParticleAttrib<VectorD_t> p_Q0_m;
+    ParticleAttrib<VectorD_t> p_Q1_m;
+    ParticleAttrib<VectorD_t> p_Q2_m;
     // Diffusion coefficient multiplied with Gaussian random vectors
     ParticleAttrib<VectorD_t> p_QdW_m;
 

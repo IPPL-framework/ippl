@@ -142,7 +142,7 @@ int main(int argc, char *argv[]){
     //dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
 
     P->dumpBeamStatistics(0, OUT_DIR);
-    P->dumpCollisionStatistics(0, OUT_DIR);
+    //P->dumpCollisionStatistics(0, OUT_DIR);
     
     for(size_t it = 1; it < NT; ++it){
 
@@ -159,7 +159,7 @@ int main(int argc, char *argv[]){
 
         P->runDiffusionSolver();
 
-        P->dumpCollisionStatistics(it, OUT_DIR);
+        //P->dumpCollisionStatistics(it, OUT_DIR);
         
         // Add dynamic friction & stochastic diffusion coefficients
         P->P = P->P + DT * P->p_Fd_m + P->p_QdW_m;

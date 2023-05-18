@@ -250,7 +250,7 @@ struct BeamStatistics{
 };
 
 KOKKOS_INLINE_FUNCTION
-MatrixD_t cholesky3x3(MatrixD_t M) {
+MatrixD_t cholesky3x3(const MatrixD_t& M) {
   MatrixD_t L;
   L[0][0] = sqrt(M[0][0]);
   L[1][0] = M[1][0] / L[0][0];
@@ -262,7 +262,7 @@ MatrixD_t cholesky3x3(MatrixD_t M) {
 }
 
 KOKKOS_INLINE_FUNCTION
-VectorD_t matrixVectorMul3x3(MatrixD_t& M, VectorD_t& v) {
+VectorD_t matrixVectorMul3x3(const MatrixD_t& M, const VectorD_t& v) {
   VectorD_t res;
   res[0] = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2];
   res[1] = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2];
