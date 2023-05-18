@@ -17,7 +17,8 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
 
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
@@ -126,7 +127,7 @@ struct FieldVal {
     struct Integral {};
     struct Hessian {};
 
-    const double pi = acos(-1.0);
+    const double pi = Kokkos::numbers::pi_v<double>;
 
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Norm&, const Idx... args) const {
@@ -143,7 +144,7 @@ struct FieldVal {
         coords                           = (0.5 + coords + lDom.first() - shift) * hx;
         view(args...)                    = 1;
         for (const auto& x : coords) {
-            view(args...) *= sin(200 * pi * x);
+            view(args...) *= Kokkos::sin(200 * pi * x);
         }
     }
 

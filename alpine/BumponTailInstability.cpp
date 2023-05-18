@@ -35,9 +35,10 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
 #include <Kokkos_Random.hpp>
 #include <chrono>
-#include <cmath>
 #include <iostream>
 #include <random>
 #include <set>
@@ -56,7 +57,7 @@ template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
     int max_iter = 20;
-    double pi    = std::acos(-1.0);
+    double pi    = Kokkos::numbers::pi_v<double>;
 
     T k, delta, u;
 
@@ -71,20 +72,20 @@ struct Newton1D {
 
     KOKKOS_INLINE_FUNCTION T f(T& x) {
         T F;
-        F = x + (delta * (std::sin(k * x) / k)) - u;
+        F = x + (delta * (Kokkos::sin(k * x) / k)) - u;
         return F;
     }
 
     KOKKOS_INLINE_FUNCTION T fprime(T& x) {
         T Fprime;
-        Fprime = 1 + (delta * std::cos(k * x));
+        Fprime = 1 + (delta * Kokkos::cos(k * x));
         return Fprime;
     }
 
     KOKKOS_FUNCTION
     void solve(T& x) {
         int iterations = 0;
-        while (iterations < max_iter && std::fabs(f(x)) > tol) {
+        while (iterations < max_iter && Kokkos::fabs(f(x)) > tol) {
             x = x - (f(x) / fprime(x));
             iterations += 1;
         }
@@ -156,7 +157,7 @@ double CDF(const double& x, const double& delta, const double& k, const unsigned
 
 KOKKOS_FUNCTION
 double PDF(const Vector_t<Dim>& xvec, const double& delta, const Vector_t<Dim>& kw) {
-    double pdf = 1.0 * 1.0 * (1.0 + delta * std::cos(kw[Dim - 1] * xvec[Dim - 1]));
+    double pdf = 1.0 * 1.0 * (1.0 + delta * Kokkos::cos(kw[Dim - 1] * xvec[Dim - 1]));
     return pdf;
 }
 

@@ -26,6 +26,8 @@
 //
 #include "Ippl.h"
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
 #include <iostream>
 #include <random>
 #include <set>
@@ -62,7 +64,7 @@ typedef Vector<double, Dim> Vector_t;
 typedef Field<double, Dim> Field_t;
 typedef Field<Vector_t, Dim> VField_t;
 
-double pi = acos(-1.0);
+double pi = Kokkos::numbers::pi_v<double>;
 
 template <class PLayout>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
@@ -253,7 +255,7 @@ public:
         }
 
         double phi0 = 0.1;
-        double pi   = acos(-1.0);
+        double pi   = Kokkos::numbers::pi_v<double>;
         // scale_fact so that particles move more
         double scale_fact = 1e5;  // 1e6
 
@@ -273,12 +275,14 @@ public:
 
                 ippl::apply<Dim>(view, args)[0] = -scale_fact * 2.0 * pi * phi0;
                 for (unsigned d1 = 0; d1 < Dim; d1++) {
-                    ippl::apply<Dim>(view, args)[0] *= cos(2 * ((d1 + 1) % 3) * pi * vec[d1]);
+                    ippl::apply<Dim>(view, args)[0] *=
+                        Kokkos::cos(2 * ((d1 + 1) % 3) * pi * vec[d1]);
                 }
                 for (unsigned d = 1; d < Dim; d++) {
                     ippl::apply<Dim>(view, args)[d] = scale_fact * 4.0 * pi * phi0;
                     for (int d1 = 0; d1 < (int)Dim - 1; d1++) {
-                        ippl::apply<Dim>(view, args)[d] *= sin(2 * ((d1 + 1) % 3) * pi * vec[d1]);
+                        ippl::apply<Dim>(view, args)[d] *=
+                            Kokkos::sin(2 * ((d1 + 1) % 3) * pi * vec[d1]);
                     }
                 }
             });

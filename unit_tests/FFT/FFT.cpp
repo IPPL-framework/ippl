@@ -17,7 +17,7 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
+#include <Kokkos_MathematicalConstants.hpp>
 #include <random>
 
 #include "MultirankUtils.h"
@@ -48,7 +48,7 @@ public:
 
     FFTTest() {
         computeGridSizes(pt);
-        const double pi = acos(-1);
+        const double pi = Kokkos::numbers::pi_v<double>;
         for (unsigned d = 0; d < MaxDim; d++) {
             len[d] = pt[d] * pi / 16;
         }
