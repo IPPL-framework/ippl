@@ -559,10 +559,10 @@ public:
             // clang-format off
             if (iteration == 0) {
                 csvout << "iteration,"
-                       << "FdAvg_x,"  << "FdAvg_y,"  << "FdAvg_z," << ","
-                       << "D0Avg_x,"  << "D0Avg_y,"  << "D0Avg_z," << ","
-                       << "D1Avg_x,"  << "D1Avg_y,"  << "D1Avg_z," << ","
-                       << "D2Avg_x,"  << "D2Avg_y,"  << "D2Avg_z," << ","
+                       << "FdAvg_x,"  << "FdAvg_y,"  << "FdAvg_z,"
+                       << "D0Avg_x,"  << "D0Avg_y,"  << "D0Avg_z,"
+                       << "D1Avg_x,"  << "D1Avg_y,"  << "D1Avg_z,"
+                       << "D2Avg_x,"  << "D2Avg_y,"  << "D2Avg_z,"
                        << "QdWAvg_x," << "QdWAvg_y," << "QdWAvg_z" << endl;
             }
 
