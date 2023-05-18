@@ -113,9 +113,13 @@ public:
         // Register particle attributes used to compute Langevin term
         this->addAttribute(p_fv_m);
         this->addAttribute(p_Fd_m);
+
         this->addAttribute(p_D0_m);
         this->addAttribute(p_D1_m);
         this->addAttribute(p_D2_m);
+        this->addAttribute(p_Q0_m);
+        this->addAttribute(p_Q1_m);
+        this->addAttribute(p_Q2_m);
         this->addAttribute(p_QdW_m);
     }
 
