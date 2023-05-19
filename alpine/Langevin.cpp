@@ -8,8 +8,6 @@ int main(int argc, char* argv[]) {
     Inform msg("Langevin");
     Inform msg2all("Langevin", INFORM_ALL_NODES);
 
-    int test = 1.0;
-
     auto start = std::chrono::high_resolution_clock::now();
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
