@@ -235,8 +235,8 @@ int main(int argc, char* argv[]) {
 
         P->gatherFd();
 
-        // Multiply with $\Gamma$ and prob. density in configuration space $f(\vec r)$
-        P->p_Fd_m = P->p_Fd_m * P->gamma_m * P->configSpaceIntegral_m;
+        // Multiply with $\Gamma$
+        P->p_Fd_m = P->p_Fd_m * P->gamma_m;
 
         // Dump actual friction coefficients
         P->dumpFdStatistics(0, OUT_DIR);
@@ -286,10 +286,11 @@ int main(int argc, char* argv[]) {
         Gdiff      = Gdiff - GfieldExact;
         dumpVTKScalar(Gdiff, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Gdiff");
 
-        // Multiply by Integral over configspace
-        P->fv_m = P->fv_m * P->configSpaceIntegral_m;
         // Compute Hessian of $g(\vec v)$
         P->D_m = hess(P->fv_m);
+
+        // Extract rows to separate fields
+        P->extractRows(P->D_m, P->D0_m, P->D1_m, P->D2_m);
 
         // Dump actual diffusion coefficients
         P->dumpDstatistics(0, OUT_DIR);
