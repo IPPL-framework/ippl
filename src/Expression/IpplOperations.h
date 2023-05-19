@@ -57,6 +57,8 @@ namespace ippl {
 #define DefineUnaryOperation(fun, name, op1, op2)                              \
     template <typename E>                                                      \
     struct fun : public detail::Expression<fun<E>, sizeof(E)> {                \
+        constexpr static unsigned dim = E::dim;                                \
+                                                                               \
         KOKKOS_FUNCTION                                                        \
         fun(const E& u)                                                        \
             : u_m(u) {}                                                        \
@@ -115,6 +117,8 @@ namespace ippl {
 #define DefineBinaryOperation(fun, name, op1, op2)                                             \
     template <typename E1, typename E2>                                                        \
     struct fun : public detail::Expression<fun<E1, E2>, sizeof(E1) + sizeof(E2)> {             \
+        constexpr static unsigned dim = std::max(E1::dim, E2::dim);                            \
+                                                                                               \
         KOKKOS_FUNCTION                                                                        \
         fun(const E1& u, const E2& v)                                                          \
             : u_m(u)                                                                           \
@@ -124,6 +128,7 @@ namespace ippl {
                                                                                                \
         template <typename... Args>                                                            \
         KOKKOS_INLINE_FUNCTION auto operator()(Args... args) const {                           \
+            static_assert(sizeof...(Args) == dim || dim == 0);                                 \
             return op2;                                                                        \
         }                                                                                      \
                                                                                                \
@@ -192,6 +197,9 @@ namespace ippl {
          */
         template <typename E1, typename E2>
         struct meta_cross : public detail::Expression<meta_cross<E1, E2>, sizeof(E1) + sizeof(E2)> {
+            constexpr static unsigned dim = E1::dim;
+            static_assert(E1::dim == E2::dim);
+
             KOKKOS_FUNCTION
             meta_cross(const E1& u, const E2& v)
                 : u_m(u)
@@ -232,6 +240,9 @@ namespace ippl {
          */
         template <typename E1, typename E2>
         struct meta_dot : public Expression<meta_dot<E1, E2>, sizeof(E1) + sizeof(E2)> {
+            constexpr static unsigned dim = E1::dim;
+            static_assert(E1::dim == E2::dim);
+
             KOKKOS_FUNCTION
             meta_dot(const E1& u, const E2& v)
                 : u_m(u)
@@ -280,6 +291,8 @@ namespace ippl {
             : public Expression<
                   meta_grad<E>,
                   sizeof(E) + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])> {
+            constexpr static unsigned dim = E::dim;
+
             KOKKOS_FUNCTION
             meta_grad(const E& u, const typename E::Mesh_t::vector_type vectors[])
                 : u_m(u) {
@@ -336,6 +349,8 @@ namespace ippl {
             : public Expression<
                   meta_div<E>,
                   sizeof(E) + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])> {
+            constexpr static unsigned dim = E::dim;
+
             KOKKOS_FUNCTION
             meta_div(const E& u, const typename E::Mesh_t::vector_type vectors[])
                 : u_m(u) {
@@ -387,6 +402,8 @@ namespace ippl {
         struct meta_laplace
             : public Expression<meta_laplace<E>,
                                 sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
+            constexpr static unsigned dim = E::dim;
+
             KOKKOS_FUNCTION
             meta_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector)
                 : u_m(u)
@@ -399,7 +416,7 @@ namespace ippl {
             KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
                 using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
                 using T                = typename E::Mesh_t::value_type;
-                constexpr unsigned Dim = E::Mesh_t::Dimension;
+                constexpr unsigned Dim = dim;
 
                 /*
                  * Equivalent computation in 3D:
@@ -440,6 +457,8 @@ namespace ippl {
         struct meta_curl
             : public Expression<meta_curl<E>,
                                 sizeof(E) + 4 * sizeof(typename E::Mesh_t::vector_type)> {
+            constexpr static unsigned dim = E::dim;
+
             KOKKOS_FUNCTION
             meta_curl(const E& u, const typename E::Mesh_t::vector_type& xvector,
                       const typename E::Mesh_t::vector_type& yvector,
@@ -488,6 +507,8 @@ namespace ippl {
                                 sizeof(E)
                                     + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])
                                     + sizeof(typename E::Mesh_t::vector_type)> {
+            constexpr static unsigned dim = E::dim;
+
             KOKKOS_FUNCTION
             meta_hess(const E& u, const typename E::Mesh_t::vector_type vectors[],
                       const typename E::Mesh_t::vector_type& hvector)
@@ -509,7 +530,7 @@ namespace ippl {
             }
 
         private:
-            constexpr static unsigned Dim = E::Mesh_t::Dimension;
+            constexpr static unsigned Dim = dim;
 
             using Mesh_t      = typename E::Mesh_t;
             using vector_type = typename Mesh_t::vector_type;
