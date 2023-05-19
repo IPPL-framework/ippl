@@ -18,6 +18,8 @@
 
 #include "Ippl.h"
 
+#include <csignal>
+
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
 
@@ -74,6 +76,27 @@ const double pi = Kokkos::numbers::pi_v<double>;
 
 // Test programs have to define this variable for VTK dump purposes
 extern const char* TestName;
+
+// Signal handling
+bool interruptSignalReceived = false;
+
+void interruptHandler(int) {
+    interruptSignalReceived = true;
+}
+
+void setSignalHandler() {
+    struct sigaction sa;
+    sa.sa_handler = interruptHandler;
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGTERM, &sa, NULL) == -1) {
+        std::cerr << Ippl::Comm->rank() << ": failed to set up signal handler for SIGTERM ("
+                  << SIGTERM << ")" << std::endl;
+    }
+    if (sigaction(SIGINT, &sa, NULL) == -1) {
+        std::cerr << Ippl::Comm->rank() << ": failed to set up signal handler for SIGINT ("
+                  << SIGINT << ")" << std::endl;
+    }
+}
 
 void dumpVTK(VField_t<3>& E, int nx, int ny, int nz, int iteration, double dx, double dy,
              double dz) {
