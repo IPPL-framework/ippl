@@ -83,6 +83,7 @@ public:
         , pMass_m(pMass)
         , epsInv_m(epsInv)
         , globParticleNum_m(globalNumParticles)
+        , configSpaceIntegral_m(globParticleNum_m)
         , dt_m(dt)
         , nv_m(nv)
         , hv_m(2*vmax / nv)
@@ -307,6 +308,65 @@ public:
         msg << "maxVel = " << maxVel << endl;
     }
 
+    void dumpDstatistics(unsigned int iteration, std::string folder) {
+        // Gather from particle attributes
+        // scatter(p_D0_m, D0_m, this->P);
+        // scatter(p_D1_m, D1_m, this->P);
+        // scatter(p_D2_m, D2_m, this->P);
+
+        VField_view_t D0View = D0_m.getView();
+        VField_view_t D1View = D1_m.getView();
+        VField_view_t D2View = D2_m.getView();
+
+        typename VField_view_t::host_mirror_type hostD0View = D0_m.getHostMirror();
+        typename VField_view_t::host_mirror_type hostD1View = D1_m.getHostMirror();
+        typename VField_view_t::host_mirror_type hostD2View = D2_m.getHostMirror();
+
+        Kokkos::deep_copy(hostD0View, D0View);
+        Kokkos::deep_copy(hostD1View, D1View);
+        Kokkos::deep_copy(hostD2View, D2View);
+
+        const int nghost = Fd_m.getNghost();
+        const ippl::NDIndex<Dim>& lDom = velocitySpaceFieldLayout_m.getLocalNDIndex();
+
+        double L2vec;
+        VectorD_t vVec;
+
+        std::stringstream fname;
+        fname << folder;
+        fname << "/Dnorm_it";
+        fname << std::setw(4) << std::setfill('0') << iteration;
+        fname << ".csv";
+
+        Inform csvout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+        csvout.precision(10);
+        csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+        // Write header
+        csvout << "v,"
+               << "D0_x,D0_y,D0_z," 
+               << "D1_x,D1_y,D1_z," 
+               << "D2_x,D2_y,D2_z" << endl;
+
+        // And dump into file
+        for (unsigned z=nghost; z<nv_m[2]+nghost; z++) {
+            for (unsigned y=nghost; y<nv_m[1]+nghost; y++) {
+                for (unsigned x=nghost; x<nv_m[0]+nghost; x++) {
+                    vVec = {double(x),double(y),double(z)};
+                    // Construct velocity vector at this cell
+                    for (unsigned d = 0; d < Dim; d++) {
+                        vVec[d] = (vVec[d] + lDom[d].first() - nghost + 0.5) * hv_m[d] + vmin_m[d];
+                    }
+                    L2vec = L2Norm(vVec);
+                    csvout << L2vec << ","
+                           << hostD0View(x,y,z)[0] << "," << hostD0View(x,y,z)[1] << "," << hostD0View(x,y,z)[2] << ","
+                           << hostD1View(x,y,z)[0] << "," << hostD1View(x,y,z)[1] << "," << hostD1View(x,y,z)[2] << ","
+                           << hostD2View(x,y,z)[0] << "," << hostD2View(x,y,z)[1] << "," << hostD2View(x,y,z)[2] << endl;
+                }
+            }
+        }
+    }
+
     void dumpFdStatistics(unsigned int iteration, std::string folder) {
         // Gather from particle attributes
         gather(p_Fd_m, Fd_m, this->P);
@@ -315,6 +375,7 @@ public:
         double L2Fd;
         VectorD_t vVec;
         VField_view_t FdView = Fd_m.getView();
+
         const int nghost = Fd_m.getNghost();
         const ippl::NDIndex<Dim>& lDom = velocitySpaceFieldLayout_m.getLocalNDIndex();
 
@@ -435,13 +496,11 @@ public:
     void runFrictionSolver() {
         Inform msg("runFrictionSolver");
 
-        double configSpaceIntegral = double(globParticleNum_m);
-
         scatterVelSpace();
 
         // Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
         // Multiply with prob. density in configuration space $f(\vec r)$
-        fv_m = - 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral;
+        fv_m = - 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
@@ -460,13 +519,11 @@ public:
     void runDiffusionSolver() {
         Inform msg("runDiffusionSolver");
 
-        double configSpaceIntegral = double(globParticleNum_m);
-
         scatterVelSpace();
         
         // Multiply with prefactors defined in RHS of Rosenbluth equations
         // FFTPoissonSolver returns $ \Delta_v \Delta_v G(\vec v)$ in `fv_m`
-        fv_m = - 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral;
+        fv_m = - 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
@@ -1099,6 +1156,10 @@ public:
     double epsInv_m;
     // Total number of global particles
     double globParticleNum_m;
+    
+    // $\int f_r(r) dr^3 = N$
+    double configSpaceIntegral_m;
+
     // Simulation timestep
     // Used to dump the time in `choleskyMultiply()` and `dumpBeamStatistics()`
     double dt_m;
