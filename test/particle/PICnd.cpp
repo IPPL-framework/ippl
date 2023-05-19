@@ -235,7 +235,7 @@ public:
         ippl::parallel_reduce(
             "Particle Charge", ippl::getRangePolicy(viewRho, nghost),
             KOKKOS_LAMBDA(const index_array_type& args, double& val) {
-                val += ippl::apply<Dim>(viewRho, args);
+                val += ippl::apply(viewRho, args);
             },
             lq);
         Kokkos::parallel_reduce(
@@ -273,15 +273,14 @@ public:
                 // local to global index conversion
                 Vector_t vec = (0.5 + args + lDom.first() - nghost) * hr;
 
-                ippl::apply<Dim>(view, args)[0] = -scale_fact * 2.0 * pi * phi0;
+                ippl::apply(view, args)[0] = -scale_fact * 2.0 * pi * phi0;
                 for (unsigned d1 = 0; d1 < Dim; d1++) {
-                    ippl::apply<Dim>(view, args)[0] *=
-                        Kokkos::cos(2 * ((d1 + 1) % 3) * pi * vec[d1]);
+                    ippl::apply(view, args)[0] *= Kokkos::cos(2 * ((d1 + 1) % 3) * pi * vec[d1]);
                 }
                 for (unsigned d = 1; d < Dim; d++) {
-                    ippl::apply<Dim>(view, args)[d] = scale_fact * 4.0 * pi * phi0;
+                    ippl::apply(view, args)[d] = scale_fact * 4.0 * pi * phi0;
                     for (int d1 = 0; d1 < (int)Dim - 1; d1++) {
-                        ippl::apply<Dim>(view, args)[d] *=
+                        ippl::apply(view, args)[d] *=
                             Kokkos::sin(2 * ((d1 + 1) % 3) * pi * vec[d1]);
                     }
                 }

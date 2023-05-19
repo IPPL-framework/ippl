@@ -38,19 +38,30 @@ namespace ippl {
         return view(coords[Idx]...);
     }
 
+    struct ExtractRank {
+        template <typename Coords, std::enable_if_t<std::is_array_v<Coords>, int> = 0>
+        constexpr static unsigned getRank() {
+            return std::extent_v<Coords>;
+        }
+
+        template <typename Coords, std::enable_if_t<std::is_class_v<Coords>, int> = 0>
+        constexpr static unsigned getRank() {
+            return Coords::dim;
+        }
+    };
+
     /*!
      * Accesses the element of a view at the indices contained in an array-like structure
      * instead of having the indices being separate arguments
-     * @tparam Dim the view's rank
      * @tparam View the view type
      * @tparam Coords an array-like container of indices
      * @param view the view to access
      * @param coords the indices
      * @return The element in the view at the given location
      */
-    template <unsigned Dim, typename View, typename Coords>
+    template <typename View, typename Coords>
     KOKKOS_INLINE_FUNCTION constexpr decltype(auto) apply(const View& view, const Coords& coords) {
-        using Indices = std::make_index_sequence<Dim>;
+        using Indices = std::make_index_sequence<ExtractRank::getRank<Coords>()>;
         return apply_impl(view, coords, Indices{});
     }
 
@@ -316,14 +327,14 @@ namespace ippl {
                  */
 
                 vector_type res(0);
-                for (unsigned d = 0; d < Dim; d++) {
-                    index_type coords[Dim] = {args...};
+                for (unsigned d = 0; d < dim; d++) {
+                    index_type coords[dim] = {args...};
 
                     coords[d] += 1;
-                    auto&& right = apply<Dim>(u_m, coords);
+                    auto&& right = apply(u_m, coords);
 
                     coords[d] -= 2;
-                    auto&& left = apply<Dim>(u_m, coords);
+                    auto&& left = apply(u_m, coords);
 
                     res += vectors_m[d] * (right - left);
                 }
@@ -331,11 +342,10 @@ namespace ippl {
             }
 
         private:
-            constexpr static unsigned Dim = E::Mesh_t::Dimension;
-            using Mesh_t                  = typename E::Mesh_t;
-            using vector_type             = typename Mesh_t::vector_type;
+            using Mesh_t      = typename E::Mesh_t;
+            using vector_type = typename Mesh_t::vector_type;
             const E u_m;
-            vector_type vectors_m[Dim];
+            vector_type vectors_m[dim];
         };
     }  // namespace detail
 
@@ -373,14 +383,14 @@ namespace ippl {
                  *   + dot(zvector_m, (u_m(i, j, k + 1) - u_m(i, j, k - 1))).apply()
                  */
                 typename E::Mesh_t::value_type res = 0;
-                for (unsigned d = 0; d < Dim; d++) {
-                    index_type coords[Dim] = {args...};
+                for (unsigned d = 0; d < dim; d++) {
+                    index_type coords[dim] = {args...};
 
                     coords[d] += 1;
-                    auto&& right = apply<Dim>(u_m, coords);
+                    auto&& right = apply(u_m, coords);
 
                     coords[d] -= 2;
-                    auto&& left = apply<Dim>(u_m, coords);
+                    auto&& left = apply(u_m, coords);
 
                     res += dot(vectors_m[d], right - left).apply();
                 }
@@ -388,11 +398,10 @@ namespace ippl {
             }
 
         private:
-            constexpr static unsigned Dim = E::Mesh_t::Dimension;
-            using Mesh_t                  = typename E::Mesh_t;
-            using vector_type             = typename Mesh_t::vector_type;
+            using Mesh_t      = typename E::Mesh_t;
+            using vector_type = typename Mesh_t::vector_type;
             const E u_m;
-            vector_type vectors_m[Dim];
+            vector_type vectors_m[dim];
         };
 
         /*!
@@ -414,9 +423,8 @@ namespace ippl {
              */
             template <typename... Idx>
             KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
-                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
-                using T                = typename E::Mesh_t::value_type;
-                constexpr unsigned Dim = dim;
+                using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
+                using T          = typename E::Mesh_t::value_type;
 
                 /*
                  * Equivalent computation in 3D:
@@ -425,15 +433,15 @@ namespace ippl {
                  *   + hvector_m[2] * (u_m(i  , j  , k+1) - 2 * u_m(i, j, k) + u_m(i  , j  , k-1))
                  */
                 T res = 0;
-                for (unsigned d = 0; d < Dim; d++) {
-                    index_type coords[Dim] = {args...};
-                    auto&& center          = apply<Dim>(u_m, coords);
+                for (unsigned d = 0; d < dim; d++) {
+                    index_type coords[dim] = {args...};
+                    auto&& center          = apply(u_m, coords);
 
                     coords[d] -= 1;
-                    auto&& left = apply<Dim>(u_m, coords);
+                    auto&& left = apply(u_m, coords);
 
                     coords[d] += 2;
-                    auto&& right = apply<Dim>(u_m, coords);
+                    auto&& right = apply(u_m, coords);
 
                     res += hvector_m[d] * (left - 2 * center + right);
                 }
@@ -525,19 +533,17 @@ namespace ippl {
             template <typename... Idx>
             KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
                 matrix_type hessian;
-                computeHessian(std::make_index_sequence<Dim>{}, hessian, args...);
+                computeHessian(std::make_index_sequence<dim>{}, hessian, args...);
                 return hessian;
             }
 
         private:
-            constexpr static unsigned Dim = dim;
-
             using Mesh_t      = typename E::Mesh_t;
             using vector_type = typename Mesh_t::vector_type;
             using matrix_type = typename Mesh_t::matrix_type;
 
             const E u_m;
-            vector_type vectors_m[Dim];
+            vector_type vectors_m[dim];
             const vector_type hvector_m;
 
             /*!
@@ -590,15 +596,15 @@ namespace ippl {
             template <size_t row, size_t col, typename... Idx>
             KOKKOS_INLINE_FUNCTION constexpr vector_type hessianEntry(const Idx... args) const {
                 using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
-                index_type coords[Dim] = {args...};
+                index_type coords[dim] = {args...};
                 if constexpr (row == col) {
-                    auto&& center = apply<Dim>(u_m, coords);
+                    auto&& center = apply(u_m, coords);
 
                     coords[row] += 1;
-                    auto&& right = apply<Dim>(u_m, coords);
+                    auto&& right = apply(u_m, coords);
 
                     coords[row] -= 2;
-                    auto&& left = apply<Dim>(u_m, coords);
+                    auto&& left = apply(u_m, coords);
 
                     // The diagonal elements correspond to second derivatives w.r.t. a single
                     // variable
@@ -607,16 +613,16 @@ namespace ippl {
                 } else {
                     coords[row] += 1;
                     coords[col] += 1;
-                    auto&& uu = apply<Dim>(u_m, coords);
+                    auto&& uu = apply(u_m, coords);
 
                     coords[col] -= 2;
-                    auto&& ud = apply<Dim>(u_m, coords);
+                    auto&& ud = apply(u_m, coords);
 
                     coords[row] -= 2;
-                    auto&& dd = apply<Dim>(u_m, coords);
+                    auto&& dd = apply(u_m, coords);
 
                     coords[col] += 2;
-                    auto&& du = apply<Dim>(u_m, coords);
+                    auto&& du = apply(u_m, coords);
 
                     // The non-diagonal elements are mixed derivatives, whose finite difference form
                     // is slightly different from above

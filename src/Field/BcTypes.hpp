@@ -110,11 +110,11 @@ namespace ippl {
                 // to avoid ambiguity with the member function
                 using ippl::apply;
 
-                T value = apply<Dim>(view, args);
+                T value = apply(view, args);
 
                 args[d] = dest;
 
-                apply<Dim>(view, args) = slope_m * value + offset_m;
+                apply(view, args) = slope_m * value + offset_m;
             });
     }
 
@@ -334,20 +334,20 @@ namespace ippl {
 
                     // x -> nghost + x
                     coords[d] += nghost;
-                    auto&& left = apply<Dim>(view, coords);
+                    auto&& left = apply(view, coords);
 
                     // nghost + x -> N - (nghost + x) = N - nghost - x
                     coords[d]    = N - coords[d];
-                    auto&& right = apply<Dim>(view, coords);
+                    auto&& right = apply(view, coords);
 
                     // N - nghost - x -> nghost - 1 - x
                     coords[d] += 2 * nghost - 1 - N;
-                    apply<Dim>(view, coords) = right;
+                    apply(view, coords) = right;
 
                     // nghost - 1 - x -> N - (nghost - 1 - x)
                     //     = N - (nghost - 1) + x
-                    coords[d]                = N - coords[d];
-                    apply<Dim>(view, coords) = left;
+                    coords[d]           = N - coords[d];
+                    apply(view, coords) = left;
                 });
         }
     }

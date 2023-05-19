@@ -140,8 +140,8 @@ namespace ippl {
         ippl::parallel_for(
             "copy from Kokkos FFT", getRangePolicy(fview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                apply<Dim>(tempField, args - nghost).real(apply<Dim>(fview, args).real());
-                apply<Dim>(tempField, args - nghost).imag(apply<Dim>(fview, args).imag());
+                apply(tempField, args - nghost).real(apply(fview, args).real());
+                apply(tempField, args - nghost).imag(apply(fview, args).imag());
             });
 
         if (direction == 1) {
@@ -157,8 +157,8 @@ namespace ippl {
         ippl::parallel_for(
             "copy to Kokkos FFT", getRangePolicy(fview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                apply<Dim>(fview, args).real() = apply<Dim>(tempField, args - nghost).real();
-                apply<Dim>(fview, args).imag() = apply<Dim>(tempField, args - nghost).imag();
+                apply(fview, args).real() = apply(tempField, args - nghost).real();
+                apply(fview, args).imag() = apply(tempField, args - nghost).imag();
             });
     }
 
@@ -280,13 +280,13 @@ namespace ippl {
         ippl::parallel_for(
             "copy from Kokkos f field in FFT", getRangePolicy(fview, nghostf),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                apply<Dim>(tempFieldf, args - nghostf) = apply<Dim>(fview, args);
+                apply(tempFieldf, args - nghostf) = apply(fview, args);
             });
         ippl::parallel_for(
             "copy from Kokkos g field in FFT", getRangePolicy(gview, nghostg),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                apply<Dim>(tempFieldg, args - nghostg).real(apply<Dim>(gview, args).real());
-                apply<Dim>(tempFieldg, args - nghostg).imag(apply<Dim>(gview, args).imag());
+                apply(tempFieldg, args - nghostg).real(apply(gview, args).real());
+                apply(tempFieldg, args - nghostg).imag(apply(gview, args).imag());
             });
 
         if (direction == 1) {
@@ -302,14 +302,14 @@ namespace ippl {
         ippl::parallel_for(
             "copy to Kokkos f field FFT", getRangePolicy(fview, nghostf),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                apply<Dim>(fview, args) = apply<Dim>(tempFieldf, args - nghostf);
+                apply(fview, args) = apply(tempFieldf, args - nghostf);
             });
 
         ippl::parallel_for(
             "copy to Kokkos g field FFT", getRangePolicy(gview, nghostg),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                apply<Dim>(gview, args).real() = apply<Dim>(tempFieldg, args - nghostg).real();
-                apply<Dim>(gview, args).imag() = apply<Dim>(tempFieldg, args - nghostg).imag();
+                apply(gview, args).real() = apply(tempFieldg, args - nghostg).real();
+                apply(gview, args).imag() = apply(tempFieldg, args - nghostg).imag();
             });
     }
 
@@ -415,7 +415,7 @@ namespace ippl {
         ippl::parallel_for(
             "copy from Kokkos FFT", getRangePolicy(fview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                apply<Dim>(tempField, args - nghost) = apply<Dim>(fview, args);
+                apply(tempField, args - nghost) = apply(fview, args);
             });
 
         if (direction == 1) {
@@ -431,7 +431,7 @@ namespace ippl {
         ippl::parallel_for(
             "copy to Kokkos FFT", getRangePolicy(fview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                apply<Dim>(fview, args) = apply<Dim>(tempField, args - nghost);
+                apply(fview, args) = apply(tempField, args - nghost);
             });
     }
 
@@ -537,7 +537,7 @@ namespace ippl {
         ippl::parallel_for(
             "copy from Kokkos FFT", getRangePolicy(fview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                apply<Dim>(tempField, args - nghost) = apply<Dim>(fview, args);
+                apply(tempField, args - nghost) = apply(fview, args);
             });
 
         if (direction == 1) {
@@ -553,7 +553,7 @@ namespace ippl {
         ippl::parallel_for(
             "copy to Kokkos FFT", getRangePolicy(fview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                apply<Dim>(fview, args) = apply<Dim>(tempField, args - nghost);
+                apply(fview, args) = apply(tempField, args - nghost);
             });
     }
 }  // namespace ippl

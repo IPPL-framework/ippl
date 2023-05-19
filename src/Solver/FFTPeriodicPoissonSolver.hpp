@@ -110,7 +110,7 @@ namespace ippl {
                         bool isNotZero     = (Dr != 0.0);
                         scalar_type factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
 
-                        apply<Dim>(view, args) *= factor;
+                        apply(view, args) *= factor;
                     });
 
                 fft_mp->transform(-1, *this->rhs_mp, fieldComplex_m);
@@ -152,12 +152,12 @@ namespace ippl {
                                 Dr += kVec[d] * kVec[d];
                             }
 
-                            apply<Dim>(tempview, args) = apply<Dim>(view, args);
+                            apply(tempview, args) = apply(view, args);
 
                             bool isNotZero     = (Dr != 0.0);
                             scalar_type factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
 
-                            apply<Dim>(tempview, args) *= -(imag * kVec[gd] * factor);
+                            apply(tempview, args) *= -(imag * kVec[gd] * factor);
                         });
 
                     fft_mp->transform(-1, *this->rhs_mp, tempFieldComplex_m);
@@ -166,7 +166,7 @@ namespace ippl {
                         "Assign Gradient FFTPeriodicPoissonSolver",
                         getRangePolicy(viewLhs, nghostL),
                         KOKKOS_LAMBDA(const index_array_type& args) {
-                            apply<Dim>(viewLhs, args)[gd] = apply<Dim>(viewRhs, args);
+                            apply(viewLhs, args)[gd] = apply(viewRhs, args);
                         });
                 }
 

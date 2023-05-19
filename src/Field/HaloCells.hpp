@@ -149,7 +149,7 @@ namespace ippl {
                         l += next;
                     }
 
-                    buffer(l) = apply<Dim>(subview, args);
+                    buffer(l) = apply(subview, args);
                 });
             Kokkos::fence();
         }
@@ -179,7 +179,7 @@ namespace ippl {
                         l += next;
                     }
 
-                    op(apply<Dim>(subview, args), buffer(l));
+                    op(apply(subview, args), buffer(l));
                 });
             Kokkos::fence();
         }
@@ -241,19 +241,19 @@ namespace ippl {
 
                             // nghost + i
                             coords[d] += nghost;
-                            auto&& left = apply<Dim>(view, coords);
+                            auto&& left = apply(view, coords);
 
                             // N - nghost - i
                             coords[d]    = N - coords[d];
-                            auto&& right = apply<Dim>(view, coords);
+                            auto&& right = apply(view, coords);
 
                             // nghost - 1 - i
                             coords[d] += 2 * nghost - 1 - N;
-                            op(apply<Dim>(view, coords), right);
+                            op(apply(view, coords), right);
 
                             // N - (nghost - 1 - i) = N - (nghost - 1) + i
                             coords[d] = N - coords[d];
-                            op(apply<Dim>(view, coords), left);
+                            op(apply(view, coords), left);
                         });
 
                     Kokkos::fence();
