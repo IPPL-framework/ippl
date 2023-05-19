@@ -238,13 +238,10 @@ int main(int argc, char* argv[]) {
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
-            "Assign initial rho based on PDF", ippl::getRangePolicy(rhoview, nghost),
+            "Assign initial rho based on PDF", P->rho_m.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
-                Vector_t<double, Dim> xvec = args;
-                for (unsigned d = 0; d < Dim; d++) {
-                    xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
-                }
+                Vector_t<Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
 
                 // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
