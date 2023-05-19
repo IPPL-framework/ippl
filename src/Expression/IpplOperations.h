@@ -40,12 +40,12 @@ namespace ippl {
 
     struct ExtractRank {
         template <typename Coords, std::enable_if_t<std::is_array_v<Coords>, int> = 0>
-        constexpr static unsigned getRank() {
+        KOKKOS_INLINE_FUNCTION constexpr static unsigned getRank() {
             return std::extent_v<Coords>;
         }
 
         template <typename Coords, std::enable_if_t<std::is_class_v<Coords>, int> = 0>
-        constexpr static unsigned getRank() {
+        KOKKOS_INLINE_FUNCTION constexpr static unsigned getRank() {
             return Coords::dim;
         }
     };
