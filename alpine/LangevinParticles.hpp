@@ -33,7 +33,7 @@
 #include "LangevinHelpers.hpp"
 #include "Solver/FFTPoissonSolver.h"
 
-template<unsigned Dim = 3>
+template <unsigned Dim = 3>
 using MField_t = Field<MatrixD_t, Dim>;
 
 template <class PLayout, unsigned Dim = 3>
@@ -48,19 +48,19 @@ class LangevinParticles : public ChargedParticles<PLayout> {
 
     // Kokkos Random Number Generator types (for stochastic diffusion coefficients)
     using KokkosRNGPool_t = Kokkos::Random_XorShift64_Pool<>;
-    using KokkosRNG_t = KokkosRNGPool_t::generator_type;
+    using KokkosRNG_t     = KokkosRNGPool_t::generator_type;
 
     // View types (of particle attributes)
-    typedef ParticleAttrib<double>::view_type     attr_view_t;
-    typedef ParticleAttrib<VectorD_t>::view_type  attr_Dview_t;
-    typedef ParticleAttrib<MatrixD_t>::view_type  attr_DMatrixView_t;
-    typedef ParticleAttrib<double>::HostMirror    attr_mirror_t;
+    typedef ParticleAttrib<double>::view_type attr_view_t;
+    typedef ParticleAttrib<VectorD_t>::view_type attr_Dview_t;
+    typedef ParticleAttrib<MatrixD_t>::view_type attr_DMatrixView_t;
+    typedef ParticleAttrib<double>::HostMirror attr_mirror_t;
     typedef ParticleAttrib<VectorD_t>::HostMirror attr_Dmirror_t;
 
     // View types (of Fields)
-    typedef typename ippl::detail::ViewType<double, Dim>::view_type     Field_view_t;
-    typedef typename ippl::detail::ViewType<VectorD_t, Dim>::view_type  VField_view_t;
-    typedef typename ippl::detail::ViewType<MatrixD_t, Dim>::view_type  MField_view_t;
+    typedef typename ippl::detail::ViewType<double, Dim>::view_type Field_view_t;
+    typedef typename ippl::detail::ViewType<VectorD_t, Dim>::view_type VField_view_t;
+    typedef typename ippl::detail::ViewType<MatrixD_t, Dim>::view_type MField_view_t;
 
 public:
     /*
@@ -69,7 +69,7 @@ public:
     */
     LangevinParticles(PLayout& pl)
         : ChargedParticles<PLayout>(pl) {
-         registerLangevinAttributes();
+        registerLangevinAttributes();
         setPotentialBCs();
     }
 
@@ -86,13 +86,13 @@ public:
         , configSpaceIntegral_m(globParticleNum_m)
         , dt_m(dt)
         , nv_m(nv)
-        , hv_m(2*vmax / nv)
+        , hv_m(2 * vmax / nv)
         , vmin_m(-vmax)
         , vmax_m(vmax)
-        , velocitySpaceIdxDomain_m(nv,nv,nv)
+        , velocitySpaceIdxDomain_m(nv, nv, nv)
         , velocitySpaceMesh_m(velocitySpaceIdxDomain_m, hv_m, 0.0)
         , velocitySpaceFieldLayout_m(velocitySpaceIdxDomain_m, configSpaceDecomp, false)
-        , randPool_m((size_type)(42 + 100*rank_m)) {
+        , randPool_m((size_type)(42 + 100 * rank_m)) {
         // Compute $\Gamma$ prefactor for Friction and Diffusion coefficients
         double q4          = pCharge_m * pCharge_m * pCharge_m * pCharge_m;
         double eps2Inv     = epsInv_m * epsInv_m;
@@ -167,10 +167,10 @@ public:
         sp.add("comm", ippl::p2p_pl);
         sp.add("r2c_direction", 0);
 
-        frictionSolver_mp =
-            std::make_shared<FrictionSolver_t>(Fd_m, fv_m, sp, solverName, FrictionSolver_t::SOL_AND_GRAD);
+        frictionSolver_mp = std::make_shared<FrictionSolver_t>(Fd_m, fv_m, sp, solverName,
+                                                               FrictionSolver_t::SOL_AND_GRAD);
     }
-    
+
     // Setup Diffusion Solver ["BIHARMONIC"]
     void initDiffusionSolver() {
         // Initializing the open-boundary solver for the G potential used
@@ -185,8 +185,7 @@ public:
         sp.add("r2c_direction", 0);
 
         // Saves the potential $g(\vec v)$ in `fv_m`
-        diffusionSolver_mp =
-            std::make_shared<DiffusionSolver_t>(fv_m, sp, "BIHARMONIC");
+        diffusionSolver_mp = std::make_shared<DiffusionSolver_t>(fv_m, sp, "BIHARMONIC");
     }
 
     size_type getGlobParticleNum() const { return globParticleNum_m; }
@@ -238,7 +237,11 @@ public:
         return avgEF;
     }
 
-    void runSolver() { throw IpplException("LangevinParticles::runSolver", "Not implemented. Run `runSpaceChargeSolver` or `runFrictionSolver` instead."); }
+    void runSolver() {
+        throw IpplException(
+            "LangevinParticles::runSolver",
+            "Not implemented. Run `runSpaceChargeSolver` or `runFrictionSolver` instead.");
+    }
 
     void runSpaceChargeSolver(size_t iteration) {
         Base::scatterCIC(this->getGlobParticleNum(), iteration, this->hr_m);
@@ -249,26 +252,25 @@ public:
         Base::runSolver();
         Base::gatherCIC();
     }
-    
-    void velocityParticleCheck(){
+
+    void velocityParticleCheck() {
         Inform msg("velocityParticleStats");
         attr_Dview_t pP_view = this->P.getView();
 
-        double avgVel = 0.0;
+        double avgVel          = 0.0;
         double minVelComponent = std::numeric_limits<double>::max();
         double maxVelComponent = std::numeric_limits<double>::min();
-        double minVel = std::numeric_limits<double>::max();
-        double maxVel = std::numeric_limits<double>::min();
+        double minVel          = std::numeric_limits<double>::max();
+        double maxVel          = std::numeric_limits<double>::min();
 
         Kokkos::parallel_reduce(
             "check charge", this->getLocalNum(),
-            KOKKOS_LAMBDA(const int i, double& loc_avgVel,
-                          double& loc_minVelComponent, double& loc_maxVelComponent,
-                          double& loc_minVel, double& loc_maxVel) {
+            KOKKOS_LAMBDA(const int i, double& loc_avgVel, double& loc_minVelComponent,
+                          double& loc_maxVelComponent, double& loc_minVel, double& loc_maxVel) {
                 double velNorm = L2Norm(pP_view[i]);
-                double velX = pP_view[i][0];
-                double velY = pP_view[i][1];
-                double velZ = pP_view[i][2];
+                double velX    = pP_view[i][0];
+                double velY    = pP_view[i][1];
+                double velZ    = pP_view[i][2];
 
                 loc_avgVel += velNorm;
 
@@ -283,22 +285,20 @@ public:
                 loc_minVel = velNorm < loc_minVel ? velNorm : loc_minVel;
                 loc_maxVel = velNorm > loc_maxVel ? velNorm : loc_maxVel;
             },
-            Kokkos::Sum<double>(avgVel),
-            Kokkos::Min<double>(minVelComponent),
-            Kokkos::Max<double>(maxVelComponent),
-            Kokkos::Min<double>(minVel),
+            Kokkos::Sum<double>(avgVel), Kokkos::Min<double>(minVelComponent),
+            Kokkos::Max<double>(maxVelComponent), Kokkos::Min<double>(minVel),
             Kokkos::Max<double>(maxVel));
 
-        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &avgVel, &avgVel,
-                   1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &minVelComponent, &minVelComponent,
-                   1, MPI_DOUBLE, MPI_MIN, 0, Ippl::getComm());
-        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &maxVelComponent, &maxVelComponent,
-                   1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &minVel, &minVel,
-                   1, MPI_DOUBLE, MPI_MIN, 0, Ippl::getComm());
-        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &maxVel, &maxVel,
-                   1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &avgVel, &avgVel, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   Ippl::getComm());
+        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &minVelComponent, &minVelComponent, 1, MPI_DOUBLE,
+                   MPI_MIN, 0, Ippl::getComm());
+        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &maxVelComponent, &maxVelComponent, 1, MPI_DOUBLE,
+                   MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &minVel, &minVel, 1, MPI_DOUBLE, MPI_MIN, 0,
+                   Ippl::getComm());
+        MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &maxVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, 0,
+                   Ippl::getComm());
 
         avgVel /= this->getGlobParticleNum();
         msg << "avgVel = " << avgVel << endl;
@@ -309,11 +309,6 @@ public:
     }
 
     void dumpDstatistics(unsigned int iteration, std::string folder) {
-        // Gather from particle attributes
-        // scatter(p_D0_m, D0_m, this->P);
-        // scatter(p_D1_m, D1_m, this->P);
-        // scatter(p_D2_m, D2_m, this->P);
-
         VField_view_t D0View = D0_m.getView();
         VField_view_t D1View = D1_m.getView();
         VField_view_t D2View = D2_m.getView();
@@ -326,7 +321,7 @@ public:
         Kokkos::deep_copy(hostD1View, D1View);
         Kokkos::deep_copy(hostD2View, D2View);
 
-        const int nghost = Fd_m.getNghost();
+        const int nghost               = Fd_m.getNghost();
         const ippl::NDIndex<Dim>& lDom = velocitySpaceFieldLayout_m.getLocalNDIndex();
 
         double L2vec;
@@ -344,24 +339,25 @@ public:
 
         // Write header
         csvout << "v,"
-               << "D0_x,D0_y,D0_z," 
-               << "D1_x,D1_y,D1_z," 
+               << "D0_x,D0_y,D0_z,"
+               << "D1_x,D1_y,D1_z,"
                << "D2_x,D2_y,D2_z" << endl;
 
         // And dump into file
-        for (unsigned z=nghost; z<nv_m[2]+nghost; z++) {
-            for (unsigned y=nghost; y<nv_m[1]+nghost; y++) {
-                for (unsigned x=nghost; x<nv_m[0]+nghost; x++) {
-                    vVec = {double(x),double(y),double(z)};
+        for (unsigned x = nghost; x < nv_m[0] + nghost; x++) {
+            for (unsigned y = nghost; y < nv_m[1] + nghost; y++) {
+                for (unsigned z = nghost; z < nv_m[2] + nghost; z++) {
+                    vVec = {double(x), double(y), double(z)};
                     // Construct velocity vector at this cell
                     for (unsigned d = 0; d < Dim; d++) {
                         vVec[d] = (vVec[d] + lDom[d].first() - nghost + 0.5) * hv_m[d] + vmin_m[d];
                     }
                     L2vec = L2Norm(vVec);
-                    csvout << L2vec << ","
-                           << hostD0View(x,y,z)[0] << "," << hostD0View(x,y,z)[1] << "," << hostD0View(x,y,z)[2] << ","
-                           << hostD1View(x,y,z)[0] << "," << hostD1View(x,y,z)[1] << "," << hostD1View(x,y,z)[2] << ","
-                           << hostD2View(x,y,z)[0] << "," << hostD2View(x,y,z)[1] << "," << hostD2View(x,y,z)[2] << endl;
+                    csvout << L2vec << "," << hostD0View(x, y, z)[0] << ","
+                           << hostD0View(x, y, z)[1] << "," << hostD0View(x, y, z)[2] << ","
+                           << hostD1View(x, y, z)[0] << "," << hostD1View(x, y, z)[1] << ","
+                           << hostD1View(x, y, z)[2] << "," << hostD2View(x, y, z)[0] << ","
+                           << hostD2View(x, y, z)[1] << "," << hostD2View(x, y, z)[2] << endl;
                 }
             }
         }
@@ -376,7 +372,7 @@ public:
         VectorD_t vVec;
         VField_view_t FdView = Fd_m.getView();
 
-        const int nghost = Fd_m.getNghost();
+        const int nghost               = Fd_m.getNghost();
         const ippl::NDIndex<Dim>& lDom = velocitySpaceFieldLayout_m.getLocalNDIndex();
 
         typename VField_view_t::host_mirror_type hostView = Fd_m.getHostMirror();
@@ -397,16 +393,16 @@ public:
 
         // Compute $||F_d(\vec v)||^2 / ||\vec{v}||^2$
         // And dump into file
-        for (unsigned z=nghost; z<nv_m[2]+nghost; z++) {
-            for (unsigned y=nghost; y<nv_m[1]+nghost; y++) {
-                for (unsigned x=nghost; x<nv_m[0]+nghost; x++) {
-                    vVec = {double(x),double(y),double(z)};
+        for (unsigned z = nghost; z < nv_m[2] + nghost; z++) {
+            for (unsigned y = nghost; y < nv_m[1] + nghost; y++) {
+                for (unsigned x = nghost; x < nv_m[0] + nghost; x++) {
+                    vVec = {double(x), double(y), double(z)};
                     // Construct velocity vector at this cell
                     for (unsigned d = 0; d < Dim; d++) {
                         vVec[d] = (vVec[d] + lDom[d].first() - nghost + 0.5) * hv_m[d] + vmin_m[d];
                     }
                     L2vec = L2Norm(vVec);
-                    L2Fd = L2Norm(hostView(x,y,z));
+                    L2Fd  = L2Norm(hostView(x, y, z));
                     csvout << L2vec << "," << L2Fd << "," << L2Fd / L2vec << endl;
                 }
             }
@@ -420,9 +416,8 @@ public:
         p_fv_m = 1.0 / globParticleNum_m;
         scatter(p_fv_m, fv_m, this->P);
         // Normalize with dV
-        double cellVolume =
-            std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
-        fv_m = fv_m / cellVolume;
+        double cellVolume = std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
+        fv_m              = fv_m / cellVolume;
     }
 
     void gatherFd() {
@@ -430,23 +425,20 @@ public:
         gather(p_Fd_m, Fd_m, this->P);
     }
 
-    void extractRows(MField_t<Dim>& M,
-                    VField_t<Dim>& V0,
-                    VField_t<Dim>& V1,
-                    VField_t<Dim>& V2) {
+    void extractRows(MField_t<Dim>& M, VField_t<Dim>& V0, VField_t<Dim>& V1, VField_t<Dim>& V2) {
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        const int nghost = M.getNghost();
-        MField_view_t Mview = M.getView();
-        VField_view_t V0view = V0.getView();
-        VField_view_t V1view = V1.getView();
-        VField_view_t V2view = V2.getView();
+        const int nghost       = M.getNghost();
+        MField_view_t Mview    = M.getView();
+        VField_view_t V0view   = V0.getView();
+        VField_view_t V1view   = V1.getView();
+        VField_view_t V2view   = V2.getView();
         ippl::parallel_for(
-                "Extract rows into separate Fields", ippl::getRangePolicy<Dim>(Mview, nghost),
-                KOKKOS_LAMBDA(const index_array_type& args) {
+            "Extract rows into separate Fields", ippl::getRangePolicy<Dim>(Mview, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args) {
                 ippl::apply<Dim>(V0view, args) = ippl::apply<Dim>(Mview, args)[0];
                 ippl::apply<Dim>(V1view, args) = ippl::apply<Dim>(Mview, args)[1];
                 ippl::apply<Dim>(V2view, args) = ippl::apply<Dim>(Mview, args)[2];
-                });
+            });
     }
 
     void gatherHessian() {
@@ -470,25 +462,23 @@ public:
         // Have to create references
         // as we want to avoid passing member variables to Kokkos kernels
         KokkosRNGPool_t& randPoolRef = randPool_m;
-        double dt = dt_m;
+        double dt                    = dt_m;
 
         // First compute cholesky decomposition of D: $Q^T Q = D$
         // Then multiply with Gaussian noise vector $dW$ to get $Q \cdot dW$
         Kokkos::parallel_for(
-            "Apply Constant Focusing", this->getLocalNum(),
-            KOKKOS_LAMBDA(const int i) {
-            KokkosRNG_t rand_gen = randPoolRef.get_state();
-            MatrixD_t Q = cholesky3x3(MatrixD_t({pD0_view(i), pD1_view(i), pD2_view(i)}));
-            pQ0_view(i) = Q[0];
-            pQ1_view(i) = Q[1];
-            pQ2_view(i) = Q[2];
-            VectorD_t dW = VectorD_t({rand_gen.normal(0.0, dt),
-                                          rand_gen.normal(0.0, dt),
-                                          rand_gen.normal(0.0, dt)});
-            pQdW_view(i) = matrixVectorMul3x3(Q, dW);
-            
-            // Give the state back, which will allow another thread to acquire it
-            randPoolRef.free_state(rand_gen);
+            "Apply Constant Focusing", this->getLocalNum(), KOKKOS_LAMBDA(const int i) {
+                KokkosRNG_t rand_gen = randPoolRef.get_state();
+                MatrixD_t Q  = cholesky3x3(MatrixD_t({pD0_view(i), pD1_view(i), pD2_view(i)}));
+                pQ0_view(i)  = Q[0];
+                pQ1_view(i)  = Q[1];
+                pQ2_view(i)  = Q[2];
+                VectorD_t dW = VectorD_t(
+                    {rand_gen.normal(0.0, dt), rand_gen.normal(0.0, dt), rand_gen.normal(0.0, dt)});
+                pQdW_view(i) = matrixVectorMul3x3(Q, dW);
+
+                // Give the state back, which will allow another thread to acquire it
+                randPoolRef.free_state(rand_gen);
             });
         Kokkos::fence();
     }
@@ -500,7 +490,7 @@ public:
 
         // Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
         // Multiply with prob. density in configuration space $f(\vec r)$
-        fv_m = - 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
+        fv_m = -8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
@@ -520,10 +510,10 @@ public:
         Inform msg("runDiffusionSolver");
 
         scatterVelSpace();
-        
+
         // Multiply with prefactors defined in RHS of Rosenbluth equations
         // FFTPoissonSolver returns $ \Delta_v \Delta_v G(\vec v)$ in `fv_m`
-        fv_m = - 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
+        fv_m = -8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
@@ -540,7 +530,7 @@ public:
         // Gather Hessian to particle attributes
         gatherHessian();
 
-        // Do Cholesky decomposition of $D$ 
+        // Do Cholesky decomposition of $D$
         // and directly multiply with Gaussian random vector
         choleskyMultiply();
 
@@ -571,9 +561,7 @@ public:
         for (unsigned d = 0; d < Dim; ++d) {
             Kokkos::parallel_reduce(
                 "rel max", this->getLocalNum(),
-                KOKKOS_LAMBDA(const int i, double& FdLoc) {
-                    FdLoc += pFd_view(i)[d];
-                },
+                KOKKOS_LAMBDA(const int i, double& FdLoc) { FdLoc += pFd_view(i)[d]; },
                 Kokkos::Sum<double>(FdAvg(d)));
         }
 
@@ -602,14 +590,8 @@ public:
         for (unsigned d = 0; d < Dim; ++d) {
             Kokkos::parallel_reduce(
                 "gather `D` and `Q` statistics", this->getLocalNum(),
-                KOKKOS_LAMBDA(const int i,
-                              double& D0Loc,
-                              double& D1Loc,
-                              double& D2Loc,
-                              double& Q0Loc,
-                              double& Q1Loc,
-                              double& Q2Loc,
-                              double& QdWLoc) {
+                KOKKOS_LAMBDA(const int i, double& D0Loc, double& D1Loc, double& D2Loc,
+                              double& Q0Loc, double& Q1Loc, double& Q2Loc, double& QdWLoc) {
                     D0Loc += pD0_view(i)[d];
                     D1Loc += pD1_view(i)[d];
                     D2Loc += pD2_view(i)[d];
@@ -618,27 +600,22 @@ public:
                     Q2Loc += pQ2_view(i)[d];
                     QdWLoc += pQdW_view(i)[d];
                 },
-                Kokkos::Sum<double>(D0Avg(d)),
-                Kokkos::Sum<double>(D1Avg(d)),
-                Kokkos::Sum<double>(D2Avg(d)),
-                Kokkos::Sum<double>(Q0Avg(d)),
-                Kokkos::Sum<double>(Q1Avg(d)),
-                Kokkos::Sum<double>(Q2Avg(d)),
-                Kokkos::Sum<double>(QdWAvg(d))
-                );
+                Kokkos::Sum<double>(D0Avg(d)), Kokkos::Sum<double>(D1Avg(d)),
+                Kokkos::Sum<double>(D2Avg(d)), Kokkos::Sum<double>(Q0Avg(d)),
+                Kokkos::Sum<double>(Q1Avg(d)), Kokkos::Sum<double>(Q2Avg(d)),
+                Kokkos::Sum<double>(QdWAvg(d)));
         }
 
-        FdAvg  = FdAvg  / globParticleNum_m;
-        D0Avg  = D0Avg  / globParticleNum_m;
-        D1Avg  = D1Avg  / globParticleNum_m;
-        D2Avg  = D2Avg  / globParticleNum_m;
-        Q0Avg  = Q0Avg  / globParticleNum_m;
-        Q1Avg  = Q1Avg  / globParticleNum_m;
-        Q2Avg  = Q2Avg  / globParticleNum_m;
+        FdAvg  = FdAvg / globParticleNum_m;
+        D0Avg  = D0Avg / globParticleNum_m;
+        D1Avg  = D1Avg / globParticleNum_m;
+        D2Avg  = D2Avg / globParticleNum_m;
+        Q0Avg  = Q0Avg / globParticleNum_m;
+        Q1Avg  = Q1Avg / globParticleNum_m;
+        Q2Avg  = Q2Avg / globParticleNum_m;
         QdWAvg = QdWAvg / globParticleNum_m;
 
         if (Ippl::Comm->rank() == 0) {
-
             std::stringstream fname;
             fname << "/collision_statistics_";
             fname << Ippl::Comm->rank();
@@ -1046,12 +1023,11 @@ public:
         Kokkos::fence();
         MPI_Allreduce(rmax_loc, rmax, Dim, MPI_DOUBLE, MPI_MAX, Ippl::getComm());
         MPI_Allreduce(rmin_loc, rmin, Dim, MPI_DOUBLE, MPI_MIN, Ippl::getComm());
-        
+
         ////////////////////////////
         //// Write to output file //
         ////////////////////////////
         if (Ippl::Comm->rank() == 0) {
-
             std::stringstream fname;
             fname << "/All_FieldLangevin_";
             fname << Ippl::Comm->rank();
@@ -1062,31 +1038,31 @@ public:
 
             if (iteration == 0) {
                 csvout << "iteration,"
-                        << "vmaxX,vmaxY,vmaxZ,"
-                        << "vminX,vminY,vminZ,"
-                        << "rmaxX,rmaxY,rmaxZ,"
-                        << "rminX,rminY,rminZ,"
-                        << "vrmsX,vrmsY,vrmsZ,"
-                        << "Tx,Ty,Tz,"
-                        << "epsX,epsY,epsZ,"
-                        << "NepsX,NepsY,NepsZ,"
-                        << "epsX2,epsY2,epsZ2,"
-                        << "rvrmsX,rvrmsY,rvrmsZ,"
-                        << "rrmsX,rrmsY,rrmsZ,"
-                        << "rmeanX,rmeanY,rmeanZ,"
-                        << "vmeanX,vmeanY,vmeanZ,"
-                        << "time,"
-                        << "Ex_field_energy,"
-                        << "Ex_max_norm,"
-                        << "lorentz_avg,"
-                        << "lorentz_max,"
-                        //<< "avgPotential,"         <<
-                        //<< "avgEfield_x,"          <<
-                        //<< "avgEfield_y,"          <<
-                        //<< "avgEfield_z,"          <<
-                        << "avgEfield_particle_x,"
-                        << "avgEfield_particle_y,"
-                        << "avgEfield_particle_z" << endl;
+                       << "vmaxX,vmaxY,vmaxZ,"
+                       << "vminX,vminY,vminZ,"
+                       << "rmaxX,rmaxY,rmaxZ,"
+                       << "rminX,rminY,rminZ,"
+                       << "vrmsX,vrmsY,vrmsZ,"
+                       << "Tx,Ty,Tz,"
+                       << "epsX,epsY,epsZ,"
+                       << "NepsX,NepsY,NepsZ,"
+                       << "epsX2,epsY2,epsZ2,"
+                       << "rvrmsX,rvrmsY,rvrmsZ,"
+                       << "rrmsX,rrmsY,rrmsZ,"
+                       << "rmeanX,rmeanY,rmeanZ,"
+                       << "vmeanX,vmeanY,vmeanZ,"
+                       << "time,"
+                       << "Ex_field_energy,"
+                       << "Ex_max_norm,"
+                       << "lorentz_avg,"
+                       << "lorentz_max,"
+                       //<< "avgPotential,"         <<
+                       //<< "avgEfield_x,"          <<
+                       //<< "avgEfield_y,"          <<
+                       //<< "avgEfield_z,"          <<
+                       << "avgEfield_particle_x,"
+                       << "avgEfield_particle_y,"
+                       << "avgEfield_particle_z" << endl;
             }
 
             // clang-format off
@@ -1137,7 +1113,8 @@ public:
     ParticleAttrib<VectorD_t> p_D0_m;
     ParticleAttrib<VectorD_t> p_D1_m;
     ParticleAttrib<VectorD_t> p_D2_m;
-    // Cholesky decomposition of `D` TODO Remove as it can be stored as a temporary matrix in the diffusion kernel
+    // Cholesky decomposition of `D` TODO Remove as it can be stored as a temporary matrix in the
+    // diffusion kernel
     ParticleAttrib<VectorD_t> p_Q0_m;
     ParticleAttrib<VectorD_t> p_Q1_m;
     ParticleAttrib<VectorD_t> p_Q2_m;
@@ -1156,7 +1133,7 @@ public:
     double epsInv_m;
     // Total number of global particles
     double globParticleNum_m;
-    
+
     // $\int f_r(r) dr^3 = N$
     double configSpaceIntegral_m;
 
@@ -1187,14 +1164,14 @@ public:
     double c_m = 2.99792458e10;
     // $\pi$ needed for Rosenbluth potentials
     double pi_m = std::acos(-1.0);
-    
+
     // Random number generator for random gaussians that are multiplied with $Q$
     KokkosRNGPool_t randPool_m;
 
     ///////////////////////////////
     // SOLVERS IN VELOCITY SPACE //
     ///////////////////////////////
-    
+
     // Solves $\Delta_v H(\vec v) = -8 \pi f(\vec v)$ and
     // directly stores $ - \nabla H(\vec v)$ in-place in LHS
     std::shared_ptr<FrictionSolver_t> frictionSolver_mp;
