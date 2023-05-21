@@ -80,10 +80,26 @@ extern const char* TestName;
 // Signal handling
 int interruptSignalReceived = 0;
 
+/*!
+ * Signal handler records the received signal
+ * @param signal received signal
+ */
 void interruptHandler(int signal) {
     interruptSignalReceived = signal;
 }
 
+/*!
+ * Checks whether a signal was received
+ * @return Signal handler was called
+ */
+bool checkSignalHandler() {
+    Ippl::Comm->barrier();
+    return interruptSignalReceived != 0;
+}
+
+/*!
+ * Sets up the signal handler
+ */
 void setSignalHandler() {
     struct sigaction sa;
     sa.sa_handler = interruptHandler;

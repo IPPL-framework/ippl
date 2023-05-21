@@ -380,7 +380,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
-        if (interruptSignalReceived) {
+        if (checkSignalHandler()) {
             msg << "Aborting timestepping loop due to signal " << interruptSignalReceived << endl;
             break;
         }
