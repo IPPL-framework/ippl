@@ -122,30 +122,33 @@ namespace ippl {
      * Forward (`+`) or backward (`-`) differencing depending on `IdxOp`
      * @param u field
      */
-    template <typename IdxOp, typename T, unsigned Dim, class M, class C>
-    detail::meta_onesidedHess<IdxOp, Field<T, Dim, M, C>> onesidedHess(Field<T, Dim, M, C>& u) {
+    template <typename IdxOp, typename T, unsigned Dim, class Mesh, class Centering>
+    detail::meta_onesidedHess<IdxOp, Field<T, Dim, Mesh, Centering>> onesidedHess(
+        Field<T, Dim, Mesh, Centering>& u) {
         u.fillHalo();
-        BConds<T,Dim>& bcField = u.getFieldBC();
+        BConds<T, Dim, Mesh, Centering>& bcField = u.getFieldBC();
         bcField.apply(u);
 
-        M& mesh = u.get_mesh();
-        typename M::vector_type xvector(0);
+        Mesh& mesh = u.get_mesh();
+        typename Mesh::vector_type xvector(0);
         xvector[0] = 1.0;
-        typename M::vector_type yvector(0);
+        typename Mesh::vector_type yvector(0);
         yvector[1] = 1.0;
-        typename M::vector_type zvector(0);
+        typename Mesh::vector_type zvector(0);
         zvector[2] = 1.0;
-        typename M::vector_type hvector(0);
+        typename Mesh::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
-        return detail::meta_onesidedHess<IdxOp, Field<T, Dim, M, C>>(u, xvector, yvector, zvector, hvector);
+        return detail::meta_onesidedHess<IdxOp, Field<T, Dim, Mesh, Centering>>(u, xvector, yvector,
+                                                                                zvector, hvector);
     }
 
     /*!
      * User interface of Hessian with forward differencing of second order in three dimensions
      * @param u field
      */
-    template <typename IdxOp=std::binary_function<size_t,size_t,size_t>, typename T, unsigned Dim, class M, class C>
-    auto forwardHess(Field<T, Dim, M, C>& u) {
+    template <typename IdxOp = std::binary_function<size_t, size_t, size_t>, typename T,
+              unsigned Dim, class Mesh, class Centering>
+    auto forwardHess(Field<T, Dim, Mesh, Centering>& u) {
         return onesidedHess<std::plus<size_t>>(u);
     }
 
@@ -153,8 +156,9 @@ namespace ippl {
      * User interface of Hessian with backward differencing of second order in three dimensions
      * @param u field
      */
-    template <typename IdxOp=std::binary_function<size_t,size_t,size_t>, typename T, unsigned Dim, class M, class C>
-    auto backwardHess(Field<T, Dim, M, C>& u) {
+    template <typename IdxOp = std::binary_function<size_t, size_t, size_t>, typename T,
+              unsigned Dim, class Mesh, class Centering>
+    auto backwardHess(Field<T, Dim, Mesh, Centering>& u) {
         return onesidedHess<std::minus<size_t>>(u);
     }
 }  // namespace ippl
