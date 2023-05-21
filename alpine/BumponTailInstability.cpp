@@ -186,11 +186,12 @@ struct PhaseDump {
     void dump(int it, std::shared_ptr<Bunch> P, bool allDims = false) {
         const auto pcount = P->getLocalNum();
         phase.realloc(pcount);
-        auto& Ri = P->R;
-        auto& Pi = P->P;
+        auto& Ri    = P->R;
+        auto& Pi    = P->P;
+        auto& phase = this->phase;
         for (unsigned d = allDims ? 0 : Dim - 1; d < Dim; d++) {
             Kokkos::parallel_for(
-                "Copy phase space", pcount, KOKKOS_CLASS_LAMBDA(const size_t i) {
+                "Copy phase space", pcount, KOKKOS_LAMBDA(const size_t i) {
                     phase(i) = {Ri(i)[d], Pi(i)[d]};
                 });
             phaseSpace = 0;
