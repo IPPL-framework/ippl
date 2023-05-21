@@ -381,7 +381,7 @@ int main(int argc, char* argv[]) {
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
         if (interruptSignalReceived) {
-            msg << "Aborting timestepping loop due to signal" << endl;
+            msg << "Aborting timestepping loop due to signal " << interruptSignalReceived << endl;
             break;
         }
     }

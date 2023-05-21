@@ -78,10 +78,10 @@ const double pi = Kokkos::numbers::pi_v<double>;
 extern const char* TestName;
 
 // Signal handling
-bool interruptSignalReceived = false;
+int interruptSignalReceived = 0;
 
-void interruptHandler(int) {
-    interruptSignalReceived = true;
+void interruptHandler(int signal) {
+    interruptSignalReceived = signal;
 }
 
 void setSignalHandler() {
