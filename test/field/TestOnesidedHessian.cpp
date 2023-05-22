@@ -109,82 +109,96 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
     return -prefactor * std::exp(-r2 / (2 * sigma * sigma));
 }
 
-std::vector<range_pair_t> genFaceIterators(typename Field_t<dim>::view_type& fieldView,
-                                           int nghost) {
+void getFaceIteratorRanges(std::vector<range_pair_t>& result,
+                           typename Field_t<dim>::view_type& fieldView, int nghost) {
     int x_max = fieldView.extent(0);
     int y_max = fieldView.extent(1);
     int z_max = fieldView.extent(2);
 
-    std::vector<range_pair_t> face_iterators(6);
-
     // x low
-    face_iterators[0] = range_pair_t({0, 1, 1}, {1, y_max - 1, z_max - 1});
+    result.push_back(
+        {{nghost, nghost + 1, nghost + 1}, {nghost + 1, y_max - nghost - 1, z_max - nghost - 1}});
     // x high
-    face_iterators[1] = range_pair_t({x_max - 1, 1, 1}, {x_max, y_max - 1, z_max - 1});
+    result.push_back({{x_max - nghost - 1, nghost + 1, nghost + 1},
+                      {x_max - nghost, y_max - nghost - 1, z_max - nghost - 1}});
     // y low
-    face_iterators[2] = range_pair_t({1, 0, 1}, {x_max - 1, 1, z_max - 1});
+    result.push_back(
+        {{nghost + 1, nghost, nghost + 1}, {x_max - nghost - 1, nghost + 1, z_max - nghost - 1}});
     // y high
-    face_iterators[3] = range_pair_t({1, y_max - 1, 1}, {x_max - 1, y_max, z_max - 1});
+    result.push_back({{nghost + 1, y_max - nghost - 1, nghost + 1},
+                      {x_max - nghost - 1, y_max - nghost, z_max - nghost - 1}});
     // z low
-    face_iterators[4] = range_pair_t({1, 1, 0}, {x_max - 1, y_max - 1, 1});
+    result.push_back(
+        {{nghost + 1, nghost + 1, nghost}, {x_max - nghost - 1, y_max - nghost - 1, nghost + 1}});
     // z high
-    face_iterators[5] = range_pair_t({1, 1, y_max - 1}, {x_max - 1, y_max - 1, z_max});
-
-    return face_iterators;
+    result.push_back({{nghost, nghost, z_max - nghost - 1},
+                      {x_max - nghost - 1, y_max - nghost - 1, z_max - nghost}});
 }
 
-std::vector<range_pair_t> genEdgeDim(Vector<int, dim> extents, unsigned dir) {
+std::vector<range_pair_t> getEdgeDim(idx_vec_t extents, unsigned dir, int nghost) {
     std::vector<range_pair_t> face_iterators(4);
 
-    Kokkos::Array<index_type, dim> lower_bound({0, 0, 0});
-    Kokkos::Array<index_type, dim> upper_bound({0, 0, 0});
+    idx_vec_t lower_bound({nghost, nghost, nghost});
+    idx_vec_t upper_bound({nghost + 1, nghost + 1, nghost + 1});
 
-    lower_bound[dir]     = 1;
-    upper_bound[dir]     = extents[dir] - 1;
+    // Set contant bounds in dimension given with `dir`
+    lower_bound[dir] = nghost + 1;
+    upper_bound[dir] = extents[dir] - nghost - 1;
+    // Go through all combination of lower and upper bounds for the other two dimensions
+    // 2^2 -> 4 combinations
     face_iterators[0]    = std::make_pair(lower_bound, upper_bound);
     index_type new_idx   = (dir + 1) % dim;
-    lower_bound[new_idx] = extents[new_idx];
-    upper_bound[new_idx] = lower_bound[new_idx];
+    lower_bound[new_idx] = extents[new_idx] - nghost;
+    upper_bound[new_idx] = lower_bound[new_idx] + 1;
     face_iterators[1]    = std::make_pair(lower_bound, upper_bound);
     new_idx              = (dir + 2) % dim;
-    lower_bound[new_idx] = extents[new_idx];
-    upper_bound[new_idx] = lower_bound[new_idx];
+    lower_bound[new_idx] = extents[new_idx] - nghost;
+    upper_bound[new_idx] = lower_bound[new_idx] + 1;
     face_iterators[2]    = std::make_pair(lower_bound, upper_bound);
     new_idx              = (dir + 1) % dim;
-    lower_bound[new_idx] = 0;
-    upper_bound[new_idx] = lower_bound[new_idx];
+    lower_bound[new_idx] = nghost;
+    upper_bound[new_idx] = lower_bound[new_idx] + 1;
     face_iterators[3]    = std::make_pair(lower_bound, upper_bound);
-
-    // Edges along x-dim:
-    // y low, z low
-    // face_iterators[0] = Kokkos::MDRangePolicy<Kokkos::Rank<dim>>({1, 0, 0}, {x_max - 1, 0, 0});
-    // // y high, z low
-    // face_iterators[1] =
-    //     Kokkos::MDRangePolicy<Kokkos::Rank<dim>>({1, y_max, 0}, {x_max - 1, y_max, 0});
-    // // y high, z high
-    // face_iterators[2] =
-    //     Kokkos::MDRangePolicy<Kokkos::Rank<dim>>({1, y_max, z_max}, {x_max - 1, y_max, z_max});
-    // // y low, z high
-    // face_iterators[3] =
-    //     Kokkos::MDRangePolicy<Kokkos::Rank<dim>>({1, 0, z_max}, {x_max - 1, 0, z_max - 1});
 
     return face_iterators;
 }
 
-std::vector<range_pair_t> genEdgeIterators(typename Field_t<dim>::view_type& fieldView) {
-    int x_max                = fieldView.extent(0);
-    int y_max                = fieldView.extent(1);
-    int z_max                = fieldView.extent(2);
-    Vector<int, dim> extents = {x_max, y_max, z_max};
-
-    std::vector<range_pair_t> face_iterators(12);
+void getEdgeIteratorRanges(std::vector<range_pair_t>& result,
+                           typename Field_t<dim>::view_type& fieldView, int nghost) {
+    index_type x_max  = fieldView.extent(0);
+    index_type y_max  = fieldView.extent(1);
+    index_type z_max  = fieldView.extent(2);
+    idx_vec_t extents = {x_max, y_max, z_max};
 
     for (unsigned d = 0; d < dim; d++) {
-        auto dim_iterators = genEdgeDim(extents, d);
-        face_iterators.insert(face_iterators.begin() + 4 * d, dim_iterators.begin(),
-                              dim_iterators.end());
+        auto dim_iterators = getEdgeDim(extents, d, nghost);
+        result.insert(result.end() + 4 * d, dim_iterators.begin(), dim_iterators.end());
     }
-    return face_iterators;
+}
+
+void getCornerIteratorRanges(std::vector<range_pair_t>& result,
+                             typename Field_t<dim>::view_type& fieldView, int nghost) {
+    int x_max = fieldView.extent(0);
+    int y_max = fieldView.extent(1);
+    int z_max = fieldView.extent(2);
+
+    result.push_back({{nghost, nghost, nghost}, {nghost + 1, nghost + 1, nghost + 1}});
+    result.push_back(
+        {{x_max - nghost - 1, nghost, nghost}, {x_max - nghost, nghost + 1, nghost + 1}});
+
+    result.push_back(
+        {{nghost, y_max - nghost - 1, nghost}, {nghost + 1, y_max - nghost, nghost + 1}});
+    result.push_back({{x_max - nghost - 1, y_max - nghost - 1, nghost},
+                      {x_max - nghost, x_max - nghost, nghost + 1}});
+
+    result.push_back(
+        {{nghost, nghost, z_max - nghost - 1}, {nghost + 1, nghost + 1, z_max - nghost}});
+    result.push_back({{x_max - nghost - 1, nghost, z_max - nghost - 1},
+                      {x_max - nghost, nghost + 1, z_max - nghost}});
+    result.push_back({{nghost, y_max - nghost - 1, z_max - nghost - 1},
+                      {nghost + 1, y_max - nghost, z_max - nghost}});
+    result.push_back({{x_max - nghost - 1, y_max - nghost - 1, z_max - nghost - 1},
+                      {x_max - nghost, y_max - nghost, z_max - nghost}});
 }
 
 int main(int argc, char* argv[]) {
@@ -230,22 +244,19 @@ int main(int argc, char* argv[]) {
 
     const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
 
-    auto faceIterators = genFaceIterators(view);
-    auto edgeIterators = genEdgeIterators(view);
-    auto& currIterator = edgeIterators[0];
-    for (int i = currIterator.first[0]; i < currIterator.second[0]; ++i) {
-        for (int j = currIterator.first[1]; j < currIterator.second[1]; ++j) {
-            for (int k = currIterator.first[2]; k < currIterator.second[2]; ++k) {
+    std::vector<range_pair_t> boundaryRanges;
+    boundaryRanges.reserve(27);
+    getFaceIteratorRanges(boundaryRanges, view, nghost);
+    getEdgeIteratorRanges(boundaryRanges, view, nghost);
+    getCornerIteratorRanges(boundaryRanges, view, nghost);
+    auto& currRange = boundaryRanges[1];
+    for (int i = currRange.first[0]; i < currRange.second[0]; ++i) {
+        for (int j = currRange.first[1]; j < currRange.second[1]; ++j) {
+            for (int k = currRange.first[2]; k < currRange.second[2]; ++k) {
                 msg << view(i, j, k) << endl;
             }
         }
     }
-    // Kokkos::parallel_for(
-    //     "Test Boundary Iterators", edgeIterators[0],
-    //     KOKKOS_LAMBDA(const int i, const int j, const int k) {
-    //         std::cout << view(i, j, k) << std::endl;
-    //     });
-    // Kokkos::fence();
 
     Kokkos::parallel_for(
         "Assign field", mdrange_type({0, 0, 0}, {view.extent(0), view.extent(1), view.extent(2)}),
@@ -332,9 +343,6 @@ int main(int argc, char* argv[]) {
     /////////////////////////////
 
     // Define Opereators
-    // CenteredHessOp centered_hess(field);
-    // OnesidedHessOp<std::plus<size_t>> forward_hess(field);
-    // OnesidedHessOp<std::minus<size_t>> backward_hess(field);
     GeneralizedHessOp<dim, double, Matrix_t<dim>, DiffType::Centered, DiffType::Centered,
                       DiffType::Centered>
         centerHess(field, hxInv);
@@ -410,18 +418,6 @@ int main(int argc, char* argv[]) {
 
         // System boundary case
         if (faceNeighbors[face].size() == 0) {
-            // Create Hessian Operators for face
-            // hessOp::DiffType diffArr[3] = {hessOp::DiffType::Centered,
-            // hessOp::DiffType::Centered, hessOp::DiffType::Centered}; if (face & 1) {
-            //     diffArr[d] = hessOp::DiffType::Backward;
-            // } else {  // Forward difference
-            //     diffArr[d] = hessOp::DiffType::Forward;
-            // }
-            // faceDiffOps[face] = std::make_unique<hessOp::GeneralDiffOpInterface<double, Matrix_t>
-            // >(field, hxInv);
-            // faceDiffOps.push_back(std::make_unique<hessOp::GeneralizedHessOp<double,Matrix_t,hessOp::DiffType::Centered,
-            // hessOp::DiffType::Centered, hessOp::DiffType::Centered> >(field, hxInv));
-
             // Create Index Range to apply the face operator to
             systemBoundaries.emplace_back(ippl::NDIndex<dim>(
                 ippl::Index(nghost, extents[0] - nghost), ippl::Index(nghost, extents[1] - nghost),
@@ -455,25 +451,33 @@ int main(int argc, char* argv[]) {
         << centerDomain[2] << endl;
 
     Kokkos::parallel_for(
-        "Onesided Hessian Loop [Center]",
-        mdrange_type({centerDomain[0].first(), centerDomain[1].first(), centerDomain[2].first()},
-                     {centerDomain[0].last(), centerDomain[1].last(), centerDomain[2].last()}),
+        "Assign Hessian",
+        mdrange_type({0, 0, 0},
+                     {view_result.extent(0), view_result.extent(1), view_result.extent(2)}),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             view_result(i, j, k) = centerHess(i, j, k);
         });
 
-    for (size_t i = 0; i < 2 * dim; ++i) {
-        msg << "apply operator on systemBoundaries[" << i << "] : " << endl;
-        Kokkos::parallel_for(
-            "Onesided Hessian Loop [Faces]",
-            mdrange_type({systemBoundaries[i][0].first(), systemBoundaries[i][1].first(),
-                          systemBoundaries[i][2].first()},
-                         {systemBoundaries[i][0].last(), systemBoundaries[i][1].last(),
-                          systemBoundaries[i][2].last()}),
-            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                view_result(i, j, k) = faceDiffOps[i]->operator()(i, j, k);
-            });
-    }
+    // Kokkos::parallel_for(
+    //     "Onesided Hessian Loop [Center]",
+    //     mdrange_type({centerDomain[0].first(), centerDomain[1].first(), centerDomain[2].first()},
+    //                  {centerDomain[0].last(), centerDomain[1].last(), centerDomain[2].last()}),
+    //     KOKKOS_LAMBDA(const int i, const int j, const int k) {
+    //         view_result(i, j, k) = centerHess(i, j, k);
+    //     });
+
+    // for (size_t i = 0; i < 2 * dim; ++i) {
+    //     msg << "apply operator on systemBoundaries[" << i << "] : " << endl;
+    //     Kokkos::parallel_for(
+    //         "Onesided Hessian Loop [Faces]",
+    //         mdrange_type({systemBoundaries[i][0].first(), systemBoundaries[i][1].first(),
+    //                       systemBoundaries[i][2].first()},
+    //                      {systemBoundaries[i][0].last(), systemBoundaries[i][1].last(),
+    //                       systemBoundaries[i][2].last()}),
+    //         KOKKOS_LAMBDA(const int i, const int j, const int k) {
+    //             view_result(i, j, k) = faceDiffOps[i]->operator()(i, j, k);
+    //         });
+    // }
 
     // Kokkos::parallel_for(
     //"Onesided Hessian Loop [Faces]",
