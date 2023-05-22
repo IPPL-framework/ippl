@@ -20,6 +20,8 @@
 
 #include <csignal>
 
+#include "Utility/TypeUtils.h"
+
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
 #include "Solver/FFTPoissonSolver.h"
@@ -65,24 +67,27 @@ using VField_t = Field<Vector_t<Dim>, Dim>;
 template <unsigned Dim = 3>
 using CGSolver_t = ippl::ElectrostaticsCG<double, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
-template <unsigned Dim = 3>
-using FFTSolver_t =
-    ippl::FFTPeriodicPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 
 template <unsigned Dim = 3>
-using P3MSolver_t = ippl::P3MSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+using FFTSolver_t = ConditionalType<
+    Dim == 2 || Dim == 3,
+    ippl::FFTPeriodicPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>;
 
 template <unsigned Dim = 3>
-using OpenSolver_t =
-    ippl::FFTPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+using P3MSolver_t =
+    ConditionalType<Dim == 3,
+                    ippl::P3MSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>;
+
+template <unsigned Dim = 3>
+using OpenSolver_t = ConditionalType<
+    Dim == 3, ippl::FFTPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>;
 
 // For now, added the Open and P3M Solvers in the (Dim == 2 || Dim == 3) variant, but
 // these solvers are only supported for Dim = 3 currently.
 template <unsigned Dim = 3>
-using Solver_t = std::conditional_t<
-    Dim == 2 || Dim == 3,
-    std::variant<CGSolver_t<Dim>, FFTSolver_t<Dim>, P3MSolver_t<Dim>, OpenSolver_t<Dim>>,
-    std::variant<CGSolver_t<Dim>>>;
+using Solver_t = VariantFromConditionalTypes<CGSolver_t<Dim>, FFTSolver_t<Dim>, P3MSolver_t<Dim>,
+                                             OpenSolver_t<Dim>>;
 
 const double pi = Kokkos::numbers::pi_v<double>;
 
