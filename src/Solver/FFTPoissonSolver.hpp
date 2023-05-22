@@ -14,17 +14,6 @@
 //
 //
 
-#include <Kokkos_MathematicalConstants.hpp>
-#include <Kokkos_MathematicalFunctions.hpp>
-#include <algorithm>
-
-#include "Utility/IpplException.h"
-#include "Utility/IpplTimings.h"
-
-#include "Communicate/Archive.h"
-#include "FFTPoissonSolver.h"
-#include "Field/HaloCells.h"
-
 // Communication specific functions (pack and unpack).
 template <class Mesh, class Centering, typename T>
 void pack(const ippl::NDIndex<3> intersect, Kokkos::View<T***>& view,
@@ -191,9 +180,6 @@ namespace ippl {
         this->setLhs(lhs);
         this->setRhs(rhs);
     }
-
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::~FFTPoissonSolver(){};
 
     /////////////////////////////////////////////////////////////////////////
     // override setRhs to call class-specific initialization

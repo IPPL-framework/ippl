@@ -14,14 +14,6 @@
 ////
 //
 
-#include <Kokkos_MathematicalFunctions.hpp>
-#include <algorithm>
-
-#include "Utility/IpplException.h"
-
-#include "Field/HaloCells.h"
-#include "P3MSolver.h"
-
 namespace ippl {
 
     /////////////////////////////////////////////////////////////////////////
@@ -29,7 +21,8 @@ namespace ippl {
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver()
-        : mesh_mp(nullptr)
+        : Base()
+        , mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {

@@ -129,6 +129,5 @@ namespace ippl {
     };
 }  // namespace ippl
 
-#include "P3MSolver.hpp"
-
+#include "Solver/P3MSolver.hpp"
 #endif

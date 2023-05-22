@@ -17,12 +17,20 @@
 #ifndef FFT_POISSON_SOLVER_H_
 #define FFT_POISSON_SOLVER_H_
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
+
 #include "Types/Vector.h"
+
+#include "Utility/IpplException.h"
+#include "Utility/IpplTimings.h"
 
 #include "Field/Field.h"
 
+#include "Communicate/Archive.h"
 #include "Electrostatics.h"
 #include "FFT/FFT.h"
+#include "Field/HaloCells.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
 
@@ -65,7 +73,7 @@ namespace ippl {
         FFTPoissonSolver();
         FFTPoissonSolver(rhs_type& rhs, ParameterList& params);
         FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
-        ~FFTPoissonSolver();
+        ~FFTPoissonSolver() = default;
 
         // override the setRhs function of the Solver class
         // since we need to call initializeFields()
@@ -189,6 +197,5 @@ namespace ippl {
     };
 }  // namespace ippl
 
-#include "FFTPoissonSolver.hpp"
-
+#include "Solver/FFTPoissonSolver.hpp"
 #endif
