@@ -138,6 +138,20 @@ namespace ippl {
 
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::FFTPoissonSolver()
+        : Base()
+        , mesh_mp(nullptr)
+        , layout_mp(nullptr)
+        , mesh2_m(nullptr)
+        , layout2_m(nullptr)
+        , meshComplex_m(nullptr)
+        , layoutComplex_m(nullptr)
+        , mesh4_m(nullptr)
+        , layout4_m(nullptr)
+        , isGradFD_m(false) {
+        setDefaultParameters();
+    }
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::FFTPoissonSolver(rhs_type& rhs,
@@ -156,14 +170,6 @@ namespace ippl {
         this->params_m.update("output_type", Base::SOL);
 
         this->setRhs(rhs);
-
-        // start a timer
-        static IpplTimings::TimerRef initialize = IpplTimings::getTimer("Initialize");
-        IpplTimings::startTimer(initialize);
-
-        initializeFields();
-
-        IpplTimings::stopTimer(initialize);
     }
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
@@ -182,8 +188,18 @@ namespace ippl {
         setDefaultParameters();
         this->params_m.merge(params);
 
-        this->setRhs(rhs);
         this->setLhs(lhs);
+        this->setRhs(rhs);
+    }
+
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::~FFTPoissonSolver(){};
+
+    /////////////////////////////////////////////////////////////////////////
+    // override setRhs to call class-specific initialization
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::setRhs(rhs_type& rhs) {
+        Base::setRhs(rhs);
 
         // start a timer
         static IpplTimings::TimerRef initialize = IpplTimings::getTimer("Initialize");
@@ -193,9 +209,6 @@ namespace ippl {
 
         IpplTimings::stopTimer(initialize);
     }
-
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::~FFTPoissonSolver(){};
 
     /////////////////////////////////////////////////////////////////////////
     // allows user to set gradient of phi = Efield instead of spectral

@@ -62,13 +62,14 @@ namespace ippl {
         using buffer_type = Communicate::buffer_type;
 
         // constructor and destructor
-        FFTPoissonSolver()
-            : Base() {
-            setDefaultParameters();
-        }
+        FFTPoissonSolver();
         FFTPoissonSolver(rhs_type& rhs, ParameterList& params);
         FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
         ~FFTPoissonSolver();
+
+        // override the setRhs function of the Solver class
+        // since we need to call initializeFields()
+        void setRhs(rhs_type& rhs) override;
 
         // allows user to set gradient of phi = Efield instead of spectral
         // calculation of Efield (which uses FFTs)
