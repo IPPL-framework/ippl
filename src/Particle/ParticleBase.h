@@ -64,9 +64,12 @@
 #ifndef IPPL_PARTICLE_BASE_H
 #define IPPL_PARTICLE_BASE_H
 
+#include <tuple>
 #include <vector>
 
 #include "Types/IpplTypes.h"
+
+#include "Utility/TypeUtils.h"
 
 #include "Particle/ParticleLayout.h"
 
@@ -75,21 +78,30 @@ namespace ippl {
      * @class ParticleBase
      * @tparam PLayout the particle layout implementing an algorithm to
      * distribute the particles among MPI ranks
+     * @tparam IDProps the view properties for particle IDs
+     * @tparam PositionProps the view properties for particle positions
+     * @tparam HashProps the view properties for the hash views
      */
-    template <class PLayout, class... Properties>
-    class ParticleBase {
+    template <class PLayout, typename IDProps = std::tuple<>, typename PositionProps = std::tuple<>,
+              typename HashProps = std::tuple<>>
+    class ParticleBase;
+
+    template <class PLayout, typename... IDProps, typename... PositionProps, typename... HashProps>
+    class ParticleBase<PLayout, std::tuple<IDProps...>, std::tuple<PositionProps...>,
+                       std::tuple<HashProps...>> {
     public:
-        using vector_type            = typename PLayout::vector_type;
-        using index_type             = typename PLayout::index_type;
-        using particle_position_type = typename PLayout::particle_position_type;
-        using particle_index_type    = ParticleAttrib<index_type>;
+        using vector_type = typename PLayout::vector_type;
+        using index_type  = typename PLayout::index_type;
+        using particle_position_type =
+            typename PLayout::template particle_position_type<PositionProps...>;
+        using particle_index_type = ParticleAttrib<index_type, IDProps...>;
 
         using Layout_t              = PLayout;
-        using attribute_type        = typename detail::ParticleAttribBase<Properties...>;
+        using attribute_type        = typename detail::ParticleAttribBase<>;
         using attribute_container_t = std::vector<attribute_type*>;
         using attribute_iterator    = typename attribute_container_t::iterator;
         using bc_container_type     = typename PLayout::bc_container_type;
-        using hash_type             = typename detail::ViewType<int, 1, Properties...>::view_type;
+        using hash_type             = typename detail::ViewType<int, 1, HashProps...>::view_type;
 
         using size_type = detail::size_type;
 
@@ -168,6 +180,7 @@ namespace ippl {
          * Add particle attribute
          * @param pa attribute to be added to ParticleBase
          */
+        template <typename... Properties>
         void addAttribute(detail::ParticleAttribBase<Properties...>& pa);
 
         /*!

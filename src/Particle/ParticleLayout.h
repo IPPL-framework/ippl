@@ -59,7 +59,10 @@ namespace ippl {
             typedef T value_type;
             typedef std::int64_t index_type;
             typedef Vector<T, Dim> vector_type;
-            typedef ParticleAttrib<vector_type> particle_position_type;
+
+            template <typename... Properties>
+            using particle_position_type = ParticleAttrib<vector_type, Properties...>;
+
             typedef std::array<BC, 2 * Dim> bc_container_type;
 
             static constexpr unsigned dim = Dim;
@@ -93,7 +96,9 @@ namespace ippl {
              * @tparam nr is the NDRegion
              * @param
              */
-            void applyBC(const particle_position_type& R, const NDRegion<T, Dim>& nr);
+            template <typename... Properties>
+            void applyBC(const particle_position_type<Properties...>& R,
+                         const NDRegion<T, Dim>& nr);
 
         private:
             //! the list of boundary conditions for this set of particles
