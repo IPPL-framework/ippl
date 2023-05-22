@@ -43,36 +43,18 @@ namespace ippl {
         template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
         using archive_type = detail::Archive<MemorySpace>;
 
-    private:
-        /*!
-         * Variant verification struct (see Utility/ViewUtils.h)
-         * Forwards the provided types to an archive behind a shared pointer and
-         * adds this to a variant only if the archive type haven't already been added. This is
-         * useful for aliases for Kokkos memory spaces, since these can have different names but
-         * still refer to the same underlying type and variants cannot have duplicate
-         * types.
-         *
-         * Constructing a variant with this verifier will map, for example:
-         * <Kokkos::HostSpace, Kokkos::CudaSpace> => std::variant<
-         *          std::shared_ptr<archive_type<Kokkos::HostSpace>>,
-         *          std::shared_ptr<archive_type<Kokkos::CudaSpace>>>
-         */
-        template <typename Space, typename... ExistingSpaces>
-        struct WrapUniqueArchives {
-            constexpr static bool enable =
-                detail::IsUnique<std::shared_ptr<archive_type<Space>>, ExistingSpaces...>::enable;
-            typedef std::shared_ptr<archive_type<Space>> type;
-        };
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        using buffer_type = std::shared_ptr<archive_type<MemorySpace>>;
 
+    private:
         template <typename... Spaces>
-        using archive_types = detail::VariantWithVerifier<WrapUniqueArchives, Spaces...>;
+        using archive_types =
+            detail::VariantWithVerifier<detail::WrapUnique<buffer_type>::Verifier,
+                                        Spaces...>;
 
         using buffer_types = detail::TypesForAllSpaces<archive_types>;
 
     public:
-        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
-        using buffer_type = std::shared_ptr<archive_type<MemorySpace>>;
-
         using size_type = detail::size_type;
 
         Communicate(int& argc, char**& argv);

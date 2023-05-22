@@ -51,6 +51,23 @@ namespace ippl {
         };
 
         /*!
+         * Defines a variant verification struct
+         * Performs the same check as IsUnique, but instead of using the provided types
+         * directly, the types are wrapped in another provided type. For example, if the
+         * wrapper type is std::shared_ptr and the types are <int, float, int>, then
+         * the final variant will allow std::shared_ptr<int> and std::shared_ptr<float>.
+         * @tparam Wrapper the wrapper type
+         */
+        template <template <typename> class Wrapper>
+        struct WrapUnique {
+            template <typename Check, typename... Collection>
+            struct Verifier {
+                typedef Wrapper<Check> type;
+                constexpr static bool enable = !std::disjunction_v<std::is_same<type, Collection>...>;
+            };
+        };
+
+        /*!
          * Convenience alias for types that should or should not be included
          * in variants constructed with ConstructVariant (defined below) based
          * on some compile-time constant
