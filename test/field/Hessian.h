@@ -168,12 +168,34 @@ public:
     }
 };
 
+// Specialization for compact centered stencils of 2nd order
+// e.g. $\frac{\partial^2 f}{\partial x^2}$
+template <OpDim D, unsigned Dim, typename T>
+class DiffOpChain<D, Dim, T, Centered,
+                  DiffOpChain<D, Dim, T, Centered, typename Field_t<Dim>::view_type>>
+    : public BaseDiffOp<D, Dim, T, Centered,
+                        DiffOpChain<D, Dim, T, Centered, typename Field_t<Dim>::view_type>> {
+public:
+    typedef T value_type;
+    typedef typename Field_t<Dim>::view_type FView_t;
+
+    DiffOpChain(const FView_t& view, Vector_t<Dim> hInvVector)
+        : BaseDiffOp<D, Dim, T, Centered,
+                     DiffOpChain<D, Dim, T, Centered, typename Field_t<Dim>::view_type>>(
+            view, hInvVector) {}
+
+    // Specialization to call the stencil operator on the field
+    inline T operator()(size_type i, size_type j, size_type k) const {
+        // return this->template stencilOp(this->view_m, i, j, k);
+        return centered_stencil_deriv2<D, T>(this->hInvVector_m[D], this->view_m, i, j, k);
+    }
+};
+
+// Can be used as type for storing a composed operator in STL containers
 template <unsigned Dim, typename T, class ReturnType>
 class GeneralDiffOpInterface {
 public:
     typedef typename Field_t<Dim>::view_type FView_t;
-    // GeneralDiffOpInterface(GeneralDiffOpInterface<T,ReturnType>&& source) :
-    // view_m(std::move(source.view_m)), hInvVector_m(std::move(source.hInvVector_m)) {};
 
     GeneralDiffOpInterface(const Field_t<Dim>& field, Vector_t<Dim> hInvVector)
         : view_m(field.getView())
@@ -197,8 +219,6 @@ public:
     typedef DiffOpChain<OpDim::X, Dim, T, DiffX, FView_t> colOpX_t;
     typedef DiffOpChain<OpDim::Y, Dim, T, DiffY, FView_t> colOpY_t;
     typedef DiffOpChain<OpDim::Z, Dim, T, DiffZ, FView_t> colOpZ_t;
-    // template<Dim D, DiffType Diff>
-    // using CompactDiffOp<D,T,Diff,Fview_t> = diagOp_t;
 
     // GeneralizedHessOp(GeneralizedHessOp<T,ReturnType,DiffX,DiffY,DiffZ>&& source) = default;
 
@@ -227,8 +247,6 @@ public:
     }
 
 private:
-    // const FView_t &view;
-
     // Row 1
     DiffOpChain<OpDim::X, Dim, T, DiffX, colOpX_t> diff_xx;
     DiffOpChain<OpDim::X, Dim, T, DiffX, colOpY_t> diff_xy;
