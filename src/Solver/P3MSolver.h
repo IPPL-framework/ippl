@@ -52,10 +52,14 @@ namespace ippl {
         typedef FFT<RCTransform, Dim, Trhs, Mesh, Centering> FFT_t;
 
         // constructor and destructor
-        P3MSolver(rhs_type& rhs, ParameterList& fftparams);
-        P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams,
-                  int sol = Base::SOL_AND_GRAD);
+        P3MSolver();
+        P3MSolver(rhs_type& rhs, ParameterList& params);
+        P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
         ~P3MSolver() = default;
+
+        // override the setRhs function of the Solver class
+        // since we need to call initializeFields()
+        void setRhs(rhs_type& rhs) override;
 
         // solve the Poisson equation
         // more specifically, compute the scalar potential given a density field rho

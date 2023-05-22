@@ -28,34 +28,46 @@ namespace ippl {
     // constructor and destructor
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver(rhs_type& rhs, ParameterList& fftparams)
+    P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver()
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
         setDefaultParameters();
-        this->setRhs(rhs);
+    }
 
-        this->params_m.merge(fftparams);
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver(rhs_type& rhs, ParameterList& params)
+        : mesh_mp(nullptr)
+        , layout_mp(nullptr)
+        , meshComplex_m(nullptr)
+        , layoutComplex_m(nullptr) {
+        setDefaultParameters();
+
+        this->params_m.merge(params);
         this->params_m.update("output_type", Base::SOL);
 
-        initializeFields();
+        this->setRhs(rhs);
     }
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver(lhs_type& lhs, rhs_type& rhs,
-                                                           ParameterList& fftparams, int sol)
+                                                           ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
         setDefaultParameters();
-        this->setRhs(rhs);
+
+        this->params_m.merge(params);
+
         this->setLhs(lhs);
+        this->setRhs(rhs);
+    }
 
-        this->params_m.merge(fftparams);
-        this->params_m.update("output_type", sol);
-
+    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::setRhs(rhs_type& rhs) {
+        Base::setRhs(rhs);
         initializeFields();
     }
 
