@@ -59,7 +59,7 @@ namespace ippl {
          */
         template <typename Space, typename... ExistingSpaces>
         struct WrapUniqueArchives {
-            constexpr static bool enable = detail::IsPresent<Space, ExistingSpaces...>::enable;
+            constexpr static bool enable = detail::IsUnique<Space, ExistingSpaces...>::enable;
             typedef std::shared_ptr<archive_type<Space>> type;
         };
 

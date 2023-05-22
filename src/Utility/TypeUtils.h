@@ -40,12 +40,12 @@ namespace ippl {
 
         /*!
          * Variant verification struct
-         * Checks whether a given type is present in a parameter pack
+         * Checks that a given type has not already been added to a variant
          * @tparam Check the type for whose presence to check
          * @tparam Collection... a collection of types
          */
         template <typename Check, typename... Collection>
-        struct IsPresent {
+        struct IsUnique {
             constexpr static bool enable = !std::disjunction_v<std::is_same<Check, Collection>...>;
             typedef Check type;
         };
@@ -76,7 +76,7 @@ namespace ippl {
         /*!
          * Base struct declaration (see full declaration below for details)
          */
-        template <typename, typename, template <typename...> class Verifier = IsPresent>
+        template <typename, typename, template <typename...> class Verifier = IsUnique>
         struct ConstructVariant;
 
         /*!
@@ -143,6 +143,10 @@ namespace ippl {
         template <typename... Types>
         using VariantFromConditionalTypes =
             typename ConstructVariant<std::variant<Types...>, std::variant<>, IsEnabled>::type;
+
+        template <typename... Types>
+        using VariantFromUniqueTypes =
+            typename ConstructVariant<std::variant<Types...>, std::variant<>, IsUnique>::type;
 
         template <template <typename...> class Verifier, typename... Types>
         using VariantWithVerifier =
