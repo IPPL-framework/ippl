@@ -67,6 +67,7 @@ int main(int argc, char* argv[]) {
     params.add("use_gpu_aware", true);
     params.add("comm", ippl::a2av);
     params.add("r2c_direction", 0);
+    params.add("output_type", Solver_t::SOL_AND_GRAD);
 
     // assign the rho field with 2.0
     typename Field_t::view_type view_rho = field.getView();
@@ -80,7 +81,12 @@ int main(int argc, char* argv[]) {
         field.write();
     }
 
-    Solver_t solver(efield, field, params, Solver_t::SOL_AND_GRAD);
+    Solver_t solver;
+
+    solver.mergeParameters(params);
+
+    solver.setLhs(efield);
+    solver.setRhs(field);
 
     solver.solve();
 
