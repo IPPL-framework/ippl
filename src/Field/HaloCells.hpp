@@ -84,7 +84,7 @@ namespace ippl {
                     size_type nsends;
                     pack(range, view, haloData_m, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer<T, memory_space>(
+                    buffer_type buf = Ippl::Comm->getBuffer<memory_space, T>(
                         IPPL_HALO_SEND + i * cubeCount + index, nsends);
 
                     Ippl::Comm->isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++],
@@ -109,7 +109,7 @@ namespace ippl {
 
                     size_type nrecvs = range.size();
 
-                    buffer_type buf = Ippl::Comm->getBuffer<T, memory_space>(
+                    buffer_type buf = Ippl::Comm->getBuffer<memory_space, T>(
                         IPPL_HALO_RECV + i * cubeCount + index, nrecvs);
 
                     Ippl::Comm->recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);

@@ -35,7 +35,7 @@
 
 namespace ippl {
 
-    template <typename T, typename MemorySpace>
+    template <typename MemorySpace, typename T>
     Communicate::buffer_type<MemorySpace> Communicate::getBuffer(int id, size_type size,
                                                                  double overallocation) {
         auto& buffers = buffers_m.get<MemorySpace>();

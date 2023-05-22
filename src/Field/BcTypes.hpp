@@ -275,7 +275,7 @@ namespace ippl {
                     halo.pack(range, view, haloData_m, nSends);
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<T, memory_space>(IPPL_PERIODIC_BC_SEND + i, nSends);
+                        Ippl::Comm->getBuffer<memory_space, T>(IPPL_PERIODIC_BC_SEND + i, nSends);
 
                     Ippl::Comm->isend(rank, tag, haloData_m, *buf, requests[i], nSends);
                     buf->resetWritePos();
@@ -292,7 +292,7 @@ namespace ippl {
                     detail::size_type nRecvs = range.size();
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<T, memory_space>(IPPL_PERIODIC_BC_RECV + i, nRecvs);
+                        Ippl::Comm->getBuffer<memory_space, T>(IPPL_PERIODIC_BC_RECV + i, nRecvs);
                     Ippl::Comm->recv(rank, matchtag, haloData_m, *buf, nRecvs * sizeof(T), nRecvs);
                     buf->resetReadPos();
 

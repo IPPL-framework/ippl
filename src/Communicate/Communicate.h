@@ -76,10 +76,10 @@ namespace ippl {
         /**
          * Obtain a buffer of at least the requested size that is associated
          * with the given ID, overallocating memory for the buffer if it's new
+         * @tparam MemorySpace The Kokkos memory space for which to allocate the buffer
          * @tparam T The datatype to be stored in the buffer; in particular, the size
          *           is scaled by the size of the data type (default char for when
          *           the size is already in bytes)
-         * @tparam MemorySpace The Kokkos memory space for which to allocate the buffer
          * @param id The numerical ID with which the buffer is associated (allows buffer reuse)
          * @param size The minimum size of the buffer, measured in number of elements
          *             of the provided datatype (if the size is in bytes, the default
@@ -91,8 +91,8 @@ namespace ippl {
          *                       is used
          * @return A shared pointer to the buffer with the requested properties
          */
-        template <typename T           = char,
-                  typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space,
+                  typename T           = char>
         buffer_type<MemorySpace> getBuffer(int id, size_type size, double overallocation = 1.0);
 
         /**
