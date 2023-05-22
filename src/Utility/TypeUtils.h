@@ -30,7 +30,7 @@ namespace ippl {
          * Instantiates a parameter pack with all the available Kokkos memory spaces
          */
         template <template <typename...> class Type>
-        using TypesForAllSpaces =
+        using TypeForAllSpaces =
             Type<Kokkos::HostSpace, Kokkos::SharedSpace, Kokkos::SharedHostPinnedSpace
 #ifdef KOKKOS_ENABLE_CUDA
                  ,
@@ -63,7 +63,8 @@ namespace ippl {
             template <typename Check, typename... Collection>
             struct Verifier {
                 typedef Wrapper<Check> type;
-                constexpr static bool enable = !std::disjunction_v<std::is_same<type, Collection>...>;
+                constexpr static bool enable =
+                    !std::disjunction_v<std::is_same<type, Collection>...>;
             };
         };
 
@@ -150,10 +151,10 @@ namespace ippl {
 
             typedef cond<
                 Check::enable,
-                         // The verifier has indicated that this type should be added
-                         typename ConstructVariant<variant<ToAdd...>,
+                // The verifier has indicated that this type should be added
+                typename ConstructVariant<variant<ToAdd...>,
                                           variant<typename Check::type, Added...>, Verifier>::type,
-                         // The verifier has indicated that the type should not be added
+                // The verifier has indicated that the type should not be added
                 typename ConstructVariant<variant<ToAdd...>, variant<Added...>, Verifier>::type>
                 type;
         };
@@ -169,6 +170,46 @@ namespace ippl {
         template <template <typename...> class Verifier, typename... Types>
         using VariantWithVerifier =
             typename ConstructVariant<std::variant<Types...>, std::variant<>, Verifier>::type;
+
+        template <template <typename> class Type, typename... Spaces>
+        struct MultispaceContainer {
+            template <typename T, typename... Ts>
+            using Verifier = typename WrapUnique<Type>::template Verifier<T, Ts...>;
+
+            using Types = VariantWithVerifier<Verifier, Spaces...>;
+
+            std::array<Types, sizeof...(Spaces)> elements_m;
+
+            template <typename Space, unsigned Idx = 0>
+            constexpr unsigned spaceToIndex() {
+                static_assert(Idx < sizeof...(Spaces));
+                if constexpr (std::is_same_v<Space,
+                                             std::tuple_element_t<Idx, std::tuple<Spaces...>>>) {
+                    return Idx;
+                } else {
+                    return spaceToIndex<Space, Idx + 1>();
+                }
+            }
+
+        public:
+            template <typename Space>
+            Type<Space>& get() {
+                return std::get<Type<Space>>(elements_m[spaceToIndex<Space>()]);
+            }
+
+            template <typename Functor>
+            void forAll(Functor&& f) {
+                (f(get<Spaces>()), ...);
+            }
+        };
+
+        template <template <typename> class Type>
+        struct ContainerForAllSpaces {
+            template <typename... Spaces>
+            using container_type = MultispaceContainer<Type, Spaces...>;
+
+            using type = TypeForAllSpaces<container_type>;
+        };
     }  // namespace detail
 }  // namespace ippl
 

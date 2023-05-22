@@ -47,12 +47,10 @@ namespace ippl {
         using buffer_type = std::shared_ptr<archive_type<MemorySpace>>;
 
     private:
-        template <typename... Spaces>
-        using archive_types =
-            detail::VariantWithVerifier<detail::WrapUnique<buffer_type>::Verifier,
-                                        Spaces...>;
+        template <typename MemorySpace>
+        using map_type = std::map<int, buffer_type<MemorySpace>>;
 
-        using buffer_types = detail::TypesForAllSpaces<archive_types>;
+        using buffer_map_type = typename detail::ContainerForAllSpaces<map_type>::type;
 
     public:
         using size_type = detail::size_type;
@@ -103,9 +101,7 @@ namespace ippl {
          */
         template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
         void deleteBuffer(int id) {
-            std::string space = MemorySpace().name();
-            auto key          = std::make_pair(space, id);
-            buffers_m.erase(key);
+            buffers_m.get<MemorySpace>().erase(id);
         }
 
         /**
@@ -140,11 +136,10 @@ namespace ippl {
 
     private:
         /*!
-         * A map of existing buffers
-         * Key: (execution space name, buffer ID)
-         * Value: buffer for the given execution space with the given ID
+         * For each memory space, store a map of all buffers
+         * created for that space
          */
-        std::map<std::pair<std::string, int>, buffer_types> buffers_m;
+        buffer_map_type buffers_m;
         double defaultOveralloc_m = 1.0;
 
         MPI_Comm comm_m;
