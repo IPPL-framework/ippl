@@ -83,8 +83,6 @@ template <unsigned Dim = 3>
 using OpenSolver_t = ConditionalType<
     Dim == 3, ippl::FFTPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>;
 
-// For now, added the Open and P3M Solvers in the (Dim == 2 || Dim == 3) variant, but
-// these solvers are only supported for Dim = 3 currently.
 template <unsigned Dim = 3>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<Dim>, FFTSolver_t<Dim>, P3MSolver_t<Dim>,
                                              OpenSolver_t<Dim>>;
