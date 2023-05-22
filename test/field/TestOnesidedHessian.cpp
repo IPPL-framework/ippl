@@ -39,6 +39,10 @@ using MField_t = Field<Matrix_t<Dim>, Dim>;
 
 constexpr unsigned int dim = 3;
 
+using index_type   = typename Kokkos::RangePolicy<int>::index_type;
+using idx_vec_t    = typename Kokkos::Array<index_type, dim>;
+using range_pair_t = typename std::pair<idx_vec_t, idx_vec_t>;
+
 template <typename T, unsigned Dim>
 void pickHessianIdx(Field_t<Dim>& out_field, MField_t<Dim>& hessian_field, size_t row_idx,
                     size_t col_idx, size_t nghost) {
@@ -105,6 +109,84 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
     return -prefactor * std::exp(-r2 / (2 * sigma * sigma));
 }
 
+std::vector<range_pair_t> genFaceIterators(typename Field_t<dim>::view_type& fieldView,
+                                           int nghost) {
+    int x_max = fieldView.extent(0);
+    int y_max = fieldView.extent(1);
+    int z_max = fieldView.extent(2);
+
+    std::vector<range_pair_t> face_iterators(6);
+
+    // x low
+    face_iterators[0] = range_pair_t({0, 1, 1}, {1, y_max - 1, z_max - 1});
+    // x high
+    face_iterators[1] = range_pair_t({x_max - 1, 1, 1}, {x_max, y_max - 1, z_max - 1});
+    // y low
+    face_iterators[2] = range_pair_t({1, 0, 1}, {x_max - 1, 1, z_max - 1});
+    // y high
+    face_iterators[3] = range_pair_t({1, y_max - 1, 1}, {x_max - 1, y_max, z_max - 1});
+    // z low
+    face_iterators[4] = range_pair_t({1, 1, 0}, {x_max - 1, y_max - 1, 1});
+    // z high
+    face_iterators[5] = range_pair_t({1, 1, y_max - 1}, {x_max - 1, y_max - 1, z_max});
+
+    return face_iterators;
+}
+
+std::vector<range_pair_t> genEdgeDim(Vector<int, dim> extents, unsigned dir) {
+    std::vector<range_pair_t> face_iterators(4);
+
+    Kokkos::Array<index_type, dim> lower_bound({0, 0, 0});
+    Kokkos::Array<index_type, dim> upper_bound({0, 0, 0});
+
+    lower_bound[dir]     = 1;
+    upper_bound[dir]     = extents[dir] - 1;
+    face_iterators[0]    = std::make_pair(lower_bound, upper_bound);
+    index_type new_idx   = (dir + 1) % dim;
+    lower_bound[new_idx] = extents[new_idx];
+    upper_bound[new_idx] = lower_bound[new_idx];
+    face_iterators[1]    = std::make_pair(lower_bound, upper_bound);
+    new_idx              = (dir + 2) % dim;
+    lower_bound[new_idx] = extents[new_idx];
+    upper_bound[new_idx] = lower_bound[new_idx];
+    face_iterators[2]    = std::make_pair(lower_bound, upper_bound);
+    new_idx              = (dir + 1) % dim;
+    lower_bound[new_idx] = 0;
+    upper_bound[new_idx] = lower_bound[new_idx];
+    face_iterators[3]    = std::make_pair(lower_bound, upper_bound);
+
+    // Edges along x-dim:
+    // y low, z low
+    // face_iterators[0] = Kokkos::MDRangePolicy<Kokkos::Rank<dim>>({1, 0, 0}, {x_max - 1, 0, 0});
+    // // y high, z low
+    // face_iterators[1] =
+    //     Kokkos::MDRangePolicy<Kokkos::Rank<dim>>({1, y_max, 0}, {x_max - 1, y_max, 0});
+    // // y high, z high
+    // face_iterators[2] =
+    //     Kokkos::MDRangePolicy<Kokkos::Rank<dim>>({1, y_max, z_max}, {x_max - 1, y_max, z_max});
+    // // y low, z high
+    // face_iterators[3] =
+    //     Kokkos::MDRangePolicy<Kokkos::Rank<dim>>({1, 0, z_max}, {x_max - 1, 0, z_max - 1});
+
+    return face_iterators;
+}
+
+std::vector<range_pair_t> genEdgeIterators(typename Field_t<dim>::view_type& fieldView) {
+    int x_max                = fieldView.extent(0);
+    int y_max                = fieldView.extent(1);
+    int z_max                = fieldView.extent(2);
+    Vector<int, dim> extents = {x_max, y_max, z_max};
+
+    std::vector<range_pair_t> face_iterators(12);
+
+    for (unsigned d = 0; d < dim; d++) {
+        auto dim_iterators = genEdgeDim(extents, d);
+        face_iterators.insert(face_iterators.begin() + 4 * d, dim_iterators.begin(),
+                              dim_iterators.end());
+    }
+    return face_iterators;
+}
+
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
     Inform msg("TestOnesidedHessian");
@@ -137,7 +219,7 @@ int main(int argc, char* argv[]) {
 
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
-    const unsigned int nghost = 2;
+    const unsigned int nghost = 1;
     Field_t<dim> field(mesh, layout, nghost);
     Field_t<dim> hessReductionField(mesh, layout, nghost);
     MField_t<dim> result(mesh, layout, nghost);
@@ -147,6 +229,23 @@ int main(int argc, char* argv[]) {
     FView_t& view = field.getView();
 
     const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
+
+    auto faceIterators = genFaceIterators(view);
+    auto edgeIterators = genEdgeIterators(view);
+    auto& currIterator = edgeIterators[0];
+    for (int i = currIterator.first[0]; i < currIterator.second[0]; ++i) {
+        for (int j = currIterator.first[1]; j < currIterator.second[1]; ++j) {
+            for (int k = currIterator.first[2]; k < currIterator.second[2]; ++k) {
+                msg << view(i, j, k) << endl;
+            }
+        }
+    }
+    // Kokkos::parallel_for(
+    //     "Test Boundary Iterators", edgeIterators[0],
+    //     KOKKOS_LAMBDA(const int i, const int j, const int k) {
+    //         std::cout << view(i, j, k) << std::endl;
+    //     });
+    // Kokkos::fence();
 
     Kokkos::parallel_for(
         "Assign field", mdrange_type({0, 0, 0}, {view.extent(0), view.extent(1), view.extent(2)}),
