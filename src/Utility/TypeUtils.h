@@ -82,8 +82,8 @@ namespace ippl {
         /*!
          * Base case for variant construction with no types to add
          */
-        template <>
-        struct ConstructVariant<std::variant<>, std::variant<>> {
+        template <template <typename...> class Verifier>
+        struct ConstructVariant<std::variant<>, std::variant<>, Verifier> {
             typedef std::variant<> type;
         };
 
@@ -91,8 +91,8 @@ namespace ippl {
          * Base case for a fully constructed variant
          * @tparam T... the types to be included in the variant
          */
-        template <typename... T>
-        struct ConstructVariant<std::variant<>, std::variant<T...>> {
+        template <typename... T, template <typename...> class Verifier>
+        struct ConstructVariant<std::variant<>, std::variant<T...>, Verifier> {
             typedef std::variant<T...> type;
         };
 
@@ -131,12 +131,13 @@ namespace ippl {
 
             using Check = Verifier<Next, Added...>;
 
-            typedef cond<Check::enable,
+            typedef cond<
+                Check::enable,
                          // The verifier has indicated that this type should be added
                          typename ConstructVariant<variant<ToAdd...>,
-                                                   variant<typename Check::type, Added...>>::type,
+                                          variant<typename Check::type, Added...>, Verifier>::type,
                          // The verifier has indicated that the type should not be added
-                         typename ConstructVariant<variant<ToAdd...>, variant<Added...>>::type>
+                typename ConstructVariant<variant<ToAdd...>, variant<Added...>, Verifier>::type>
                 type;
         };
 
