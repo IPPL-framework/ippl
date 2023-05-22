@@ -232,20 +232,16 @@ namespace ippl {
         // convolution becomes multiplication in FFT
         rhotr_m = rhotr_m * grntr_m;
 
-        // if output_type is SOL or SOL_AND_GRAD, we caculate solution
-        if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
-            // inverse FFT of the product and store the electrostatic potential in rho2_mr
-            fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
-        }
+        // inverse FFT of the product and store the electrostatic potential in rho2_mr
+        fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
 
         // normalization is double counted due to 2 transforms
         *(this->rhs_mp) = *(this->rhs_mp) * nr_m[0] * nr_m[1] * nr_m[2];
         // discretization of integral requires h^3 factor
         *(this->rhs_mp) = *(this->rhs_mp) * hr_m[0] * hr_m[1] * hr_m[2];
 
-        // if we want gradient of phi = Efield instead of doing grad in Fourier domain
-        // this is only possible if SOL_AND_GRAD is output type
-        if (out == Base::SOL_AND_GRAD) {
+        // if we want gradient of phi = Efield
+        if (out == Base::SOL_AND_GRAD || out == Base::GRAD) {
             *(this->lhs_mp) = -grad(*this->rhs_mp);
         }
     };
