@@ -112,9 +112,6 @@ namespace ippl {
         //! view of particle IDs
         particle_index_type ID;
 
-        typename attribute_type::boolean_view_type invalidIndex;
-        hash_type newIndex;
-
         /*!
          * If this constructor is used, the user must call 'initialize' with
          * a layout object in order to use this.
