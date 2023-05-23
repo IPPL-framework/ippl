@@ -214,7 +214,13 @@ int main(int argc, char* argv[]) {
     PLayout_t<Dim> PL(FL, mesh);
 
     std::string solver = argv[arg++];
-    P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+
+    if (solver == "OPEN") {
+        throw IpplException("LandauDamping",
+                            "Open boundaries solver incompatible with this simulation!");
+    }
+
+    P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
     P->nr_m = nr;
 
