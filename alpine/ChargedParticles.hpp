@@ -508,7 +508,7 @@ public:
 
     template <typename Solver>
     void initSolverWithParams(const ippl::ParameterList& sp) {
-        solver_m       = Solver();
+        solver_m.template emplace<Solver>();
         Solver& solver = std::get<Solver>(solver_m);
 
         solver.mergeParameters(sp);
