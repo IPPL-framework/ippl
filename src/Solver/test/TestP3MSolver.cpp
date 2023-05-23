@@ -1,9 +1,31 @@
+//
+// TestP3MSolver
 // This program tests the P3MSolver with a constant source rho = 2.
 // This is for comparison purposes with a reference implementation in ippl_orig.
 // I/O output is only enabled when running serially.
-// The problem size must be given by the user.
-// Usage:
-//   srun ./TestP3MSolver 16 16 16 --info 5
+//   Usage:
+//     srun ./TestP3MSolver <nx> <ny> <nz> --info 5
+//     nx = No. cell-centered points in the x-direction
+//     ny = No. cell-centered points in the y-direction
+//     nz = No. cell-centered points in the z-direction
+//
+//     Example:
+//       srun ./TestP3MSolver 16 16 16 --info 5
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 #include "Ippl.h"
 

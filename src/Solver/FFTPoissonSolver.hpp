@@ -1,6 +1,11 @@
 //
 // Class FFTPoissonSolver
-//   FFT-based Poisson Solver class.
+//   FFT-based Poisson Solver for open boundaries.
+//   Solves laplace(phi) = -rho, and E = -grad(phi).
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
 //
 // This file is part of IPPL.
 //
@@ -11,7 +16,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 //
 
 // Communication specific functions (pack and unpack).

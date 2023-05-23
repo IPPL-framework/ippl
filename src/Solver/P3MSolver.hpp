@@ -1,17 +1,26 @@
 //
-//// Class P3MSolver
-////   FFT-based Poisson Solver class.
-////
-//// This file is part of IPPL.
-////
-//// IPPL is free software: you can redistribute it and/or modify
-//// it under the terms of the GNU General Public License as published by
-//// the Free Software Foundation, either version 3 of the License, or
-//// (at your option) any later version.
-////
-//// You should have received a copy of the GNU General Public License
-//// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-////
+// Class P3MSolver
+//   Poisson solver for periodic boundaries, based on FFTs.
+//   Solves laplace(phi) = -rho, and E = -grad(phi).
+//
+//   Uses a convolution with a Green's function given by:
+//      G(r) = ke * erf(alpha * r) / r,
+//   where ke = Coulomb constant,
+//         alpha = controls long-range interaction.
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 namespace ippl {

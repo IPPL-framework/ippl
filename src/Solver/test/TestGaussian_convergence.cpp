@@ -1,8 +1,28 @@
-// This program tests the FFTPoissonSolver class with a Gaussian source.
+//
+// TestGaussian_convergence
+// This programs tests the FFTPoissonSolver for a Gaussian source.
 // Different problem sizes are used for the purpose of convergence tests.
-// The algorithm used is chosen by the user:
-//     srun ./TestGaussian_convergence HOCKNEY --info 10
-// OR  srun ./TestGaussian_convergence VICO --info 10
+//   Usage:
+//     srun ./TestGaussian_convergence <algorithm> --info 5
+//     algorithm = "HOCKNEY" or "VICO", types of open BC algorithms
+//
+//     Example:
+//       srun ./TestGaussian_convergence HOCKNEY --info 5
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 #include "Ippl.h"
 

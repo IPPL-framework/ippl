@@ -1,8 +1,29 @@
-// This programs solves the Poisson equation:
-//   The source is a constant term which is 0 outside a certain radius,
-//   and the exact solution is the gravitational potential of a sphere.
-// The algorithm can be chosen by the user ("HOCKNEY" or "VICO"). Example:
-//   srun ./TestSphere HOCKNEY --info 10
+//
+// TestSphere
+// This programs tests the FFTPoissonSolver for the gravitational case.
+// The source is a constant term which is 0 outside a certain radius,
+// and the exact solution is the gravitational potential of a sphere.
+//   Usage:
+//     srun ./TestSphere <algorithm> --info 5
+//     algorithm = "HOCKNEY" or "VICO", types of open BC algorithms
+//
+//     Example:
+//       srun ./TestSphere HOCKNEY --info 5
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 #include "Ippl.h"
 

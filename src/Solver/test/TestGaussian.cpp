@@ -1,14 +1,39 @@
+//
+// TestGaussian
 // This program tests the FFTPoissonSolver class with a Gaussian source.
 // The solve is iterated 5 times for the purpose of timing studies.
-// The problem size, heffte parameters, and algorithm are given by the user:
-//   srun ./TestGaussian 64 64 64 pencils a2a no-reorder HOCKNEY --info 10
-// Possible algorithms: "HOCKNEY" or "VICO".
-// Possible heffte parameters:
-//  - "pencils" or "slabs" (reshape)
-//  - "a2a", "a2av", "p2p", "p2p_pl" (communication)
-//  - "reorder" or "no-reorder" (reordering)
-// See heffte documentation for more information on these parameters:
-// https://mkstoyanov.bitbucket.io/heffte/
+//   Usage:
+//     srun ./TestGaussian
+//                  <nx> <ny> <nz> <reshape> <comm>
+//                  <reorder> <algorithm> --info 5
+//     nx        = No. cell-centered points in the x-direction
+//     ny        = No. cell-centered points in the y-direction
+//     nz        = No. cell-centered points in the z-direction
+//     reshape   = "pencils" or "slabs" (heffte parameter)
+//     comm      = "a2a", "a2av", "p2p", "p2p_pl" (heffte parameter)
+//     reorder   = "reorder" or "no-reorder" (heffte parameter)
+//     algorithm = "HOCKNEY" or "VICO", types of open BC algorithms
+//
+//     For more info on the heffte parameters, see:
+//     https://github.com/icl-utk-edu/heffte
+//
+//     Example:
+//       srun ./TestGaussian 64 64 64 pencils a2a no-reorder HOCKNEY --info 5
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 #include "Ippl.h"
 
