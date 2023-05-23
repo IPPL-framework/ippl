@@ -572,7 +572,8 @@ namespace ippl {
 
         // multiply FFT(rho2)*FFT(green)
         // convolution becomes multiplication in FFT
-        rho2tr_m = rho2tr_m * grntr_m;
+        // minus sign since we are solving laplace(phi) = -rho
+        rho2tr_m = -rho2tr_m * grntr_m;
 
         // if output_type is SOL or SOL_AND_GRAD, we caculate solution
         if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
@@ -680,8 +681,9 @@ namespace ippl {
             IpplTimings::stopTimer(dtos);
         }
 
-        // if we want gradient of phi = Efield instead of doing grad in Fourier domain
-        // this is only possible if SOL_AND_GRAD is output type
+        // if we want finite differences Efield = -grad(phi)
+        // instead of computing it in Fourier domain
+        // this is only possible if SOL_AND_GRAD is the output type
         if (isGradFD_m && (out == Base::SOL_AND_GRAD)) {
             *(this->lhs_mp) = -grad(*this->rhs_mp);
         }
