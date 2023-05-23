@@ -25,7 +25,7 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
     double prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return -prefactor * exp(-r2 / (2 * sigma * sigma));
+    return prefactor * exp(-r2 / (2 * sigma * sigma));
 }
 
 KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sigma = 0.05,

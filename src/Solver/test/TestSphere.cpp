@@ -30,8 +30,8 @@ KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double den
     double r = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
 
     bool checkInside = (r <= R);
-    return -(double(checkInside) * (2.0 / 3.0) * pi * G * density * (3 * R * R - r * r))
-           - ((1.0 - double(checkInside)) * (4.0 / 3.0) * pi * G * density * R * R * R / r);
+    return (double(checkInside) * (2.0 / 3.0) * pi * G * density * (3 * R * R - r * r))
+           + ((1.0 - double(checkInside)) * (4.0 / 3.0) * pi * G * density * R * R * R / r);
 }
 
 int main(int argc, char* argv[]) {
