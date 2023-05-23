@@ -344,11 +344,12 @@ public:
             if (stype_m == "FFT") {
                 std::get<FFTSolver_t<Dim>>(solver_m).setRhs(rho_m);
             }
-        } else if constexpr (Dim == 3) {
-            if (stype_m == "P3M") {
-                std::get<P3MSolver_t<Dim>>(solver_m).setRhs(rho_m);
-            } else if (stype_m == "OPEN") {
-                std::get<OpenSolver_t<Dim>>(solver_m).setRhs(rho_m);
+            if constexpr (Dim == 3) {
+                if (stype_m == "P3M") {
+                    std::get<P3MSolver_t<Dim>>(solver_m).setRhs(rho_m);
+                } else if (stype_m == "OPEN") {
+                    std::get<OpenSolver_t<Dim>>(solver_m).setRhs(rho_m);
+                }
             }
         }
     }
