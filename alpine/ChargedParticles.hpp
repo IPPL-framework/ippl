@@ -581,7 +581,7 @@ public:
             sp.add("use_gpu_aware", true);
             sp.add("comm", ippl::p2p_pl);
             sp.add("r2c_direction", 0);
-            sp.add("algorithm", "HOCKNEY");
+            sp.add("algorithm", OpenSolver_t<Dim>::HOCKNEY);
 
             initSolverWithParams<OpenSolver_t<Dim>>(sp);
         } else {
