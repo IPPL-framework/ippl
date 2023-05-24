@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
     int arg    = 1;
 
-    ippl::Vector<int, Dim> nr;
+    Vector_t<int, Dim> nr;
     for (unsigned d = 0; d < Dim; d++)
         nr[d] = std::atoi(argv[arg++]);
 
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
     msg << "Uniform Plasma Test" << endl
         << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-    using bunch_type = ChargedParticles<PLayout_t<Dim>, Dim, double>;
+    using bunch_type = ChargedParticles<PLayout_t<double, Dim>, double, Dim>;
 
     std::unique_ptr<bunch_type> P;
 
@@ -118,12 +118,12 @@ int main(int argc, char* argv[]) {
     }
 
     // create mesh and layout objects for this problem domain
-    Vector_t<Dim> rmin(0.0);
-    Vector_t<Dim> rmax(20.0);
+    Vector_t<double, Dim> rmin(0.0);
+    Vector_t<double, Dim> rmax(20.0);
 
-    Vector_t<Dim> hr;
-    Vector_t<Dim> origin = rmin;
-    const double dt      = 1.0;
+    Vector_t<double, Dim> hr;
+    Vector_t<double, Dim> origin = rmin;
+    const double dt              = 1.0;
 
     ippl::e_dim_tag decomp[Dim];
     for (unsigned d = 0; d < Dim; ++d) {
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
     const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);
     FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
-    PLayout_t<Dim> PL(FL, mesh);
+    PLayout_t<double, Dim> PL(FL, mesh);
 
     double Q           = -1562.5;
     std::string solver = argv[arg++];
@@ -152,16 +152,16 @@ int main(int argc, char* argv[]) {
     P->create(nloc);
 
     const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-    Vector_t<Dim> Rmin, Rmax;
+    Vector_t<double, Dim> Rmin, Rmax;
     for (unsigned d = 0; d < Dim; ++d) {
         Rmin[d] = origin[d] + lDom[d].first() * hr[d];
         Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
     }
 
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
-    Kokkos::parallel_for(nloc,
-                         generate_random<Vector_t<Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                             P->R.getView(), rand_pool64, Rmin, Rmax));
+    Kokkos::parallel_for(
+        nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                  P->R.getView(), rand_pool64, Rmin, Rmax));
     Kokkos::fence();
     P->q = P->Q_m / totalP;
     P->P = 0.0;
@@ -215,9 +215,10 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(PTimer);
 
         IpplTimings::startTimer(temp);
-        Kokkos::parallel_for(P->getLocalNum(),
-                             generate_random<Vector_t<Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                                 P->P.getView(), rand_pool64, -hr, hr));
+        Kokkos::parallel_for(
+            P->getLocalNum(),
+            generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                P->P.getView(), rand_pool64, -hr, hr));
         Kokkos::fence();
         IpplTimings::stopTimer(temp);
 

@@ -74,9 +74,9 @@ void unpack_impl(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& vi
                  size_t dim = 0, bool x = false, bool y = false, bool z = false) {
     Kokkos::View<Tb*>& buffer = fd.buffer;
 
-    int first0 = intersect[0].first() + nghost - ldom[0].first();
-    int first1 = intersect[1].first() + nghost - ldom[1].first();
-    int first2 = intersect[2].first() + nghost - ldom[2].first();
+    const int first0 = intersect[0].first() + nghost - ldom[0].first();
+    const int first1 = intersect[1].first() + nghost - ldom[1].first();
+    const int first2 = intersect[2].first() + nghost - ldom[2].first();
 
     const int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
     const int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
@@ -939,7 +939,7 @@ namespace ippl {
                         // assign value and replace with analytic limit at origin (0,0,0)
                         const bool isOrig    = ((ig == 0 && jg == 0 && kg == 0));
                         const Tg analyticLim = -L_sum * L_sum * L_sum * L_sum / 8.0;
-                        const Tg value       = -((2 - (L_sum * L_sum * s * s)) * std::cos(L_sum * s)
+                        const Tg value = -((2 - (L_sum * L_sum * s * s)) * Kokkos::cos(L_sum * s)
                                            + 2 * L_sum * s * Kokkos::sin(L_sum * s) - 2)
                                          / (2 * s * s * s * s + isOrig * 1.0);
 

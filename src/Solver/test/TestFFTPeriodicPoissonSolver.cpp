@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
                         "Vector errorDr reduce", ippl::getRangePolicy<3>(view, nghost),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
                                       double& valL) {
-                            double myVal = pow(Eview_exact(i, j, k)[d], 2);
+                            double myVal = Kokkos::pow(Eview_exact(i, j, k)[d], 2);
                             valL += myVal;
                         },
                         Kokkos::Sum<double>(temp));
