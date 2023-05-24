@@ -151,6 +151,8 @@ const char* TestName = "LandauDamping";
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
+    setSignalHandler();
+
     Inform msg("LandauDamping");
     Inform msg2all("LandauDamping", INFORM_ALL_NODES);
 
@@ -377,6 +379,11 @@ int main(int argc, char* argv[]) {
         P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
+
+        if (checkSignalHandler()) {
+            msg << "Aborting timestepping loop due to signal " << interruptSignalReceived << endl;
+            break;
+        }
     }
 
     msg << "LandauDamping: End." << endl;

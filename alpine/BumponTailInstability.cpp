@@ -237,6 +237,9 @@ private:
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
+
+    setSignalHandler();
+
     Inform msg(TestName);
     Inform msg2all(TestName, INFORM_ALL_NODES);
 
@@ -511,6 +514,11 @@ int main(int argc, char* argv[]) {
 
         if constexpr (EnablePhaseDump) {
             phase.dump(it, P);
+        }
+
+        if (checkSignalHandler()) {
+            msg << "Aborting timestepping loop due to signal " << interruptSignalReceived << endl;
+            break;
         }
     }
 
