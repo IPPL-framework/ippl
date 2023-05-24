@@ -186,7 +186,6 @@ public:
 
     // Specialization to call the stencil operator on the field
     inline T operator()(size_type i, size_type j, size_type k) const {
-        // return this->template stencilOp(this->view_m, i, j, k);
         return centered_stencil_deriv2<D, T>(this->hInvVector_m[D], this->view_m, i, j, k);
     }
 };
@@ -219,8 +218,6 @@ public:
     typedef DiffOpChain<OpDim::X, Dim, T, DiffX, FView_t> colOpX_t;
     typedef DiffOpChain<OpDim::Y, Dim, T, DiffY, FView_t> colOpY_t;
     typedef DiffOpChain<OpDim::Z, Dim, T, DiffZ, FView_t> colOpZ_t;
-
-    // GeneralizedHessOp(GeneralizedHessOp<T,ReturnType,DiffX,DiffY,DiffZ>&& source) = default;
 
     GeneralizedHessOp(const Field_t<Dim>& field, Vector_t<Dim> hInvVector)
         : GeneralDiffOpInterface<Dim, T, ReturnType>(field, hInvVector)

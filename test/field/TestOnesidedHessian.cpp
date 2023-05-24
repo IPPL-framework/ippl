@@ -316,6 +316,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // GeneralDiffOpInterface<dim, double, Matrix_t<dim>> operators[27];
     GeneralizedHessOp<dim, double, Matrix_t<dim>, DiffType::Centered, DiffType::Centered,
                       DiffType::Centered>
         operators[27];
@@ -394,10 +395,6 @@ int main(int argc, char* argv[]) {
                                 "`onesidedHess()` operator not applicable with periodic b.c.");
         }
     }
-
-    // Check if on physical boundary
-    // TODO Check how we could check this now. Previously used `getFaceNeighbors()`
-    const auto& faceNeighbors = layout.getNeighbors();
 
     // Assign initial values to subField
     result = {0.0, 0.0, 0.0};
