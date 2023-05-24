@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
                         Kokkos::Sum<double>(temp));
                     double globaltemp = 0.0;
                     MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-                    errorNr[d] = sqrt(globaltemp);
+                    errorNr[d] = std::sqrt(globaltemp);
 
                     temp = 0.0;
                     Kokkos::parallel_reduce(
@@ -196,7 +196,7 @@ int main(int argc, char* argv[]) {
                         Kokkos::Sum<double>(temp));
                     globaltemp = 0.0;
                     MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-                    errorDr[d] = sqrt(globaltemp);
+                    errorDr[d] = std::sqrt(globaltemp);
 
                     error_norm2[d] = errorNr[d] / errorDr[d];
                 }
