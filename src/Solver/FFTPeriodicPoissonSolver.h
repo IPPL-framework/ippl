@@ -41,17 +41,25 @@ namespace ippl {
         using Layout_t  = FieldLayout<Dim>;
         using Vector_t  = Vector<Trhs, Dim>;
 
-        using Base     = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
+        using Base        = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
+        using lhs_type    = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
+        using rhs_type    = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
+        using scalar_type = typename Mesh::value_type;
+        using vector_type = typename Mesh::vector_type;
 
         FFTPeriodicPoissonSolver()
             : Base() {
+            using T = typename Tlhs::value_type;
+            static_assert(std::is_floating_point<T>::value, "Not a floating point type");
+
             setDefaultParameters();
         }
 
         FFTPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs) {
+            using T = typename Tlhs::value_type;
+            static_assert(std::is_floating_point<T>::value, "Not a floating point type");
+
             setDefaultParameters();
         }
 

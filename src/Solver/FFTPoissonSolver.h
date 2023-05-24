@@ -27,13 +27,44 @@
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {
+
+    namespace detail {
+        /*!
+         * Access a view that either contains a vector field or a scalar field
+         * in such a way that the correct element access is determined at compile
+         * time, reducing the number of functions needed to achieve the same
+         * behavior for both kinds of fields
+         * @tparam isVec whether the field is a vector field
+         * @tparam - the view type
+         */
+        template <bool isVec, typename>
+        struct ViewAccess;
+
+        template <typename View>
+        struct ViewAccess<true, View> {
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim, size_t i,
+                                                              size_t j, size_t k) {
+                return view(i, j, k)[dim];
+            }
+        };
+
+        template <typename View>
+        struct ViewAccess<false, View> {
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view,
+                                                              [[maybe_unused]] unsigned dim,
+                                                              size_t i, size_t j, size_t k) {
+                return view(i, j, k);
+            }
+        };
+    }  // namespace detail
+
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     class FFTPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
     public:
         // types for LHS and RHS
         using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
         using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
-
+        using Tg       = typename Tlhs::value_type;
         // type of output
         using Base = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
 
@@ -41,8 +72,10 @@ namespace ippl {
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
         typedef Field<Trhs, Dim, Mesh, Centering> Field_t;
+        typedef Field<Tg, Dim, Mesh, Centering> Field_gt;
         typedef Field<int, Dim, Mesh, Centering> IField_t;
         typedef Field<Kokkos::complex<Trhs>, Dim, Mesh, Centering> CxField_t;
+        typedef Field<Kokkos::complex<Tg>, Dim, Mesh, Centering> CxField_gt;
         typedef Vector<Trhs, Dim> Vector_t;
 
         // define type for field layout
@@ -53,6 +86,10 @@ namespace ippl {
 
         // type for communication buffers
         using buffer_type = Communicate::buffer_type;
+
+        // types of mesh and mesh spacing
+        using vector_type = typename Mesh::vector_type;
+        using scalar_type = typename Mesh::value_type;
 
         // constructor and destructor
         FFTPoissonSolver(rhs_type& rhs, ParameterList& fftparams, std::string alg);
@@ -75,7 +112,7 @@ namespace ippl {
         void initializeFields();
 
         // communication used for multi-rank Vico-Greengard's Green's function
-        void communicateVico(Vector<int, Dim> size, typename CxField_t::view_type view_g,
+        void communicateVico(Vector<int, Dim> size, typename CxField_gt::view_type view_g,
                              const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
                              typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
                              const int nghost);
@@ -124,16 +161,16 @@ namespace ippl {
         NDIndex<Dim> domainComplex_m;  // field for the complex values of the RC transformation
 
         // mesh spacing and mesh size
-        Vector_t hr_m;
+        vector_type hr_m;
         Vector<int, Dim> nr_m;
 
         // string specifying algorithm: Hockney or Vico-Greengard
         std::string alg_m;
 
         // members for Vico-Greengard
-        CxField_t grnL_m;
+        CxField_gt grnL_m;
 
-        std::unique_ptr<FFT<CCTransform, Dim, double, Mesh, Centering>> fft4n_m;
+        std::unique_ptr<FFT<CCTransform, Dim, Tg, Mesh, Centering>> fft4n_m;
 
         std::unique_ptr<Mesh> mesh4_m;
         std::unique_ptr<FieldLayout_t> layout4_m;

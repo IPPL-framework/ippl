@@ -32,7 +32,7 @@ class Cartesian;
 template <unsigned Dim, class MFLOAT>
 std::ostream& operator<<(std::ostream&, const Cartesian<Dim, MFLOAT>&);
 
-template <unsigned Dim, class MFLOAT = double>
+template <unsigned Dim, class MFLOAT>
 class Cartesian : public Mesh<Dim> {
 public:
     // # public typedefs

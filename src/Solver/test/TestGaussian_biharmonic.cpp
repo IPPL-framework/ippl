@@ -6,9 +6,6 @@
 
 #include "Ippl.h"
 
-#include <Kokkos_MathematicalConstants.hpp>
-#include <Kokkos_MathematicalFunctions.hpp>
-
 #include "Utility/IpplTimings.h"
 
 #include "FFTPoissonSolver.h"

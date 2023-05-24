@@ -34,8 +34,8 @@ namespace ippl {
 
         NDIndex<Dim> domainComplex;
 
-        Vector<double, Dim> hComplex;
-        Vector<double, Dim> originComplex;
+        vector_type hComplex;
+        vector_type originComplex;
 
         for (unsigned d = 0; d < Dim; ++d) {
             hComplex[d]      = 1.0;
@@ -67,10 +67,9 @@ namespace ippl {
         auto view        = fieldComplex_m.getView();
         const int nghost = fieldComplex_m.getNghost();
 
-        double pi                 = Kokkos::numbers::pi_v<double>;
+        scalar_type pi            = Kokkos::numbers::pi_v<scalar_type>;
         const Mesh& mesh          = this->rhs_mp->get_mesh();
         const auto& lDomComplex   = layoutComplex_mp->getLocalNDIndex();
-        using vector_type         = typename Mesh::vector_type;
         const vector_type& origin = mesh.getOrigin();
         const vector_type& hx     = mesh.getMeshSpacing();
 
@@ -98,18 +97,18 @@ namespace ippl {
                         Vector_t kVec;
 
                         for (size_t d = 0; d < Dim; ++d) {
-                            const double Len = rmax[d] - origin[d];
-                            bool shift       = (iVec[d] > (N[d] / 2));
-                            kVec[d]          = 2 * pi / Len * (iVec[d] - shift * N[d]);
+                            const scalar_type Len = rmax[d] - origin[d];
+                            bool shift            = (iVec[d] > (N[d] / 2));
+                            kVec[d]               = 2 * pi / Len * (iVec[d] - shift * N[d]);
                         }
 
-                        double Dr = 0;
+                        scalar_type Dr = 0;
                         for (unsigned d = 0; d < Dim; ++d) {
                             Dr += kVec[d] * kVec[d];
                         }
 
-                        bool isNotZero = (Dr != 0.0);
-                        double factor  = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
+                        bool isNotZero     = (Dr != 0.0);
+                        scalar_type factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
 
                         apply<Dim>(view, args) *= factor;
                     });
@@ -122,11 +121,11 @@ namespace ippl {
                 // Compute gradient in Fourier space and then
                 // take inverse FFT.
 
-                Kokkos::complex<double> imag = {0.0, 1.0};
-                auto tempview                = tempFieldComplex_m.getView();
-                auto viewRhs                 = this->rhs_mp->getView();
-                auto viewLhs                 = this->lhs_mp->getView();
-                const int nghostL            = this->lhs_mp->getNghost();
+                Complex_t imag    = {0.0, 1.0};
+                auto tempview     = tempFieldComplex_m.getView();
+                auto viewRhs      = this->rhs_mp->getView();
+                auto viewLhs      = this->lhs_mp->getView();
+                const int nghostL = this->lhs_mp->getNghost();
 
                 for (size_t gd = 0; gd < Dim; ++gd) {
                     ippl::parallel_for(
@@ -140,23 +139,23 @@ namespace ippl {
                             Vector_t kVec;
 
                             for (size_t d = 0; d < Dim; ++d) {
-                                const double Len = rmax[d] - origin[d];
-                                bool shift       = (iVec[d] > (N[d] / 2));
-                                bool notMid      = (iVec[d] != (N[d] / 2));
+                                const scalar_type Len = rmax[d] - origin[d];
+                                bool shift            = (iVec[d] > (N[d] / 2));
+                                bool notMid           = (iVec[d] != (N[d] / 2));
                                 // For the noMid part see
                                 // https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 1
                                 kVec[d] = notMid * 2 * pi / Len * (iVec[d] - shift * N[d]);
                             }
 
-                            double Dr = 0;
+                            scalar_type Dr = 0;
                             for (unsigned d = 0; d < Dim; ++d) {
                                 Dr += kVec[d] * kVec[d];
                             }
 
                             apply<Dim>(tempview, args) = apply<Dim>(view, args);
 
-                            bool isNotZero = (Dr != 0.0);
-                            double factor  = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
+                            bool isNotZero     = (Dr != 0.0);
+                            scalar_type factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
 
                             apply<Dim>(tempview, args) *= -(imag * kVec[gd] * factor);
                         });
