@@ -140,10 +140,10 @@ namespace ippl {
         Kokkos::parallel_for(
             "ParticleAttrib::scatter", *(this->localNum_mp), KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l           = (pp(idx) - origin) * invdx + 0.5;
-                Vector<int, Dim> index  = l;
-                Vector<T, Dim> whi         = l - index;
-                Vector<T, Dim> wlo         = 1.0 - whi;
+                vector_type l          = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Dim> index = l;
+                Vector<T, Dim> whi     = l - index;
+                Vector<T, Dim> wlo     = 1.0 - whi;
 
                 Vector<size_t, Dim> args = index - lDom.first() + nghost;
 
@@ -188,10 +188,10 @@ namespace ippl {
         Kokkos::parallel_for(
             "ParticleAttrib::gather", *(this->localNum_mp), KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l           = (pp(idx) - origin) * invdx + 0.5;
-                Vector<int, Dim> index  = l;
-                Vector<T,Dim> whi		= l - index;
-                Vector<T,Dim> wlo		= 1.0 - whi;
+                vector_type l          = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Dim> index = l;
+                Vector<T, Dim> whi     = l - index;
+                Vector<T, Dim> wlo     = 1.0 - whi;
 
                 Vector<size_t, Dim> args = index - lDom.first() + nghost;
 
@@ -207,15 +207,17 @@ namespace ippl {
      *
      */
 
-    template <typename P1, typename Tf, unsigned Dim, class M, class C, typename P2, class... Properties>
-    inline void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<Tf, Dim, M, C>& f,
-                        const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) {
+    template <typename Tp1, typename Tf, unsigned Dim, class M, class C, typename Tp2,
+              class... Properties>
+    inline void scatter(const ParticleAttrib<Tp1, Properties...>& attrib, Field<Tf, Dim, M, C>& f,
+                        const ParticleAttrib<Vector<Tp2, Dim>, Properties...>& pp) {
         attrib.scatter(f, pp);
     }
 
-    template <typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
-    inline void gather(ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-                       const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) {
+    template <typename Tp1, typename Tf, unsigned Dim, class M, class C, typename Tp2,
+              class... Properties>
+    inline void gather(ParticleAttrib<Tp1, Properties...>& attrib, Field<Tf, Dim, M, C>& f,
+                       const ParticleAttrib<Vector<Tp2, Dim>, Properties...>& pp) {
         attrib.gather(f, pp);
     }
 

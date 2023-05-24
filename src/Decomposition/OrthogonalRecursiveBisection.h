@@ -33,17 +33,16 @@
 namespace ippl {
     /*
      * @class OrthogonalRecursiveBisection
-     * @tparam Tf type of field 
+     * @tparam Tf type of field
      * @tparam Dim dimension
      * @tparam M mesh
      * @tparam Tp type of particle position. If not specified, it will be equal to the field's type
      */
 
-    template<class Tf, unsigned Dim, class Mesh, class Centering, class Tp=Tf>
+    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp = Tf>
     class OrthogonalRecursiveBisection {
     public:
-        using view_type = typename detail::ViewType<Tp, Dim>::view_type;
-	using field_view_type = typename detail::ViewType<Tf, Dim>::view_type;
+        using field_view_type = typename detail::ViewType<Tf, Dim>::view_type;
 
         // Weight for reduction
         Field<Tf, Dim, Mesh, Centering> bf_m;
@@ -55,7 +54,7 @@ namespace ippl {
          * @param rho Density field
          */
         void initialize(FieldLayout<Dim>& fl, Mesh& mesh,
-                        const Field<Tf,Dim,Mesh, Centering>& rho);
+                        const Field<Tf, Dim, Mesh, Centering>& rho);
 
         /*!
          * Performs scatter operation of particle positions in field (weights) and
@@ -64,8 +63,7 @@ namespace ippl {
          * @param fl FieldLayout
          * @param isFirstRepartition boolean which tells whether to scatter or not
          */
-        bool binaryRepartition(const ParticleAttrib<Vector<Tp,Dim>>& R,
-                               FieldLayout<Dim>& fl,
+        bool binaryRepartition(const ParticleAttrib<Vector<Tp, Dim>>& R, FieldLayout<Dim>& fl,
                                const bool& isFirstRepartition);
 
         /*!
@@ -81,14 +79,13 @@ namespace ippl {
          * @param dom Domain to reduce
          * @param cutAxis Index of cut axis
          */
-        void perpendicularReduction(std::vector<Tp>& res, unsigned int cutAxis,
-                                                         NDIndex<Dim>& dom);
+        void perpendicularReduction(std::vector<Tf>& res, unsigned int cutAxis, NDIndex<Dim>& dom);
 
         /*!
          * Find median of array
          * @param w Array of real numbers
          */
-        int findMedian(std::vector<Tp>& w);
+        int findMedian(std::vector<Tf>& w);
 
         /*!
          * Splits the domain given by the iterator along the cut axis at the median,
@@ -106,7 +103,7 @@ namespace ippl {
          * Scattering of particle positions in field using a CIC method
          * @param r Weights
          */
-        void scatterR(const ParticleAttrib<Vector<Tp,Dim>>& r);
+        void scatterR(const ParticleAttrib<Vector<Tp, Dim>>& r);
 
     };  // class
 

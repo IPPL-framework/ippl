@@ -236,8 +236,8 @@ TEST_F(BareFieldTest, AllFuncs) {
     apply(check, fields);
 }
 
-int main(int argc, char *argv[]) {
-    Ippl ippl(argc,argv);
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

@@ -277,7 +277,7 @@ namespace ippl {
 
                 const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
 
-                Trhs r      = Kokkos::real(Kokkos::sqrt(view(i, j, k)));
+                Trhs r        = Kokkos::real(Kokkos::sqrt(view(i, j, k)));
                 view(i, j, k) = (!isOrig) * ke * (Kokkos::erf(alpha * r) / r);
             });
 

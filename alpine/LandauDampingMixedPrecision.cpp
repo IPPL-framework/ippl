@@ -1,5 +1,10 @@
 // Landau Damping Test, variant with mixed precision.
-//   Usage:
+// In order to avoid eccessive error when scattering from grid-points to the particles,
+// the charge and the scalar field are kept in double precision. The Mesh object is also
+// in double precision, as it leads to a higher precision without affecting memory negatively.
+// Everything else (namely the vector field E and the particle position) are in single
+// precision, since the choice increases memory saving, without losing precision.
+//    Usage:
 //     srun ./LandauDamping <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
 //     ny       = No. cell-centered points in the y-direction
@@ -51,7 +56,7 @@ template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
     int max_iter = 20;
-    double pi    = Kokkos::numbers::pi_v<double>;
+    T pi         = Kokkos::numbers::pi_v<T>;
 
     T k, alpha, u;
 
@@ -80,11 +85,10 @@ struct Newton1D {
     void solve(T& x) {
         int iterations = 0;
         while (iterations < max_iter && Kokkos::fabs(f(x)) > tol) {
-          x = x - (f(x) / fprime(x));
-          iterations += 1;
+            x = x - (f(x) / fprime(x));
+            iterations += 1;
         }
     }
-
 };
 
 template <typename T, class GeneratorPool, unsigned Dim>
@@ -130,13 +134,14 @@ struct generate_random {
     }
 };
 
-double CDF(const double& x, const double& alpha, const double& k) {
-    double cdf = x + (alpha / k) * std::sin(k * x);
+float CDF(const float& x, const float& alpha, const float& k) {
+    float cdf = x + (alpha / k) * std::sin(k * x);
     return cdf;
 }
 
 KOKKOS_FUNCTION
-double PDF(const Vector_t<Dim>& xvec, const double& alpha, const Vector_t<Dim>& kw, const unsigned Dim) {
+double PDF(const Vector_t<double, Dim>& xvec, const double& alpha, const Vector_t<double, Dim>& kw,
+           const unsigned Dim) {
     double pdf = 1.0;
 
     for (unsigned d = 0; d < Dim; ++d) {
@@ -155,10 +160,10 @@ int main(int argc, char* argv[]) {
 
     Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
-    auto start                = std::chrono::high_resolution_clock::now();
-    int arg = 1;
+    auto start = std::chrono::high_resolution_clock::now();
+    int arg    = 1;
 
-    ippl::Vector<int, Dim> nr;
+    Vector_t<int, Dim> nr;
     for (unsigned d = 0; d < Dim; d++) {
         nr[d] = std::atoi(argv[arg++]);
     }
@@ -178,13 +183,9 @@ int main(int argc, char* argv[]) {
     const size_type totalP = std::atoll(argv[arg++]);
     const unsigned int nt  = std::atoi(argv[arg++]);
 
-    msg << "Landau damping"
-        << endl
-        << "nt " << nt << " Np= "
-        << totalP << " grid = " << nr
-        << endl;
+    msg << "Landau damping" << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-    using bunch_type = ChargedParticles<PLayout_t<Dim, float>, Dim, float>;
+    using bunch_type = ChargedParticles<PLayout_t<float, Dim>, float, Dim>;
 
     std::unique_ptr<bunch_type> P;
 
@@ -199,21 +200,21 @@ int main(int argc, char* argv[]) {
     }
 
     // create mesh and layout objects for this problem domain
-    Vector_t<Dim, float> kw = 0.5;
-    float alpha = 0.05;
-    Vector_t<Dim> rmin(0.0);
-    Vector_t<Dim> rmax = 2 * pi / kw;
+    Vector_t<float, Dim> kw = 0.5;
+    float alpha             = 0.05;
+    Vector_t<double, Dim> rmin(0.0);
+    Vector_t<double, Dim> rmax = 2 * pi / kw;
 
-    Vector_t<Dim> hr     = rmax / nr;
+    Vector_t<double, Dim> hr = rmax / nr;
     // Q = -\int\int f dx dv
-    double Q             = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
-    Vector_t<Dim> origin = rmin;
-    const double dt      = 0.5 * hr[0];
+    double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
+    Vector_t<double, Dim> origin = rmin;
+    const double dt              = 0.5 * hr[0];
 
     const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);
     FieldLayout_t FL(domain, decomp, isAllPeriodic);
-    PLayout_t<Dim, float> PL(FL, mesh);
+    PLayout_t<float, Dim> PL(FL, mesh);
 
     std::string solver = argv[arg++];
     P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
@@ -243,7 +244,7 @@ int main(int argc, char* argv[]) {
             "Assign initial rho based on PDF", ippl::getRangePolicy<Dim>(rhoview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
-                Vector_t<Dim> xvec = args;
+                Vector_t<double, Dim> xvec = args;
                 for (unsigned d = 0; d < Dim; d++) {
                     xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
                 }
@@ -264,10 +265,10 @@ int main(int argc, char* argv[]) {
     IpplTimings::startTimer(particleCreation);
 
     typedef ippl::detail::RegionLayout<float, Dim, Mesh_t<Dim>> RegionLayout_t;
-    const RegionLayout_t& RLayout = PL.getRegionLayout();
+    const RegionLayout_t& RLayout                           = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_t<Dim, float> Nr, Dr, minU, maxU;
-    int myRank = Ippl::Comm->rank();
+    Vector_t<float, Dim> Nr, Dr, minU, maxU;
+    int myRank   = Ippl::Comm->rank();
     float factor = 1;
     for (unsigned d = 0; d < Dim; ++d) {
         Nr[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d])
@@ -285,15 +286,15 @@ int main(int argc, char* argv[]) {
 
     int rest = (int)(totalP - Total_particles);
 
-    if (Ippl::Comm->rank() < rest){
+    if (Ippl::Comm->rank() < rest) {
         ++nloc;
     }
 
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
-    Kokkos::parallel_for(nloc,
-                         generate_random<Vector_t<Dim, float>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                         P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+    Kokkos::parallel_for(
+        nloc, generate_random<Vector_t<float, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                  P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
     Kokkos::fence();
     Ippl::Comm->barrier();

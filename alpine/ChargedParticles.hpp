@@ -18,6 +18,8 @@
 
 #include "Ippl.h"
 
+#include <csignal>
+
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
 
@@ -25,7 +27,7 @@
 template <unsigned Dim = 3>
 using Mesh_t = ippl::UniformCartesian<double, Dim>;
 
-template <unsigned Dim = 3, typename T=double>
+template <typename T, unsigned Dim = 3>
 using PLayout_t = typename ippl::ParticleSpatialLayout<T, Dim, Mesh_t<Dim>>;
 
 template <unsigned Dim = 3>
@@ -34,51 +36,85 @@ using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
 template <unsigned Dim = 3>
 using FieldLayout_t = ippl::FieldLayout<Dim>;
 
-template <unsigned Dim = 3, typename T=double>
+template <typename T = double, unsigned Dim = 3>
 using ORB = ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t<Dim>, Centering_t<Dim>, T>;
 
 using size_type = ippl::detail::size_type;
 
-template <unsigned Dim = 3, typename T=double>
-using Vector = ippl::Vector<T, Dim>;
-
-template <unsigned Dim = 3, typename T=double>
+template <typename T, unsigned Dim = 3>
 using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
 
-template <unsigned Dim = 3, typename T=double>
-using Vector_t = Vector<Dim, T>;
+template <typename T, unsigned Dim = 3>
+using Vector_t = ippl::Vector<T, Dim>;
 
-template <unsigned Dim = 3, typename T=double>
-using Field_t = Field<Dim, T>;
+template <unsigned Dim = 3>
+using Field_t = Field<double, Dim>;
 
-template <unsigned Dim = 3, typename T=double>
-using VField_t = Field<Dim, Vector_t<Dim, T>>;
+template <typename T = double, unsigned Dim = 3>
+using VField_t = Field<Vector_t<T, Dim>, Dim>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
-template <unsigned Dim = 3, typename T=double>
+template <typename T = double, unsigned Dim = 3>
 using CGSolver_t = ippl::ElectrostaticsCG<T, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
-template <unsigned Dim = 3, typename T=double>
+template <typename T = double, unsigned Dim = 3>
 using FFTSolver_t =
-    ippl::FFTPeriodicPoissonSolver<Vector_t<Dim, T>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+    ippl::FFTPeriodicPoissonSolver<Vector_t<T, Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 
-template <unsigned Dim = 3, typename T=double>
+template <typename T = double, unsigned Dim = 3>
 using Solver_t =
-    std::conditional_t<Dim == 2 || Dim == 3, std::variant<CGSolver_t<Dim, T>, FFTSolver_t<Dim, T>>,
-                       std::variant<CGSolver_t<Dim, T>>>;
+    std::conditional_t<Dim == 2 || Dim == 3, std::variant<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>>,
+                       std::variant<CGSolver_t<T, Dim>>>;
 
 const double pi = Kokkos::numbers::pi_v<double>;
 
 // Test programs have to define this variable for VTK dump purposes
 extern const char* TestName;
 
-template<typename T>
-void dumpVTK(VField_t<3, T>& E, int nx, int ny, int nz, int iteration, double dx, double dy,
+// Signal handling
+int interruptSignalReceived = 0;
+
+/*!
+ * Signal handler records the received signal
+ * @param signal received signal
+ */
+void interruptHandler(int signal) {
+    interruptSignalReceived = signal;
+}
+
+/*!
+ * Checks whether a signal was received
+ * @return Signal handler was called
+ */
+bool checkSignalHandler() {
+    Ippl::Comm->barrier();
+    return interruptSignalReceived != 0;
+}
+
+/*!
+ * Sets up the signal handler
+ */
+void setSignalHandler() {
+    struct sigaction sa;
+    sa.sa_handler = interruptHandler;
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGTERM, &sa, NULL) == -1) {
+        std::cerr << Ippl::Comm->rank() << ": failed to set up signal handler for SIGTERM ("
+                  << SIGTERM << ")" << std::endl;
+    }
+    if (sigaction(SIGINT, &sa, NULL) == -1) {
+        std::cerr << Ippl::Comm->rank() << ": failed to set up signal handler for SIGINT ("
+                  << SIGINT << ")" << std::endl;
+    }
+}
+
+template <typename T>
+void dumpVTK(VField_t<T, 3>& E, int nx, int ny, int nz, int iteration, double dx, double dy,
              double dz) {
-    typename VField_t<3, T>::view_type::host_mirror_type host_view = E.getHostMirror();
+    typename VField_t<T, 3>::view_type::host_mirror_type host_view = E.getHostMirror();
 
     std::stringstream fname;
     fname << "data/ef_";
@@ -148,33 +184,33 @@ void dumpVTK(Field_t<3>& rho, int nx, int ny, int nz, int iteration, double dx, 
     }
 }
 
-template <class PLayout, unsigned Dim = 3, typename T = double>
+template <class PLayout, typename T, unsigned Dim = 3>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
 public:
-    VField_t<Dim, T> E_m;
+    VField_t<T, Dim> E_m;
     Field_t<Dim> rho_m;
-    Field_t<Dim, T> phi_m;
+    Field<T, Dim> phi_m;
 
     typedef ippl::BConds<T, Dim, Mesh_t<Dim>, Centering_t<Dim>> bc_type;
     bc_type allPeriodic;
 
     // ORB
-    ORB<Dim, T> orb;
+    ORB<T, Dim> orb;
 
-    Vector<Dim, T> nr_m;
+    Vector_t<T, Dim> nr_m;
 
     ippl::e_dim_tag decomp_m[Dim];
 
-    Vector_t<Dim> hr_m;
-    Vector_t<Dim> rmin_m;
-    Vector_t<Dim> rmax_m;
+    Vector_t<double, Dim> hr_m;
+    Vector_t<double, Dim> rmin_m;
+    Vector_t<double, Dim> rmax_m;
 
     std::string stype_m;
 
     double Q_m;
 
 private:
-    Solver_t<Dim, T> solver_m;
+    Solver_t<T, Dim> solver_m;
 
 public:
     double time_m;
@@ -201,8 +237,9 @@ public:
         setPotentialBCs();
     }
 
-    ChargedParticles(PLayout& pl, Vector_t<Dim> hr, Vector_t<Dim> rmin, Vector_t<Dim> rmax,
-                     ippl::e_dim_tag decomp[Dim], double Q, std::string solver)
+    ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
+                     Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
+                     std::string solver)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
@@ -222,8 +259,8 @@ public:
         // simply assumes them
         if (stype_m == "CG") {
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                allPeriodic[i] = std::make_shared<
-                    ippl::PeriodicFace<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
+                allPeriodic[i] =
+                    std::make_shared<ippl::PeriodicFace<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
             }
         }
     }
@@ -240,7 +277,7 @@ public:
     void setupBCs() { setBCAllPeriodic(); }
 
     void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                      ChargedParticles<PLayout, Dim, T>& buffer, bool& isFirstRepartition) {
+                      ChargedParticles<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -277,7 +314,7 @@ public:
     }
 
     void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                     ChargedParticles<PLayout, Dim, T>& buffer, bool& isFirstRepartition) {
+                     ChargedParticles<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
 
@@ -289,7 +326,7 @@ public:
         this->updateLayout(fl, mesh, buffer, isFirstRepartition);
         if constexpr (Dim == 2 || Dim == 3) {
             if (stype_m == "FFT") {
-                std::get<FFTSolver_t<Dim, T>>(solver_m).setRhs(rho_m);
+                std::get<FFTSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
             }
         }
     }
@@ -346,7 +383,7 @@ public:
 
     void gatherCIC() { gather(this->E, E_m, this->R); }
 
-    void scatterCIC(size_type totalP, unsigned int iteration, Vector_t<Dim>& hrField) {
+    void scatterCIC(size_type totalP, unsigned int iteration, Vector_t<double, Dim>& hrField) {
         Inform m("scatter ");
 
         rho_m = 0.0;
@@ -405,7 +442,7 @@ public:
 
     void runSolver() {
         if (stype_m == "CG") {
-            CGSolver_t<Dim, T>& solver = std::get<CGSolver_t<Dim, T>>(solver_m);
+            CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(solver_m);
             solver.solve();
 
             if (Ippl::Comm->rank() == 0) {
@@ -428,7 +465,7 @@ public:
             Ippl::Comm->barrier();
         } else if (stype_m == "FFT") {
             if constexpr (Dim == 2 || Dim == 3) {
-                std::get<FFTSolver_t<Dim, T>>(solver_m).solve();
+                std::get<FFTSolver_t<T, Dim>>(solver_m).solve();
             }
         } else {
             throw std::runtime_error("Unknown solver type");
@@ -444,12 +481,12 @@ public:
 
         solver.setRhs(rho_m);
 
-        if constexpr (std::is_same_v<Solver, CGSolver_t<Dim, T>>) {
+        if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>) {
             // The CG solver computes the potential directly and
             // uses this to get the electric field
             solver.setLhs(phi_m);
             solver.setGradient(E_m);
-        } else if constexpr (std::is_same_v<Solver, FFTSolver_t<Dim, T>>) {
+        } else if constexpr (std::is_same_v<Solver, FFTSolver_t<T, Dim>>) {
             // The periodic Poisson solver computes the electric
             // field directly
             solver.setLhs(E_m);
@@ -458,17 +495,17 @@ public:
 
     void initCGSolver() {
         ippl::ParameterList sp;
-        sp.add("output_type", CGSolver_t<Dim, T>::GRAD);
+        sp.add("output_type", CGSolver_t<T, Dim>::GRAD);
         // Increase tolerance in the 1D case
         sp.add("tolerance", 1e-10);
 
-        initSolverWithParams<CGSolver_t<Dim,T>>(sp);
+        initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
 
     void initFFTSolver() {
         if constexpr (Dim == 2 || Dim == 3) {
             ippl::ParameterList sp;
-            sp.add("output_type", FFTSolver_t<Dim,T>::GRAD);
+            sp.add("output_type", FFTSolver_t<T, Dim>::GRAD);
             sp.add("use_heffte_defaults", false);
             sp.add("use_pencils", true);
             sp.add("use_reorder", false);
@@ -476,7 +513,7 @@ public:
             sp.add("comm", ippl::p2p_pl);
             sp.add("r2c_direction", 0);
 
-            initSolverWithParams<FFTSolver_t<Dim,T>>(sp);
+            initSolverWithParams<FFTSolver_t<T, Dim>>(sp);
         } else {
             throw std::runtime_error("Unsupported dimensionality for FFT solver");
         }
@@ -498,13 +535,11 @@ public:
         Energy *= 0.5;
         double gEnergy = 0.0;
 
-	
-
         MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
-        Vector_t<Dim, T> normE;
+        Vector_t<T, Dim> normE;
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         for (unsigned d = 0; d < Dim; ++d) {
@@ -518,8 +553,8 @@ public:
                     valL += myVal;
                 },
                 Kokkos::Sum<T>(temp));
-            T globaltemp = 0.0;
-	    MPI_Datatype mpi_type = get_mpi_datatype<T>(temp); 
+            T globaltemp          = 0.0;
+            MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
             MPI_Reduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, 0, Ippl::getComm());
             normE[d] = std::sqrt(globaltemp);
         }
@@ -663,8 +698,8 @@ public:
     }
 
     void dumpParticleData() {
-        typename ParticleAttrib<Vector_t<Dim, T>>::HostMirror R_host = this->R.getHostMirror();
-        typename ParticleAttrib<Vector_t<Dim, T>>::HostMirror P_host = this->P.getHostMirror();
+        typename ParticleAttrib<Vector_t<T, Dim>>::HostMirror R_host = this->R.getHostMirror();
+        typename ParticleAttrib<Vector_t<T, Dim>>::HostMirror P_host = this->P.getHostMirror();
         Kokkos::deep_copy(R_host, this->R.getView());
         Kokkos::deep_copy(P_host, P.getView());
         std::stringstream pname;

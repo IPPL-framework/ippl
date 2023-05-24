@@ -37,26 +37,26 @@ namespace ippl {
          * @tparam isVec whether the field is a vector field
          * @tparam - the view type
          */
-        template <bool isVec, typename> struct ViewAccess;
+        template <bool isVec, typename>
+        struct ViewAccess;
 
         template <typename View>
         struct ViewAccess<true, View> {
-            KOKKOS_INLINE_FUNCTION
-            constexpr static auto& get(View&& view, unsigned dim,
-                                       size_t i, size_t j, size_t k) {
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim, size_t i,
+                                                              size_t j, size_t k) {
                 return view(i, j, k)[dim];
             }
         };
 
-        template<typename View>
+        template <typename View>
         struct ViewAccess<false, View> {
-            KOKKOS_INLINE_FUNCTION
-            constexpr static auto& get(View&& view, [[maybe_unused]] unsigned dim,
-                                       size_t i, size_t j, size_t k) {
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view,
+                                                              [[maybe_unused]] unsigned dim,
+                                                              size_t i, size_t j, size_t k) {
                 return view(i, j, k);
             }
         };
-    }
+    }  // namespace detail
 
     template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
     class FFTPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
@@ -64,7 +64,7 @@ namespace ippl {
         // types for LHS and RHS
         using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
         using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
-	using Tg = typename Tlhs::value_type;
+        using Tg       = typename Tlhs::value_type;
         // type of output
         using Base = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
 
@@ -81,15 +81,15 @@ namespace ippl {
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
 
-	// define a type for the 3 dimensional real to complex Fourier transform
+        // define a type for the 3 dimensional real to complex Fourier transform
         typedef FFT<RCTransform, Dim, Trhs, Mesh, Centering> FFT_t;
 
         // type for communication buffers
         using buffer_type = Communicate::buffer_type;
-	
-	//types of mesh and mesh spacing
-	using vector_type = typename Mesh::vector_type;
-	using scalar_type = typename Mesh::value_type;
+
+        // types of mesh and mesh spacing
+        using vector_type = typename Mesh::vector_type;
+        using scalar_type = typename Mesh::value_type;
 
         // constructor and destructor
         FFTPoissonSolver(rhs_type& rhs, ParameterList& fftparams, std::string alg);
@@ -182,6 +182,7 @@ namespace ippl {
 
         // buffer for communication
         detail::FieldBufferData<Trhs> fd_m;
+
     protected:
         virtual void setDefaultParameters() override {
             using heffteBackend       = typename FFT_t::heffteBackend;
