@@ -250,26 +250,26 @@ KOKKOS_INLINE_FUNCTION MatrixD_t cholesky3x3(const MatrixD_t& M) {
     return L;
 
     // Check that there has been no NaN computed
-    //bool foundNaN = false;
-    //for (int i = 0; i < 3; ++i) {
-        //for (int j = 0; j <= i; ++j) {
-            //if (L[i][j] == L[i][j]) {
-                //foundNaN = true;
-            //}
-        //}
+    // bool foundNaN = false;
+    // for (int i = 0; i < 3; ++i) {
+    // for (int j = 0; j <= i; ++j) {
+    // if (L[i][j] == L[i][j]) {
+    // foundNaN = true;
+    //}
+    //}
     //}
 
     //// Print input Matrix M
-    //if (foundNaN) {
-        //for (int i = 0; i < 3; ++i) {
-            //for (int j = 0; j < 3; ++j) {
-                //std::cout << M[i][j] << ' ';
-            //}
-            //std::cout << '\n';
-        //}
+    // if (foundNaN) {
+    // for (int i = 0; i < 3; ++i) {
+    // for (int j = 0; j < 3; ++j) {
+    // std::cout << M[i][j] << ' ';
     //}
-    //PAssert(foundNaN == false);
-    //return L;
+    // std::cout << '\n';
+    //}
+    //}
+    // PAssert(foundNaN == false);
+    // return L;
 }
 
 // Only pick the diagonal values of the input Matrix
@@ -300,11 +300,13 @@ KOKKOS_INLINE_FUNCTION MatrixD_t LDLtCholesky3x3(const MatrixD_t& M) {
 
     // Eliminate value at [2,1]
     row_factors[2] = M[2][1] / M[1][1];
-    M[2] = M[2] - row_factors[2] * M[1];
+    M[2]           = M[2] - row_factors[2] * M[1];
 
-    // Check that the input matrix semi-positive definite
+    // Check that the input matrix is semi-positive definite
     VectorD_t D = {M[0][0], M[1][1], M[2][2]};
-    PAssert_GE(D, VectorD_t{})
+    PAssert_GE(M[0][0], 0.0);
+    PAssert_GE(M[1][1], 0.0);
+    PAssert_GE(M[2][2], 0.0);
 
     // Compute Q = sqrt(D) * L^T
     // Where D is diag(M) and `row-factors` are the lower triangular values of L^T
@@ -321,9 +323,9 @@ KOKKOS_INLINE_FUNCTION MatrixD_t LDLtCholesky3x3(const MatrixD_t& M) {
 
 KOKKOS_INLINE_FUNCTION VectorD_t matrixVectorMul3x3(const MatrixD_t& M, const VectorD_t& v) {
     VectorD_t res;
-    res[0] = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2];
-    res[1] = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2];
-    res[2] = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2];
+    res[0] = dot(M[0], v).apply();
+    res[1] = dot(M[1], v).apply();
+    res[2] = dot(M[2], v).apply();
     return res;
 }
 
