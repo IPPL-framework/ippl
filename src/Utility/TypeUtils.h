@@ -195,7 +195,14 @@ namespace ippl {
                                     "Unreachable state");
             }
 
+            template <typename Space>
+            void initElements() {
+                elements_m[spaceToIndex<Space>()] = Type<Space>{};
+            }
+
         public:
+            MultispaceContainer() { (initElements<Spaces>(), ...); }
+
             template <typename Space>
             Type<Space>& get() {
                 return std::get<Type<Space>>(elements_m[spaceToIndex<Space>()]);
