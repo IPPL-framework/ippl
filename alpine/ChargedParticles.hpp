@@ -442,7 +442,7 @@ public:
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
 
-        // dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
+        dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], iteration, hrField[0], hrField[1], hrField[2]);
 
         // rho = rho_e - rho_i
         double size = 1;
@@ -592,20 +592,23 @@ public:
     void dumpData() {
         auto Pview = P.getView();
 
-        double Energy = 0.0;
+        double kinEnergy = 0.0;
+        double potEnergy = 0.0;
+
+        potEnergy = 0.5 * hr_m[0] * hr_m[1] * hr_m[2] * rho_m.sum();
 
         Kokkos::parallel_reduce(
-            "Particle Energy", this->getLocalNum(),
+            "Particle Kinetic Energy", this->getLocalNum(),
             KOKKOS_LAMBDA(const int i, double& valL) {
                 double myVal = dot(Pview(i), Pview(i)).apply();
                 valL += myVal;
             },
-            Kokkos::Sum<double>(Energy));
+            Kokkos::Sum<double>(kinEnergy));
 
-        Energy *= 0.5;
-        double gEnergy = 0.0;
+        kinEnergy *= 0.5;
+        double gkinEnergy = 0.0;
 
-        MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
@@ -639,14 +642,16 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if (time_m == 0.0) {
-                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2";
+                csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2, "
+                          "Ex_norm2, Ey_norm2, Ez_norm2";
                 for (unsigned d = 0; d < Dim; d++) {
                     csvout << "E" << d << "norm2, ";
                 }
                 csvout << endl;
             }
 
-            csvout << time_m << " " << gEnergy << " " << rhoNorm_m << " ";
+            csvout << time_m << " " << potEnergy << " " << gkinEnergy << " "
+                   << potEnergy + gkinEnergy << " " << rhoNorm_m << " ";
             for (unsigned d = 0; d < Dim; d++) {
                 csvout << normE[d] << " ";
             }
