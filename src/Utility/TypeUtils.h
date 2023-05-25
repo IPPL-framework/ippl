@@ -27,18 +27,6 @@ namespace ippl {
     namespace detail {
 
         /*!
-         * Instantiates a parameter pack with all the available Kokkos memory spaces
-         */
-        template <template <typename...> class Type>
-        using TypeForAllSpaces =
-            Type<Kokkos::HostSpace, Kokkos::SharedSpace, Kokkos::SharedHostPinnedSpace
-#ifdef KOKKOS_ENABLE_CUDA
-                 ,
-                 Kokkos::CudaSpace, Kokkos::CudaHostPinnedSpace, Kokkos::CudaUVMSpace
-#endif
-                 >;
-
-        /*!
          * Variant verification struct
          * Checks that a given type has not already been added to a variant
          * @tparam Check the type for whose presence to check
@@ -171,8 +159,32 @@ namespace ippl {
         using VariantWithVerifier =
             typename ConstructVariant<std::variant<Types...>, std::variant<>, Verifier>::type;
 
+        /*!
+         * Instantiates a parameter pack with all the available Kokkos memory spaces
+         */
+        template <template <typename...> class Type>
+        struct TypeForAllSpaces {
+            using unique_spaces = VariantFromUniqueTypes<
+                Kokkos::HostSpace, Kokkos::SharedSpace, Kokkos::SharedHostPinnedSpace
+#ifdef KOKKOS_ENABLE_CUDA
+                ,
+                Kokkos::CudaSpace, Kokkos::CudaHostPinnedSpace, Kokkos::CudaUVMSpace
+#endif
+                >;
+
+            template <typename>
+            struct Forward;
+
+            template <typename... Spaces>
+            struct Forward<std::variant<Spaces...>> {
+                using type = Type<Spaces...>;
+            };
+
+            using type = typename Forward<unique_spaces>::type;
+        };
+
         template <template <typename> class Type, typename... Spaces>
-        struct MultispaceContainer {
+        class MultispaceContainer {
             template <typename T, typename... Ts>
             using Verifier = typename WrapUnique<Type>::template Verifier<T, Ts...>;
 
@@ -219,7 +231,7 @@ namespace ippl {
             template <typename... Spaces>
             using container_type = MultispaceContainer<Type, Spaces...>;
 
-            using type = TypeForAllSpaces<container_type>;
+            using type = typename TypeForAllSpaces<container_type>::type;
         };
     }  // namespace detail
 }  // namespace ippl
