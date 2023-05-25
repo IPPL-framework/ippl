@@ -233,6 +233,15 @@ namespace ippl {
 
             using type = typename TypeForAllSpaces<container_type>::type;
         };
+
+        template <typename Functor>
+        void runForAllSpaces(Functor&& f) {
+            using all_spaces = typename TypeForAllSpaces<std::variant>::type;
+            auto runner      = [&]<typename... Spaces>(const std::variant<Spaces...>&) {
+                (f.template operator()<Spaces>(), ...);
+            };
+            runner(all_spaces{});
+        }
     }  // namespace detail
 }  // namespace ippl
 
