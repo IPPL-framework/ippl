@@ -13,6 +13,13 @@ link_directories (
 set (IPPL_LIBS ippl)
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
+add_executable (TestMixedExec TestMixedExec.cpp)
+target_link_libraries (
+    TestMixedExec
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
 add_executable (TestLaplace TestLaplace.cpp)
 target_link_libraries (
     TestLaplace
