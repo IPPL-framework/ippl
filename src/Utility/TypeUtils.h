@@ -189,6 +189,10 @@ namespace ippl {
                 } else {
                     return spaceToIndex<Space, Idx + 1>();
                 }
+                // Silences incorrect nvcc warning: missing return statement at end of non-void
+                // function
+                throw IpplException("detail::MultispaceContainer::spaceToIndex",
+                                    "Unreachable state");
             }
 
         public:
