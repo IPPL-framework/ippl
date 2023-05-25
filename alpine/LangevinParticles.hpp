@@ -308,24 +308,21 @@ public:
         msg << "maxVel = " << maxVel << endl;
     }
 
-    void dumpDfield(size_t iteration, std::string folder) {
-        VField_view_t D0View = D0_m.getView();
-        VField_view_t D1View = D1_m.getView();
-        VField_view_t D2View = D2_m.getView();
+    void dumpCSVMatrix(VField_t<Dim>& M0, VField_t<Dim>& M1, VField_t<Dim>& M2, VectorD_t& hx,
+                       std::string matrixPrefix, size_t iteration, std::string folder) {
+        VField_view_t M0View = M0.getView();
+        VField_view_t M1View = M1.getView();
+        VField_view_t M2View = M2.getView();
 
-        typename VField_view_t::host_mirror_type hostD0View = D0_m.getHostMirror();
-        typename VField_view_t::host_mirror_type hostD1View = D1_m.getHostMirror();
-        typename VField_view_t::host_mirror_type hostD2View = D2_m.getHostMirror();
+        typename VField_view_t::host_mirror_type hostM0View = M0.getHostMirror();
+        typename VField_view_t::host_mirror_type hostM1View = M1.getHostMirror();
+        typename VField_view_t::host_mirror_type hostM2View = M2.getHostMirror();
 
-        Kokkos::deep_copy(hostD0View, D0View);
-        Kokkos::deep_copy(hostD1View, D1View);
-        Kokkos::deep_copy(hostD2View, D2View);
+        Kokkos::deep_copy(hostM0View, M0View);
+        Kokkos::deep_copy(hostM1View, M1View);
+        Kokkos::deep_copy(hostM2View, M2View);
 
-        const int nghost               = Fd_m.getNghost();
-        const ippl::NDIndex<Dim>& lDom = velocitySpaceFieldLayout_m.getLocalNDIndex();
-
-        double L2vec;
-        VectorD_t vVec;
+        const int nghost = Fd_m.getNghost();
 
         std::stringstream fname;
         fname << folder;
@@ -338,32 +335,25 @@ public:
         csvout.setf(std::ios::scientific, std::ios::floatfield);
 
         // Write header
-        csvout << "v,"
-               << "D0_x,D0_y,D0_z,"
-               << "D1_x,D1_y,D1_z,"
-               << "D2_x,D2_y,D2_z" << endl;
+        csvout << matrixPrefix << "0_x," << matrixPrefix << "0_y," << matrixPrefix << "0_z,"
+               << matrixPrefix << "1_x," << matrixPrefix << "1_y," << matrixPrefix << "1_z,"
+               << matrixPrefix << "2_x," << matrixPrefix << "2_y," << matrixPrefix << "2_z" << endl;
 
         // And dump into file
-        for (unsigned x = nghost; x < nv_m[0] + nghost; x++) {
-            for (unsigned y = nghost; y < nv_m[1] + nghost; y++) {
-                for (unsigned z = nghost; z < nv_m[2] + nghost; z++) {
-                    vVec = {double(x), double(y), double(z)};
-                    // Construct velocity vector at this cell
-                    for (unsigned d = 0; d < Dim; d++) {
-                        vVec[d] = (vVec[d] + lDom[d].first() - nghost + 0.5) * hv_m[d] + vmin_m[d];
-                    }
-                    L2vec = L2Norm(vVec);
-                    csvout << L2vec << "," << hostD0View(x, y, z)[0] << ","
-                           << hostD0View(x, y, z)[1] << "," << hostD0View(x, y, z)[2] << ","
-                           << hostD1View(x, y, z)[0] << "," << hostD1View(x, y, z)[1] << ","
-                           << hostD1View(x, y, z)[2] << "," << hostD2View(x, y, z)[0] << ","
-                           << hostD2View(x, y, z)[1] << "," << hostD2View(x, y, z)[2] << endl;
+        for (unsigned x = nghost; x < hx[0] + nghost; x++) {
+            for (unsigned y = nghost; y < hx[1] + nghost; y++) {
+                for (unsigned z = nghost; z < hx[2] + nghost; z++) {
+                    csvout << hostM0View(x, y, z)[0] << "," << hostM0View(x, y, z)[1] << ","
+                           << hostM0View(x, y, z)[2] << "," << hostM1View(x, y, z)[0] << ","
+                           << hostM1View(x, y, z)[1] << "," << hostM1View(x, y, z)[2] << ","
+                           << hostM2View(x, y, z)[0] << "," << hostM2View(x, y, z)[1] << ","
+                           << hostM2View(x, y, z)[2] << endl;
                 }
             }
         }
     }
 
-    void dumpFdStatistics(unsigned int iteration, std::string folder) {
+    void dumpFdField(unsigned int iteration, std::string folder) {
         // Gather from particle attributes
         gather(p_Fd_m, Fd_m, this->P);
 
@@ -492,7 +482,7 @@ public:
         // Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
         // `-1.0` prefactor is because the solver returns $- \nabla H(\vec v)$
         // Multiply with prob. density in configuration space $f(\vec r)$
-        fv_m = -1.0*(-8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m);
+        fv_m = -1.0 * (-8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m);
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);

@@ -177,12 +177,12 @@ int main(int argc, char* argv[]) {
             P->dumpBeamStatistics(it, OUT_DIR);
             P->velocityParticleCheck();
 
-            //if (it % 200 == 0) {
-                // dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F_d");
-                // dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "H(v)");
-                // P->dumpFdStatistics(it, OUT_DIR);
+            // if (it % 200 == 0) {
+            //  dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F_d");
+            //  dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "H(v)");
+            //  P->dumpFdField(it, OUT_DIR);
             //}
-            P->dumpDfield(it%2, OUT_DIR);
+            P->dumpCSVMatrix(P->D0_m, P->D1_m, P->D2_m, P->hv_m, "D", it % 2, OUT_DIR);
 
             msg << "Finished iteration " << it << endl;
             auto end = std::chrono::high_resolution_clock::now();
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
             std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
         }
     }
-    P->dumpFdStatistics(NT - 1, OUT_DIR);
+    P->dumpFdField(NT - 1, OUT_DIR);
 
     msg << "LangevinDIH: End." << endl;
     IpplTimings::stopTimer(mainTimer);

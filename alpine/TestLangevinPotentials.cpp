@@ -239,7 +239,7 @@ int main(int argc, char* argv[]) {
         P->p_Fd_m = P->p_Fd_m * P->gamma_m;
 
         // Dump actual friction coefficients
-        P->dumpFdStatistics(0, OUT_DIR);
+        P->dumpFdField(0, OUT_DIR);
 
         //////////////////////////////////////
         // COMPUTE 2nd ROSENBLUTH POTENTIAL //
@@ -293,7 +293,7 @@ int main(int argc, char* argv[]) {
         P->extractRows(P->D_m, P->D0_m, P->D1_m, P->D2_m);
 
         // Dump actual diffusion coefficients
-        P->dumpDstatistics(0, OUT_DIR);
+        P->dumpCSVMatrix(P->D0_m, P->D1_m, P->D2_m, P->hv_m, "D", 0, OUT_DIR);
 
         // Do Cholesky decomposition of $D$
         // and directly multiply with Gaussian random vector
