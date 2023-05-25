@@ -308,7 +308,7 @@ public:
         msg << "maxVel = " << maxVel << endl;
     }
 
-    void dumpDstatistics(unsigned int iteration, std::string folder) {
+    void dumpDfield(size_t iteration, std::string folder) {
         VField_view_t D0View = D0_m.getView();
         VField_view_t D1View = D1_m.getView();
         VField_view_t D2View = D2_m.getView();
@@ -329,7 +329,7 @@ public:
 
         std::stringstream fname;
         fname << folder;
-        fname << "/Dnorm_it";
+        fname << "/Dnorm_last_iteration";
         fname << std::setw(4) << std::setfill('0') << iteration;
         fname << ".csv";
 
@@ -439,6 +439,7 @@ public:
                 ippl::apply<Dim>(V1view, args) = ippl::apply<Dim>(Mview, args)[1];
                 ippl::apply<Dim>(V2view, args) = ippl::apply<Dim>(Mview, args)[2];
             });
+        Kokkos::fence();
     }
 
     void gatherHessian() {
@@ -469,7 +470,7 @@ public:
         Kokkos::parallel_for(
             "Apply Constant Focusing", this->getLocalNum(), KOKKOS_LAMBDA(const int i) {
                 KokkosRNG_t rand_gen = randPoolRef.get_state();
-                MatrixD_t Q  = cholesky3x3(MatrixD_t({pD0_view(i), pD1_view(i), pD2_view(i)}));
+                MatrixD_t Q  = LDLtCholesky3x3(MatrixD_t({pD0_view(i), pD1_view(i), pD2_view(i)}));
                 pQ0_view(i)  = Q[0];
                 pQ1_view(i)  = Q[1];
                 pQ2_view(i)  = Q[2];
@@ -489,13 +490,14 @@ public:
         scatterVelSpace();
 
         // Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
+        // `-1.0` prefactor is because the solver returns $- \nabla H(\vec v)$
         // Multiply with prob. density in configuration space $f(\vec r)$
-        fv_m = -8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
+        fv_m = -1.0*(-8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m);
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
 
-        // Solve for $\Delta_v H(\vec v)$, is stored in `Fd_m`
+        // Solve for $\Delta_v H(\vec v)$. Its gradient is stored in `Fd_m`
         frictionSolver_mp->solve();
 
         // Set origin of velocity space mesh to vmin (for scatter / gather)

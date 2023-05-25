@@ -237,36 +237,86 @@ struct BeamStatistics {
     VectorD_t Neps2;
 };
 
+// Cholesky Decomposition for positive-definite matrices
 KOKKOS_INLINE_FUNCTION MatrixD_t cholesky3x3(const MatrixD_t& M) {
     MatrixD_t L;
-    L[0][0] = sqrt(M[0][0]);
+    L[0][0] = Kokkos::sqrt(M[0][0]);
     L[1][0] = M[1][0] / L[0][0];
-    L[1][1] = sqrt(M[1][1] - L[1][0] * L[1][0]);
+    L[1][1] = Kokkos::sqrt(M[1][1] - L[1][0] * L[1][0]);
     L[2][0] = M[2][0] / L[0][0];
     L[2][1] = (M[2][1] - L[2][0] * L[1][0]) / L[1][1];
-    L[2][2] = sqrt(M[2][2] - L[2][0] * L[2][0] - L[2][1] * L[2][1]);
+    L[2][2] = Kokkos::sqrt(M[2][2] - L[2][0] * L[2][0] - L[2][1] * L[2][1]);
+
+    return L;
 
     // Check that there has been no NaN computed
-    bool foundNaN = false;
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j <= i; ++j) {
-            if (L[i][j] == L[i][j]) {
-                foundNaN = true;
-            }
-        }
-    }
+    //bool foundNaN = false;
+    //for (int i = 0; i < 3; ++i) {
+        //for (int j = 0; j <= i; ++j) {
+            //if (L[i][j] == L[i][j]) {
+                //foundNaN = true;
+            //}
+        //}
+    //}
 
-    // Print input Matrix M
-    if (foundNaN) {
-        for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                std::cout << M[i][j] << ' ';
-            }
-            std::cout << '\n';
-        }
-    }
-    PAssert(foundNaN == false);
+    //// Print input Matrix M
+    //if (foundNaN) {
+        //for (int i = 0; i < 3; ++i) {
+            //for (int j = 0; j < 3; ++j) {
+                //std::cout << M[i][j] << ' ';
+            //}
+            //std::cout << '\n';
+        //}
+    //}
+    //PAssert(foundNaN == false);
+    //return L;
+}
+
+// Only pick the diagonal values of the input Matrix
+KOKKOS_INLINE_FUNCTION MatrixD_t cholesky3x3_diagonal(const MatrixD_t& M) {
+    MatrixD_t L;
+    L[0][0] = Kokkos::sqrt(M[0][0]);
+    L[1][1] = Kokkos::sqrt(M[1][1]);
+    L[2][2] = Kokkos::sqrt(M[2][2]);
     return L;
+}
+
+// Cholesky decomposition for semi-positive definite matrices
+// Avoids sqrt of negative numbers by pivoting
+// Computation is inplace
+KOKKOS_INLINE_FUNCTION MatrixD_t LDLtCholesky3x3(const MatrixD_t& M) {
+    MatrixD_t Q;
+    VectorD_t row_factors;
+
+    // Compute first row multiplicators
+    row_factors[0] = M[1][0] / M[0][0];
+    row_factors[1] = M[2][0] / M[0][0];
+
+    // Eliminate value at [1,0]
+    M[1] = M[1] - row_factors[0] * M[0];
+
+    // Eliminate value at [2,0]
+    M[2] = M[2] - row_factors[1] * M[0];
+
+    // Eliminate value at [2,1]
+    row_factors[2] = M[2][1] / M[1][1];
+    M[2] = M[2] - row_factors[2] * M[1];
+
+    // Check that the input matrix semi-positive definite
+    VectorD_t D = {M[0][0], M[1][1], M[2][2]};
+    PAssert_GE(D, VectorD_t{})
+
+    // Compute Q = sqrt(D) * L^T
+    // Where D is diag(M) and `row-factors` are the lower triangular values of L^T
+    // Loop is unrolled as we only ever do this for 3x3 Matrices
+    Q[0][0] = Kokkos::sqrt(M[0][0]);
+    Q[1][0] = row_factors[0] * Kokkos::sqrt(M[1][1]);
+    Q[1][1] = Kokkos::sqrt(M[1][1]);
+    Q[2][0] = row_factors[1] * Kokkos::sqrt(M[2][2]);
+    Q[2][1] = row_factors[2] * Kokkos::sqrt(M[2][2]);
+    Q[2][2] = Kokkos::sqrt(M[2][2]);
+
+    return Q;
 }
 
 KOKKOS_INLINE_FUNCTION VectorD_t matrixVectorMul3x3(const MatrixD_t& M, const VectorD_t& v) {
