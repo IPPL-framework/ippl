@@ -177,11 +177,12 @@ int main(int argc, char* argv[]) {
             P->dumpBeamStatistics(it, OUT_DIR);
             P->velocityParticleCheck();
 
-            if (it % 200 == 0) {
+            //if (it % 200 == 0) {
                 // dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F_d");
                 // dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "H(v)");
                 // P->dumpFdStatistics(it, OUT_DIR);
-            }
+            //}
+            P->dumpDfield(it%2, OUT_DIR);
 
             msg << "Finished iteration " << it << endl;
             auto end = std::chrono::high_resolution_clock::now();
