@@ -44,6 +44,8 @@ namespace ippl {
                                sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)> {
     public:
         typedef T value_type;
+        constexpr static unsigned dim = 1;
+
         using boolean_view_type =
             typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
         using view_type  = typename detail::ViewType<T, 1, Properties...>::view_type;

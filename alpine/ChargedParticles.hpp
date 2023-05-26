@@ -545,11 +545,11 @@ public:
         for (unsigned d = 0; d < Dim; ++d) {
             T temp = 0.0;
             ippl::parallel_reduce(
-                "Vector E reduce", ippl::getRangePolicy<Dim>(Eview, nghostE),
+                "Vector E reduce", ippl::getRangePolicy(Eview, nghostE),
                 KOKKOS_LAMBDA(const index_array_type& args, T& valL) {
-                    // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                    // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
-                    T myVal = std::pow(ippl::apply<Dim>(Eview, args)[d], 2);
+                    T myVal = std::pow(ippl::apply(Eview, args)[d], 2);
                     valL += myVal;
                 },
                 Kokkos::Sum<T>(temp));
@@ -595,11 +595,11 @@ public:
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         double temp            = 0.0;
         ippl::parallel_reduce(
-            "Ex inner product", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex inner product", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::pow(ippl::apply<Dim>(Eview, args)[0], 2);
+                double myVal = std::pow(ippl::apply(Eview, args)[0], 2);
                 valL += myVal;
             },
             Kokkos::Sum<double>(temp));
@@ -609,11 +609,11 @@ public:
 
         double tempMax = 0.0;
         ippl::parallel_reduce(
-            "Ex max norm", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex max norm", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[0]);
+                double myVal = std::fabs(ippl::apply(Eview, args)[0]);
                 if (myVal > valL) {
                     valL = myVal;
                 }
@@ -650,11 +650,11 @@ public:
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         double temp            = 0.0;
         ippl::parallel_reduce(
-            "Ex inner product", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex inner product", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::pow(ippl::apply<Dim>(Eview, args)[Dim - 1], 2);
+                double myVal = std::pow(ippl::apply(Eview, args)[Dim - 1], 2);
                 valL += myVal;
             },
             Kokkos::Sum<double>(temp));
@@ -664,11 +664,11 @@ public:
 
         double tempMax = 0.0;
         ippl::parallel_reduce(
-            "Ex max norm", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex max norm", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[Dim - 1]);
+                double myVal = std::fabs(ippl::apply(Eview, args)[Dim - 1]);
                 if (myVal > valL) {
                     valL = myVal;
                 }

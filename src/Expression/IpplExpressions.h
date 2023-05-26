@@ -37,6 +37,8 @@ namespace ippl {
          */
         template <typename E, size_t N = sizeof(E)>
         struct Expression {
+            constexpr static unsigned dim = E::dim;
+
             /*!
              * Access single element of the expression
              */
@@ -53,8 +55,11 @@ namespace ippl {
          */
         template <typename E, size_t N = sizeof(E)>
         struct CapturedExpression {
+            constexpr static unsigned dim = E::dim;
+
             template <typename... Args>
             KOKKOS_INLINE_FUNCTION auto operator()(Args... args) const {
+                static_assert(sizeof...(Args) == dim || dim == 0);
                 return reinterpret_cast<const E&>(*this)(args...);
             }
 
@@ -68,6 +73,7 @@ namespace ippl {
         template <typename T>
         struct Scalar : public Expression<Scalar<T>, sizeof(T)> {
             typedef T value_type;
+            constexpr static unsigned dim = 0;
 
             KOKKOS_FUNCTION
             Scalar(value_type val)
