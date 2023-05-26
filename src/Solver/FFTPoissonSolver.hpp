@@ -305,8 +305,7 @@ namespace ippl {
             grnL_m.initialize(*mesh4_m, *layout4_m);
 
             // create a Complex-to-Complex FFT object to transform for layout4
-            fft4n_m = std::make_unique<FFT<CCTransform, CxField_gt>>(*layout4_m,
-                                                                                   this->params_m);
+            fft4n_m = std::make_unique<FFT<CCTransform, CxField_gt>>(*layout4_m, this->params_m);
 
             IpplTimings::stopTimer(initialize_vico);
         }
@@ -835,7 +834,7 @@ namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
     void FFTPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
         const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
-        grn_mr          = 0.0;
+        grn_mr               = 0.0;
 
         if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
             vector_type l(hr_m * nr_m);

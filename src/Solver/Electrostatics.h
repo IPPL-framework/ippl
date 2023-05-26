@@ -27,7 +27,7 @@ namespace ippl {
     class Electrostatics : public Solver<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Tlhs                    = typename FieldLHS::value_type;
-        using Trhs = typename FieldRHS::value_type;
+        using Trhs                    = typename FieldRHS::value_type;
         using Base                    = Solver<FieldLHS, FieldRHS>;
 
     public:

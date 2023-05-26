@@ -63,7 +63,7 @@ namespace ippl {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Trhs                    = typename FieldRHS::value_type;
         using mesh_type               = typename FieldLHS::Mesh_t;
-        using Tg       = typename FieldLHS::value_type::value_type;
+        using Tg                      = typename FieldLHS::value_type::value_type;
 
     public:
         // type of output
