@@ -132,7 +132,7 @@ namespace ippl {
                 case 0:
                     Kokkos::parallel_for(
                         "Helper index Green field initialization",
-                        ippl::getRangePolicy<3>(view, nghost),
+                        ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int ig = i + ldom[0].first() - nghost;
@@ -151,7 +151,7 @@ namespace ippl {
                 case 1:
                     Kokkos::parallel_for(
                         "Helper index Green field initialization",
-                        ippl::getRangePolicy<3>(view, nghost),
+                        ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int jg = j + ldom[1].first() - nghost;
@@ -164,7 +164,7 @@ namespace ippl {
                 case 2:
                     Kokkos::parallel_for(
                         "Helper index Green field initialization",
-                        ippl::getRangePolicy<3>(view, nghost),
+                        ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int kg = k + ldom[2].first() - nghost;
@@ -268,7 +268,7 @@ namespace ippl {
 
         // Kokkos parallel for loop to find (0,0,0) point and regularize
         Kokkos::parallel_for(
-            "Assign Green's function ", ippl::getRangePolicy<3>(view, nghost),
+            "Assign Green's function ", ippl::getRangePolicy(view, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // go from local indices to global
                 const int ig = i + ldom[0].first() - nghost;

@@ -194,7 +194,7 @@ namespace ippl {
             ippl::parallel_reduce(
                 "ORB weight reduction", createRangePolicy<Dim>(begin, end),
                 KOKKOS_LAMBDA(const index_array_type& args, Tf& weight) {
-                    weight += apply<Dim>(data, args);
+                    weight += apply(data, args);
                 },
                 Kokkos::Sum<Tf>(tempRes));
 

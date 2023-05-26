@@ -110,11 +110,11 @@ public:
                     index_type coords[Dim] = {args...};
                     if (checkLower) {
                         coords[d] = 0;
-                        EXPECT_DOUBLE_EQ(expected, apply<Dim>(HostF, coords));
+                        EXPECT_DOUBLE_EQ(expected, apply(HostF, coords));
                     }
                     if (checkUpper) {
                         coords[d] = N - 1;
-                        EXPECT_DOUBLE_EQ(expected, apply<Dim>(HostF, coords));
+                        EXPECT_DOUBLE_EQ(expected, apply(HostF, coords));
                     }
                 });
         }

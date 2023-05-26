@@ -32,7 +32,7 @@ namespace ippl {
         ippl::parallel_reduce(
             "Field::innerProduct(Field&, Field&)", f1.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const index_array_type& args, T& val) {
-                val += apply<Dim>(view1, args) * apply<Dim>(view2, args);
+                val += apply(view1, args) * apply(view2, args);
             },
             Kokkos::Sum<T>(sum));
         T globalSum       = 0;
@@ -57,7 +57,7 @@ namespace ippl {
                 ippl::parallel_reduce(
                     "Field::norm(0)", field.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args, T& val) {
-                        T myVal = std::abs(apply<Dim>(view, args));
+                        T myVal = std::abs(apply(view, args));
                         if (myVal > val)
                             val = myVal;
                     },
@@ -73,7 +73,7 @@ namespace ippl {
                 ippl::parallel_reduce(
                     "Field::norm(int) general", field.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args, T& val) {
-                        val += std::pow(std::abs(apply<Dim>(view, args)), p);
+                        val += std::pow(std::abs(apply(view, args)), p);
                     },
                     Kokkos::Sum<T>(local));
                 T globalSum       = 0;
