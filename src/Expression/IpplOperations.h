@@ -38,12 +38,26 @@ namespace ippl {
         return view(coords[Idx]...);
     }
 
-    struct ExtractRank {
+    /*!
+     * Extracts the mathematical rank of an expression (i.e. the number of dimensions) based on
+     * its type
+     */
+    struct ExtractExpressionRank {
+        /*!
+         * Extracts the extent of an array-like expression
+         * @tparam Coords the array type
+         * @return The array's rank
+         */
         template <typename Coords, std::enable_if_t<std::is_array_v<Coords>, int> = 0>
         KOKKOS_INLINE_FUNCTION constexpr static unsigned getRank() {
             return std::extent_v<Coords>;
         }
 
+        /*!
+         * Extracts the rank of an expression type
+         * @tparam Coords the expression type that evaluates to a set of coordinates
+         * @return The number of dimensions in the expression
+         */
         template <typename Coords, std::enable_if_t<std::is_class_v<Coords>, int> = 0>
         KOKKOS_INLINE_FUNCTION constexpr static unsigned getRank() {
             return Coords::dim;
@@ -61,7 +75,7 @@ namespace ippl {
      */
     template <typename View, typename Coords>
     KOKKOS_INLINE_FUNCTION constexpr decltype(auto) apply(const View& view, const Coords& coords) {
-        using Indices = std::make_index_sequence<ExtractRank::getRank<Coords>()>;
+        using Indices = std::make_index_sequence<ExtractExpressionRank::getRank<Coords>()>;
         return apply_impl(view, coords, Indices{});
     }
 
