@@ -32,14 +32,16 @@ namespace ippl {
         return fun(arg);                        \
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    class ElectrostaticsCG : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
+    template <typename FieldLHS, typename FieldRHS = FieldLHS>
+    class ElectrostaticsCG : public Electrostatics<FieldLHS, FieldRHS> {
+        using Tlhs = typename FieldLHS::value_type;
+
     public:
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
-        using OpRet    = UnaryMinus<detail::meta_laplace<lhs_type>>;
-        using algo     = PCG<Tlhs, Trhs, Dim, OpRet, Mesh, Centering>;
-        using Base     = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
+        using Base = Electrostatics<FieldLHS, FieldRHS>;
+        using typename Base::lhs_type, typename Base::rhs_type;
+
+        using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;
+        using algo  = PCG<OpRet, FieldLHS, FieldRHS>;
 
         ElectrostaticsCG()
             : Base() {

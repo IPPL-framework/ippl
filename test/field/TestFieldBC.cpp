@@ -15,39 +15,39 @@ int main(int argc, char* argv[]) {
     ippl::NDIndex<dim> owned(I, I, I);
 
     ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
-    for (unsigned int d = 0; d < dim; d++)
+    for (unsigned int d = 0; d < dim; d++) {
         allParallel[d] = ippl::PARALLEL;
+    }
 
     ippl::FieldLayout<dim> layout(owned, allParallel);
 
-    double dx                      = 1.0 / double(pt);
-    ippl::Vector<double, 3> hx     = {dx, dx, dx};
-    ippl::Vector<double, 3> origin = {0, 0, 0};
+    double dx                        = 1.0 / double(pt);
+    ippl::Vector<double, dim> hx     = dx;
+    ippl::Vector<double, dim> origin = 0;
 
-    using Mesh_t      = ippl::UniformCartesian<double, 3>;
+    using Mesh_t      = ippl::UniformCartesian<double, dim>;
     using Centering_t = Mesh_t::DefaultCentering;
 
     Mesh_t mesh(owned, hx, origin);
 
     typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
 
-    typedef ippl::BConds<double, dim, Mesh_t, Centering_t> bc_type;
+    typedef ippl::BConds<field_type, dim> bc_type;
 
     bc_type bcField;
 
     // X direction periodic BC
     for (unsigned int i = 0; i < 2; ++i) {
-        bcField[i] = std::make_shared<ippl::PeriodicFace<double, dim, Mesh_t, Centering_t>>(i);
+        bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
     }
     ////Lower Y face
-    bcField[2] = std::make_shared<ippl::NoBcFace<double, dim, Mesh_t, Centering_t>>(2);
+    bcField[2] = std::make_shared<ippl::NoBcFace<field_type>>(2);
     ////Higher Y face
-    bcField[3] = std::make_shared<ippl::ConstantFace<double, dim, Mesh_t, Centering_t>>(3, 7.0);
+    bcField[3] = std::make_shared<ippl::ConstantFace<field_type>>(3, 7.0);
     ////Lower Z face
-    bcField[4] = std::make_shared<ippl::ZeroFace<double, dim, Mesh_t, Centering_t>>(4);
+    bcField[4] = std::make_shared<ippl::ZeroFace<field_type>>(4);
     ////Higher Z face
-    bcField[5] =
-        std::make_shared<ippl::ExtrapolateFace<double, dim, Mesh_t, Centering_t>>(5, 0.0, 1.0);
+    bcField[5] = std::make_shared<ippl::ExtrapolateFace<field_type>>(5, 0.0, 1.0);
 
     // std::cout << bcField << std::endl;
     std::cout << layout << std::endl;
@@ -58,13 +58,10 @@ int main(int argc, char* argv[]) {
 
     const ippl::NDIndex<dim>& lDom       = layout.getLocalNDIndex();
     const int nghost                     = field.getNghost();
-    using mdrange_type                   = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
     typename field_type::view_type& view = field.getView();
 
     Kokkos::parallel_for(
-        "Assign field",
-        mdrange_type({nghost, nghost, nghost},
-                     {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
+        "Assign field", field.getFieldRangePolicy(),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             // local to global index conversion
             const size_t ig = i + lDom[0].first() - nghost;

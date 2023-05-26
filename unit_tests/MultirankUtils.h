@@ -67,14 +67,14 @@ protected:
      * Defines a type alias for a collection of constructs
      * with the desired ranks
      */
-    template <template <unsigned Dim> class Type>
+    template <template <unsigned> class Type>
     using Collection = std::tuple<Type<Dims>...>;
 
     /*!
      * Defines a type alias for a collection of pointers to
      * constructs with the desired ranks
      */
-    template <template <typename> class Pointer, template <unsigned Dim> class Type>
+    template <template <typename> class Pointer, template <unsigned> class Type>
     using PtrCollection = std::tuple<Pointer<Type<Dims>>...>;
 
     // The highest rank being tested

@@ -28,15 +28,12 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, class Centering>
     class Field : public BareField<T, Dim> {
     public:
-        typedef T type;
-        static constexpr unsigned dimension = Dim;
-
         using Mesh_t      = Mesh;
         using Centering_t = Cell;
         using Layout_t    = FieldLayout<Dim>;
         using BareField_t = BareField<T, Dim>;
         using view_type   = typename BareField_t::view_type;
-        using BConds_t    = BConds<T, Dim, Mesh, Centering>;
+        using BConds_t    = BConds<Field<T, Dim, Mesh, Centering>, Dim>;
 
         // A default constructor, which should be used only if the user calls the
         // 'initialize' function before doing anything else.  There are no special

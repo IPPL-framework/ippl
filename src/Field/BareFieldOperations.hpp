@@ -23,8 +23,11 @@ namespace ippl {
      * @param f2 second field
      * @return Result of f1^T f2
      */
-    template <typename T, unsigned Dim>
-    T innerProduct(const BareField<T, Dim>& f1, const BareField<T, Dim>& f2) {
+    template <typename BareField>
+    typename BareField::value_type innerProduct(const BareField& f1, const BareField& f2) {
+        using T                = typename BareField::value_type;
+        constexpr unsigned Dim = BareField::dim;
+
         T sum                  = 0;
         auto view1             = f1.getView();
         auto view2             = f2.getView();
@@ -47,8 +50,11 @@ namespace ippl {
      * @param p desired norm (default 2)
      * @return The desired norm of the field
      */
-    template <typename T, unsigned Dim>
-    T norm(const BareField<T, Dim>& field, int p = 2) {
+    template <typename BareField>
+    typename BareField::value_type norm(const BareField& field, int p = 2) {
+        using T                = typename BareField::value_type;
+        constexpr unsigned Dim = BareField::dim;
+
         T local                = 0;
         auto view              = field.getView();
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
@@ -67,8 +73,6 @@ namespace ippl {
                 MPI_Allreduce(&local, &globalMax, 1, type, MPI_MAX, Ippl::getComm());
                 return globalMax;
             }
-            case 2:
-                return std::sqrt(innerProduct(field, field));
             default: {
                 ippl::parallel_reduce(
                     "Field::norm(int) general", field.getFieldRangePolicy(),

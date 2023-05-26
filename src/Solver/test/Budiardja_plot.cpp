@@ -121,8 +121,8 @@ int main(int argc, char* argv[]) {
         fftParams.add("r2c_direction", 0);
 
         // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t> FFTsolver(
-            rho, fftParams, "HOCKNEY");
+        using vfield_type = ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t>;
+        ippl::FFTPoissonSolver<vfield_type, field> FFTsolver(rho, fftParams, "HOCKNEY");
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();

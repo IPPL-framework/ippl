@@ -35,7 +35,7 @@ public:
     using field_type = ippl::Field<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
 
     template <unsigned Dim>
-    using bc_type = ippl::BConds<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
+    using bc_type = ippl::BConds<field_type<Dim>, Dim>;
 
     FieldBCTest() {
         computeGridSizes(nPoints);
@@ -138,8 +138,7 @@ TEST_F(FieldBCTest, PeriodicBC) {
     double expected = 10.0;
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field, bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
-            bcField[i] = std::make_shared<
-                ippl::PeriodicFace<double, Dim, mesh_type<Dim>, centering_type<Dim>>>(i);
+            bcField[i] = std::make_shared<ippl::PeriodicFace<field_type<Dim>>>(i);
         }
         bcField.findBCNeighbors(*field);
         bcField.apply(*field);
@@ -153,9 +152,7 @@ TEST_F(FieldBCTest, NoBC) {
     double expected = 1.0;
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field, bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
-            bcField[i] =
-                std::make_shared<ippl::NoBcFace<double, Dim, mesh_type<Dim>, centering_type<Dim>>>(
-                    i);
+            bcField[i] = std::make_shared<ippl::NoBcFace<field_type<Dim>>>(i);
         }
         bcField.findBCNeighbors(*field);
         bcField.apply(*field);
@@ -169,9 +166,7 @@ TEST_F(FieldBCTest, ZeroBC) {
     double expected = 0.0;
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field, bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
-            bcField[i] =
-                std::make_shared<ippl::ZeroFace<double, Dim, mesh_type<Dim>, centering_type<Dim>>>(
-                    i);
+            bcField[i] = std::make_shared<ippl::ZeroFace<field_type<Dim>>>(i);
         }
         bcField.findBCNeighbors(*field);
         bcField.apply(*field);
@@ -185,8 +180,7 @@ TEST_F(FieldBCTest, ConstantBC) {
     double constant = 7.0;
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field, bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
-            bcField[i] = std::make_shared<
-                ippl::ConstantFace<double, Dim, mesh_type<Dim>, centering_type<Dim>>>(i, constant);
+            bcField[i] = std::make_shared<ippl::ConstantFace<field_type<Dim>>>(i, constant);
         }
         bcField.findBCNeighbors(*field);
         bcField.apply(*field);
@@ -200,9 +194,7 @@ TEST_F(FieldBCTest, ExtrapolateBC) {
     double expected = 10.0;
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field, bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
-            bcField[i] = std::make_shared<
-                ippl::ExtrapolateFace<double, Dim, mesh_type<Dim>, centering_type<Dim>>>(i, 0.0,
-                                                                                         1.0);
+            bcField[i] = std::make_shared<ippl::ExtrapolateFace<field_type<Dim>>>(i, 0.0, 1.0);
         }
         bcField.findBCNeighbors(*field);
         bcField.apply(*field);

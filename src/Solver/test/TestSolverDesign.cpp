@@ -10,8 +10,9 @@
 constexpr unsigned int dim = 3;
 using Mesh_t               = ippl::UniformCartesian<double, dim>;
 using Centering_t          = Mesh_t::DefaultCentering;
+using field_type           = ippl::Field<double, dim, Mesh_t, Centering_t>;
 
-class TestSolver : public ippl::Electrostatics<double, double, dim, Mesh_t, Centering_t> {
+class TestSolver : public ippl::Electrostatics<field_type, field_type> {
 public:
     void solve() override {
         *rhs_mp = *lhs_mp + *rhs_mp;
@@ -30,8 +31,9 @@ int main(int argc, char* argv[]) {
     ippl::NDIndex<dim> owned(I, I, I);
 
     ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
-    for (unsigned int d = 0; d < dim; d++)
+    for (unsigned int d = 0; d < dim; d++) {
         allParallel[d] = ippl::SERIAL;
+    }
 
     // all parallel layout, standard domain, normal axis order
     ippl::FieldLayout<dim> layout(owned, allParallel);
@@ -42,7 +44,6 @@ int main(int argc, char* argv[]) {
     ippl::Vector<double, dim> origin = {0, 0, 0};
     Mesh_t mesh(owned, hx, origin);
 
-    typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
     field_type lhs(mesh, layout), rhs(mesh, layout);
 
     typedef ippl::Field<ippl::Vector<double, dim>, dim, Mesh_t, Centering_t> vfield_type;

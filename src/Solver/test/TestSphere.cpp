@@ -126,8 +126,8 @@ int main(int argc, char* argv[]) {
         fftParams.add("comm", ippl::a2av);
         fftParams.add("r2c_direction", 0);
 
-        ippl::FFTPoissonSolver<Vector_t, double, 3, Mesh_t, Centering_t> FFTsolver(rho, fftParams,
-                                                                                   algorithm);
+        using vfield_type = ippl::Field<Vector_t, 3, Mesh_t, Centering_t>;
+        ippl::FFTPoissonSolver<vfield_type, field> FFTsolver(rho, fftParams, algorithm);
 
         // solve the Poisson equation -> rho contains the solution (phi) now
         FFTsolver.solve();
