@@ -58,10 +58,10 @@ using VField_t = Field<Vector_t<T, Dim>, Dim>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
 template <typename T = double, unsigned Dim = 3>
-using CGSolver_t = ippl::ElectrostaticsCG<Field<T, Dim>, Field<T, Dim>>;
+using CGSolver_t = ippl::ElectrostaticsCG<Field<T, Dim>, Field<double, Dim>>;
 
 template <typename T = double, unsigned Dim = 3>
-using FFTSolver_t = ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field<T, Dim>>;
+using FFTSolver_t = ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field<double, Dim>>;
 
 template <typename T = double, unsigned Dim = 3>
 using Solver_t =
@@ -190,7 +190,7 @@ public:
     Field_t<Dim> rho_m;
     Field<T, Dim> phi_m;
 
-    typedef ippl::BConds<Field<T, Dim>> bc_type;
+    typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
     bc_type allPeriodic;
 
     // ORB
