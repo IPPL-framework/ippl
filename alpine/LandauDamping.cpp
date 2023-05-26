@@ -241,7 +241,7 @@ int main(int argc, char* argv[]) {
             "Assign initial rho based on PDF", P->rho_m.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
-                Vector_t<Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
+                Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
 
                 // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
