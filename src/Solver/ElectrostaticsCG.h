@@ -43,11 +43,13 @@ namespace ippl {
 
         ElectrostaticsCG()
             : Base() {
+            static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
 
         ElectrostaticsCG(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs) {
+            static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
 

@@ -136,7 +136,7 @@ double CDF(const double& x, const double& alpha, const double& k) {
 }
 
 KOKKOS_FUNCTION
-double PDF(const Vector_t<Dim>& xvec, const double& alpha, const Vector_t<Dim>& kw,
+double PDF(const Vector_t<double, Dim>& xvec, const double& alpha, const Vector_t<double, Dim>& kw,
            const unsigned Dim) {
     double pdf = 1.0;
 
@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
 
     int arg = 1;
 
-    ippl::Vector<int, Dim> nr;
+    Vector_t<int, Dim> nr;
     for (unsigned d = 0; d < Dim; d++) {
         nr[d] = std::atoi(argv[arg++]);
     }
@@ -182,7 +182,7 @@ int main(int argc, char* argv[]) {
 
     msg << "Landau damping" << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-    using bunch_type = ChargedParticles<PLayout_t<Dim>, Dim>;
+    using bunch_type = ChargedParticles<PLayout_t<double, Dim>, double, Dim>;
 
     std::unique_ptr<bunch_type> P;
 
@@ -197,21 +197,21 @@ int main(int argc, char* argv[]) {
     }
 
     // create mesh and layout objects for this problem domain
-    Vector_t<Dim> kw = 0.5;
-    double alpha     = 0.05;
-    Vector_t<Dim> rmin(0.0);
-    Vector_t<Dim> rmax = 2 * pi / kw;
+    Vector_t<double, Dim> kw = 0.5;
+    double alpha             = 0.05;
+    Vector_t<double, Dim> rmin(0.0);
+    Vector_t<double, Dim> rmax = 2 * pi / kw;
 
-    Vector_t<Dim> hr = rmax / nr;
+    Vector_t<double, Dim> hr = rmax / nr;
     // Q = -\int\int f dx dv
-    double Q             = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
-    Vector_t<Dim> origin = rmin;
-    const double dt      = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
+    double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
+    Vector_t<double, Dim> origin = rmin;
+    const double dt              = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
 
     const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);
     FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
-    PLayout_t<Dim> PL(FL, mesh);
+    PLayout_t<double, Dim> PL(FL, mesh);
 
     std::string solver = argv[arg++];
     P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
@@ -241,7 +241,7 @@ int main(int argc, char* argv[]) {
             "Assign initial rho based on PDF", ippl::getRangePolicy<Dim>(rhoview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
-                Vector_t<Dim> xvec = args;
+                Vector_t<double, Dim> xvec = args;
                 for (unsigned d = 0; d < Dim; d++) {
                     xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
                 }
@@ -264,7 +264,7 @@ int main(int argc, char* argv[]) {
     typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> RegionLayout_t;
     const RegionLayout_t& RLayout                           = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_t<Dim> Nr, Dr, minU, maxU;
+    Vector_t<double, Dim> Nr, Dr, minU, maxU;
     int myRank    = Ippl::Comm->rank();
     double factor = 1;
     for (unsigned d = 0; d < Dim; ++d) {
@@ -289,9 +289,9 @@ int main(int argc, char* argv[]) {
 
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
-    Kokkos::parallel_for(nloc,
-                         generate_random<Vector_t<Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                             P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+    Kokkos::parallel_for(
+        nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                  P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
     Kokkos::fence();
     Ippl::Comm->barrier();
