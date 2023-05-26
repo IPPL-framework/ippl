@@ -23,7 +23,7 @@
 
 namespace ippl {
 
-    template <typename FieldLHS, typename FieldRHS, typename OpRet>
+    template <typename OpRet, typename FieldLHS, typename FieldRHS = FieldLHS>
     class PCG : public SolverAlgorithm<FieldLHS, FieldRHS> {
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;

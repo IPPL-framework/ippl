@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
                          * sin(sin(pi * z)));
         });
 
-    ippl::ElectrostaticsCG<field_type, field_type> lapsolver;
+    ippl::ElectrostaticsCG<field_type> lapsolver;
 
     ippl::ParameterList params;
     params.add("max_iterations", 2000);

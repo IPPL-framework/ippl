@@ -32,7 +32,7 @@ namespace ippl {
         return fun(arg);                        \
     }
 
-    template <typename FieldLHS, typename FieldRHS>
+    template <typename FieldLHS, typename FieldRHS = FieldLHS>
     class ElectrostaticsCG : public Electrostatics<FieldLHS, FieldRHS> {
         using Tlhs = typename FieldLHS::value_type;
 
@@ -41,7 +41,7 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
 
         using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;
-        using algo  = PCG<FieldLHS, FieldRHS, OpRet>;
+        using algo  = PCG<OpRet, FieldLHS, FieldRHS>;
 
         ElectrostaticsCG()
             : Base() {
