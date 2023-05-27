@@ -50,18 +50,6 @@ class LangevinParticles : public ChargedParticles<PLayout> {
     using KokkosRNGPool_t = Kokkos::Random_XorShift64_Pool<>;
     using KokkosRNG_t     = KokkosRNGPool_t::generator_type;
 
-    // View types (of particle attributes)
-    // typedef ParticleAttrib<double>::view_type attr_view_t;
-    // typedef ParticleAttrib<VectorD_t>::view_type attr_Dview_t;
-    // typedef ParticleAttrib<MatrixD_t>::view_type attr_DMatrixView_t;
-    // typedef ParticleAttrib<double>::HostMirror attr_mirror_t;
-    // typedef ParticleAttrib<VectorD_t>::HostMirror attr_Dmirror_t;
-
-    // // View types (of Fields)
-    // typedef typename ippl::detail::ViewType<double, Dim>::view_type Field_view_t;
-    // typedef typename ippl::detail::ViewType<VectorD_t, Dim>::view_type VField_view_t;
-    // typedef typename ippl::detail::ViewType<MatrixD_t, Dim>::view_type MField_view_t;
-
 public:
     /*
       This constructor is mandatory for all derived classes from
