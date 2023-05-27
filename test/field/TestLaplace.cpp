@@ -20,25 +20,24 @@ int main(int argc, char* argv[]) {
     const int iterations = std::stoi(argv[2]);
 
     ippl::e_dim_tag decomp[dim];  // Specifies SERIAL, PARALLEL dims
-    for (unsigned int d = 0; d < dim; d++)
+    for (unsigned int d = 0; d < dim; d++) {
         decomp[d] = ippl::PARALLEL;
+    }
     // decomp[d] = ippl::SERIAL;
 
     // all parallel layout, standard domain, normal axis order
     ippl::FieldLayout<dim> layout(owned, decomp);
 
     // Unit box
-    double dx                      = 2.0 / double(pt);
-    ippl::Vector<double, 3> hx     = {dx, dx, dx};
-    ippl::Vector<double, 3> origin = {-1.0, -1.0, -1.0};
+    double dx                        = 2.0 / double(pt);
+    ippl::Vector<double, dim> hx     = dx;
+    ippl::Vector<double, dim> origin = -1;
     Mesh_t mesh(owned, hx, origin);
 
     double pi = acos(-1.0);
 
     typedef ippl::Field<double, dim, Mesh_t, Centering_t> Field_t;
     typedef ippl::Field<ippl::Vector<double, dim>, dim, Mesh_t, Centering_t> vector_field_type;
-
-    typedef ippl::Vector<double, dim> Vector_t;
 
     Field_t field(mesh, layout);
     Field_t Lap(mesh, layout);
@@ -47,29 +46,29 @@ int main(int argc, char* argv[]) {
 
     typename Field_t::view_type& view       = field.getView();
     typename Field_t::view_type& view_exact = Lap_exact.getView();
-    typedef ippl::BConds<double, dim, Mesh_t, Centering_t> bc_type;
-    typedef ippl::BConds<Vector_t, dim, Mesh_t, Centering_t> vbc_type;
+    typedef ippl::BConds<Field_t, dim> bc_type;
+    typedef ippl::BConds<vector_field_type, dim> vbc_type;
 
     bc_type bcField;
     vbc_type vbcField;
 
     // X direction periodic BC
     for (unsigned int i = 0; i < 6; ++i) {
-        bcField[i]  = std::make_shared<ippl::PeriodicFace<double, dim, Mesh_t, Centering_t>>(i);
-        vbcField[i] = std::make_shared<ippl::PeriodicFace<Vector_t, dim, Mesh_t, Centering_t>>(i);
+        bcField[i]  = std::make_shared<ippl::PeriodicFace<Field_t>>(i);
+        vbcField[i] = std::make_shared<ippl::PeriodicFace<vector_field_type>>(i);
     }
     ////Lower Y face
-    // bcField[2] = std::make_shared<ippl::NoBcFace<double, dim>>(2);
-    // vbcField[2] = std::make_shared<ippl::NoBcFace<Vector_t, dim>>(2);
+    // bcField[2] = std::make_shared<ippl::NoBcFace<Field_t>>(2);
+    // vbcField[2] = std::make_shared<ippl::NoBcFace<vector_field_type>>(2);
     ////Higher Y face
-    // bcField[3] = std::make_shared<ippl::ConstantFace<double, dim>>(3, 7.0);
-    // vbcField[3] = std::make_shared<ippl::ConstantFace<Vector_t, dim>>(3, 7.0);
+    // bcField[3] = std::make_shared<ippl::ConstantFace<Field_t>>(3, 7.0);
+    // vbcField[3] = std::make_shared<ippl::ConstantFace<vector_field_type>>(3, 7.0);
     ////Lower Z face
-    // bcField[4] = std::make_shared<ippl::ZeroFace<double, dim>>(4);
-    // vbcField[4] = std::make_shared<ippl::ZeroFace<Vector_t, dim>>(4);
+    // bcField[4] = std::make_shared<ippl::ZeroFace<Field_t>>(4);
+    // vbcField[4] = std::make_shared<ippl::ZeroFace<vector_field_type>>(4);
     ////Higher Z face
-    // bcField[5] = std::make_shared<ippl::ExtrapolateFace<double, dim>>(5, 0.0, 1.0);
-    // vbcField[5] = std::make_shared<ippl::ExtrapolateFace<Vector_t, dim>>(5, 0.0, 1.0);
+    // bcField[5] = std::make_shared<ippl::ExtrapolateFace<Field_t>>(5, 0.0, 1.0);
+    // vbcField[5] = std::make_shared<ippl::ExtrapolateFace<vector_field_type>>(5, 0.0, 1.0);
 
     field.setFieldBC(bcField);
     Lap.setFieldBC(bcField);
@@ -77,12 +76,9 @@ int main(int argc, char* argv[]) {
 
     const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
     const int nghost               = field.getNghost();
-    using mdrange_type             = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
     Kokkos::parallel_for(
-        "Assign field",
-        mdrange_type({nghost, nghost, nghost},
-                     {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
+        "Assign field", field.getFieldRangePolicy(),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             // local to global index conversion
             const size_t ig = i + lDom[0].first() - nghost;

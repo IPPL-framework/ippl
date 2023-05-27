@@ -213,8 +213,7 @@ int main(int argc, char* argv[]) {
     fftParams.add("r2c_direction", 0);
 
     // define an FFTPoissonSolver object
-    ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, Dim, Mesh_t, Centering_t> FFTsolver(
-        fieldE, rho, fftParams, algorithm);
+    ippl::FFTPoissonSolver<fieldV, field> FFTsolver(fieldE, rho, fftParams, algorithm);
 
     // iterate over 5 timesteps
     for (int times = 0; times < 5; ++times) {

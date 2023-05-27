@@ -5,10 +5,11 @@
 // Everything else (namely the vector field E and the particle position) are in single
 // precision, since the choice increases memory saving, without losing precision.
 //    Usage:
-//     srun ./LandauDamping <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
+//     srun ./LandauDamping
+//                  <nx> [<ny>...] <Np> <Nt> <stype>
+//                  <lbthres> --overallocate <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
-//     ny       = No. cell-centered points in the y-direction
-//     nz       = No. cell-centered points in the z-direction
+//     ny...    = No. cell-centered points in the y-, z-, ...-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
 //     stype    = Field solver type e.g., FFT
@@ -157,8 +158,6 @@ int main(int argc, char* argv[]) {
 
     Inform msg("LandauDamping");
     Inform msg2all("LandauDamping", INFORM_ALL_NODES);
-
-    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
 
     auto start = std::chrono::high_resolution_clock::now();
     int arg    = 1;
