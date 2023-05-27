@@ -68,7 +68,6 @@ namespace ippl {
     ParticleBase<PLayout, std::tuple<IP...>, std::tuple<PP...>, std::tuple<HP...>>::ParticleBase()
         : layout_m(nullptr)
         , localNum_m(0)
-        , attributes_m(0)
         , nextID_m(Ippl::Comm->myNode())
         , numNodes_m(Ippl::Comm->getNodes()) {
         addAttribute(ID);  // needs to be added first due to destroy function
@@ -87,7 +86,9 @@ namespace ippl {
     void
     ParticleBase<PLayout, std::tuple<IP...>, std::tuple<PP...>, std::tuple<HP...>>::addAttribute(
         detail::ParticleAttribBase<Properties...>& pa) {
-        attributes_m.push_back(&pa);
+        using memory_space   = typename detail::ParticleAttribBase<Properties...>::memory_space;
+        using attribute_type = detail::ParticleAttribBase<memory_space>;
+        attributes_m.template get<memory_space>().push_back((attribute_type*)&pa);
         pa.setParticleCount(localNum_m);
     }
 
@@ -105,9 +106,11 @@ namespace ippl {
         size_type nLocal) {
         PAssert(layout_m != nullptr);
 
-        for (attribute_iterator it = attributes_m.begin(); it != attributes_m.end(); ++it) {
-            (*it)->create(nLocal);
-        }
+        attributes_m.forAll([&]<typename Attributes>(Attributes& att) {
+            for (auto& attribute : att) {
+                attribute->create(nLocal);
+            }
+        });
 
         // set the unique ID value for these new particles
         auto pIDs     = ID.getView();
@@ -230,9 +233,11 @@ namespace ippl {
         localNum_m -= destroyNum;
 
         // Partition the attributes into valid and invalid regions
-        for (attribute_iterator it = attributes_m.begin(); it != attributes_m.end(); ++it) {
-            (*it)->destroy(deleteIndex_m, keepIndex_m, maxDeleteIndex + 1);
-        }
+        attributes_m.forAll([&]<typename Attributes>(Attributes& att) {
+            for (auto& attribute : att) {
+                attribute->destroy(deleteIndex_m, keepIndex_m, maxDeleteIndex + 1);
+            }
+        });
     }
 
     template <class PLayout, typename... IP, typename... PP, typename... HP>
@@ -244,14 +249,16 @@ namespace ippl {
         requests.resize(requests.size() + 1);
 
         pack(buffer, hash);
-        size_type bufSize = packedSize(nSends);
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            size_type bufSize = packedSize<MemorySpace>(nSends);
 
-        auto buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sendNum, bufSize);
+            auto buf = Ippl::Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
 
-        Ippl::Comm->isend(rank, tag, buffer, *buf, requests.back(), nSends);
-        buf->resetWritePos();
+            Ippl::Comm->isend(rank, tag, buffer, *buf, requests.back(), nSends);
+            buf->resetWritePos();
 
-        ++sendNum;
+            ++sendNum;
+        });
     }
 
     template <class PLayout, typename... IP, typename... PP, typename... HP>
@@ -259,46 +266,46 @@ namespace ippl {
     void ParticleBase<PLayout, std::tuple<IP...>, std::tuple<PP...>,
                       std::tuple<HP...>>::recvFromRank(int rank, int tag, int& recvNum,
                                                        size_type nRecvs, BufferType& buffer) {
-        size_type bufSize = packedSize(nRecvs);
-        auto buf          = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvNum, bufSize);
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            size_type bufSize = packedSize<MemorySpace>(nRecvs);
+            auto buf = Ippl::Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_RECV + recvNum, bufSize);
 
-        Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs);
-        buf->resetReadPos();
+            Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs);
+            buf->resetReadPos();
 
+            ++recvNum;
+        });
         unpack(buffer, nRecvs);
-
-        ++recvNum;
     }
 
     template <class PLayout, typename... IP, typename... PP, typename... HP>
     template <typename Archive>
     void ParticleBase<PLayout, std::tuple<IP...>, std::tuple<PP...>, std::tuple<HP...>>::serialize(
         Archive& ar, size_type nsends) {
-        using size_type = typename attribute_container_t::size_type;
-        for (size_type i = 0; i < attributes_m.size(); ++i) {
-            attributes_m[i]->serialize(ar, nsends);
-        }
+        using memory_space = typename Archive::buffer_type::memory_space;
+        forAllAttributes<memory_space>([&]<typename Attribute>(Attribute& att) {
+            att->serialize(ar, nsends);
+        });
     }
 
     template <class PLayout, typename... IP, typename... PP, typename... HP>
     template <typename Archive>
     void ParticleBase<PLayout, std::tuple<IP...>, std::tuple<PP...>,
                       std::tuple<HP...>>::deserialize(Archive& ar, size_type nrecvs) {
-        using size_type = typename attribute_container_t::size_type;
-        for (size_type i = 0; i < attributes_m.size(); ++i) {
-            attributes_m[i]->deserialize(ar, nrecvs);
-        }
+        using memory_space = typename Archive::buffer_type::memory_space;
+        forAllAttributes<memory_space>([&]<typename Attribute>(Attribute& att) {
+            att->deserialize(ar, nrecvs);
+        });
     }
 
     template <class PLayout, typename... IP, typename... PP, typename... HP>
+    template <typename MemorySpace>
     detail::size_type ParticleBase<PLayout, std::tuple<IP...>, std::tuple<PP...>,
                                    std::tuple<HP...>>::packedSize(const size_type count) const {
         size_type total = 0;
-        // Vector size type
-        using vsize_t = typename attribute_container_t::size_type;
-        for (vsize_t i = 0; i < attributes_m.size(); ++i) {
-            total += attributes_m[i]->packedSize(count);
-        }
+        forAllAttributes<MemorySpace>([&]<typename Attribute>(const Attribute& att) {
+            total += att->packedSize(count);
+        });
         return total;
     }
 
@@ -306,22 +313,26 @@ namespace ippl {
     template <class Buffer>
     void ParticleBase<PLayout, std::tuple<IP...>, std::tuple<PP...>, std::tuple<HP...>>::pack(
         Buffer& buffer, const hash_type& hash) {
-        // Vector size type
-        using vsize_t = typename attribute_container_t::size_type;
-        for (vsize_t j = 0; j < attributes_m.size(); ++j) {
-            attributes_m[j]->pack(buffer.getAttribute(j), hash);
-        }
+        forAllAttributes([&]<typename Attributes>(Attributes& att) {
+            using memory_space =
+                typename std::remove_pointer_t<typename Attributes::value_type>::memory_space;
+            for (unsigned j = 0; j < att.size(); j++) {
+                att[j]->pack(buffer.template getAttribute<memory_space>(j), hash);
+            }
+        });
     }
 
     template <class PLayout, typename... IP, typename... PP, typename... HP>
     template <class Buffer>
     void ParticleBase<PLayout, std::tuple<IP...>, std::tuple<PP...>, std::tuple<HP...>>::unpack(
         Buffer& buffer, size_type nrecvs) {
-        // Vector size type
-        using vsize_t = typename attribute_container_t::size_type;
-        for (vsize_t j = 0; j < attributes_m.size(); ++j) {
-            attributes_m[j]->unpack(buffer.getAttribute(j), nrecvs);
-        }
-        localNum_m += nrecvs;
+        forAllAttributes([&]<typename Attributes>(Attributes& att) {
+            using memory_space =
+                typename std::remove_pointer_t<typename Attributes::value_type>::memory_space;
+            for (unsigned j = 0; j < att.size(); j++) {
+                att[j]->unpack(buffer.template getAttribute<memory_space>(j), nrecvs);
+            }
+            localNum_m += nrecvs;
+        });
     }
 }  // namespace ippl

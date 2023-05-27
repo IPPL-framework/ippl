@@ -96,12 +96,19 @@ namespace ippl {
             typename PLayout::template particle_position_type<PositionProps...>;
         using particle_index_type = ParticleAttrib<index_type, IDProps...>;
 
-        using Layout_t              = PLayout;
-        using attribute_type        = typename detail::ParticleAttribBase<>;
-        using attribute_container_t = std::vector<attribute_type*>;
-        using attribute_iterator    = typename attribute_container_t::iterator;
-        using bc_container_type     = typename PLayout::bc_container_type;
-        using hash_type             = typename detail::ViewType<int, 1, HashProps...>::view_type;
+        using Layout_t = PLayout;
+
+        template <typename... Properties>
+        using attribute_type = typename detail::ParticleAttribBase<Properties...>;
+
+        template <typename MemorySpace>
+        using container_type = std::vector<attribute_type<MemorySpace>*>;
+
+        using attribute_container_type =
+            typename detail::ContainerForAllSpaces<container_type>::type;
+
+        using bc_container_type = typename PLayout::bc_container_type;
+        using hash_type         = typename detail::ViewType<int, 1, HashProps...>::view_type;
 
         using size_type = detail::size_type;
 
@@ -185,13 +192,42 @@ namespace ippl {
          * @param i attribute number in container
          * @returns a pointer to the attribute
          */
-        attribute_type* getAttribute(size_t i) { return attributes_m[i]; }
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        attribute_type<MemorySpace>* getAttribute(size_t i) {
+            return attributes_m.template get<MemorySpace>()[i];
+        }
+
+        template <typename MemorySpace = void, typename Functor>
+        void forAllAttributes(Functor&& f) const {
+            if constexpr (std::is_void_v<MemorySpace>) {
+                attributes_m.forAll(f);
+            } else {
+                for (auto& attribute : attributes_m.template get<MemorySpace>()) {
+                    f(attribute);
+                }
+            }
+        }
+
+        template <typename MemorySpace = void, typename Functor>
+        void forAllAttributes(Functor&& f) {
+            if constexpr (std::is_void_v<MemorySpace>) {
+                attributes_m.forAll(f);
+            } else {
+                for (auto& attribute : attributes_m.template get<MemorySpace>()) {
+                    f(attribute);
+                }
+            }
+        }
 
         /*!
          * @returns the number of attributes
          */
-        typename attribute_container_t::size_type getAttributeNum() const {
-            return attributes_m.size();
+        unsigned getAttributeNum() const {
+            unsigned total = 0;
+            forAllAttributes([&]<typename Attributes>(const Attributes& att) {
+                total += att.size();
+            });
+            return total;
         }
 
         /*!
@@ -244,9 +280,11 @@ namespace ippl {
 
         /*!
          * Determine the total space necessary to store a certain number of particles
+         * @tparam MemorySpace only consider attributes stored in this memory space
          * @param count particle number
          * @return Total size of a buffer packed with the given number of particles
          */
+        template <typename MemorySpace>
         size_type packedSize(const size_type count) const;
 
         //     protected:
@@ -277,7 +315,7 @@ namespace ippl {
         size_type localNum_m;
 
         //! all attributes
-        attribute_container_t attributes_m;
+        attribute_container_type attributes_m;
 
         //! next unique particle ID
         index_type nextID_m;

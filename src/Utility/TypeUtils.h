@@ -193,7 +193,7 @@ namespace ippl {
             std::array<Types, sizeof...(Spaces)> elements_m;
 
             template <typename Space, unsigned Idx = 0>
-            constexpr unsigned spaceToIndex() {
+            constexpr static unsigned spaceToIndex() {
                 static_assert(Idx < sizeof...(Spaces));
                 if constexpr (std::is_same_v<Space,
                                              std::tuple_element_t<Idx, std::tuple<Spaces...>>>) {
@@ -216,8 +216,18 @@ namespace ippl {
             MultispaceContainer() { (initElements<Spaces>(), ...); }
 
             template <typename Space>
+            const Type<Space>& get() const {
+                return std::get<Type<Space>>(elements_m[spaceToIndex<Space>()]);
+            }
+
+            template <typename Space>
             Type<Space>& get() {
                 return std::get<Type<Space>>(elements_m[spaceToIndex<Space>()]);
+            }
+
+            template <typename Functor>
+            void forAll(Functor&& f) const {
+                (f(get<Spaces>()), ...);
             }
 
             template <typename Functor>
