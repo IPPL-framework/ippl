@@ -51,16 +51,16 @@ class LangevinParticles : public ChargedParticles<PLayout> {
     using KokkosRNG_t     = KokkosRNGPool_t::generator_type;
 
     // View types (of particle attributes)
-    typedef ParticleAttrib<double>::view_type attr_view_t;
-    typedef ParticleAttrib<VectorD_t>::view_type attr_Dview_t;
-    typedef ParticleAttrib<MatrixD_t>::view_type attr_DMatrixView_t;
-    typedef ParticleAttrib<double>::HostMirror attr_mirror_t;
-    typedef ParticleAttrib<VectorD_t>::HostMirror attr_Dmirror_t;
+    // typedef ParticleAttrib<double>::view_type attr_view_t;
+    // typedef ParticleAttrib<VectorD_t>::view_type attr_Dview_t;
+    // typedef ParticleAttrib<MatrixD_t>::view_type attr_DMatrixView_t;
+    // typedef ParticleAttrib<double>::HostMirror attr_mirror_t;
+    // typedef ParticleAttrib<VectorD_t>::HostMirror attr_Dmirror_t;
 
-    // View types (of Fields)
-    typedef typename ippl::detail::ViewType<double, Dim>::view_type Field_view_t;
-    typedef typename ippl::detail::ViewType<VectorD_t, Dim>::view_type VField_view_t;
-    typedef typename ippl::detail::ViewType<MatrixD_t, Dim>::view_type MField_view_t;
+    // // View types (of Fields)
+    // typedef typename ippl::detail::ViewType<double, Dim>::view_type Field_view_t;
+    // typedef typename ippl::detail::ViewType<VectorD_t, Dim>::view_type VField_view_t;
+    // typedef typename ippl::detail::ViewType<MatrixD_t, Dim>::view_type MField_view_t;
 
 public:
     /*
@@ -75,8 +75,8 @@ public:
 
     LangevinParticles(PLayout& pl, VectorD_t hr, VectorD_t rmin, VectorD_t rmax,
                       ippl::e_dim_tag configSpaceDecomp[Dim], std::string solver, double pCharge,
-                      double pMass, double epsInv, double Q, size_t globalNumParticles, double dt,
-                      size_t nv, double vmax)
+                      double pMass, double epsInv, double Q, size_type globalNumParticles,
+                      double dt, size_type nv, double vmax)
         : ChargedParticles<PLayout>(pl, hr, rmin, rmax, configSpaceDecomp, Q, solver)
         , rank_m(Ippl::Comm->rank())
         , pCharge_m(pCharge)
@@ -243,7 +243,7 @@ public:
             "Not implemented. Run `runSpaceChargeSolver` or `runFrictionSolver` instead.");
     }
 
-    void runSpaceChargeSolver(size_t iteration) {
+    void runSpaceChargeSolver(size_type iteration) {
         Base::scatterCIC(this->getGlobParticleNum(), iteration, this->hr_m);
         // Multiply by inverse vacuum permittivity
         // (due to differential formulation of Green's function)
@@ -306,51 +306,6 @@ public:
         msg << "maxVelComponent = " << maxVelComponent << endl;
         msg << "minVel = " << minVel << endl;
         msg << "maxVel = " << maxVel << endl;
-    }
-
-    void dumpCSVMatrix(VField_t<Dim>& M0, VField_t<Dim>& M1, VField_t<Dim>& M2, VectorD_t& hx,
-                       std::string matrixPrefix, size_t iteration, std::string folder) {
-        VField_view_t M0View = M0.getView();
-        VField_view_t M1View = M1.getView();
-        VField_view_t M2View = M2.getView();
-
-        typename VField_view_t::host_mirror_type hostM0View = M0.getHostMirror();
-        typename VField_view_t::host_mirror_type hostM1View = M1.getHostMirror();
-        typename VField_view_t::host_mirror_type hostM2View = M2.getHostMirror();
-
-        Kokkos::deep_copy(hostM0View, M0View);
-        Kokkos::deep_copy(hostM1View, M1View);
-        Kokkos::deep_copy(hostM2View, M2View);
-
-        const int nghost = Fd_m.getNghost();
-
-        std::stringstream fname;
-        fname << folder;
-        fname << "/Dnorm_last_iteration";
-        fname << std::setw(4) << std::setfill('0') << iteration;
-        fname << ".csv";
-
-        Inform csvout(NULL, fname.str().c_str(), Inform::OVERWRITE);
-        csvout.precision(10);
-        csvout.setf(std::ios::scientific, std::ios::floatfield);
-
-        // Write header
-        csvout << matrixPrefix << "0_x," << matrixPrefix << "0_y," << matrixPrefix << "0_z,"
-               << matrixPrefix << "1_x," << matrixPrefix << "1_y," << matrixPrefix << "1_z,"
-               << matrixPrefix << "2_x," << matrixPrefix << "2_y," << matrixPrefix << "2_z" << endl;
-
-        // And dump into file
-        for (unsigned x = nghost; x < hx[0] + nghost; x++) {
-            for (unsigned y = nghost; y < hx[1] + nghost; y++) {
-                for (unsigned z = nghost; z < hx[2] + nghost; z++) {
-                    csvout << hostM0View(x, y, z)[0] << "," << hostM0View(x, y, z)[1] << ","
-                           << hostM0View(x, y, z)[2] << "," << hostM1View(x, y, z)[0] << ","
-                           << hostM1View(x, y, z)[1] << "," << hostM1View(x, y, z)[2] << ","
-                           << hostM2View(x, y, z)[0] << "," << hostM2View(x, y, z)[1] << ","
-                           << hostM2View(x, y, z)[2] << endl;
-                }
-            }
-        }
     }
 
     void dumpFdField(unsigned int iteration, std::string folder) {
@@ -677,7 +632,7 @@ public:
 
         for (unsigned d = 0; d < Dim; ++d) {
             Kokkos::parallel_reduce(
-                "get local EField sum", static_cast<size_t>(this->getLocalNum()),
+                "get local EField sum", static_cast<size_type>(this->getLocalNum()),
                 KOKKOS_LAMBDA(const int i, double& lefsum) { lefsum += std::fabs(pE_view(i)[d]); },
                 Kokkos::Sum<double>(locEFsum[d]));
         }
@@ -702,7 +657,7 @@ public:
             mdrange_type({nghostE, nghostE, nghostE},
                          {E_view.extent(0) - nghostE, E_view.extent(1) - nghostE,
                           E_view.extent(2) - nghostE}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
+            KOKKOS_LAMBDA(const size_type i, const size_type j, const size_type k, double& valL) {
                 double myVal = std::pow(E_view(i, j, k)[0], 2);
                 valL += myVal;
             },
@@ -722,7 +677,7 @@ public:
             mdrange_type({nghostE, nghostE, nghostE},
                          {E_view.extent(0) - nghostE, E_view.extent(1) - nghostE,
                           E_view.extent(2) - nghostE}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
+            KOKKOS_LAMBDA(const size_type i, const size_type j, const size_type k, double& valL) {
                 double myVal = std::fabs(E_view(i, j, k)[0]);
                 if (myVal > valL)
                     valL = myVal;
@@ -743,7 +698,7 @@ public:
         double globT[Dim];
         VectorD_t temperature;
 
-        const size_t locNp = static_cast<size_t>(this->getLocalNum());
+        const size_type locNp = static_cast<size_type>(this->getLocalNum());
 
         for (unsigned d = 0; d < Dim; ++d) {
             Kokkos::parallel_reduce(
@@ -1138,7 +1093,7 @@ public:
     ////////////////////////////////////////////
 
     // Number of cells per dim in velocity space
-    Vector<size_t> nv_m;
+    Vector<size_type> nv_m;
     // Mesh-Spacing of velocity space grid `fv_m`
     VectorD_t hv_m;
 

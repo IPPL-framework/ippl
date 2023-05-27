@@ -23,6 +23,18 @@ using MatrixD_t = VectorD<VectorD<double>>;
 
 using Matrix2D_t = Vector2D<Vector2D<double>>;
 
+// View types (of particle attributes)
+typedef ParticleAttrib<double>::view_type attr_view_t;
+typedef ParticleAttrib<VectorD_t>::view_type attr_Dview_t;
+typedef ParticleAttrib<MatrixD_t>::view_type attr_DMatrixView_t;
+typedef ParticleAttrib<double>::HostMirror attr_mirror_t;
+typedef ParticleAttrib<VectorD_t>::HostMirror attr_Dmirror_t;
+
+// View types (of Fields)
+typedef typename ippl::detail::ViewType<double, Dim>::view_type Field_view_t;
+typedef typename ippl::detail::ViewType<VectorD_t, Dim>::view_type VField_view_t;
+typedef typename ippl::detail::ViewType<MatrixD_t, Dim>::view_type MField_view_t;
+
 template <typename T>
 KOKKOS_INLINE_FUNCTION typename T::value_type L2Norm(T& x) {
     return sqrt(dot(x, x).apply());
@@ -183,6 +195,90 @@ void dumpVTKVector(VField_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCel
                        << scalingFactor * host_view(x, y, z)[2] << endl;
             }
         }
+    }
+}
+
+void dumpCSVMatrixField(VField_t<Dim>& M0, VField_t<Dim>& M1, VField_t<Dim>& M2,
+                        Vector<size_type> nx, std::string matrixPrefix, size_type iteration,
+                        std::string folder) {
+    VField_view_t M0View = M0.getView();
+    VField_view_t M1View = M1.getView();
+    VField_view_t M2View = M2.getView();
+
+    typename VField_view_t::host_mirror_type hostM0View = M0.getHostMirror();
+    typename VField_view_t::host_mirror_type hostM1View = M1.getHostMirror();
+    typename VField_view_t::host_mirror_type hostM2View = M2.getHostMirror();
+
+    Kokkos::deep_copy(hostM0View, M0View);
+    Kokkos::deep_copy(hostM1View, M1View);
+    Kokkos::deep_copy(hostM2View, M2View);
+
+    const int nghost = M0.getNghost();
+
+    std::stringstream fname;
+    fname << folder << "/";
+    fname << matrixPrefix << "field_it";
+    fname << std::setw(4) << std::setfill('0') << iteration;
+    fname << ".csv";
+
+    Inform csvout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+    csvout.precision(10);
+    csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+    // Write header
+    csvout << matrixPrefix << "0_x," << matrixPrefix << "0_y," << matrixPrefix << "0_z,"
+           << matrixPrefix << "1_x," << matrixPrefix << "1_y," << matrixPrefix << "1_z,"
+           << matrixPrefix << "2_x," << matrixPrefix << "2_y," << matrixPrefix << "2_z" << endl;
+
+    // And dump into file
+    for (unsigned x = nghost; x < nx[0] + nghost; x++) {
+        for (unsigned y = nghost; y < nx[1] + nghost; y++) {
+            for (unsigned z = nghost; z < nx[2] + nghost; z++) {
+                csvout << hostM0View(x, y, z)[0] << "," << hostM0View(x, y, z)[1] << ","
+                       << hostM0View(x, y, z)[2] << "," << hostM1View(x, y, z)[0] << ","
+                       << hostM1View(x, y, z)[1] << "," << hostM1View(x, y, z)[2] << ","
+                       << hostM2View(x, y, z)[0] << "," << hostM2View(x, y, z)[1] << ","
+                       << hostM2View(x, y, z)[2] << endl;
+            }
+        }
+    }
+}
+
+void dumpCSVMatrixAttr(ParticleAttrib<VectorD_t>& M0, ParticleAttrib<VectorD_t>& M1,
+                       ParticleAttrib<VectorD_t>& M2, size_type particleNum,
+                       std::string matrixPrefix, size_type iteration, std::string folder) {
+    attr_Dview_t M0View = M0.getView();
+    attr_Dview_t M1View = M1.getView();
+    attr_Dview_t M2View = M2.getView();
+
+    typename attr_Dview_t::host_mirror_type hostM0View = M0.getHostMirror();
+    typename attr_Dview_t::host_mirror_type hostM1View = M1.getHostMirror();
+    typename attr_Dview_t::host_mirror_type hostM2View = M2.getHostMirror();
+
+    Kokkos::deep_copy(hostM0View, M0View);
+    Kokkos::deep_copy(hostM1View, M1View);
+    Kokkos::deep_copy(hostM2View, M2View);
+
+    std::stringstream fname;
+    fname << folder << "/";
+    fname << matrixPrefix << "attr_it";
+    fname << std::setw(4) << std::setfill('0') << iteration;
+    fname << ".csv";
+
+    Inform csvout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+    csvout.precision(10);
+    csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+    // Write header
+    csvout << matrixPrefix << "0_x," << matrixPrefix << "0_y," << matrixPrefix << "0_z,"
+           << matrixPrefix << "1_x," << matrixPrefix << "1_y," << matrixPrefix << "1_z,"
+           << matrixPrefix << "2_x," << matrixPrefix << "2_y," << matrixPrefix << "2_z" << endl;
+
+    // And dump into file
+    for (size_type i = 0; i < particleNum; ++i) {
+        csvout << hostM0View(i)[0] << "," << hostM0View(i)[1] << "," << hostM0View(i)[2] << ","
+               << hostM1View(i)[0] << "," << hostM1View(i)[1] << "," << hostM1View(i)[2] << ","
+               << hostM2View(i)[0] << "," << hostM2View(i)[1] << "," << hostM2View(i)[2] << endl;
     }
 }
 

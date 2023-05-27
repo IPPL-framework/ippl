@@ -182,7 +182,9 @@ int main(int argc, char* argv[]) {
             //  dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "H(v)");
             //  P->dumpFdField(it, OUT_DIR);
             //}
-            P->dumpCSVMatrix(P->D0_m, P->D1_m, P->D2_m, P->hv_m, "D", it % 2, OUT_DIR);
+            dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", it % 2, OUT_DIR);
+            dumpCSVMatrixAttr(P->p_Q0_m, P->p_Q1_m, P->p_Q2_m, P->getGlobParticleNum(), "Q", it % 2,
+                              OUT_DIR);
 
             msg << "Finished iteration " << it << endl;
             auto end = std::chrono::high_resolution_clock::now();

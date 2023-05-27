@@ -293,7 +293,7 @@ int main(int argc, char* argv[]) {
         P->extractRows(P->D_m, P->D0_m, P->D1_m, P->D2_m);
 
         // Dump actual diffusion coefficients
-        P->dumpCSVMatrix(P->D0_m, P->D1_m, P->D2_m, P->hv_m, "D", 0, OUT_DIR);
+        dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->hv_m, "D", 0, OUT_DIR);
 
         // Do Cholesky decomposition of $D$
         // and directly multiply with Gaussian random vector
