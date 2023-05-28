@@ -1,12 +1,12 @@
 //
 ////
-//// TestOnesidedHessian.cpp
+//// TestFunctorHessian.cpp
 ////   This program tests the onesided Hessian operator on a vector field.
 ////   The problem size can be given by the user (N^3), and a bool (0 or 1)
 ////   indicates whether the field is f=xyz or a Gaussian field.
 ////
 //// Usage:
-////   srun ./TestOnesidedHessian N 0 --info 10
+////   srun ./TestFunctorHessian N 0 --info 10
 ////
 //// Copyright (c) 2022,
 //// Paul Scherrer Institut, Villigen, Switzerland
@@ -29,13 +29,7 @@
 #include <iostream>
 #include <typeinfo>
 
-#include "TemplatedHessian.h"
-
-template <unsigned Dim = 3>
-using Matrix_t = Vector<Vector<double>>;
-
-template <unsigned Dim = 3>
-using MField_t = Field<Matrix_t<Dim>, Dim>;
+#include "Hessian.h"
 
 constexpr unsigned int dim = 3;
 
@@ -231,30 +225,6 @@ std::array<DiffType, 3> getOperatorTypes(int opEncoding) {
     return operators;
 }
 
-// Helper template to generate array of operator class instantiations
-template <DiffType DiffX, DiffType DiffY, DiffType DiffZ, int Index>
-struct OperatorGenerator {
-    static constexpr int TotalCombinations = 27;
-
-    static void generate(GeneralDiffOpInterface<dim, double, Matrix_t<dim>>* arr,
-                         const Field_t<dim>& field, Vector_t<dim> hInvVector) {
-        arr[Index] =
-            GeneralizedHessOp<dim, double, Matrix_t<dim>, DiffX, DiffY, DiffZ>(field, hInvVector);
-        OperatorGenerator<(DiffType)((Index + 1) / 9), (DiffType)(((Index + 1) / 3) % 3),
-                          (DiffType)((Index + 1) % 3), Index + 1>::generate(arr, field, hInvVector);
-    }
-};
-
-// Base case to stop recursion
-template <DiffType DiffX, DiffType DiffY, DiffType DiffZ>
-struct OperatorGenerator<DiffX, DiffY, DiffZ,
-                         OperatorGenerator<DiffX, DiffY, DiffZ, 27>::TotalCombinations> {
-    static void generate(GeneralDiffOpInterface<dim, double, Matrix_t<dim>>* arr,
-                         const Field_t<dim>& field, Vector_t<dim> hInvVector) {
-        // Do nothing
-    }
-};
-
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
     Inform msg("TestOnesidedHessian");
@@ -262,8 +232,6 @@ int main(int argc, char* argv[]) {
 
     // Define often used types
     typedef Kokkos::MDRangePolicy<Kokkos::Rank<dim>> mdrange_type;
-    typedef typename Field_t<dim>::view_type FView_t;
-    typedef typename MField_t<dim>::view_type MView_t;
 
     int pt         = std::atoi(argv[1]);
     bool gauss_fct = std::atoi(argv[2]);
@@ -294,7 +262,7 @@ int main(int argc, char* argv[]) {
     MField_t<dim> subResult(mesh, layout, nghost);
     MField_t<dim> exact(mesh, layout, nghost);
 
-    FView_t& view = field.getView();
+    FView_t<dim>& view = field.getView();
 
     const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
 
@@ -316,13 +284,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // GeneralDiffOpInterface<dim, double, Matrix_t<dim>> operators[27];
-    // GeneralizedHessOp<dim, double, Matrix_t<dim>, DiffType::Centered, DiffType::Centered,
-    //                   DiffType::Centered>
-    //     operators[27];
-    // OperatorGenerator<DiffType::Centered, DiffType::Centered, DiffType::Centered, 0>::generate(
-    //     operators, field, hxInv);
-
     Kokkos::parallel_for(
         "Assign field", mdrange_type({0, 0, 0}, {view.extent(0), view.extent(1), view.extent(2)}),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -342,8 +303,8 @@ int main(int argc, char* argv[]) {
             }
         });
 
-    MView_t& view_exact  = exact.getView();
-    MView_t& view_result = result.getView();
+    MView_t<dim>& view_exact  = exact.getView();
+    MView_t<dim>& view_result = result.getView();
 
     Kokkos::parallel_for(
         "Assign exact",
@@ -403,18 +364,17 @@ int main(int argc, char* argv[]) {
     // Kokkos loop for Hessian //
     /////////////////////////////
 
-    // Define Opereators
-    GeneralizedHessOp<dim, double, Matrix_t<dim>, DiffType::Centered, DiffType::Centered,
-                      DiffType::Centered>
-        centerHess(field, hxInv);
+    BackwardStencil<OpDim::X> bs;
+    CenteredStencil<OpDim::X> bs;
+    view(5, 5, 5) = bs(view, hx, 5, 5, 5);
 
-    Kokkos::parallel_for(
-        "Assign Hessian",
-        mdrange_type({0, 0, 0},
-                     {view_result.extent(0), view_result.extent(1), view_result.extent(2)}),
-        KOKKOS_LAMBDA(const int i, const int j, const int k) {
-            view_result(i, j, k) = centerHess(i, j, k);
-        });
+    // Kokkos::parallel_for(
+    //     "Assign Hessian",
+    //     mdrange_type({0, 0, 0},
+    //                  {view_result.extent(0), view_result.extent(1), view_result.extent(2)}),
+    //     KOKKOS_LAMBDA(const int i, const int j, const int k) {
+    //         view_result(i, j, k) = centerHess(i, j, k);
+    //     });
 
     // pickHessianIdx<double,dim>(hessReductionField, result, 0, 1, 2);
 
