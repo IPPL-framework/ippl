@@ -46,9 +46,10 @@ namespace ippl {
         typedef T value_type;
         constexpr static unsigned dim = 1;
 
-        using boolean_view_type =
-            typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
-        using int_view_type = typename detail::ViewType<int, 1, Properties...>::view_type;
+        using Base = detail::ParticleAttribBase<Properties...>;
+
+        using boolean_view_type = typename Base::boolean_view_type;
+        using int_view_type     = typename Base::int_view_type;
 
         using view_type  = typename detail::ViewType<T, 1, Properties...>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
