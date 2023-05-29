@@ -364,9 +364,15 @@ int main(int argc, char* argv[]) {
     // Kokkos loop for Hessian //
     /////////////////////////////
 
-    BackwardStencil<OpDim::X> bs;
-    CenteredStencil<OpDim::X> bs;
-    view(5, 5, 5) = bs(view, hx, 5, 5, 5);
+    if (currRange.first[0] == nghost) {
+        BackwardStencil<OpDim::X, double, dim, FView_t<dim>> bs(view, hxInv);
+        BackwardStencil<OpDim::X, double, dim, decltype(bs)> bs2(view, bs, hxInv);
+        std::cout << bs(5, 5, 5) << std::endl;
+    } else {
+        BackwardStencil<OpDim::X, double, dim, FView_t<dim>> bs(view, hxInv);
+        BackwardStencil<OpDim::Y, double, dim, decltype(bs)> bs2(view, bs, hxInv);
+        std::cout << bs(5, 5, 5) << std::endl;
+    }
 
     // Kokkos::parallel_for(
     //     "Assign Hessian",
