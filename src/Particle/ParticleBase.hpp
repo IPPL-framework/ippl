@@ -154,7 +154,8 @@ namespace ippl {
     }
 
     template <class PLayout, typename... IP>
-    void ParticleBase<PLayout, IP...>::destroy(const Kokkos::View<bool*>& invalid,
+    template <typename... Properties>
+    void ParticleBase<PLayout, IP...>::destroy(const Kokkos::View<bool*, Properties...>& invalid,
                                                const size_type destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
@@ -171,18 +172,25 @@ namespace ippl {
             return;
         }
 
+        using memory_space   = typename Kokkos::View<bool*, Properties...>::memory_space;
+        auto& locDeleteIndex = deleteIndex_m.get<memory_space>();
+        auto& locKeepIndex   = keepIndex_m.get<memory_space>();
+
         // Resize buffers, if necessary
-        if (deleteIndex_m.size() < destroyNum) {
-            int overalloc = Ippl::Comm->getDefaultOverallocation();
-            Kokkos::realloc(deleteIndex_m, destroyNum * overalloc);
-            Kokkos::realloc(keepIndex_m, destroyNum * overalloc);
-        }
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            if (attributes_m.template get<memory_space>().size() > 0) {
+                int overalloc = Ippl::Comm->getDefaultOverallocation();
+                auto& del     = deleteIndex_m.get<memory_space>();
+                auto& keep    = keepIndex_m.get<memory_space>();
+                if (del.size() < destroyNum) {
+                    Kokkos::realloc(del, destroyNum * overalloc);
+                    Kokkos::realloc(keep, destroyNum * overalloc);
+                }
+            }
+        });
 
         // Reset index buffer
-        Kokkos::deep_copy(deleteIndex_m, -1);
-
-        auto locDeleteIndex = deleteIndex_m;
-        auto locKeepIndex   = keepIndex_m;
+        Kokkos::deep_copy(locDeleteIndex, -1);
 
         // Find the indices of the invalid particles in the valid region
         Kokkos::parallel_scan(
@@ -225,29 +233,43 @@ namespace ippl {
 
         localNum_m -= destroyNum;
 
+        auto filter = [&]<typename MemorySpace>() {
+            return attributes_m.template get<MemorySpace>().size() > 0;
+        };
+        deleteIndex_m.copyToOtherSpaces<memory_space>(filter);
+        keepIndex_m.copyToOtherSpaces<memory_space>(filter);
+
         // Partition the attributes into valid and invalid regions
         attributes_m.forAll([&]<typename Attributes>(Attributes& att) {
+            using att_memory_space =
+                typename std::remove_pointer_t<typename Attributes::value_type>::memory_space;
+            auto& del  = deleteIndex_m.get<att_memory_space>();
+            auto& keep = keepIndex_m.get<att_memory_space>();
             for (auto& attribute : att) {
-                attribute->destroy(deleteIndex_m, keepIndex_m, maxDeleteIndex + 1);
+                attribute->destroy(del, keep, maxDeleteIndex + 1);
             }
         });
     }
 
     template <class PLayout, typename... IP>
-    template <typename BufferType>
+    template <typename HashType, typename BufferType>
     void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag, int& sendNum,
                                                   std::vector<MPI_Request>& requests,
-                                                  const hash_container_type& hash,
-                                                  BufferType& buffer) {
-        size_type nSends =
-            hash.template get<typename Kokkos::DefaultExecutionSpace::memory_space>().size();
+                                                  const HashType& hash, BufferType& buffer) {
+        size_type nSends = hash.size();
         requests.resize(requests.size() + 1);
 
-        pack(buffer, hash);
-        detail::runForAllSpaces([&]<typename MemorySpace>() {
-            size_type bufSize = packedSize<MemorySpace>(nSends);
+        auto hashes = hash_container_type(hash, [&]<typename MemSpace>() {
+            return attributes_m.template get<MemSpace>().size() > 0;
+        });
+        pack(buffer, hashes);
+        detail::runForAllSpaces([&]<typename MemSpace>() {
+            size_type bufSize = packedSize<MemSpace>(nSends);
+            if (bufSize == 0) {
+                return;
+            }
 
-            auto buf = Ippl::Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
+            auto buf = Ippl::Comm->getBuffer<MemSpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
 
             Ippl::Comm->isend(rank, tag, buffer, *buf, requests.back(), nSends);
             buf->resetWritePos();

@@ -248,11 +248,12 @@ namespace ippl {
          * @param invalid View marking which indices are invalid
          * @param destroyNum Total number of invalid particles
          */
-        void destroy(const Kokkos::View<bool*>& invalid, const size_type destroyNum);
+        template <typename... Properties>
+        void destroy(const Kokkos::View<bool*, Properties...>& invalid, const size_type destroyNum);
 
-        template <typename BufferType>
+        template <typename HashType, typename BufferType>
         void sendToRank(int rank, int tag, int& sendNum, std::vector<MPI_Request>& requests,
-                        const hash_container_type& hash, BufferType& buffer);
+                        const HashType& hash, BufferType& buffer);
 
         template <typename BufferType>
         void recvFromRank(int rank, int tag, int& recvNum, size_type nRecvs, BufferType& buffer);
@@ -280,8 +281,7 @@ namespace ippl {
         template <typename MemorySpace>
         size_type packedSize(const size_type count) const;
 
-        //     protected:
-
+    protected:
         /*!
          * Fill attributes of buffer.
          * @tparam Buffer is a bunch type
