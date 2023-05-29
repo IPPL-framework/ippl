@@ -49,15 +49,20 @@ namespace ippl {
      * @tparam Dim dimension
      * @tparam Mesh type
      */
-    template <typename T, unsigned Dim, class Mesh = UniformCartesian<T, Dim>>
-    class ParticleSpatialLayout : public detail::ParticleLayout<T, Dim> {
+    template <typename T, unsigned Dim, class Mesh = UniformCartesian<T, Dim>,
+              typename... PositionProperties>
+    class ParticleSpatialLayout : public detail::ParticleLayout<T, Dim, PositionProperties...> {
     public:
-        using hash_type   = typename ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>::hash_type;
-        using locate_type = typename detail::ViewType<int, 1>::view_type;
-        using bool_type   = typename detail::ViewType<bool, 1>::view_type;
-        using vector_type = typename detail::ParticleLayout<T, Dim>::vector_type;
+        using Base = detail::ParticleLayout<T, Dim, PositionProperties...>;
+
+        using position_memory_space = typename Base::particle_position_type::memory_space;
+
+        using hash_type   = detail::hash_type<position_memory_space>;
+        using locate_type = typename detail::ViewType<int, 1, position_memory_space>::view_type;
+        using bool_type   = typename detail::ViewType<bool, 1, position_memory_space>::view_type;
+
+        using vector_type    = typename Base::vector_type;
         using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
-        using Mesh_t         = UniformCartesian<double, Dim>;
 
         using size_type = detail::size_type;
 

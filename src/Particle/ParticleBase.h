@@ -78,20 +78,15 @@ namespace ippl {
      * @class ParticleBase
      * @tparam PLayout the particle layout implementing an algorithm to
      * distribute the particles among MPI ranks
-     * @tparam IDProps the view properties for particle IDs
-     * @tparam PositionProps the view properties for particle positions
+     * @tparam IDProperties the view properties for particle IDs
      */
-    template <class PLayout, typename IDProps = std::tuple<>, typename PositionProps = std::tuple<>>
-    class ParticleBase;
-
-    template <class PLayout, typename... IDProps, typename... PositionProps>
-    class ParticleBase<PLayout, std::tuple<IDProps...>, std::tuple<PositionProps...>> {
+    template <class PLayout, typename... IDProperties>
+    class ParticleBase {
     public:
-        using vector_type = typename PLayout::vector_type;
-        using index_type  = typename PLayout::index_type;
-        using particle_position_type =
-            typename PLayout::template particle_position_type<PositionProps...>;
-        using particle_index_type = ParticleAttrib<index_type, IDProps...>;
+        using vector_type            = typename PLayout::vector_type;
+        using index_type             = typename PLayout::index_type;
+        using particle_position_type = typename PLayout::particle_position_type;
+        using particle_index_type    = ParticleAttrib<index_type, IDProperties...>;
 
         using Layout_t = PLayout;
 
