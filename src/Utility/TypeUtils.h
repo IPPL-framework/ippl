@@ -215,17 +215,26 @@ namespace ippl {
         public:
             MultispaceContainer() { (initElements<Spaces>(), ...); }
 
+            template <typename DataType, typename Filter = bool>
+            MultispaceContainer(const DataType& data, Filter&& predicate = true) {
+                using space = typename DataType::memory_space;
+                static_assert(std::is_same_v<DataType, Type<space>>);
+                elements_m[spaceToIndex<space>()] = data;
+                copyToOtherSpaces<space>(predicate);
+            }
+
             template <typename Space, typename Filter = bool>
             void copyToOtherSpaces(Filter&& predicate = true) {
-                forAll([&]<typename MemSpace>(Type<MemSpace>& dst) {
-                    if constexpr (!std::is_same_v<Space, MemSpace>) {
+                forAll([&]<typename DataType>(DataType& dst) {
+                    using memory_space = typename DataType::memory_space;
+                    if constexpr (!std::is_same_v<Space, memory_space>) {
                         bool include = true;
                         if constexpr (!std::is_same_v<Filter, bool>) {
-                            include = predicate.template operator()<MemSpace>();
+                            include = predicate.template operator()<memory_space>();
                         }
                         if (include) {
                             dst = Kokkos::create_mirror_view_and_copy(
-                                Kokkos::view_alloc(MemSpace{}, Kokkos::WithoutInitializing),
+                                Kokkos::view_alloc(memory_space{}, Kokkos::WithoutInitializing),
                                 get<Space>());
                         }
                     }
