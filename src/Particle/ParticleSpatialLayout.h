@@ -69,7 +69,6 @@ namespace ippl {
             : detail::ParticleLayout<T, Dim>() {}
 
         ~ParticleSpatialLayout() = default;
-        //~ParticleSpatialLayout() {}
 
         void updateLayout(FieldLayout<Dim>&, Mesh&);
 

@@ -80,15 +80,12 @@ namespace ippl {
      * distribute the particles among MPI ranks
      * @tparam IDProps the view properties for particle IDs
      * @tparam PositionProps the view properties for particle positions
-     * @tparam HashProps the view properties for the hash views
      */
-    template <class PLayout, typename IDProps = std::tuple<>, typename PositionProps = std::tuple<>,
-              typename HashProps = std::tuple<>>
+    template <class PLayout, typename IDProps = std::tuple<>, typename PositionProps = std::tuple<>>
     class ParticleBase;
 
-    template <class PLayout, typename... IDProps, typename... PositionProps, typename... HashProps>
-    class ParticleBase<PLayout, std::tuple<IDProps...>, std::tuple<PositionProps...>,
-                       std::tuple<HashProps...>> {
+    template <class PLayout, typename... IDProps, typename... PositionProps>
+    class ParticleBase<PLayout, std::tuple<IDProps...>, std::tuple<PositionProps...>> {
     public:
         using vector_type = typename PLayout::vector_type;
         using index_type  = typename PLayout::index_type;
@@ -108,7 +105,8 @@ namespace ippl {
             typename detail::ContainerForAllSpaces<container_type>::type;
 
         using bc_container_type = typename PLayout::bc_container_type;
-        using hash_type         = typename detail::ViewType<int, 1, HashProps...>::view_type;
+
+        using hash_container_type = typename detail::ContainerForAllSpaces<detail::hash_type>::type;
 
         using size_type = detail::size_type;
 
@@ -259,7 +257,7 @@ namespace ippl {
 
         template <typename BufferType>
         void sendToRank(int rank, int tag, int& sendNum, std::vector<MPI_Request>& requests,
-                        const hash_type& hash, BufferType& buffer);
+                        const hash_container_type& hash, BufferType& buffer);
 
         template <typename BufferType>
         void recvFromRank(int rank, int tag, int& recvNum, size_type nRecvs, BufferType& buffer);
@@ -296,7 +294,7 @@ namespace ippl {
          * @param hash function to access index.
          */
         template <class Buffer>
-        void pack(Buffer& buffer, const hash_type& hash);
+        void pack(Buffer& buffer, const hash_container_type& hash);
 
         /*!
          * Fill my attributes.
@@ -324,8 +322,8 @@ namespace ippl {
         index_type numNodes_m;
 
         //! buffers for particle partitioning
-        hash_type deleteIndex_m;
-        hash_type keepIndex_m;
+        hash_container_type deleteIndex_m;
+        hash_container_type keepIndex_m;
     };
 }  // namespace ippl
 
