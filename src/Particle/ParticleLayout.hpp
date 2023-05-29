@@ -43,10 +43,9 @@
 
 namespace ippl {
     namespace detail {
-        template <typename T, unsigned Dim>
-        template <typename... Properties>
-        void ParticleLayout<T, Dim>::applyBC(const particle_position_type<Properties...>& R,
-                                             const NDRegion<T, Dim>& nr) {
+        template <typename T, unsigned Dim, typename... Properties>
+        void ParticleLayout<T, Dim, Properties...>::applyBC(const particle_position_type& R,
+                                                            const NDRegion<T, Dim>& nr) {
             /* loop over all faces
              * 0: lower x-face
              * 1: upper x-face

@@ -93,10 +93,9 @@ namespace ippl {
             const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region);
 
     public:
-        template <typename... Properties>
-        void locateParticles(
-            const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>, Properties...>& pdata,
-            locate_type& ranks, bool_type& invalid) const;
+        template <typename ParticleBunch>
+        void locateParticles(const ParticleBunch& pdata, locate_type& ranks,
+                             bool_type& invalid) const;
 
         /*!
          * @param rank we sent to

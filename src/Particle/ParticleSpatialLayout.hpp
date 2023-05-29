@@ -40,18 +40,21 @@
 
 namespace ippl {
 
-    template <typename T, unsigned Dim, class Mesh>
-    ParticleSpatialLayout<T, Dim, Mesh>::ParticleSpatialLayout(FieldLayout<Dim>& fl, Mesh& mesh)
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    ParticleSpatialLayout<T, Dim, Mesh, Properties...>::ParticleSpatialLayout(FieldLayout<Dim>& fl,
+                                                                              Mesh& mesh)
         : rlayout_m(fl, mesh) {}
 
-    template <typename T, unsigned Dim, class Mesh>
-    void ParticleSpatialLayout<T, Dim, Mesh>::updateLayout(FieldLayout<Dim>& fl, Mesh& mesh) {
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    void ParticleSpatialLayout<T, Dim, Mesh, Properties...>::updateLayout(FieldLayout<Dim>& fl,
+                                                                          Mesh& mesh) {
         rlayout_m.changeDomain(fl, mesh);
     }
 
-    template <typename T, unsigned Dim, class Mesh>
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <class BufferType>
-    void ParticleSpatialLayout<T, Dim, Mesh>::update(BufferType& pdata, BufferType& buffer) {
+    void ParticleSpatialLayout<T, Dim, Mesh, Properties...>::update(BufferType& pdata,
+                                                                    BufferType& buffer) {
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
         IpplTimings::startTimer(ParticleBCTimer);
         this->applyBC(pdata.R, rlayout_m.getDomain());
@@ -178,18 +181,18 @@ namespace ippl {
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }
 
-    template <typename T, unsigned Dim, class Mesh>
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <size_t... Idx>
-    KOKKOS_INLINE_FUNCTION constexpr bool ParticleSpatialLayout<T, Dim, Mesh>::positionInRegion(
+    KOKKOS_INLINE_FUNCTION constexpr bool
+    ParticleSpatialLayout<T, Dim, Mesh, Properties...>::positionInRegion(
         const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region) {
         return ((pos[Idx] >= region[Idx].min()) && ...) && ((pos[Idx] <= region[Idx].max()) && ...);
     };
 
-    template <typename T, unsigned Dim, class Mesh>
-    template <typename... Properties>
-    void ParticleSpatialLayout<T, Dim, Mesh>::locateParticles(
-        const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>, Properties...>& pdata,
-        locate_type& ranks, bool_type& invalid) const {
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    template <typename ParticleBunch>
+    void ParticleSpatialLayout<T, Dim, Mesh, Properties...>::locateParticles(
+        const ParticleBunch& pdata, locate_type& ranks, bool_type& invalid) const {
         auto& positions                            = pdata.R.getView();
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
 
@@ -212,9 +215,10 @@ namespace ippl {
         Kokkos::fence();
     }
 
-    template <typename T, unsigned Dim, class Mesh>
-    void ParticleSpatialLayout<T, Dim, Mesh>::fillHash(int rank, const locate_type& ranks,
-                                                       hash_type& hash) {
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    void ParticleSpatialLayout<T, Dim, Mesh, Properties...>::fillHash(int rank,
+                                                                      const locate_type& ranks,
+                                                                      hash_type& hash) {
         /* Compute the prefix sum and fill the hash
          */
         Kokkos::parallel_scan(
@@ -233,8 +237,9 @@ namespace ippl {
         Kokkos::fence();
     }
 
-    template <typename T, unsigned Dim, class Mesh>
-    size_t ParticleSpatialLayout<T, Dim, Mesh>::numberOfSends(int rank, const locate_type& ranks) {
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    size_t ParticleSpatialLayout<T, Dim, Mesh, Properties...>::numberOfSends(
+        int rank, const locate_type& ranks) {
         size_t nSends = 0;
         Kokkos::parallel_reduce(
             "ParticleSpatialLayout::numberOfSends()", ranks.extent(0),
