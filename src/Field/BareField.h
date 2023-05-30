@@ -56,8 +56,6 @@ namespace ippl {
     public:
         using Layout_t = FieldLayout<Dim>;
 
-        constexpr static unsigned dim = Dim;
-
         //! Domain type specifying the index region
         using Domain_t = NDIndex<Dim>;
 
