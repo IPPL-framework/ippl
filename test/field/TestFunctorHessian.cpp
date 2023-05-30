@@ -363,15 +363,22 @@ int main(int argc, char* argv[]) {
     /////////////////////////////
     // Kokkos loop for Hessian //
     /////////////////////////////
+    using bo1_type = BackwardStencil<OpDim::X, double, dim, FView_t<dim>>;
+    using bs1_type = BackwardOperator<OpDim::X, double, dim, FView_t<dim>, bo1_type>;
+    using bo2_type = BackwardStencil<OpDim::X, double, dim, bs1_type>;
+    // using bs2_type = BackwardStencil<OpDim::X, double, dim, bs1_type, bo2_type>;
+
+    bo1_type bo1;
+    bo2_type bo2;
 
     if (currRange.first[0] == nghost) {
-        BackwardStencil<OpDim::X, double, dim, FView_t<dim>> bs(view, hxInv);
-        BackwardStencil<OpDim::X, double, dim, decltype(bs)> bs2(view, bs, hxInv);
-        std::cout << bs(5, 5, 5) << std::endl;
+        BackwardOperator<OpDim::X, double, dim, FView_t<dim>, bo1_type> bs(view, hxInv, bo1);
+        BackwardOperator<OpDim::X, double, dim, decltype(bs), bo2_type> bs2(view, bs, hxInv, bo2);
+        std::cout << bs2(5, 5, 5) << std::endl;
     } else {
-        BackwardStencil<OpDim::X, double, dim, FView_t<dim>> bs(view, hxInv);
-        BackwardStencil<OpDim::Y, double, dim, decltype(bs)> bs2(view, bs, hxInv);
-        std::cout << bs(5, 5, 5) << std::endl;
+        // BackwardStencil<OpDim::X, double, dim, FView_t<dim>> bs(view, hxInv);
+        // BackwardStencil<OpDim::Y, double, dim, decltype(bs)> bs2(view, bs, hxInv);
+        // std::cout << bs(5, 5, 5) << std::endl;
     }
 
     // Kokkos::parallel_for(
