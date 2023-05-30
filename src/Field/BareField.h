@@ -67,8 +67,8 @@ namespace ippl {
         template <typename Tag = void>
         using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
 
-        using value_type = T;
-        // constexpr static unsigned dim = Dim;
+        using value_type              = T;
+        constexpr static unsigned dim = Dim;
 
         /*! A default constructor, which should be used only if the user calls the
          * 'initialize' function before doing anything else.  There are no special
