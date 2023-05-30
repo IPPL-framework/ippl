@@ -108,11 +108,13 @@ namespace ippl {
         });
 
         // set the unique ID value for these new particles
+        using policy_type =
+            Kokkos::RangePolicy<size_type, typename particle_index_type::execution_space>;
         auto pIDs     = ID.getView();
         auto nextID   = this->nextID_m;
         auto numNodes = this->numNodes_m;
         Kokkos::parallel_for(
-            "ParticleBase<...>::create(size_t)", Kokkos::RangePolicy<size_type>(localNum_m, nLocal),
+            "ParticleBase<...>::create(size_t)", policy_type(localNum_m, nLocal),
             KOKKOS_LAMBDA(const std::int64_t i) { pIDs(i) = nextID + numNodes * i; });
         // nextID_m += numNodes_m * (nLocal - localNum_m);
         nextID_m += numNodes_m * nLocal;
@@ -172,9 +174,12 @@ namespace ippl {
             return;
         }
 
-        using memory_space   = typename Kokkos::View<bool*, Properties...>::memory_space;
-        auto& locDeleteIndex = deleteIndex_m.get<memory_space>();
-        auto& locKeepIndex   = keepIndex_m.get<memory_space>();
+        using view_type       = Kokkos::View<bool*, Properties...>;
+        using memory_space    = typename view_type::memory_space;
+        using execution_space = typename view_type::execution_space;
+        using policy_type     = Kokkos::RangePolicy<execution_space>;
+        auto& locDeleteIndex  = deleteIndex_m.get<memory_space>();
+        auto& locKeepIndex    = keepIndex_m.get<memory_space>();
 
         // Resize buffers, if necessary
         detail::runForAllSpaces([&]<typename MemorySpace>() {
@@ -194,7 +199,7 @@ namespace ippl {
 
         // Find the indices of the invalid particles in the valid region
         Kokkos::parallel_scan(
-            "Scan in ParticleBase::destroy()", localNum_m - destroyNum,
+            "Scan in ParticleBase::destroy()", policy_type(0, localNum_m - destroyNum),
             KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
                 if (final && invalid(i)) {
                     locDeleteIndex(idx) = i;
@@ -208,7 +213,7 @@ namespace ippl {
         // Determine the total number of invalid particles in the valid region
         size_type maxDeleteIndex = 0;
         Kokkos::parallel_reduce(
-            "Reduce in ParticleBase::destroy()", destroyNum,
+            "Reduce in ParticleBase::destroy()", policy_type(0, destroyNum),
             KOKKOS_LAMBDA(const size_t i, size_t& maxIdx) {
                 if (locDeleteIndex(i) >= 0 && i > maxIdx) {
                     maxIdx = i;
@@ -219,7 +224,7 @@ namespace ippl {
         // Find the indices of the valid particles in the invalid region
         Kokkos::parallel_scan(
             "Second scan in ParticleBase::destroy()",
-            Kokkos::RangePolicy<size_type>(localNum_m - destroyNum, localNum_m),
+            Kokkos::RangePolicy<size_type, execution_space>(localNum_m - destroyNum, localNum_m),
             KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
                 if (final && !invalid(i)) {
                     locKeepIndex(idx) = i;

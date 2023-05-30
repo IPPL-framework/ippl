@@ -55,7 +55,8 @@ namespace ippl {
     public:
         using Base = detail::ParticleLayout<T, Dim, PositionProperties...>;
 
-        using position_memory_space = typename Base::particle_position_type::memory_space;
+        using position_memory_space    = typename Base::particle_position_type::memory_space;
+        using position_execution_space = typename Base::particle_position_type::execution_space;
 
         using hash_type   = detail::hash_type<position_memory_space>;
         using locate_type = typename detail::ViewType<int, 1, position_memory_space>::view_type;

@@ -145,8 +145,10 @@ namespace ippl {
 
         size_type invalidCount = 0;
         auto pIDs              = pdata.ID.getView();
+        using execution_space  = decltype(pdata.ID)::execution_space;
+        using policy_type      = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_reduce(
-            "set/count invalid", localnum,
+            "set/count invalid", policy_type(0, localnum),
             KOKKOS_LAMBDA(const size_t i, size_type& nInvalid) {
                 if (invalid(i)) {
                     pIDs(i) = -1;
@@ -197,7 +199,7 @@ namespace ippl {
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
 
         using view_size_t  = typename RegionLayout_t::view_type::size_type;
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
 
         int myRank = Ippl::Comm->rank();
 
@@ -221,8 +223,9 @@ namespace ippl {
                                                                       hash_type& hash) {
         /* Compute the prefix sum and fill the hash
          */
+        using policy_type = Kokkos::RangePolicy<position_execution_space>;
         Kokkos::parallel_scan(
-            "ParticleSpatialLayout::fillHash()", ranks.extent(0),
+            "ParticleSpatialLayout::fillHash()", policy_type(0, ranks.extent(0)),
             KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
                 if (final) {
                     if (rank == ranks(i)) {
@@ -240,9 +243,10 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     size_t ParticleSpatialLayout<T, Dim, Mesh, Properties...>::numberOfSends(
         int rank, const locate_type& ranks) {
-        size_t nSends = 0;
+        size_t nSends     = 0;
+        using policy_type = Kokkos::RangePolicy<position_execution_space>;
         Kokkos::parallel_reduce(
-            "ParticleSpatialLayout::numberOfSends()", ranks.extent(0),
+            "ParticleSpatialLayout::numberOfSends()", policy_type(0, ranks.extent(0)),
             KOKKOS_LAMBDA(const size_t i, size_t& num) { num += size_t(rank == ranks(i)); },
             nSends);
         Kokkos::fence();

@@ -40,6 +40,7 @@ namespace ippl {
             using boolean_view_type = typename ViewType<bool, 1, Properties...>::view_type;
             using int_view_type     = typename detail::ViewType<int, 1, Properties...>::view_type;
             using memory_space      = typename boolean_view_type::memory_space;
+            using execution_space   = typename boolean_view_type::execution_space;
 
             virtual void create(size_type) = 0;
 
