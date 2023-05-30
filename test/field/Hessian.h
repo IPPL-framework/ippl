@@ -75,55 +75,56 @@ inline typename Callable::value_type shiftedIdxApply(Callable& F, size_type shif
         shiftedIdx);
 }
 
-template <OpDim applyDim, typename T, unsigned Dim, class Callable>
+template <OpDim applyDim, unsigned Dim, class Callable>
 struct CenteredStencil {
-    T operator()(Callable& F, Vector_t<Dim>& hInv, size_type i, size_type j, size_type k) {
+    Callable::value_type operator()(Callable& F, Vector_t<Dim>& hInv, size_type i, size_type j,
+                                    size_type k) {
         return hInv[applyDim] * hInv[applyDim]
                * (shiftedIdxApply<applyDim>(F, -1, i, j, k) - 2.0 * idxApply(F, i, j, k)
                   + shiftedIdxApply<applyDim>(F, 1, i, j, k));
     }
 };
 
-template <OpDim applyDim, typename T, unsigned Dim, class Callable>
+template <OpDim applyDim, unsigned Dim, class Callable>
 struct ForwardStencil {
-    T operator()(Callable& F, Vector_t<Dim>& hInv, size_type i, size_type j, size_type k) {
+    Callable::value_type operator()(Callable& F, Vector_t<Dim>& hInv, size_type i, size_type j,
+                                    size_type k) {
         return 0.5 * hInv[applyDim]
                * (-3.0 * idxApply(F, i, j, k) + 4.0 * shiftedIdxApply<applyDim>(F, 1, i, j, k)
                   - shiftedIdxApply<applyDim>(F, 2, i, j, k));
     }
 };
 
-template <OpDim applyDim, typename T, unsigned Dim, class Callable>
+template <OpDim applyDim, unsigned Dim, class Callable>
 struct BackwardStencil {
-    T operator()(Callable& F, Vector_t<Dim>& hInv, size_type i, size_type j, size_type k) {
+    Callable::value_type operator()(Callable& F, Vector_t<Dim>& hInv, size_type i, size_type j,
+                                    size_type k) {
         return 0.5 * hInv[applyDim]
                * (3.0 * idxApply(F, i, j, k) - 4.0 * shiftedIdxApply<applyDim>(F, -1, i, j, k)
                   + shiftedIdxApply<applyDim>(F, -2, i, j, k));
     }
 };
 
-template <OpDim applyDim, typename T, unsigned Dim, class Callable, class Stencil>
+template <typename T, unsigned Dim, class Callable, class Stencil>
 struct OperatorBase {
     typedef T value_type;
 
-    OperatorBase(FView_t<Dim>& view, Vector_t<Dim>& hInv, Stencil& stencil)
-        : view_m(view)
-        , hInv_m(hInv)
+    OperatorBase(Vector_t<Dim>& hInv, Stencil& stencil)
+        : hInv_m(hInv)
         , stencil_m(stencil) {}
 
     T stencilOp(Callable& F, size_type i, size_type j, size_type k) {
         return stencil_m(F, hInv_m, i, j, k);
     }
 
-    FView_t<Dim>& view_m;
     Vector_t<Dim>& hInv_m;
     Stencil stencil_m;
 };
 
-template <OpDim applyDim, typename T, unsigned Dim, class Callable, class Stencil>
-struct ChainedOperator : public OperatorBase<applyDim, T, Dim, Callable, Stencil> {
-    ChainedOperator(FView_t<Dim>& view, Callable& leftOp, Vector_t<Dim>& hInv, Stencil& stencil)
-        : OperatorBase<applyDim, T, Dim, Callable, Stencil>(view, hInv, stencil)
+template <typename T, unsigned Dim, class Callable, class Stencil>
+struct ChainedOperator : public OperatorBase<T, Dim, Callable, Stencil> {
+    ChainedOperator(Callable& leftOp, Vector_t<Dim>& hInv, Stencil& stencil)
+        : OperatorBase<T, Dim, Callable, Stencil>(hInv, stencil)
         , leftOp_m(leftOp) {}
 
     T operator()(size_type i, size_type j, size_type k) {
@@ -134,15 +135,18 @@ struct ChainedOperator : public OperatorBase<applyDim, T, Dim, Callable, Stencil
 };
 
 // Template Specialization for applying stenciil to field directly (right-most operator)
-template <OpDim applyDim, unsigned Dim, typename T, class Stencil>
-struct ChainedOperator<applyDim, T, Dim, FView_t<Dim>, Stencil>
-    : public OperatorBase<applyDim, T, Dim, FView_t<Dim>, Stencil> {
+template <unsigned Dim, typename T, class Stencil>
+struct ChainedOperator<T, Dim, FView_t<Dim>, Stencil>
+    : public OperatorBase<T, Dim, FView_t<Dim>, Stencil> {
     ChainedOperator(FView_t<Dim>& view, Vector_t<Dim>& hInv, Stencil& stencil)
-        : OperatorBase<applyDim, T, Dim, FView_t<Dim>, Stencil>(view, hInv, stencil) {}
+        : OperatorBase<T, Dim, FView_t<Dim>, Stencil>(hInv, stencil)
+        , view_m(view) {}
 
     T operator()(size_type i, size_type j, size_type k) {
         return this->stencilOp(this->view_m, i, j, k);
     }
+
+    FView_t<Dim>& view_m;
 };
 
 // template <unsigned Dim, typename T, class ReturnType, class DiffOpX, class DiffOpY, class
@@ -151,9 +155,9 @@ struct ChainedOperator<applyDim, T, Dim, FView_t<Dim>, Stencil>
 
 //     // Define typedefs for innermost operators applied to Field<T> as they are identical on each
 //     // row
-//     typedef DiffOpChain<OpDim::X, Dim, T, DiffX, FView_t> colOpX_t;
-//     typedef DiffOpChain<OpDim::Y, Dim, T, DiffY, FView_t> colOpY_t;
-//     typedef DiffOpChain<OpDim::Z, Dim, T, DiffZ, FView_t> colOpZ_t;
+//     typedef ChainedOperator<OpDim::X, Dim, T, DiffX, FView_t> colOpX_t;
+//     typedef ChainedOperator<OpDim::Y, Dim, T, DiffY, FView_t> colOpY_t;
+//     typedef ChainedOperator<OpDim::Z, Dim, T, DiffZ, FView_t> colOpZ_t;
 
 //     GeneralizedHessOp(const Field_t<Dim>& field, Vector_t<Dim> hInvVector) {}
 // };

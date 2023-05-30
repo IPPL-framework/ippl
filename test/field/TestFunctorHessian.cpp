@@ -363,25 +363,25 @@ int main(int argc, char* argv[]) {
     /////////////////////////////
     // Kokkos loop for Hessian //
     /////////////////////////////
-    using bs1_type = BackwardStencil<OpDim::X, double, dim, FView_t<dim>>;
+    using bs1_type = BackwardStencil<OpDim::X, dim, FView_t<dim>>;
 
+    using bo1_type = ChainedOperator<double, dim, FView_t<dim>, bs1_type>;
     if (currRange.first[0] == nghost) {
-        using bo1_type = ChainedOperator<OpDim::X, double, dim, FView_t<dim>, bs1_type>;
-        using bs2_type = BackwardStencil<OpDim::X, double, dim, bo1_type>;
+        using bs2_type = BackwardStencil<OpDim::X, dim, bo1_type>;
         bs1_type bo1;
         bs2_type bo2;
 
         bo1_type bs(view, hxInv, bo1);
-        ChainedOperator<OpDim::X, double, dim, decltype(bs), bs2_type> bs2(view, bs, hxInv, bo2);
+        ChainedOperator<double, dim, decltype(bs), bs2_type> bs2(bs, hxInv, bo2);
         std::cout << bs2(5, 5, 5) << std::endl;
     } else {
-        using bo1_type = ChainedOperator<OpDim::X, double, dim, FView_t<dim>, bs1_type>;
-        using bs2_type = BackwardStencil<OpDim::X, double, dim, bo1_type>;
+        using bo1_type = ChainedOperator<double, dim, FView_t<dim>, bs1_type>;
+        using bs2_type = BackwardStencil<OpDim::Y, dim, bo1_type>;
         bs1_type bo1;
         bs2_type bo2;
 
         bo1_type bs(view, hxInv, bo1);
-        ChainedOperator<OpDim::Y, double, dim, decltype(bs), bs2_type> bs2(view, bs, hxInv, bo2);
+        ChainedOperator<double, dim, decltype(bs), bs2_type> bs2(bs, hxInv, bo2);
         std::cout << bs2(5, 5, 5) << std::endl;
     }
 
