@@ -444,12 +444,14 @@ public:
 
         // dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], iteration, hrField[0], hrField[1], hrField[2]);
 
-        // rho = rho_e - rho_i
-        double size = 1;
-        for (unsigned d = 0; d < Dim; d++) {
-            size *= rmax_m[d] - rmin_m[d];
+        // rho = rho_e - rho_i (only if periodic BCs)
+        if (stype_m != "OPEN") {
+            double size = 1;
+            for (unsigned d = 0; d < Dim; d++) {
+                size *= rmax_m[d] - rmin_m[d];
+            }
+            rho_m = rho_m - (Q_m / size);
         }
-        rho_m = rho_m - (Q_m / size);
     }
 
     void initSolver() {
