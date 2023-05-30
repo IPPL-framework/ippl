@@ -231,30 +231,6 @@ std::array<DiffType, 3> getOperatorTypes(int opEncoding) {
     return operators;
 }
 
-// Helper template to generate array of operator class instantiations
-template <DiffType DiffX, DiffType DiffY, DiffType DiffZ, int Index>
-struct OperatorGenerator {
-    static constexpr int TotalCombinations = 27;
-
-    static void generate(GeneralDiffOpInterface<dim, double, Matrix_t<dim>>* arr,
-                         const Field_t<dim>& field, Vector_t<dim> hInvVector) {
-        arr[Index] =
-            GeneralizedHessOp<dim, double, Matrix_t<dim>, DiffX, DiffY, DiffZ>(field, hInvVector);
-        OperatorGenerator<(DiffType)((Index + 1) / 9), (DiffType)(((Index + 1) / 3) % 3),
-                          (DiffType)((Index + 1) % 3), Index + 1>::generate(arr, field, hInvVector);
-    }
-};
-
-// Base case to stop recursion
-template <DiffType DiffX, DiffType DiffY, DiffType DiffZ>
-struct OperatorGenerator<DiffX, DiffY, DiffZ,
-                         OperatorGenerator<DiffX, DiffY, DiffZ, 27>::TotalCombinations> {
-    static void generate(GeneralDiffOpInterface<dim, double, Matrix_t<dim>>* arr,
-                         const Field_t<dim>& field, Vector_t<dim> hInvVector) {
-        // Do nothing
-    }
-};
-
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
     Inform msg("TestOnesidedHessian");
