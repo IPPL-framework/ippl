@@ -630,26 +630,28 @@ public:
         }
      }
 
-    void writelocalError(double Rerror, double Perror, unsigned int nc, unsigned int iter) {
+    void writelocalError(double Rerror, double Perror, unsigned int nc, unsigned int iter, int rankTime) {
         
-            std::stringstream fname;
-            fname << "data/localError_rank_";
-            fname << Ippl::Comm->rank();
-            fname << "_nc_";
-            fname << nc;
-            fname << ".csv";
+            if(Ippl::Comm->rank() == 0) {
+                std::stringstream fname;
+                fname << "data/localError_rank_";
+                fname << rankTime;
+                fname << "_nc_";
+                fname << nc;
+                fname << ".csv";
 
-            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
-            csvout.precision(10);
-            csvout.setf(std::ios::scientific, std::ios::floatfield);
+                Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, rankTime);
+                csvout.precision(10);
+                csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-            if(iter == 1) {
-                csvout << "Iter, Rerror, Perror" << endl;
+                if(iter == 1) {
+                    csvout << "Iter, Rerror, Perror" << endl;
+                }
+
+                csvout << iter << " "
+                       << Rerror << " "
+                       << Perror << endl;
             }
-
-            csvout << iter << " "
-                   << Rerror << " "
-                   << Perror << endl;
 
     }
 

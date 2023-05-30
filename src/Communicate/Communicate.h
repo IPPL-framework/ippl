@@ -123,14 +123,14 @@ namespace ippl {
          */
         template <class Buffer>
         void recv(int src, int tag, Buffer& buffer, archive_type& ar,
-                  size_type msize, size_type nrecvs);
+                  size_type msize, size_type nrecvs, const MPI_Comm& comm = comm_m);
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
         void isend(int dest, int tag, Buffer& buffer, archive_type&,
-                   MPI_Request&, size_type nsends);
+                   MPI_Request&, size_type nsends, const MPI_Comm& comm = comm_m);
 
         /*!
          * \warning Only works with default spaces!
@@ -158,7 +158,7 @@ namespace ippl {
 
     template <class Buffer>
     void Communicate::recv(int src, int tag, Buffer& buffer, archive_type& ar,
-                           size_type msize, size_type nrecvs)
+                           size_type msize, size_type nrecvs, const MPI_Comm& comm)
     {
         // Temporary fix. MPI communication seems to have problems when the
         // count argument exceeds the range of int, so large messages should
@@ -169,14 +169,15 @@ namespace ippl {
         }
         MPI_Status status;
         MPI_Recv(ar.getBuffer(), msize,
-                MPI_BYTE, src, tag, comm_m, &status);
+                MPI_BYTE, src, tag, comm, &status);
 
         buffer.deserialize(ar, nrecvs);
     }
 
     template <class Buffer>
     void Communicate::isend(int dest, int tag, Buffer& buffer,
-                            archive_type& ar, MPI_Request& request, size_type nsends)
+                            archive_type& ar, MPI_Request& request, size_type nsends, 
+                            const MPI_Comm& comm)
     {
         if (ar.getSize() > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
@@ -184,7 +185,7 @@ namespace ippl {
         }
         buffer.serialize(ar, nsends);
         MPI_Isend(ar.getBuffer(), ar.getSize(),
-                  MPI_BYTE, dest, tag, comm_m, &request);
+                  MPI_BYTE, dest, tag, comm, &request);
     }
 }
 

@@ -160,6 +160,15 @@ namespace ippl {
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
         const int nghost = f.getNghost();
 
+
+        Field<FT,Dim,M,C> tempField;
+
+        tempField.initialize(mesh, layout);
+
+        tempField = 0.0;
+        
+        view_type viewLocal = tempField.getView();
+
         Kokkos::parallel_for(
             "ParticleAttrib::scatter",
             *(this->localNum_mp),
@@ -183,14 +192,14 @@ namespace ippl {
 
                 // scatter
                 const value_type& val = dview_m(idx);
-                Kokkos::atomic_add(&view(i-1, j-1, k-1), wlo[0] * wlo[1] * wlo[2] * val);
-                Kokkos::atomic_add(&view(i-1, j-1, k  ), wlo[0] * wlo[1] * whi[2] * val);
-                Kokkos::atomic_add(&view(i-1, j,   k-1), wlo[0] * whi[1] * wlo[2] * val);
-                Kokkos::atomic_add(&view(i-1, j,   k  ), wlo[0] * whi[1] * whi[2] * val);
-                Kokkos::atomic_add(&view(i,   j-1, k-1), whi[0] * wlo[1] * wlo[2] * val);
-                Kokkos::atomic_add(&view(i,   j-1, k  ), whi[0] * wlo[1] * whi[2] * val);
-                Kokkos::atomic_add(&view(i,   j,   k-1), whi[0] * whi[1] * wlo[2] * val);
-                Kokkos::atomic_add(&view(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
+                Kokkos::atomic_add(&viewLocal(i-1, j-1, k-1), wlo[0] * wlo[1] * wlo[2] * val);
+                Kokkos::atomic_add(&viewLocal(i-1, j-1, k  ), wlo[0] * wlo[1] * whi[2] * val);
+                Kokkos::atomic_add(&viewLocal(i-1, j,   k-1), wlo[0] * whi[1] * wlo[2] * val);
+                Kokkos::atomic_add(&viewLocal(i-1, j,   k  ), wlo[0] * whi[1] * whi[2] * val);
+                Kokkos::atomic_add(&viewLocal(i,   j-1, k-1), whi[0] * wlo[1] * wlo[2] * val);
+                Kokkos::atomic_add(&viewLocal(i,   j-1, k  ), whi[0] * wlo[1] * whi[2] * val);
+                Kokkos::atomic_add(&viewLocal(i,   j,   k-1), whi[0] * whi[1] * wlo[2] * val);
+                Kokkos::atomic_add(&viewLocal(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
             }
         );
         IpplTimings::stopTimer(scatterPICTimer);
@@ -198,7 +207,14 @@ namespace ippl {
         //static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("AccumulateHalo");           
         //IpplTimings::startTimer(accumulateHaloTimer);                                               
         f.accumulateHalo();
-        //IpplTimings::stopTimer(accumulateHaloTimer);                                               
+        //IpplTimings::stopTimer(accumulateHaloTimer);
+
+        static IpplTimings::TimerRef scatterAllReducePICTimer = IpplTimings::getTimer("scatterAllReducePIC");           
+        IpplTimings::startTimer(scatterAllReducePICTimer);                                               
+        int viewSize = view.extent(0) * view.extent(1) * view.extent(2);
+        MPI_Allreduce(viewLocal.data(), view.data(), viewSize, 
+                      MPI_DOUBLE, MPI_SUM, Ippl::getComm());  
+        IpplTimings::stopTimer(scatterAllReducePICTimer);
     }
 
 
@@ -497,31 +513,33 @@ namespace ippl {
 
         auto q = *this;
         
-        //Field<FT,Dim,M,C> tempField;
+        Field<FT,Dim,M,C> tempField;
 
-        //FieldLayout<Dim>& layout = f.getLayout(); 
-        //M& mesh = f.get_mesh();
+        FieldLayout<Dim>& layout = f.getLayout(); 
+        M& mesh = f.get_mesh();
 
-        //tempField.initialize(mesh, layout);
+        tempField.initialize(mesh, layout);
+
+        tempField = 0.0;
         
-        //fftType_mp->transform(pp, q, tempField);
-        fftType_mp->transform(pp, q, f);
+        fftType_mp->transform(pp, q, tempField);
+        //fftType_mp->transform(pp, q, f);
 
         
         using view_type = typename Field<FT, Dim, M, C>::view_type;
         view_type fview = f.getView();
-        //view_type viewLocal = tempField.getView();
+        view_type viewLocal = tempField.getView();
         typename Field<ST, Dim, M, C>::view_type Skview = Sk.getView();
         const int nghost = f.getNghost();
         
         IpplTimings::stopTimer(scatterPIFNUFFTTimer);
 
-        //static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
-        //IpplTimings::startTimer(scatterAllReduceTimer);                                               
-        //int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
-        //MPI_Allreduce(viewLocal.data(), fview.data(), viewSize, 
-        //              MPI_C_DOUBLE_COMPLEX, MPI_SUM, Ippl::getComm());  
-        //IpplTimings::stopTimer(scatterAllReduceTimer);
+        static IpplTimings::TimerRef scatterAllReducePIFTimer = IpplTimings::getTimer("scatterAllReducePIF");           
+        IpplTimings::startTimer(scatterAllReducePIFTimer);                                               
+        int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
+        MPI_Allreduce(viewLocal.data(), fview.data(), viewSize, 
+                      MPI_C_DOUBLE_COMPLEX, MPI_SUM, Ippl::getComm());  
+        IpplTimings::stopTimer(scatterAllReducePIFTimer);
 
         //IpplTimings::startTimer(scatterPIFNUFFTTimer);
 
