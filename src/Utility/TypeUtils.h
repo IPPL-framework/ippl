@@ -212,27 +212,38 @@ namespace ippl {
                 elements_m[spaceToIndex<Space>()] = Type<Space>{};
             }
 
+            template <typename MemorySpace, typename Filter,
+                      std::enable_if_t<std::is_null_pointer_v<std::decay_t<Filter>>, int> = 0>
+            constexpr bool copyToSpace(Filter&&) {
+                return true;
+            }
+
+            template <typename MemorySpace, typename Filter,
+                      std::enable_if_t<!std::is_null_pointer_v<std::decay_t<Filter>>, int> = 0>
+            bool copyToSpace(Filter&& predicate) {
+                static_assert(!std::is_null_pointer_v<Filter>);
+                return predicate.template operator()<MemorySpace>();
+            }
+
         public:
             MultispaceContainer() { (initElements<Spaces>(), ...); }
 
-            template <typename DataType, typename Filter = bool>
-            MultispaceContainer(const DataType& data, Filter&& predicate = true) {
+            template <typename DataType, typename Filter = std::nullptr_t>
+            MultispaceContainer(const DataType& data, Filter&& predicate = nullptr)
+                : MultispaceContainer() {
                 using space = typename DataType::memory_space;
                 static_assert(std::is_same_v<DataType, Type<space>>);
+
                 elements_m[spaceToIndex<space>()] = data;
                 copyToOtherSpaces<space>(predicate);
             }
 
-            template <typename Space, typename Filter = bool>
-            void copyToOtherSpaces(Filter&& predicate = true) {
+            template <typename Space, typename Filter = std::nullptr_t>
+            void copyToOtherSpaces(Filter&& predicate = nullptr) {
                 forAll([&]<typename DataType>(DataType& dst) {
                     using memory_space = typename DataType::memory_space;
                     if constexpr (!std::is_same_v<Space, memory_space>) {
-                        bool include = true;
-                        if constexpr (!std::is_same_v<Filter, bool>) {
-                            include = predicate.template operator()<memory_space>();
-                        }
-                        if (include) {
+                        if (copyToSpace<memory_space>(predicate)) {
                             dst = Kokkos::create_mirror_view_and_copy(
                                 Kokkos::view_alloc(memory_space{}, Kokkos::WithoutInitializing),
                                 get<Space>());
