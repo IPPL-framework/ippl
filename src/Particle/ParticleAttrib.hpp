@@ -116,17 +116,20 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
-    template <unsigned Dim, class M, class C, class PT>
+    template <typename Field, class PT>
     void ParticleAttrib<T, Properties...>::scatter(
-        Field<T, Dim, M, C>& f, const ParticleAttrib<Vector<PT, Dim>, Properties...>& pp) const {
+        Field& f, const ParticleAttrib<Vector<PT, Field::dim>, Properties...>& pp) const {
+        constexpr unsigned Dim = Field::dim;
+
         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
         IpplTimings::startTimer(scatterTimer);
-        using view_type = typename Field<T, Dim, M, C>::view_type;
+        using view_type = typename Field::view_type;
         view_type view  = f.getView();
 
-        const M& mesh = f.get_mesh();
+        using mesh_type       = typename Field::Mesh_t;
+        const mesh_type& mesh = f.get_mesh();
 
-        using vector_type = typename M::vector_type;
+        using vector_type = typename mesh_type::vector_type;
         using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
 
         const vector_type& dx     = mesh.getMeshSpacing();
@@ -161,9 +164,11 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
-    template <unsigned Dim, class M, class C, typename P2>
+    template <typename Field, typename P2>
     void ParticleAttrib<T, Properties...>::gather(
-        Field<T, Dim, M, C>& f, const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) {
+        Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) {
+        constexpr unsigned Dim = Field::dim;
+
         static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
         IpplTimings::startTimer(fillHaloTimer);
         f.fillHalo();
@@ -171,11 +176,12 @@ namespace ippl {
 
         static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");
         IpplTimings::startTimer(gatherTimer);
-        const typename Field<T, Dim, M, C>::view_type view = f.getView();
+        const typename Field::view_type view = f.getView();
 
-        const M& mesh = f.get_mesh();
+        using mesh_type       = typename Field::Mesh_t;
+        const mesh_type& mesh = f.get_mesh();
 
-        using vector_type = typename M::vector_type;
+        using vector_type = typename mesh_type::vector_type;
 
         const vector_type& dx     = mesh.getMeshSpacing();
         const vector_type& origin = mesh.getOrigin();
@@ -207,15 +213,17 @@ namespace ippl {
      *
      */
 
-    template <typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
-    inline void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-                        const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) {
+    template <typename Tp1, typename Tf, unsigned Dim, class M, class C, typename Tp2,
+              class... Properties>
+    inline void scatter(const ParticleAttrib<Tp1, Properties...>& attrib, Field<Tf, Dim, M, C>& f,
+                        const ParticleAttrib<Vector<Tp2, Dim>, Properties...>& pp) {
         attrib.scatter(f, pp);
     }
 
-    template <typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
-    inline void gather(ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-                       const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) {
+    template <typename Tp1, typename Tf, unsigned Dim, class M, class C, typename Tp2,
+              class... Properties>
+    inline void gather(ParticleAttrib<Tp1, Properties...>& attrib, Field<Tf, Dim, M, C>& f,
+                       const ParticleAttrib<Vector<Tp2, Dim>, Properties...>& pp) {
         attrib.gather(f, pp);
     }
 

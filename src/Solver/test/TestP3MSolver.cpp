@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
     typedef ippl::Field<double, dim, Mesh_t, Centering_t> Field_t;
     typedef ippl::Vector<double, dim> Vector_t;
     typedef ippl::Field<Vector_t, dim, Mesh_t, Centering_t> VField_t;
-    typedef ippl::P3MSolver<Vector_t, double, dim, Mesh_t, Centering_t> Solver_t;
+    typedef ippl::P3MSolver<VField_t, Field_t> Solver_t;
 
     // get the gridsize from the user
     ippl::Vector<int, dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};

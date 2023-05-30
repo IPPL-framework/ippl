@@ -36,29 +36,32 @@
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    class P3MSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
-    public:
-        // types for LHS and RHS
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
+    template <typename FieldLHS, typename FieldRHS>
+    class P3MSolver : public Electrostatics<FieldLHS, FieldRHS> {
+        constexpr static unsigned Dim = FieldLHS::dim;
+        using Trhs                    = typename FieldRHS::value_type;
+        using mesh_type               = typename FieldRHS::Mesh_t;
 
+    public:
         // type of output
-        using Base = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
+        using Base = Electrostatics<FieldLHS, FieldRHS>;
+
+        // types for LHS and RHS
+        using typename Base::lhs_type, typename Base::rhs_type;
+
+        // define a type for the 3 dimensional real to complex Fourier transform
+        typedef FFT<RCTransform, FieldRHS> FFT_t;
 
         // define a type for a 3 dimensional field (e.g. charge density field)
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
-        typedef Field<Trhs, Dim, Mesh, Centering> Field_t;
-        typedef Field<int, Dim, Mesh, Centering> IField_t;
-        typedef Field<Kokkos::complex<Trhs>, Dim, Mesh, Centering> CxField_t;
+        typedef FieldRHS Field_t;
+        typedef Field<int, Dim, mesh_type, typename FieldLHS::Centering_t> IField_t;
+        typedef typename FFT_t::ComplexField CxField_t;
         typedef Vector<Trhs, Dim> Vector_t;
 
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
-
-        // define a type for the 3 dimensional real to complex Fourier transform
-        typedef FFT<RCTransform, Dim, Trhs, Mesh, Centering> FFT_t;
 
         // constructor and destructor
         P3MSolver();
@@ -93,11 +96,11 @@ namespace ippl {
         std::unique_ptr<FFT_t> fft_m;
 
         // mesh and layout objects for rho_m (RHS)
-        Mesh* mesh_mp;
+        mesh_type* mesh_mp;
         FieldLayout_t* layout_mp;
 
         // mesh and layout objects for the Fourier transformed Complex fields
-        std::unique_ptr<Mesh> meshComplex_m;
+        std::unique_ptr<mesh_type> meshComplex_m;
         std::unique_ptr<FieldLayout_t> layoutComplex_m;
 
         // domains for the various fields

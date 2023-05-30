@@ -25,11 +25,11 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
+    template <typename FieldLHS, typename FieldRHS>
     class Solver {
     public:
-        using lhs_type = Field<Tlhs, Dim, Mesh, Centering>;
-        using rhs_type = Field<Trhs, Dim, Mesh, Centering>;
+        using lhs_type = FieldLHS;
+        using rhs_type = FieldRHS;
 
         /*!
          * Default constructor

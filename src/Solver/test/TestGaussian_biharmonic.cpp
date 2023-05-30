@@ -22,9 +22,6 @@
 
 #include "Ippl.h"
 
-#include <Kokkos_MathematicalConstants.hpp>
-#include <Kokkos_MathematicalFunctions.hpp>
-
 #include "Utility/IpplTimings.h"
 
 #include "FFTPoissonSolver.h"
@@ -33,7 +30,7 @@ using Mesh_t        = ippl::UniformCartesian<double, 3>;
 using Centering_t   = Mesh_t::DefaultCentering;
 using ScalarField_t = ippl::Field<double, 3, Mesh_t, Centering_t>;
 using VectorField_t = ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t>;
-using Solver_t = ippl::FFTPoissonSolver<ippl::Vector<double, 3>, double, 3, Mesh_t, Centering_t>;
+using Solver_t      = ippl::FFTPoissonSolver<VectorField_t, ScalarField_t>;
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {
@@ -169,7 +166,7 @@ int main(int argc, char* argv[]) {
         const auto& ldom                           = layout.getLocalNDIndex();
 
         Kokkos::parallel_for(
-            "Assign rho field", ippl::getRangePolicy<3>(view_rho, nghost),
+            "Assign rho field", ippl::getRangePolicy(view_rho, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // go from local to global indices
                 const int ig = i + ldom[0].first() - nghost;
@@ -188,7 +185,7 @@ int main(int argc, char* argv[]) {
         typename ScalarField_t::view_type view_exact = exact.getView();
 
         Kokkos::parallel_for(
-            "Assign exact field", ippl::getRangePolicy<3>(view_exact, nghost),
+            "Assign exact field", ippl::getRangePolicy(view_exact, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;
@@ -204,7 +201,7 @@ int main(int argc, char* argv[]) {
         // assign the exact gradient field
         auto view_grad = exactE.getView();
         Kokkos::parallel_for(
-            "Assign exact field", ippl::getRangePolicy<3>(view_grad, nghost),
+            "Assign exact field", ippl::getRangePolicy(view_grad, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;
@@ -256,7 +253,7 @@ int main(int argc, char* argv[]) {
             double temp = 0.0;
 
             Kokkos::parallel_reduce(
-                "Vector errorNr reduce", ippl::getRangePolicy<3>(view_fieldE, nghost),
+                "Vector errorNr reduce", ippl::getRangePolicy(view_fieldE, nghost),
 
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
                     double myVal = pow(view_fieldE(i, j, k)[d], 2);
@@ -271,7 +268,7 @@ int main(int argc, char* argv[]) {
             temp = 0.0;
 
             Kokkos::parallel_reduce(
-                "Vector errorDr reduce", ippl::getRangePolicy<3>(view_grad, nghost),
+                "Vector errorDr reduce", ippl::getRangePolicy(view_grad, nghost),
 
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
                     double myVal = pow(view_grad(i, j, k)[d], 2);

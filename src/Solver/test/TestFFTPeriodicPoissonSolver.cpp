@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
     constexpr unsigned int dim = 3;
-    using Mesh_t               = ippl::UniformCartesian<double, 3>;
+    using Mesh_t               = ippl::UniformCartesian<double, dim>;
     using Centering_t          = Mesh_t::DefaultCentering;
 
     const int npts            = 7;
@@ -29,16 +29,17 @@ int main(int argc, char* argv[]) {
         ippl::NDIndex<dim> owned(I, I, I);
 
         ippl::e_dim_tag decomp[dim];  // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < dim; d++)
+        for (unsigned int d = 0; d < dim; d++) {
             decomp[d] = ippl::PARALLEL;
+        }
 
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<dim> layout(owned, decomp);
 
         //[-1, 1] box
-        double dx                      = 2.0 / double(pt);
-        ippl::Vector<double, 3> hx     = {dx, dx, dx};
-        ippl::Vector<double, 3> origin = {-1.0, -1.0, -1.0};
+        double dx                        = 2.0 / double(pt);
+        ippl::Vector<double, dim> hx     = {dx, dx, dx};
+        ippl::Vector<double, dim> origin = {-1.0, -1.0, -1.0};
         Mesh_t mesh(owned, hx, origin);
 
         double pi = Kokkos::numbers::pi_v<double>;
@@ -50,7 +51,7 @@ int main(int argc, char* argv[]) {
         Field_t field;
         field.initialize(mesh, layout);
 
-        typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, dim, Mesh_t, Centering_t> Solver_t;
+        typedef ippl::FFTPeriodicPoissonSolver<VField_t, Field_t> Solver_t;
 
         ippl::ParameterList params;
         params.add("output_type", Solver_t::SOL);
@@ -78,7 +79,7 @@ int main(int argc, char* argv[]) {
                 auto view_exact = phifield_exact.getView();
 
                 Kokkos::parallel_for(
-                    "Assign rhs", ippl::getRangePolicy<3>(view, nghost),
+                    "Assign rhs", ippl::getRangePolicy(view, nghost),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         using Kokkos::pow, Kokkos::cos, Kokkos::sin;
                         // local to global index conversion
@@ -132,7 +133,7 @@ int main(int argc, char* argv[]) {
                 auto Eview_exact = Efield_exact.getView();
 
                 Kokkos::parallel_for(
-                    "Assign rhs", ippl::getRangePolicy<3>(view, nghost),
+                    "Assign rhs", ippl::getRangePolicy(view, nghost),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         using Kokkos::pow, Kokkos::cos, Kokkos::sin;
                         // local to global index conversion
@@ -174,7 +175,7 @@ int main(int argc, char* argv[]) {
                 for (size_t d = 0; d < dim; ++d) {
                     double temp = 0.0;
                     Kokkos::parallel_reduce(
-                        "Vector errorNr reduce", ippl::getRangePolicy<3>(view, nghost),
+                        "Vector errorNr reduce", ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
                                       double& valL) {
                             double myVal = Kokkos::pow(Eview(i, j, k)[d], 2);
@@ -187,7 +188,7 @@ int main(int argc, char* argv[]) {
 
                     temp = 0.0;
                     Kokkos::parallel_reduce(
-                        "Vector errorDr reduce", ippl::getRangePolicy<3>(view, nghost),
+                        "Vector errorDr reduce", ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
                                       double& valL) {
                             double myVal = Kokkos::pow(Eview_exact(i, j, k)[d], 2);

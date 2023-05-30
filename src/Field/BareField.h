@@ -56,6 +56,8 @@ namespace ippl {
     public:
         using Layout_t = FieldLayout<Dim>;
 
+        constexpr static unsigned dim = Dim;
+
         //! Domain type specifying the index region
         using Domain_t = NDIndex<Dim>;
 
@@ -64,6 +66,9 @@ namespace ippl {
         using HostMirror = typename view_type::host_mirror_type;
         template <typename Tag = void>
         using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
+
+        using value_type = T;
+        // constexpr static unsigned dim = Dim;
 
         /*! A default constructor, which should be used only if the user calls the
          * 'initialize' function before doing anything else.  There are no special
@@ -187,7 +192,7 @@ namespace ippl {
         policy_type<Tag> getFieldRangePolicy(const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
             const size_t shift = nghost_m - nghost;
-            return getRangePolicy<Dim, Tag>(dview_m, shift);
+            return getRangePolicy(dview_m, shift);
         }
 
         /*!

@@ -1,5 +1,10 @@
-// Landau Damping Test
-//   Usage:
+// Landau Damping Test, variant with mixed precision.
+// In order to avoid eccessive error when scattering from grid-points to the particles,
+// the charge and the scalar field are kept in double precision. The Mesh object is also
+// in double precision, as it leads to a higher precision without affecting memory negatively.
+// Everything else (namely the vector field E and the particle position) are in single
+// precision, since the choice increases memory saving, without losing precision.
+//    Usage:
 //     srun ./LandauDamping
 //                  <nx> [<ny>...] <Np> <Nt> <stype>
 //                  <lbthres> --overallocate <ovfactor> --info 10
@@ -7,7 +12,7 @@
 //     ny...    = No. cell-centered points in the y-, z-, ...-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
-//     stype    = Field solver type (FFT and CG supported)
+//     stype    = Field solver type e.g., FFT
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
 //                particle load balancing occurs. A value of 0.01 is good for many typical
@@ -15,7 +20,7 @@
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 --overallocate 2.0 --info 10
+//     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 2.0 --info 10
 //
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -52,7 +57,7 @@ template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
     int max_iter = 20;
-    double pi    = Kokkos::numbers::pi_v<double>;
+    T pi         = Kokkos::numbers::pi_v<T>;
 
     T k, alpha, u;
 
@@ -130,8 +135,8 @@ struct generate_random {
     }
 };
 
-double CDF(const double& x, const double& alpha, const double& k) {
-    double cdf = x + (alpha / k) * std::sin(k * x);
+float CDF(const float& x, const float& alpha, const float& k) {
+    float cdf = x + (alpha / k) * std::sin(k * x);
     return cdf;
 }
 
@@ -151,14 +156,11 @@ const char* TestName = "LandauDamping";
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
-    setSignalHandler();
-
     Inform msg("LandauDamping");
     Inform msg2all("LandauDamping", INFORM_ALL_NODES);
 
     auto start = std::chrono::high_resolution_clock::now();
-
-    int arg = 1;
+    int arg    = 1;
 
     Vector_t<int, Dim> nr;
     for (unsigned d = 0; d < Dim; d++) {
@@ -182,7 +184,7 @@ int main(int argc, char* argv[]) {
 
     msg << "Landau damping" << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-    using bunch_type = ChargedParticles<PLayout_t<double, Dim>, double, Dim>;
+    using bunch_type = ChargedParticles<PLayout_t<float, Dim>, float, Dim>;
 
     std::unique_ptr<bunch_type> P;
 
@@ -197,8 +199,8 @@ int main(int argc, char* argv[]) {
     }
 
     // create mesh and layout objects for this problem domain
-    Vector_t<double, Dim> kw = 0.5;
-    double alpha             = 0.05;
+    Vector_t<float, Dim> kw = 0.5;
+    float alpha             = 0.05;
     Vector_t<double, Dim> rmin(0.0);
     Vector_t<double, Dim> rmax = 2 * pi / kw;
 
@@ -206,21 +208,15 @@ int main(int argc, char* argv[]) {
     // Q = -\int\int f dx dv
     double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
     Vector_t<double, Dim> origin = rmin;
-    const double dt              = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
+    const double dt              = 0.5 * hr[0];
 
     const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);
     FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
-    PLayout_t<double, Dim> PL(FL, mesh);
+    PLayout_t<float, Dim> PL(FL, mesh);
 
     std::string solver = argv[arg++];
-
-    if (solver == "OPEN") {
-        throw IpplException("LandauDamping",
-                            "Open boundaries solver incompatible with this simulation!");
-    }
-
-    P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+    P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
     P->nr_m = nr;
 
@@ -244,7 +240,7 @@ int main(int argc, char* argv[]) {
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
-            "Assign initial rho based on PDF", P->rho_m.getFieldRangePolicy(),
+            "Assign initial rho based on PDF", ippl::getRangePolicy(rhoview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
                 Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
@@ -264,12 +260,12 @@ int main(int argc, char* argv[]) {
     msg << "First domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
 
-    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> RegionLayout_t;
+    typedef ippl::detail::RegionLayout<float, Dim, Mesh_t<Dim>> RegionLayout_t;
     const RegionLayout_t& RLayout                           = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_t<double, Dim> Nr, Dr, minU, maxU;
-    int myRank    = Ippl::Comm->rank();
-    double factor = 1;
+    Vector_t<float, Dim> Nr, Dr, minU, maxU;
+    int myRank   = Ippl::Comm->rank();
+    float factor = 1;
     for (unsigned d = 0; d < Dim; ++d) {
         Nr[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d])
                 - CDF(Regions(myRank)[d].min(), alpha, kw[d]);
@@ -293,7 +289,7 @@ int main(int argc, char* argv[]) {
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
     Kokkos::parallel_for(
-        nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+        nloc, generate_random<Vector_t<float, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
                   P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
     Kokkos::fence();
@@ -342,7 +338,6 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(RTimer);
         P->R = P->R + dt * P->P;
         IpplTimings::stopTimer(RTimer);
-        // P->R.print();
 
         // Since the particles have moved spatially update them to correct processors
         IpplTimings::startTimer(updateTimer);
@@ -382,11 +377,6 @@ int main(int argc, char* argv[]) {
         P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
-
-        if (checkSignalHandler()) {
-            msg << "Aborting timestepping loop due to signal " << interruptSignalReceived << endl;
-            break;
-        }
     }
 
     msg << "LandauDamping: End." << endl;

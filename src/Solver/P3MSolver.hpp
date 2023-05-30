@@ -28,8 +28,8 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver()
+    template <typename FieldLHS, typename FieldRHS>
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver()
         : Base()
         , mesh_mp(nullptr)
         , layout_mp(nullptr)
@@ -38,8 +38,8 @@ namespace ippl {
         setDefaultParameters();
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver(rhs_type& rhs, ParameterList& params)
+    template <typename FieldLHS, typename FieldRHS>
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(rhs_type& rhs, ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
@@ -52,9 +52,8 @@ namespace ippl {
         this->setRhs(rhs);
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver(lhs_type& lhs, rhs_type& rhs,
-                                                           ParameterList& params)
+    template <typename FieldLHS, typename FieldRHS>
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
@@ -67,8 +66,8 @@ namespace ippl {
         this->setRhs(rhs);
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::setRhs(rhs_type& rhs) {
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
         Base::setRhs(rhs);
         initializeFields();
     }
@@ -76,8 +75,8 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // initializeFields method, called in constructor
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::initializeFields() {
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::initializeFields() {
         static_assert(Dim == 3, "Dimension other than 3 not supported in P3MSolver!");
 
         // get layout and mesh
@@ -117,7 +116,8 @@ namespace ippl {
         }
 
         // create mesh and layout for the real to complex FFT transformed fields
-        meshComplex_m = std::unique_ptr<Mesh>(new Mesh(domainComplex_m, hr_m, origin));
+        using mesh_type = typename lhs_type::Mesh_t;
+        meshComplex_m   = std::unique_ptr<mesh_type>(new mesh_type(domainComplex_m, hr_m, origin));
         layoutComplex_m =
             std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domainComplex_m, decomp));
 
@@ -146,7 +146,7 @@ namespace ippl {
                 case 0:
                     Kokkos::parallel_for(
                         "Helper index Green field initialization",
-                        ippl::getRangePolicy<3>(view, nghost),
+                        ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int ig = i + ldom[0].first() - nghost;
@@ -165,7 +165,7 @@ namespace ippl {
                 case 1:
                     Kokkos::parallel_for(
                         "Helper index Green field initialization",
-                        ippl::getRangePolicy<3>(view, nghost),
+                        ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int jg = j + ldom[1].first() - nghost;
@@ -178,7 +178,7 @@ namespace ippl {
                 case 2:
                     Kokkos::parallel_for(
                         "Helper index Green field initialization",
-                        ippl::getRangePolicy<3>(view, nghost),
+                        ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int kg = k + ldom[2].first() - nghost;
@@ -200,8 +200,8 @@ namespace ippl {
 
     /////////////////////////////////////////////////////////////////////////
     // compute electric potential by solving Poisson's eq given a field rho and mesh spacings hr
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::solve() {
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::solve() {
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
 
@@ -251,8 +251,8 @@ namespace ippl {
     ////////////////////////////////////////////////////////////////////////
     // calculate FFT of the Green's function
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::greensFunction() {
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::greensFunction() {
         grn_m = 0.0;
 
         // This alpha parameter is a choice for the Green's function
@@ -260,7 +260,7 @@ namespace ippl {
         // for the P3M collision modelling method, it indicates
         // the splitting between Particle-Particle interactions
         // and the Particle-Mesh computations).
-        double alpha = 1e6;
+        Trhs alpha = 1e6;
 
         // calculate square of the mesh spacing for each dimension
         Vector_t hrsq(hr_m * hr_m);
@@ -274,11 +274,11 @@ namespace ippl {
         const int nghost                 = grn_m.getNghost();
         const auto& ldom                 = layout_mp->getLocalNDIndex();
 
-        constexpr double ke = 2.532638e8;
+        constexpr Trhs ke = 2.532638e8;
 
         // Kokkos parallel for loop to find (0,0,0) point and regularize
         Kokkos::parallel_for(
-            "Assign Green's function ", ippl::getRangePolicy<3>(view, nghost),
+            "Assign Green's function ", ippl::getRangePolicy(view, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // go from local indices to global
                 const int ig = i + ldom[0].first() - nghost;
@@ -287,7 +287,7 @@ namespace ippl {
 
                 const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
 
-                double r      = Kokkos::real(Kokkos::sqrt(view(i, j, k)));
+                Trhs r        = Kokkos::real(Kokkos::sqrt(view(i, j, k)));
                 view(i, j, k) = (!isOrig) * ke * (Kokkos::erf(alpha * r) / r);
             });
 

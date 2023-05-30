@@ -34,22 +34,21 @@
 namespace ippl {
     namespace detail {
 
-        template <typename T, unsigned Dim, class Mesh, class Centering>
-        BCondBase<T, Dim, Mesh, Centering>::BCondBase(unsigned int face)
+        template <typename Field>
+        BCondBase<Field>::BCondBase(unsigned int face)
             : face_m(face)
             , changePhysical_m(false) {}
 
-        template <typename T, unsigned Dim, class Mesh, class Centering>
-        inline std::ostream& operator<<(std::ostream& os,
-                                        const BCondBase<T, Dim, Mesh, Centering>& bc) {
+        template <typename Field>
+        inline std::ostream& operator<<(std::ostream& os, const BCondBase<Field>& bc) {
             bc.write(os);
             return os;
         }
 
     }  // namespace detail
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void ExtrapolateFace<T, Dim, Mesh, Centering>::apply(Field_t& field) {
+    template <typename Field>
+    void ExtrapolateFace<Field>::apply(Field& field) {
         // We only support constant extrapolation for the moment, other
         // higher order extrapolation stuffs need to be added.
 
@@ -72,8 +71,8 @@ namespace ippl {
         // boundary or it is the single core case. Then the following code is same
         // irrespective of either it is a single core or multi-core case as the
         // non-periodic BC is local to apply.
-        typename Field_t::view_type& view = field.getView();
-        const int nghost                  = field.getNghost();
+        typename Field::view_type& view = field.getView();
+        const int nghost                = field.getNghost();
         int src, dest;
 
         // It is not clear what it exactly means to do extrapolate
@@ -110,46 +109,46 @@ namespace ippl {
                 // to avoid ambiguity with the member function
                 using ippl::apply;
 
-                T value = apply<Dim>(view, args);
+                T value = apply(view, args);
 
                 args[d] = dest;
 
-                apply<Dim>(view, args) = slope_m * value + offset_m;
+                apply(view, args) = slope_m * value + offset_m;
             });
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void ExtrapolateFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
+    template <typename Field>
+    void ExtrapolateFace<Field>::write(std::ostream& out) const {
         out << "Constant Extrapolation Face"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void NoBcFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
+    template <typename Field>
+    void NoBcFace<Field>::write(std::ostream& out) const {
         out << "NoBcFace"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void ConstantFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
+    template <typename Field>
+    void ConstantFace<Field>::write(std::ostream& out) const {
         out << "ConstantFace"
             << ", Face = " << this->face_m << ", Constant = " << this->offset_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void ZeroFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
+    template <typename Field>
+    void ZeroFace<Field>::write(std::ostream& out) const {
         out << "ZeroFace"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void PeriodicFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
+    template <typename Field>
+    void PeriodicFace<Field>::write(std::ostream& out) const {
         out << "PeriodicFace"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void PeriodicFace<T, Dim, Mesh, Centering>::findBCNeighbors(Field_t& field) {
+    template <typename Field>
+    void PeriodicFace<Field>::findBCNeighbors(Field& field) {
         // For cell centering only face neighbors are needed
         unsigned int face      = this->face_m;
         unsigned int d         = face / 2;
@@ -202,16 +201,16 @@ namespace ippl {
         }
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void PeriodicFace<T, Dim, Mesh, Centering>::apply(Field_t& field) {
-        unsigned int face                 = this->face_m;
-        unsigned int d                    = face / 2;
-        typename Field_t::view_type& view = field.getView();
-        const Layout_t& layout            = field.getLayout();
-        const int nghost                  = field.getNghost();
-        int myRank                        = Ippl::Comm->rank();
-        const auto& lDomains              = layout.getHostLocalDomains();
-        const auto& domain                = layout.getDomain();
+    template <typename Field>
+    void PeriodicFace<Field>::apply(Field& field) {
+        unsigned int face               = this->face_m;
+        unsigned int d                  = face / 2;
+        typename Field::view_type& view = field.getView();
+        const Layout_t& layout          = field.getLayout();
+        const int nghost                = field.getNghost();
+        int myRank                      = Ippl::Comm->rank();
+        const auto& lDomains            = layout.getHostLocalDomains();
+        const auto& domain              = layout.getDomain();
 
         // We have to put tag here so that the matchtag inside
         // the if is proper.
@@ -334,20 +333,20 @@ namespace ippl {
 
                     // x -> nghost + x
                     coords[d] += nghost;
-                    auto&& left = apply<Dim>(view, coords);
+                    auto&& left = apply(view, coords);
 
                     // nghost + x -> N - (nghost + x) = N - nghost - x
                     coords[d]    = N - coords[d];
-                    auto&& right = apply<Dim>(view, coords);
+                    auto&& right = apply(view, coords);
 
                     // N - nghost - x -> nghost - 1 - x
                     coords[d] += 2 * nghost - 1 - N;
-                    apply<Dim>(view, coords) = right;
+                    apply(view, coords) = right;
 
                     // nghost - 1 - x -> N - (nghost - 1 - x)
                     //     = N - (nghost - 1) + x
-                    coords[d]                = N - coords[d];
-                    apply<Dim>(view, coords) = left;
+                    coords[d]           = N - coords[d];
+                    apply(view, coords) = left;
                 });
         }
     }

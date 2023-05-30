@@ -82,7 +82,9 @@ int main(int argc, char* argv[]) {
         using Mesh_t      = ippl::UniformCartesian<double, 3>;
         using Centering_t = Mesh_t::DefaultCentering;
         using Vector_t    = ippl::Vector<double, 3>;
-        using Solver_t    = ippl::FFTPoissonSolver<Vector_t, double, 3, Mesh_t, Centering_t>;
+        typedef ippl::Field<double, 3, Mesh_t, Centering_t> field;
+        typedef ippl::Field<Vector_t, 3, Mesh_t, Centering_t> vfield;
+        using Solver_t = ippl::FFTPoissonSolver<vfield, field>;
 
         // unit box
         double dx       = 2.4 / pt;
@@ -94,7 +96,6 @@ int main(int argc, char* argv[]) {
         ippl::FieldLayout<3> layout(owned, decomp);
 
         // define the L (phi) and R (rho) fields
-        typedef ippl::Field<double, 3, Mesh_t, Centering_t> field;
         field rho;
         rho.initialize(mesh, layout);
 
@@ -108,7 +109,7 @@ int main(int argc, char* argv[]) {
         const auto& ldom                   = layout.getLocalNDIndex();
 
         Kokkos::parallel_for(
-            "Assign rho field", ippl::getRangePolicy<3>(view_rho, nghost),
+            "Assign rho field", ippl::getRangePolicy(view_rho, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // go from local to global indices
                 const int ig = i + ldom[0].first() - nghost;
@@ -127,7 +128,7 @@ int main(int argc, char* argv[]) {
         typename field::view_type view_exact = exact.getView();
 
         Kokkos::parallel_for(
-            "Assign exact field", ippl::getRangePolicy<3>(view_exact, nghost),
+            "Assign exact field", ippl::getRangePolicy(view_exact, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;

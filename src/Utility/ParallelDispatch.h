@@ -55,7 +55,6 @@ namespace ippl {
     /*!
      * Create a range policy that spans an entire Kokkos view, excluding
      * a specifiable number of ghost cells at the extremes.
-     * @tparam Dim view dimension
      * @tparam Tag range policy tag
      * @tparam View the view type
      *
@@ -64,9 +63,11 @@ namespace ippl {
      *
      * @return A (MD)RangePolicy that spans the desired elements of the given view
      */
-    template <unsigned Dim, typename Tag = void, typename View>
-    typename RangePolicy<Dim, Tag>::policy_type getRangePolicy(const View& view, int shift = 0) {
-        using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
+    template <typename Tag = void, typename View>
+    typename RangePolicy<View::rank, Tag>::policy_type getRangePolicy(const View& view,
+                                                                      int shift = 0) {
+        constexpr unsigned Dim = View::rank;
+        using policy_type      = typename RangePolicy<Dim, Tag>::policy_type;
         if constexpr (Dim == 1) {
             return policy_type(shift, view.size() - shift);
         } else {
@@ -94,7 +95,7 @@ namespace ippl {
      *
      * @return A (MD)RangePolicy spanning the given range
      */
-    template <unsigned Dim, typename Tag = void>
+    template <size_t Dim, typename Tag = void>
     typename RangePolicy<Dim, Tag>::policy_type createRangePolicy(
         const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& begin,
         const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& end) {

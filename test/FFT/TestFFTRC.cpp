@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     Mesh_t meshOutput(ownedOutput, hx, origin);
     field_type_complex fieldOutput(meshOutput, layoutOutput);
 
-    typedef ippl::FFT<ippl::RCTransform, 3, double, Mesh_t, Centering_t> FFT_type;
+    typedef ippl::FFT<ippl::RCTransform, field_type_real> FFT_type;
 
     std::unique_ptr<FFT_type> fft;
 

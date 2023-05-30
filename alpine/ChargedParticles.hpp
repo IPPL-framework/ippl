@@ -29,10 +29,10 @@
 
 // some typedefs
 template <unsigned Dim = 3>
-using PLayout_t = ippl::ParticleSpatialLayout<double, Dim>;
-
-template <unsigned Dim = 3>
 using Mesh_t = ippl::UniformCartesian<double, Dim>;
+
+template <typename T, unsigned Dim = 3>
+using PLayout_t = typename ippl::ParticleSpatialLayout<T, Dim, Mesh_t<Dim>>;
 
 template <unsigned Dim = 3>
 using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
@@ -40,13 +40,10 @@ using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
 template <unsigned Dim = 3>
 using FieldLayout_t = ippl::FieldLayout<Dim>;
 
-template <unsigned Dim = 3>
-using ORB = ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+template <typename T = double, unsigned Dim = 3>
+using ORB = ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t<Dim>, Centering_t<Dim>, T>;
 
 using size_type = ippl::detail::size_type;
-
-template <typename T, unsigned Dim = 3>
-using Vector = ippl::Vector<T, Dim>;
 
 template <typename T, unsigned Dim = 3>
 using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
@@ -54,38 +51,35 @@ using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
 
-template <unsigned Dim = 3>
-using Vector_t = Vector<double, Dim>;
+template <typename T, unsigned Dim = 3>
+using Vector_t = ippl::Vector<T, Dim>;
 
 template <unsigned Dim = 3>
 using Field_t = Field<double, Dim>;
 
-template <unsigned Dim = 3>
-using VField_t = Field<Vector_t<Dim>, Dim>;
+template <typename T = double, unsigned Dim = 3>
+using VField_t = Field<Vector_t<T, Dim>, Dim>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
-template <unsigned Dim = 3>
-using CGSolver_t = ippl::ElectrostaticsCG<double, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+template <typename T = double, unsigned Dim = 3>
+using CGSolver_t = ippl::ElectrostaticsCG<Field<T, Dim>, Field_t<Dim>>;
 
 using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 
-template <unsigned Dim = 3>
-using FFTSolver_t = ConditionalType<
-    Dim == 2 || Dim == 3,
-    ippl::FFTPeriodicPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>;
+template <typename T = double, unsigned Dim = 3>
+using FFTSolver_t = ConditionalType<Dim == 2 || Dim == 3,
+                                    ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
-template <unsigned Dim = 3>
-using P3MSolver_t =
-    ConditionalType<Dim == 3,
-                    ippl::P3MSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>;
+template <typename T = double, unsigned Dim = 3>
+using P3MSolver_t = ConditionalType<Dim == 3, ippl::P3MSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
-template <unsigned Dim = 3>
-using OpenSolver_t = ConditionalType<
-    Dim == 3, ippl::FFTPoissonSolver<Vector_t<Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>;
+template <typename T = double, unsigned Dim = 3>
+using OpenSolver_t =
+    ConditionalType<Dim == 3, ippl::FFTPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
-template <unsigned Dim = 3>
-using Solver_t = VariantFromConditionalTypes<CGSolver_t<Dim>, FFTSolver_t<Dim>, P3MSolver_t<Dim>,
-                                             OpenSolver_t<Dim>>;
+template <typename T = double, unsigned Dim = 3>
+using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
+                                             P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
 
 const double pi = Kokkos::numbers::pi_v<double>;
 
@@ -129,9 +123,10 @@ void setSignalHandler() {
     }
 }
 
-void dumpVTK(VField_t<3>& E, int nx, int ny, int nz, int iteration, double dx, double dy,
+template <typename T>
+void dumpVTK(VField_t<T, 3>& E, int nx, int ny, int nz, int iteration, double dx, double dy,
              double dz) {
-    typename VField_t<3>::view_type::host_mirror_type host_view = E.getHostMirror();
+    typename VField_t<T, 3>::view_type::host_mirror_type host_view = E.getHostMirror();
 
     std::stringstream fname;
     fname << "data/ef_";
@@ -201,33 +196,33 @@ void dumpVTK(Field_t<3>& rho, int nx, int ny, int nz, int iteration, double dx, 
     }
 }
 
-template <class PLayout, unsigned Dim = 3>
+template <class PLayout, typename T, unsigned Dim = 3>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
 public:
-    VField_t<Dim> E_m;
+    VField_t<T, Dim> E_m;
     Field_t<Dim> rho_m;
-    Field_t<Dim> phi_m;
+    Field<T, Dim> phi_m;
 
-    typedef ippl::BConds<double, Dim, Mesh_t<Dim>, Centering_t<Dim>> bc_type;
+    typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
     bc_type allPeriodic;
 
     // ORB
-    ORB<Dim> orb;
+    ORB<T, Dim> orb;
 
-    Vector<int, Dim> nr_m;
+    Vector_t<T, Dim> nr_m;
 
     ippl::e_dim_tag decomp_m[Dim];
 
-    Vector_t<Dim> hr_m;
-    Vector_t<Dim> rmin_m;
-    Vector_t<Dim> rmax_m;
+    Vector_t<double, Dim> hr_m;
+    Vector_t<double, Dim> rmin_m;
+    Vector_t<double, Dim> rmax_m;
 
     std::string stype_m;
 
     double Q_m;
 
 private:
-    Solver_t<Dim> solver_m;
+    Solver_t<T, Dim> solver_m;
 
 public:
     double time_m;
@@ -254,8 +249,9 @@ public:
         setPotentialBCs();
     }
 
-    ChargedParticles(PLayout& pl, Vector_t<Dim> hr, Vector_t<Dim> rmin, Vector_t<Dim> rmax,
-                     ippl::e_dim_tag decomp[Dim], double Q, std::string solver)
+    ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
+                     Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
+                     std::string solver)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
@@ -275,8 +271,7 @@ public:
         // simply assumes them
         if (stype_m == "CG") {
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                allPeriodic[i] = std::make_shared<
-                    ippl::PeriodicFace<double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
+                allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
             }
         }
     }
@@ -293,7 +288,7 @@ public:
     void setupBCs() { setBCAllPeriodic(); }
 
     void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                      ChargedParticles<PLayout, Dim>& buffer, bool& isFirstRepartition) {
+                      ChargedParticles<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -330,7 +325,7 @@ public:
     }
 
     void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                     ChargedParticles<PLayout, Dim>& buffer, bool& isFirstRepartition) {
+                     ChargedParticles<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
 
@@ -342,13 +337,13 @@ public:
         this->updateLayout(fl, mesh, buffer, isFirstRepartition);
         if constexpr (Dim == 2 || Dim == 3) {
             if (stype_m == "FFT") {
-                std::get<FFTSolver_t<Dim>>(solver_m).setRhs(rho_m);
+                std::get<FFTSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
             }
             if constexpr (Dim == 3) {
                 if (stype_m == "P3M") {
-                    std::get<P3MSolver_t<Dim>>(solver_m).setRhs(rho_m);
+                    std::get<P3MSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
                 } else if (stype_m == "OPEN") {
-                    std::get<OpenSolver_t<Dim>>(solver_m).setRhs(rho_m);
+                    std::get<OpenSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
                 }
             }
         }
@@ -406,7 +401,7 @@ public:
 
     void gatherCIC() { gather(this->E, E_m, this->R); }
 
-    void scatterCIC(size_type totalP, unsigned int iteration, Vector_t<Dim>& hrField) {
+    void scatterCIC(size_type totalP, unsigned int iteration, Vector_t<double, Dim>& hrField) {
         Inform m("scatter ");
 
         rho_m = 0.0;
@@ -471,7 +466,7 @@ public:
 
     void runSolver() {
         if (stype_m == "CG") {
-            CGSolver_t<Dim>& solver = std::get<CGSolver_t<Dim>>(solver_m);
+            CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(solver_m);
             solver.solve();
 
             if (Ippl::Comm->rank() == 0) {
@@ -494,15 +489,15 @@ public:
             Ippl::Comm->barrier();
         } else if (stype_m == "FFT") {
             if constexpr (Dim == 2 || Dim == 3) {
-                std::get<FFTSolver_t<Dim>>(solver_m).solve();
+                std::get<FFTSolver_t<T, Dim>>(solver_m).solve();
             }
         } else if (stype_m == "P3M") {
             if constexpr (Dim == 3) {
-                std::get<P3MSolver_t<Dim>>(solver_m).solve();
+                std::get<P3MSolver_t<T, Dim>>(solver_m).solve();
             }
         } else if (stype_m == "OPEN") {
             if constexpr (Dim == 3) {
-                std::get<OpenSolver_t<Dim>>(solver_m).solve();
+                std::get<OpenSolver_t<T, Dim>>(solver_m).solve();
             }
         } else {
             throw std::runtime_error("Unknown solver type");
@@ -518,7 +513,7 @@ public:
 
         solver.setRhs(rho_m);
 
-        if constexpr (std::is_same_v<Solver, CGSolver_t<Dim>>) {
+        if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>) {
             // The CG solver computes the potential directly and
             // uses this to get the electric field
             solver.setLhs(phi_m);
@@ -532,17 +527,17 @@ public:
 
     void initCGSolver() {
         ippl::ParameterList sp;
-        sp.add("output_type", CGSolver_t<Dim>::GRAD);
+        sp.add("output_type", CGSolver_t<T, Dim>::GRAD);
         // Increase tolerance in the 1D case
         sp.add("tolerance", 1e-10);
 
-        initSolverWithParams<CGSolver_t<Dim>>(sp);
+        initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
 
     void initFFTSolver() {
         if constexpr (Dim == 2 || Dim == 3) {
             ippl::ParameterList sp;
-            sp.add("output_type", FFTSolver_t<Dim>::GRAD);
+            sp.add("output_type", FFTSolver_t<T, Dim>::GRAD);
             sp.add("use_heffte_defaults", false);
             sp.add("use_pencils", true);
             sp.add("use_reorder", false);
@@ -550,7 +545,7 @@ public:
             sp.add("comm", ippl::p2p_pl);
             sp.add("r2c_direction", 0);
 
-            initSolverWithParams<FFTSolver_t<Dim>>(sp);
+            initSolverWithParams<FFTSolver_t<T, Dim>>(sp);
         } else {
             throw std::runtime_error("Unsupported dimensionality for FFT solver");
         }
@@ -559,7 +554,7 @@ public:
     void initP3MSolver() {
         if constexpr (Dim == 3) {
             ippl::ParameterList sp;
-            sp.add("output_type", P3MSolver_t<Dim>::GRAD);
+            sp.add("output_type", P3MSolver_t<T, Dim>::GRAD);
             sp.add("use_heffte_defaults", false);
             sp.add("use_pencils", true);
             sp.add("use_reorder", false);
@@ -567,7 +562,7 @@ public:
             sp.add("comm", ippl::p2p_pl);
             sp.add("r2c_direction", 0);
 
-            initSolverWithParams<P3MSolver_t<Dim>>(sp);
+            initSolverWithParams<P3MSolver_t<T, Dim>>(sp);
         } else {
             throw std::runtime_error("Unsupported dimensionality for P3M solver");
         }
@@ -576,16 +571,16 @@ public:
     void initOpenSolver() {
         if constexpr (Dim == 3) {
             ippl::ParameterList sp;
-            sp.add("output_type", OpenSolver_t<Dim>::GRAD);
+            sp.add("output_type", OpenSolver_t<T, Dim>::GRAD);
             sp.add("use_heffte_defaults", false);
             sp.add("use_pencils", true);
             sp.add("use_reorder", false);
             sp.add("use_gpu_aware", true);
             sp.add("comm", ippl::p2p_pl);
             sp.add("r2c_direction", 0);
-            sp.add("algorithm", OpenSolver_t<Dim>::HOCKNEY);
+            sp.add("algorithm", OpenSolver_t<T, Dim>::HOCKNEY);
 
-            initSolverWithParams<OpenSolver_t<Dim>>(sp);
+            initSolverWithParams<OpenSolver_t<T, Dim>>(sp);
         } else {
             throw std::runtime_error("Unsupported dimensionality for OPEN solver");
         }
@@ -614,22 +609,23 @@ public:
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
-        Vector_t<Dim> normE;
+        Vector_t<T, Dim> normE;
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         for (unsigned d = 0; d < Dim; ++d) {
-            double temp = 0.0;
+            T temp = 0.0;
             ippl::parallel_reduce(
-                "Vector E reduce", ippl::getRangePolicy<Dim>(Eview, nghostE),
-                KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                    // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                "Vector E reduce", ippl::getRangePolicy(Eview, nghostE),
+                KOKKOS_LAMBDA(const index_array_type& args, T& valL) {
+                    // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
-                    double myVal = std::pow(ippl::apply<Dim>(Eview, args)[d], 2);
+                    T myVal = std::pow(ippl::apply(Eview, args)[d], 2);
                     valL += myVal;
                 },
-                Kokkos::Sum<double>(temp));
-            double globaltemp = 0.0;
-            MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+                Kokkos::Sum<T>(temp));
+            T globaltemp          = 0.0;
+            MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
+            MPI_Reduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, 0, Ippl::getComm());
             normE[d] = std::sqrt(globaltemp);
         }
 
@@ -671,11 +667,11 @@ public:
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         double temp            = 0.0;
         ippl::parallel_reduce(
-            "Ex inner product", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex inner product", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::pow(ippl::apply<Dim>(Eview, args)[0], 2);
+                double myVal = std::pow(ippl::apply(Eview, args)[0], 2);
                 valL += myVal;
             },
             Kokkos::Sum<double>(temp));
@@ -685,11 +681,11 @@ public:
 
         double tempMax = 0.0;
         ippl::parallel_reduce(
-            "Ex max norm", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex max norm", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[0]);
+                double myVal = std::fabs(ippl::apply(Eview, args)[0]);
                 if (myVal > valL) {
                     valL = myVal;
                 }
@@ -726,11 +722,11 @@ public:
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         double temp            = 0.0;
         ippl::parallel_reduce(
-            "Ex inner product", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex inner product", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::pow(ippl::apply<Dim>(Eview, args)[Dim - 1], 2);
+                double myVal = std::pow(ippl::apply(Eview, args)[Dim - 1], 2);
                 valL += myVal;
             },
             Kokkos::Sum<double>(temp));
@@ -740,11 +736,11 @@ public:
 
         double tempMax = 0.0;
         ippl::parallel_reduce(
-            "Ex max norm", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex max norm", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[Dim - 1]);
+                double myVal = std::fabs(ippl::apply(Eview, args)[Dim - 1]);
                 if (myVal > valL) {
                     valL = myVal;
                 }
@@ -774,8 +770,8 @@ public:
     }
 
     void dumpParticleData() {
-        typename ParticleAttrib<Vector_t<Dim>>::HostMirror R_host = this->R.getHostMirror();
-        typename ParticleAttrib<Vector_t<Dim>>::HostMirror P_host = this->P.getHostMirror();
+        typename ParticleAttrib<Vector_t<T, Dim>>::HostMirror R_host = this->R.getHostMirror();
+        typename ParticleAttrib<Vector_t<T, Dim>>::HostMirror P_host = this->P.getHostMirror();
         Kokkos::deep_copy(R_host, this->R.getView());
         Kokkos::deep_copy(P_host, P.getView());
         std::stringstream pname;
