@@ -20,16 +20,17 @@
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
+template <typename T>
 class HaloTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
     template <unsigned Dim>
-    using mesh_type = ippl::UniformCartesian<double, Dim>;
+    using mesh_type = ippl::UniformCartesian<T, Dim>;
 
     template <unsigned Dim>
     using centering_type = typename mesh_type<Dim>::DefaultCentering;
 
     template <unsigned Dim>
-    using field_type = ippl::Field<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
+    using field_type = ippl::Field<T, Dim, mesh_type<Dim>, centering_type<Dim>>;
 
     template <unsigned Dim>
     using layout_type = ippl::FieldLayout<Dim>;
@@ -50,8 +51,8 @@ public:
         }
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(indices);
 
-        ippl::Vector<double, Dim> hx;
-        ippl::Vector<double, Dim> origin;
+        ippl::Vector<T, Dim> hx;
+        ippl::Vector<T, Dim> origin;
 
         ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned d = 0; d < Dim; d++) {
@@ -71,11 +72,15 @@ public:
     Collection<layout_type> layouts;
     PtrCollection<std::shared_ptr, field_type> fields;
     size_t nPoints[MaxDim];
-    double domain[MaxDim];
+    T domain[MaxDim];
 };
 
-TEST_F(HaloTest, CheckNeighbors) {
-    auto check = [&]<unsigned Dim>(const layout_type<Dim>& layout) {
+using Precisions = ::testing::Types<double, float>;
+
+TYPED_TEST_CASE(HaloTest, Precisions);
+
+TYPED_TEST(HaloTest, CheckNeighbors) {
+    auto check = [&]<unsigned Dim>(const typename TestFixture::layout_type<Dim>& layout) {
         int myRank = Ippl::Comm->rank();
         int nRanks = Ippl::Comm->size();
 
@@ -119,11 +124,11 @@ TEST_F(HaloTest, CheckNeighbors) {
         }
     };
 
-    apply(check, layouts);
+    this->apply(check, this->layouts);
 }
 
-TEST_F(HaloTest, CheckCubes) {
-    auto check = [&]<unsigned Dim>(const layout_type<Dim>& layout) {
+TYPED_TEST(HaloTest, CheckCubes) {
+    auto check = [&]<unsigned Dim>(const typename TestFixture::layout_type<Dim>& layout) {
         const auto& domains = layout.getHostLocalDomains();
 
         for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
@@ -154,33 +159,37 @@ TEST_F(HaloTest, CheckCubes) {
         }
     };
 
-    apply(check, layouts);
+    this->apply(check, this->layouts);
 }
 
-TEST_F(HaloTest, FillHalo) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+TYPED_TEST(HaloTest, FillHalo) {
+    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field) {
         *field = 1;
         field->fillHalo();
 
         auto view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
-        nestedViewLoop<Dim>(view, 0, [&]<typename... Idx>(const Idx... args) {
+        this->template nestedViewLoop<Dim>(view, 0, [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(view(args...), 1);
         });
     };
 
-    apply(check, fields);
+    this->apply(check, this->fields);
 }
 
-TEST_F(HaloTest, AccumulateHalo) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field,
-                                   const layout_type<Dim>& layout) {
-        *field      = 1;
-        auto mirror = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
+TYPED_TEST(HaloTest, AccumulateHalo) {
+    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field,
+                                   const typename TestFixture::layout_type<Dim>& layout) {
+        using mirror_type   = typename TestFixture::field_type<Dim>::view_type::host_mirror_type;
+        using neighbor_list = typename TestFixture::layout_type<Dim>::neighbor_list;
+
+        *field = 1;
+        mirror_type mirror =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
         const unsigned int nghost = field->getNghost();
 
         if (Ippl::Comm->size() > 1) {
-            auto& neighbors = layout.getNeighbors();
-            auto lDom       = layout.getLocalNDIndex();
+            const neighbor_list& neighbors = layout.getNeighbors();
+            ippl::NDIndex<Dim> lDom        = layout.getLocalNDIndex();
 
             auto arrayToCube = []<size_t... Dims>(const std::index_sequence<Dims...>&,
                                                   const std::array<ippl::e_cube_tag, Dim>& tags) {
@@ -194,38 +203,40 @@ TEST_F(HaloTest, AccumulateHalo) {
                                                               : ippl::IS_PARALLEL)...};
             };
 
-            nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
-                auto encoding = indexToTags(std::make_index_sequence<Dim>{}, args...);
-                auto cube     = arrayToCube(std::make_index_sequence<Dim>{}, encoding);
+            this->template nestedViewLoop<Dim>(
+                mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+                    auto encoding = indexToTags(std::make_index_sequence<Dim>{}, args...);
+                    auto cube     = arrayToCube(std::make_index_sequence<Dim>{}, encoding);
 
-                // ignore all interior points
-                if (cube == ippl::detail::countHypercubes(Dim) - 1) {
-                    return;
-                }
+                    // ignore all interior points
+                    if (cube == ippl::detail::countHypercubes(Dim) - 1) {
+                        return;
+                    }
 
-                unsigned int n = 0;
-                nestedLoop<Dim>(
-                    [&](unsigned dl) -> size_t {
-                        return encoding[dl] == ippl::IS_PARALLEL ? 0 : (encoding[dl] + 1) * 10;
-                    },
-                    [&](unsigned dl) -> size_t {
-                        return encoding[dl] == ippl::IS_PARALLEL ? 1 : (encoding[dl] + 1) * 10 + 2;
-                    },
-                    [&]<typename... Flag>(const Flag... flags) {
-                        auto adjacent = ippl::detail::getCube<Dim>(
-                            (flags == 0   ? ippl::IS_PARALLEL
-                             : flags < 20 ? (flags & 1 ? ippl::LOWER : ippl::IS_PARALLEL)
-                                          : (flags & 1 ? ippl::UPPER : ippl::IS_PARALLEL))...);
-                        if (adjacent == ippl::detail::countHypercubes(Dim) - 1) {
-                            return;
-                        }
-                        n += neighbors[adjacent].size();
-                    });
+                    unsigned int n = 0;
+                    this->template nestedLoop<Dim>(
+                        [&](unsigned dl) -> size_t {
+                            return encoding[dl] == ippl::IS_PARALLEL ? 0 : (encoding[dl] + 1) * 10;
+                        },
+                        [&](unsigned dl) -> size_t {
+                            return encoding[dl] == ippl::IS_PARALLEL ? 1
+                                                                     : (encoding[dl] + 1) * 10 + 2;
+                        },
+                        [&]<typename... Flag>(const Flag... flags) {
+                            auto adjacent = ippl::detail::getCube<Dim>(
+                                (flags == 0   ? ippl::IS_PARALLEL
+                                 : flags < 20 ? (flags & 1 ? ippl::LOWER : ippl::IS_PARALLEL)
+                                              : (flags & 1 ? ippl::UPPER : ippl::IS_PARALLEL))...);
+                            if (adjacent == ippl::detail::countHypercubes(Dim) - 1) {
+                                return;
+                            }
+                            n += neighbors[adjacent].size();
+                        });
 
-                if (n > 0) {
-                    mirror(args...) = 1. / (n + 1);
-                }
-            });
+                    if (n > 0) {
+                        mirror(args...) = 1. / (n + 1);
+                    }
+                });
             Kokkos::deep_copy(field->getView(), mirror);
         }
 
@@ -234,12 +245,12 @@ TEST_F(HaloTest, AccumulateHalo) {
 
         Kokkos::deep_copy(mirror, field->getView());
 
-        nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        this->template nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirror(args...), 1);
         });
     };
 
-    apply(check, fields, layouts);
+    this->apply(check, this->fields, this->layouts);
 }
 
 int main(int argc, char* argv[]) {
