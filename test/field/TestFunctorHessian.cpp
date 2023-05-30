@@ -363,33 +363,27 @@ int main(int argc, char* argv[]) {
     /////////////////////////////
     // Kokkos loop for Hessian //
     /////////////////////////////
-    using bo1_type = BackwardStencil<OpDim::X, double, dim, FView_t<dim>>;
-    using bs1_type = BackwardOperator<OpDim::X, double, dim, FView_t<dim>, bo1_type>;
-    using bo2_type = BackwardStencil<OpDim::X, double, dim, bs1_type>;
-    // using bs2_type = BackwardStencil<OpDim::X, double, dim, bs1_type, bo2_type>;
-
-    bo1_type bo1;
-    bo2_type bo2;
+    using bs1_type = BackwardStencil<OpDim::X, double, dim, FView_t<dim>>;
 
     if (currRange.first[0] == nghost) {
-        BackwardOperator<OpDim::X, double, dim, FView_t<dim>, bo1_type> bs(view, hxInv, bo1);
-        BackwardOperator<OpDim::X, double, dim, decltype(bs), bo2_type> bs2(view, bs, hxInv, bo2);
+        using bo1_type = ChainedOperator<OpDim::X, double, dim, FView_t<dim>, bs1_type>;
+        using bs2_type = BackwardStencil<OpDim::X, double, dim, bo1_type>;
+        bs1_type bo1;
+        bs2_type bo2;
+
+        bo1_type bs(view, hxInv, bo1);
+        ChainedOperator<OpDim::X, double, dim, decltype(bs), bs2_type> bs2(view, bs, hxInv, bo2);
         std::cout << bs2(5, 5, 5) << std::endl;
     } else {
-        // BackwardStencil<OpDim::X, double, dim, FView_t<dim>> bs(view, hxInv);
-        // BackwardStencil<OpDim::Y, double, dim, decltype(bs)> bs2(view, bs, hxInv);
-        // std::cout << bs(5, 5, 5) << std::endl;
+        using bo1_type = ChainedOperator<OpDim::X, double, dim, FView_t<dim>, bs1_type>;
+        using bs2_type = BackwardStencil<OpDim::X, double, dim, bo1_type>;
+        bs1_type bo1;
+        bs2_type bo2;
+
+        bo1_type bs(view, hxInv, bo1);
+        ChainedOperator<OpDim::Y, double, dim, decltype(bs), bs2_type> bs2(view, bs, hxInv, bo2);
+        std::cout << bs2(5, 5, 5) << std::endl;
     }
-
-    // Kokkos::parallel_for(
-    //     "Assign Hessian",
-    //     mdrange_type({0, 0, 0},
-    //                  {view_result.extent(0), view_result.extent(1), view_result.extent(2)}),
-    //     KOKKOS_LAMBDA(const int i, const int j, const int k) {
-    //         view_result(i, j, k) = centerHess(i, j, k);
-    //     });
-
-    // pickHessianIdx<double,dim>(hessReductionField, result, 0, 1, 2);
 
     result = result - exact;
 

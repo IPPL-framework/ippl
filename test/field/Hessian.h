@@ -76,6 +76,24 @@ inline typename Callable::value_type shiftedIdxApply(Callable& F, size_type shif
 }
 
 template <OpDim applyDim, typename T, unsigned Dim, class Callable>
+struct CenteredStencil {
+    T operator()(Callable& F, Vector_t<Dim>& hInv, size_type i, size_type j, size_type k) {
+        return hInv[applyDim] * hInv[applyDim]
+               * (shiftedIdxApply<applyDim>(F, -1, i, j, k) - 2.0 * idxApply(F, i, j, k)
+                  + shiftedIdxApply<applyDim>(F, 1, i, j, k));
+    }
+};
+
+template <OpDim applyDim, typename T, unsigned Dim, class Callable>
+struct ForwardStencil {
+    T operator()(Callable& F, Vector_t<Dim>& hInv, size_type i, size_type j, size_type k) {
+        return 0.5 * hInv[applyDim]
+               * (-3.0 * idxApply(F, i, j, k) + 4.0 * shiftedIdxApply<applyDim>(F, 1, i, j, k)
+                  - shiftedIdxApply<applyDim>(F, 2, i, j, k));
+    }
+};
+
+template <OpDim applyDim, typename T, unsigned Dim, class Callable>
 struct BackwardStencil {
     T operator()(Callable& F, Vector_t<Dim>& hInv, size_type i, size_type j, size_type k) {
         return 0.5 * hInv[applyDim]
@@ -103,8 +121,8 @@ struct OperatorBase {
 };
 
 template <OpDim applyDim, typename T, unsigned Dim, class Callable, class Stencil>
-struct BackwardOperator : public OperatorBase<applyDim, T, Dim, Callable, Stencil> {
-    BackwardOperator(FView_t<Dim>& view, Callable& leftOp, Vector_t<Dim>& hInv, Stencil& stencil)
+struct ChainedOperator : public OperatorBase<applyDim, T, Dim, Callable, Stencil> {
+    ChainedOperator(FView_t<Dim>& view, Callable& leftOp, Vector_t<Dim>& hInv, Stencil& stencil)
         : OperatorBase<applyDim, T, Dim, Callable, Stencil>(view, hInv, stencil)
         , leftOp_m(leftOp) {}
 
@@ -115,10 +133,11 @@ struct BackwardOperator : public OperatorBase<applyDim, T, Dim, Callable, Stenci
     Callable& leftOp_m;
 };
 
+// Template Specialization for applying stenciil to field directly (right-most operator)
 template <OpDim applyDim, unsigned Dim, typename T, class Stencil>
-struct BackwardOperator<applyDim, T, Dim, FView_t<Dim>, Stencil>
+struct ChainedOperator<applyDim, T, Dim, FView_t<Dim>, Stencil>
     : public OperatorBase<applyDim, T, Dim, FView_t<Dim>, Stencil> {
-    BackwardOperator(FView_t<Dim>& view, Vector_t<Dim>& hInv, Stencil& stencil)
+    ChainedOperator(FView_t<Dim>& view, Vector_t<Dim>& hInv, Stencil& stencil)
         : OperatorBase<applyDim, T, Dim, FView_t<Dim>, Stencil>(view, hInv, stencil) {}
 
     T operator()(size_type i, size_type j, size_type k) {
