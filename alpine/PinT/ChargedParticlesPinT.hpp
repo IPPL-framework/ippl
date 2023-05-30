@@ -182,15 +182,17 @@ public:
                             const unsigned int& ntCoarse,
                             const double& dtCoarse,
                             const double& tStartMySlice,
-                            const double& Bext) {
+                            const double& Bext,
+                            const int& rankTime,
+                            MPI_Comm& spaceComm) {
 
         //Copy initial conditions as they are needed later
         Kokkos::deep_copy(R0.getView(), this->R.getView());
         Kokkos::deep_copy(P0.getView(), P.getView());
 
         //Get initial guess for ranks other than 0 by propagating the coarse solver
-        if (Ippl::Comm->rank() > 0) {
-            BorisPIC(this->R, P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice, Bext); 
+        if (rankTime > 0) {
+            BorisPIC(this->R, P, rankTime*ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
         }
         
         //Ippl::Comm->barrier();
@@ -200,10 +202,10 @@ public:
 
 
         //Run the coarse integrator to get the values at the end of the time slice 
-        BorisPIC(this->R, P, ntCoarse, dtCoarse, tStartMySlice, Bext); 
+        BorisPIC(this->R, P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
 
         isConverged = false;
-        if(Ippl::Comm->rank() == 0) {
+        if(rankTime == 0) {
             isPreviousDomainConverged = true;
         }
         else {
@@ -487,7 +489,8 @@ public:
 
 
     void dumpEnergy(size_type /*totalP*/, const unsigned int& nc, 
-                    const unsigned int& iter, ParticleAttrib<Vector_t>& Ptemp) {
+                    const unsigned int& iter, ParticleAttrib<Vector_t>& Ptemp,
+                    int rankTime, int rankSpace, const MPI_Comm& spaceComm = MPI_COMM_WORLD) {
        
 
         double potentialEnergy, kineticEnergy;
@@ -572,32 +575,34 @@ public:
                                 }, Kokkos::Sum<double>(temp));
 
         temp *= 0.5;
-        //globaltemp = 0.0;
-        double globaltemp = temp;
-        //MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        double globaltemp = 0.0;
+        //double globaltemp = temp;
+        MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, spaceComm);
 
         kineticEnergy = globaltemp;
 
-        std::stringstream fname;
-        fname << "data/Energy_rank_";
-        fname << Ippl::Comm->rank();
-        fname << "_nc_";
-        fname << nc;
-        fname << "_iter_";
-        fname << iter;
-        fname << ".csv";
+        if(rankSpace == 0) {
+            std::stringstream fname;
+            fname << "data/Energy_rank_";
+            fname << rankTime;
+            fname << "_nc_";
+            fname << nc;
+            fname << "_iter_";
+            fname << iter;
+            fname << ".csv";
 
 
-        Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
-        csvout.precision(10);
-        csvout.setf(std::ios::scientific, std::ios::floatfield);
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-        //csvout << "time, Potential energy, Kinetic energy, Total energy" << endl;
+            //csvout << "time, Potential energy, Kinetic energy, Total energy" << endl;
 
-        csvout << time_m << " "
-               << potentialEnergy << " "
-               << kineticEnergy << " "
-               << potentialEnergy + kineticEnergy << endl;
+            csvout << time_m << " "
+                   << potentialEnergy << " "
+                   << kineticEnergy << " "
+                   << potentialEnergy + kineticEnergy << endl;
+        }
 
     }
 
@@ -630,9 +635,10 @@ public:
         }
      }
 
-    void writelocalError(double Rerror, double Perror, unsigned int nc, unsigned int iter, int rankTime) {
+    void writelocalError(double Rerror, double Perror, unsigned int nc, unsigned int iter, int rankTime, int rankSpace) {
         
-            if(Ippl::Comm->rank() == 0) {
+            //if(Ippl::Comm->rank() == 0) {
+            if(rankSpace == 0) {
                 std::stringstream fname;
                 fname << "data/localError_rank_";
                 fname << rankTime;
@@ -640,7 +646,7 @@ public:
                 fname << nc;
                 fname << ".csv";
 
-                Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, rankTime);
+                Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
                 csvout.precision(10);
                 csvout.setf(std::ios::scientific, std::ios::floatfield);
 
@@ -840,16 +846,15 @@ public:
     
     }
 
-    void BorisPIC(ParticleAttrib<Vector_t>& Rtemp, 
-                     ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
-                     const double dt, const double& tStartMySlice, const double& Bext) {
+    void BorisPIC(ParticleAttrib<Vector_t>& Rtemp, ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
+                  const double dt, const double& tStartMySlice, const double& Bext, MPI_Comm& spaceComm) {
     
         static IpplTimings::TimerRef fieldSolvePIC = IpplTimings::getTimer("fieldSolvePIC");
         PLayout& PL = this->getLayout();
         //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIC_m = 0.0;
-        scatter(q, rhoPIC_m, Rtemp);
+        scatter(q, rhoPIC_m, Rtemp, spaceComm);
     
         rhoPIC_m = rhoPIC_m / (hr_m[0] * hr_m[1] * hr_m[2]);
         rhoPIC_m = rhoPIC_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
@@ -906,7 +911,7 @@ public:
     
             //scatter the charge onto the underlying grid
             rhoPIC_m = 0.0;
-            scatter(q, rhoPIC_m, Rtemp);
+            scatter(q, rhoPIC_m, Rtemp, spaceComm);
     
     
             rhoPIC_m = rhoPIC_m / (hr_m[0] * hr_m[1] * hr_m[2]);
@@ -1019,16 +1024,17 @@ public:
 
     void BorisPIF(ParticleAttrib<Vector_t>& Rtemp,
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
-                     const double& dt, const bool& /*isConverged*/, 
-                     const double& tStartMySlice, const unsigned& nc, 
-                     const unsigned int& iter, const double& Bext) {
+                     const double& dt, const double& tStartMySlice, const unsigned& nc, 
+                     const unsigned int& iter, const double& Bext,
+                     int rankTime, int rankSpace,
+                     MPI_Comm& spaceComm) {
     
         static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
         //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
-        scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp);
+        scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, spaceComm);
     
         rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
@@ -1041,7 +1047,7 @@ public:
 
         if((time_m == 0.0)) {
             IpplTimings::startTimer(dumpData);
-            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp);
+            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
             IpplTimings::stopTimer(dumpData);
         }
         double alpha = -0.5 * dt;
@@ -1087,7 +1093,7 @@ public:
     
             //scatter the charge onto the underlying grid
             rhoPIF_m = {0.0, 0.0};
-            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp);
+            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, spaceComm);
     
             rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
@@ -1118,7 +1124,7 @@ public:
             time_m += dt;
             
             IpplTimings::startTimer(dumpData);
-            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp);         
+            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);         
             IpplTimings::stopTimer(dumpData);
     
         }

@@ -147,7 +147,7 @@ double CDF(const double& x, const double& mu, const double& sigma) {
 }
 
 double computeRL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
-                      Vector_t& length) {
+                      Vector_t& length, MPI_Comm& spaceComm) {
     
     auto Qview = Q.getView();
     auto QprevIterView = QprevIter.getView();
@@ -174,9 +174,11 @@ double computeRL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qp
 
     Kokkos::fence();
     double globalError = 0.0;
-    MPI_Allreduce(&localError, &globalError, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    //MPI_Allreduce(&localError, &globalError, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(&localError, &globalError, 1, MPI_DOUBLE, MPI_SUM, spaceComm);
     double globalNorm = 0.0;
-    MPI_Allreduce(&localNorm, &globalNorm, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    //MPI_Allreduce(&localNorm, &globalNorm, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(&localNorm, &globalNorm, 1, MPI_DOUBLE, MPI_SUM, spaceComm);
     //lError = std::sqrt(localError)/std::sqrt(localNorm);
 
     double relError = std::sqrt(globalError) / std::sqrt(globalNorm);
@@ -185,7 +187,7 @@ double computeRL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qp
 
 }
 
-double computePL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter) {
+double computePL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, MPI_Comm& spaceComm) {
     
     auto Qview = Q.getView();
     auto QprevIterView = QprevIter.getView();
@@ -203,9 +205,11 @@ double computePL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qp
 
     Kokkos::fence();
     double globalError = 0.0;
-    MPI_Allreduce(&localError, &globalError, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    //MPI_Allreduce(&localError, &globalError, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(&localError, &globalError, 1, MPI_DOUBLE, MPI_SUM, spaceComm);
     double globalNorm = 0.0;
-    MPI_Allreduce(&localNorm, &globalNorm, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    //MPI_Allreduce(&localNorm, &globalNorm, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(&localNorm, &globalNorm, 1, MPI_DOUBLE, MPI_SUM, spaceComm);
     //lError = std::sqrt(localError)/std::sqrt(localNorm);
 
     double relError = std::sqrt(globalError) / std::sqrt(globalNorm);
@@ -383,21 +387,27 @@ const char* TestName = "PenningTrapPinT";
 
 int main(int argc, char *argv[]){
    
-    int rankWorld, sizeWorld;
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
-    MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
+    Ippl ippl(argc, argv);
+    
+    //int rankWorld, sizeWorld;
+    //MPI_Init(&argc, &argv);
+    //MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+    //MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
 
     int spaceColor, timeColor;
     MPI_Comm spaceComm, timeComm;
 
-    int spaceProcs = std::atoi(argv[13]);
-    int timeProcs = std::atoi(argv[14]);
-    spaceColor = rankWorld / spaceProcs; 
-    timeColor = rankWorld % spaceProcs;
+    int spaceProcs = std::atoi(argv[15]);
+    int timeProcs = std::atoi(argv[16]);
+    //spaceColor = rankWorld / spaceProcs; 
+    //timeColor = rankWorld % spaceProcs;
+    spaceColor = Ippl::Comm->rank() / spaceProcs; 
+    timeColor = Ippl::Comm->rank() % spaceProcs;
 
-    MPI_Comm_split(MPI_COMM_WORLD, spaceColor, rankWorld, &spaceComm);
-    MPI_Comm_split(MPI_COMM_WORLD, timeColor, rankWorld, &timeComm);
+    //MPI_Comm_split(MPI_COMM_WORLD, spaceColor, rankWorld, &spaceComm);
+    //MPI_Comm_split(MPI_COMM_WORLD, timeColor, rankWorld, &timeComm);
+    MPI_Comm_split(Ippl::getComm(), spaceColor, Ippl::Comm->rank(), &spaceComm);
+    MPI_Comm_split(Ippl::getComm(), timeColor, Ippl::Comm->rank(), &timeComm);
 
     int rankSpace, sizeSpace, rankTime, sizeTime;
     MPI_Comm_rank(spaceComm, &rankSpace);
@@ -406,8 +416,9 @@ int main(int argc, char *argv[]){
     MPI_Comm_rank(timeComm, &rankTime);
     MPI_Comm_size(timeComm, &sizeTime);
 
-    Ippl ippl(argc, argv, spaceComm);
+    //Ippl ippl(argc, argv, spaceComm);
     
+    //Inform msg(TestName, sizeSpace-1);
     Inform msg(TestName, Ippl::Comm->size()-1);
     Inform msg2all(TestName,INFORM_ALL_NODES);
 
@@ -508,8 +519,10 @@ int main(int argc, char *argv[]){
 
     size_type Total_particles = 0;
 
+    //MPI_Allreduce(&nloc, &Total_particles, 1,
+    //            MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
     MPI_Allreduce(&nloc, &Total_particles, 1,
-                MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+                MPI_UNSIGNED_LONG, MPI_SUM, spaceComm);
 
     int rest = (int) (totalP - Total_particles);
 
@@ -519,7 +532,7 @@ int main(int argc, char *argv[]){
 
     double Q = -1562.5;
     double Bext = 5.0;
-    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q,nloc);
+    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q,totalP);
     Pbegin = std::make_unique<states_begin_type>(PL);
     Pend = std::make_unique<states_end_type>(PL);
 
@@ -643,12 +656,12 @@ int main(int argc, char *argv[]){
         //<< " Max. iterations: " << maxIter
         << " No. of cycles: " << nCycles
         << endl
-        << "Np= " << nloc 
+        << "Np= " << totalP 
         << " Fourier modes = " << nmPIF
         << " Grid points = " << nrPIC
         << endl;
     
-    Pcoarse->q = Pcoarse->Q_m/nloc;
+    Pcoarse->q = Pcoarse->Q_m/totalP;
     IpplTimings::stopTimer(particleCreation);                                                    
     
     msg << "particles created and initial conditions assigned " << endl;
@@ -721,7 +734,7 @@ int main(int argc, char *argv[]){
         IpplTimings::startTimer(initializeCycles);
         Pcoarse->initializeParareal(Pbegin->R, Pbegin->P, isConverged,
                                     isPreviousDomainConverged, ntCoarse,
-                                    dtCoarse, tStartMySlice, Bext);
+                                    dtCoarse, tStartMySlice, Bext, rankTime, spaceComm);
         IpplTimings::stopTimer(initializeCycles);
         unsigned int it = 0;
         while (!isConverged) { 
@@ -730,7 +743,7 @@ int main(int argc, char *argv[]){
 
             //Run fine integrator in parallel
             IpplTimings::startTimer(finePropagator);
-            Pcoarse->BorisPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, isConverged, tStartMySlice, nc+1, it+1, Bext);
+            Pcoarse->BorisPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, tStartMySlice, nc+1, it+1, Bext, rankTime, rankSpace, spaceComm);
             IpplTimings::stopTimer(finePropagator);
         
 
@@ -773,7 +786,7 @@ int main(int argc, char *argv[]){
             IpplTimings::stopTimer(deepCopy);
 
             IpplTimings::startTimer(coarsePropagator);
-            Pcoarse->BorisPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, Bext); 
+            Pcoarse->BorisPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
             IpplTimings::stopTimer(coarsePropagator);
 
             Pend->R = Pend->R + Pcoarse->R;
@@ -784,8 +797,8 @@ int main(int argc, char *argv[]){
             PL.applyBC(Pend->R, PL.getRegionLayout().getDomain());
             IpplTimings::startTimer(computeErrors);
             //double localRerror, localPerror;
-            double Rerror = computeRL2Error(Pcoarse->R, Pcoarse->RprevIter, length);
-            double Perror = computePL2Error(Pcoarse->P, Pcoarse->PprevIter);
+            double Rerror = computeRL2Error(Pcoarse->R, Pcoarse->RprevIter, length, spaceComm);
+            double Perror = computePL2Error(Pcoarse->P, Pcoarse->PprevIter, spaceComm);
         
             IpplTimings::stopTimer(computeErrors);
 
@@ -815,7 +828,7 @@ int main(int argc, char *argv[]){
 
             IpplTimings::startTimer(dumpData);
             //Pcoarse->writeError(Rerror, Perror, it+1);
-            Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime);
+            Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
             //Pcoarse->dumpParticleData(it+1, Pend->R, Pend->P, "Parareal");
             IpplTimings::stopTimer(dumpData);
 

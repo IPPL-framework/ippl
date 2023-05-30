@@ -139,7 +139,8 @@ namespace ippl {
     template<typename T, class... Properties>
     template <unsigned Dim, class M, class C, class PT>
     void ParticleAttrib<T, Properties...>::scatter(Field<T,Dim,M,C>& f,
-                                                   const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
+                                                   const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp,
+                                                   const MPI_Comm& spaceComm)
     const
     {
         static IpplTimings::TimerRef scatterPICTimer = IpplTimings::getTimer("ScatterPIC");           
@@ -206,14 +207,14 @@ namespace ippl {
             
         //static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("AccumulateHalo");           
         //IpplTimings::startTimer(accumulateHaloTimer);                                               
-        f.accumulateHalo();
+        tempField.accumulateHalo();
         //IpplTimings::stopTimer(accumulateHaloTimer);
 
         static IpplTimings::TimerRef scatterAllReducePICTimer = IpplTimings::getTimer("scatterAllReducePIC");           
         IpplTimings::startTimer(scatterAllReducePICTimer);                                               
         int viewSize = view.extent(0) * view.extent(1) * view.extent(2);
         MPI_Allreduce(viewLocal.data(), view.data(), viewSize, 
-                      MPI_DOUBLE, MPI_SUM, Ippl::getComm());  
+                      MPI_DOUBLE, MPI_SUM, spaceComm);  
         IpplTimings::stopTimer(scatterAllReducePICTimer);
     }
 
@@ -504,7 +505,8 @@ namespace ippl {
     template<typename T, class... Properties>
     template <unsigned Dim, class M, class C, class FT, class ST, class PT>
     void ParticleAttrib<T, Properties...>::scatterPIFNUFFT(Field<FT,Dim,M,C>& f, Field<ST,Dim,M,C>& Sk,
-                                                   const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
+                                                   const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp,
+                                                   const MPI_Comm& spaceComm)
     const
     {
         
@@ -538,7 +540,7 @@ namespace ippl {
         IpplTimings::startTimer(scatterAllReducePIFTimer);                                               
         int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
         MPI_Allreduce(viewLocal.data(), fview.data(), viewSize, 
-                      MPI_C_DOUBLE_COMPLEX, MPI_SUM, Ippl::getComm());  
+                      MPI_C_DOUBLE_COMPLEX, MPI_SUM, spaceComm);  
         IpplTimings::stopTimer(scatterAllReducePIFTimer);
 
         //IpplTimings::startTimer(scatterPIFNUFFTTimer);
@@ -648,10 +650,11 @@ namespace ippl {
     template<typename P1, unsigned Dim, class M, class C, typename P2, typename P3, typename P4, class... Properties>
     inline
     void scatterPIFNUFFT(const ParticleAttrib<P1, Properties...>& attrib, Field<P2, Dim, M, C>& f,
-                 Field<P3, Dim, M, C>& Sk, const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp)
+                 Field<P3, Dim, M, C>& Sk, const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp,
+                 const MPI_Comm& spaceComm = MPI_COMM_WORLD)
     {
 #ifdef KOKKOS_ENABLE_CUDA
-        attrib.scatterPIFNUFFT(f, Sk, pp);
+        attrib.scatterPIFNUFFT(f, Sk, pp, spaceComm);
 #else
         //throw IpplException("scatterPIFNUFFT", "The NUFFT library cuFINUFFT currently only works with CUDA and hence Kokkos needs to 
         //                     be compiled with CUDA. Otherwise use scatterPIFNUDFT.");
@@ -682,9 +685,10 @@ namespace ippl {
     template<typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
     inline
     void scatter(const ParticleAttrib<P1, Properties...>& attrib, Field<P1, Dim, M, C>& f,
-                 const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
+                 const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp,
+                 const MPI_Comm& spaceComm = MPI_COMM_WORLD)
     {
-        attrib.scatter(f, pp);
+        attrib.scatter(f, pp, spaceComm);
     }
 
     template<typename P1, unsigned Dim, class M, class C, typename P2, typename P3, typename P4, class... Properties>
