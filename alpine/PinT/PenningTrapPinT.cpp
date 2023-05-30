@@ -866,5 +866,8 @@ int main(int argc, char *argv[]){
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
 
+    MPI_Comm_free(spaceComm);
+    MPI_Comm_free(timeComm);
+
     return 0;
 }
