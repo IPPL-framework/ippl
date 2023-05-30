@@ -103,6 +103,7 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
     return -prefactor * std::exp(-r2 / (2 * sigma * sigma));
 }
 
+// Construct ranges needed to loop over Faces of 3D cube
 void getFaceIteratorRanges(std::vector<range_pair_t>& result, const idx_vec_t& extents,
                            const int& nghost) {
     int x_max = extents[0];
@@ -129,6 +130,7 @@ void getFaceIteratorRanges(std::vector<range_pair_t>& result, const idx_vec_t& e
                       {x_max - nghost - 1, y_max - nghost - 1, z_max - nghost}});
 }
 
+// Helper to construct edges
 std::vector<range_pair_t> getEdgeDim(const idx_vec_t& extents, const unsigned& dir,
                                      const int& nghost) {
     std::vector<range_pair_t> face_iterators(4);
@@ -158,6 +160,7 @@ std::vector<range_pair_t> getEdgeDim(const idx_vec_t& extents, const unsigned& d
     return face_iterators;
 }
 
+// Construct ranges needed to loop over Edges of 3D cube
 void getEdgeIteratorRanges(std::vector<range_pair_t>& result, const idx_vec_t& extents,
                            int nghost) {
     for (unsigned d = 0; d < dim; d++) {
@@ -166,6 +169,7 @@ void getEdgeIteratorRanges(std::vector<range_pair_t>& result, const idx_vec_t& e
     }
 }
 
+// Construct ranges needed to loop over edges of 3D cube
 void getCornerIteratorRanges(std::vector<range_pair_t>& result, const idx_vec_t& extents,
                              const int& nghost) {
     int x_max = extents[0];
@@ -191,6 +195,7 @@ void getCornerIteratorRanges(std::vector<range_pair_t>& result, const idx_vec_t&
                       {x_max - nghost, y_max - nghost, z_max - nghost}});
 }
 
+// Construct ranges needed to loop over center domain of 3D cube
 void getCenterIteratorRange(std::vector<range_pair_t>& result, const idx_vec_t& extents,
                             const int& nghost) {
     int x_max = extents[0];
@@ -199,30 +204,6 @@ void getCenterIteratorRange(std::vector<range_pair_t>& result, const idx_vec_t& 
 
     result.push_back({{nghost + 1, nghost + 1, nghost + 1},
                       {x_max - nghost - 2, y_max - nghost - 1, z_max - nghost - 1}});
-}
-
-int getTernaryEncoding(const range_pair_t& range, const idx_vec_t& extents, const int& nghost) {
-    int opCode = 0;
-    for (int d = 0; d < 3; ++d) {
-        if (range.first[d] - nghost == 0) {  // Forward
-            opCode += std::pow(3, d) * 1;
-        } else if (range.second[d] + nghost == extents[d]) {  // Backward
-            opCode += std::pow(3, d) * 2;
-        } else {  // Centered
-            opCode += std::pow(3, d) * 0;
-        }
-    }
-    return opCode;
-}
-
-std::array<DiffType, 3> getOperatorTypes(int opEncoding) {
-    std::array<DiffType, 3> operators;
-    operators[0] = static_cast<DiffType>(opEncoding / 9);
-    opEncoding -= opEncoding % 9;
-    operators[1] = static_cast<DiffType>(opEncoding / 3);
-    opEncoding -= opEncoding % 3;
-    operators[2] = static_cast<DiffType>(opEncoding);
-    return operators;
 }
 
 int main(int argc, char* argv[]) {
@@ -360,21 +341,34 @@ int main(int argc, char* argv[]) {
     // Assign initial values to subField
     result = {0.0, 0.0, 0.0};
 
-    /////////////////////////////
-    // Kokkos loop for Hessian //
-    /////////////////////////////
+    /////////////////////////////////////////
+    // Operators loop appearing in Hessian //
+    /////////////////////////////////////////
+
+    // Right-most Stencil
     using bs1_type = BackwardStencil<OpDim::X, dim, FView_t<dim>>;
 
+    // Operator applying the first stencil
     using bo1_type = ChainedOperator<double, dim, FView_t<dim>, bs1_type>;
-    if (currRange.first[0] == nghost) {
-        using bs2_type = BackwardStencil<OpDim::X, dim, bo1_type>;
-        bs1_type bo1;
-        bs2_type bo2;
 
-        bo1_type bs(view, hxInv, bo1);
-        ChainedOperator<double, dim, decltype(bs), bs2_type> bs2(bs, hxInv, bo2);
-        std::cout << bs2(5, 5, 5) << std::endl;
+    // Test if case distinction works
+    if (currRange.first[0] == nghost) {
+        // Stencil operating on the first derivative of the field
+        using bs2_type = BackwardStencil<OpDim::X, dim, bo1_type>;
+
+        // Construct backward operators
+        bs1_type bs1;
+        bs2_type bs2;
+
+        bo1_type bo1(view, hxInv, bs1);
+
+        // Construct operator applying the second operator `bo2` to existing operator `bo1`
+        ChainedOperator<double, dim, decltype(bo1), bs2_type> bo2(bo1, hxInv, bs2);
+
+        // Print Result
+        std::cout << bo2(5, 5, 5) << std::endl;
     } else {
+        // Same here but with applying it along dimension `Y` at the second derivative
         using bo1_type = ChainedOperator<double, dim, FView_t<dim>, bs1_type>;
         using bs2_type = BackwardStencil<OpDim::Y, dim, bo1_type>;
         bs1_type bo1;
