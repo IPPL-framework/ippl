@@ -147,7 +147,7 @@ namespace ippl {
         
         typename Field<T, Dim, M, C>::view_type view = f.getView();
 
-        const M& mesh = f.get_mesh();
+        M& mesh = f.get_mesh();
 
         using vector_type = typename M::vector_type;
         using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
@@ -156,18 +156,18 @@ namespace ippl {
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx = 1.0 / dx;
 
-        const FieldLayout<Dim>& layout = f.getLayout(); 
+        FieldLayout<Dim>& layout = f.getLayout(); 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
         const int nghost = f.getNghost();
 
 
-        Field<FT,Dim,M,C> tempField;
+        Field<T, Dim, M, C> tempField;
 
         tempField.initialize(mesh, layout);
 
         tempField = 0.0;
         
-        view_type viewLocal = tempField.getView();
+        typename Field<T, Dim, M, C>::view_type viewLocal = tempField.getView();
 
         Kokkos::parallel_for(
             "ParticleAttrib::scatter",

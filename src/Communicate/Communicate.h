@@ -123,14 +123,14 @@ namespace ippl {
          */
         template <class Buffer>
         void recv(int src, int tag, Buffer& buffer, archive_type& ar,
-                  size_type msize, size_type nrecvs, const MPI_Comm& comm = comm_m);
+                  size_type msize, size_type nrecvs, const MPI_Comm& comm = MPI_COMM_WORLD);
 
         /*!
          * \warning Only works with default spaces!
          */
         template <class Buffer>
         void isend(int dest, int tag, Buffer& buffer, archive_type&,
-                   MPI_Request&, size_type nsends, const MPI_Comm& comm = comm_m);
+                   MPI_Request&, size_type nsends, const MPI_Comm& comm = MPI_COMM_WORLD);
 
         /*!
          * \warning Only works with default spaces!

@@ -815,7 +815,7 @@ int main(int argc, char *argv[]){
 
             IpplTimings::startTimer(dumpData);
             //Pcoarse->writeError(Rerror, Perror, it+1);
-            Pcoarse->writelocalError(localRerror, localPerror, nc+1, it+1, rankTime);
+            Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime);
             //Pcoarse->dumpParticleData(it+1, Pend->R, Pend->P, "Parareal");
             IpplTimings::stopTimer(dumpData);
 
@@ -866,8 +866,8 @@ int main(int argc, char *argv[]){
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
 
-    MPI_Comm_free(spaceComm);
-    MPI_Comm_free(timeComm);
+    MPI_Comm_free(&spaceComm);
+    MPI_Comm_free(&timeComm);
 
     return 0;
 }
