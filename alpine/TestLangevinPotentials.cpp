@@ -19,6 +19,68 @@ KOKKOS_INLINE_FUNCTION double HexactDistribution(const VectorD_t& v, const doubl
     return (2.0 * numberDensity / vNorm) * Kokkos::erf(vNorm / (Kokkos::sqrt(2.0) * vth));
 }
 
+KOKKOS_INLINE_FUNCTION double analyticalD00(const VectorD_t& v, const double& numberDensity,
+                                            const double& vth) {
+    return Kokkos::sqrt(2) * numberDensity * vth * (-Kokkos::pow(vth, 2) + Kokkos::pow(v[0], 2))
+               / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                              / (2. * Kokkos::pow(vth, 2)))
+                  * Kokkos::sqrt(pi) * Kokkos::pow(vth, 4))
+           + (2 * Kokkos::pow(v[0], 2)
+              * (-Kokkos::pow(vth, 2) + Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                 + Kokkos::pow(v[2], 2)))
+                 / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                                / (2. * Kokkos::pow(vth, 2)))
+                    * Kokkos::sqrt(Kokkos::numbers::pi_v<double>) * Kokkos::pow(vth, 2)
+                    * Kokkos::pow(
+                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2))
+           + ((Kokkos::pow(vth, 2) + Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+               + Kokkos::pow(v[2], 2))
+              * (-Kokkos::pow(v[0], 4)
+                 + Kokkos::pow(vth, 2) * (Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                 - Kokkos::pow(v[0], 2) * (Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))))
+                 / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                                / (2. * Kokkos::pow(vth, 2)))
+                    * Kokkos::sqrt(Kokkos::numbers::pi_v<double>) * Kokkos::pow(vth, 4)
+                    * Kokkos::pow(
+                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2))
+           + ((Kokkos::pow(vth, 2)
+                   * (2 * Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2], 2))
+               + (Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                     * (Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2)))
+              * Kokkos::erf(
+                  Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                  / (Kokkos::sqrt(2) * vth)))
+                 / (Kokkos::sqrt(2) * vth
+                    * Kokkos::pow(
+                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2.5));
+}
+
+KOKKOS_INLINE_FUNCTION double analyticalD01(const VectorD_t& v, const double& numberDensity,
+                                            const double& vth) {
+    return Kokkos::sqrt(2) * numberDensity * vth * (v[0] * v[1])
+               / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                              / (2. * Kokkos::pow(vth, 2)))
+                  * Kokkos::sqrt(pi) * Kokkos::pow(vth, 4))
+           - (v[0] * v[1]
+              * (3 * Kokkos::pow(vth, 4)
+                 + Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
+                               2)))
+                 / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                                / (2. * Kokkos::pow(vth, 2)))
+                    * Kokkos::sqrt(Kokkos::numbers::pi_v<double>) * Kokkos::pow(vth, 4)
+                    * Kokkos::pow(
+                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2))
+           - (v[0] * v[1]
+              * (-3 * Kokkos::pow(vth, 2) + Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                 + Kokkos::pow(v[2], 2))
+              * Kokkos::erf(
+                  Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                  / (Kokkos::sqrt(2) * vth)))
+                 / (Kokkos::sqrt(2) * vth
+                    * Kokkos::pow(
+                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2.5));
+}
+
 KOKKOS_INLINE_FUNCTION double GexactDistribution(const VectorD_t& v, const double& numberDensity,
                                                  const double& vth) {
     double vNorm   = L2Norm(v);
@@ -133,9 +195,14 @@ int main(int argc, char* argv[]) {
         // REFERENCE SOLUTION FIELDS FOR MAXWELLIAN //
         //////////////////////////////////////////////
 
-        // Create scalar Field for Rosenbluth Potential
-        auto HfieldExact = P->fv_m.deepCopy();
-        auto GfieldExact = P->fv_m.deepCopy();
+        // Create scalar Field for Rosenbluth Potentials
+        auto HfieldExact   = P->fv_m.deepCopy();
+        auto GfieldExact   = P->fv_m.deepCopy();
+        auto D00fieldExact = P->fv_m.deepCopy();
+        auto D01fieldExact = P->fv_m.deepCopy();
+
+        // Create scalar Field for identities that must hold
+        auto DtraceDiff = P->fv_m.deepCopy();
 
         //////////////////////////////////////////////
         // PARTICLE CREATION & INITIAL SPACE CHARGE //
@@ -168,6 +235,9 @@ int main(int argc, char* argv[]) {
         auto fvView                    = P->fv_m.getView();
         auto HviewExact                = HfieldExact.getView();
         auto GviewExact                = GfieldExact.getView();
+        auto D00viewExact              = D00fieldExact.getView();
+        auto D01viewExact              = D01fieldExact.getView();
+        auto DtraceDiffView            = DtraceDiff.getView();
         VectorD_t hv                   = P->hv_m;
         VectorD_t vOrigin              = P->vmin_m;
 
@@ -201,6 +271,9 @@ int main(int argc, char* argv[]) {
         P->runSpaceChargeSolver(0);
 
         // Multiply with prefactor
+        // Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
+        // `-1.0` prefactor is **not** needed because we need SOL and not GRAD output of solver
+        // Prob. density in configuration space $f(\vec r)$ already added in in initial condition
         P->fv_m = -8.0 * P->pi_m * P->fv_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
@@ -214,20 +287,20 @@ int main(int argc, char* argv[]) {
         P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
 
         // Dump all data of the potentials
-        dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Happr");
-        dumpVTKScalar(HfieldExact, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Hexact");
-        dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "gradHappr");
+        dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Happr");
+        dumpVTKScalar(HfieldExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Hexact");
+        dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "gradHappr");
         auto Hdiff = P->fv_m.deepCopy();
         Hdiff      = Hdiff - HfieldExact;
-        dumpVTKScalar(Hdiff, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Hdiff");
+        dumpVTKScalar(Hdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Hdiff");
 
         P->gatherFd();
 
-        // Multiply with $\Gamma$
-        P->p_Fd_m = P->p_Fd_m * P->gamma_m;
+        // Multiply with `-1.0` as solver returns $- \nabla H(\vec v)$
+        P->p_Fd_m = -1.0 * P->p_Fd_m * P->gamma_m;
 
         // Dump actual friction coefficients
-        P->dumpFdField(0, OUT_DIR);
+        P->dumpFdField(nv, OUT_DIR);
 
         //////////////////////////////////////
         // COMPUTE 2nd ROSENBLUTH POTENTIAL //
@@ -249,6 +322,10 @@ int main(int argc, char* argv[]) {
                     maxwellianPDF(xvec, numberDensity, vth) * P->configSpaceIntegral_m;
                 ippl::apply<Dim>(GviewExact, args) =
                     GexactDistribution(xvec, numberDensity, vth) * P->configSpaceIntegral_m;
+                ippl::apply<Dim>(D00viewExact, args) =
+                    analyticalD00(xvec, numberDensity, vth) * P->configSpaceIntegral_m;
+                ippl::apply<Dim>(D01viewExact, args) =
+                    analyticalD01(xvec, numberDensity, vth) * P->configSpaceIntegral_m;
             });
 
         // Need to scatter rho as we use it as $f(\vec r)$
@@ -268,11 +345,18 @@ int main(int argc, char* argv[]) {
         P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
 
         // Dump all data of the potentials
-        dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Gappr");
-        dumpVTKScalar(GfieldExact, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Gexact");
+        dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gappr");
+        dumpVTKScalar(GfieldExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gexact");
+        dumpVTKScalar(D00fieldExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR,
+                      "D00Analytical");
+        dumpVTKScalar(D01fieldExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR,
+                      "D01Analytical");
         auto Gdiff = P->fv_m.deepCopy();
         Gdiff      = Gdiff - GfieldExact;
-        dumpVTKScalar(Gdiff, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "Gdiff");
+        dumpVTKScalar(Gdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gdiff");
+
+        // Multiply with $\Gamma$
+        P->fv_m = P->fv_m * P->gamma_m;
 
         // Compute Hessian of $g(\vec v)$
         P->D_m = hess(P->fv_m);
@@ -281,22 +365,44 @@ int main(int argc, char* argv[]) {
         P->extractRows(P->D_m, P->D0_m, P->D1_m, P->D2_m);
 
         // Dump actual diffusion coefficients
-        dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", nv, OUT_DIR);
+        // dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", nv, OUT_DIR);
+        dumpVTKVector(P->D0_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D0");
+        dumpVTKVector(P->D1_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D1");
+        dumpVTKVector(P->D2_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D2");
 
-        // Do Cholesky decomposition of $D$
-        // and directly multiply with Gaussian random vector
-        // P->choleskyMultiply();
+        ///////////////////////////////////////
+        // COMPUTE IDENTITIES THAT MUST HOLD //
+        ///////////////////////////////////////
 
-        ////////////////////////////
-        // COMPUTE RELATIVE ERROR //
-        ////////////////////////////
+        // $Tr(\boldsymbol D) - h = 0$
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        Kokkos::parallel_for(
+            "Gather trace of $D$",
+            mdrange_type({nghost, nghost, nghost},
+                         {DtraceDiffView.extent(0) - nghost, DtraceDiffView.extent(1) - nghost,
+                          DtraceDiffView.extent(2) - nghost}),
+            KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                DtraceDiffView(i, j, k) = P->D0_m(i, j, k)[0] + P->D1_m(i, j, k)[1]
+                                          + P->D2_m(i, j, k)[2] - HfieldExact(i, j, k);
+            });
 
-        double HrelError = norm(Hdiff) / norm(HfieldExact);
-        double GrelError = norm(Gdiff) / norm(GfieldExact);
+        Kokkos::fence();
+
+        dumpVTKScalar(DtraceDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DtraceDiff");
+
+        /////////////////////////////
+        // COMPUTE RELATIVE ERRORS //
+        /////////////////////////////
+
+        double HrelError      = norm(Hdiff) / norm(HfieldExact);
+        double GrelError      = norm(Gdiff) / norm(GfieldExact);
+        double DtraceRelError = norm(DtraceDiff) / norm(HfieldExact);
         msg << "h(v) rel. error (" << nv << "^3)"
             << ": " << HrelError << endl;
         msg << "g(v) rel. error (" << nv << "^3)"
             << ": " << GrelError << endl;
+        msg << "Tr(D) - h = 0 rel. error (" << nv << "^3)"
+            << ": " << DtraceRelError << endl;
     }
 
     msg << "LangevinPotentials: End." << endl;
