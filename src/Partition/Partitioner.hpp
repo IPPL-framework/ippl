@@ -117,7 +117,9 @@ namespace ippl {
                                 }
                             }
                         }
-                        domains_c[vl].split(domains_c[vl], domains_c[vr], d, a);
+                        NDIndex_t temp;
+                        domains_c[vl].split(temp, domains_c[vr], d, a);
+                        domains_c[vl] = temp;
                         ++vtot;
                     }
                 }
