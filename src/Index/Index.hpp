@@ -204,9 +204,9 @@ namespace ippl {
     }
 
     //////////////////////////////////////////////////////////////////////
-    // Calculate the least common multipple of s1 and s2.
+    // Calculate the lowest common multiple of s1 and s2.
     // put the result in s.
-    // also calculate m1 = s/s1 and m2 = s/s2.
+    // Also calculate m1 = s/s1 and m2 = s/s2.
     // This version is optimized for small s1 and s2 and
     // just uses an exhaustive search.
     //////////////////////////////////////////////////////////////////////
