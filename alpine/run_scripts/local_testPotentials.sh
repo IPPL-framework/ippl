@@ -18,7 +18,7 @@ EPS_INV=3.182609e9      # [\frac{cm^3 m_e}{s^2 q_e^2}] Inverse Vacuum Permittivi
 
 # Collisional Parameters
 NV_MAX=32               # Number of gridpoints on the velocity grid (along each dim.)
-VMAX=5e7                # Maximum vel.-domain size to test (runs tests over the interval of [8, NV_MAX], in powers of two)
+VMAX=5                  # Maximum vel.-domain size to test (runs tests over the interval of [8, NV_MAX], in powers of two)
 FRICTION_SOLVER=HOCKNEY # Solver for first Rosenbluth Potential (Options: [HOCKNEY, VICO])
 
 # Frequency of computing statistics
@@ -37,7 +37,7 @@ mkdir -p ${OUT_DIR}
 THIS_FILE="$(readlink -f "$0")"
 cp ${THIS_FILE} ${OUT_DIR}/jobscript.sh
 
-gdb --args ./TestLangevinPotentials \
+./TestLangevinPotentials \
     ${MPI_OVERALLOC} ${SOLVER_T} ${LB_THRESHOLD} ${NR} \
     ${BOXL} ${NP} ${DT} ${PARTICLE_CHARGE} ${PARTICLE_MASS} \
     ${EPS_INV} ${NV_MAX} ${VMAX} ${FRICTION_SOLVER} ${OUT_DIR} \
