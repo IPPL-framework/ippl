@@ -355,9 +355,6 @@ int main(int argc, char* argv[]) {
         Gdiff      = Gdiff - GfieldExact;
         dumpVTKScalar(Gdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gdiff");
 
-        // Multiply with $\Gamma$
-        P->fv_m = P->fv_m * P->gamma_m;
-
         // Compute Hessian of $g(\vec v)$
         P->D_m = hess(P->fv_m);
 
