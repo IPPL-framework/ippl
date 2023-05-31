@@ -29,9 +29,6 @@ void IpplAbort(const char* = nullptr, int = 1);
 
 #include "Communicate/Communicate.h"
 
-class Ippl;
-std::ostream& operator<<(std::ostream&, const Ippl&);
-
 class Ippl {
 public:
     // an enumeration used to indicate whether to KEEP command-line arguments
@@ -77,6 +74,8 @@ private:
     template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
     T getNumericalOption(const char* arg);
 };
+
+std::ostream& operator<<(std::ostream&, const Ippl&);
 
 // macros used to print out messages to the console or a directed file
 #define INFOMSG(msg) \
