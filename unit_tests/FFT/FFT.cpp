@@ -144,6 +144,7 @@ public:
     template <unsigned Dim, typename MirrorA, typename MirrorB>
     void verifyResult(int nghost, const MirrorA& computed, const MirrorB& expected) {
         T max_error_local = 0.0;
+        T tol             = (std::is_same<T, double>::value) ? 1e-13 : 1e-7;
         nestedViewLoop<Dim>(computed, nghost, [&]<typename... Idx>(const Idx... args) {
             T error = std::fabs(expected(args...) - computed(args...));
 
@@ -151,12 +152,12 @@ public:
                 max_error_local = error;
             }
 
-            ASSERT_NEAR(error, 0, 1e-13);
+            ASSERT_NEAR(error, 0, tol);
         });
 
         T max_error = 0.0;
         MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-        ASSERT_NEAR(max_error, 0, 1e-13);
+        ASSERT_NEAR(max_error, 0, tol);
     }
 
     /*!
