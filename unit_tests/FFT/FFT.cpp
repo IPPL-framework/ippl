@@ -24,31 +24,32 @@
 #include "gtest/gtest.h"
 
 // Restrict testing to 2 and 3 dimensions since this is what heFFTe supports
+template <typename T>
 class FFTTest : public ::testing::Test, public MultirankUtils<2, 3> {
 public:
     template <unsigned Dim>
-    using mesh_type = ippl::UniformCartesian<double, Dim>;
+    using mesh_type = ippl::UniformCartesian<T, Dim>;
 
     template <unsigned Dim>
     using centering_type = typename mesh_type<Dim>::DefaultCentering;
 
     template <unsigned Dim>
     using field_type_complex =
-        ippl::Field<Kokkos::complex<double>, Dim, mesh_type<Dim>, centering_type<Dim>>;
+        ippl::Field<Kokkos::complex<T>, Dim, mesh_type<Dim>, centering_type<Dim>>;
 
     template <unsigned Dim>
-    using field_type_real = ippl::Field<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
+    using field_type_real = ippl::Field<T, Dim, mesh_type<Dim>, centering_type<Dim>>;
 
     template <unsigned Dim>
     using layout_type = ippl::FieldLayout<Dim>;
 
     template <typename Transform, unsigned Dim>
-    using FFT_type = ippl::FFT<Transform, Dim, double, mesh_type<Dim>,
-                               typename mesh_type<Dim>::DefaultCentering>;
+    using FFT_type =
+        ippl::FFT<Transform, Dim, T, mesh_type<Dim>, typename mesh_type<Dim>::DefaultCentering>;
 
     FFTTest() {
         computeGridSizes(pt);
-        const double pi = Kokkos::numbers::pi_v<double>;
+        const T pi = Kokkos::numbers::pi_v<T>;
         for (unsigned d = 0; d < MaxDim; d++) {
             len[d] = pt[d] * pi / 16;
         }
@@ -59,8 +60,8 @@ public:
     void setupDim() {
         std::array<ippl::Index, Dim> domains;
 
-        ippl::Vector<double, Dim> hx;
-        ippl::Vector<double, Dim> origin;
+        ippl::Vector<T, Dim> hx;
+        ippl::Vector<T, Dim> origin;
 
         ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned d = 0; d < Dim; d++) {
@@ -104,7 +105,7 @@ public:
     template <unsigned Dim>
     void randomizeRealField(int nghost, typename field_type_real<Dim>::HostMirror& mirror) {
         std::mt19937_64 eng(42 + Ippl::Comm->rank());
-        std::uniform_real_distribution<double> unif(0, 1);
+        std::uniform_real_distribution<T> unif(0, 1);
 
         nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
             mirror(args...) = unif(eng);
@@ -120,10 +121,10 @@ public:
     template <unsigned Dim>
     void randomizeComplexField(int nghost, typename field_type_complex<Dim>::HostMirror& mirror) {
         std::mt19937_64 engReal(42 + Ippl::Comm->rank());
-        std::uniform_real_distribution<double> unifReal(0, 1);
+        std::uniform_real_distribution<T> unifReal(0, 1);
 
         std::mt19937_64 engImag(43 + Ippl::Comm->rank());
-        std::uniform_real_distribution<double> unifImag(0, 1);
+        std::uniform_real_distribution<T> unifImag(0, 1);
 
         nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
             mirror(args...).real() = unifReal(engReal);
@@ -142,9 +143,9 @@ public:
      */
     template <unsigned Dim, typename MirrorA, typename MirrorB>
     void verifyResult(int nghost, const MirrorA& computed, const MirrorB& expected) {
-        double max_error_local = 0.0;
+        T max_error_local = 0.0;
         nestedViewLoop<Dim>(computed, nghost, [&]<typename... Idx>(const Idx... args) {
-            double error = std::fabs(expected(args...) - computed(args...));
+            T error = std::fabs(expected(args...) - computed(args...));
 
             if (error > max_error_local) {
                 max_error_local = error;
@@ -153,7 +154,7 @@ public:
             ASSERT_NEAR(error, 0, 1e-13);
         });
 
-        double max_error = 0.0;
+        T max_error = 0.0;
         MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
         ASSERT_NEAR(max_error, 0, 1e-13);
     }
@@ -192,30 +193,41 @@ public:
     PtrCollection<std::shared_ptr, field_type_complex> compFields;
 
     size_t pt[MaxDim];
-    double len[MaxDim];
+    T len[MaxDim];
 };
 
-TEST_F(FFTTest, Cos) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type_real<Dim>>& field,
-                                   const layout_type<Dim>& layout) {
-        testTrig<ippl::CosTransform, Dim>(field, layout);
+using Precisions = ::testing::Types<double, float>;
+
+TYPED_TEST_CASE(FFTTest, Precisions);
+
+TYPED_TEST(FFTTest, Cos) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::field_type_real<Dim>>& field,
+                     const typename TestFixture::layout_type<Dim>& layout) {
+        this->template testTrig<ippl::CosTransform, Dim>(field, layout);
     };
 
-    apply(check, realFields, layouts);
+    this->apply(check, this->realFields, this->layouts);
 }
 
-TEST_F(FFTTest, Sin) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type_real<Dim>>& field,
-                                   const layout_type<Dim>& layout) {
-        testTrig<ippl::SineTransform, Dim>(field, layout);
+TYPED_TEST(FFTTest, Sin) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::field_type_real<Dim>>& field,
+                     const typename TestFixture::layout_type<Dim>& layout) {
+        this->template testTrig<ippl::SineTransform, Dim>(field, layout);
     };
 
-    apply(check, realFields, layouts);
+    this->apply(check, this->realFields, this->layouts);
 }
 
-TEST_F(FFTTest, RC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type_real<Dim>>& field,
-                                   const layout_type<Dim>& layout, const mesh_type<Dim>& mesh) {
+TYPED_TEST(FFTTest, RC) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::field_type_real<Dim>>& field,
+                     const typename TestFixture::layout_type<Dim>& layout,
+                     const typename TestFixture::mesh_type<Dim>& mesh) {
+        using view_type   = typename TestFixture::field_type_real<Dim>::view_type;
+        using mirror_type = typename view_type::host_mirror_type;
+
         ippl::ParameterList fftParams;
         fftParams.add("use_heffte_defaults", true);
         fftParams.add("r2c_direction", 0);
@@ -225,87 +237,96 @@ TEST_F(FFTTest, RC) {
         for (unsigned d = 0; d < Dim; d++) {
             allParallel[d] = ippl::PARALLEL;
             if ((int)d == fftParams.get<int>("r2c_direction")) {
-                ownedOutput[d] = ippl::Index(pt[d] / 2 + 1);
+                ownedOutput[d] = ippl::Index(this->pt[d] / 2 + 1);
             } else {
-                ownedOutput[d] = ippl::Index(pt[d]);
+                ownedOutput[d] = ippl::Index(this->pt[d]);
             }
         }
 
-        layout_type<Dim> layoutOutput(ownedOutput, allParallel);
+        typename TestFixture::layout_type<Dim> layoutOutput(ownedOutput, allParallel);
 
-        mesh_type<Dim> meshOutput(ownedOutput, mesh.getMeshSpacing(), mesh.getOrigin());
-        field_type_complex<Dim> fieldOutput(meshOutput, layoutOutput);
+        typename TestFixture::mesh_type<Dim> meshOutput(ownedOutput, mesh.getMeshSpacing(),
+                                                        mesh.getOrigin());
+        typename TestFixture::field_type_complex<Dim> fieldOutput(meshOutput, layoutOutput);
 
-        auto fft =
-            std::make_unique<FFT_type<ippl::RCTransform, Dim>>(layout, layoutOutput, fftParams);
+        std::shared_ptr<typename TestFixture::FFT_type<ippl::RCTransform, Dim>> fft =
+            std::make_unique<typename TestFixture::FFT_type<ippl::RCTransform, Dim>>(
+                layout, layoutOutput, fftParams);
 
-        auto& view      = field->getView();
-        auto input_host = field->getHostMirror();
+        view_type& view        = field->getView();
+        mirror_type input_host = field->getHostMirror();
 
         const int nghost = field->getNghost();
-        randomizeRealField<Dim>(nghost, input_host);
+        this->template randomizeRealField<Dim>(nghost, input_host);
 
         Kokkos::deep_copy(view, input_host);
 
         fft->transform(1, *field, fieldOutput);
         fft->transform(-1, *field, fieldOutput);
 
-        auto field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
+        mirror_type field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
 
-        verifyResult<Dim>(nghost, field_result, input_host);
+        this->template verifyResult<Dim>(nghost, field_result, input_host);
     };
 
-    apply(check, realFields, layouts, meshes);
+    this->apply(check, this->realFields, this->layouts, this->meshes);
 }
 
-TEST_F(FFTTest, CC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type_complex<Dim>>& field,
-                                   const layout_type<Dim>& layout) {
+TYPED_TEST(FFTTest, CC) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::field_type_complex<Dim>>& field,
+                     const typename TestFixture::layout_type<Dim>& layout) {
+        using view_type   = typename TestFixture::field_type_complex<Dim>::view_type;
+        using mirror_type = typename view_type::host_mirror_type;
+
         ippl::ParameterList fftParams;
 
         fftParams.add("use_heffte_defaults", true);
 
-        auto fft = std::make_unique<FFT_type<ippl::CCTransform, Dim>>(layout, fftParams);
+        std::shared_ptr<typename TestFixture::FFT_type<ippl::CCTransform, Dim>> fft =
+            std::make_unique<typename TestFixture::FFT_type<ippl::CCTransform, Dim>>(layout,
+                                                                                     fftParams);
 
-        auto& view      = field->getView();
-        auto field_host = field->getHostMirror();
+        view_type& view        = field->getView();
+        mirror_type field_host = field->getHostMirror();
 
         const int nghost = field->getNghost();
-        randomizeComplexField<Dim>(nghost, field_host);
+        this->template randomizeComplexField<Dim>(nghost, field_host);
 
         Kokkos::deep_copy(view, field_host);
 
         fft->transform(1, *field);
         fft->transform(-1, *field);
 
-        auto field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
+        mirror_type field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
 
-        Kokkos::complex<double> max_error_local(0, 0);
-        nestedViewLoop<Dim>(field_host, nghost, [&]<typename... Idx>(const Idx... args) {
-            Kokkos::complex<double> error(
-                std::fabs(field_host(args...).real() - field_result(args...).real()),
-                std::fabs(field_host(args...).imag() - field_result(args...).imag()));
+        Kokkos::complex<TypeParam> max_error_local(0, 0);
+        this->template nestedViewLoop<Dim>(
+            field_host, nghost, [&]<typename... Idx>(const Idx... args) {
+                Kokkos::complex<TypeParam> error(
+                    std::fabs(field_host(args...).real() - field_result(args...).real()),
+                    std::fabs(field_host(args...).imag() - field_result(args...).imag()));
 
-            if (error.real() > max_error_local.real()) {
-                max_error_local.real() = error.real();
-            }
+                if (error.real() > max_error_local.real()) {
+                    max_error_local.real() = error.real();
+                }
 
-            if (error.imag() > max_error_local.imag()) {
-                max_error_local.imag() = error.imag();
-            }
+                if (error.imag() > max_error_local.imag()) {
+                    max_error_local.imag() = error.imag();
+                }
 
-            ASSERT_NEAR(error.real(), 0, 1e-13);
-            ASSERT_NEAR(error.imag(), 0, 1e-13);
-        });
+                ASSERT_NEAR(error.real(), 0, 1e-13);
+                ASSERT_NEAR(error.imag(), 0, 1e-13);
+            });
 
-        Kokkos::complex<double> max_error(0, 0);
+        Kokkos::complex<TypeParam> max_error(0, 0);
         MPI_Allreduce(&max_error_local, &max_error, 1, MPI_C_DOUBLE_COMPLEX, MPI_SUM,
                       Ippl::getComm());
         ASSERT_NEAR(max_error.real(), 0, 1e-13);
         ASSERT_NEAR(max_error.imag(), 0, 1e-13);
     };
 
-    apply(check, compFields, layouts);
+    this->apply(check, this->compFields, this->layouts);
 }
 
 int main(int argc, char* argv[]) {
