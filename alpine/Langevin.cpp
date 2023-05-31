@@ -22,32 +22,23 @@ int main(int argc, char* argv[]) {
 
     Ippl::Comm->setDefaultOverallocation(std::atof(argv[1]));
 
-    const std::string SOLVER_T   = argv[2];
-    const double LB_THRESHOLD    = std::atof(argv[3]);
-    const size_type NR           = std::atoll(argv[4]);
-    const double BEAM_RADIUS     = std::atof(argv[5]);
-    const double BOXL            = std::atof(argv[6]);
-    const size_type NP           = std::atoll(argv[7]);
-    const double DT              = std::atof(argv[8]);
-    const size_type NT           = std::atoll(argv[9]);
-    const double PARTICLE_CHARGE = std::atof(argv[10]);
-    const double PARTICLE_MASS   = std::atof(argv[11]);
-    const double FOCUS_FORCE     = std::atof(argv[12]);
-    const int PRINT_INTERVAL     = std::atoi(argv[13]);
-    const double EPS_INV         = std::atof(argv[14]);
-    const size_t NV              = std::atoi(argv[15]);
-    const double VMAX            = std::atof(argv[16]);
-    // const double REL_BUFF        = std::atof(argv[17]);
-    // const bool VMESH_ADAPT_B     = std::atoi(argv[18]);
-    // const bool SCATTER_PHASE_B   = std::atoi(argv[19]);
-    // const double FCT             = std::atof(argv[20]);
-    // const double DRAG_FCT_B      = std::atof(argv[21]);
-    // const double DIFF_FCT_B      = std::atof(argv[22]);
-    // const double DRAG_B          = std::atof(argv[23]);
-    // const double DIFFUSION_B     = std::atof(argv[24]);
-    // const bool PRINT             = std::atoi(argv[25]);
-    // const bool COLLISION         = std::atoi(argv[26]);
-    const std::string OUT_DIR = argv[27];
+    const std::string SOLVER_T        = argv[2];
+    const double LB_THRESHOLD         = std::atof(argv[3]);
+    const size_type NR                = std::atoll(argv[4]);
+    const double BEAM_RADIUS          = std::atof(argv[5]);
+    const double BOXL                 = std::atof(argv[6]);
+    const size_type NP                = std::atoll(argv[7]);
+    const double DT                   = std::atof(argv[8]);
+    const size_type NT                = std::atoll(argv[9]);
+    const double PARTICLE_CHARGE      = std::atof(argv[10]);
+    const double PARTICLE_MASS        = std::atof(argv[11]);
+    const double FOCUS_FORCE          = std::atof(argv[12]);
+    const double EPS_INV              = std::atof(argv[13]);
+    const size_t NV                   = std::atoi(argv[14]);
+    const double VMAX                 = std::atof(argv[15]);
+    const std::string FRICTION_SOLVER = argv[16];
+    const int DUMP_INTERVAL           = std::atoi(argv[17]);
+    const std::string OUT_DIR         = argv[18];
 
     using bunch_type = LangevinParticles<PLayout_t<Dim>, Dim>;
 
@@ -82,7 +73,6 @@ int main(int argc, char* argv[]) {
     std::shared_ptr P = std::make_shared<bunch_type>(
         PL, hr, configSpaceLowerBound, configSpaceUpperBound, configSpaceDecomp, SOLVER_T,
         PARTICLE_CHARGE, PARTICLE_MASS, EPS_INV, Q, NP, DT, NV, VMAX);
-
     // Initialize Particle Fields in Particles Class
     P->nr_m = {int(NR), int(NR), int(NR)};
     P->E_m.initialize(configSpaceMesh, configSpaceFieldLayout);
@@ -99,8 +89,7 @@ int main(int argc, char* argv[]) {
     P->rho_m.setFieldBC(bcField);
 
     bunch_type bunchBuffer(PL);
-    std::string frictionSolverName = "HOCKNEY";
-    P->initAllSolvers(frictionSolverName);
+    P->initAllSolvers(FRICTION_SOLVER);
 
     P->loadbalancethreshold_m = LB_THRESHOLD;
 
@@ -172,8 +161,8 @@ int main(int argc, char* argv[]) {
         P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
         P->R = P->R + 0.5 * DT * P->P;
 
-        // Dump Statistics every PRINT_INTERVAL iteration
-        if (it % PRINT_INTERVAL == 0) {
+        // Dump Statistics every DUMP_INTERVAL iteration
+        if (it % DUMP_INTERVAL == 0) {
             P->dumpBeamStatistics(it, OUT_DIR);
             P->velocityParticleCheck();
 

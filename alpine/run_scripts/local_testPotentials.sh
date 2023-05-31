@@ -9,19 +9,16 @@ MPI_OVERALLOC=2.0
 SOLVER_T=FFT            # Solver Type to solve for the electrostatic potential
 LB_THRESHOLD=1.0        # Load Balancing Threshold
 NR=64                   # Number of gridpoints on the spatial grid (along each dim.)
-BEAM_RADIUS=0.001774    # [cm]
 BOXL=0.01               # [cm]
 NP=156055               # Number of particles
 DT=2.15623e-13          # [s] Timestep
-NT=100                  # Number of timesteps
 PARTICLE_CHARGE=-1      # [e]
 PARTICLE_MASS=1         # [m_e]
-FOCUS_FORCE=1.5         # Scaling factor of constant focusing force
 EPS_INV=3.182609e9      # [\frac{cm^3 m_e}{s^2 q_e^2}] Inverse Vacuum Permittivity
 
 # Collisional Parameters
-NV=32                   # Number of gridpoints on the velocity grid (along each dim.)
-VMAX=5e7                # [cm / s] Extent of velocity grid ([-VMAX, VMAX] in each dim.); $VMAX = 5\sigma_v$ of Boltzmann distribution
+NV_MAX=32               # Number of gridpoints on the velocity grid (along each dim.)
+VMAX=5e7                # Maximum vel.-domain size to test (runs tests over the interval of [8, NV_MAX], in powers of two)
 FRICTION_SOLVER=HOCKNEY # Solver for first Rosenbluth Potential (Options: [HOCKNEY, VICO])
 
 # Frequency of computing statistics
@@ -40,9 +37,8 @@ mkdir -p ${OUT_DIR}
 THIS_FILE="$(readlink -f "$0")"
 cp ${THIS_FILE} ${OUT_DIR}/jobscript.sh
 
-./Langevin \
+gdb --args ./TestLangevinPotentials \
     ${MPI_OVERALLOC} ${SOLVER_T} ${LB_THRESHOLD} ${NR} \
-    ${BEAM_RADIUS} ${BOXL} ${NP} ${DT} \
-    ${NT} ${PARTICLE_CHARGE} ${PARTICLE_MASS} ${FOCUS_FORCE} \
-    ${EPS_INV} ${NV} ${VMAX} ${FRICTION_SOLVER} ${DUMP_INTERVAL} ${OUT_DIR} \
+    ${BOXL} ${NP} ${DT} ${PARTICLE_CHARGE} ${PARTICLE_MASS} \
+    ${EPS_INV} ${NV_MAX} ${VMAX} ${FRICTION_SOLVER} ${OUT_DIR} \
     --info 5 1>&1 | tee ${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err 
