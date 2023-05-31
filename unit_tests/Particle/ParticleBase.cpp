@@ -20,10 +20,11 @@
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
+template <typename T>
 class ParticleBaseTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
     template <unsigned Dim>
-    using playout_type = ippl::detail::ParticleLayout<double, Dim>;
+    using playout_type = ippl::detail::ParticleLayout<T, Dim>;
 
     template <unsigned Dim>
     using bunch_type = ippl::ParticleBase<playout_type<Dim>>;
@@ -39,7 +40,11 @@ public:
     PtrCollection<std::shared_ptr, bunch_type> pbases;
 };
 
-TEST_F(ParticleBaseTest, CreateAndDestroy) {
+using Precisions = ::testing::Types<double, float>;
+
+TYPED_TEST_CASE(ParticleBaseTest, Precisions);
+
+TYPED_TEST(ParticleBaseTest, CreateAndDestroy) {
     if (Ippl::Comm->size() > 1) {
         std::cerr << "ParticleBaseTest::CreateAndDestroy test only works for one MPI rank!"
                   << std::endl;
@@ -47,7 +52,7 @@ TEST_F(ParticleBaseTest, CreateAndDestroy) {
     }
     size_t nParticles = 1000;
 
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& pbase) {
+    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& pbase) {
         // Create 1000 particles
         pbase->create(nParticles);
 
@@ -85,12 +90,12 @@ TEST_F(ParticleBaseTest, CreateAndDestroy) {
         }
     };
 
-    apply(check, pbases);
+    this->apply(check, this->pbases);
 }
 
-TEST_F(ParticleBaseTest, AddAttribute) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& pbase) {
-        using attrib_type = ippl::ParticleAttrib<double>;
+TYPED_TEST(ParticleBaseTest, AddAttribute) {
+    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& pbase) {
+        using attrib_type = ippl::ParticleAttrib<TypeParam>;
 
         attrib_type Q;
 
@@ -101,32 +106,42 @@ TEST_F(ParticleBaseTest, AddAttribute) {
         EXPECT_EQ(size_t(3), nAttributes);
     };
 
-    apply(check, pbases);
+    this->apply(check, this->pbases);
 }
 
 TEST(ParticleBase, Initialize1) {
-    auto check = [&]<unsigned Dim>() {
-        ParticleBaseTest::playout_type<Dim> pl;
-        ParticleBaseTest::bunch_type<Dim> bunch(pl);
+    auto check_impl = [&]<typename T, unsigned Dim>() {
+        typename ParticleBaseTest<T>::playout_type<Dim> pl;
+        typename ParticleBaseTest<T>::bunch_type<Dim> bunch(pl);
 
         size_t localnum = bunch.getLocalNum();
 
         EXPECT_EQ(size_t(0), localnum);
     };
 
+    auto check = [&]<unsigned Dim>() {
+        check_impl.template operator()<double, Dim>();
+        check_impl.template operator()<float, Dim>();
+    };
+
     MultirankUtils<1, 2, 3, 4, 5, 6>::apply(check);
 }
 
 TEST(ParticleBase, Initialize2) {
-    auto check = [&]<unsigned Dim>() {
-        ParticleBaseTest::bunch_type<Dim> bunch;
+    auto check_impl = [&]<typename T, unsigned Dim>() {
+        typename ParticleBaseTest<T>::playout_type<Dim> pl;
+        typename ParticleBaseTest<T>::bunch_type<Dim> bunch;
 
-        ParticleBaseTest::playout_type<Dim> pl;
         bunch.initialize(pl);
 
         size_t localnum = bunch.getLocalNum();
 
         EXPECT_EQ(size_t(0), localnum);
+    };
+
+    auto check = [&]<unsigned Dim>() {
+        check_impl.template operator()<double, Dim>();
+        check_impl.template operator()<float, Dim>();
     };
 
     MultirankUtils<1, 2, 3, 4, 5, 6>::apply(check);
