@@ -177,6 +177,10 @@ public:
 
     void initializeParareal(ParticleAttrib<Vector_t>& Rbegin,
                             ParticleAttrib<Vector_t>& Pbegin,
+                            ParticleAttrib<Vector_t>& Rcoarse,
+                            ParticleAttrib<Vector_t>& Pcoarse,
+                            ParticleAttrib<Vector_t>& Rtemp,
+                            ParticleAttrib<Vector_t>& Ptemp,
                             bool& isConverged,
                             bool& isPreviousDomainConverged,
                             const unsigned int& ntCoarse,
@@ -187,22 +191,33 @@ public:
                             MPI_Comm& spaceComm) {
 
         //Copy initial conditions as they are needed later
-        Kokkos::deep_copy(R0.getView(), this->R.getView());
-        Kokkos::deep_copy(P0.getView(), P.getView());
+        //Kokkos::deep_copy(R0.getView(), this->R.getView());
+        //Kokkos::deep_copy(P0.getView(), P.getView());
+        Kokkos::deep_copy(Rtemp.getView(), Rcoarse.getView());
+        Kokkos::deep_copy(Ptemp.getView(), Pcoarse.getView());
 
         //Get initial guess for ranks other than 0 by propagating the coarse solver
         if (rankTime > 0) {
-            BorisPIC(this->R, P, rankTime*ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
+            //BorisPIC(this->R, P, rankTime*ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
+            BorisPIC(Rcoarse, Pcoarse, rankTime*ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
         }
-        
+
+        //Copy initial conditions as they are needed later
+        //Kokkos::deep_copy(R0.getView(), this->R.getView());
+        //Kokkos::deep_copy(P0.getView(), P.getView());
+
+
         //Ippl::Comm->barrier();
         
-        Kokkos::deep_copy(Rbegin.getView(), this->R.getView());
-        Kokkos::deep_copy(Pbegin.getView(), P.getView());
+        //Kokkos::deep_copy(Rbegin.getView(), this->R.getView());
+        //Kokkos::deep_copy(Pbegin.getView(), P.getView());
+        Kokkos::deep_copy(Rbegin.getView(), Rcoarse.getView());
+        Kokkos::deep_copy(Pbegin.getView(), Pcoarse.getView());
 
 
         //Run the coarse integrator to get the values at the end of the time slice 
-        BorisPIC(this->R, P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
+        //BorisPIC(this->R, P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
+        BorisPIC(Rcoarse, Pcoarse, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
 
         isConverged = false;
         if(rankTime == 0) {
@@ -860,6 +875,7 @@ public:
         rhoPIC_m = rhoPIC_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
     
         //Field solve
+        EfieldPIC_m = 0.0;
         solver_mp->solve();
     
         // gather E field
@@ -919,6 +935,7 @@ public:
     
             //Field solve
             IpplTimings::startTimer(fieldSolvePIC);
+            EfieldPIC_m = 0.0;
             solver_mp->solve();
             IpplTimings::stopTimer(fieldSolvePIC);
     
@@ -1031,7 +1048,7 @@ public:
     
         static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
-        //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
+        PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
         scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, spaceComm);
@@ -1045,7 +1062,7 @@ public:
 
         time_m = tStartMySlice;
 
-        if((time_m == 0.0)) {
+        if((time_m == 1000.0)) {
             IpplTimings::startTimer(dumpData);
             dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
             IpplTimings::stopTimer(dumpData);
@@ -1124,7 +1141,7 @@ public:
             time_m += dt;
             
             IpplTimings::startTimer(dumpData);
-            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);         
+            //dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);         
             IpplTimings::stopTimer(dumpData);
     
         }

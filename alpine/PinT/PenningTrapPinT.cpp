@@ -561,8 +561,19 @@ int main(int argc, char *argv[]){
     Pbegin->create(nloc);
     Pend->create(nloc);
 
+    Pcoarse->q = Pcoarse->Q_m/totalP;
     using buffer_type = ippl::Communicate::buffer_type;
     int tag;
+
+    Pcoarse->shapetype_m = argv[13];
+    Pcoarse->shapedegree_m = std::atoi(argv[14]); 
+    IpplTimings::startTimer(initializeShapeFunctionPIF);
+    Pcoarse->initializeShapeFunctionPIF();
+    IpplTimings::stopTimer(initializeShapeFunctionPIF);
+    
+    
+    Pcoarse->initNUFFT(FLPIF);
+
 #ifdef KOKKOS_ENABLE_CUDA
     //If we don't do the following even with the same seed the initial 
     //condition is not the same on different GPUs
@@ -617,7 +628,49 @@ int main(int argc, char *argv[]){
         buf->resetReadPos();
     }
 
+    IpplTimings::startTimer(deepCopy);
+    Kokkos::deep_copy(Pend->R.getView(), Pbegin->R.getView());
+    Kokkos::deep_copy(Pend->P.getView(), Pbegin->P.getView());
+    Kokkos::deep_copy(Pcoarse->R0.getView(), Pbegin->R.getView());
+    Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
+    IpplTimings::stopTimer(deepCopy);
+    Kokkos::fence();
+
+    if(rankTime == 0) {
+        unsigned int stepsToRun = 2*ntCoarse;
+        Pcoarse->BorisPIC(Pend->R, Pend->P, stepsToRun, dtCoarse, rankTime * dtSlice, Bext, spaceComm); 
+        Pcoarse->BorisPIC(Pbegin->R, Pbegin->P, ntCoarse, dtCoarse, rankTime * dtSlice, Bext, spaceComm); 
+        Pcoarse->BorisPIC(Pbegin->R, Pbegin->P, ntCoarse, dtCoarse, rankTime * dtSlice, Bext, spaceComm); 
+        //Pcoarse->BorisPIF(Pend->R, Pend->P, stepsToRun, dtFine, rankTime * dtSlice, 0, 0, Bext, rankTime, rankSpace, spaceComm);
+        //Pcoarse->BorisPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, rankTime * dtSlice, 0, 0, Bext, rankTime, rankSpace, spaceComm);
+        //Pcoarse->BorisPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, rankTime * dtSlice, 0, 0, Bext, rankTime, rankSpace, spaceComm);
+        Pcoarse->dumpParticleData(0, Pend->R, Pend->P, "cont");
+        Pcoarse->dumpParticleData(0, Pbegin->R, Pbegin->P, "sep");
+    }
+
+    IpplTimings::startTimer(deepCopy);
+    Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
+    Kokkos::deep_copy(Pcoarse->P.getView(), Pend->P.getView());
+    IpplTimings::stopTimer(deepCopy);
+    Kokkos::fence();
     
+    if(rankTime < sizeTime-1) {
+        size_type bufSize = Pend->packedSize(nloc);
+        buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
+        MPI_Request request;
+        Ippl::Comm->isend(rankTime+1, tag, *Pend, *buf, request, nloc, timeComm);
+        buf->resetWritePos();
+        MPI_Wait(&request, MPI_STATUS_IGNORE);
+    }
+    Ippl::Comm->barrier();
+
+    if(rankTime > 0) {
+        size_type bufSize = Pbegin->packedSize(nloc);
+        buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
+        Ippl::Comm->recv(rankTime-1, tag, *Pbegin, *buf, bufSize, nloc, timeComm);
+        buf->resetReadPos();
+    }
+
     if(rankTime < sizeTime-1) {
         size_type bufSize = Pbegin->packedSize(nloc);
         buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
@@ -627,11 +680,41 @@ int main(int argc, char *argv[]){
         MPI_Wait(&request, MPI_STATUS_IGNORE);
     }
 
-    //Ippl::Comm->barrier();
-    IpplTimings::startTimer(deepCopy);
-    Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
-    Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
-    IpplTimings::stopTimer(deepCopy);
+
+    if(rankTime == 1) {
+        unsigned int stepsToRun = (rankTime+1) * ntCoarse;
+    //    std::cout << "Rank: " << Ippl::Comm->rank() << "needs to run " << stepsToRun << " steps" << std::endl;
+        Pcoarse->BorisPIC(Pbegin->R, Pbegin->P, stepsToRun, dtCoarse, rankTime * dtSlice, Bext, spaceComm); 
+        Pcoarse->BorisPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, rankTime * dtSlice, Bext, spaceComm); 
+    }   
+
+    //Pcoarse->dumpParticleData(0, Pcoarse->R, Pcoarse->P, "new");
+    //Pcoarse->dumpParticleData(0, Pbegin->R, Pbegin->P, "old");
+    double Rerror2 = computeRL2Error(Pbegin->R, Pcoarse->R, length, spaceComm);
+    double Perror2 = computePL2Error(Pbegin->P, Pcoarse->P, spaceComm);
+    std::cout << "Rank: " << Ippl::Comm->rank() << " Rerror: " << Rerror2 << " Perror: "  << Perror2 << std::endl;
+    Pbegin->R = Pbegin->R - Pcoarse->R;
+    Pbegin->P = Pbegin->P - Pcoarse->P;
+    //Pcoarse->dumpParticleData(0, Pbegin->R, Pbegin->P, "diff");
+
+
+    //IpplTimings::startTimer(deepCopy);
+    //Kokkos::deep_copy(Pbegin->R.getView(), Pend->R.getView());
+    //Kokkos::deep_copy(Pbegin->P.getView(), Pend->P.getView());
+    //IpplTimings::stopTimer(deepCopy);
+
+
+    //Pcoarse->BorisPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, Bext, spaceComm); 
+
+    //IpplTimings::startTimer(deepCopy);
+    //Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
+    //Kokkos::deep_copy(Pcoarse->P.getView(), Pend->P.getView());
+    //IpplTimings::stopTimer(deepCopy);
+
+    //IpplTimings::startTimer(deepCopy);
+    //Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
+    //Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
+    //IpplTimings::stopTimer(deepCopy);
 #else
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
     Kokkos::parallel_for(nloc,
@@ -661,7 +744,6 @@ int main(int argc, char *argv[]){
         << " Grid points = " << nrPIC
         << endl;
     
-    Pcoarse->q = Pcoarse->Q_m/totalP;
     IpplTimings::stopTimer(particleCreation);                                                    
     
     msg << "particles created and initial conditions assigned " << endl;
@@ -716,26 +798,44 @@ int main(int argc, char *argv[]){
     //    isPreviousDomainConverged = false;
     //}
 
-    bool isConverged, isPreviousDomainConverged;
 
-    Pcoarse->shapetype_m = argv[13];
-    Pcoarse->shapedegree_m = std::atoi(argv[14]); 
-    IpplTimings::startTimer(initializeShapeFunctionPIF);
-    Pcoarse->initializeShapeFunctionPIF();
-    IpplTimings::stopTimer(initializeShapeFunctionPIF);
     
-    
-    Pcoarse->initNUFFT(FLPIF);
-    
-   
+    int sign = 1;
     for (unsigned int nc=0; nc < nCycles; nc++) {
-        double tStartMySlice = (nc * tEndCycle) + (rankTime * dtSlice); 
-        Pcoarse->time_m = tStartMySlice;
-        IpplTimings::startTimer(initializeCycles);
-        Pcoarse->initializeParareal(Pbegin->R, Pbegin->P, isConverged,
-                                    isPreviousDomainConverged, ntCoarse,
-                                    dtCoarse, tStartMySlice, Bext, rankTime, spaceComm);
-        IpplTimings::stopTimer(initializeCycles);
+        
+        double tStartMySlice; 
+        bool sendCriteria, recvCriteria;
+        bool isConverged = false;
+        bool isPreviousDomainConverged = false;
+        
+        //IpplTimings::startTimer(initializeCycles);
+        //Pcoarse->initializeParareal(Pbegin->R, Pbegin->P, Pcoarse->R, Pcoarse->P, Pcoarse->R0, 
+        //                            Pcoarse->P0, isConverged,
+        //                            isPreviousDomainConverged, ntCoarse,
+        //                            dtCoarse, tStartMySlice, Bext, rankTime, spaceComm);
+        //IpplTimings::stopTimer(initializeCycles);
+        //even cycles
+        if(nc % 2 == 0) {
+            sendCriteria = (rankTime < (sizeTime-1));
+            recvCriteria = (rankTime > 0);
+            if(rankTime == 0) {
+                isPreviousDomainConverged = true;
+            }
+            tStartMySlice = (nc * tEndCycle) + (rankTime * dtSlice);
+            msg.setPrintNode(Ippl::Comm->size()-1);
+        }
+        //odd cycles
+        else {
+            recvCriteria = (rankTime < (sizeTime-1));
+            sendCriteria = (rankTime > 0);
+            if(rankTime == (sizeTime - 1)) {
+                isPreviousDomainConverged = true;
+            }
+            tStartMySlice = (nc * tEndCycle) + (((sizeTime - 1) - rankTime) * dtSlice);
+            msg.setPrintNode(0);
+        }
+        //Pcoarse->time_m = tStartMySlice;
+        
         unsigned int it = 0;
         while (!isConverged) { 
         //while ((!isPreviousDomainConverged) || (!isConverged)) { 
@@ -743,7 +843,8 @@ int main(int argc, char *argv[]){
 
             //Run fine integrator in parallel
             IpplTimings::startTimer(finePropagator);
-            Pcoarse->BorisPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, tStartMySlice, nc+1, it+1, Bext, rankTime, rankSpace, spaceComm);
+            Pcoarse->BorisPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, tStartMySlice, nc+1, it+1, 
+                              Bext, rankTime, rankSpace, spaceComm);
             IpplTimings::stopTimer(finePropagator);
         
 
@@ -764,12 +865,12 @@ int main(int argc, char *argv[]){
             tag = 1100;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
             int tagbool = 1300;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
             
-            if((rankTime > 0) && (!isPreviousDomainConverged)) {
+            if(recvCriteria && (!isPreviousDomainConverged)) {
                 size_type bufSize = Pbegin->packedSize(nloc);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
-                Ippl::Comm->recv(rankTime-1, tag, *Pbegin, *buf, bufSize, nloc, timeComm);
+                Ippl::Comm->recv(rankTime-sign, tag, *Pbegin, *buf, bufSize, nloc, timeComm);
                 buf->resetReadPos();
-                MPI_Recv(&isPreviousDomainConverged, 1, MPI_C_BOOL, rankTime-1, tagbool, 
+                MPI_Recv(&isPreviousDomainConverged, 1, MPI_C_BOOL, rankTime-sign, tagbool, 
                         timeComm, MPI_STATUS_IGNORE);
                 IpplTimings::startTimer(deepCopy);
                 Kokkos::deep_copy(Pcoarse->R0.getView(), Pbegin->R.getView());
@@ -808,14 +909,14 @@ int main(int argc, char *argv[]){
 
 
             IpplTimings::startTimer(timeCommunication);
-            if(rankTime < (sizeTime-1)) {
+            if(sendCriteria) {
                 size_type bufSize = Pend->packedSize(nloc);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
                 MPI_Request request;
-                Ippl::Comm->isend(rankTime+1, tag, *Pend, *buf, request, nloc, timeComm);
+                Ippl::Comm->isend(rankTime+sign, tag, *Pend, *buf, request, nloc, timeComm);
                 buf->resetWritePos();
                 MPI_Wait(&request, MPI_STATUS_IGNORE);
-                MPI_Send(&isConverged, 1, MPI_C_BOOL, rankTime+1, tagbool, timeComm);
+                MPI_Send(&isConverged, 1, MPI_C_BOOL, rankTime+sign, tagbool, timeComm);
             }
             IpplTimings::stopTimer(timeCommunication);
 
@@ -828,7 +929,7 @@ int main(int argc, char *argv[]){
 
             IpplTimings::startTimer(dumpData);
             //Pcoarse->writeError(Rerror, Perror, it+1);
-            Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
+            //Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
             //Pcoarse->dumpParticleData(it+1, Pend->R, Pend->P, "Parareal");
             IpplTimings::stopTimer(dumpData);
 
@@ -848,18 +949,47 @@ int main(int argc, char *argv[]){
         if((nCycles > 1) && (nc < (nCycles - 1))) {  
             IpplTimings::startTimer(timeCommunication);
             tag = 1000;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+           
+            //send, receive criteria and tStartMySlice are reversed at the end of the cycle
+            if(nc % 2 == 0) {
+                recvCriteria = (rankTime < (sizeTime-1));
+                sendCriteria = (rankTime > 0);
+                tStartMySlice = (nc * tEndCycle) + (((sizeTime - 1) - rankTime) * dtSlice);
+            }
+            //odd cycles
+            else {
+                sendCriteria = (rankTime < (sizeTime-1));
+                recvCriteria = (rankTime > 0);
+                tStartMySlice = (nc * tEndCycle) + (rankTime * dtSlice);
+            }
             
-            if(rankTime < (sizeTime-1)) {
-                size_type bufSize = Pend->packedSize(nloc);
+            if(recvCriteria) {
+                size_type bufSize = Pbegin->packedSize(nloc);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
-                Ippl::Comm->recv(rankTime+1, tag, *Pend, *buf, bufSize, nloc, timeComm);
+                Ippl::Comm->recv(rankTime+sign, tag, *Pbegin, *buf, bufSize, nloc, timeComm);
                 buf->resetReadPos();
             }
-            if(rankTime > 0) {
+
+            IpplTimings::startTimer(deepCopy);
+            Kokkos::deep_copy(Pend->R.getView(), Pbegin->R.getView());
+            Kokkos::deep_copy(Pend->P.getView(), Pbegin->P.getView());
+            Kokkos::deep_copy(Pcoarse->R0.getView(), Pbegin->R.getView());
+            Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
+            IpplTimings::stopTimer(deepCopy);
+            
+            Pcoarse->BorisPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
+            
+            IpplTimings::startTimer(deepCopy);
+            Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
+            Kokkos::deep_copy(Pcoarse->P.getView(), Pend->P.getView());
+            IpplTimings::stopTimer(deepCopy);
+
+
+            if(sendCriteria) {
                 size_type bufSize = Pend->packedSize(nloc);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
                 MPI_Request request;
-                Ippl::Comm->isend(rankTime-1, tag, *Pend, *buf, request, nloc, timeComm);
+                Ippl::Comm->isend(rankTime-sign, tag, *Pend, *buf, request, nloc, timeComm);
                 buf->resetWritePos();
                 MPI_Wait(&request, MPI_STATUS_IGNORE);
             }
@@ -868,10 +998,11 @@ int main(int argc, char *argv[]){
             //Ippl::Comm->barrier();
 
             //msg << "Communication finished in cycle: " << nc+1 << endl;
-            IpplTimings::startTimer(deepCopy);
-            Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
-            Kokkos::deep_copy(Pcoarse->P.getView(), Pend->P.getView());
-            IpplTimings::stopTimer(deepCopy);
+            //IpplTimings::startTimer(deepCopy);
+            //Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
+            //Kokkos::deep_copy(Pcoarse->P.getView(), Pend->P.getView());
+            //IpplTimings::stopTimer(deepCopy);
+            sign *= -1;
         }
     }
     msg << TestName << " Parareal: End." << endl;
