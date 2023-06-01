@@ -352,6 +352,7 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(dumpDataTimer);
     P->dumpData();
+    P->dumpEnergy(totalP);
     P->gatherStatistics(totalP);
     //P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
@@ -381,13 +382,13 @@ int main(int argc, char *argv[]){
             double Eext_y = -(Rview(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
             double Eext_z =  (Rview(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
 
-            Eview(j)[0] += Eext_x;
-            Eview(j)[1] += Eext_y;
-            Eview(j)[2] += Eext_z;
+            Eext_x += Eview(j)[0];
+            Eext_y += Eview(j)[1];
+            Eext_z += Eview(j)[2];
             
-            Pview(j)[0] += alpha * (Eview(j)[0]  + Pview(j)[1] * Bext);
-            Pview(j)[1] += alpha * (Eview(j)[1]  - Pview(j)[0] * Bext);
-            Pview(j)[2] += alpha * Eview(j)[2];
+            Pview(j)[0] += alpha * (Eext_x  + Pview(j)[1] * Bext);
+            Pview(j)[1] += alpha * (Eext_y  - Pview(j)[0] * Bext);
+            Pview(j)[2] += alpha * Eext_z;
         });
         IpplTimings::stopTimer(PTimer);
 
@@ -434,20 +435,22 @@ int main(int argc, char *argv[]){
             double Eext_y = -(R2view(j)[1] - 0.5*rmax[1]) * (V0/(2*std::pow(rmax[2],2)));
             double Eext_z =  (R2view(j)[2] - 0.5*rmax[2]) * (V0/(std::pow(rmax[2],2)));
 
-            E2view(j)[0] += Eext_x;
-            E2view(j)[1] += Eext_y;
-            E2view(j)[2] += Eext_z;
-            P2view(j)[0]  = DrInv * ( P2view(j)[0] + alpha * (E2view(j)[0] 
-                            + P2view(j)[1] * Bext + alpha * Bext * E2view(j)[1]) );
-            P2view(j)[1]  = DrInv * ( P2view(j)[1] + alpha * (E2view(j)[1] 
-                            - P2view(j)[0] * Bext - alpha * Bext * E2view(j)[0]) );
-            P2view(j)[2] += alpha * E2view(j)[2];
+            Eext_x += E2view(j)[0];
+            Eext_y += E2view(j)[1];
+            Eext_z += E2view(j)[2];
+            
+            P2view(j)[0]  = DrInv * ( P2view(j)[0] + alpha * (Eext_x 
+                            + P2view(j)[1] * Bext + alpha * Bext * Eext_y) );
+            P2view(j)[1]  = DrInv * ( P2view(j)[1] + alpha * (Eext_y 
+                            - P2view(j)[0] * Bext - alpha * Bext * Eext_x) );
+            P2view(j)[2] += alpha * Eext_z;
         });
         IpplTimings::stopTimer(PTimer);
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpData();
+        P->dumpEnergy(totalP);
         P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
