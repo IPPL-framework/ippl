@@ -258,43 +258,43 @@ namespace ippl {
 
     template <class PLayout, typename... IP>
     template <typename HashType, typename BufferType>
-    void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag, int& sendNum,
+    void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag, int sendNum,
                                                   std::vector<MPI_Request>& requests,
                                                   const HashType& hash, BufferType& buffer) {
         size_type nSends = hash.size();
         requests.resize(requests.size() + 1);
 
-        auto hashes = hash_container_type(hash, [&]<typename MemSpace>() {
-            return attributes_m.template get<MemSpace>().size() > 0;
+        auto hashes = hash_container_type(hash, [&]<typename MemorySpace>() {
+            return attributes_m.template get<MemorySpace>().size() > 0;
         });
         pack(buffer, hashes);
-        detail::runForAllSpaces([&]<typename MemSpace>() {
-            size_type bufSize = packedSize<MemSpace>(nSends);
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            size_type bufSize = packedSize<MemorySpace>(nSends);
             if (bufSize == 0) {
                 return;
             }
 
-            auto buf = Ippl::Comm->getBuffer<MemSpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
+            auto buf = Ippl::Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
 
-            Ippl::Comm->isend(rank, tag, buffer, *buf, requests.back(), nSends);
+            Ippl::Comm->isend(rank, tag++, buffer, *buf, requests.back(), nSends);
             buf->resetWritePos();
-
-            ++sendNum;
         });
     }
 
     template <class PLayout, typename... IP>
     template <typename BufferType>
-    void ParticleBase<PLayout, IP...>::recvFromRank(int rank, int tag, int& recvNum,
+    void ParticleBase<PLayout, IP...>::recvFromRank(int rank, int tag, int recvNum,
                                                     size_type nRecvs, BufferType& buffer) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             size_type bufSize = packedSize<MemorySpace>(nRecvs);
+            if (bufSize == 0) {
+                return;
+            }
+
             auto buf = Ippl::Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_RECV + recvNum, bufSize);
 
-            Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs);
+            Ippl::Comm->recv(rank, tag++, buffer, *buf, bufSize, nRecvs);
             buf->resetReadPos();
-
-            ++recvNum;
         });
         unpack(buffer, nRecvs);
     }

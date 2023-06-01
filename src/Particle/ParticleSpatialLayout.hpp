@@ -135,6 +135,7 @@ namespace ippl {
                 fillHash(rank, ranks, hash);
 
                 pdata.sendToRank(rank, tag, sends, requests, hash, buffer);
+                ++sends;
             }
         }
         IpplTimings::stopTimer(sendTimer);
@@ -169,6 +170,7 @@ namespace ippl {
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
                 pdata.recvFromRank(rank, tag, recvs, nRecvs[rank], buffer);
+                ++recvs;
             }
         }
         IpplTimings::stopTimer(recvTimer);
