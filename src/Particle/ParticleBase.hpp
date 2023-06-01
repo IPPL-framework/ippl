@@ -81,11 +81,9 @@ namespace ippl {
     }
 
     template <class PLayout, typename... IP>
-    template <typename... Properties>
-    void ParticleBase<PLayout, IP...>::addAttribute(detail::ParticleAttribBase<Properties...>& pa) {
-        using memory_space   = typename detail::ParticleAttribBase<Properties...>::memory_space;
-        using attribute_type = detail::ParticleAttribBase<memory_space>;
-        attributes_m.template get<memory_space>().push_back((attribute_type*)&pa);
+    template <typename MemorySpace>
+    void ParticleBase<PLayout, IP...>::addAttribute(detail::ParticleAttribBase<MemorySpace>& pa) {
+        attributes_m.template get<MemorySpace>().push_back(&pa);
         pa.setParticleCount(localNum_m);
     }
 

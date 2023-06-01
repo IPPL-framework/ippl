@@ -177,8 +177,8 @@ namespace ippl {
          * Add particle attribute
          * @param pa attribute to be added to ParticleBase
          */
-        template <typename... Properties>
-        void addAttribute(detail::ParticleAttribBase<Properties...>& pa);
+        template <typename MemorySpace>
+        void addAttribute(detail::ParticleAttribBase<MemorySpace>& pa);
 
         /*!
          * Get particle attribute

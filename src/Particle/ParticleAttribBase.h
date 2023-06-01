@@ -34,20 +34,19 @@
 
 namespace ippl {
     namespace detail {
-        template <class... Properties>
+        template <typename MemorySpace>
         class ParticleAttribBase {
         public:
-            using boolean_view_type = typename ViewType<bool, 1, Properties...>::view_type;
-            using int_view_type     = typename detail::ViewType<int, 1, Properties...>::view_type;
-            using memory_space      = typename boolean_view_type::memory_space;
-            using execution_space   = typename boolean_view_type::execution_space;
+            using hash_type       = hash_type<MemorySpace>;
+            using memory_space    = MemorySpace;
+            using execution_space = typename memory_space::execution_space;
 
             virtual void create(size_type) = 0;
 
-            virtual void destroy(const int_view_type&, const int_view_type&, size_type) = 0;
-            virtual size_type packedSize(const size_type) const                         = 0;
+            virtual void destroy(const hash_type&, const hash_type&, size_type) = 0;
+            virtual size_type packedSize(const size_type) const                 = 0;
 
-            virtual void pack(void*, const int_view_type&) const = 0;
+            virtual void pack(void*, const hash_type&) const = 0;
 
             virtual void unpack(void*, size_type) = 0;
 

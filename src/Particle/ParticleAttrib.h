@@ -36,9 +36,17 @@
 
 namespace ippl {
 
+    namespace detail {
+        template <class... Properties>
+        struct AttribBaseWithMemSpace {
+            using memory_space = typename Kokkos::View<char*, Properties...>::memory_space;
+            using type         = ParticleAttribBase<memory_space>;
+        };
+    }  // namespace detail
+
     // ParticleAttrib class definition
     template <typename T, class... Properties>
-    class ParticleAttrib : public detail::ParticleAttribBase<Properties...>,
+    class ParticleAttrib : public detail::AttribBaseWithMemSpace<Properties...>::type,
                            public detail::Expression<
                                ParticleAttrib<T, Properties...>,
                                sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)> {
@@ -46,10 +54,9 @@ namespace ippl {
         typedef T value_type;
         constexpr static unsigned dim = 1;
 
-        using Base = detail::ParticleAttribBase<Properties...>;
+        using Base = typename detail::AttribBaseWithMemSpace<Properties...>::type;
 
-        using boolean_view_type = typename Base::boolean_view_type;
-        using int_view_type     = typename Base::int_view_type;
+        using hash_type = typename Base::hash_type;
 
         using view_type  = typename detail::ViewType<T, 1, Properties...>::view_type;
         using HostMirror = typename view_type::host_mirror_type;
@@ -70,10 +77,10 @@ namespace ippl {
          * @param keepIndex List of indices of valid particles in the invalid region
          * @param invalidCount Number of invalid particles in the valid region
          */
-        void destroy(const int_view_type& deleteIndex, const int_view_type& keepIndex,
+        void destroy(const hash_type& deleteIndex, const hash_type& keepIndex,
                      size_type invalidCount) override;
 
-        void pack(void*, const int_view_type&) const override;
+        void pack(void*, const hash_type&) const override;
 
         void unpack(void*, size_type) override;
 
