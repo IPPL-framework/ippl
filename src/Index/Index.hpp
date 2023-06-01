@@ -184,7 +184,7 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION bool Index::split(Index& l, Index& r, int i) const {
         PAssert_EQ(stride_m, 1);
         PAssert_GT(length_m, 1);
-        if (i >= first_m + (int)length_m) {
+        if (i >= first_m + static_cast<int>(length_m)) {
             return false;
         }
         l = Index(first_m, i);
@@ -197,16 +197,16 @@ namespace ippl {
         PAssert_GT(length_m, 1);
         PAssert_LT(a, 1.0);
         PAssert_GT(a, 0.0);
-        int mid = first_m + (int)(length_m * a + 0.5) - 1;
+        int mid = first_m + static_cast<int>(length_m * a + 0.5) - 1;
         l       = Index(first_m, mid);
         r       = Index(mid + 1, first_m + length_m - 1);
         return true;
     }
 
     //////////////////////////////////////////////////////////////////////
-    // Calculate the least common multipple of s1 and s2.
+    // Calculate the lowest common multiple of s1 and s2.
     // put the result in s.
-    // also calculate m1 = s/s1 and m2 = s/s2.
+    // Also calculate m1 = s/s1 and m2 = s/s2.
     // This version is optimized for small s1 and s2 and
     // just uses an exhaustive search.
     //////////////////////////////////////////////////////////////////////
