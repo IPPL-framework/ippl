@@ -1,9 +1,31 @@
+//
+// TestP3MSolver
 // This program tests the P3MSolver with a constant source rho = 2.
 // This is for comparison purposes with a reference implementation in ippl_orig.
 // I/O output is only enabled when running serially.
-// The problem size must be given by the user.
-// Usage:
-//   srun ./TestP3MSolver 16 16 16 --info 5
+//   Usage:
+//     srun ./TestP3MSolver <nx> <ny> <nz> --info 5
+//     nx = No. cell-centered points in the x-direction
+//     ny = No. cell-centered points in the y-direction
+//     nz = No. cell-centered points in the z-direction
+//
+//     Example:
+//       srun ./TestP3MSolver 16 16 16 --info 5
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 #include "Ippl.h"
 
@@ -67,6 +89,7 @@ int main(int argc, char* argv[]) {
     params.add("use_gpu_aware", true);
     params.add("comm", ippl::a2av);
     params.add("r2c_direction", 0);
+    params.add("output_type", Solver_t::SOL_AND_GRAD);
 
     // assign the rho field with 2.0
     typename Field_t::view_type view_rho = field.getView();
@@ -80,7 +103,12 @@ int main(int argc, char* argv[]) {
         field.write();
     }
 
-    Solver_t solver(efield, field, params, Solver_t::SOL_AND_GRAD);
+    Solver_t solver;
+
+    solver.mergeParameters(params);
+
+    solver.setLhs(efield);
+    solver.setRhs(field);
 
     solver.solve();
 
