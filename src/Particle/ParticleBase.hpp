@@ -101,7 +101,7 @@ namespace ippl {
     void ParticleBase<PLayout, IP...>::create(size_type nLocal) {
         PAssert(layout_m != nullptr);
 
-        attributes_m.forAll([&]<typename Attributes>(Attributes& att) {
+        forAllAttributes([&]<typename Attributes>(Attributes& att) {
             for (auto& attribute : att) {
                 attribute->create(nLocal);
             }
@@ -245,7 +245,7 @@ namespace ippl {
         keepIndex_m.copyToOtherSpaces<memory_space>(filter);
 
         // Partition the attributes into valid and invalid regions
-        attributes_m.forAll([&]<typename Attributes>(Attributes& att) {
+        forAllAttributes([&]<typename Attributes>(Attributes& att) {
             using att_memory_space =
                 typename std::remove_pointer_t<typename Attributes::value_type>::memory_space;
             auto& del  = deleteIndex_m.get<att_memory_space>();
