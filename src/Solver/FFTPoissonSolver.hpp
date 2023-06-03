@@ -1,6 +1,11 @@
 //
 // Class FFTPoissonSolver
-//   FFT-based Poisson Solver class.
+//   FFT-based Poisson Solver for open boundaries.
+//   Solves laplace(phi) = -rho, and E = -grad(phi).
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
 //
 // This file is part of IPPL.
 //
@@ -12,18 +17,6 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-//
-
-#include <Kokkos_MathematicalConstants.hpp>
-#include <Kokkos_MathematicalFunctions.hpp>
-#include <algorithm>
-
-#include "Utility/IpplException.h"
-#include "Utility/IpplTimings.h"
-
-#include "Communicate/Archive.h"
-#include "FFTPoissonSolver.h"
-#include "Field/HaloCells.h"
 
 // Communication specific functions (pack and unpack).
 template <typename Tb, typename Tf>
@@ -120,63 +113,69 @@ namespace ippl {
 
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
+    template <typename FieldLHS, typename FieldRHS>
+    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver()
+        : Base()
+        , mesh_mp(nullptr)
+        , layout_mp(nullptr)
+        , mesh2_m(nullptr)
+        , layout2_m(nullptr)
+        , meshComplex_m(nullptr)
+        , layoutComplex_m(nullptr)
+        , mesh4_m(nullptr)
+        , layout4_m(nullptr)
+        , isGradFD_m(false) {
+        setDefaultParameters();
+    }
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(rhs_type& rhs, ParameterList& fftparams,
-                                                           std::string alg)
+    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(rhs_type& rhs, ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
         , layout2_m(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr)
-        , alg_m(alg)
         , mesh4_m(nullptr)
         , layout4_m(nullptr)
         , isGradFD_m(false) {
         using T = typename FieldLHS::value_type::value_type;
         static_assert(std::is_floating_point<T>::value, "Not a floating point type");
 
-        std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
         setDefaultParameters();
-        this->setRhs(rhs);
-
-        this->params_m.merge(fftparams);
+        this->params_m.merge(params);
         this->params_m.update("output_type", Base::SOL);
 
-        // start a timer
-        static IpplTimings::TimerRef initialize = IpplTimings::getTimer("Initialize");
-        IpplTimings::startTimer(initialize);
-
-        initializeFields();
-
-        IpplTimings::stopTimer(initialize);
+        this->setRhs(rhs);
     }
 
     template <typename FieldLHS, typename FieldRHS>
     FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs,
-                                                           ParameterList& fftparams,
-                                                           std::string alg, int sol)
+                                                           ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
         , layout2_m(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr)
-        , alg_m(alg)
         , mesh4_m(nullptr)
         , layout4_m(nullptr)
         , isGradFD_m(false) {
         using T = typename FieldLHS::value_type::value_type;
         static_assert(std::is_floating_point<T>::value, "Not a floating point type");
 
-        std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
         setDefaultParameters();
-        this->setRhs(rhs);
-        this->setLhs(lhs);
+        this->params_m.merge(params);
 
-        this->params_m.merge(fftparams);
-        this->params_m.update("output_type", sol);
+        this->setLhs(lhs);
+        this->setRhs(rhs);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // override setRhs to call class-specific initialization
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
+        Base::setRhs(rhs);
 
         // start a timer
         static IpplTimings::TimerRef initialize = IpplTimings::getTimer("Initialize");
@@ -210,11 +209,14 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
+        const int alg = this->params_m.template get<int>("algorithm");
+
         // first check if valid algorithm choice
-        if ((alg_m != "VICO") && (alg_m != "HOCKNEY") && (alg_m != "BIHARMONIC")) {
+        if ((alg != Algorithm::VICO) && (alg != Algorithm::HOCKNEY)
+            && (alg != Algorithm::BIHARMONIC)) {
             throw IpplException(
                 "FFTPoissonSolver::initializeFields()",
-                "Currently only Hockney and Vico algorithms are supported for open BCs");
+                "Currently only Hockney, Vico, and Biharmonic are supported for open BCs");
         }
 
         // get layout and mesh
@@ -287,7 +289,7 @@ namespace ippl {
         // if Vico, also need to create mesh and layout for 4N Fourier domain
         // on this domain, the truncated Green's function is defined
         // also need to create the 4N complex grid, on which precomputation step done
-        if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
+        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
             // start a timer
             static IpplTimings::TimerRef initialize_vico =
                 IpplTimings::getTimer("Initialize: extra Vico");
@@ -311,7 +313,7 @@ namespace ippl {
         }
 
         // these are fields that are used for calculating the Green's function for Hockney
-        if (alg_m == "HOCKNEY") {
+        if (alg == Algorithm::HOCKNEY) {
             // start a timer
             static IpplTimings::TimerRef initialize_hockney =
                 IpplTimings::getTimer("Initialize: extra Hockney");
@@ -394,7 +396,7 @@ namespace ippl {
         IpplTimings::startTimer(warmup);
 
         fft_m->transform(+1, rho2_mr, rho2tr_m);
-        if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
+        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
             fft4n_m->transform(+1, grnL_m);
         }
 
@@ -423,6 +425,9 @@ namespace ippl {
 
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
+
+        // get the algorithm (hockney, vico, or biharmonic)
+        const int alg = this->params_m.template get<int>("algorithm");
 
         // set the mesh & spacing, which may change each timestep
         mesh_mp = &(this->rhs_mp->get_mesh());
@@ -553,7 +558,8 @@ namespace ippl {
 
         // multiply FFT(rho2)*FFT(green)
         // convolution becomes multiplication in FFT
-        rho2tr_m = rho2tr_m * grntr_m;
+        // minus sign since we are solving laplace(phi) = -rho
+        rho2tr_m = -rho2tr_m * grntr_m;
 
         // if output_type is SOL or SOL_AND_GRAD, we caculate solution
         if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
@@ -572,7 +578,7 @@ namespace ippl {
             // Vico: need to multiply by normalization factor of 1/4N^3,
             // since only backward transform was performed on the 4N grid
             for (unsigned int i = 0; i < Dim; ++i) {
-                if ((alg_m == "VICO") || (alg_m == "BIHARMONIC"))
+                if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
                     rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                 else
                     rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
@@ -660,8 +666,9 @@ namespace ippl {
             IpplTimings::stopTimer(dtos);
         }
 
-        // if we want gradient of phi = Efield instead of doing grad in Fourier domain
-        // this is only possible if SOL_AND_GRAD is output type
+        // if we want finite differences Efield = -grad(phi)
+        // instead of computing it in Fourier domain
+        // this is only possible if SOL_AND_GRAD is the output type
         if (isGradFD_m && (out == Base::SOL_AND_GRAD)) {
             *(this->lhs_mp) = -grad(*this->rhs_mp);
         }
@@ -735,7 +742,7 @@ namespace ippl {
 
                 // apply proper normalization
                 for (unsigned int i = 0; i < Dim; ++i) {
-                    if ((alg_m == "VICO") || (alg_m == "BIHARMONIC"))
+                    if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
                         rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                     else
                         rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
@@ -836,10 +843,12 @@ namespace ippl {
         const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
         grn_mr               = 0.0;
 
-        if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
-            vector_type l(hr_m * nr_m);
-            vector_type hs_m;
-            scalar_type L_sum(0.0);
+        const int alg = this->params_m.template get<int>("algorithm");
+
+        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
+            Vector_t l(hr_m * nr_m);
+            Vector_t hs_m;
+            double L_sum(0.0);
 
             // compute length of the physical domain
             // compute Fourier domain spacing
@@ -872,7 +881,7 @@ namespace ippl {
             // Kokkos parallel for loop to assign analytic grnL_m
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-            if (alg_m == "VICO") {
+            if (alg == Algorithm::VICO) {
                 Kokkos::parallel_for(
                     "Initialize Green's function ",
                     mdrange_type({nghost_g, nghost_g, nghost_g},
@@ -907,7 +916,7 @@ namespace ippl {
                         view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
                     });
 
-            } else if (alg_m == "BIHARMONIC") {
+            } else if (alg == Algorithm::BIHARMONIC) {
                 Kokkos::parallel_for(
                     "Initialize Green's function ",
                     mdrange_type({nghost_g, nghost_g, nghost_g},

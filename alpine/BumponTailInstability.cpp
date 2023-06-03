@@ -329,7 +329,13 @@ int main(int argc, char* argv[]) {
     // Q = -\int\int f dx dv
     double Q           = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
     std::string solver = argv[arg++];
-    P                  = std::make_shared<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+
+    if (solver == "OPEN") {
+        throw IpplException("BumpOnTailInstability",
+                            "Open boundaries solver incompatible with this simulation!");
+    }
+
+    P = std::make_shared<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
     P->nr_m = nr;
 
