@@ -91,7 +91,7 @@ namespace ippl {
          */
         bool_type invalid("invalid", localnum);
 
-        locateParticles(pdata, ranks, invalid);
+        size_type invalidCount = locateParticles(pdata, ranks, invalid);
         IpplTimings::stopTimer(locateTimer);
 
         // 2nd step
@@ -144,21 +144,6 @@ namespace ippl {
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("particleDestroy");
         IpplTimings::startTimer(destroyTimer);
 
-        size_type invalidCount = 0;
-        auto pIDs              = pdata.ID.getView();
-        using execution_space  = decltype(pdata.ID)::execution_space;
-        using policy_type      = Kokkos::RangePolicy<execution_space>;
-        Kokkos::parallel_reduce(
-            "set/count invalid", policy_type(0, localnum),
-            KOKKOS_LAMBDA(const size_t i, size_type& nInvalid) {
-                if (invalid(i)) {
-                    pIDs(i) = -1;
-                    nInvalid += 1;
-                }
-            },
-            invalidCount);
-        Kokkos::fence();
-
         pdata.destroy(invalid, invalidCount);
         Kokkos::fence();
 
@@ -195,28 +180,33 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <typename ParticleBunch>
-    void ParticleSpatialLayout<T, Dim, Mesh, Properties...>::locateParticles(
+    detail::size_type ParticleSpatialLayout<T, Dim, Mesh, Properties...>::locateParticles(
         const ParticleBunch& pdata, locate_type& ranks, bool_type& invalid) const {
         auto& positions                            = pdata.R.getView();
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
 
-        using view_size_t  = typename RegionLayout_t::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
 
         int myRank = Ippl::Comm->rank();
 
         const auto is = std::make_index_sequence<Dim>{};
-        Kokkos::parallel_for(
+
+        size_type invalidCount = 0;
+        Kokkos::parallel_reduce(
             "ParticleSpatialLayout::locateParticles()",
             mdrange_type({0, 0}, {ranks.extent(0), Regions.extent(0)}),
-            KOKKOS_LAMBDA(const size_t i, const view_size_t j) {
+            KOKKOS_LAMBDA(const size_t i, const size_type j, size_type& count) {
                 bool xyz_bool = positionInRegion(is, positions(i), Regions(j));
                 if (xyz_bool) {
                     ranks(i)   = j;
                     invalid(i) = (myRank != ranks(i));
+                    count += invalid(i);
                 }
-            });
+            },
+            Kokkos::Sum<size_type>(invalidCount));
         Kokkos::fence();
+
+        return invalidCount;
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>

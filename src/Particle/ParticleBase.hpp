@@ -70,7 +70,7 @@ namespace ippl {
         , localNum_m(0)
         , nextID_m(Ippl::Comm->myNode())
         , numNodes_m(Ippl::Comm->getNodes()) {
-        addAttribute(ID);  // needs to be added first due to destroy function
+        addAttribute(ID);
         addAttribute(R);
     }
 
