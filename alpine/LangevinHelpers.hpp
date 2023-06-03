@@ -23,6 +23,9 @@ using MatrixD_t = VectorD<VectorD<double>>;
 
 using Matrix2D_t = Vector2D<Vector2D<double>>;
 
+template <unsigned Dim = 3>
+using MField_t = Field<MatrixD_t, Dim>;
+
 // View types (of particle attributes)
 typedef ParticleAttrib<double>::view_type attr_view_t;
 typedef ParticleAttrib<VectorD_t>::view_type attr_Dview_t;
@@ -116,6 +119,8 @@ void dumpVTKScalar(Field_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCell
     int ny = nCells[1];
     int nz = nCells[2];
 
+    const int nghost = F.getNghost();
+
     typename Field_t<Dim>::view_type::host_mirror_type host_view = F.getHostMirror();
 
     std::stringstream fname;
@@ -137,16 +142,16 @@ void dumpVTKScalar(Field_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCell
     vtkout << TestName << endl;
     vtkout << "ASCII" << endl;
     vtkout << "DATASET STRUCTURED_POINTS" << endl;
-    vtkout << "DIMENSIONS " << nx + 1 << " " << ny + 1 << " " << nz + 1 << endl;
+    vtkout << "DIMENSIONS " << nx + nghost << " " << ny + nghost << " " << nz + nghost << endl;
     vtkout << "ORIGIN " << origin[0] << " " << origin[1] << " " << origin[2] << endl;
     vtkout << "SPACING " << cellSpacing[0] << " " << cellSpacing[1] << " " << cellSpacing[2]
            << endl;
     vtkout << "CELL_DATA " << nx * ny * nz << endl;
     vtkout << "SCALARS " << label << " float" << endl;
     vtkout << "LOOKUP_TABLE default" << endl;
-    for (int z = 1; z < nz + 1; z++) {
-        for (int y = 1; y < ny + 1; y++) {
-            for (int x = 1; x < nx + 1; x++) {
+    for (int z = nghost; z < nz + nghost; z++) {
+        for (int y = nghost; y < ny + nghost; y++) {
+            for (int x = nghost; x < nx + nghost; x++) {
                 vtkout << scalingFactor * host_view(x, y, z) << endl;
             }
         }
@@ -159,6 +164,8 @@ void dumpVTKVector(VField_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCel
     int nx = nCells[0];
     int ny = nCells[1];
     int nz = nCells[2];
+
+    const int nghost = F.getNghost();
 
     typename VField_t<Dim>::view_type::host_mirror_type host_view = F.getHostMirror();
 
@@ -181,15 +188,15 @@ void dumpVTKVector(VField_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCel
     vtkout << TestName << endl;
     vtkout << "ASCII" << endl;
     vtkout << "DATASET STRUCTURED_POINTS" << endl;
-    vtkout << "DIMENSIONS " << nx + 1 << " " << ny + 1 << " " << nz + 1 << endl;
+    vtkout << "DIMENSIONS " << nx + nghost << " " << ny + nghost << " " << nz + nghost << endl;
     vtkout << "ORIGIN " << origin[0] << " " << origin[1] << " " << origin[2] << endl;
     vtkout << "SPACING " << cellSpacing[0] << " " << cellSpacing[1] << " " << cellSpacing[2]
            << endl;
     vtkout << "CELL_DATA " << nx * ny * nz << endl;
     vtkout << "VECTORS " << label << " float" << endl;
-    for (int z = 1; z < nz + 1; z++) {
-        for (int y = 1; y < ny + 1; y++) {
-            for (int x = 1; x < nx + 1; x++) {
+    for (int z = nghost; z < nz + nghost; z++) {
+        for (int y = nghost; y < ny + nghost; y++) {
+            for (int x = nghost; x < nx + nghost; x++) {
                 vtkout << scalingFactor * host_view(x, y, z)[0] << "\t"
                        << scalingFactor * host_view(x, y, z)[1] << "\t"
                        << scalingFactor * host_view(x, y, z)[2] << endl;
@@ -282,6 +289,95 @@ void dumpCSVMatrixAttr(ParticleAttrib<VectorD_t>& M0, ParticleAttrib<VectorD_t>&
     }
 }
 
+void extractScalarFieldDim(VField_t<Dim>& vectorField, Field_t<Dim>& scalarField,
+                           size_t dimToExtract) {
+    VField_view_t vectorView = vectorField.getView();
+    Field_view_t scalarView  = scalarField.getView();
+
+    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+    ippl::parallel_for(
+        "Assign initial velocity PDF and reference solution for H",
+        ippl::getRangePolicy<Dim>(vectorView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::apply<Dim>(scalarView, args) = ippl::apply<Dim>(vectorView, args)[dimToExtract];
+        });
+}
+
+void extractScalarField(VField_t<Dim>& vectorField, Field_t<Dim>& scalarField0,
+                        Field_t<Dim>& scalarField1, Field_t<Dim>& scalarField2) {
+    extractScalarFieldDim(vectorField, scalarField0, 0);
+    extractScalarFieldDim(vectorField, scalarField1, 1);
+    extractScalarFieldDim(vectorField, scalarField2, 2);
+}
+
+void constructVFieldFromFields(VField_t<Dim>& vectorField, Field_t<Dim>& scalarField0,
+                               Field_t<Dim>& scalarField1, Field_t<Dim>& scalarField2) {
+    VField_view_t vectorView = vectorField.getView();
+    Field_view_t scalarView0 = scalarField0.getView();
+    Field_view_t scalarView1 = scalarField1.getView();
+    Field_view_t scalarView2 = scalarField2.getView();
+
+    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+    ippl::parallel_for(
+        "Assign initial velocity PDF and reference solution for H",
+        ippl::getRangePolicy<Dim>(vectorView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::apply<Dim>(vectorView, args)[0] = ippl::apply<Dim>(scalarView0, args);
+            ippl::apply<Dim>(vectorView, args)[1] = ippl::apply<Dim>(scalarView1, args);
+            ippl::apply<Dim>(vectorView, args)[2] = ippl::apply<Dim>(scalarView2, args);
+        });
+}
+
+void extractScalarField(MField_t<Dim>& matrixField, Field_t<Dim>& scalarField, size_t rowIdx,
+                        size_t colIdx) {
+    MField_view_t matrixView = matrixField.getView();
+    Field_view_t scalarView  = scalarField.getView();
+
+    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+    ippl::parallel_for(
+        "Assign initial velocity PDF and reference solution for H",
+        ippl::getRangePolicy<Dim>(matrixView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::apply<Dim>(scalarView, args) = ippl::apply<Dim>(matrixView, args)[rowIdx][colIdx];
+        });
+}
+
+double L2VectorNorm(const VField_t<Dim>& vectorField, const int shift) {
+    double sum             = 0;
+    VField_view_t view     = vectorField.getView();
+    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+    ippl::parallel_reduce(
+        "L2VectorNorm(VField&, shift)", ippl::getRangePolicy<Dim>(view, shift),
+        KOKKOS_LAMBDA(const index_array_type& args, double& val) {
+            val += L2Norm(apply<Dim>(view, args));
+        },
+        Kokkos::Sum<double>(sum));
+    double globalSum  = 0;
+    MPI_Datatype type = get_mpi_datatype<double>(sum);
+    MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
+    return globalSum;
+}
+
+/*!
+ * Computes the inner product of two fields given a margin of `nghost` in which the values are
+ * ignored
+ * @param f field
+ * @return Result of f^T f
+ */
+template <typename T, unsigned Dim>
+T subfieldNorm(const Field<T, Dim>& f, const int shift, const int p = 2) {
+    T sum                  = 0;
+    auto view              = f.getView();
+    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+    ippl::parallel_reduce(
+        "subfieldSum(Field&, shift)", ippl::getRangePolicy<Dim>(view, shift),
+        KOKKOS_LAMBDA(const index_array_type& args, T& val) {
+            val += Kokkos::pow(apply<Dim>(view, args), p);
+        },
+        Kokkos::Sum<T>(sum));
+    T globalSum       = 0;
+    MPI_Datatype type = get_mpi_datatype<T>(sum);
+    MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
+    return std::pow(globalSum, 1.0 / p);
+}
+
 // Store all BeamStatistics to be gathered for file dumping
 // Not in use yet (could improve readibility of dumping later on)
 // TODO Write sensible comments
@@ -334,6 +430,7 @@ struct BeamStatistics {
 };
 
 // Cholesky Decomposition for positive-definite matrices
+// Simplest algorithm, might return NaN's for ill-conditioned matrices
 KOKKOS_INLINE_FUNCTION MatrixD_t cholesky3x3(const MatrixD_t& M) {
     MatrixD_t L;
     L[0][0] = Kokkos::sqrt(M[0][0]);
@@ -344,31 +441,10 @@ KOKKOS_INLINE_FUNCTION MatrixD_t cholesky3x3(const MatrixD_t& M) {
     L[2][2] = Kokkos::sqrt(M[2][2] - L[2][0] * L[2][0] - L[2][1] * L[2][1]);
 
     return L;
-
-    // Check that there has been no NaN computed
-    // bool foundNaN = false;
-    // for (int i = 0; i < 3; ++i) {
-    // for (int j = 0; j <= i; ++j) {
-    // if (L[i][j] == L[i][j]) {
-    // foundNaN = true;
-    //}
-    //}
-    //}
-
-    //// Print input Matrix M
-    // if (foundNaN) {
-    // for (int i = 0; i < 3; ++i) {
-    // for (int j = 0; j < 3; ++j) {
-    // std::cout << M[i][j] << ' ';
-    //}
-    // std::cout << '\n';
-    //}
-    //}
-    // PAssert(foundNaN == false);
-    // return L;
 }
 
 // Only pick the diagonal values of the input Matrix
+// Avoids division by zero as seen in `cholesky3x3()`
 KOKKOS_INLINE_FUNCTION MatrixD_t cholesky3x3_diagonal(const MatrixD_t& M) {
     MatrixD_t L;
     L[0][0] = Kokkos::sqrt(M[0][0]);
