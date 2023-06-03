@@ -214,7 +214,13 @@ int main(int argc, char* argv[]) {
     PLayout_t<double, Dim> PL(FL, mesh);
 
     std::string solver = argv[arg++];
-    P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+
+    if (solver == "OPEN") {
+        throw IpplException("LandauDamping",
+                            "Open boundaries solver incompatible with this simulation!");
+    }
+
+    P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
     P->nr_m = nr;
 
@@ -238,17 +244,14 @@ int main(int argc, char* argv[]) {
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
-            "Assign initial rho based on PDF", ippl::getRangePolicy<Dim>(rhoview, nghost),
+            "Assign initial rho based on PDF", P->rho_m.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
-                Vector_t<double, Dim> xvec = args;
-                for (unsigned d = 0; d < Dim; d++) {
-                    xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
-                }
+                Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
 
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                ippl::apply<Dim>(rhoview, args) = PDF(xvec, alpha, kw, Dim);
+                ippl::apply(rhoview, args) = PDF(xvec, alpha, kw, Dim);
             });
 
         Kokkos::fence();

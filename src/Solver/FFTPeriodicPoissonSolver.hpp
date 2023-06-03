@@ -19,14 +19,14 @@
 
 namespace ippl {
 
-    template <typename Tl, typename Tr, unsigned Dim, class Mesh, class Centering>
-    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, Mesh, Centering>::setRhs(rhs_type& rhs) {
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTPeriodicPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
         Base::setRhs(rhs);
         initialize();
     }
 
-    template <typename Tl, typename Tr, unsigned Dim, class Mesh, class Centering>
-    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, Mesh, Centering>::initialize() {
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTPeriodicPoissonSolver<FieldLHS, FieldRHS>::initialize() {
         const Layout_t& layout_r = this->rhs_mp->getLayout();
         domain_m                 = layout_r.getDomain();
 
@@ -42,34 +42,37 @@ namespace ippl {
             originComplex[d] = 0.0;
 
             decomp[d] = layout_r.getRequestedDistribution(d);
-            if (this->params_m.template get<int>("r2c_direction") == (int)d)
+            if (this->params_m.template get<int>("r2c_direction") == (int)d) {
                 domainComplex[d] = Index(domain_m[d].length() / 2 + 1);
-            else
+            } else {
                 domainComplex[d] = Index(domain_m[d].length());
+            }
         }
 
         layoutComplex_mp = std::make_shared<Layout_t>(domainComplex, decomp);
 
-        Mesh meshComplex(domainComplex, hComplex, originComplex);
+        mesh_type meshComplex(domainComplex, hComplex, originComplex);
 
         fieldComplex_m.initialize(meshComplex, *layoutComplex_mp);
 
-        if (this->params_m.template get<int>("output_type") == Base::GRAD)
+        if (this->params_m.template get<int>("output_type") == Base::GRAD) {
             tempFieldComplex_m.initialize(meshComplex, *layoutComplex_mp);
+        }
 
         fft_mp = std::make_shared<FFT_t>(layout_r, *layoutComplex_mp, this->params_m);
     }
 
-    template <typename Tl, typename Tr, unsigned Dim, class Mesh, class Centering>
-    void FFTPeriodicPoissonSolver<Tl, Tr, Dim, Mesh, Centering>::solve() {
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTPeriodicPoissonSolver<FieldLHS, FieldRHS>::solve() {
         fft_mp->transform(1, *this->rhs_mp, fieldComplex_m);
 
         auto view        = fieldComplex_m.getView();
         const int nghost = fieldComplex_m.getNghost();
 
         scalar_type pi            = Kokkos::numbers::pi_v<scalar_type>;
-        const Mesh& mesh          = this->rhs_mp->get_mesh();
+        const mesh_type& mesh     = this->rhs_mp->get_mesh();
         const auto& lDomComplex   = layoutComplex_mp->getLocalNDIndex();
+        using vector_type         = typename mesh_type::vector_type;
         const vector_type& origin = mesh.getOrigin();
         const vector_type& hx     = mesh.getMeshSpacing();
 
@@ -87,7 +90,7 @@ namespace ippl {
         switch (this->params_m.template get<int>("output_type")) {
             case Base::SOL: {
                 ippl::parallel_for(
-                    "Solution FFTPeriodicPoissonSolver", getRangePolicy<Dim>(view, nghost),
+                    "Solution FFTPeriodicPoissonSolver", getRangePolicy(view, nghost),
                     KOKKOS_LAMBDA(const index_array_type& args) {
                         Vector<int, Dim> iVec = args - nghost;
                         for (unsigned d = 0; d < Dim; ++d) {
@@ -110,7 +113,7 @@ namespace ippl {
                         bool isNotZero     = (Dr != 0.0);
                         scalar_type factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
 
-                        apply<Dim>(view, args) *= factor;
+                        apply(view, args) *= factor;
                     });
 
                 fft_mp->transform(-1, *this->rhs_mp, fieldComplex_m);
@@ -129,7 +132,7 @@ namespace ippl {
 
                 for (size_t gd = 0; gd < Dim; ++gd) {
                     ippl::parallel_for(
-                        "Gradient FFTPeriodicPoissonSolver", getRangePolicy<Dim>(view, nghost),
+                        "Gradient FFTPeriodicPoissonSolver", getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const index_array_type& args) {
                             Vector<int, Dim> iVec = args - nghost;
                             for (unsigned d = 0; d < Dim; ++d) {
@@ -152,21 +155,21 @@ namespace ippl {
                                 Dr += kVec[d] * kVec[d];
                             }
 
-                            apply<Dim>(tempview, args) = apply<Dim>(view, args);
+                            apply(tempview, args) = apply(view, args);
 
                             bool isNotZero     = (Dr != 0.0);
                             scalar_type factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
 
-                            apply<Dim>(tempview, args) *= -(imag * kVec[gd] * factor);
+                            apply(tempview, args) *= -(imag * kVec[gd] * factor);
                         });
 
                     fft_mp->transform(-1, *this->rhs_mp, tempFieldComplex_m);
 
                     ippl::parallel_for(
                         "Assign Gradient FFTPeriodicPoissonSolver",
-                        getRangePolicy<Dim>(viewLhs, nghostL),
+                        getRangePolicy(viewLhs, nghostL),
                         KOKKOS_LAMBDA(const index_array_type& args) {
-                            apply<Dim>(viewLhs, args)[gd] = apply<Dim>(viewRhs, args);
+                            apply(viewLhs, args)[gd] = apply(viewRhs, args);
                         });
                 }
 

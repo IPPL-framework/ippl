@@ -45,7 +45,8 @@ public:
 
     template <typename Transform, unsigned Dim>
     using FFT_type =
-        ippl::FFT<Transform, Dim, T, mesh_type<Dim>, typename mesh_type<Dim>::DefaultCentering>;
+        ippl::FFT<Transform, std::conditional_t<std::is_same_v<Transform, ippl::CCTransform>,
+                                                field_type_complex<Dim>, field_type_real<Dim>>>;
 
     FFTTest() {
         computeGridSizes(pt);

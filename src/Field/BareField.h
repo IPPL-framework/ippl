@@ -65,6 +65,9 @@ namespace ippl {
         template <typename Tag = void>
         using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
 
+        using value_type              = T;
+        constexpr static unsigned dim = Dim;
+
         /*! A default constructor, which should be used only if the user calls the
          * 'initialize' function before doing anything else.  There are no special
          * checks in the rest of the BareField methods to check that the field has
@@ -187,7 +190,7 @@ namespace ippl {
         policy_type<Tag> getFieldRangePolicy(const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
             const size_t shift = nghost_m - nghost;
-            return getRangePolicy<Dim, Tag>(dview_m, shift);
+            return getRangePolicy(dview_m, shift);
         }
 
         /*!

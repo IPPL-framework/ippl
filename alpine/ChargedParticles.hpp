@@ -20,8 +20,12 @@
 
 #include <csignal>
 
+#include "Utility/TypeUtils.h"
+
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
+#include "Solver/FFTPoissonSolver.h"
+#include "Solver/P3MSolver.h"
 
 // some typedefs
 template <unsigned Dim = 3>
@@ -58,16 +62,24 @@ using VField_t = Field<Vector_t<T, Dim>, Dim>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
 template <typename T = double, unsigned Dim = 3>
-using CGSolver_t = ippl::ElectrostaticsCG<T, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+using CGSolver_t = ippl::ElectrostaticsCG<Field<T, Dim>, Field_t<Dim>>;
+
+using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 
 template <typename T = double, unsigned Dim = 3>
-using FFTSolver_t =
-    ippl::FFTPeriodicPoissonSolver<Vector_t<T, Dim>, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+using FFTSolver_t = ConditionalType<Dim == 2 || Dim == 3,
+                                    ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
-using Solver_t =
-    std::conditional_t<Dim == 2 || Dim == 3, std::variant<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>>,
-                       std::variant<CGSolver_t<T, Dim>>>;
+using P3MSolver_t = ConditionalType<Dim == 3, ippl::P3MSolver<VField_t<T, Dim>, Field_t<Dim>>>;
+
+template <typename T = double, unsigned Dim = 3>
+using OpenSolver_t =
+    ConditionalType<Dim == 3, ippl::FFTPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
+
+template <typename T = double, unsigned Dim = 3>
+using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
+                                             P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
 
 const double pi = Kokkos::numbers::pi_v<double>;
 
@@ -191,7 +203,7 @@ public:
     Field_t<Dim> rho_m;
     Field<T, Dim> phi_m;
 
-    typedef ippl::BConds<T, Dim, Mesh_t<Dim>, Centering_t<Dim>> bc_type;
+    typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
     bc_type allPeriodic;
 
     // ORB
@@ -259,8 +271,7 @@ public:
         // simply assumes them
         if (stype_m == "CG") {
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                allPeriodic[i] =
-                    std::make_shared<ippl::PeriodicFace<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
+                allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
             }
         }
     }
@@ -327,6 +338,13 @@ public:
         if constexpr (Dim == 2 || Dim == 3) {
             if (stype_m == "FFT") {
                 std::get<FFTSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
+            }
+            if constexpr (Dim == 3) {
+                if (stype_m == "P3M") {
+                    std::get<P3MSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
+                } else if (stype_m == "OPEN") {
+                    std::get<OpenSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
+                }
             }
         }
     }
@@ -419,14 +437,16 @@ public:
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
 
-        // dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
+        // dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], iteration, hrField[0], hrField[1], hrField[2]);
 
-        // rho = rho_e - rho_i
-        double size = 1;
-        for (unsigned d = 0; d < Dim; d++) {
-            size *= rmax_m[d] - rmin_m[d];
+        // rho = rho_e - rho_i (only if periodic BCs)
+        if (stype_m != "OPEN") {
+            double size = 1;
+            for (unsigned d = 0; d < Dim; d++) {
+                size *= rmax_m[d] - rmin_m[d];
+            }
+            rho_m = rho_m - (Q_m / size);
         }
-        rho_m = rho_m - (Q_m / size);
     }
 
     void initSolver() {
@@ -435,6 +455,10 @@ public:
             initFFTSolver();
         } else if (stype_m == "CG") {
             initCGSolver();
+        } else if (stype_m == "P3M") {
+            initP3MSolver();
+        } else if (stype_m == "OPEN") {
+            initOpenSolver();
         } else {
             m << "No solver matches the argument" << endl;
         }
@@ -467,6 +491,14 @@ public:
             if constexpr (Dim == 2 || Dim == 3) {
                 std::get<FFTSolver_t<T, Dim>>(solver_m).solve();
             }
+        } else if (stype_m == "P3M") {
+            if constexpr (Dim == 3) {
+                std::get<P3MSolver_t<T, Dim>>(solver_m).solve();
+            }
+        } else if (stype_m == "OPEN") {
+            if constexpr (Dim == 3) {
+                std::get<OpenSolver_t<T, Dim>>(solver_m).solve();
+            }
         } else {
             throw std::runtime_error("Unknown solver type");
         }
@@ -474,7 +506,7 @@ public:
 
     template <typename Solver>
     void initSolverWithParams(const ippl::ParameterList& sp) {
-        solver_m       = Solver();
+        solver_m.template emplace<Solver>();
         Solver& solver = std::get<Solver>(solver_m);
 
         solver.mergeParameters(sp);
@@ -486,9 +518,9 @@ public:
             // uses this to get the electric field
             solver.setLhs(phi_m);
             solver.setGradient(E_m);
-        } else if constexpr (std::is_same_v<Solver, FFTSolver_t<T, Dim>>) {
-            // The periodic Poisson solver computes the electric
-            // field directly
+        } else {
+            // The periodic Poisson solver, Open boundaries solver,
+            // and the P3M solver compute the electric field directly
             solver.setLhs(E_m);
         }
     }
@@ -519,23 +551,61 @@ public:
         }
     }
 
+    void initP3MSolver() {
+        if constexpr (Dim == 3) {
+            ippl::ParameterList sp;
+            sp.add("output_type", P3MSolver_t<T, Dim>::GRAD);
+            sp.add("use_heffte_defaults", false);
+            sp.add("use_pencils", true);
+            sp.add("use_reorder", false);
+            sp.add("use_gpu_aware", true);
+            sp.add("comm", ippl::p2p_pl);
+            sp.add("r2c_direction", 0);
+
+            initSolverWithParams<P3MSolver_t<T, Dim>>(sp);
+        } else {
+            throw std::runtime_error("Unsupported dimensionality for P3M solver");
+        }
+    }
+
+    void initOpenSolver() {
+        if constexpr (Dim == 3) {
+            ippl::ParameterList sp;
+            sp.add("output_type", OpenSolver_t<T, Dim>::GRAD);
+            sp.add("use_heffte_defaults", false);
+            sp.add("use_pencils", true);
+            sp.add("use_reorder", false);
+            sp.add("use_gpu_aware", true);
+            sp.add("comm", ippl::p2p_pl);
+            sp.add("r2c_direction", 0);
+            sp.add("algorithm", OpenSolver_t<T, Dim>::HOCKNEY);
+
+            initSolverWithParams<OpenSolver_t<T, Dim>>(sp);
+        } else {
+            throw std::runtime_error("Unsupported dimensionality for OPEN solver");
+        }
+    }
+
     void dumpData() {
         auto Pview = P.getView();
 
-        double Energy = 0.0;
+        double kinEnergy = 0.0;
+        double potEnergy = 0.0;
+
+        potEnergy = 0.5 * hr_m[0] * hr_m[1] * hr_m[2] * rho_m.sum();
 
         Kokkos::parallel_reduce(
-            "Particle Energy", this->getLocalNum(),
+            "Particle Kinetic Energy", this->getLocalNum(),
             KOKKOS_LAMBDA(const int i, double& valL) {
                 double myVal = dot(Pview(i), Pview(i)).apply();
                 valL += myVal;
             },
-            Kokkos::Sum<double>(Energy));
+            Kokkos::Sum<double>(kinEnergy));
 
-        Energy *= 0.5;
-        double gEnergy = 0.0;
+        kinEnergy *= 0.5;
+        double gkinEnergy = 0.0;
 
-        MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
@@ -545,11 +615,11 @@ public:
         for (unsigned d = 0; d < Dim; ++d) {
             T temp = 0.0;
             ippl::parallel_reduce(
-                "Vector E reduce", ippl::getRangePolicy<Dim>(Eview, nghostE),
+                "Vector E reduce", ippl::getRangePolicy(Eview, nghostE),
                 KOKKOS_LAMBDA(const index_array_type& args, T& valL) {
-                    // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                    // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
-                    T myVal = std::pow(ippl::apply<Dim>(Eview, args)[d], 2);
+                    T myVal = std::pow(ippl::apply(Eview, args)[d], 2);
                     valL += myVal;
                 },
                 Kokkos::Sum<T>(temp));
@@ -570,14 +640,16 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if (time_m == 0.0) {
-                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2";
+                csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2, "
+                          "Ex_norm2, Ey_norm2, Ez_norm2";
                 for (unsigned d = 0; d < Dim; d++) {
                     csvout << "E" << d << "norm2, ";
                 }
                 csvout << endl;
             }
 
-            csvout << time_m << " " << gEnergy << " " << rhoNorm_m << " ";
+            csvout << time_m << " " << potEnergy << " " << gkinEnergy << " "
+                   << potEnergy + gkinEnergy << " " << rhoNorm_m << " ";
             for (unsigned d = 0; d < Dim; d++) {
                 csvout << normE[d] << " ";
             }
@@ -595,11 +667,11 @@ public:
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         double temp            = 0.0;
         ippl::parallel_reduce(
-            "Ex inner product", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex inner product", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::pow(ippl::apply<Dim>(Eview, args)[0], 2);
+                double myVal = std::pow(ippl::apply(Eview, args)[0], 2);
                 valL += myVal;
             },
             Kokkos::Sum<double>(temp));
@@ -609,11 +681,11 @@ public:
 
         double tempMax = 0.0;
         ippl::parallel_reduce(
-            "Ex max norm", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex max norm", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[0]);
+                double myVal = std::fabs(ippl::apply(Eview, args)[0]);
                 if (myVal > valL) {
                     valL = myVal;
                 }
@@ -650,11 +722,11 @@ public:
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         double temp            = 0.0;
         ippl::parallel_reduce(
-            "Ex inner product", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex inner product", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::pow(ippl::apply<Dim>(Eview, args)[Dim - 1], 2);
+                double myVal = std::pow(ippl::apply(Eview, args)[Dim - 1], 2);
                 valL += myVal;
             },
             Kokkos::Sum<double>(temp));
@@ -664,11 +736,11 @@ public:
 
         double tempMax = 0.0;
         ippl::parallel_reduce(
-            "Ex max norm", ippl::getRangePolicy<Dim>(Eview, nghostE),
+            "Ex max norm", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::fabs(ippl::apply<Dim>(Eview, args)[Dim - 1]);
+                double myVal = std::fabs(ippl::apply(Eview, args)[Dim - 1]);
                 if (myVal > valL) {
                     valL = myVal;
                 }

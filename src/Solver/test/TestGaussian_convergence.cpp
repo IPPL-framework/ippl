@@ -1,9 +1,29 @@
-// This program tests the FFTPoissonSolver class with a Gaussian source.
+//
+// TestGaussian_convergence
+// This programs tests the FFTPoissonSolver for a Gaussian source.
 // Different problem sizes are used for the purpose of convergence tests.
-// The test can be ran either in single or T precision.
-// The algorithm used is chosen by the user:
-//     srun ./TestGaussian_convergence HOCKNEY [DOUBLE|SINGLE] --info 10
-// OR  srun ./TestGaussian_convergence VICO [DOUBLE|SINGLE] --info 10
+//   Usage:
+//     srun ./TestGaussian_convergence <algorithm> <precision> --info 5
+//     algorithm = "HOCKNEY" or "VICO", types of open BC algorithms
+//     precision = "DOUBLE" or "SINGLE", precision of the fields
+//
+//     Example:
+//       srun ./TestGaussian_convergence HOCKNEY DOUBLE --info 5
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 #include "Ippl.h"
 
@@ -28,12 +48,15 @@ template <typename T>
 using VectorField_t = typename ippl::Field<ippl::Vector<T, 3>, 3, Mesh_t<T>, Centering_t<T>>;
 
 template <typename T>
+using Solver_t = ippl::FFTPoissonSolver<VectorField_t<T>, ScalarField_t<T>>;
+
+template <typename T>
 KOKKOS_INLINE_FUNCTION T gaussian(T x, T y, T z, T sigma = 0.05, T mu = 0.5) {
     T pi        = Kokkos::numbers::pi_v<T>;
     T prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     T r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return -prefactor * exp(-r2 / (2 * sigma * sigma));
+    return prefactor * exp(-r2 / (2 * sigma * sigma));
 }
 
 template <typename T>
@@ -143,7 +166,7 @@ void compute_convergence(std::string algorithm, int pt) {
     const auto& ldom                              = layout.getLocalNDIndex();
 
     Kokkos::parallel_for(
-        "Assign rho field", ippl::getRangePolicy<3>(view_rho, nghost),
+        "Assign rho field", ippl::getRangePolicy(view_rho, nghost),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             // go from local to global indices
             const int ig = i + ldom[0].first() - nghost;
@@ -162,7 +185,7 @@ void compute_convergence(std::string algorithm, int pt) {
     typename ScalarField_t<T>::view_type view_exact = exact.getView();
 
     Kokkos::parallel_for(
-        "Assign exact field", ippl::getRangePolicy<3>(view_exact, nghost),
+        "Assign exact field", ippl::getRangePolicy(view_exact, nghost),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             const int ig = i + ldom[0].first() - nghost;
             const int jg = j + ldom[1].first() - nghost;
@@ -179,7 +202,7 @@ void compute_convergence(std::string algorithm, int pt) {
     auto view_exactE = exactE.getView();
 
     Kokkos::parallel_for(
-        "Assign exact E-field", ippl::getRangePolicy<3>(view_exactE, nghost),
+        "Assign exact E-field", ippl::getRangePolicy(view_exactE, nghost),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             const int ig = i + ldom[0].first() - nghost;
             const int jg = j + ldom[1].first() - nghost;
@@ -194,17 +217,30 @@ void compute_convergence(std::string algorithm, int pt) {
             view_exactE(i, j, k)[2] = exact_E(x, y, z)[2];
         });
 
-    // set the FFT parameters
+    // set the solver parameters
+    ippl::ParameterList params;
 
-    ippl::ParameterList fftParams;
-    fftParams.add("use_heffte_defaults", false);
-    fftParams.add("use_pencils", true);
-    fftParams.add("use_gpu_aware", true);
-    fftParams.add("comm", ippl::a2av);
-    fftParams.add("r2c_direction", 0);
+    // set the FFT parameters
+    params.add("use_heffte_defaults", false);
+    params.add("use_pencils", true);
+    params.add("use_gpu_aware", true);
+    params.add("comm", ippl::a2av);
+    params.add("r2c_direction", 0);
+
+    // set the algorithm
+    if (algorithm == "HOCKNEY") {
+        params.add("algorithm", Solver_t<T>::HOCKNEY);
+    } else if (algorithm == "VICO") {
+        params.add("algorithm", Solver_t<T>::VICO);
+    } else {
+        throw IpplException("TestGaussian_convergence.cpp main()", "Unrecognized algorithm type");
+    }
+
+    // add output type
+    params.add("output_type", Solver_t<T>::SOL_AND_GRAD);
+
     // define an FFTPoissonSolver object
-    ippl::FFTPoissonSolver<ippl::Vector<T, 3>, T, 3, Mesh_t<T>, Centering_t<T>> FFTsolver(
-        fieldE, rho, fftParams, algorithm);
+    Solver_t<T> FFTsolver(fieldE, rho, params);
 
     // solve the Poisson equation -> rho contains the solution (phi) now
     FFTsolver.solve();
@@ -221,7 +257,7 @@ void compute_convergence(std::string algorithm, int pt) {
     for (size_t d = 0; d < 3; ++d) {
         T temp = 0.0;
         Kokkos::parallel_reduce(
-            "Vector errorNr reduce", ippl::getRangePolicy<3>(view_fieldE, nghost),
+            "Vector errorNr reduce", ippl::getRangePolicy(view_fieldE, nghost),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) {
                 T myVal = pow(view_fieldE(i, j, k)[d], 2);
                 valL += myVal;
@@ -236,7 +272,7 @@ void compute_convergence(std::string algorithm, int pt) {
 
         temp = 0.0;
         Kokkos::parallel_reduce(
-            "Vector errorDr reduce", ippl::getRangePolicy<3>(view_exactE, nghost),
+            "Vector errorDr reduce", ippl::getRangePolicy(view_exactE, nghost),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) {
                 T myVal = pow(view_exactE(i, j, k)[d], 2);
                 valL += myVal;

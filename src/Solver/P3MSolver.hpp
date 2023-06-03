@@ -1,69 +1,82 @@
 //
-//// Class P3MSolver
-////   FFT-based Poisson Solver class.
-////
-//// This file is part of IPPL.
-////
-//// IPPL is free software: you can redistribute it and/or modify
-//// it under the terms of the GNU General Public License as published by
-//// the Free Software Foundation, either version 3 of the License, or
-//// (at your option) any later version.
-////
-//// You should have received a copy of the GNU General Public License
-//// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-////
+// Class P3MSolver
+//   Poisson solver for periodic boundaries, based on FFTs.
+//   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
-
-#include <Kokkos_MathematicalFunctions.hpp>
-#include <algorithm>
-
-#include "Utility/IpplException.h"
-
-#include "Field/HaloCells.h"
-#include "P3MSolver.h"
+//   Uses a convolution with a Green's function given by:
+//      G(r) = ke * erf(alpha * r) / r,
+//   where ke = Coulomb constant,
+//         alpha = controls long-range interaction.
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 namespace ippl {
 
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver(rhs_type& rhs, ParameterList& fftparams)
-        : mesh_mp(nullptr)
+    template <typename FieldLHS, typename FieldRHS>
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver()
+        : Base()
+        , mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
         setDefaultParameters();
-        this->setRhs(rhs);
-
-        this->params_m.merge(fftparams);
-        this->params_m.update("output_type", Base::SOL);
-
-        initializeFields();
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::P3MSolver(lhs_type& lhs, rhs_type& rhs,
-                                                           ParameterList& fftparams, int sol)
+    template <typename FieldLHS, typename FieldRHS>
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(rhs_type& rhs, ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
         setDefaultParameters();
+
+        this->params_m.merge(params);
+        this->params_m.update("output_type", Base::SOL);
+
         this->setRhs(rhs);
+    }
+
+    template <typename FieldLHS, typename FieldRHS>
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params)
+        : mesh_mp(nullptr)
+        , layout_mp(nullptr)
+        , meshComplex_m(nullptr)
+        , layoutComplex_m(nullptr) {
+        setDefaultParameters();
+
+        this->params_m.merge(params);
+
         this->setLhs(lhs);
+        this->setRhs(rhs);
+    }
 
-        this->params_m.merge(fftparams);
-        this->params_m.update("output_type", sol);
-
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
+        Base::setRhs(rhs);
         initializeFields();
     }
 
     /////////////////////////////////////////////////////////////////////////
     // initializeFields method, called in constructor
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::initializeFields() {
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::initializeFields() {
         static_assert(Dim == 3, "Dimension other than 3 not supported in P3MSolver!");
 
         // get layout and mesh
@@ -103,7 +116,8 @@ namespace ippl {
         }
 
         // create mesh and layout for the real to complex FFT transformed fields
-        meshComplex_m = std::unique_ptr<Mesh>(new Mesh(domainComplex_m, hr_m, origin));
+        using mesh_type = typename lhs_type::Mesh_t;
+        meshComplex_m   = std::unique_ptr<mesh_type>(new mesh_type(domainComplex_m, hr_m, origin));
         layoutComplex_m =
             std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domainComplex_m, decomp));
 
@@ -132,7 +146,7 @@ namespace ippl {
                 case 0:
                     Kokkos::parallel_for(
                         "Helper index Green field initialization",
-                        ippl::getRangePolicy<3>(view, nghost),
+                        ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int ig = i + ldom[0].first() - nghost;
@@ -151,7 +165,7 @@ namespace ippl {
                 case 1:
                     Kokkos::parallel_for(
                         "Helper index Green field initialization",
-                        ippl::getRangePolicy<3>(view, nghost),
+                        ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int jg = j + ldom[1].first() - nghost;
@@ -164,7 +178,7 @@ namespace ippl {
                 case 2:
                     Kokkos::parallel_for(
                         "Helper index Green field initialization",
-                        ippl::getRangePolicy<3>(view, nghost),
+                        ippl::getRangePolicy(view, nghost),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int kg = k + ldom[2].first() - nghost;
@@ -186,8 +200,8 @@ namespace ippl {
 
     /////////////////////////////////////////////////////////////////////////
     // compute electric potential by solving Poisson's eq given a field rho and mesh spacings hr
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::solve() {
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::solve() {
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
 
@@ -220,20 +234,16 @@ namespace ippl {
         // convolution becomes multiplication in FFT
         rhotr_m = rhotr_m * grntr_m;
 
-        // if output_type is SOL or SOL_AND_GRAD, we caculate solution
-        if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
-            // inverse FFT of the product and store the electrostatic potential in rho2_mr
-            fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
-        }
+        // inverse FFT of the product and store the electrostatic potential in rho2_mr
+        fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
 
         // normalization is double counted due to 2 transforms
         *(this->rhs_mp) = *(this->rhs_mp) * nr_m[0] * nr_m[1] * nr_m[2];
         // discretization of integral requires h^3 factor
         *(this->rhs_mp) = *(this->rhs_mp) * hr_m[0] * hr_m[1] * hr_m[2];
 
-        // if we want gradient of phi = Efield instead of doing grad in Fourier domain
-        // this is only possible if SOL_AND_GRAD is output type
-        if (out == Base::SOL_AND_GRAD) {
+        // if we want gradient of phi = Efield
+        if (out == Base::SOL_AND_GRAD || out == Base::GRAD) {
             *(this->lhs_mp) = -grad(*this->rhs_mp);
         }
     };
@@ -241,8 +251,8 @@ namespace ippl {
     ////////////////////////////////////////////////////////////////////////
     // calculate FFT of the Green's function
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void P3MSolver<Tlhs, Trhs, Dim, Mesh, Centering>::greensFunction() {
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::greensFunction() {
         grn_m = 0.0;
 
         // This alpha parameter is a choice for the Green's function
@@ -268,7 +278,7 @@ namespace ippl {
 
         // Kokkos parallel for loop to find (0,0,0) point and regularize
         Kokkos::parallel_for(
-            "Assign Green's function ", ippl::getRangePolicy<3>(view, nghost),
+            "Assign Green's function ", ippl::getRangePolicy(view, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // go from local indices to global
                 const int ig = i + ldom[0].first() - nghost;

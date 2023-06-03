@@ -5,10 +5,11 @@
 // Everything else (namely the vector field E and the particle position) are in single
 // precision, since the choice increases memory saving, without losing precision.
 //    Usage:
-//     srun ./LandauDamping <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres> <ovfactor> --info 10
+//     srun ./LandauDamping
+//                  <nx> [<ny>...] <Np> <Nt> <stype>
+//                  <lbthres> --overallocate <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
-//     ny       = No. cell-centered points in the y-direction
-//     nz       = No. cell-centered points in the z-direction
+//     ny...    = No. cell-centered points in the y-, z-, ...-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
 //     stype    = Field solver type e.g., FFT
@@ -158,8 +159,6 @@ int main(int argc, char* argv[]) {
     Inform msg("LandauDamping");
     Inform msg2all("LandauDamping", INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(std::atof(argv[8]));
-
     auto start = std::chrono::high_resolution_clock::now();
     int arg    = 1;
 
@@ -213,7 +212,7 @@ int main(int argc, char* argv[]) {
 
     const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);
-    FieldLayout_t FL(domain, decomp, isAllPeriodic);
+    FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
     PLayout_t<float, Dim> PL(FL, mesh);
 
     std::string solver = argv[arg++];
@@ -241,17 +240,14 @@ int main(int argc, char* argv[]) {
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
-            "Assign initial rho based on PDF", ippl::getRangePolicy<Dim>(rhoview, nghost),
+            "Assign initial rho based on PDF", ippl::getRangePolicy(rhoview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
-                Vector_t<double, Dim> xvec = args;
-                for (unsigned d = 0; d < Dim; d++) {
-                    xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hr[d] + origin[d];
-                }
+                Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
 
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // ippl::apply accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                ippl::apply<Dim>(rhoview, args) = PDF(xvec, alpha, kw, Dim);
+                ippl::apply(rhoview, args) = PDF(xvec, alpha, kw, Dim);
             });
 
         Kokkos::fence();

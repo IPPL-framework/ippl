@@ -8,7 +8,7 @@
 //     nz       = No. cell-centered points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
-//     stype    = Field solver type (FFT and CG supported)
+//     stype    = Field solver type (FFT, CG, P3M, and OPEN supported)
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
 //                particle load balancing occurs. A value of 0.01 is good for many typical
@@ -243,14 +243,10 @@ int main(int argc, char* argv[]) {
         isFirstRepartition             = true;
         const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
         const int nghost               = P->rho_m.getNghost();
-        using mdrange_type             = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         auto rhoview                   = P->rho_m.getView();
 
         Kokkos::parallel_for(
-            "Assign initial rho based on PDF",
-            mdrange_type({nghost, nghost, nghost},
-                         {rhoview.extent(0) - nghost, rhoview.extent(1) - nghost,
-                          rhoview.extent(2) - nghost}),
+            "Assign initial rho based on PDF", P->rho_m.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // local to global index conversion
                 const size_t ig = i + lDom[0].first() - nghost;

@@ -36,7 +36,7 @@ public:
     using field_type = ippl::Field<T, Dim, mesh_type<Dim>, centering_type<Dim>>;
 
     template <unsigned Dim>
-    using bc_type = ippl::BConds<T, Dim, mesh_type<Dim>, centering_type<Dim>>;
+    using bc_type = ippl::BConds<field_type<Dim>, Dim>;
 
     FieldBCTest() {
         computeGridSizes(nPoints);
@@ -111,11 +111,11 @@ public:
                     index_type coords[Dim] = {args...};
                     if (checkLower) {
                         coords[d] = 0;
-                        EXPECT_DOUBLE_EQ(expected, apply<Dim>(HostF, coords));
+                        EXPECT_DOUBLE_EQ(expected, apply(HostF, coords));
                     }
                     if (checkUpper) {
                         coords[d] = N - 1;
-                        EXPECT_DOUBLE_EQ(expected, apply<Dim>(HostF, coords));
+                        EXPECT_DOUBLE_EQ(expected, apply(HostF, coords));
                     }
                 });
         }
@@ -144,9 +144,8 @@ TYPED_TEST(FieldBCTest, PeriodicBC) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field,
                                    typename TestFixture::bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
-            bcField[i] = std::make_shared<
-                ippl::PeriodicFace<TypeParam, Dim, typename TestFixture::mesh_type<Dim>,
-                                   typename TestFixture::centering_type<Dim>>>(i);
+            bcField[i] =
+                std::make_shared<ippl::PeriodicFace<typename TestFixture::field_type<Dim>>>(i);
         }
         bcField.findBCNeighbors(*field);
         bcField.apply(*field);
@@ -161,9 +160,7 @@ TYPED_TEST(FieldBCTest, NoBC) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field,
                                    typename TestFixture::bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
-            bcField[i] = std::make_shared<
-                ippl::NoBcFace<TypeParam, Dim, typename TestFixture::mesh_type<Dim>,
-                               typename TestFixture::centering_type<Dim>>>(i);
+            bcField[i] = std::make_shared<ippl::NoBcFace<typename TestFixture::field_type<Dim>>>(i);
         }
         bcField.findBCNeighbors(*field);
         bcField.apply(*field);
@@ -178,9 +175,7 @@ TYPED_TEST(FieldBCTest, ZeroBC) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field,
                                    typename TestFixture::bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
-            bcField[i] = std::make_shared<
-                ippl::ZeroFace<TypeParam, Dim, typename TestFixture::mesh_type<Dim>,
-                               typename TestFixture::centering_type<Dim>>>(i);
+            bcField[i] = std::make_shared<ippl::ZeroFace<typename TestFixture::field_type<Dim>>>(i);
         }
         bcField.findBCNeighbors(*field);
         bcField.apply(*field);
@@ -195,9 +190,9 @@ TYPED_TEST(FieldBCTest, ConstantBC) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field,
                                    typename TestFixture::bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
-            bcField[i] = std::make_shared<
-                ippl::ConstantFace<TypeParam, Dim, typename TestFixture::mesh_type<Dim>,
-                                   typename TestFixture::centering_type<Dim>>>(i, constant);
+            bcField[i] =
+                std::make_shared<ippl::ConstantFace<typename TestFixture::field_type<Dim>>>(
+                    i, constant);
         }
         bcField.findBCNeighbors(*field);
         bcField.apply(*field);
@@ -212,9 +207,9 @@ TYPED_TEST(FieldBCTest, ExtrapolateBC) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field,
                                    typename TestFixture::bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
-            bcField[i] = std::make_shared<
-                ippl::ExtrapolateFace<TypeParam, Dim, typename TestFixture::mesh_type<Dim>,
-                                      typename TestFixture::centering_type<Dim>>>(i, 0.0, 1.0);
+            bcField[i] =
+                std::make_shared<ippl::ExtrapolateFace<typename TestFixture::field_type<Dim>>>(
+                    i, 0.0, 1.0);
         }
         bcField.findBCNeighbors(*field);
         bcField.apply(*field);

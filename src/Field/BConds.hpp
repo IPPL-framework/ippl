@@ -19,8 +19,8 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 namespace ippl {
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void BConds<T, Dim, Mesh, Centering>::write(std::ostream& os) const {
+    template <typename Field, unsigned Dim>
+    void BConds<Field, Dim>::write(std::ostream& os) const {
         os << "BConds: (" << std::endl;
         const_iterator it = bc_m.begin();
         for (; it != bc_m.end() - 1; ++it) {
@@ -31,8 +31,8 @@ namespace ippl {
         os << std::endl << ")";
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void BConds<T, Dim, Mesh, Centering>::findBCNeighbors(Field<T, Dim, Mesh, Centering>& field) {
+    template <typename Field, unsigned Dim>
+    void BConds<Field, Dim>::findBCNeighbors(Field& field) {
         for (auto& bc : bc_m) {
             bc->findBCNeighbors(field);
         }
@@ -40,8 +40,8 @@ namespace ippl {
         Ippl::Comm->barrier();
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void BConds<T, Dim, Mesh, Centering>::apply(Field<T, Dim, Mesh, Centering>& field) {
+    template <typename Field, unsigned Dim>
+    void BConds<Field, Dim>::apply(Field& field) {
         for (auto& bc : bc_m) {
             bc->apply(field);
         }
@@ -49,8 +49,8 @@ namespace ippl {
         Ippl::Comm->barrier();
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    bool BConds<T, Dim, Mesh, Centering>::changesPhysicalCells() const {
+    template <typename Field, unsigned Dim>
+    bool BConds<Field, Dim>::changesPhysicalCells() const {
         for (const auto& bc : bc_m) {
             if (bc->changesPhysicalCells())
                 return true;

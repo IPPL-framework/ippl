@@ -1,17 +1,26 @@
 //
-//// Class P3MSolver
-////   Poisson Solver for preiodic boundaries.
-////
-//// This file is part of IPPL.
-////
-//// IPPL is free software: you can redistribute it and/or modify
-//// it under the terms of the GNU General Public License as published by
-//// the Free Software Foundation, either version 3 of the License, or
-//// (at your option) any later version.
-////
-//// You should have received a copy of the GNU General Public License
-//// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-////
+// Class P3MSolver
+//   Poisson solver for periodic boundaries, based on FFTs.
+//   Solves laplace(phi) = -rho, and E = -grad(phi).
+//
+//   Uses a convolution with a Green's function given by:
+//      G(r) = ke * erf(alpha * r) / r,
+//   where ke = Coulomb constant,
+//         alpha = controls long-range interaction.
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 #ifndef P3M_SOLVER_H_
@@ -27,35 +36,42 @@
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    class P3MSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
-    public:
-        // types for LHS and RHS
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
+    template <typename FieldLHS, typename FieldRHS>
+    class P3MSolver : public Electrostatics<FieldLHS, FieldRHS> {
+        constexpr static unsigned Dim = FieldLHS::dim;
+        using Trhs                    = typename FieldRHS::value_type;
+        using mesh_type               = typename FieldRHS::Mesh_t;
 
+    public:
         // type of output
-        using Base = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
+        using Base = Electrostatics<FieldLHS, FieldRHS>;
+
+        // types for LHS and RHS
+        using typename Base::lhs_type, typename Base::rhs_type;
+
+        // define a type for the 3 dimensional real to complex Fourier transform
+        typedef FFT<RCTransform, FieldRHS> FFT_t;
 
         // define a type for a 3 dimensional field (e.g. charge density field)
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
-        typedef Field<Trhs, Dim, Mesh, Centering> Field_t;
-        typedef Field<int, Dim, Mesh, Centering> IField_t;
-        typedef Field<Kokkos::complex<Trhs>, Dim, Mesh, Centering> CxField_t;
+        typedef FieldRHS Field_t;
+        typedef Field<int, Dim, mesh_type, typename FieldLHS::Centering_t> IField_t;
+        typedef typename FFT_t::ComplexField CxField_t;
         typedef Vector<Trhs, Dim> Vector_t;
 
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
 
-        // define a type for the 3 dimensional real to complex Fourier transform
-        typedef FFT<RCTransform, Dim, Trhs, Mesh, Centering> FFT_t;
-
         // constructor and destructor
-        P3MSolver(rhs_type& rhs, ParameterList& fftparams);
-        P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams,
-                  int sol = Base::SOL_AND_GRAD);
+        P3MSolver();
+        P3MSolver(rhs_type& rhs, ParameterList& params);
+        P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
         ~P3MSolver() = default;
+
+        // override the setRhs function of the Solver class
+        // since we need to call initializeFields()
+        void setRhs(rhs_type& rhs) override;
 
         // solve the Poisson equation
         // more specifically, compute the scalar potential given a density field rho
@@ -80,11 +96,11 @@ namespace ippl {
         std::unique_ptr<FFT_t> fft_m;
 
         // mesh and layout objects for rho_m (RHS)
-        Mesh* mesh_mp;
+        mesh_type* mesh_mp;
         FieldLayout_t* layout_mp;
 
         // mesh and layout objects for the Fourier transformed Complex fields
-        std::unique_ptr<Mesh> meshComplex_m;
+        std::unique_ptr<mesh_type> meshComplex_m;
         std::unique_ptr<FieldLayout_t> layoutComplex_m;
 
         // domains for the various fields
@@ -125,6 +141,5 @@ namespace ippl {
     };
 }  // namespace ippl
 
-#include "P3MSolver.hpp"
-
+#include "Solver/P3MSolver.hpp"
 #endif

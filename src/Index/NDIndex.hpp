@@ -66,24 +66,27 @@ namespace ippl {
     template <unsigned Dim>
     inline std::ostream& operator<<(std::ostream& out, const NDIndex<Dim>& idx) {
         out << '{';
-        for (unsigned d = 0; d < Dim; ++d)
+        for (unsigned d = 0; d < Dim; ++d) {
             out << idx[d] << ((d == Dim - 1) ? '}' : ',');
+        }
         return out;
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION NDIndex<Dim> NDIndex<Dim>::intersect(const NDIndex<Dim>& ndi) const {
         NDIndex<Dim> r;
-        for (unsigned d = 0; d < Dim; ++d)
+        for (unsigned d = 0; d < Dim; ++d) {
             r[d] = indices_m[d].intersect(ndi[d]);
+        }
         return r;
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION NDIndex<Dim> NDIndex<Dim>::grow(int ncells) const {
         NDIndex<Dim> r;
-        for (unsigned d = 0; d < Dim; ++d)
+        for (unsigned d = 0; d < Dim; ++d) {
             r[d] = indices_m[d].grow(ncells);
+        }
         return r;
     }
 
@@ -97,46 +100,54 @@ namespace ippl {
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::touches(const NDIndex<Dim>& a) const {
         bool touch = true;
-        for (unsigned int d = 0; (d < Dim) && touch; ++d)
+        for (unsigned int d = 0; (d < Dim) && touch; ++d) {
             touch = touch && indices_m[d].touches(a.indices_m[d]);
+        }
         return touch;
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::contains(const NDIndex<Dim>& a) const {
         bool cont = true;
-        for (unsigned int d = 0; (d < Dim) && cont; ++d)
+        for (unsigned int d = 0; (d < Dim) && cont; ++d) {
             cont = cont && indices_m[d].contains(a.indices_m[d]);
+        }
         return cont;
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d,
                                                     int i) const {
-        if (&l != this)
+        if (&l != this) {
             l = *this;
-        if (&r != this)
+        }
+        if (&r != this) {
             r = *this;
+        }
         return indices_m[d].split(l[d], r[d], i);
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d,
                                                     double a) const {
-        if (&l != this)
+        if (&l != this) {
             l = *this;
-        if (&r != this)
+        }
+        if (&r != this) {
             r = *this;
+        }
         return indices_m[d].split(l[d], r[d], a);
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r,
                                                     unsigned d) const {
-        if (&l != this)
+        if (&l != this) {
             l = *this;
-        if (&r != this)
+        }
+        if (&r != this) {
             r = *this;
+        }
         return indices_m[d].split(l[d], r[d]);
     }
 
@@ -144,11 +155,12 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r) const {
         unsigned int max_dim    = 0;
         unsigned int max_length = 0;
-        for (unsigned int d = 0; d < Dim; ++d)
+        for (unsigned int d = 0; d < Dim; ++d) {
             if (indices_m[d].length() > max_length) {
                 max_dim    = d;
                 max_length = indices_m[d].length();
             }
+        }
         return split(l, r, max_dim);
     }
 
