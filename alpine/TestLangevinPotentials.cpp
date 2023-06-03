@@ -21,28 +21,13 @@ KOKKOS_INLINE_FUNCTION double HexactDistribution(const VectorD_t& v, const doubl
 
 KOKKOS_INLINE_FUNCTION double analyticalD00(const VectorD_t& v, const double& numberDensity,
                                             const double& vth) {
-    return Kokkos::sqrt(2) * numberDensity * vth * (-Kokkos::pow(vth, 2) + Kokkos::pow(v[0], 2))
+    return Kokkos::sqrt(2) * numberDensity * vth
+               * (-2 * Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
                / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
                               / (2. * Kokkos::pow(vth, 2)))
-                  * Kokkos::sqrt(pi) * Kokkos::pow(vth, 4))
-           + (2 * Kokkos::pow(v[0], 2)
-              * (-Kokkos::pow(vth, 2) + Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
-                 + Kokkos::pow(v[2], 2)))
-                 / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
-                                / (2. * Kokkos::pow(vth, 2)))
-                    * Kokkos::sqrt(Kokkos::numbers::pi_v<double>) * Kokkos::pow(vth, 2)
-                    * Kokkos::pow(
-                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2))
-           + ((Kokkos::pow(vth, 2) + Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
-               + Kokkos::pow(v[2], 2))
-              * (-Kokkos::pow(v[0], 4)
-                 + Kokkos::pow(vth, 2) * (Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
-                 - Kokkos::pow(v[0], 2) * (Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))))
-                 / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
-                                / (2. * Kokkos::pow(vth, 2)))
-                    * Kokkos::sqrt(Kokkos::numbers::pi_v<double>) * Kokkos::pow(vth, 4)
-                    * Kokkos::pow(
-                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2))
+                  * Kokkos::sqrt(Kokkos::numbers::pi_v<double>)
+                  * Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
+                                2))
            + ((Kokkos::pow(vth, 2)
                    * (2 * Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2], 2))
                + (Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
@@ -57,28 +42,24 @@ KOKKOS_INLINE_FUNCTION double analyticalD00(const VectorD_t& v, const double& nu
 
 KOKKOS_INLINE_FUNCTION double analyticalD01(const VectorD_t& v, const double& numberDensity,
                                             const double& vth) {
-    return Kokkos::sqrt(2) * numberDensity * vth * (v[0] * v[1])
-               / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
-                              / (2. * Kokkos::pow(vth, 2)))
-                  * Kokkos::sqrt(pi) * Kokkos::pow(vth, 4))
+    return Kokkos::sqrt(2.0) * numberDensity * vth * (-3.0 * v[0] * v[1])
+               / (Kokkos::exp(
+                      (Kokkos::pow(v[0], 2.0) + Kokkos::pow(v[1], 2.0) + Kokkos::pow(v[2], 2.0))
+                      / (2.0 * Kokkos::pow(vth, 2.0)))
+                  * Kokkos::sqrt(Kokkos::numbers::pi_v<double>)
+                  * Kokkos::pow(
+                      Kokkos::pow(v[0], 2.0) + Kokkos::pow(v[1], 2.0) + Kokkos::pow(v[2], 2.0),
+                      2.0))
            - (v[0] * v[1]
-              * (3 * Kokkos::pow(vth, 4)
-                 + Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
-                               2)))
-                 / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
-                                / (2. * Kokkos::pow(vth, 2)))
-                    * Kokkos::sqrt(Kokkos::numbers::pi_v<double>) * Kokkos::pow(vth, 4)
+              * (-3.0 * Kokkos::pow(vth, 2.0) + Kokkos::pow(v[0], 2.0) + Kokkos::pow(v[1], 2.0)
+                 + Kokkos::pow(v[2], 2.0))
+              * Kokkos::erf(Kokkos::sqrt(Kokkos::pow(v[0], 2.0) + Kokkos::pow(v[1], 2.0)
+                                         + Kokkos::pow(v[2], 2.0))
+                            / (Kokkos::sqrt(2.0) * vth)))
+                 / (Kokkos::sqrt(2.0) * vth
                     * Kokkos::pow(
-                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2))
-           - (v[0] * v[1]
-              * (-3 * Kokkos::pow(vth, 2) + Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
-                 + Kokkos::pow(v[2], 2))
-              * Kokkos::erf(
-                  Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
-                  / (Kokkos::sqrt(2) * vth)))
-                 / (Kokkos::sqrt(2) * vth
-                    * Kokkos::pow(
-                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2.5));
+                        Kokkos::pow(v[0], 2.0) + Kokkos::pow(v[1], 2.0) + Kokkos::pow(v[2], 2.0),
+                        2.5));
 }
 
 KOKKOS_INLINE_FUNCTION double GexactDistribution(const VectorD_t& v, const double& numberDensity,
@@ -184,7 +165,7 @@ int main(int argc, char* argv[]) {
         P->rho_m.setFieldBC(bcField);
 
         bunch_type bunchBuffer(PL);
-        std::string frictionSolverName = "HOCKNEY";
+        std::string frictionSolverName = "VICO";
         P->initAllSolvers(FRICTION_SOLVER);
 
         P->loadbalancethreshold_m = LB_THRESHOLD;
@@ -196,13 +177,20 @@ int main(int argc, char* argv[]) {
         //////////////////////////////////////////////
 
         // Create scalar Field for Rosenbluth Potentials
-        auto HfieldExact   = P->fv_m.deepCopy();
-        auto GfieldExact   = P->fv_m.deepCopy();
-        auto D00fieldExact = P->fv_m.deepCopy();
-        auto D01fieldExact = P->fv_m.deepCopy();
+        Field_t<Dim> HfieldExact   = P->fv_m.deepCopy();
+        Field_t<Dim> GfieldExact   = P->fv_m.deepCopy();
+        Field_t<Dim> D00fieldExact = P->fv_m.deepCopy();
+        Field_t<Dim> D01fieldExact = P->fv_m.deepCopy();
 
-        // Create scalar Field for identities that must hold
-        auto DtraceDiff = P->fv_m.deepCopy();
+        // Fields for identities that must hold
+        Field_t<Dim> Dtrace     = P->fv_m.deepCopy();
+        Field_t<Dim> DtraceDiff = P->fv_m.deepCopy();
+
+        Field_t<Dim> D0div     = P->fv_m.deepCopy();
+        Field_t<Dim> D1div     = P->fv_m.deepCopy();
+        Field_t<Dim> D2div     = P->fv_m.deepCopy();
+        VField_t<Dim> Ddiv     = P->Fd_m.deepCopy();
+        VField_t<Dim> DdivDiff = P->Fd_m.deepCopy();
 
         //////////////////////////////////////////////
         // PARTICLE CREATION & INITIAL SPACE CHARGE //
@@ -232,23 +220,25 @@ int main(int argc, char* argv[]) {
         // Initialize Maxwellian Velocity Distribution
         const ippl::NDIndex<Dim>& lDom = P->velocitySpaceFieldLayout_m.getLocalNDIndex();
         const int nghost               = P->fv_m.getNghost();
-        auto fvView                    = P->fv_m.getView();
-        auto HviewExact                = HfieldExact.getView();
-        auto GviewExact                = GfieldExact.getView();
-        auto D00viewExact              = D00fieldExact.getView();
-        auto D01viewExact              = D01fieldExact.getView();
-        auto DtraceDiffView            = DtraceDiff.getView();
         VectorD_t hv                   = P->hv_m;
         VectorD_t vOrigin              = P->vmin_m;
+
+        Field_view_t fvView         = P->fv_m.getView();
+        Field_view_t HviewExact     = HfieldExact.getView();
+        Field_view_t GviewExact     = GfieldExact.getView();
+        Field_view_t D00viewExact   = D00fieldExact.getView();
+        Field_view_t D01viewExact   = D01fieldExact.getView();
+        Field_view_t DtraceView     = Dtrace.getView();
+        Field_view_t DtraceDiffView = DtraceDiff.getView();
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
             "Assign initial velocity PDF and reference solution for H",
-            ippl::getRangePolicy<Dim>(fvView, nghost), KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::getRangePolicy<Dim>(fvView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
                 Vector_t<Dim> xvec = args;
                 for (unsigned d = 0; d < Dim; d++) {
-                    xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hv[d] + vOrigin[d];
+                    xvec[d] = (xvec[d] + lDom[d].first() + 0.5) * hv[d] + vOrigin[d] - hv[d];
                 }
 
                 // ippl::apply<unsigned> accesses the view at the given indices and obtains a
@@ -294,10 +284,9 @@ int main(int argc, char* argv[]) {
         Hdiff      = Hdiff - HfieldExact;
         dumpVTKScalar(Hdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Hdiff");
 
+        // Multiply with `-1.0 \Gamma` as solver returns $- \nabla H(\vec v)$
+        P->Fd_m = -1.0 * P->gamma_m * P->Fd_m;
         P->gatherFd();
-
-        // Multiply with `-1.0` as solver returns $- \nabla H(\vec v)$
-        P->p_Fd_m = -1.0 * P->p_Fd_m * P->gamma_m;
 
         // Dump actual friction coefficients
         P->dumpFdField(nv, OUT_DIR);
@@ -309,11 +298,11 @@ int main(int argc, char* argv[]) {
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
             "Assign initial velocity PDF and reference solution for G",
-            ippl::getRangePolicy<Dim>(fvView, nghost), KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::getRangePolicy<Dim>(fvView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
                 Vector_t<Dim> xvec = args;
                 for (unsigned d = 0; d < Dim; d++) {
-                    xvec[d] = (xvec[d] + lDom[d].first() - nghost + 0.5) * hv[d] + vOrigin[d];
+                    xvec[d] = (xvec[d] + lDom[d].first() + 0.5) * hv[d] + vOrigin[d] - hv[d];
                 }
 
                 // ippl::apply<unsigned> accesses the view at the given indices and obtains a
@@ -356,9 +345,9 @@ int main(int argc, char* argv[]) {
         dumpVTKScalar(Gdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gdiff");
 
         // Compute Hessian of $g(\vec v)$
-        P->D_m = hess(P->fv_m);
+        P->D_m = P->gamma_m * hess(P->fv_m);
 
-        // Extract rows to separate fields
+        // Extract rows to separate Vector-Fields
         P->extractRows(P->D_m, P->D0_m, P->D1_m, P->D2_m);
 
         // Dump actual diffusion coefficients
@@ -371,35 +360,62 @@ int main(int argc, char* argv[]) {
         // COMPUTE IDENTITIES THAT MUST HOLD //
         ///////////////////////////////////////
 
-        // $Tr(\boldsymbol D) - h = 0$
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        ////////////////////////////////////
+        // $Tr(\boldsymbol D) / \Gamma = h$ //
+        ////////////////////////////////////
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
         Kokkos::parallel_for(
             "Gather trace of $D$",
             mdrange_type({nghost, nghost, nghost},
-                         {DtraceDiffView.extent(0) - nghost, DtraceDiffView.extent(1) - nghost,
-                          DtraceDiffView.extent(2) - nghost}),
+                         {DtraceView.extent(0) - nghost, DtraceView.extent(1) - nghost,
+                          DtraceView.extent(2) - nghost}),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                DtraceDiffView(i, j, k) = P->D0_m(i, j, k)[0] + P->D1_m(i, j, k)[1]
-                                          + P->D2_m(i, j, k)[2] - HfieldExact(i, j, k);
+                DtraceView(i, j, k) =
+                    P->D0_m(i, j, k)[0] + P->D1_m(i, j, k)[1] + P->D2_m(i, j, k)[2];
             });
 
         Kokkos::fence();
 
+        DtraceDiff = Dtrace / P->gamma_m - HfieldExact;
+
+        dumpVTKScalar(Dtrace, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Dtrace");
         dumpVTKScalar(DtraceDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DtraceDiff");
+
+        ///////////////////////////////////////
+        // $\nabla \cdot \boldsymbol D = Fd$ //
+        ///////////////////////////////////////
+
+        P->extractCols(P->D_m, P->D0_m, P->D1_m, P->D2_m);
+
+        D0div = div(P->D0_m);
+        D1div = div(P->D1_m);
+        D2div = div(P->D2_m);
+
+        constructVFieldFromFields(Ddiv, D0div, D1div, D2div);
+
+        DdivDiff = Ddiv - P->Fd_m;
+
+        dumpVTKVector(Ddiv, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Ddiv");
+        dumpVTKVector(DdivDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DdivDiff");
 
         /////////////////////////////
         // COMPUTE RELATIVE ERRORS //
         /////////////////////////////
 
-        double HrelError      = norm(Hdiff) / norm(HfieldExact);
-        double GrelError      = norm(Gdiff) / norm(GfieldExact);
-        double DtraceRelError = norm(DtraceDiff) / norm(HfieldExact);
+        const int shift       = 2 * nghost;
+        double HrelError      = subfieldNorm(Hdiff, shift) / subfieldNorm(HfieldExact, shift);
+        double GrelError      = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
+        double DtraceRelError = subfieldNorm(DtraceDiff, shift) / subfieldNorm(HfieldExact, shift);
+        VectorD_t DdivDiffRelError = L2VectorNorm(DdivDiff, shift) / L2VectorNorm(P->Fd_m, shift);
         msg << "h(v) rel. error (" << nv << "^3)"
             << ": " << HrelError << endl;
         msg << "g(v) rel. error (" << nv << "^3)"
             << ": " << GrelError << endl;
         msg << "Tr(D) - h = 0 rel. error (" << nv << "^3)"
             << ": " << DtraceRelError << endl;
+        msg << "div(D) - Fd = 0 rel. error (" << nv << "^3)"
+            << ": " << DdivDiffRelError << endl;
     }
 
     msg << "LangevinPotentials: End." << endl;
