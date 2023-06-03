@@ -54,16 +54,14 @@ namespace ippl {
     class ParticleSpatialLayout : public detail::ParticleLayout<T, Dim, PositionProperties...> {
     public:
         using Base = detail::ParticleLayout<T, Dim, PositionProperties...>;
-
-        using position_memory_space    = typename Base::particle_position_type::memory_space;
-        using position_execution_space = typename Base::particle_position_type::execution_space;
+        using typename Base::position_memory_space, typename Base::position_execution_space;
 
         using hash_type   = detail::hash_type<position_memory_space>;
         using locate_type = typename detail::ViewType<int, 1, position_memory_space>::view_type;
         using bool_type   = typename detail::ViewType<bool, 1, position_memory_space>::view_type;
 
         using vector_type    = typename Base::vector_type;
-        using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
+        using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh, position_memory_space>;
 
         using size_type = detail::size_type;
 

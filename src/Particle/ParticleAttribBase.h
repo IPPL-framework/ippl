@@ -37,7 +37,7 @@ namespace ippl {
         template <typename MemorySpace>
         class ParticleAttribBase {
         public:
-            using hash_type       = hash_type<MemorySpace>;
+            using hash_type       = ippl::detail::hash_type<MemorySpace>;
             using memory_space    = MemorySpace;
             using execution_space = typename memory_space::execution_space;
 

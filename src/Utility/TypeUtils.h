@@ -221,7 +221,6 @@ namespace ippl {
             template <typename MemorySpace, typename Filter,
                       std::enable_if_t<!std::is_null_pointer_v<std::decay_t<Filter>>, int> = 0>
             bool copyToSpace(Filter&& predicate) {
-                static_assert(!std::is_null_pointer_v<Filter>);
                 return predicate.template operator()<MemorySpace>();
             }
 

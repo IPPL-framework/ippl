@@ -59,7 +59,10 @@ namespace ippl {
             typedef T value_type;
             typedef std::int64_t index_type;
             typedef Vector<T, Dim> vector_type;
-            using particle_position_type = ParticleAttrib<vector_type, PositionProperties...>;
+
+            using particle_position_type   = ParticleAttrib<vector_type, PositionProperties...>;
+            using position_memory_space    = typename particle_position_type::memory_space;
+            using position_execution_space = typename particle_position_type::execution_space;
 
             typedef std::array<BC, 2 * Dim> bc_container_type;
 
