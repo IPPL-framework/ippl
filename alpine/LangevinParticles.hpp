@@ -33,7 +33,7 @@
 #include "LangevinHelpers.hpp"
 #include "Solver/FFTPoissonSolver.h"
 
-template <unsigned Dim = 3>
+template <unsigned Dim>
 using MField_t = Field<MatrixD_t, Dim>;
 
 template <class PLayout, unsigned Dim = 3>
