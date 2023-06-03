@@ -53,6 +53,8 @@ namespace ippl {
              * 3: upper y-face
              * etc...
              */
+            Kokkos::RangePolicy<typename particle_position_type::execution_space> policy{
+                0, R.getParticleCount()};
             for (unsigned face = 0; face < 2 * Dim; ++face) {
                 // unsigned face = i % Dim;
                 unsigned d   = face / 2;
@@ -65,15 +67,15 @@ namespace ippl {
                         if (isUpper)
                             break;
 
-                        Kokkos::parallel_for("Periodic BC", R.getParticleCount(),
+                        Kokkos::parallel_for("Periodic BC", policy,
                                              PeriodicBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::REFLECTIVE:
-                        Kokkos::parallel_for("Reflective BC", R.getParticleCount(),
+                        Kokkos::parallel_for("Reflective BC", policy,
                                              ReflectiveBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::SINK:
-                        Kokkos::parallel_for("Sink BC", R.getParticleCount(),
+                        Kokkos::parallel_for("Sink BC", policy,
                                              SinkBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::NO:

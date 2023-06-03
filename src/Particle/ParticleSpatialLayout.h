@@ -70,7 +70,7 @@ namespace ippl {
         ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&);
 
         ParticleSpatialLayout()
-            : detail::ParticleLayout<T, Dim>() {}
+            : detail::ParticleLayout<T, Dim, PositionProperties...>() {}
 
         ~ParticleSpatialLayout() = default;
 
