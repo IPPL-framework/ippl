@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
 
     P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
-    // dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "Rho");
+    // dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, nghost, 0, 1.0, OUT_DIR, "Rho");
     // dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
 
     P->dumpBeamStatistics(0, OUT_DIR);
