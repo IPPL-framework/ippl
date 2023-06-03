@@ -347,7 +347,7 @@ namespace ippl {
             for (unsigned j = 0; j < att.size(); j++) {
                 att[j]->unpack(buffer.template getAttribute<memory_space>(j), nrecvs);
             }
-            localNum_m += nrecvs;
         });
+        localNum_m += nrecvs;
     }
 }  // namespace ippl
