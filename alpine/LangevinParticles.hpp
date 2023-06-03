@@ -375,6 +375,29 @@ public:
         Kokkos::fence();
     }
 
+    void extractCols(MField_t<Dim>& M, VField_t<Dim>& V0, VField_t<Dim>& V1, VField_t<Dim>& V2) {
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        const int nghost       = M.getNghost();
+        MField_view_t Mview    = M.getView();
+        VField_view_t V0view   = V0.getView();
+        VField_view_t V1view   = V1.getView();
+        VField_view_t V2view   = V2.getView();
+        ippl::parallel_for(
+            "Extract cols into separate Fields", ippl::getRangePolicy<Dim>(Mview, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                ippl::apply<Dim>(V0view, args) = {ippl::apply<Dim>(Mview, args)[0][0]
+                                                  * ippl::apply<Dim>(Mview, args)[1][0]
+                                                  * ippl::apply<Dim>(Mview, args)[2][0]};
+                ippl::apply<Dim>(V1view, args) = {ippl::apply<Dim>(Mview, args)[0][1]
+                                                  * ippl::apply<Dim>(Mview, args)[1][1]
+                                                  * ippl::apply<Dim>(Mview, args)[2][1]};
+                ippl::apply<Dim>(V2view, args) = {ippl::apply<Dim>(Mview, args)[0][2]
+                                                  * ippl::apply<Dim>(Mview, args)[1][2]
+                                                  * ippl::apply<Dim>(Mview, args)[2][2]};
+            });
+        Kokkos::fence();
+    }
+
     void gatherHessian() {
         extractRows(D_m, D0_m, D1_m, D2_m);
         gather(p_D0_m, D0_m, this->P);
