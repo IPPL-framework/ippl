@@ -32,26 +32,26 @@ public:
     using mesh_type = ippl::UniformCartesian<double, Dim>;
 
     template <unsigned Dim>
-    using playout_type = ippl::ParticleSpatialLayout<double, Dim, Kokkos::HostSpace>;
+    using playout_type = ippl::ParticleSpatialLayout<double, Dim, mesh_type<Dim>>;
 
     template <unsigned Dim>
     using RegionLayout_t =
-        ippl::detail::RegionLayout<double, Dim, mesh_type<Dim>, Kokkos::HostSpace>;
+        typename ippl::detail::RegionLayout<double, Dim, mesh_type<Dim>>::uniform_type;
 
-    typedef ippl::ParticleAttrib<int> ER_t;
+    typedef ippl::ParticleAttrib<int> rank_type;
 
     template <class PLayout>
-    struct Bunch : public ippl::ParticleBase<PLayout, Kokkos::OpenMP> {
+    struct Bunch : public ippl::ParticleBase<PLayout> {
         Bunch(PLayout& playout)
-            : ippl::ParticleBase<PLayout, Kokkos::OpenMP>(playout) {
+            : ippl::ParticleBase<PLayout>(playout) {
             this->addAttribute(expectedRank);
             this->addAttribute(Q);
         }
 
         ~Bunch() {}
 
-        typedef ippl::ParticleAttrib<int> rank_type;
         typedef ippl::ParticleAttrib<double> charge_container_type;
+
         rank_type expectedRank;
         charge_container_type Q;
 
@@ -132,9 +132,9 @@ public:
         using size_type    = typename RegionLayout_t<Dim>::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
 
-        auto& positions     = bunch->R.getView();
-        region_view Regions = RLayout.getdLocalRegions();
-        ER_t::view_type ER  = bunch->expectedRank.getView();
+        auto& positions         = bunch->R.getView();
+        region_view Regions     = RLayout.getdLocalRegions();
+        rank_type::view_type ER = bunch->expectedRank.getView();
 
         Kokkos::parallel_for(
             "Expected Rank", mdrange_type({0, 0}, {ER.extent(0), Regions.extent(0)}),
@@ -167,7 +167,7 @@ TEST_F(ParticleSendRecv, SendAndRecieve) {
         bunch_type<Dim> bunchBuffer(pl);
         pl.update(*bunch, bunchBuffer);
 
-        ER_t::view_type::host_mirror_type ER_host = bunch->expectedRank.getHostMirror();
+        rank_type::view_type::host_mirror_type ER_host = bunch->expectedRank.getHostMirror();
         Kokkos::resize(ER_host, bunch->expectedRank.size());
         Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
 

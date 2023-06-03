@@ -60,8 +60,9 @@ namespace ippl {
         using locate_type = typename detail::ViewType<int, 1, position_memory_space>::view_type;
         using bool_type   = typename detail::ViewType<bool, 1, position_memory_space>::view_type;
 
-        using vector_type    = typename Base::vector_type;
-        using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh, position_memory_space>;
+        using vector_type = typename Base::vector_type;
+        using RegionLayout_t =
+            typename detail::RegionLayout<T, Dim, Mesh, position_memory_space>::uniform_type;
 
         using size_type = detail::size_type;
 

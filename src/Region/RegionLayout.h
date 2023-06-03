@@ -38,6 +38,8 @@
 
 #include "Types/ViewTypes.h"
 
+#include "Utility/TypeUtils.h"
+
 #include "Region/NDRegion.h"
 
 namespace ippl {
@@ -45,10 +47,15 @@ namespace ippl {
 
         template <typename T, unsigned Dim, class Mesh, class... Properties>
         class RegionLayout {
+            template <typename... Props>
+            using base_type = RegionLayout<T, Dim, Mesh, Props...>;
+
         public:
             using NDRegion_t       = NDRegion<T, Dim>;
             using view_type        = typename ViewType<NDRegion_t, 1, Properties...>::view_type;
             using host_mirror_type = typename view_type::host_mirror_type;
+
+            using uniform_type = typename CreateUniformType<base_type, view_type>::type;
 
             // Default constructor.  To make this class actually work, the user
             // will have to later call 'changeDomain' to set the proper Domain

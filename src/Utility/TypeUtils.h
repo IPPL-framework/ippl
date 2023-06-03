@@ -159,6 +159,25 @@ namespace ippl {
         using VariantWithVerifier =
             typename ConstructVariant<std::variant<Types...>, std::variant<>, Verifier>::type;
 
+        template <template <typename...> class, typename>
+        struct Forward;
+
+        template <template <typename...> class Type, typename... Spaces>
+        struct Forward<Type, std::variant<Spaces...>> {
+            using type = Type<Spaces...>;
+        };
+
+        template <template <typename...> class Type, typename T, typename... Properties>
+        struct Forward<Type, Kokkos::View<T, Properties...>> {
+            using type = Type<Properties...>;
+        };
+
+        template <template <typename...> class Type, typename View>
+        struct CreateUniformType {
+            using view_type = typename View::uniform_type;
+            using type      = typename Forward<Type, view_type>::type;
+        };
+
         /*!
          * Instantiates a parameter pack with all the available Kokkos memory spaces
          */
@@ -172,15 +191,7 @@ namespace ippl {
 #endif
                 >;
 
-            template <typename>
-            struct Forward;
-
-            template <typename... Spaces>
-            struct Forward<std::variant<Spaces...>> {
-                using type = Type<Spaces...>;
-            };
-
-            using type = typename Forward<unique_spaces>::type;
+            using type = typename Forward<Type, unique_spaces>::type;
         };
 
         template <template <typename> class Type, typename... Spaces>
