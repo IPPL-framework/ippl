@@ -134,8 +134,7 @@ namespace ippl {
                 hash_type hash("hash", nSends[rank]);
                 fillHash(rank, ranks, hash);
 
-                pdata.sendToRank(rank, tag, sends, requests, hash, buffer);
-                ++sends;
+                pdata.sendToRank(rank, tag, sends++, requests, hash, buffer);
             }
         }
         IpplTimings::stopTimer(sendTimer);
@@ -154,8 +153,7 @@ namespace ippl {
         int recvs = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
-                pdata.recvFromRank(rank, tag, recvs, nRecvs[rank], buffer);
-                ++recvs;
+                pdata.recvFromRank(rank, tag, recvs++, nRecvs[rank], buffer);
             }
         }
         IpplTimings::stopTimer(recvTimer);
