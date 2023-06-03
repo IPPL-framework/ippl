@@ -127,7 +127,7 @@ namespace ippl {
 
         detail::Partitioner<Dim> partition;
 
-        partition.split(domain, hLocalDomains_m, requestedLayout_m, nRanks);
+        partition.split(Ippl::Comm.get(), domain, hLocalDomains_m, requestedLayout_m, nRanks);
 
         findNeighbors();
 
