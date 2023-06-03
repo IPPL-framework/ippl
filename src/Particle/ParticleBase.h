@@ -204,7 +204,11 @@ namespace ippl {
         template <typename MemorySpace = void, typename Functor>
         void forAllAttributes(Functor&& f) {
             if constexpr (std::is_void_v<MemorySpace>) {
-                attributes_m.forAll(f);
+                attributes_m.forAll([&]<typename Attributes>(Attributes& atts) {
+                    for (auto& attribute : atts) {
+                        f(attribute);
+                    }
+                });
             } else {
                 for (auto& attribute : attributes_m.template get<MemorySpace>()) {
                     f(attribute);

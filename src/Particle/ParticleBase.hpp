@@ -99,10 +99,8 @@ namespace ippl {
     void ParticleBase<PLayout, IP...>::create(size_type nLocal) {
         PAssert(layout_m != nullptr);
 
-        forAllAttributes([&]<typename Attributes>(Attributes& att) {
-            for (auto& attribute : att) {
-                attribute->create(nLocal);
-            }
+        forAllAttributes([&]<typename Attribute>(Attribute& attribute) {
+            attribute->create(nLocal);
         });
 
         // set the unique ID value for these new particles
@@ -243,14 +241,14 @@ namespace ippl {
         keepIndex_m.copyToOtherSpaces<memory_space>(filter);
 
         // Partition the attributes into valid and invalid regions
-        forAllAttributes([&]<typename Attributes>(Attributes& att) {
-            using att_memory_space =
-                typename std::remove_pointer_t<typename Attributes::value_type>::memory_space;
-            auto& del  = deleteIndex_m.get<att_memory_space>();
-            auto& keep = keepIndex_m.get<att_memory_space>();
-            for (auto& attribute : att) {
-                attribute->destroy(del, keep, maxDeleteIndex + 1);
-            }
+        // NOTE: The vector elements are pointers, but we want to extract
+        // the memory space from the class type, so we explicitly
+        // make the lambda argument a pointer to the template parameter
+        forAllAttributes([&]<typename Attribute>(Attribute*& attribute) {
+            using att_memory_space = typename Attribute::memory_space;
+            auto& del              = deleteIndex_m.get<att_memory_space>();
+            auto& keep             = keepIndex_m.get<att_memory_space>();
+            attribute->destroy(del, keep, maxDeleteIndex + 1);
         });
     }
 
@@ -328,12 +326,11 @@ namespace ippl {
     template <class PLayout, typename... IP>
     template <class Buffer>
     void ParticleBase<PLayout, IP...>::pack(Buffer& buffer, const hash_container_type& hash) {
-        forAllAttributes([&]<typename Attributes>(Attributes& att) {
-            using memory_space =
-                typename std::remove_pointer_t<typename Attributes::value_type>::memory_space;
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            auto& att = attributes_m.template get<MemorySpace>();
             for (unsigned j = 0; j < att.size(); j++) {
-                att[j]->pack(buffer.template getAttribute<memory_space>(j),
-                             hash.template get<memory_space>());
+                att[j]->pack(buffer.template getAttribute<MemorySpace>(j),
+                             hash.template get<MemorySpace>());
             }
         });
     }
@@ -341,11 +338,10 @@ namespace ippl {
     template <class PLayout, typename... IP>
     template <class Buffer>
     void ParticleBase<PLayout, IP...>::unpack(Buffer& buffer, size_type nrecvs) {
-        forAllAttributes([&]<typename Attributes>(Attributes& att) {
-            using memory_space =
-                typename std::remove_pointer_t<typename Attributes::value_type>::memory_space;
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            auto& att = attributes_m.template get<MemorySpace>();
             for (unsigned j = 0; j < att.size(); j++) {
-                att[j]->unpack(buffer.template getAttribute<memory_space>(j), nrecvs);
+                att[j]->unpack(buffer.template getAttribute<MemorySpace>(j), nrecvs);
             }
         });
         localNum_m += nrecvs;
