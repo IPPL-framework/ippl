@@ -385,15 +385,15 @@ public:
         ippl::parallel_for(
             "Extract cols into separate Fields", ippl::getRangePolicy<Dim>(Mview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                ippl::apply<Dim>(V0view, args) = {ippl::apply<Dim>(Mview, args)[0][0]
-                                                  * ippl::apply<Dim>(Mview, args)[1][0]
-                                                  * ippl::apply<Dim>(Mview, args)[2][0]};
-                ippl::apply<Dim>(V1view, args) = {ippl::apply<Dim>(Mview, args)[0][1]
-                                                  * ippl::apply<Dim>(Mview, args)[1][1]
-                                                  * ippl::apply<Dim>(Mview, args)[2][1]};
-                ippl::apply<Dim>(V2view, args) = {ippl::apply<Dim>(Mview, args)[0][2]
-                                                  * ippl::apply<Dim>(Mview, args)[1][2]
-                                                  * ippl::apply<Dim>(Mview, args)[2][2]};
+                ippl::apply<Dim>(V0view, args) = {ippl::apply<Dim>(Mview, args)[0][0],
+                                                  ippl::apply<Dim>(Mview, args)[1][0],
+                                                  ippl::apply<Dim>(Mview, args)[2][0]};
+                ippl::apply<Dim>(V1view, args) = {ippl::apply<Dim>(Mview, args)[0][1],
+                                                  ippl::apply<Dim>(Mview, args)[1][1],
+                                                  ippl::apply<Dim>(Mview, args)[2][1]};
+                ippl::apply<Dim>(V2view, args) = {ippl::apply<Dim>(Mview, args)[0][2],
+                                                  ippl::apply<Dim>(Mview, args)[1][2],
+                                                  ippl::apply<Dim>(Mview, args)[2][2]};
             });
         Kokkos::fence();
     }
