@@ -19,47 +19,150 @@ KOKKOS_INLINE_FUNCTION double HexactDistribution(const VectorD_t& v, const doubl
     return (2.0 * numberDensity / vNorm) * Kokkos::erf(vNorm / (Kokkos::sqrt(2.0) * vth));
 }
 
-KOKKOS_INLINE_FUNCTION double analyticalD00(const VectorD_t& v, const double& numberDensity,
-                                            const double& vth) {
-    return Kokkos::sqrt(2) * numberDensity * vth
-               * (-2 * Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
-               / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
-                              / (2. * Kokkos::pow(vth, 2)))
-                  * Kokkos::sqrt(Kokkos::numbers::pi_v<double>)
-                  * Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
-                                2))
-           + ((Kokkos::pow(vth, 2)
-                   * (2 * Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2], 2))
-               + (Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
-                     * (Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2)))
-              * Kokkos::erf(
-                  Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
-                  / (Kokkos::sqrt(2) * vth)))
-                 / (Kokkos::sqrt(2) * vth
-                    * Kokkos::pow(
-                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2.5));
+KOKKOS_INLINE_FUNCTION double analyticalD00(const VectorD_t& v, const double& gamma,
+                                            const double& numberDensity, const double& vth) {
+    return Kokkos::sqrt(2) * gamma * numberDensity * vth
+               * (-(1
+                    / (Kokkos::exp(
+                           (Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                           / (2. * Kokkos::pow(vth, 2)))
+                       * Kokkos::pow(vth, 2)))
+                  + Kokkos::pow(v[0], 2)
+                        / (Kokkos::exp(
+                               (Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                               / (2. * Kokkos::pow(vth, 2)))
+                           * Kokkos::pow(vth, 4)))
+               / Kokkos::sqrt(Kokkos::numbers::pi_v<double>)
+           + (2 * Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * v[0]
+              * (-((vth * v[0])
+                   / (Kokkos::sqrt(2)
+                      * Kokkos::pow(
+                          Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 1.5)))
+                 + v[0]
+                       / (Kokkos::sqrt(2) * vth
+                          * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                         + Kokkos::pow(v[2], 2)))))
+                 / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                                / (2. * Kokkos::pow(vth, 2)))
+                    * vth
+                    * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                   + Kokkos::pow(v[2], 2)))
+           + (-((Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * Kokkos::pow(v[0], 2))
+                / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                               / (2. * Kokkos::pow(vth, 2)))
+                   * vth
+                   * Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
+                                 1.5)))
+              + Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>)
+                    / (Kokkos::exp(
+                           (Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                           / (2. * Kokkos::pow(vth, 2)))
+                       * vth
+                       * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                      + Kokkos::pow(v[2], 2)))
+              - (Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * Kokkos::pow(v[0], 2))
+                    / (Kokkos::exp(
+                           (Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                           / (2. * Kokkos::pow(vth, 2)))
+                       * Kokkos::pow(vth, 3)
+                       * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                      + Kokkos::pow(v[2], 2))))
+                 * (vth
+                        / (Kokkos::sqrt(2)
+                           * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                          + Kokkos::pow(v[2], 2)))
+                    + Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                   + Kokkos::pow(v[2], 2))
+                          / (Kokkos::sqrt(2) * vth))
+           + ((vth
+               * ((3 * Kokkos::pow(v[0], 2))
+                      / Kokkos::pow(
+                          Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2.5)
+                  - Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
+                                -1.5)))
+                  / Kokkos::sqrt(2)
+              + (-(Kokkos::pow(v[0], 2)
+                   / Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
+                                 1.5))
+                 + 1
+                       / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                      + Kokkos::pow(v[2], 2)))
+                    / (Kokkos::sqrt(2) * vth))
+                 * Kokkos::erf(Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                            + Kokkos::pow(v[2], 2))
+                               / (Kokkos::sqrt(2) * vth));
 }
 
-KOKKOS_INLINE_FUNCTION double analyticalD01(const VectorD_t& v, const double& numberDensity,
-                                            const double& vth) {
-    return Kokkos::sqrt(2.0) * numberDensity * vth * (-3.0 * v[0] * v[1])
-               / (Kokkos::exp(
-                      (Kokkos::pow(v[0], 2.0) + Kokkos::pow(v[1], 2.0) + Kokkos::pow(v[2], 2.0))
-                      / (2.0 * Kokkos::pow(vth, 2.0)))
-                  * Kokkos::sqrt(Kokkos::numbers::pi_v<double>)
-                  * Kokkos::pow(
-                      Kokkos::pow(v[0], 2.0) + Kokkos::pow(v[1], 2.0) + Kokkos::pow(v[2], 2.0),
-                      2.0))
-           - (v[0] * v[1]
-              * (-3.0 * Kokkos::pow(vth, 2.0) + Kokkos::pow(v[0], 2.0) + Kokkos::pow(v[1], 2.0)
-                 + Kokkos::pow(v[2], 2.0))
-              * Kokkos::erf(Kokkos::sqrt(Kokkos::pow(v[0], 2.0) + Kokkos::pow(v[1], 2.0)
-                                         + Kokkos::pow(v[2], 2.0))
-                            / (Kokkos::sqrt(2.0) * vth)))
-                 / (Kokkos::sqrt(2.0) * vth
+KOKKOS_INLINE_FUNCTION double analyticalD01(const VectorD_t& v, const double& gamma,
+                                            const double& numberDensity, const double& vth) {
+    return Kokkos::sqrt(2.0) * gamma * numberDensity * vth * (v[0] * v[1])
+               / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                              / (2. * Kokkos::pow(vth, 2)))
+                  * Kokkos::sqrt(Kokkos::numbers::pi_v<double>) * Kokkos::pow(vth, 4))
+           + (Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * v[1]
+              * (-((vth * v[0])
+                   / (Kokkos::sqrt(2)
+                      * Kokkos::pow(
+                          Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 1.5)))
+                 + v[0]
+                       / (Kokkos::sqrt(2) * vth
+                          * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                         + Kokkos::pow(v[2], 2)))))
+                 / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                                / (2. * Kokkos::pow(vth, 2)))
+                    * vth
+                    * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                   + Kokkos::pow(v[2], 2)))
+           + (Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * v[0]
+              * (-((vth * v[1])
+                   / (Kokkos::sqrt(2)
+                      * Kokkos::pow(
+                          Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 1.5)))
+                 + v[1]
+                       / (Kokkos::sqrt(2) * vth
+                          * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                         + Kokkos::pow(v[2], 2)))))
+                 / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                                / (2. * Kokkos::pow(vth, 2)))
+                    * vth
+                    * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                   + Kokkos::pow(v[2], 2)))
+           - (Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * v[0] * v[1]
+              * (vth
+                     / (Kokkos::sqrt(2)
+                        * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                       + Kokkos::pow(v[2], 2)))
+                 + Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                       / (Kokkos::sqrt(2) * vth)))
+                 / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                                / (2. * Kokkos::pow(vth, 2)))
+                    * vth
                     * Kokkos::pow(
-                        Kokkos::pow(v[0], 2.0) + Kokkos::pow(v[1], 2.0) + Kokkos::pow(v[2], 2.0),
-                        2.5));
+                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 1.5))
+           - (Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * v[0] * v[1]
+              * (vth
+                     / (Kokkos::sqrt(2)
+                        * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                       + Kokkos::pow(v[2], 2)))
+                 + Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                       / (Kokkos::sqrt(2) * vth)))
+                 / (Kokkos::exp((Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
+                                / (2. * Kokkos::pow(vth, 2)))
+                    * Kokkos::pow(vth, 3)
+                    * Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                   + Kokkos::pow(v[2], 2)))
+           + ((3 * vth * v[0] * v[1])
+                  / (Kokkos::sqrt(2)
+                     * Kokkos::pow(
+                         Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 2.5))
+              - (v[0] * v[1])
+                    / (Kokkos::sqrt(2) * vth
+                       * Kokkos::pow(
+                           Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
+                           1.5)))
+                 * Kokkos::erf(Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+                                            + Kokkos::pow(v[2], 2))
+                               / (Kokkos::sqrt(2) * vth));
 }
 
 KOKKOS_INLINE_FUNCTION double GexactDistribution(const VectorD_t& v, const double& numberDensity,
@@ -311,10 +414,12 @@ int main(int argc, char* argv[]) {
                     maxwellianPDF(xvec, numberDensity, vth) * P->configSpaceIntegral_m;
                 ippl::apply<Dim>(GviewExact, args) =
                     GexactDistribution(xvec, numberDensity, vth) * P->configSpaceIntegral_m;
+
+                // Need to multiply by Gamma to obtain
                 ippl::apply<Dim>(D00viewExact, args) =
-                    analyticalD00(xvec, numberDensity, vth) * P->configSpaceIntegral_m;
+                    analyticalD00(xvec, P->gamma_m, numberDensity, vth) * P->configSpaceIntegral_m;
                 ippl::apply<Dim>(D01viewExact, args) =
-                    analyticalD01(xvec, numberDensity, vth) * P->configSpaceIntegral_m;
+                    analyticalD01(xvec, P->gamma_m, numberDensity, vth) * P->configSpaceIntegral_m;
             });
 
         // Need to scatter rho as we use it as $f(\vec r)$
