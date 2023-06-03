@@ -318,7 +318,7 @@ void constructVFieldFromFields(VField_t<Dim>& vectorField, Field_t<Dim>& scalarF
 
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     ippl::parallel_for(
-        "Assign initial velocity PDF and reference solution for H",
+        "constructVFieldFromFields(VField&, Field&, Field&, Field&)",
         ippl::getRangePolicy<Dim>(vectorView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
             ippl::apply<Dim>(vectorView, args)[0] = ippl::apply<Dim>(scalarView0, args);
             ippl::apply<Dim>(vectorView, args)[1] = ippl::apply<Dim>(scalarView1, args);
@@ -333,7 +333,7 @@ void extractScalarField(MField_t<Dim>& matrixField, Field_t<Dim>& scalarField, s
 
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     ippl::parallel_for(
-        "Assign initial velocity PDF and reference solution for H",
+        "extractScalarField(MField&, Field&, rowIdx, colIdx)",
         ippl::getRangePolicy<Dim>(matrixView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
             ippl::apply<Dim>(scalarView, args) = ippl::apply<Dim>(matrixView, args)[rowIdx][colIdx];
         });
