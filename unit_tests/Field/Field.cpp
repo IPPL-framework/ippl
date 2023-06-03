@@ -292,6 +292,7 @@ TYPED_TEST(FieldTest, VolumeIntegral) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field) {
         using view_type = typename TestFixture::field_type<Dim>::view_type;
 
+        TypeParam tol                 = (std::is_same<TypeParam, double>::value) ? 5e-15 : 5e-6;
         const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
         const int shift               = field->getNghost();
 
@@ -303,7 +304,7 @@ TYPED_TEST(FieldTest, VolumeIntegral) {
             "Set field",
             field->template getFieldRangePolicy<typename FieldVal<TypeParam, Dim>::Integral>(), fv);
 
-        ASSERT_NEAR(field->getVolumeIntegral(), 0., 5e-15);
+        ASSERT_NEAR(field->getVolumeIntegral(), 0., tol);
     };
 
     this->apply(check, this->fields);

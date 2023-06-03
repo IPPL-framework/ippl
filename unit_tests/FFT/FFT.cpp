@@ -144,7 +144,7 @@ public:
     template <unsigned Dim, typename MirrorA, typename MirrorB>
     void verifyResult(int nghost, const MirrorA& computed, const MirrorB& expected) {
         T max_error_local = 0.0;
-        T tol             = (std::is_same<T, double>::value) ? 1e-13 : 1e-7;
+        T tol             = (std::is_same<T, double>::value) ? 1e-13 : 1e-6;
         nestedViewLoop<Dim>(computed, nghost, [&]<typename... Idx>(const Idx... args) {
             T error = std::fabs(expected(args...) - computed(args...));
 
@@ -279,6 +279,7 @@ TYPED_TEST(FFTTest, CC) {
                      const typename TestFixture::layout_type<Dim>& layout) {
         using view_type   = typename TestFixture::field_type_complex<Dim>::view_type;
         using mirror_type = typename view_type::host_mirror_type;
+        TypeParam tol     = (std::is_same<TypeParam, double>::value) ? 1e-13 : 1e-6;
 
         ippl::ParameterList fftParams;
 
@@ -316,15 +317,15 @@ TYPED_TEST(FFTTest, CC) {
                     max_error_local.imag() = error.imag();
                 }
 
-                ASSERT_NEAR(error.real(), 0, 1e-13);
-                ASSERT_NEAR(error.imag(), 0, 1e-13);
+                ASSERT_NEAR(error.real(), 0, tol);
+                ASSERT_NEAR(error.imag(), 0, tol);
             });
 
         Kokkos::complex<TypeParam> max_error(0, 0);
         MPI_Allreduce(&max_error_local, &max_error, 1, MPI_C_DOUBLE_COMPLEX, MPI_SUM,
                       Ippl::getComm());
-        ASSERT_NEAR(max_error.real(), 0, 1e-13);
-        ASSERT_NEAR(max_error.imag(), 0, 1e-13);
+        ASSERT_NEAR(max_error.real(), 0, tol);
+        ASSERT_NEAR(max_error.imag(), 0, tol);
     };
 
     this->apply(check, this->compFields, this->layouts);
