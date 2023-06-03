@@ -403,11 +403,13 @@ int main(int argc, char* argv[]) {
         // COMPUTE RELATIVE ERRORS //
         /////////////////////////////
 
-        const int shift       = 2 * nghost;
-        double HrelError      = subfieldNorm(Hdiff, shift) / subfieldNorm(HfieldExact, shift);
-        double GrelError      = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
-        double DtraceRelError = subfieldNorm(DtraceDiff, shift) / subfieldNorm(HfieldExact, shift);
-        VectorD_t DdivDiffRelError = L2VectorNorm(DdivDiff, shift) / L2VectorNorm(P->Fd_m, shift);
+        const int shift  = nghost;
+        double HrelError = subfieldNorm(Hdiff, shift) / subfieldNorm(HfieldExact, shift);
+        double GrelError = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
+        double DtraceRelError =
+            subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
+        VectorD_t DdivDiffRelError =
+            L2VectorNorm(DdivDiff, shift + 2 * shift) / L2VectorNorm(P->Fd_m, 2 * shift);
         msg << "h(v) rel. error (" << nv << "^3)"
             << ": " << HrelError << endl;
         msg << "g(v) rel. error (" << nv << "^3)"
