@@ -111,9 +111,9 @@ namespace ippl {
         }
 
         heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
-            inbox, outbox, Ippl::getComm(), heffteOptions);
+            inbox, outbox, Comm->getCommunicator(), heffteOptions);
 
-        // heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
         if (workspace_m.size() < heffte_m->size_workspace())
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
@@ -246,9 +246,9 @@ namespace ippl {
         }
 
         heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>(
-            inbox, outbox, params.get<int>("r2c_direction"), Ippl::getComm(), heffteOptions);
+            inbox, outbox, params.get<int>("r2c_direction"), Comm->getCommunicator(), heffteOptions);
 
-        // heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
         if (workspace_m.size() < heffte_m->size_workspace())
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
@@ -382,9 +382,9 @@ namespace ippl {
         }
 
         heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
-            inbox, outbox, Ippl::getComm(), heffteOptions);
+            inbox, outbox, Comm->getCommunicator(), heffteOptions);
 
-        // heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
         if (workspace_m.size() < heffte_m->size_workspace())
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
@@ -502,9 +502,9 @@ namespace ippl {
         }
 
         heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
-            inbox, outbox, Ippl::getComm(), heffteOptions);
+            inbox, outbox, Comm->getCommunicator(), heffteOptions);
 
-        // heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
         if (workspace_m.size() < heffte_m->size_workspace())
             workspace_m = workspace_t(heffte_m->size_workspace());
     }

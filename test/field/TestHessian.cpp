@@ -40,7 +40,7 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
                 Kokkos::Sum<double>(valN));
 
             double globalN(0.0);
-            MPI_Allreduce(&valN, &globalN, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+            MPI_Allreduce(&valN, &globalN, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
             double errorN = std::sqrt(globalN);
 
             double valD(0.0);
@@ -184,7 +184,7 @@ int main(int argc, char* argv[]) {
                 Kokkos::Sum<double>(valD));
 
             double globalD(0.0);
-            MPI_Allreduce(&valD, &globalD, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+            MPI_Allreduce(&valD, &globalD, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
             double errorD = std::sqrt(globalD);
 
             // Compute relative Error
@@ -194,7 +194,7 @@ int main(int argc, char* argv[]) {
                 err_hess[dim1][dim2] = errorN / errorD;
             }
 
-            if (Ippl::Comm->rank() == 0) {
+            if (ippl::Comm->rank() == 0) {
                 std::cout << std::setprecision(16) << "Error (" << dim1 + 1 << "," << dim2 + 1
                           << "): " << err_hess[dim1][dim2] << std::endl;
             }
@@ -208,6 +208,8 @@ int main(int argc, char* argv[]) {
     std::cout << std::setprecision(16) << "Average error = " << avg;
 
     IpplTimings::print();
+
+    ippl::finalize();
 
     return 0;
 }

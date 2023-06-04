@@ -78,7 +78,7 @@ struct generate_random {
 };
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     setSignalHandler();
 
@@ -144,11 +144,11 @@ int main(int argc, char* argv[]) {
     P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
     P->nr_m        = nr;
-    size_type nloc = totalP / Ippl::Comm->size();
+    size_type nloc = totalP / ippl::Comm->size();
 
-    int rest = (int)(totalP - nloc * Ippl::Comm->size());
+    int rest = (int)(totalP - nloc * ippl::Comm->size());
 
-    if (Ippl::Comm->rank() < rest)
+    if (ippl::Comm->rank() < rest)
         ++nloc;
 
     IpplTimings::startTimer(particleCreation);
@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
         Rmax[d] = origin[d] + (lDom[d].last() + 1) * hr[d];
     }
 
-    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
+    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
     Kokkos::parallel_for(
         nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
                   P->R.getView(), rand_pool64, Rmin, Rmax));
@@ -281,6 +281,8 @@ int main(int argc, char* argv[]) {
     std::chrono::duration<double> time_chrono =
         std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
+
+    ippl::finalize();
 
     return 0;
 }

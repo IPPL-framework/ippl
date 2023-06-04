@@ -154,7 +154,7 @@ double PDF(const Vector_t<double, Dim>& xvec, const double& alpha, const Vector_
 const char* TestName = "LandauDamping";
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     Inform msg("LandauDamping");
     Inform msg2all("LandauDamping", INFORM_ALL_NODES);
@@ -230,7 +230,7 @@ int main(int argc, char* argv[]) {
 
     bool isFirstRepartition;
 
-    if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
+    if ((P->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
         msg << "Starting first repartition" << endl;
         IpplTimings::startTimer(domainDecomposition);
         isFirstRepartition             = true;
@@ -264,7 +264,7 @@ int main(int argc, char* argv[]) {
     const RegionLayout_t& RLayout                           = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
     Vector_t<float, Dim> Nr, Dr, minU, maxU;
-    int myRank   = Ippl::Comm->rank();
+    int myRank   = ippl::Comm->rank();
     float factor = 1;
     for (unsigned d = 0; d < Dim; ++d) {
         Nr[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d])
@@ -278,22 +278,22 @@ int main(int argc, char* argv[]) {
     size_type nloc            = (size_type)(factor * totalP);
     size_type Total_particles = 0;
 
-    MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
 
     int rest = (int)(totalP - Total_particles);
 
-    if (Ippl::Comm->rank() < rest) {
+    if (ippl::Comm->rank() < rest) {
         ++nloc;
     }
 
     P->create(nloc);
-    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
+    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
     Kokkos::parallel_for(
         nloc, generate_random<Vector_t<float, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
                   P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
     Kokkos::fence();
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
     IpplTimings::stopTimer(particleCreation);
 
     P->q = P->Q_m / totalP;
@@ -388,6 +388,8 @@ int main(int argc, char* argv[]) {
     std::chrono::duration<double> time_chrono =
         std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
+
+    ippl::finalize();
 
     return 0;
 }

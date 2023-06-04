@@ -3,7 +3,7 @@
 #include <typeinfo>
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     typedef ippl::Vector<double, 10> vector_t;
 
@@ -16,6 +16,8 @@ int main(int argc, char* argv[]) {
     z = a * x * y * a;
 
     std::cout << z << std::endl;
+
+    ippl::finalize();
 
     return 0;
 }

@@ -94,7 +94,7 @@ void dumpVTK(std::string path, ScalarField_t& rho, int nx, int ny, int nz, int i
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
     Inform msg("");
     Inform msg2all("", INFORM_ALL_NODES);
 
@@ -240,7 +240,7 @@ int main(int argc, char* argv[]) {
                 Kokkos::Sum<double>(temp));
 
             double globaltemp = 0.0;
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
             double errorNr = std::sqrt(globaltemp);
 
             temp = 0.0;
@@ -255,7 +255,7 @@ int main(int argc, char* argv[]) {
                 Kokkos::Sum<double>(temp));
 
             globaltemp = 0.0;
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
             double errorDr = std::sqrt(globaltemp);
 
             errE[d] = errorNr / errorDr;
@@ -268,6 +268,8 @@ int main(int argc, char* argv[]) {
     // stop the timer
     IpplTimings::stopTimer(allTimer);
     IpplTimings::print(std::string("timing.dat"));
+
+    ippl::finalize();
 
     return 0;
 }

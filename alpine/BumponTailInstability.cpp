@@ -177,10 +177,10 @@ struct PhaseDump {
 
         mesh = Mesh_t<2>(owned, hx, origin);
         phaseSpace.initialize(mesh, layout);
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             phaseSpaceBuf.initialize(mesh, layout);
         }
-        std::cout << Ippl::Comm->rank() << ": " << phaseSpace.getOwned() << std::endl;
+        std::cout << ippl::Comm->rank() << ": " << phaseSpace.getOwned() << std::endl;
     }
 
     void dump(int it, std::shared_ptr<Bunch> P, bool allDims = false) {
@@ -198,8 +198,8 @@ struct PhaseDump {
             scatter(P->q, phaseSpace, phase);
             auto& view = phaseSpace.getView();
             MPI_Reduce(view.data(), phaseSpaceBuf.getView().data(), view.size(), MPI_DOUBLE,
-                       MPI_SUM, 0, Ippl::getComm());
-            if (Ippl::Comm->rank() == 0) {
+                       MPI_SUM, 0, ippl::Comm->getCommunicator());
+            if (ippl::Comm->rank() == 0) {
                 std::stringstream fname;
                 fname << "PhaseSpace_t=" << it << "_d=" << d << ".csv";
 
@@ -215,11 +215,11 @@ struct PhaseDump {
                     minValue = min;
                 }
             }
-            Ippl::Comm->barrier();
+            ippl::Comm->barrier();
         }
 
-        MPI_Bcast(&maxValue, 1, MPI_DOUBLE, 0, Ippl::getComm());
-        MPI_Bcast(&minValue, 1, MPI_DOUBLE, 0, Ippl::getComm());
+        MPI_Bcast(&maxValue, 1, MPI_DOUBLE, 0, ippl::Comm->getCommunicator());
+        MPI_Bcast(&minValue, 1, MPI_DOUBLE, 0, ippl::Comm->getCommunicator());
     }
 
     double maxRecorded() const { return maxValue; }
@@ -236,7 +236,7 @@ private:
 };
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     setSignalHandler();
 
@@ -343,7 +343,7 @@ int main(int argc, char* argv[]) {
 
     bool isFirstRepartition;
 
-    if ((P->loadbalancethreshold_m != 1.0) && (Ippl::Comm->size() > 1)) {
+    if ((P->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
         msg << "Starting first repartition" << endl;
         IpplTimings::startTimer(domainDecomposition);
         isFirstRepartition             = true;
@@ -377,7 +377,7 @@ int main(int argc, char* argv[]) {
     const RegionLayout_t& RLayout                           = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
     Vector_t<double, Dim> Nr, Dr, minU, maxU;
-    int myRank = Ippl::Comm->rank();
+    int myRank = ippl::Comm->rank();
     for (unsigned d = 0; d < Dim; ++d) {
         Nr[d] = CDF(Regions(myRank)[d].max(), delta, kw[d], d)
                 - CDF(Regions(myRank)[d].min(), delta, kw[d], d);
@@ -397,11 +397,11 @@ int main(int argc, char* argv[]) {
     size_type nloc            = nlocBulk + nlocBeam;
     size_type Total_particles = 0;
 
-    MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
 
     int rest = (int)(totalP - Total_particles);
 
-    if (Ippl::Comm->rank() < rest) {
+    if (ippl::Comm->rank() < rest) {
         ++nloc;
     }
 
@@ -409,22 +409,22 @@ int main(int argc, char* argv[]) {
 
     PhaseDump<bunch_type> phase;
     if constexpr (EnablePhaseDump) {
-        if (Ippl::Comm->size() != 1) {
+        if (ippl::Comm->size() != 1) {
             msg << "Phase dump only supported on one rank" << endl;
-            IpplAbort();
+            ippl::Comm->abort();
         }
         phase.initialize(*std::max_element(nr.begin(), nr.end()),
                          *std::max_element(rmax.begin(), rmax.end()));
     }
 
-    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * Ippl::Comm->rank()));
+    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
 
     Kokkos::parallel_for(
         nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
                   P->R.getView(), P->P.getView(), rand_pool64, delta, kw, sigma, muBulk, muBeam,
                   nlocBulk, minU, maxU));
     Kokkos::fence();
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
     IpplTimings::stopTimer(particleCreation);
 
     P->q = P->Q_m / totalP;
@@ -537,11 +537,13 @@ int main(int argc, char* argv[]) {
             << "Phase space axis: " << (Dim - 1)
                 << "; range: [" << phase.minRecorded() << ", " << phase.maxRecorded() << "]\n"
             << "Particle count: " << totalP << "\n"
-            << "Ranks: " << Ippl::Comm->size() << "\n"
+            << "Ranks: " << ippl::Comm->size() << "\n"
             << "Timestep: " << dt << "\n"
             << "------------------------------" << endl;
         // clang-format on
     }
+
+    ippl::finalize();
 
     return 0;
 }

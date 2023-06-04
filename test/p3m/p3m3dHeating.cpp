@@ -456,7 +456,7 @@ public:
 
     void openH5(std::string fn) {
         h5_prop_t props = H5CreateFileProp();
-        MPI_Comm comm   = Ippl::getComm();
+        MPI_Comm comm   = ippl::Comm->getCommunicator();
         h5_err_t h5err  = H5SetPropFileMPIOCollective(props, &comm);
 #if defined(NDEBUG)
         (void)h5err;
@@ -606,7 +606,7 @@ void ChargedParticles<PL>::calculatePairForces(double interaction_radius, double
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
     Inform msg(argv[0]);
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
@@ -673,7 +673,7 @@ int main(int argc, char* argv[]) {
     INFOMSG(P->getMesh() << endl);
     INFOMSG(P->getFieldLayout() << endl);
     msg << endl << endl;
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
 
     // dumpParticlesCSV(P,0);
 
@@ -773,10 +773,10 @@ int main(int argc, char* argv[]) {
 
         msg << "Finished iteration " << it << endl;
     }
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
 
     P->closeH5();
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
 
     IpplTimings::stopTimer(allTimer);
 
@@ -785,6 +785,8 @@ int main(int argc, char* argv[]) {
     delete P;
     delete FL;
     delete mesh;
+
+    ippl::finalize();
 
     return 0;
 }

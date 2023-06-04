@@ -41,7 +41,7 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
             },
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
-        MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
         double errorNr = std::sqrt(globaltemp);
 
         temp       = 0.0;
@@ -158,15 +158,17 @@ int main(int argc, char* argv[]) {
                 valL += myVal;
             },
             Kokkos::Sum<double>(temp));
-        MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
         double errorDr = std::sqrt(globaltemp);
 
         errE[gd] = errorNr / errorDr;
     }
 
-    if (Ippl::Comm->rank() == 0) {
+    if (ippl::Comm->rank() == 0) {
         std::cout << "Error: " << errE[0] << ", " << errE[1] << ", " << errE[2] << std::endl;
     }
+
+    ippl::finalize();
 
     return 0;
 }

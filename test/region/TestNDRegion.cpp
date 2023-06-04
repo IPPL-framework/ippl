@@ -1,7 +1,7 @@
 #include "Ippl.h"
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     typedef ippl::PRegion<double> region_t;
     typedef ippl::NDRegion<double, 3> ndi_t;
@@ -17,5 +17,8 @@ int main(int argc, char* argv[]) {
 */
 
     std::cout << nd << std::endl;
+
+    ippl::finalize();
+
     return 0;
 }

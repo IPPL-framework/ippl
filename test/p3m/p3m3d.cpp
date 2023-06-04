@@ -433,7 +433,7 @@ void ChargedParticles<PL>::calculatePairForces(double interaction_radius) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
     Inform msg(argv[0]);
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
@@ -494,7 +494,7 @@ int main(int argc, char* argv[]) {
     INFOMSG(P->getMesh() << endl);
     INFOMSG(P->getFieldLayout() << endl);
     msg << endl << endl;
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
 
     // center of charge distribution
     Vektor<double, Dim> source(0.1 + (32) / 2, 0.3 + (32) / 2, 0.7 + (32) / 2);
@@ -628,6 +628,8 @@ int main(int argc, char* argv[]) {
     delete P;
     delete FL;
     delete mesh;
+
+    ippl::finalize();
 
     return 0;
 }

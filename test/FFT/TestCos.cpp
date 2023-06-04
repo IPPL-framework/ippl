@@ -8,7 +8,7 @@
 #include "Utility/ParameterList.h"
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
     typename field_type::HostMirror field_host = field.getHostMirror();
 
     const int nghost = field.getNghost();
-    std::mt19937_64 eng(42 + Ippl::Comm->rank());
+    std::mt19937_64 eng(42 + ippl::Comm->rank());
     std::uniform_real_distribution<double> unif(0, 1);
 
     for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
@@ -91,12 +91,15 @@ int main(int argc, char* argv[]) {
     }
 
     double max_error = 0.0;
-    MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+    MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
 
-    std::cout << "Rank:" << Ippl::Comm->rank() << "Max. error " << std::setprecision(16)
+    std::cout << "Rank:" << ippl::Comm->rank() << "Max. error " << std::setprecision(16)
               << max_error_local << std::endl;
-    if (Ippl::Comm->rank() == 0) {
+    if (ippl::Comm->rank() == 0) {
         std::cout << "Overall Max. error " << std::setprecision(16) << max_error << std::endl;
     }
+
+    ippl::finalize();
+
     return 0;
 }

@@ -304,7 +304,7 @@ static void SendReduce(IndexIterator domainsBegin, IndexIterator domainsEnd,
                 mess->setCopy(false).setDelete(true).put(p, p + (*dbp).length());
             }
             // Send the message to proc di.
-            Ippl::Comm->send(mess, di, tag);
+            Comm->send(mess, di, tag);
         }
         // Clear out the buffers.
         domainBuffer.erase(domainBuffer.begin(), domainBuffer.end());
@@ -337,8 +337,8 @@ static void ReceiveReduce(NDIndex<Dim>& domain, BareField<T, Dim>& weights, int 
     // Build a count of the number of messages to expect.
     // We get *one message* from each node that has a touch.
     int expected      = 0;
-    int nodes         = Ippl::Comm->getNodes();
-    int mynode        = Ippl::Comm->myNode();
+    int nodes         = Comm->getNodes();
+    int mynode        = Comm->myNode();
     bool* found_touch = new bool[nodes];
     for (i = 0; i < nodes; ++i)
         found_touch[i] = false;
@@ -368,7 +368,7 @@ static void ReceiveReduce(NDIndex<Dim>& domain, BareField<T, Dim>& weights, int 
     while (--expected >= 0) {
         // Receive a message.
         int any_node  = COMM_ANY_NODE;
-        Message* mess = Ippl::Comm->receive_block(any_node, reduce_tag);
+        Message* mess = Comm->receive_block(any_node, reduce_tag);
         PAssert(mess);
         // Loop over all the domains in this message.
         int received_domains = 0;
@@ -410,7 +410,7 @@ inline void BcastCuts(int cutLoc, int cutAxis, int bcast_tag) {
     mess->put(cutLoc);
     mess->put(cutAxis);
     // Send it out.
-    Ippl::Comm->broadcast_all(mess, bcast_tag);
+    Comm->broadcast_all(mess, bcast_tag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -436,7 +436,7 @@ static void ReceiveCuts(std::vector<NDIndex<Dim> >& domains, std::vector<int>& n
         // in the domains vector.
         int whichDomain = COMM_ANY_NODE;
         int cutLocation = 0, cutAxis = 0;
-        Message* mess = Ippl::Comm->receive_block(whichDomain, bcast_tag);
+        Message* mess = Comm->receive_block(whichDomain, bcast_tag);
         PAssert(mess);
         mess->get(cutLocation);
         mess->get(cutAxis);
@@ -488,8 +488,8 @@ template <class T, unsigned Dim>
 static void CutEach(std::vector<NDIndex<Dim> >& domains, std::vector<int>& nprocs,
                     BareField<T, Dim>& weights) {
     // Get tags for the reduction and the broadcast.
-    int reduce_tag = Ippl::Comm->next_tag(F_REDUCE_PERP_TAG, F_TAG_CYCLE);
-    int bcast_tag  = Ippl::Comm->next_tag(F_REDUCE_PERP_TAG, F_TAG_CYCLE);
+    int reduce_tag = Comm->next_tag(F_REDUCE_PERP_TAG, F_TAG_CYCLE);
+    int bcast_tag  = Comm->next_tag(F_REDUCE_PERP_TAG, F_TAG_CYCLE);
     /*out << "reduce_tag=" << reduce_tag << endl;*/
     /*out << "bcast_tag=" << bcast_tag << endl;*/
 
@@ -498,7 +498,7 @@ static void CutEach(std::vector<NDIndex<Dim> >& domains, std::vector<int>& nproc
 
     // On the appropriate processors, receive the data for the reduce,
     // and broadcast the cuts.
-    unsigned int mynode = Ippl::Comm->myNode();
+    unsigned int mynode = Comm->myNode();
     if (mynode < domains.size()) {
         // Receive partially reduced data, finish the reduction, find the median.
         int cutAxis, cutLoc;
@@ -520,12 +520,12 @@ NDIndex<Dim> CalcBinaryRepartition(FieldLayout<Dim>& layout, BareField<T, Dim>& 
     std::vector<int> procs;
 
     /*out << "Starting CalcBinaryRepartition, outstanding msgs="
-        << Ippl::Comm->getReceived()
+        << Comm->getReceived()
         << endl;*/
 
     // Get the processors we'll be dealing with.
-    int nprocs = Ippl::Comm->getNodes();
-    int myproc = Ippl::Comm->myNode();
+    int nprocs = Comm->getNodes();
+    int myproc = Comm->myNode();
     domains.reserve(nprocs);
     procs.reserve(nprocs);
 

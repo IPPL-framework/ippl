@@ -12,12 +12,12 @@
 #include "P3MSolver.h"
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     Inform msg(argv[0]);
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
-    int ranks = Ippl::Comm->size();
+    int ranks = ippl::Comm->size();
 
     constexpr unsigned int dim = 3;
 
@@ -95,6 +95,8 @@ int main(int argc, char* argv[]) {
     }
 
     msg << "End of test" << endl;
+
+    ippl::finalize();
 
     return 0;
 }

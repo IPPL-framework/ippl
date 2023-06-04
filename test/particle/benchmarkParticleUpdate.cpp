@@ -97,9 +97,9 @@ public:
         unsigned int local_particles = this->getLocalNum();
 
         MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
-                   Ippl::getComm());
+                   ippl::Comm->getCommunicator());
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             if (Total_particles != totalP) {
                 std::cout << "Total particles in the sim. " << totalP << " "
                           << "after update: " << Total_particles << std::endl;
@@ -109,9 +109,9 @@ public:
             }
         }
 
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
 
-        std::cout << "Rank " << Ippl::Comm->rank() << " has " << local_particles << std::endl;
+        std::cout << "Rank " << ippl::Comm->rank() << " has " << local_particles << std::endl;
     }
 
     Vector_t getRMin() { return rmin_m; }
@@ -143,7 +143,7 @@ private:
 };
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
     Inform msg(argv[0]);
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
@@ -195,7 +195,7 @@ int main(int argc, char* argv[]) {
     double Q = 1e6;
     P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
 
-    unsigned long int nloc = totalP / Ippl::Comm->size();
+    unsigned long int nloc = totalP / ippl::Comm->size();
 
     static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
     IpplTimings::startTimer(particleCreation);
@@ -204,7 +204,7 @@ int main(int argc, char* argv[]) {
     std::mt19937_64 eng[Dim];
     for (unsigned i = 0; i < Dim; ++i) {
         eng[i].seed(42 + i * Dim);
-        eng[i].discard(nloc * Ippl::Comm->rank());
+        eng[i].discard(nloc * ippl::Comm->rank());
     }
     std::uniform_real_distribution<double> unif(0, 1);
 
@@ -218,9 +218,9 @@ int main(int argc, char* argv[]) {
         }
     }
     double global_sum_coord = 0.0;
-    MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+    MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
 
-    if (Ippl::Comm->rank() == 0) {
+    if (ippl::Comm->rank() == 0) {
         std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
     }
 
@@ -251,7 +251,7 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef RandPTimer = IpplTimings::getTimer("RandomP");
         IpplTimings::startTimer(RandPTimer);
         std::mt19937_64 engP;
-        engP.seed(42 + 10 * it + 100 * Ippl::Comm->rank());
+        engP.seed(42 + 10 * it + 100 * ippl::Comm->rank());
         Kokkos::resize(P_host, P->P.size());
         double sum_coord = 0.0;
         Kokkos::resize(R_host, P->R.size());
@@ -263,13 +263,13 @@ int main(int argc, char* argv[]) {
             }
         }
         double global_sum_coord = 0.0;
-        MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        if (Ippl::Comm->rank() == 0) {
+        MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        if (ippl::Comm->rank() == 0) {
             std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
         }
         Kokkos::deep_copy(P->P.getView(), P_host);
         IpplTimings::stopTimer(RandPTimer);
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
 
         // advance the particle positions
         // basic leapfrogging timestep scheme.  velocities are offset
@@ -303,6 +303,8 @@ int main(int argc, char* argv[]) {
     std::chrono::duration<double> time_elapsed =
         std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_elapsed.count() << std::endl;
+
+    ippl::finalize();
 
     return 0;
 }

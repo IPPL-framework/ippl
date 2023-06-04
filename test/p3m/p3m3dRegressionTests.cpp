@@ -579,7 +579,7 @@ void ChargedParticles<PL>::calculatePairForces(double interaction_radius, double
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
     Inform msg(argv[0]);
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
@@ -714,7 +714,7 @@ int main(int argc, char* argv[]) {
     INFOMSG(P->getMesh() << endl);
     INFOMSG(P->getFieldLayout() << endl);
     msg << endl << endl;
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
 
     // dumpParticlesCSV(P,0);
 
@@ -812,7 +812,7 @@ int main(int argc, char* argv[]) {
         }
         msg << "Finished iteration " << it << endl;
     }
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
 
     msg << "number of particles = " << endl;
     msg << P->getTotalNum() << endl;
@@ -914,6 +914,8 @@ int main(int argc, char* argv[]) {
     delete P;
     delete FL;
     delete mesh;
+
+    ippl::finalize();
 
     return 0;
 }

@@ -35,7 +35,8 @@ KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double den
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+
+    ippl::initialize(argc, argv);
 
     std::string algorithm = argv[1];
 
@@ -138,6 +139,8 @@ int main(int argc, char* argv[]) {
 
         std::cout << std::setprecision(16) << dx << " " << err << std::endl;
     }
+
+    ippl::finalize();
 
     return 0;
 }

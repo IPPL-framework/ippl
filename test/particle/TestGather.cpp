@@ -16,7 +16,7 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
 };
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
     typedef Bunch<playout_type> bunch_type;
@@ -73,6 +73,8 @@ int main(int argc, char* argv[]) {
     gather(bunch.Q, field, bunch.R);
 
     bunch.Q.print();
+
+    ippl::finalize();
 
     return 0;
 }

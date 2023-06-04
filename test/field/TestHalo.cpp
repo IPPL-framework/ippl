@@ -7,7 +7,7 @@
 #include <typeinfo>
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
     Inform msg("TestHalo");
 
     static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
@@ -44,12 +44,12 @@ int main(int argc, char* argv[]) {
 
     field_type field(mesh, layout);
 
-    field      = Ippl::Comm->rank();
-    int myRank = Ippl::Comm->rank();
-    int nRanks = Ippl::Comm->size();
+    field      = ippl::Comm->rank();
+    int myRank = ippl::Comm->rank();
+    int nRanks = ippl::Comm->size();
 
     for (int rank = 0; rank < nRanks; ++rank) {
-        if (rank == Ippl::Comm->rank()) {
+        if (rank == ippl::Comm->rank()) {
             const auto& neighbors = layout.getNeighbors();
             for (unsigned i = 0; i < neighbors.size(); i++) {
                 const auto& n = neighbors[i];
@@ -78,13 +78,13 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     auto& domains = layout.getHostLocalDomains();
 
-    for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-        if (rank == Ippl::Comm->rank()) {
+    for (int rank = 0; rank < ippl::Comm->size(); ++rank) {
+        if (rank == ippl::Comm->rank()) {
             auto& neighbors = layout.getNeighbors();
 
             int nFaces = 0, nEdges = 0, nVertices = 0;
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
                       << " - vertices: " << nVertices << std::endl
                       << "--------------------------------------" << std::endl;
         }
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     int nsteps = 300;
@@ -124,25 +124,28 @@ int main(int argc, char* argv[]) {
     IpplTimings::startTimer(fillHaloTimer);
     for (int nt = 0; nt < nsteps; ++nt) {
         field.accumulateHalo();
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
         field.fillHalo();
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
         msg << "Update: " << nt + 1 << endl;
     }
     IpplTimings::stopTimer(fillHaloTimer);
 
     for (int rank = 0; rank < nRanks; ++rank) {
-        if (rank == Ippl::Comm->rank()) {
+        if (rank == ippl::Comm->rank()) {
             std::string fname =
                 "field_nRanks_" + std::to_string(nRanks) + "_rank_" + std::to_string(rank) + ".dat";
             Inform out("Output", fname.c_str(), Inform::OVERWRITE, rank);
             field.write(out);
         }
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
     IpplTimings::print(std::string("timing.dat"));
+
+    ippl::finalize();
+
     return 0;
 }

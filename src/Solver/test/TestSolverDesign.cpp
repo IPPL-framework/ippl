@@ -24,7 +24,7 @@ public:
 };
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     int pt = 4;
     ippl::Index I(pt);
@@ -65,6 +65,8 @@ int main(int argc, char* argv[]) {
     rhs.write();
 
     grad.write();
+
+    ippl::finalize();
 
     return 0;
 }

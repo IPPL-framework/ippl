@@ -16,7 +16,7 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
 };
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
     typedef Bunch<playout_type> bunch_type;
@@ -50,11 +50,11 @@ int main(int argc, char* argv[]) {
 
     bunch.setParticleBC(ippl::BC::PERIODIC);
 
-    int nRanks              = Ippl::Comm->size();
+    int nRanks              = ippl::Comm->size();
     unsigned int nParticles = std::pow(256, 3);
 
     if (nParticles % nRanks > 0) {
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::cerr << nParticles << " not a multiple of " << nRanks << std::endl;
         }
         return 0;
@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
 
     std::mt19937_64 eng;
     eng.seed(42);
-    eng.discard(nLoc * Ippl::Comm->rank());
+    eng.discard(nLoc * ippl::Comm->rank());
     std::uniform_real_distribution<double> unif(hx[0] / 2, 1 - (hx[0] / 2));
 
     typename bunch_type::particle_position_type::HostMirror R_host = bunch.R.getHostMirror();
@@ -79,9 +79,9 @@ int main(int argc, char* argv[]) {
     Kokkos::deep_copy(bunch.R.getView(), R_host);
 
     double global_sum_coord = 0.0;
-    MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+    MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
 
-    if (Ippl::Comm->rank() == 0) {
+    if (ippl::Comm->rank() == 0) {
         std::cout << "Sum coord: " << global_sum_coord << std::endl;
     }
 
@@ -104,6 +104,8 @@ int main(int argc, char* argv[]) {
     } catch (const std::exception& e) {
         std::cout << e.what() << std::endl;
     }
+
+    ippl::finalize();
 
     return 0;
 }

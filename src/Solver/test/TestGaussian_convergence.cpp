@@ -231,7 +231,7 @@ void compute_convergence(std::string algorithm, int pt) {
         T globaltemp = 0.0;
 
         MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
         T errorNr = std::sqrt(globaltemp);
 
         temp = 0.0;
@@ -244,7 +244,7 @@ void compute_convergence(std::string algorithm, int pt) {
             Kokkos::Sum<T>(temp));
 
         globaltemp = 0.0;
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
         T errorDr = std::sqrt(globaltemp);
 
         errE[d] = errorNr / errorDr;
@@ -257,7 +257,7 @@ void compute_convergence(std::string algorithm, int pt) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
     Inform msg("");
     Inform msg2all("", INFORM_ALL_NODES);
 
@@ -292,6 +292,8 @@ int main(int argc, char* argv[]) {
     // stop the timer
     IpplTimings::stopTimer(allTimer);
     IpplTimings::print(std::string("timing.dat"));
+
+    ippl::finalize();
 
     return 0;
 }

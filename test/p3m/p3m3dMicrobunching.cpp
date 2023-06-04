@@ -459,7 +459,7 @@ public:
 
     void openH5(std::string fn) {
         h5_prop_t props = H5CreateFileProp();
-        MPI_Comm comm   = Ippl::getComm();
+        MPI_Comm comm   = ippl::Comm->getCommunicator();
         h5_err_t h5err  = H5SetPropFileMPIOCollective(props, &comm);
         PAssert(h5err != H5_ERR);
         H5f_m = H5OpenFile(fn.c_str(), H5_O_WRONLY, props);
@@ -613,7 +613,7 @@ void ChargedParticles<PL>::calculatePairForces(double interaction_radius, double
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
     Inform msg(argv[0]);
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
@@ -676,7 +676,7 @@ int main(int argc, char* argv[]) {
     PL->enableCaching();
 
     /////// Print mesh informations ////////////////////////////////////////////////////////////
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
     // dumpParticlesCSVp(P,0);
 
     INFOMSG(P->getMesh() << endl);
@@ -778,7 +778,7 @@ int main(int argc, char* argv[]) {
     // P->computeBunchingGain();
 
     P->closeH5();
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
 
     msg << "number of particles = " << endl;
     msg << P->getTotalNum() << endl;
@@ -789,6 +789,8 @@ int main(int argc, char* argv[]) {
     delete P;
     delete FL;
     delete mesh;
+
+    ippl::finalize();
 
     return 0;
 }

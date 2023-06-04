@@ -52,7 +52,7 @@ KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_E(double x, double y, doubl
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     Inform msg(argv[0]);
     Inform msg2all(argv[0], INFORM_ALL_NODES);
@@ -255,7 +255,7 @@ int main(int argc, char* argv[]) {
                 Kokkos::Sum<double>(temp));
 
             double globaltemp = 0.0;
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
             double errorNr = std::sqrt(globaltemp);
 
             temp = 0.0;
@@ -268,7 +268,7 @@ int main(int argc, char* argv[]) {
                 Kokkos::Sum<double>(temp));
 
             globaltemp = 0.0;
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
             double errorDr = std::sqrt(globaltemp);
 
             errE[d] = errorNr / errorDr;
@@ -328,6 +328,8 @@ int main(int argc, char* argv[]) {
     // stop the timers
     IpplTimings::stopTimer(allTimer);
     IpplTimings::print(std::string("timing.dat"));
+
+    ippl::finalize();
 
     return 0;
 }

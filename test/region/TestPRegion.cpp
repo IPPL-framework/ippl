@@ -3,7 +3,7 @@
 #include <typeinfo>
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     typedef ippl::PRegion<double> region_t;
 
@@ -13,6 +13,8 @@ int main(int argc, char* argv[]) {
 
             region += 1.0;
         });
+
+    ippl::finalize();
 
     return 0;
 }

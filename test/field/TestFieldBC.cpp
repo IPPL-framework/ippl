@@ -6,7 +6,7 @@
 #include <typeinfo>
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     constexpr unsigned int dim = 3;
 
@@ -87,15 +87,17 @@ int main(int argc, char* argv[]) {
         bcField.apply(field);
     }
 
-    int nRanks = Ippl::Comm->size();
+    int nRanks = ippl::Comm->size();
     for (int rank = 0; rank < nRanks; ++rank) {
-        if (rank == Ippl::Comm->rank()) {
+        if (rank == ippl::Comm->rank()) {
             std::string fname = "field_AllBC_" + std::to_string(rank) + ".dat";
             Inform out("Output", fname.c_str(), Inform::OVERWRITE, rank);
             field.write(out);
         }
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
+
+    ippl::finalize();
 
     return 0;
 }

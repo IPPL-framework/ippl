@@ -8,7 +8,7 @@
 #include "FFTPeriodicPoissonSolver.h"
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
@@ -17,8 +17,8 @@ int main(int argc, char* argv[]) {
     const int npts            = 7;
     std::array<int, npts> pts = {2, 4, 8, 16, 32, 64, 128};
 
-    if (Ippl::Comm->size() > 4) {
-        if (Ippl::Comm->rank() == 0) {
+    if (ippl::Comm->size() > 4) {
+        if (ippl::Comm->rank() == 0) {
             std::cerr << " Too many MPI ranks please use <= 4 ranks" << std::endl;
         }
     }
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
                 double error2      = sqrt(phifield_exact.sum());
                 double error_norm2 = error1 / error2;
 
-                if (Ippl::Comm->rank() == 0) {
+                if (ippl::Comm->rank() == 0) {
                     std::cout << "L2 relative error norm: " << error_norm2 << std::endl;
                 }
                 break;
@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
                         },
                         Kokkos::Sum<double>(temp));
                     double globaltemp = 0.0;
-                    MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+                    MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
                     errorNr[d] = std::sqrt(globaltemp);
 
                     temp = 0.0;
@@ -196,13 +196,13 @@ int main(int argc, char* argv[]) {
                         },
                         Kokkos::Sum<double>(temp));
                     globaltemp = 0.0;
-                    MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+                    MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
                     errorDr[d] = std::sqrt(globaltemp);
 
                     error_norm2[d] = errorNr[d] / errorDr[d];
                 }
 
-                if (Ippl::Comm->rank() == 0) {
+                if (ippl::Comm->rank() == 0) {
                     for (size_t d = 0; d < dim; ++d) {
                         std::cout << "L2 relative error norm Efield[" << d
                                   << "]: " << error_norm2[d] << std::endl;
@@ -215,6 +215,8 @@ int main(int argc, char* argv[]) {
                 std::cout << "Unrecognized option" << std::endl;
         }
     }
+
+    ippl::finalize();
 
     return 0;
 }

@@ -16,7 +16,7 @@
 #include "ElectrostaticsCG.h"
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, 3>;
@@ -150,6 +150,8 @@ int main(int argc, char* argv[]) {
       << endl;
 
     IpplTimings::print("timings" + std::to_string(pt) + ".dat");
+
+    ippl::finalize();
 
     return 0;
 }

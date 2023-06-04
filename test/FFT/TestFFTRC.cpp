@@ -8,7 +8,7 @@
 #include "Utility/ParameterList.h"
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
         ownedOutput[1] = ippl::Index(pt[1]);
         ownedOutput[2] = ippl::Index(pt[2] / 2 + 1);
     } else {
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::cerr << "RCDirection need to be 0, 1 or 2 and it"
                       << "indicates the dimension in which data is shortened" << std::endl;
         }
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
     typename field_type_real::HostMirror fieldInput_host = fieldInput.getHostMirror();
 
     const int nghost = fieldInput.getNghost();
-    std::mt19937_64 eng(42 + Ippl::Comm->rank());
+    std::mt19937_64 eng(42 + ippl::Comm->rank());
     std::uniform_real_distribution<double> unif(0, 1);
 
     for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
@@ -117,11 +117,14 @@ int main(int argc, char* argv[]) {
 
     // Kokkos::complex<double> max_error(0.0, 0.0);
     // MPI_Reduce(&max_error_local, &max_error, 1,
-    //            MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
+    //            MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, ippl::Comm->getCommunicator());
 
-    // if(Ippl::Comm->rank() == 0) {
-    std::cout << "Rank:" << Ippl::Comm->rank() << "Max. error " << std::setprecision(16)
+    // if(ippl::Comm->rank() == 0) {
+    std::cout << "Rank:" << ippl::Comm->rank() << "Max. error " << std::setprecision(16)
               << max_error_local << std::endl;
     //}
+
+    ippl::finalize();
+
     return 0;
 }

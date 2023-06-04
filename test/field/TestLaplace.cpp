@@ -7,7 +7,7 @@
 #include <typeinfo>
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(timer);
         Lap = laplace(field);
         IpplTimings::stopTimer(timer);
-        Ippl::fence();
+        ippl::fence();
     }
 
     Lap = Lap - Lap_exact;
@@ -121,13 +121,15 @@ int main(int argc, char* argv[]) {
     double error = sqrt(Lap.sum());
     error        = error / sqrt(Lap_exact.sum());
 
-    if (Ippl::Comm->rank() == 0) {
+    if (ippl::Comm->rank() == 0) {
         std::cout << "Error: " << error << std::endl;
     }
     std::stringstream ss;
-    ss << "timing_" << pt << "pt_" << iterations << "iterations_" << Ippl::Comm->size()
+    ss << "timing_" << pt << "pt_" << iterations << "iterations_" << ippl::Comm->size()
        << "ranks.dat";
     IpplTimings::print(ss.str());
+
+    ippl::finalize();
 
     return 0;
 }

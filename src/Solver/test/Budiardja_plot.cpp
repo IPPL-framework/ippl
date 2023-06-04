@@ -32,7 +32,7 @@ KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double den
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
 
     // number of interations
     const int n = 5;
@@ -133,5 +133,8 @@ int main(int argc, char* argv[]) {
 
         std::cout << dx << " " << err << std::endl;
     }
+
+    ippl::finalize();
+
     return 0;
 }

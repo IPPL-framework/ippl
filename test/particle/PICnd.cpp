@@ -158,14 +158,14 @@ public:
 
     bool balance(unsigned int totalP) {  //, int timestep = 1) {
         int local = 0;
-        std::vector<int> res(Ippl::Comm->size());
+        std::vector<int> res(ippl::Comm->size());
         double threshold = 1.0;
-        double equalPart = (double)totalP / Ippl::Comm->size();
+        double equalPart = (double)totalP / ippl::Comm->size();
         double dev       = std::abs((double)this->getLocalNum() - equalPart) / totalP;
         if (dev > threshold) {
             local = 1;
         }
-        MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
+        MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, ippl::Comm->getCommunicator());
 
         for (unsigned int i = 0; i < res.size(); i++) {
             if (res[i] == 1) {
@@ -176,11 +176,11 @@ public:
     }
 
     void gatherStatistics(unsigned int totalP) {
-        Ippl::Comm->barrier();
-        std::cout << "Rank " << Ippl::Comm->rank() << " has "
+        ippl::Comm->barrier();
+        std::cout << "Rank " << ippl::Comm->rank() << " has "
                   << (double)this->getLocalNum() / totalP * 100.0
                   << " percent of the total particles " << std::endl;
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     void gatherCIC() {
@@ -206,12 +206,12 @@ public:
         unsigned int local_particles = this->getLocalNum();
 
         MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
-                   Ippl::getComm());
+                   ippl::Comm->getCommunicator());
 
         double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
         m << "Rel. error in charge conservation = " << rel_error << endl;
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             if (Total_particles != totalP || rel_error > 1e-10) {
                 std::cout << "Total particles in the sim. " << totalP << " "
                           << "after update: " << Total_particles << std::endl;
@@ -307,7 +307,7 @@ public:
         Energy *= 0.5;
         double gEnergy = 0.0;
 
-        MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
 
         Inform csvout(NULL, "data/energy.csv", Inform::APPEND);
         csvout.precision(10);
@@ -315,7 +315,7 @@ public:
 
         csvout << iteration << " " << gEnergy << endl;
 
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     // @param tag
@@ -330,13 +330,13 @@ public:
         std::mt19937_64 eng[Dim];
         for (unsigned i = 0; i < Dim; ++i) {
             eng[i].seed(42 + i * Dim);
-            eng[i].discard(nloc * Ippl::Comm->rank());
+            eng[i].discard(nloc * ippl::Comm->rank());
         }
 
         std::mt19937_64 engN[4 * Dim];
         for (unsigned i = 0; i < 4 * Dim; ++i) {
             engN[i].seed(42 + i * Dim);
-            engN[i].discard(nloc * Ippl::Comm->rank());
+            engN[i].discard(nloc * ippl::Comm->rank());
         }
 
         auto dom                = fl.getDomain();
@@ -344,8 +344,8 @@ public:
         for (unsigned d = 0; d < Dim; d++) {
             gridpoints *= dom[d].length();
         }
-        if (tag == 0 && nloc * Ippl::Comm->size() != gridpoints) {
-            if (Ippl::Comm->rank() == 0) {
+        if (tag == 0 && nloc * ippl::Comm->size() != gridpoints) {
+            if (ippl::Comm->rank() == 0) {
                 std::cerr << "Particle count must match gridpoint count to use gridpoint "
                              "locations. Switching to uniform distribution."
                           << std::endl;
@@ -357,7 +357,7 @@ public:
             m << "Positions are set on grid points" << endl;
             int N = fl.getDomain()[0].length();  // this only works for boxes
             const ippl::NDIndex<Dim>& lDom = fl.getLocalNDIndex();
-            int size                       = Ippl::Comm->size();
+            int size                       = ippl::Comm->size();
             using index_type               = typename ippl::RangePolicy<Dim>::index_type;
             Kokkos::Array<index_type, Dim> begin, end;
             for (unsigned d = 0; d < Dim; d++) {
@@ -422,11 +422,11 @@ private:
 };
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
+    ippl::initialize(argc, argv);
     Inform msg(PROG_NAME);
     Inform msg2all(argv[0], INFORM_ALL_NODES);
 
-    Ippl::Comm->setDefaultOverallocation(3.0);
+    ippl::Comm->setDefaultOverallocation(3.0);
 
     int arg = 1;
 
@@ -437,7 +437,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Each rank must have a minimal volume of 8
-    if (volume < 8 * Ippl::Comm->size()) {
+    if (volume < 8 * ippl::Comm->size()) {
         msg << "!!! Ranks have not enough volume for proper working !!! (Minimal volume per rank: "
                "8)"
             << endl;
@@ -484,11 +484,11 @@ int main(int argc, char* argv[]) {
     double Q = 1.0;
     P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
 
-    unsigned long int nloc = totalP / Ippl::Comm->size();
+    unsigned long int nloc = totalP / ippl::Comm->size();
 
-    int rest = (int)(totalP - nloc * Ippl::Comm->size());
+    int rest = (int)(totalP - nloc * ippl::Comm->size());
 
-    if (Ippl::Comm->rank() < rest) {
+    if (ippl::Comm->rank() < rest) {
         ++nloc;
     }
 
@@ -498,7 +498,7 @@ int main(int argc, char* argv[]) {
     // Verifying that particles are created
     double totalParticles = 0.0;
     double localParticles = P->getLocalNum();
-    MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+    MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
     msg << "Total particles: " << totalParticles << endl;
     P->initPositions(FL, hr, nloc, 2);
 
@@ -590,8 +590,10 @@ int main(int argc, char* argv[]) {
     msg << "Particle test " << PROG_NAME << ": End." << endl;
     IpplTimings::stopTimer(mainTimer);
     IpplTimings::print();
-    IpplTimings::print(std::string("timing" + std::to_string(Ippl::Comm->size()) + "r_"
+    IpplTimings::print(std::string("timing" + std::to_string(ippl::Comm->size()) + "r_"
                                    + std::to_string(nr[0]) + "c.dat"));
+
+    ippl::finalize();
 
     return 0;
 }
