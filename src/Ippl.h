@@ -37,9 +37,9 @@ namespace ippl {
     // Inform object to use to print messages to the console (or even to a
     // file if requested)
     // use inlining to avoid multiple definitions
-    inline std::unique_ptr<Inform> Info            = 0;
-    inline std::unique_ptr<Inform> Warn            = 0;
-    inline std::unique_ptr<Inform> Error           = 0;
+    inline std::unique_ptr<Inform> Info  = 0;
+    inline std::unique_ptr<Inform> Warn  = 0;
+    inline std::unique_ptr<Inform> Error = 0;
 
     void initialize(int& argc, char* argv[], MPI_Comm comm = MPI_COMM_WORLD);
 
