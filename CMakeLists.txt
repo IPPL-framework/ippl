@@ -38,7 +38,7 @@ set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "-O3")
 set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
-if ("${Kokkos_DEVICES}" MATCHES ".*CUDA.*")
+if ("${Kokkos_DEVICES}" MATCHES "CUDA")
     set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -G --diag-suppress=20011")
 endif()
 

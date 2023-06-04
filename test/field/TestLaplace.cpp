@@ -39,35 +39,23 @@ int main(int argc, char* argv[]) {
     typedef ippl::Field<double, dim, Mesh_t, Centering_t> Field_t;
     typedef ippl::Field<ippl::Vector<double, dim>, dim, Mesh_t, Centering_t> vector_field_type;
 
-    typedef ippl::Field<double, dim, Mesh_t, Centering_t, Kokkos::OpenMP> Field_host_t;
-
     Field_t field(mesh, layout);
     Field_t Lap(mesh, layout);
     Field_t Lap_exact(mesh, layout);
     vector_field_type vfield(mesh, layout);
-
-    Field_host_t field_host(mesh, layout);
-    Field_host_t Lap_host(mesh, layout);
-    Field_host_t Lap_host_exact(mesh, layout);
 
     typename Field_t::view_type& view       = field.getView();
     typename Field_t::view_type& view_exact = Lap_exact.getView();
     typedef ippl::BConds<Field_t, dim> bc_type;
     typedef ippl::BConds<vector_field_type, dim> vbc_type;
 
-    typedef ippl::BConds<Field_host_t, dim> bc_host_type;
-
     bc_type bcField;
     vbc_type vbcField;
-
-    bc_host_type bcField_host;
 
     // X direction periodic BC
     for (unsigned int i = 0; i < 6; ++i) {
         bcField[i]  = std::make_shared<ippl::PeriodicFace<Field_t>>(i);
         vbcField[i] = std::make_shared<ippl::PeriodicFace<vector_field_type>>(i);
-
-        bcField_host[i] = std::make_shared<ippl::PeriodicFace<Field_host_t>>(i);
     }
     ////Lower Y face
     // bcField[2] = std::make_shared<ippl::NoBcFace<Field_t>>(2);
@@ -85,9 +73,6 @@ int main(int argc, char* argv[]) {
     field.setFieldBC(bcField);
     Lap.setFieldBC(bcField);
     vfield.setFieldBC(vbcField);
-
-    field_host.setFieldBC(bcField_host);
-    Lap_host.setFieldBC(bcField_host);
 
     const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
     const int nghost               = field.getNghost();
@@ -109,16 +94,6 @@ int main(int argc, char* argv[]) {
             view_exact(i, j, k) = -3.0 * pi * pi * sin(pi * x) * sin(pi * y) * sin(pi * z);
         });
 
-    // set host field by copying
-    auto mirror1 = field.getHostMirror();
-    Kokkos::deep_copy(mirror1, view);
-    Kokkos::deep_copy(field_host.getView(), mirror1);
-
-    // set host exact laplacian
-    auto mirror2 = Lap_exact.getHostMirror();
-    Kokkos::deep_copy(mirror2, view_exact);
-    Kokkos::deep_copy(Lap_host_exact.getView(), mirror2);
-
     // field.write();
 
     // vfield = grad(field);
@@ -129,14 +104,12 @@ int main(int argc, char* argv[]) {
 
     // field.write();
 
-    Lap      = 0.0;
-    Lap_host = 0.0;
+    Lap = 0.0;
 
     static auto timer = IpplTimings::getTimer("laplace");
     for (int i = 0; i < iterations; i++) {
         IpplTimings::startTimer(timer);
-        Lap      = laplace(field);
-        Lap_host = laplace(field_host);
+        Lap = laplace(field);
         IpplTimings::stopTimer(timer);
         Ippl::fence();
     }
