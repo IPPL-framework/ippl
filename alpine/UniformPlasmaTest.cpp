@@ -7,7 +7,7 @@
 //     ny...    = No. cell-centered points in the y-, z-, ...direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
-//     stype    = Field solver type (FFT and CG supported)
+//     stype    = Field solver type (FFT, CG, P3M, and OPEN supported)
 //     lbfreq   = Load balancing frequency i.e., Number of time steps after which particle
 //                load balancing should happen
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical

@@ -1,8 +1,24 @@
-// This program tests the FFTPoissonSolver class with a Gaussian source.
-// Different problem sizes are used for the purpose of convergence tests.
-// The algorithm used is chosen by the user:
-//     srun ./TestGaussian_convergence HOCKNEY --info 10
-// OR  srun ./TestGaussian_convergence VICO --info 10
+//
+// TestGaussian_biharmonic
+// This programs tests the Biharmonic solver from FFTPoissonSolver.
+// The test is done on a Gaussian source.
+//   Usage:
+//     srun ./TestGaussian_biharmonic --info 5
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 #include "Ippl.h"
 
@@ -14,6 +30,7 @@ using Mesh_t        = ippl::UniformCartesian<double, 3>;
 using Centering_t   = Mesh_t::DefaultCentering;
 using ScalarField_t = ippl::Field<double, 3, Mesh_t, Centering_t>;
 using VectorField_t = ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t>;
+using Solver_t      = ippl::FFTPoissonSolver<VectorField_t, ScalarField_t>;
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {
@@ -21,7 +38,7 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
     double prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return -prefactor * exp(-r2 / (2 * sigma * sigma));
+    return prefactor * exp(-r2 / (2 * sigma * sigma));
 }
 
 KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sigma = 0.05,
@@ -98,8 +115,6 @@ int main(int argc, char* argv[]) {
     {
         Inform msg("");
         Inform msg2all("", INFORM_ALL_NODES);
-
-        std::string algorithm = "BIHARMONIC";
 
         // start a timer to time the FFT Poisson solver
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
@@ -204,17 +219,24 @@ int main(int argc, char* argv[]) {
 
             Kokkos::fence();
 
+            // parameter list for solver
+            ippl::ParameterList params;
+
             // set the FFT parameters
-            ippl::ParameterList fftParams;
-            fftParams.add("use_heffte_defaults", false);
-            fftParams.add("use_pencils", true);
-            fftParams.add("use_gpu_aware", true);
-            fftParams.add("comm", ippl::a2av);
-            fftParams.add("r2c_direction", 0);
+            params.add("use_heffte_defaults", false);
+            params.add("use_pencils", true);
+            params.add("use_gpu_aware", true);
+            params.add("comm", ippl::a2av);
+            params.add("r2c_direction", 0);
+
+            // set the algorithm (BIHARMONIC here)
+            params.add("algorithm", Solver_t::BIHARMONIC);
+
+            // add output type
+            params.add("output_type", Solver_t::SOL_AND_GRAD);
 
             // define an FFTPoissonSolver object
-            ippl::FFTPoissonSolver<VectorField_t, ScalarField_t> FFTsolver(fieldE, rho, fftParams,
-                                                                        algorithm);
+            Solver_t FFTsolver(fieldE, rho, params);
 
             // solve the Poisson equation -> rho contains the solution (phi) now
             FFTsolver.solve();
@@ -271,6 +293,5 @@ int main(int argc, char* argv[]) {
         IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
-
     return 0;
 }

@@ -1,14 +1,39 @@
+//
+// TestGaussian
 // This program tests the FFTPoissonSolver class with a Gaussian source.
 // The solve is iterated 5 times for the purpose of timing studies.
-// The problem size, heffte parameters, and algorithm are given by the user:
-//   srun ./TestGaussian 64 64 64 pencils a2a no-reorder HOCKNEY --info 10
-// Possible algorithms: "HOCKNEY" or "VICO".
-// Possible heffte parameters:
-//  - "pencils" or "slabs" (reshape)
-//  - "a2a", "a2av", "p2p", "p2p_pl" (communication)
-//  - "reorder" or "no-reorder" (reordering)
-// See heffte documentation for more information on these parameters:
-// https://mkstoyanov.bitbucket.io/heffte/
+//   Usage:
+//     srun ./TestGaussian
+//                  <nx> <ny> <nz> <reshape> <comm>
+//                  <reorder> <algorithm> --info 5
+//     nx        = No. cell-centered points in the x-direction
+//     ny        = No. cell-centered points in the y-direction
+//     nz        = No. cell-centered points in the z-direction
+//     reshape   = "pencils" or "slabs" (heffte parameter)
+//     comm      = "a2a", "a2av", "p2p", "p2p_pl" (heffte parameter)
+//     reorder   = "reorder" or "no-reorder" (heffte parameter)
+//     algorithm = "HOCKNEY" or "VICO", types of open BC algorithms
+//
+//     For more info on the heffte parameters, see:
+//     https://github.com/icl-utk-edu/heffte
+//
+//     Example:
+//       srun ./TestGaussian 64 64 64 pencils a2a no-reorder HOCKNEY --info 5
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 #include "Ippl.h"
 
@@ -27,7 +52,7 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
     double prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return -prefactor * exp(-r2 / (2 * sigma * sigma));
+    return prefactor * exp(-r2 / (2 * sigma * sigma));
 }
 
 KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sigma = 0.05,
@@ -61,6 +86,9 @@ int main(int argc, char* argv[]) {
 
         using Mesh_t      = ippl::UniformCartesian<double, 3>;
         using Centering_t = Mesh_t::DefaultCentering;
+        typedef ippl::Field<double, Dim, Mesh_t, Centering_t> field;
+        typedef ippl::Field<ippl::Vector<double, Dim>, Dim, Mesh_t, Centering_t> fieldV;
+        using Solver_t = ippl::FFTPoissonSolver<fieldV, field>;
 
         // start a timer
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
@@ -106,13 +134,11 @@ int main(int argc, char* argv[]) {
         ippl::FieldLayout<Dim> layout(owned, decomp);
 
         // define the R (rho) field
-        typedef ippl::Field<double, Dim, Mesh_t, Centering_t> field;
         field exact, rho;
         exact.initialize(mesh, layout);
         rho.initialize(mesh, layout);
 
         // define the Vector field E (LHS)
-        typedef ippl::Field<ippl::Vector<double, Dim>, Dim, Mesh_t, Centering_t> fieldV;
         fieldV exactE, fieldE;
         exactE.initialize(mesh, layout);
         fieldE.initialize(mesh, layout);
@@ -179,41 +205,55 @@ int main(int argc, char* argv[]) {
                 view_exactE(i, j, k)[2] = exact_E(x, y, z)[2];
             });
 
+        // Parameter List to pass to solver
+        ippl::ParameterList params;
+
         // set the FFT parameters
-        ippl::ParameterList fftParams;
         if (reshape == "pencils") {
-            fftParams.add("use_pencils", true);
+            params.add("use_pencils", true);
         } else if (reshape == "slabs") {
-            fftParams.add("use_pencils", false);
+            params.add("use_pencils", false);
         } else {
             throw IpplException("TestGaussian.cpp main()", "Unrecognized heffte parameter");
         }
 
         if (communication == "a2a") {
-            fftParams.add("comm", ippl::a2a);
+            params.add("comm", ippl::a2a);
         } else if (communication == "a2av") {
-            fftParams.add("comm", ippl::a2av);
+            params.add("comm", ippl::a2av);
         } else if (communication == "p2p") {
-            fftParams.add("comm", ippl::p2p);
+            params.add("comm", ippl::p2p);
         } else if (communication == "p2p_pl") {
-            fftParams.add("comm", ippl::p2p_pl);
+            params.add("comm", ippl::p2p_pl);
         } else {
             throw IpplException("TestGaussian.cpp main()", "Unrecognized heffte parameter");
         }
 
         if (reordering == "reorder") {
-            fftParams.add("use_reorder", true);
+            params.add("use_reorder", true);
         } else if (reordering == "no-reorder") {
-            fftParams.add("use_reorder", false);
+            params.add("use_reorder", false);
         } else {
             throw IpplException("TestGaussian.cpp main()", "Unrecognized heffte parameter");
         }
-        fftParams.add("use_heffte_defaults", false);
-        fftParams.add("use_gpu_aware", true);
-        fftParams.add("r2c_direction", 0);
+        params.add("use_heffte_defaults", false);
+        params.add("use_gpu_aware", true);
+        params.add("r2c_direction", 0);
+
+        // set the algorithm
+        if (algorithm == "HOCKNEY") {
+            params.add("algorithm", Solver_t::HOCKNEY);
+        } else if (algorithm == "VICO") {
+            params.add("algorithm", Solver_t::VICO);
+        } else {
+            throw IpplException("TestGaussian.cpp main()", "Unrecognized algorithm type");
+        }
+
+        // add output type
+        params.add("output_type", Solver_t::SOL_AND_GRAD);
 
         // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<fieldV, field> FFTsolver(fieldE, rho, fftParams, algorithm);
+        Solver_t FFTsolver(fieldE, rho, params);
 
         // iterate over 5 timesteps
         for (int times = 0; times < 5; ++times) {

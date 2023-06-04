@@ -1,26 +1,27 @@
 //
-//// Class P3MSolver
-////   FFT-based Poisson Solver class.
-////
-//// This file is part of IPPL.
-////
-//// IPPL is free software: you can redistribute it and/or modify
-//// it under the terms of the GNU General Public License as published by
-//// the Free Software Foundation, either version 3 of the License, or
-//// (at your option) any later version.
-////
-//// You should have received a copy of the GNU General Public License
-//// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-////
+// Class P3MSolver
+//   Poisson solver for periodic boundaries, based on FFTs.
+//   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
-
-#include <Kokkos_MathematicalFunctions.hpp>
-#include <algorithm>
-
-#include "Utility/IpplException.h"
-
-#include "Field/HaloCells.h"
-#include "P3MSolver.h"
+//   Uses a convolution with a Green's function given by:
+//      G(r) = ke * erf(alpha * r) / r,
+//   where ke = Coulomb constant,
+//         alpha = controls long-range interaction.
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 namespace ippl {
 
@@ -28,34 +29,46 @@ namespace ippl {
     // constructor and destructor
 
     template <typename FieldLHS, typename FieldRHS>
-    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(rhs_type& rhs, ParameterList& fftparams)
-        : mesh_mp(nullptr)
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver()
+        : Base()
+        , mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
         setDefaultParameters();
-        this->setRhs(rhs);
-
-        this->params_m.merge(fftparams);
-        this->params_m.update("output_type", Base::SOL);
-
-        initializeFields();
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams,
-                                             int sol)
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(rhs_type& rhs, ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
         setDefaultParameters();
+
+        this->params_m.merge(params);
+        this->params_m.update("output_type", Base::SOL);
+
         this->setRhs(rhs);
+    }
+
+    template <typename FieldLHS, typename FieldRHS>
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params)
+        : mesh_mp(nullptr)
+        , layout_mp(nullptr)
+        , meshComplex_m(nullptr)
+        , layoutComplex_m(nullptr) {
+        setDefaultParameters();
+
+        this->params_m.merge(params);
+
         this->setLhs(lhs);
+        this->setRhs(rhs);
+    }
 
-        this->params_m.merge(fftparams);
-        this->params_m.update("output_type", sol);
-
+    template <typename FieldLHS, typename FieldRHS>
+    void P3MSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
+        Base::setRhs(rhs);
         initializeFields();
     }
 
@@ -221,20 +234,16 @@ namespace ippl {
         // convolution becomes multiplication in FFT
         rhotr_m = rhotr_m * grntr_m;
 
-        // if output_type is SOL or SOL_AND_GRAD, we caculate solution
-        if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
-            // inverse FFT of the product and store the electrostatic potential in rho2_mr
-            fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
-        }
+        // inverse FFT of the product and store the electrostatic potential in rho2_mr
+        fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
 
         // normalization is double counted due to 2 transforms
         *(this->rhs_mp) = *(this->rhs_mp) * nr_m[0] * nr_m[1] * nr_m[2];
         // discretization of integral requires h^3 factor
         *(this->rhs_mp) = *(this->rhs_mp) * hr_m[0] * hr_m[1] * hr_m[2];
 
-        // if we want gradient of phi = Efield instead of doing grad in Fourier domain
-        // this is only possible if SOL_AND_GRAD is output type
-        if (out == Base::SOL_AND_GRAD) {
+        // if we want gradient of phi = Efield
+        if (out == Base::SOL_AND_GRAD || out == Base::GRAD) {
             *(this->lhs_mp) = -grad(*this->rhs_mp);
         }
     };
