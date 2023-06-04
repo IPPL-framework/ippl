@@ -30,16 +30,16 @@
 
 namespace ippl {
 
-    namespace {
-        // the parallel communication object
-        std::unique_ptr<ippl::Communicate> Comm = 0;
+    // the parallel communication object
+    // use inlining to avoid multiple definitions
+    inline std::unique_ptr<ippl::Communicate> Comm = 0;
 
-        // Inform object to use to print messages to the console (or even to a
-        // file if requested)
-        std::unique_ptr<Inform> Info            = 0;
-        std::unique_ptr<Inform> Warn            = 0;
-        std::unique_ptr<Inform> Error           = 0;
-    }
+    // Inform object to use to print messages to the console (or even to a
+    // file if requested)
+    // use inlining to avoid multiple definitions
+    inline std::unique_ptr<Inform> Info            = 0;
+    inline std::unique_ptr<Inform> Warn            = 0;
+    inline std::unique_ptr<Inform> Error           = 0;
 
     void initialize(int& argc, char* argv[], MPI_Comm comm = MPI_COMM_WORLD);
 
