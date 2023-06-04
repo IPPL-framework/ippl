@@ -260,7 +260,8 @@ int main(int argc, char* argv[]) {
     msg << "First domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
 
-    typedef ippl::detail::RegionLayout<float, Dim, Mesh_t<Dim>> RegionLayout_t;
+    typedef
+        typename ippl::detail::RegionLayout<float, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
     const RegionLayout_t& RLayout                           = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
     Vector_t<float, Dim> Nr, Dr, minU, maxU;
@@ -309,6 +310,9 @@ int main(int argc, char* argv[]) {
 
     P->scatterCIC(totalP, 0, hr);
 
+    double tempEx2, tempExNorm;
+    P->collectLandau(tempEx2, tempExNorm);
+
     IpplTimings::startTimer(SolveTimer);
     P->runSolver();
     IpplTimings::stopTimer(SolveTimer);
@@ -316,7 +320,7 @@ int main(int argc, char* argv[]) {
     P->gatherCIC();
 
     IpplTimings::startTimer(dumpDataTimer);
-    P->dumpLandau();
+    P->dumpLandau(tempEx2, tempExNorm);
     P->gatherStatistics(totalP);
     // P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
@@ -363,6 +367,8 @@ int main(int argc, char* argv[]) {
         P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
+        P->collectLandau(tempEx2, tempExNorm);
+
         // gather E field
         P->gatherCIC();
 
@@ -373,7 +379,7 @@ int main(int argc, char* argv[]) {
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpLandau();
+        P->dumpLandau(tempEx2, tempExNorm);
         P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;

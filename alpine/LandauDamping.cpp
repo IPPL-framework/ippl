@@ -258,7 +258,7 @@ int main(int argc, char* argv[]) {
     msg << "First domain decomposition done" << endl;
     IpplTimings::startTimer(particleCreation);
 
-    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> RegionLayout_t;
+    typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
     const RegionLayout_t& RLayout                           = PL.getRegionLayout();
     const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
     Vector_t<double, Dim> Nr, Dr, minU, maxU;
