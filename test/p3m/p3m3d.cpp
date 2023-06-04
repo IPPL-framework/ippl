@@ -434,201 +434,202 @@ void ChargedParticles<PL>::calculatePairForces(double interaction_radius) {
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
-    Inform msg(argv[0]);
-    Inform msg2all(argv[0], INFORM_ALL_NODES);
+    {
+        Inform msg(argv[0]);
+        Inform msg2all(argv[0], INFORM_ALL_NODES);
 
-    IpplTimings::TimerRef allTimer = IpplTimings::getTimer("AllTimer");
-    IpplTimings::startTimer(allTimer);
+        IpplTimings::TimerRef allTimer = IpplTimings::getTimer("AllTimer");
+        IpplTimings::startTimer(allTimer);
 
-    Vektor<int, Dim> nr;
+        Vektor<int, Dim> nr;
 
-    unsigned param = 1;
+        unsigned param = 1;
 
-    if (Dim == 3) {
-        nr    = Vektor<int, Dim>(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
-        param = 4;
-    } else {
-        nr    = Vektor<int, Dim>(atoi(argv[1]), atoi(argv[2]));
-        param = 3;
-    }
-
-    double interaction_radius = atof(argv[param++]);
-    size_t count              = atoi(argv[param++]);
-
-    enum DistType {
-        UNIFORM,
-        RANDOM,
-        POINT
-    };
-    DistType type = UNIFORM;
-
-    if (argv[param] == std::string("uniform")) {
-        type = UNIFORM;
-    } else if (argv[param] == std::string("random")) {
-        type = RANDOM;
-    } else if (argv[param] == std::string("point")) {
-        type = POINT;
-    }
-
-    e_dim_tag decomp[Dim];
-    Mesh_t* mesh;
-    FieldLayout_t* FL;
-    ChargedParticles<playout_t>* P;
-
-    NDIndex<Dim> domain;
-    for (unsigned i = 0; i < Dim; i++)
-        domain[i] = domain[i] = Index(nr[i]);
-
-    for (unsigned d = 0; d < Dim; ++d)
-        decomp[d] = PARALLEL;
-
-    // create mesh and layout objects for this problem domain
-    mesh          = new Mesh_t(domain);
-    FL            = new FieldLayout_t(*mesh, decomp);
-    playout_t* PL = new playout_t(*FL, *mesh);
-
-    PL->setAllCacheDimensions(interaction_radius);
-    PL->enableCaching();
-
-    P = new ChargedParticles<playout_t>(PL, nr, decomp);
-    INFOMSG(P->getMesh() << endl);
-    INFOMSG(P->getFieldLayout() << endl);
-    msg << endl << endl;
-    ippl::Comm->barrier();
-
-    // center of charge distribution
-    Vektor<double, Dim> source(0.1 + (32) / 2, 0.3 + (32) / 2, 0.7 + (32) / 2);
-
-    double total_charge = 0;
-
-    if (Ippl::myNode() == 0) {
-        size_t index  = 0;
-        double radius = 6;
-
-        double density = count * 3 / (radius * radius * radius * 4 * 3.14159);
-        double pdist   = std::pow(1 / density, 1 / 3.);
-
-        // create sample particles with charge 0
-        for (int i = 0; i < 32; ++i)
-            for (int j = 0; j < 32; ++j)
-                for (int k = 0; k < 32; ++k) {
-                    Vektor<double, Dim> pos(i, j, k);
-
-                    if (type != POINT
-                        && dot(pos - source, pos - source)
-                               <= (radius + pdist / 3) * (radius + pdist / 3))
-                        continue;
-                    P->create(1);
-                    P->R[index] = pos;
-                    P->Q[index] = 0;
-                    ++index;
-                }
-
-        switch (type) {
-            case UNIFORM:
-
-                for (double x = 0; x < 32; x += pdist)
-                    for (double y = 0; y < 32; y += pdist)
-                        for (double z = 0; z < 32; z += pdist) {
-                            Vektor<double, Dim> pos(x, y, z);
-
-                            if (dot(pos - source, pos - source) <= radius * radius) {
-                                P->create(1);
-                                P->R[index] = pos;
-                                P->Q[index] = 1. / count;
-                                total_charge += 1. / count;
-                                ++index;
-                            }
-                        }
-                break;
-
-            case RANDOM:
-
-                IpplRandom.SetSeed(42);
-
-                P->create(count);
-                for (unsigned i = 0; i < count; ++i) {
-                    Vektor<double, Dim> pos;
-                    do {
-                        pos = 2
-                              * Vektor<double, Dim>((IpplRandom() - 0.5), (IpplRandom() - 0.5),
-                                                    (IpplRandom() - 0.5));
-                    } while (dot(pos, pos) > 1);
-
-                    P->R[index] = source + pos * radius;
-                    P->Q[index] = 1. / count;
-                    total_charge += 1. / count;
-                    ++index;
-                }
-
-                break;
-            case POINT:
-                P->create(1);
-                P->R[index] = source;
-                P->Q[index] = 1;
-                total_charge += 1.;
-                break;
-        }
-    }
-
-    P->update();
-
-    msg << "calculating grid" << endl;
-    IpplTimings::TimerRef gridTimer = IpplTimings::getTimer("GridTimer");
-    IpplTimings::startTimer(gridTimer);
-
-    P->calculateGridForces(interaction_radius);
-
-    IpplTimings::stopTimer(gridTimer);
-
-    msg << "calculating pairs" << endl;
-
-    IpplTimings::TimerRef particleTimer = IpplTimings::getTimer("ParticleTimer");
-    IpplTimings::startTimer(particleTimer);
-
-    P->calculatePairForces(interaction_radius);
-
-    IpplTimings::stopTimer(particleTimer);
-
-    // P->writeFields(1);
-
-    double error = 0;
-    int n        = 0;
-    for (unsigned i = 0; i < P->getLocalNum(); ++i) {
-        double radius = std::sqrt(dot(source - P->R[i], source - P->R[i]));
-        double E      = std::sqrt(dot(P->EF[i], P->EF[i]));
-        // if(radius < 2*interaction_radius)
-        // msg2all << radius << ' ' << E << ' ' << P->R[i][0] << ' ' << P->R[i][1] << ' ' <<
-        // P->R[i][2] << endl;
-
-        double diff = 0;
-
-        if (type != POINT && radius <= 6) {
-            diff = E - radius / (6 * 6 * 6);
+        if (Dim == 3) {
+            nr    = Vektor<int, Dim>(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
+            param = 4;
         } else {
-            if (radius > 0)
-                diff = E - 1 / (radius * radius);
+            nr    = Vektor<int, Dim>(atoi(argv[1]), atoi(argv[2]));
+            param = 3;
         }
-        error += diff * diff;
-        n++;
+
+        double interaction_radius = atof(argv[param++]);
+        size_t count              = atoi(argv[param++]);
+
+        enum DistType {
+            UNIFORM,
+            RANDOM,
+            POINT
+        };
+        DistType type = UNIFORM;
+
+        if (argv[param] == std::string("uniform")) {
+            type = UNIFORM;
+        } else if (argv[param] == std::string("random")) {
+            type = RANDOM;
+        } else if (argv[param] == std::string("point")) {
+            type = POINT;
+        }
+
+        e_dim_tag decomp[Dim];
+        Mesh_t* mesh;
+        FieldLayout_t* FL;
+        ChargedParticles<playout_t>* P;
+
+        NDIndex<Dim> domain;
+        for (unsigned i = 0; i < Dim; i++)
+            domain[i] = domain[i] = Index(nr[i]);
+
+        for (unsigned d = 0; d < Dim; ++d)
+            decomp[d] = PARALLEL;
+
+        // create mesh and layout objects for this problem domain
+        mesh          = new Mesh_t(domain);
+        FL            = new FieldLayout_t(*mesh, decomp);
+        playout_t* PL = new playout_t(*FL, *mesh);
+
+        PL->setAllCacheDimensions(interaction_radius);
+        PL->enableCaching();
+
+        P = new ChargedParticles<playout_t>(PL, nr, decomp);
+        INFOMSG(P->getMesh() << endl);
+        INFOMSG(P->getFieldLayout() << endl);
+        msg << endl << endl;
+        ippl::Comm->barrier();
+
+        // center of charge distribution
+        Vektor<double, Dim> source(0.1 + (32) / 2, 0.3 + (32) / 2, 0.7 + (32) / 2);
+
+        double total_charge = 0;
+
+        if (Ippl::myNode() == 0) {
+            size_t index  = 0;
+            double radius = 6;
+
+            double density = count * 3 / (radius * radius * radius * 4 * 3.14159);
+            double pdist   = std::pow(1 / density, 1 / 3.);
+
+            // create sample particles with charge 0
+            for (int i = 0; i < 32; ++i)
+                for (int j = 0; j < 32; ++j)
+                    for (int k = 0; k < 32; ++k) {
+                        Vektor<double, Dim> pos(i, j, k);
+
+                        if (type != POINT
+                            && dot(pos - source, pos - source)
+                                <= (radius + pdist / 3) * (radius + pdist / 3))
+                            continue;
+                        P->create(1);
+                        P->R[index] = pos;
+                        P->Q[index] = 0;
+                        ++index;
+                    }
+
+            switch (type) {
+                case UNIFORM:
+
+                    for (double x = 0; x < 32; x += pdist)
+                        for (double y = 0; y < 32; y += pdist)
+                            for (double z = 0; z < 32; z += pdist) {
+                                Vektor<double, Dim> pos(x, y, z);
+
+                                if (dot(pos - source, pos - source) <= radius * radius) {
+                                    P->create(1);
+                                    P->R[index] = pos;
+                                    P->Q[index] = 1. / count;
+                                    total_charge += 1. / count;
+                                    ++index;
+                                }
+                            }
+                    break;
+
+                case RANDOM:
+
+                    IpplRandom.SetSeed(42);
+
+                    P->create(count);
+                    for (unsigned i = 0; i < count; ++i) {
+                        Vektor<double, Dim> pos;
+                        do {
+                            pos = 2
+                                * Vektor<double, Dim>((IpplRandom() - 0.5), (IpplRandom() - 0.5),
+                                                        (IpplRandom() - 0.5));
+                        } while (dot(pos, pos) > 1);
+
+                        P->R[index] = source + pos * radius;
+                        P->Q[index] = 1. / count;
+                        total_charge += 1. / count;
+                        ++index;
+                    }
+
+                    break;
+                case POINT:
+                    P->create(1);
+                    P->R[index] = source;
+                    P->Q[index] = 1;
+                    total_charge += 1.;
+                    break;
+            }
+        }
+
+        P->update();
+
+        msg << "calculating grid" << endl;
+        IpplTimings::TimerRef gridTimer = IpplTimings::getTimer("GridTimer");
+        IpplTimings::startTimer(gridTimer);
+
+        P->calculateGridForces(interaction_radius);
+
+        IpplTimings::stopTimer(gridTimer);
+
+        msg << "calculating pairs" << endl;
+
+        IpplTimings::TimerRef particleTimer = IpplTimings::getTimer("ParticleTimer");
+        IpplTimings::startTimer(particleTimer);
+
+        P->calculatePairForces(interaction_radius);
+
+        IpplTimings::stopTimer(particleTimer);
+
+        // P->writeFields(1);
+
+        double error = 0;
+        int n        = 0;
+        for (unsigned i = 0; i < P->getLocalNum(); ++i) {
+            double radius = std::sqrt(dot(source - P->R[i], source - P->R[i]));
+            double E      = std::sqrt(dot(P->EF[i], P->EF[i]));
+            // if(radius < 2*interaction_radius)
+            // msg2all << radius << ' ' << E << ' ' << P->R[i][0] << ' ' << P->R[i][1] << ' ' <<
+            // P->R[i][2] << endl;
+
+            double diff = 0;
+
+            if (type != POINT && radius <= 6) {
+                diff = E - radius / (6 * 6 * 6);
+            } else {
+                if (radius > 0)
+                    diff = E - 1 / (radius * radius);
+            }
+            error += diff * diff;
+            n++;
+        }
+
+        double total_error = 0;
+        reduce(error, total_error, OpAddAssign());
+
+        total_error = std::sqrt(total_error) / n;
+
+        IpplTimings::stopTimer(allTimer);
+
+        IpplTimings::print();
+
+        msg << "total charge: " << total_charge << endl;
+        msg << "Error: " << total_error << endl;
+
+        delete P;
+        delete FL;
+        delete mesh;
     }
-
-    double total_error = 0;
-    reduce(error, total_error, OpAddAssign());
-
-    total_error = std::sqrt(total_error) / n;
-
-    IpplTimings::stopTimer(allTimer);
-
-    IpplTimings::print();
-
-    msg << "total charge: " << total_charge << endl;
-    msg << "Error: " << total_error << endl;
-
-    delete P;
-    delete FL;
-    delete mesh;
-
     ippl::finalize();
 
     return 0;

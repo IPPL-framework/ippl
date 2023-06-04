@@ -258,41 +258,42 @@ void compute_convergence(std::string algorithm, int pt) {
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
-    Inform msg("");
-    Inform msg2all("", INFORM_ALL_NODES);
+    {
+        Inform msg("");
+        Inform msg2all("", INFORM_ALL_NODES);
 
-    std::string algorithm = argv[1];
-    std::string precision = argv[2];
+        std::string algorithm = argv[1];
+        std::string precision = argv[2];
 
-    if (precision != "DOUBLE" && precision != "SINGLE") {
-        throw IpplException("TestGaussian_convergence",
-                            "Precision argument must be DOUBLE or SINGLE.");
-    }
-
-    // start a timer to time the FFT Poisson solver
-    static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
-    IpplTimings::startTimer(allTimer);
-
-    // number of interations
-    const int n = 6;
-
-    // number of gridpoints to iterate over
-    std::array<int, n> N = {4, 8, 16, 32, 64, 128};
-
-    msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
-
-    for (int p = 0; p < n; ++p) {
-        if (precision == "DOUBLE") {
-            compute_convergence<double>(algorithm, N[p]);
-        } else {
-            compute_convergence<float>(algorithm, N[p]);
+        if (precision != "DOUBLE" && precision != "SINGLE") {
+            throw IpplException("TestGaussian_convergence",
+                                "Precision argument must be DOUBLE or SINGLE.");
         }
+
+        // start a timer to time the FFT Poisson solver
+        static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
+        IpplTimings::startTimer(allTimer);
+
+        // number of interations
+        const int n = 6;
+
+        // number of gridpoints to iterate over
+        std::array<int, n> N = {4, 8, 16, 32, 64, 128};
+
+        msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
+
+        for (int p = 0; p < n; ++p) {
+            if (precision == "DOUBLE") {
+                compute_convergence<double>(algorithm, N[p]);
+            } else {
+                compute_convergence<float>(algorithm, N[p]);
+            }
+        }
+
+        // stop the timer
+        IpplTimings::stopTimer(allTimer);
+        IpplTimings::print(std::string("timing.dat"));
     }
-
-    // stop the timer
-    IpplTimings::stopTimer(allTimer);
-    IpplTimings::print(std::string("timing.dat"));
-
     ippl::finalize();
 
     return 0;

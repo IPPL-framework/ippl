@@ -155,240 +155,240 @@ const char* TestName = "LandauDamping";
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
+    {
+        Inform msg("LandauDamping");
+        Inform msg2all("LandauDamping", INFORM_ALL_NODES);
 
-    Inform msg("LandauDamping");
-    Inform msg2all("LandauDamping", INFORM_ALL_NODES);
+        auto start = std::chrono::high_resolution_clock::now();
+        int arg    = 1;
 
-    auto start = std::chrono::high_resolution_clock::now();
-    int arg    = 1;
-
-    Vector_t<int, Dim> nr;
-    for (unsigned d = 0; d < Dim; d++) {
-        nr[d] = std::atoi(argv[arg++]);
-    }
-
-    static IpplTimings::TimerRef mainTimer           = IpplTimings::getTimer("total");
-    static IpplTimings::TimerRef particleCreation    = IpplTimings::getTimer("particlesCreation");
-    static IpplTimings::TimerRef dumpDataTimer       = IpplTimings::getTimer("dumpData");
-    static IpplTimings::TimerRef PTimer              = IpplTimings::getTimer("pushVelocity");
-    static IpplTimings::TimerRef RTimer              = IpplTimings::getTimer("pushPosition");
-    static IpplTimings::TimerRef updateTimer         = IpplTimings::getTimer("update");
-    static IpplTimings::TimerRef DummySolveTimer     = IpplTimings::getTimer("solveWarmup");
-    static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("solve");
-    static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
-
-    IpplTimings::startTimer(mainTimer);
-
-    const size_type totalP = std::atoll(argv[arg++]);
-    const unsigned int nt  = std::atoi(argv[arg++]);
-
-    msg << "Landau damping" << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
-
-    using bunch_type = ChargedParticles<PLayout_t<float, Dim>, float, Dim>;
-
-    std::unique_ptr<bunch_type> P;
-
-    ippl::NDIndex<Dim> domain;
-    for (unsigned i = 0; i < Dim; i++) {
-        domain[i] = ippl::Index(nr[i]);
-    }
-
-    ippl::e_dim_tag decomp[Dim];
-    for (unsigned d = 0; d < Dim; ++d) {
-        decomp[d] = ippl::PARALLEL;
-    }
-
-    // create mesh and layout objects for this problem domain
-    Vector_t<float, Dim> kw = 0.5;
-    float alpha             = 0.05;
-    Vector_t<double, Dim> rmin(0.0);
-    Vector_t<double, Dim> rmax = 2 * pi / kw;
-
-    Vector_t<double, Dim> hr = rmax / nr;
-    // Q = -\int\int f dx dv
-    double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
-    Vector_t<double, Dim> origin = rmin;
-    const double dt              = 0.5 * hr[0];
-
-    const bool isAllPeriodic = true;
-    Mesh_t<Dim> mesh(domain, hr, origin);
-    FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
-    PLayout_t<float, Dim> PL(FL, mesh);
-
-    std::string solver = argv[arg++];
-    P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
-
-    P->nr_m = nr;
-
-    P->initializeFields(mesh, FL);
-
-    bunch_type bunchBuffer(PL);
-
-    P->initSolver();
-    P->time_m                 = 0.0;
-    P->loadbalancethreshold_m = std::atof(argv[arg++]);
-
-    bool isFirstRepartition;
-
-    if ((P->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
-        msg << "Starting first repartition" << endl;
-        IpplTimings::startTimer(domainDecomposition);
-        isFirstRepartition             = true;
-        const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-        const int nghost               = P->rho_m.getNghost();
-        auto rhoview                   = P->rho_m.getView();
-
-        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        ippl::parallel_for(
-            "Assign initial rho based on PDF", ippl::getRangePolicy(rhoview, nghost),
-            KOKKOS_LAMBDA(const index_array_type& args) {
-                // local to global index conversion
-                Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
-
-                // ippl::apply accesses the view at the given indices and obtains a
-                // reference; see src/Expression/IpplOperations.h
-                ippl::apply(rhoview, args) = PDF(xvec, alpha, kw, Dim);
-            });
-
-        Kokkos::fence();
-
-        P->initializeORB(FL, mesh);
-        P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
-        IpplTimings::stopTimer(domainDecomposition);
-    }
-
-    msg << "First domain decomposition done" << endl;
-    IpplTimings::startTimer(particleCreation);
-
-    typedef ippl::detail::RegionLayout<float, Dim, Mesh_t<Dim>> RegionLayout_t;
-    const RegionLayout_t& RLayout                           = PL.getRegionLayout();
-    const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-    Vector_t<float, Dim> Nr, Dr, minU, maxU;
-    int myRank   = ippl::Comm->rank();
-    float factor = 1;
-    for (unsigned d = 0; d < Dim; ++d) {
-        Nr[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d])
-                - CDF(Regions(myRank)[d].min(), alpha, kw[d]);
-        Dr[d]   = CDF(rmax[d], alpha, kw[d]) - CDF(rmin[d], alpha, kw[d]);
-        minU[d] = CDF(Regions(myRank)[d].min(), alpha, kw[d]);
-        maxU[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d]);
-        factor *= Nr[d] / Dr[d];
-    }
-
-    size_type nloc            = (size_type)(factor * totalP);
-    size_type Total_particles = 0;
-
-    MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
-
-    int rest = (int)(totalP - Total_particles);
-
-    if (ippl::Comm->rank() < rest) {
-        ++nloc;
-    }
-
-    P->create(nloc);
-    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
-    Kokkos::parallel_for(
-        nloc, generate_random<Vector_t<float, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                  P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
-
-    Kokkos::fence();
-    ippl::Comm->barrier();
-    IpplTimings::stopTimer(particleCreation);
-
-    P->q = P->Q_m / totalP;
-    msg << "particles created and initial conditions assigned " << endl;
-    isFirstRepartition = false;
-    // The update after the particle creation is not needed as the
-    // particles are generated locally
-
-    IpplTimings::startTimer(DummySolveTimer);
-    P->rho_m = 0.0;
-    P->runSolver();
-    IpplTimings::stopTimer(DummySolveTimer);
-
-    P->scatterCIC(totalP, 0, hr);
-
-    IpplTimings::startTimer(SolveTimer);
-    P->runSolver();
-    IpplTimings::stopTimer(SolveTimer);
-
-    P->gatherCIC();
-
-    IpplTimings::startTimer(dumpDataTimer);
-    P->dumpLandau();
-    P->gatherStatistics(totalP);
-    // P->dumpLocalDomains(FL, 0);
-    IpplTimings::stopTimer(dumpDataTimer);
-
-    // begin main timestep loop
-    msg << "Starting iterations ..." << endl;
-    for (unsigned int it = 0; it < nt; it++) {
-        // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
-        // Here, we assume a constant charge-to-mass ratio of -1 for
-        // all the particles hence eliminating the need to store mass as
-        // an attribute
-        // kick
-
-        IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E;
-        IpplTimings::stopTimer(PTimer);
-
-        // drift
-        IpplTimings::startTimer(RTimer);
-        P->R = P->R + dt * P->P;
-        IpplTimings::stopTimer(RTimer);
-
-        // Since the particles have moved spatially update them to correct processors
-        IpplTimings::startTimer(updateTimer);
-        PL.update(*P, bunchBuffer);
-        IpplTimings::stopTimer(updateTimer);
-
-        // Domain Decomposition
-        if (P->balance(totalP, it + 1)) {
-            msg << "Starting repartition" << endl;
-            IpplTimings::startTimer(domainDecomposition);
-            P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
-            IpplTimings::stopTimer(domainDecomposition);
-            // IpplTimings::startTimer(dumpDataTimer);
-            // P->dumpLocalDomains(FL, it+1);
-            // IpplTimings::stopTimer(dumpDataTimer);
+        Vector_t<int, Dim> nr;
+        for (unsigned d = 0; d < Dim; d++) {
+            nr[d] = std::atoi(argv[arg++]);
         }
 
-        // scatter the charge onto the underlying grid
-        P->scatterCIC(totalP, it + 1, hr);
+        static IpplTimings::TimerRef mainTimer           = IpplTimings::getTimer("total");
+        static IpplTimings::TimerRef particleCreation    = IpplTimings::getTimer("particlesCreation");
+        static IpplTimings::TimerRef dumpDataTimer       = IpplTimings::getTimer("dumpData");
+        static IpplTimings::TimerRef PTimer              = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer              = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer         = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef DummySolveTimer     = IpplTimings::getTimer("solveWarmup");
+        static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("solve");
+        static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
 
-        // Field solve
+        IpplTimings::startTimer(mainTimer);
+
+        const size_type totalP = std::atoll(argv[arg++]);
+        const unsigned int nt  = std::atoi(argv[arg++]);
+
+        msg << "Landau damping" << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
+
+        using bunch_type = ChargedParticles<PLayout_t<float, Dim>, float, Dim>;
+
+        std::unique_ptr<bunch_type> P;
+
+        ippl::NDIndex<Dim> domain;
+        for (unsigned i = 0; i < Dim; i++) {
+            domain[i] = ippl::Index(nr[i]);
+        }
+
+        ippl::e_dim_tag decomp[Dim];
+        for (unsigned d = 0; d < Dim; ++d) {
+            decomp[d] = ippl::PARALLEL;
+        }
+
+        // create mesh and layout objects for this problem domain
+        Vector_t<float, Dim> kw = 0.5;
+        float alpha             = 0.05;
+        Vector_t<double, Dim> rmin(0.0);
+        Vector_t<double, Dim> rmax = 2 * pi / kw;
+
+        Vector_t<double, Dim> hr = rmax / nr;
+        // Q = -\int\int f dx dv
+        double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
+        Vector_t<double, Dim> origin = rmin;
+        const double dt              = 0.5 * hr[0];
+
+        const bool isAllPeriodic = true;
+        Mesh_t<Dim> mesh(domain, hr, origin);
+        FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
+        PLayout_t<float, Dim> PL(FL, mesh);
+
+        std::string solver = argv[arg++];
+        P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+
+        P->nr_m = nr;
+
+        P->initializeFields(mesh, FL);
+
+        bunch_type bunchBuffer(PL);
+
+        P->initSolver();
+        P->time_m                 = 0.0;
+        P->loadbalancethreshold_m = std::atof(argv[arg++]);
+
+        bool isFirstRepartition;
+
+        if ((P->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
+            msg << "Starting first repartition" << endl;
+            IpplTimings::startTimer(domainDecomposition);
+            isFirstRepartition             = true;
+            const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+            const int nghost               = P->rho_m.getNghost();
+            auto rhoview                   = P->rho_m.getView();
+
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+            ippl::parallel_for(
+                "Assign initial rho based on PDF", ippl::getRangePolicy(rhoview, nghost),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    // local to global index conversion
+                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
+
+                    // ippl::apply accesses the view at the given indices and obtains a
+                    // reference; see src/Expression/IpplOperations.h
+                    ippl::apply(rhoview, args) = PDF(xvec, alpha, kw, Dim);
+                });
+
+            Kokkos::fence();
+
+            P->initializeORB(FL, mesh);
+            P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+            IpplTimings::stopTimer(domainDecomposition);
+        }
+
+        msg << "First domain decomposition done" << endl;
+        IpplTimings::startTimer(particleCreation);
+
+        typedef ippl::detail::RegionLayout<float, Dim, Mesh_t<Dim>> RegionLayout_t;
+        const RegionLayout_t& RLayout                           = PL.getRegionLayout();
+        const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
+        Vector_t<float, Dim> Nr, Dr, minU, maxU;
+        int myRank   = ippl::Comm->rank();
+        float factor = 1;
+        for (unsigned d = 0; d < Dim; ++d) {
+            Nr[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d])
+                    - CDF(Regions(myRank)[d].min(), alpha, kw[d]);
+            Dr[d]   = CDF(rmax[d], alpha, kw[d]) - CDF(rmin[d], alpha, kw[d]);
+            minU[d] = CDF(Regions(myRank)[d].min(), alpha, kw[d]);
+            maxU[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d]);
+            factor *= Nr[d] / Dr[d];
+        }
+
+        size_type nloc            = (size_type)(factor * totalP);
+        size_type Total_particles = 0;
+
+        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
+
+        int rest = (int)(totalP - Total_particles);
+
+        if (ippl::Comm->rank() < rest) {
+            ++nloc;
+        }
+
+        P->create(nloc);
+        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
+        Kokkos::parallel_for(
+            nloc, generate_random<Vector_t<float, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                    P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+
+        Kokkos::fence();
+        ippl::Comm->barrier();
+        IpplTimings::stopTimer(particleCreation);
+
+        P->q = P->Q_m / totalP;
+        msg << "particles created and initial conditions assigned " << endl;
+        isFirstRepartition = false;
+        // The update after the particle creation is not needed as the
+        // particles are generated locally
+
+        IpplTimings::startTimer(DummySolveTimer);
+        P->rho_m = 0.0;
+        P->runSolver();
+        IpplTimings::stopTimer(DummySolveTimer);
+
+        P->scatterCIC(totalP, 0, hr);
+
         IpplTimings::startTimer(SolveTimer);
         P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
-        // gather E field
         P->gatherCIC();
 
-        // kick
-        IpplTimings::startTimer(PTimer);
-        P->P = P->P - 0.5 * dt * P->E;
-        IpplTimings::stopTimer(PTimer);
-
-        P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpLandau();
         P->gatherStatistics(totalP);
+        // P->dumpLocalDomains(FL, 0);
         IpplTimings::stopTimer(dumpDataTimer);
-        msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
+
+        // begin main timestep loop
+        msg << "Starting iterations ..." << endl;
+        for (unsigned int it = 0; it < nt; it++) {
+            // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
+            // Here, we assume a constant charge-to-mass ratio of -1 for
+            // all the particles hence eliminating the need to store mass as
+            // an attribute
+            // kick
+
+            IpplTimings::startTimer(PTimer);
+            P->P = P->P - 0.5 * dt * P->E;
+            IpplTimings::stopTimer(PTimer);
+
+            // drift
+            IpplTimings::startTimer(RTimer);
+            P->R = P->R + dt * P->P;
+            IpplTimings::stopTimer(RTimer);
+
+            // Since the particles have moved spatially update them to correct processors
+            IpplTimings::startTimer(updateTimer);
+            PL.update(*P, bunchBuffer);
+            IpplTimings::stopTimer(updateTimer);
+
+            // Domain Decomposition
+            if (P->balance(totalP, it + 1)) {
+                msg << "Starting repartition" << endl;
+                IpplTimings::startTimer(domainDecomposition);
+                P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+                IpplTimings::stopTimer(domainDecomposition);
+                // IpplTimings::startTimer(dumpDataTimer);
+                // P->dumpLocalDomains(FL, it+1);
+                // IpplTimings::stopTimer(dumpDataTimer);
+            }
+
+            // scatter the charge onto the underlying grid
+            P->scatterCIC(totalP, it + 1, hr);
+
+            // Field solve
+            IpplTimings::startTimer(SolveTimer);
+            P->runSolver();
+            IpplTimings::stopTimer(SolveTimer);
+
+            // gather E field
+            P->gatherCIC();
+
+            // kick
+            IpplTimings::startTimer(PTimer);
+            P->P = P->P - 0.5 * dt * P->E;
+            IpplTimings::stopTimer(PTimer);
+
+            P->time_m += dt;
+            IpplTimings::startTimer(dumpDataTimer);
+            P->dumpLandau();
+            P->gatherStatistics(totalP);
+            IpplTimings::stopTimer(dumpDataTimer);
+            msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
+        }
+
+        msg << "LandauDamping: End." << endl;
+        IpplTimings::stopTimer(mainTimer);
+        IpplTimings::print();
+        IpplTimings::print(std::string("timing.dat"));
+        auto end = std::chrono::high_resolution_clock::now();
+
+        std::chrono::duration<double> time_chrono =
+            std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+        std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
     }
-
-    msg << "LandauDamping: End." << endl;
-    IpplTimings::stopTimer(mainTimer);
-    IpplTimings::print();
-    IpplTimings::print(std::string("timing.dat"));
-    auto end = std::chrono::high_resolution_clock::now();
-
-    std::chrono::duration<double> time_chrono =
-        std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-    std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
-
     ippl::finalize();
 
     return 0;

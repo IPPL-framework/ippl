@@ -423,176 +423,177 @@ private:
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
-    Inform msg(PROG_NAME);
-    Inform msg2all(argv[0], INFORM_ALL_NODES);
+    {
+        Inform msg(PROG_NAME);
+        Inform msg2all(argv[0], INFORM_ALL_NODES);
 
-    ippl::Comm->setDefaultOverallocation(3.0);
+        ippl::Comm->setDefaultOverallocation(3.0);
 
-    int arg = 1;
+        int arg = 1;
 
-    int volume = 1;
-    ippl::Vector<int, Dim> nr;
-    for (unsigned d = 0; d < Dim; d++) {
-        volume *= nr[d] = std::atoi(argv[arg++]);
-    }
+        int volume = 1;
+        ippl::Vector<int, Dim> nr;
+        for (unsigned d = 0; d < Dim; d++) {
+            volume *= nr[d] = std::atoi(argv[arg++]);
+        }
 
-    // Each rank must have a minimal volume of 8
-    if (volume < 8 * ippl::Comm->size()) {
-        msg << "!!! Ranks have not enough volume for proper working !!! (Minimal volume per rank: "
-               "8)"
-            << endl;
-    }
+        // Each rank must have a minimal volume of 8
+        if (volume < 8 * ippl::Comm->size()) {
+            msg << "!!! Ranks have not enough volume for proper working !!! (Minimal volume per rank: "
+                "8)"
+                << endl;
+        }
 
-    static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
-    IpplTimings::startTimer(mainTimer);
-    const unsigned int totalP = std::atoi(argv[arg++]);
-    const unsigned int nt     = std::atoi(argv[arg++]);
+        static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
+        IpplTimings::startTimer(mainTimer);
+        const unsigned int totalP = std::atoi(argv[arg++]);
+        const unsigned int nt     = std::atoi(argv[arg++]);
 
-    msg << "Particle test " << PROG_NAME << endl
-        << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
+        msg << "Particle test " << PROG_NAME << endl
+            << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-    using bunch_type = ChargedParticles<PLayout_t>;
+        using bunch_type = ChargedParticles<PLayout_t>;
 
-    std::unique_ptr<bunch_type> P;
+        std::unique_ptr<bunch_type> P;
 
-    Vector_t rmin(0.0);
-    Vector_t rmax(1.0);
-    // create mesh and layout objects for this problem domain
-    Vector_t hr;
+        Vector_t rmin(0.0);
+        Vector_t rmax(1.0);
+        // create mesh and layout objects for this problem domain
+        Vector_t hr;
 
-    ippl::NDIndex<Dim> domain;
-    ippl::e_dim_tag decomp[Dim];
-    for (unsigned d = 0; d < Dim; d++) {
-        domain[d] = ippl::Index(nr[d]);
-        decomp[d] = ippl::PARALLEL;
-        hr[d]     = rmax[d] / nr[d];
-    }
+        ippl::NDIndex<Dim> domain;
+        ippl::e_dim_tag decomp[Dim];
+        for (unsigned d = 0; d < Dim; d++) {
+            domain[d] = ippl::Index(nr[d]);
+            decomp[d] = ippl::PARALLEL;
+            hr[d]     = rmax[d] / nr[d];
+        }
 
-    Vector_t origin = rmin;
+        Vector_t origin = rmin;
 
-    const double dt = 0.5 * hr[0];  // size of timestep
+        const double dt = 0.5 * hr[0];  // size of timestep
 
-    const bool isAllPeriodic = true;
-    Mesh_t mesh(domain, hr, origin);
-    FieldLayout_t FL(domain, decomp, isAllPeriodic);
-    PLayout_t PL(FL, mesh);
+        const bool isAllPeriodic = true;
+        Mesh_t mesh(domain, hr, origin);
+        FieldLayout_t FL(domain, decomp, isAllPeriodic);
+        PLayout_t PL(FL, mesh);
 
-    /**PRINT**/
-    msg << "FIELD LAYOUT (INITIAL)" << endl;
-    msg << FL << endl;
+        /**PRINT**/
+        msg << "FIELD LAYOUT (INITIAL)" << endl;
+        msg << FL << endl;
 
-    double Q = 1.0;
-    P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+        double Q = 1.0;
+        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
 
-    unsigned long int nloc = totalP / ippl::Comm->size();
+        unsigned long int nloc = totalP / ippl::Comm->size();
 
-    int rest = (int)(totalP - nloc * ippl::Comm->size());
+        int rest = (int)(totalP - nloc * ippl::Comm->size());
 
-    if (ippl::Comm->rank() < rest) {
-        ++nloc;
-    }
+        if (ippl::Comm->rank() < rest) {
+            ++nloc;
+        }
 
-    static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
-    IpplTimings::startTimer(particleCreation);
-    P->create(nloc);
-    // Verifying that particles are created
-    double totalParticles = 0.0;
-    double localParticles = P->getLocalNum();
-    MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-    msg << "Total particles: " << totalParticles << endl;
-    P->initPositions(FL, hr, nloc, 2);
+        static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+        IpplTimings::startTimer(particleCreation);
+        P->create(nloc);
+        // Verifying that particles are created
+        double totalParticles = 0.0;
+        double localParticles = P->getLocalNum();
+        MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        msg << "Total particles: " << totalParticles << endl;
+        P->initPositions(FL, hr, nloc, 2);
 
-    P->qm = P->Q_m / totalP;
-    P->P  = 0.0;
-    IpplTimings::stopTimer(particleCreation);
+        P->qm = P->Q_m / totalP;
+        P->P  = 0.0;
+        IpplTimings::stopTimer(particleCreation);
 
-    bunch_type bunchBuffer(PL);
+        bunch_type bunchBuffer(PL);
 
-    static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
-    IpplTimings::startTimer(UpdateTimer);
-    PL.update(*P, bunchBuffer);
-    IpplTimings::stopTimer(UpdateTimer);
-
-    msg << "particles created and initial conditions assigned " << endl;
-
-    P->EFD_m.initialize(mesh, FL);
-    P->EFDMag_m.initialize(mesh, FL);
-    P->initializeORB(FL, mesh);
-
-    // Mass conservation
-    // P->writePerRank();
-
-    static IpplTimings::TimerRef domainDecomposition0 = IpplTimings::getTimer("domainDecomp0");
-    IpplTimings::startTimer(domainDecomposition0);
-    if (P->balance(totalP)) {
-        P->repartition(FL, mesh, bunchBuffer);
-    }
-    IpplTimings::stopTimer(domainDecomposition0);
-    msg << "Balancing finished" << endl;
-
-    // Mass conservation
-    // P->writePerRank();
-
-    P->scatterCIC(totalP, 0);
-    msg << "scatter done" << endl;
-
-    P->initFields();
-    msg << "P->initField() done" << endl;
-
-    // Moving particles one grid cell
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(0.0, 1.0);
-
-    P->P = 1.0;
-
-    msg << "Starting iterations ..." << endl;
-    for (unsigned int it = 0; it < nt; it++) {
-        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");
-        IpplTimings::startTimer(RTimer);
-        P->R = P->R + dt * P->P;
-        IpplTimings::stopTimer(RTimer);
-
+        static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
         IpplTimings::startTimer(UpdateTimer);
         PL.update(*P, bunchBuffer);
         IpplTimings::stopTimer(UpdateTimer);
 
-        // Domain Decomposition
+        msg << "particles created and initial conditions assigned " << endl;
+
+        P->EFD_m.initialize(mesh, FL);
+        P->EFDMag_m.initialize(mesh, FL);
+        P->initializeORB(FL, mesh);
+
+        // Mass conservation
+        // P->writePerRank();
+
+        static IpplTimings::TimerRef domainDecomposition0 = IpplTimings::getTimer("domainDecomp0");
+        IpplTimings::startTimer(domainDecomposition0);
         if (P->balance(totalP)) {
-            msg << "Starting repartition" << endl;
-            IpplTimings::startTimer(domainDecomposition0);
             P->repartition(FL, mesh, bunchBuffer);
-            IpplTimings::stopTimer(domainDecomposition0);
-            // Conservations
-            // P->writePerRank();
+        }
+        IpplTimings::stopTimer(domainDecomposition0);
+        msg << "Balancing finished" << endl;
+
+        // Mass conservation
+        // P->writePerRank();
+
+        P->scatterCIC(totalP, 0);
+        msg << "scatter done" << endl;
+
+        P->initFields();
+        msg << "P->initField() done" << endl;
+
+        // Moving particles one grid cell
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<> dis(0.0, 1.0);
+
+        P->P = 1.0;
+
+        msg << "Starting iterations ..." << endl;
+        for (unsigned int it = 0; it < nt; it++) {
+            static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");
+            IpplTimings::startTimer(RTimer);
+            P->R = P->R + dt * P->P;
+            IpplTimings::stopTimer(RTimer);
+
+            IpplTimings::startTimer(UpdateTimer);
+            PL.update(*P, bunchBuffer);
+            IpplTimings::stopTimer(UpdateTimer);
+
+            // Domain Decomposition
+            if (P->balance(totalP)) {
+                msg << "Starting repartition" << endl;
+                IpplTimings::startTimer(domainDecomposition0);
+                P->repartition(FL, mesh, bunchBuffer);
+                IpplTimings::stopTimer(domainDecomposition0);
+                // Conservations
+                // P->writePerRank();
+            }
+
+            // scatter the charge onto the underlying grid
+            msg << "Starting scatterCIC" << endl;
+            P->scatterCIC(totalP, it + 1);
+
+            // gather the local value of the E field
+            P->gatherCIC();
+
+            // advance the particle velocities
+            static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");
+            IpplTimings::startTimer(PTimer);
+            P->P = P->P + dt * P->qm * P->E;
+            IpplTimings::stopTimer(PTimer);
+
+            P->dumpData(it);
+
+            msg << "Finished iteration " << it << endl;
+
+            P->gatherStatistics(totalP);
         }
 
-        // scatter the charge onto the underlying grid
-        msg << "Starting scatterCIC" << endl;
-        P->scatterCIC(totalP, it + 1);
-
-        // gather the local value of the E field
-        P->gatherCIC();
-
-        // advance the particle velocities
-        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");
-        IpplTimings::startTimer(PTimer);
-        P->P = P->P + dt * P->qm * P->E;
-        IpplTimings::stopTimer(PTimer);
-
-        P->dumpData(it);
-
-        msg << "Finished iteration " << it << endl;
-
-        P->gatherStatistics(totalP);
+        msg << "Particle test " << PROG_NAME << ": End." << endl;
+        IpplTimings::stopTimer(mainTimer);
+        IpplTimings::print();
+        IpplTimings::print(std::string("timing" + std::to_string(ippl::Comm->size()) + "r_"
+                                     + std::to_string(nr[0]) + "c.dat"));
     }
-
-    msg << "Particle test " << PROG_NAME << ": End." << endl;
-    IpplTimings::stopTimer(mainTimer);
-    IpplTimings::print();
-    IpplTimings::print(std::string("timing" + std::to_string(ippl::Comm->size()) + "r_"
-                                   + std::to_string(nr[0]) + "c.dat"));
-
     ippl::finalize();
 
     return 0;
