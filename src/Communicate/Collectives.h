@@ -1,7 +1,7 @@
 // Global communication functions, such as reduce and scatter.
 
-#ifndef IPPL_COLLECTIVES_H
-#define IPPL_COLLECTIVES_H
+#ifndef IPPL_MPI_COLLECTIVES_H
+#define IPPL_MPI_COLLECTIVES_H
 
 namespace ippl {
     namespace mpi {
