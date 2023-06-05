@@ -243,7 +243,7 @@ namespace ippl {
 
         bool operator==(const FieldLayout<Dim>& x) const {
             for (unsigned int i = 0; i < Dim; ++i) {
-                if (hLocalDomains_m(Ippl::Comm->rank())[i] != x.getLocalNDIndex()[i]) {
+                if (hLocalDomains_m(Comm->rank())[i] != x.getLocalNDIndex()[i]) {
                     return false;
                 }
             }
@@ -263,7 +263,7 @@ namespace ippl {
         // be SERIAL or PARALLEL
         e_dim_tag getRequestedDistribution(unsigned int d) const { return requestedLayout_m[d]; }
 
-        const NDIndex_t& getLocalNDIndex(int rank = Ippl::Comm->rank()) const;
+        const NDIndex_t& getLocalNDIndex(int rank = Comm->rank()) const;
 
         const host_mirror_type getHostLocalDomains() const;
 

@@ -252,7 +252,7 @@ public:
             loc_kinetic_energy += 0.5 * v2;
         }
         kinetic_energy = 0;
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
         reduce(loc_kinetic_energy, kinetic_energy, OpAddAssign());
     }
 
@@ -273,7 +273,7 @@ public:
             loc_potential_energy += 0.5 * (Q[i]) * Phi[i];
         }
         potential_energy = 0;
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
         reduce(loc_potential_energy, potential_energy, OpAddAssign());
     }
 
@@ -559,339 +559,342 @@ void ChargedParticles<PL>::calculatePairForces(double interaction_radius, double
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    Inform msg(argv[0]);
-    Inform msg2all(argv[0], INFORM_ALL_NODES);
+    ippl::initialize(argc, argv);
+    {
+        Inform msg(argv[0]);
+        Inform msg2all(argv[0], INFORM_ALL_NODES);
 
-    IpplTimings::TimerRef allTimer = IpplTimings::getTimer("AllTimer");
-    IpplTimings::startTimer(allTimer);
+        IpplTimings::TimerRef allTimer = IpplTimings::getTimer("AllTimer");
+        IpplTimings::startTimer(allTimer);
 
-    Vektor<int, Dim> nr;
+        Vektor<int, Dim> nr;
 
-    unsigned param = 1;
+        unsigned param = 1;
 
-    if (Dim == 3) {
-        nr    = Vektor<int, Dim>(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
-        param = 4;
-    } else {
-        nr    = Vektor<int, Dim>(atoi(argv[1]), atoi(argv[2]));
-        param = 3;
-    }
-
-    double interaction_radius = atof(argv[param++]);
-#ifndef SPHERE
-    double k = 0.5;
-#endif
-
-    /////////// setup the computational domain boundaries /////////
-#ifdef TWOSTREAM
-    // Vektor<double,Dim> extend_r(.25*M_PI,.25*M_PI,2.*M_PI/k);
-    Vektor<double, Dim> extend_r(2. * M_PI / k, 2. * M_PI / k, 2. * M_PI / k);
-    Vektor<double, Dim> extend_l(0, 0, 0);
-    // Vektor<double,Dim> extend_r(1,1,1);
-#endif
-
-#ifdef LANDAU
-    Vektor<double, Dim> extend_l(0, 0, 0);
-    Vektor<double, Dim> extend_r(2. * M_PI / k, 2. * M_PI / k, 2. * M_PI / k);
-    // Vektor<double,Dim> extend_r(1,1,2.*M_PI/k);
-#endif
-
-#ifdef SPHERE
-    double L = 4.;
-    Vektor<double, Dim> extend_l(-L, -L, -L);
-    Vektor<double, Dim> extend_r(L, L, L);
-#endif
-    ///////////////////////////////////////////////////////////////
-
-    // read the remaining sim params
-    double alpha   = atof(argv[param++]);
-    double dt      = atof(argv[param++]);
-    double eps     = atof(argv[param++]);
-    int iterations = atoi(argv[param++]);
-    Vektor<double, 3> source(0, 0, 0);
-    source[0] = atof(argv[param++]);
-    source[1] = atof(argv[param++]);
-    source[2] = atof(argv[param++]);
-
-    ///////// setup the initial layout ///////////////////////////////////////
-    e_dim_tag decomp[Dim];
-    Mesh_t* mesh;
-    FieldLayout_t* FL;
-    ChargedParticles<playout_t>* P;
-
-    NDIndex<Dim> domain;
-    for (unsigned i = 0; i < Dim; i++)
-        domain[i] = domain[i] = Index(nr[i] + 1);
-    std::cout << "Initially created domain = " << domain << std::endl;
-
-    for (unsigned d = 0; d < Dim; ++d)
-        decomp[d] = PARALLEL;
-    // create mesh and layout objects for this problem domain
-    mesh          = new Mesh_t(domain);
-    FL            = new FieldLayout_t(*mesh, decomp);
-    playout_t* PL = new playout_t(*FL, *mesh);
-
-    PL->setAllCacheDimensions(interaction_radius);
-    PL->enableCaching();
-
-    /////////////////////////////////////////////////////////////////////////
-
-    /////////// Create the particle distribution
-    ////////////////////////////////////////////////////////
-#ifdef TWOSTREAM
-    Vektor<int, Dim> Nx(4, 4, 32);
-    Vektor<int, Dim> Nv(8, 8, 128);
-    Vektor<double, Dim> Vmax(6, 6, 6);
-    double ampl_alpha = atof(argv[param++]);
-    // refinement factor for mesh in 2d phase space
-    int refine = 1;
-    P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
-                                        refine * Nv, Vmax);
-
-    createParticleDistributionTwoStream(P, extend_l, extend_r, Nx, Nv, Vmax, ampl_alpha);
-
-    P->interpolate_distribution((extend_r - extend_l) / (Nx), 2. * Vmax / (Nv));
-    write_f_field(P->f_m, P, 0, "f_m");
-#endif
-
-#ifdef LANDAU
-    Vektor<int, Dim> Nx(8, 8, 8);
-    Vektor<int, Dim> Nv(32, 32, 32);
-    Vektor<double, Dim> Vmax(6, 6, 6);
-    double ampl_alpha = atof(argv[param++]);
-    // refinement factor for mesh in 2d phase space
-    int refine = 1;
-    P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
-                                        refine * Nv, Vmax);
-    createParticleDistributionLandau(P, extend_l, extend_r, Nx, Nv, Vmax, ampl_alpha);
-    // std::cout << "charge per particle pls: " << std::endl;
-    // double qi;
-    // std::cin >> qi;
-    // createParticleDistribution(P, "even",10000, qi, extend_l,extend_r);
-#endif
-
-#ifdef SPHERE
-    Vektor<int, Dim> Nx(16, 16, 16);
-    Vektor<int, Dim> Nv(16, 16, 16);
-    Vektor<double, Dim> Vmax(6, 6, 6);
-    // refinement factor for mesh in 2d phase space
-    int refine = 4;
-    P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
-                                        refine * Nv, Vmax);
-    createParticleDistribution(P, "random", 20000, 0.00005, extend_l, extend_r, source, 1., 0);
-    // createParticleDistribution(P,"random", 10, 0.1, extend_l,extend_r,source,1.,0);
-    // createParticleDistribution(P,"manual", 2, 1, extend_l,extend_r,1.)0
-    for (unsigned i = 0; i < P->getLocalNum(); ++i) {
-        P->ID[i] = int(Ippl::myNode());
-    }
-    P->update();
-
-    dumpParticlesCSV(P, 0);
-#endif
-
-    /////////////////////////////////////////////////////////////////////////////////////////////
-
-    /////// Print mesh informations ////////////////////////////////////////////////////////////
-    INFOMSG(P->getMesh() << endl);
-    INFOMSG(P->getFieldLayout() << endl);
-    msg << endl << endl;
-    Ippl::Comm->barrier();
-
-    // dumpParticlesCSV(P,0);
-
-    INFOMSG(P->getMesh() << endl);
-    INFOMSG(P->getFieldLayout() << endl);
-    msg << endl << endl;
-
-    msg << "number of particles = " << endl;
-    msg << P->getTotalNum() << endl;
-    msg << "Total charge Q = " << endl;
-    msg << P->total_charge << endl;
-    ////////////////////////////////////////////////////////////////////////////////////////////
-
-    // START TIMESTEPPING LOOP
-    msg << "Starting iterations ..." << endl;
-    bool GcalcKSpace = false;
-
-    // calculate initial grid forces
-    P->calculateGridForces(interaction_radius, alpha, eps, GcalcKSpace, 999);
-    dumpVTKVector(P->eg_m, P, 0, "EFieldAfterPMandPP");
-
-    // compute quantities to check correctness:
-    P->calc_field_energy();
-    P->calc_potential_energy();
-    P->calc_kinetic_energy();
-    writeEnergy(P, 0);
-
-#ifndef TWOSTREAM
-    P->calc_Amplitude_E();
-    writeEamplitude(P, 0);
-#endif
-    for (int it = 0; it < iterations; it++) {
-        // advance the particle positions
-        // basic leapfrogging timestep scheme.  velocities are offset
-        // by half a timestep from the positions.
-        assign(P->R, P->R + dt * P->v);
-        // update particle distribution across processors
-        P->update();
-
-        // compute the electric field
-        msg << "calculating grid" << endl;
-        IpplTimings::TimerRef gridTimer = IpplTimings::getTimer("GridTimer");
-        IpplTimings::startTimer(gridTimer);
-
-        P->calculateGridForces(interaction_radius, alpha, eps, GcalcKSpace, it);
-        IpplTimings::stopTimer(gridTimer);
-
-        msg << "calculating pairs" << endl;
-
-        IpplTimings::TimerRef particleTimer = IpplTimings::getTimer("ParticleTimer");
-        IpplTimings::startTimer(particleTimer);
-
-        P->calculatePairForces(interaction_radius, eps, alpha);
-        IpplTimings::stopTimer(particleTimer);
-
-        P->update();
-#ifdef SPHERE
-        if (it % 1 == 0)
-            dumpVTKVector(P->eg_m, P, it + 1, "EFieldAfterPMandPP");
-#endif
-            // second part of leapfrog: advance velocitites
-            // assign(P->P, P->P + dt * P->Q/P->m * P->EF);
-
-            // assign(P->P, P->P + dt * P->EF);
-
-#ifdef SPHERE
-        // Print the particle positions
-        if (it % 1 == 0) {
-            dumpParticlesCSV(P, it + 1);
-        }
-#endif
-
-        // compute quantities
-        P->calc_field_energy();
-        P->calc_kinetic_energy();
-        P->calc_potential_energy();
-        writeEnergy(P, it + 1);
-#ifndef TWOSTREAM
-        P->calc_Amplitude_E();
-        writeEamplitude(P, it + 1);
-#endif
-
-#ifdef TWOSTREAM
-        msg << "start interpolation to phase space " << endl;
-        P->interpolate_distribution((extend_r - extend_l) / (Nx), 2. * Vmax / (Nv));
-        write_f_field(P->f_m, P, it + 1, "f_m");
-#endif
-        msg << "Finished iteration " << it << endl;
-    }
-    Ippl::Comm->barrier();
-
-    msg << "number of particles = " << endl;
-    msg << P->getTotalNum() << endl;
-
-    IpplTimings::stopTimer(allTimer);
-
-    IpplTimings::print();
-
-#ifdef CALC_ERRORS
-    //      Vektor<double,3> source(3.5,3.5,3.5);
-    // Vektor<double,3> source(0,0,0);
-    double sphere_radius = 1;
-    std::cout << "total E-Field = " << sum(dot(P->EF, P->EF)) << std::endl;
-    std::cout << "total Potential = " << sum(P->Phi) << std::endl;
-    std::cout << "source = " << source << std::endl;
-    std::cout << "RhoSum = " << RhoSum << std::endl;
-
-    double error = 0, errorV = 0;
-    double l2_exact = 0, l2_V_exact = 0;
-    double total_E_exact = 0, total_V_exact = 0;
-    double total_E = 0, total_V = 0;
-
-    double total_charge = 1.;
-    double k0           = 1. / (4. * M_PI);
-
-    for (unsigned i = 0; i < P->getLocalNum(); ++i) {
-        double radius = std::sqrt(dot(source - P->R[i], source - P->R[i]));
-        double E      = std::sqrt(dot(P->EF[i], P->EF[i]));
-        double V      = P->Phi[i];
-
-        double diff = 0, diffV = 0;
-        double exact = 0, exactV = 0;
-
-        if (radius <= sphere_radius) {
-            exact = k0 * (total_charge * radius / (sphere_radius * sphere_radius * sphere_radius));
-            diff  = E - exact;
-
-            exactV = k0 * total_charge / (2. * sphere_radius)
-                     * (3. - radius * radius / (sphere_radius * sphere_radius));
-            diffV = V - exactV;
-
+        if (Dim == 3) {
+            nr    = Vektor<int, Dim>(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
+            param = 4;
         } else {
-            if (radius > 0) {
-                exact = k0 * (total_charge * 1. / (radius * radius));
+            nr    = Vektor<int, Dim>(atoi(argv[1]), atoi(argv[2]));
+            param = 3;
+        }
+
+        double interaction_radius = atof(argv[param++]);
+    #ifndef SPHERE
+        double k = 0.5;
+    #endif
+
+        /////////// setup the computational domain boundaries /////////
+    #ifdef TWOSTREAM
+        // Vektor<double,Dim> extend_r(.25*M_PI,.25*M_PI,2.*M_PI/k);
+        Vektor<double, Dim> extend_r(2. * M_PI / k, 2. * M_PI / k, 2. * M_PI / k);
+        Vektor<double, Dim> extend_l(0, 0, 0);
+        // Vektor<double,Dim> extend_r(1,1,1);
+    #endif
+
+    #ifdef LANDAU
+        Vektor<double, Dim> extend_l(0, 0, 0);
+        Vektor<double, Dim> extend_r(2. * M_PI / k, 2. * M_PI / k, 2. * M_PI / k);
+        // Vektor<double,Dim> extend_r(1,1,2.*M_PI/k);
+    #endif
+
+    #ifdef SPHERE
+        double L = 4.;
+        Vektor<double, Dim> extend_l(-L, -L, -L);
+        Vektor<double, Dim> extend_r(L, L, L);
+    #endif
+        ///////////////////////////////////////////////////////////////
+
+        // read the remaining sim params
+        double alpha   = atof(argv[param++]);
+        double dt      = atof(argv[param++]);
+        double eps     = atof(argv[param++]);
+        int iterations = atoi(argv[param++]);
+        Vektor<double, 3> source(0, 0, 0);
+        source[0] = atof(argv[param++]);
+        source[1] = atof(argv[param++]);
+        source[2] = atof(argv[param++]);
+
+        ///////// setup the initial layout ///////////////////////////////////////
+        e_dim_tag decomp[Dim];
+        Mesh_t* mesh;
+        FieldLayout_t* FL;
+        ChargedParticles<playout_t>* P;
+
+        NDIndex<Dim> domain;
+        for (unsigned i = 0; i < Dim; i++)
+            domain[i] = domain[i] = Index(nr[i] + 1);
+        std::cout << "Initially created domain = " << domain << std::endl;
+
+        for (unsigned d = 0; d < Dim; ++d)
+            decomp[d] = PARALLEL;
+        // create mesh and layout objects for this problem domain
+        mesh          = new Mesh_t(domain);
+        FL            = new FieldLayout_t(*mesh, decomp);
+        playout_t* PL = new playout_t(*FL, *mesh);
+
+        PL->setAllCacheDimensions(interaction_radius);
+        PL->enableCaching();
+
+        /////////////////////////////////////////////////////////////////////////
+
+        /////////// Create the particle distribution
+        ////////////////////////////////////////////////////////
+    #ifdef TWOSTREAM
+        Vektor<int, Dim> Nx(4, 4, 32);
+        Vektor<int, Dim> Nv(8, 8, 128);
+        Vektor<double, Dim> Vmax(6, 6, 6);
+        double ampl_alpha = atof(argv[param++]);
+        // refinement factor for mesh in 2d phase space
+        int refine = 1;
+        P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
+                                            refine * Nv, Vmax);
+
+        createParticleDistributionTwoStream(P, extend_l, extend_r, Nx, Nv, Vmax, ampl_alpha);
+
+        P->interpolate_distribution((extend_r - extend_l) / (Nx), 2. * Vmax / (Nv));
+        write_f_field(P->f_m, P, 0, "f_m");
+    #endif
+
+    #ifdef LANDAU
+        Vektor<int, Dim> Nx(8, 8, 8);
+        Vektor<int, Dim> Nv(32, 32, 32);
+        Vektor<double, Dim> Vmax(6, 6, 6);
+        double ampl_alpha = atof(argv[param++]);
+        // refinement factor for mesh in 2d phase space
+        int refine = 1;
+        P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
+                                            refine * Nv, Vmax);
+        createParticleDistributionLandau(P, extend_l, extend_r, Nx, Nv, Vmax, ampl_alpha);
+        // std::cout << "charge per particle pls: " << std::endl;
+        // double qi;
+        // std::cin >> qi;
+        // createParticleDistribution(P, "even",10000, qi, extend_l,extend_r);
+    #endif
+
+    #ifdef SPHERE
+        Vektor<int, Dim> Nx(16, 16, 16);
+        Vektor<int, Dim> Nv(16, 16, 16);
+        Vektor<double, Dim> Vmax(6, 6, 6);
+        // refinement factor for mesh in 2d phase space
+        int refine = 4;
+        P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
+                                            refine * Nv, Vmax);
+        createParticleDistribution(P, "random", 20000, 0.00005, extend_l, extend_r, source, 1., 0);
+        // createParticleDistribution(P,"random", 10, 0.1, extend_l,extend_r,source,1.,0);
+        // createParticleDistribution(P,"manual", 2, 1, extend_l,extend_r,1.)0
+        for (unsigned i = 0; i < P->getLocalNum(); ++i) {
+            P->ID[i] = int(Ippl::myNode());
+        }
+        P->update();
+
+        dumpParticlesCSV(P, 0);
+    #endif
+
+        /////////////////////////////////////////////////////////////////////////////////////////////
+
+        /////// Print mesh informations ////////////////////////////////////////////////////////////
+        INFOMSG(P->getMesh() << endl);
+        INFOMSG(P->getFieldLayout() << endl);
+        msg << endl << endl;
+        ippl::Comm->barrier();
+
+        // dumpParticlesCSV(P,0);
+
+        INFOMSG(P->getMesh() << endl);
+        INFOMSG(P->getFieldLayout() << endl);
+        msg << endl << endl;
+
+        msg << "number of particles = " << endl;
+        msg << P->getTotalNum() << endl;
+        msg << "Total charge Q = " << endl;
+        msg << P->total_charge << endl;
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+        // START TIMESTEPPING LOOP
+        msg << "Starting iterations ..." << endl;
+        bool GcalcKSpace = false;
+
+        // calculate initial grid forces
+        P->calculateGridForces(interaction_radius, alpha, eps, GcalcKSpace, 999);
+        dumpVTKVector(P->eg_m, P, 0, "EFieldAfterPMandPP");
+
+        // compute quantities to check correctness:
+        P->calc_field_energy();
+        P->calc_potential_energy();
+        P->calc_kinetic_energy();
+        writeEnergy(P, 0);
+
+    #ifndef TWOSTREAM
+        P->calc_Amplitude_E();
+        writeEamplitude(P, 0);
+    #endif
+        for (int it = 0; it < iterations; it++) {
+            // advance the particle positions
+            // basic leapfrogging timestep scheme.  velocities are offset
+            // by half a timestep from the positions.
+            assign(P->R, P->R + dt * P->v);
+            // update particle distribution across processors
+            P->update();
+
+            // compute the electric field
+            msg << "calculating grid" << endl;
+            IpplTimings::TimerRef gridTimer = IpplTimings::getTimer("GridTimer");
+            IpplTimings::startTimer(gridTimer);
+
+            P->calculateGridForces(interaction_radius, alpha, eps, GcalcKSpace, it);
+            IpplTimings::stopTimer(gridTimer);
+
+            msg << "calculating pairs" << endl;
+
+            IpplTimings::TimerRef particleTimer = IpplTimings::getTimer("ParticleTimer");
+            IpplTimings::startTimer(particleTimer);
+
+            P->calculatePairForces(interaction_radius, eps, alpha);
+            IpplTimings::stopTimer(particleTimer);
+
+            P->update();
+    #ifdef SPHERE
+            if (it % 1 == 0)
+                dumpVTKVector(P->eg_m, P, it + 1, "EFieldAfterPMandPP");
+    #endif
+                // second part of leapfrog: advance velocitites
+                // assign(P->P, P->P + dt * P->Q/P->m * P->EF);
+
+                // assign(P->P, P->P + dt * P->EF);
+
+    #ifdef SPHERE
+            // Print the particle positions
+            if (it % 1 == 0) {
+                dumpParticlesCSV(P, it + 1);
+            }
+    #endif
+
+            // compute quantities
+            P->calc_field_energy();
+            P->calc_kinetic_energy();
+            P->calc_potential_energy();
+            writeEnergy(P, it + 1);
+    #ifndef TWOSTREAM
+            P->calc_Amplitude_E();
+            writeEamplitude(P, it + 1);
+    #endif
+
+    #ifdef TWOSTREAM
+            msg << "start interpolation to phase space " << endl;
+            P->interpolate_distribution((extend_r - extend_l) / (Nx), 2. * Vmax / (Nv));
+            write_f_field(P->f_m, P, it + 1, "f_m");
+    #endif
+            msg << "Finished iteration " << it << endl;
+        }
+        ippl::Comm->barrier();
+
+        msg << "number of particles = " << endl;
+        msg << P->getTotalNum() << endl;
+
+        IpplTimings::stopTimer(allTimer);
+
+        IpplTimings::print();
+
+    #ifdef CALC_ERRORS
+        //      Vektor<double,3> source(3.5,3.5,3.5);
+        // Vektor<double,3> source(0,0,0);
+        double sphere_radius = 1;
+        std::cout << "total E-Field = " << sum(dot(P->EF, P->EF)) << std::endl;
+        std::cout << "total Potential = " << sum(P->Phi) << std::endl;
+        std::cout << "source = " << source << std::endl;
+        std::cout << "RhoSum = " << RhoSum << std::endl;
+
+        double error = 0, errorV = 0;
+        double l2_exact = 0, l2_V_exact = 0;
+        double total_E_exact = 0, total_V_exact = 0;
+        double total_E = 0, total_V = 0;
+
+        double total_charge = 1.;
+        double k0           = 1. / (4. * M_PI);
+
+        for (unsigned i = 0; i < P->getLocalNum(); ++i) {
+            double radius = std::sqrt(dot(source - P->R[i], source - P->R[i]));
+            double E      = std::sqrt(dot(P->EF[i], P->EF[i]));
+            double V      = P->Phi[i];
+
+            double diff = 0, diffV = 0;
+            double exact = 0, exactV = 0;
+
+            if (radius <= sphere_radius) {
+                exact = k0 * (total_charge * radius / (sphere_radius * sphere_radius * sphere_radius));
                 diff  = E - exact;
 
-                exactV = k0 * total_charge / radius;
-                diff   = V - exactV;
+                exactV = k0 * total_charge / (2. * sphere_radius)
+                        * (3. - radius * radius / (sphere_radius * sphere_radius));
+                diffV = V - exactV;
+
+            } else {
+                if (radius > 0) {
+                    exact = k0 * (total_charge * 1. / (radius * radius));
+                    diff  = E - exact;
+
+                    exactV = k0 * total_charge / radius;
+                    diff   = V - exactV;
+                }
             }
+
+            total_E += E;
+            total_V += V;
+            total_E_exact += exact;
+            total_V_exact += exactV;
+
+            error += diff * diff;
+            errorV += diffV * diffV;
+
+            l2_exact += exact * exact;
+            l2_V_exact += exactV * exactV;
+        }
+        // reduce all relevant quantities:
+        double Error, L2_exact, ErrorV, L2_V_exact, Total_E, Total_V, Total_E_exact,
+            Total_V_exact;  // A, Potential_energy;
+        reduce(error, Error, OpAddAssign());
+        reduce(l2_exact, L2_exact, OpAddAssign());
+        reduce(errorV, ErrorV, OpAddAssign());
+        reduce(l2_V_exact, L2_V_exact, OpAddAssign());
+
+        reduce(total_E, Total_E, OpAddAssign());
+        reduce(total_V, Total_V, OpAddAssign());
+        reduce(total_E_exact, Total_E_exact, OpAddAssign());
+        reduce(total_V_exact, Total_V_exact, OpAddAssign());
+
+        // reduce(P->potential_energy, Potential_energy, OpAddAssign());
+
+        double Relative_error   = std::sqrt(Error) / std::sqrt(L2_exact);
+        double Relative_V_error = std::sqrt(ErrorV) / std::sqrt(L2_V_exact);
+        double U =
+            k0 * 3. / 5. * total_charge * total_charge
+            / sphere_radius;  // electric energy stored in solid charged sphere for infinite domain
+
+        //      double Ufinite = 0.0394785; //electric energy stored in solid charged sphere for finite
+        //      domain 8^3
+        // double U = Ufinite;
+
+        if (Ippl::myNode() == 0) {
+            std::cout << "master node prints: Q = " << total_charge << std::endl;
+            Inform ofs(NULL, "data/statistics.txt", Inform::APPEND);
+            // mesh size , n particle, r_cut, alpha, smoothing eps, absolut_err, relative error,
+            // relative error in total E-field, absolut_V_err, relative V error, relative error in total
+            // V, deviation in sum(U) from solid sphere
+            ofs << nr[0] << "," << P->getTotalNum() << "," << interaction_radius << "," << eps << ","
+                << alpha << "," << Error << "," << Relative_error << ","
+                << fabs(Total_E - Total_E_exact) / Total_E_exact << "," << ErrorV << ","
+                << Relative_V_error << "," << fabs(Total_V - Total_V_exact) / Total_V_exact << ","
+                << std::abs(P->potential_energy - U) / U << std::endl;
         }
 
-        total_E += E;
-        total_V += V;
-        total_E_exact += exact;
-        total_V_exact += exactV;
+    #endif
 
-        error += diff * diff;
-        errorV += diffV * diffV;
-
-        l2_exact += exact * exact;
-        l2_V_exact += exactV * exactV;
+        delete P;
+        delete FL;
+        delete mesh;
     }
-    // reduce all relevant quantities:
-    double Error, L2_exact, ErrorV, L2_V_exact, Total_E, Total_V, Total_E_exact,
-        Total_V_exact;  // A, Potential_energy;
-    reduce(error, Error, OpAddAssign());
-    reduce(l2_exact, L2_exact, OpAddAssign());
-    reduce(errorV, ErrorV, OpAddAssign());
-    reduce(l2_V_exact, L2_V_exact, OpAddAssign());
-
-    reduce(total_E, Total_E, OpAddAssign());
-    reduce(total_V, Total_V, OpAddAssign());
-    reduce(total_E_exact, Total_E_exact, OpAddAssign());
-    reduce(total_V_exact, Total_V_exact, OpAddAssign());
-
-    // reduce(P->potential_energy, Potential_energy, OpAddAssign());
-
-    double Relative_error   = std::sqrt(Error) / std::sqrt(L2_exact);
-    double Relative_V_error = std::sqrt(ErrorV) / std::sqrt(L2_V_exact);
-    double U =
-        k0 * 3. / 5. * total_charge * total_charge
-        / sphere_radius;  // electric energy stored in solid charged sphere for infinite domain
-
-    //      double Ufinite = 0.0394785; //electric energy stored in solid charged sphere for finite
-    //      domain 8^3
-    // double U = Ufinite;
-
-    if (Ippl::myNode() == 0) {
-        std::cout << "master node prints: Q = " << total_charge << std::endl;
-        Inform ofs(NULL, "data/statistics.txt", Inform::APPEND);
-        // mesh size , n particle, r_cut, alpha, smoothing eps, absolut_err, relative error,
-        // relative error in total E-field, absolut_V_err, relative V error, relative error in total
-        // V, deviation in sum(U) from solid sphere
-        ofs << nr[0] << "," << P->getTotalNum() << "," << interaction_radius << "," << eps << ","
-            << alpha << "," << Error << "," << Relative_error << ","
-            << fabs(Total_E - Total_E_exact) / Total_E_exact << "," << ErrorV << ","
-            << Relative_V_error << "," << fabs(Total_V - Total_V_exact) / Total_V_exact << ","
-            << std::abs(P->potential_energy - U) / U << std::endl;
-    }
-
-#endif
-
-    delete P;
-    delete FL;
-    delete mesh;
+    ippl::finalize();
 
     return 0;
 }
