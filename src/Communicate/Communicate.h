@@ -126,7 +126,7 @@ namespace ippl {
 
         void barrier() noexcept { MPI_Barrier(comm_m); }
 
-        void abort() noexcept { MPI_Abort(comm_m, -1); }
+        void abort(int errorcode = -1) noexcept { MPI_Abort(comm_m, errorcode); }
 
     private:
         std::map<int, buffer_type> buffers_m;

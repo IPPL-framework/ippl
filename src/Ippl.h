@@ -47,7 +47,7 @@ namespace ippl {
 
     void fence();
 
-    void abort(const std::string&);
+    void abort(const char* msg = nullptr, int errorcode = -1);
 
 
     namespace detail {

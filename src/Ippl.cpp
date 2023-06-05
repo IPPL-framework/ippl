@@ -105,8 +105,11 @@ namespace ippl {
         Kokkos::fence();
     }
 
-    void abort(const std::string& /*msg*/) {
-        Comm->abort();
+    void abort(const char* msg, int errorcode) {
+        if (msg) {
+            *Error << msg << endl;
+        }
+        Comm->abort(errorcode);
     }
 
 
