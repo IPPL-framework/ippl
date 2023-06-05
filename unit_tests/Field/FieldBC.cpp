@@ -83,7 +83,7 @@ public:
 
         const auto& lDomains = layout.getHostLocalDomains();
         const auto& domain   = layout.getDomain();
-        const int myRank     = Ippl::Comm->rank();
+        const int myRank     = ippl::Comm->rank();
 
         Kokkos::deep_copy(HostF, field->getView());
 
