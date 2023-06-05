@@ -189,7 +189,7 @@ bool reduce(Communicate& comm, InputIterator s1, InputIterator s2, OutputIterato
 template <class InputIterator, class OutputIterator, class ReduceOp>
 bool reduce(InputIterator s1, InputIterator s2, OutputIterator t1, const ReduceOp& op,
             bool* IncludeVal) {
-    return reduce(*Ippl::Comm, s1, s2, t1, op, IncludeVal);
+    return reduce(*Comm, s1, s2, t1, op, IncludeVal);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -320,7 +320,7 @@ bool reduce_masked(Communicate& comm, T& input, T& output, const ReduceOp& op, b
 // same as above, but this uses the default Communicate object
 template <class T, class ReduceOp>
 bool reduce_masked(T& input, T& output, const ReduceOp& op, bool IncludeVal) {
-    return reduce_masked(*Ippl::Comm, input, output, op, IncludeVal);
+    return reduce_masked(*Comm, input, output, op, IncludeVal);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -419,21 +419,21 @@ bool scatter(Communicate& comm, InputIterator s1, InputIterator s2, RandomIterat
 template <class InputIterator, class RandomIterator, class ScatterOp>
 bool scatter(InputIterator s1, InputIterator s2, RandomIterator t1, int* target_node,
              int* target_position, const ScatterOp& op) {
-    return scatter(*Ippl::Comm, s1, s2, t1, target_node, target_position, op);
+    return scatter(*Comm, s1, s2, t1, target_node, target_position, op);
 }
 
 template <typename T>
 void gather(const T* input, T* output, int count, int root) {
     MPI_Datatype type = get_mpi_datatype<T>(*input);
 
-    MPI_Gather(const_cast<T*>(input), count, type, output, count, type, root, Ippl::getComm());
+    MPI_Gather(const_cast<T*>(input), count, type, output, count, type, root, Comm->getCommunicator());
 }
 
 template <typename T>
 void scatter(const T* input, T* output, int count, int root) {
     MPI_Datatype type = get_mpi_datatype<T>(*input);
 
-    MPI_Scatter(const_cast<T*>(input), count, type, output, count, type, root, Ippl::getComm());
+    MPI_Scatter(const_cast<T*>(input), count, type, output, count, type, root, Comm->getCommunicator());
 }
 
 template <typename T, class Op>
@@ -442,7 +442,7 @@ void reduce(const T* input, T* output, int count, Op op, int root) {
 
     MPI_Op mpiOp = get_mpi_op<Op>(op);
 
-    MPI_Reduce(const_cast<T*>(input), output, count, type, mpiOp, root, Ippl::getComm());
+    MPI_Reduce(const_cast<T*>(input), output, count, type, mpiOp, root, Comm->getCommunicator());
 }
 
 template <typename T, class Op>
@@ -451,7 +451,7 @@ void new_reduce(const T* input, T* output, int count, Op op, int root) {
 
     MPI_Op mpiOp = get_mpi_op<Op>(op);
 
-    MPI_Reduce(const_cast<T*>(input), output, count, type, mpiOp, root, Ippl::getComm());
+    MPI_Reduce(const_cast<T*>(input), output, count, type, mpiOp, root, Comm->getCommunicator());
 }
 
 template <typename T, class Op>
@@ -460,10 +460,10 @@ void new_reduce(T* inout, int count, Op op, int root) {
 
     MPI_Op mpiOp = get_mpi_op<Op>(op);
 
-    if (Ippl::Comm->myNode() == root) {
-        MPI_Reduce(MPI_IN_PLACE, inout, count, type, mpiOp, root, Ippl::getComm());
+    if (Comm->myNode() == root) {
+        MPI_Reduce(MPI_IN_PLACE, inout, count, type, mpiOp, root, Comm->getCommunicator());
     } else {
-        MPI_Reduce(inout, inout, count, type, mpiOp, root, Ippl::getComm());
+        MPI_Reduce(inout, inout, count, type, mpiOp, root, Comm->getCommunicator());
     }
 }
 
@@ -478,7 +478,7 @@ void allreduce(const T* input, T* output, int count, Op op) {
 
     MPI_Op mpiOp = get_mpi_op<Op>(op);
 
-    MPI_Allreduce(const_cast<T*>(input), output, count, type, mpiOp, Ippl::getComm());
+    MPI_Allreduce(const_cast<T*>(input), output, count, type, mpiOp, Comm->getCommunicator());
 }
 
 template <typename T, class Op>
@@ -492,7 +492,7 @@ void allreduce(T* inout, int count, Op op) {
 
     MPI_Op mpiOp = get_mpi_op<Op>(op);
 
-    MPI_Allreduce(MPI_IN_PLACE, inout, count, type, mpiOp, Ippl::getComm());
+    MPI_Allreduce(MPI_IN_PLACE, inout, count, type, mpiOp, Comm->getCommunicator());
 }
 
 template <typename T, class Op>

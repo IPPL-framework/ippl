@@ -37,7 +37,7 @@ namespace ippl {
             bc->findBCNeighbors(field);
         }
         Kokkos::fence();
-        Ippl::Comm->barrier();
+        Comm->barrier();
     }
 
     template <typename Field, unsigned Dim>
@@ -46,7 +46,7 @@ namespace ippl {
             bc->apply(field);
         }
         Kokkos::fence();
-        Ippl::Comm->barrier();
+        Comm->barrier();
     }
 
     template <typename Field, unsigned Dim>
