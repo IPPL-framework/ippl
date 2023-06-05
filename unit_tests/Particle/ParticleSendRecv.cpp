@@ -180,8 +180,7 @@ TEST_F(ParticleSendRecv, SendAndRecieve) {
         unsigned int Total_particles = 0;
         unsigned int local_particles = bunch->getLocalNum();
 
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
-                   Ippl::getComm());
+        ippl::mpi::reduce(local_particles, Total_particles, 1, std::plus<unsigned int>());
 
         if (Ippl::Comm->rank() == 0) {
             ASSERT_EQ(nParticles, Total_particles);

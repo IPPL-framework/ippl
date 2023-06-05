@@ -96,8 +96,7 @@ public:
         unsigned int Total_particles = 0;
         unsigned int local_particles = this->getLocalNum();
 
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(local_particles, Total_particles, 1, std::plus<unsigned int>());
 
         if (ippl::Comm->rank() == 0) {
             if (Total_particles != totalP) {
@@ -219,7 +218,7 @@ int main(int argc, char* argv[]) {
             }
         }
         double global_sum_coord = 0.0;
-        MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(sum_coord, global_sum_coord, 1, std::plus<double>());
 
         if (ippl::Comm->rank() == 0) {
             std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
@@ -264,7 +263,7 @@ int main(int argc, char* argv[]) {
                 }
             }
             double global_sum_coord = 0.0;
-            MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+            ippl::mpi::reduce(sum_coord, global_sum_coord, 1, std::plus<double>());
             if (ippl::Comm->rank() == 0) {
                 std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
             }

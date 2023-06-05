@@ -155,7 +155,7 @@ public:
         });
 
         double max_error = 0.0;
-        MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        ippl::mpi::reduce(max_error_local, max_error, 1, std::greater<double>());
         ASSERT_NEAR(max_error, 0, 1e-13);
     }
 

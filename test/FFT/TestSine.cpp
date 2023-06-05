@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
         }
 
         double max_error = 0.0;
-        MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(max_error_local, max_error, 1, std::greater<double>());
 
         std::cout << "Rank:" << ippl::Comm->rank() << "Max. error " << std::setprecision(16)
                 << max_error_local << std::endl;

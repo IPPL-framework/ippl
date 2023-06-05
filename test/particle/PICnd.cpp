@@ -205,8 +205,7 @@ public:
         unsigned int Total_particles = 0;
         unsigned int local_particles = this->getLocalNum();
 
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(&local_particles, &Total_particles, 1, std::plus<unsigned int>());
 
         double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
         m << "Rel. error in charge conservation = " << rel_error << endl;
@@ -307,7 +306,7 @@ public:
         Energy *= 0.5;
         double gEnergy = 0.0;
 
-        MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(&Energy, &gEnergy, 1, std::plus<double>());
 
         Inform csvout(NULL, "data/energy.csv", Inform::APPEND);
         csvout.precision(10);
@@ -499,7 +498,7 @@ int main(int argc, char* argv[]) {
         // Verifying that particles are created
         double totalParticles = 0.0;
         double localParticles = P->getLocalNum();
-        MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(&localParticles, &totalParticles, 1, std::plus<double>());
         msg << "Total particles: " << totalParticles << endl;
         P->initPositions(FL, hr, nloc, 2);
 
