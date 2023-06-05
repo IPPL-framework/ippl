@@ -482,7 +482,8 @@ public:
 
         // Multiply with prefactors defined in RHS of Rosenbluth equations
         // FFTPoissonSolver returns $ \Delta_v \Delta_v G(\vec v)$ in `fv_m`
-        fv_m = -8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
+        // `-1.0` prefactor is because the solver computes $\Delta \Delta G(\vec v) = - rhs(v)$
+        fv_m = -1.0 * (-8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m);
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);

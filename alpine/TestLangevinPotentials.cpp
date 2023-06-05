@@ -241,7 +241,7 @@ int main(int argc, char* argv[]) {
     // CONSTANTS FOR MAXELLIAN //
     /////////////////////////////
 
-    constexpr std::string_view testCase = "Gaussian";
+    constexpr std::string_view testCase = "Maxwellian";
     double vth                          = 1.0;
     double numberDensity                = 1.0;
     // double numberDensity = NP / (BOXL*BOXL*BOXL);
@@ -434,10 +434,9 @@ int main(int argc, char* argv[]) {
         // Multiply with prefactor
         // Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth
         // equations
-        // `-1.0` prefactor is **not** needed because we need SOL and not GRAD output of solver
         // Prob. density in configuration space $f(\vec r)$ already added in in initial
         // condition
-        P->fv_m = -8.0 * P->pi_m * P->fv_m;
+        P->fv_m = -1.0 * (-8.0 * P->pi_m * P->fv_m);
 
         // Set origin of velocity space mesh to zero (for FFT)
         P->velocitySpaceMesh_m.setOrigin(0.0);
@@ -457,8 +456,7 @@ int main(int argc, char* argv[]) {
         Hdiff      = Hdiff - HfieldExact;
         dumpVTKScalar(Hdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Hdiff");
 
-        // Multiply with `-1.0 \Gamma` as solver returns $- \nabla H(\vec v)$
-        P->Fd_m = -1.0 * gamma * P->Fd_m;
+        P->Fd_m = gamma * P->Fd_m;
         P->gatherFd();
 
         // Dump actual friction coefficients
@@ -492,8 +490,8 @@ int main(int argc, char* argv[]) {
         P->runSpaceChargeSolver(0);
 
         // Multiply with prefactors defined in RHS of Rosenbluth equations
-        // FFTPoissonSolver returns $ \Delta_v \Delta_v G(\vec v)$ in `fv_m`
-        P->fv_m = -8.0 * P->pi_m * P->fv_m;
+        // `-1.0` prefactor is because the solver computes $\Delta \Delta G(\vec v) = - rhs(v)$
+        P->fv_m = -1.0 * (-8.0 * P->pi_m * P->fv_m);
 
         // Set origin of velocity space mesh to zero (for FFT)
         P->velocitySpaceMesh_m.setOrigin(0.0);
