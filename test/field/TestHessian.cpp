@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(valN));
 
                 double globalN(0.0);
-                MPI_Allreduce(&valN, &globalN, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+                ippl::mpi::allredcue(valN, globalN, 1, std::plus<double>());
                 double errorN = std::sqrt(globalN);
 
                 double valD(0.0);
@@ -184,7 +184,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(valD));
 
                 double globalD(0.0);
-                MPI_Allreduce(&valD, &globalD, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+                ippl::mpi::allreduce(valD, globalD, 1, std::plus<double>());
                 double errorD = std::sqrt(globalD);
 
                 // Compute relative Error
