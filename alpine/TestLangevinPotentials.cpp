@@ -4,6 +4,11 @@
 #include "LangevinParticles.hpp"
 
 const char* TestName = "LangevinPotentials";
+enum TestCase {
+    MAXWELLIAN = 0b01,
+    GAUSSIAN   = 0b10
+};
+
 
 KOKKOS_INLINE_FUNCTION double maxwellianPDF(const VectorD_t& v, const double& numberDensity,
                                             const double& vth) {
@@ -241,12 +246,7 @@ int main(int argc, char* argv[]) {
     // CONSTANTS FOR MAXELLIAN //
     /////////////////////////////
 
-    enum TestCase {
-        MAXWELLIAN = 0b01,
-        GAUSSIAN   = 0b10
-    };
-
-    const TestCase testType    = TestCase::GAUSSIAN;
+    constexpr TestCase testType    = TestCase::GAUSSIAN;
     const double vth           = 1.0;
     const double numberDensity = 1.0;
     // double numberDensity = NP / (BOXL*BOXL*BOXL);
@@ -311,7 +311,8 @@ int main(int argc, char* argv[]) {
 
         // Gamma prefactor used for multiplying the potentials to obtain friction and diffusion
         // coefficients
-        double gamma = P->gamma_m;
+        const double gamma = P->gamma_m;
+        const double configSpaceIntegral = P->configSpaceIntegral_m;
 
         // Create scalar Field for Rosenbluth Potentials
         Field_t<Dim> HfieldExact   = P->fv_m.deepCopy();
@@ -368,61 +369,25 @@ int main(int argc, char* argv[]) {
         Field_view_t DtraceView     = Dtrace.getView();
         Field_view_t DtraceDiffView = DtraceDiff.getView();
 
-        // Define initial condition and analytical solution as lambda function
-        auto initialPDF = [numberDensity, vth](const VectorD_t& v) {
-            if constexpr (testType == TestCase::MAXWELLIAN) {
-                return maxwellianPDF(v, numberDensity, vth);
-            } else if constexpr (testType == TestCase::GAUSSIAN) {
-                return gaussianPDF(v);
-            }
-        };
-
-        auto Hexact = [numberDensity, vth](const VectorD_t& v) {
-            if constexpr (testType == TestCase::MAXWELLIAN) {
-                return maxwellianHexact(v, numberDensity, vth);
-            } else if constexpr (testType == TestCase::GAUSSIAN) {
-                return gaussianHexact(v);
-            }
-        };
-
-        auto Gexact = [numberDensity, vth](const VectorD_t& v) {
-            if constexpr (testType == TestCase::MAXWELLIAN) {
-                return maxwellianGexact(v, numberDensity, vth);
-            } else if constexpr (testType == TestCase::GAUSSIAN) {
-                return gaussianGexact(v);
-            }
-        };
-
-        auto D00exact = [gamma, numberDensity, vth](const VectorD_t& v) {
-            if constexpr (testType == TestCase::MAXWELLIAN) {
-                return maxwellianD00exact(v, gamma, numberDensity, vth);
-            } else if constexpr (testType == TestCase::GAUSSIAN) {
-                return gaussianD00exact(v, gamma);
-            }
-        };
-
-        auto D01exact = [gamma, numberDensity, vth](const VectorD_t& v) {
-            if constexpr (testType == TestCase::MAXWELLIAN) {
-                return maxwellianD01exact(v, gamma, numberDensity, vth);
-            } else if constexpr (testType == TestCase::GAUSSIAN) {
-                return gaussianD01exact(v, gamma);
-            }
-        };
-
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
             "Assign initial velocity PDF and reference solution for H",
             ippl::getRangePolicy(fvView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
-                Vector_t<double, Dim> xvec = args;
+                VectorD_t xvec = args;
                 for (unsigned d = 0; d < Dim; d++) {
                     xvec[d] = (xvec[d] + lDom[d].first() + 0.5) * hv[d] + vOrigin[d] - hv[d];
                 }
 
                 // ippl::apply<unsigned> accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                ippl::apply(fvView, args)     = initialPDF(xvec) * P->configSpaceIntegral_m;
-                ippl::apply(HviewExact, args) = Hexact(xvec) * P->configSpaceIntegral_m;
+                if constexpr (testType == TestCase::MAXWELLIAN) {
+                    ippl::apply(fvView, args)     = maxwellianPDF(xvec, numberDensity, vth) * configSpaceIntegral;
+                    ippl::apply(HviewExact, args) = maxwellianHexact(xvec, numberDensity, vth) * configSpaceIntegral;
+                } else if constexpr (testType == TestCase::GAUSSIAN) {
+                    ippl::apply(fvView, args)     = gaussianPDF(xvec) * configSpaceIntegral;
+                    ippl::apply(HviewExact, args) = gaussianHexact(xvec) * configSpaceIntegral;
+                }
             });
 
         Kokkos::fence();
@@ -483,12 +448,21 @@ int main(int argc, char* argv[]) {
 
                 // ippl::apply<unsigned> accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                ippl::apply(fvView, args)     = initialPDF(xvec) * P->configSpaceIntegral_m;
-                ippl::apply(GviewExact, args) = Gexact(xvec) * P->configSpaceIntegral_m;
+                if constexpr (testType == TestCase::MAXWELLIAN) {
+                    ippl::apply(fvView, args)     = maxwellianPDF(xvec, numberDensity, vth) * configSpaceIntegral;
+                    ippl::apply(GviewExact, args) = maxwellianGexact(xvec, numberDensity, vth) * configSpaceIntegral;
 
-                // First diagonal and off-diagonal entries of Hessian
-                ippl::apply(D00viewExact, args) = D00exact(xvec) * P->configSpaceIntegral_m;
-                ippl::apply(D01viewExact, args) = D01exact(xvec) * P->configSpaceIntegral_m;
+                    // First diagonal and off-diagonal entries of Hessian
+                    ippl::apply(D00viewExact, args) = maxwellianD00exact(xvec, gamma, numberDensity, vth) * configSpaceIntegral;
+                    ippl::apply(D01viewExact, args) = maxwellianD01exact(xvec, gamma, numberDensity, vth) * configSpaceIntegral;
+                } else if constexpr (testType == TestCase::MAXWELLIAN) {
+                    ippl::apply(fvView, args)     = gaussianPDF(xvec) * configSpaceIntegral;
+                    ippl::apply(GviewExact, args) = gaussianGexact(xvec) * configSpaceIntegral;
+
+                    // First diagonal and off-diagonal entries of Hessian
+                    ippl::apply(D00viewExact, args) = gaussianD00exact(xvec, gamma) * configSpaceIntegral;
+                    ippl::apply(D01viewExact, args) = gaussianD01exact(xvec, gamma) * configSpaceIntegral;
+                }
             });
 
         // Need to scatter rho as we use it as $f(\vec r)$
