@@ -36,15 +36,13 @@
 template <unsigned Dim>
 using MField_t = Field<MatrixD_t, Dim>;
 
-template <class PLayout, unsigned Dim = 3>
-class LangevinParticles : public ChargedParticles<PLayout> {
-    using Base = ChargedParticles<PLayout, Dim>;
+template <class PLayout, typename T, unsigned Dim = 3>
+class LangevinParticles : public ChargedParticles<PLayout, T, Dim> {
+    using Base = ChargedParticles<PLayout, T, Dim>;
 
     // Solver types acting on Fields in velocity space
-    using FrictionSolver_t =
-        ippl::FFTPoissonSolver<VectorD_t, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
-    using DiffusionSolver_t =
-        ippl::FFTPoissonSolver<VectorD_t, double, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+    using FrictionSolver_t  = ippl::FFTPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>;
+    using DiffusionSolver_t = ippl::FFTPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>;
 
     // Kokkos Random Number Generator types (for stochastic diffusion coefficients)
     using KokkosRNGPool_t = Kokkos::Random_XorShift64_Pool<>;
@@ -56,7 +54,7 @@ public:
       ParticleBase as the bunch buffer uses this
     */
     LangevinParticles(PLayout& pl)
-        : ChargedParticles<PLayout>(pl) {
+        : ChargedParticles<PLayout, T, Dim>(pl) {
         registerLangevinAttributes();
         setPotentialBCs();
     }
@@ -65,7 +63,7 @@ public:
                       ippl::e_dim_tag configSpaceDecomp[Dim], std::string solver, double pCharge,
                       double pMass, double epsInv, double Q, size_type globalNumParticles,
                       double dt, size_type nv, double vmax)
-        : ChargedParticles<PLayout>(pl, hr, rmin, rmax, configSpaceDecomp, Q, solver)
+        : ChargedParticles<PLayout, T, Dim>(pl, hr, rmin, rmax, configSpaceDecomp, Q, solver)
         , rank_m(Ippl::Comm->rank())
         , pCharge_m(pCharge)
         , pMass_m(pMass)
@@ -138,14 +136,23 @@ public:
 
     void initSpaceChargeSolver() {
         // Initializing the solver defined by the ChargedParticles Class
-        ChargedParticles<PLayout>::initFFTSolver();
+        ChargedParticles<PLayout, T, Dim>::initFFTSolver();
     }
 
     // Setup Friction Solver ["HOCKNEY", "VICO"]
     void initFrictionSolver(std::string solverName) {
         // Initializing the open-boundary solver for the H potential used
         // to compute the friction coefficient $F$
-        // [Hockney Open Poisson Solver]
+
+        typename FrictionSolver_t::Algorithm solverEnum;
+        if (solverName == "HOCKNEY") {
+            solverEnum = FrictionSolver_t::HOCKNEY;
+        } else if (solverName == "VICO") {
+            solverEnum = FrictionSolver_t::VICO;
+        } else {
+            throw IpplException("LangevinParticles::initFrictionSolver()",
+                                "Supported Friction solvers : ['HOCKNEY', 'VICO']");
+        }
 
         ippl::ParameterList sp;
         sp.add("use_heffte_defaults", false);
@@ -154,9 +161,10 @@ public:
         sp.add("use_gpu_aware", true);
         sp.add("comm", ippl::p2p_pl);
         sp.add("r2c_direction", 0);
+        sp.add("algorithm", solverEnum);
+        sp.add("output_type", FrictionSolver_t::SOL_AND_GRAD);
 
-        frictionSolver_mp = std::make_shared<FrictionSolver_t>(Fd_m, fv_m, sp, solverName,
-                                                               FrictionSolver_t::SOL_AND_GRAD);
+        frictionSolver_mp = std::make_shared<FrictionSolver_t>(Fd_m, fv_m, sp);
     }
 
     // Setup Diffusion Solver ["BIHARMONIC"]
@@ -171,9 +179,10 @@ public:
         sp.add("use_gpu_aware", true);
         sp.add("comm", ippl::p2p_pl);
         sp.add("r2c_direction", 0);
+        sp.add("algorithm", DiffusionSolver_t::Algorithm::BIHARMONIC);
 
         // Saves the potential $g(\vec v)$ in `fv_m`
-        diffusionSolver_mp = std::make_shared<DiffusionSolver_t>(fv_m, sp, "BIHARMONIC");
+        diffusionSolver_mp = std::make_shared<DiffusionSolver_t>(fv_m, sp);
     }
 
     size_type getGlobParticleNum() const { return globParticleNum_m; }
@@ -358,7 +367,8 @@ public:
         gather(p_Fd_m, Fd_m, this->P);
     }
 
-    void extractRows(MField_t<Dim>& M, VField_t<Dim>& V0, VField_t<Dim>& V1, VField_t<Dim>& V2) {
+    void extractRows(MField_t<Dim>& M, VField_t<T, Dim>& V0, VField_t<T, Dim>& V1,
+                     VField_t<T, Dim>& V2) {
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         const int nghost       = M.getNghost();
         MField_view_t Mview    = M.getView();
@@ -366,16 +376,17 @@ public:
         VField_view_t V1view   = V1.getView();
         VField_view_t V2view   = V2.getView();
         ippl::parallel_for(
-            "Extract rows into separate Fields", ippl::getRangePolicy<Dim>(Mview, nghost),
+            "Extract rows into separate Fields", ippl::getRangePolicy(Mview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                ippl::apply<Dim>(V0view, args) = ippl::apply<Dim>(Mview, args)[0];
-                ippl::apply<Dim>(V1view, args) = ippl::apply<Dim>(Mview, args)[1];
-                ippl::apply<Dim>(V2view, args) = ippl::apply<Dim>(Mview, args)[2];
+                ippl::apply(V0view, args) = ippl::apply(Mview, args)[0];
+                ippl::apply(V1view, args) = ippl::apply(Mview, args)[1];
+                ippl::apply(V2view, args) = ippl::apply(Mview, args)[2];
             });
         Kokkos::fence();
     }
 
-    void extractCols(MField_t<Dim>& M, VField_t<Dim>& V0, VField_t<Dim>& V1, VField_t<Dim>& V2) {
+    void extractCols(MField_t<Dim>& M, VField_t<T, Dim>& V0, VField_t<T, Dim>& V1,
+                     VField_t<T, Dim>& V2) {
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         const int nghost       = M.getNghost();
         MField_view_t Mview    = M.getView();
@@ -383,17 +394,17 @@ public:
         VField_view_t V1view   = V1.getView();
         VField_view_t V2view   = V2.getView();
         ippl::parallel_for(
-            "Extract cols into separate Fields", ippl::getRangePolicy<Dim>(Mview, nghost),
+            "Extract cols into separate Fields", ippl::getRangePolicy(Mview, nghost),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                ippl::apply<Dim>(V0view, args) = {ippl::apply<Dim>(Mview, args)[0][0],
-                                                  ippl::apply<Dim>(Mview, args)[1][0],
-                                                  ippl::apply<Dim>(Mview, args)[2][0]};
-                ippl::apply<Dim>(V1view, args) = {ippl::apply<Dim>(Mview, args)[0][1],
-                                                  ippl::apply<Dim>(Mview, args)[1][1],
-                                                  ippl::apply<Dim>(Mview, args)[2][1]};
-                ippl::apply<Dim>(V2view, args) = {ippl::apply<Dim>(Mview, args)[0][2],
-                                                  ippl::apply<Dim>(Mview, args)[1][2],
-                                                  ippl::apply<Dim>(Mview, args)[2][2]};
+                ippl::apply(V0view, args) = {ippl::apply(Mview, args)[0][0],
+                                             ippl::apply(Mview, args)[1][0],
+                                             ippl::apply(Mview, args)[2][0]};
+                ippl::apply(V1view, args) = {ippl::apply(Mview, args)[0][1],
+                                             ippl::apply(Mview, args)[1][1],
+                                             ippl::apply(Mview, args)[2][1]};
+                ippl::apply(V2view, args) = {ippl::apply(Mview, args)[0][2],
+                                             ippl::apply(Mview, args)[1][2],
+                                             ippl::apply(Mview, args)[2][2]};
             });
         Kokkos::fence();
     }
@@ -1055,13 +1066,13 @@ public:
 public:
     Field_t<Dim> fv_m;
     // Friction Coefficients
-    VField_t<Dim> Fd_m;
+    VField_t<T, Dim> Fd_m;
     // Diffusion Coefficients
     MField_t<Dim> D_m;
     // Separate rows, as gathering of Matrices is not yet possible
-    VField_t<Dim> D0_m;
-    VField_t<Dim> D1_m;
-    VField_t<Dim> D2_m;
+    VField_t<T, Dim> D0_m;
+    VField_t<T, Dim> D1_m;
+    VField_t<T, Dim> D2_m;
 
     // Velocity density
     ParticleAttrib<double> p_fv_m;
@@ -1104,7 +1115,7 @@ public:
     ////////////////////////////////////////////
 
     // Number of cells per dim in velocity space
-    Vector<size_type> nv_m;
+    ippl::Vector<size_type, Dim> nv_m;
     // Mesh-Spacing of velocity space grid `fv_m`
     VectorD_t hv_m;
 

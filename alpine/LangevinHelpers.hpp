@@ -10,10 +10,10 @@
 constexpr unsigned Dim = 3;
 
 template <typename T>
-using VectorD = Vector<T, Dim>;
+using VectorD = ippl::Vector<T, Dim>;
 
 template <typename T>
-using Vector2D = Vector<T, 2 * Dim>;
+using Vector2D = ippl::Vector<T, 2 * Dim>;
 
 using VectorD_t = VectorD<double>;
 
@@ -158,7 +158,8 @@ void dumpVTKScalar(Field_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCell
     }
 }
 
-void dumpVTKVector(VField_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCells,
+template <typename T>
+void dumpVTKVector(VField_t<T, Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCells,
                    VectorD_t origin, int iteration, double scalingFactor, std::string out_dir,
                    std::string label) {
     int nx = nCells[0];
@@ -167,7 +168,7 @@ void dumpVTKVector(VField_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCel
 
     const int nghost = F.getNghost();
 
-    typename VField_t<Dim>::view_type::host_mirror_type host_view = F.getHostMirror();
+    typename VField_t<T, Dim>::view_type::host_mirror_type host_view = F.getHostMirror();
 
     std::stringstream fname;
     fname << out_dir;
@@ -205,9 +206,10 @@ void dumpVTKVector(VField_t<Dim>& F, VectorD_t cellSpacing, VectorD<size_t> nCel
     }
 }
 
-void dumpCSVMatrixField(VField_t<Dim>& M0, VField_t<Dim>& M1, VField_t<Dim>& M2,
-                        Vector<size_type> nx, std::string matrixPrefix, size_type iteration,
-                        std::string folder) {
+template <typename T>
+void dumpCSVMatrixField(VField_t<T, Dim>& M0, VField_t<T, Dim>& M1, VField_t<T, Dim>& M2,
+                        ippl::Vector<size_type, Dim> nx, std::string matrixPrefix,
+                        size_type iteration, std::string folder) {
     VField_view_t M0View = M0.getView();
     VField_view_t M1View = M1.getView();
     VField_view_t M2View = M2.getView();
@@ -289,7 +291,8 @@ void dumpCSVMatrixAttr(ParticleAttrib<VectorD_t>& M0, ParticleAttrib<VectorD_t>&
     }
 }
 
-void extractScalarFieldDim(VField_t<Dim>& vectorField, Field_t<Dim>& scalarField,
+template <typename T>
+void extractScalarFieldDim(VField_t<T, Dim>& vectorField, Field_t<Dim>& scalarField,
                            size_t dimToExtract) {
     VField_view_t vectorView = vectorField.getView();
     Field_view_t scalarView  = scalarField.getView();
@@ -297,19 +300,21 @@ void extractScalarFieldDim(VField_t<Dim>& vectorField, Field_t<Dim>& scalarField
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     ippl::parallel_for(
         "Assign initial velocity PDF and reference solution for H",
-        ippl::getRangePolicy<Dim>(vectorView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
-            ippl::apply<Dim>(scalarView, args) = ippl::apply<Dim>(vectorView, args)[dimToExtract];
+        ippl::getRangePolicy(vectorView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::apply(scalarView, args) = ippl::apply(vectorView, args)[dimToExtract];
         });
 }
 
-void extractScalarField(VField_t<Dim>& vectorField, Field_t<Dim>& scalarField0,
+template <typename T>
+void extractScalarField(VField_t<T, Dim>& vectorField, Field_t<Dim>& scalarField0,
                         Field_t<Dim>& scalarField1, Field_t<Dim>& scalarField2) {
     extractScalarFieldDim(vectorField, scalarField0, 0);
     extractScalarFieldDim(vectorField, scalarField1, 1);
     extractScalarFieldDim(vectorField, scalarField2, 2);
 }
 
-void constructVFieldFromFields(VField_t<Dim>& vectorField, Field_t<Dim>& scalarField0,
+template <typename T>
+void constructVFieldFromFields(VField_t<T, Dim>& vectorField, Field_t<Dim>& scalarField0,
                                Field_t<Dim>& scalarField1, Field_t<Dim>& scalarField2) {
     VField_view_t vectorView = vectorField.getView();
     Field_view_t scalarView0 = scalarField0.getView();
@@ -319,10 +324,10 @@ void constructVFieldFromFields(VField_t<Dim>& vectorField, Field_t<Dim>& scalarF
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     ippl::parallel_for(
         "constructVFieldFromFields(VField&, Field&, Field&, Field&)",
-        ippl::getRangePolicy<Dim>(vectorView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
-            ippl::apply<Dim>(vectorView, args)[0] = ippl::apply<Dim>(scalarView0, args);
-            ippl::apply<Dim>(vectorView, args)[1] = ippl::apply<Dim>(scalarView1, args);
-            ippl::apply<Dim>(vectorView, args)[2] = ippl::apply<Dim>(scalarView2, args);
+        ippl::getRangePolicy(vectorView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::apply(vectorView, args)[0] = ippl::apply(scalarView0, args);
+            ippl::apply(vectorView, args)[1] = ippl::apply(scalarView1, args);
+            ippl::apply(vectorView, args)[2] = ippl::apply(scalarView2, args);
         });
 }
 
@@ -333,20 +338,21 @@ void extractScalarField(MField_t<Dim>& matrixField, Field_t<Dim>& scalarField, s
 
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     ippl::parallel_for(
-        "extractScalarField(MField&, Field&, rowIdx, colIdx)",
-        ippl::getRangePolicy<Dim>(matrixView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
-            ippl::apply<Dim>(scalarView, args) = ippl::apply<Dim>(matrixView, args)[rowIdx][colIdx];
+        "extractScalarField(MField&, Field&, rowIdx, colIdx)", ippl::getRangePolicy(matrixView, 0),
+        KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::apply(scalarView, args) = ippl::apply(matrixView, args)[rowIdx][colIdx];
         });
 }
 
-double L2VectorNorm(const VField_t<Dim>& vectorField, const int shift) {
+template <typename T>
+double L2VectorNorm(const VField_t<T, Dim>& vectorField, const int shift) {
     double sum             = 0;
     VField_view_t view     = vectorField.getView();
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     ippl::parallel_reduce(
-        "L2VectorNorm(VField&, shift)", ippl::getRangePolicy<Dim>(view, shift),
+        "L2VectorNorm(VField&, shift)", ippl::getRangePolicy(view, shift),
         KOKKOS_LAMBDA(const index_array_type& args, double& val) {
-            val += L2Norm(apply<Dim>(view, args));
+            val += L2Norm(apply(view, args));
         },
         Kokkos::Sum<double>(sum));
     double globalSum  = 0;
@@ -367,9 +373,9 @@ T subfieldNorm(const Field<T, Dim>& f, const int shift, const int p = 2) {
     auto view              = f.getView();
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     ippl::parallel_reduce(
-        "subfieldSum(Field&, shift)", ippl::getRangePolicy<Dim>(view, shift),
+        "subfieldSum(Field&, shift)", ippl::getRangePolicy(view, shift),
         KOKKOS_LAMBDA(const index_array_type& args, T& val) {
-            val += Kokkos::pow(apply<Dim>(view, args), p);
+            val += Kokkos::pow(apply(view, args), p);
         },
         Kokkos::Sum<T>(sum));
     T globalSum       = 0;

@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     const int DUMP_INTERVAL           = std::atoi(argv[17]);
     const std::string OUT_DIR         = argv[18];
 
-    using bunch_type = LangevinParticles<PLayout_t<Dim>, Dim>;
+    using bunch_type = LangevinParticles<PLayout_t<double, Dim>, double, Dim>;
 
     /////////////////////////
     // CONFIGURATION SPACE //
@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
     const bool isAllPeriodic = true;
     FieldLayout_t<Dim> configSpaceFieldLayout(configSpaceIdxDomain, configSpaceDecomp,
                                               isAllPeriodic);
-    PLayout_t<Dim> PL(configSpaceFieldLayout, configSpaceMesh);
+    PLayout_t<double, Dim> PL(configSpaceFieldLayout, configSpaceMesh);
 
     const double Q = NP * PARTICLE_CHARGE;
 
@@ -74,17 +74,16 @@ int main(int argc, char* argv[]) {
         PL, hr, configSpaceLowerBound, configSpaceUpperBound, configSpaceDecomp, SOLVER_T,
         PARTICLE_CHARGE, PARTICLE_MASS, EPS_INV, Q, NP, DT, NV, VMAX);
     // Initialize Particle Fields in Particles Class
-    P->nr_m = {int(NR), int(NR), int(NR)};
+    P->nr_m = {double(NR), double(NR), double(NR)};
     P->E_m.initialize(configSpaceMesh, configSpaceFieldLayout);
     P->rho_m.initialize(configSpaceMesh, configSpaceFieldLayout);
 
     // Set Periodic BCs for rho
-    typedef ippl::BConds<double, Dim, Mesh_t<Dim>, Centering_t<Dim>> bc_type;
+    typedef ippl::BConds<Field_t<Dim>, Dim> bc_type;
 
     bc_type bcField;
     for (unsigned int i = 0; i < 6; ++i) {
-        bcField[i] =
-            std::make_shared<ippl::PeriodicFace<double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
+        bcField[i] = std::make_shared<ippl::PeriodicFace<Field_t<Dim>>>(i);
     }
     P->rho_m.setFieldBC(bcField);
 

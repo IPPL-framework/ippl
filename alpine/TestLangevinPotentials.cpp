@@ -235,7 +235,7 @@ int main(int argc, char* argv[]) {
     const std::string FRICTION_SOLVER = argv[13];
     const std::string OUT_DIR         = argv[14];
 
-    using bunch_type = LangevinParticles<PLayout_t<Dim>, Dim>;
+    using bunch_type = LangevinParticles<PLayout_t<double, Dim>, double, Dim>;
 
     /////////////////////////////
     // CONSTANTS FOR MAXELLIAN //
@@ -265,7 +265,7 @@ int main(int argc, char* argv[]) {
         const bool isAllPeriodic = true;
         FieldLayout_t<Dim> configSpaceFieldLayout(configSpaceIdxDomain, configSpaceDecomp,
                                                   isAllPeriodic);
-        PLayout_t<Dim> PL(configSpaceFieldLayout, configSpaceMesh);
+        PLayout_t<double, Dim> PL(configSpaceFieldLayout, configSpaceMesh);
 
         const double Q = NP * PARTICLE_CHARGE;
 
@@ -280,22 +280,20 @@ int main(int argc, char* argv[]) {
             PARTICLE_CHARGE, PARTICLE_MASS, EPS_INV, Q, NP, DT, nv, V_MAX);
 
         // Initialize Particle Fields in Particles Class
-        P->nr_m = {int(NR), int(NR), int(NR)};
+        P->nr_m = {double(NR), double(NR), double(NR)};
         P->E_m.initialize(configSpaceMesh, configSpaceFieldLayout);
         P->rho_m.initialize(configSpaceMesh, configSpaceFieldLayout);
 
         // Set Periodic BCs for rho
-        typedef ippl::BConds<double, Dim, Mesh_t<Dim>, Centering_t<Dim>> bc_type;
+        typedef ippl::BConds<Field_t<Dim>, Dim> bc_type;
 
         bc_type bcField;
         for (unsigned int i = 0; i < 6; ++i) {
-            bcField[i] =
-                std::make_shared<ippl::PeriodicFace<double, Dim, Mesh_t<Dim>, Centering_t<Dim>>>(i);
+            bcField[i] = std::make_shared<ippl::PeriodicFace<Field_t<Dim>>>(i);
         }
         P->rho_m.setFieldBC(bcField);
 
         bunch_type bunchBuffer(PL);
-        std::string frictionSolverName = "VICO";
         P->initAllSolvers(FRICTION_SOLVER);
 
         P->loadbalancethreshold_m = LB_THRESHOLD;
@@ -320,11 +318,11 @@ int main(int argc, char* argv[]) {
         Field_t<Dim> Dtrace     = P->fv_m.deepCopy();
         Field_t<Dim> DtraceDiff = P->fv_m.deepCopy();
 
-        Field_t<Dim> D0div     = P->fv_m.deepCopy();
-        Field_t<Dim> D1div     = P->fv_m.deepCopy();
-        Field_t<Dim> D2div     = P->fv_m.deepCopy();
-        VField_t<Dim> Ddiv     = P->Fd_m.deepCopy();
-        VField_t<Dim> DdivDiff = P->Fd_m.deepCopy();
+        Field_t<Dim> D0div             = P->fv_m.deepCopy();
+        Field_t<Dim> D1div             = P->fv_m.deepCopy();
+        Field_t<Dim> D2div             = P->fv_m.deepCopy();
+        VField_t<double, Dim> Ddiv     = P->Fd_m.deepCopy();
+        VField_t<double, Dim> DdivDiff = P->Fd_m.deepCopy();
 
         //////////////////////////////////////////////
         // PARTICLE CREATION & INITIAL SPACE CHARGE //
@@ -409,17 +407,17 @@ int main(int argc, char* argv[]) {
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
             "Assign initial velocity PDF and reference solution for H",
-            ippl::getRangePolicy<Dim>(fvView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::getRangePolicy(fvView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
-                Vector_t<Dim> xvec = args;
+                Vector_t<double, Dim> xvec = args;
                 for (unsigned d = 0; d < Dim; d++) {
                     xvec[d] = (xvec[d] + lDom[d].first() + 0.5) * hv[d] + vOrigin[d] - hv[d];
                 }
 
                 // ippl::apply<unsigned> accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                ippl::apply<Dim>(fvView, args)     = initialPDF(xvec) * P->configSpaceIntegral_m;
-                ippl::apply<Dim>(HviewExact, args) = Hexact(xvec) * P->configSpaceIntegral_m;
+                ippl::apply(fvView, args)     = initialPDF(xvec) * P->configSpaceIntegral_m;
+                ippl::apply(HviewExact, args) = Hexact(xvec) * P->configSpaceIntegral_m;
             });
 
         Kokkos::fence();
@@ -473,21 +471,21 @@ int main(int argc, char* argv[]) {
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
             "Assign initial velocity PDF and reference solution for G",
-            ippl::getRangePolicy<Dim>(fvView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::getRangePolicy(fvView, 0), KOKKOS_LAMBDA(const index_array_type& args) {
                 // local to global index conversion
-                Vector_t<Dim> xvec = args;
+                Vector_t<double, Dim> xvec = args;
                 for (unsigned d = 0; d < Dim; d++) {
                     xvec[d] = (xvec[d] + lDom[d].first() + 0.5) * hv[d] + vOrigin[d] - hv[d];
                 }
 
                 // ippl::apply<unsigned> accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                ippl::apply<Dim>(fvView, args)     = initialPDF(xvec) * P->configSpaceIntegral_m;
-                ippl::apply<Dim>(GviewExact, args) = Gexact(xvec) * P->configSpaceIntegral_m;
+                ippl::apply(fvView, args)     = initialPDF(xvec) * P->configSpaceIntegral_m;
+                ippl::apply(GviewExact, args) = Gexact(xvec) * P->configSpaceIntegral_m;
 
                 // First diagonal and off-diagonal entries of Hessian
-                ippl::apply<Dim>(D00viewExact, args) = D00exact(xvec) * P->configSpaceIntegral_m;
-                ippl::apply<Dim>(D01viewExact, args) = D01exact(xvec) * P->configSpaceIntegral_m;
+                ippl::apply(D00viewExact, args) = D00exact(xvec) * P->configSpaceIntegral_m;
+                ippl::apply(D01viewExact, args) = D01exact(xvec) * P->configSpaceIntegral_m;
             });
 
         // Need to scatter rho as we use it as $f(\vec r)$
