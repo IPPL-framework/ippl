@@ -22,6 +22,7 @@
 #include <utility>
 
 #include "Communicate/DataTypes.h"
+#include "Communicate/Collectives.h"
 
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
@@ -156,28 +157,27 @@ namespace ippl {
         write(inf.getDestination());
     }
 
-#define DefineReduction(fun, name, op, MPI_Op)                                          \
-    template <typename T, unsigned Dim>                                                 \
-    T BareField<T, Dim>::name(int nghost) const {                                       \
-        PAssert_LE(nghost, nghost_m);                                                   \
-        T temp                 = 0.0;                                                   \
-        using index_array_type = typename RangePolicy<Dim>::index_array_type;           \
-        ippl::parallel_reduce(                                                          \
-            "fun", getRangePolicy(dview_m, nghost_m - nghost),                          \
-            KOKKOS_CLASS_LAMBDA(const index_array_type& args, T& valL) {                \
-                T myVal = apply(dview_m, args);                                         \
-                op;                                                                     \
-            },                                                                          \
-            Kokkos::fun<T>(temp));                                                      \
-        T globaltemp      = 0.0;                                                        \
-        MPI_Datatype type = mpi::get_mpi_datatype<T>(temp);                             \
-        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Comm->getCommunicator());    \
-        return globaltemp;                                                              \
+#define DefineReduction(fun, name, op, MPI_Op)                                  \
+    template <typename T, unsigned Dim>                                         \
+    T BareField<T, Dim>::name(int nghost) const {                               \
+        PAssert_LE(nghost, nghost_m);                                           \
+        T temp                 = 0.0;                                           \
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;   \
+        ippl::parallel_reduce(                                                  \
+            "fun", getRangePolicy(dview_m, nghost_m - nghost),                  \
+            KOKKOS_CLASS_LAMBDA(const index_array_type& args, T& valL) {        \
+                T myVal = apply(dview_m, args);                                 \
+                op;                                                             \
+            },                                                                  \
+            Kokkos::fun<T>(temp));                                              \
+        T globaltemp      = 0.0;                                                \
+        mpi::allreduce(temp, globaltemp, 1, MPI_Op<T>());                       \
+        return globaltemp;                                                      \
     }
 
-    DefineReduction(Sum, sum, valL += myVal, MPI_SUM)
-    DefineReduction(Max, max, if (myVal > valL) valL = myVal, MPI_MAX)
-    DefineReduction(Min, min, if (myVal < valL) valL = myVal, MPI_MIN)
-    DefineReduction(Prod, prod, valL *= myVal, MPI_PROD)
+    DefineReduction(Sum, sum, valL += myVal, std::plus)
+    DefineReduction(Max, max, if (myVal > valL) valL = myVal, std::greater)
+    DefineReduction(Min, min, if (myVal < valL) valL = myVal, std::less)
+    DefineReduction(Prod, prod, valL *= myVal, std::multiplies)
 
 }  // namespace ippl

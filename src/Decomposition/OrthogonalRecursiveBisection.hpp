@@ -18,14 +18,6 @@ namespace ippl {
         static IpplTimings::TimerRef tallReduce     = IpplTimings::getTimer("allReduce");
         static IpplTimings::TimerRef tscatter       = IpplTimings::getTimer("scatterR");
 
-        // MPI datatype
-        MPI_Datatype mpi_data = MPI_DATATYPE_NULL;
-        if constexpr (std::is_same_v<Tf, float>) {
-            mpi_data = MPI_FLOAT;
-        } else if constexpr (std::is_same_v<Tf, double>) {
-            mpi_data = MPI_DOUBLE;
-        }
-
         // Scattering of particle positions in field
         // In case of first repartition we know the density from the
         // analytical expression and we use that for load balancing
@@ -76,8 +68,7 @@ namespace ippl {
 
             // Communicate to all the reduced weights
             IpplTimings::startTimer(tallReduce);
-            MPI_Allreduce(reducedRank.data(), reduced.data(), reducedRank.size(), mpi_data, MPI_SUM,
-                          Comm->getCommunicator());
+            mpi::allreduce(reducedRank.data(), reduced.data(), reducedRank.size(), std::plus<Tf>());
             IpplTimings::stopTimer(tallReduce);
 
             // Find median of reduced weights

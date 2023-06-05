@@ -266,8 +266,7 @@ void compute_convergence(std::string algorithm, int pt) {
 
         T globaltemp = 0.0;
 
-        MPI_Datatype mpi_type = ippl::mpi::get_mpi_datatype<T>(temp);
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
+        ippl::mpi::allreduce(temp, globaltemp, 1, std::plus<T>());
         T errorNr = std::sqrt(globaltemp);
 
         temp = 0.0;
@@ -280,7 +279,7 @@ void compute_convergence(std::string algorithm, int pt) {
             Kokkos::Sum<T>(temp));
 
         globaltemp = 0.0;
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
+        ippl::mpi::allreduce(temp, globaltemp, 1, std::plus<T>());
         T errorDr = std::sqrt(globaltemp);
 
         errE[d] = errorNr / errorDr;

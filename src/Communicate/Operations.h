@@ -94,6 +94,18 @@ namespace ippl {
         IPPL_MPI_OP(std::greater<double>, MPI_MAX);
         IPPL_MPI_OP(std::greater<long double>, MPI_MAX);
 
+        IPPL_MPI_OP(std::multiplies<short>, MPI_PROD);
+        IPPL_MPI_OP(std::multiplies<int>, MPI_PROD);
+        IPPL_MPI_OP(std::multiplies<long>, MPI_PROD);
+        IPPL_MPI_OP(std::multiplies<long long>, MPI_PROD);
+        IPPL_MPI_OP(std::multiplies<unsigned short>, MPI_PROD);
+        IPPL_MPI_OP(std::multiplies<unsigned int>, MPI_PROD);
+        IPPL_MPI_OP(std::multiplies<unsigned long>, MPI_PROD);
+        IPPL_MPI_OP(std::multiplies<unsigned long long>, MPI_PROD);
+        IPPL_MPI_OP(std::multiplies<float>, MPI_PROD);
+        IPPL_MPI_OP(std::multiplies<double>, MPI_PROD);
+        IPPL_MPI_OP(std::multiplies<long double>, MPI_PROD);
+
         IPPL_MPI_OP(std::logical_or<bool>, MPI_LOR);
         IPPL_MPI_OP(std::logical_and<bool>, MPI_LAND);
     }
