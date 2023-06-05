@@ -107,7 +107,7 @@ public:
         std::mt19937_64 eng(42 + Ippl::Comm->rank());
         std::uniform_real_distribution<double> unif(0, 1);
 
-        nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
             mirror(args...) = unif(eng);
         });
     }
@@ -126,7 +126,7 @@ public:
         std::mt19937_64 engImag(43 + Ippl::Comm->rank());
         std::uniform_real_distribution<double> unifImag(0, 1);
 
-        nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
             mirror(args...).real() = unifReal(engReal);
             mirror(args...).imag() = unifImag(engImag);
         });
@@ -144,7 +144,7 @@ public:
     template <unsigned Dim, typename MirrorA, typename MirrorB>
     void verifyResult(int nghost, const MirrorA& computed, const MirrorB& expected) {
         double max_error_local = 0.0;
-        nestedViewLoop<Dim>(computed, nghost, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(computed, nghost, [&]<typename... Idx>(const Idx... args) {
             double error = std::fabs(expected(args...) - computed(args...));
 
             if (error > max_error_local) {
@@ -282,7 +282,7 @@ TEST_F(FFTTest, CC) {
         auto field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
 
         Kokkos::complex<double> max_error_local(0, 0);
-        nestedViewLoop<Dim>(field_host, nghost, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(field_host, nghost, [&]<typename... Idx>(const Idx... args) {
             Kokkos::complex<double> error(
                 std::fabs(field_host(args...).real() - field_result(args...).real()),
                 std::fabs(field_host(args...).imag() - field_result(args...).imag()));
@@ -310,7 +310,8 @@ TEST_F(FFTTest, CC) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
+    ippl::initialize(argc, argv);
+    { ::testing::InitGoogleTest(&argc, argv); }
+    ippl::finalize();
     return RUN_ALL_TESTS();
 }

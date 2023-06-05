@@ -171,7 +171,7 @@ TEST_F(FieldTest, DeepCopy) {
         Kokkos::deep_copy(mirrorA, field->getView());
         Kokkos::deep_copy(mirrorB, copy.getView());
 
-        nestedViewLoop<Dim>(mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirrorA(args...) + 1, mirrorB(args...));
         });
     };
@@ -298,7 +298,7 @@ TEST_F(FieldTest, Grad) {
         auto mirror     = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
             for (size_t d = 0; d < Dim; d++) {
                 ASSERT_DOUBLE_EQ(mirror(args...)[d], 0.);
             }
@@ -326,7 +326,7 @@ TEST_F(FieldTest, Div) {
         auto mirror     = Kokkos::create_mirror_view(field->getView());
         Kokkos::deep_copy(mirror, field->getView());
 
-        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirror(args...), Dim);
         });
     };
@@ -424,7 +424,7 @@ TEST_F(FieldTest, Hessian) {
         auto mirror_result = Kokkos::create_mirror_view(view_result);
         Kokkos::deep_copy(mirror_result, view_result);
 
-        nestedViewLoop<Dim>(mirror_result, nghost, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror_result, nghost, [&]<typename... Idx>(const Idx... args) {
             double det = 0;
             for (unsigned d = 0; d < Dim; d++) {
                 det += mirror_result(args...)[d][d];
@@ -437,7 +437,8 @@ TEST_F(FieldTest, Hessian) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
+    ippl::initialize(argc, argv);
+    { ::testing::InitGoogleTest(&argc, argv); }
+    ippl::finalize();
     return RUN_ALL_TESTS();
 }

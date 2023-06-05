@@ -37,7 +37,7 @@ namespace ippl {
                             size_type msize) {
         if (msize > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
-            IpplAbort();
+            this->abort();
         }
         MPI_Irecv(ar.getBuffer(), msize, MPI_BYTE, src, tag, comm_m, &request);
     }
