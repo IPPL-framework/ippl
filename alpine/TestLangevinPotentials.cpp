@@ -241,9 +241,14 @@ int main(int argc, char* argv[]) {
     // CONSTANTS FOR MAXELLIAN //
     /////////////////////////////
 
-    constexpr std::string_view testCase = "Maxwellian";
-    double vth                          = 1.0;
-    double numberDensity                = 1.0;
+    enum TestCase {
+        MAXWELLIAN = 0b01,
+        GAUSSIAN   = 0b10
+    };
+
+    const TestCase testType    = TestCase::GAUSSIAN;
+    const double vth           = 1.0;
+    const double numberDensity = 1.0;
     // double numberDensity = NP / (BOXL*BOXL*BOXL);
 
     for (size_t nv = 8; nv <= NV_MAX; nv *= 2) {
@@ -364,42 +369,42 @@ int main(int argc, char* argv[]) {
         Field_view_t DtraceDiffView = DtraceDiff.getView();
 
         // Define initial condition and analytical solution as lambda function
-        auto initialPDF = [testCase, numberDensity, vth](const VectorD_t& v) {
-            if constexpr (testCase == "Maxwellian") {
+        auto initialPDF = [numberDensity, vth](const VectorD_t& v) {
+            if constexpr (testType == TestCase::MAXWELLIAN) {
                 return maxwellianPDF(v, numberDensity, vth);
-            } else if constexpr (testCase == "Gaussian") {
+            } else if constexpr (testType == TestCase::GAUSSIAN) {
                 return gaussianPDF(v);
             }
         };
 
-        auto Hexact = [testCase, numberDensity, vth](const VectorD_t& v) {
-            if constexpr (testCase == "Maxwellian") {
+        auto Hexact = [numberDensity, vth](const VectorD_t& v) {
+            if constexpr (testType == TestCase::MAXWELLIAN) {
                 return maxwellianHexact(v, numberDensity, vth);
-            } else if constexpr (testCase == "Gaussian") {
+            } else if constexpr (testType == TestCase::GAUSSIAN) {
                 return gaussianHexact(v);
             }
         };
 
-        auto Gexact = [testCase, numberDensity, vth](const VectorD_t& v) {
-            if constexpr (testCase == "Maxwellian") {
+        auto Gexact = [numberDensity, vth](const VectorD_t& v) {
+            if constexpr (testType == TestCase::MAXWELLIAN) {
                 return maxwellianGexact(v, numberDensity, vth);
-            } else if constexpr (testCase == "Gaussian") {
+            } else if constexpr (testType == TestCase::GAUSSIAN) {
                 return gaussianGexact(v);
             }
         };
 
-        auto D00exact = [testCase, gamma, numberDensity, vth](const VectorD_t& v) {
-            if constexpr (testCase == "Maxwellian") {
+        auto D00exact = [gamma, numberDensity, vth](const VectorD_t& v) {
+            if constexpr (testType == TestCase::MAXWELLIAN) {
                 return maxwellianD00exact(v, gamma, numberDensity, vth);
-            } else if constexpr (testCase == "Gaussian") {
+            } else if constexpr (testType == TestCase::GAUSSIAN) {
                 return gaussianD00exact(v, gamma);
             }
         };
 
-        auto D01exact = [testCase, gamma, numberDensity, vth](const VectorD_t& v) {
-            if constexpr (testCase == "Maxwellian") {
+        auto D01exact = [gamma, numberDensity, vth](const VectorD_t& v) {
+            if constexpr (testType == TestCase::MAXWELLIAN) {
                 return maxwellianD01exact(v, gamma, numberDensity, vth);
-            } else if constexpr (testCase == "Gaussian") {
+            } else if constexpr (testType == TestCase::GAUSSIAN) {
                 return gaussianD01exact(v, gamma);
             }
         };
