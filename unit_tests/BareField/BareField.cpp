@@ -90,7 +90,7 @@ TEST_F(BareFieldTest, DeepCopy) {
         Kokkos::deep_copy(mirrorA, field->getView());
         Kokkos::deep_copy(mirrorB, copy.getView());
 
-        nestedViewLoop<Dim>(mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirrorA(args...) + 1, mirrorB(args...));
         });
     };
@@ -174,7 +174,7 @@ TEST_F(BareFieldTest, ScalarMultiplication) {
         auto mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirror(args...), 10.);
         });
     };
@@ -194,7 +194,7 @@ TEST_F(BareFieldTest, DotProduct) {
         auto mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirror(args...), 5 * Dim);
         });
     };
@@ -228,7 +228,7 @@ TEST_F(BareFieldTest, AllFuncs) {
         auto mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirror(args...), beta);
         });
     };
