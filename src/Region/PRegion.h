@@ -36,8 +36,7 @@ namespace ippl {
      * @tparam T type of interval
      */
     template <typename T>
-    class PRegion
-    {
+    class PRegion {
     public:
         /*!
          * Default region [0, 1[
@@ -59,48 +58,39 @@ namespace ippl {
 
         KOKKOS_DEFAULTED_FUNCTION
         ~PRegion() = default;
-   
+
         KOKKOS_FUNCTION
         PRegion(const PRegion<T>&);
 
-        KOKKOS_INLINE_FUNCTION
-        PRegion<T>& operator=(const PRegion<T>& rhs);
-    
+        KOKKOS_INLINE_FUNCTION PRegion<T>& operator=(const PRegion<T>& rhs);
+
         /*!
          * @returns the lower bound
          */
-        KOKKOS_INLINE_FUNCTION
-        T min() const noexcept;
+        KOKKOS_INLINE_FUNCTION T min() const noexcept;
 
         /*!
          * @returns the upper bound
          */
-        KOKKOS_INLINE_FUNCTION
-        T max() const noexcept;
+        KOKKOS_INLINE_FUNCTION T max() const noexcept;
 
         /*!
          * @returns the length of the region
          */
-        KOKKOS_INLINE_FUNCTION
-        T length() const noexcept;
+        KOKKOS_INLINE_FUNCTION T length() const noexcept;
 
         /*!
          * @returns true if empty
          */
-        KOKKOS_INLINE_FUNCTION
-        bool empty() const noexcept;
-    
-        KOKKOS_INLINE_FUNCTION
-        PRegion<T>& operator+=(T t) noexcept;
+        KOKKOS_INLINE_FUNCTION bool empty() const noexcept;
 
-        KOKKOS_INLINE_FUNCTION
-        PRegion<T>& operator-=(T t) noexcept;
+        KOKKOS_INLINE_FUNCTION PRegion<T>& operator+=(T t) noexcept;
 
-        KOKKOS_INLINE_FUNCTION
-        PRegion<T>& operator*=(T t) noexcept;
-  
-        KOKKOS_INLINE_FUNCTION
-        PRegion<T>& operator/=(T t) noexcept;
+        KOKKOS_INLINE_FUNCTION PRegion<T>& operator-=(T t) noexcept;
+
+        KOKKOS_INLINE_FUNCTION PRegion<T>& operator*=(T t) noexcept;
+
+        KOKKOS_INLINE_FUNCTION PRegion<T>& operator/=(T t) noexcept;
 
     private:
         //! Interval start point
@@ -109,7 +99,7 @@ namespace ippl {
         //! Interval end point
         T b_m;
     };
-}
+}  // namespace ippl
 
 #include "PRegion.hpp"
 

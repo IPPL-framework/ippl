@@ -15,6 +15,8 @@ if (ENABLE_FFT)
                  FFTPoissonSolver.hpp
                  FFTPeriodicPoissonSolver.h
                  FFTPeriodicPoissonSolver.hpp
+                 P3MSolver.h
+                 P3MSolver.hpp
     )
 endif ()
 
@@ -25,6 +27,6 @@ include_DIRECTORIES (
 add_ippl_sources (${_SRCS})
 add_ippl_headers (${_HDRS})
 
-add_subdirectory(test)
+add_subdirectory( test )
 
 install (FILES ${_HDRS} DESTINATION include/Solver)

@@ -18,12 +18,14 @@
 #ifndef IPPL_HALO_CELLS_H
 #define IPPL_HALO_CELLS_H
 
-#include "Index/NDIndex.h"
-#include "Types/ViewTypes.h"
+#include <array>
+
 #include "Types/IpplTypes.h"
+#include "Types/ViewTypes.h"
+
 #include "Communicate/Archive.h"
 #include "FieldLayout/FieldLayout.h"
-#include <array>
+#include "Index/NDIndex.h"
 
 namespace ippl {
     namespace detail {
@@ -34,29 +36,22 @@ namespace ippl {
         struct FieldBufferData {
             using view_type = typename detail::ViewType<T, 1>::view_type;
 
-            void serialize(Archive<>& ar, size_type nsends) {
-                ar.serialize(buffer, nsends);
-            }
+            void serialize(Archive<>& ar, size_type nsends) { ar.serialize(buffer, nsends); }
 
-            void deserialize(Archive<>& ar, size_type nrecvs) {
-                ar.deserialize(buffer, nrecvs);
-            }
+            void deserialize(Archive<>& ar, size_type nrecvs) { ar.deserialize(buffer, nrecvs); }
 
             view_type buffer;
         };
-
 
         /*!
          * This class provides the functionality to do field halo exchange.
          * @file HaloCells.h
          */
         template <typename T, unsigned Dim>
-        class HaloCells
-        {
-
+        class HaloCells {
         public:
-            using view_type = typename detail::ViewType<T, Dim>::view_type;
-            using Layout_t  = FieldLayout<Dim>;
+            using view_type  = typename detail::ViewType<T, Dim>::view_type;
+            using Layout_t   = FieldLayout<Dim>;
             using bound_type = typename Layout_t::bound_type;
 
             enum SendOrder {
@@ -72,8 +67,7 @@ namespace ippl {
              * @param view the original field data
              * @param layout the field layout storing the domain decomposition
              */
-            void accumulateHalo(view_type& view,
-                                const Layout_t* layout);
+            void accumulateHalo(view_type& view, const Layout_t* layout);
 
             /*!
              * Send interal data to halo cells. This operation uses
@@ -89,9 +83,7 @@ namespace ippl {
              * @param view the original view
              * @param fd the buffer to pack into
              */
-            void pack(const bound_type& range,
-                      const view_type& view,
-                      FieldBufferData<T>& fd,
+            void pack(const bound_type& range, const view_type& view, FieldBufferData<T>& fd,
                       size_type& nsends);
 
             /*!
@@ -102,19 +94,14 @@ namespace ippl {
              * @tparam Op the data assigment operator
              */
             template <typename Op>
-            void unpack(const bound_type& range,
-                        const view_type& view,
-                        FieldBufferData<T>& fd);
+            void unpack(const bound_type& range, const view_type& view, FieldBufferData<T>& fd);
 
             /*!
              * Operator for the unpack function.
              * This operator is used in case of INTERNAL_TO_HALO.
              */
             struct assign {
-                KOKKOS_INLINE_FUNCTION
-                void operator()(T& lhs, const T& rhs) const {
-                    lhs = rhs;
-                }
+                KOKKOS_INLINE_FUNCTION void operator()(T& lhs, const T& rhs) const { lhs = rhs; }
             };
 
             /*!
@@ -122,10 +109,7 @@ namespace ippl {
              * This operator is used in case of HALO_TO_INTERNAL.
              */
             struct lhs_plus_assign {
-                KOKKOS_INLINE_FUNCTION
-                void operator()(T& lhs, const T& rhs) const {
-                    lhs += rhs;
-                }
+                KOKKOS_INLINE_FUNCTION void operator()(T& lhs, const T& rhs) const { lhs += rhs; }
             };
 
             /*!
@@ -133,28 +117,21 @@ namespace ippl {
              * all periodic BCs application in BareField.
              */
             struct rhs_plus_assign {
-                KOKKOS_INLINE_FUNCTION
-                void operator()(const T& lhs, T& rhs) const {
-                    rhs += lhs;
-                }
+                KOKKOS_INLINE_FUNCTION void operator()(const T& lhs, T& rhs) const { rhs += lhs; }
             };
 
             /*!
-             * Apply all periodic boundary conditions for the 
+             * Apply all periodic boundary conditions for the
              * serial dimensions. Used in case of both fillHalo
              * and accumulateHalo with the help of operator as
              * template parameter.
              */
             template <typename Op>
-            void applyPeriodicSerialDim(view_type& view,
-                                        const Layout_t* layout,
-                                        const int nghost);
-
+            void applyPeriodicSerialDim(view_type& view, const Layout_t* layout, const int nghost);
 
         private:
-
             /*!
-             * Exchange the data of faces.
+             * Exchange the data of halo cells.
              * @param view is the original field data
              * @param layout the field layout storing the domain decomposition
              * @param order the data send orientation
@@ -162,35 +139,7 @@ namespace ippl {
              * unpack function call
              */
             template <class Op>
-            void exchangeFaces(view_type& view,
-                               const Layout_t* layout,
-                               SendOrder order);
-
-            /*!
-             * Exchange the data of edges.
-             * @param view is the original field data
-             * @param layout the field layout storing the domain decomposition
-             * @param order the data send orientation
-             * @tparam Op the data assigment operator of the
-             * unpack function call
-             */
-            template <class Op>
-            void exchangeEdges(view_type& view,
-                               const Layout_t* layout,
-                               SendOrder order);
-
-            /*!
-             * Exchange the data of vertices.
-             * @param view is the original field data
-             * @param layout the field layout storing the domain decomposition
-             * @param order the data send orientation
-             * @tparam Op the data assigment operator of the
-             * unpack function call
-             */
-            template <class Op>
-            void exchangeVertices(view_type& view,
-                                  const Layout_t* layout,
-                                  SendOrder order);
+            void exchangeBoundaries(view_type& view, const Layout_t* layout, SendOrder order);
 
             /*!
              * Extract the subview of the original data. This does not copy.
@@ -198,14 +147,12 @@ namespace ippl {
              * @param view is the original field data
              * @param intersect the bounds of the intersection
              */
-            auto makeSubview(const view_type& view,
-                             const bound_type& intersect);
+            auto makeSubview(const view_type& view, const bound_type& intersect);
 
             FieldBufferData<T> haloData_m;
-
         };
-    }
-}
+    }  // namespace detail
+}  // namespace ippl
 
 #include "Field/HaloCells.hpp"
 

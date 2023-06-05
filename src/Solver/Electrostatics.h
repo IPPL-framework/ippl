@@ -23,24 +23,26 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim,
-              class M=UniformCartesian<double, Dim>,
-              class C=typename M::DefaultCentering>
-    class Electrostatics : public Solver<Tlhs, Trhs, Dim, M, C>
-    {
+    template <typename FieldLHS, typename FieldRHS>
+    class Electrostatics : public Solver<FieldLHS, FieldRHS> {
+        constexpr static unsigned Dim = FieldLHS::dim;
+        using Tlhs                    = typename FieldLHS::value_type;
+        using Trhs                    = typename FieldRHS::value_type;
+        using Base                    = Solver<FieldLHS, FieldRHS>;
+
     public:
-        using grad_type = Field<Vector<Tlhs, Dim>, Dim, M, C>;
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
+        using grad_type = Field<Vector<Tlhs, Dim>, Dim, typename FieldLHS::Mesh_t,
+                                typename FieldLHS::Centering_t>;
+        using typename Base::lhs_type, typename Base::rhs_type;
 
         /*!
          * Represents the types of fields that should
          * be output by the solver
          */
         enum OutputType {
-            SOL             = 0b01,
-            GRAD            = 0b10,
-            SOL_AND_GRAD    = 0b11
+            SOL          = 0b01,
+            GRAD         = 0b10,
+            SOL_AND_GRAD = 0b11
         };
 
         /*!
@@ -48,16 +50,16 @@ namespace ippl {
          * desired output type defaults to solution only
          */
         Electrostatics()
-            : Solver<Tlhs, Trhs, Dim, M, C>()
-            , grad_mp(nullptr)
-        {
+            : Base()
+            , grad_mp(nullptr) {
+            static_assert(std::is_floating_point<Trhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
 
         Electrostatics(lhs_type& lhs, rhs_type& rhs)
-            : Solver<Tlhs, Trhs, Dim, M, C>(lhs, rhs)
-            , grad_mp(nullptr)
-        {
+            : Base(lhs, rhs)
+            , grad_mp(nullptr) {
+            static_assert(std::is_floating_point<Trhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
 
@@ -74,15 +76,13 @@ namespace ippl {
          */
         virtual void solve() = 0;
 
-        virtual ~Electrostatics() { }
+        virtual ~Electrostatics() {}
 
     protected:
         grad_type* grad_mp;
 
-        virtual void setDefaultParameters() override {
-            this->params_m.add("output_type", SOL);
-        }
+        virtual void setDefaultParameters() override { this->params_m.add("output_type", SOL); }
     };
-}
+}  // namespace ippl
 
 #endif

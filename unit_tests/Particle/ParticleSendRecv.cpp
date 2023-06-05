@@ -2,7 +2,7 @@
 // Unit test Particle send/receive
 //   Test particle send and receive operations.
 //
-// Copyright (c) 2020, Sriramkrishnan Muralikrishnan, 
+// Copyright (c) 2020, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -18,85 +18,89 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
-#include "gtest/gtest.h"
-
 #include <random>
 
-class ParticleSendRecv : public ::testing::Test {
+#include "MultirankUtils.h"
+#include "gtest/gtest.h"
 
+class ParticleSendRecv : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
-    static constexpr size_t dim = 3;
-    typedef ippl::FieldLayout<dim> flayout_type;
-    typedef ippl::UniformCartesian<double, dim> mesh_type;
-    typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
-    typedef ippl::detail::RegionLayout<double, 3, mesh_type> RegionLayout_t;
+    template <unsigned Dim>
+    using flayout_type = ippl::FieldLayout<Dim>;
+
+    template <unsigned Dim>
+    using mesh_type = ippl::UniformCartesian<double, Dim>;
+
+    template <unsigned Dim>
+    using playout_type = ippl::ParticleSpatialLayout<double, Dim>;
+
+    template <unsigned Dim>
+    using RegionLayout_t = ippl::detail::RegionLayout<double, Dim, mesh_type<Dim>>;
+
     typedef ippl::ParticleAttrib<int> ER_t;
 
-    template<class PLayout>
-    struct Bunch : public ippl::ParticleBase<PLayout>
-    {
+    template <class PLayout>
+    struct Bunch : public ippl::ParticleBase<PLayout> {
         Bunch(PLayout& playout)
-        : ippl::ParticleBase<PLayout>(playout)
-        {
+            : ippl::ParticleBase<PLayout>(playout) {
             this->addAttribute(expectedRank);
             this->addAttribute(Q);
         }
-        
-        ~Bunch(){ }
-        
+
+        ~Bunch() {}
+
         typedef ippl::ParticleAttrib<int> rank_type;
         typedef ippl::ParticleAttrib<double> charge_container_type;
         rank_type expectedRank;
         charge_container_type Q;
-    
+
         void update() {
             PLayout& layout = this->getLayout();
             layout.update(*this);
         }
     };
 
-
-    typedef Bunch<playout_type> bunch_type;
-
+    template <unsigned Dim>
+    using bunch_type = Bunch<playout_type<Dim>>;
 
     ParticleSendRecv()
-    : nParticles(std::pow(256,3))
-    , nPoints(1024)
-    {
-        setup();
+        : nParticles(128) {
+        computeGridSizes(nPoints);
+        for (unsigned d = 0; d < MaxDim; d++) {
+            domain[d] = nPoints[d] / 16.;
+        }
+        setup(this);
     }
 
-    void setup() {
-        ippl::Index I(nPoints);
-        ippl::NDIndex<dim> owned(I, I, I);
+    template <unsigned Idx, unsigned Dim>
+    void setupDim() {
+        std::array<ippl::Index, Dim> args;
+        for (unsigned d = 0; d < Dim; d++)
+            args[d] = ippl::Index(nPoints[d]);
+        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
-        ippl::e_dim_tag domDec[dim];    // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < dim; d++)
+        ippl::Vector<double, Dim> hx;
+        ippl::Vector<double, Dim> origin;
+
+        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        for (unsigned int d = 0; d < Dim; d++) {
             domDec[d] = ippl::PARALLEL;
+            hx[d]     = domain[d] / nPoints[d];
+            origin[d] = 0;
+        }
 
-        layout_m = flayout_type(owned, domDec);
+        auto& layout = std::get<Idx>(layouts) = flayout_type<Dim>(owned, domDec);
 
-        double dx = 1.0 / double(nPoints);
-        ippl::Vector<double, dim> hx = {dx, dx, dx};
-        ippl::Vector<double, dim> origin = {0, 0, 0};
+        auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
 
-        mesh_m = mesh_type(owned, hx, origin);
+        auto& pl = std::get<Idx>(playouts) = playout_type<Dim>(layout, mesh);
 
-        pl = playout_type(layout_m, mesh_m);
-        
-        bunch = std::make_unique<bunch_type>(pl);
-        
+        auto bunch = std::get<Idx>(bunches) = std::make_shared<bunch_type<Dim>>(pl);
+
         using BC = ippl::BC;
 
-        bunch_type::bc_container_type bcs = {
-            BC::PERIODIC,
-            BC::PERIODIC,
-            BC::PERIODIC,
-            BC::PERIODIC,
-            BC::PERIODIC,
-            BC::PERIODIC
-        };
+        typename bunch_type<Dim>::bc_container_type bcs;
+        bcs.fill(BC::PERIODIC);
 
         bunch->setParticleBC(bcs);
 
@@ -108,96 +112,87 @@ public:
         }
 
         bunch->create(nParticles / nRanks);
-        
+
         std::mt19937_64 eng(Ippl::Comm->rank());
         std::uniform_real_distribution<double> unif(0, 1);
 
-        typename bunch_type::particle_position_type::HostMirror R_host = bunch->R.getHostMirror();
-        for(size_t i = 0; i < bunch->getLocalNum(); ++i) {
-            ippl::Vector<double, dim> r = {unif(eng), unif(eng), unif(eng)};
+        auto R_host = bunch->R.getHostMirror();
+        for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
+            ippl::Vector<double, Dim> r;
+            for (unsigned d = 0; d < Dim; d++) {
+                r[d] = unif(eng) * domain[d];
+            }
             R_host(i) = r;
         }
 
         Kokkos::deep_copy(bunch->R.getView(), R_host);
-        bunch->Q = 1.0;
-        RegionLayout_t RLayout = pl.getRegionLayout();
+        bunch->Q                    = 1.0;
+        RegionLayout_t<Dim> RLayout = pl.getRegionLayout();
 
-        auto& positions = bunch->R.getView();
-        typename RegionLayout_t::view_type Regions = RLayout.getdLocalRegions();
-        using size_type = typename RegionLayout_t::view_type::size_type;
+        using region_view  = typename RegionLayout_t<Dim>::view_type;
+        using size_type    = typename RegionLayout_t<Dim>::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
-        ER_t::view_type ER = bunch->expectedRank.getView();
 
-        Kokkos::parallel_for("Expected Rank",
-                mdrange_type({0, 0},
-                             {ER.extent(0), Regions.extent(0)}), 
-                KOKKOS_LAMBDA(const size_t i, const size_type j) {
-                    bool x_bool = false;
-                    bool y_bool = false;
-                    bool z_bool = false;
-                    if((positions(i)[0] >= Regions(j)[0].min()) &&
-                       (positions(i)[0] <= Regions(j)[0].max())) {
-                        x_bool = true;    
-                    }
-                    if((positions(i)[1] >= Regions(j)[1].min()) &&
-                       (positions(i)[1] <= Regions(j)[1].max())) {
-                        y_bool = true;    
-                    }
-                    if((positions(i)[2] >= Regions(j)[2].min()) &&
-                       (positions(i)[2] <= Regions(j)[2].max())) {
-                        z_bool = true;    
-                    }
-                    if(x_bool && y_bool && z_bool){
-                        ER(i) = j;
-                    }
+        auto& positions     = bunch->R.getView();
+        region_view Regions = RLayout.getdLocalRegions();
+        ER_t::view_type ER  = bunch->expectedRank.getView();
+
+        Kokkos::parallel_for(
+            "Expected Rank", mdrange_type({0, 0}, {ER.extent(0), Regions.extent(0)}),
+            KOKKOS_LAMBDA(const size_t i, const size_type j) {
+                bool xyz_bool = true;
+                for (unsigned d = 0; d < Dim; d++) {
+                    xyz_bool &= positions(i)[d] <= Regions(j)[d].max()
+                                && positions(i)[d] >= Regions(j)[d].min();
+                }
+                if (xyz_bool) {
+                    ER(i) = j;
+                }
             });
         Kokkos::fence();
     }
 
-    std::unique_ptr<bunch_type> bunch;
+    PtrCollection<std::shared_ptr, bunch_type> bunches;
     unsigned int nParticles;
-    size_t nPoints;
-    playout_type pl;
+    size_t nPoints[MaxDim];
+    double domain[MaxDim];
+    Collection<playout_type> playouts;
 
 private:
-    flayout_type layout_m;
-    mesh_type mesh_m;
+    Collection<flayout_type> layouts;
+    Collection<mesh_type> meshes;
 };
 
-
-
 TEST_F(ParticleSendRecv, SendAndRecieve) {
+    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch, playout_type<Dim>& pl) {
+        bunch_type<Dim> bunchBuffer(pl);
+        pl.update(*bunch, bunchBuffer);
+        // bunch->update();
+        ER_t::view_type::host_mirror_type ER_host = bunch->expectedRank.getHostMirror();
+        Kokkos::resize(ER_host, bunch->expectedRank.size());
+        Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
 
-    bunch_type bunchBuffer(pl);
-    pl.update(*bunch, bunchBuffer);
-    //bunch->update();
-    ER_t::view_type::host_mirror_type ER_host = bunch->expectedRank.getHostMirror();
-    Kokkos::resize(ER_host, bunch->expectedRank.size());
-    Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
+        for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
+            ASSERT_EQ(ER_host(i), Ippl::Comm->rank());
+        }
+        Ippl::Comm->barrier();
 
-    for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
-        ASSERT_EQ(ER_host(i), Ippl::Comm->rank());
-    }
-    Ippl::Comm->barrier();
+        unsigned int Total_particles = 0;
+        unsigned int local_particles = bunch->getLocalNum();
 
-    unsigned int Total_particles = 0;
-    unsigned int local_particles = bunch->getLocalNum();
+        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
+                   Ippl::getComm());
 
-    MPI_Reduce(&local_particles, &Total_particles, 1, 
-                MPI_UNSIGNED, MPI_SUM, 0, Ippl::getComm());
-    
-    if (Ippl::Comm->rank() == 0) {
+        if (Ippl::Comm->rank() == 0) {
+            ASSERT_EQ(nParticles, Total_particles);
+        }
+    };
 
-        ASSERT_EQ(nParticles, Total_particles);
-    }
-
-
-
+    apply(check, bunches, playouts);
 }
 
-
-int main(int argc, char *argv[]) {
-    Ippl ippl(argc,argv);
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

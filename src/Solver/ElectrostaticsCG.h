@@ -24,35 +24,34 @@
 
 namespace ippl {
 
-    // Expands to a lambda that acts as a wrapper for a differential operator
-    // fun: the function for which to create the wrapper, such as ippl::laplace
-    // type: the argument type, which should match the LHS type for the solver
-    #define IPPL_SOLVER_OPERATOR_WRAPPER(fun, type)    \
-    [] (type arg) {                                    \
-        return fun(arg);                               \
+// Expands to a lambda that acts as a wrapper for a differential operator
+// fun: the function for which to create the wrapper, such as ippl::laplace
+// type: the argument type, which should match the LHS type for the solver
+#define IPPL_SOLVER_OPERATOR_WRAPPER(fun, type) \
+    [](type arg) {                              \
+        return fun(arg);                        \
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim,
-              class M=UniformCartesian<double, Dim>,
-              class C=typename M::DefaultCentering>
-    class ElectrostaticsCG : public Electrostatics<Tlhs, Trhs, Dim, M, C>
-    {
+    template <typename FieldLHS, typename FieldRHS = FieldLHS>
+    class ElectrostaticsCG : public Electrostatics<FieldLHS, FieldRHS> {
+        using Tlhs = typename FieldLHS::value_type;
+
     public:
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, M, C>::rhs_type;
+        using Base = Electrostatics<FieldLHS, FieldRHS>;
+        using typename Base::lhs_type, typename Base::rhs_type;
+
         using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;
-        using algo = PCG<Tlhs, Trhs, Dim, OpRet, M, C>;
-        using Base = Electrostatics<Tlhs, Trhs, Dim, M, C>;
+        using algo  = PCG<OpRet, FieldLHS, FieldRHS>;
 
         ElectrostaticsCG()
-            : Base()
-        {
+            : Base() {
+            static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
 
         ElectrostaticsCG(lhs_type& lhs, rhs_type& rhs)
-            : Base(lhs, rhs)
-        {
+            : Base(lhs, rhs) {
+            static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
 
@@ -62,7 +61,7 @@ namespace ippl {
 
             int output = this->params_m.template get<int>("output_type");
             if (output & Base::GRAD) {
-                *(this->grad_mp) = grad(*(this->lhs_mp));
+                *(this->grad_mp) = -grad(*(this->lhs_mp));
             }
         }
 
@@ -71,9 +70,13 @@ namespace ippl {
          * the last time this solver was used
          * @return Iteration count of last solve
          */
-        int getIterationCount() {
-            return algo_m.getIterationCount();
-        }
+        int getIterationCount() { return algo_m.getIterationCount(); }
+
+        /*!
+         * Query the residue
+         * @return Residue norm from last solve
+         */
+        Tlhs getResidue() const { return algo_m.getResidue(); }
 
     protected:
         algo algo_m = algo();
@@ -84,6 +87,6 @@ namespace ippl {
         }
     };
 
-}
+}  // namespace ippl
 
 #endif

@@ -30,7 +30,7 @@ namespace ippl {
 
     namespace detail {
 
-        template<typename T, unsigned Dim, class ViewType>
+        template <typename T, unsigned Dim, class ViewType>
         struct ParticleBC {
             using value_type = typename ViewType::value_type::value_type;
 
@@ -54,17 +54,13 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             ParticleBC() = default;
 
-            KOKKOS_INLINE_FUNCTION
-            ParticleBC(const ViewType& view,
-                       const NDRegion<T, Dim>& nr,
-                       const unsigned& dim, 
-                       const bool& isUpper)
-            : view_m(view)
-            , dim_m(dim)
-            , minval_m(nr[dim].min())
-            , maxval_m(nr[dim].max())
-            , isUpper_m(isUpper)
-            {
+            KOKKOS_INLINE_FUNCTION ParticleBC(const ViewType& view, const NDRegion<T, Dim>& nr,
+                                              const unsigned& dim, const bool& isUpper)
+                : view_m(view)
+                , dim_m(dim)
+                , minval_m(nr[dim].min())
+                , maxval_m(nr[dim].max())
+                , isUpper_m(isUpper) {
                 extent_m = nr[dim].length();
                 middle_m = (minval_m + maxval_m) / 2;
             }
@@ -73,7 +69,7 @@ namespace ippl {
             ~ParticleBC() = default;
         };
 
-        template<typename T, unsigned Dim, class ViewType>
+        template <typename T, unsigned Dim, class ViewType>
         struct PeriodicBC : public ParticleBC<T, Dim, ViewType> {
             using value_type = typename ParticleBC<T, Dim, ViewType>::value_type;
 
@@ -83,25 +79,20 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             PeriodicBC() = default;
 
-            KOKKOS_INLINE_FUNCTION
-            PeriodicBC(const ViewType& view,
-                       const NDRegion<T, Dim>& nr,
-                       const unsigned& dim, 
-                       const bool& isUpper)
-            : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper)
-            { }
+            KOKKOS_INLINE_FUNCTION PeriodicBC(const ViewType& view, const NDRegion<T, Dim>& nr,
+                                              const unsigned& dim, const bool& isUpper)
+                : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {}
 
-            KOKKOS_INLINE_FUNCTION
-            void operator()(const size_t& i) const {
+            KOKKOS_INLINE_FUNCTION void operator()(const size_t& i) const {
                 value_type& value = this->view_m(i)[this->dim_m];
-                value = value - extent_m * (int)((value - middle_m) * 2 / extent_m);
+                value             = value - extent_m * (int)((value - middle_m) * 2 / extent_m);
             }
 
             KOKKOS_DEFAULTED_FUNCTION
             ~PeriodicBC() = default;
         };
 
-        template<typename T, unsigned Dim, class ViewType>
+        template <typename T, unsigned Dim, class ViewType>
         struct ReflectiveBC : public ParticleBC<T, Dim, ViewType> {
             using value_type = typename ParticleBC<T, Dim, ViewType>::value_type;
 
@@ -112,30 +103,24 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             ReflectiveBC() = default;
 
-            KOKKOS_INLINE_FUNCTION
-            ReflectiveBC(const ViewType& view,
-                         const NDRegion<T, Dim>& nr,
-                         const unsigned& dim, 
-                         const bool& isUpper)
-            : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper)
-            { }
+            KOKKOS_INLINE_FUNCTION ReflectiveBC(const ViewType& view, const NDRegion<T, Dim>& nr,
+                                                const unsigned& dim, const bool& isUpper)
+                : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {}
 
-            KOKKOS_INLINE_FUNCTION
-            void operator()(const size_t& i) const {
+            KOKKOS_INLINE_FUNCTION void operator()(const size_t& i) const {
                 value_type& value = this->view_m(i)[this->dim_m];
-                bool tooHigh = value >= maxval_m;
-                bool tooLow = value < minval_m;
-                value += 2 * (
-                          (tooHigh && isUpper_m) * (maxval_m - value) +
-                          (tooLow && !isUpper_m) * (minval_m - value)
-                         );
+                bool tooHigh      = value >= maxval_m;
+                bool tooLow       = value < minval_m;
+                value += 2
+                         * ((tooHigh && isUpper_m) * (maxval_m - value)
+                            + (tooLow && !isUpper_m) * (minval_m - value));
             }
 
             KOKKOS_DEFAULTED_FUNCTION
             ~ReflectiveBC() = default;
         };
 
-        template<typename T, unsigned Dim, class ViewType>
+        template <typename T, unsigned Dim, class ViewType>
         struct SinkBC : public ParticleBC<T, Dim, ViewType> {
             using value_type = typename ParticleBC<T, Dim, ViewType>::value_type;
 
@@ -146,28 +131,23 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             SinkBC() = default;
 
-            KOKKOS_INLINE_FUNCTION
-            SinkBC(const ViewType& view,
-                   const NDRegion<T, Dim>& nr,
-                   const unsigned& dim, 
-                   const bool& isUpper)
-            : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper)
-            { }
+            KOKKOS_INLINE_FUNCTION SinkBC(const ViewType& view, const NDRegion<T, Dim>& nr,
+                                          const unsigned& dim, const bool& isUpper)
+                : ParticleBC<T, Dim, ViewType>(view, nr, dim, isUpper) {}
 
-            KOKKOS_INLINE_FUNCTION
-            void operator()(const size_t& i) const {
+            KOKKOS_INLINE_FUNCTION void operator()(const size_t& i) const {
                 value_type& value = this->view_m(i)[this->dim_m];
-                bool tooHigh = value >= maxval_m;
-                bool tooLow = value < minval_m;
-                value += (tooHigh && isUpper_m) * (maxval_m - value) +
-                         (tooLow && !isUpper_m) * (minval_m - value);
+                bool tooHigh      = value >= maxval_m;
+                bool tooLow       = value < minval_m;
+                value += (tooHigh && isUpper_m) * (maxval_m - value)
+                         + (tooLow && !isUpper_m) * (minval_m - value);
             }
 
             KOKKOS_DEFAULTED_FUNCTION
             ~SinkBC() = default;
         };
 
-    }
-}
+    }  // namespace detail
+}  // namespace ippl
 
 #endif

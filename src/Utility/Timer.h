@@ -24,19 +24,18 @@
 
 #include <chrono>
 
-class Timer
-{
+class Timer {
 public:
-    using timer_type = std::chrono::time_point<std::chrono::high_resolution_clock>;
+    using timer_type    = std::chrono::time_point<std::chrono::high_resolution_clock>;
     using duration_type = std::chrono::duration<double>;
 
     Timer();
 
-    void clear();               // Set all accumulated times to 0
-    void start();               // Start timer
-    void stop();                // Stop timer
+    void clear();  // Set all accumulated times to 0
+    void start();  // Start timer
+    void stop();   // Stop timer
 
-    double elapsed();         // Report clock time accumulated in seconds
+    double elapsed();  // Report clock time accumulated in seconds
 
 private:
     double elapsed_m;

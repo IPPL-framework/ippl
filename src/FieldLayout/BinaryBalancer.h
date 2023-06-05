@@ -2,7 +2,7 @@
 /***************************************************************************
  *
  * The IPPL Framework
- * 
+ *
  *
  * Visit http://people.web.psi.ch/adelmann/ for more details
  *
@@ -23,7 +23,7 @@
   and the location of that cut by balancing the weights on each side
   of the cut.  The resulting distribution has one vnode per processor.
 
-  This is restricted to a processor number that is a power of two. 
+  This is restricted to a processor number that is a power of two.
 
   It performs log(P) parallel reductions.
 
@@ -52,32 +52,31 @@
 //////////////////////////////////////////////////////////////////////
 
 // forward declarations
-template<unsigned Dim> class FieldLayout;
-template<class T, unsigned Dim> class BareField;
+template <unsigned Dim>
+class FieldLayout;
+template <class T, unsigned Dim>
+class BareField;
 
-class BinaryRepartitionFailed {  };
+class BinaryRepartitionFailed {};
 
 // Calculate the local domain for a binary repartition.
-template<unsigned Dim>
-NDIndex<Dim>
-CalcBinaryRepartition(FieldLayout<Dim>&, BareField<double,Dim>&);
+template <unsigned Dim>
+NDIndex<Dim> CalcBinaryRepartition(FieldLayout<Dim>&, BareField<T, Dim>&);
 
 // Calculate and apply a local domain for a binary repartition.
-template<unsigned Dim>
-inline void
-BinaryRepartition(FieldLayout<Dim>& layout, BareField<double,Dim>& weights)
-{
-  layout.Repartition( CalcBinaryRepartition(layout,weights) );
+template <class T, unsigned Dim>
+inline void BinaryRepartition(FieldLayout<Dim>& layout, BareField<T, Dim>& weights) {
+    layout.Repartition(CalcBinaryRepartition(layout, weights));
 }
 
 //////////////////////////////////////////////////////////////////////
 
 #include "FieldLayout/BinaryBalancer.hpp"
 
-#endif // BINARY_BALANCER_H
+#endif  // BINARY_BALANCER_H
 
 /***************************************************************************
  * $RCSfile: BinaryBalancer.h,v $   $Author: adelmann $
  * $Revision: 1.1.1.1 $   $Date: 2003/01/23 07:40:27 $
- * IPPL_VERSION_ID: $Id: BinaryBalancer.h,v 1.1.1.1 2003/01/23 07:40:27 adelmann Exp $ 
+ * IPPL_VERSION_ID: $Id: BinaryBalancer.h,v 1.1.1.1 2003/01/23 07:40:27 adelmann Exp $
  ***************************************************************************/

@@ -35,13 +35,11 @@
 #ifndef IPPL_PARTICLE_SPATIAL_LAYOUT_H
 #define IPPL_PARTICLE_SPATIAL_LAYOUT_H
 
-
-#include "FieldLayout/FieldLayout.h"
-#include "Particle/ParticleLayout.h"
-#include "Particle/ParticleBase.h"
-
 #include "Types/IpplTypes.h"
 
+#include "FieldLayout/FieldLayout.h"
+#include "Particle/ParticleBase.h"
+#include "Particle/ParticleLayout.h"
 #include "Region/RegionLayout.h"
 
 namespace ippl {
@@ -51,17 +49,15 @@ namespace ippl {
      * @tparam Dim dimension
      * @tparam Mesh type
      */
-    template <typename T, unsigned Dim,
-              class Mesh = UniformCartesian<T, Dim>
-              >
-    class ParticleSpatialLayout : public detail::ParticleLayout<T, Dim>
-    {
+    template <typename T, unsigned Dim, class Mesh = UniformCartesian<T, Dim>>
+    class ParticleSpatialLayout : public detail::ParticleLayout<T, Dim> {
     public:
-        using hash_type = typename ParticleBase<ParticleSpatialLayout<T, Dim, Mesh> >::hash_type;
+        using hash_type   = typename ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>::hash_type;
         using locate_type = typename detail::ViewType<int, 1>::view_type;
-        using bool_type = typename detail::ViewType<bool, 1>::view_type;
+        using bool_type   = typename detail::ViewType<bool, 1>::view_type;
+        using vector_type = typename detail::ParticleLayout<T, Dim>::vector_type;
         using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
-        using Mesh_t = UniformCartesian<double,Dim>;
+        using Mesh_t         = UniformCartesian<double, Dim>;
 
         using size_type = detail::size_type;
 
@@ -69,26 +65,32 @@ namespace ippl {
         // constructor: this one also takes a Mesh
         ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&);
 
-        ParticleSpatialLayout() : detail::ParticleLayout<T, Dim>() { }
+        ParticleSpatialLayout()
+            : detail::ParticleLayout<T, Dim>() {}
 
         ~ParticleSpatialLayout() = default;
         //~ParticleSpatialLayout() {}
 
         void updateLayout(FieldLayout<Dim>&, Mesh&);
- 
+
         template <class BufferType>
         void update(BufferType& pdata, BufferType& buffer);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
-        
+
     protected:
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
-         
+
+        using region_type = typename RegionLayout_t::view_type::value_type;
+
+        template <size_t... Idx>
+        KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(
+            const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region);
+
     public:
         void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
-                             locate_type& ranks,
-                             bool_type& invalid) const;
+                             locate_type& ranks, bool_type& invalid) const;
 
         /*!
          * @param rank we sent to
@@ -102,9 +104,8 @@ namespace ippl {
          * @param ranks a container specifying where a particle at the i-th index should go.
          */
         size_t numberOfSends(int rank, const locate_type& ranks);
-
     };
-}
+}  // namespace ippl
 
 #include "Particle/ParticleSpatialLayout.hpp"
 

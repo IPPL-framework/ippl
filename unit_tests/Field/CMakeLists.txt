@@ -3,6 +3,7 @@ message (STATUS "Adding unit tests found in ${_relPath}")
 
 include_directories (
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${GTEST_INCLUDE_DIRS}
 )
 
@@ -24,6 +25,15 @@ target_link_libraries (
 add_executable (FieldBC FieldBC.cpp)
 target_link_libraries (
     FieldBC
+    ippl
+    pthread
+    ${MPI_CXX_LIBRARIES}
+    ${GTEST_BOTH_LIBRARIES}
+)
+
+add_executable (Halo Halo.cpp)
+target_link_libraries (
+    Halo
     ippl
     pthread
     ${MPI_CXX_LIBRARIES}

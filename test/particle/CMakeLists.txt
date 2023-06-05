@@ -19,8 +19,8 @@ target_link_libraries (TestScatter ${IPPL_LIBS})
 add_executable (TestGather TestGather.cpp)
 target_link_libraries (TestGather ${IPPL_LIBS})
 
-add_executable (PIC3d PIC3d.cpp)
-target_link_libraries (PIC3d ${IPPL_LIBS})
+add_executable (PICnd PICnd.cpp)
+target_link_libraries (PICnd ${IPPL_LIBS})
 
 add_executable (benchmarkParticleUpdate benchmarkParticleUpdate.cpp)
 target_link_libraries (benchmarkParticleUpdate ${IPPL_LIBS})

@@ -17,181 +17,227 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
+
+#include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
-class BareFieldTest : public ::testing::Test {
-
+class BareFieldTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
-    static constexpr size_t dim = 3;
-    typedef ippl::BareField<double, dim> field_type;
-    typedef ippl::BareField<ippl::Vector<double, 3>, dim> vfield_type;
+    template <unsigned Dim>
+    using field_type = ippl::BareField<double, Dim>;
 
-    BareFieldTest()
-    : nPoints(8)
-    {
-        setup();
+    template <unsigned Dim>
+    using vfield_type = ippl::BareField<ippl::Vector<double, Dim>, Dim>;
+
+    BareFieldTest() {
+        computeGridSizes(nPoints);
+        setup(this);
     }
 
-    void setup() {
-        ippl::Index I(nPoints);
-        ippl::NDIndex<dim> owned(I, I, I);
+    template <size_t Idx, unsigned Dim>
+    void setupDim() {
+        std::array<ippl::Index, Dim> indices;
+        for (unsigned d = 0; d < Dim; d++) {
+            indices[d] = ippl::Index(nPoints[d]);
+        }
+        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(indices);
 
-        ippl::e_dim_tag domDec[dim];    // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < dim; d++)
-            domDec[d] = ippl::PARALLEL;
+        ippl::e_dim_tag domDec[Dim];
+        for (auto& tag : domDec) {
+            tag = ippl::PARALLEL;
+        }
 
-        ippl::FieldLayout<dim> layout(owned, domDec);
-        field = std::make_unique<field_type>(layout);
-        vfield = std::make_unique<vfield_type>(layout);
+        std::get<Idx>(layouts) = ippl::FieldLayout<Dim>(owned, domDec);
+        auto& layout           = std::get<Idx>(layouts);
+
+        std::get<Idx>(fields)  = std::make_shared<field_type<Dim>>(layout);
+        std::get<Idx>(vfields) = std::make_shared<vfield_type<Dim>>(layout);
     }
 
-    std::unique_ptr<field_type> field;
-    std::unique_ptr<vfield_type> vfield;
-    size_t nPoints;
+    Collection<ippl::FieldLayout> layouts;
+
+    PtrCollection<std::shared_ptr, field_type> fields;
+    PtrCollection<std::shared_ptr, vfield_type> vfields;
+    size_t nPoints[MaxDim];
 };
 
+template <unsigned Dim>
+struct FieldVal {
+    const typename BareFieldTest::field_type<Dim>::view_type view;
+    const ippl::NDIndex<Dim> lDom;
 
+    template <typename... Idx>
+    KOKKOS_INLINE_FUNCTION void operator()(const Idx... args) const {
+        double tot = (args + ...);
+        for (unsigned d = 0; d < Dim; d++) {
+            tot += lDom[d].first();
+        }
+        view(args...) = tot - 1;
+    }
+};
+
+TEST_F(BareFieldTest, DeepCopy) {
+    auto check = []<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        *field               = 0;
+        field_type<Dim> copy = field->deepCopy();
+        copy                 = copy + 1;
+
+        auto mirrorA = field->getHostMirror();
+        auto mirrorB = copy.getHostMirror();
+
+        Kokkos::deep_copy(mirrorA, field->getView());
+        Kokkos::deep_copy(mirrorB, copy.getView());
+
+        nestedViewLoop<Dim>(mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
+            ASSERT_DOUBLE_EQ(mirrorA(args...) + 1, mirrorB(args...));
+        });
+    };
+
+    apply(check, fields);
+}
 
 TEST_F(BareFieldTest, Sum) {
-    double val = 1.0;
+    double val              = 1.0;
+    double expected[MaxDim] = {val * nPoints[0]};
+    for (unsigned d = 1; d < MaxDim; d++) {
+        expected[d] = expected[d - 1] * nPoints[d];
+    }
 
-    *field = val;
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        *field     = val;
+        double sum = field->sum();
+        ASSERT_DOUBLE_EQ(expected[dimToIndex(Dim)], sum);
+    };
 
-    double sum = field->sum();
-
-    ASSERT_DOUBLE_EQ(val * std::pow(nPoints, dim), sum);
+    apply(check, fields);
 }
 
 TEST_F(BareFieldTest, Min) {
-    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
-    const int shift = field->getNghost();
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
+        auto view                     = field->getView();
 
-    auto view = field->getView();
-    auto mirror = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(mirror, view);
+        Kokkos::parallel_for("Set field", field->getFieldRangePolicy(), FieldVal<Dim>{view, lDom});
+        Kokkos::fence();
 
-    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
-        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
-            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                const size_t ig = i + lDom[0].first();
-                const size_t jg = j + lDom[1].first();
-                const size_t kg = k + lDom[2].first();
+        double min = field->min();
+        // minimum value in 3D: -1 + nghost + nghost + nghost
+        ASSERT_DOUBLE_EQ(min, field->getNghost() * Dim - 1);
+    };
 
-                mirror(i, j, k) = -1.0 + (ig + jg + kg);
-            }
-        }
-    }
-    Kokkos::deep_copy(view, mirror);
-
-    double min = field->min();
-    // minimum value -1 + nghost + nghost + nghost
-    ASSERT_DOUBLE_EQ(min, 2.);
+    apply(check, fields);
 }
 
 TEST_F(BareFieldTest, Max) {
-    const ippl::NDIndex<dim> lDom = field->getLayout().getLocalNDIndex();
-    const int shift = field->getNghost();
-
-    auto view = field->getView();
-    auto mirror = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(mirror, view);
-
-    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
-        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
-            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                const size_t ig = i + lDom[0].first();
-                const size_t jg = j + lDom[1].first();
-                const size_t kg = k + lDom[2].first();
-
-                mirror(i, j, k) = -1.0 + (ig + jg + kg);
-            }
-        }
+    double expected[MaxDim] = {nPoints[0] - 1.};
+    for (unsigned d = 1; d < MaxDim; d++) {
+        expected[d] = expected[d - 1] + nPoints[d];
     }
-    Kokkos::deep_copy(view, mirror);
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
+        auto view                     = field->getView();
 
-    double max = field->max();
-    double expected = -1. + nPoints * 3;
-    ASSERT_DOUBLE_EQ(max, expected);
+        Kokkos::parallel_for("Set field", field->getFieldRangePolicy(), FieldVal<Dim>{view, lDom});
+        Kokkos::fence();
+
+        double max = field->max();
+        ASSERT_DOUBLE_EQ(max, expected[dimToIndex(Dim)]);
+    };
+
+    apply(check, fields);
 }
 
 TEST_F(BareFieldTest, Prod) {
-    *field = 2.;
-    double val = field->prod();
-    ASSERT_DOUBLE_EQ(val, pow(2, nPoints * nPoints * nPoints));
+    double sizes[MaxDim] = {(double)nPoints[0]};
+    for (unsigned d = 1; d < MaxDim; d++) {
+        sizes[d] = sizes[d - 1] * nPoints[d];
+    }
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        *field     = 2.;
+        double val = field->prod();
+        ASSERT_DOUBLE_EQ(val, pow(2, sizes[dimToIndex(Dim)]));
+    };
+
+    apply(check, fields);
 }
 
 TEST_F(BareFieldTest, ScalarMultiplication) {
-    *field = 1.;
-    *field = *field * 10;
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        *field = 1.;
+        *field = *field * 10;
 
-    const int shift = field->getNghost();
+        const int shift = field->getNghost();
 
-    auto view = field->getView();
-    auto mirror = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(mirror, view);
+        auto view   = field->getView();
+        auto mirror = Kokkos::create_mirror_view(view);
+        Kokkos::deep_copy(mirror, view);
 
-    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
-        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
-            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                ASSERT_DOUBLE_EQ(mirror(i,j,k), 10.);
-            }
-        }
-    }
+        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+            ASSERT_DOUBLE_EQ(mirror(args...), 10.);
+        });
+    };
+
+    apply(check, fields);
 }
 
 TEST_F(BareFieldTest, DotProduct) {
-    *vfield = 1.;
-    *field = 5. * dot(*vfield, *vfield);
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field,
+                                   std::shared_ptr<vfield_type<Dim>>& vfield) {
+        *vfield = 1.;
+        *field  = 5. * dot(*vfield, *vfield);
 
-    const int shift = field->getNghost();
+        const int shift = field->getNghost();
 
-    auto view = field->getView();
-    auto mirror = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(mirror, view);
+        auto view   = field->getView();
+        auto mirror = Kokkos::create_mirror_view(view);
+        Kokkos::deep_copy(mirror, view);
 
-    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
-        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
-            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                ASSERT_DOUBLE_EQ(mirror(i,j,k), 15.);
-            }
-        }
-    }
+        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+            ASSERT_DOUBLE_EQ(mirror(args...), 5 * Dim);
+        });
+    };
+
+    apply(check, fields, vfields);
 }
 
 TEST_F(BareFieldTest, AllFuncs) {
-    double pi = acos(-1.);
-    double alpha = pi / 4;
-    *field = alpha;
-    // Compute new value
-    double beta = fabs(7.0 * (sin(alpha) * cos(alpha))/(tan(alpha) * acos(alpha)) 
-                - exp(alpha) + erf(alpha) + (asin(alpha) * cosh(alpha)) / (atan(alpha) 
-                * sinh(alpha)) + tanh(alpha) * log(alpha)
-                - log10(alpha) * sqrt(alpha) + floor(alpha) * ceil(alpha));
+    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+        using Kokkos::sin, Kokkos::cos, Kokkos::tan, Kokkos::acos, Kokkos::asin, Kokkos::exp,
+            Kokkos::erf, Kokkos::cosh, Kokkos::tanh, Kokkos::sinh, Kokkos::log, Kokkos::ceil,
+            Kokkos::atan, Kokkos::log, Kokkos::log10, Kokkos::sqrt, Kokkos::floor;
+        double pi    = Kokkos::numbers::pi_v<double>;
+        double alpha = pi / 4;
+        *field       = alpha;
+        // Compute new value
+        double beta = fabs(7.0 * (sin(alpha) * cos(alpha)) / (tan(alpha) * acos(alpha)) - exp(alpha)
+                           + erf(alpha) + (asin(alpha) * cosh(alpha)) / (atan(alpha) * sinh(alpha))
+                           + tanh(alpha) * log(alpha) - log10(alpha) * sqrt(alpha)
+                           + floor(alpha) * ceil(alpha));
 
-    // Compute same value via field ops
-    *field = fabs(7.0 * (sin(*field) * cos(*field))/(tan(*field) * acos(*field)) 
-                - exp(*field) + erf(*field) + (asin(*field) * cosh(*field)) / (atan(*field) 
-                * sinh(*field)) + tanh(*field) * log(*field)
-                - log10(*field) * sqrt(*field) + floor(*field) * ceil(*field));
+        // Compute same value via field ops
+        *field = fabs(7.0 * (sin(*field) * cos(*field)) / (tan(*field) * acos(*field)) - exp(*field)
+                      + erf(*field) + (asin(*field) * cosh(*field)) / (atan(*field) * sinh(*field))
+                      + tanh(*field) * log(*field) - log10(*field) * sqrt(*field)
+                      + floor(*field) * ceil(*field));
 
-    const int shift = field->getNghost();
+        const int shift = field->getNghost();
 
-    auto view = field->getView();
-    auto mirror = Kokkos::create_mirror_view(view);
-    Kokkos::deep_copy(mirror, view);
+        auto view   = field->getView();
+        auto mirror = Kokkos::create_mirror_view(view);
+        Kokkos::deep_copy(mirror, view);
 
-    for (size_t i = shift; i < mirror.extent(0) - shift; ++i) {
-        for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
-            for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
-                ASSERT_DOUBLE_EQ(mirror(i,j,k), beta);
-            }
-        }
-    }
+        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+            ASSERT_DOUBLE_EQ(mirror(args...), beta);
+        });
+    };
+
+    apply(check, fields);
 }
 
-int main(int argc, char *argv[]) {
-    Ippl ippl(argc,argv);
+int main(int argc, char* argv[]) {
+    Ippl ippl(argc, argv);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

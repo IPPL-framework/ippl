@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-//#include "Utility/PAssert.h"
+// #include "Utility/PAssert.h"
 
 #include <iomanip>
 #include <iostream>
@@ -24,32 +24,26 @@ namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim>
         struct isExpression<Vector<T, Dim>> : std::true_type {};
-    }
+    }  // namespace detail
 
-
-    template<typename T, unsigned Dim>
-    template<typename E, size_t N>
-    KOKKOS_FUNCTION
-    Vector<T, Dim>::Vector(const detail::Expression<E, N>& expr) {
+    template <typename T, unsigned Dim>
+    template <typename E, size_t N>
+    KOKKOS_FUNCTION Vector<T, Dim>::Vector(const detail::Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] = expr[i];
         }
     }
 
-
-    template<typename T, unsigned Dim>
-    KOKKOS_FUNCTION
-    Vector<T, Dim>::Vector(const T& val) {
+    template <typename T, unsigned Dim>
+    KOKKOS_FUNCTION Vector<T, Dim>::Vector(const T& val) {
         for (unsigned i = 0; i < Dim; ++i) {
             data_m[i] = val;
         }
     }
 
-
-    template<typename T, unsigned Dim>
-    KOKKOS_FUNCTION
-    Vector<T, Dim>::Vector(const std::initializer_list<T>& list) {
-        //PAssert(list.size() == Dim);
+    template <typename T, unsigned Dim>
+    KOKKOS_FUNCTION Vector<T, Dim>::Vector(const std::initializer_list<T>& list) {
+        // PAssert(list.size() == Dim);
         unsigned int i = 0;
         for (auto& l : list) {
             data_m[i] = l;
@@ -57,119 +51,132 @@ namespace ippl {
         }
     }
 
-
     /*
      *
      * Element access operators
      *
      */
-    template<typename T, unsigned Dim>
-    KOKKOS_INLINE_FUNCTION
-    typename Vector<T, Dim>::value_type& Vector<T, Dim>::operator[](unsigned int i) {
-        //PAssert(i < Dim);
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION typename Vector<T, Dim>::value_type& Vector<T, Dim>::operator[](
+        unsigned int i) {
+        // PAssert(i < Dim);
         return data_m[i];
     }
 
-
-    template<typename T, unsigned Dim>
-    KOKKOS_INLINE_FUNCTION
-    typename Vector<T, Dim>::value_type Vector<T, Dim>::operator[](unsigned int i) const {
-        //PAssert(i < Dim);
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION typename Vector<T, Dim>::value_type Vector<T, Dim>::operator[](
+        unsigned int i) const {
+        // PAssert(i < Dim);
         return data_m[i];
     }
 
-
-    template<typename T, unsigned Dim>
-    KOKKOS_INLINE_FUNCTION
-    typename Vector<T, Dim>::value_type& Vector<T, Dim>::operator()(unsigned int i) {
-        //PAssert(i < Dim);
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION typename Vector<T, Dim>::value_type& Vector<T, Dim>::operator()(
+        unsigned int i) {
+        // PAssert(i < Dim);
         return data_m[i];
     }
 
-
-    template<typename T, unsigned Dim>
-    KOKKOS_INLINE_FUNCTION
-    typename Vector<T, Dim>::value_type Vector<T, Dim>::operator()(unsigned int i) const {
-        //PAssert(i < Dim);
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION typename Vector<T, Dim>::value_type Vector<T, Dim>::operator()(
+        unsigned int i) const {
+        // PAssert(i < Dim);
         return data_m[i];
     }
-
 
     /*
      *
      * Vector Expression assignment operators
      *
      */
-    template<typename T, unsigned Dim>
-    template<typename E, size_t N>
-    KOKKOS_INLINE_FUNCTION
-        Vector<T, Dim>& Vector<T, Dim>::operator=(const detail::Expression<E, N>& expr) {
+    template <typename T, unsigned Dim>
+    template <typename E, size_t N>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator=(
+        const detail::Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] = expr[i];
         }
         return *this;
     }
 
-
-    template<typename T, unsigned Dim>
-    template<typename E, size_t N>
-    KOKKOS_INLINE_FUNCTION
-    Vector<T, Dim>& Vector<T, Dim>::operator+=(const detail::Expression<E, N>& expr) {
+    template <typename T, unsigned Dim>
+    template <typename E, size_t N>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator+=(
+        const detail::Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] += expr[i];
         }
         return *this;
     }
 
-
-    template<typename T, unsigned Dim>
-    template<typename E, size_t N>
-    KOKKOS_INLINE_FUNCTION
-    Vector<T, Dim>& Vector<T, Dim>::operator-=(const detail::Expression<E, N>& expr) {
+    template <typename T, unsigned Dim>
+    template <typename E, size_t N>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator-=(
+        const detail::Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] -= expr[i];
         }
         return *this;
     }
 
-
-    template<typename T, unsigned Dim>
-    template<typename E, size_t N>
-    KOKKOS_INLINE_FUNCTION
-    Vector<T, Dim>& Vector<T, Dim>::operator*=(const detail::Expression<E, N>& expr) {
+    template <typename T, unsigned Dim>
+    template <typename E, size_t N>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator*=(
+        const detail::Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] *= expr[i];
         }
         return *this;
     }
 
-
-    template<typename T, unsigned Dim>
-    template<typename E, size_t N>
-    KOKKOS_INLINE_FUNCTION
-    Vector<T, Dim>& Vector<T, Dim>::operator/=(const detail::Expression<E, N>& expr) {
+    template <typename T, unsigned Dim>
+    template <typename E, size_t N>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator/=(
+        const detail::Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
             data_m[i] /= expr[i];
         }
         return *this;
     }
 
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::iterator Vector<T, Dim>::begin() {
+        return data_m;
+    }
 
-    template<typename T, unsigned Dim>
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::iterator Vector<T, Dim>::end() {
+        return data_m + Dim;
+    }
+
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::const_iterator Vector<T, Dim>::begin()
+        const {
+        return data_m;
+    }
+
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::const_iterator Vector<T, Dim>::end()
+        const {
+        return data_m + Dim;
+    }
+
+    template <typename T, unsigned Dim>
     inline std::ostream& operator<<(std::ostream& out, const Vector<T, Dim>& v) {
-    std::streamsize sw = out.width();
+        std::streamsize sw = out.width();
         out << std::setw(1);
-        if (Dim >= 1) {
+        if constexpr (Dim > 1) {
             out << "( ";
-            for (unsigned int i = 0; i < Dim - 1; i++)
-            out << std::setw(sw) << v[i] << " , ";
+            for (unsigned int i = 0; i < Dim - 1; i++) {
+                out << std::setw(sw) << v[i] << " , ";
+            }
             out << std::setw(sw) << v[Dim - 1] << " )";
         } else {
             out << "( " << std::setw(sw) << v[0] << " )";
         }
         return out;
     }
-}
+}  // namespace ippl
 
 // vi: set et ts=4 sw=4 sts=4:
 // Local Variables:
