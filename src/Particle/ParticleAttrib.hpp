@@ -241,7 +241,7 @@ namespace ippl {
             },                                                                          \
             Kokkos::fun<T>(temp));                                                      \
         T globaltemp      = 0.0;                                                        \
-        MPI_Datatype type = get_mpi_datatype<T>(temp);                                  \
+        MPI_Datatype type = mpi::get_mpi_datatype<T>(temp);                             \
         MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Comm->getCommunicator());    \
         return globaltemp;                                                              \
     }

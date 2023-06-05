@@ -8,9 +8,9 @@ set (_HDRS
     Archive.hpp
     Communicate.h
     DataTypes.h
-#     GlobalComm.hpp
-#     GlobalComm.h
     Operations.h
+    Collectives.h
+    Collectives.hpp
     TagMaker.h
     Tags.h
     )

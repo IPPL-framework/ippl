@@ -375,7 +375,7 @@ public:
         std::vector<double> imb(ippl::Comm->size());
         double equalPart = (double)totalP / ippl::Comm->size();
         double dev       = (std::abs((double)this->getLocalNum() - equalPart) / totalP) * 100.0;
-        MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0, ippl::Comm->getCommunicator());
+        ippl::mpi::gather((&dev, imb.data(), 1);
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
@@ -414,8 +414,7 @@ public:
         size_type Total_particles = 0;
         size_type local_particles = this->getLocalNum();
 
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(local_particles, Total_particles, 1,  std::plus<size_type>());
 
         double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
         m << "Rel. error in charge conservation = " << rel_error << endl;
@@ -605,7 +604,7 @@ public:
         kinEnergy *= 0.5;
         double gkinEnergy = 0.0;
 
-        MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(kinEnergy, gkinEnergy, 1,  std::plus<double>());
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
@@ -624,8 +623,7 @@ public:
                 },
                 Kokkos::Sum<T>(temp));
             T globaltemp          = 0.0;
-            MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
-            MPI_Reduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, 0, ippl::Comm->getCommunicator());
+            ippl::mpi::reduce(temp, globaltemp, 1,  std::plus<T>());
             normE[d] = std::sqrt(globaltemp);
         }
 
@@ -676,7 +674,7 @@ public:
             },
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(temp, globaltemp, 1,  std::plus<double>());
         fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double tempMax = 0.0;
@@ -692,7 +690,7 @@ public:
             },
             Kokkos::Max<double>(tempMax));
         ExAmp = 0.0;
-        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(tempMax, ExAmp, 1,  std::greater<double>());
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
@@ -731,7 +729,7 @@ public:
             },
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(temp, globaltemp, 1,  std::plus<double>());
         fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double tempMax = 0.0;
@@ -747,7 +745,7 @@ public:
             },
             Kokkos::Max<double>(tempMax));
         EzAmp = 0.0;
-        MPI_Reduce(&tempMax, &EzAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
+        ippl::mpi::reduce(tempMax, EzAmp, 1,  std::greater<double>());
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;

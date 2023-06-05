@@ -266,7 +266,7 @@ void compute_convergence(std::string algorithm, int pt) {
 
         T globaltemp = 0.0;
 
-        MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
+        MPI_Datatype mpi_type = ippl::mpi::get_mpi_datatype<T>(temp);
         MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
         T errorNr = std::sqrt(globaltemp);
 

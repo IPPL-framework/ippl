@@ -39,7 +39,7 @@ namespace ippl {
             },
             Kokkos::Sum<T>(sum));
         T globalSum       = 0;
-        MPI_Datatype type = get_mpi_datatype<T>(sum);
+        MPI_Datatype type = mpi::get_mpi_datatype<T>(sum);
         MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Comm->getCommunicator());
         return globalSum;
     }
@@ -69,7 +69,7 @@ namespace ippl {
                     },
                     Kokkos::Max<T>(local));
                 T globalMax       = 0;
-                MPI_Datatype type = get_mpi_datatype<T>(local);
+                MPI_Datatype type = mpi::get_mpi_datatype<T>(local);
                 MPI_Allreduce(&local, &globalMax, 1, type, MPI_MAX, Comm->getCommunicator());
                 return globalMax;
             }
@@ -81,7 +81,7 @@ namespace ippl {
                     },
                     Kokkos::Sum<T>(local));
                 T globalSum       = 0;
-                MPI_Datatype type = get_mpi_datatype<T>(local);
+                MPI_Datatype type = mpi::get_mpi_datatype<T>(local);
                 MPI_Allreduce(&local, &globalSum, 1, type, MPI_SUM, Comm->getCommunicator());
                 return std::pow(globalSum, 1.0 / p);
             }
