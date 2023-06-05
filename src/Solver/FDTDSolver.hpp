@@ -92,7 +92,7 @@ namespace ippl {
 
         // compute scalar potential at next time-step using Finite Differences
         Kokkos::parallel_for(
-            "Scalar potential update", ippl::getRangePolicy<3>(view_phiN, nghost_phi),
+            "Scalar potential update", ippl::getRangePolicy(view_phiN, nghost_phi),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                 // global indices
                 const int ig = i + ldom[0].first() - nghost_phi;
@@ -148,7 +148,7 @@ namespace ippl {
         // compute vector potential at next time-step
         for (size_t gd = 0; gd < Dim; ++gd) {
             Kokkos::parallel_for(
-                "Vector potential update", ippl::getRangePolicy<3>(view_aN, nghost_a),
+                "Vector potential update", ippl::getRangePolicy(view_aN, nghost_a),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                     // global indices
                     const int ig = i + ldom[0].first() - nghost_a;
