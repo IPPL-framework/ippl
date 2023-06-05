@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(valN));
 
                 double globalN(0.0);
-                ippl::mpi::allredcue(valN, globalN, 1, std::plus<double>());
+                ippl::mpi::allreduce(valN, globalN, 1, std::plus<double>());
                 double errorN = std::sqrt(globalN);
 
                 double valD(0.0);
