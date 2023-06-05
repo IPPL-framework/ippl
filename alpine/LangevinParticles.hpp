@@ -136,7 +136,7 @@ public:
 
     void initSpaceChargeSolver() {
         // Initializing the solver defined by the ChargedParticles Class
-        ChargedParticles<PLayout, T, Dim>::initFFTSolver();
+        ChargedParticles<PLayout, T, Dim>::initSolver();
     }
 
     // Setup Friction Solver ["HOCKNEY", "VICO"]
