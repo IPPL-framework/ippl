@@ -375,7 +375,7 @@ public:
         std::vector<double> imb(ippl::Comm->size());
         double equalPart = (double)totalP / ippl::Comm->size();
         double dev       = (std::abs((double)this->getLocalNum() - equalPart) / totalP) * 100.0;
-        ippl::mpi::gather((&dev, imb.data(), 1);
+        ippl::mpi::gather(&dev, imb.data(), 1);
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
