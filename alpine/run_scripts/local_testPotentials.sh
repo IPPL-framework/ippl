@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#export OMP_NUM_THREADS=6
-#export OMP_PROC_BIND=spread
-#export OMP_PLACES=threads
+export OMP_NUM_THREADS=6
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
 
 # General Solver Parameters
 MPI_OVERALLOC=2.0
@@ -17,9 +17,9 @@ PARTICLE_MASS=1         # [m_e]
 EPS_INV=3.182609e9      # [\frac{cm^3 m_e}{s^2 q_e^2}] Inverse Vacuum Permittivity
 
 # Collisional Parameters
-NV_MAX=32               # Number of gridpoints on the velocity grid (along each dim.)
+NV_MAX=64               # Number of gridpoints on the velocity grid (along each dim.)
 VMAX=5                  # Maximum vel.-domain size to test (runs tests over the interval of [8, NV_MAX], in powers of two)
-FRICTION_SOLVER=HOCKNEY # Solver for first Rosenbluth Potential (Options: [HOCKNEY, VICO])
+FRICTION_SOLVER=VICO    # Solver for first Rosenbluth Potential (Options: [HOCKNEY, VICO])
 
 # Frequency of computing statistics
 DUMP_INTERVAL=1         # How often to dump beamstatistics to ${OUT_DIR}
