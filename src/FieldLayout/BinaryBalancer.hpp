@@ -171,8 +171,8 @@ static RandomIterator FindMedian(int nprocs, RandomIterator begin, RandomIterato
 // Reduce over a 3 dimensional BrickIterator
 // given the axis not to reduce on
 // and where in that dimension to reduce.
-
-static inline double PerpReduce(BrickIterator<double, 3>& data, int i, int cutAxis) {
+template <class T>
+static inline T PerpReduce(BrickIterator<T, 3>& data, int i, int cutAxis) {
     double r = 0;
     if (cutAxis == 0) {
         int l1 = data.size(1);
@@ -202,8 +202,8 @@ static inline double PerpReduce(BrickIterator<double, 3>& data, int i, int cutAx
 // Reduce over a 2 dimensional BrickIterator
 // given the axis not to reduce on
 // and where in that dimension to reduce.
-
-static inline double PerpReduce(BrickIterator<double, 2>& data, int i, int cutAxis) {
+template <class T>
+static inline T PerpReduce(BrickIterator<T, 2>& data, int i, int cutAxis) {
     double r = 0;
     if (cutAxis == 0) {
         int length = data.size(1);
@@ -223,7 +223,7 @@ static inline double PerpReduce(BrickIterator<double, 2>& data, int i, int cutAx
 // and where in that dimension to reduce.
 //
 
-static inline double PerpReduce(BrickIterator<double, 1>& data, int i, int) {
+static inline T PerpReduce(BrickIterator<T, 1>& data, int i, int) {
     return data.offset(i);
 }
 
@@ -232,8 +232,8 @@ static inline double PerpReduce(BrickIterator<double, 1>& data, int i, int) {
 // Put the results in an array of doubles.
 //
 
-template <unsigned Dim>
-static void LocalReduce(double* reduced, int cutAxis, BrickIterator<double, Dim> data) {
+template <class T, unsigned Dim>
+static void LocalReduce(T* reduced, int cutAxis, BrickIterator<T, Dim> data) {
     int length = data.size(cutAxis);
     for (int i = 0; i < length; ++i)
         reduced[i] = PerpReduce(data, i, cutAxis);
@@ -251,11 +251,11 @@ static void LocalReduce(double* reduced, int cutAxis, BrickIterator<double, Dim>
 // Each of those final reductions are on different processors.
 //
 
-template <class IndexIterator, unsigned Dim>
+template <class IndexIterator, class T, unsigned Dim>
 static void SendReduce(IndexIterator domainsBegin, IndexIterator domainsEnd,
-                       BareField<double, Dim>& weights, int tag) {
+                       BareField<T, Dim>& weights, int tag) {
     // Buffers to store up domains and blocks of reduced data.
-    std::vector<double*> reducedBuffer;
+    std::vector<T*> reducedBuffer;
     std::vector<Index> domainBuffer;
     // Loop over all of the domains.  Keep a counter of which one you're on.
     int di;
@@ -267,14 +267,14 @@ static void SendReduce(IndexIterator domainsBegin, IndexIterator domainsEnd,
         // We'll reduce in the dimensions perpendicular to this.
         int cutAxis = FindCutAxis(*dp, weights.getLayout());
         // Find the LFields on this processor that touch this domain.
-        typename BareField<double, Dim>::iterator_if lf_p;
+        typename BareField<T, Dim>::iterator_if lf_p;
         for (lf_p = weights.begin_if(); lf_p != weights.end_if(); ++lf_p)
             if ((*dp).touches((*lf_p).second->getOwned())) {
                 // Find the intersection with this LField.
                 NDIndex<Dim> intersection = (*dp).intersect((*lf_p).second->getOwned());
                 // Allocate the accumulation buffer.
-                int length      = intersection[cutAxis].length();
-                double* reduced = new double[length];
+                int length = intersection[cutAxis].length();
+                T* reduced = new T[length];
                 // Reduce into the local buffer.
                 /*out << "LocalReduce " << intersection << endl;*/
                 LocalReduce(reduced, cutAxis, (*lf_p).second->begin(intersection));
@@ -292,19 +292,19 @@ static void SendReduce(IndexIterator domainsBegin, IndexIterator domainsEnd,
             // The number of reduced domains is the first thing in the message.
             mess->put(nrdomains);
             // Loop over the reduced domains, storing in the message each time.
-            std::vector<Index>::iterator dbp   = domainBuffer.begin();
-            std::vector<double*>::iterator rbp = reducedBuffer.begin();
+            std::vector<Index>::iterator dbp = domainBuffer.begin();
+            std::vector<T*>::iterator rbp    = reducedBuffer.begin();
             for (int i = 0; i < nrdomains; ++i, ++dbp, ++rbp) {
                 // First store the domain.
                 /*out << "putMessage " << *dbp << endl;*/
                 putMessage(*mess, *dbp);
                 // Then the reduced data using begin/end iterators.
                 // Tell the message to delete the memory when it is done.
-                double* p = *rbp;
+                T* p = *rbp;
                 mess->setCopy(false).setDelete(true).put(p, p + (*dbp).length());
             }
             // Send the message to proc di.
-            Ippl::Comm->send(mess, di, tag);
+            Comm->send(mess, di, tag);
         }
         // Clear out the buffers.
         domainBuffer.erase(domainBuffer.begin(), domainBuffer.end());
@@ -321,29 +321,29 @@ static void SendReduce(IndexIterator domainsBegin, IndexIterator domainsEnd,
 // Return begin and end iterators for the reduced data.
 //
 
-template <unsigned Dim>
-static void ReceiveReduce(NDIndex<Dim>& domain, BareField<double, Dim>& weights, int reduce_tag,
+template <class T, unsigned Dim>
+static void ReceiveReduce(NDIndex<Dim>& domain, BareField<T, Dim>& weights, int reduce_tag,
                           int nprocs, int& cutLoc, int& cutAxis) {
     // Build a place to accumulate the reduced data.
     cutAxis = FindCutAxis(domain, weights.getLayout());
     /*out << "ReceiveReduce, cutAxis=" << cutAxis << endl;*/
     int i, length = domain[cutAxis].length();
     int offset = domain[cutAxis].first();
-    std::vector<double> reduced(length);
-    std::vector<double> subReduced(length);
+    std::vector<T> reduced(length);
+    std::vector<T> subReduced(length);
     for (i = 0; i < length; ++i)
         reduced[i] = 0;
 
     // Build a count of the number of messages to expect.
     // We get *one message* from each node that has a touch.
     int expected      = 0;
-    int nodes         = Ippl::Comm->getNodes();
-    int mynode        = Ippl::Comm->myNode();
+    int nodes         = Comm->getNodes();
+    int mynode        = Comm->myNode();
     bool* found_touch = new bool[nodes];
     for (i = 0; i < nodes; ++i)
         found_touch[i] = false;
     // First look in the local vnodes of weights.
-    typename BareField<double, Dim>::iterator_if lf_p, lf_end = weights.end_if();
+    typename BareField<T, Dim>::iterator_if lf_p, lf_end = weights.end_if();
     for (lf_p = weights.begin_if(); lf_p != lf_end && !(found_touch[mynode]); ++lf_p) {
         // Expect a message if it touches.
         if ((*lf_p).second->getOwned().touches(domain))
@@ -368,7 +368,7 @@ static void ReceiveReduce(NDIndex<Dim>& domain, BareField<double, Dim>& weights,
     while (--expected >= 0) {
         // Receive a message.
         int any_node  = COMM_ANY_NODE;
-        Message* mess = Ippl::Comm->receive_block(any_node, reduce_tag);
+        Message* mess = Comm->receive_block(any_node, reduce_tag);
         PAssert(mess);
         // Loop over all the domains in this message.
         int received_domains = 0;
@@ -391,8 +391,8 @@ static void ReceiveReduce(NDIndex<Dim>& domain, BareField<double, Dim>& weights,
     }
 
     // Get the median.
-    cutLoc = FindMedian(nprocs, reduced.begin(), reduced.begin() + length, double())
-             - reduced.begin() + domain[cutAxis].first();
+    cutLoc = FindMedian(nprocs, reduced.begin(), reduced.begin() + length, T()) - reduced.begin()
+             + domain[cutAxis].first();
     /*out << "ReceiveReduce, cutLoc=" << cutLoc << endl;*/
 }
 
@@ -410,7 +410,7 @@ inline void BcastCuts(int cutLoc, int cutAxis, int bcast_tag) {
     mess->put(cutLoc);
     mess->put(cutAxis);
     // Send it out.
-    Ippl::Comm->broadcast_all(mess, bcast_tag);
+    Comm->broadcast_all(mess, bcast_tag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -436,7 +436,7 @@ static void ReceiveCuts(std::vector<NDIndex<Dim> >& domains, std::vector<int>& n
         // in the domains vector.
         int whichDomain = COMM_ANY_NODE;
         int cutLocation = 0, cutAxis = 0;
-        Message* mess = Ippl::Comm->receive_block(whichDomain, bcast_tag);
+        Message* mess = Comm->receive_block(whichDomain, bcast_tag);
         PAssert(mess);
         mess->get(cutLocation);
         mess->get(cutAxis);
@@ -484,12 +484,12 @@ static void ReceiveCuts(std::vector<NDIndex<Dim> >& domains, std::vector<int>& n
 // according to the weights in a BareField.
 //
 
-template <unsigned Dim>
+template <class T, unsigned Dim>
 static void CutEach(std::vector<NDIndex<Dim> >& domains, std::vector<int>& nprocs,
-                    BareField<double, Dim>& weights) {
+                    BareField<T, Dim>& weights) {
     // Get tags for the reduction and the broadcast.
-    int reduce_tag = Ippl::Comm->next_tag(F_REDUCE_PERP_TAG, F_TAG_CYCLE);
-    int bcast_tag  = Ippl::Comm->next_tag(F_REDUCE_PERP_TAG, F_TAG_CYCLE);
+    int reduce_tag = Comm->next_tag(F_REDUCE_PERP_TAG, F_TAG_CYCLE);
+    int bcast_tag  = Comm->next_tag(F_REDUCE_PERP_TAG, F_TAG_CYCLE);
     /*out << "reduce_tag=" << reduce_tag << endl;*/
     /*out << "bcast_tag=" << bcast_tag << endl;*/
 
@@ -498,7 +498,7 @@ static void CutEach(std::vector<NDIndex<Dim> >& domains, std::vector<int>& nproc
 
     // On the appropriate processors, receive the data for the reduce,
     // and broadcast the cuts.
-    unsigned int mynode = Ippl::Comm->myNode();
+    unsigned int mynode = Comm->myNode();
     if (mynode < domains.size()) {
         // Receive partially reduced data, finish the reduction, find the median.
         int cutAxis, cutLoc;
@@ -513,19 +513,19 @@ static void CutEach(std::vector<NDIndex<Dim> >& domains, std::vector<int>& nproc
 
 //////////////////////////////////////////////////////////////////////
 
-template <unsigned Dim>
-NDIndex<Dim> CalcBinaryRepartition(FieldLayout<Dim>& layout, BareField<double, Dim>& weights) {
+template <class T, unsigned Dim>
+NDIndex<Dim> CalcBinaryRepartition(FieldLayout<Dim>& layout, BareField<T, Dim>& weights) {
     // Build a list of domains as we go.
     std::vector<NDIndex<Dim> > domains;  // used by TAU_TYPE_STRING
     std::vector<int> procs;
 
     /*out << "Starting CalcBinaryRepartition, outstanding msgs="
-        << Ippl::Comm->getReceived()
+        << Comm->getReceived()
         << endl;*/
 
     // Get the processors we'll be dealing with.
-    int nprocs = Ippl::Comm->getNodes();
-    int myproc = Ippl::Comm->myNode();
+    int nprocs = Comm->getNodes();
+    int myproc = Comm->myNode();
     domains.reserve(nprocs);
     procs.reserve(nprocs);
 

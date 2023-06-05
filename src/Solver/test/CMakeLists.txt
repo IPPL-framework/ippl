@@ -75,6 +75,13 @@ if (ENABLE_FFT)
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
+
+    add_executable (TestP3MSolver TestP3MSolver.cpp)
+    target_link_libraries (
+        TestP3MSolver
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
 endif ()
 
 # vi: set et ts=4 sw=4 sts=4:

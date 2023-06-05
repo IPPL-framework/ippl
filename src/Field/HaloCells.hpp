@@ -82,9 +82,9 @@ namespace ippl {
                     pack(range, view, haloData_m, nsends);
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<T>(IPPL_HALO_SEND + i * cubeCount + index, nsends);
+                        Comm->getBuffer<T>(IPPL_HALO_SEND + i * cubeCount + index, nsends);
 
-                    Ippl::Comm->isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++],
+                    Comm->isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++],
                                       nsends);
                     buf->resetWritePos();
                 }
@@ -107,9 +107,9 @@ namespace ippl {
                     size_type nrecvs = range.size();
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<T>(IPPL_HALO_RECV + i * cubeCount + index, nrecvs);
+                        Comm->getBuffer<T>(IPPL_HALO_RECV + i * cubeCount + index, nrecvs);
 
-                    Ippl::Comm->recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
+                    Comm->recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, haloData_m);
@@ -131,13 +131,13 @@ namespace ippl {
             size_t size = subview.size();
             nsends      = size;
             if (buffer.size() < size) {
-                int overalloc = Ippl::Comm->getDefaultOverallocation();
+                int overalloc = Comm->getDefaultOverallocation();
                 Kokkos::realloc(buffer, size * overalloc);
             }
 
             using index_array_type = typename RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
-                "HaloCells::pack()", getRangePolicy<Dim>(subview),
+                "HaloCells::pack()", getRangePolicy(subview),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     int l = 0;
 
@@ -149,7 +149,7 @@ namespace ippl {
                         l += next;
                     }
 
-                    buffer(l) = apply<Dim>(subview, args);
+                    buffer(l) = apply(subview, args);
                 });
             Kokkos::fence();
         }
@@ -167,7 +167,7 @@ namespace ippl {
 
             using index_array_type = typename RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
-                "HaloCells::unpack()", getRangePolicy<Dim>(subview),
+                "HaloCells::unpack()", getRangePolicy(subview),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     int l = 0;
 
@@ -179,7 +179,7 @@ namespace ippl {
                         l += next;
                     }
 
-                    op(apply<Dim>(subview, args), buffer(l));
+                    op(apply(subview, args), buffer(l));
                 });
             Kokkos::fence();
         }
@@ -210,7 +210,7 @@ namespace ippl {
         template <typename Op>
         void HaloCells<T, Dim>::applyPeriodicSerialDim(view_type& view, const Layout_t* layout,
                                                        const int nghost) {
-            int myRank           = Ippl::Comm->rank();
+            int myRank           = Comm->rank();
             const auto& lDomains = layout->getHostLocalDomains();
             const auto& domain   = layout->getDomain();
             using index_type     = typename RangePolicy<Dim>::index_type;
@@ -241,19 +241,19 @@ namespace ippl {
 
                             // nghost + i
                             coords[d] += nghost;
-                            auto&& left = apply<Dim>(view, coords);
+                            auto&& left = apply(view, coords);
 
                             // N - nghost - i
                             coords[d]    = N - coords[d];
-                            auto&& right = apply<Dim>(view, coords);
+                            auto&& right = apply(view, coords);
 
                             // nghost - 1 - i
                             coords[d] += 2 * nghost - 1 - N;
-                            op(apply<Dim>(view, coords), right);
+                            op(apply(view, coords), right);
 
                             // N - (nghost - 1 - i) = N - (nghost - 1) + i
                             coords[d] = N - coords[d];
-                            op(apply<Dim>(view, coords), left);
+                            op(apply(view, coords), left);
                         });
 
                     Kokkos::fence();

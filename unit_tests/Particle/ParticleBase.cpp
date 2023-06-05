@@ -17,8 +17,6 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
-
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
@@ -135,7 +133,10 @@ TEST(ParticleBase, Initialize2) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+    }
+    ippl::finalize();
     return RUN_ALL_TESTS();
 }

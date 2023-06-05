@@ -17,7 +17,8 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
 
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
@@ -89,7 +90,7 @@ TEST_F(BareFieldTest, DeepCopy) {
         Kokkos::deep_copy(mirrorA, field->getView());
         Kokkos::deep_copy(mirrorB, copy.getView());
 
-        nestedViewLoop<Dim>(mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirrorA(args...) + 1, mirrorB(args...));
         });
     };
@@ -173,7 +174,7 @@ TEST_F(BareFieldTest, ScalarMultiplication) {
         auto mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirror(args...), 10.);
         });
     };
@@ -193,7 +194,7 @@ TEST_F(BareFieldTest, DotProduct) {
         auto mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirror(args...), 5 * Dim);
         });
     };
@@ -203,7 +204,10 @@ TEST_F(BareFieldTest, DotProduct) {
 
 TEST_F(BareFieldTest, AllFuncs) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
-        double pi    = acos(-1.);
+        using Kokkos::sin, Kokkos::cos, Kokkos::tan, Kokkos::acos, Kokkos::asin, Kokkos::exp,
+            Kokkos::erf, Kokkos::cosh, Kokkos::tanh, Kokkos::sinh, Kokkos::log, Kokkos::ceil,
+            Kokkos::atan, Kokkos::log, Kokkos::log10, Kokkos::sqrt, Kokkos::floor;
+        double pi    = Kokkos::numbers::pi_v<double>;
         double alpha = pi / 4;
         *field       = alpha;
         // Compute new value
@@ -224,7 +228,7 @@ TEST_F(BareFieldTest, AllFuncs) {
         auto mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirror(args...), beta);
         });
     };
@@ -233,7 +237,10 @@ TEST_F(BareFieldTest, AllFuncs) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+    }
+    ippl::finalize();
     return RUN_ALL_TESTS();
 }

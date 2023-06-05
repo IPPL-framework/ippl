@@ -57,16 +57,11 @@ namespace ippl {
     };
 
     namespace detail {
-        template <typename T, unsigned Dim, class Mesh, class Centering>
-        class BCondBase;
-
-        template <typename T, unsigned Dim, class Mesh, class Centering>
-        std::ostream& operator<<(std::ostream&, const BCondBase<T, Dim, Mesh, Centering>&);
-
-        template <typename T, unsigned Dim, class Mesh, class Centering>
+        template <typename Field>
         class BCondBase {
+            constexpr static unsigned Dim = Field::dim;
+
         public:
-            using Field_t  = Field<T, Dim, Mesh, Centering>;
             using Layout_t = FieldLayout<Dim>;
 
             // Constructor takes:
@@ -79,9 +74,9 @@ namespace ippl {
 
             virtual FieldBC getBCType() const { return NO_FACE; }
 
-            virtual void findBCNeighbors(Field<T, Dim, Mesh, Centering>& field) = 0;
-            virtual void apply(Field<T, Dim, Mesh, Centering>& field)           = 0;
-            virtual void write(std::ostream&) const                             = 0;
+            virtual void findBCNeighbors(Field& field) = 0;
+            virtual void apply(Field& field)           = 0;
+            virtual void write(std::ostream&) const    = 0;
 
             // Return face on which BC applies
             unsigned int getFace() const { return face_m; }
@@ -97,18 +92,23 @@ namespace ippl {
             bool changePhysical_m;
         };
 
+        template <typename Field>
+        std::ostream& operator<<(std::ostream&, const BCondBase<Field>&);
+
     }  // namespace detail
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    class ExtrapolateFace : public detail::BCondBase<T, Dim, Mesh, Centering> {
+    template <typename Field>
+    class ExtrapolateFace : public detail::BCondBase<Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using T                       = typename Field::value_type;
+
     public:
         // Constructor takes zero, one, or two int's specifying components of
         // multicomponent types like Vector this BC applies to.
         // Zero int's specified means apply to all components; one means apply to
         // component (i), and two means apply to component (i,j),
-        using base_type = detail::BCondBase<T, Dim, Mesh, Centering>;
-        using Field_t   = typename detail::BCondBase<T, Dim, Mesh, Centering>::Field_t;
-        using Layout_t  = typename detail::BCondBase<T, Dim, Mesh, Centering>::Layout_t;
+        using base_type = detail::BCondBase<Field>;
+        using Layout_t  = typename detail::BCondBase<Field>::Layout_t;
 
         ExtrapolateFace(unsigned face, T offset, T slope)
             : base_type(face)
@@ -119,8 +119,8 @@ namespace ippl {
 
         virtual FieldBC getBCType() const { return EXTRAPOLATE_FACE; }
 
-        virtual void findBCNeighbors(Field_t& /*field*/) {}
-        virtual void apply(Field_t& field);
+        virtual void findBCNeighbors(Field& /*field*/) {}
+        virtual void apply(Field& field);
 
         virtual void write(std::ostream& out) const;
 
@@ -132,55 +132,58 @@ namespace ippl {
         T slope_m;
     };
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    class NoBcFace : public detail::BCondBase<T, Dim, Mesh, Centering> {
+    template <typename Field>
+    class NoBcFace : public detail::BCondBase<Field> {
     public:
-        using Field_t = typename detail::BCondBase<T, Dim, Mesh, Centering>::Field_t;
         NoBcFace(int face)
-            : detail::BCondBase<T, Dim, Mesh, Centering>(face) {}
+            : detail::BCondBase<Field>(face) {}
 
-        virtual void findBCNeighbors(Field_t& /*field*/) {}
-        virtual void apply(Field_t& /*field*/) {}
+        virtual void findBCNeighbors(Field& /*field*/) {}
+        virtual void apply(Field& /*field*/) {}
 
         virtual void write(std::ostream& out) const;
     };
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    class ConstantFace : public ExtrapolateFace<T, Dim, Mesh, Centering> {
+    template <typename Field>
+    class ConstantFace : public ExtrapolateFace<Field> {
+        using T = typename Field::value_type;
+
     public:
         ConstantFace(unsigned int face, T constant)
-            : ExtrapolateFace<T, Dim, Mesh, Centering>(face, constant, 0) {}
+            : ExtrapolateFace<Field>(face, constant, 0) {}
 
         virtual FieldBC getBCType() const { return CONSTANT_FACE; }
 
         virtual void write(std::ostream& out) const;
     };
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    class ZeroFace : public ConstantFace<T, Dim, Mesh, Centering> {
+    template <typename Field>
+    class ZeroFace : public ConstantFace<Field> {
     public:
         ZeroFace(unsigned face)
-            : ConstantFace<T, Dim, Mesh, Centering>(face, 0.0) {}
+            : ConstantFace<Field>(face, 0.0) {}
 
         virtual FieldBC getBCType() const { return ZERO_FACE; }
 
         virtual void write(std::ostream& out) const;
     };
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    class PeriodicFace : public detail::BCondBase<T, Dim, Mesh, Centering> {
+    template <typename Field>
+    class PeriodicFace : public detail::BCondBase<Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using T                       = typename Field::value_type;
+
     public:
         using face_neighbor_type = std::array<std::vector<int>, 2 * Dim>;
-        using Field_t            = typename detail::BCondBase<T, Dim, Mesh, Centering>::Field_t;
-        using Layout_t           = typename detail::BCondBase<T, Dim, Mesh, Centering>::Layout_t;
+        using Layout_t           = typename detail::BCondBase<Field>::Layout_t;
 
         PeriodicFace(unsigned face)
-            : detail::BCondBase<T, Dim, Mesh, Centering>(face) {}
+            : detail::BCondBase<Field>(face) {}
 
         virtual FieldBC getBCType() const { return PERIODIC_FACE; }
 
-        virtual void findBCNeighbors(Field_t& field);
-        virtual void apply(Field_t& field);
+        virtual void findBCNeighbors(Field& field);
+        virtual void apply(Field& field);
 
         virtual void write(std::ostream& out) const;
 

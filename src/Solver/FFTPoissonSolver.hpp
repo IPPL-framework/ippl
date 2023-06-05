@@ -1,39 +1,34 @@
 //
-//// Class FFTPoissonSolver
-////   FFT-based Poisson Solver class.
-////
-//// This file is part of IPPL.
-////
-//// IPPL is free software: you can redistribute it and/or modify
-//// it under the terms of the GNU General Public License as published by
-//// the Free Software Foundation, either version 3 of the License, or
-//// (at your option) any later version.
-////
-//// You should have received a copy of the GNU General Public License
-//// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-////
+// Class FFTPoissonSolver
+//   FFT-based Poisson Solver for open boundaries.
+//   Solves laplace(phi) = -rho, and E = -grad(phi).
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include <algorithm>
-
-#include "Utility/IpplException.h"
-#include "Utility/IpplTimings.h"
-
-#include "Communicate/Archive.h"
-#include "FFTPoissonSolver.h"
-#include "Field/HaloCells.h"
-
 // Communication specific functions (pack and unpack).
-template <class Mesh, class Centering, typename T>
-void pack(const ippl::NDIndex<3> intersect, Kokkos::View<T***>& view,
-          ippl::detail::FieldBufferData<double>& fd, int nghost, const ippl::NDIndex<3> ldom,
+template <typename Tb, typename Tf>
+void pack(const ippl::NDIndex<3> intersect, Kokkos::View<Tf***>& view,
+          ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
           ippl::Communicate::size_type& nsends) {
-    typename ippl::Field<double, 1, Mesh, Centering>::view_type& buffer = fd.buffer;
+    Kokkos::View<Tb*>& buffer = fd.buffer;
 
     size_t size = intersect.size();
     nsends      = size;
     if (buffer.size() < size) {
-        const int overalloc = Ippl::Comm->getDefaultOverallocation();
+        const int overalloc = ippl::Comm->getDefaultOverallocation();
         Kokkos::realloc(buffer, size * overalloc);
     }
 
@@ -56,22 +51,21 @@ void pack(const ippl::NDIndex<3> intersect, Kokkos::View<T***>& view,
             const int jg = j - first1;
             const int kg = k - first2;
 
-            const int l = ig + jg * intersect[0].length()
-                          + kg * intersect[1].length() * intersect[0].length();
+            int l = ig + jg * intersect[0].length()
+                    + kg * intersect[1].length() * intersect[0].length();
 
-            Kokkos::complex<double> val = view(i, j, k);
+            Kokkos::complex<Tb> val = view(i, j, k);
 
             buffer(l) = Kokkos::real(val);
         });
     Kokkos::fence();
 }
 
-template <class Mesh, class Centering>
-void unpack(const ippl::NDIndex<3> intersect,
-            const typename ippl::Field<double, 3, Mesh, Centering>::view_type& view,
-            ippl::detail::FieldBufferData<double>& fd, int nghost, const ippl::NDIndex<3> ldom,
-            bool x = false, bool y = false, bool z = false) {
-    typename ippl::Field<double, 1, Mesh, Centering>::view_type& buffer = fd.buffer;
+template <bool isVec, typename Tb, typename Tf>
+void unpack_impl(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
+                 ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
+                 size_t dim = 0, bool x = false, bool y = false, bool z = false) {
+    Kokkos::View<Tb*>& buffer = fd.buffer;
 
     const int first0 = intersect[0].first() + nghost - ldom[0].first();
     const int first1 = intersect[1].first() + nghost - ldom[1].first();
@@ -93,102 +87,95 @@ void unpack(const ippl::NDIndex<3> intersect,
             jg = y * (intersect[1].length() - 2 * jg - 1) + jg;
             kg = z * (intersect[2].length() - 2 * kg - 1) + kg;
 
-            const int l = ig + jg * intersect[0].length()
-                          + kg * intersect[1].length() * intersect[0].length();
+            int l = ig + jg * intersect[0].length()
+                    + kg * intersect[1].length() * intersect[0].length();
 
-            view(i, j, k) = buffer(l);
+            ippl::detail::ViewAccess<isVec, decltype(view)>::get(view, dim, i, j, k) = buffer(l);
         });
     Kokkos::fence();
 }
 
-template <class Mesh, class Centering>
-void unpack(
-    const ippl::NDIndex<3> intersect,
-    const typename ippl::Field<ippl::Vector<double, 3>, 3, Mesh, Centering>::view_type& view,
-    size_t dim, ippl::detail::FieldBufferData<double>& fd, int nghost,
-    const ippl::NDIndex<3> ldom) {
-    typename ippl::Field<double, 1, Mesh, Centering>::view_type& buffer = fd.buffer;
+template <typename Tb, typename Tf>
+void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
+            ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
+            bool x = false, bool y = false, bool z = false) {
+    unpack_impl<false, Tb, Tf>(intersect, view, fd, nghost, ldom, 0, x, y, z);
+}
 
-    const int first0 = intersect[0].first() + nghost - ldom[0].first();
-    const int first1 = intersect[1].first() + nghost - ldom[1].first();
-    const int first2 = intersect[2].first() + nghost - ldom[2].first();
-
-    const int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
-    const int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
-    const int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
-
-    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-    Kokkos::parallel_for(
-        "pack()", mdrange_type({first0, first1, first2}, {last0, last1, last2}),
-        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-            const int ig = i - first0;
-            const int jg = j - first1;
-            const int kg = k - first2;
-
-            const int l = ig + jg * intersect[0].length()
-                          + kg * intersect[1].length() * intersect[0].length();
-            view(i, j, k)[dim] = buffer(l);
-        });
-    Kokkos::fence();
+template <typename Tb, typename Tf>
+void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<ippl::Vector<Tf, 3>***>& view,
+            size_t dim, ippl::detail::FieldBufferData<Tb>& fd, int nghost,
+            const ippl::NDIndex<3> ldom) {
+    unpack_impl<true, Tb, ippl::Vector<Tf, 3>>(intersect, view, fd, nghost, ldom, dim);
 }
 
 namespace ippl {
 
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
+    template <typename FieldLHS, typename FieldRHS>
+    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver()
+        : Base()
+        , mesh_mp(nullptr)
+        , layout_mp(nullptr)
+        , mesh2_m(nullptr)
+        , layout2_m(nullptr)
+        , meshComplex_m(nullptr)
+        , layoutComplex_m(nullptr)
+        , mesh4_m(nullptr)
+        , layout4_m(nullptr)
+        , isGradFD_m(false) {
+        setDefaultParameters();
+    }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::FFTPoissonSolver(rhs_type& rhs,
-                                                                         ParameterList& fftparams,
-                                                                         std::string alg)
+    template <typename FieldLHS, typename FieldRHS>
+    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(rhs_type& rhs, ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
         , layout2_m(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr)
-        , alg_m(alg)
         , mesh4_m(nullptr)
         , layout4_m(nullptr)
         , isGradFD_m(false) {
-        std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
-        setDefaultParameters();
-        this->setRhs(rhs);
+        using T = typename FieldLHS::value_type::value_type;
+        static_assert(std::is_floating_point<T>::value, "Not a floating point type");
 
-        this->params_m.merge(fftparams);
+        setDefaultParameters();
+        this->params_m.merge(params);
         this->params_m.update("output_type", Base::SOL);
 
-        // start a timer
-        static IpplTimings::TimerRef initialize = IpplTimings::getTimer("Initialize");
-        IpplTimings::startTimer(initialize);
-
-        initializeFields();
-
-        IpplTimings::stopTimer(initialize);
+        this->setRhs(rhs);
     }
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::FFTPoissonSolver(lhs_type& lhs,
-                                                                         rhs_type& rhs,
-                                                                         ParameterList& fftparams,
-                                                                         std::string alg, int sol)
+    template <typename FieldLHS, typename FieldRHS>
+    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs,
+                                                           ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
         , layout2_m(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr)
-        , alg_m(alg)
         , mesh4_m(nullptr)
         , layout4_m(nullptr)
         , isGradFD_m(false) {
-        std::transform(alg_m.begin(), alg_m.end(), alg_m.begin(), ::toupper);
-        setDefaultParameters();
-        this->setRhs(rhs);
-        this->setLhs(lhs);
+        using T = typename FieldLHS::value_type::value_type;
+        static_assert(std::is_floating_point<T>::value, "Not a floating point type");
 
-        this->params_m.merge(fftparams);
-        this->params_m.update("output_type", sol);
+        setDefaultParameters();
+        this->params_m.merge(params);
+
+        this->setLhs(lhs);
+        this->setRhs(rhs);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // override setRhs to call class-specific initialization
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
+        Base::setRhs(rhs);
 
         // start a timer
         static IpplTimings::TimerRef initialize = IpplTimings::getTimer("Initialize");
@@ -198,16 +185,13 @@ namespace ippl {
 
         IpplTimings::stopTimer(initialize);
     }
-
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::~FFTPoissonSolver(){};
 
     /////////////////////////////////////////////////////////////////////////
     // allows user to set gradient of phi = Efield instead of spectral
     // calculation of Efield (which uses FFTs)
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::setGradFD() {
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTPoissonSolver<FieldLHS, FieldRHS>::setGradFD() {
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
 
@@ -223,13 +207,16 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // initializeFields method, called in constructor
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::initializeFields() {
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
+        const int alg = this->params_m.template get<int>("algorithm");
+
         // first check if valid algorithm choice
-        if ((alg_m != "VICO") && (alg_m != "HOCKNEY") && (alg_m != "BIHARMONIC")) {
+        if ((alg != Algorithm::VICO) && (alg != Algorithm::HOCKNEY)
+            && (alg != Algorithm::BIHARMONIC)) {
             throw IpplException(
                 "FFTPoissonSolver::initializeFields()",
-                "Currently only Hockney and Vico algorithms are supported for open BCs");
+                "Currently only Hockney, Vico, and Biharmonic are supported for open BCs");
         }
 
         // get layout and mesh
@@ -240,8 +227,8 @@ namespace ippl {
         hr_m = mesh_mp->getMeshSpacing();
 
         // get origin
-        Vector_t origin  = mesh_mp->getOrigin();
-        const double sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
+        vector_type origin    = mesh_mp->getOrigin();
+        const scalar_type sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
 
         // origin should always be 0 for Green's function computation to work...
         if (sum != 0.0) {
@@ -266,7 +253,7 @@ namespace ippl {
         }
 
         // create double sized mesh and layout objects using the previously defined domain2_m
-        mesh2_m   = std::unique_ptr<Mesh>(new Mesh(domain2_m, hr_m, origin));
+        mesh2_m   = std::unique_ptr<mesh_type>(new mesh_type(domain2_m, hr_m, origin));
         layout2_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain2_m, decomp));
 
         // create the domain for the transformed (complex) fields
@@ -275,14 +262,15 @@ namespace ippl {
         // the dimension is given by the user via r2c_direction
         unsigned int RCDirection = this->params_m.template get<int>("r2c_direction");
         for (unsigned int i = 0; i < Dim; ++i) {
-            if (i == RCDirection)
+            if (i == RCDirection) {
                 domainComplex_m[RCDirection] = Index(nr_m[RCDirection] + 1);
-            else
+            } else {
                 domainComplex_m[i] = Index(2 * nr_m[i]);
+            }
         }
 
         // create mesh and layout for the real to complex FFT transformed fields
-        meshComplex_m = std::unique_ptr<Mesh>(new Mesh(domainComplex_m, hr_m, origin));
+        meshComplex_m = std::unique_ptr<mesh_type>(new mesh_type(domainComplex_m, hr_m, origin));
         layoutComplex_m =
             std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domainComplex_m, decomp));
 
@@ -298,11 +286,10 @@ namespace ippl {
 
         // create the FFT object
         fft_m = std::make_unique<FFT_t>(*layout2_m, *layoutComplex_m, this->params_m);
-
         // if Vico, also need to create mesh and layout for 4N Fourier domain
         // on this domain, the truncated Green's function is defined
         // also need to create the 4N complex grid, on which precomputation step done
-        if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
+        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
             // start a timer
             static IpplTimings::TimerRef initialize_vico =
                 IpplTimings::getTimer("Initialize: extra Vico");
@@ -313,21 +300,20 @@ namespace ippl {
             }
 
             // 4N grid
-            mesh4_m   = std::unique_ptr<Mesh>(new Mesh(domain4_m, hr_m, origin));
+            mesh4_m   = std::unique_ptr<mesh_type>(new mesh_type(domain4_m, hr_m, origin));
             layout4_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain4_m, decomp));
 
             // initialize fields
             grnL_m.initialize(*mesh4_m, *layout4_m);
 
             // create a Complex-to-Complex FFT object to transform for layout4
-            fft4n_m = std::make_unique<FFT<CCTransform, Dim, double, Mesh, Centering>>(
-                *layout4_m, this->params_m);
+            fft4n_m = std::make_unique<FFT<CCTransform, CxField_gt>>(*layout4_m, this->params_m);
 
             IpplTimings::stopTimer(initialize_vico);
         }
 
         // these are fields that are used for calculating the Green's function for Hockney
-        if (alg_m == "HOCKNEY") {
+        if (alg == Algorithm::HOCKNEY) {
             // start a timer
             static IpplTimings::TimerRef initialize_hockney =
                 IpplTimings::getTimer("Initialize: extra Hockney");
@@ -410,7 +396,7 @@ namespace ippl {
         IpplTimings::startTimer(warmup);
 
         fft_m->transform(+1, rho2_mr, rho2tr_m);
-        if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
+        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
             fft4n_m->transform(+1, grnL_m);
         }
 
@@ -425,22 +411,23 @@ namespace ippl {
         // for all timesteps (green's fct will only change if mesh size changes)
         static IpplTimings::TimerRef ginit = IpplTimings::getTimer("Green Init");
         IpplTimings::startTimer(ginit);
-
         greensFunction();
-
         IpplTimings::stopTimer(ginit);
     };
 
     /////////////////////////////////////////////////////////////////////////
     // compute electric potential by solving Poisson's eq given a field rho and mesh spacings hr
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::solve() {
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTPoissonSolver<FieldLHS, FieldRHS>::solve() {
         // start a timer
         static IpplTimings::TimerRef solve = IpplTimings::getTimer("Solve");
         IpplTimings::startTimer(solve);
 
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
+
+        // get the algorithm (hockney, vico, or biharmonic)
+        const int alg = this->params_m.template get<int>("algorithm");
 
         // set the mesh & spacing, which may change each timestep
         mesh_mp = &(this->rhs_mp->get_mesh());
@@ -471,7 +458,7 @@ namespace ippl {
 
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-        const int ranks = Ippl::Comm->size();
+        const int ranks = Comm->size();
 
         auto view2 = rho2_mr.getView();
         auto view1 = this->rhs_mp->getView();
@@ -496,18 +483,18 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view1, fd_m, nghost1, ldom1, nsends);
+                    pack(intersection, view1, fd_m, nghost1, ldom1, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_SOLVER_SEND + i, nsends);
+                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
 
-                    Ippl::Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(), nsends);
+                    Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
                 }
             }
 
             // receive
             const auto& lDomains1 = layout_mp->getHostLocalDomains();
-            int myRank            = Ippl::Comm->rank();
+            int myRank            = Comm->rank();
 
             for (int i = 0; i < ranks; ++i) {
                 if (lDomains1[i].touches(ldom2)) {
@@ -517,13 +504,12 @@ namespace ippl {
                     nrecvs = intersection.size();
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_SOLVER_RECV + myRank, nrecvs);
+                        Comm->getBuffer<Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
 
-                    Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(double),
-                                     nrecvs);
+                    Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Mesh, Centering>(intersection, view2, fd_m, nghost2, ldom2);
+                    unpack(intersection, view2, fd_m, nghost2, ldom2);
                 }
             }
 
@@ -531,7 +517,7 @@ namespace ippl {
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
             }
-            Ippl::Comm->barrier();
+            Comm->barrier();
 
         } else {
             Kokkos::parallel_for(
@@ -572,7 +558,8 @@ namespace ippl {
 
         // multiply FFT(rho2)*FFT(green)
         // convolution becomes multiplication in FFT
-        rho2tr_m = rho2tr_m * grntr_m;
+        // minus sign since we are solving laplace(phi) = -rho
+        rho2tr_m = -rho2tr_m * grntr_m;
 
         // if output_type is SOL or SOL_AND_GRAD, we caculate solution
         if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
@@ -591,7 +578,7 @@ namespace ippl {
             // Vico: need to multiply by normalization factor of 1/4N^3,
             // since only backward transform was performed on the 4N grid
             for (unsigned int i = 0; i < Dim; ++i) {
-                if ((alg_m == "VICO") || (alg_m == "BIHARMONIC"))
+                if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
                     rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                 else
                     rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
@@ -619,19 +606,18 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
 
                         Communicate::size_type nsends;
-                        pack<Mesh, Centering>(intersection, view2, fd_m, nghost2, ldom2, nsends);
+                        pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
 
-                        buffer_type buf =
-                            Ippl::Comm->getBuffer<double>(IPPL_SOLVER_SEND + i, nsends);
+                        buffer_type buf = Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
 
-                        Ippl::Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(), nsends);
+                        Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(), nsends);
                         buf->resetWritePos();
                     }
                 }
 
                 // receive
                 const auto& lDomains2 = layout2_m->getHostLocalDomains();
-                int myRank            = Ippl::Comm->rank();
+                int myRank            = Comm->rank();
 
                 for (int i = 0; i < ranks; ++i) {
                     if (ldom1.touches(lDomains2[i])) {
@@ -641,13 +627,13 @@ namespace ippl {
                         nrecvs = intersection.size();
 
                         buffer_type buf =
-                            Ippl::Comm->getBuffer<double>(IPPL_SOLVER_RECV + myRank, nrecvs);
+                            Comm->getBuffer<Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
 
-                        Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(double),
+                        Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
                                          nrecvs);
                         buf->resetReadPos();
 
-                        unpack<Mesh, Centering>(intersection, view1, fd_m, nghost1, ldom1);
+                        unpack(intersection, view1, fd_m, nghost1, ldom1);
                     }
                 }
 
@@ -655,7 +641,7 @@ namespace ippl {
                 if (requests.size() > 0) {
                     MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                 }
-                Ippl::Comm->barrier();
+                Comm->barrier();
 
             } else {
                 Kokkos::parallel_for(
@@ -680,8 +666,9 @@ namespace ippl {
             IpplTimings::stopTimer(dtos);
         }
 
-        // if we want gradient of phi = Efield instead of doing grad in Fourier domain
-        // this is only possible if SOL_AND_GRAD is output type
+        // if we want finite differences Efield = -grad(phi)
+        // instead of computing it in Fourier domain
+        // this is only possible if SOL_AND_GRAD is the output type
         if (isGradFD_m && (out == Base::SOL_AND_GRAD)) {
             *(this->lhs_mp) = -grad(*this->rhs_mp);
         }
@@ -705,11 +692,11 @@ namespace ippl {
             auto view_g = temp_m.getView();
 
             // define some constants
-            const double pi                 = std::acos(-1.0);
-            const Kokkos::complex<double> I = {0.0, 1.0};
+            const scalar_type pi          = Kokkos::numbers::pi_v<scalar_type>;
+            const Kokkos::complex<Trhs> I = {0.0, 1.0};
 
             // define some member variables in local scope for the parallel_for
-            Vector_t hsize     = hr_m;
+            vector_type hsize  = hr_m;
             Vector<int, Dim> N = nr_m;
 
             // loop over each component (E = vector field)
@@ -730,14 +717,15 @@ namespace ippl {
                         Vector_t kVec;
 
                         for (size_t d = 0; d < Dim; ++d) {
-                            const double Len  = N[d] * hsize[d];
-                            const bool shift  = (iVec[d] > N[d]);
-                            const bool notMid = (iVec[d] != N[d]);
+                            const scalar_type Len = N[d] * hsize[d];
+                            const bool shift      = (iVec[d] > N[d]);
+                            const bool notMid     = (iVec[d] != N[d]);
 
                             kVec[d] = notMid * (pi / Len) * (iVec[d] - shift * 2 * N[d]);
                         }
 
-                        const double Dr = kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
+                        const scalar_type Dr =
+                            kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
 
                         const bool isNotZero = (Dr != 0.0);
                         view_g(i, j, k)      = -isNotZero * (I * kVec[gd]) * viewR(i, j, k);
@@ -754,7 +742,7 @@ namespace ippl {
 
                 // apply proper normalization
                 for (unsigned int i = 0; i < Dim; ++i) {
-                    if ((alg_m == "VICO") || (alg_m == "BIHARMONIC"))
+                    if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
                         rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                     else
                         rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
@@ -781,13 +769,12 @@ namespace ippl {
                             requests.resize(requests.size() + 1);
 
                             Communicate::size_type nsends;
-                            pack<Mesh, Centering>(intersection, view2, fd_m, nghost2, ldom2,
-                                                  nsends);
+                            pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
 
                             buffer_type buf =
-                                Ippl::Comm->getBuffer<double>(IPPL_SOLVER_SEND + i, nsends);
+                                Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
 
-                            Ippl::Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(),
+                            Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(),
                                               nsends);
                             buf->resetWritePos();
                         }
@@ -795,7 +782,7 @@ namespace ippl {
 
                     // receive
                     const auto& lDomains2 = layout2_m->getHostLocalDomains();
-                    int myRank            = Ippl::Comm->rank();
+                    int myRank            = Comm->rank();
 
                     for (int i = 0; i < ranks; ++i) {
                         if (ldom1.touches(lDomains2[i])) {
@@ -805,13 +792,13 @@ namespace ippl {
                             nrecvs = intersection.size();
 
                             buffer_type buf =
-                                Ippl::Comm->getBuffer<double>(IPPL_SOLVER_RECV + myRank, nrecvs);
+                                Comm->getBuffer<Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
 
-                            Ippl::Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf,
-                                             nrecvs * sizeof(double), nrecvs);
+                            Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
+                                             nrecvs);
                             buf->resetReadPos();
 
-                            unpack<Mesh, Centering>(intersection, viewL, gd, fd_m, nghostL, ldom1);
+                            unpack(intersection, viewL, gd, fd_m, nghostL, ldom1);
                         }
                     }
 
@@ -819,7 +806,7 @@ namespace ippl {
                     if (requests.size() > 0) {
                         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                     }
-                    Ippl::Comm->barrier();
+                    Comm->barrier();
 
                 } else {
                     Kokkos::parallel_for(
@@ -851,12 +838,14 @@ namespace ippl {
     ////////////////////////////////////////////////////////////////////////
     // calculate FFT of the Green's function
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::greensFunction() {
-        const double pi = std::acos(-1.0);
-        grn_mr          = 0.0;
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
+        const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
+        grn_mr               = 0.0;
 
-        if ((alg_m == "VICO") || (alg_m == "BIHARMONIC")) {
+        const int alg = this->params_m.template get<int>("algorithm");
+
+        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
             Vector_t l(hr_m * nr_m);
             Vector_t hs_m;
             double L_sum(0.0);
@@ -869,7 +858,7 @@ namespace ippl {
             }
 
             // define the origin of the 4N grid
-            Vector_t origin;
+            vector_type origin;
 
             for (unsigned int i = 0; i < Dim; ++i) {
                 origin[i] = -2 * nr_m[i] * pi / l[i];
@@ -883,16 +872,16 @@ namespace ippl {
             L_sum = 1.1 * L_sum;
 
             // initialize grnL_m
-            typename CxField_t::view_type view_g = grnL_m.getView();
-            const int nghost_g                   = grnL_m.getNghost();
-            const auto& ldom_g                   = layout4_m->getLocalNDIndex();
+            typename CxField_gt::view_type view_g = grnL_m.getView();
+            const int nghost_g                    = grnL_m.getNghost();
+            const auto& ldom_g                    = layout4_m->getLocalNDIndex();
 
             Vector<int, Dim> size = nr_m;
 
             // Kokkos parallel for loop to assign analytic grnL_m
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
-            if (alg_m == "VICO") {
+            if (alg == Algorithm::VICO) {
                 Kokkos::parallel_for(
                     "Initialize Green's function ",
                     mdrange_type({nghost_g, nghost_g, nghost_g},
@@ -905,29 +894,29 @@ namespace ippl {
                         const int kg = k + ldom_g[2].first() - nghost_g;
 
                         bool isOutside = (ig > 2 * size[0] - 1);
-                        const double t = ig * hs_m[0] + isOutside * origin[0];
+                        const Tg t     = ig * hs_m[0] + isOutside * origin[0];
 
-                        isOutside      = (jg > 2 * size[1] - 1);
-                        const double u = jg * hs_m[1] + isOutside * origin[1];
+                        isOutside  = (jg > 2 * size[1] - 1);
+                        const Tg u = jg * hs_m[1] + isOutside * origin[1];
 
-                        isOutside      = (kg > 2 * size[2] - 1);
-                        const double v = kg * hs_m[2] + isOutside * origin[2];
+                        isOutside  = (kg > 2 * size[2] - 1);
+                        const Tg v = kg * hs_m[2] + isOutside * origin[2];
 
-                        double s = (t * t) + (u * u) + (v * v);
-                        s        = std::sqrt(s);
+                        Tg s = (t * t) + (u * u) + (v * v);
+                        s    = Kokkos::sqrt(s);
 
                         // assign the green's function value
                         // if (0,0,0), assign L^2/2 (analytical limit of sinc)
 
-                        const bool isOrig        = ((ig == 0 && jg == 0 && kg == 0));
-                        const double analyticLim = -L_sum * L_sum * 0.5;
-                        const double value = -2.0 * (std::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
-                                             * (std::sin(0.5 * L_sum * s) / (s + isOrig * 1.0));
+                        const bool isOrig    = ((ig == 0 && jg == 0 && kg == 0));
+                        const Tg analyticLim = -L_sum * L_sum * 0.5;
+                        const Tg value = -2.0 * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
+                                         * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0));
 
                         view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
                     });
 
-            } else if (alg_m == "BIHARMONIC") {
+            } else if (alg == Algorithm::BIHARMONIC) {
                 Kokkos::parallel_for(
                     "Initialize Green's function ",
                     mdrange_type({nghost_g, nghost_g, nghost_g},
@@ -940,24 +929,23 @@ namespace ippl {
                         const int kg = k + ldom_g[2].first() - nghost_g;
 
                         bool isOutside = (ig > 2 * size[0] - 1);
-                        const double t = ig * hs_m[0] + isOutside * origin[0];
+                        const Tg t     = ig * hs_m[0] + isOutside * origin[0];
 
-                        isOutside      = (jg > 2 * size[1] - 1);
-                        const double u = jg * hs_m[1] + isOutside * origin[1];
+                        isOutside  = (jg > 2 * size[1] - 1);
+                        const Tg u = jg * hs_m[1] + isOutside * origin[1];
 
-                        isOutside      = (kg > 2 * size[2] - 1);
-                        const double v = kg * hs_m[2] + isOutside * origin[2];
+                        isOutside  = (kg > 2 * size[2] - 1);
+                        const Tg v = kg * hs_m[2] + isOutside * origin[2];
 
-                        double s = (t * t) + (u * u) + (v * v);
-                        s        = std::sqrt(s);
+                        Tg s = (t * t) + (u * u) + (v * v);
+                        s    = Kokkos::sqrt(s);
 
                         // assign value and replace with analytic limit at origin (0,0,0)
-
-                        const bool isOrig        = ((ig == 0 && jg == 0 && kg == 0));
-                        const double analyticLim = -L_sum * L_sum * L_sum * L_sum / 8.0;
-                        const double value = -((2 - (L_sum * L_sum * s * s)) * std::cos(L_sum * s)
-                                               + 2 * L_sum * s * std::sin(L_sum * s) - 2)
-                                             / (2 * s * s * s * s + isOrig * 1.0);
+                        const bool isOrig    = ((ig == 0 && jg == 0 && kg == 0));
+                        const Tg analyticLim = -L_sum * L_sum * L_sum * L_sum / 8.0;
+                        const Tg value = -((2 - (L_sum * L_sum * s * s)) * Kokkos::cos(L_sum * s)
+                                           + 2 * L_sum * s * Kokkos::sin(L_sum * s) - 2)
+                                         / (2 * s * s * s * s + isOrig * 1.0);
 
                         view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
                     });
@@ -984,7 +972,7 @@ namespace ippl {
             IpplTimings::startTimer(ifftshift);
 
             // get number of ranks to see if need communication
-            const int ranks = Ippl::Comm->size();
+            const int ranks = Comm->size();
 
             if (ranks > 1) {
                 communicateVico(size, view_g, ldom_g, nghost_g, view, ldom, nghost);
@@ -1071,17 +1059,17 @@ namespace ippl {
         IpplTimings::stopTimer(fftg);
     };
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    void FFTPoissonSolver<Tlhs, Trhs, Dim, Mesh, Centering>::communicateVico(
-        Vector<int, Dim> size, typename CxField_t::view_type view_g,
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTPoissonSolver<FieldLHS, FieldRHS>::communicateVico(
+        Vector<int, Dim> size, typename CxField_gt::view_type view_g,
         const ippl::NDIndex<Dim> ldom_g, const int nghost_g, typename Field_t::view_type view,
         const ippl::NDIndex<Dim> ldom, const int nghost) {
         const auto& lDomains2 = layout2_m->getHostLocalDomains();
         const auto& lDomains4 = layout4_m->getHostLocalDomains();
 
         std::vector<MPI_Request> requests(0);
-        const int myRank = Ippl::Comm->rank();
-        const int ranks  = Ippl::Comm->size();
+        const int myRank = Comm->rank();
+        const int ranks  = Comm->size();
 
         // 1st step: Define 8 domains corresponding to the different quadrants
         ippl::NDIndex<Dim> none;
@@ -1136,13 +1124,13 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + i, nsends);
+                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + i, nsends);
 
                     int tag = VICO_SOLVER_TAG;
 
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
+                    Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
                 }
             }
@@ -1163,13 +1151,13 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 8 + i, nsends);
+                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 1;
 
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
+                    Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
                 }
             }
@@ -1190,14 +1178,14 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 2 * 8 + i, nsends);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 2 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 2;
 
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
+                    Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
                 }
             }
@@ -1218,14 +1206,14 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 3 * 8 + i, nsends);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 3 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 3;
 
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
+                    Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
                 }
             }
@@ -1248,14 +1236,14 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 4 * 8 + i, nsends);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 4 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 4;
 
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
+                    Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
                 }
             }
@@ -1278,14 +1266,14 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 5 * 8 + i, nsends);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 5 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 5;
 
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
+                    Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
                 }
             }
@@ -1308,14 +1296,14 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 6 * 8 + i, nsends);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 6 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 6;
 
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
+                    Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
                 }
             }
@@ -1340,14 +1328,14 @@ namespace ippl {
                     requests.resize(requests.size() + 1);
 
                     Communicate::size_type nsends;
-                    pack<Mesh, Centering>(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
+                    pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_SEND + 7 * 8 + i, nsends);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 7 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 7;
 
-                    Ippl::Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
+                    Comm->isend(i, tag, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
                 }
             }
@@ -1364,15 +1352,14 @@ namespace ippl {
                     Communicate::size_type nrecvs;
                     nrecvs = intersection.size();
 
-                    buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + myRank, nrecvs);
+                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_RECV + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG;
 
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                    Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom);
+                    unpack(intersection, view, fd_m, nghost, ldom);
                 }
             }
 
@@ -1398,15 +1385,14 @@ namespace ippl {
                     nrecvs = intersection.size();
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 + myRank, nrecvs);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 1;
 
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                    Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, false,
-                                            false);
+                    unpack(intersection, view, fd_m, nghost, ldom, true, false, false);
                 }
             }
 
@@ -1432,15 +1418,14 @@ namespace ippl {
                     nrecvs = intersection.size();
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 * 2 + myRank, nrecvs);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 2 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 2;
 
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                    Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, true,
-                                            false);
+                    unpack(intersection, view, fd_m, nghost, ldom, false, true, false);
                 }
             }
 
@@ -1466,15 +1451,14 @@ namespace ippl {
                     nrecvs = intersection.size();
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 * 3 + myRank, nrecvs);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 3 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 3;
 
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                    Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, false,
-                                            true);
+                    unpack(intersection, view, fd_m, nghost, ldom, false, false, true);
                 }
             }
 
@@ -1504,15 +1488,14 @@ namespace ippl {
                     nrecvs = intersection.size();
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 * 4 + myRank, nrecvs);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 4 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 4;
 
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                    Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, true,
-                                            false);
+                    unpack(intersection, view, fd_m, nghost, ldom, true, true, false);
                 }
             }
 
@@ -1542,15 +1525,14 @@ namespace ippl {
                     nrecvs = intersection.size();
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 * 5 + myRank, nrecvs);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 5 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 5;
 
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                    Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, false, true,
-                                            true);
+                    unpack(intersection, view, fd_m, nghost, ldom, false, true, true);
                 }
             }
 
@@ -1580,15 +1562,14 @@ namespace ippl {
                     nrecvs = intersection.size();
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 * 6 + myRank, nrecvs);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 6 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 6;
 
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                    Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, false,
-                                            true);
+                    unpack(intersection, view, fd_m, nghost, ldom, true, false, true);
                 }
             }
 
@@ -1622,23 +1603,21 @@ namespace ippl {
                     nrecvs = intersection.size();
 
                     buffer_type buf =
-                        Ippl::Comm->getBuffer<double>(IPPL_VICO_RECV + 8 * 7 + myRank, nrecvs);
+                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 7 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 7;
 
-                    Ippl::Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(double), nrecvs);
+                    Comm->recv(i, tag, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Mesh, Centering>(intersection, view, fd_m, nghost, ldom, true, true,
-                                            true);
+                    unpack(intersection, view, fd_m, nghost, ldom, true, true, true);
                 }
             }
         }
 
-        // Wait for all messages to be received
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
-        Ippl::Comm->barrier();
+        Comm->barrier();
     };
 }  // namespace ippl

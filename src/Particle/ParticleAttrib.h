@@ -44,6 +44,8 @@ namespace ippl {
                                sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)> {
     public:
         typedef T value_type;
+        constexpr static unsigned dim = 1;
+
         using boolean_view_type =
             typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
         using view_type  = typename detail::ViewType<T, 1, Properties...>::view_type;
@@ -124,13 +126,12 @@ namespace ippl {
 
         //     // scatter the data from this attribute onto the given Field, using
         //     // the given Position attribute
-        template <unsigned Dim, class M, class C, typename P2>
-        void scatter(Field<T, Dim, M, C>& f,
-                     const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) const;
+        template <typename Field, typename P2>
+        void scatter(Field& f,
+                     const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) const;
 
-        template <unsigned Dim, class M, class C, typename P2>
-        void gather(Field<T, Dim, M, C>& f,
-                    const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
+        template <typename Field, typename P2>
+        void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp);
 
         T sum();
         T max();

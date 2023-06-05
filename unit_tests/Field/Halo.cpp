@@ -17,8 +17,6 @@
 //
 #include "Ippl.h"
 
-#include <cmath>
-
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
@@ -165,7 +163,7 @@ TEST_F(HaloTest, FillHalo) {
         field->fillHalo();
 
         auto view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
-        nestedViewLoop<Dim>(view, 0, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(view, 0, [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(view(args...), 1);
         });
     };
@@ -196,7 +194,7 @@ TEST_F(HaloTest, AccumulateHalo) {
                                                               : ippl::IS_PARALLEL)...};
             };
 
-            nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+            nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
                 auto encoding = indexToTags(std::make_index_sequence<Dim>{}, args...);
                 auto cube     = arrayToCube(std::make_index_sequence<Dim>{}, encoding);
 
@@ -236,7 +234,7 @@ TEST_F(HaloTest, AccumulateHalo) {
 
         Kokkos::deep_copy(mirror, field->getView());
 
-        nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
             ASSERT_DOUBLE_EQ(mirror(args...), 1);
         });
     };
@@ -245,7 +243,10 @@ TEST_F(HaloTest, AccumulateHalo) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+    }
+    ippl::finalize();
     return RUN_ALL_TESTS();
 }

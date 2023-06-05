@@ -59,7 +59,7 @@ namespace ippl {
 
         static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("updateParticle");
         IpplTimings::startTimer(ParticleUpdateTimer);
-        int nRanks = Ippl::Comm->size();
+        int nRanks = Comm->size();
 
         if (nRanks < 2) {
             return;
@@ -99,19 +99,19 @@ namespace ippl {
         MPI_Win win;
         std::vector<size_type> nRecvs(nRanks, 0);
         MPI_Win_create(nRecvs.data(), nRanks * sizeof(size_type), sizeof(size_type), MPI_INFO_NULL,
-                       Ippl::getComm(), &win);
+                       Comm->getCommunicator(), &win);
 
         std::vector<size_type> nSends(nRanks, 0);
 
         MPI_Win_fence(0, win);
 
         for (int rank = 0; rank < nRanks; ++rank) {
-            if (rank == Ippl::Comm->rank()) {
+            if (rank == Comm->rank()) {
                 // we do not need to send to ourselves
                 continue;
             }
             nSends[rank] = numberOfSends(rank, ranks);
-            MPI_Put(nSends.data() + rank, 1, MPI_LONG_LONG_INT, rank, Ippl::Comm->rank(), 1,
+            MPI_Put(nSends.data() + rank, 1, MPI_LONG_LONG_INT, rank, Comm->rank(), 1,
                     MPI_LONG_LONG_INT, win);
         }
         MPI_Win_fence(0, win);
@@ -125,7 +125,7 @@ namespace ippl {
 
         using buffer_type = Communicate::buffer_type;
 
-        int tag = Ippl::Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
+        int tag = Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
 
         int sends = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
@@ -138,9 +138,9 @@ namespace ippl {
                 pdata.pack(buffer, hash);
                 size_type bufSize = pdata.packedSize(nSends[rank]);
 
-                buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
+                buffer_type buf = Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
 
-                Ippl::Comm->isend(rank, tag, buffer, *buf, requests.back(), nSends[rank]);
+                Comm->isend(rank, tag, buffer, *buf, requests.back(), nSends[rank]);
                 buf->resetWritePos();
 
                 ++sends;
@@ -176,9 +176,9 @@ namespace ippl {
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
                 size_type bufSize = pdata.packedSize(nRecvs[rank]);
-                buffer_type buf   = Ippl::Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
+                buffer_type buf   = Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
 
-                Ippl::Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
+                Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
                 buf->resetReadPos();
 
                 pdata.unpack(buffer, nRecvs[rank]);
@@ -202,8 +202,7 @@ namespace ippl {
     template <size_t... Idx>
     KOKKOS_INLINE_FUNCTION constexpr bool ParticleSpatialLayout<T, Dim, Mesh>::positionInRegion(
         const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region) {
-        return ((pos[Idx] >= region[Idx].min()) && ...)
-            && ((pos[Idx] <= region[Idx].max()) && ...);
+        return ((pos[Idx] >= region[Idx].min()) && ...) && ((pos[Idx] <= region[Idx].max()) && ...);
     };
 
     template <typename T, unsigned Dim, class Mesh>
@@ -216,7 +215,7 @@ namespace ippl {
         using view_size_t  = typename RegionLayout_t::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
 
-        int myRank = Ippl::Comm->rank();
+        int myRank = Comm->rank();
 
         const auto is = std::make_index_sequence<Dim>{};
         Kokkos::parallel_for(

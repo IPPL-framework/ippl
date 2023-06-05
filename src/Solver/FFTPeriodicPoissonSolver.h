@@ -20,6 +20,8 @@
 #ifndef IPPL_FFT_PERIODIC_POISSON_SOLVER_H
 #define IPPL_FFT_PERIODIC_POISSON_SOLVER_H
 
+#include <Kokkos_MathematicalConstants.hpp>
+
 #include "Types/ViewTypes.h"
 
 #include "Electrostatics.h"
@@ -29,27 +31,38 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    class FFTPeriodicPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
+    template <typename FieldLHS, typename FieldRHS>
+    class FFTPeriodicPoissonSolver : public Electrostatics<FieldLHS, FieldRHS> {
+        constexpr static unsigned Dim = FieldLHS::dim;
+        using Trhs                    = typename FieldRHS::value_type;
+        using mesh_type               = typename FieldRHS::Mesh_t;
+
     public:
-        using Field_t   = Field<Trhs, Dim, Mesh, Centering>;
-        using FFT_t     = FFT<RCTransform, Dim, Trhs, Mesh, Centering>;
-        using Complex_t = Kokkos::complex<Trhs>;
-        using CxField_t = Field<Complex_t, Dim, Mesh, Centering>;
+        using Field_t   = FieldRHS;
+        using FFT_t     = FFT<RCTransform, FieldRHS>;
+        using Complex_t = typename FFT_t::Complex_t;
+        using CxField_t = typename FFT_t::ComplexField;
         using Layout_t  = FieldLayout<Dim>;
         using Vector_t  = Vector<Trhs, Dim>;
 
-        using Base     = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
+        using Base = Electrostatics<FieldLHS, FieldRHS>;
+        using typename Base::lhs_type, typename Base::rhs_type;
+        using scalar_type = typename FieldLHS::Mesh_t::value_type;
+        using vector_type = typename FieldLHS::Mesh_t::vector_type;
 
         FFTPeriodicPoissonSolver()
             : Base() {
+            using T = typename FieldLHS::value_type::value_type;
+            static_assert(std::is_floating_point<T>::value, "Not a floating point type");
+
             setDefaultParameters();
         }
 
         FFTPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs) {
+            using T = typename FieldLHS::value_type::value_type;
+            static_assert(std::is_floating_point<T>::value, "Not a floating point type");
+
             setDefaultParameters();
         }
 
