@@ -70,8 +70,7 @@ namespace ippl {
 
         /*!
          * Constructs a new view with size equal to that of the given view, minus the ghost cells
-         * @tparam Dim the view's rank
-         * @tparam T the view's value type
+         * (used for heFFTe, which expects the data to have a certain layout and no ghost cells)
          * @param label the new view's name
          * @param view the view to shrink
          * @param nghost the number of ghost cells on the view's boundary
