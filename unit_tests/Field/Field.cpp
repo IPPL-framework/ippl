@@ -445,3 +445,4 @@ int main(int argc, char* argv[]) {
     }
     ippl::finalize();
     return success;
+}
