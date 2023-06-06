@@ -83,9 +83,9 @@ public:
 
         bunch = std::make_unique<bunch_type>(pl_m);
 
-        int nRanks = Ippl::Comm->size();
+        int nRanks = ippl::Comm->size();
         if (nParticles % nRanks > 0) {
-            if (Ippl::Comm->rank() == 0) {
+            if (ippl::Comm->rank() == 0) {
                 std::cerr << nParticles << " not a multiple of " << nRanks << std::endl;
             }
             exit(1);
@@ -96,7 +96,7 @@ public:
 
         std::mt19937_64 eng;
         eng.seed(42);
-        eng.discard(nloc * Ippl::Comm->rank());
+        eng.discard(nloc * ippl::Comm->rank());
         std::uniform_real_distribution<double> unif(0, 1);
 
         typename bunch_type::particle_position_type::HostMirror R_host = bunch->R.getHostMirror();

@@ -40,7 +40,7 @@ public:
 };
 
 TEST_F(ParticleBaseTest, CreateAndDestroy) {
-    if (Ippl::Comm->size() > 1) {
+    if (ippl::Comm->size() > 1) {
         std::cerr << "ParticleBaseTest::CreateAndDestroy test only works for one MPI rank!"
                   << std::endl;
         return;
