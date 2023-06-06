@@ -118,61 +118,79 @@ KOKKOS_INLINE_FUNCTION double maxwellianD01exact(const VectorD_t& v, const doubl
 }
 
 KOKKOS_INLINE_FUNCTION double gaussianD00exact(const VectorD_t& v, const double& gamma) {
-    // double vNorm = L2Norm(v);
-    // double v2    = vNorm * vNorm;
-    double pi = Kokkos::numbers::pi_v<double>;
+    double vNorm  = L2Norm(v);
+    double vNorm2 = vNorm * vNorm;
+    double vx2    = v[0] * v[0];
+    double pi     = Kokkos::numbers::pi_v<double>;
 
-    return gamma * Kokkos::sqrt(2 / pi)
-               * (-Kokkos::exp((-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2], 2))
-                               / 2.)
-                  + Kokkos::exp(
-                        (-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2], 2)) / 2.)
-                        * Kokkos::pow(v[0], 2))
-           + (2
-              * Kokkos::exp((-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2], 2))
-                            / 2.)
-              * Kokkos::sqrt(2 / pi) * v[0]
-              * (-(v[0]
-                   / Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
-                                 1.5))
-                 + v[0]
-                       / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
-                                      + Kokkos::pow(v[2], 2))))
-                 / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2))
-           + (-((Kokkos::exp((-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2], 2))
-                             / 2.)
-                 * Kokkos::sqrt(2 / pi) * Kokkos::pow(v[0], 2))
-                / Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
-                              1.5))
-              + (Kokkos::exp((-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2], 2))
-                             / 2.)
-                 * Kokkos::sqrt(2 / pi))
-                    / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
-                                   + Kokkos::pow(v[2], 2))
-              - (Kokkos::exp((-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2], 2))
-                             / 2.)
-                 * Kokkos::sqrt(2 / pi) * Kokkos::pow(v[0], 2))
-                    / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
-                                   + Kokkos::pow(v[2], 2)))
-                 * (1
-                        / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
-                                       + Kokkos::pow(v[2], 2))
-                    + Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
-                                   + Kokkos::pow(v[2], 2)))
-           + ((3 * Kokkos::pow(v[0], 2))
-                  / Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
-                                2.5)
-              - Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
-                            -1.5)
-              - Kokkos::pow(v[0], 2)
-                    / Kokkos::pow(
-                        Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 1.5)
-              + 1
-                    / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
-                                   + Kokkos::pow(v[2], 2)))
-                 * Kokkos::erf(Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
-                                            + Kokkos::pow(v[2], 2))
-                               / Kokkos::sqrt(2));
+    double expTerm =
+        Kokkos::exp(-0.5 * vNorm2) * (-vx2 * (1.0 - 1.0 / vNorm2) + vx2 + 2.0 * vx2 / (vNorm2)-1);
+    double erfTerm = Kokkos::erf(vNorm / Kokkos::sqrt(2.0))
+                     * (vx2 * (1.0 - 1 / vNorm2) * 1.0 / vNorm2 - 2.0 * vx2 / (vNorm2 * vNorm2)
+                        - (1.0 - 1.0 / vNorm2));
+
+    // TODO Check why there is a `-1.0` factor needed!
+    return -1.0 * gamma * ((Kokkos::sqrt(2.0 / pi) / vNorm2) * expTerm + (1.0 / vNorm) * erfTerm);
+
+    // return gamma * Kokkos::sqrt(2 / pi)
+    //            * (-Kokkos::exp((-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2],
+    //            2))
+    //                            / 2.)
+    //               + Kokkos::exp(
+    //                     (-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2], 2))
+    //                     / 2.)
+    //                     * Kokkos::pow(v[0], 2))
+    //        + (2
+    //           * Kokkos::exp((-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2], 2))
+    //                         / 2.)
+    //           * Kokkos::sqrt(2 / pi) * v[0]
+    //           * (-(v[0]
+    //                / Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2],
+    //                2),
+    //                              1.5))
+    //              + v[0]
+    //                    / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+    //                                   + Kokkos::pow(v[2], 2))))
+    //              / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2],
+    //              2))
+    //        + (-((Kokkos::exp((-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2],
+    //        2))
+    //                          / 2.)
+    //              * Kokkos::sqrt(2 / pi) * Kokkos::pow(v[0], 2))
+    //             / Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
+    //                           1.5))
+    //           + (Kokkos::exp((-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2],
+    //           2))
+    //                          / 2.)
+    //              * Kokkos::sqrt(2 / pi))
+    //                 / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+    //                                + Kokkos::pow(v[2], 2))
+    //           - (Kokkos::exp((-Kokkos::pow(v[0], 2) - Kokkos::pow(v[1], 2) - Kokkos::pow(v[2],
+    //           2))
+    //                          / 2.)
+    //              * Kokkos::sqrt(2 / pi) * Kokkos::pow(v[0], 2))
+    //                 / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+    //                                + Kokkos::pow(v[2], 2)))
+    //              * (1
+    //                     / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+    //                                    + Kokkos::pow(v[2], 2))
+    //                 + Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+    //                                + Kokkos::pow(v[2], 2)))
+    //        + ((3 * Kokkos::pow(v[0], 2))
+    //               / Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2],
+    //               2),
+    //                             2.5)
+    //           - Kokkos::pow(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2),
+    //                         -1.5)
+    //           - Kokkos::pow(v[0], 2)
+    //                 / Kokkos::pow(
+    //                     Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2) + Kokkos::pow(v[2], 2), 1.5)
+    //           + 1
+    //                 / Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+    //                                + Kokkos::pow(v[2], 2)))
+    //              * Kokkos::erf(Kokkos::sqrt(Kokkos::pow(v[0], 2) + Kokkos::pow(v[1], 2)
+    //                                         + Kokkos::pow(v[2], 2))
+    //                            / Kokkos::sqrt(2));
 }
 
 KOKKOS_INLINE_FUNCTION double gaussianD01exact(const VectorD_t& v, const double& gamma) {
