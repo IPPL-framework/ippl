@@ -104,7 +104,7 @@ public:
      */
     template <unsigned Dim>
     void randomizeRealField(int nghost, typename field_type_real<Dim>::HostMirror& mirror) {
-        std::mt19937_64 eng(42 + Ippl::Comm->rank());
+        std::mt19937_64 eng(42 + ippl::Comm->rank());
         std::uniform_real_distribution<double> unif(0, 1);
 
         nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
@@ -120,10 +120,10 @@ public:
      */
     template <unsigned Dim>
     void randomizeComplexField(int nghost, typename field_type_complex<Dim>::HostMirror& mirror) {
-        std::mt19937_64 engReal(42 + Ippl::Comm->rank());
+        std::mt19937_64 engReal(42 + ippl::Comm->rank());
         std::uniform_real_distribution<double> unifReal(0, 1);
 
-        std::mt19937_64 engImag(43 + Ippl::Comm->rank());
+        std::mt19937_64 engImag(43 + ippl::Comm->rank());
         std::uniform_real_distribution<double> unifImag(0, 1);
 
         nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
@@ -155,7 +155,7 @@ public:
         });
 
         double max_error = 0.0;
-        MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
         ASSERT_NEAR(max_error, 0, 1e-13);
     }
 
@@ -301,7 +301,7 @@ TEST_F(FFTTest, CC) {
 
         Kokkos::complex<double> max_error(0, 0);
         MPI_Allreduce(&max_error_local, &max_error, 1, MPI_C_DOUBLE_COMPLEX, MPI_SUM,
-                      Ippl::getComm());
+                      ippl::Comm->getCommunicator());
         ASSERT_NEAR(max_error.real(), 0, 1e-13);
         ASSERT_NEAR(max_error.imag(), 0, 1e-13);
     };
@@ -310,10 +310,12 @@ TEST_F(FFTTest, CC) {
 }
 
 int main(int argc, char* argv[]) {
+    int success = 1;
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
     }
     ippl::finalize();
-    return RUN_ALL_TESTS();
+    return success;
 }

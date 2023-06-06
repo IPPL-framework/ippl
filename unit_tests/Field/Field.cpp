@@ -437,10 +437,12 @@ TEST_F(FieldTest, Hessian) {
 }
 
 int main(int argc, char* argv[]) {
+    int success = 1;
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
     }
     ippl::finalize();
-    return RUN_ALL_TESTS();
+    return success;
 }
