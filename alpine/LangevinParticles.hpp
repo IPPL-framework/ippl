@@ -235,9 +235,9 @@ public:
     }
 
     void runSolver() {
-        throw IpplException(
-            "LangevinParticles::runSolver",
-            "Not implemented. Run `runSpaceChargeSolver` or `runFrictionSolver` instead.");
+        throw IpplException("LangevinParticles::runSolver",
+                            "Not implemented. Run `runSpaceChargeSolver`, `runFrictionSolver` or "
+                            "`runDiffusionSolver` instead.");
     }
 
     void runSpaceChargeSolver(size_type iteration) {
