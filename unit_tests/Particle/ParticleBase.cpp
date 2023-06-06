@@ -133,11 +133,12 @@ TEST(ParticleBase, Initialize2) {
 }
 
 int main(int argc, char* argv[]) {
+    int success = 1;
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
-        RUN_ALL_TESTS();
+        success = RUN_ALL_TESTS();
     }
     ippl::finalize();
-    return 0;
+    return success;
 }
