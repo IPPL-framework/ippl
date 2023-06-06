@@ -1,6 +1,7 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <cmath>
 
+#include "LangevinHelpers.hpp"
 #include "LangevinParticles.hpp"
 
 const char* TestName = "LangevinPotentials";
@@ -32,6 +33,15 @@ KOKKOS_INLINE_FUNCTION double maxwellianHexact(const VectorD_t& v, const double&
 KOKKOS_INLINE_FUNCTION double gaussianHexact(const VectorD_t& v) {
     double vNorm = L2Norm(v);
     return (2.0 / vNorm) * Kokkos::erf(vNorm / Kokkos::sqrt(2.0));
+}
+
+KOKKOS_INLINE_FUNCTION VectorD_t gaussianFdExact(const VectorD_t& v, const double& gamma) {
+    double vNorm     = L2Norm(v);
+    double pi        = Kokkos::numbers::pi_v<double>;
+    double preFactor = (2.0 / (vNorm * vNorm)) * Kokkos::erf(vNorm / Kokkos::sqrt(2.0));
+    double erfFactor = (1.0 / vNorm) * Kokkos::erf(0.5 * vNorm);
+    double expFactor = Kokkos::sqrt(2.0 / pi) * Kokkos::exp(-0.5 * vNorm * vNorm);
+    return gamma * preFactor * (erfFactor - expFactor) * v;
 }
 
 KOKKOS_INLINE_FUNCTION double maxwellianGexact(const VectorD_t& v, const double& numberDensity,
@@ -220,11 +230,12 @@ class GenerateTestData {
 
 public:
     GenerateTestData(Field_view_t fvView, Field_view_t HviewExact, Field_view_t GviewExact,
-                     Field_view_t D00viewExact, Field_view_t D01viewExact, double numberDensity,
-                     double vth, const Bunch& P)
+                     VField_view_t FdViewExact, Field_view_t D00viewExact,
+                     Field_view_t D01viewExact, double numberDensity, double vth, const Bunch& P)
         : fvView_m(fvView)
         , HviewExact_m(HviewExact)
         , GviewExact_m(GviewExact)
+        , FdViewExact_m(FdViewExact)
         , D00viewExact_m(D00viewExact)
         , D01viewExact_m(D01viewExact)
         , numberDensity_m(numberDensity)
@@ -245,6 +256,8 @@ public:
             ippl::apply(GviewExact_m, args) =
                 maxwellianGexact(v, numberDensity_m, vth_m) * P_m->configSpaceIntegral_m;
 
+            // Exact friction coefficients
+
             // First diagonal and off-diagonal entries of Hessian
             ippl::apply(D00viewExact_m, args) =
                 maxwellianD00exact(v, P_m->gamma_m, numberDensity_m, vth_m)
@@ -256,6 +269,8 @@ public:
             ippl::apply(fvView_m, args)     = gaussianPDF(v) * P_m->configSpaceIntegral_m;
             ippl::apply(HviewExact_m, args) = gaussianHexact(v) * P_m->configSpaceIntegral_m;
             ippl::apply(GviewExact_m, args) = gaussianGexact(v) * P_m->configSpaceIntegral_m;
+            ippl::apply(FdViewExact_m, args) =
+                gaussianFdExact(v, P_m->gamma_m) * P_m->configSpaceIntegral_m;
 
             // First diagonal and off-diagonal entries of Hessian
             ippl::apply(D00viewExact_m, args) =
@@ -269,6 +284,7 @@ private:
     const Field_view_t fvView_m;
     const Field_view_t HviewExact_m;
     const Field_view_t GviewExact_m;
+    const VField_view_t FdViewExact_m;
     const Field_view_t D00viewExact_m;
     const Field_view_t D01viewExact_m;
     const double numberDensity_m;
@@ -384,10 +400,11 @@ int main(int argc, char* argv[]) {
         const double gamma = P->gamma_m;
 
         // Create scalar Field for Rosenbluth Potentials
-        Field_t<Dim> HfieldExact   = P->fv_m.deepCopy();
-        Field_t<Dim> GfieldExact   = P->fv_m.deepCopy();
-        Field_t<Dim> D00fieldExact = P->fv_m.deepCopy();
-        Field_t<Dim> D01fieldExact = P->fv_m.deepCopy();
+        Field_t<Dim> HfieldExact      = P->fv_m.deepCopy();
+        Field_t<Dim> GfieldExact      = P->fv_m.deepCopy();
+        Field_t<Dim> D00fieldExact    = P->fv_m.deepCopy();
+        Field_t<Dim> D01fieldExact    = P->fv_m.deepCopy();
+        VField_t<double, Dim> FdExact = P->Fd_m.deepCopy();
 
         // Fields for identities that must hold
         Field_t<Dim> Dtrace     = P->fv_m.deepCopy();
@@ -435,13 +452,15 @@ int main(int argc, char* argv[]) {
         Field_view_t fvView         = P->fv_m.getView();
         Field_view_t HviewExact     = HfieldExact.getView();
         Field_view_t GviewExact     = GfieldExact.getView();
+        VField_view_t FdViewExact   = FdExact.getView();
         Field_view_t D00viewExact   = D00fieldExact.getView();
         Field_view_t D01viewExact   = D01fieldExact.getView();
         Field_view_t DtraceView     = Dtrace.getView();
         Field_view_t DtraceDiffView = DtraceDiff.getView();
 
         GenerateTestData<testType, std::shared_ptr<bunch_type>> dataGenerator(
-            fvView, HviewExact, GviewExact, D00viewExact, D01viewExact, numberDensity, vth, P);
+            fvView, HviewExact, GviewExact, FdViewExact, D00viewExact, D01viewExact, numberDensity,
+            vth, P);
 
         ippl::parallel_for("Assign initial velocity PDF and reference solutions",
                            ippl::getRangePolicy(fvView, 0), dataGenerator);
@@ -476,13 +495,18 @@ int main(int argc, char* argv[]) {
         // Dump all data of the potentials
         dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Happr");
         dumpVTKScalar(HfieldExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Hexact");
-        dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "gradHappr");
         auto Hdiff = P->fv_m.deepCopy();
         Hdiff      = Hdiff - HfieldExact;
         dumpVTKScalar(Hdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Hdiff");
 
         P->Fd_m = gamma * P->Fd_m;
         P->gatherFd();
+
+        dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Fdappr");
+        dumpVTKVector(FdExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Fdexact");
+
+        auto FdDiff = P->Fd_m.deepCopy();
+        FdDiff      = FdDiff - FdExact;
 
         // Dump actual friction coefficients
         P->dumpFdField(nv, OUT_DIR);
@@ -581,9 +605,10 @@ int main(int argc, char* argv[]) {
         // COMPUTE RELATIVE ERRORS //
         /////////////////////////////
 
-        const int shift  = nghost;
-        double HrelError = subfieldNorm(Hdiff, shift) / subfieldNorm(HfieldExact, shift);
-        double GrelError = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
+        const int shift   = nghost;
+        double HrelError  = subfieldNorm(Hdiff, shift) / subfieldNorm(HfieldExact, shift);
+        double GrelError  = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
+        double FdRelError = L2VectorNorm(FdDiff, shift) / L2VectorNorm(FdDiff, shift);
         double DtraceRelError =
             subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
         VectorD_t DdivDiffRelError =
@@ -592,6 +617,8 @@ int main(int argc, char* argv[]) {
             << ": " << HrelError << endl;
         msg << "g(v) rel. error (" << nv << "^3)"
             << ": " << GrelError << endl;
+        msg << "Fd(v) rel. error (" << nv << "^3)"
+            << ": " << FdRelError << endl;
         msg << "Tr(D) - h = 0 rel. error (" << nv << "^3)"
             << ": " << DtraceRelError << endl;
         msg << "div(D) - Fd = 0 rel. error (" << nv << "^3)"
