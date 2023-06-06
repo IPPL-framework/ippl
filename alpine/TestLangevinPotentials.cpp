@@ -38,8 +38,8 @@ KOKKOS_INLINE_FUNCTION double gaussianHexact(const VectorD_t& v) {
 KOKKOS_INLINE_FUNCTION VectorD_t gaussianFdExact(const VectorD_t& v, const double& gamma) {
     double vNorm     = L2Norm(v);
     double pi        = Kokkos::numbers::pi_v<double>;
-    double preFactor = (2.0 / (vNorm * vNorm)) * Kokkos::erf(vNorm / Kokkos::sqrt(2.0));
-    double erfFactor = (1.0 / vNorm) * Kokkos::erf(0.5 * vNorm);
+    double preFactor = (2.0 / (vNorm * vNorm));
+    double erfFactor = (1.0 / vNorm) * Kokkos::erf(vNorm / Kokkos::sqrt(2));
     double expFactor = Kokkos::sqrt(2.0 / pi) * Kokkos::exp(-0.5 * vNorm * vNorm);
     return gamma * preFactor * (erfFactor - expFactor) * v;
 }
@@ -502,11 +502,12 @@ int main(int argc, char* argv[]) {
         P->Fd_m = gamma * P->Fd_m;
         P->gatherFd();
 
-        dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Fdappr");
-        dumpVTKVector(FdExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Fdexact");
-
         auto FdDiff = P->Fd_m.deepCopy();
         FdDiff      = FdDiff - FdExact;
+
+        dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Fdappr");
+        dumpVTKVector(FdExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Fdexact");
+        dumpVTKVector(FdExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "FdDiff");
 
         // Dump actual friction coefficients
         P->dumpFdField(nv, OUT_DIR);
@@ -608,7 +609,7 @@ int main(int argc, char* argv[]) {
         const int shift   = nghost;
         double HrelError  = subfieldNorm(Hdiff, shift) / subfieldNorm(HfieldExact, shift);
         double GrelError  = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
-        double FdRelError = L2VectorNorm(FdDiff, shift) / L2VectorNorm(FdDiff, shift);
+        double FdRelError = L2VectorNorm(FdDiff, shift) / L2VectorNorm(FdExact, shift);
         double DtraceRelError =
             subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
         VectorD_t DdivDiffRelError =
