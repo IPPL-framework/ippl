@@ -76,8 +76,8 @@ public:
 
 TEST_F(HaloTest, CheckNeighbors) {
     auto check = [&]<unsigned Dim>(const layout_type<Dim>& layout) {
-        int myRank = Ippl::Comm->rank();
-        int nRanks = Ippl::Comm->size();
+        int myRank = ippl::Comm->rank();
+        int nRanks = ippl::Comm->size();
 
         for (int rank = 0; rank < nRanks; ++rank) {
             if (rank == myRank) {
@@ -115,7 +115,7 @@ TEST_F(HaloTest, CheckNeighbors) {
                     }
                 }
             }
-            Ippl::Comm->barrier();
+            ippl::Comm->barrier();
         }
     };
 
@@ -126,8 +126,8 @@ TEST_F(HaloTest, CheckCubes) {
     auto check = [&]<unsigned Dim>(const layout_type<Dim>& layout) {
         const auto& domains = layout.getHostLocalDomains();
 
-        for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-            if (rank == Ippl::Comm->rank()) {
+        for (int rank = 0; rank < ippl::Comm->size(); ++rank) {
+            if (rank == ippl::Comm->rank()) {
                 const auto& neighbors = layout.getNeighbors();
 
                 constexpr static const char* cubes[6] = {"vertices", "edges",      "faces",
@@ -150,7 +150,7 @@ TEST_F(HaloTest, CheckCubes) {
                 }
                 std::cout << "--------------------------------------" << std::endl;
             }
-            Ippl::Comm->barrier();
+            ippl::Comm->barrier();
         }
     };
 
@@ -178,7 +178,7 @@ TEST_F(HaloTest, AccumulateHalo) {
         auto mirror = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
         const unsigned int nghost = field->getNghost();
 
-        if (Ippl::Comm->size() > 1) {
+        if (ippl::Comm->size() > 1) {
             auto& neighbors = layout.getNeighbors();
             auto lDom       = layout.getLocalNDIndex();
 
@@ -243,8 +243,12 @@ TEST_F(HaloTest, AccumulateHalo) {
 }
 
 int main(int argc, char* argv[]) {
+    int success = 1;
     ippl::initialize(argc, argv);
-    { ::testing::InitGoogleTest(&argc, argv); }
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
+    }
     ippl::finalize();
-    return RUN_ALL_TESTS();
+    return success;
 }

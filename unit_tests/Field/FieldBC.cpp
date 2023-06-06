@@ -83,7 +83,7 @@ public:
 
         const auto& lDomains = layout.getHostLocalDomains();
         const auto& domain   = layout.getDomain();
-        const int myRank     = Ippl::Comm->rank();
+        const int myRank     = ippl::Comm->rank();
 
         Kokkos::deep_copy(HostF, field->getView());
 
@@ -205,8 +205,12 @@ TEST_F(FieldBCTest, ExtrapolateBC) {
 }
 
 int main(int argc, char* argv[]) {
+    int success = 1;
     ippl::initialize(argc, argv);
-    { ::testing::InitGoogleTest(&argc, argv); }
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
+    }
     ippl::finalize();
-    return RUN_ALL_TESTS();
+    return success;
 }
