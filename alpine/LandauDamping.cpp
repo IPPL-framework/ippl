@@ -307,8 +307,7 @@ int main(int argc, char* argv[]) {
 
     P->scatterCIC(totalP, 0, hr);
 
-    double tempEx2, tempExNorm;
-    P->collectLandau(tempEx2, tempExNorm);
+    auto Eview = P->getEMirror();
 
     IpplTimings::startTimer(SolveTimer);
     P->runSolver();
@@ -317,7 +316,7 @@ int main(int argc, char* argv[]) {
     P->gatherCIC();
 
     IpplTimings::startTimer(dumpDataTimer);
-    P->dumpLandau(tempEx2, tempExNorm);
+    P->dumpLandau(Eview);
     P->gatherStatistics(totalP);
     // P->dumpLocalDomains(FL, 0);
     IpplTimings::stopTimer(dumpDataTimer);
@@ -365,7 +364,7 @@ int main(int argc, char* argv[]) {
         P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
-        P->collectLandau(tempEx2, tempExNorm);
+        P->updateEMirror(Eview);
 
         // gather E field
         P->gatherCIC();
@@ -377,7 +376,7 @@ int main(int argc, char* argv[]) {
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpLandau(tempEx2, tempExNorm);
+        P->dumpLandau(Eview);
         P->gatherStatistics(totalP);
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;

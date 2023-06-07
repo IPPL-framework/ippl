@@ -181,7 +181,7 @@ namespace ippl {
 
         const view_type& getView() const { return dview_m; }
 
-        HostMirror getHostMirror() { return Kokkos::create_mirror(dview_m); }
+        HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
 
         /*!
          * Generate the range policy for iterating over the field,

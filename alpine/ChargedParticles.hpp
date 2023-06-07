@@ -588,14 +588,21 @@ public:
         Ippl::Comm->barrier();
     }
 
-    void collectLandau(double& localEx2, double& localExNorm) {
+    decltype(auto) getEMirror() const {
+        auto Eview = E_m.getHostMirror();
+        updateEMirror(Eview);
+        return Eview;
+    }
+
+    void updateEMirror(VField_t<double, Dim>::HostMirror& mirror) const {
+        Kokkos::deep_copy(mirror, E_m.getView());
+    }
+
+    void dumpLandau(VField_t<double, Dim>::HostMirror& Eview) {
         const int nghostE = E_m.getNghost();
-        auto deviceView   = E_m.getView();
-        auto Eview        = E_m.getHostMirror();
-        Kokkos::deep_copy(Eview, deviceView);
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        localEx2 = localExNorm = 0.0;
+        double localEx2 = 0, localExNorm = 0;
         ippl::parallel_reduce(
             "Ex stats", ippl::getRangePolicy(Eview, nghostE),
             KOKKOS_LAMBDA(const index_array_type& args, double& E2, double& ENorm) {
@@ -611,9 +618,7 @@ public:
                 }
             },
             Kokkos::Sum<double>(localEx2), Kokkos::Max<double>(localExNorm));
-    }
 
-    void dumpLandau(double& localEx2, double& localExNorm) {
         double globaltemp = 0.0;
         MPI_Reduce(&localEx2, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
         double fieldEnergy =
