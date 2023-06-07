@@ -70,7 +70,9 @@ namespace ippl {
         , localNum_m(0)
         , nextID_m(Ippl::Comm->myNode())
         , numNodes_m(Ippl::Comm->getNodes()) {
-        addAttribute(ID);
+        if constexpr (EnableIDs) {
+            addAttribute(ID);
+        }
         addAttribute(R);
     }
 
@@ -103,17 +105,19 @@ namespace ippl {
             attribute->create(nLocal);
         });
 
-        // set the unique ID value for these new particles
-        using policy_type =
-            Kokkos::RangePolicy<size_type, typename particle_index_type::execution_space>;
-        auto pIDs     = ID.getView();
-        auto nextID   = this->nextID_m;
-        auto numNodes = this->numNodes_m;
-        Kokkos::parallel_for(
-            "ParticleBase<...>::create(size_t)", policy_type(localNum_m, nLocal),
-            KOKKOS_LAMBDA(const std::int64_t i) { pIDs(i) = nextID + numNodes * i; });
-        // nextID_m += numNodes_m * (nLocal - localNum_m);
-        nextID_m += numNodes_m * nLocal;
+        if constexpr (EnableIDs) {
+            // set the unique ID value for these new particles
+            using policy_type =
+                Kokkos::RangePolicy<size_type, typename particle_index_type::execution_space>;
+            auto pIDs     = ID.getView();
+            auto nextID   = this->nextID_m;
+            auto numNodes = this->numNodes_m;
+            Kokkos::parallel_for(
+                "ParticleBase<...>::create(size_t)", policy_type(localNum_m, nLocal),
+                KOKKOS_LAMBDA(const std::int64_t i) { pIDs(i) = nextID + numNodes * i; });
+            // nextID_m += numNodes_m * (nLocal - localNum_m);
+            nextID_m += numNodes_m * nLocal;
+        }
 
         // remember that we're creating these new particles
         localNum_m += nLocal;

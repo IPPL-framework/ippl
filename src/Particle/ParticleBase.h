@@ -65,6 +65,7 @@
 #define IPPL_PARTICLE_BASE_H
 
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 #include "Types/IpplTypes.h"
@@ -74,19 +75,44 @@
 #include "Particle/ParticleLayout.h"
 
 namespace ippl {
+
+    // A flag struct for indicating that a particle bunch
+    // does not need to track particle IDs
+    struct DisableParticleIDs {};
+
+    namespace detail {
+        template <bool, typename...>
+        struct ParticleIDType;
+
+        template <typename IndexType, typename... Properties>
+        struct ParticleIDType<true, IndexType, Properties...> {
+            using type = ParticleAttrib<IndexType, Properties...>;
+        };
+
+        template <typename... Ts>
+        struct ParticleIDType<false, Ts...> {
+            using type = void*;
+        };
+    }  // namespace detail
+
     /*!
      * @class ParticleBase
      * @tparam PLayout the particle layout implementing an algorithm to
      * distribute the particles among MPI ranks
-     * @tparam IDProperties the view properties for particle IDs
+     * @tparam IDProperties the view properties for particle IDs (if any
+     * of the provided types is ippl::DisableParticleIDs, then particle
+     * IDs will be disabled for the bunch)
      */
     template <class PLayout, typename... IDProperties>
     class ParticleBase {
+        constexpr static bool EnableIDs =
+            !std::disjunction_v<std::is_same<IDProperties, DisableParticleIDs>...>;
+
     public:
         using vector_type            = typename PLayout::vector_type;
         using index_type             = typename PLayout::index_type;
         using particle_position_type = typename PLayout::particle_position_type;
-        using particle_index_type    = ParticleAttrib<index_type, IDProperties...>;
+        using particle_index_type    = typename detail::ParticleIDType<EnableIDs, index_type>::type;
 
         using Layout_t = PLayout;
 

@@ -187,7 +187,9 @@ void dumpVTK(Field_t<3>& rho, int nx, int ny, int nz, int iteration, double dx, 
 }
 
 template <class PLayout, typename T, unsigned Dim = 3>
-class ChargedParticles : public ippl::ParticleBase<PLayout> {
+class ChargedParticles : public ippl::ParticleBase<PLayout, ippl::DisableParticleIDs> {
+    using Base = ippl::ParticleBase<PLayout, ippl::DisableParticleIDs>;
+
 public:
     VField_t<T, Dim> E_m;
     Field_t<Dim> rho_m;
@@ -224,17 +226,16 @@ public:
     double loadbalancethreshold_m;
 
 public:
-    ParticleAttrib<double> q;                                        // charge
-    typename ippl::ParticleBase<PLayout>::particle_position_type P;  // particle velocity
-    typename ippl::ParticleBase<PLayout>::particle_position_type
-        E;  // electric field at particle position
+    ParticleAttrib<double> q;                 // charge
+    typename Base::particle_position_type P;  // particle velocity
+    typename Base::particle_position_type E;  // electric field at particle position
 
     /*
       This constructor is mandatory for all derived classes from
       ParticleBase as the bunch buffer uses this
     */
     ChargedParticles(PLayout& pl)
-        : ippl::ParticleBase<PLayout>(pl) {
+        : Base(pl) {
         registerAttributes();
         setPotentialBCs();
     }
@@ -242,7 +243,7 @@ public:
     ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
                      Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
                      std::string solver)
-        : ippl::ParticleBase<PLayout>(pl)
+        : Base(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
