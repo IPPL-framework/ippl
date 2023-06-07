@@ -4,6 +4,8 @@
 #include <memory>
 #include <mpi.h>
 
+#include "Communicate/Status.h"
+
 ////////////////////////////////////////////////
 // For message size check; see below
 #include <climits>
@@ -42,10 +44,10 @@ namespace ippl {
             void send(const T* buffer, int count, int dest, int tag);
 
             template <typename T>
-            void recv(T& output, int count, int source, int tag, MPI_Status& status);
+            void recv(T& output, int count, int source, int tag, Status& status);
 
             template <typename T>
-            void recv(T* output, int count, int source, int tag, MPI_Status& status);
+            void recv(T* output, int count, int source, int tag, Status& status);
 
             /////////////////////////////////////////////////////////////////////////////////////
             using archive_type = detail::Archive<>;

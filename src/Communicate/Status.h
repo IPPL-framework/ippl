@@ -2,6 +2,7 @@
 #define IPPL_MPI_STATUS_H
 
 #include <mpi.h>
+#include <optional>
 
 namespace ippl {
     namespace mpi {
@@ -19,9 +20,9 @@ namespace ippl {
             template <typename T>
             std::optional<int> count();
 
-            MPI_Status& operator() { return status_m; }
+            MPI_Status& operator()() { return status_m; }
 
-            const MPI_Status& operator() const { return status_m; }
+            const MPI_Status& operator()() const { return status_m; }
 
         private:
             MPI_Status status_m;
