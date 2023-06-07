@@ -103,9 +103,9 @@ public:
 
         auto bunch = std::get<Idx>(bunches) = std::make_shared<bunch_type<Dim>>(pl);
 
-        int nRanks = Ippl::Comm->size();
+        int nRanks = ippl::Comm->size();
         if (nParticles % nRanks > 0) {
-            if (Ippl::Comm->rank() == 0) {
+            if (ippl::Comm->rank() == 0) {
                 std::cerr << nParticles << " not a multiple of " << nRanks << std::endl;
             }
             exit(1);
@@ -116,7 +116,7 @@ public:
 
         std::mt19937_64 eng;
         eng.seed(42);
-        eng.discard(nloc * Ippl::Comm->rank());
+        eng.discard(nloc * ippl::Comm->rank());
         std::uniform_real_distribution<double> unif(0, 1);
 
         auto R_host = bunch->R.getHostMirror();
@@ -211,7 +211,12 @@ TEST_F(ORBTest, Charge) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    int success = 1;
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
+    }
+    ippl::finalize();
+    return success;
 }

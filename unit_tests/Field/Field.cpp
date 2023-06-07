@@ -159,6 +159,15 @@ struct FieldVal {
     }
 };
 
+template <typename T>
+void assertTypeParam(T valA, T valB) {
+    if constexpr (std::is_same<T, double>::value) {
+        ASSERT_DOUBLE_EQ(valA, valB);
+    } else {
+        ASSERT_FLOAT_EQ(valA, valB);
+    }
+};
+
 using Precisions = ::testing::Types<double, float>;
 
 TYPED_TEST_CASE(FieldTest, Precisions);
@@ -178,13 +187,9 @@ TYPED_TEST(FieldTest, DeepCopy) {
         Kokkos::deep_copy(mirrorA, field->getView());
         Kokkos::deep_copy(mirrorB, copy.getView());
 
-        this->template nestedViewLoop<Dim>(
+        this->template nestedViewLoop(
             mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
-                if constexpr (std::is_same<TypeParam, double>::value) {
-                    ASSERT_DOUBLE_EQ(mirrorA(args...) + 1, mirrorB(args...));
-                } else {
-                    ASSERT_FLOAT_EQ(mirrorA(args...) + 1, mirrorB(args...));
-                }
+                assertTypeParam<TypeParam>(mirrorA(args...) + 1, mirrorB(args...));
             });
     };
 
@@ -203,11 +208,7 @@ TYPED_TEST(FieldTest, Sum) {
 
         TypeParam sum = field->sum();
 
-        if constexpr (std::is_same<TypeParam, double>::value) {
-            ASSERT_DOUBLE_EQ(expected[this->dimToIndex(Dim)], sum);
-        } else {
-            ASSERT_FLOAT_EQ(expected[this->dimToIndex(Dim)], sum);
-        }
+        assertTypeParam<TypeParam>(expected[this->dimToIndex(Dim)], sum);
     };
 
     this->apply(check, this->fields);
@@ -225,11 +226,7 @@ TYPED_TEST(FieldTest, Norm1) {
 
         TypeParam norm1 = ippl::norm(*field, 1);
 
-        if constexpr (std::is_same<TypeParam, double>::value) {
-            ASSERT_DOUBLE_EQ(expected[this->dimToIndex(Dim)], norm1);
-        } else {
-            ASSERT_FLOAT_EQ(expected[this->dimToIndex(Dim)], norm1);
-        }
+        assertTypeParam<TypeParam>(expected[this->dimToIndex(Dim)], norm1);
     };
 
     this->apply(check, this->fields);
@@ -247,11 +244,7 @@ TYPED_TEST(FieldTest, Norm2) {
 
         TypeParam norm2 = ippl::norm(*field);
 
-        if constexpr (std::is_same<TypeParam, double>::value) {
-            ASSERT_DOUBLE_EQ(std::sqrt(squared[this->dimToIndex(Dim)]), norm2);
-        } else {
-            ASSERT_FLOAT_EQ(std::sqrt(squared[this->dimToIndex(Dim)]), norm2);
-        }
+        assertTypeParam<TypeParam>(std::sqrt(squared[this->dimToIndex(Dim)]), norm2);
     };
 
     this->apply(check, this->fields);
@@ -278,11 +271,7 @@ TYPED_TEST(FieldTest, NormInf) {
 
         TypeParam normInf = ippl::norm(*field, 0);
 
-        if constexpr (std::is_same<TypeParam, double>::value) {
-            ASSERT_DOUBLE_EQ(expected[this->dimToIndex(Dim)], normInf);
-        } else {
-            ASSERT_FLOAT_EQ(expected[this->dimToIndex(Dim)], normInf);
-        }
+        assertTypeParam<TypeParam>(expected[this->dimToIndex(Dim)], normInf);
     };
 
     this->apply(check, this->fields);
@@ -316,11 +305,7 @@ TYPED_TEST(FieldTest, VolumeIntegral2) {
         TypeParam integral = field->getVolumeIntegral();
         TypeParam volume   = field->get_mesh().getMeshVolume();
 
-        if constexpr (std::is_same<TypeParam, double>::value) {
-            ASSERT_DOUBLE_EQ(integral, volume);
-        } else {
-            ASSERT_FLOAT_EQ(integral, volume);
-        }
+        assertTypeParam<TypeParam>(integral, volume);
     };
 
     this->apply(check, this->fields);
@@ -342,13 +327,9 @@ TYPED_TEST(FieldTest, Grad) {
         mirror_type mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        this->template nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+        this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
             for (size_t d = 0; d < Dim; d++) {
-                if constexpr (std::is_same<TypeParam, double>::value) {
-                    ASSERT_DOUBLE_EQ(mirror(args...)[d], 0.);
-                } else {
-                    ASSERT_FLOAT_EQ(mirror(args...)[d], 0.);
-                }
+                assertTypeParam<TypeParam>(mirror(args...)[d], 0.);
             }
         });
     };
@@ -378,12 +359,8 @@ TYPED_TEST(FieldTest, Div) {
         mirror_type mirror = Kokkos::create_mirror_view(field->getView());
         Kokkos::deep_copy(mirror, field->getView());
 
-        this->template nestedViewLoop<Dim>(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-            if constexpr (std::is_same<TypeParam, double>::value) {
-                ASSERT_DOUBLE_EQ(mirror(args...), Dim);
-            } else {
-                ASSERT_FLOAT_EQ(mirror(args...), Dim);
-            }
+        this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+            assertTypeParam<TypeParam>(mirror(args...), Dim);
         });
     };
 
@@ -451,11 +428,7 @@ TYPED_TEST(FieldTest, Curl) {
         for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
             for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
                 for (size_t d = 0; d < dim; ++d) {
-                    if constexpr (std::is_same<TypeParam, double>::value) {
-                        ASSERT_DOUBLE_EQ(mirror(i, j, k)[d], 0.);
-                    } else {
-                        ASSERT_FLOAT_EQ(mirror(i, j, k)[d], 0.);
-                    }
+                    assertTypeParam<TypeParam>(mirror(i, j, k)[d], 0.);
                 }
             }
         }
@@ -497,25 +470,26 @@ TYPED_TEST(FieldTest, Hessian) {
         mirror_type_m mirror_result = Kokkos::create_mirror_view(view_result);
         Kokkos::deep_copy(mirror_result, view_result);
 
-        this->template nestedViewLoop<Dim>(
-            mirror_result, nghost, [&]<typename... Idx>(const Idx... args) {
-                TypeParam det = 0;
-                for (unsigned d = 0; d < Dim; d++) {
-                    det += mirror_result(args...)[d][d];
-                }
-                if constexpr (std::is_same<TypeParam, double>::value) {
-                    ASSERT_DOUBLE_EQ(det, 0.);
-                } else {
-                    ASSERT_FLOAT_EQ(det, 0.);
-                }
-            });
+        this->template nestedViewLoop(mirror_result, nghost,
+                                      [&]<typename... Idx>(const Idx... args) {
+                                          TypeParam det = 0;
+                                          for (unsigned d = 0; d < Dim; d++) {
+                                              det += mirror_result(args...)[d][d];
+                                          }
+                                          assertTypeParam<TypeParam>(det, 0.);
+                                      });
     };
 
     this->apply(check, this->meshes, this->layouts);
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    int success = 1;
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
+    }
+    ippl::finalize();
+    return success;
 }

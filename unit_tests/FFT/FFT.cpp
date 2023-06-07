@@ -105,10 +105,10 @@ public:
      */
     template <unsigned Dim>
     void randomizeRealField(int nghost, typename field_type_real<Dim>::HostMirror& mirror) {
-        std::mt19937_64 eng(42 + Ippl::Comm->rank());
+        std::mt19937_64 eng(42 + ippl::Comm->rank());
         std::uniform_real_distribution<T> unif(0, 1);
 
-        nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
             mirror(args...) = unif(eng);
         });
     }
@@ -121,13 +121,13 @@ public:
      */
     template <unsigned Dim>
     void randomizeComplexField(int nghost, typename field_type_complex<Dim>::HostMirror& mirror) {
-        std::mt19937_64 engReal(42 + Ippl::Comm->rank());
+        std::mt19937_64 engReal(42 + ippl::Comm->rank());
         std::uniform_real_distribution<T> unifReal(0, 1);
 
-        std::mt19937_64 engImag(43 + Ippl::Comm->rank());
+        std::mt19937_64 engImag(43 + ippl::Comm->rank());
         std::uniform_real_distribution<T> unifImag(0, 1);
 
-        nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
             mirror(args...).real() = unifReal(engReal);
             mirror(args...).imag() = unifImag(engImag);
         });
@@ -146,7 +146,7 @@ public:
     void verifyResult(int nghost, const MirrorA& computed, const MirrorB& expected) {
         T max_error_local = 0.0;
         T tol             = (std::is_same<T, double>::value) ? 1e-13 : 1e-6;
-        nestedViewLoop<Dim>(computed, nghost, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(computed, nghost, [&]<typename... Idx>(const Idx... args) {
             T error = std::fabs(expected(args...) - computed(args...));
 
             if (error > max_error_local) {
@@ -156,8 +156,11 @@ public:
             ASSERT_NEAR(error, 0, tol);
         });
 
-        T max_error = 0.0;
-        MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        T max_error           = 0.0;
+        MPI_Datatype mpi_data = get_mpi_datatype<T>(max_error);
+
+        MPI_Reduce(&max_error_local, &max_error, 1, mpi_data, MPI_MAX, 0,
+                   ippl::Comm->getCommunicator());
         ASSERT_NEAR(max_error, 0, tol);
     }
 
@@ -304,27 +307,28 @@ TYPED_TEST(FFTTest, CC) {
         mirror_type field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
 
         Kokkos::complex<TypeParam> max_error_local(0, 0);
-        this->template nestedViewLoop<Dim>(
-            field_host, nghost, [&]<typename... Idx>(const Idx... args) {
-                Kokkos::complex<TypeParam> error(
-                    std::fabs(field_host(args...).real() - field_result(args...).real()),
-                    std::fabs(field_host(args...).imag() - field_result(args...).imag()));
+        this->template nestedViewLoop(field_host, nghost, [&]<typename... Idx>(const Idx... args) {
+            Kokkos::complex<TypeParam> error(
+                std::fabs(field_host(args...).real() - field_result(args...).real()),
+                std::fabs(field_host(args...).imag() - field_result(args...).imag()));
 
-                if (error.real() > max_error_local.real()) {
-                    max_error_local.real() = error.real();
-                }
+            if (error.real() > max_error_local.real()) {
+                max_error_local.real() = error.real();
+            }
 
-                if (error.imag() > max_error_local.imag()) {
-                    max_error_local.imag() = error.imag();
-                }
+            if (error.imag() > max_error_local.imag()) {
+                max_error_local.imag() = error.imag();
+            }
 
-                ASSERT_NEAR(error.real(), 0, tol);
-                ASSERT_NEAR(error.imag(), 0, tol);
-            });
+            ASSERT_NEAR(error.real(), 0, tol);
+            ASSERT_NEAR(error.imag(), 0, tol);
+        });
 
         Kokkos::complex<TypeParam> max_error(0, 0);
-        MPI_Allreduce(&max_error_local, &max_error, 1, MPI_C_DOUBLE_COMPLEX, MPI_SUM,
-                      Ippl::getComm());
+        MPI_Datatype mpi_data = get_mpi_datatype<std::complex<TypeParam>>(max_error);
+
+        MPI_Allreduce(&max_error_local, &max_error, 1, mpi_data, MPI_SUM,
+                      ippl::Comm->getCommunicator());
         ASSERT_NEAR(max_error.real(), 0, tol);
         ASSERT_NEAR(max_error.imag(), 0, tol);
     };
@@ -333,7 +337,12 @@ TYPED_TEST(FFTTest, CC) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    int success = 1;
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
+    }
+    ippl::finalize();
+    return success;
 }

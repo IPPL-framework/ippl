@@ -7,142 +7,146 @@
 #include <typeinfo>
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    Inform msg("TestHalo");
+    ippl::initialize(argc, argv);
+    {
+        Inform msg("TestHalo");
 
-    static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
-    IpplTimings::startTimer(mainTimer);
+        static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
+        IpplTimings::startTimer(mainTimer);
 
-    constexpr unsigned int dim = 3;
-    using Mesh_t               = ippl::UniformCartesian<double, dim>;
-    using Centering_t          = Mesh_t::DefaultCentering;
+        constexpr unsigned int dim = 3;
+        using Mesh_t               = ippl::UniformCartesian<double, dim>;
+        using Centering_t          = Mesh_t::DefaultCentering;
 
-    //     std::array<int, dim> pt = {8, 7, 13};
-    std::array<int, dim> pt = {4, 4, 4};
-    ippl::Index I(pt[0]);
-    ippl::Index J(pt[1]);
-    ippl::Index K(pt[2]);
-    ippl::NDIndex<dim> owned(I, J, K);
+        //     std::array<int, dim> pt = {8, 7, 13};
+        std::array<int, dim> pt = {4, 4, 4};
+        ippl::Index I(pt[0]);
+        ippl::Index J(pt[1]);
+        ippl::Index K(pt[2]);
+        ippl::NDIndex<dim> owned(I, J, K);
 
-    ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
-    for (unsigned int d = 0; d < dim; d++)
-        allParallel[d] = ippl::PARALLEL;
+        ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
+        for (unsigned int d = 0; d < dim; d++)
+            allParallel[d] = ippl::PARALLEL;
 
-    typedef ippl::FieldLayout<dim> Layout_t;
-    Layout_t layout(owned, allParallel);
+        typedef ippl::FieldLayout<dim> Layout_t;
+        Layout_t layout(owned, allParallel);
 
-    std::array<double, dim> dx = {
-        1.0 / double(pt[0]),
-        1.0 / double(pt[1]),
-        1.0 / double(pt[2]),
-    };
-    ippl::Vector<double, 3> hx     = {dx[0], dx[1], dx[2]};
-    ippl::Vector<double, 3> origin = {0, 0, 0};
-    Mesh_t mesh(owned, hx, origin);
+        std::array<double, dim> dx = {
+            1.0 / double(pt[0]),
+            1.0 / double(pt[1]),
+            1.0 / double(pt[2]),
+        };
+        ippl::Vector<double, 3> hx     = {dx[0], dx[1], dx[2]};
+        ippl::Vector<double, 3> origin = {0, 0, 0};
+        Mesh_t mesh(owned, hx, origin);
 
-    typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
+        typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
 
-    field_type field(mesh, layout);
+        field_type field(mesh, layout);
 
-    field      = Ippl::Comm->rank();
-    int myRank = Ippl::Comm->rank();
-    int nRanks = Ippl::Comm->size();
+        field      = ippl::Comm->rank();
+        int myRank = ippl::Comm->rank();
+        int nRanks = ippl::Comm->size();
 
-    for (int rank = 0; rank < nRanks; ++rank) {
-        if (rank == Ippl::Comm->rank()) {
-            const auto& neighbors = layout.getNeighbors();
-            for (unsigned i = 0; i < neighbors.size(); i++) {
-                const auto& n = neighbors[i];
-                if (n.size() > 0) {
-                    unsigned dim = 0;
-                    for (unsigned idx = i; idx > 0; idx /= 3) {
-                        dim += idx % 3 == 2;
-                    }
-                    std::cout << "My Rank: " << myRank;
-                    switch (dim) {
-                        case 0:
-                            std::cout << " vertex: ";
-                            break;
-                        case 1:
-                            std::cout << " edge: ";
-                            break;
-                        case 2:
-                            std::cout << " face: ";
-                            break;
-                    }
-                    std::cout << i << " neighbors: ";
-                    for (const auto& nrank : n) {
-                        std::cout << nrank << ' ';
-                    }
-                    std::cout << std::endl;
-                }
-            }
-        }
-        Ippl::Comm->barrier();
-    }
-
-    auto& domains = layout.getHostLocalDomains();
-
-    for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
-        if (rank == Ippl::Comm->rank()) {
-            auto& neighbors = layout.getNeighbors();
-
-            int nFaces = 0, nEdges = 0, nVertices = 0;
-            for (unsigned i = 0; i < neighbors.size(); i++) {
-                if (neighbors[i].size() > 0) {
-                    unsigned dim = 0;
-                    for (unsigned idx = i; idx > 0; idx /= 3) {
-                        dim += idx % 3 == 2;
-                    }
-                    switch (dim) {
-                        case 0:
-                            nVertices++;
-                            break;
-                        case 1:
-                            nEdges++;
-                            break;
-                        case 2:
-                            nFaces++;
-                            break;
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (rank == ippl::Comm->rank()) {
+                const auto& neighbors = layout.getNeighbors();
+                for (unsigned i = 0; i < neighbors.size(); i++) {
+                    const auto& n = neighbors[i];
+                    if (n.size() > 0) {
+                        unsigned dim = 0;
+                        for (unsigned idx = i; idx > 0; idx /= 3) {
+                            dim += idx % 3 == 2;
+                        }
+                        std::cout << "My Rank: " << myRank;
+                        switch (dim) {
+                            case 0:
+                                std::cout << " vertex: ";
+                                break;
+                            case 1:
+                                std::cout << " edge: ";
+                                break;
+                            case 2:
+                                std::cout << " face: ";
+                                break;
+                        }
+                        std::cout << i << " neighbors: ";
+                        for (const auto& nrank : n) {
+                            std::cout << nrank << ' ';
+                        }
+                        std::cout << std::endl;
                     }
                 }
             }
-
-            std::cout << "rank " << rank << ": " << std::endl
-                      << " - domain:   " << domains[rank] << std::endl
-                      << " - faces:    " << nFaces << std::endl
-                      << " - edges:    " << nEdges << std::endl
-                      << " - vertices: " << nVertices << std::endl
-                      << "--------------------------------------" << std::endl;
+            ippl::Comm->barrier();
         }
-        Ippl::Comm->barrier();
-    }
 
-    int nsteps = 300;
+        auto& domains = layout.getHostLocalDomains();
 
-    static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
-    IpplTimings::startTimer(fillHaloTimer);
-    for (int nt = 0; nt < nsteps; ++nt) {
-        field.accumulateHalo();
-        Ippl::Comm->barrier();
-        field.fillHalo();
-        Ippl::Comm->barrier();
-        msg << "Update: " << nt + 1 << endl;
-    }
-    IpplTimings::stopTimer(fillHaloTimer);
+        for (int rank = 0; rank < ippl::Comm->size(); ++rank) {
+            if (rank == ippl::Comm->rank()) {
+                auto& neighbors = layout.getNeighbors();
 
-    for (int rank = 0; rank < nRanks; ++rank) {
-        if (rank == Ippl::Comm->rank()) {
-            std::string fname =
-                "field_nRanks_" + std::to_string(nRanks) + "_rank_" + std::to_string(rank) + ".dat";
-            Inform out("Output", fname.c_str(), Inform::OVERWRITE, rank);
-            field.write(out);
+                int nFaces = 0, nEdges = 0, nVertices = 0;
+                for (unsigned i = 0; i < neighbors.size(); i++) {
+                    if (neighbors[i].size() > 0) {
+                        unsigned dim = 0;
+                        for (unsigned idx = i; idx > 0; idx /= 3) {
+                            dim += idx % 3 == 2;
+                        }
+                        switch (dim) {
+                            case 0:
+                                nVertices++;
+                                break;
+                            case 1:
+                                nEdges++;
+                                break;
+                            case 2:
+                                nFaces++;
+                                break;
+                        }
+                    }
+                }
+
+                std::cout << "rank " << rank << ": " << std::endl
+                          << " - domain:   " << domains[rank] << std::endl
+                          << " - faces:    " << nFaces << std::endl
+                          << " - edges:    " << nEdges << std::endl
+                          << " - vertices: " << nVertices << std::endl
+                          << "--------------------------------------" << std::endl;
+            }
+            ippl::Comm->barrier();
         }
-        Ippl::Comm->barrier();
-    }
 
-    IpplTimings::stopTimer(mainTimer);
-    IpplTimings::print();
-    IpplTimings::print(std::string("timing.dat"));
+        int nsteps = 300;
+
+        static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
+        IpplTimings::startTimer(fillHaloTimer);
+        for (int nt = 0; nt < nsteps; ++nt) {
+            field.accumulateHalo();
+            ippl::Comm->barrier();
+            field.fillHalo();
+            ippl::Comm->barrier();
+            msg << "Update: " << nt + 1 << endl;
+        }
+        IpplTimings::stopTimer(fillHaloTimer);
+
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (rank == ippl::Comm->rank()) {
+                std::string fname = "field_nRanks_" + std::to_string(nRanks) + "_rank_"
+                                    + std::to_string(rank) + ".dat";
+                Inform out("Output", fname.c_str(), Inform::OVERWRITE, rank);
+                field.write(out);
+            }
+            ippl::Comm->barrier();
+        }
+
+        IpplTimings::stopTimer(mainTimer);
+        IpplTimings::print();
+        IpplTimings::print(std::string("timing.dat"));
+    }
+    ippl::finalize();
+
     return 0;
 }

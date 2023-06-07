@@ -109,7 +109,7 @@ void Timing::print() {
     Inform msg("Timings");
     msg << level1 << "---------------------------------------------";
     msg << "\n";
-    msg << "     Timing results for " << Ippl::Comm->getNodes() << " nodes:"
+    msg << "     Timing results for " << ippl::Comm->size() << " nodes:"
         << "\n";
     msg << "---------------------------------------------";
     msg << "\n";
@@ -117,7 +117,8 @@ void Timing::print() {
     {
         TimerInfo* tptr  = TimerList[0].get();
         double walltotal = 0.0;
-        MPI_Reduce(&tptr->wallTime, &walltotal, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(&tptr->wallTime, &walltotal, 1, MPI_DOUBLE, MPI_MAX, 0,
+                   ippl::Comm->getCommunicator());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
         msg << tptr->name.substr(0, lengthName) << std::string().assign(20 - lengthName, '.')
             << " Wall tot = " << std::setw(10) << walltotal << "\n"
@@ -128,15 +129,18 @@ void Timing::print() {
         TimerInfo* tptr = TimerList[i].get();
         double wallmax = 0.0, wallmin = 0.0;
         double wallavg = 0.0;
-        MPI_Reduce(&tptr->wallTime, &wallmax, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->wallTime, &wallmin, 1, MPI_DOUBLE, MPI_MIN, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->wallTime, &wallavg, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&tptr->wallTime, &wallmax, 1, MPI_DOUBLE, MPI_MAX, 0,
+                   ippl::Comm->getCommunicator());
+        MPI_Reduce(&tptr->wallTime, &wallmin, 1, MPI_DOUBLE, MPI_MIN, 0,
+                   ippl::Comm->getCommunicator());
+        MPI_Reduce(&tptr->wallTime, &wallavg, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
 
         msg << tptr->name.substr(0, lengthName) << std::string().assign(20 - lengthName, '.')
             << " Wall max = " << std::setw(10) << wallmax << "\n"
             << std::string().assign(20, ' ') << " Wall avg = " << std::setw(10)
-            << wallavg / Ippl::Comm->getNodes() << "\n"
+            << wallavg / ippl::Comm->size() << "\n"
             << std::string().assign(20, ' ') << " Wall min = " << std::setw(10) << wallmin << "\n"
             << "\n";
     }
@@ -169,13 +173,14 @@ void Timing::print(const std::string& fn, const std::map<std::string, unsigned i
     {
         TimerInfo* tptr  = TimerList[0].get();
         double walltotal = 0.0;
-        MPI_Reduce(&tptr->wallTime, &walltotal, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(&tptr->wallTime, &walltotal, 1, MPI_DOUBLE, MPI_MAX, 0,
+                   ippl::Comm->getCommunicator());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
         *msg << tptr->name.substr(0, lengthName);
         for (int j = lengthName; j < 20; ++j) {
             *msg << ".";
         }
-        *msg << " " << std::setw(6) << Ippl::Comm->getNodes() << " " << std::setw(9)
+        *msg << " " << std::setw(6) << ippl::Comm->size() << " " << std::setw(9)
              << std::setprecision(4) << walltotal << "\n";
     }
 
@@ -187,18 +192,21 @@ void Timing::print(const std::string& fn, const std::map<std::string, unsigned i
         TimerInfo* tptr = TimerList[i].get();
         double wallmax = 0.0, wallmin = 0.0;
         double wallavg = 0.0;
-        MPI_Reduce(&tptr->wallTime, &wallmax, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->wallTime, &wallmin, 1, MPI_DOUBLE, MPI_MIN, 0, Ippl::getComm());
-        MPI_Reduce(&tptr->wallTime, &wallavg, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&tptr->wallTime, &wallmax, 1, MPI_DOUBLE, MPI_MAX, 0,
+                   ippl::Comm->getCommunicator());
+        MPI_Reduce(&tptr->wallTime, &wallmin, 1, MPI_DOUBLE, MPI_MIN, 0,
+                   ippl::Comm->getCommunicator());
+        MPI_Reduce(&tptr->wallTime, &wallavg, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
         size_t lengthName = std::min(tptr->name.length(), 19lu);
         *msg << tptr->name.substr(0, lengthName);
         for (int j = lengthName; j < 20; ++j) {
             *msg << ".";
         }
-        *msg << " " << std::setw(6) << Ippl::Comm->getNodes() << " " << std::setw(9)
+        *msg << " " << std::setw(6) << ippl::Comm->size() << " " << std::setw(9)
              << std::setprecision(4) << wallmax << " " << std::setw(9) << std::setprecision(4)
              << wallmin << " " << std::setw(9) << std::setprecision(4)
-             << wallavg / Ippl::Comm->getNodes() << endl;
+             << wallavg / ippl::Comm->size() << endl;
     }
     timer_stream->close();
     delete msg;

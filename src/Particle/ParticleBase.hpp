@@ -69,8 +69,8 @@ namespace ippl {
         : layout_m(nullptr)
         , localNum_m(0)
         , attributes_m(0)
-        , nextID_m(Ippl::Comm->myNode())
-        , numNodes_m(Ippl::Comm->getNodes()) {
+        , nextID_m(Comm->rank())
+        , numNodes_m(Comm->size()) {
         addAttribute(ID);  // needs to be added first due to destroy function
         addAttribute(R);
     }
@@ -131,7 +131,7 @@ namespace ippl {
         create(1);
 
         nextID_m   = tmpNextID;
-        numNodes_m = Ippl::Comm->getNodes();
+        numNodes_m = Comm->getNodes();
     }
 
     template <class PLayout, class... Properties>
@@ -141,7 +141,7 @@ namespace ippl {
         // Compute the number of particles local to each processor
         size_type nLocal = nTotal / numNodes_m;
 
-        const size_t rank = Ippl::Comm->myNode();
+        const size_t rank = Comm->myNode();
 
         size_type rest = nTotal - nLocal * rank;
         if (rank < rest)
@@ -169,7 +169,7 @@ namespace ippl {
 
         // Resize buffers, if necessary
         if (deleteIndex_m.size() < destroyNum) {
-            int overalloc = Ippl::Comm->getDefaultOverallocation();
+            int overalloc = Comm->getDefaultOverallocation();
             Kokkos::realloc(deleteIndex_m, destroyNum * overalloc);
             Kokkos::realloc(keepIndex_m, destroyNum * overalloc);
         }
