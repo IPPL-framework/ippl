@@ -161,7 +161,7 @@ struct FieldVal {
 
 template <typename T>
 void assertTypeParam(T valA, T valB) {
-    if constexpr (std::is_same<T, double>::value) {
+    if constexpr (std::is_same_v<T, double>) {
         ASSERT_DOUBLE_EQ(valA, valB);
     } else {
         ASSERT_FLOAT_EQ(valA, valB);
@@ -281,7 +281,7 @@ TYPED_TEST(FieldTest, VolumeIntegral) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field) {
         using view_type = typename TestFixture::field_type<Dim>::view_type;
 
-        TypeParam tol                 = (std::is_same<TypeParam, double>::value) ? 5e-15 : 5e-6;
+        TypeParam tol                 = (std::is_same_v<TypeParam, double>) ? 5e-15 : 5e-6;
         const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
         const int shift               = field->getNghost();
 

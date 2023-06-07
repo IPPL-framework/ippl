@@ -64,7 +64,7 @@ TYPED_TEST(UniformCartesianTest, Constructor) {
 
         TypeParam length = mesh.getCellVolume();
 
-        if constexpr (std::is_same<TypeParam, double>::value) {
+        if constexpr (std::is_same_v<TypeParam, double>) {
             ASSERT_DOUBLE_EQ(length, cellVol);
             ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
         } else {
@@ -87,7 +87,7 @@ TYPED_TEST(UniformCartesianTest, Initialize) {
         ippl::UniformCartesian<TypeParam, Dim> mesh;
         mesh.initialize(owned, hx, origin);
 
-        if constexpr (std::is_same<TypeParam, double>::value) {
+        if constexpr (std::is_same_v<TypeParam, double>) {
             ASSERT_DOUBLE_EQ(mesh.getCellVolume(), cellVol);
             ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
         } else {

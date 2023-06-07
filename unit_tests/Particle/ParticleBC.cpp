@@ -64,7 +64,7 @@ public:
 
     template <unsigned Idx, unsigned Dim>
     void checkResult(const ippl::Vector<T, Dim>& expected) {
-        T tol       = (std::is_same<T, double>::value) ? 1e-15 : 1e-7;
+        T tol       = (std::is_same_v<T, double>) ? 1e-15 : 1e-7;
         auto& HostR = std::get<Idx>(mirrors);
         auto bunch  = std::get<Idx>(bunches);
 

@@ -81,7 +81,7 @@ struct FieldVal {
 
 template <typename T>
 void assertTypeParam(const T valA, const T valB) {
-    if constexpr (std::is_same<T, double>::value) {
+    if constexpr (std::is_same_v<T, double>) {
         ASSERT_DOUBLE_EQ(valA, valB);
     } else {
         ASSERT_FLOAT_EQ(valA, valB);
