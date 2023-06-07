@@ -1,12 +1,15 @@
 set (_SRCS
-    Communicate.cpp
+    Communicator.cpp
+    Environment.cpp
     Buffers.cpp
     )
 
 set (_HDRS
     Archive.h
     Archive.hpp
-    Communicate.h
+    Buffers.hpp
+    Communicator.h
+    Environment.h
     DataTypes.h
     Operations.h
     Collectives.h

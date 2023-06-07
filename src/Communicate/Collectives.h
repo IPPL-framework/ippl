@@ -9,35 +9,41 @@ namespace ippl {
         * specific node (default: 0).
         */
         template <typename T>
-        void gather(const T* input, T* output, int count, int root = 0);
+        void gather(const T* input, T* output, int count,
+                    const MPI_Comm& comm = Comm->getCommunicator(), int root = 0);
 
         /* Scatter the data from all other nodes to a
         * specific node (default: 0).
         */
         template <typename T>
-        void scatter(const T* input, T* output, int count, int root = 0);
+        void scatter(const T* input, T* output, int count,
+                     const MPI_Comm& comm = Comm->getCommunicator(), int root = 0);
 
         /* Reduce data coming from all nodes to a specific node
         * (default: 0). Apply certain operation
         *
         */
         template <typename T, class Op>
-        void reduce(const T* input, T* output, int count, Op op, int root = 0);
+        void reduce(const T* input, T* output, int count, Op op,
+                    const MPI_Comm& comm = Comm->getCommunicator(), int root = 0);
 
         template <typename T, class Op>
-        void reduce(const T& input, T& output, int count, Op op, int root = 0);
+        void reduce(const T& input, T& output, int count, Op op,
+                    const MPI_Comm& comm = Comm->getCommunicator(), int root = 0);
 
         template <typename T, class Op>
-        void allreduce(const T* input, T* output, int count, Op op);
+        void allreduce(const T* input, T* output, int count, Op op,
+                       const MPI_Comm& comm = Comm->getCommunicator());
 
         template <typename T, class Op>
-        void allreduce(const T& input, T& output, int count, Op op);
+        void allreduce(const T& input, T& output, int count, Op op,
+                       const MPI_Comm& comm = Comm->getCommunicator());
 
         template <typename T, class Op>
-        void allreduce(T* inout, int count, Op op);
+        void allreduce(T* inout, int count, Op op, const MPI_Comm& comm = Comm->getCommunicator());
 
         template <typename T, class Op>
-        void allreduce(T& inout, int count, Op op);
+        void allreduce(T& inout, int count, Op op, const MPI_Comm& comm = Comm->getCommunicator());
     }
 }
 

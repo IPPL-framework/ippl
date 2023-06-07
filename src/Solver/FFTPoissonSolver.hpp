@@ -22,7 +22,7 @@
 template <typename Tb, typename Tf>
 void pack(const ippl::NDIndex<3> intersect, Kokkos::View<Tf***>& view,
           ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
-          ippl::Communicate::size_type& nsends) {
+          ippl::mpi::Communicator::size_type& nsends) {
     Kokkos::View<Tb*>& buffer = fd.buffer;
 
     size_t size = intersect.size();
@@ -482,7 +482,7 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-                    Communicate::size_type nsends;
+                    mpi::Communicator::size_type nsends;
                     pack(intersection, view1, fd_m, nghost1, ldom1, nsends);
 
                     buffer_type buf = Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
@@ -500,7 +500,7 @@ namespace ippl {
                 if (lDomains1[i].touches(ldom2)) {
                     auto intersection = lDomains1[i].intersect(ldom2);
 
-                    Communicate::size_type nrecvs;
+                    mpi::Communicator::size_type nrecvs;
                     nrecvs = intersection.size();
 
                     buffer_type buf =
@@ -605,7 +605,7 @@ namespace ippl {
 
                         requests.resize(requests.size() + 1);
 
-                        Communicate::size_type nsends;
+                        mpi::Communicator::size_type nsends;
                         pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
 
                         buffer_type buf = Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
@@ -623,7 +623,7 @@ namespace ippl {
                     if (ldom1.touches(lDomains2[i])) {
                         auto intersection = ldom1.intersect(lDomains2[i]);
 
-                        Communicate::size_type nrecvs;
+                        mpi::Communicator::size_type nrecvs;
                         nrecvs = intersection.size();
 
                         buffer_type buf =
@@ -768,7 +768,7 @@ namespace ippl {
 
                             requests.resize(requests.size() + 1);
 
-                            Communicate::size_type nsends;
+                            mpi::Communicator::size_type nsends;
                             pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
 
                             buffer_type buf =
@@ -788,7 +788,7 @@ namespace ippl {
                         if (ldom1.touches(lDomains2[i])) {
                             auto intersection = ldom1.intersect(lDomains2[i]);
 
-                            Communicate::size_type nrecvs;
+                            mpi::Communicator::size_type nrecvs;
                             nrecvs = intersection.size();
 
                             buffer_type buf =
@@ -1123,7 +1123,7 @@ namespace ippl {
                     intersection = intersection.intersect(ldom_g);
                     requests.resize(requests.size() + 1);
 
-                    Communicate::size_type nsends;
+                    mpi::Communicator::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + i, nsends);
@@ -1150,7 +1150,7 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-                    Communicate::size_type nsends;
+                    mpi::Communicator::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 8 + i, nsends);
@@ -1177,7 +1177,7 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-                    Communicate::size_type nsends;
+                    mpi::Communicator::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
@@ -1205,7 +1205,7 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-                    Communicate::size_type nsends;
+                    mpi::Communicator::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
@@ -1235,7 +1235,7 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-                    Communicate::size_type nsends;
+                    mpi::Communicator::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
@@ -1265,7 +1265,7 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-                    Communicate::size_type nsends;
+                    mpi::Communicator::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
@@ -1295,7 +1295,7 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-                    Communicate::size_type nsends;
+                    mpi::Communicator::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
@@ -1327,7 +1327,7 @@ namespace ippl {
 
                     requests.resize(requests.size() + 1);
 
-                    Communicate::size_type nsends;
+                    mpi::Communicator::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
                     buffer_type buf =
@@ -1349,7 +1349,7 @@ namespace ippl {
                 if (lDomains4[i].touches(intersection)) {
                     intersection = intersection.intersect(lDomains4[i]);
 
-                    Communicate::size_type nrecvs;
+                    mpi::Communicator::size_type nrecvs;
                     nrecvs = intersection.size();
 
                     buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_RECV + myRank, nrecvs);
@@ -1381,7 +1381,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    Communicate::size_type nrecvs;
+                    mpi::Communicator::size_type nrecvs;
                     nrecvs = intersection.size();
 
                     buffer_type buf =
@@ -1414,7 +1414,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    Communicate::size_type nrecvs;
+                    mpi::Communicator::size_type nrecvs;
                     nrecvs = intersection.size();
 
                     buffer_type buf =
@@ -1447,7 +1447,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    Communicate::size_type nrecvs;
+                    mpi::Communicator::size_type nrecvs;
                     nrecvs = intersection.size();
 
                     buffer_type buf =
@@ -1484,7 +1484,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    Communicate::size_type nrecvs;
+                    mpi::Communicator::size_type nrecvs;
                     nrecvs = intersection.size();
 
                     buffer_type buf =
@@ -1521,7 +1521,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    Communicate::size_type nrecvs;
+                    mpi::Communicator::size_type nrecvs;
                     nrecvs = intersection.size();
 
                     buffer_type buf =
@@ -1558,7 +1558,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    Communicate::size_type nrecvs;
+                    mpi::Communicator::size_type nrecvs;
                     nrecvs = intersection.size();
 
                     buffer_type buf =
@@ -1599,7 +1599,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    Communicate::size_type nrecvs;
+                    mpi::Communicator::size_type nrecvs;
                     nrecvs = intersection.size();
 
                     buffer_type buf =

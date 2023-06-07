@@ -337,7 +337,7 @@ static void ReceiveReduce(NDIndex<Dim>& domain, BareField<T, Dim>& weights, int 
     // Build a count of the number of messages to expect.
     // We get *one message* from each node that has a touch.
     int expected      = 0;
-    int nodes         = Comm->getNodes();
+    int nodes         = Comm->size();
     int mynode        = Comm->myNode();
     bool* found_touch = new bool[nodes];
     for (i = 0; i < nodes; ++i)
@@ -524,7 +524,7 @@ NDIndex<Dim> CalcBinaryRepartition(FieldLayout<Dim>& layout, BareField<T, Dim>& 
         << endl;*/
 
     // Get the processors we'll be dealing with.
-    int nprocs = Comm->getNodes();
+    int nprocs = Comm->size();
     int myproc = Comm->myNode();
     domains.reserve(nprocs);
     procs.reserve(nprocs);

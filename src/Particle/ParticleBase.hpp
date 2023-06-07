@@ -131,7 +131,7 @@ namespace ippl {
         create(1);
 
         nextID_m   = tmpNextID;
-        numNodes_m = Comm->getNodes();
+        numNodes_m = Comm->size();
     }
 
     template <class PLayout, class... Properties>
@@ -141,7 +141,7 @@ namespace ippl {
         // Compute the number of particles local to each processor
         size_type nLocal = nTotal / numNodes_m;
 
-        const size_t rank = Comm->myNode();
+        const size_t rank = Comm->rank();
 
         size_type rest = nTotal - nLocal * rank;
         if (rank < rest)

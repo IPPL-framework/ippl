@@ -21,7 +21,7 @@
 
 #include "Utility/IpplException.h"
 
-#include "Communicate/Communicate.h"
+#include "Communicate/Communicator.h"
 
 namespace ippl {
     namespace detail {
@@ -54,7 +54,7 @@ namespace ippl {
                 totalRequests += componentNeighbors.size();
             }
 
-            using buffer_type = Communicate::buffer_type;
+            using buffer_type = mpi::Communicator::buffer_type;
             std::vector<MPI_Request> requests(totalRequests);
 
             // sending loop

@@ -123,7 +123,7 @@ namespace ippl {
         // send
         std::vector<MPI_Request> requests(0);
 
-        using buffer_type = Communicate::buffer_type;
+        using buffer_type = mpi::Communicator::buffer_type;
 
         int tag = Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
 

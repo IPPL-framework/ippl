@@ -9,7 +9,7 @@
 //   in the case that the amount of data to be exchanged increases, when a new buffer
 //   is created, an amount of memory greater than the requested size is allocated
 //   for the new buffer. The factor by which memory is overallocated is determined by
-//   a data member in Communicate, which can be set and queried at runtime. Only new
+//   a data member in Communicator, which can be set and queried at runtime. Only new
 //   buffers are overallocated. If a buffer is requested with the same ID as a buffer
 //   that has been previously allocated, the same buffer will be used. If the requested
 //   size exceeds the buffer size, that buffer will be resized to have exactly
@@ -34,9 +34,10 @@
 //
 
 namespace ippl {
+    namespace mpi {
 
     template <typename T>
-    Communicate::buffer_type Communicate::getBuffer(int id, size_type size, double overallocation) {
+    Communicator::buffer_type Communicator::getBuffer(int id, size_type size, double overallocation) {
         size *= sizeof(T);
 #if __cplusplus > 201703L
         if (buffers_m.contains(id)) {
@@ -52,6 +53,7 @@ namespace ippl {
         buffers_m[id] = std::make_shared<archive_type>(
             (size_type)(size * std::max(overallocation, defaultOveralloc_m)));
         return buffers_m[id];
+    }
     }
 
 }  // namespace ippl
