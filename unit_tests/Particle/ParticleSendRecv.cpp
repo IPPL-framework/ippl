@@ -105,9 +105,9 @@ public:
 
         bunch->setParticleBC(bcs);
 
-        int nRanks = Ippl::Comm->size();
+        int nRanks = ippl::Comm->size();
         if (nParticles % nRanks > 0) {
-            if (Ippl::Comm->rank() == 0) {
+            if (ippl::Comm->rank() == 0) {
                 std::cerr << nParticles << " not a multiple of " << nRanks << std::endl;
             }
         }
@@ -180,18 +180,18 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
         Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
 
         for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
-            ASSERT_EQ(ER_host(i), Ippl::Comm->rank());
+            ASSERT_EQ(ER_host(i), ippl::Comm->rank());
         }
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
 
         unsigned int Total_particles = 0;
         unsigned int local_particles = bunch->getLocalNum();
 
         MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
-                   Ippl::getComm());
+                   ippl::Comm->getCommunicator());
 
-        if (Ippl::Comm->rank() == 0) {
-            ASSERT_EQ(this->nParticles, Total_particles);
+        if (ippl::Comm->rank() == 0) {
+            ASSERT_EQ(nParticles, Total_particles);
         }
     };
 
@@ -199,7 +199,8 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
+    ippl::initialize(argc, argv);
+    { ::testing::InitGoogleTest(&argc, argv); }
+    ippl::finalize();
     return RUN_ALL_TESTS();
 }

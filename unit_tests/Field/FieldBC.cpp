@@ -84,7 +84,7 @@ public:
 
         const auto& lDomains = layout.getHostLocalDomains();
         const auto& domain   = layout.getDomain();
-        const int myRank     = Ippl::Comm->rank();
+        const int myRank     = ippl::Comm->rank();
 
         Kokkos::deep_copy(HostF, field->getView());
 
@@ -111,11 +111,19 @@ public:
                     index_type coords[Dim] = {args...};
                     if (checkLower) {
                         coords[d] = 0;
-                        EXPECT_DOUBLE_EQ(expected, apply(HostF, coords));
+                        if constexpr (std::is_same<T, double>::value) {
+                            EXPECT_DOUBLE_EQ(expected, apply(HostF, coords));
+                        } else {
+                            EXPECT_FLOAT_EQ(expected, apply(HostF, coords));
+                        }
                     }
                     if (checkUpper) {
                         coords[d] = N - 1;
-                        EXPECT_DOUBLE_EQ(expected, apply(HostF, coords));
+                        if constexpr (std::is_same<T, double>::value) {
+                            EXPECT_DOUBLE_EQ(expected, apply(HostF, coords));
+                        } else {
+                            EXPECT_FLOAT_EQ(expected, apply(HostF, coords));
+                        }
                     }
                 });
         }
@@ -220,7 +228,8 @@ TYPED_TEST(FieldBCTest, ExtrapolateBC) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
+    ippl::initialize(argc, argv);
+    { ::testing::InitGoogleTest(&argc, argv); }
+    ippl::finalize();
     return RUN_ALL_TESTS();
 }

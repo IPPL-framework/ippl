@@ -111,9 +111,9 @@ namespace ippl {
         }
 
         heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
-            inbox, outbox, Ippl::getComm(), heffteOptions);
+            inbox, outbox, Comm->getCommunicator(), heffteOptions);
 
-        // heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
         if (workspace_m.size() < heffte_m->size_workspace())
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
@@ -132,7 +132,7 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempField = detail::shrinkView<Dim, Complex_t>("tempField", fview, nghost);
+        auto tempField = detail::shrinkView("tempField", fview, nghost);
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
@@ -246,9 +246,10 @@ namespace ippl {
         }
 
         heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>(
-            inbox, outbox, params.get<int>("r2c_direction"), Ippl::getComm(), heffteOptions);
+            inbox, outbox, params.get<int>("r2c_direction"), Comm->getCommunicator(),
+            heffteOptions);
 
-        // heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
         if (workspace_m.size() < heffte_m->size_workspace())
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
@@ -269,8 +270,8 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempFieldf = detail::shrinkView<Dim, Real_t>("tempFieldf", fview, nghostf);
-        auto tempFieldg = detail::shrinkView<Dim, Complex_t>("tempFieldg", gview, nghostg);
+        auto tempFieldf = detail::shrinkView("tempFieldf", fview, nghostf);
+        auto tempFieldg = detail::shrinkView("tempFieldg", gview, nghostg);
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
@@ -382,9 +383,9 @@ namespace ippl {
         }
 
         heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
-            inbox, outbox, Ippl::getComm(), heffteOptions);
+            inbox, outbox, Comm->getCommunicator(), heffteOptions);
 
-        // heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
         if (workspace_m.size() < heffte_m->size_workspace())
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
@@ -403,7 +404,7 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempField = detail::shrinkView<Dim, T>("tempField", fview, nghost);
+        auto tempField = detail::shrinkView("tempField", fview, nghost);
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
@@ -502,9 +503,9 @@ namespace ippl {
         }
 
         heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
-            inbox, outbox, Ippl::getComm(), heffteOptions);
+            inbox, outbox, Comm->getCommunicator(), heffteOptions);
 
-        // heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
+        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
         if (workspace_m.size() < heffte_m->size_workspace())
             workspace_m = workspace_t(heffte_m->size_workspace());
     }
@@ -523,7 +524,7 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempField = detail::shrinkView<Dim, T>("tempField", fview, nghost);
+        auto tempField = detail::shrinkView("tempField", fview, nghost);
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(

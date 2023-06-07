@@ -20,7 +20,7 @@
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
-template<typename T>
+template <typename T>
 class UniformCartesianTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
     UniformCartesianTest() { computeGridSizes(nPoints); }
@@ -64,14 +64,13 @@ TYPED_TEST(UniformCartesianTest, Constructor) {
 
         TypeParam length = mesh.getCellVolume();
 
-        if constexpr( std::is_same< TypeParam, double >::value ){
+        if constexpr (std::is_same<TypeParam, double>::value) {
             ASSERT_DOUBLE_EQ(length, cellVol);
             ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
-        }
-        else {
+        } else {
             ASSERT_FLOAT_EQ(length, cellVol);
             ASSERT_FLOAT_EQ(mesh.getMeshVolume(), meshVol);
-       }
+        }
     };
 
     this->apply(check);
@@ -88,21 +87,21 @@ TYPED_TEST(UniformCartesianTest, Initialize) {
         ippl::UniformCartesian<TypeParam, Dim> mesh;
         mesh.initialize(owned, hx, origin);
 
-        if constexpr( std::is_same< TypeParam, double >::value ){
+        if constexpr (std::is_same<TypeParam, double>::value) {
             ASSERT_DOUBLE_EQ(mesh.getCellVolume(), cellVol);
             ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
-        }
-        else {
+        } else {
             ASSERT_FLOAT_EQ(mesh.getCellVolume(), cellVol);
             ASSERT_FLOAT_EQ(mesh.getMeshVolume(), meshVol);
         }
-   };
+    };
 
-   this->apply(check);
+    this->apply(check);
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
+    ippl::initialize(argc, argv);
+    { ::testing::InitGoogleTest(&argc, argv); }
+    ippl::finalize();
     return RUN_ALL_TESTS();
 }

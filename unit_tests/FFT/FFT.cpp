@@ -108,7 +108,7 @@ public:
         std::mt19937_64 eng(42 + Ippl::Comm->rank());
         std::uniform_real_distribution<T> unif(0, 1);
 
-        nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
             mirror(args...) = unif(eng);
         });
     }
@@ -127,7 +127,7 @@ public:
         std::mt19937_64 engImag(43 + Ippl::Comm->rank());
         std::uniform_real_distribution<T> unifImag(0, 1);
 
-        nestedViewLoop<Dim>(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
             mirror(args...).real() = unifReal(engReal);
             mirror(args...).imag() = unifImag(engImag);
         });
@@ -146,6 +146,9 @@ public:
     void verifyResult(int nghost, const MirrorA& computed, const MirrorB& expected) {
         T max_error_local = 0.0;
         T tol             = (std::is_same<T, double>::value) ? 1e-13 : 1e-6;
+        MPI_Datatype mpi_datatype =
+            constexpr(std::is_same<T, double>::value) ? MPI_DOUBLE : MPI_FLOAT;
+
         nestedViewLoop<Dim>(computed, nghost, [&]<typename... Idx>(const Idx... args) {
             T error = std::fabs(expected(args...) - computed(args...));
 
@@ -157,7 +160,7 @@ public:
         });
 
         T max_error = 0.0;
-        MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(&max_error_local, &max_error, 1, mpi_data, MPI_MAX, 0, Ippl::getComm());
         ASSERT_NEAR(max_error, 0, tol);
     }
 
@@ -324,7 +327,7 @@ TYPED_TEST(FFTTest, CC) {
 
         Kokkos::complex<TypeParam> max_error(0, 0);
         MPI_Allreduce(&max_error_local, &max_error, 1, MPI_C_DOUBLE_COMPLEX, MPI_SUM,
-                      Ippl::getComm());
+                      ippl::Comm->getCommunicator());
         ASSERT_NEAR(max_error.real(), 0, tol);
         ASSERT_NEAR(max_error.imag(), 0, tol);
     };
@@ -333,7 +336,8 @@ TYPED_TEST(FFTTest, CC) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
+    ippl::initialize(argc, argv);
+    { ::testing::InitGoogleTest(&argc, argv); }
+    ippl::finalize();
     return RUN_ALL_TESTS();
 }
