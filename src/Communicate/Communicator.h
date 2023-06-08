@@ -4,6 +4,7 @@
 #include <memory>
 #include <mpi.h>
 
+#include "Communicate/Request.h"
 #include "Communicate/Status.h"
 
 ////////////////////////////////////////////////
@@ -54,12 +55,31 @@ namespace ippl {
             template <typename T>
             void recv(T* output, int count, int source, int tag, Status& status);
 
-            Status probe(int source, int tag);
+            void probe(int source, int tag, Status& status);
 
             /*
              * Non-blocking point-to-point communication
              *
              */
+
+            template <typename T>
+            void isend(const T& buffer, int count, int dest, int tag, Request& request);
+
+            template <typename T>
+            void isend(const T* buffer, int count, int dest, int tag, Request& request);
+
+            template <typename T>
+            void irecv(T& buffer, int count, int source, int tag, Request& request);
+
+            template <typename T>
+            void irecv(T* buffer, int count, int source, int tag, Request& request);
+
+            bool iprobe(int source, int tag, Status& status);
+
+            /*
+             *
+             */
+            void waitall(std::vector<Request>& requests, std::vector<Status>& statuses);
 
             /////////////////////////////////////////////////////////////////////////////////////
             using archive_type = detail::Archive<>;

@@ -16,10 +16,14 @@ namespace ippl {
             MPI_Comm_size(*comm_m, &size_m);
         }
 
-        Status Communicator::probe(int source, int tag) {
-            Status status;
+        void Communicator::probe(int source, int tag, Status& status) {
             MPI_Probe(source, tag, *comm_m, status);
-            return status;
+        }
+
+        bool Communicator::iprobe(int source, int tag, Status& status) {
+            int flag = 0;
+            MPI_Iprobe(source, tag, *comm_m, &flag, status);
+            return (flag != 0);
         }
     }  // namespace mpi
 }  // namespace ippl
