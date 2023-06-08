@@ -14,6 +14,7 @@ set (_HDRS
     Operations.h
     Collectives.h
     Collectives.hpp
+    Request.h
     Status.h
     TagMaker.h
     Tags.h

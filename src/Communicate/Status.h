@@ -20,9 +20,10 @@ namespace ippl {
             template <typename T>
             std::optional<int> count();
 
-            MPI_Status& operator()() noexcept { return status_m; }
+            // https://en.cppreference.com/w/cpp/language/cast_operator
+            operator MPI_Status&() noexcept { return status_m; }
 
-            const MPI_Status& operator()() const noexcept { return status_m; }
+            operator const MPI_Status&() const noexcept { return status_m; }
 
         private:
             MPI_Status status_m;

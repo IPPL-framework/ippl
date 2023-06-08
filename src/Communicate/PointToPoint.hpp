@@ -15,14 +15,14 @@ namespace ippl {
 
         template <typename T>
         void Communicator::recv(T& output, int count, int source, int tag, Status& status) {
-            this->recv(&output, count, source, tag, status());
+            this->recv(&output, count, source, tag, status);
         }
 
         template <typename T>
         void Communicator::recv(T* output, int count, int source, int tag, Status& status) {
             MPI_Datatype type = get_mpi_datatype<T>(*output);
 
-            MPI_Recv(output, count, type, source, tag, comm_m, &status());
+            MPI_Recv(output, count, type, source, tag, comm_m, &status);
         }
     }  // namespace mpi
 }  // namespace ippl

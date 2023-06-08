@@ -27,15 +27,15 @@ namespace ippl {
 
             ~Communicator() = default;
 
-            MPI_Comm* operator()() noexcept { return comm_m.get(); }
+            operator const MPI_Comm&() const noexcept { return *comm_m; }
 
             int size() const noexcept { return size_m; }
 
             int rank() const noexcept { return rank_m; }
 
-            void barrier() noexcept { MPI_Barrier(*comm_m); }
+            void barrier() { MPI_Barrier(*comm_m); }
 
-            void abort(int errorcode = -1) noexcept { MPI_Abort(*comm_m, errorcode); }
+            void abort(int errorcode = -1) { MPI_Abort(*comm_m, errorcode); }
 
             template <typename T>
             void send(const T& buffer, int count, int dest, int tag);
