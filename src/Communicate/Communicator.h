@@ -37,6 +37,11 @@ namespace ippl {
 
             void abort(int errorcode = -1) { MPI_Abort(*comm_m, errorcode); }
 
+            /*
+             * Blocking point-to-point communication
+             *
+             */
+
             template <typename T>
             void send(const T& buffer, int count, int dest, int tag);
 
@@ -48,6 +53,13 @@ namespace ippl {
 
             template <typename T>
             void recv(T* output, int count, int source, int tag, Status& status);
+
+            Status probe(int source, int tag);
+
+            /*
+             * Non-blocking point-to-point communication
+             *
+             */
 
             /////////////////////////////////////////////////////////////////////////////////////
             using archive_type = detail::Archive<>;

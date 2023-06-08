@@ -8,8 +8,14 @@ namespace ippl {
     namespace mpi {
 
         class Status {
+        public:
             Status()
-                : count_m(-1){};
+                : status_m()
+                , count_m(-1){};
+
+            Status(const Status&) = default;
+
+            Status& operator=(Status& other) = default;
 
             int source() const noexcept { return status_m.MPI_SOURCE; }
 
@@ -21,9 +27,9 @@ namespace ippl {
             std::optional<int> count();
 
             // https://en.cppreference.com/w/cpp/language/cast_operator
-            operator MPI_Status&() noexcept { return status_m; }
+            operator MPI_Status*() noexcept { return &status_m; }
 
-            operator const MPI_Status&() const noexcept { return status_m; }
+            operator const MPI_Status*() const noexcept { return &status_m; }
 
         private:
             MPI_Status status_m;
