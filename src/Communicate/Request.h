@@ -7,6 +7,7 @@ namespace ippl {
     namespace mpi {
 
         class Request {
+        public:
             Request()
                 : request_m(MPI_REQUEST_NULL) {}
 
