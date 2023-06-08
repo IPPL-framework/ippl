@@ -2,6 +2,7 @@ set (_SRCS
     Communicator.cpp
     Environment.cpp
     Buffers.cpp
+    Request.cpp
     )
 
 set (_HDRS
