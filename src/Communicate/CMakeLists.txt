@@ -19,6 +19,7 @@ set (_HDRS
     Status.h
     TagMaker.h
     Tags.h
+    Wait.h
     )
 
 include_directories (

@@ -42,7 +42,7 @@ namespace ippl {
         void Communicator::isend(const T* buffer, int count, int dest, int tag, Request& request) {
             MPI_Datatype type = get_mpi_datatype<T>(*buffer);
 
-            MPI_Isend(buffer, count, type, dest, tag, *comm_m, &request);
+            MPI_Isend(buffer, count, type, dest, tag, *comm_m, request);
         }
 
         template <typename T>
@@ -54,7 +54,7 @@ namespace ippl {
         void Communicator::irecv(T* buffer, int count, int source, int tag, Request& request) {
             MPI_Datatype type = get_mpi_datatype<T>(*buffer);
 
-            MPI_Irecv(buffer, count, type, source, tag, *comm_m, &request);
+            MPI_Irecv(buffer, count, type, source, tag, *comm_m, request);
         }
 
     }  // namespace mpi

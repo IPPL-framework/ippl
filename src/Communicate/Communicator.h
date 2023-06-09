@@ -76,11 +76,6 @@ namespace ippl {
 
             bool iprobe(int source, int tag, Status& status);
 
-            /*
-             *
-             */
-            void waitall(std::vector<Request>& requests, std::vector<Status>& statuses);
-
             /////////////////////////////////////////////////////////////////////////////////////
             using archive_type = detail::Archive<>;
             using buffer_type  = std::shared_ptr<archive_type>;
