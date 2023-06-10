@@ -125,7 +125,7 @@ namespace ippl {
 
         using buffer_type = mpi::Communicator::buffer_type;
 
-        int tag = Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
+        int tag = Comm->next_tag(mpi::tag::P_SPATIAL_LAYOUT, mpi::tag::P_LAYOUT_CYCLE);
 
         int sends = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
@@ -138,7 +138,7 @@ namespace ippl {
                 pdata.pack(buffer, hash);
                 size_type bufSize = pdata.packedSize(nSends[rank]);
 
-                buffer_type buf = Comm->getBuffer(IPPL_PARTICLE_SEND + sends, bufSize);
+                buffer_type buf = Comm->getBuffer(mpi::tag::PARTICLE_SEND + sends, bufSize);
 
                 Comm->isend(rank, tag, buffer, *buf, requests.back(), nSends[rank]);
                 buf->resetWritePos();
@@ -176,7 +176,7 @@ namespace ippl {
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
                 size_type bufSize = pdata.packedSize(nRecvs[rank]);
-                buffer_type buf   = Comm->getBuffer(IPPL_PARTICLE_RECV + recvs, bufSize);
+                buffer_type buf   = Comm->getBuffer(mpi::tag::PARTICLE_RECV + recvs, bufSize);
 
                 Comm->recv(rank, tag, buffer, *buf, bufSize, nRecvs[rank]);
                 buf->resetReadPos();

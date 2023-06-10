@@ -214,7 +214,7 @@ namespace ippl {
 
         // We have to put tag here so that the matchtag inside
         // the if is proper.
-        int tag = Comm->next_tag(BC_PARALLEL_PERIODIC_TAG, BC_TAG_CYCLE);
+        int tag = Comm->next_tag(mpi::tag::BC_PARALLEL_PERIODIC, mpi::tag::BC_CYCLE);
 
         if (lDomains[myRank][d].length() < domain[d].length()) {
             // Only along this dimension we need communication.
@@ -232,12 +232,12 @@ namespace ippl {
                     // upper face
                     offset     = -domain[d].length();
                     offsetRecv = nghost;
-                    matchtag   = Comm->preceding_tag(BC_PARALLEL_PERIODIC_TAG);
+                    matchtag   = Comm->preceding_tag(mpi::tag::BC_PARALLEL_PERIODIC);
                 } else {
                     // lower face
                     offset     = domain[d].length();
                     offsetRecv = -nghost;
-                    matchtag   = Comm->following_tag(BC_PARALLEL_PERIODIC_TAG);
+                    matchtag   = Comm->following_tag(mpi::tag::BC_PARALLEL_PERIODIC);
                 }
 
                 auto& neighbors = faceNeighbors_m[face];
@@ -272,7 +272,7 @@ namespace ippl {
                     detail::size_type nSends;
                     halo.pack(range, view, haloData_m, nSends);
 
-                    buffer_type buf = Comm->getBuffer<T>(IPPL_PERIODIC_BC_SEND + i, nSends);
+                    buffer_type buf = Comm->getBuffer<T>(mpi::tag::PERIODIC_BC_SEND + i, nSends);
 
                     Comm->isend(rank, tag, haloData_m, *buf, requests[i], nSends);
                     buf->resetWritePos();
@@ -288,7 +288,7 @@ namespace ippl {
 
                     detail::size_type nRecvs = range.size();
 
-                    buffer_type buf = Comm->getBuffer<T>(IPPL_PERIODIC_BC_RECV + i, nRecvs);
+                    buffer_type buf = Comm->getBuffer<T>(mpi::tag::PERIODIC_BC_RECV + i, nRecvs);
                     Comm->recv(rank, matchtag, haloData_m, *buf, nRecvs * sizeof(T), nRecvs);
                     buf->resetReadPos();
 

@@ -61,7 +61,7 @@ namespace ippl {
             constexpr size_t cubeCount = detail::countHypercubes(Dim) - 1;
             size_t requestIndex        = 0;
             for (size_t index = 0; index < cubeCount; index++) {
-                int tag                        = HALO_TAG + index;
+                int tag                        = mpi::tag::HALO + index;
                 const auto& componentNeighbors = neighbors[index];
                 for (size_t i = 0; i < componentNeighbors.size(); i++) {
                     int targetRank = componentNeighbors[i];
@@ -82,17 +82,17 @@ namespace ippl {
                     pack(range, view, haloData_m, nsends);
 
                     buffer_type buf =
-                        Comm->getBuffer<T>(IPPL_HALO_SEND + i * cubeCount + index, nsends);
+                        Comm->getBuffer<T>(mpi::tag::HALO_SEND + i * cubeCount + index, nsends);
 
                     Comm->isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++],
-                                      nsends);
+                                nsends);
                     buf->resetWritePos();
                 }
             }
 
             // receiving loop
             for (size_t index = 0; index < cubeCount; index++) {
-                int tag                        = HALO_TAG + Layout_t::getMatchingIndex(index);
+                int tag                        = mpi::tag::HALO + Layout_t::getMatchingIndex(index);
                 const auto& componentNeighbors = neighbors[index];
                 for (size_t i = 0; i < componentNeighbors.size(); i++) {
                     int sourceRank = componentNeighbors[i];
@@ -107,7 +107,7 @@ namespace ippl {
                     size_type nrecvs = range.size();
 
                     buffer_type buf =
-                        Comm->getBuffer<T>(IPPL_HALO_RECV + i * cubeCount + index, nrecvs);
+                        Comm->getBuffer<T>(mpi::tag::HALO_RECV + i * cubeCount + index, nrecvs);
 
                     Comm->recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
