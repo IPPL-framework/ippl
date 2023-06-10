@@ -13,9 +13,9 @@ namespace ippl {
 
             ~Request();
 
-            operator MPI_Request&() noexcept { return request_m; }
+            //             operator MPI_Request&() noexcept { return request_m; }
 
-            operator const MPI_Request&() const noexcept { return request_m; }
+            //             operator const MPI_Request&() const noexcept { return request_m; }
 
             operator MPI_Request*() noexcept { return &request_m; }
 

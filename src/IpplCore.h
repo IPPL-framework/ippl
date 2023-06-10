@@ -49,6 +49,4 @@
 // // IPPL Load balancing
 #include "Decomposition/OrthogonalRecursiveBisection.h"
 
-#include "Communicate/Collectives.h"
-
 #endif

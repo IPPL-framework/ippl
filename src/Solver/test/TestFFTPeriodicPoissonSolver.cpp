@@ -90,18 +90,18 @@ int main(int argc, char* argv[]) {
                             double y        = origin[1] + (jg + 0.5) * hx[1];
                             double z        = origin[2] + (kg + 0.5) * hx[2];
 
-                            // view(i, j, k) = 3.0 * pow(pi, 2) * sin(pi * x) * sin(pi * y) * sin(pi *
-                            // z);
-                            view(i, j, k) =
-                                pow(pi, 2)
-                                * (cos(sin(pi * z)) * sin(pi * z) * sin(sin(pi * x)) * sin(sin(pi * y))
-                                + (cos(sin(pi * y)) * sin(pi * y) * sin(sin(pi * x))
-                                    + (cos(sin(pi * x)) * sin(pi * x)
-                                        + (pow(cos(pi * x), 2) + pow(cos(pi * y), 2)
-                                            + pow(cos(pi * z), 2))
-                                            * sin(sin(pi * x)))
-                                            * sin(sin(pi * y)))
-                                        * sin(sin(pi * z)));
+                            // view(i, j, k) = 3.0 * pow(pi, 2) * sin(pi * x) * sin(pi * y) * sin(pi
+                            // * z);
+                            view(i, j, k) = pow(pi, 2)
+                                            * (cos(sin(pi * z)) * sin(pi * z) * sin(sin(pi * x))
+                                                   * sin(sin(pi * y))
+                                               + (cos(sin(pi * y)) * sin(pi * y) * sin(sin(pi * x))
+                                                  + (cos(sin(pi * x)) * sin(pi * x)
+                                                     + (pow(cos(pi * x), 2) + pow(cos(pi * y), 2)
+                                                        + pow(cos(pi * z), 2))
+                                                           * sin(sin(pi * x)))
+                                                        * sin(sin(pi * y)))
+                                                     * sin(sin(pi * z)));
 
                             // view_exact(i, j, k) = sin(pi * x) * sin(pi * y) * sin(pi * z);
                             view_exact(i, j, k) =
@@ -144,23 +144,23 @@ int main(int argc, char* argv[]) {
                             double y        = origin[1] + (jg + 0.5) * hx[1];
                             double z        = origin[2] + (kg + 0.5) * hx[2];
 
-                            view(i, j, k) =
-                                pow(pi, 2)
-                                * (cos(sin(pi * z)) * sin(pi * z) * sin(sin(pi * x)) * sin(sin(pi * y))
-                                + (cos(sin(pi * y)) * sin(pi * y) * sin(sin(pi * x))
-                                    + (cos(sin(pi * x)) * sin(pi * x)
-                                        + (pow(cos(pi * x), 2) + pow(cos(pi * y), 2)
-                                            + pow(cos(pi * z), 2))
-                                            * sin(sin(pi * x)))
-                                            * sin(sin(pi * y)))
-                                        * sin(sin(pi * z)));
+                            view(i, j, k) = pow(pi, 2)
+                                            * (cos(sin(pi * z)) * sin(pi * z) * sin(sin(pi * x))
+                                                   * sin(sin(pi * y))
+                                               + (cos(sin(pi * y)) * sin(pi * y) * sin(sin(pi * x))
+                                                  + (cos(sin(pi * x)) * sin(pi * x)
+                                                     + (pow(cos(pi * x), 2) + pow(cos(pi * y), 2)
+                                                        + pow(cos(pi * z), 2))
+                                                           * sin(sin(pi * x)))
+                                                        * sin(sin(pi * y)))
+                                                     * sin(sin(pi * z)));
 
                             Eview_exact(i, j, k)[0] = -pi * cos(pi * x) * cos(sin(pi * x))
-                                                    * sin(sin(pi * y)) * sin(sin(pi * z));
+                                                      * sin(sin(pi * y)) * sin(sin(pi * z));
                             Eview_exact(i, j, k)[1] = -pi * cos(pi * y) * cos(sin(pi * y))
-                                                    * sin(sin(pi * x)) * sin(sin(pi * z));
+                                                      * sin(sin(pi * x)) * sin(sin(pi * z));
                             Eview_exact(i, j, k)[2] = -pi * cos(pi * z) * cos(sin(pi * z))
-                                                    * sin(sin(pi * x)) * sin(sin(pi * y));
+                                                      * sin(sin(pi * x)) * sin(sin(pi * y));
                         });
 
                     FFTsolver.setLhs(Efield);
@@ -177,26 +177,26 @@ int main(int argc, char* argv[]) {
                         Kokkos::parallel_reduce(
                             "Vector errorNr reduce", ippl::getRangePolicy(view, nghost),
                             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
-                                        double& valL) {
+                                          double& valL) {
                                 double myVal = Kokkos::pow(Eview(i, j, k)[d], 2);
                                 valL += myVal;
                             },
                             Kokkos::Sum<double>(temp));
                         double globaltemp = 0.0;
-                        ippl::mpi::allreduce(temp, globaltemp, 1, std::plus<double>());
+                        ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                         errorNr[d] = std::sqrt(globaltemp);
 
                         temp = 0.0;
                         Kokkos::parallel_reduce(
                             "Vector errorDr reduce", ippl::getRangePolicy(view, nghost),
                             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k,
-                                        double& valL) {
+                                          double& valL) {
                                 double myVal = Kokkos::pow(Eview_exact(i, j, k)[d], 2);
                                 valL += myVal;
                             },
                             Kokkos::Sum<double>(temp));
                         globaltemp = 0.0;
-                        ippl::mpi::allreduce(temp, globaltemp, 1, std::plus<double>());
+                        ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                         errorDr[d] = std::sqrt(globaltemp);
 
                         error_norm2[d] = errorNr[d] / errorDr[d];
@@ -205,7 +205,7 @@ int main(int argc, char* argv[]) {
                     if (ippl::Comm->rank() == 0) {
                         for (size_t d = 0; d < dim; ++d) {
                             std::cout << "L2 relative error norm Efield[" << d
-                                    << "]: " << error_norm2[d] << std::endl;
+                                      << "]: " << error_norm2[d] << std::endl;
                         }
                     }
                     break;

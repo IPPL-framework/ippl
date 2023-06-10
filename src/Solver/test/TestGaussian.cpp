@@ -106,8 +106,8 @@ int main(int argc, char* argv[]) {
         std::string algorithm = argv[7];  // Hockney or Vico
 
         // print out info and title for the relative error (L2 norm)
-        msg << "Test Gaussian, grid = " << nr << ", heffte params: " << reshape << " " << communication
-            << " " << reordering << ", algorithm = " << algorithm << endl;
+        msg << "Test Gaussian, grid = " << nr << ", heffte params: " << reshape << " "
+            << communication << " " << reordering << ", algorithm = " << algorithm << endl;
         msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
 
         // domain
@@ -295,7 +295,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 double globaltemp = 0.0;
-                ippl::mpi::allreduce(temp, globaltemp, 1, std::plus<double>());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorNr = std::sqrt(globaltemp);
 
                 temp = 0.0;
@@ -308,14 +308,14 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 globaltemp = 0.0;
-                ippl::mpi::allreduce(temp, globaltemp, 1, std::plus<double>());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorDr = std::sqrt(globaltemp);
 
                 errE[d] = errorNr / errorDr;
             }
 
-            msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1] << " "
-                << errE[2] << endl;
+            msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1]
+                << " " << errE[2] << endl;
 
             // reassign the correct values to the fields for the loop to work
             Kokkos::parallel_for(

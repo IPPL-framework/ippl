@@ -266,7 +266,7 @@ void compute_convergence(std::string algorithm, int pt) {
 
         T globaltemp = 0.0;
 
-        ippl::mpi::allreduce(temp, globaltemp, 1, std::plus<T>());
+        ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<T>());
         T errorNr = std::sqrt(globaltemp);
 
         temp = 0.0;
@@ -279,7 +279,7 @@ void compute_convergence(std::string algorithm, int pt) {
             Kokkos::Sum<T>(temp));
 
         globaltemp = 0.0;
-        ippl::mpi::allreduce(temp, globaltemp, 1, std::plus<T>());
+        ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<T>());
         T errorDr = std::sqrt(globaltemp);
 
         errE[d] = errorNr / errorDr;

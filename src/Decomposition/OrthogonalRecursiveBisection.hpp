@@ -68,7 +68,8 @@ namespace ippl {
 
             // Communicate to all the reduced weights
             IpplTimings::startTimer(tallReduce);
-            mpi::allreduce(reducedRank.data(), reduced.data(), reducedRank.size(), std::plus<Tf>());
+            Comm->allreduce(reducedRank.data(), reduced.data(), reducedRank.size(),
+                            std::plus<Tf>());
             IpplTimings::stopTimer(tallReduce);
 
             // Find median of reduced weights

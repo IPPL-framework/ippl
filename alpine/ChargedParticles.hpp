@@ -360,7 +360,8 @@ public:
             if (dev > loadbalancethreshold_m) {
                 local = 1;
             }
-            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, ippl::Comm->getCommunicator());
+            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT,
+                          ippl::Comm->getCommunicator());
 
             for (unsigned int i = 0; i < res.size(); i++) {
                 if (res[i] == 1) {
@@ -375,7 +376,7 @@ public:
         std::vector<double> imb(ippl::Comm->size());
         double equalPart = (double)totalP / ippl::Comm->size();
         double dev       = (std::abs((double)this->getLocalNum() - equalPart) / totalP) * 100.0;
-        ippl::mpi::gather(&dev, imb.data(), 1);
+        ippl::Comm->gather(&dev, imb.data(), 1);
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
@@ -414,7 +415,7 @@ public:
         size_type Total_particles = 0;
         size_type local_particles = this->getLocalNum();
 
-        ippl::mpi::reduce(local_particles, Total_particles, 1,  std::plus<size_type>());
+        ippl::Comm->reduce(local_particles, Total_particles, 1, std::plus<size_type>());
 
         double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
         m << "Rel. error in charge conservation = " << rel_error << endl;
@@ -604,7 +605,7 @@ public:
         kinEnergy *= 0.5;
         double gkinEnergy = 0.0;
 
-        ippl::mpi::reduce(kinEnergy, gkinEnergy, 1,  std::plus<double>());
+        ippl::Comm->reduce(kinEnergy, gkinEnergy, 1, std::plus<double>());
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
@@ -622,8 +623,8 @@ public:
                     valL += myVal;
                 },
                 Kokkos::Sum<T>(temp));
-            T globaltemp          = 0.0;
-            ippl::mpi::reduce(temp, globaltemp, 1,  std::plus<T>());
+            T globaltemp = 0.0;
+            ippl::Comm->reduce(temp, globaltemp, 1, std::plus<T>());
             normE[d] = std::sqrt(globaltemp);
         }
 
@@ -674,7 +675,7 @@ public:
             },
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
-        ippl::mpi::reduce(temp, globaltemp, 1,  std::plus<double>());
+        ippl::Comm->reduce(temp, globaltemp, 1, std::plus<double>());
         fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double tempMax = 0.0;
@@ -690,7 +691,7 @@ public:
             },
             Kokkos::Max<double>(tempMax));
         ExAmp = 0.0;
-        ippl::mpi::reduce(tempMax, ExAmp, 1,  std::greater<double>());
+        ippl::Comm->reduce(tempMax, ExAmp, 1, std::greater<double>());
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
@@ -729,7 +730,7 @@ public:
             },
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
-        ippl::mpi::reduce(temp, globaltemp, 1,  std::plus<double>());
+        ippl::Comm->reduce(temp, globaltemp, 1, std::plus<double>());
         fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double tempMax = 0.0;
@@ -745,7 +746,7 @@ public:
             },
             Kokkos::Max<double>(tempMax));
         EzAmp = 0.0;
-        ippl::mpi::reduce(tempMax, EzAmp, 1,  std::greater<double>());
+        ippl::Comm->reduce(tempMax, EzAmp, 1, std::greater<double>());
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;

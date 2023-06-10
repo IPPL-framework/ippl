@@ -29,7 +29,6 @@
 #include "Ippl.h"
 
 #include "Communicate/DataTypes.h"
-#include "Communicate/Collectives.h"
 
 #include "Utility/IpplTimings.h"
 
@@ -143,9 +142,8 @@ namespace ippl {
 
         Kokkos::parallel_for(
             "ParticleAttrib::scatter", *(this->localNum_mp), KOKKOS_CLASS_LAMBDA(const size_t idx) {
-
                 // find nearest grid point
-                vector_type l          = (pp(idx) - origin) * invdx + 0.5;
+                vector_type l                 = (pp(idx) - origin) * invdx + 0.5;
                 Vector<int, Field::dim> index = l;
                 Vector<T, Field::dim> whi     = l - index;
                 Vector<T, Field::dim> wlo     = 1.0 - whi;
@@ -154,8 +152,8 @@ namespace ippl {
 
                 // scatter
                 const value_type& val = dview_m(idx);
-                detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi, args,
-                                       val);
+                detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
+                                       args, val);
             });
         IpplTimings::stopTimer(scatterTimer);
 
@@ -195,9 +193,8 @@ namespace ippl {
 
         Kokkos::parallel_for(
             "ParticleAttrib::gather", *(this->localNum_mp), KOKKOS_CLASS_LAMBDA(const size_t idx) {
-
                 // find nearest grid point
-                vector_type l          = (pp(idx) - origin) * invdx + 0.5;
+                vector_type l                 = (pp(idx) - origin) * invdx + 0.5;
                 Vector<int, Field::dim> index = l;
                 Vector<T, Field::dim> whi     = l - index;
                 Vector<T, Field::dim> wlo     = 1.0 - whi;
@@ -205,8 +202,8 @@ namespace ippl {
                 Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
                 // gather
-                dview_m(idx) = detail::gatherFromField(std::make_index_sequence<1 << Field::dim>{}, view,
-                                                       wlo, whi, args);
+                dview_m(idx) = detail::gatherFromField(std::make_index_sequence<1 << Field::dim>{},
+                                                       view, wlo, whi, args);
             });
         IpplTimings::stopTimer(gatherTimer);
     }
@@ -230,20 +227,20 @@ namespace ippl {
         attrib.gather(f, pp);
     }
 
-#define DefineParticleReduction(fun, name, op, MPI_Op)      \
-    template <typename T, class... Properties>              \
-    T ParticleAttrib<T, Properties...>::name() {            \
-        T temp = 0.0;                                       \
-        Kokkos::parallel_reduce(                            \
-            "fun", *(this->localNum_mp),                    \
-            KOKKOS_CLASS_LAMBDA(const size_t i, T& valL) {  \
-                T myVal = dview_m(i);                       \
-                op;                                         \
-            },                                              \
-            Kokkos::fun<T>(temp));                          \
-        T globaltemp      = 0.0;                            \
-        mpi::allreduce(temp, globaltemp, 1, MPI_Op<T>());   \
-        return globaltemp;                                  \
+#define DefineParticleReduction(fun, name, op, MPI_Op)     \
+    template <typename T, class... Properties>             \
+    T ParticleAttrib<T, Properties...>::name() {           \
+        T temp = 0.0;                                      \
+        Kokkos::parallel_reduce(                           \
+            "fun", *(this->localNum_mp),                   \
+            KOKKOS_CLASS_LAMBDA(const size_t i, T& valL) { \
+                T myVal = dview_m(i);                      \
+                op;                                        \
+            },                                             \
+            Kokkos::fun<T>(temp));                         \
+        T globaltemp = 0.0;                                \
+        Comm->allreduce(temp, globaltemp, 1, MPI_Op<T>()); \
+        return globaltemp;                                 \
     }
 
     DefineParticleReduction(Sum, sum, valL += myVal, std::plus)

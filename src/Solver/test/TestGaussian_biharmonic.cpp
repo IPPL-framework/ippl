@@ -263,7 +263,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 double globaltemp = 0.0;
-                ippl::mpi::allreduce(temp, globaltemp, 1, std::plus<double>());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorNr = std::sqrt(globaltemp);
 
                 temp = 0.0;
@@ -278,14 +278,14 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 globaltemp = 0.0;
-                ippl::mpi::allreduce(temp, globaltemp, 1, std::plus<double>());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorDr = std::sqrt(globaltemp);
 
                 errE[d] = errorNr / errorDr;
             }
 
-            msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1] << " "
-                << errE[2] << endl;
+            msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1]
+                << " " << errE[2] << endl;
         }
 
         // stop the timer

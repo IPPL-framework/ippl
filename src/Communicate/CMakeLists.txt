@@ -13,7 +13,6 @@ set (_HDRS
     Environment.h
     DataTypes.h
     Operations.h
-    Collectives.h
     Collectives.hpp
     Request.h
     Status.h

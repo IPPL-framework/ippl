@@ -180,7 +180,7 @@ TEST_F(ParticleSendRecv, SendAndRecieve) {
         unsigned int Total_particles = 0;
         unsigned int local_particles = bunch->getLocalNum();
 
-        ippl::mpi::reduce(local_particles, Total_particles, 1, std::plus<unsigned int>());
+        ippl::Comm->reduce(local_particles, Total_particles, 1, std::plus<unsigned int>());
 
         if (ippl::Comm->rank() == 0) {
             ASSERT_EQ(nParticles, Total_particles);
@@ -192,9 +192,7 @@ TEST_F(ParticleSendRecv, SendAndRecieve) {
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
-    {
-        ::testing::InitGoogleTest(&argc, argv);
-    }
+    { ::testing::InitGoogleTest(&argc, argv); }
     ippl::finalize();
     return RUN_ALL_TESTS();
 }

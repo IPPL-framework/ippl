@@ -155,7 +155,7 @@ public:
         });
 
         double max_error = 0.0;
-        ippl::mpi::reduce(max_error_local, max_error, 1, std::greater<double>());
+        ippl::Comm->reduce(max_error_local, max_error, 1, std::greater<double>());
         ASSERT_NEAR(max_error, 0, 1e-13);
     }
 
@@ -311,9 +311,7 @@ TEST_F(FFTTest, CC) {
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
-    {
-        ::testing::InitGoogleTest(&argc, argv);
-    }
+    { ::testing::InitGoogleTest(&argc, argv); }
     ippl::finalize();
     return RUN_ALL_TESTS();
 }

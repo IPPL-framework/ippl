@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
         Kokkos::deep_copy(bunch.R.getView(), R_host);
 
         double global_sum_coord = 0.0;
-        ippl::mpi::reduce(sum_coord, global_sum_coord, 1, std::plus<double>());
+        ippl::Comm->reduce(sum_coord, global_sum_coord, 1, std::plus<double>());
 
         if (ippl::Comm->rank() == 0) {
             std::cout << "Sum coord: " << global_sum_coord << std::endl;

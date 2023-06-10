@@ -38,8 +38,8 @@ namespace ippl {
                 val += apply(view1, args) * apply(view2, args);
             },
             Kokkos::Sum<T>(sum));
-        T globalSum       = 0;
-        mpi::allreduce(sum, globalSum, 1, std::plus<T>());
+        T globalSum = 0;
+        Comm->allreduce(sum, globalSum, 1, std::plus<T>());
         return globalSum;
     }
 
@@ -67,8 +67,8 @@ namespace ippl {
                             val = myVal;
                     },
                     Kokkos::Max<T>(local));
-                T globalMax       = 0;
-                mpi::allreduce(local, globalMax, 1, std::greater<T>());
+                T globalMax = 0;
+                Comm->allreduce(local, globalMax, 1, std::greater<T>());
                 return globalMax;
             }
             default: {
@@ -78,8 +78,8 @@ namespace ippl {
                         val += std::pow(std::abs(apply(view, args)), p);
                     },
                     Kokkos::Sum<T>(local));
-                T globalSum       = 0;
-                mpi::allreduce(local, globalSum, 1, std::plus<T>());
+                T globalSum = 0;
+                Comm->allreduce(local, globalSum, 1, std::plus<T>());
                 return std::pow(globalSum, 1.0 / p);
             }
         }
