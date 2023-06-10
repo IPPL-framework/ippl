@@ -38,6 +38,8 @@
 
 #include "Utility/IpplTimings.h"
 
+#include "Communicate/Window.h"
+
 namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh>
@@ -96,14 +98,13 @@ namespace ippl {
         // figure out how many receives
         static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("sendPreprocess");
         IpplTimings::startTimer(preprocTimer);
-        MPI_Win win;
+        mpi::rma::Window<mpi::rma::Active> window;
         std::vector<size_type> nRecvs(nRanks, 0);
-        MPI_Win_create(nRecvs.data(), nRanks * sizeof(size_type), sizeof(size_type), MPI_INFO_NULL,
-                       Comm->getCommunicator(), &win);
+        window.create<size_type>(*Comm, nRecvs.begin(), nRecvs.end());
 
         std::vector<size_type> nSends(nRanks, 0);
 
-        MPI_Win_fence(0, win);
+        window.fence(0);
 
         for (int rank = 0; rank < nRanks; ++rank) {
             if (rank == Comm->rank()) {
@@ -111,11 +112,9 @@ namespace ippl {
                 continue;
             }
             nSends[rank] = numberOfSends(rank, ranks);
-            MPI_Put(nSends.data() + rank, 1, MPI_LONG_LONG_INT, rank, Comm->rank(), 1,
-                    MPI_LONG_LONG_INT, win);
+            window.put<size_type>(nSends.data() + rank, 1, rank, Comm->rank());
         }
-        MPI_Win_fence(0, win);
-        MPI_Win_free(&win);
+        window.fence(0);
         IpplTimings::stopTimer(preprocTimer);
 
         static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("particleSend");
