@@ -100,7 +100,7 @@ namespace ippl {
         IpplTimings::startTimer(preprocTimer);
         mpi::rma::Window<mpi::rma::Active> window;
         std::vector<size_type> nRecvs(nRanks, 0);
-        window.create<size_type>(*Comm, nRecvs.begin(), nRecvs.end());
+        window.create(*Comm, nRecvs.begin(), nRecvs.end());
 
         std::vector<size_type> nSends(nRanks, 0);
 
@@ -112,7 +112,7 @@ namespace ippl {
                 continue;
             }
             nSends[rank] = numberOfSends(rank, ranks);
-            window.put<size_type>(nSends.data() + rank, 1, rank, Comm->rank());
+            window.put<size_type>(nSends.data() + rank, rank, Comm->rank());
         }
         window.fence(0);
         IpplTimings::stopTimer(preprocTimer);

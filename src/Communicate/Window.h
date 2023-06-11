@@ -53,22 +53,58 @@ namespace ippl {
 
                 ~Window();
 
-                template <typename T, std::contiguous_iterator Iter>
+                operator MPI_Win*() noexcept { return &win_m; }
+
+                operator const MPI_Win*() const noexcept { return &win_m; }
+
+                template <std::contiguous_iterator Iter>
                 bool create(const Communicator& comm, Iter first, Iter last);
 
-                template <typename T, std::contiguous_iterator Iter>
-                bool attach(const Communicator& comm, Iter first, Iter last);
-
-                template <typename T, std::contiguous_iterator Iter>
-                bool detach(Iter first);
+                //                 template <std::contiguous_iterator Iter>
+                //                 bool attach(const Communicator& comm, Iter first, Iter last);
+                //
+                //                 template <std::contiguous_iterator Iter>
+                //                 bool detach(Iter first);
 
                 void fence(int asrt = 0);
 
-                template <typename T>
-                void put(T* buffer, int count, int dest, unsigned int displ);
+                template <std::contiguous_iterator Iter>
+                void put(Iter first, Iter last, int dest, unsigned int pos);
 
                 template <typename T>
-                void get(T* buffer, int count, int source, unsigned int displ);
+                void put(const T& value, int dest, unsigned int pos);
+
+                template <typename T>
+                void put(const T* value, int dest, unsigned int pos);
+
+                template <std::contiguous_iterator Iter>
+                void get(Iter first, Iter last, int source, unsigned int pos);
+
+                template <typename T>
+                void get(T& value, int source, unsigned int pos);
+
+                template <typename T>
+                void get(T* value, int source, unsigned int pos);
+
+                /*
+                 * Passive target communication:
+                 */
+                void flush(int rank);
+
+                void flushall();
+
+                enum LockType : int {
+                    Exclusive = MPI_LOCK_EXCLUSIVE,
+                    Shared    = MPI_LOCK_SHARED
+                };
+
+                void lock(int locktype, int rank, int asrt = 0);
+
+                void lockall(int asrt = 0);
+
+                void unlock(int rank);
+
+                void unlockall();
 
             private:
                 MPI_Win win_m;
