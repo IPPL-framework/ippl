@@ -86,45 +86,68 @@ namespace ippl {
 
             template <TargetComm Target>
             template <std::contiguous_iterator Iter>
-            void Window<Target>::put(Iter first, Iter last, int dest, unsigned int pos) {
+            void Window<Target>::put(Iter first, Iter last, int dest, unsigned int pos,
+                                     Request* request) {
                 MPI_Datatype datatype = get_mpi_datatype<typename Iter::value_type>(*first);
                 auto count            = std::distance(first, last);
-                MPI_Put(&(*first), count, datatype, dest, (MPI_Aint)pos, count_m, datatype, win_m);
+                if (request == nullptr) {
+                    MPI_Put(&(*first), count, datatype, dest, (MPI_Aint)pos, count_m, datatype,
+                            win_m);
+                } else {
+                    MPI_Rput(&(*first), count, datatype, dest, (MPI_Aint)pos, count_m, datatype,
+                             win_m, *request);
+                }
             }
 
             template <TargetComm Target>
             template <typename T>
-            void Window<Target>::put(const T& value, int dest, unsigned int pos) {
-                this->put(&value, dest, pos);
+            void Window<Target>::put(const T& value, int dest, unsigned int pos, Request* request) {
+                this->put(&value, dest, pos, request);
             }
 
             template <TargetComm Target>
             template <typename T>
-            void Window<Target>::put(const T* value, int dest, unsigned int pos) {
+            void Window<Target>::put(const T* value, int dest, unsigned int pos, Request* request) {
                 MPI_Datatype datatype = get_mpi_datatype<T>(*value);
-                MPI_Put(value, 1, datatype, dest, (MPI_Aint)pos, count_m, datatype, win_m);
+                if (request == nullptr) {
+                    MPI_Put(value, 1, datatype, dest, (MPI_Aint)pos, count_m, datatype, win_m);
+                } else {
+                    MPI_Rput(value, 1, datatype, dest, (MPI_Aint)pos, count_m, datatype, win_m,
+                             *request);
+                }
             }
 
             template <TargetComm Target>
             template <std::contiguous_iterator Iter>
-            void Window<Target>::get(Iter first, Iter last, int source, unsigned int pos) {
+            void Window<Target>::get(Iter first, Iter last, int source, unsigned int pos,
+                                     Request* request) {
                 MPI_Datatype datatype = get_mpi_datatype<typename Iter::value_type>(*first);
                 auto count            = std::distance(first, last);
-                MPI_Get(&(*first), count, datatype, source, (MPI_Aint)pos, count_m, datatype,
-                        win_m);
+                if (request == nullptr) {
+                    MPI_Get(&(*first), count, datatype, source, (MPI_Aint)pos, count_m, datatype,
+                            win_m);
+                } else {
+                    MPI_Rget(&(*first), count, datatype, source, (MPI_Aint)pos, count_m, datatype,
+                             win_m, *request);
+                }
             }
 
             template <TargetComm Target>
             template <typename T>
-            void Window<Target>::get(T& value, int source, unsigned int pos) {
+            void Window<Target>::get(T& value, int source, unsigned int pos, Request* request) {
                 this->get(&value, source, pos);
             }
 
             template <TargetComm Target>
             template <typename T>
-            void Window<Target>::get(T* value, int source, unsigned int pos) {
+            void Window<Target>::get(T* value, int source, unsigned int pos, Request* request) {
                 MPI_Datatype datatype = get_mpi_datatype<T>(*value);
-                MPI_Get(value, 1, datatype, source, (MPI_Aint)pos, count_m, datatype, win_m);
+                if (request == nullptr) {
+                    MPI_Get(value, 1, datatype, source, (MPI_Aint)pos, count_m, datatype, win_m);
+                } else {
+                    MPI_Rget(value, 1, datatype, source, (MPI_Aint)pos, count_m, datatype, win_m,
+                             *request);
+                }
             }
 
             /*
