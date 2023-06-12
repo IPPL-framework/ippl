@@ -361,6 +361,35 @@ double L2VectorNorm(const VField_t<T, Dim>& vectorField, const int shift) {
     return globalSum;
 }
 
+MatrixD_t MFieldRelError(const MField_t<Dim>& matrixFieldAppr,
+                         const MField_t<Dim>& matrixFieldExact, const int shift) {
+    MatrixD_t relError;
+    MField_view_t viewAppr  = matrixFieldAppr.getView();
+    MField_view_t viewExact = matrixFieldExact.getView();
+
+    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
+    for (size_type m = 0; m < Dim; ++m) {
+        for (size_type n = 0; n < Dim; ++n) {
+            double diffNorm  = 0;
+            double exactNorm = 0;
+            Kokkos::parallel_reduce(
+                "MFieldError(MField&, MField&, shift)",
+                mdrange_type({shift, shift, shift},
+                             {viewAppr.extent(0) - shift, viewAppr.extent(1) - shift,
+                              viewAppr.extent(2) - shift}),
+                KOKKOS_LAMBDA(const size_type i, const size_type j, const size_type k,
+                              double& diffVal, double& exactVal) {
+                    diffVal += Kokkos::pow(viewAppr(i, j, k)[m][n] - viewExact(i, j, k)[m][n], 2);
+                    exactVal += Kokkos::pow(viewExact(i, j, k)[m][n], 2);
+                },
+                Kokkos::Sum<double>(diffNorm), Kokkos::Sum<double>(exactNorm));
+            relError[m][n] = diffNorm / exactNorm;
+        }
+    }
+    // TODO MPI Reduction
+    return relError;
+}
+
 /*!
  * Computes the inner product of two fields given a margin of `nghost` in which the values are
  * ignored
