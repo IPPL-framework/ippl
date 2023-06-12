@@ -360,7 +360,8 @@ public:
             if (dev > loadbalancethreshold_m) {
                 local = 1;
             }
-            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, ippl::Comm->getCommunicator());
+            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT,
+                          ippl::Comm->getCommunicator());
 
             for (unsigned int i = 0; i < res.size(); i++) {
                 if (res[i] == 1) {
@@ -375,7 +376,8 @@ public:
         std::vector<double> imb(ippl::Comm->size());
         double equalPart = (double)totalP / ippl::Comm->size();
         double dev       = (std::abs((double)this->getLocalNum() - equalPart) / totalP) * 100.0;
-        MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0, ippl::Comm->getCommunicator());
+        MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0,
+                   ippl::Comm->getCommunicator());
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
@@ -403,6 +405,11 @@ public:
 
     void scatterCIC(size_type totalP, unsigned int iteration, Vector_t<double, Dim>& hrField) {
         Inform m("scatter ");
+
+        // debug
+        dumpParticleData();
+
+        m << "Total particles = " << this->getLocalNum() << endl;
 
         rho_m = 0.0;
         scatter(q, rho_m, this->R);
@@ -605,7 +612,8 @@ public:
         kinEnergy *= 0.5;
         double gkinEnergy = 0.0;
 
-        MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
@@ -782,15 +790,34 @@ public:
         pcsvout.precision(10);
         pcsvout.setf(std::ios::scientific, std::ios::floatfield);
         pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
+
+        // debug
+        Vector_t<double, Dim> minR = 0.0;
+        Vector_t<double, Dim> maxR = 0.0;
+
         for (size_type i = 0; i < this->getLocalNum(); i++) {
             for (unsigned d = 0; d < Dim; d++) {
                 pcsvout << R_host(i)[d] << " ";
+
+                // debug
+                if (R_host(i)[d] < minR[d]) {
+                    minR[d] = R_host(i)[d];
+                }
+                if (R_host(i)[d] > maxR[d]) {
+                    maxR[d] = R_host(i)[d];
+                }
             }
             for (unsigned d = 0; d < Dim; d++) {
                 pcsvout << P_host(i)[d] << " ";
             }
             pcsvout << endl;
         }
+
+        // debug
+        Inform m("scatter ");
+        m << "Minimum position = " << minR << endl;
+        m << "Maximum position = " << maxR << endl;
+
         ippl::Comm->barrier();
     }
 
