@@ -524,15 +524,15 @@ int main(int argc, char *argv[]){
     MPI_Allreduce(&nloc, &Total_particles, 1,
                 MPI_UNSIGNED_LONG, MPI_SUM, spaceComm);
 
-    int rest = (int) (totalP - Total_particles);
+    //int rest = (int) (totalP - Total_particles);
 
-    if ( Ippl::Comm->rank() < rest ) {
-        ++nloc;
-    }
+    //if ( (rankTime == 0) && (rankSpace < rest) ) {
+    //    ++nloc;
+    //}
 
     double Q = -1562.5;
     double Bext = 5.0;
-    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q,totalP);
+    Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q,Total_particles);
     Pbegin = std::make_unique<states_begin_type>(PL);
     Pend = std::make_unique<states_end_type>(PL);
 
@@ -561,7 +561,7 @@ int main(int argc, char *argv[]){
     Pbegin->create(nloc);
     Pend->create(nloc);
 
-    Pcoarse->q = Pcoarse->Q_m/totalP;
+    Pcoarse->q = Pcoarse->Q_m/Total_particles;
     using buffer_type = ippl::Communicate::buffer_type;
     int tag;
 
@@ -673,7 +673,7 @@ int main(int argc, char *argv[]){
         //<< " Max. iterations: " << maxIter
         << " No. of cycles: " << nCycles
         << endl
-        << "Np= " << totalP 
+        << "Np= " << Total_particles 
         << " Fourier modes = " << nmPIF
         << " Grid points = " << nrPIC
         << endl;
@@ -742,12 +742,6 @@ int main(int argc, char *argv[]){
         bool isConverged = false;
         bool isPreviousDomainConverged = false;
         
-        //IpplTimings::startTimer(initializeCycles);
-        //Pcoarse->initializeParareal(Pbegin->R, Pbegin->P, Pcoarse->R, Pcoarse->P, Pcoarse->R0, 
-        //                            Pcoarse->P0, isConverged,
-        //                            isPreviousDomainConverged, ntCoarse,
-        //                            dtCoarse, tStartMySlice, Bext, rankTime, spaceComm);
-        //IpplTimings::stopTimer(initializeCycles);
         //even cycles
         if(nc % 2 == 0) {
             sendCriteria = (rankTime < (sizeTime-1));
@@ -896,7 +890,13 @@ int main(int argc, char *argv[]){
                 recvCriteria = (rankTime > 0);
                 tStartMySlice = (nc * tEndCycle) + (rankTime * dtSlice);
             }
-            
+
+
+            IpplTimings::startTimer(deepCopy);
+            Kokkos::deep_copy(Pbegin->R.getView(), Pend->R.getView());
+            Kokkos::deep_copy(Pbegin->P.getView(), Pend->P.getView());
+            IpplTimings::stopTimer(deepCopy);
+
             if(recvCriteria) {
                 size_type bufSize = Pbegin->packedSize(nloc);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);

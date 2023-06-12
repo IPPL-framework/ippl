@@ -413,7 +413,7 @@ public:
                << ExAmp << endl;
     }
 
-    void dumpBumponTail(const unsigned int& nc, const unsigned int& iter) {
+    void dumpBumponTail(const unsigned int& nc, const unsigned int& iter, int rankTime, int rankSpace) {
        
 
         double fieldEnergy = 0.0; 
@@ -480,24 +480,26 @@ public:
         fieldEnergy *= volume;
 
 
-        std::stringstream fname;
-        fname << "data/FieldBumponTail_rank_";
-        fname << Ippl::Comm->rank();
-        fname << "_nc_";
-        fname << nc;
-        fname << "_iter_";
-        fname << iter;
-        fname << ".csv";
+        if(rankSpace == 0) {
+            std::stringstream fname;
+            fname << "data/FieldBumponTail_rank_";
+            fname << rankTime;
+            fname << "_nc_";
+            fname << nc;
+            fname << "_iter_";
+            fname << iter;
+            fname << ".csv";
 
 
-        Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
-        csvout.precision(10);
-        csvout.setf(std::ios::scientific, std::ios::floatfield);
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
 
 
-        csvout << time_m << " "
-               << fieldEnergy << " "
-               << EzAmp << endl;
+            csvout << time_m << " "
+                   << fieldEnergy << " "
+                   << EzAmp << endl;
+        }
     }
 
 
@@ -802,14 +804,14 @@ public:
 
     void LeapFrogPIC(ParticleAttrib<Vector_t>& Rtemp, 
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int nt, 
-                     const double dt, const double& tStartMySlice) {
+                     const double dt, const double& tStartMySlice, MPI_Comm& spaceComm) {
     
         static IpplTimings::TimerRef fieldSolvePIC = IpplTimings::getTimer("fieldSolvePIC");
         PLayout& PL = this->getLayout();
         //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIC_m = 0.0;
-        scatter(q, rhoPIC_m, Rtemp);
+        scatter(q, rhoPIC_m, Rtemp, spaceComm);
     
         rhoPIC_m = rhoPIC_m / (hr_m[0] * hr_m[1] * hr_m[2]);
         rhoPIC_m = rhoPIC_m - (Q_m/((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2])));
@@ -838,7 +840,7 @@ public:
     
             //scatter the charge onto the underlying grid
             rhoPIC_m = 0.0;
-            scatter(q, rhoPIC_m, Rtemp);
+            scatter(q, rhoPIC_m, Rtemp, spaceComm);
     
     
             rhoPIC_m = rhoPIC_m / (hr_m[0] * hr_m[1] * hr_m[2]);
@@ -973,16 +975,16 @@ public:
 
     void LeapFrogPIF(ParticleAttrib<Vector_t>& Rtemp,
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
-                     const double& dt, const bool& /*isConverged*/, 
-                     const double& tStartMySlice, const unsigned& nc, 
-                     const unsigned int& iter) {
+                     const double& dt, const double& tStartMySlice, const unsigned& nc, 
+                     const unsigned int& iter, int rankTime, int rankSpace,
+                     MPI_Comm& spaceComm) {
     
         static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
         //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
-        scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp);
+        scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, spaceComm);
     
         rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
@@ -996,8 +998,8 @@ public:
         if((time_m == 0.0)) {
             IpplTimings::startTimer(dumpData);
             //dumpLandau(iter);         
-            dumpBumponTail(nc, iter);         
-            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp);
+            dumpBumponTail(nc, iter, rankTime, rankSpace);         
+            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
             IpplTimings::stopTimer(dumpData);
         }
         for (unsigned int it=0; it<nt; it++) {
@@ -1016,7 +1018,7 @@ public:
     
             //scatter the charge onto the underlying grid
             rhoPIF_m = {0.0, 0.0};
-            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp);
+            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, spaceComm);
     
             rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
@@ -1032,8 +1034,8 @@ public:
             
             IpplTimings::startTimer(dumpData);
             //dumpLandau(iter);         
-            dumpBumponTail(nc, iter);         
-            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp);         
+            dumpBumponTail(nc, iter, rankTime, rankSpace);         
+            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);         
             IpplTimings::stopTimer(dumpData);
     
         }
