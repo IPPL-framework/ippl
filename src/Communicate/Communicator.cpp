@@ -16,6 +16,12 @@ namespace ippl {
             MPI_Comm_size(*comm_m, &size_m);
         }
 
+        Communicator Communicator::Communicator::split(int color, int key) const {
+            MPI_Comm newcomm;
+            MPI_Comm_split(*comm_m, color, key, &newcomm);
+            return Communicator(newcomm);
+        }
+
         void Communicator::probe(int source, int tag, Status& status) {
             MPI_Probe(source, tag, *comm_m, status);
         }

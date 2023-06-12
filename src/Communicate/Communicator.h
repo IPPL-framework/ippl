@@ -47,6 +47,8 @@ namespace ippl {
 
             ~Communicator() = default;
 
+            Communicator split(int color, int key) const;
+
             operator const MPI_Comm&() const noexcept { return *comm_m; }
 
             int size() const noexcept { return size_m; }
