@@ -36,17 +36,9 @@
 
 namespace ippl {
 
-    namespace detail {
-        template <class... Properties>
-        struct AttribBaseWithMemSpace {
-            using memory_space = typename Kokkos::View<char*, Properties...>::memory_space;
-            using type         = ParticleAttribBase<memory_space>;
-        };
-    }  // namespace detail
-
     // ParticleAttrib class definition
     template <typename T, class... Properties>
-    class ParticleAttrib : public detail::AttribBaseWithMemSpace<Properties...>::type,
+    class ParticleAttrib : public detail::ParticleAttribBase<>::with_properties<Properties...>,
                            public detail::Expression<
                                ParticleAttrib<T, Properties...>,
                                sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)> {
@@ -54,7 +46,7 @@ namespace ippl {
         typedef T value_type;
         constexpr static unsigned dim = 1;
 
-        using Base = typename detail::AttribBaseWithMemSpace<Properties...>::type;
+        using Base = typename detail::ParticleAttribBase<>::with_properties<Properties...>;
 
         using hash_type = typename Base::hash_type;
 

@@ -34,12 +34,21 @@
 
 namespace ippl {
     namespace detail {
-        template <typename MemorySpace>
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
         class ParticleAttribBase {
+            template <class... Properties>
+            struct WithMemSpace {
+                using memory_space = typename Kokkos::View<char*, Properties...>::memory_space;
+                using type         = ParticleAttribBase<memory_space>;
+            };
+
         public:
             using hash_type       = ippl::detail::hash_type<MemorySpace>;
             using memory_space    = MemorySpace;
             using execution_space = typename memory_space::execution_space;
+
+            template <typename... Properties>
+            using with_properties = typename WithMemSpace<Properties...>::type;
 
             virtual void create(size_type) = 0;
 
