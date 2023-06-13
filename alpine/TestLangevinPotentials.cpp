@@ -306,7 +306,8 @@ int main(int argc, char* argv[]) {
     const double numberDensity  = 1.0;
     // double numberDensity = NP / (BOXL*BOXL*BOXL);
 
-    for (size_t nv = 8; nv <= NV_MAX; nv *= 2) {
+    const size_t nvMin = 8;
+    for (size_t nv = nvMin; nv <= NV_MAX; nv *= 2) {
         /////////////////////////
         // CONFIGURATION SPACE //
         /////////////////////////
@@ -570,19 +571,32 @@ int main(int argc, char* argv[]) {
 
         dumpVTKVector(DdivDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DdivDiff");
 
-        /////////////////////////////
-        // COMPUTE RELATIVE ERRORS //
-        /////////////////////////////
+        ///////////////////////////////////////////////
+        // COMPUTE RELATIVE ERRORS AND DUMP TO FILES //
+        ///////////////////////////////////////////////
 
         const int shift     = nghost;
         double HrelError    = subfieldNorm(Hdiff, shift) / subfieldNorm(HfieldExact, shift);
         double GrelError    = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
         double FdRelError   = L2VectorNorm(FdDiff, shift) / L2VectorNorm(FdExact, shift);
-        MatrixD_t DRelError = MFieldRelError(P->D_m, DfieldExact, 2 * shift);
+        MatrixD_t DrelError = MFieldRelError(P->D_m, DfieldExact, 2 * shift);
         double DtraceRelError =
             subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
         VectorD_t DdivDiffRelError =
             L2VectorNorm(DdivDiff, shift + 2 * shift) / L2VectorNorm(P->Fd_m, 2 * shift);
+
+        std::string convergenceOutDir = OUT_DIR + "/convergenceStats";
+        dumpCSVScalar(HrelError, "H", nv, (nv == nvMin), convergenceOutDir);
+        dumpCSVScalar(GrelError, "G", nv, (nv == nvMin), convergenceOutDir);
+        dumpCSVScalar(FdRelError, "Fd", nv, (nv == nvMin), convergenceOutDir);
+        dumpCSVMatrix(DrelError, "D", nv, (nv == nvMin), convergenceOutDir);
+        dumpCSVScalar(DtraceRelError, "Dtrace", nv, (nv == nvMin), convergenceOutDir);
+        dumpCSVVector(DdivDiffRelError, "Ddiv", nv, (nv == nvMin), convergenceOutDir);
+
+        /////////////////////////////
+        // WRITE RESULTS TO STDOUT //
+        /////////////////////////////
+
         msg << "h(v) rel. error (" << nv << "^3)"
             << ": " << HrelError << endl;
         msg << "g(v) rel. error (" << nv << "^3)"
@@ -591,9 +605,9 @@ int main(int argc, char* argv[]) {
             << ": " << FdRelError << endl;
         msg << "D(v) rel. error (" << nv << "^3)"
             << ": " << endl;
-        msg << DRelError[0] << endl;
-        msg << DRelError[1] << endl;
-        msg << DRelError[2] << endl;
+        msg << DrelError[0] << endl;
+        msg << DrelError[1] << endl;
+        msg << DrelError[2] << endl;
         msg << "Tr(D) - h = 0 rel. error (" << nv << "^3)"
             << ": " << DtraceRelError << endl;
         msg << "div(D) - Fd = 0 rel. error (" << nv << "^3)"

@@ -206,6 +206,93 @@ void dumpVTKVector(VField_t<T, Dim>& F, VectorD_t cellSpacing, VectorD<size_t> n
     }
 }
 
+void dumpCSVMatrix(MatrixD_t m, std::string matrixPrefix, size_type iteration, bool create_header,
+                   std::string folder) {
+    std::stringstream fname;
+    fname << folder << "/";
+    fname << matrixPrefix;
+    fname << ".csv";
+
+    Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+    csvout.precision(10);
+    csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+    if (create_header) {
+        // Write header
+        csvout << "nv,";
+
+        csvout << matrixPrefix << "_xx," << matrixPrefix << "_xy," << matrixPrefix << "_xz,"
+               << matrixPrefix << "_yx," << matrixPrefix << "_yy," << matrixPrefix << "_yz,"
+               << matrixPrefix << "_zx," << matrixPrefix << "_zy," << matrixPrefix << "_zz" << endl;
+    }
+
+    // And dump into file
+    csvout << iteration << ",";
+    for (size_type i = 0; i < Dim; ++i) {
+        for (size_type j = 0; j < Dim; ++j) {
+            csvout << m[i][j];
+            if (i == Dim - 1 && j == Dim - 1) {
+                csvout << endl;
+            } else {
+                csvout << ",";
+            }
+        }
+    }
+}
+
+void dumpCSVVector(VectorD_t v, std::string vectorPrefix, size_type iteration, bool create_header,
+                   std::string folder) {
+    std::stringstream fname;
+    fname << folder << "/";
+    fname << vectorPrefix;
+    fname << ".csv";
+
+    Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+    csvout.precision(10);
+    csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+    if (create_header) {
+        csvout << "nv,";
+
+        // Write header
+        csvout << vectorPrefix << "_x," << vectorPrefix << "_y," << vectorPrefix << "_z" << endl;
+    }
+
+    // And dump into file
+    csvout << iteration << ",";
+    for (size_type i = 0; i < Dim; ++i) {
+        csvout << v[i];
+        if (i == Dim - 1) {
+            csvout << endl;
+        } else {
+            csvout << ",";
+        }
+    }
+}
+
+void dumpCSVScalar(double val, std::string scalarPrefix, size_type iteration, bool create_header,
+                   std::string folder) {
+    std::stringstream fname;
+    fname << folder << "/";
+    fname << scalarPrefix;
+    fname << ".csv";
+
+    Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+    csvout.precision(10);
+    csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+    if (create_header) {
+        csvout << "nv,";
+
+        // Write header
+        csvout << scalarPrefix << endl;
+    }
+
+    // And dump into file
+    csvout << iteration << ",";
+    csvout << val << endl;
+}
+
 template <typename T>
 void dumpCSVMatrixField(VField_t<T, Dim>& M0, VField_t<T, Dim>& M1, VField_t<T, Dim>& M2,
                         ippl::Vector<size_type, Dim> nx, std::string matrixPrefix,
