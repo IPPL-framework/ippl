@@ -33,6 +33,8 @@ echo "Output directory: ${OUT_DIR}"
 
 # Create directory to write output data and this script
 mkdir -p ${OUT_DIR}
+mkdir -p ${OUT_DIR}/convergenceStats
+
 # Copy this script to the data directory (follows symlinks)
 THIS_FILE="$(readlink -f "$0")"
 cp ${THIS_FILE} ${OUT_DIR}/jobscript.sh
