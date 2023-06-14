@@ -138,14 +138,14 @@ class GenerateTestData {
 public:
     GenerateTestData(Field_view_t fvView, Field_view_t HviewExact, Field_view_t GviewExact,
                      VField_view_t FdViewExact, MField_view_t DviewExact, double numberDensity,
-                     double vth, const Bunch& P)
+                     double sigma, const Bunch& P)
         : fvView_m(fvView)
         , HviewExact_m(HviewExact)
         , GviewExact_m(GviewExact)
         , FdViewExact_m(FdViewExact)
         , DviewExact_m(DviewExact)
         , numberDensity_m(numberDensity)
-        , vth_m(vth)
+        , sigma_m(sigma)
         , lDom_m(P->velocitySpaceFieldLayout_m.getLocalNDIndex())
         , P_m(P) {}
 
@@ -156,28 +156,25 @@ public:
         }
 
         double prefactor;
-        double sigma;
 
         // Set specific factors depending on Test-Case
         if constexpr (Test == TestCase::MAXWELLIAN) {
             prefactor = numberDensity_m;
-            sigma     = vth_m;
         } else if constexpr (Test == TestCase::GAUSSIAN) {
             prefactor = 1.0;
-            sigma     = 1.0;
         }
 
         // Multiply Integral over configuration-space
         prefactor *= P_m->configSpaceIntegral_m;
 
         // Initialize I.C. and all resulting potentials, etc.
-        ippl::apply(fvView_m, args)      = gaussianPDF(v, sigma, prefactor);
-        ippl::apply(HviewExact_m, args)  = gaussianHexact(v, sigma, prefactor);
-        ippl::apply(GviewExact_m, args)  = gaussianGexact(v, sigma, prefactor);
-        ippl::apply(FdViewExact_m, args) = gaussianFdExact(v, P_m->gamma_m, sigma, prefactor);
+        ippl::apply(fvView_m, args)      = gaussianPDF(v, sigma_m, prefactor);
+        ippl::apply(HviewExact_m, args)  = gaussianHexact(v, sigma_m, prefactor);
+        ippl::apply(GviewExact_m, args)  = gaussianGexact(v, sigma_m, prefactor);
+        ippl::apply(FdViewExact_m, args) = gaussianFdExact(v, P_m->gamma_m, sigma_m, prefactor);
 
         // Diffusion Coefficient $D$
-        ippl::apply(DviewExact_m, args) = gaussianFullDexact(v, P_m->gamma_m, sigma, prefactor);
+        ippl::apply(DviewExact_m, args) = gaussianFullDexact(v, P_m->gamma_m, sigma_m, prefactor);
     }
 
 private:
@@ -187,7 +184,7 @@ private:
     const VField_view_t FdViewExact_m;
     const MField_view_t DviewExact_m;
     const double numberDensity_m;
-    const double vth_m;
+    const double sigma_m;
     const ippl::NDIndex<Dim>& lDom_m;
     const Bunch& P_m;
 };
@@ -214,7 +211,6 @@ int main(int argc, char* argv[]) {
     const std::string SOLVER_T        = argv[2];
     const double LB_THRESHOLD         = std::atof(argv[3]);
     const size_type NR                = std::atoll(argv[4]);
-    const double BOXL                 = std::atof(argv[5]);
     const size_type NP                = std::atoll(argv[6]);
     const double DT                   = std::atof(argv[7]);
     const double PARTICLE_CHARGE      = std::atof(argv[8]);
@@ -231,10 +227,9 @@ int main(int argc, char* argv[]) {
     // CONSTANTS FOR MAXELLIAN //
     /////////////////////////////
 
-    constexpr TestCase testType = TestCase::MAXWELLIAN;
+    constexpr TestCase testType = TestCase::GAUSSIAN;
     const double vth            = 1.0;
     const double numberDensity  = 1.0;
-    // double numberDensity = NP / (BOXL*BOXL*BOXL);
 
     const size_t nvMin = 8;
     for (size_t nv = nvMin; nv <= NV_MAX; nv *= 2) {
@@ -245,11 +240,21 @@ int main(int argc, char* argv[]) {
         const ippl::NDIndex<Dim> configSpaceIdxDomain(NR, NR, NR);
         ippl::e_dim_tag configSpaceDecomp[Dim] = {ippl::PARALLEL, ippl::PARALLEL, ippl::PARALLEL};
 
-        const double L = BOXL * 0.5;
+        // Define \sigma of initial distribution
+        double sigma;
+        if constexpr (testType == TestCase::MAXWELLIAN) {
+            sigma = vth;
+        } else if constexpr (testType == TestCase::GAUSSIAN) {
+            sigma = 0.05;
+        }
+
+        // Domain is [-5\sigma, 5\sigma]^3
+        const double L         = 5.0 * sigma;
+        const double boxLength = 2.0 * L;
         const VectorD_t configSpaceLowerBound({-L, -L, -L});
         const VectorD_t configSpaceUpperBound({L, L, L});
         const VectorD_t configSpaceOrigin({-L, -L, -L});
-        VectorD_t hr({BOXL / NR, BOXL / NR, BOXL / NR});  // spacing
+        VectorD_t hr({boxLength / NR, boxLength / NR, boxLength / NR});  // spacing
         VectorD<size_t> nr({NR, NR, NR});
 
         Mesh_t<Dim> configSpaceMesh(configSpaceIdxDomain, hr, configSpaceOrigin);
@@ -332,7 +337,7 @@ int main(int argc, char* argv[]) {
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * rank));
         Kokkos::parallel_for(
             nloc, GenerateRandomBoxPositions<VectorD_t, Kokkos::Random_XorShift64_Pool<>>(
-                      P->R.getView(), BOXL, rand_pool64));
+                      P->R.getView(), boxLength, rand_pool64));
 
         // Initialize constant particle attributes
         P->q = PARTICLE_CHARGE;
@@ -357,13 +362,13 @@ int main(int argc, char* argv[]) {
         Field_view_t DtraceDiffView = DtraceDiff.getView();
 
         GenerateTestData<testType, std::shared_ptr<bunch_type>> dataGenerator(
-            fvView, HviewExact, GviewExact, FdViewExact, DviewExact, numberDensity, vth, P);
+            fvView, HviewExact, GviewExact, FdViewExact, DviewExact, numberDensity, sigma, P);
 
         ippl::parallel_for("Assign initial velocity PDF and reference solutions",
                            ippl::getRangePolicy(fvView, 0), dataGenerator);
         Kokkos::fence();
 
-        dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, 0, 1.0, OUT_DIR, "fvInit");
+        dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "fvInit");
 
         //////////////////////////////////////
         // COMPUTE 1st ROSENBLUTH POTENTIAL //
@@ -503,7 +508,6 @@ int main(int argc, char* argv[]) {
 
         constructVFieldFromFields(Ddiv, D0div, D1div, D2div);
 
-        // DdivDiff = Ddiv - P->Fd_m;
         DdivDiff = Ddiv - FdExact;
         dumpVTKVector(Ddiv, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Ddiv");
 
