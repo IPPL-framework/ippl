@@ -10,14 +10,6 @@ enum TestCase {
     GAUSSIAN   = 0b10
 };
 
-KOKKOS_INLINE_FUNCTION double maxwellianPDF(const VectorD_t& v, const double& numberDensity,
-                                            const double& vth) {
-    double vNorm   = L2Norm(v);
-    double expTerm = Kokkos::exp(-vNorm * vNorm / (2.0 * vth * vth));
-    return (numberDensity / Kokkos::pow(2.0 * Kokkos::numbers::pi_v<double> * vth * vth, 1.5))
-           * expTerm;
-}
-
 KOKKOS_INLINE_FUNCTION double gaussianPDF(const VectorD_t& v, const double& sigma,
                                           const double& prefactor) {
     const double vNorm  = L2Norm(v);
@@ -25,12 +17,6 @@ KOKKOS_INLINE_FUNCTION double gaussianPDF(const VectorD_t& v, const double& sigm
     const double pi     = Kokkos::numbers::pi_v<double>;
     return prefactor * Kokkos::exp(-1.0 * vNorm * vNorm / (2.0 * sigma * sigma))
            / (Kokkos::sqrt(8.0 * pi * pi * pi) * sigma3);
-}
-
-KOKKOS_INLINE_FUNCTION double maxwellianHexact(const VectorD_t& v, const double& numberDensity,
-                                               const double& vth) {
-    double vNorm = L2Norm(v);
-    return (2.0 * numberDensity / vNorm) * Kokkos::erf(vNorm / (Kokkos::sqrt(2.0) * vth));
 }
 
 KOKKOS_INLINE_FUNCTION double gaussianHexact(const VectorD_t& v, const double& sigma,
@@ -51,17 +37,6 @@ KOKKOS_INLINE_FUNCTION VectorD_t gaussianFdExact(const VectorD_t& v, const doubl
     return prefactor * gamma * preFactor * (expTerm - erfTerm) * v;
 }
 
-KOKKOS_INLINE_FUNCTION double maxwellianGexact(const VectorD_t& v, const double& numberDensity,
-                                               const double& vth) {
-    double vNorm   = L2Norm(v);
-    double sqrt2   = Kokkos::sqrt(2.0);
-    double expTerm = Kokkos::exp(-vNorm * vNorm / (2.0 * vth * vth))
-                     / Kokkos::sqrt(Kokkos::numbers::pi_v<double>);
-    double erfTerm   = Kokkos::erf(vNorm / (sqrt2 * vth));
-    double erfFactor = (vth / (sqrt2 * vNorm)) + (vNorm / (sqrt2 * vth));
-    return sqrt2 * numberDensity * vth * (expTerm + erfTerm * erfFactor);
-}
-
 KOKKOS_INLINE_FUNCTION double gaussianGexact(const VectorD_t& v, const double& sigma,
                                              const double& prefactor) {
     const double vNorm  = L2Norm(v);
@@ -74,58 +49,25 @@ KOKKOS_INLINE_FUNCTION double gaussianGexact(const VectorD_t& v, const double& s
     return prefactor * (expTerm + erfTerm);
 }
 
-KOKKOS_INLINE_FUNCTION double maxwellianD00exact(const VectorD_t& v, const double& gamma,
-                                                 const double& numberDensity, const double& vth) {
-    double vNorm = L2Norm(v);
-    double v2    = vNorm * vNorm;
-    return Kokkos::sqrt(2) * gamma * numberDensity * vth
-               * (-(1 / (Kokkos::exp((v2) / (2. * Kokkos::pow(vth, 2))) * Kokkos::pow(vth, 2)))
-                  + Kokkos::pow(v[0], 2)
-                        / (Kokkos::exp((v2) / (2. * Kokkos::pow(vth, 2))) * Kokkos::pow(vth, 4)))
-               / Kokkos::sqrt(Kokkos::numbers::pi_v<double>)
-           + (2 * Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * v[0]
-              * (-((vth * v[0]) / (Kokkos::sqrt(2) * Kokkos::pow(v2, 1.5)))
-                 + v[0] / (Kokkos::sqrt(2) * vth * vNorm)))
-                 / (Kokkos::exp((v2) / (2. * Kokkos::pow(vth, 2))) * vth * vNorm)
-           + (-((Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * Kokkos::pow(v[0], 2))
-                / (Kokkos::exp((v2) / (2. * Kokkos::pow(vth, 2))) * vth * Kokkos::pow(v2, 1.5)))
-              + Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>)
-                    / (Kokkos::exp((v2) / (2. * Kokkos::pow(vth, 2))) * vth * vNorm)
-              - (Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * Kokkos::pow(v[0], 2))
-                    / (Kokkos::exp((v2) / (2. * Kokkos::pow(vth, 2))) * Kokkos::pow(vth, 3)
-                       * vNorm))
-                 * (vth / (Kokkos::sqrt(2) * vNorm) + vNorm / (Kokkos::sqrt(2) * vth))
-           + ((vth * ((3 * Kokkos::pow(v[0], 2)) / Kokkos::pow(v2, 2.5) - Kokkos::pow(v2, -1.5)))
-                  / Kokkos::sqrt(2)
-              + (-(Kokkos::pow(v[0], 2) / Kokkos::pow(v2, 1.5)) + 1 / vNorm)
-                    / (Kokkos::sqrt(2) * vth))
-                 * Kokkos::erf(vNorm / (Kokkos::sqrt(2) * vth));
-}
+KOKKOS_INLINE_FUNCTION double gaussianDiagEntryExact(const VectorD_t& v, const size_type colIdx,
+                                                     const double& gamma, const double& sigma) {
+    const double vNorm  = L2Norm(v);
+    const double vNorm2 = vNorm * vNorm;
+    const double sigma2 = sigma * sigma;
+    const double vHat2  = v[colIdx] * v[colIdx];
+    const double pi     = Kokkos::numbers::pi_v<double>;
 
-KOKKOS_INLINE_FUNCTION double maxwellianD01exact(const VectorD_t& v, const double& gamma,
-                                                 const double& numberDensity, const double& vth) {
-    double vNorm = L2Norm(v);
-    double v2    = vNorm * vNorm;
-    return Kokkos::sqrt(2.0) * gamma * numberDensity * vth * (v[0] * v[1])
-               / (Kokkos::exp((v2) / (2. * Kokkos::pow(vth, 2)))
-                  * Kokkos::sqrt(Kokkos::numbers::pi_v<double>) * Kokkos::pow(vth, 4))
-           + (Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * v[1]
-              * (-((vth * v[0]) / (Kokkos::sqrt(2) * Kokkos::pow(v2, 1.5)))
-                 + v[0] / (Kokkos::sqrt(2) * vth * vNorm)))
-                 / (Kokkos::exp((v2) / (2. * Kokkos::pow(vth, 2))) * vth * vNorm)
-           + (Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * v[0]
-              * (-((vth * v[1]) / (Kokkos::sqrt(2) * Kokkos::pow(v2, 1.5)))
-                 + v[1] / (Kokkos::sqrt(2) * vth * vNorm)))
-                 / (Kokkos::exp((v2) / (2. * Kokkos::pow(vth, 2))) * vth * vNorm)
-           - (Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * v[0] * v[1]
-              * (vth / (Kokkos::sqrt(2) * vNorm) + Kokkos::sqrt(v2) / (Kokkos::sqrt(2) * vth)))
-                 / (Kokkos::exp((v2) / (2. * Kokkos::pow(vth, 2))) * vth * Kokkos::pow(v2, 1.5))
-           - (Kokkos::sqrt(2 / Kokkos::numbers::pi_v<double>) * v[0] * v[1]
-              * (vth / (Kokkos::sqrt(2) * vNorm) + Kokkos::sqrt(v2) / (Kokkos::sqrt(2) * vth)))
-                 / (Kokkos::exp((v2) / (2. * Kokkos::pow(vth, 2))) * Kokkos::pow(vth, 3) * vNorm)
-           + ((3 * vth * v[0] * v[1]) / (Kokkos::sqrt(2) * Kokkos::pow(v2, 2.5))
-              - (v[0] * v[1]) / (Kokkos::sqrt(2) * vth * Kokkos::pow(v2, 1.5)))
-                 * Kokkos::erf(vNorm / (Kokkos::sqrt(2) * vth));
+    const double expFactor = (vHat2 - sigma2) / sigma2
+                             + (sigma2 / vNorm + vNorm)
+                                   * (sigma2 * vNorm2 - vHat2 * vNorm2 - sigma2 * vHat2)
+                                   / (sigma2 * vNorm2 * vNorm)
+                             + 2.0 * vHat2 / (vNorm2 * vNorm2) * (vNorm2 - sigma2);
+    const double expTerm =
+        Kokkos::sqrt(2.0 / pi) * 1.0 / sigma * Kokkos::exp(-vNorm2 / (2.0 * sigma2)) * expFactor;
+    const double erfTerm = 1.0 / (vNorm2 * vNorm2 * vNorm)
+                           * Kokkos::erf(vNorm / (sigma * Kokkos::sqrt(2.0)))
+                           * (vNorm2 * vNorm2 - vNorm2 * (vHat2 + sigma2) + 3.0 * sigma2 * vHat2);
+    return gamma * (expTerm + erfTerm);
 }
 
 KOKKOS_INLINE_FUNCTION double gaussianD01exact(const VectorD_t& v, const double& gamma,
@@ -152,27 +94,6 @@ KOKKOS_INLINE_FUNCTION double gaussianD02exact(const VectorD_t& v, const double&
                   * Kokkos::exp(-vNorm2 / (2 * sigma2))
               + Kokkos::erf(vNorm / (sigma * Kokkos::sqrt(2)))
                     * (v[0] * v[2] / (vNorm * vNorm2) * (3 * sigma2 / vNorm2 - 1)));
-}
-
-KOKKOS_INLINE_FUNCTION double gaussianDiagEntryExact(const VectorD_t& v, const size_type colIdx,
-                                                     const double& gamma, const double& sigma) {
-    const double vNorm  = L2Norm(v);
-    const double vNorm2 = vNorm * vNorm;
-    const double sigma2 = sigma * sigma;
-    const double vHat2  = v[colIdx] * v[colIdx];
-    const double pi     = Kokkos::numbers::pi_v<double>;
-
-    const double expFactor = (vHat2 - sigma2) / sigma2
-                             + (sigma2 / vNorm + vNorm)
-                                   * (sigma2 * vNorm2 - vHat2 * vNorm2 - sigma2 * vHat2)
-                                   / (sigma2 * vNorm2 * vNorm)
-                             + 2.0 * vHat2 / (vNorm2 * vNorm2) * (vNorm2 - sigma2);
-    const double expTerm =
-        Kokkos::sqrt(2.0 / pi) * 1.0 / sigma * Kokkos::exp(-vNorm2 / (2.0 * sigma2)) * expFactor;
-    const double erfTerm = 1.0 / (vNorm2 * vNorm2 * vNorm)
-                           * Kokkos::erf(vNorm / (sigma * Kokkos::sqrt(2.0)))
-                           * (vNorm2 * vNorm2 - vNorm2 * (vHat2 + sigma2) + 3.0 * sigma2 * vHat2);
-    return gamma * (expTerm + erfTerm);
 }
 
 KOKKOS_INLINE_FUNCTION double gaussianD12exact(const VectorD_t& v, const double& gamma,
@@ -232,29 +153,30 @@ public:
         for (unsigned d = 0; d < Dim; d++) {
             v[d] = (v[d] + lDom_m[d].first() + 0.5) * P_m->hv_m[d] + P_m->vmin_m[d] - P_m->hv_m[d];
         }
+
+        double prefactor;
+        double sigma;
+
+        // Set specific factors depending on Test-Case
         if constexpr (Test == TestCase::MAXWELLIAN) {
-            ippl::apply(fvView_m, args) =
-                maxwellianPDF(v, numberDensity_m, vth_m) * P_m->configSpaceIntegral_m;
-            ippl::apply(HviewExact_m, args) =
-                maxwellianHexact(v, numberDensity_m, vth_m) * P_m->configSpaceIntegral_m;
-            ippl::apply(GviewExact_m, args) =
-                maxwellianGexact(v, numberDensity_m, vth_m) * P_m->configSpaceIntegral_m;
-
-            // Exact friction coefficients
-
-            // First diagonal and off-diagonal entries of Hessian
-            // TODO Define entries for Maxwellian
+            prefactor = numberDensity_m;
+            sigma     = vth_m;
         } else if constexpr (Test == TestCase::GAUSSIAN) {
-            const double prefactor           = P_m->configSpaceIntegral_m;
-            const double sigma               = 1.0;
-            ippl::apply(fvView_m, args)      = gaussianPDF(v, sigma, prefactor);
-            ippl::apply(HviewExact_m, args)  = gaussianHexact(v, sigma, prefactor);
-            ippl::apply(GviewExact_m, args)  = gaussianGexact(v, sigma, prefactor);
-            ippl::apply(FdViewExact_m, args) = gaussianFdExact(v, P_m->gamma_m, sigma, prefactor);
-
-            // First diagonal and off-diagonal entries of Hessian
-            ippl::apply(DviewExact_m, args) = gaussianFullDexact(v, P_m->gamma_m, sigma, prefactor);
+            prefactor = 1.0;
+            sigma     = 1.0;
         }
+
+        // Multiply Integral over configuration-space
+        prefactor *= P_m->configSpaceIntegral_m;
+
+        // Initialize I.C. and all resulting potentials, etc.
+        ippl::apply(fvView_m, args)      = gaussianPDF(v, sigma, prefactor);
+        ippl::apply(HviewExact_m, args)  = gaussianHexact(v, sigma, prefactor);
+        ippl::apply(GviewExact_m, args)  = gaussianGexact(v, sigma, prefactor);
+        ippl::apply(FdViewExact_m, args) = gaussianFdExact(v, P_m->gamma_m, sigma, prefactor);
+
+        // Diffusion Coefficient $D$
+        ippl::apply(DviewExact_m, args) = gaussianFullDexact(v, P_m->gamma_m, sigma, prefactor);
     }
 
 private:
@@ -308,7 +230,7 @@ int main(int argc, char* argv[]) {
     // CONSTANTS FOR MAXELLIAN //
     /////////////////////////////
 
-    constexpr TestCase testType = TestCase::GAUSSIAN;
+    constexpr TestCase testType = TestCase::MAXWELLIAN;
     const double vth            = 1.0;
     const double numberDensity  = 1.0;
     // double numberDensity = NP / (BOXL*BOXL*BOXL);
