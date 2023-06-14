@@ -583,7 +583,7 @@ int main(int argc, char* argv[]) {
         double DtraceRelError =
             subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
         VectorD_t DdivDiffRelError =
-            L2VectorNorm(DdivDiff, shift + 2 * shift) / L2VectorNorm(P->Fd_m, 2 * shift);
+            L2VectorNorm(DdivDiff, 2 * shift) / L2VectorNorm(P->Fd_m, 2 * shift);
 
         std::string convergenceOutDir = OUT_DIR + "/convergenceStats";
         dumpCSVScalar(HrelError, "H", nv, (nv == nvMin), convergenceOutDir);
