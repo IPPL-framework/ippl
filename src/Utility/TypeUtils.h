@@ -189,6 +189,15 @@ namespace ippl {
                 ,
                 Kokkos::CudaSpace, Kokkos::CudaHostPinnedSpace, Kokkos::CudaUVMSpace
 #endif
+#ifdef KOKKOS_ENABLE_HIP
+                ,
+                Kokkos::HIPSpace, Kokkos::HIPHostPinnedSpace, Kokkos::HIPManagedSpace
+#endif
+#ifdef KOKKOS_ENABLE_SYCL
+                ,
+                Kokkos::Experimental::SYCLDeviceUSMSpace, Kokkos::Experimental::SYCLHostUSMSpace,
+                Kokkos::Experimental::SYCLSharedUSMSpace
+#endif
                 >;
 
             using type = typename Forward<Type, unique_spaces>::type;
