@@ -50,7 +50,8 @@ KOKKOS_INLINE_FUNCTION double gaussianGexact(const VectorD_t& v, const double& s
 }
 
 KOKKOS_INLINE_FUNCTION double gaussianDiagEntryExact(const VectorD_t& v, const size_type colIdx,
-                                                     const double& gamma, const double& sigma) {
+                                                     const double& gamma, const double& sigma,
+                                                     const double& prefactor) {
     const double vNorm  = L2Norm(v);
     const double vNorm2 = vNorm * vNorm;
     const double sigma2 = sigma * sigma;
@@ -67,16 +68,16 @@ KOKKOS_INLINE_FUNCTION double gaussianDiagEntryExact(const VectorD_t& v, const s
     const double erfTerm = 1.0 / (vNorm2 * vNorm2 * vNorm)
                            * Kokkos::erf(vNorm / (sigma * Kokkos::sqrt(2.0)))
                            * (vNorm2 * vNorm2 - vNorm2 * (vHat2 + sigma2) + 3.0 * sigma2 * vHat2);
-    return gamma * (expTerm + erfTerm);
+    return gamma * prefactor * (expTerm + erfTerm);
 }
 
 KOKKOS_INLINE_FUNCTION double gaussianD01exact(const VectorD_t& v, const double& gamma,
-                                               const double& sigma) {
+                                               const double& sigma, const double& prefactor) {
     const double vNorm  = L2Norm(v);
     const double vNorm2 = vNorm * vNorm;
     const double pi     = Kokkos::numbers::pi_v<double>;
     const double sigma2 = sigma * sigma;
-    return gamma
+    return gamma * prefactor
            * (-3 * sigma * sqrt(2 / pi) * v[0] * v[1] / (vNorm2 * vNorm2)
                   * Kokkos::exp(-vNorm2 / (2 * sigma2))
               + Kokkos::erf(vNorm / (sigma * Kokkos::sqrt(2)))
@@ -84,12 +85,12 @@ KOKKOS_INLINE_FUNCTION double gaussianD01exact(const VectorD_t& v, const double&
 }
 
 KOKKOS_INLINE_FUNCTION double gaussianD02exact(const VectorD_t& v, const double& gamma,
-                                               const double& sigma) {
+                                               const double& sigma, const double& prefactor) {
     const double vNorm  = L2Norm(v);
     const double vNorm2 = vNorm * vNorm;
     const double pi     = Kokkos::numbers::pi_v<double>;
     const double sigma2 = sigma * sigma;
-    return gamma
+    return gamma * prefactor
            * (-3 * sigma * sqrt(2 / pi) * v[0] * v[2] / (vNorm2 * vNorm2)
                   * Kokkos::exp(-vNorm2 / (2 * sigma2))
               + Kokkos::erf(vNorm / (sigma * Kokkos::sqrt(2)))
@@ -97,12 +98,12 @@ KOKKOS_INLINE_FUNCTION double gaussianD02exact(const VectorD_t& v, const double&
 }
 
 KOKKOS_INLINE_FUNCTION double gaussianD12exact(const VectorD_t& v, const double& gamma,
-                                               const double& sigma) {
+                                               const double& sigma, const double& prefactor) {
     const double vNorm  = L2Norm(v);
     const double vNorm2 = vNorm * vNorm;
     const double pi     = Kokkos::numbers::pi_v<double>;
     const double sigma2 = sigma * sigma;
-    return gamma
+    return gamma * prefactor
            * (-3 * sigma * sqrt(2 / pi) * v[1] * v[2] / (vNorm2 * vNorm2)
                   * Kokkos::exp(-vNorm2 / (2 * sigma2))
               + Kokkos::erf(vNorm / (sigma * Kokkos::sqrt(2)))
@@ -113,14 +114,14 @@ KOKKOS_INLINE_FUNCTION MatrixD_t gaussianFullDexact(const VectorD_t& v, const do
                                                     const double& sigma, const double& prefactor) {
     MatrixD_t D;
     // Diagonal Entries
-    D[0][0] = gaussianDiagEntryExact(v, 0, gamma, sigma) * prefactor;
-    D[1][1] = gaussianDiagEntryExact(v, 1, gamma, sigma) * prefactor;
-    D[2][2] = gaussianDiagEntryExact(v, 2, gamma, sigma) * prefactor;
+    D[0][0] = gaussianDiagEntryExact(v, 0, gamma, sigma, prefactor);
+    D[1][1] = gaussianDiagEntryExact(v, 1, gamma, sigma, prefactor);
+    D[2][2] = gaussianDiagEntryExact(v, 2, gamma, sigma, prefactor);
 
     // Off-Diagonals
-    D[0][1] = gaussianD01exact(v, gamma, sigma) * prefactor;
-    D[0][2] = gaussianD02exact(v, gamma, sigma) * prefactor;
-    D[1][2] = gaussianD12exact(v, gamma, sigma) * prefactor;
+    D[0][1] = gaussianD01exact(v, gamma, sigma, prefactor);
+    D[0][2] = gaussianD02exact(v, gamma, sigma, prefactor);
+    D[1][2] = gaussianD12exact(v, gamma, sigma, prefactor);
 
     // Mirror along diagonal
     D[1][0] = D[0][1];
