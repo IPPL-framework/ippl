@@ -454,12 +454,15 @@ public:
     void runFrictionSolver() {
         Inform msg("runFrictionSolver");
 
+        // Initialize `fv_m`
         scatterVelSpace();
 
-        // Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
-        // `-1.0` prefactor is because the solver returns $- \nabla H(\vec v)$
-        // Multiply with prob. density in configuration space $f(\vec r)$
-        fv_m = -1.0 * (-8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m);
+        /*
+         * Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
+         * `-1.0` prefactor is because the solver computes $- \Delta H(\vec v) = - rhs(v)$
+         * Multiply with prob. density in configuration space $f(\vec r)$
+         */
+        fv_m = 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
@@ -467,9 +470,13 @@ public:
         // Solve for $\Delta_v H(\vec v)$. Its gradient is stored in `Fd_m`
         frictionSolver_mp->solve();
 
+        // Sign change needed as solver returns $- \nabla H(\vec)$
+        Fd_m = -Fd_m;
+
         // Set origin of velocity space mesh to vmin (for scatter / gather)
         velocitySpaceMesh_m.setOrigin(vmin_m);
 
+        // Only needed for dumping
         gatherFd();
 
         msg << "Friction computation done." << endl;
@@ -478,12 +485,16 @@ public:
     void runDiffusionSolver() {
         Inform msg("runDiffusionSolver");
 
+        // Initialize `fv_m`
         scatterVelSpace();
 
-        // Multiply with prefactors defined in RHS of Rosenbluth equations
-        // FFTPoissonSolver returns $ \Delta_v \Delta_v G(\vec v)$ in `fv_m`
-        // `-1.0` prefactor is because the solver computes $\Delta \Delta G(\vec v) = - rhs(v)$
-        fv_m = -1.0 * (-8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m);
+        /*
+         * Multiply with prefactors defined in RHS of Rosenbluth equations
+         * FFTPoissonSolver returns $G(\vec v)$ in `fv_m`
+         * Density multiplied with `-1.0` as the solver computes $\Delta \Delta G(\vec v) = -
+         * rhs(v)$
+         */
+        fv_m = 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
