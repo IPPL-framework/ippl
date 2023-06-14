@@ -84,11 +84,11 @@ namespace ippl {
                     size_type nsends;
                     pack(range, view, haloData_m, nsends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer<memory_space, T>(
+                    buffer_type buf = Comm->getBuffer<memory_space, T>(
                         IPPL_HALO_SEND + i * cubeCount + index, nsends);
 
-                    Ippl::Comm->isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++],
-                                      nsends);
+                    Comm->isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++],
+                                nsends);
                     buf->resetWritePos();
                 }
             }
@@ -109,10 +109,10 @@ namespace ippl {
 
                     size_type nrecvs = range.size();
 
-                    buffer_type buf = Ippl::Comm->getBuffer<memory_space, T>(
+                    buffer_type buf = Comm->getBuffer<memory_space, T>(
                         IPPL_HALO_RECV + i * cubeCount + index, nrecvs);
 
-                    Ippl::Comm->recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
+                    Comm->recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, haloData_m);
@@ -134,7 +134,7 @@ namespace ippl {
             size_t size = subview.size();
             nsends      = size;
             if (buffer.size() < size) {
-                int overalloc = Ippl::Comm->getDefaultOverallocation();
+                int overalloc = Comm->getDefaultOverallocation();
                 Kokkos::realloc(buffer, size * overalloc);
             }
 
@@ -215,7 +215,7 @@ namespace ippl {
         void HaloCells<T, Dim, ViewArgs...>::applyPeriodicSerialDim(view_type& view,
                                                                     const Layout_t* layout,
                                                                     const int nghost) {
-            int myRank           = Ippl::Comm->rank();
+            int myRank           = Comm->rank();
             const auto& lDomains = layout->getHostLocalDomains();
             const auto& domain   = layout->getDomain();
             using index_type     = typename RangePolicy<Dim>::index_type;

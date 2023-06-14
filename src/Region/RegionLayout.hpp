@@ -109,7 +109,7 @@ namespace ippl {
 
         template <typename T, unsigned Dim, class Mesh, class... Properties>
         void RegionLayout<T, Dim, Mesh, Properties...>::write(std::ostream& out) const {
-            if (Ippl::Comm->rank() > 0) {
+            if (Comm->rank() > 0) {
                 return;
             }
 

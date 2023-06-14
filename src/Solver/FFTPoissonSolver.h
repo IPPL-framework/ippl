@@ -1,28 +1,40 @@
 //
-//// Class FFTPoissonSolver
-////   FFT-based Poisson Solver for open boundaries.
-////
-//// This file is part of IPPL.
-////
-//// IPPL is free software: you can redistribute it and/or modify
-//// it under the terms of the GNU General Public License as published by
-//// the Free Software Foundation, either version 3 of the License, or
-//// (at your option) any later version.
-////
-//// You should have received a copy of the GNU General Public License
-//// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-////
+// Class FFTPoissonSolver
+//   FFT-based Poisson Solver for open boundaries.
+//   Solves laplace(phi) = -rho, and E = -grad(phi).
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 #ifndef FFT_POISSON_SOLVER_H_
 #define FFT_POISSON_SOLVER_H_
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
+
 #include "Types/Vector.h"
+
+#include "Utility/IpplException.h"
+#include "Utility/IpplTimings.h"
 
 #include "Field/Field.h"
 
+#include "Communicate/Archive.h"
 #include "Electrostatics.h"
 #include "FFT/FFT.h"
+#include "Field/HaloCells.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
 
@@ -75,6 +87,13 @@ namespace ippl {
         // define a type for the 3 dimensional real to complex Fourier transform
         typedef FFT<RCTransform, FieldRHS> FFT_t;
 
+        // enum type for the algorithm
+        enum Algorithm {
+            HOCKNEY    = 0b01,
+            VICO       = 0b10,
+            BIHARMONIC = 0b11
+        };
+
         // define a type for a 3 dimensional field (e.g. charge density field)
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
@@ -97,10 +116,14 @@ namespace ippl {
         using scalar_type = typename mesh_type::value_type;
 
         // constructor and destructor
-        FFTPoissonSolver(rhs_type& rhs, ParameterList& fftparams, std::string alg);
-        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams, std::string alg,
-                         int sol = Base::SOL_AND_GRAD);
+        FFTPoissonSolver();
+        FFTPoissonSolver(rhs_type& rhs, ParameterList& params);
+        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
         ~FFTPoissonSolver() = default;
+
+        // override the setRhs function of the Solver class
+        // since we need to call initializeFields()
+        void setRhs(rhs_type& rhs) override;
 
         // allows user to set gradient of phi = Efield instead of spectral
         // calculation of Efield (which uses FFTs)
@@ -214,10 +237,11 @@ namespace ippl {
                     throw IpplException("FFTPoissonSolver::setDefaultParameters",
                                         "Unrecognized heffte communication type");
             }
+
+            this->params_m.add("algorithm", HOCKNEY);
         }
     };
 }  // namespace ippl
 
-#include "FFTPoissonSolver.hpp"
-
+#include "Solver/FFTPoissonSolver.hpp"
 #endif

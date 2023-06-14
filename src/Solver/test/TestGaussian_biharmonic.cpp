@@ -1,8 +1,24 @@
-// This program tests the FFTPoissonSolver class with a Gaussian source.
-// Different problem sizes are used for the purpose of convergence tests.
-// The algorithm used is chosen by the user:
-//     srun ./TestGaussian_convergence HOCKNEY --info 10
-// OR  srun ./TestGaussian_convergence VICO --info 10
+//
+// TestGaussian_biharmonic
+// This programs tests the Biharmonic solver from FFTPoissonSolver.
+// The test is done on a Gaussian source.
+//   Usage:
+//     srun ./TestGaussian_biharmonic --info 5
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 #include "Ippl.h"
 
@@ -14,6 +30,7 @@ using Mesh_t        = ippl::UniformCartesian<double, 3>;
 using Centering_t   = Mesh_t::DefaultCentering;
 using ScalarField_t = ippl::Field<double, 3, Mesh_t, Centering_t>;
 using VectorField_t = ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t>;
+using Solver_t      = ippl::FFTPoissonSolver<VectorField_t, ScalarField_t>;
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {
@@ -21,7 +38,7 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
     double prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return -prefactor * exp(-r2 / (2 * sigma * sigma));
+    return prefactor * exp(-r2 / (2 * sigma * sigma));
 }
 
 KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sigma = 0.05,
@@ -94,180 +111,189 @@ void dumpVTK(std::string path, ScalarField_t& rho, int nx, int ny, int nz, int i
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    Inform msg("");
-    Inform msg2all("", INFORM_ALL_NODES);
+    ippl::initialize(argc, argv);
+    {
+        Inform msg("");
+        Inform msg2all("", INFORM_ALL_NODES);
 
-    std::string algorithm = "BIHARMONIC";
+        // start a timer to time the FFT Poisson solver
+        static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
+        IpplTimings::startTimer(allTimer);
 
-    // start a timer to time the FFT Poisson solver
-    static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
-    IpplTimings::startTimer(allTimer);
+        // number of interations
+        const int n = 6;
 
-    // number of interations
-    const int n = 6;
+        // number of gridpoints to iterate over
+        std::array<int, n> N = {4, 8, 16, 32, 64, 128};
 
-    // number of gridpoints to iterate over
-    std::array<int, n> N = {4, 8, 16, 32, 64, 128};
+        msg << "Spacing Error" << endl;
 
-    msg << "Spacing Error" << endl;
+        for (int p = 0; p < n; ++p) {
+            // domain
+            int pt = N[p];
+            ippl::Index I(pt);
+            ippl::NDIndex<3> owned(I, I, I);
 
-    for (int p = 0; p < n; ++p) {
-        // domain
-        int pt = N[p];
-        ippl::Index I(pt);
-        ippl::NDIndex<3> owned(I, I, I);
+            // specifies decomposition; here all dimensions are parallel
+            ippl::e_dim_tag decomp[3];
+            for (unsigned int d = 0; d < 3; d++)
+                decomp[d] = ippl::PARALLEL;
 
-        // specifies decomposition; here all dimensions are parallel
-        ippl::e_dim_tag decomp[3];
-        for (unsigned int d = 0; d < 3; d++)
-            decomp[d] = ippl::PARALLEL;
+            // unit box
+            double dx                      = 1.0 / pt;
+            ippl::Vector<double, 3> hx     = {dx, dx, dx};
+            ippl::Vector<double, 3> origin = {0.0, 0.0, 0.0};
+            ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
-        // unit box
-        double dx                      = 1.0 / pt;
-        ippl::Vector<double, 3> hx     = {dx, dx, dx};
-        ippl::Vector<double, 3> origin = {0.0, 0.0, 0.0};
-        ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+            // all parallel layout, standard domain, normal axis order
+            ippl::FieldLayout<3> layout(owned, decomp);
 
-        // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<3> layout(owned, decomp);
+            // define the R (rho) field
+            ScalarField_t rho;
+            rho.initialize(mesh, layout);
 
-        // define the R (rho) field
-        ScalarField_t rho;
-        rho.initialize(mesh, layout);
+            // define the exact solution field
+            ScalarField_t exact;
+            exact.initialize(mesh, layout);
 
-        // define the exact solution field
-        ScalarField_t exact;
-        exact.initialize(mesh, layout);
+            // field for gradient and exact gradient
+            VectorField_t fieldE, exactE;
+            fieldE.initialize(mesh, layout);
+            exactE.initialize(mesh, layout);
 
-        // field for gradient and exact gradient
-        VectorField_t fieldE, exactE;
-        fieldE.initialize(mesh, layout);
-        exactE.initialize(mesh, layout);
+            // assign the rho field with a gaussian
+            typename ScalarField_t::view_type view_rho = rho.getView();
+            const int nghost                           = rho.getNghost();
+            const auto& ldom                           = layout.getLocalNDIndex();
 
-        // assign the rho field with a gaussian
-        typename ScalarField_t::view_type view_rho = rho.getView();
-        const int nghost                           = rho.getNghost();
-        const auto& ldom                           = layout.getLocalNDIndex();
+            Kokkos::parallel_for(
+                "Assign rho field", ippl::getRangePolicy(view_rho, nghost),
+                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    // go from local to global indices
+                    const int ig = i + ldom[0].first() - nghost;
+                    const int jg = j + ldom[1].first() - nghost;
+                    const int kg = k + ldom[2].first() - nghost;
 
-        Kokkos::parallel_for(
-            "Assign rho field", ippl::getRangePolicy(view_rho, nghost),
-            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                // go from local to global indices
-                const int ig = i + ldom[0].first() - nghost;
-                const int jg = j + ldom[1].first() - nghost;
-                const int kg = k + ldom[2].first() - nghost;
+                    // define the physical points (cell-centered)
+                    double x = (ig + 0.5) * hx[0] + origin[0];
+                    double y = (jg + 0.5) * hx[1] + origin[1];
+                    double z = (kg + 0.5) * hx[2] + origin[2];
 
-                // define the physical points (cell-centered)
-                double x = (ig + 0.5) * hx[0] + origin[0];
-                double y = (jg + 0.5) * hx[1] + origin[1];
-                double z = (kg + 0.5) * hx[2] + origin[2];
+                    view_rho(i, j, k) = gaussian(x, y, z);
+                });
 
-                view_rho(i, j, k) = gaussian(x, y, z);
-            });
+            // assign the exact field with its values (erf function)
+            typename ScalarField_t::view_type view_exact = exact.getView();
 
-        // assign the exact field with its values (erf function)
-        typename ScalarField_t::view_type view_exact = exact.getView();
+            Kokkos::parallel_for(
+                "Assign exact field", ippl::getRangePolicy(view_exact, nghost),
+                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    const int ig = i + ldom[0].first() - nghost;
+                    const int jg = j + ldom[1].first() - nghost;
+                    const int kg = k + ldom[2].first() - nghost;
 
-        Kokkos::parallel_for(
-            "Assign exact field", ippl::getRangePolicy(view_exact, nghost),
-            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                const int ig = i + ldom[0].first() - nghost;
-                const int jg = j + ldom[1].first() - nghost;
-                const int kg = k + ldom[2].first() - nghost;
+                    double x = (ig + 0.5) * hx[0] + origin[0];
+                    double y = (jg + 0.5) * hx[1] + origin[1];
+                    double z = (kg + 0.5) * hx[2] + origin[2];
 
-                double x = (ig + 0.5) * hx[0] + origin[0];
-                double y = (jg + 0.5) * hx[1] + origin[1];
-                double z = (kg + 0.5) * hx[2] + origin[2];
+                    view_exact(i, j, k) = exact_fct(x, y, z);
+                });
 
-                view_exact(i, j, k) = exact_fct(x, y, z);
-            });
+            // assign the exact gradient field
+            auto view_grad = exactE.getView();
+            Kokkos::parallel_for(
+                "Assign exact field", ippl::getRangePolicy(view_grad, nghost),
+                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    const int ig = i + ldom[0].first() - nghost;
+                    const int jg = j + ldom[1].first() - nghost;
+                    const int kg = k + ldom[2].first() - nghost;
 
-        // assign the exact gradient field
-        auto view_grad = exactE.getView();
-        Kokkos::parallel_for(
-            "Assign exact field", ippl::getRangePolicy(view_grad, nghost),
-            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                const int ig = i + ldom[0].first() - nghost;
-                const int jg = j + ldom[1].first() - nghost;
-                const int kg = k + ldom[2].first() - nghost;
+                    double x = (ig + 0.5) * hx[0] + origin[0];
+                    double y = (jg + 0.5) * hx[1] + origin[1];
+                    double z = (kg + 0.5) * hx[2] + origin[2];
 
-                double x = (ig + 0.5) * hx[0] + origin[0];
-                double y = (jg + 0.5) * hx[1] + origin[1];
-                double z = (kg + 0.5) * hx[2] + origin[2];
+                    view_grad(i, j, k)[0] = exact_grad(x, y, z)[0];
+                    view_grad(i, j, k)[1] = exact_grad(x, y, z)[1];
+                    view_grad(i, j, k)[2] = exact_grad(x, y, z)[2];
+                });
 
-                view_grad(i, j, k)[0] = exact_grad(x, y, z)[0];
-                view_grad(i, j, k)[1] = exact_grad(x, y, z)[1];
-                view_grad(i, j, k)[2] = exact_grad(x, y, z)[2];
-            });
+            Kokkos::fence();
 
-        Kokkos::fence();
+            // parameter list for solver
+            ippl::ParameterList params;
 
-        // set the FFT parameters
-        ippl::ParameterList fftParams;
-        fftParams.add("use_heffte_defaults", false);
-        fftParams.add("use_pencils", true);
-        fftParams.add("use_gpu_aware", true);
-        fftParams.add("comm", ippl::a2av);
-        fftParams.add("r2c_direction", 0);
+            // set the FFT parameters
+            params.add("use_heffte_defaults", false);
+            params.add("use_pencils", true);
+            params.add("use_gpu_aware", true);
+            params.add("comm", ippl::a2av);
+            params.add("r2c_direction", 0);
 
-        // define an FFTPoissonSolver object
-        ippl::FFTPoissonSolver<VectorField_t, ScalarField_t> FFTsolver(fieldE, rho, fftParams,
-                                                                       algorithm);
+            // set the algorithm (BIHARMONIC here)
+            params.add("algorithm", Solver_t::BIHARMONIC);
 
-        // solve the Poisson equation -> rho contains the solution (phi) now
-        FFTsolver.solve();
+            // add output type
+            params.add("output_type", Solver_t::SOL_AND_GRAD);
 
-        // compute relative error norm for potential
-        rho        = rho - exact;
-        double err = norm(rho) / norm(exact);
+            // define an FFTPoissonSolver object
+            Solver_t FFTsolver(fieldE, rho, params);
 
-        // compute relative error norm for the E-field components
-        ippl::Vector<double, 3> errE{0.0, 0.0, 0.0};
-        fieldE           = fieldE - exactE;
-        auto view_fieldE = fieldE.getView();
+            // solve the Poisson equation -> rho contains the solution (phi) now
+            FFTsolver.solve();
 
-        for (size_t d = 0; d < 3; ++d) {
-            double temp = 0.0;
+            // compute relative error norm for potential
+            rho        = rho - exact;
+            double err = norm(rho) / norm(exact);
 
-            Kokkos::parallel_reduce(
-                "Vector errorNr reduce", ippl::getRangePolicy(view_fieldE, nghost),
+            // compute relative error norm for the E-field components
+            ippl::Vector<double, 3> errE{0.0, 0.0, 0.0};
+            fieldE           = fieldE - exactE;
+            auto view_fieldE = fieldE.getView();
 
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                    double myVal = pow(view_fieldE(i, j, k)[d], 2);
-                    valL += myVal;
-                },
-                Kokkos::Sum<double>(temp));
+            for (size_t d = 0; d < 3; ++d) {
+                double temp = 0.0;
 
-            double globaltemp = 0.0;
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-            double errorNr = std::sqrt(globaltemp);
+                Kokkos::parallel_reduce(
+                    "Vector errorNr reduce", ippl::getRangePolicy(view_fieldE, nghost),
 
-            temp = 0.0;
+                    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
+                        double myVal = pow(view_fieldE(i, j, k)[d], 2);
+                        valL += myVal;
+                    },
+                    Kokkos::Sum<double>(temp));
 
-            Kokkos::parallel_reduce(
-                "Vector errorDr reduce", ippl::getRangePolicy(view_grad, nghost),
+                double globaltemp = 0.0;
+                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
+                              ippl::Comm->getCommunicator());
+                double errorNr = std::sqrt(globaltemp);
 
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                    double myVal = pow(view_grad(i, j, k)[d], 2);
-                    valL += myVal;
-                },
-                Kokkos::Sum<double>(temp));
+                temp = 0.0;
 
-            globaltemp = 0.0;
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-            double errorDr = std::sqrt(globaltemp);
+                Kokkos::parallel_reduce(
+                    "Vector errorDr reduce", ippl::getRangePolicy(view_grad, nghost),
 
-            errE[d] = errorNr / errorDr;
+                    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
+                        double myVal = pow(view_grad(i, j, k)[d], 2);
+                        valL += myVal;
+                    },
+                    Kokkos::Sum<double>(temp));
+
+                globaltemp = 0.0;
+                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
+                              ippl::Comm->getCommunicator());
+                double errorDr = std::sqrt(globaltemp);
+
+                errE[d] = errorNr / errorDr;
+            }
+
+            msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1]
+                << " " << errE[2] << endl;
         }
 
-        msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1] << " "
-            << errE[2] << endl;
+        // stop the timer
+        IpplTimings::stopTimer(allTimer);
+        IpplTimings::print(std::string("timing.dat"));
     }
-
-    // stop the timer
-    IpplTimings::stopTimer(allTimer);
-    IpplTimings::print(std::string("timing.dat"));
-
+    ippl::finalize();
     return 0;
 }

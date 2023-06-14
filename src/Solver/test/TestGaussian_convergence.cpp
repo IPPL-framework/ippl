@@ -1,9 +1,29 @@
-// This program tests the FFTPoissonSolver class with a Gaussian source.
+//
+// TestGaussian_convergence
+// This programs tests the FFTPoissonSolver for a Gaussian source.
 // Different problem sizes are used for the purpose of convergence tests.
-// The test can be ran either in single or T precision.
-// The algorithm used is chosen by the user:
-//     srun ./TestGaussian_convergence HOCKNEY [DOUBLE|SINGLE] --info 10
-// OR  srun ./TestGaussian_convergence VICO [DOUBLE|SINGLE] --info 10
+//   Usage:
+//     srun ./TestGaussian_convergence <algorithm> <precision> --info 5
+//     algorithm = "HOCKNEY" or "VICO", types of open BC algorithms
+//     precision = "DOUBLE" or "SINGLE", precision of the fields
+//
+//     Example:
+//       srun ./TestGaussian_convergence HOCKNEY DOUBLE --info 5
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
 
 #include "Ippl.h"
 
@@ -28,12 +48,15 @@ template <typename T>
 using VectorField_t = typename ippl::Field<ippl::Vector<T, 3>, 3, Mesh_t<T>, Centering_t<T>>;
 
 template <typename T>
+using Solver_t = ippl::FFTPoissonSolver<VectorField_t<T>, ScalarField_t<T>>;
+
+template <typename T>
 KOKKOS_INLINE_FUNCTION T gaussian(T x, T y, T z, T sigma = 0.05, T mu = 0.5) {
     T pi        = Kokkos::numbers::pi_v<T>;
     T prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     T r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return -prefactor * exp(-r2 / (2 * sigma * sigma));
+    return prefactor * exp(-r2 / (2 * sigma * sigma));
 }
 
 template <typename T>
@@ -194,17 +217,30 @@ void compute_convergence(std::string algorithm, int pt) {
             view_exactE(i, j, k)[2] = exact_E(x, y, z)[2];
         });
 
-    // set the FFT parameters
+    // set the solver parameters
+    ippl::ParameterList params;
 
-    ippl::ParameterList fftParams;
-    fftParams.add("use_heffte_defaults", false);
-    fftParams.add("use_pencils", true);
-    fftParams.add("use_gpu_aware", true);
-    fftParams.add("comm", ippl::a2av);
-    fftParams.add("r2c_direction", 0);
+    // set the FFT parameters
+    params.add("use_heffte_defaults", false);
+    params.add("use_pencils", true);
+    params.add("use_gpu_aware", true);
+    params.add("comm", ippl::a2av);
+    params.add("r2c_direction", 0);
+
+    // set the algorithm
+    if (algorithm == "HOCKNEY") {
+        params.add("algorithm", Solver_t<T>::HOCKNEY);
+    } else if (algorithm == "VICO") {
+        params.add("algorithm", Solver_t<T>::VICO);
+    } else {
+        throw IpplException("TestGaussian_convergence.cpp main()", "Unrecognized algorithm type");
+    }
+
+    // add output type
+    params.add("output_type", Solver_t<T>::SOL_AND_GRAD);
+
     // define an FFTPoissonSolver object
-    ippl::FFTPoissonSolver<VectorField_t<T>, ScalarField_t<T>> FFTsolver(fieldE, rho, fftParams,
-                                                                         algorithm);
+    Solver_t<T> FFTsolver(fieldE, rho, params);
 
     // solve the Poisson equation -> rho contains the solution (phi) now
     FFTsolver.solve();
@@ -231,7 +267,7 @@ void compute_convergence(std::string algorithm, int pt) {
         T globaltemp = 0.0;
 
         MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
         T errorNr = std::sqrt(globaltemp);
 
         temp = 0.0;
@@ -244,7 +280,7 @@ void compute_convergence(std::string algorithm, int pt) {
             Kokkos::Sum<T>(temp));
 
         globaltemp = 0.0;
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
         T errorDr = std::sqrt(globaltemp);
 
         errE[d] = errorNr / errorDr;
@@ -257,41 +293,44 @@ void compute_convergence(std::string algorithm, int pt) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    Inform msg("");
-    Inform msg2all("", INFORM_ALL_NODES);
+    ippl::initialize(argc, argv);
+    {
+        Inform msg("");
+        Inform msg2all("", INFORM_ALL_NODES);
 
-    std::string algorithm = argv[1];
-    std::string precision = argv[2];
+        std::string algorithm = argv[1];
+        std::string precision = argv[2];
 
-    if (precision != "DOUBLE" && precision != "SINGLE") {
-        throw IpplException("TestGaussian_convergence",
-                            "Precision argument must be DOUBLE or SINGLE.");
-    }
-
-    // start a timer to time the FFT Poisson solver
-    static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
-    IpplTimings::startTimer(allTimer);
-
-    // number of interations
-    const int n = 6;
-
-    // number of gridpoints to iterate over
-    std::array<int, n> N = {4, 8, 16, 32, 64, 128};
-
-    msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
-
-    for (int p = 0; p < n; ++p) {
-        if (precision == "DOUBLE") {
-            compute_convergence<double>(algorithm, N[p]);
-        } else {
-            compute_convergence<float>(algorithm, N[p]);
+        if (precision != "DOUBLE" && precision != "SINGLE") {
+            throw IpplException("TestGaussian_convergence",
+                                "Precision argument must be DOUBLE or SINGLE.");
         }
-    }
 
-    // stop the timer
-    IpplTimings::stopTimer(allTimer);
-    IpplTimings::print(std::string("timing.dat"));
+        // start a timer to time the FFT Poisson solver
+        static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
+        IpplTimings::startTimer(allTimer);
+
+        // number of interations
+        const int n = 6;
+
+        // number of gridpoints to iterate over
+        std::array<int, n> N = {4, 8, 16, 32, 64, 128};
+
+        msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
+
+        for (int p = 0; p < n; ++p) {
+            if (precision == "DOUBLE") {
+                compute_convergence<double>(algorithm, N[p]);
+            } else {
+                compute_convergence<float>(algorithm, N[p]);
+            }
+        }
+
+        // stop the timer
+        IpplTimings::stopTimer(allTimer);
+        IpplTimings::print(std::string("timing.dat"));
+    }
+    ippl::finalize();
 
     return 0;
 }

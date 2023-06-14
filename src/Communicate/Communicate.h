@@ -130,9 +130,13 @@ namespace ippl {
          */
         void irecv(int src, int tag, archive_type<>&, MPI_Request&, size_type msize);
 
-        MPI_Comm* getCommunicator() noexcept { return &comm_m; }
+        const MPI_Comm& getCommunicator() const noexcept { return comm_m; }
+
+        void setCommunicator(const MPI_Comm& comm) noexcept { comm_m = comm; }
 
         void barrier() noexcept { MPI_Barrier(comm_m); }
+
+        void abort(int errorcode = -1) noexcept { MPI_Abort(comm_m, errorcode); }
 
     private:
         /*!
@@ -155,7 +159,7 @@ namespace ippl {
         // be split into smaller messages
         if (msize > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
-            IpplAbort();
+            this->abort();
         }
         MPI_Status status;
         MPI_Recv(ar.getBuffer(), msize, MPI_BYTE, src, tag, comm_m, &status);
@@ -168,7 +172,7 @@ namespace ippl {
                             size_type nsends) {
         if (ar.getSize() > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
-            IpplAbort();
+            this->abort();
         }
         buffer.serialize(ar, nsends);
         MPI_Isend(ar.getBuffer(), ar.getSize(), MPI_BYTE, dest, tag, comm_m, &request);

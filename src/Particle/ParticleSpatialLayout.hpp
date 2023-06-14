@@ -62,7 +62,7 @@ namespace ippl {
 
         static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("updateParticle");
         IpplTimings::startTimer(ParticleUpdateTimer);
-        int nRanks = Ippl::Comm->size();
+        int nRanks = Comm->size();
 
         if (nRanks < 2) {
             return;
@@ -102,19 +102,19 @@ namespace ippl {
         MPI_Win win;
         std::vector<size_type> nRecvs(nRanks, 0);
         MPI_Win_create(nRecvs.data(), nRanks * sizeof(size_type), sizeof(size_type), MPI_INFO_NULL,
-                       Ippl::getComm(), &win);
+                       Comm->getCommunicator(), &win);
 
         std::vector<size_type> nSends(nRanks, 0);
 
         MPI_Win_fence(0, win);
 
         for (int rank = 0; rank < nRanks; ++rank) {
-            if (rank == Ippl::Comm->rank()) {
+            if (rank == Comm->rank()) {
                 // we do not need to send to ourselves
                 continue;
             }
             nSends[rank] = numberOfSends(rank, ranks);
-            MPI_Put(nSends.data() + rank, 1, MPI_LONG_LONG_INT, rank, Ippl::Comm->rank(), 1,
+            MPI_Put(nSends.data() + rank, 1, MPI_LONG_LONG_INT, rank, Comm->rank(), 1,
                     MPI_LONG_LONG_INT, win);
         }
         MPI_Win_fence(0, win);
@@ -126,7 +126,7 @@ namespace ippl {
         // send
         std::vector<MPI_Request> requests(0);
 
-        int tag = Ippl::Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
+        int tag = Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
 
         int sends = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
@@ -185,7 +185,7 @@ namespace ippl {
 
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
 
-        int myRank = Ippl::Comm->rank();
+        int myRank = Comm->rank();
 
         const auto is = std::make_index_sequence<Dim>{};
 

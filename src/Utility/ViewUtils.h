@@ -61,27 +61,24 @@ namespace ippl {
         /*!
          * Utility function for shrinkView
          */
-        template <unsigned Dim, typename T, size_t... Idx>
-        decltype(auto) shrinkView_impl(std::string label,
-                                       const typename ViewType<T, Dim>::view_type& view, int nghost,
+        template <typename View, size_t... Idx>
+        decltype(auto) shrinkView_impl(std::string label, const View& view, int nghost,
                                        const std::index_sequence<Idx...>&) {
-            return Kokkos::View<typename NPtr<T, Dim>::type, Kokkos::LayoutLeft>(
+            return Kokkos::View<typename View::data_type, Kokkos::LayoutLeft>(
                 label, (view.extent(Idx) - 2 * nghost)...);
         }
 
         /*!
          * Constructs a new view with size equal to that of the given view, minus the ghost cells
-         * @tparam Dim the view's rank
-         * @tparam T the view's value type
+         * (used for heFFTe, which expects the data to have a certain layout and no ghost cells)
          * @param label the new view's name
          * @param view the view to shrink
          * @param nghost the number of ghost cells on the view's boundary
          * @return The shrunken view
          */
-        template <unsigned Dim, typename T>
-        decltype(auto) shrinkView(std::string label,
-                                  const typename ViewType<T, Dim>::view_type& view, int nghost) {
-            return shrinkView_impl<Dim, T>(label, view, nghost, std::make_index_sequence<Dim>{});
+        template <typename View>
+        decltype(auto) shrinkView(std::string label, const View& view, int nghost) {
+            return shrinkView_impl(label, view, nghost, std::make_index_sequence<View::rank>{});
         }
     }  // namespace detail
 }  // namespace ippl

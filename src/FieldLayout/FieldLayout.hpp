@@ -86,7 +86,7 @@ namespace ippl {
     template <unsigned Dim>
     void FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain, e_dim_tag* userflags,
                                       bool isAllPeriodic) {
-        int nRanks = Ippl::Comm->size();
+        int nRanks = Comm->size();
 
         gDomain_m = domain;
 
@@ -171,7 +171,7 @@ namespace ippl {
 
     template <unsigned Dim>
     void FieldLayout<Dim>::write(std::ostream& out) const {
-        if (Ippl::Comm->rank() > 0) {
+        if (Comm->rank() > 0) {
             return;
         }
 
@@ -251,7 +251,7 @@ namespace ippl {
             neighborsRecvRange_m[i].clear();
         }
 
-        int myRank = Ippl::Comm->rank();
+        int myRank = Comm->rank();
 
         // get my local box
         auto& nd = hLocalDomains_m[myRank];
@@ -263,7 +263,7 @@ namespace ippl {
             IpplTimings::getTimer("findInternal");
         static IpplTimings::TimerRef findPeriodicNeighborsTimer =
             IpplTimings::getTimer("findPeriodic");
-        for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
+        for (int rank = 0; rank < Comm->size(); ++rank) {
             if (rank == myRank) {
                 // do not compare with my domain
                 continue;

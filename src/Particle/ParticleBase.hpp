@@ -68,8 +68,8 @@ namespace ippl {
     ParticleBase<PLayout, IP...>::ParticleBase()
         : layout_m(nullptr)
         , localNum_m(0)
-        , nextID_m(Ippl::Comm->myNode())
-        , numNodes_m(Ippl::Comm->getNodes()) {
+        , nextID_m(Comm->rank())
+        , numNodes_m(Comm->size()) {
         if constexpr (EnableIDs) {
             addAttribute(ID);
         }
@@ -135,7 +135,7 @@ namespace ippl {
         create(1);
 
         nextID_m   = tmpNextID;
-        numNodes_m = Ippl::Comm->getNodes();
+        numNodes_m = Comm->getNodes();
     }
 
     template <class PLayout, typename... IP>
@@ -145,7 +145,7 @@ namespace ippl {
         // Compute the number of particles local to each processor
         size_type nLocal = nTotal / numNodes_m;
 
-        const size_t rank = Ippl::Comm->myNode();
+        const size_t rank = Comm->myNode();
 
         size_type rest = nTotal - nLocal * rank;
         if (rank < rest) {
@@ -184,7 +184,7 @@ namespace ippl {
         // Resize buffers, if necessary
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             if (attributes_m.template get<memory_space>().size() > 0) {
-                int overalloc = Ippl::Comm->getDefaultOverallocation();
+                int overalloc = Comm->getDefaultOverallocation();
                 auto& del     = deleteIndex_m.get<memory_space>();
                 auto& keep    = keepIndex_m.get<memory_space>();
                 if (del.size() < destroyNum) {
@@ -274,9 +274,9 @@ namespace ippl {
                 return;
             }
 
-            auto buf = Ippl::Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
+            auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
 
-            Ippl::Comm->isend(rank, tag++, buffer, *buf, requests.back(), nSends);
+            Comm->isend(rank, tag++, buffer, *buf, requests.back(), nSends);
             buf->resetWritePos();
         });
     }
@@ -291,9 +291,9 @@ namespace ippl {
                 return;
             }
 
-            auto buf = Ippl::Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_RECV + recvNum, bufSize);
+            auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_RECV + recvNum, bufSize);
 
-            Ippl::Comm->recv(rank, tag++, buffer, *buf, bufSize, nRecvs);
+            Comm->recv(rank, tag++, buffer, *buf, bufSize, nRecvs);
             buf->resetReadPos();
         });
         unpack(buffer, nRecvs);

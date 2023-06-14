@@ -25,65 +25,36 @@
 #include "Utility/Inform.h"
 #include "Utility/ParallelDispatch.h"
 
-void IpplAbort(const char* = nullptr, int = 1);
-
 #include "Communicate/Communicate.h"
 
-class Ippl {
-public:
-    // an enumeration used to indicate whether to KEEP command-line arguments
-    // or REMOVE them
-    enum {
-        KEEP   = 0,
-        REMOVE = 1
-    };
+namespace ippl {
 
     // the parallel communication object
-    static std::unique_ptr<ippl::Communicate> Comm;
+    // use inlining to avoid multiple definitions
+    inline std::unique_ptr<ippl::Communicate> Comm = 0;
 
-    //   // Inform object to use to print messages to the console (or even to a
-    //   // file if requested)
-    static std::unique_ptr<Inform> Info;
-    static std::unique_ptr<Inform> Warn;
-    static std::unique_ptr<Inform> Error;
+    // Inform object to use to print messages to the console (or even to a
+    // file if requested)
+    // use inlining to avoid multiple definitions
+    inline std::unique_ptr<Inform> Info  = 0;
+    inline std::unique_ptr<Inform> Warn  = 0;
+    inline std::unique_ptr<Inform> Error = 0;
 
-    // Constructor 1: specify the argc, argv values from the cmd line.
-    // The second argument controls whether the IPPL-specific command line
-    // arguments are stripped out (the default) or left in (if the setting
-    // is IpplInfo::KEEP).
-    Ippl(int&, char**&, MPI_Comm mpicomm = MPI_COMM_WORLD);
+    void initialize(int& argc, char* argv[], MPI_Comm comm = MPI_COMM_WORLD);
 
-    // Constructor 2: default constructor.  This will not change anything in
-    // how the static data members are set up.  This is useful for declaring
-    // automatic IpplInfo instances in functions after IpplInfo.has been
-    // initially created in the main() routine.
-    Ippl(){};
+    void finalize();
 
-    // Destructor.
-    ~Ippl();
+    void fence();
 
-    static MPI_Comm getComm();
+    void abort(const char* msg = nullptr, int errorcode = -1);
 
-    static void fence();
+    namespace detail {
+        bool checkOption(const char* arg, const char* lstr, const char* sstr);
 
-    static void deleteGlobals();
-
-private:
-    bool checkOption(const char* arg, const char* lstr, const char* sstr);
-
-    template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
-    T getNumericalOption(const char* arg);
-};
-
-std::ostream& operator<<(std::ostream&, const Ippl&);
-
-// macros used to print out messages to the console or a directed file
-#define INFOMSG(msg) \
-    { *Ippl::Info << msg; }
-#define WARNMSG(msg) \
-    { *Ippl::Warn << msg; }
-#define ERRORMSG(msg) \
-    { *Ippl::Error << msg; }
+        template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
+        T getNumericalOption(const char* arg);
+    }  // namespace detail
+}  // namespace ippl
 
 // FIMXE remove (only for backwards compatibility)
 #include "IpplCore.h"

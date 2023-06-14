@@ -40,7 +40,7 @@ public:
 };
 
 TEST_F(ParticleBaseTest, CreateAndDestroy) {
-    if (Ippl::Comm->size() > 1) {
+    if (ippl::Comm->size() > 1) {
         std::cerr << "ParticleBaseTest::CreateAndDestroy test only works for one MPI rank!"
                   << std::endl;
         return;
@@ -133,7 +133,12 @@ TEST(ParticleBase, Initialize2) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    int success = 1;
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
+    }
+    ippl::finalize();
+    return success;
 }

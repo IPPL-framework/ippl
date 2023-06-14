@@ -20,8 +20,12 @@
 
 #include <csignal>
 
+#include "Utility/TypeUtils.h"
+
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
+#include "Solver/FFTPoissonSolver.h"
+#include "Solver/P3MSolver.h"
 
 // some typedefs
 template <unsigned Dim = 3>
@@ -61,15 +65,24 @@ using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
 template <typename T = double, unsigned Dim = 3>
-using CGSolver_t = ippl::ElectrostaticsCG<Field<T, Dim>, Field<double, Dim>>;
+using CGSolver_t = ippl::ElectrostaticsCG<Field<T, Dim>, Field_t<Dim>>;
+
+using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 
 template <typename T = double, unsigned Dim = 3>
-using FFTSolver_t = ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field<double, Dim>>;
+using FFTSolver_t = ConditionalType<Dim == 2 || Dim == 3,
+                                    ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
-using Solver_t =
-    std::conditional_t<Dim == 2 || Dim == 3, std::variant<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>>,
-                       std::variant<CGSolver_t<T, Dim>>>;
+using P3MSolver_t = ConditionalType<Dim == 3, ippl::P3MSolver<VField_t<T, Dim>, Field_t<Dim>>>;
+
+template <typename T = double, unsigned Dim = 3>
+using OpenSolver_t =
+    ConditionalType<Dim == 3, ippl::FFTPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
+
+template <typename T = double, unsigned Dim = 3>
+using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
+                                             P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
 
 const double pi = Kokkos::numbers::pi_v<double>;
 
@@ -92,7 +105,7 @@ void interruptHandler(int signal) {
  * @return Signal handler was called
  */
 bool checkSignalHandler() {
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
     return interruptSignalReceived != 0;
 }
 
@@ -104,11 +117,11 @@ void setSignalHandler() {
     sa.sa_handler = interruptHandler;
     sigemptyset(&sa.sa_mask);
     if (sigaction(SIGTERM, &sa, NULL) == -1) {
-        std::cerr << Ippl::Comm->rank() << ": failed to set up signal handler for SIGTERM ("
+        std::cerr << ippl::Comm->rank() << ": failed to set up signal handler for SIGTERM ("
                   << SIGTERM << ")" << std::endl;
     }
     if (sigaction(SIGINT, &sa, NULL) == -1) {
-        std::cerr << Ippl::Comm->rank() << ": failed to set up signal handler for SIGINT ("
+        std::cerr << ippl::Comm->rank() << ": failed to set up signal handler for SIGINT ("
                   << SIGINT << ")" << std::endl;
     }
 }
@@ -330,6 +343,13 @@ public:
             if (stype_m == "FFT") {
                 std::get<FFTSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
             }
+            if constexpr (Dim == 3) {
+                if (stype_m == "P3M") {
+                    std::get<P3MSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
+                } else if (stype_m == "OPEN") {
+                    std::get<OpenSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
+                }
+            }
         }
     }
 
@@ -338,13 +358,14 @@ public:
             return (nstep % loadbalancefreq_m == 0);
         } else {
             int local = 0;
-            std::vector<int> res(Ippl::Comm->size());
-            double equalPart = (double)totalP / Ippl::Comm->size();
+            std::vector<int> res(ippl::Comm->size());
+            double equalPart = (double)totalP / ippl::Comm->size();
             double dev       = std::abs((double)this->getLocalNum() - equalPart) / totalP;
             if (dev > loadbalancethreshold_m) {
                 local = 1;
             }
-            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
+            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT,
+                          ippl::Comm->getCommunicator());
 
             for (unsigned int i = 0; i < res.size(); i++) {
                 if (res[i] == 1) {
@@ -356,15 +377,16 @@ public:
     }
 
     void gatherStatistics(size_type totalP) {
-        std::vector<double> imb(Ippl::Comm->size());
-        double equalPart = (double)totalP / Ippl::Comm->size();
+        std::vector<double> imb(ippl::Comm->size());
+        double equalPart = (double)totalP / ippl::Comm->size();
         double dev       = (std::abs((double)this->getLocalNum() - equalPart) / totalP) * 100.0;
-        MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0, Ippl::getComm());
+        MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0,
+                   ippl::Comm->getCommunicator());
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/LoadBalance_";
-            fname << Ippl::Comm->size();
+            fname << ippl::Comm->size();
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
@@ -375,12 +397,12 @@ public:
                 csvout << "time, rank, imbalance percentage" << endl;
             }
 
-            for (int r = 0; r < Ippl::Comm->size(); ++r) {
+            for (int r = 0; r < ippl::Comm->size(); ++r) {
                 csvout << time_m << " " << r << " " << imb[r] << endl;
             }
         }
 
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     void gatherCIC() { gather(this->E, E_m, this->R); }
@@ -399,18 +421,18 @@ public:
         size_type local_particles = this->getLocalNum();
 
         MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
-                   Ippl::getComm());
+                   ippl::Comm->getCommunicator());
 
         double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
         m << "Rel. error in charge conservation = " << rel_error << endl;
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             if (Total_particles != totalP || rel_error > 1e-10) {
                 m << "Time step: " << iteration << endl;
                 m << "Total particles in the sim. " << totalP << " "
                   << "after update: " << Total_particles << endl;
                 m << "Rel. error in charge conservation: " << rel_error << endl;
-                IpplAbort();
+                ippl::Comm->abort();
             }
         }
 
@@ -421,14 +443,16 @@ public:
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
 
-        // dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
+        // dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], iteration, hrField[0], hrField[1], hrField[2]);
 
-        // rho = rho_e - rho_i
-        double size = 1;
-        for (unsigned d = 0; d < Dim; d++) {
-            size *= rmax_m[d] - rmin_m[d];
+        // rho = rho_e - rho_i (only if periodic BCs)
+        if (stype_m != "OPEN") {
+            double size = 1;
+            for (unsigned d = 0; d < Dim; d++) {
+                size *= rmax_m[d] - rmin_m[d];
+            }
+            rho_m = rho_m - (Q_m / size);
         }
-        rho_m = rho_m - (Q_m / size);
     }
 
     void initSolver() {
@@ -437,6 +461,10 @@ public:
             initFFTSolver();
         } else if (stype_m == "CG") {
             initCGSolver();
+        } else if (stype_m == "P3M") {
+            initP3MSolver();
+        } else if (stype_m == "OPEN") {
+            initOpenSolver();
         } else {
             m << "No solver matches the argument" << endl;
         }
@@ -447,10 +475,10 @@ public:
             CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(solver_m);
             solver.solve();
 
-            if (Ippl::Comm->rank() == 0) {
+            if (ippl::Comm->rank() == 0) {
                 std::stringstream fname;
                 fname << "data/CG_";
-                fname << Ippl::Comm->size();
+                fname << ippl::Comm->size();
                 fname << ".csv";
 
                 Inform log(NULL, fname.str().c_str(), Inform::APPEND);
@@ -464,10 +492,18 @@ public:
                     log << time_m << "," << solver.getResidue() << "," << iterations << endl;
                 }
             }
-            Ippl::Comm->barrier();
+            ippl::Comm->barrier();
         } else if (stype_m == "FFT") {
             if constexpr (Dim == 2 || Dim == 3) {
                 std::get<FFTSolver_t<T, Dim>>(solver_m).solve();
+            }
+        } else if (stype_m == "P3M") {
+            if constexpr (Dim == 3) {
+                std::get<P3MSolver_t<T, Dim>>(solver_m).solve();
+            }
+        } else if (stype_m == "OPEN") {
+            if constexpr (Dim == 3) {
+                std::get<OpenSolver_t<T, Dim>>(solver_m).solve();
             }
         } else {
             throw std::runtime_error("Unknown solver type");
@@ -476,7 +512,7 @@ public:
 
     template <typename Solver>
     void initSolverWithParams(const ippl::ParameterList& sp) {
-        solver_m       = Solver();
+        solver_m.template emplace<Solver>();
         Solver& solver = std::get<Solver>(solver_m);
 
         solver.mergeParameters(sp);
@@ -488,9 +524,9 @@ public:
             // uses this to get the electric field
             solver.setLhs(phi_m);
             solver.setGradient(E_m);
-        } else if constexpr (std::is_same_v<Solver, FFTSolver_t<T, Dim>>) {
-            // The periodic Poisson solver computes the electric
-            // field directly
+        } else {
+            // The periodic Poisson solver, Open boundaries solver,
+            // and the P3M solver compute the electric field directly
             solver.setLhs(E_m);
         }
     }
@@ -521,23 +557,62 @@ public:
         }
     }
 
+    void initP3MSolver() {
+        if constexpr (Dim == 3) {
+            ippl::ParameterList sp;
+            sp.add("output_type", P3MSolver_t<T, Dim>::GRAD);
+            sp.add("use_heffte_defaults", false);
+            sp.add("use_pencils", true);
+            sp.add("use_reorder", false);
+            sp.add("use_gpu_aware", true);
+            sp.add("comm", ippl::p2p_pl);
+            sp.add("r2c_direction", 0);
+
+            initSolverWithParams<P3MSolver_t<T, Dim>>(sp);
+        } else {
+            throw std::runtime_error("Unsupported dimensionality for P3M solver");
+        }
+    }
+
+    void initOpenSolver() {
+        if constexpr (Dim == 3) {
+            ippl::ParameterList sp;
+            sp.add("output_type", OpenSolver_t<T, Dim>::GRAD);
+            sp.add("use_heffte_defaults", false);
+            sp.add("use_pencils", true);
+            sp.add("use_reorder", false);
+            sp.add("use_gpu_aware", true);
+            sp.add("comm", ippl::p2p_pl);
+            sp.add("r2c_direction", 0);
+            sp.add("algorithm", OpenSolver_t<T, Dim>::HOCKNEY);
+
+            initSolverWithParams<OpenSolver_t<T, Dim>>(sp);
+        } else {
+            throw std::runtime_error("Unsupported dimensionality for OPEN solver");
+        }
+    }
+
     void dumpData() {
         auto Pview = P.getView();
 
-        double Energy = 0.0;
+        double kinEnergy = 0.0;
+        double potEnergy = 0.0;
+
+        potEnergy = 0.5 * hr_m[0] * hr_m[1] * hr_m[2] * rho_m.sum();
 
         Kokkos::parallel_reduce(
-            "Particle Energy", this->getLocalNum(),
+            "Particle Kinetic Energy", this->getLocalNum(),
             KOKKOS_LAMBDA(const int i, double& valL) {
                 double myVal = dot(Pview(i), Pview(i)).apply();
                 valL += myVal;
             },
-            Kokkos::Sum<double>(Energy));
+            Kokkos::Sum<double>(kinEnergy));
 
-        Energy *= 0.5;
-        double gEnergy = 0.0;
+        kinEnergy *= 0.5;
+        double gkinEnergy = 0.0;
 
-        MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
@@ -557,14 +632,14 @@ public:
                 Kokkos::Sum<T>(temp));
             T globaltemp          = 0.0;
             MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
-            MPI_Reduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, 0, Ippl::getComm());
+            MPI_Reduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, 0, ippl::Comm->getCommunicator());
             normE[d] = std::sqrt(globaltemp);
         }
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/ParticleField_";
-            fname << Ippl::Comm->size();
+            fname << ippl::Comm->size();
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
@@ -572,21 +647,23 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if (time_m == 0.0) {
-                csvout << "time, Kinetic energy, Rho_norm2, Ex_norm2, Ey_norm2, Ez_norm2";
+                csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2, "
+                          "Ex_norm2, Ey_norm2, Ez_norm2";
                 for (unsigned d = 0; d < Dim; d++) {
                     csvout << "E" << d << "norm2, ";
                 }
                 csvout << endl;
             }
 
-            csvout << time_m << " " << gEnergy << " " << rhoNorm_m << " ";
+            csvout << time_m << " " << potEnergy << " " << gkinEnergy << " "
+                   << potEnergy + gkinEnergy << " " << rhoNorm_m << " ";
             for (unsigned d = 0; d < Dim; d++) {
                 csvout << normE[d] << " ";
             }
             csvout << endl;
         }
 
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     decltype(auto) getEMirror() const {
@@ -621,17 +698,18 @@ public:
             Kokkos::Sum<double>(localEx2), Kokkos::Max<double>(localExNorm));
 
         double globaltemp = 0.0;
-        MPI_Reduce(&localEx2, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&localEx2, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
         double fieldEnergy =
             std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double ExAmp = 0.0;
-        MPI_Reduce(&localExNorm, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(&localExNorm, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/FieldLandau_";
-            fname << Ippl::Comm->size();
+            fname << ippl::Comm->size();
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
@@ -645,7 +723,7 @@ public:
             csvout << time_m << " " << fieldEnergy << " " << ExAmp << endl;
         }
 
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     void dumpBumponTail() {
@@ -665,7 +743,7 @@ public:
             },
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
         fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double tempMax = 0.0;
@@ -681,12 +759,12 @@ public:
             },
             Kokkos::Max<double>(tempMax));
         EzAmp = 0.0;
-        MPI_Reduce(&tempMax, &EzAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(&tempMax, &EzAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/FieldBumponTail_";
-            fname << Ippl::Comm->size();
+            fname << ippl::Comm->size();
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
@@ -700,7 +778,7 @@ public:
             csvout << time_m << " " << fieldEnergy << " " << EzAmp << endl;
         }
 
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     void dumpParticleData() {
@@ -710,9 +788,9 @@ public:
         Kokkos::deep_copy(P_host, P.getView());
         std::stringstream pname;
         pname << "data/ParticleIC_";
-        pname << Ippl::Comm->rank();
+        pname << ippl::Comm->rank();
         pname << ".csv";
-        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, ippl::Comm->rank());
         pcsvout.precision(10);
         pcsvout.setf(std::ios::scientific, std::ios::floatfield);
         pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
@@ -725,11 +803,11 @@ public:
             }
             pcsvout << endl;
         }
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     void dumpLocalDomains(const FieldLayout_t<Dim>& fl, const unsigned int step) {
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             const typename FieldLayout_t<Dim>::host_mirror_type domains = fl.getHostLocalDomains();
             std::ofstream myfile;
             myfile.open("data/domains" + std::to_string(step) + ".txt");
@@ -741,7 +819,7 @@ public:
             }
             myfile.close();
         }
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
 private:
