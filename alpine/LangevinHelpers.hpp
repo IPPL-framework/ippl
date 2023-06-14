@@ -439,13 +439,14 @@ double L2VectorNorm(const VField_t<T, Dim>& vectorField, const int shift) {
     ippl::parallel_reduce(
         "L2VectorNorm(VField&, shift)", ippl::getRangePolicy(view, shift),
         KOKKOS_LAMBDA(const index_array_type& args, double& val) {
-            val += L2Norm(apply(view, args));
+            VectorD_t& tmp_vec = apply(view, args);
+            val += dot(tmp_vec, tmp_vec).apply();
         },
         Kokkos::Sum<double>(sum));
     double globalSum  = 0;
     MPI_Datatype type = get_mpi_datatype<double>(sum);
     MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
-    return globalSum;
+    return Kokkos::sqrt(globalSum);
 }
 
 MatrixD_t MFieldRelError(const MField_t<Dim>& matrixFieldAppr,
@@ -470,7 +471,7 @@ MatrixD_t MFieldRelError(const MField_t<Dim>& matrixFieldAppr,
                     exactVal += Kokkos::pow(viewExact(i, j, k)[m][n], 2);
                 },
                 Kokkos::Sum<double>(diffNorm), Kokkos::Sum<double>(exactNorm));
-            relError[m][n] = diffNorm / exactNorm;
+            relError[m][n] = Kokkos::sqrt(diffNorm / exactNorm);
         }
     }
     // TODO MPI Reduction
