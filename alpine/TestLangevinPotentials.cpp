@@ -211,15 +211,15 @@ int main(int argc, char* argv[]) {
     const std::string SOLVER_T        = argv[2];
     const double LB_THRESHOLD         = std::atof(argv[3]);
     const size_type NR                = std::atoll(argv[4]);
+    const double BOXL                 = std::atof(argv[5]);
     const size_type NP                = std::atoll(argv[6]);
     const double DT                   = std::atof(argv[7]);
     const double PARTICLE_CHARGE      = std::atof(argv[8]);
     const double PARTICLE_MASS        = std::atof(argv[9]);
     const double EPS_INV              = std::atof(argv[10]);
     const size_t NV_MAX               = std::atoi(argv[11]);
-    const double V_MAX                = std::atof(argv[12]);
-    const std::string FRICTION_SOLVER = argv[13];
-    const std::string OUT_DIR         = argv[14];
+    const std::string FRICTION_SOLVER = argv[12];
+    const std::string OUT_DIR         = argv[13];
 
     using bunch_type = LangevinParticles<PLayout_t<double, Dim>, double, Dim>;
 
@@ -227,7 +227,7 @@ int main(int argc, char* argv[]) {
     // CONSTANTS FOR MAXELLIAN //
     /////////////////////////////
 
-    constexpr TestCase testType = TestCase::GAUSSIAN;
+    constexpr TestCase testType = TestCase::MAXWELLIAN;
     const double vth            = 1.0;
     const double numberDensity  = 1.0;
 
@@ -248,13 +248,11 @@ int main(int argc, char* argv[]) {
             sigma = 0.05;
         }
 
-        // Domain is [-5\sigma, 5\sigma]^3
-        const double L         = 5.0 * sigma;
-        const double boxLength = 2.0 * L;
+        const double L = BOXL * 0.5;
         const VectorD_t configSpaceLowerBound({-L, -L, -L});
         const VectorD_t configSpaceUpperBound({L, L, L});
         const VectorD_t configSpaceOrigin({-L, -L, -L});
-        VectorD_t hr({boxLength / NR, boxLength / NR, boxLength / NR});  // spacing
+        VectorD_t hr({BOXL / NR, BOXL / NR, BOXL / NR});  // spacing
         VectorD<size_t> nr({NR, NR, NR});
 
         Mesh_t<Dim> configSpaceMesh(configSpaceIdxDomain, hr, configSpaceOrigin);
@@ -267,13 +265,20 @@ int main(int argc, char* argv[]) {
 
         msg << "Initialized Configuration Space" << endl;
 
+        ////////////////////
+        // VELOCITY SPACE //
+        ////////////////////
+
+        // Domain is [-5\sigma, 5\sigma]^3
+        const double vMax = 5.0 * sigma;
+
         /////////////////////////////////
         // LANGEVIN PARTICLE CONTAINER //
         /////////////////////////////////
 
         std::shared_ptr P = std::make_shared<bunch_type>(
             PL, hr, configSpaceLowerBound, configSpaceUpperBound, configSpaceDecomp, SOLVER_T,
-            PARTICLE_CHARGE, PARTICLE_MASS, EPS_INV, Q, NP, DT, nv, V_MAX);
+            PARTICLE_CHARGE, PARTICLE_MASS, EPS_INV, Q, NP, DT, nv, vMax);
 
         // Initialize Particle Fields in Particles Class
         P->nr_m = {double(NR), double(NR), double(NR)};
@@ -337,7 +342,7 @@ int main(int argc, char* argv[]) {
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * rank));
         Kokkos::parallel_for(
             nloc, GenerateRandomBoxPositions<VectorD_t, Kokkos::Random_XorShift64_Pool<>>(
-                      P->R.getView(), boxLength, rand_pool64));
+                      P->R.getView(), BOXL, rand_pool64));
 
         // Initialize constant particle attributes
         P->q = PARTICLE_CHARGE;
