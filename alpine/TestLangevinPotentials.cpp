@@ -18,12 +18,12 @@ KOKKOS_INLINE_FUNCTION double maxwellianPDF(const VectorD_t& v, const double& nu
            * expTerm;
 }
 
-KOKKOS_INLINE_FUNCTION double gaussianPDF(const VectorD_t& v) {
-    double vNorm = L2Norm(v);
-    double pi    = Kokkos::numbers::pi_v<double>;
-    return Kokkos::exp(-0.5 * vNorm * vNorm) / Kokkos::sqrt(8 * pi * pi * pi);
-    // return 1.0 / (Kokkos::pow(2.0 * pi, 3.0 / 2.0) * Kokkos::pow(sigma, 3))
-    //        * Kokkos::exp(-vNorm * vNorm / (2 * Kokkos::pow(sigma, 2)));
+KOKKOS_INLINE_FUNCTION double gaussianPDF(const VectorD_t& v, const double& sigma) {
+    double vNorm  = L2Norm(v);
+    double sigma3 = sigma * sigma * sigma;
+    double pi     = Kokkos::numbers::pi_v<double>;
+    return Kokkos::exp(-1.0 * vNorm * vNorm / (2 * sigma * sigma))
+           / (Kokkos::sqrt(8 * pi * pi * pi) * sigma3);
 }
 
 KOKKOS_INLINE_FUNCTION double maxwellianHexact(const VectorD_t& v, const double& numberDensity,
@@ -32,18 +32,21 @@ KOKKOS_INLINE_FUNCTION double maxwellianHexact(const VectorD_t& v, const double&
     return (2.0 * numberDensity / vNorm) * Kokkos::erf(vNorm / (Kokkos::sqrt(2.0) * vth));
 }
 
-KOKKOS_INLINE_FUNCTION double gaussianHexact(const VectorD_t& v) {
+KOKKOS_INLINE_FUNCTION double gaussianHexact(const VectorD_t& v, const double& sigma) {
     double vNorm = L2Norm(v);
-    return (2.0 / vNorm) * Kokkos::erf(vNorm / Kokkos::sqrt(2.0));
+    return 2.0 / vNorm * Kokkos::erf(vNorm / (Kokkos::sqrt(2.0) * sigma));
 }
 
-KOKKOS_INLINE_FUNCTION VectorD_t gaussianFdExact(const VectorD_t& v, const double& gamma) {
+KOKKOS_INLINE_FUNCTION VectorD_t gaussianFdExact(const VectorD_t& v, const double& gamma,
+                                                 const double& sigma) {
     double vNorm     = L2Norm(v);
+    double vNorm2    = vNorm * vNorm;
     double pi        = Kokkos::numbers::pi_v<double>;
-    double preFactor = (2.0 / (vNorm * vNorm));
-    double erfFactor = (1.0 / vNorm) * Kokkos::erf(vNorm / Kokkos::sqrt(2));
-    double expFactor = Kokkos::sqrt(2.0 / pi) * Kokkos::exp(-0.5 * vNorm * vNorm);
-    return gamma * preFactor * (erfFactor - expFactor) * v;
+    double preFactor = 2.0 / vNorm2;
+    double expTerm =
+        Kokkos::sqrt(2.0 / pi) * 1.0 / sigma * Kokkos::exp(-1.0 * vNorm2 / (2.0 * sigma * sigma));
+    double erfTerm = 1.0 / vNorm * Kokkos::erf(vNorm / (Kokkos::sqrt(2.0) * sigma));
+    return gamma * preFactor * (expTerm - erfTerm) * v;
 }
 
 KOKKOS_INLINE_FUNCTION double maxwellianGexact(const VectorD_t& v, const double& numberDensity,
@@ -57,11 +60,13 @@ KOKKOS_INLINE_FUNCTION double maxwellianGexact(const VectorD_t& v, const double&
     return sqrt2 * numberDensity * vth * (expTerm + erfTerm * erfFactor);
 }
 
-KOKKOS_INLINE_FUNCTION double gaussianGexact(const VectorD_t& v) {
-    double vNorm   = L2Norm(v);
-    double pi      = Kokkos::numbers::pi_v<double>;
-    double expTerm = Kokkos::sqrt(2.0 / pi) * Kokkos::exp(-0.5 * vNorm * vNorm);
-    double erfTerm = (vNorm + 1.0 / vNorm) * Kokkos::erf(vNorm / Kokkos::sqrt(2.0));
+KOKKOS_INLINE_FUNCTION double gaussianGexact(const VectorD_t& v, const double& sigma) {
+    double vNorm  = L2Norm(v);
+    double sigma2 = sigma * sigma;
+    double pi     = Kokkos::numbers::pi_v<double>;
+    double expTerm =
+        sigma * Kokkos::sqrt(2.0 / pi) * Kokkos::exp(-1.0 * vNorm * vNorm / (2.0 * sigma2));
+    double erfTerm = (vNorm + sigma2 / vNorm) * Kokkos::erf(vNorm / (sigma * Kokkos::sqrt(2.0)));
     return (expTerm + erfTerm);
 }
 
@@ -238,11 +243,11 @@ public:
             // TODO Define entries for Maxwellian
         } else if constexpr (Test == TestCase::GAUSSIAN) {
             double sigma                    = 1.0;
-            ippl::apply(fvView_m, args)     = gaussianPDF(v) * P_m->configSpaceIntegral_m;
-            ippl::apply(HviewExact_m, args) = gaussianHexact(v) * P_m->configSpaceIntegral_m;
-            ippl::apply(GviewExact_m, args) = gaussianGexact(v) * P_m->configSpaceIntegral_m;
+            ippl::apply(fvView_m, args)     = gaussianPDF(v, sigma) * P_m->configSpaceIntegral_m;
+            ippl::apply(HviewExact_m, args) = gaussianHexact(v, sigma) * P_m->configSpaceIntegral_m;
+            ippl::apply(GviewExact_m, args) = gaussianGexact(v, sigma) * P_m->configSpaceIntegral_m;
             ippl::apply(FdViewExact_m, args) =
-                gaussianFdExact(v, P_m->gamma_m) * P_m->configSpaceIntegral_m;
+                gaussianFdExact(v, P_m->gamma_m, sigma) * P_m->configSpaceIntegral_m;
 
             // First diagonal and off-diagonal entries of Hessian
             ippl::apply(DviewExact_m, args) =
@@ -442,12 +447,14 @@ int main(int argc, char* argv[]) {
         // Need to scatter rho as we use it as $f(\vec r)$
         P->runSpaceChargeSolver(0);
 
-        // Multiply with prefactor
-        // Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth
-        // equations
-        // Prob. density in configuration space $f(\vec r)$ already added in in initial
-        // condition
-        P->fv_m = -1.0 * (-8.0 * P->pi_m * P->fv_m);
+        /*
+         * Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
+         * `-1.0` prefactor is because the solver computes $- \Delta H(\vec v) = - rhs(v)$
+         * Multiply with prob. density in configuration space $f(\vec r)$
+         * Prob. density in configuration space $f(\vec r)$ already added in in initial
+         * condition
+         */
+        P->fv_m = 8.0 * P->pi_m * P->fv_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
         P->velocitySpaceMesh_m.setOrigin(0.0);
@@ -466,7 +473,8 @@ int main(int argc, char* argv[]) {
         Hdiff      = Hdiff - HfieldExact;
         dumpVTKScalar(Hdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Hdiff");
 
-        P->Fd_m = gamma * P->Fd_m;
+        // Sign change needed as solver returns $- \nabla H(\vec)$
+        P->Fd_m = -1.0 * gamma * P->Fd_m;
         P->gatherFd();
 
         auto FdDiff = P->Fd_m.deepCopy();
@@ -490,9 +498,13 @@ int main(int argc, char* argv[]) {
         // Need to scatter rho as we use it as $f(\vec r)$
         P->runSpaceChargeSolver(0);
 
-        // Multiply with prefactors defined in RHS of Rosenbluth equations
-        // `-1.0` prefactor is because the solver computes $\Delta \Delta G(\vec v) = - rhs(v)$
-        P->fv_m = -1.0 * (-8.0 * P->pi_m * P->fv_m);
+        /*
+         * Multiply with prefactors defined in RHS of Rosenbluth equations
+         * FFTPoissonSolver returns $G(\vec v)$ in `fv_m`
+         * Density multiplied with `-1.0` as the solver computes $\Delta \Delta G(\vec v) = -
+         * rhs(v)$
+         */
+        P->fv_m = 8.0 * P->pi_m * P->fv_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
         P->velocitySpaceMesh_m.setOrigin(0.0);
