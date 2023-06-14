@@ -503,7 +503,8 @@ int main(int argc, char* argv[]) {
 
         constructVFieldFromFields(Ddiv, D0div, D1div, D2div);
 
-        DdivDiff = Ddiv - P->Fd_m;
+        // DdivDiff = Ddiv - P->Fd_m;
+        DdivDiff = Ddiv - FdExact;
         dumpVTKVector(Ddiv, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Ddiv");
 
         dumpVTKVector(DdivDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DdivDiff");
@@ -520,15 +521,16 @@ int main(int argc, char* argv[]) {
         double DtraceRelError =
             subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
         VectorD_t DdivDiffRelError =
-            L2VectorNorm(DdivDiff, 2 * shift) / L2VectorNorm(P->Fd_m, 2 * shift);
+            L2VectorNorm(DdivDiff, 2 * shift) / L2VectorNorm(FdExact, 2 * shift);
 
         std::string convergenceOutDir = OUT_DIR + "/convergenceStats";
-        dumpCSVScalar(HrelError, "H", nv, (nv == nvMin), convergenceOutDir);
-        dumpCSVScalar(GrelError, "G", nv, (nv == nvMin), convergenceOutDir);
-        dumpCSVScalar(FdRelError, "Fd", nv, (nv == nvMin), convergenceOutDir);
-        dumpCSVMatrix(DrelError, "D", nv, (nv == nvMin), convergenceOutDir);
-        dumpCSVScalar(DtraceRelError, "Dtrace", nv, (nv == nvMin), convergenceOutDir);
-        dumpCSVVector(DdivDiffRelError, "Ddiv", nv, (nv == nvMin), convergenceOutDir);
+        bool writeHeader              = (nv == nvMin);
+        dumpCSVScalar(HrelError, "H", nv, writeHeader, convergenceOutDir);
+        dumpCSVScalar(GrelError, "G", nv, writeHeader, convergenceOutDir);
+        dumpCSVScalar(FdRelError, "Fd", nv, writeHeader, convergenceOutDir);
+        dumpCSVMatrix(DrelError, "D", nv, writeHeader, convergenceOutDir);
+        dumpCSVScalar(DtraceRelError, "Dtrace", nv, writeHeader, convergenceOutDir);
+        dumpCSVVector(DdivDiffRelError, "Ddiv", nv, writeHeader, convergenceOutDir);
 
         /////////////////////////////
         // WRITE RESULTS TO STDOUT //
