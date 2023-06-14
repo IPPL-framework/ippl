@@ -672,11 +672,11 @@ public:
         return Eview;
     }
 
-    void updateEMirror(VField_t<double, Dim>::HostMirror& mirror) const {
+    void updateEMirror(VField_t<T, Dim>::HostMirror& mirror) const {
         Kokkos::deep_copy(mirror, E_m.getView());
     }
 
-    void dumpLandau(VField_t<double, Dim>::HostMirror& Eview) {
+    void dumpLandau(VField_t<T, Dim>::HostMirror& Eview) {
         const int nghostE = E_m.getNghost();
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
