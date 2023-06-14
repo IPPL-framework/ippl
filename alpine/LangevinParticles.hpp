@@ -529,7 +529,8 @@ public:
         Kokkos::fence();
     }
 
-    void dumpCollisionStatistics(unsigned int iteration, std::string folder) {
+    void dumpCollisionStatistics(unsigned int iteration, bool isFirstIteration,
+                                 std::string folder) {
         Inform m("dumpCollisionStatistics");
 
         //////////////////////
@@ -586,6 +587,7 @@ public:
                 Kokkos::Sum<double>(Q1Avg(d)), Kokkos::Sum<double>(Q2Avg(d)),
                 Kokkos::Sum<double>(QdWAvg(d)));
         }
+        Kokkos::fence();
 
         FdAvg  = FdAvg / globParticleNum_m;
         D0Avg  = D0Avg / globParticleNum_m;
@@ -606,7 +608,7 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             // clang-format off
-            if (iteration == 0) {
+            if (isFirstIteration) {
                 csvout << "iteration,"
                        << "FdAvg_x,"  << "FdAvg_y,"  << "FdAvg_z,"
                        << "D0Avg_x,"  << "D0Avg_y,"  << "D0Avg_z,"

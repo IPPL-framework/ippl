@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
     // dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
 
     P->dumpBeamStatistics(0, OUT_DIR);
-    P->dumpCollisionStatistics(0, OUT_DIR);
+    P->dumpCollisionStatistics(0, true, OUT_DIR);
 
     for (size_t it = 1; it < NT; ++it) {
         P->R = P->R + 0.5 * DT * P->P;
@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
 
         P->runDiffusionSolver();
 
-        P->dumpCollisionStatistics(it, OUT_DIR);
+        P->dumpCollisionStatistics(it, false, OUT_DIR);
 
         // Add dynamic friction & stochastic diffusion coefficients
         P->P = P->P + DT * P->p_Fd_m + P->p_QdW_m;
@@ -170,9 +170,10 @@ int main(int argc, char* argv[]) {
             //  dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "H(v)");
             //  P->dumpFdField(it, OUT_DIR);
             //}
-            dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", it % 2, OUT_DIR);
-            dumpCSVMatrixAttr(P->p_Q0_m, P->p_Q1_m, P->p_Q2_m, P->getGlobParticleNum(), "Q", it % 2,
-                              OUT_DIR);
+            // dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", it % 2, OUT_DIR);
+            // dumpCSVMatrixAttr(P->p_Q0_m, P->p_Q1_m, P->p_Q2_m, P->getGlobParticleNum(), "Q", it %
+            // 2,
+            //                   OUT_DIR);
 
             msg << "Finished iteration " << it << endl;
             auto end = std::chrono::high_resolution_clock::now();

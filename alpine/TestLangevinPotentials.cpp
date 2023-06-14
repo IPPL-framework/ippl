@@ -460,6 +460,12 @@ int main(int argc, char* argv[]) {
         // Compute Hessian of $g(\vec v)$
         P->D_m = gamma * hess(P->fv_m);
 
+        // Gather Hessian to particle attributes
+        P->gatherHessian();
+
+        // Dump Collisional Coefficient avg. from particle attributes
+        P->dumpCollisionStatistics(nv, nv == nvMin, OUT_DIR);
+
         // Extract rows of exact field to separate Vector-Fields
         P->extractRows(DfieldExact, P->D0_m, P->D1_m, P->D2_m);
 
