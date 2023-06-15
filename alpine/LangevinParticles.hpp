@@ -462,7 +462,7 @@ public:
          * `-1.0` prefactor is because the solver computes $- \Delta H(\vec v) = - rhs(v)$
          * Multiply with prob. density in configuration space $f(\vec r)$
          */
-        fv_m = 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
+        fv_m = 8.0 * pi_m * fv_m * configSpaceIntegral_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
@@ -471,7 +471,7 @@ public:
         frictionSolver_mp->solve();
 
         // Sign change needed as solver returns $- \nabla H(\vec)$
-        Fd_m = -Fd_m;
+        Fd_m = -1.0 * gamma_m * Fd_m;
 
         // Set origin of velocity space mesh to vmin (for scatter / gather)
         velocitySpaceMesh_m.setOrigin(vmin_m);
@@ -494,7 +494,7 @@ public:
          * Density multiplied with `-1.0` as the solver computes $\Delta \Delta G(\vec v) = -
          * rhs(v)$
          */
-        fv_m = 8.0 * pi_m * gamma_m * fv_m * configSpaceIntegral_m;
+        fv_m = 8.0 * pi_m * fv_m * configSpaceIntegral_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
         velocitySpaceMesh_m.setOrigin(0.0);
@@ -507,6 +507,8 @@ public:
 
         // Compute Hessian of $g(\vec v)$
         D_m = hess(fv_m);
+
+        D_m = gamma_m * D_m;
 
         // Gather Hessian to particle attributes
         gatherHessian();
