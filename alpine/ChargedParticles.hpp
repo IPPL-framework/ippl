@@ -441,10 +441,12 @@ public:
             std::reduce(hrField.begin(), hrField.end(), 1., std::multiplies<double>());
         rho_m = rho_m / cellVolume;
 
+        std::cout << "rho sum after normalisation = " << rho_m.sum() << std::endl;
+
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
 
-        // dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], iteration, hrField[0], hrField[1], hrField[2]);
+        dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 0, hrField[0], hrField[1], hrField[2]);
 
         // rho = rho_e - rho_i (only if periodic BCs)
         if (stype_m != "OPEN") {
@@ -453,7 +455,10 @@ public:
                 size *= rmax_m[d] - rmin_m[d];
             }
             rho_m = rho_m - (Q_m / size);
+
+            std::cout << "total_charge/size = " << Q_m / size << std::endl;
         }
+        std::cout << "rho sum after subtraction = " << rho_m.sum() << std::endl;
     }
 
     void initSolver() {
@@ -498,10 +503,14 @@ public:
             if constexpr (Dim == 2 || Dim == 3) {
                 std::get<FFTSolver_t<T, Dim>>(solver_m).solve();
             }
+            Vector_t<double> hrField = (rho_m.get_mesh()).getMeshSpacing();
+            dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 1, hrField[0], hrField[1], hrField[2]);
         } else if (stype_m == "P3M") {
             if constexpr (Dim == 3) {
                 std::get<P3MSolver_t<T, Dim>>(solver_m).solve();
             }
+            Vector_t<double> hrField = (rho_m.get_mesh()).getMeshSpacing();
+            dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 1, hrField[0], hrField[1], hrField[2]);
         } else if (stype_m == "OPEN") {
             if constexpr (Dim == 3) {
                 std::get<OpenSolver_t<T, Dim>>(solver_m).solve();
@@ -544,7 +553,7 @@ public:
     void initFFTSolver() {
         if constexpr (Dim == 2 || Dim == 3) {
             ippl::ParameterList sp;
-            sp.add("output_type", FFTSolver_t<T, Dim>::GRAD);
+            sp.add("output_type", FFTSolver_t<T, Dim>::SOL);
             sp.add("use_heffte_defaults", false);
             sp.add("use_pencils", true);
             sp.add("use_reorder", false);
@@ -561,7 +570,7 @@ public:
     void initP3MSolver() {
         if constexpr (Dim == 3) {
             ippl::ParameterList sp;
-            sp.add("output_type", P3MSolver_t<T, Dim>::GRAD);
+            sp.add("output_type", P3MSolver_t<T, Dim>::SOL);
             sp.add("use_heffte_defaults", false);
             sp.add("use_pencils", true);
             sp.add("use_reorder", false);
