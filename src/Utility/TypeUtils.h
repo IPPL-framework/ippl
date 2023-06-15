@@ -102,7 +102,8 @@ namespace ippl {
             typedef std::variant<T...> type;
         };
 
-        /*!Constructs a variant type containing all the provided types that fulfill a certain
+        /*!
+         * Constructs a variant type containing all the provided types that fulfill a certain
          * condition. This is done by recursively adding types to the variant based on the
          * inclusion criteria.
          *
@@ -147,31 +148,68 @@ namespace ippl {
                 type;
         };
 
+        /*!
+         * A variant containing all the enabled types,
+         * where "enabled" types are assumed to be void
+         * when disabled (i.e. std::conditional_t<B, T, void>)
+         */
         template <typename... Types>
         using VariantFromConditionalTypes =
             typename ConstructVariant<std::variant<Types...>, std::variant<>, IsEnabled>::type;
 
+        /*!
+         * A variant containing just the unique types
+         * from the pack
+         */
         template <typename... Types>
         using VariantFromUniqueTypes =
             typename ConstructVariant<std::variant<Types...>, std::variant<>, IsUnique>::type;
 
+        /*!
+         * A variant containing the types enabled by a custom
+         * verifier; to implement a custom verifier, provide the following:
+         * - template <typename Next, typename... Added>
+         *   Next: the next input type to check
+         *   Added: the types that have already been added
+         * - bool enable: whether the type should be added
+         * - typename type: the output type to be added
+         */
         template <template <typename...> class Verifier, typename... Types>
         using VariantWithVerifier =
             typename ConstructVariant<std::variant<Types...>, std::variant<>, Verifier>::type;
 
-        template <template <typename...> class, typename>
+        /*!
+         * Utility struct for forwarding parameter packs
+         * (see specializations)
+         * @tparam Type the templated type
+         * @tparam Pack a type containing the parameters to forward
+         */
+        template <template <typename...> class Type, typename Pack>
         struct Forward;
 
+        /*!
+         * Forwards the types in a variant to another type
+         */
         template <template <typename...> class Type, typename... Spaces>
         struct Forward<Type, std::variant<Spaces...>> {
             using type = Type<Spaces...>;
         };
 
+        /*!
+         * Forwards the properties of a Kokkos view to another type
+         */
         template <template <typename...> class Type, typename T, typename... Properties>
         struct Forward<Type, Kokkos::View<T, Properties...>> {
             using type = Type<Properties...>;
         };
 
+        /*!
+         * Constructs a uniform type based on Kokkos views' uniform
+         * types (i.e. a type where all optional template parameters
+         * are explicitly specified)
+         * @tparam Type the type to specialize
+         * @tparam View the view type
+         */
         template <template <typename...> class Type, typename View>
         struct CreateUniformType {
             using view_type = typename View::uniform_type;
@@ -203,6 +241,12 @@ namespace ippl {
             using type = typename Forward<Type, unique_spaces>::type;
         };
 
+        /*!
+         * A container indexed by type instead of by numerical indices;
+         * designed for storing elements associated with Kokkos memory spaces
+         * @tparam Type the element type
+         * @tparam Spaces... the memory spaces of interest
+         */
         template <template <typename> class Type, typename... Spaces>
         class MultispaceContainer {
             template <typename T, typename... Ts>
@@ -212,6 +256,11 @@ namespace ippl {
 
             std::array<Types, sizeof...(Spaces)> elements_m;
 
+            /*!
+             * Locates an element associated with a space
+             * @tparam Space the memory space
+             * @return The numerical index for that space's element
+             */
             template <typename Space, unsigned Idx = 0>
             constexpr static unsigned spaceToIndex() {
                 static_assert(Idx < sizeof...(Spaces));
@@ -227,11 +276,18 @@ namespace ippl {
                                     "Unreachable state");
             }
 
+            /*!
+             * Initializes the element for a space
+             */
             template <typename Space>
             void initElements() {
                 elements_m[spaceToIndex<Space>()] = Type<Space>{};
             }
 
+            /*!
+             * Determine whether the element for a space should be initialized,
+             * possibly based on a predicate functor
+             */
             template <typename MemorySpace, typename Filter,
                       std::enable_if_t<std::is_null_pointer_v<std::decay_t<Filter>>, int> = 0>
             constexpr bool copyToSpace(Filter&&) {
@@ -247,6 +303,16 @@ namespace ippl {
         public:
             MultispaceContainer() { (initElements<Spaces>(), ...); }
 
+            /*!
+             * Constructs a container where all spaces have a mirror with
+             * the same data as the provided data structure; a predicate
+             * functor can be provided to skip any undesired memory spaces
+             * @tparam DataType the type of the provided element
+             * @tparam Filter the predicate type, or nullptr_t if there is no predicate
+             * @param data the original data
+             * @param predicate an optional functor that determines which memory spaces need a copy
+             * of the data
+             */
             template <typename DataType, typename Filter = std::nullptr_t>
             MultispaceContainer(const DataType& data, Filter&& predicate = nullptr)
                 : MultispaceContainer() {
@@ -257,6 +323,13 @@ namespace ippl {
                 copyToOtherSpaces<space>(predicate);
             }
 
+            /*!
+             * Copies the data from one memory space to all other memory spaces
+             * @tparam Space the source space
+             * @tparam Filter the predicate type
+             * @param predicate an optional functor that determines which memory spaces need a copy
+             * of the data
+             */
             template <typename Space, typename Filter = std::nullptr_t>
             void copyToOtherSpaces(Filter&& predicate = nullptr) {
                 forAll([&]<typename DataType>(DataType& dst) {
@@ -271,6 +344,11 @@ namespace ippl {
                 });
             }
 
+            /*!
+             * Accessor for a space's element
+             * @tparam Space the memory space
+             * @return The element associated with that space
+             */
             template <typename Space>
             const Type<Space>& get() const {
                 return std::get<Type<Space>>(elements_m[spaceToIndex<Space>()]);
@@ -281,6 +359,11 @@ namespace ippl {
                 return std::get<Type<Space>>(elements_m[spaceToIndex<Space>()]);
             }
 
+            /*!
+             * Performs an action for each element
+             * @tparam Functor the functor type
+             * @param f a functor taking an element for a given space
+             */
             template <typename Functor>
             void forAll(Functor&& f) const {
                 (f(get<Spaces>()), ...);
@@ -292,6 +375,10 @@ namespace ippl {
             }
         };
 
+        /*!
+         * Constructs a MultispaceContainer for all the available Kokkos memory spaces
+         * @tparam Type the element type
+         */
         template <template <typename> class Type>
         struct ContainerForAllSpaces {
             template <typename... Spaces>
@@ -300,6 +387,12 @@ namespace ippl {
             using type = typename TypeForAllSpaces<container_type>::type;
         };
 
+        /*!
+         * Performs an action for all memory spaces
+         * @tparam Functor the functor type
+         * @param f a functor object whose call operator takes a memory space as a template
+         * parameter
+         */
         template <typename Functor>
         void runForAllSpaces(Functor&& f) {
             using all_spaces = typename TypeForAllSpaces<std::variant>::type;
