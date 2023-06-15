@@ -414,6 +414,9 @@ public:
         rho_m = 0.0;
         scatter(q, rho_m, this->R);
 
+        rho_m.write();
+        m << "rho sum = " << rho_m.sum() << endl;
+
         static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check");
         IpplTimings::startTimer(sumTimer);
         double Q_grid = rho_m.sum();
