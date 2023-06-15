@@ -414,7 +414,7 @@ public:
         rho_m = 0.0;
         scatter(q, rho_m, this->R);
 
-        dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 0, hrField[0], hrField[1], hrField[2]);
+        // dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 0, hrField[0], hrField[1], hrField[2]);
 
         rho_m.write();
         m << "rho sum = " << rho_m.sum() << endl;
@@ -445,6 +445,9 @@ public:
         double cellVolume =
             std::reduce(hrField.begin(), hrField.end(), 1., std::multiplies<double>());
         rho_m = rho_m / cellVolume;
+
+        std::cout << "cellVolume = " << cellVolume << std::endl;
+        dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 0, hrField[0], hrField[1], hrField[2]);
 
         std::cout << "rho sum after normalisation = " << rho_m.sum() << std::endl;
 
