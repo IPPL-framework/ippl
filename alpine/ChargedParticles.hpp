@@ -414,6 +414,8 @@ public:
         rho_m = 0.0;
         scatter(q, rho_m, this->R);
 
+        dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 0, hrField[0], hrField[1], hrField[2]);
+
         rho_m.write();
         m << "rho sum = " << rho_m.sum() << endl;
 
@@ -448,8 +450,6 @@ public:
 
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
-
-        dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 0, hrField[0], hrField[1], hrField[2]);
 
         // rho = rho_e - rho_i (only if periodic BCs)
         if (stype_m != "OPEN") {
