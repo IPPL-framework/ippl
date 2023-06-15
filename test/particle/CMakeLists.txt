@@ -71,14 +71,11 @@ target_link_libraries (
     boost_timer
 )
 
-add_executable (p3m3dMicrobunching p3m3dMicrobunching.cpp)
+add_executable (p3mPenning p3mPenning.cpp)
 target_link_libraries (
-    p3m3dMicrobunching
+    p3mPenning
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
-    ${H5Hut_LIBRARY}
-    ${HDF5_LIBRARIES}
-    z
     boost_timer
 )
 

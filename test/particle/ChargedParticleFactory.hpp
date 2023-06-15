@@ -674,9 +674,6 @@ void createParticleDistributionHeating(Particles & P, Vektor<double,3> /*extend_
         P->update();
 }
 
-
-
-
 template<typename Particles>
 void createParticleDistributionPerformance(Particles & P, Vektor<double,3> extend_l, Vektor<double,3> extend_r, unsigned Nparts,double qi, double mi, double vMin, double vMax) {
         P->total_charge=0;
