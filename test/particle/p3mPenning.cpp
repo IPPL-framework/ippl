@@ -199,6 +199,9 @@ public:
         rho_m[domain_m]=0; 
         this->Q.scatter(this->rho_m, this->R, IntrplCIC_t());
 
+        rho_m.write(std::cout);
+        std::cout << "sum = " << sum(rho_m) << std::endl;
+
         double Q_grid = sum(rho_m);
         Q_grid = std::fabs((this->total_charge - Q_grid) / this->total_charge);
         std::cout << "Rel. error in charge conservation = " << Q_grid << std::endl;
@@ -416,6 +419,8 @@ void createParticlePenning(Particles & P, Vektor<double,3> extend_l, Vektor<doub
 
         std::cout << "i = " << i << ", qi = " << qi << ", pos = " << pos << std::endl;
     }
+
+    dumpParticlesCSV(P, 0);
 
     std::cout << "Minimum position = " << minR << std::endl;
     std::cout << "Maximum position = " << maxR << std::endl;
