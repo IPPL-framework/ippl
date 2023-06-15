@@ -199,6 +199,8 @@ public:
         rho_m[domain_m]=0; 
         this->Q.scatter(this->rho_m, this->R, IntrplCIC_t());
 
+        dumpVTKScalar(rho_m,this,0,"rho");
+
         rho_m.write(std::cout);
         std::cout << "sum = " << sum(rho_m) << std::endl;
 
@@ -212,8 +214,6 @@ public:
         rhocmpl_m[domain_m] = rho_m[domain_m]/(hr_m[0]*hr_m[1]*hr_m[2]);
 
         std::cout << "Rho sum after normalisation = " << sum(rhocmpl_m) << std::endl;
-
-        dumpVTKScalar(rho_m,this,0,"rho");
 
         // trick for periodic BCs penning trap (subtract ion density)
         double size = 1;
