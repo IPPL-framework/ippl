@@ -687,10 +687,10 @@ public:
                 // ippl::apply<unsigned> accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
                 double val = ippl::apply(Eview, args)[0];
-                double e2  = std::pow(val, 2);
+                double e2  = Kokkos::pow(val, 2);
                 E2 += e2;
 
-                double norm = std::fabs(ippl::apply(Eview, args)[0]);
+                double norm = Kokkos::fabs(ippl::apply(Eview, args)[0]);
                 if (norm > ENorm) {
                     ENorm = norm;
                 }
