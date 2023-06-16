@@ -72,9 +72,10 @@ public:
         , configSpaceIntegral_m(globParticleNum_m)
         , dt_m(dt)
         , nv_m(nv)
-        , hv_m(2 * vmax / nv)
-        , vmin_m(-vmax)
-        , vmax_m(vmax)
+        , vScalingFactor_m(1.0 / vmax)
+        , hv_m(2.0 / nv)
+        , vmin_m(-1.0)
+        , vmax_m(1.0)
         , velocitySpaceIdxDomain_m(nv, nv, nv)
         , velocitySpaceMesh_m(velocitySpaceIdxDomain_m, hv_m, 0.0)
         , velocitySpaceFieldLayout_m(velocitySpaceIdxDomain_m, configSpaceDecomp, false)
@@ -306,8 +307,12 @@ public:
     }
 
     void dumpFdField(unsigned int iteration, std::string folder) {
+        // Normalize particle velocities to [-1,1]^3
+        this->P = this->P * vScalingFactor_m;
         // Gather from particle attributes
         gather(p_Fd_m, Fd_m, this->P);
+        // Renormalize particle velocities to original domain
+        this->P = this->P / vScalingFactor_m;
 
         double L2vec;
         double L2Fd;
@@ -356,15 +361,25 @@ public:
         fv_m = 0.0;
         // Scattered quantity should be a density ($\sum_i fv_i = 1$)
         p_fv_m = 1.0 / globParticleNum_m;
+
+        // Normalize particle velocities to [-1,1]^3
+        this->P = this->P * vScalingFactor_m;
         scatter(p_fv_m, fv_m, this->P);
+        // Renormalize particle velocities to original domain
+        this->P = this->P / vScalingFactor_m;
+
         // Normalize with dV
         double cellVolume = std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
         fv_m              = fv_m / cellVolume;
     }
 
     void gatherFd() {
+        // Normalize particle velocities to [-1,1]^3
+        this->P = this->P * vScalingFactor_m;
         // Gather Friction coefficients to particles attribute
         gather(p_Fd_m, Fd_m, this->P);
+        // Renormalize particle velocities to original domain
+        this->P = this->P / vScalingFactor_m;
     }
 
     void extractRows(MField_t<Dim>& M, VField_t<T, Dim>& V0, VField_t<T, Dim>& V1,
@@ -411,9 +426,14 @@ public:
 
     void gatherHessian() {
         extractRows(D_m, D0_m, D1_m, D2_m);
+
+        // Normalize particle velocities to [-1,1]^3
+        this->P = this->P * vScalingFactor_m;
         gather(p_D0_m, D0_m, this->P);
         gather(p_D1_m, D1_m, this->P);
         gather(p_D2_m, D2_m, this->P);
+        // Renormalize particle velocities to original domain
+        this->P = this->P / vScalingFactor_m;
     }
 
     void choleskyMultiply() {
@@ -443,6 +463,8 @@ public:
                 pQ2_view(i)  = Q[2];
                 VectorD_t dW = VectorD_t(
                     {rand_gen.normal(0.0, dt), rand_gen.normal(0.0, dt), rand_gen.normal(0.0, dt)});
+
+                // Renormalize to match velocity contribution on original domain size
                 pQdW_view(i) = matrixVectorMul3x3(Q, dW);
 
                 // Give the state back, which will allow another thread to acquire it
@@ -478,6 +500,8 @@ public:
 
         // Only needed for dumping
         gatherFd();
+
+        p_Fd_m = p_Fd_m * vScalingFactor_m * vScalingFactor_m;
 
         msg << "Friction computation done." << endl;
     }
@@ -516,6 +540,8 @@ public:
         // Do Cholesky decomposition of $D$
         // and directly multiply with Gaussian random vector
         choleskyMultiply();
+
+        // p_QdW_m = p_QdW_m * vScalingFactor_m;
 
         msg << "Diffusion computation done." << endl;
     }
@@ -1132,6 +1158,10 @@ public:
 
     // Number of cells per dim in velocity space
     ippl::Vector<size_type, Dim> nv_m;
+    // Scaling factor used to scale from [-1,1]^3 to [-VMAX,VMAX]^3
+    // The velocity solvers will compute the Rosenbluth potentials on a normalized domain
+    // due to peculiarities with floating-point numbers if the domain is too large
+    double vScalingFactor_m;
     // Mesh-Spacing of velocity space grid `fv_m`
     VectorD_t hv_m;
 
