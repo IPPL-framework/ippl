@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
     P->dumpBeamStatistics(0, OUT_DIR);
     P->dumpCollisionStatistics(0, true, OUT_DIR);
 
-    for (size_t it = 1; it < NT; ++it) {
+    for (size_t it = 0; it < NT; ++it) {
         P->R = P->R + 0.5 * DT * P->P;
         P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
 
