@@ -206,7 +206,8 @@ int main(int argc, char *argv[]){
 
     // create mesh and layout objects for this problem domain
     Vector_t rmin = {0.0, 0.0, 0.0};
-    Vector_t rmax = {20.0, 20.0, 20.0};
+    //Vector_t rmax = {20.0, 20.0, 20.0};
+    Vector_t rmax = {25.0, 25.0, 25.0};
     double dx = rmax[0] / nr[0];
     double dy = rmax[1] / nr[1];
     double dz = rmax[2] / nr[2];
@@ -236,9 +237,12 @@ int main(int argc, char *argv[]){
     for (unsigned d = 0; d<Dim; d++) {
         mu[d] = 0.5 * length[d];
     }
-    sd[0] = 0.15*length[0];
-    sd[1] = 0.05*length[1];
-    sd[2] = 0.20*length[2];
+    //sd[0] = 0.15*length[0];
+    //sd[1] = 0.05*length[1];
+    //sd[2] = 0.20*length[2];
+    sd[0] = 0.10*20.0;//length[0];
+    sd[1] = 0.05*20.0;//length[1];
+    sd[2] = 0.15*20.0;//length[2];
 
     P->E_m.initialize(mesh, FL);
     P->rho_m.initialize(mesh, FL);

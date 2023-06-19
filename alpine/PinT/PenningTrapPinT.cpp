@@ -159,9 +159,9 @@ double computeRL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qp
                                 Vector_t diff = Qview(i) - QprevIterView(i);
 
                                 for (unsigned d = 0; d < 3; ++d) {
-                                    bool isLeft = (diff[d] <= -22.0);
-                                    bool isRight = (diff[d] >= 22.0);
-                                    bool isInside = ((diff[d] > -22.0) && (diff[d] < 22.0));
+                                    bool isLeft = (diff[d] <= -17.0);
+                                    bool isRight = (diff[d] >= 17.0);
+                                    bool isInside = ((diff[d] > -17.0) && (diff[d] < 17.0));
                                     diff[d] = (isInside * diff[d]) + (isLeft * (diff[d] + length[d]))
                                               +(isRight * (diff[d] - length[d]));
                                 }
@@ -485,6 +485,7 @@ int main(int argc, char *argv[]){
     // create mesh and layout objects for this problem domain
     Vector_t rmin(0.0);
     Vector_t rmax(25.0);
+    //Vector_t rmax(20.0);
     Vector_t length = rmax - rmin;
     double dxPIC = length[0] / nrPIC[0];
     double dyPIC = length[1] / nrPIC[1];
@@ -496,6 +497,9 @@ int main(int argc, char *argv[]){
     for (unsigned d = 0; d<Dim; d++) {
         mu[d] = 0.5 * length[d];
     }
+    //sd[0] = 0.15*length[0];
+    //sd[1] = 0.05*length[1];
+    //sd[2] = 0.20*length[2];
     sd[0] = 0.10*20.0;//length[0];
     sd[1] = 0.05*20.0;//length[1];
     sd[2] = 0.15*20.0;//length[2];
