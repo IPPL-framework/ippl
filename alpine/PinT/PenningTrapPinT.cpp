@@ -159,9 +159,9 @@ double computeRL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qp
                                 Vector_t diff = Qview(i) - QprevIterView(i);
 
                                 for (unsigned d = 0; d < 3; ++d) {
-                                    bool isLeft = (diff[d] <= -17.0);
-                                    bool isRight = (diff[d] >= 17.0);
-                                    bool isInside = ((diff[d] > -17.0) && (diff[d] < 17.0));
+                                    bool isLeft = (diff[d] <= -22.0);
+                                    bool isRight = (diff[d] >= 22.0);
+                                    bool isInside = ((diff[d] > -22.0) && (diff[d] < 22.0));
                                     diff[d] = (isInside * diff[d]) + (isLeft * (diff[d] + length[d]))
                                               +(isRight * (diff[d] - length[d]));
                                 }
