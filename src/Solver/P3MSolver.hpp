@@ -274,8 +274,6 @@ namespace ippl {
         const int nghost                 = grn_m.getNghost();
         const auto& ldom                 = layout_mp->getLocalNDIndex();
 
-        constexpr Trhs ke = 2.532638e8;
-
         // Kokkos parallel for loop to find (0,0,0) point and regularize
         Kokkos::parallel_for(
             "Assign Green's function ", ippl::getRangePolicy(view, nghost),
@@ -288,7 +286,7 @@ namespace ippl {
                 const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
 
                 Trhs r        = Kokkos::real(Kokkos::sqrt(view(i, j, k)));
-                view(i, j, k) = (!isOrig) * ke * (Kokkos::erf(alpha * r) / r);
+                view(i, j, k) = (!isOrig) * (Kokkos::erf(alpha * r) / r);
             });
 
         // perform the FFT of the Green's function for the convolution
