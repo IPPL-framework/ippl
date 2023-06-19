@@ -309,9 +309,6 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(particleCreation);
 
         P->q = P->Q_m / totalP;
-
-        P->dumpParticleData();
-
         msg << "particles created and initial conditions assigned " << endl;
         isFirstRepartition = false;
         // The update after the particle creation is not needed as the
@@ -320,7 +317,6 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(DummySolveTimer);
         P->rho_m = 0.0;
         P->runSolver();
-
         IpplTimings::stopTimer(DummySolveTimer);
 
         P->scatterCIC(totalP, 0, hr);
@@ -328,9 +324,6 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(SolveTimer);
         P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
-
-        // debug
-        msg << "Rho sum after first solve = " << P->rho_m.sum() << endl;
 
         P->gatherCIC();
 
