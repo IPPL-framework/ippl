@@ -125,6 +125,7 @@ namespace ippl {
         grn_m.initialize(*mesh_mp, *layout_mp);
         rhotr_m.initialize(*meshComplex_m, *layoutComplex_m);
         grntr_m.initialize(*meshComplex_m, *layoutComplex_m);
+        tempFieldComplex_m.initialize(*meshComplex_m, *layoutComplex_m);
 
         // create the FFT object
         fft_m = std::make_unique<FFT_t>(*layout_mp, *layoutComplex_m, this->params_m);
@@ -234,18 +235,90 @@ namespace ippl {
         // convolution becomes multiplication in FFT
         rhotr_m = rhotr_m * grntr_m;
 
-        // inverse FFT of the product and store the electrostatic potential in rho2_mr
-        fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+        if ((out == Base::GRAD) || (out == Base::SOL_AND_GRAD)) {
+            // Compute gradient in Fourier space and then
+            // take inverse FFT.
 
-        // normalization is double counted due to 2 transforms
-        *(this->rhs_mp) = *(this->rhs_mp) * nr_m[0] * nr_m[1] * nr_m[2];
-        // discretization of integral requires h^3 factor
-        *(this->rhs_mp) = *(this->rhs_mp) * hr_m[0] * hr_m[1] * hr_m[2];
+            const Trhs pi              = Kokkos::numbers::pi_v<Trhs>;
+            Kokkos::complex<Trhs> imag = {0.0, 1.0};
+
+            auto view               = rhotr_m.getView();
+            const int nghost        = rhotr_m.getNghost();
+            auto tempview           = tempFieldComplex_m.getView();
+            auto viewRhs            = this->rhs_mp->getView();
+            auto viewLhs            = this->lhs_mp->getView();
+            const int nghostL       = this->lhs_mp->getNghost();
+            const auto& lDomComplex = layoutComplex_m->getLocalNDIndex();
+
+            // define some member variables in local scope for the parallel_for
+            Vector_t hsize     = hr_m;
+            Vector<int, Dim> N = nr_m;
+            Vector_t origin    = mesh_mp->getOrigin();
+
+            for (size_t gd = 0; gd < Dim; ++gd) {
+                ippl::parallel_for(
+                    "Gradient FFTPeriodicPoissonSolver", getRangePolicy(view, nghost),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        Vector<int, Dim> iVec = args - nghost;
+
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            iVec[d] += lDomComplex[d].first();
+                        }
+
+                        Vector_t kVec;
+
+                        for (size_t d = 0; d < Dim; ++d) {
+                            const Trhs Len = N[d] * hsize[d];
+                            bool shift     = (iVec[d] > (N[d] / 2));
+                            bool notMid    = (iVec[d] != (N[d] / 2));
+                            // For the noMid part see
+                            // https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 1
+                            kVec[d] = notMid * 2 * pi / Len * (iVec[d] - shift * N[d]);
+                        }
+
+                        Trhs Dr = 0;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            Dr += kVec[d] * kVec[d];
+                        }
+
+                        apply(tempview, args) = apply(view, args);
+
+                        bool isNotZero = (Dr != 0.0);
+                        Trhs factor    = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
+
+                        apply(tempview, args) *= -(imag * kVec[gd] * factor);
+                    });
+
+                fft_m->transform(-1, *this->rhs_mp, tempFieldComplex_m);
+
+                ippl::parallel_for(
+                    "Assign Gradient FFTPeriodicPoissonSolver", getRangePolicy(viewLhs, nghostL),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        apply(viewLhs, args)[gd] = apply(viewRhs, args);
+                    });
+            }
+
+            // normalization is double counted due to 2 transforms
+            *(this->lhs_mp) = *(this->lhs_mp) * nr_m[0] * nr_m[1] * nr_m[2];
+            // discretization of integral requires h^3 factor
+            *(this->lhs_mp) = *(this->lhs_mp) * hr_m[0] * hr_m[1] * hr_m[2];
+        }
+
+        if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
+            // inverse FFT of the product and store the electrostatic potential in rho2_mr
+            fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
+
+            // normalization is double counted due to 2 transforms
+            *(this->rhs_mp) = *(this->rhs_mp) * nr_m[0] * nr_m[1] * nr_m[2];
+            // discretization of integral requires h^3 factor
+            *(this->rhs_mp) = *(this->rhs_mp) * hr_m[0] * hr_m[1] * hr_m[2];
+        }
 
         // if we want gradient of phi = Efield
-        if (out == Base::SOL_AND_GRAD || out == Base::GRAD) {
-            *(this->lhs_mp) = -grad(*this->rhs_mp);
-        }
+        // if (out == Base::SOL_AND_GRAD || out == Base::GRAD) {
+        //    *(this->lhs_mp) = -grad(*this->rhs_mp);
+        //}
     };
 
     ////////////////////////////////////////////////////////////////////////
