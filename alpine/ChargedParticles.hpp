@@ -509,14 +509,14 @@ public:
             if constexpr (Dim == 2 || Dim == 3) {
                 std::get<FFTSolver_t<T, Dim>>(solver_m).solve();
             }
-            Vector_t<double> hrField = (rho_m.get_mesh()).getMeshSpacing();
-            dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 1, hrField[0], hrField[1], hrField[2]);
+            // Vector_t<double> hrField = (rho_m.get_mesh()).getMeshSpacing();
+            // dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 1, hrField[0], hrField[1], hrField[2]);
         } else if (stype_m == "P3M") {
             if constexpr (Dim == 3) {
                 std::get<P3MSolver_t<T, Dim>>(solver_m).solve();
             }
-            Vector_t<double> hrField = (rho_m.get_mesh()).getMeshSpacing();
-            dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 1, hrField[0], hrField[1], hrField[2]);
+            // Vector_t<double> hrField = (rho_m.get_mesh()).getMeshSpacing();
+            // dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], 1, hrField[0], hrField[1], hrField[2]);
         } else if (stype_m == "OPEN") {
             if constexpr (Dim == 3) {
                 std::get<OpenSolver_t<T, Dim>>(solver_m).solve();
@@ -576,7 +576,7 @@ public:
     void initP3MSolver() {
         if constexpr (Dim == 3) {
             ippl::ParameterList sp;
-            sp.add("output_type", P3MSolver_t<T, Dim>::SOL);
+            sp.add("output_type", P3MSolver_t<T, Dim>::SOL_AND_GRAD);
             sp.add("use_heffte_defaults", false);
             sp.add("use_pencils", true);
             sp.add("use_reorder", false);
