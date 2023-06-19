@@ -661,7 +661,7 @@ public:
         }
     }
 
-    void dumpBeamStatistics(unsigned int iteration, std::string folder) {
+    void dumpBeamStatistics(unsigned int iteration, bool isFirstIteration, std::string folder) {
         Inform m("DUMPLangevin");
 
         // Usefull constants
@@ -1047,7 +1047,7 @@ public:
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-            if (iteration == 0) {
+            if (isFirstIteration) {
                 csvout << "iteration,"
                        << "vmaxX,vmaxY,vmaxZ,"
                        << "vminX,vminY,vminZ,"

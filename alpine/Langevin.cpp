@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
     // dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, nghost, 0, 1.0, OUT_DIR, "Rho");
     // dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
 
-    P->dumpBeamStatistics(0, OUT_DIR);
+    P->dumpBeamStatistics(0, true, OUT_DIR);
     P->dumpCollisionStatistics(0, true, OUT_DIR);
 
     for (size_t it = 0; it < NT; ++it) {
@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
 
         P->runDiffusionSolver();
 
-        P->dumpCollisionStatistics(it, false, OUT_DIR);
+        P->dumpCollisionStatistics(it+1, false, OUT_DIR);
 
         // Add dynamic friction & stochastic diffusion coefficients
         P->P = P->P + DT * P->p_Fd_m + P->p_QdW_m;
@@ -162,7 +162,7 @@ int main(int argc, char* argv[]) {
 
         // Dump Statistics every DUMP_INTERVAL iteration
         if (it % DUMP_INTERVAL == 0) {
-            P->dumpBeamStatistics(it, OUT_DIR);
+            P->dumpBeamStatistics(it+1, false, OUT_DIR);
             P->velocityParticleCheck();
 
             // if (it % 200 == 0) {
