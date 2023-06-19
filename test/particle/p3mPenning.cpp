@@ -52,7 +52,8 @@ const unsigned Dim = 3;
 
 // Coulomb constant
 //const double ke=2.532638e8; // Ulmer's
-const double ke = 8.987551e9; // SI units
+//const double ke = 8.987551e9; // SI units
+const double ke = 1.0;
 
 // some typedefs
 typedef UniformCartesian<Dim, double>                                 Mesh_t;
