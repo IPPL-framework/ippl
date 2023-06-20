@@ -543,7 +543,7 @@ namespace ippl {
                       MPI_C_DOUBLE_COMPLEX, MPI_SUM, spaceComm);  
         IpplTimings::stopTimer(scatterAllReducePIFTimer);
 
-        //IpplTimings::startTimer(scatterPIFNUFFTTimer);
+        IpplTimings::startTimer(scatterPIFNUFFTTimer);
 
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         Kokkos::parallel_for("Multiply with shape functions",

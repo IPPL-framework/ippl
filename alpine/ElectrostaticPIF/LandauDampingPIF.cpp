@@ -170,10 +170,18 @@ int main(int argc, char *argv[]){
     const unsigned int nt     = std::atoi(argv[5]);
     const double dt = std::atof(argv[6]);
 
+    double factor = 1.0/Ippl::Comm->size();
+    size_type nloc = (size_type)(factor * totalP);
+    size_type Total_particles = 0;
+
+    MPI_Allreduce(&nloc, &Total_particles, 1,
+                MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+
+
     msg << "Landau damping"
         << endl
         << "nt " << nt << " Np= "
-        << totalP << " Fourier modes = " << nr
+        << Total_particles << " Fourier modes = " << nr
         << endl;
 
     using bunch_type = ChargedParticlesPIF<PLayout_t>;
@@ -214,7 +222,7 @@ int main(int argc, char *argv[]){
     //Q = -\int\int f dx dv
     double Q = -length[0] * length[1] * length[2];
     //double Q = -64.0 * pi * pi * pi;
-    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q,totalP);
+    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q,Total_particles);
 
     P->nr_m = nr;
 
@@ -241,17 +249,11 @@ int main(int argc, char *argv[]){
         //maxU[d] = rmax[d];//CDF(Regions(myRank)[d].max(), alpha, kw[d]);
     }
 
-    double factor = 1.0/Ippl::Comm->size();
-    size_type nloc = (size_type)(factor * totalP);
-    size_type Total_particles = 0;
 
-    MPI_Allreduce(&nloc, &Total_particles, 1,
-                MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+    //int rest = (int) (totalP - Total_particles);
 
-    int rest = (int) (totalP - Total_particles);
-
-    if ( Ippl::Comm->rank() < rest )
-        ++nloc;
+    //if ( Ippl::Comm->rank() < rest )
+    //    ++nloc;
 
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
@@ -263,7 +265,7 @@ int main(int argc, char *argv[]){
     Ippl::Comm->barrier();
     IpplTimings::stopTimer(particleCreation);                                                    
     
-    P->q = P->Q_m/totalP;
+    P->q = P->Q_m/Total_particles;
     msg << "particles created and initial conditions assigned " << endl;
 
     IpplTimings::startTimer(initializeShapeFunctionPIF);

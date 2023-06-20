@@ -173,11 +173,6 @@ int main(int argc, char *argv[]){
     const unsigned int nt     = std::atoi(argv[5]);
     const double dt = std::atof(argv[6]);
 
-    msg << TestName 
-        << endl
-        << "nt " << nt << " Np= "
-        << totalP << " Fourier modes = " << nr
-        << endl;
 
     using bunch_type = ChargedParticlesPIF<PLayout_t>;
 
@@ -240,9 +235,27 @@ int main(int argc, char *argv[]){
     FieldLayout_t FL(domain, decomp, isAllPeriodic);
     PLayout_t PL(FL, mesh);
 
+    double factorConf = 1.0/Ippl::Comm->size();
+    double factorVelBulk = 1.0 - epsilon;
+    double factorVelBeam = 1.0 - factorVelBulk;
+    size_type nlocBulk = (size_type)(factorConf * factorVelBulk * totalP);
+    size_type nlocBeam = (size_type)(factorConf * factorVelBeam * totalP);
+    size_type nloc = nlocBulk + nlocBeam;
+    size_type Total_particles = 0;
+
+    MPI_Allreduce(&nloc, &Total_particles, 1,
+                MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+    
+    msg << TestName 
+        << endl
+        << "nt " << nt << " Np= "
+        << Total_particles << " Fourier modes = " << nr
+        << endl;
+    
+    
     //Q = -\int\int f dx dv
     double Q = -rmax[0] * rmax[1] * rmax[2];
-    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q,totalP);
+    P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q,Total_particles);
 
     P->nr_m = nr;
 
@@ -266,21 +279,11 @@ int main(int argc, char *argv[]){
         maxU[d]   = CDF(rmax[d], delta, kw[d], d);
     }
 
-    double factorConf = 1.0/Ippl::Comm->size();
-    double factorVelBulk = 1.0 - epsilon;
-    double factorVelBeam = 1.0 - factorVelBulk;
-    size_type nlocBulk = (size_type)(factorConf * factorVelBulk * totalP);
-    size_type nlocBeam = (size_type)(factorConf * factorVelBeam * totalP);
-    size_type nloc = nlocBulk + nlocBeam;
-    size_type Total_particles = 0;
 
-    MPI_Allreduce(&nloc, &Total_particles, 1,
-                MPI_UNSIGNED_LONG, MPI_SUM, Ippl::getComm());
+    //int rest = (int) (totalP - Total_particles);
 
-    int rest = (int) (totalP - Total_particles);
-
-    if ( Ippl::Comm->rank() < rest )
-        ++nloc;
+    //if ( Ippl::Comm->rank() < rest )
+    //    ++nloc;
 
     P->create(nloc);
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
@@ -293,7 +296,7 @@ int main(int argc, char *argv[]){
     Ippl::Comm->barrier();
     IpplTimings::stopTimer(particleCreation);                                                    
     
-    P->q = P->Q_m/totalP;
+    P->q = P->Q_m/Total_particles;
     msg << "particles created and initial conditions assigned " << endl;
 
     IpplTimings::startTimer(initializeShapeFunctionPIF);
