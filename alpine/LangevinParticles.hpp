@@ -48,7 +48,10 @@ class LangevinParticles : public ChargedParticles<PLayout, T, Dim> {
     using KokkosRNGPool_t = Kokkos::Random_XorShift64_Pool<>;
     using KokkosRNG_t     = KokkosRNGPool_t::generator_type;
 
-    enum ScaleOpType {FORWARD = 0, INVERSE};
+    enum ScaleOpType {
+        FORWARD = 0,
+        INVERSE
+    };
 
 public:
     /*
@@ -75,10 +78,10 @@ public:
         , dt_m(dt)
         , nv_m(nv)
         , vmaxInit_m(vmax)
-        , vScalingFactor_m(1.0 / (2.0 * vmax))
-        , hv_m(1.0 / nv)
+        , vScalingFactor_m(1.0 / vmax)
+        , hv_m(2.0 / nv)
         , hvInit_m(2.0 * vmaxInit_m / nv)
-        , vmin_m(0.0)
+        , vmin_m(-1.0)
         , vmax_m(1.0)
         , velocitySpaceIdxDomain_m(nv, nv, nv)
         , velocitySpaceMesh_m(velocitySpaceIdxDomain_m, hv_m, 0.0)
@@ -367,58 +370,60 @@ public:
         }
     }
 
-    void scaleParticleVelocities(ScaleOpType direction){
-        if (direction == ScaleOpType::FORWARD) { // Scale from [VMIN,VMAX] to [0,1]
-            this->P =  vScalingFactor_m * (this->P + vmaxInit_m);
-        } else if (direction == ScaleOpType::INVERSE){ // Scale from [0,1] -> [VMIN,VMAX]
-            this->P = (this->P / vScalingFactor_m) - vmaxInit_m;
+    void scaleParticleVelocities(ScaleOpType direction) {
+        if (direction == ScaleOpType::FORWARD) {  // Scale from [VMIN,VMAX] to [-1,1]
+            this->P = vScalingFactor_m * this->P;
+        } else if (direction == ScaleOpType::INVERSE) {  // Scale from [-1,1] -> [VMIN,VMAX]
+            this->P = (this->P / vScalingFactor_m);
         } else {
             throw IpplException("LangevinParticles::scaleParticleVelocities",
-                                "Only allows scaling to [0,1] or [-vmax, vmax]");
+                                "Only allows scaling to [-1,1] or [-vmax, vmax]");
         }
     }
 
     void scatterVelSpace(bool useNormalizedVelSpace) {
-        if (useNormalizedVelSpace){ // Scatter on [0,1]
+        if (useNormalizedVelSpace) {  // Scatter on [-1,1]
             // Scatter velocity density on grid
             fv_m = 0.0;
 
-            // Normalize particle velocities to [0,1]^3
+            // Normalize particle velocities to [-1,1]^3
             scaleParticleVelocities(ScaleOpType::FORWARD);
             scatter(p_fv_m, fv_m, this->P);
             // Renormalize particle velocities to original domain
             scaleParticleVelocities(ScaleOpType::INVERSE);
 
             // Normalize with dV
-            double cellVolume = std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
-            fv_m              = fv_m / cellVolume;
-        } else { // Scatter on [-VMAX,VMAX]
+            double cellVolume =
+                std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
+            fv_m = fv_m / cellVolume;
+        } else {  // Scatter on [-VMAX,VMAX]
             // Scatter potential to grid
             fvInit_m = 0.0;
 
             scatter(p_fv_m, fvInit_m, this->P);
 
             // Normalize with dV
-            double cellVolume = std::reduce(hvInit_m.begin(), hvInit_m.end(), 1., std::multiplies<double>());
-            fvInit_m              = fvInit_m / cellVolume;
+            double cellVolume =
+                std::reduce(hvInit_m.begin(), hvInit_m.end(), 1., std::multiplies<double>());
+            fvInit_m = fvInit_m / cellVolume;
         }
     }
 
     void gatherVelSpace(bool useNormalizedVelSpace) {
-        if (useNormalizedVelSpace){ // Scatter on [0,1]
-            // Normalize particle velocities to [0,1]^3
+        if (useNormalizedVelSpace) {  // Scatter on [-1,1]
+            // Normalize particle velocities to [-1,1]^3
             scaleParticleVelocities(ScaleOpType::FORWARD);
             gather(p_fv_m, fv_m, this->P);
             // Revert normalization of particle velocities to original domain
             scaleParticleVelocities(ScaleOpType::INVERSE);
-        } else { // Scatter on [-VMAX,VMAX]
+        } else {  // Scatter on [-VMAX,VMAX]
             gather(p_fv_m, fvInit_m, this->P);
         }
     }
 
     void gatherFd(bool useNormalizedVelSpace) {
         if (useNormalizedVelSpace) {
-            // Normalize particle velocities to [0,1]^3
+            // Normalize particle velocities to [-1,1]^3
             scaleParticleVelocities(ScaleOpType::FORWARD);
             // Gather Friction coefficients to particles attribute
             gather(p_Fd_m, Fd_m, this->P);
@@ -474,7 +479,7 @@ public:
     void gatherHessian() {
         extractRows(D_m, D0_m, D1_m, D2_m);
 
-        // Normalize particle velocities to [0,1]^3
+        // Normalize particle velocities to [-1,1]^3
         scaleParticleVelocities(ScaleOpType::FORWARD);
         gather(p_D0_m, D0_m, this->P);
         gather(p_D1_m, D1_m, this->P);
@@ -525,7 +530,7 @@ public:
 
         // Initialize `fv_m`
         // Scattered quantity should be a density ($\sum_i fv_i = 1$)
-        p_fv_m = 1.0 / globParticleNum_m;
+        p_fv_m = vScalingFactor_m / globParticleNum_m;
         scatterVelSpace(true);
 
         /*
@@ -545,22 +550,25 @@ public:
         velocitySpaceMesh_m.setOrigin(vmin_m);
 
         // Sign change needed as solver returns $- \nabla H(\vec)$
-        //Fd_m = -1.0 * gamma_m * Fd_m;
-        
+        Fd_m = -1.0 * gamma_m * Fd_m;
+
         // Gather potential from normalized grid
-        gatherVelSpace(true);
+        // gatherVelSpace(true);
 
         // Scale potential back to [-VMAX,VMAX]
-        p_fv_m = p_fv_m / vScalingFactor_m - vmaxInit_m;
+        // p_fv_m = p_fv_m / vScalingFactor_m;
 
         scatterVelSpace(false);
 
         // Sign change not needed here as we compute grad(h) with FD
-        FdInit_m = gamma_m * grad(fvInit_m);
+        // FdInit_m = gamma_m * grad(fvInit_m);
 
         // Only needed for dumping
         gatherFd(false);
-        
+
+        // Scale potential back to [-VMAX,VMAX]
+        p_Fd_m = p_Fd_m / vScalingFactor_m;
+
         msg << "Friction computation done." << endl;
     }
 
@@ -1223,7 +1231,7 @@ public:
 
     double vmaxInit_m;
 
-    // Scaling factor used to scale from [-VMAX,VMAX]^3 to [-1,1]^3 
+    // Scaling factor used to scale from [-VMAX,VMAX]^3 to [-1,1]^3
     // The velocity solvers will compute the Rosenbluth potentials on a normalized domain
     // due to peculiarities with floating-point numbers if the domain is too large
     double vScalingFactor_m;
