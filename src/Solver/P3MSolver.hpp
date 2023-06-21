@@ -233,7 +233,7 @@ namespace ippl {
 
         // multiply FFT(rho2)*FFT(green)
         // convolution becomes multiplication in FFT
-        rhotr_m = rhotr_m * grntr_m;
+        rhotr_m = -rhotr_m * grntr_m;
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         if ((out == Base::GRAD) || (out == Base::SOL_AND_GRAD)) {
@@ -285,9 +285,8 @@ namespace ippl {
                         apply(tempview, args) = apply(view, args);
 
                         bool isNotZero = (Dr != 0.0);
-                        Trhs factor    = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
 
-                        apply(tempview, args) *= -(imag * kVec[gd] * factor);
+                        apply(tempview, args) *= -(isNotZero * imag * kVec[gd]);
                     });
 
                 fft_m->transform(-1, *this->rhs_mp, tempFieldComplex_m);
