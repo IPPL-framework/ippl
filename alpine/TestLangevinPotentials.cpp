@@ -227,7 +227,7 @@ int main(int argc, char* argv[]) {
     // CONSTANTS FOR MAXELLIAN //
     /////////////////////////////
 
-    constexpr TestCase testType = TestCase::MAXWELLIAN;
+    constexpr TestCase testType = TestCase::GAUSSIAN;
     const double vth            = 1.0;
     const double numberDensity  = 1.0;
 
@@ -242,10 +242,14 @@ int main(int argc, char* argv[]) {
 
         // Define \sigma of initial distribution
         double sigma;
+        double vMax;
         if constexpr (testType == TestCase::MAXWELLIAN) {
             sigma = vth;
+            vMax  = 5.0 * sigma;
         } else if constexpr (testType == TestCase::GAUSSIAN) {
-            sigma = 0.05;
+            vMax = 5e7;
+            // Domain is [-5\sigma, 5\sigma]^3
+            sigma = 0.2 * vMax;
         }
 
         const double L = BOXL * 0.5;
@@ -268,9 +272,6 @@ int main(int argc, char* argv[]) {
         ////////////////////
         // VELOCITY SPACE //
         ////////////////////
-
-        // Domain is [-5\sigma, 5\sigma]^3
-        const double vMax = 5.0 * sigma;
 
         /////////////////////////////////
         // LANGEVIN PARTICLE CONTAINER //
@@ -310,10 +311,10 @@ int main(int argc, char* argv[]) {
         const double gamma = P->gamma_m;
 
         // Create scalar Field for Rosenbluth Potentials
-        Field_t<Dim> HfieldExact      = P->fv_m.deepCopy();
-        Field_t<Dim> GfieldExact      = P->fv_m.deepCopy();
+        Field_t<Dim> HfieldExact      = P->fvInit_m.deepCopy();
+        Field_t<Dim> GfieldExact      = P->fvInit_m.deepCopy();
         MField_t<Dim> DfieldExact     = P->D_m.deepCopy();
-        VField_t<double, Dim> FdExact = P->Fd_m.deepCopy();
+        VField_t<double, Dim> FdExact = P->FdInit_m.deepCopy();
 
         // Fields for identities that must hold
         Field_t<Dim> Dtrace     = P->fv_m.deepCopy();
@@ -338,11 +339,11 @@ int main(int argc, char* argv[]) {
 
         P->create(nloc);
 
-        // Initialize Cold Sphere (positions only)
+        // Initialize Random Positions of particles in configuration space
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * rank));
         Kokkos::parallel_for(
-            nloc, GenerateRandomBoxPositions<VectorD_t, Kokkos::Random_XorShift64_Pool<>>(
-                      P->R.getView(), BOXL, rand_pool64));
+            nloc, GenerateMaxwellian<VectorD_t, Kokkos::Random_XorShift64_Pool<>>(
+                      P->R.getView(), P->P.getView(), 0.0, sigma, BOXL, 2 * vMax, rand_pool64));
 
         // Initialize constant particle attributes
         P->q = PARTICLE_CHARGE;
@@ -358,7 +359,7 @@ int main(int argc, char* argv[]) {
         VectorD_t hv      = P->hv_m;
         VectorD_t vOrigin = P->vmin_m;
 
-        Field_view_t fvView         = P->fv_m.getView();
+        Field_view_t fvInitView     = P->fvInit_m.getView();
         Field_view_t HviewExact     = HfieldExact.getView();
         Field_view_t GviewExact     = GfieldExact.getView();
         VField_view_t FdViewExact   = FdExact.getView();
@@ -367,13 +368,14 @@ int main(int argc, char* argv[]) {
         Field_view_t DtraceDiffView = DtraceDiff.getView();
 
         GenerateTestData<testType, std::shared_ptr<bunch_type>> dataGenerator(
-            fvView, HviewExact, GviewExact, FdViewExact, DviewExact, numberDensity, sigma, P);
+            fvInitView, HviewExact, GviewExact, FdViewExact, DviewExact, numberDensity, sigma, P);
 
         ippl::parallel_for("Assign initial velocity PDF and reference solutions",
-                           ippl::getRangePolicy(fvView, 0), dataGenerator);
+                           ippl::getRangePolicy(fvInitView, 0), dataGenerator);
         Kokkos::fence();
 
-        dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "fvInit");
+        dumpVTKScalar(P->fvInit_m, P->hvInit_m, P->nv_m, -P->vmaxInit_m, nv, 1.0, OUT_DIR,
+                      "fvInit");
 
         //////////////////////////////////////
         // COMPUTE 1st ROSENBLUTH POTENTIAL //
@@ -382,14 +384,17 @@ int main(int argc, char* argv[]) {
         // Need to scatter rho as we use it as $f(\vec r)$
         P->runSpaceChargeSolver(0);
 
+        // Initialize `fv_m`
+        // Scattered quantity should be a density ($\sum_i fv_i = 1$)
+        P->p_fv_m = 1.0 / P->globParticleNum_m;
+        P->scatterVelSpace(true);
+
         /*
          * Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
          * `-1.0` prefactor is because the solver computes $- \Delta H(\vec v) = - rhs(v)$
          * Multiply with prob. density in configuration space $f(\vec r)$
-         * Prob. density in configuration space $f(\vec r)$ already added in in initial
-         * condition
          */
-        P->fv_m = 8.0 * P->pi_m * P->fv_m;
+        P->fv_m = 8.0 * P->pi_m * P->fv_m * P->configSpaceIntegral_m;
 
         // Set origin of velocity space mesh to zero (for FFT)
         P->velocitySpaceMesh_m.setOrigin(0.0);
@@ -410,7 +415,7 @@ int main(int argc, char* argv[]) {
 
         // Sign change needed as solver returns $- \nabla H(\vec)$
         P->Fd_m = -1.0 * gamma * P->Fd_m;
-        P->gatherFd();
+        P->gatherFd(true);
 
         auto FdDiff = P->Fd_m.deepCopy();
         FdDiff      = FdDiff - FdExact;
@@ -426,126 +431,126 @@ int main(int argc, char* argv[]) {
         // COMPUTE 2nd ROSENBLUTH POTENTIAL //
         //////////////////////////////////////
 
-        ippl::parallel_for("Assign initial velocity PDF and reference solutions",
-                           ippl::getRangePolicy(fvView, 0), dataGenerator);
-        Kokkos::fence();
+        // ippl::parallel_for("Assign initial velocity PDF and reference solutions",
+        //                    ippl::getRangePolicy(fvView, 0), dataGenerator);
+        // Kokkos::fence();
 
-        // Need to scatter rho as we use it as $f(\vec r)$
-        P->runSpaceChargeSolver(0);
+        // // Need to scatter rho as we use it as $f(\vec r)$
+        // P->runSpaceChargeSolver(0);
 
-        /*
-         * Multiply with prefactors defined in RHS of Rosenbluth equations
-         * FFTPoissonSolver returns $G(\vec v)$ in `fv_m`
-         * Density multiplied with `-1.0` as the solver computes $\Delta \Delta G(\vec v) = -
-         * rhs(v)$
-         */
-        P->fv_m = 8.0 * P->pi_m * P->fv_m;
+        // /*
+        //  * Multiply with prefactors defined in RHS of Rosenbluth equations
+        //  * FFTPoissonSolver returns $G(\vec v)$ in `fv_m`
+        //  * Density multiplied with `-1.0` as the solver computes $\Delta \Delta G(\vec v) = -
+        //  * rhs(v)$
+        //  */
+        // P->fv_m = 8.0 * P->pi_m * P->fv_m;
 
-        // Set origin of velocity space mesh to zero (for FFT)
-        P->velocitySpaceMesh_m.setOrigin(0.0);
+        // // Set origin of velocity space mesh to zero (for FFT)
+        // P->velocitySpaceMesh_m.setOrigin(0.0);
 
-        // Solve for $\Delta_v \Delta_v G(\vec v)$, is stored in `fv_m`
-        P->diffusionSolver_mp->solve();
+        // // Solve for $\Delta_v \Delta_v G(\vec v)$, is stored in `fv_m`
+        // P->diffusionSolver_mp->solve();
 
-        // Set origin of velocity space mesh to vmin (for scatter / gather)
-        P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
+        // // Set origin of velocity space mesh to vmin (for scatter / gather)
+        // P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
 
-        // Dump all data of the potentials
-        dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gappr");
-        dumpVTKScalar(GfieldExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gexact");
-        auto Gdiff = P->fv_m.deepCopy();
-        Gdiff      = Gdiff - GfieldExact;
-        dumpVTKScalar(Gdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gdiff");
+        // // Dump all data of the potentials
+        // dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gappr");
+        // dumpVTKScalar(GfieldExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gexact");
+        // auto Gdiff = P->fv_m.deepCopy();
+        // Gdiff      = Gdiff - GfieldExact;
+        // dumpVTKScalar(Gdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gdiff");
 
-        // Compute Hessian of $g(\vec v)$
-        P->D_m = gamma * hess(P->fv_m);
+        // // Compute Hessian of $g(\vec v)$
+        // P->D_m = gamma * hess(P->fv_m);
 
-        // Gather Hessian to particle attributes
-        P->gatherHessian();
+        // // Gather Hessian to particle attributes
+        // P->gatherHessian();
 
-        // Dump Collisional Coefficient avg. from particle attributes
-        P->dumpCollisionStatistics(nv, nv == nvMin, OUT_DIR);
+        // // Dump Collisional Coefficient avg. from particle attributes
+        // P->dumpCollisionStatistics(nv, nv == nvMin, OUT_DIR);
 
-        // Extract rows of exact field to separate Vector-Fields
-        P->extractRows(DfieldExact, P->D0_m, P->D1_m, P->D2_m);
+        // // Extract rows of exact field to separate Vector-Fields
+        // P->extractRows(DfieldExact, P->D0_m, P->D1_m, P->D2_m);
 
-        // Dump actual diffusion coefficients
-        // dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", nv, OUT_DIR);
-        dumpVTKVector(P->D0_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D0exact");
-        dumpVTKVector(P->D1_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D1exact");
-        dumpVTKVector(P->D2_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D2exact");
+        // // Dump actual diffusion coefficients
+        // // dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", nv, OUT_DIR);
+        // dumpVTKVector(P->D0_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D0exact");
+        // dumpVTKVector(P->D1_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D1exact");
+        // dumpVTKVector(P->D2_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D2exact");
 
-        // Extract rows of approximation to separate Vector-Fields
-        P->extractRows(P->D_m, P->D0_m, P->D1_m, P->D2_m);
+        // // Extract rows of approximation to separate Vector-Fields
+        // P->extractRows(P->D_m, P->D0_m, P->D1_m, P->D2_m);
 
-        // Dump actual diffusion coefficients
-        dumpVTKVector(P->D0_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D0");
-        dumpVTKVector(P->D1_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D1");
-        dumpVTKVector(P->D2_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D2");
+        // // Dump actual diffusion coefficients
+        // dumpVTKVector(P->D0_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D0");
+        // dumpVTKVector(P->D1_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D1");
+        // dumpVTKVector(P->D2_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D2");
 
-        ///////////////////////////////////////
-        // COMPUTE IDENTITIES THAT MUST HOLD //
-        //                                   //
-        // $Tr(\boldsymbol D) / \Gamma = h$  //
-        ///////////////////////////////////////
+        // ///////////////////////////////////////
+        // // COMPUTE IDENTITIES THAT MUST HOLD //
+        // //                                   //
+        // // $Tr(\boldsymbol D) / \Gamma = h$  //
+        // ///////////////////////////////////////
 
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
-        Kokkos::parallel_for(
-            "Gather trace of $D$",
-            mdrange_type({nghost, nghost, nghost},
-                         {DtraceView.extent(0) - nghost, DtraceView.extent(1) - nghost,
-                          DtraceView.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                DtraceView(i, j, k) =
-                    P->D0_m(i, j, k)[0] + P->D1_m(i, j, k)[1] + P->D2_m(i, j, k)[2];
-            });
+        // using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
+        // Kokkos::parallel_for(
+        //     "Gather trace of $D$",
+        //     mdrange_type({nghost, nghost, nghost},
+        //                  {DtraceView.extent(0) - nghost, DtraceView.extent(1) - nghost,
+        //                   DtraceView.extent(2) - nghost}),
+        //     KOKKOS_LAMBDA(const int i, const int j, const int k) {
+        //         DtraceView(i, j, k) =
+        //             P->D0_m(i, j, k)[0] + P->D1_m(i, j, k)[1] + P->D2_m(i, j, k)[2];
+        //     });
 
-        Kokkos::fence();
+        // Kokkos::fence();
 
-        DtraceDiff = Dtrace / gamma - HfieldExact;
+        // DtraceDiff = Dtrace / gamma - HfieldExact;
 
-        dumpVTKScalar(Dtrace, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Dtrace");
-        dumpVTKScalar(DtraceDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DtraceDiff");
+        // dumpVTKScalar(Dtrace, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Dtrace");
+        // dumpVTKScalar(DtraceDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DtraceDiff");
 
-        ///////////////////////////////////////
-        // $\nabla \cdot \boldsymbol D = Fd$ //
-        ///////////////////////////////////////
+        // ///////////////////////////////////////
+        // // $\nabla \cdot \boldsymbol D = Fd$ //
+        // ///////////////////////////////////////
 
-        P->extractCols(P->D_m, P->D0_m, P->D1_m, P->D2_m);
+        // P->extractCols(P->D_m, P->D0_m, P->D1_m, P->D2_m);
 
-        D0div = div(P->D0_m);
-        D1div = div(P->D1_m);
-        D2div = div(P->D2_m);
+        // D0div = div(P->D0_m);
+        // D1div = div(P->D1_m);
+        // D2div = div(P->D2_m);
 
-        constructVFieldFromFields(Ddiv, D0div, D1div, D2div);
+        // constructVFieldFromFields(Ddiv, D0div, D1div, D2div);
 
-        DdivDiff = Ddiv - FdExact;
-        dumpVTKVector(Ddiv, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Ddiv");
+        // DdivDiff = Ddiv - FdExact;
+        // dumpVTKVector(Ddiv, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Ddiv");
 
-        dumpVTKVector(DdivDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DdivDiff");
+        // dumpVTKVector(DdivDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DdivDiff");
 
         ///////////////////////////////////////////////
         // COMPUTE RELATIVE ERRORS AND DUMP TO FILES //
         ///////////////////////////////////////////////
 
-        const int shift     = nghost;
-        double HrelError    = subfieldNorm(Hdiff, shift) / subfieldNorm(HfieldExact, shift);
-        double GrelError    = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
-        double FdRelError   = L2VectorNorm(FdDiff, shift) / L2VectorNorm(FdExact, shift);
-        MatrixD_t DrelError = MFieldRelError(P->D_m, DfieldExact, 2 * shift);
-        double DtraceRelError =
-            subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
-        VectorD_t DdivDiffRelError =
-            L2VectorNorm(DdivDiff, 2 * shift) / L2VectorNorm(FdExact, 2 * shift);
+        const int shift  = nghost;
+        double HrelError = subfieldNorm(Hdiff, shift) / subfieldNorm(HfieldExact, shift);
+        // double GrelError    = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
+        double FdRelError = L2VectorNorm(FdDiff, shift) / L2VectorNorm(FdExact, shift);
+        // MatrixD_t DrelError = MFieldRelError(P->D_m, DfieldExact, 2 * shift);
+        // double DtraceRelError =
+        //     subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
+        // VectorD_t DdivDiffRelError =
+        //     L2VectorNorm(DdivDiff, 2 * shift) / L2VectorNorm(FdExact, 2 * shift);
 
         std::string convergenceOutDir = OUT_DIR + "/convergenceStats";
         bool writeHeader              = (nv == nvMin);
         dumpCSVScalar(HrelError, "H", nv, writeHeader, convergenceOutDir);
-        dumpCSVScalar(GrelError, "G", nv, writeHeader, convergenceOutDir);
+        // dumpCSVScalar(GrelError, "G", nv, writeHeader, convergenceOutDir);
         dumpCSVScalar(FdRelError, "Fd", nv, writeHeader, convergenceOutDir);
-        dumpCSVMatrix(DrelError, "D", nv, writeHeader, convergenceOutDir);
-        dumpCSVScalar(DtraceRelError, "Dtrace", nv, writeHeader, convergenceOutDir);
-        dumpCSVVector(DdivDiffRelError, "Ddiv", nv, writeHeader, convergenceOutDir);
+        // dumpCSVMatrix(DrelError, "D", nv, writeHeader, convergenceOutDir);
+        // dumpCSVScalar(DtraceRelError, "Dtrace", nv, writeHeader, convergenceOutDir);
+        // dumpCSVVector(DdivDiffRelError, "Ddiv", nv, writeHeader, convergenceOutDir);
 
         /////////////////////////////
         // WRITE RESULTS TO STDOUT //
@@ -553,19 +558,19 @@ int main(int argc, char* argv[]) {
 
         msg << "h(v) rel. error (" << nv << "^3)"
             << ": " << HrelError << endl;
-        msg << "g(v) rel. error (" << nv << "^3)"
-            << ": " << GrelError << endl;
+        // msg << "g(v) rel. error (" << nv << "^3)"
+        //     << ": " << GrelError << endl;
         msg << "Fd(v) rel. error (" << nv << "^3)"
             << ": " << FdRelError << endl;
-        msg << "D(v) rel. error (" << nv << "^3)"
-            << ": " << endl;
-        msg << DrelError[0] << endl;
-        msg << DrelError[1] << endl;
-        msg << DrelError[2] << endl;
-        msg << "Tr(D) - h = 0 rel. error (" << nv << "^3)"
-            << ": " << DtraceRelError << endl;
-        msg << "div(D) - Fd = 0 rel. error (" << nv << "^3)"
-            << ": " << DdivDiffRelError << endl;
+        // msg << "D(v) rel. error (" << nv << "^3)"
+        //     << ": " << endl;
+        // msg << DrelError[0] << endl;
+        // msg << DrelError[1] << endl;
+        // msg << DrelError[2] << endl;
+        // msg << "Tr(D) - h = 0 rel. error (" << nv << "^3)"
+        //     << ": " << DtraceRelError << endl;
+        // msg << "div(D) - Fd = 0 rel. error (" << nv << "^3)"
+        //     << ": " << DdivDiffRelError << endl;
     }
 
     msg << "LangevinPotentials: End." << endl;

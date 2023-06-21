@@ -78,29 +78,49 @@ struct GenerateBoxMuller {
 };
 
 // Generate random numbers in Sphere given by `beamRadius`, centered at the origin
+// This works only on we initialize all particles on one processor and call the `update()`
+// method on the particle bunch
+// If local initialization is needed, have a look at the initialization in `PenningTrap.cpp`
 template <typename T, class GeneratorPool>
-struct GenerateRandomBoxPositions {
+struct GenerateMaxwellian {
     using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
     using value_type = typename T::value_type;
     // Output View for the random positions in the sphere
     view_type r;
-    const value_type halfBoxL;
+    view_type v;
+    double mu;
+    double sigma;
+    const value_type halfBoxL_r;
+    const value_type halfBoxL_v;
 
     // The GeneratorPool
     GeneratorPool pool;
 
     // Initialize all members
-    GenerateRandomBoxPositions(view_type r_, value_type boxL_, GeneratorPool pool_)
+    GenerateMaxwellian(view_type r_, view_type v_, double mu_, double sigma_, value_type boxL_r_,
+                       value_type boxL_v_, GeneratorPool pool_)
         : r(r_)
-        , halfBoxL(0.5 * boxL_)
+        , v(v_)
+        , mu(mu_)
+        , sigma(sigma_)
+        , halfBoxL_r(0.5 * boxL_r_)
+        , halfBoxL_v(0.5 * boxL_v_)
         , pool(pool_) {}
 
     KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
         // Get a random number state from the pool for the active thread
         typename GeneratorPool::generator_type rand_gen = pool.get_state();
 
-        r(i) = {rand_gen.drand(-halfBoxL, halfBoxL), rand_gen.drand(-halfBoxL, halfBoxL),
-                rand_gen.drand(-halfBoxL, halfBoxL)};
+        r(i) = {rand_gen.drand(-halfBoxL_r, halfBoxL_r), rand_gen.drand(-halfBoxL_r, halfBoxL_r),
+                rand_gen.drand(-halfBoxL_r, halfBoxL_r)};
+
+        v(i) = {rand_gen.normal(mu, sigma), rand_gen.normal(mu, sigma), rand_gen.normal(mu, sigma)};
+        // Could be that some sampled velocities are outside our velocity domain
+        for (unsigned d = 0; d < Dim; ++d) {
+            while (v(i)[d] < -halfBoxL_v || v(i)[d] > halfBoxL_v) {
+                v(i)[d] = rand_gen.normal(mu, sigma);
+            }
+        }
 
         // Give the state back, which will allow another thread to acquire it
         pool.free_state(rand_gen);
