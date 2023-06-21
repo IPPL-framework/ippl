@@ -314,11 +314,6 @@ namespace ippl {
             // discretization of integral requires h^3 factor
             *(this->rhs_mp) = *(this->rhs_mp) * hr_m[0] * hr_m[1] * hr_m[2];
         }
-
-        // if we want gradient of phi = Efield
-        // if (out == Base::SOL_AND_GRAD || out == Base::GRAD) {
-        //    *(this->lhs_mp) = -grad(*this->rhs_mp);
-        //}
     };
 
     ////////////////////////////////////////////////////////////////////////
@@ -327,6 +322,9 @@ namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
     void P3MSolver<FieldLHS, FieldRHS>::greensFunction() {
         grn_m = 0.0;
+
+        // define pi
+        Trhs pi = Kokkos::numbers::pi_v<Trhs>;
 
         // This alpha parameter is a choice for the Green's function
         // it controls the "range" of the Green's function (e.g.
@@ -359,7 +357,7 @@ namespace ippl {
                 const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
 
                 Trhs r        = Kokkos::real(Kokkos::sqrt(view(i, j, k)));
-                view(i, j, k) = (!isOrig) * (Kokkos::erf(alpha * r) / r);
+                view(i, j, k) = (!isOrig) * (-1.0 / (4.0 * pi)) * (Kokkos::erf(alpha * r) / r);
             });
 
         // perform the FFT of the Green's function for the convolution
