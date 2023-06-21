@@ -117,7 +117,7 @@ struct GenerateMaxwellian {
         v(i) = {rand_gen.normal(mu, sigma), rand_gen.normal(mu, sigma), rand_gen.normal(mu, sigma)};
         // Could be that some sampled velocities are outside our velocity domain
         for (unsigned d = 0; d < Dim; ++d) {
-            while (v(i)[d] < -halfBoxL_v || v(i)[d] > halfBoxL_v) {
+            while (v(i)[d] <= -halfBoxL_v || v(i)[d] >= halfBoxL_v) {
                 v(i)[d] = rand_gen.normal(mu, sigma);
             }
         }

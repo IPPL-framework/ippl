@@ -78,9 +78,10 @@ public:
         , dt_m(dt)
         , nv_m(nv)
         , vmaxInit_m(vmax)
+        , vminInit_m(-vmax)
         , vScalingFactor_m(1.0 / vmax)
         , hv_m(2.0 / nv)
-        , hvInit_m(2.0 * vmaxInit_m / nv)
+        , hvInit_m((vmaxInit_m - vminInit_m) / nv)
         , vmin_m(-1.0)
         , vmax_m(1.0)
         , velocitySpaceIdxDomain_m(nv, nv, nv)
@@ -318,9 +319,11 @@ public:
     void dumpFdField(unsigned int iteration, std::string folder) {
         // Normalize particle velocities to [-1,1]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
+        velocitySpaceMesh_m.setOrigin(vminInit_m);
         // Gather from particle attributes
         gather(p_Fd_m, Fd_m, this->P);
         // Renormalize particle velocities to original domain
+        velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
 
         double L2vec;
@@ -382,7 +385,9 @@ public:
 
         // Normalize particle velocities to [-1,1]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
+        velocitySpaceMesh_m.setOrigin(vminInit_m);
         scatter(p_fv_m, fv_m, this->P);
+        velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
         // Renormalize particle velocities to original domain
 
@@ -394,17 +399,20 @@ public:
     void gatherVelSpace() {
         // Normalize particle velocities to [-1,1]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
+        velocitySpaceMesh_m.setOrigin(vminInit_m);
         gather(p_fv_m, fv_m, this->P);
         // Revert normalization of particle velocities to original domain
+        velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
     }
 
     void gatherFd() {
         // Normalize particle velocities to [-1,1]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
-        // Gather Friction coefficients to particles attribute
+        velocitySpaceMesh_m.setOrigin(vminInit_m);
         gather(p_Fd_m, Fd_m, this->P);
         // Revert normalization of particle velocities to original domain
+        velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
     }
 
@@ -455,11 +463,13 @@ public:
 
         // Normalize particle velocities to [-1,1]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
+        velocitySpaceMesh_m.setOrigin(vminInit_m);
         std::cout << velocitySpaceMesh_m.getMeshSpacing() << std::endl;
         gather(p_D0_m, D0_m, this->P);
         gather(p_D1_m, D1_m, this->P);
         gather(p_D2_m, D2_m, this->P);
         // Renormalize particle velocities to original domain
+        velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
     }
 
@@ -1193,7 +1203,8 @@ public:
     // Number of cells per dim in velocity space
     ippl::Vector<size_type, Dim> nv_m;
 
-    double vmaxInit_m;
+    VectorD_t vmaxInit_m;
+    VectorD_t vminInit_m;
 
     // Scaling factor used to scale from [-VMAX,VMAX]^3 to [-1,1]^3
     // The velocity solvers will compute the Rosenbluth potentials on a normalized domain

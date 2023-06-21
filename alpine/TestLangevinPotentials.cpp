@@ -136,11 +136,9 @@ class GenerateTestData {
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
 
 public:
-    GenerateTestData(Field_view_t fvView, Field_view_t HviewExact, Field_view_t GviewExact,
-                     VField_view_t FdViewExact, MField_view_t DviewExact, double numberDensity,
-                     double sigma, const Bunch& P)
-        : fvView_m(fvView)
-        , HviewExact_m(HviewExact)
+    GenerateTestData(Field_view_t HviewExact, Field_view_t GviewExact, VField_view_t FdViewExact,
+                     MField_view_t DviewExact, double numberDensity, double sigma, const Bunch& P)
+        : HviewExact_m(HviewExact)
         , GviewExact_m(GviewExact)
         , FdViewExact_m(FdViewExact)
         , DviewExact_m(DviewExact)
@@ -150,9 +148,11 @@ public:
         , P_m(P) {}
 
     KOKKOS_INLINE_FUNCTION void operator()(const index_array_type& args) const {
+        // Use mesh-spacing on original domain for computation of reference solution ([-VMAX,VMAX])
         VectorD_t v = args;
         for (unsigned d = 0; d < Dim; d++) {
-            v[d] = (v[d] + lDom_m[d].first() + 0.5) * P_m->hv_m[d] + P_m->vmin_m[d] - P_m->hv_m[d];
+            v[d] = (v[d] + lDom_m[d].first() + 0.5) * P_m->hvInit_m[d] + P_m->vminInit_m[d]
+                   - P_m->hvInit_m[d];
         }
 
         double prefactor;
@@ -168,7 +168,6 @@ public:
         prefactor *= P_m->configSpaceIntegral_m;
 
         // Initialize I.C. and all resulting potentials, etc.
-        ippl::apply(fvView_m, args)      = gaussianPDF(v, sigma_m, prefactor);
         ippl::apply(HviewExact_m, args)  = gaussianHexact(v, sigma_m, prefactor);
         ippl::apply(GviewExact_m, args)  = gaussianGexact(v, sigma_m, prefactor);
         ippl::apply(FdViewExact_m, args) = gaussianFdExact(v, P_m->gamma_m, sigma_m, prefactor);
@@ -178,7 +177,6 @@ public:
     }
 
 private:
-    const Field_view_t fvView_m;
     const Field_view_t HviewExact_m;
     const Field_view_t GviewExact_m;
     const VField_view_t FdViewExact_m;
@@ -229,7 +227,7 @@ int main(int argc, char* argv[]) {
 
     constexpr TestCase testType = TestCase::GAUSSIAN;
     const double vth            = 1.0;
-    // const double numberDensity  = 1.0;
+    const double numberDensity  = 1.0;
 
     const size_t nvMin = 32;
     const size_t nv    = nvMin;
@@ -242,8 +240,8 @@ int main(int argc, char* argv[]) {
     ippl::e_dim_tag configSpaceDecomp[Dim] = {ippl::PARALLEL, ippl::PARALLEL, ippl::PARALLEL};
 
     // Define \sigma of initial distribution
-    double sigma;
     double vMax;
+    double sigma;
     if constexpr (testType == TestCase::MAXWELLIAN) {
         sigma = vth;
         vMax  = 5.0 * sigma;
@@ -311,20 +309,20 @@ int main(int argc, char* argv[]) {
     // coefficients
 
     // Create scalar Field for Rosenbluth Potentials
-    // Field_t<Dim> HfieldExact      = P->fvInit_m.deepCopy();
-    // Field_t<Dim> GfieldExact      = P->fvInit_m.deepCopy();
-    // MField_t<Dim> DfieldExact     = P->D_m.deepCopy();
-    // VField_t<double, Dim> FdExact = P->FdInit_m.deepCopy();
+    Field_t<Dim> HfieldExact      = P->fv_m.deepCopy();
+    Field_t<Dim> GfieldExact      = P->fv_m.deepCopy();
+    MField_t<Dim> DfieldExact     = P->D_m.deepCopy();
+    VField_t<double, Dim> FdExact = P->Fd_m.deepCopy();
 
-    // // Fields for identities that must hold
-    // Field_t<Dim> Dtrace     = P->fv_m.deepCopy();
-    // Field_t<Dim> DtraceDiff = P->fv_m.deepCopy();
+    // Fields for identities that must hold
+    Field_t<Dim> Dtrace     = P->fv_m.deepCopy();
+    Field_t<Dim> DtraceDiff = P->fv_m.deepCopy();
 
-    // Field_t<Dim> D0div             = P->fv_m.deepCopy();
-    // Field_t<Dim> D1div             = P->fv_m.deepCopy();
-    // Field_t<Dim> D2div             = P->fv_m.deepCopy();
-    // VField_t<double, Dim> Ddiv     = P->Fd_m.deepCopy();
-    // VField_t<double, Dim> DdivDiff = P->Fd_m.deepCopy();
+    Field_t<Dim> D0div             = P->fv_m.deepCopy();
+    Field_t<Dim> D1div             = P->fv_m.deepCopy();
+    Field_t<Dim> D2div             = P->fv_m.deepCopy();
+    VField_t<double, Dim> Ddiv     = P->Fd_m.deepCopy();
+    VField_t<double, Dim> DdivDiff = P->Fd_m.deepCopy();
 
     //////////////////////////////////////////////
     // PARTICLE CREATION & INITIAL SPACE CHARGE //
@@ -343,7 +341,12 @@ int main(int argc, char* argv[]) {
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * rank));
     Kokkos::parallel_for(
         nloc, GenerateMaxwellian<VectorD_t, Kokkos::Random_XorShift64_Pool<>>(
-                  P->R.getView(), P->P.getView(), 0.0, sigma, BOXL, 2 * vMax, rand_pool64));
+                  P->R.getView(), P->P.getView(), 0.0, sigma, BOXL, 2.0 * vMax, rand_pool64));
+
+    // Loop through particle velocities and print
+    for (size_t i = 0; i < nloc; ++i) {
+        msg << "Particle " << i << ": " << P->P(i) << endl;
+    }
 
     // Initialize constant particle attributes
     P->q = PARTICLE_CHARGE;
@@ -355,26 +358,22 @@ int main(int argc, char* argv[]) {
     // INITIALIZE MAXWELLIAN VELOCITY DISTRIBUTION //
     /////////////////////////////////////////////////
 
-    // const int nghost  = P->fv_m.getNghost();
+    // const int nghost = P->fv_m.getNghost();
 
-    // Field_view_t fvInitView     = P->fvInit_m.getView();
-    // Field_view_t HviewExact     = HfieldExact.getView();
-    // Field_view_t GviewExact     = GfieldExact.getView();
-    // VField_view_t FdViewExact   = FdExact.getView();
-    // MField_view_t DviewExact    = DfieldExact.getView();
-    // Field_view_t DtraceView     = Dtrace.getView();
-    // Field_view_t DtraceDiffView = DtraceDiff.getView();
+    Field_view_t fvView         = P->fv_m.getView();
+    Field_view_t HviewExact     = HfieldExact.getView();
+    Field_view_t GviewExact     = GfieldExact.getView();
+    VField_view_t FdViewExact   = FdExact.getView();
+    MField_view_t DviewExact    = DfieldExact.getView();
+    Field_view_t DtraceView     = Dtrace.getView();
+    Field_view_t DtraceDiffView = DtraceDiff.getView();
 
-    // GenerateTestData<testType, std::shared_ptr<bunch_type>> dataGenerator(
-    //     fvInitView, HviewExact, GviewExact, FdViewExact, DviewExact, numberDensity, sigma,
-    //     P);
+    GenerateTestData<testType, std::shared_ptr<bunch_type>> dataGenerator(
+        HviewExact, GviewExact, FdViewExact, DviewExact, numberDensity, sigma, P);
 
-    // ippl::parallel_for("Assign initial velocity PDF and reference solutions",
-    //                    ippl::getRangePolicy(fvInitView, 0), dataGenerator);
-    // Kokkos::fence();
-
-    // dumpVTKScalar(P->fvInit_m, P->hvInit_m, P->nv_m, -P->vmaxInit_m, nv, 1.0, OUT_DIR,
-    //               "fvInit");
+    ippl::parallel_for("Assign initial velocity PDF and reference solutions",
+                       ippl::getRangePolicy(HviewExact, 0), dataGenerator);
+    Kokkos::fence();
 
     //////////////////////////////////////
     // COMPUTE 1st ROSENBLUTH POTENTIAL //
@@ -387,6 +386,8 @@ int main(int argc, char* argv[]) {
     // Scattered quantity should be a density ($\sum_i fv_i = 1$)
     P->p_fv_m = 1.0 / P->globParticleNum_m;
     P->scatterVelSpace();
+
+    dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "fv");
 
     /*
      * Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
@@ -406,11 +407,11 @@ int main(int argc, char* argv[]) {
     P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
 
     // Dump all data of the potentials
-    // dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Happr");
-    // dumpVTKScalar(HfieldExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Hexact");
-    // auto Hdiff = P->fv_m.deepCopy();
-    // Hdiff      = Hdiff - HfieldExact;
-    // dumpVTKScalar(Hdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Hdiff");
+    dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Happr");
+    dumpVTKScalar(HfieldExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Hexact");
+    auto Hdiff = P->fv_m.deepCopy();
+    Hdiff      = Hdiff - HfieldExact;
+    dumpVTKScalar(Hdiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Hdiff");
 
     // Sign change needed as solver returns $- \nabla H(\vec)$
     P->Fd_m = -1.0 * P->gamma_m * P->Fd_m;
@@ -434,7 +435,7 @@ int main(int argc, char* argv[]) {
     //////////////////////////////////////
 
     // ippl::parallel_for("Assign initial velocity PDF and reference solutions",
-    //                    ippl::getRangePolicy(fvInitView, 0), dataGenerator);
+    //                    ippl::getRangePolicy(fvView, 0), dataGenerator);
     // Kokkos::fence();
 
     // Need to scatter rho as we use it as $f(\vec r)$
