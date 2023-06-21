@@ -86,9 +86,6 @@ public:
         , velocitySpaceIdxDomain_m(nv, nv, nv)
         , velocitySpaceMesh_m(velocitySpaceIdxDomain_m, hv_m, 0.0)
         , velocitySpaceFieldLayout_m(velocitySpaceIdxDomain_m, configSpaceDecomp, false)
-        , initVelocitySpaceIdxDomain_m(nv, nv, nv)
-        , initVelocitySpaceMesh_m(initVelocitySpaceIdxDomain_m, hvInit_m, 0.0)
-        , initVelocitySpaceFieldLayout_m(initVelocitySpaceIdxDomain_m, configSpaceDecomp, false)
         , randPool_m((size_type)(42 + 100 * rank_m)) {
         // Compute $\Gamma$ prefactor for Friction and Diffusion coefficients
         double q4          = pCharge_m * pCharge_m * pCharge_m * pCharge_m;
@@ -125,11 +122,9 @@ public:
         Inform msg("setupVelocitySpace");
         // Velocity density (with open boundaries)
         fv_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
-        fvInit_m.initialize(initVelocitySpaceMesh_m, initVelocitySpaceFieldLayout_m);
 
         // Velocity friction coefficient
         Fd_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
-        FdInit_m.initialize(initVelocitySpaceMesh_m, initVelocitySpaceFieldLayout_m);
 
         // Diffusion Coefficients
         D_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
@@ -322,11 +317,11 @@ public:
 
     void dumpFdField(unsigned int iteration, std::string folder) {
         // Normalize particle velocities to [-1,1]^3
-        scaleParticleVelocities(ScaleOpType::FORWARD);
+        velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
         // Gather from particle attributes
         gather(p_Fd_m, Fd_m, this->P);
         // Renormalize particle velocities to original domain
-        scaleParticleVelocities(ScaleOpType::INVERSE);
+        velocitySpaceMesh_m.setMeshSpacing(hv_m);
 
         double L2vec;
         double L2Fd;
@@ -381,57 +376,36 @@ public:
         }
     }
 
-    void scatterVelSpace(bool useNormalizedVelSpace) {
-        if (useNormalizedVelSpace) {  // Scatter on [-1,1]
-            // Scatter velocity density on grid
-            fv_m = 0.0;
+    void scatterVelSpace() {
+        // Scatter velocity density on grid
+        fv_m = 0.0;
 
-            // Normalize particle velocities to [-1,1]^3
-            scaleParticleVelocities(ScaleOpType::FORWARD);
-            scatter(p_fv_m, fv_m, this->P);
-            // Renormalize particle velocities to original domain
-            scaleParticleVelocities(ScaleOpType::INVERSE);
+        // Normalize particle velocities to [-1,1]^3
+        velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
+        scatter(p_fv_m, fv_m, this->P);
+        velocitySpaceMesh_m.setMeshSpacing(hv_m);
+        // Renormalize particle velocities to original domain
 
-            // Normalize with dV
-            double cellVolume =
-                std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
-            fv_m = fv_m / cellVolume;
-        } else {  // Scatter on [-VMAX,VMAX]
-            // Scatter potential to grid
-            fvInit_m = 0.0;
-
-            scatter(p_fv_m, fvInit_m, this->P);
-
-            // Normalize with dV
-            double cellVolume =
-                std::reduce(hvInit_m.begin(), hvInit_m.end(), 1., std::multiplies<double>());
-            fvInit_m = fvInit_m / cellVolume;
-        }
+        // Normalize with dV
+        double cellVolume = std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
+        fv_m              = fv_m / cellVolume;
     }
 
-    void gatherVelSpace(bool useNormalizedVelSpace) {
-        if (useNormalizedVelSpace) {  // Scatter on [-1,1]
-            // Normalize particle velocities to [-1,1]^3
-            scaleParticleVelocities(ScaleOpType::FORWARD);
-            gather(p_fv_m, fv_m, this->P);
-            // Revert normalization of particle velocities to original domain
-            scaleParticleVelocities(ScaleOpType::INVERSE);
-        } else {  // Scatter on [-VMAX,VMAX]
-            gather(p_fv_m, fvInit_m, this->P);
-        }
+    void gatherVelSpace() {
+        // Normalize particle velocities to [-1,1]^3
+        velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
+        gather(p_fv_m, fv_m, this->P);
+        // Revert normalization of particle velocities to original domain
+        velocitySpaceMesh_m.setMeshSpacing(hv_m);
     }
 
-    void gatherFd(bool useNormalizedVelSpace) {
-        if (useNormalizedVelSpace) {
-            // Normalize particle velocities to [-1,1]^3
-            scaleParticleVelocities(ScaleOpType::FORWARD);
-            // Gather Friction coefficients to particles attribute
-            gather(p_Fd_m, Fd_m, this->P);
-            // Revert normalization of particle velocities to original domain
-            scaleParticleVelocities(ScaleOpType::INVERSE);
-        } else {
-            gather(p_Fd_m, FdInit_m, this->P);
-        }
+    void gatherFd() {
+        // Normalize particle velocities to [-1,1]^3
+        velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
+        // Gather Friction coefficients to particles attribute
+        gather(p_Fd_m, Fd_m, this->P);
+        // Revert normalization of particle velocities to original domain
+        velocitySpaceMesh_m.setMeshSpacing(hv_m);
     }
 
     void extractRows(MField_t<Dim>& M, VField_t<T, Dim>& V0, VField_t<T, Dim>& V1,
@@ -480,12 +454,13 @@ public:
         extractRows(D_m, D0_m, D1_m, D2_m);
 
         // Normalize particle velocities to [-1,1]^3
-        scaleParticleVelocities(ScaleOpType::FORWARD);
+        velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
+        std::cout << velocitySpaceMesh_m.getMeshSpacing() << std::endl;
         gather(p_D0_m, D0_m, this->P);
         gather(p_D1_m, D1_m, this->P);
         gather(p_D2_m, D2_m, this->P);
         // Renormalize particle velocities to original domain
-        scaleParticleVelocities(ScaleOpType::INVERSE);
+        velocitySpaceMesh_m.setMeshSpacing(hv_m);
     }
 
     void choleskyMultiply() {
@@ -530,8 +505,8 @@ public:
 
         // Initialize `fv_m`
         // Scattered quantity should be a density ($\sum_i fv_i = 1$)
-        p_fv_m = vScalingFactor_m / globParticleNum_m;
-        scatterVelSpace(true);
+        p_fv_m = 1.0 / globParticleNum_m;
+        scatterVelSpace();
 
         /*
          * Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
@@ -552,22 +527,11 @@ public:
         // Sign change needed as solver returns $- \nabla H(\vec)$
         Fd_m = -1.0 * gamma_m * Fd_m;
 
-        // Gather potential from normalized grid
-        // gatherVelSpace(true);
-
-        // Scale potential back to [-VMAX,VMAX]
-        // p_fv_m = p_fv_m / vScalingFactor_m;
-
-        scatterVelSpace(false);
-
-        // Sign change not needed here as we compute grad(h) with FD
-        // FdInit_m = gamma_m * grad(fvInit_m);
-
         // Only needed for dumping
-        gatherFd(false);
+        gatherFd();
 
         // Scale potential back to [-VMAX,VMAX]
-        p_Fd_m = p_Fd_m / vScalingFactor_m;
+        p_Fd_m = p_Fd_m * vScalingFactor_m * vScalingFactor_m;
 
         msg << "Friction computation done." << endl;
     }
@@ -578,7 +542,7 @@ public:
         // Initialize `fv_m`
         // Scattered quantity should be a density ($\sum_i fv_i = 1$)
         p_fv_m = 1.0 / globParticleNum_m;
-        scatterVelSpace(true);
+        scatterVelSpace();
 
         /*
          * Multiply with prefactors defined in RHS of Rosenbluth equations
@@ -598,12 +562,14 @@ public:
         velocitySpaceMesh_m.setOrigin(vmin_m);
 
         // Compute Hessian of $g(\vec v)$
-        D_m = hess(fv_m);
-
-        D_m = gamma_m * D_m / vScalingFactor_m;
+        D_m = gamma_m * hess(fv_m);
 
         // Gather Hessian to particle attributes
         gatherHessian();
+
+        p_D0_m = p_D0_m * vScalingFactor_m;
+        p_D1_m = p_D1_m * vScalingFactor_m;
+        p_D2_m = p_D2_m * vScalingFactor_m;
 
         // Do Cholesky decomposition of $D$
         // and directly multiply with Gaussian random vector
@@ -1175,10 +1141,8 @@ public:
 
 public:
     Field_t<Dim> fv_m;
-    Field_t<Dim> fvInit_m;
     // Friction Coefficients
     VField_t<T, Dim> Fd_m;
-    VField_t<T, Dim> FdInit_m;
     // Diffusion Coefficients
     MField_t<Dim> D_m;
     // Separate rows, as gathering of Matrices is not yet possible
@@ -1243,13 +1207,10 @@ public:
     VectorD_t vmin_m;
     VectorD_t vmax_m;
 
+    // Domain [-1,1]
     ippl::NDIndex<Dim> velocitySpaceIdxDomain_m;
     Mesh_t<Dim> velocitySpaceMesh_m;
     FieldLayout_t<Dim> velocitySpaceFieldLayout_m;
-
-    ippl::NDIndex<Dim> initVelocitySpaceIdxDomain_m;
-    Mesh_t<Dim> initVelocitySpaceMesh_m;
-    FieldLayout_t<Dim> initVelocitySpaceFieldLayout_m;
 
     // $\Gamma$ prefactor for Friction and Diffusion coefficients
     double gamma_m;
