@@ -167,7 +167,7 @@ public:
         // Multiply Integral over configuration-space
         prefactor *= P_m->configSpaceIntegral_m;
 
-        // Initialize I.C. and all resulting potentials, etc.
+        // Initialize all needed analytical potentials and their gradient, etc.
         ippl::apply(HviewExact_m, args)  = gaussianHexact(v, sigma_m, prefactor);
         ippl::apply(GviewExact_m, args)  = gaussianGexact(v, sigma_m, prefactor);
         ippl::apply(FdViewExact_m, args) = gaussianFdExact(v, P_m->gamma_m, sigma_m, prefactor);
@@ -381,6 +381,7 @@ int main(int argc, char* argv[]) {
         P->p_fv_m = 1.0 / P->globParticleNum_m;
         P->scatterVelSpace();
 
+        // Need to rescale and dump `fv_m` before the solver overwrites it with the potential
         P->fv_m = P->fv_m * P->vScalingFactor_m;
         dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "fv");
         P->fv_m = P->fv_m / P->vScalingFactor_m;
@@ -434,71 +435,78 @@ int main(int argc, char* argv[]) {
         // COMPUTE 2nd ROSENBLUTH POTENTIAL //
         //////////////////////////////////////
 
-        // ippl::parallel_for("Assign initial velocity PDF and reference solutions",
-        //                    ippl::getRangePolicy(fvView, 0), dataGenerator);
-        // Kokkos::fence();
-
         // Need to scatter rho as we use it as $f(\vec r)$
-        // P->runSpaceChargeSolver(0);
+        P->runSpaceChargeSolver(0);
 
-        // // Initialize `fv_m`
-        // // Scattered quantity should be a density ($\sum_i fv_i = 1$)
-        // P->p_fv_m = 1.0 / P->globParticleNum_m;
-        // P->scatterVelSpace();
+        // Initialize `fv_m`
+        // Scattered quantity should be a density ($\sum_i fv_i = 1$)
+        P->p_fv_m = 1.0 / P->globParticleNum_m;
+        P->scatterVelSpace();
 
-        // /*
-        //  * Multiply with prefactors defined in RHS of Rosenbluth equations
-        //  * FFTPoissonSolver returns $G(\vec v)$ in `fv_m`
-        //  * Density multiplied with `-1.0` as the solver computes $\Delta \Delta G(\vec v) = -
-        //  * rhs(v)$
-        //  */
-        // P->fv_m = 8.0 * P->pi_m * P->fv_m * P->configSpaceIntegral_m;
+        /*
+         * Multiply with prefactors defined in RHS of Rosenbluth equations
+         * FFTPoissonSolver returns $G(\vec v)$ in `fv_m`
+         * Density multiplied with `-1.0` as the solver computes $\Delta \Delta G(\vec v) = -
+         * rhs(v)$
+         */
+        P->fv_m = 8.0 * P->pi_m * P->fv_m * P->configSpaceIntegral_m;
 
-        // // Set origin of velocity space mesh to zero (for FFT)
-        // P->velocitySpaceMesh_m.setOrigin(0.0);
+        // Set origin of velocity space mesh to zero (for FFT)
+        P->velocitySpaceMesh_m.setOrigin(0.0);
 
-        // // Solve for $\Delta_v \Delta_v G(\vec v)$, is stored in `fv_m`
-        // P->diffusionSolver_mp->solve();
+        // Solve for $\Delta_v \Delta_v G(\vec v)$, is stored in `fv_m`
+        P->diffusionSolver_mp->solve();
 
-        // // Set origin of velocity space mesh to vmin (for scatter / gather)
-        // P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
+        // Set origin of velocity space mesh to vmin (for scatter / gather)
+        P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
 
-        // // Dump all data of the potentials
-        // // dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gappr");
-        // // dumpVTKScalar(GfieldExact, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gexact");
-        // // auto Gdiff = P->fv_m.deepCopy();
-        // // Gdiff      = Gdiff - GfieldExact;
-        // // dumpVTKScalar(Gdiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Gdiff");
+        // Rescale magnitude of computed $g(v)$ for dumping as it is computed on [-1,1]^3
+        // P->fv_m = P->fv_m * P->vScalingFactor_m / P->vScalingFactor_m / P->vScalingFactor_m;
+        P->fv_m = P->fv_m / P->vScalingFactor_m;
 
-        // P->D_m = P->gamma_m * hess(P->fv_m);
+        // Dump all data of the potentials
+        auto Gdiff = P->fv_m.deepCopy();
+        Gdiff      = Gdiff - GfieldExact;
 
-        // // Gather Hessian to particle attributes
+        dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gappr");
+        dumpVTKScalar(GfieldExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gexact");
+        dumpVTKScalar(Gdiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gdiff");
+
+        // Reset scaling before computing the hessian
+        P->fv_m = P->fv_m * P->vScalingFactor_m;
+
+        P->D_m = P->gamma_m * hess(P->fv_m);
+
+        // Apply rescaling
+        P->D_m = P->D_m * P->vScalingFactor_m;
+
+        // Gather Hessian to particle attributes
         // P->velocityParticleCheck();
         // P->gatherHessian();
 
-        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m;
-        // P->p_D1_m = P->p_D1_m * P->vScalingFactor_m;
-        // P->p_D2_m = P->p_D2_m * P->vScalingFactor_m;
+        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m / P->vScalingFactor_m;
+        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m / P->vScalingFactor_m;
+        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m / P->vScalingFactor_m;
 
-        // // Dump Collisional Coefficient avg. from particle attributes
-        // P->dumpCollisionStatistics(nv, nv == nvMin, OUT_DIR);
+        // Dump Collisional Coefficient avg. from particle attributes
+        P->dumpCollisionStatistics(nv, nv == nvMin, OUT_DIR);
 
         // Extract rows of exact field to separate Vector-Fields
-        // P->extractRows(DfieldExact, P->D0_m, P->D1_m, P->D2_m);
+        P->extractRows(DfieldExact, P->D0_m, P->D1_m, P->D2_m);
+
+        // Dump actual diffusion coefficients
+        // dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", nv, OUT_DIR);
+        dumpVTKVector(P->D0_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D0exact");
+        dumpVTKVector(P->D1_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D1exact");
+        dumpVTKVector(P->D2_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D2exact");
+
+        // Extract rows of approximation to separate Vector-Fields
+        P->extractRows(P->D_m, P->D0_m, P->D1_m, P->D2_m);
 
         // // Dump actual diffusion coefficients
-        // // dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", nv, OUT_DIR);
-        // dumpVTKVector(P->D0_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D0exact");
-        // dumpVTKVector(P->D1_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D1exact");
-        // dumpVTKVector(P->D2_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D2exact");
-
-        // // Extract rows of approximation to separate Vector-Fields
-        // P->extractRows(P->D_m, P->D0_m, P->D1_m, P->D2_m);
-
-        // // Dump actual diffusion coefficients
-        // dumpVTKVector(P->D0_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D0");
-        // dumpVTKVector(P->D1_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D1");
-        // dumpVTKVector(P->D2_m, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "D2");
+        dumpVTKVector(P->D0_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D0");
+        dumpVTKVector(P->D1_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D1");
+        dumpVTKVector(P->D2_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D2");
 
         ///////////////////////////////////////
         // COMPUTE IDENTITIES THAT MUST HOLD //
@@ -545,22 +553,22 @@ int main(int argc, char* argv[]) {
         // COMPUTE RELATIVE ERRORS AND DUMP TO FILES //
         ///////////////////////////////////////////////
 
-        const int shift  = nghost;
-        double HrelError = subfieldNorm(Hdiff, shift) / subfieldNorm(HfieldExact, shift);
-        // double GrelError  = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
-        double FdRelError = L2VectorNorm(FdDiff, shift) / L2VectorNorm(FdExact, shift);
-        // // MatrixD_t DrelError = MFieldRelError(P->D_m, DfieldExact, 2 * shift);
-        // // double DtraceRelError =
-        // //     subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
-        // // VectorD_t DdivDiffRelError =
-        // //     L2VectorNorm(DdivDiff, 2 * shift) / L2VectorNorm(FdExact, 2 * shift);
+        const int shift     = nghost;
+        double HrelError    = subfieldNorm(Hdiff, shift) / subfieldNorm(HfieldExact, shift);
+        double GrelError    = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
+        double FdRelError   = L2VectorNorm(FdDiff, shift) / L2VectorNorm(FdExact, shift);
+        MatrixD_t DrelError = MFieldRelError(P->D_m, DfieldExact, 2 * shift);
+        // double DtraceRelError =
+        //     subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
+        // VectorD_t DdivDiffRelError =
+        //     L2VectorNorm(DdivDiff, 2 * shift) / L2VectorNorm(FdExact, 2 * shift);
 
         std::string convergenceOutDir = OUT_DIR + "/convergenceStats";
         bool writeHeader              = (nv == nvMin);
         dumpCSVScalar(HrelError, "H", nv, writeHeader, convergenceOutDir);
-        // // dumpCSVScalar(GrelError, "G", nv, writeHeader, convergenceOutDir);
+        dumpCSVScalar(GrelError, "G", nv, writeHeader, convergenceOutDir);
         dumpCSVScalar(FdRelError, "Fd", nv, writeHeader, convergenceOutDir);
-        // dumpCSVMatrix(DrelError, "D", nv, writeHeader, convergenceOutDir);
+        dumpCSVMatrix(DrelError, "D", nv, writeHeader, convergenceOutDir);
         // dumpCSVScalar(DtraceRelError, "Dtrace", nv, writeHeader, convergenceOutDir);
         // dumpCSVVector(DdivDiffRelError, "Ddiv", nv, writeHeader, convergenceOutDir);
 
@@ -570,15 +578,15 @@ int main(int argc, char* argv[]) {
 
         msg << "h(v) rel. error (" << nv << "^3)"
             << ": " << HrelError << endl;
-        // msg << "g(v) rel. error (" << nv << "^3)"
-        //     << ": " << GrelError << endl;
+        msg << "g(v) rel. error (" << nv << "^3)"
+            << ": " << GrelError << endl;
         msg << "Fd(v) rel. error (" << nv << "^3)"
             << ": " << FdRelError << endl;
-        // msg << "D(v) rel. error (" << nv << "^3)"
-        //     << ": " << endl;
-        // msg << DrelError[0] << endl;
-        // msg << DrelError[1] << endl;
-        // msg << DrelError[2] << endl;
+        msg << "D(v) rel. error (" << nv << "^3)"
+            << ": " << endl;
+        msg << DrelError[0] << endl;
+        msg << DrelError[1] << endl;
+        msg << DrelError[2] << endl;
         // msg << "Tr(D) - h = 0 rel. error (" << nv << "^3)"
         //     << ": " << DtraceRelError << endl;
         // msg << "div(D) - Fd = 0 rel. error (" << nv << "^3)"
