@@ -464,7 +464,6 @@ public:
         // Normalize particle velocities to [-1,1]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
         velocitySpaceMesh_m.setOrigin(vminInit_m);
-        std::cout << velocitySpaceMesh_m.getMeshSpacing() << std::endl;
         gather(p_D0_m, D0_m, this->P);
         gather(p_D1_m, D1_m, this->P);
         gather(p_D2_m, D2_m, this->P);
