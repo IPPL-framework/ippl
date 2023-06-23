@@ -97,12 +97,15 @@ namespace ippl {
         // define a type for a 3 dimensional field (e.g. charge density field)
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
+        // define matrix and matrix field types for the Hessian
         typedef FieldRHS Field_t;
         typedef Field<int, Dim, mesh_type, typename FieldLHS::Centering_t> IField_t;
         typedef Field<Tg, Dim, mesh_type, Centering> Field_gt;
         typedef Field<Kokkos::complex<Tg>, Dim, mesh_type, Centering> CxField_gt;
         typedef typename FFT_t::ComplexField CxField_t;
         typedef Vector<Trhs, Dim> Vector_t;
+        typedef typename mesh_type::matrix_type Matrix_t;
+        typedef Field<Matrix_t, Dim, mesh_type, Centering> MField_t;
 
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
@@ -116,8 +119,9 @@ namespace ippl {
 
         // constructor and destructor
         FFTPoissonSolver();
-        FFTPoissonSolver(rhs_type& rhs, ParameterList& params);
-        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
+        FFTPoissonSolver(rhs_type& rhs, ParameterList& params, bool hessian_ = false);
+        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params,
+                         bool hessian_ = false);
         ~FFTPoissonSolver() = default;
 
         // override the setRhs function of the Solver class
@@ -131,6 +135,9 @@ namespace ippl {
         // solve the Poisson equation using FFT;
         // more specifically, compute the scalar potential given a density field rho using
         void solve() override;
+
+        // return the Hessian
+        MField_t getHessian() { return hess_m; };
 
         // compute standard Green's function
         void greensFunction();
@@ -166,6 +173,10 @@ namespace ippl {
 
         // fields that facilitate the calculation in greensFunction()
         IField_t grnIField_m[Dim];
+
+        // if hessian, then set bool to true, and pointer to field
+        MField_t hess_m;
+        bool hessian;
 
         // the FFT object
         std::unique_ptr<FFT_t> fft_m;
