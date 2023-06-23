@@ -404,15 +404,8 @@ void compute_convergence(std::string algorithm, int pt) {
         }
     }
 
-    errorMsg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1] << " "
-             << errE[2];
-
-    for (size_t m = 0; m < 3; ++m) {
-        for (size_t n = 0; n < 3; ++n) {
-            errorMsg << " " << errH[m][n];
-        }
-    }
-    errorMsg << endl;
+    errorMsg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errH[0][0]
+             << " " << errH[0][1] << endl;
 
     return;
 }
@@ -441,7 +434,7 @@ int main(int argc, char* argv[]) {
         // number of gridpoints to iterate over
         std::array<int, n> N = {4, 8, 16, 32, 64, 128};
 
-        msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
+        msg << "Spacing Error ErrorEx ErrorDxx ErrorDxy" << endl;
 
         for (int p = 0; p < n; ++p) {
             if (precision == "DOUBLE") {
