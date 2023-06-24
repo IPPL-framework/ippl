@@ -133,6 +133,7 @@ public:
         fftParams.add("tolerance", 1e-6);
 
         fftParams.add("use_cufinufft_defaults", false);
+        //fftParams.add("use_cufinufft_defaults", true);
 
         q.initializeNUFFT(FL, 1, fftParams);
         E.initializeNUFFT(FL, 2, fftParams);

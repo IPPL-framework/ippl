@@ -303,6 +303,7 @@ int main(int argc, char *argv[]){
     P->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
 
+    P->initNUFFT(FL);
 
     P->scatter();
 
