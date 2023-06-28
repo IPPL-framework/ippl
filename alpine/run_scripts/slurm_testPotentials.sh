@@ -5,11 +5,9 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --ntasks-per-core=1
 #SBATCH --cpus-per-task=16
-#SBATCH --time=00:59:00            # Define max time job will run
+#SBATCH --time=00:05:00            # Define max time job will run
 #SBATCH --output=data/langevin_cpu.out   # Define your output file
 #SBATCH --error=data/langevin_cpu.err    # Define your output file
-##SBATCH --exclusive
-
 
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 export OMP_PROC_BIND=spread
@@ -29,21 +27,21 @@ EPS_INV=3.182609e9      # [\frac{cm^3 m_e}{s^2 q_e^2}] Inverse Vacuum Permittivi
 
 # Collisional Parameters
 NV_MAX=128              # Number of gridpoints on the velocity grid (along each dim.)
-VMAX=5                  # Maximum vel.-domain size to test (runs tests over the interval of [8, NV_MAX], in powers of two)
-FRICTION_SOLVER=VICO    # Solver for first Rosenbluth Potential (Options: [HOCKNEY, VICO])
+FRICTION_SOLVER=HOCKNEY    # Solver for first Rosenbluth Potential (Options: [HOCKNEY, VICO])
 
 # Frequency of computing statistics
 DUMP_INTERVAL=1         # How often to dump beamstatistics to ${OUT_DIR}
 
 # Take first User argument as foldername if provided
 USER_OUT_DIR=$1
-USER_OUT_DIR="${USER_OUT_DIR:=langevin}"
+USER_OUT_DIR="${USER_OUT_DIR:=testPotentials}"
 OUT_DIR=data/${USER_OUT_DIR}_$(date +%m%d_%H%M)
 
 echo "Output directory: ${OUT_DIR}"
 
 # Create directory to write output data and this script
 mkdir -p ${OUT_DIR}
+# Relative Errors of all meshsizes are stored here
 mkdir -p ${OUT_DIR}/convergenceStats
 
 # Copy this script to the data directory (follows symlinks)
@@ -53,5 +51,5 @@ cp ${THIS_FILE} ${OUT_DIR}/jobscript.sh
 srun --cpus-per-task=${SLURM_CPUS_PER_TASK} ./TestLangevinPotentials  \
     ${MPI_OVERALLOC} ${SOLVER_T} ${LB_THRESHOLD} ${NR} \
     ${BOXL} ${NP} ${DT} ${PARTICLE_CHARGE} ${PARTICLE_MASS} \
-    ${EPS_INV} ${NV_MAX} ${VMAX} ${FRICTION_SOLVER} ${OUT_DIR} \
-    --info 5 1>&1 | tee ${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err 
+    ${EPS_INV} ${NV_MAX} ${FRICTION_SOLVER} ${OUT_DIR} \
+    --info 5 2>&1 | tee -a ${OUT_DIR}/testPotentials.out | tee -a ${OUT_DIR}/testPotentials.err >&2
