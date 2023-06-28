@@ -225,7 +225,7 @@ int main(int argc, char* argv[]) {
     // CONSTANTS FOR MAXELLIAN //
     /////////////////////////////
 
-    constexpr TestCase testType = TestCase::GAUSSIAN;
+    constexpr TestCase testType = TestCase::MAXWELLIAN;
     const double vth            = 1.0;
     const double numberDensity  = 1.0;
 
@@ -382,9 +382,11 @@ int main(int argc, char* argv[]) {
         P->scatterVelSpace();
 
         // Need to rescale and dump `fv_m` before the solver overwrites it with the potential
-        P->fv_m = P->fv_m * P->vScalingFactor_m;
-        dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "fv");
-        P->fv_m = P->fv_m / P->vScalingFactor_m;
+        if (nv == 64) {
+            P->fv_m = P->fv_m * P->vScalingFactor_m;
+            dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "fv");
+            P->fv_m = P->fv_m / P->vScalingFactor_m;
+        }
 
         /*
          * Multiply velSpaceDensity `fv_m` with prefactors defined in RHS of Rosenbluth equations
@@ -421,12 +423,14 @@ int main(int argc, char* argv[]) {
         auto FdDiff = P->Fd_m.deepCopy();
         FdDiff      = FdDiff - FdExact;
 
-        dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Happr");
-        dumpVTKScalar(HfieldExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Hexact");
-        dumpVTKScalar(Hdiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Hdiff");
-        dumpVTKVector(P->Fd_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Fdappr");
-        dumpVTKVector(FdExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Fdexact");
-        dumpVTKVector(FdDiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "FdDiff");
+        if (nv == 64) {
+            dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Happr");
+            dumpVTKScalar(HfieldExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Hexact");
+            dumpVTKScalar(Hdiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Hdiff");
+            dumpVTKVector(P->Fd_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Fdappr");
+            dumpVTKVector(FdExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Fdexact");
+            dumpVTKVector(FdDiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "FdDiff");
+        }
 
         // Dump actual friction coefficients
         // P->dumpFdField(nv, OUT_DIR);
@@ -468,9 +472,11 @@ int main(int argc, char* argv[]) {
         auto Gdiff = P->fv_m.deepCopy();
         Gdiff      = Gdiff - GfieldExact;
 
-        dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gappr");
-        dumpVTKScalar(GfieldExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gexact");
-        dumpVTKScalar(Gdiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gdiff");
+        if (nv == 64) {
+            dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gappr");
+            dumpVTKScalar(GfieldExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gexact");
+            dumpVTKScalar(Gdiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gdiff");
+        }
 
         // Reset scaling before computing the hessian
         P->fv_m = P->fv_m * P->vScalingFactor_m;
@@ -495,18 +501,22 @@ int main(int argc, char* argv[]) {
         P->extractRows(DfieldExact, P->D0_m, P->D1_m, P->D2_m);
 
         // Dump actual diffusion coefficients
-        // dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", nv, OUT_DIR);
-        dumpVTKVector(P->D0_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D0exact");
-        dumpVTKVector(P->D1_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D1exact");
-        dumpVTKVector(P->D2_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D2exact");
+        if (nv == 64) {
+            // dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", nv, OUT_DIR);
+            dumpVTKVector(P->D0_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D0exact");
+            dumpVTKVector(P->D1_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D1exact");
+            dumpVTKVector(P->D2_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D2exact");
+        }
 
         // Extract rows of approximation to separate Vector-Fields
         P->extractRows(P->D_m, P->D0_m, P->D1_m, P->D2_m);
 
-        // // Dump actual diffusion coefficients
-        dumpVTKVector(P->D0_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D0");
-        dumpVTKVector(P->D1_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D1");
-        dumpVTKVector(P->D2_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D2");
+        // Dump actual diffusion coefficients
+        if (nv == 64) {
+            dumpVTKVector(P->D0_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D0");
+            dumpVTKVector(P->D1_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D1");
+            dumpVTKVector(P->D2_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D2");
+        }
 
         ///////////////////////////////////////
         // COMPUTE IDENTITIES THAT MUST HOLD //
@@ -529,8 +539,10 @@ int main(int argc, char* argv[]) {
 
         // DtraceDiff = Dtrace / P->gamma_m - HfieldExact;
 
+        //if (nv == 64) {
         // dumpVTKScalar(Dtrace, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Dtrace");
         // dumpVTKScalar(DtraceDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DtraceDiff");
+        // }
 
         // ///////////////////////////////////////
         // // $\nabla \cdot \boldsymbol D = Fd$ //
@@ -545,9 +557,11 @@ int main(int argc, char* argv[]) {
         // constructVFieldFromFields(Ddiv, D0div, D1div, D2div);
 
         // DdivDiff = Ddiv - FdExact;
-        // dumpVTKVector(Ddiv, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Ddiv");
 
+        //if (nv == 64) {
+        // dumpVTKVector(Ddiv, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Ddiv");
         // dumpVTKVector(DdivDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DdivDiff");
+        // }
 
         ///////////////////////////////////////////////
         // COMPUTE RELATIVE ERRORS AND DUMP TO FILES //
