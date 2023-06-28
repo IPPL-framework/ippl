@@ -56,4 +56,4 @@ srun --cpus-per-task=${SLURM_CPUS_PER_TASK} ./Langevin \
     ${BEAM_RADIUS} ${BOXL} ${NP} ${DT} \
     ${NT} ${PARTICLE_CHARGE} ${PARTICLE_MASS} ${FOCUS_FORCE} \
     ${EPS_INV} ${NV} ${VMAX} ${FRICTION_SOLVER} ${DUMP_INTERVAL} ${OUT_DIR} \
-    --info 5 --kokkos-num-devices=${SLURM_GPUS} 1>&1 | tee ${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err 
+    --info 5 --kokkos-num-devices=${SLURM_GPUS} 2>&1 | tee -a ${OUT_DIR}/langevin.out | tee -a ${OUT_DIR}/langevin.err >&2
