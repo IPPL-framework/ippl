@@ -374,7 +374,7 @@ int main(int argc, char* argv[]) {
         //////////////////////////////////////
 
         // Need to scatter rho as we use it as $f(\vec r)$
-        // P->runSpaceChargeSolver(0);
+        P->runSpaceChargeSolver(0);
 
         // Initialize `fv_m`
         // Scattered quantity should be a density ($\sum_i fv_i = 1$)
@@ -382,7 +382,7 @@ int main(int argc, char* argv[]) {
         P->scatterVelSpace();
 
         // Need to rescale and dump `fv_m` before the solver overwrites it with the potential
-        if (nv == 64) {
+        if (nv == 32) {
             P->fv_m = P->fv_m * P->vScalingFactor_m;
             dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "fv");
             P->fv_m = P->fv_m / P->vScalingFactor_m;
@@ -423,12 +423,14 @@ int main(int argc, char* argv[]) {
         auto FdDiff = P->Fd_m.deepCopy();
         FdDiff      = FdDiff - FdExact;
 
-        if (nv == 64) {
+        if (nv == 32) {
             dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Happr");
-            dumpVTKScalar(HfieldExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Hexact");
+            dumpVTKScalar(HfieldExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR,
+                          "Hexact");
             dumpVTKScalar(Hdiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Hdiff");
             dumpVTKVector(P->Fd_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Fdappr");
-            dumpVTKVector(FdExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Fdexact");
+            dumpVTKVector(FdExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR,
+                          "Fdexact");
             dumpVTKVector(FdDiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "FdDiff");
         }
 
@@ -467,32 +469,39 @@ int main(int argc, char* argv[]) {
         // Rescale magnitude of computed $g(v)$ for dumping as it is computed on [-1,1]^3
         // P->fv_m = P->fv_m * P->vScalingFactor_m / P->vScalingFactor_m / P->vScalingFactor_m;
         P->fv_m = P->fv_m / P->vScalingFactor_m;
+        msg << P->velocitySpaceMesh_m.getMeshSpacing() << endl;
 
         // Dump all data of the potentials
         auto Gdiff = P->fv_m.deepCopy();
         Gdiff      = Gdiff - GfieldExact;
 
-        if (nv == 64) {
+        if (nv == 32) {
             dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gappr");
-            dumpVTKScalar(GfieldExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gexact");
+            dumpVTKScalar(GfieldExact, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR,
+                          "Gexact");
             dumpVTKScalar(Gdiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Gdiff");
         }
 
         // Reset scaling before computing the hessian
         P->fv_m = P->fv_m * P->vScalingFactor_m;
 
+        // P->velocitySpaceMesh_m.setMeshSpacing(P->hvInit_m);
+        // P->velocitySpaceMesh_m.setOrigin(P->vminInit_m);
         P->D_m = P->gamma_m * hess(P->fv_m);
+        // P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
+        // P->velocitySpaceMesh_m.setMeshSpacing(P->hv_m);
 
-        // Apply rescaling
+        // Apply scaing due to Hessian operator
+        // == P->D_m = P->D_m / P->vScalingFactor_m * (P->vScalingFactor_m * P->vScalingFactor_m);
         P->D_m = P->D_m * P->vScalingFactor_m;
 
         // Gather Hessian to particle attributes
         // P->velocityParticleCheck();
         // P->gatherHessian();
 
-        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m / P->vScalingFactor_m;
-        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m / P->vScalingFactor_m;
-        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m / P->vScalingFactor_m;
+        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m;
+        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m;
+        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m;
 
         // Dump Collisional Coefficient avg. from particle attributes
         P->dumpCollisionStatistics(nv, nv == nvMin, OUT_DIR);
@@ -501,18 +510,21 @@ int main(int argc, char* argv[]) {
         P->extractRows(DfieldExact, P->D0_m, P->D1_m, P->D2_m);
 
         // Dump actual diffusion coefficients
-        if (nv == 64) {
+        if (nv == 32) {
             // dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", nv, OUT_DIR);
-            dumpVTKVector(P->D0_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D0exact");
-            dumpVTKVector(P->D1_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D1exact");
-            dumpVTKVector(P->D2_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D2exact");
+            dumpVTKVector(P->D0_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR,
+                          "D0exact");
+            dumpVTKVector(P->D1_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR,
+                          "D1exact");
+            dumpVTKVector(P->D2_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR,
+                          "D2exact");
         }
 
         // Extract rows of approximation to separate Vector-Fields
         P->extractRows(P->D_m, P->D0_m, P->D1_m, P->D2_m);
 
         // Dump actual diffusion coefficients
-        if (nv == 64) {
+        if (nv == 32) {
             dumpVTKVector(P->D0_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D0");
             dumpVTKVector(P->D1_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D1");
             dumpVTKVector(P->D2_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "D2");
@@ -524,44 +536,48 @@ int main(int argc, char* argv[]) {
         // $Tr(\boldsymbol D) / \Gamma = h$  //
         ///////////////////////////////////////
 
-        // using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
-        // Kokkos::parallel_for(
-        //     "Gather trace of $D$",
-        //     mdrange_type({nghost, nghost, nghost},
-        //                  {DtraceView.extent(0) - nghost, DtraceView.extent(1) - nghost,
-        //                   DtraceView.extent(2) - nghost}),
-        //     KOKKOS_LAMBDA(const int i, const int j, const int k) {
-        //         DtraceView(i, j, k) =
-        //             P->D0_m(i, j, k)[0] + P->D1_m(i, j, k)[1] + P->D2_m(i, j, k)[2];
-        //     });
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
+        Kokkos::parallel_for(
+            "Gather trace of $D$",
+            mdrange_type({nghost, nghost, nghost},
+                         {DtraceView.extent(0) - nghost, DtraceView.extent(1) - nghost,
+                          DtraceView.extent(2) - nghost}),
+            KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                DtraceView(i, j, k) =
+                    P->D0_m(i, j, k)[0] + P->D1_m(i, j, k)[1] + P->D2_m(i, j, k)[2];
+            });
 
-        // Kokkos::fence();
+        Kokkos::fence();
 
-        // DtraceDiff = Dtrace / P->gamma_m - HfieldExact;
+        DtraceDiff = Dtrace / P->gamma_m - HfieldExact;
 
-        //if (nv == 64) {
-        // dumpVTKScalar(Dtrace, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Dtrace");
-        // dumpVTKScalar(DtraceDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DtraceDiff");
-        // }
+        if (nv == 32) {
+            dumpVTKScalar(Dtrace, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Dtrace");
+            dumpVTKScalar(DtraceDiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR,
+                          "DtraceDiff");
+        }
 
         // ///////////////////////////////////////
         // // $\nabla \cdot \boldsymbol D = Fd$ //
         // ///////////////////////////////////////
 
-        // P->extractCols(P->D_m, P->D0_m, P->D1_m, P->D2_m);
+        // P->D_m = P->D_m / P->vScalingFactor_m / P->vScalingFactor_m;
+        P->extractCols(P->D_m, P->D0_m, P->D1_m, P->D2_m);
 
-        // D0div = div(P->D0_m);
-        // D1div = div(P->D1_m);
-        // D2div = div(P->D2_m);
+        D0div = div(P->D0_m);
+        D1div = div(P->D1_m);
+        D2div = div(P->D2_m);
 
-        // constructVFieldFromFields(Ddiv, D0div, D1div, D2div);
+        constructVFieldFromFields(Ddiv, D0div, D1div, D2div);
+        Ddiv = Ddiv * P->vScalingFactor_m;
 
-        // DdivDiff = Ddiv - FdExact;
+        DdivDiff = Ddiv - FdExact;
 
-        //if (nv == 64) {
-        // dumpVTKVector(Ddiv, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "Ddiv");
-        // dumpVTKVector(DdivDiff, P->hv_m, P->nv_m, P->vmin_m, nv, 1.0, OUT_DIR, "DdivDiff");
-        // }
+        if (nv == 32) {
+            dumpVTKVector(Ddiv, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "Ddiv");
+            dumpVTKVector(DdivDiff, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR,
+                          "DdivDiff");
+        }
 
         ///////////////////////////////////////////////
         // COMPUTE RELATIVE ERRORS AND DUMP TO FILES //
@@ -572,10 +588,10 @@ int main(int argc, char* argv[]) {
         double GrelError    = subfieldNorm(Gdiff, shift) / subfieldNorm(GfieldExact, shift);
         double FdRelError   = L2VectorNorm(FdDiff, shift) / L2VectorNorm(FdExact, shift);
         MatrixD_t DrelError = MFieldRelError(P->D_m, DfieldExact, 2 * shift);
-        // double DtraceRelError =
-        //     subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
-        // VectorD_t DdivDiffRelError =
-        //     L2VectorNorm(DdivDiff, 2 * shift) / L2VectorNorm(FdExact, 2 * shift);
+        double DtraceRelError =
+            subfieldNorm(DtraceDiff, 2 * shift) / subfieldNorm(HfieldExact, 2 * shift);
+        VectorD_t DdivDiffRelError =
+            L2VectorNorm(DdivDiff, 4 * shift) / L2VectorNorm(FdExact, 4 * shift);
 
         std::string convergenceOutDir = OUT_DIR + "/convergenceStats";
         bool writeHeader              = (nv == nvMin);
@@ -583,8 +599,8 @@ int main(int argc, char* argv[]) {
         dumpCSVScalar(GrelError, "G", nv, writeHeader, convergenceOutDir);
         dumpCSVScalar(FdRelError, "Fd", nv, writeHeader, convergenceOutDir);
         dumpCSVMatrix(DrelError, "D", nv, writeHeader, convergenceOutDir);
-        // dumpCSVScalar(DtraceRelError, "Dtrace", nv, writeHeader, convergenceOutDir);
-        // dumpCSVVector(DdivDiffRelError, "Ddiv", nv, writeHeader, convergenceOutDir);
+        dumpCSVScalar(DtraceRelError, "Dtrace", nv, writeHeader, convergenceOutDir);
+        dumpCSVVector(DdivDiffRelError, "Ddiv", nv, writeHeader, convergenceOutDir);
 
         /////////////////////////////
         // WRITE RESULTS TO STDOUT //
@@ -601,10 +617,10 @@ int main(int argc, char* argv[]) {
         msg << DrelError[0] << endl;
         msg << DrelError[1] << endl;
         msg << DrelError[2] << endl;
-        // msg << "Tr(D) - h = 0 rel. error (" << nv << "^3)"
-        //     << ": " << DtraceRelError << endl;
-        // msg << "div(D) - Fd = 0 rel. error (" << nv << "^3)"
-        //     << ": " << DdivDiffRelError << endl;
+        msg << "Tr(D) - h = 0 rel. error (" << nv << "^3)"
+            << ": " << DtraceRelError << endl;
+        msg << "div(D) - Fd = 0 rel. error (" << nv << "^3)"
+            << ": " << DdivDiffRelError << endl;
     }
 
     msg << "LangevinPotentials: End." << endl;
