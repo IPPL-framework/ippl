@@ -58,7 +58,7 @@ struct GenerateBoxMuller {
     GeneratorPool pool;
 
     // Initialize all members
-    GenerateBoxMuller(view_type r_, value_type beamRadius_, value_type origin_, GeneratorPool pool_)
+    GenerateBoxMuller(view_type r_, value_type beamRadius_, T origin_, GeneratorPool pool_)
         : r(r_)
         , beamRadius(beamRadius_)
         , origin(origin_)
