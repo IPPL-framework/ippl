@@ -64,8 +64,9 @@ namespace ippl {
                         // Periodic faces come in pairs and the application of
                         // BCs checks both sides, so there is no reason to
                         // apply periodic conditions twice
-                        if (isUpper)
+                        if (isUpper) {
                             break;
+                        }
 
                         Kokkos::parallel_for("Periodic BC", policy,
                                              PeriodicBC(R.getView(), nr, d, isUpper));
@@ -82,7 +83,6 @@ namespace ippl {
                     default:
                         break;
                 }
-                Kokkos::fence();
             }
         }
     }  // namespace detail
