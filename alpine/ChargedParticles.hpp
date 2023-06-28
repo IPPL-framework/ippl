@@ -19,6 +19,7 @@
 #include "Ippl.h"
 
 #include <csignal>
+#include <thread>
 
 #include "Utility/TypeUtils.h"
 
@@ -26,6 +27,8 @@
 #include "Solver/FFTPeriodicPoissonSolver.h"
 #include "Solver/FFTPoissonSolver.h"
 #include "Solver/P3MSolver.h"
+
+unsigned LogFreq = 50;
 
 // some typedefs
 template <unsigned Dim = 3>
@@ -354,6 +357,9 @@ public:
     }
 
     bool balance(size_type totalP, const unsigned int nstep) {
+        if (ippl::Comm->size() < 2) {
+            return false;
+        }
         if (std::strcmp(TestName, "UniformPlasmaTest") == 0) {
             return (nstep % loadbalancefreq_m == 0);
         } else {
@@ -414,25 +420,27 @@ public:
         scatter(q, rho_m, this->R);
 
         static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check");
-        IpplTimings::startTimer(sumTimer);
-        double Q_grid = rho_m.sum();
+        if (iteration % LogFreq == 0) {
+            IpplTimings::startTimer(sumTimer);
+            double Q_grid = rho_m.sum();
 
-        size_type Total_particles = 0;
-        size_type local_particles = this->getLocalNum();
+            size_type Total_particles = 0;
+            size_type local_particles = this->getLocalNum();
 
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+            MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
+                       ippl::Comm->getCommunicator());
 
-        double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
-        m << "Rel. error in charge conservation = " << rel_error << endl;
+            double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
+            m << "Rel. error in charge conservation = " << rel_error << endl;
 
-        if (ippl::Comm->rank() == 0) {
-            if (Total_particles != totalP || rel_error > 1e-10) {
-                m << "Time step: " << iteration << endl;
-                m << "Total particles in the sim. " << totalP << " "
-                  << "after update: " << Total_particles << endl;
-                m << "Rel. error in charge conservation: " << rel_error << endl;
-                ippl::Comm->abort();
+            if (ippl::Comm->rank() == 0) {
+                if (Total_particles != totalP || rel_error > 1e-10) {
+                    m << "Time step: " << iteration << endl;
+                    m << "Total particles in the sim. " << totalP << " "
+                      << "after update: " << Total_particles << endl;
+                    m << "Rel. error in charge conservation: " << rel_error << endl;
+                    ippl::Comm->abort();
+                }
             }
         }
 
@@ -440,8 +448,10 @@ public:
             std::reduce(hrField.begin(), hrField.end(), 1., std::multiplies<double>());
         rho_m = rho_m / cellVolume;
 
-        rhoNorm_m = norm(rho_m);
-        IpplTimings::stopTimer(sumTimer);
+        if (iteration % LogFreq == 0) {
+            rhoNorm_m = norm(rho_m);
+            IpplTimings::stopTimer(sumTimer);
+        }
 
         // dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], iteration, hrField[0], hrField[1], hrField[2]);
 

@@ -233,6 +233,8 @@ int main(int argc, char* argv[]) {
         P->time_m                 = 0.0;
         P->loadbalancethreshold_m = std::atof(argv[arg++]);
 
+        LogFreq = std::atoll(argv[arg++]);
+
         bool isFirstRepartition;
 
         if ((P->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
@@ -331,6 +333,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(dumpDataTimer);
 
         // begin main timestep loop
+        std::thread dumpThread;
         msg << "Starting iterations ..." << endl;
         for (unsigned int it = 0; it < nt; it++) {
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
@@ -373,7 +376,20 @@ int main(int argc, char* argv[]) {
             P->runSolver();
             IpplTimings::stopTimer(SolveTimer);
 
-            P->updateEMirror(Eview);
+            if (it % LogFreq == 0) {
+                P->updateEMirror(Eview);
+                if (dumpThread.joinable()) {
+                    dumpThread.join();
+                }
+                auto dump = [&]() {
+                    IpplTimings::startTimer(dumpDataTimer);
+                    msg << "Processing time step " << it + 1 << " on host" << endl;
+                    P->dumpLandau(Eview);
+                    P->gatherStatistics(totalP);
+                    IpplTimings::stopTimer(dumpDataTimer);
+                };
+                dumpThread = std::thread(dump);
+            }
 
             // gather E field
             P->gatherCIC();
@@ -384,17 +400,16 @@ int main(int argc, char* argv[]) {
             IpplTimings::stopTimer(PTimer);
 
             P->time_m += dt;
-            IpplTimings::startTimer(dumpDataTimer);
-            P->dumpLandau(Eview);
-            P->gatherStatistics(totalP);
-            IpplTimings::stopTimer(dumpDataTimer);
-            msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
+            msg << "Host reached end of time step: " << it + 1 << " time: " << P->time_m << endl;
 
             if (checkSignalHandler()) {
                 msg << "Aborting timestepping loop due to signal " << interruptSignalReceived
                     << endl;
                 break;
             }
+        }
+        if (dumpThread.joinable()) {
+            dumpThread.join();
         }
 
         msg << "LandauDamping: End." << endl;
