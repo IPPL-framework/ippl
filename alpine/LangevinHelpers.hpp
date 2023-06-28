@@ -51,16 +51,17 @@ struct GenerateBoxMuller {
     // Output View for the random positions in the sphere
     view_type r;
     const value_type beamRadius;
+    const T origin;
     const value_type oneThird = 1.0 / 3.0;
-    const T origin            = {0.0, 0.0, 0.0};
 
     // The GeneratorPool
     GeneratorPool pool;
 
     // Initialize all members
-    GenerateBoxMuller(view_type r_, value_type beamRadius_, GeneratorPool pool_)
+    GenerateBoxMuller(view_type r_, value_type beamRadius_, value_type origin_, GeneratorPool pool_)
         : r(r_)
         , beamRadius(beamRadius_)
+        , origin(origin_)
         , pool(pool_) {}
 
     KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {

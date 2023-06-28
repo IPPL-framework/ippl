@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
     // Initialize Cold Sphere (positions only)
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * rank));
     Kokkos::parallel_for(nloc, GenerateBoxMuller<VectorD_t, Kokkos::Random_XorShift64_Pool<>>(
-                                   P->R.getView(), BEAM_RADIUS, rand_pool64));
+                                   P->R.getView(), BEAM_RADIUS, configSpaceLowerBound, rand_pool64));
 
     // Initialize constant particle attributes
     P->q = PARTICLE_CHARGE;
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
     P->runSpaceChargeSolver(0);
     VectorD_t avgEF(P->compAvgSCForce(BEAM_RADIUS));
 
-    P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
+    //P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
     // dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, nghost, 0, 1.0, OUT_DIR, "Rho");
     // dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
         P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
 
         // Field Solve
-        P->runSpaceChargeSolver(it);
+        P->runSpaceChargeSolver(it+1);
 
         // Add constant focusing term
         P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
