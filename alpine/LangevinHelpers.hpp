@@ -78,53 +78,60 @@ struct GenerateBoxMuller {
     }
 };
 
-// Generate random numbers in Sphere given by `beamRadius`, centered at the origin
+// Generates random particle velocities in box given by $prefactor \times \mathcal N(0, sigma)$
+// Generate random particle positions in box given by `[boxLr^3]`, centered at the origin.
 // This works only on we initialize all particles on one processor and call the `update()`
 // method on the particle bunch
 // If local initialization is needed, have a look at the initialization in `PenningTrap.cpp`
 template <typename T, class GeneratorPool>
-struct GenerateMaxwellian {
+struct GenerateGaussianVelocity {
     using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
     using value_type = typename T::value_type;
     // Output View for the random positions in the sphere
-    view_type r;
-    view_type v;
-    double mu;
-    double sigma;
-    const value_type halfBoxL_r;
-    const value_type halfBoxL_v;
+    view_type r_m;
+    view_type v_m;
+    double mu_m;
+    double sigma_m;
+    double prefactor_m;
+    const value_type halfBoxLr_m;
+    const value_type halfBoxLv_m;
 
     // The GeneratorPool
-    GeneratorPool pool;
+    GeneratorPool pool_m;
 
     // Initialize all members
-    GenerateMaxwellian(view_type r_, view_type v_, double mu_, double sigma_, value_type boxL_r_,
-                       value_type boxL_v_, GeneratorPool pool_)
-        : r(r_)
-        , v(v_)
-        , mu(mu_)
-        , sigma(sigma_)
-        , halfBoxL_r(0.5 * boxL_r_)
-        , halfBoxL_v(0.5 * boxL_v_)
-        , pool(pool_) {}
+    GenerateGaussianVelocity(view_type r, view_type v, double mu, double sigma, double prefactor,
+                             value_type boxLr, value_type boxLv, GeneratorPool pool)
+        : r_m(r)
+        , v_m(v)
+        , mu_m(mu)
+        , sigma_m(sigma)
+        , prefactor_m(prefactor)
+        , halfBoxLr_m(0.5 * boxLr)
+        , halfBoxLv_m(0.5 * boxLv)
+        , pool_m(pool) {}
 
     KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
         // Get a random number state from the pool for the active thread
-        typename GeneratorPool::generator_type rand_gen = pool.get_state();
+        typename GeneratorPool::generator_type rand_gen = pool_m.get_state();
 
-        r(i) = {rand_gen.drand(-halfBoxL_r, halfBoxL_r), rand_gen.drand(-halfBoxL_r, halfBoxL_r),
-                rand_gen.drand(-halfBoxL_r, halfBoxL_r)};
+        r_m(i) = {rand_gen.drand(-halfBoxLr_m, halfBoxLr_m),
+                  rand_gen.drand(-halfBoxLr_m, halfBoxLr_m),
+                  rand_gen.drand(-halfBoxLr_m, halfBoxLr_m)};
 
-        v(i) = {rand_gen.normal(mu, sigma), rand_gen.normal(mu, sigma), rand_gen.normal(mu, sigma)};
+        v_m(i) = {rand_gen.normal(mu_m, sigma_m), rand_gen.normal(mu_m, sigma_m),
+                  rand_gen.normal(mu_m, sigma_m)};
         // Could be that some sampled velocities are outside our velocity domain
         for (unsigned d = 0; d < Dim; ++d) {
-            while (v(i)[d] <= -halfBoxL_v || v(i)[d] >= halfBoxL_v) {
-                v(i)[d] = rand_gen.normal(mu, sigma);
+            while (v_m(i)[d] <= -halfBoxLv_m || v_m(i)[d] >= halfBoxLv_m) {
+                v_m(i)[d] = rand_gen.normal(mu_m, sigma_m);
             }
         }
 
+        v_m(i) = prefactor_m * v_m(i);
+
         // Give the state back, which will allow another thread to acquire it
-        pool.free_state(rand_gen);
+        pool_m.free_state(rand_gen);
     }
 };
 

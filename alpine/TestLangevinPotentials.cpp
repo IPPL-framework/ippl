@@ -4,7 +4,8 @@
 #include "LangevinHelpers.hpp"
 #include "LangevinParticles.hpp"
 
-const char* TestName = "LangevinPotentials";
+const char* TestName = "TestLangevinPotentials";
+
 enum TestCase {
     MAXWELLIAN = 0b01,
     GAUSSIAN   = 0b10
@@ -137,12 +138,12 @@ class GenerateTestData {
 
 public:
     GenerateTestData(Field_view_t HviewExact, Field_view_t GviewExact, VField_view_t FdViewExact,
-                     MField_view_t DviewExact, double numberDensity, double sigma, const Bunch& P)
+                     MField_view_t DviewExact, double prefactor, double sigma, const Bunch& P)
         : HviewExact_m(HviewExact)
         , GviewExact_m(GviewExact)
         , FdViewExact_m(FdViewExact)
         , DviewExact_m(DviewExact)
-        , numberDensity_m(numberDensity)
+        , prefactor_m(prefactor)
         , sigma_m(sigma)
         , lDom_m(P->velocitySpaceFieldLayout_m.getLocalNDIndex())
         , P_m(P) {}
@@ -155,25 +156,18 @@ public:
                    - P_m->hvInit_m[d];
         }
 
-        double prefactor;
-
-        // Set specific factors depending on Test-Case
-        if constexpr (Test == TestCase::MAXWELLIAN) {
-            prefactor = numberDensity_m;
-        } else if constexpr (Test == TestCase::GAUSSIAN) {
-            prefactor = 1.0;
-        }
-
         // Multiply Integral over configuration-space
-        prefactor *= P_m->configSpaceIntegral_m;
+        double prefactor_times_fr = prefactor_m * P_m->configSpaceIntegral_m;
 
         // Initialize all needed analytical potentials and their gradient, etc.
-        ippl::apply(HviewExact_m, args)  = gaussianHexact(v, sigma_m, prefactor);
-        ippl::apply(GviewExact_m, args)  = gaussianGexact(v, sigma_m, prefactor);
-        ippl::apply(FdViewExact_m, args) = gaussianFdExact(v, P_m->gamma_m, sigma_m, prefactor);
+        ippl::apply(HviewExact_m, args) = gaussianHexact(v, sigma_m, prefactor_times_fr);
+        ippl::apply(GviewExact_m, args) = gaussianGexact(v, sigma_m, prefactor_times_fr);
+        ippl::apply(FdViewExact_m, args) =
+            gaussianFdExact(v, P_m->gamma_m, sigma_m, prefactor_times_fr);
 
         // Diffusion Coefficient $D$
-        ippl::apply(DviewExact_m, args) = gaussianFullDexact(v, P_m->gamma_m, sigma_m, prefactor);
+        ippl::apply(DviewExact_m, args) =
+            gaussianFullDexact(v, P_m->gamma_m, sigma_m, prefactor_times_fr);
     }
 
 private:
@@ -181,7 +175,7 @@ private:
     const Field_view_t GviewExact_m;
     const VField_view_t FdViewExact_m;
     const MField_view_t DviewExact_m;
-    const double numberDensity_m;
+    const double prefactor_m;
     const double sigma_m;
     const ippl::NDIndex<Dim>& lDom_m;
     const Bunch& P_m;
@@ -190,8 +184,8 @@ private:
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
 
-    Inform msg("TestLangevinPotentials");
-    Inform msg2all("TestLangevinPotentials", INFORM_ALL_NODES);
+    Inform msg(TestName);
+    Inform msg2all(TestName, INFORM_ALL_NODES);
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -225,9 +219,10 @@ int main(int argc, char* argv[]) {
     // CONSTANTS FOR MAXELLIAN //
     /////////////////////////////
 
-    constexpr TestCase testType = TestCase::MAXWELLIAN;
+    constexpr TestCase testType = TestCase::GAUSSIAN;
     const double vth            = 1.0;
     const double numberDensity  = 1.0;
+    double prefactor            = 1.0;
 
     const size_t nvMin = 8;
     for (size_t nv = nvMin; nv <= NV_MAX; nv *= 2) {
@@ -238,16 +233,20 @@ int main(int argc, char* argv[]) {
         const ippl::NDIndex<Dim> configSpaceIdxDomain(NR, NR, NR);
         ippl::e_dim_tag configSpaceDecomp[Dim] = {ippl::PARALLEL, ippl::PARALLEL, ippl::PARALLEL};
 
-        // Define \sigma of initial distribution
+        // Define \sigma and prefactor of initial distribution
         double vMax;
         double sigma;
         if constexpr (testType == TestCase::MAXWELLIAN) {
-            sigma = vth;
-            vMax  = 5.0 * sigma;
+            sigma     = vth;
+            vMax      = 5.0 * sigma;
+            prefactor = numberDensity;
         } else if constexpr (testType == TestCase::GAUSSIAN) {
             vMax = 5e7;
-            // Domain is [-5\sigma, 5\sigma]^3
-            sigma = 0.2 * vMax;
+            // Domain is [-20\sigma, 20\sigma]^3
+            sigma = 0.05 * vMax;
+            // Scaling prefactor s.t. inital vel. density matches what we see at iteration 100 in
+            // DIH
+            prefactor = 3.1307;
         }
 
         const double L = BOXL * 0.5;
@@ -339,8 +338,9 @@ int main(int argc, char* argv[]) {
         // Initialize Random Positions of particles in configuration space
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * rank));
         Kokkos::parallel_for(
-            nloc, GenerateMaxwellian<VectorD_t, Kokkos::Random_XorShift64_Pool<>>(
-                      P->R.getView(), P->P.getView(), 0.0, sigma, BOXL, 2.0 * vMax, rand_pool64));
+            nloc, GenerateGaussianVelocity<VectorD_t, Kokkos::Random_XorShift64_Pool<>>(
+                      P->R.getView(), P->P.getView(), 0.0, sigma, prefactor, BOXL, 2.0 * vMax,
+                      rand_pool64));
 
         // Initialize constant particle attributes
         P->q = PARTICLE_CHARGE;
@@ -363,7 +363,7 @@ int main(int argc, char* argv[]) {
         Field_view_t DtraceDiffView = DtraceDiff.getView();
 
         GenerateTestData<testType, std::shared_ptr<bunch_type>> dataGenerator(
-            HviewExact, GviewExact, FdViewExact, DviewExact, numberDensity, sigma, P);
+            HviewExact, GviewExact, FdViewExact, DviewExact, prefactor, sigma, P);
 
         ippl::parallel_for("Assign initial velocity PDF and reference solutions",
                            ippl::getRangePolicy(HviewExact, 0), dataGenerator);
@@ -381,11 +381,14 @@ int main(int argc, char* argv[]) {
         P->p_fv_m = 1.0 / P->globParticleNum_m;
         P->scatterVelSpace();
 
+        // Scaling to DIH magnitude or to reflext maxwellian
+        P->fv_m = prefactor * P->fv_m;
+
         // Need to rescale and dump `fv_m` before the solver overwrites it with the potential
         if (nv == 32) {
-            P->fv_m = P->fv_m * P->vScalingFactor_m;
+            // P->fv_m = P->fv_m * P->vScalingFactor_m;
             dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, nv, 1.0, OUT_DIR, "fv");
-            P->fv_m = P->fv_m / P->vScalingFactor_m;
+            // P->fv_m = P->fv_m / P->vScalingFactor_m;
         }
 
         /*
@@ -449,6 +452,9 @@ int main(int argc, char* argv[]) {
         P->p_fv_m = 1.0 / P->globParticleNum_m;
         P->scatterVelSpace();
 
+        // Scaling to DIH magnitude or to reflext maxwellian
+        P->fv_m = prefactor * P->fv_m;
+
         /*
          * Multiply with prefactors defined in RHS of Rosenbluth equations
          * FFTPoissonSolver returns $G(\vec v)$ in `fv_m`
@@ -494,14 +500,6 @@ int main(int argc, char* argv[]) {
         // Apply scaing due to Hessian operator
         // == P->D_m = P->D_m / P->vScalingFactor_m * (P->vScalingFactor_m * P->vScalingFactor_m);
         P->D_m = P->D_m * P->vScalingFactor_m;
-
-        // Gather Hessian to particle attributes
-        // P->velocityParticleCheck();
-        // P->gatherHessian();
-
-        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m;
-        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m;
-        // P->p_D0_m = P->p_D0_m * P->vScalingFactor_m;
 
         // Dump Collisional Coefficient avg. from particle attributes
         P->dumpCollisionStatistics(nv, nv == nvMin, OUT_DIR);
