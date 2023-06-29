@@ -534,13 +534,10 @@ public:
         velocitySpaceMesh_m.setOrigin(vmin_m);
 
         // Sign change needed as solver returns $- \nabla H(\vec)$
-        Fd_m = -1.0 * gamma_m * Fd_m;
+        Fd_m = -1.0 * vScalingFactor_m * vScalingFactor_m * gamma_m * Fd_m;
 
         // Only needed for dumping
         gatherFd();
-
-        // Scale potential back to [-VMAX,VMAX]
-        p_Fd_m = p_Fd_m * vScalingFactor_m * vScalingFactor_m;
 
         msg << "Friction computation done." << endl;
     }
@@ -571,20 +568,14 @@ public:
         velocitySpaceMesh_m.setOrigin(vmin_m);
 
         // Compute Hessian of $g(\vec v)$
-        D_m = gamma_m * hess(fv_m);
+        D_m = vScalingFactor_m * gamma_m * hess(fv_m);
 
         // Gather Hessian to particle attributes
         gatherHessian();
 
-        p_D0_m = p_D0_m * vScalingFactor_m;
-        p_D1_m = p_D1_m * vScalingFactor_m;
-        p_D2_m = p_D2_m * vScalingFactor_m;
-
         // Do Cholesky decomposition of $D$
         // and directly multiply with Gaussian random vector
         choleskyMultiply();
-
-        // p_QdW_m = p_QdW_m * vScalingFactor_m;
 
         msg << "Diffusion computation done." << endl;
     }
