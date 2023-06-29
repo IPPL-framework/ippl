@@ -215,17 +215,19 @@ int main(int argc, char* argv[]) {
 
     using bunch_type = LangevinParticles<PLayout_t<double, Dim>, double, Dim>;
 
-    /////////////////////////////
-    // CONSTANTS FOR MAXELLIAN //
-    /////////////////////////////
-
-    constexpr TestCase testType = TestCase::GAUSSIAN;
-    const double vth            = 1.0;
-    const double numberDensity  = 1.0;
-    double prefactor            = 1.0;
-
     const size_t nvMin = 8;
     for (size_t nv = nvMin; nv <= NV_MAX; nv *= 2) {
+        ////////////////////////////
+        // CONSTANTS FOR GAUSSIAN //
+        ////////////////////////////
+
+        constexpr TestCase testType = TestCase::GAUSSIAN;
+        const double vth            = 1.0;
+        const double numberDensity  = 1.0;
+        // Values altered according to chosen test case
+        double gaussianPrefactor = 1.0;
+        double densityScaling    = 1.0;
+
         /////////////////////////
         // CONFIGURATION SPACE //
         /////////////////////////
@@ -237,16 +239,16 @@ int main(int argc, char* argv[]) {
         double vMax;
         double sigma;
         if constexpr (testType == TestCase::MAXWELLIAN) {
-            sigma     = vth;
-            vMax      = 5.0 * sigma;
-            prefactor = numberDensity;
+            sigma             = vth;
+            vMax              = 5.0 * sigma;
+            gaussianPrefactor = numberDensity;
         } else if constexpr (testType == TestCase::GAUSSIAN) {
             vMax = 5e7;
             // Domain is [-20\sigma, 20\sigma]^3
             sigma = 0.05 * vMax;
             // Scaling prefactor s.t. inital vel. density matches what we see at iteration 100 in
             // DIH
-            prefactor = 3.1307;
+            densityScaling = 3.1307;
         }
 
         const double L = BOXL * 0.5;
@@ -339,8 +341,8 @@ int main(int argc, char* argv[]) {
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * rank));
         Kokkos::parallel_for(
             nloc, GenerateGaussianVelocity<VectorD_t, Kokkos::Random_XorShift64_Pool<>>(
-                      P->R.getView(), P->P.getView(), 0.0, sigma, prefactor, BOXL, 2.0 * vMax,
-                      rand_pool64));
+                      P->R.getView(), P->P.getView(), 0.0, sigma, gaussianPrefactor, BOXL,
+                      2.0 * vMax, rand_pool64));
 
         // Initialize constant particle attributes
         P->q = PARTICLE_CHARGE;
@@ -362,8 +364,9 @@ int main(int argc, char* argv[]) {
         Field_view_t DtraceView     = Dtrace.getView();
         Field_view_t DtraceDiffView = DtraceDiff.getView();
 
+        gaussianPrefactor *= densityScaling;
         GenerateTestData<testType, std::shared_ptr<bunch_type>> dataGenerator(
-            HviewExact, GviewExact, FdViewExact, DviewExact, prefactor, sigma, P);
+            HviewExact, GviewExact, FdViewExact, DviewExact, gaussianPrefactor, sigma, P);
 
         ippl::parallel_for("Assign initial velocity PDF and reference solutions",
                            ippl::getRangePolicy(HviewExact, 0), dataGenerator);
@@ -382,7 +385,7 @@ int main(int argc, char* argv[]) {
         P->scatterVelSpace();
 
         // Scaling to DIH magnitude or to reflext maxwellian
-        P->fv_m = prefactor * P->fv_m;
+        P->fv_m = densityScaling * P->fv_m;
 
         // Need to rescale and dump `fv_m` before the solver overwrites it with the potential
         if (nv == 32) {
@@ -453,7 +456,7 @@ int main(int argc, char* argv[]) {
         P->scatterVelSpace();
 
         // Scaling to DIH magnitude or to reflext maxwellian
-        P->fv_m = prefactor * P->fv_m;
+        P->fv_m = densityScaling * P->fv_m;
 
         /*
          * Multiply with prefactors defined in RHS of Rosenbluth equations
