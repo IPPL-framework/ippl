@@ -317,12 +317,12 @@ public:
     }
 
     void dumpFdField(unsigned int iteration, std::string folder) {
-        // Normalize particle velocities to [-1,1]^3
+        // Renormalize mesh to original domain [-vmax, vmax]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
         velocitySpaceMesh_m.setOrigin(vminInit_m);
         // Gather from particle attributes
         gather(p_Fd_m, Fd_m, this->P);
-        // Renormalize particle velocities to original domain
+        // Normalize mesh to [-1,1]^3
         velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
 
@@ -368,28 +368,17 @@ public:
         }
     }
 
-    void scaleParticleVelocities(ScaleOpType direction) {
-        if (direction == ScaleOpType::FORWARD) {  // Scale from [VMIN,VMAX] to [-1,1]
-            this->P = vScalingFactor_m * this->P;
-        } else if (direction == ScaleOpType::INVERSE) {  // Scale from [-1,1] -> [VMIN,VMAX]
-            this->P = (this->P / vScalingFactor_m);
-        } else {
-            throw IpplException("LangevinParticles::scaleParticleVelocities",
-                                "Only allows scaling to [-1,1] or [-vmax, vmax]");
-        }
-    }
-
     void scatterVelSpace() {
         // Scatter velocity density on grid
         fv_m = 0.0;
 
-        // Normalize particle velocities to [-1,1]^3
+        // Renormalize mesh to original domain [-vmax, vmax]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
         velocitySpaceMesh_m.setOrigin(vminInit_m);
         scatter(p_fv_m, fv_m, this->P);
+        // Normalize mesh to [-1,1]^3
         velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
-        // Renormalize particle velocities to original domain
 
         // Normalize with dV
         double cellVolume = std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
@@ -397,21 +386,21 @@ public:
     }
 
     void gatherVelSpace() {
-        // Normalize particle velocities to [-1,1]^3
+        // Renormalize mesh to original domain [-vmax, vmax]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
         velocitySpaceMesh_m.setOrigin(vminInit_m);
         gather(p_fv_m, fv_m, this->P);
-        // Revert normalization of particle velocities to original domain
+        // Normalize mesh to [-1,1]^3
         velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
     }
 
     void gatherFd() {
-        // Normalize particle velocities to [-1,1]^3
+        // Renormalize mesh to original domain [-vmax, vmax]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
         velocitySpaceMesh_m.setOrigin(vminInit_m);
         gather(p_Fd_m, Fd_m, this->P);
-        // Revert normalization of particle velocities to original domain
+        // Normalize mesh to [-1,1]^3
         velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
     }
@@ -461,13 +450,13 @@ public:
     void gatherHessian() {
         extractRows(D_m, D0_m, D1_m, D2_m);
 
-        // Normalize particle velocities to [-1,1]^3
+        // Renormalize mesh to original domain [-vmax, vmax]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
         velocitySpaceMesh_m.setOrigin(vminInit_m);
         gather(p_D0_m, D0_m, this->P);
         gather(p_D1_m, D1_m, this->P);
         gather(p_D2_m, D2_m, this->P);
-        // Renormalize particle velocities to original domain
+        // Normalize mesh to [-1,1]^3
         velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
     }
