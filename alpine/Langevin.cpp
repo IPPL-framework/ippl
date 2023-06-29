@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
     // Initialize Cold Sphere (positions only)
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * rank));
     Kokkos::parallel_for(nloc, GenerateBoxMuller<VectorD_t, Kokkos::Random_XorShift64_Pool<>>(
-                                   P->R.getView(), BEAM_RADIUS, configSpaceLowerBound, rand_pool64));
+                                   P->R.getView(), BEAM_RADIUS, 0.0, rand_pool64));
 
     // Initialize constant particle attributes
     P->q = PARTICLE_CHARGE;
