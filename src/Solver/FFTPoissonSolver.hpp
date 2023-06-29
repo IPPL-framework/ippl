@@ -921,7 +921,7 @@ namespace ippl {
                                 kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
 
                             const bool isNotZero = (Dr != 0.0);
-                            view_g(i, j, k) = -isNotZero * (kVec[col] * kVec[col]) * viewR(i, j, k);
+                            view_g(i, j, k) = -isNotZero * (kVec[col] * kVec[row]) * viewR(i, j, k);
                         });
 
                     // start a timer
