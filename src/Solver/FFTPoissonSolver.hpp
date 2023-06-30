@@ -138,6 +138,7 @@ void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
         });
     Kokkos::fence();
 }
+
 namespace ippl {
 
     /////////////////////////////////////////////////////////////////////////
@@ -558,10 +559,7 @@ namespace ippl {
 
         } else {
             Kokkos::parallel_for(
-                "Write rho on the doubled grid",
-                mdrange_type({nghost1, nghost1, nghost1},
-                             {view1.extent(0) - nghost1, view1.extent(1) - nghost1,
-                              view1.extent(2) - nghost1}),
+                "Write rho on the doubled grid", this->rhs_mp->getFieldRangePolicy(nghost1),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                     const size_t ig2 = i + ldom2[0].first() - nghost2;
                     const size_t jg2 = j + ldom2[1].first() - nghost2;
@@ -682,9 +680,7 @@ namespace ippl {
             } else {
                 Kokkos::parallel_for(
                     "Write the solution into the LHS on physical grid",
-                    mdrange_type({nghost1, nghost1, nghost1},
-                                 {view1.extent(0) - nghost1, view1.extent(1) - nghost1,
-                                  view1.extent(2) - nghost1}),
+                    this->rhs_mp->getFieldRangePolicy(nghost1),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         const int ig2 = i + ldom2[0].first() - nghost2;
                         const int jg2 = j + ldom2[1].first() - nghost2;

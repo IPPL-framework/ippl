@@ -99,7 +99,8 @@ namespace ippl {
         // also define a type for the Fourier transformed complex valued fields
         // define matrix and matrix field types for the Hessian
         typedef FieldRHS Field_t;
-        typedef Field<int, Dim, mesh_type, typename FieldLHS::Centering_t> IField_t;
+        typedef typename FieldLHS::Centering_t Centering;
+        typedef Field<int, Dim, mesh_type, Centering> IField_t;
         typedef Field<Tg, Dim, mesh_type, Centering> Field_gt;
         typedef Field<Kokkos::complex<Tg>, Dim, mesh_type, Centering> CxField_gt;
         typedef typename FFT_t::ComplexField CxField_t;
@@ -135,8 +136,16 @@ namespace ippl {
         // more specifically, compute the scalar potential given a density field rho using
         void solve() override;
 
-        // return the Hessian
-        MField_t getHessian() { return hess_m; };
+        // override getHessian to return Hessian field if flag is on
+        MField_t* getHessian() override {
+            bool hessian = this->params_m.template get<bool>("hessian");
+            if (!hessian) {
+                throw IpplException(
+                    "FFTPoissonSolver::getHessian()",
+                    "Cannot call getHessian() if 'hessian' flag in ParameterList is false");
+            }
+            return &hess_m;
+        }
 
         // compute standard Green's function
         void greensFunction();

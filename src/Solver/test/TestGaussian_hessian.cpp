@@ -234,9 +234,9 @@ void compute_convergence(std::string algorithm, int pt) {
     fieldE.initialize(mesh, layout);
 
     // define the Matrix field for the Hessian
-    MField_t<T> exactH, fieldH;
+    MField_t<T> exactH;
+    MField_t<T>* fieldH = nullptr;
     exactH.initialize(mesh, layout);
-    fieldH.initialize(mesh, layout);
 
     // assign the rho field with a gaussian
     typename ScalarField_t<T>::view_type view_rho = rho.getView();
@@ -391,7 +391,7 @@ void compute_convergence(std::string algorithm, int pt) {
     }
 
     Matrix_t<T> errH;
-    auto view_fieldH = fieldH.getView();
+    auto view_fieldH = fieldH->getView();
 
     for (size_t m = 0; m < 3; ++m) {
         for (size_t n = 0; n < 3; ++n) {
