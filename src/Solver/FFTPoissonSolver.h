@@ -47,23 +47,35 @@ namespace ippl {
          * time, reducing the number of functions needed to achieve the same
          * behavior for both kinds of fields
          * @tparam isVec whether the field is a vector field
+         * @tparam isMat whether the field is a matrix field
          * @tparam - the view type
          */
-        template <bool isVec, typename>
+        template <bool isVec, bool isMat, typename>
         struct ViewAccess;
 
         template <typename View>
-        struct ViewAccess<true, View> {
-            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim, size_t i,
-                                                              size_t j, size_t k) {
-                return view(i, j, k)[dim];
+        struct ViewAccess<true, true, View> {
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim1,
+                                                              unsigned dim2, size_t i, size_t j,
+                                                              size_t k) {
+                return view(i, j, k)[dim1][dim2];
             }
         };
 
         template <typename View>
-        struct ViewAccess<false, View> {
+        struct ViewAccess<true, false, View> {
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim1,
+                                                              [[maybe_unused]] unsigned dim2,
+                                                              size_t i, size_t j, size_t k) {
+                return view(i, j, k)[dim1];
+            }
+        };
+
+        template <typename View>
+        struct ViewAccess<false, false, View> {
             KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view,
-                                                              [[maybe_unused]] unsigned dim,
+                                                              [[maybe_unused]] unsigned dim1,
+                                                              [[maybe_unused]] unsigned dim2,
                                                               size_t i, size_t j, size_t k) {
                 return view(i, j, k);
             }
