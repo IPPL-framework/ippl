@@ -367,14 +367,11 @@ namespace ippl {
                 const int size = nr_m[d];
 
                 // Kokkos parallel for loop to initialize grnIField[d]
-                using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
                 switch (d) {
                     case 0:
                         Kokkos::parallel_for(
                             "Helper index Green field initialization",
-                            mdrange_type({nghost, nghost, nghost},
-                                         {view.extent(0) - nghost, view.extent(1) - nghost,
-                                          view.extent(2) - nghost}),
+                            grnIField_m[d].getFieldRangePolicy(nghost),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 // go from local indices to global
                                 const int ig = i + ldom[0].first() - nghost;
@@ -394,9 +391,7 @@ namespace ippl {
                     case 1:
                         Kokkos::parallel_for(
                             "Helper index Green field initialization",
-                            mdrange_type({nghost, nghost, nghost},
-                                         {view.extent(0) - nghost, view.extent(1) - nghost,
-                                          view.extent(2) - nghost}),
+                            grnIField_m[d].getFieldRangePolicy(nghost),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 // go from local indices to global
                                 const int jg = j + ldom[1].first() - nghost;
@@ -410,9 +405,7 @@ namespace ippl {
                     case 2:
                         Kokkos::parallel_for(
                             "Helper index Green field initialization",
-                            mdrange_type({nghost, nghost, nghost},
-                                         {view.extent(0) - nghost, view.extent(1) - nghost,
-                                          view.extent(2) - nghost}),
+                            grnIField_m[d].getFieldRangePolicy(nghost),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 // go from local indices to global
                                 const int kg = k + ldom[2].first() - nghost;
@@ -494,8 +487,6 @@ namespace ippl {
 
         // store rho (RHS) in the lower left quadrant of the doubled grid
         // with or without communication (if only 1 rank)
-
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         const int ranks = Comm->size();
 
@@ -735,10 +726,7 @@ namespace ippl {
             for (size_t gd = 0; gd < Dim; ++gd) {
                 // loop over rho2tr_m to multiply by -ik (gradient in Fourier space)
                 Kokkos::parallel_for(
-                    "Gradient - E field",
-                    mdrange_type({nghostR, nghostR, nghostR},
-                                 {viewR.extent(0) - nghostR, viewR.extent(1) - nghostR,
-                                  viewR.extent(2) - nghostR}),
+                    "Gradient - E field", rho2tr_m.getFieldRangePolicy(nghostR),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // global indices for 2N rhotr_m
                         const int ig = i + ldomR[0].first() - nghostR;
@@ -842,9 +830,7 @@ namespace ippl {
                 } else {
                     Kokkos::parallel_for(
                         "Write the E-field on physical grid",
-                        mdrange_type({nghostL, nghostL, nghostL},
-                                     {viewL.extent(0) - nghostL, viewL.extent(1) - nghostL,
-                                      viewL.extent(2) - nghostL}),
+                        this->lhs_mp->getFieldRangePolicy(nghostL),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             const int ig2 = i + ldom2[0].first() - nghost2;
                             const int jg2 = j + ldom2[1].first() - nghost2;
@@ -894,10 +880,7 @@ namespace ippl {
                 for (size_t col = 0; col < Dim; ++col) {
                     // loop over rho2tr_m to multiply by -k^2 (second derivative in Fourier space)
                     Kokkos::parallel_for(
-                        "Hessian",
-                        mdrange_type({nghostR, nghostR, nghostR},
-                                     {viewR.extent(0) - nghostR, viewR.extent(1) - nghostR,
-                                      viewR.extent(2) - nghostR}),
+                        "Hessian", rho2tr_m.getFieldRangePolicy(nghostR),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // global indices for 2N rhotr_m
                             const int ig = i + ldomR[0].first() - nghostR;
@@ -1002,10 +985,7 @@ namespace ippl {
 
                     } else {
                         Kokkos::parallel_for(
-                            "Write Hessian on physical grid",
-                            mdrange_type({nghostH, nghostH, nghostH},
-                                         {viewH.extent(0) - nghostH, viewH.extent(1) - nghostH,
-                                          viewH.extent(2) - nghostH}),
+                            "Write Hessian on physical grid", hess_m.getFieldRangePolicy(nghostH),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 const int ig2 = i + ldom2[0].first() - nghost2;
                                 const int jg2 = j + ldom2[1].first() - nghost2;
@@ -1073,14 +1053,9 @@ namespace ippl {
             Vector<int, Dim> size = nr_m;
 
             // Kokkos parallel for loop to assign analytic grnL_m
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
             if (alg == Algorithm::VICO) {
                 Kokkos::parallel_for(
-                    "Initialize Green's function ",
-                    mdrange_type({nghost_g, nghost_g, nghost_g},
-                                 {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
-                                  view_g.extent(2) - nghost_g}),
+                    "Initialize Green's function ", grnL_m.getFieldRangePolicy(nghost_g),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // go from local indices to global
                         const int ig = i + ldom_g[0].first() - nghost_g;
@@ -1112,10 +1087,7 @@ namespace ippl {
 
             } else if (alg == Algorithm::BIHARMONIC) {
                 Kokkos::parallel_for(
-                    "Initialize Green's function ",
-                    mdrange_type({nghost_g, nghost_g, nghost_g},
-                                 {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
-                                  view_g.extent(2) - nghost_g}),
+                    "Initialize Green's function ", grnL_m.getFieldRangePolicy(nghost_g),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // go from local indices to global
                         const int ig = i + ldom_g[0].first() - nghost_g;
@@ -1172,6 +1144,7 @@ namespace ippl {
                 communicateVico(size, view_g, ldom_g, nghost_g, view, ldom, nghost);
             } else {
                 // restrict the green's function to a (2N)^3 grid from the (4N)^3 grid
+                using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
                 Kokkos::parallel_for(
                     "Restrict domain of Green's function from 4N to 2N",
                     mdrange_type({nghost, nghost, nghost}, {view.extent(0) - nghost - size[0],
@@ -1225,12 +1198,8 @@ namespace ippl {
             const auto& ldom                 = layout2_m->getLocalNDIndex();
 
             // Kokkos parallel for loop to find (0,0,0) point and regularize
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(
-                "Regularize Green's function ",
-                mdrange_type(
-                    {nghost, nghost, nghost},
-                    {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
+                "Regularize Green's function ", grn_mr.getFieldRangePolicy(nghost),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     // go from local indices to global
                     const int ig = i + ldom[0].first() - nghost;
