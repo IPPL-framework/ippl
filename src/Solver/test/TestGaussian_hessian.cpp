@@ -338,10 +338,11 @@ void compute_convergence(std::string algorithm, int pt) {
     // add output type
     params.add("output_type", Solver_t<T>::SOL_AND_GRAD);
 
-    bool hessian = true;
+    // add hessian flag parameter
+    params.add("hessian", true);
 
     // define an FFTPoissonSolver object
-    Solver_t<T> FFTsolver(fieldE, rho, params, hessian);
+    Solver_t<T> FFTsolver(fieldE, rho, params);
 
     // solve the Poisson equation -> rho contains the solution (phi) now
     FFTsolver.solve();

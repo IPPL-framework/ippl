@@ -145,7 +145,6 @@ namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
     FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver()
         : Base()
-        , hessian(false)
         , mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
@@ -159,10 +158,8 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(rhs_type& rhs, ParameterList& params,
-                                                           bool hessian_)
-        : hessian(hessian_)
-        , mesh_mp(nullptr)
+    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(rhs_type& rhs, ParameterList& params)
+        : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
         , layout2_m(nullptr)
@@ -183,9 +180,8 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs,
-                                                           ParameterList& params, bool hessian_)
-        : hessian(hessian_)
-        , mesh_mp(nullptr)
+                                                           ParameterList& params)
+        : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
         , layout2_m(nullptr)
@@ -242,7 +238,9 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
-        const int alg = this->params_m.template get<int>("algorithm");
+        // get algorithm and hessian flag from parameter list
+        const int alg      = this->params_m.template get<int>("algorithm");
+        const bool hessian = this->params_m.template get<bool>("hessian");
 
         // first check if valid algorithm choice
         if ((alg != Algorithm::VICO) && (alg != Algorithm::HOCKNEY)
@@ -466,6 +464,9 @@ namespace ippl {
 
         // get the algorithm (hockney, vico, or biharmonic)
         const int alg = this->params_m.template get<int>("algorithm");
+
+        // get hessian flag (if true, we compute the Hessian)
+        const bool hessian = this->params_m.template get<bool>("hessian");
 
         // set the mesh & spacing, which may change each timestep
         mesh_mp = &(this->rhs_mp->get_mesh());

@@ -119,9 +119,8 @@ namespace ippl {
 
         // constructor and destructor
         FFTPoissonSolver();
-        FFTPoissonSolver(rhs_type& rhs, ParameterList& params, bool hessian_ = false);
-        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params,
-                         bool hessian_ = false);
+        FFTPoissonSolver(rhs_type& rhs, ParameterList& params);
+        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
         ~FFTPoissonSolver() = default;
 
         // override the setRhs function of the Solver class
@@ -174,9 +173,8 @@ namespace ippl {
         // fields that facilitate the calculation in greensFunction()
         IField_t grnIField_m[Dim];
 
-        // if hessian, then set bool to true, and pointer to field
+        // hessian matrix field (only if hessian parameter is set)
         MField_t hess_m;
-        bool hessian;
 
         // the FFT object
         std::unique_ptr<FFT_t> fft_m;
@@ -249,6 +247,7 @@ namespace ippl {
             }
 
             this->params_m.add("algorithm", HOCKNEY);
+            this->params_m.add("hessian", true);
         }
     };
 }  // namespace ippl
