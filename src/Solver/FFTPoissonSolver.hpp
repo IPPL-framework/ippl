@@ -311,12 +311,11 @@ namespace ippl {
         grntr_m.initialize(*meshComplex_m, *layoutComplex_m);
 
         int out = this->params_m.template get<int>("output_type");
-        if ((((out == Base::GRAD) || (out == Base::SOL_AND_GRAD)) && (!isGradFD_m))
-            || (hessian == true)) {
+        if ((((out == Base::GRAD) || (out == Base::SOL_AND_GRAD)) && !isGradFD_m) || hessian) {
             temp_m.initialize(*meshComplex_m, *layoutComplex_m);
         }
 
-        if (hessian == true) {
+        if (hessian) {
             hess_m.initialize(*mesh_mp, *layout_mp);
         }
 
@@ -616,10 +615,11 @@ namespace ippl {
             // Vico: need to multiply by normalization factor of 1/4N^3,
             // since only backward transform was performed on the 4N grid
             for (unsigned int i = 0; i < Dim; ++i) {
-                if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
+                if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
                     rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
-                else
+                } else {
                     rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                }
             }
 
             // start a timer
@@ -778,10 +778,11 @@ namespace ippl {
 
                 // apply proper normalization
                 for (unsigned int i = 0; i < Dim; ++i) {
-                    if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
+                    if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
                         rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
-                    else
+                    } else {
                         rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                    }
                 }
 
                 // start a timer
@@ -868,7 +869,7 @@ namespace ippl {
         }
 
         // if user asked for Hessian, compute in Fourier domain (-k^2 multiplication)
-        if (hessian == true) {
+        if (hessian) {
             // start a timer
             static IpplTimings::TimerRef hess = IpplTimings::getTimer("Solve: Hessian");
             IpplTimings::startTimer(hess);
@@ -936,10 +937,11 @@ namespace ippl {
 
                     // apply proper normalization
                     for (unsigned int i = 0; i < Dim; ++i) {
-                        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
+                        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
                             rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
-                        else
+                        } else {
                             rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                        }
                     }
 
                     // start a timer
