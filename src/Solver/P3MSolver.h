@@ -88,6 +88,7 @@ namespace ippl {
 
         CxField_t rhotr_m;
         CxField_t grntr_m;
+        CxField_t tempFieldComplex_m;
 
         // fields that facilitate the calculation in greensFunction()
         IField_t grnIField_m[Dim];

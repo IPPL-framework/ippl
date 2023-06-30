@@ -164,14 +164,14 @@ int main(int argc, char* argv[]) {
         auto start            = std::chrono::high_resolution_clock::now();
         Vector_t<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
 
-        static IpplTimings::TimerRef mainTimer           = IpplTimings::getTimer("total");
-        static IpplTimings::TimerRef particleCreation    = IpplTimings::getTimer("particlesCreation");
-        static IpplTimings::TimerRef dumpDataTimer       = IpplTimings::getTimer("dumpData");
-        static IpplTimings::TimerRef PTimer              = IpplTimings::getTimer("pushVelocity");
-        static IpplTimings::TimerRef RTimer              = IpplTimings::getTimer("pushPosition");
-        static IpplTimings::TimerRef updateTimer         = IpplTimings::getTimer("update");
-        static IpplTimings::TimerRef DummySolveTimer     = IpplTimings::getTimer("solveWarmup");
-        static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("Solve");
+        static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("total");
+        static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+        static IpplTimings::TimerRef dumpDataTimer    = IpplTimings::getTimer("dumpData");
+        static IpplTimings::TimerRef PTimer           = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef DummySolveTimer  = IpplTimings::getTimer("solveWarmup");
+        static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("Solve");
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
 
         IpplTimings::startTimer(mainTimer);
@@ -179,7 +179,8 @@ int main(int argc, char* argv[]) {
         size_type totalP      = std::atol(argv[4]);
         const unsigned int nt = std::atoi(argv[5]);
 
-        msg << "Penning Trap " << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
+        msg << "Penning Trap " << endl
+            << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
         using bunch_type = ChargedParticles<PLayout_t<double, Dim>, double, Dim>;
 
@@ -289,7 +290,8 @@ int main(int argc, char* argv[]) {
         size_type nloc            = (size_type)(factor * totalP);
         size_type Total_particles = 0;
 
-        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
+        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM,
+                      ippl::Comm->getCommunicator());
 
         int rest = (int)(totalP - Total_particles);
 
@@ -300,7 +302,7 @@ int main(int argc, char* argv[]) {
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
         Kokkos::parallel_for(
             nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                    P->R.getView(), P->P.getView(), rand_pool64, mu, sd, minU, maxU));
+                      P->R.getView(), P->P.getView(), rand_pool64, mu, sd, minU, maxU));
 
         Kokkos::fence();
         ippl::Comm->barrier();
@@ -355,7 +357,8 @@ int main(int argc, char* argv[]) {
                         -(Rview(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
                     double Eext_y =
                         -(Rview(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
-                    double Eext_z = (Rview(j)[2] - 0.5 * rmax[2]) * (V0 / (Kokkos::pow(rmax[2], 2)));
+                    double Eext_z =
+                        (Rview(j)[2] - 0.5 * rmax[2]) * (V0 / (Kokkos::pow(rmax[2], 2)));
 
                     Eview(j)[0] += Eext_x;
                     Eview(j)[1] += Eext_y;
@@ -410,21 +413,22 @@ int main(int argc, char* argv[]) {
                         -(R2view(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
                     double Eext_y =
                         -(R2view(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
-                    double Eext_z = (R2view(j)[2] - 0.5 * rmax[2]) * (V0 / (Kokkos::pow(rmax[2], 2)));
+                    double Eext_z =
+                        (R2view(j)[2] - 0.5 * rmax[2]) * (V0 / (Kokkos::pow(rmax[2], 2)));
 
                     E2view(j)[0] += Eext_x;
                     E2view(j)[1] += Eext_y;
                     E2view(j)[2] += Eext_z;
-                    P2view(j)[0] =
-                        DrInv
-                        * (P2view(j)[0]
-                        + alpha
-                                * (E2view(j)[0] + P2view(j)[1] * Bext + alpha * Bext * E2view(j)[1]));
-                    P2view(j)[1] =
-                        DrInv
-                        * (P2view(j)[1]
-                        + alpha
-                                * (E2view(j)[1] - P2view(j)[0] * Bext - alpha * Bext * E2view(j)[0]));
+                    P2view(j)[0] = DrInv
+                                   * (P2view(j)[0]
+                                      + alpha
+                                            * (E2view(j)[0] + P2view(j)[1] * Bext
+                                               + alpha * Bext * E2view(j)[1]));
+                    P2view(j)[1] = DrInv
+                                   * (P2view(j)[1]
+                                      + alpha
+                                            * (E2view(j)[1] - P2view(j)[0] * Bext
+                                               - alpha * Bext * E2view(j)[0]));
                     P2view(j)[2] += alpha * E2view(j)[2];
                 });
             IpplTimings::stopTimer(PTimer);
@@ -437,7 +441,8 @@ int main(int argc, char* argv[]) {
             msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
             if (checkSignalHandler()) {
-                msg << "Aborting timestepping loop due to signal " << interruptSignalReceived << endl;
+                msg << "Aborting timestepping loop due to signal " << interruptSignalReceived
+                    << endl;
                 break;
             }
         }
