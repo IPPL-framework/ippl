@@ -102,7 +102,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::fillHalo() {
-        if (Comm->size() > 1) {
+        if (layout_m->comm.size() > 1) {
             halo_m.fillHalo(dview_m, layout_m);
         }
         if (layout_m->isAllPeriodic_m) {
@@ -113,7 +113,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     void BareField<T, Dim>::accumulateHalo() {
-        if (Comm->size() > 1) {
+        if (layout_m->comm.size() > 1) {
             halo_m.accumulateHalo(dview_m, layout_m);
         }
         if (layout_m->isAllPeriodic_m) {
@@ -170,7 +170,7 @@ namespace ippl {
             },                                                                \
             Kokkos::fun<T>(temp));                                            \
         T globaltemp = 0.0;                                                   \
-        Comm->allreduce(temp, globaltemp, 1, MPI_Op<T>());                    \
+        layout_m->comm.allreduce(temp, globaltemp, 1, MPI_Op<T>());           \
         return globaltemp;                                                    \
     }
 
