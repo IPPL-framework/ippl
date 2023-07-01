@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
             decomp[d] = ippl::PARALLEL;
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<dim> layout(owned, decomp);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, decomp);
 
         // type definitions
         typedef ippl::Vector<double, dim> Vector_t;

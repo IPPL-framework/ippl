@@ -28,6 +28,7 @@
 
 #include "Types/ViewTypes.h"
 
+#include "Communicate/Communicator.h"
 #include "Index/NDIndex.h"
 
 namespace ippl {
@@ -215,9 +216,10 @@ namespace ippl {
          * Default constructor, which should only be used if you are going to
          * call 'initialize' soon after (before using in any context)
          */
-        FieldLayout();
+        FieldLayout(mpi::Communicator = MPI_COMM_WORLD);
 
-        FieldLayout(const NDIndex<Dim>& domain, e_dim_tag* p = 0, bool isAllPeriodic = false);
+        FieldLayout(mpi::Communicator, const NDIndex<Dim>& domain, e_dim_tag* p = 0,
+                    bool isAllPeriodic = false);
 
         // Destructor: Everything deletes itself automatically ... the base
         // class destructors inform all the FieldLayoutUser's we're going away.
@@ -351,6 +353,8 @@ namespace ippl {
         void updateLayout(const std::vector<NDIndex_t>& domains);
 
         bool isAllPeriodic_m;
+
+        mpi::Communicator comm;
 
     private:
         /*!

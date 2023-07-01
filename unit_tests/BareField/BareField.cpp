@@ -49,7 +49,7 @@ public:
             tag = ippl::PARALLEL;
         }
 
-        std::get<Idx>(layouts) = ippl::FieldLayout<Dim>(owned, domDec);
+        std::get<Idx>(layouts) = ippl::FieldLayout<Dim>(MPI_COMM_WORLD, owned, domDec);
         auto& layout           = std::get<Idx>(layouts);
 
         std::get<Idx>(fields)  = std::make_shared<field_type<Dim>>(layout);

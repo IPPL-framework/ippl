@@ -92,15 +92,15 @@ int main(int argc, char* argv[]) {
         for (unsigned d = 0; d < Dim; d++)
             nr[d] = std::atoi(argv[arg++]);
 
-        static IpplTimings::TimerRef mainTimer           = IpplTimings::getTimer("total");
-        static IpplTimings::TimerRef particleCreation    = IpplTimings::getTimer("particlesCreation");
-        static IpplTimings::TimerRef dumpDataTimer       = IpplTimings::getTimer("dumpData");
-        static IpplTimings::TimerRef PTimer              = IpplTimings::getTimer("pushVelocity");
-        static IpplTimings::TimerRef temp                = IpplTimings::getTimer("randomMove");
-        static IpplTimings::TimerRef RTimer              = IpplTimings::getTimer("pushPosition");
-        static IpplTimings::TimerRef updateTimer         = IpplTimings::getTimer("update");
-        static IpplTimings::TimerRef DummySolveTimer     = IpplTimings::getTimer("solveWarmup");
-        static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("solve");
+        static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("total");
+        static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+        static IpplTimings::TimerRef dumpDataTimer    = IpplTimings::getTimer("dumpData");
+        static IpplTimings::TimerRef PTimer           = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef temp             = IpplTimings::getTimer("randomMove");
+        static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef DummySolveTimer  = IpplTimings::getTimer("solveWarmup");
+        static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
 
         IpplTimings::startTimer(mainTimer);
@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
 
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
-        FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
+        FieldLayout_t<Dim> FL(MPI_COMM_WORLD, domain, decomp, isAllPeriodic);
         PLayout_t<double, Dim> PL(FL, mesh);
 
         double Q           = -1562.5;
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
         Kokkos::parallel_for(
             nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                    P->R.getView(), rand_pool64, Rmin, Rmax));
+                      P->R.getView(), rand_pool64, Rmin, Rmax));
         Kokkos::fence();
         P->q = P->Q_m / totalP;
         P->P = 0.0;
@@ -267,7 +267,8 @@ int main(int argc, char* argv[]) {
             msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
             if (checkSignalHandler()) {
-                msg << "Aborting timestepping loop due to signal " << interruptSignalReceived << endl;
+                msg << "Aborting timestepping loop due to signal " << interruptSignalReceived
+                    << endl;
                 break;
             }
         }

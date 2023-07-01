@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
         for (unsigned int d = 0; d < dim; d++)
             allParallel[d] = ippl::PARALLEL;
 
-        ippl::FieldLayout<dim> layout(owned, allParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, allParallel);
 
         std::array<double, dim> dx = {
             1.0 / double(pt[0]),
@@ -75,7 +75,8 @@ int main(int argc, char* argv[]) {
         // Reverse transform
         fft->transform(-1, field);
 
-        auto field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
+        auto field_result =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
 
         Kokkos::complex<double> max_error_local(0.0, 0.0);
         for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
@@ -101,7 +102,7 @@ int main(int argc, char* argv[]) {
 
         // if(ippl::Comm->rank() == 0) {
         std::cout << "Rank:" << ippl::Comm->rank() << "Max. error " << std::setprecision(16)
-                << max_error_local << std::endl;
+                  << max_error_local << std::endl;
         //}
     }
     ippl::finalize();

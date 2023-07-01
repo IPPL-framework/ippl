@@ -145,7 +145,7 @@ void compute_convergence(std::string algorithm, int pt) {
     Mesh_t<T> mesh(owned, hx, origin);
 
     // all parallel layout, standard domain, normal axis order
-    ippl::FieldLayout<3> layout(owned, decomp);
+    ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, decomp);
 
     // define the R (rho) field
     ScalarField_t<T> rho;

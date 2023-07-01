@@ -251,14 +251,14 @@ int main(int argc, char* argv[]) {
             nr[d] = std::atoi(argv[arg++]);
         };
 
-        static IpplTimings::TimerRef mainTimer           = IpplTimings::getTimer("total");
-        static IpplTimings::TimerRef particleCreation    = IpplTimings::getTimer("particlesCreation");
-        static IpplTimings::TimerRef dumpDataTimer       = IpplTimings::getTimer("dumpData");
-        static IpplTimings::TimerRef PTimer              = IpplTimings::getTimer("pushVelocity");
-        static IpplTimings::TimerRef RTimer              = IpplTimings::getTimer("pushPosition");
-        static IpplTimings::TimerRef updateTimer         = IpplTimings::getTimer("update");
-        static IpplTimings::TimerRef DummySolveTimer     = IpplTimings::getTimer("solveWarmup");
-        static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("solve");
+        static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("total");
+        static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+        static IpplTimings::TimerRef dumpDataTimer    = IpplTimings::getTimer("dumpData");
+        static IpplTimings::TimerRef PTimer           = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef DummySolveTimer  = IpplTimings::getTimer("solveWarmup");
+        static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
 
         IpplTimings::startTimer(mainTimer);
@@ -323,7 +323,7 @@ int main(int argc, char* argv[]) {
 
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
-        FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
+        FieldLayout_t<Dim> FL(MPI_COMM_WORLD, domain, decomp, isAllPeriodic);
         PLayout_t<double, Dim> PL(FL, mesh);
 
         // Q = -\int\int f dx dv
@@ -403,7 +403,8 @@ int main(int argc, char* argv[]) {
         size_type nloc            = nlocBulk + nlocBeam;
         size_type Total_particles = 0;
 
-        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
+        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM,
+                      ippl::Comm->getCommunicator());
 
         int rest = (int)(totalP - Total_particles);
 
@@ -420,15 +421,15 @@ int main(int argc, char* argv[]) {
                 ippl::Comm->abort();
             }
             phase.initialize(*std::max_element(nr.begin(), nr.end()),
-                            *std::max_element(rmax.begin(), rmax.end()));
+                             *std::max_element(rmax.begin(), rmax.end()));
         }
 
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
 
         Kokkos::parallel_for(
             nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                    P->R.getView(), P->P.getView(), rand_pool64, delta, kw, sigma, muBulk, muBeam,
-                    nlocBulk, minU, maxU));
+                      P->R.getView(), P->P.getView(), rand_pool64, delta, kw, sigma, muBulk, muBeam,
+                      nlocBulk, minU, maxU));
         Kokkos::fence();
         ippl::Comm->barrier();
         IpplTimings::stopTimer(particleCreation);
@@ -520,7 +521,8 @@ int main(int argc, char* argv[]) {
             }
 
             if (checkSignalHandler()) {
-                msg << "Aborting timestepping loop due to signal " << interruptSignalReceived << endl;
+                msg << "Aborting timestepping loop due to signal " << interruptSignalReceived
+                    << endl;
                 break;
             }
         }

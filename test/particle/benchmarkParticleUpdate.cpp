@@ -184,7 +184,7 @@ int main(int argc, char* argv[]) {
         const double dt = 1.0;  // size of timestep
 
         Mesh_t mesh(domain, hr, origin);
-        FieldLayout_t FL(domain, decomp);
+        FieldLayout_t FL(MPI_COMM_WORLD, domain, decomp);
         PLayout_t PL(FL, mesh);
 
         /*

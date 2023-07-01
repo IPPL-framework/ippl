@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
             allParallel[d] = ippl::PARALLEL;
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<3> layout(owned, allParallel);
+        ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, allParallel);
 
         double dx                      = 1.0 / double(pt);
         ippl::Vector<double, 3> hx     = {dx, dx, dx};

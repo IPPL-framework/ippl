@@ -60,7 +60,7 @@ public:
             origin[d] = 0;
         }
 
-        auto& layout = std::get<Idx>(layouts) = layout_type<Dim>(owned, domDec);
+        auto& layout = std::get<Idx>(layouts) = layout_type<Dim>(MPI_COMM_WORLD, owned, domDec);
 
         auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
 

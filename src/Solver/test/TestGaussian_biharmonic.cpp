@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
             ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
             // all parallel layout, standard domain, normal axis order
-            ippl::FieldLayout<3> layout(owned, decomp);
+            ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, decomp);
 
             // define the R (rho) field
             ScalarField_t rho;

@@ -167,14 +167,14 @@ int main(int argc, char* argv[]) {
             nr[d] = std::atoi(argv[arg++]);
         }
 
-        static IpplTimings::TimerRef mainTimer           = IpplTimings::getTimer("total");
-        static IpplTimings::TimerRef particleCreation    = IpplTimings::getTimer("particlesCreation");
-        static IpplTimings::TimerRef dumpDataTimer       = IpplTimings::getTimer("dumpData");
-        static IpplTimings::TimerRef PTimer              = IpplTimings::getTimer("pushVelocity");
-        static IpplTimings::TimerRef RTimer              = IpplTimings::getTimer("pushPosition");
-        static IpplTimings::TimerRef updateTimer         = IpplTimings::getTimer("update");
-        static IpplTimings::TimerRef DummySolveTimer     = IpplTimings::getTimer("solveWarmup");
-        static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("solve");
+        static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("total");
+        static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+        static IpplTimings::TimerRef dumpDataTimer    = IpplTimings::getTimer("dumpData");
+        static IpplTimings::TimerRef PTimer           = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef DummySolveTimer  = IpplTimings::getTimer("solveWarmup");
+        static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
 
         IpplTimings::startTimer(mainTimer);
@@ -182,7 +182,8 @@ int main(int argc, char* argv[]) {
         const size_type totalP = std::atoll(argv[arg++]);
         const unsigned int nt  = std::atoi(argv[arg++]);
 
-        msg << "Landau damping" << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
+        msg << "Landau damping" << endl
+            << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
         using bunch_type = ChargedParticles<PLayout_t<float, Dim>, float, Dim>;
 
@@ -212,7 +213,7 @@ int main(int argc, char* argv[]) {
 
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
-        FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
+        FieldLayout_t<Dim> FL(MPI_COMM_WORLD, domain, decomp, isAllPeriodic);
         PLayout_t<float, Dim> PL(FL, mesh);
 
         std::string solver = argv[arg++];
@@ -278,7 +279,8 @@ int main(int argc, char* argv[]) {
         size_type nloc            = (size_type)(factor * totalP);
         size_type Total_particles = 0;
 
-        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
+        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM,
+                      ippl::Comm->getCommunicator());
 
         int rest = (int)(totalP - Total_particles);
 
@@ -290,7 +292,7 @@ int main(int argc, char* argv[]) {
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
         Kokkos::parallel_for(
             nloc, generate_random<Vector_t<float, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                    P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+                      P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
         Kokkos::fence();
         ippl::Comm->barrier();

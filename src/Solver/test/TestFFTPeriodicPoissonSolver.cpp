@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
             }
 
             // all parallel layout, standard domain, normal axis order
-            ippl::FieldLayout<dim> layout(owned, decomp);
+            ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, decomp);
 
             //[-1, 1] box
             double dx                        = 2.0 / double(pt);

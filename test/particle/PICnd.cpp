@@ -475,7 +475,7 @@ int main(int argc, char* argv[]) {
 
         const bool isAllPeriodic = true;
         Mesh_t mesh(domain, hr, origin);
-        FieldLayout_t FL(domain, decomp, isAllPeriodic);
+        FieldLayout_t FL(MPI_COMM_WORLD, domain, decomp, isAllPeriodic);
         PLayout_t PL(FL, mesh);
 
         /**PRINT**/

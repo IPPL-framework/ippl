@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
         // decomp[d] = ippl::SERIAL;
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<dim> layout(owned, decomp);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, decomp);
 
         // Unit box
         double dx                        = 2.0 / double(pt);
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
         }
         std::stringstream ss;
         ss << "timing_" << pt << "pt_" << iterations << "iterations_" << ippl::Comm->size()
-        << "ranks.dat";
+           << "ranks.dat";
         IpplTimings::print(ss.str());
     }
     ippl::finalize();

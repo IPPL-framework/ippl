@@ -110,6 +110,8 @@ namespace ippl {
             void Window<Target>::put(const T* value, int dest, unsigned int pos, Request* request) {
                 MPI_Datatype datatype = get_mpi_datatype<T>(*value);
                 if (request == nullptr) {
+                    std::cout << "pos = " << pos << std::endl;
+                    std::cout << datatype << " " << MPI_DOUBLE << std::endl;
                     MPI_Put(value, 1, datatype, dest, (MPI_Aint)pos, count_m, datatype, win_m);
                 } else {
                     MPI_Rput(value, 1, datatype, dest, (MPI_Aint)pos, count_m, datatype, win_m,

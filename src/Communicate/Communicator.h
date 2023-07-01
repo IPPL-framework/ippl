@@ -43,7 +43,7 @@ namespace ippl {
         public:
             Communicator();
 
-            Communicator(MPI_Comm& comm);
+            Communicator(MPI_Comm comm);
 
             ~Communicator() = default;
 

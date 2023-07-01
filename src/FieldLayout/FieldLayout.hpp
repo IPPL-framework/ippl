@@ -48,8 +48,9 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    FieldLayout<Dim>::FieldLayout()
-        : dLocalDomains_m("local domains (device)", 0)
+    FieldLayout<Dim>::FieldLayout(mpi::Communicator communicator)
+        : comm(communicator)
+        , dLocalDomains_m("local domains (device)", 0)
         , hLocalDomains_m(Kokkos::create_mirror_view(dLocalDomains_m)) {
         for (unsigned int d = 0; d < Dim; ++d) {
             requestedLayout_m[d] = PARALLEL;
@@ -58,8 +59,9 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    FieldLayout<Dim>::FieldLayout(const NDIndex<Dim>& domain, e_dim_tag* p, bool isAllPeriodic)
-        : FieldLayout() {
+    FieldLayout<Dim>::FieldLayout(mpi::Communicator communicator, const NDIndex<Dim>& domain,
+                                  e_dim_tag* p, bool isAllPeriodic)
+        : FieldLayout(communicator) {
         initialize(domain, p, isAllPeriodic);
     }
 

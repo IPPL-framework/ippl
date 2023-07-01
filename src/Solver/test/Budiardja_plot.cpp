@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
             Mesh_t mesh(owned, hx, origin);
 
             // all parallel layout, standard domain, normal axis order
-            ippl::FieldLayout<3> layout(owned, decomp);
+            ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, decomp);
 
             // define the L (phi) and R (rho) fields
             field rho;

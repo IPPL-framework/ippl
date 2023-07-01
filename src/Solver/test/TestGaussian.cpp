@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
         Mesh_t mesh(owned, hr, origin);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<Dim> layout(owned, decomp);
+        ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, owned, decomp);
 
         // define the R (rho) field
         field exact, rho;

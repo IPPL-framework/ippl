@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
             allParallel[d] = ippl::PARALLEL;
 
         typedef ippl::FieldLayout<dim> Layout_t;
-        Layout_t layout(owned, allParallel);
+        Layout_t layout(MPI_COMM_WORLD, owned, allParallel);
 
         std::array<double, dim> dx = {
             1.0 / double(pt[0]),
@@ -110,11 +110,11 @@ int main(int argc, char* argv[]) {
                 }
 
                 std::cout << "rank " << rank << ": " << std::endl
-                        << " - domain:   " << domains[rank] << std::endl
-                        << " - faces:    " << nFaces << std::endl
-                        << " - edges:    " << nEdges << std::endl
-                        << " - vertices: " << nVertices << std::endl
-                        << "--------------------------------------" << std::endl;
+                          << " - domain:   " << domains[rank] << std::endl
+                          << " - faces:    " << nFaces << std::endl
+                          << " - edges:    " << nEdges << std::endl
+                          << " - vertices: " << nVertices << std::endl
+                          << "--------------------------------------" << std::endl;
             }
             ippl::Comm->barrier();
         }
@@ -134,8 +134,8 @@ int main(int argc, char* argv[]) {
 
         for (int rank = 0; rank < nRanks; ++rank) {
             if (rank == ippl::Comm->rank()) {
-                std::string fname =
-                    "field_nRanks_" + std::to_string(nRanks) + "_rank_" + std::to_string(rank) + ".dat";
+                std::string fname = "field_nRanks_" + std::to_string(nRanks) + "_rank_"
+                                    + std::to_string(rank) + ".dat";
                 Inform out("Output", fname.c_str(), Inform::OVERWRITE, rank);
                 field.write(out);
             }
