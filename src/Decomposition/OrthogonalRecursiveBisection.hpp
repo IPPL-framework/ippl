@@ -102,10 +102,11 @@ namespace ippl {
 
         // Check that no plane was obtained in the repartition
         IpplTimings::startTimer(tbasicOp);
-        for (unsigned int i = 0; i < domains.size(); i++) {
-            if (domains[i][0].length() == 1 || domains[i][1].length() == 1
-                || domains[i][2].length() == 1) {
-                return false;
+        for (const auto& domain : domains) {
+            for (const auto& axis : domain) {
+                if (axis.length() == 1) {
+                    return false;
+                }
             }
         }
 
@@ -192,8 +193,7 @@ namespace ippl {
 
             Kokkos::fence();
 
-            rankWeights[arrayStart] = tempRes;
-            arrayStart++;
+            rankWeights[arrayStart++] = tempRes;
         }
     }
 
