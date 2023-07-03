@@ -28,7 +28,7 @@
 #include "Solver/FFTPoissonSolver.h"
 #include "Solver/P3MSolver.h"
 
-unsigned LogFreq = 50;
+unsigned LoggingPeriod = 50;
 
 // some typedefs
 template <unsigned Dim = 3>
@@ -420,7 +420,7 @@ public:
         scatter(q, rho_m, this->R);
 
         static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check");
-        if (iteration % LogFreq == 0) {
+        if (iteration % LoggingPeriod == 0) {
             IpplTimings::startTimer(sumTimer);
             double Q_grid = rho_m.sum();
 
@@ -448,7 +448,7 @@ public:
             std::reduce(hrField.begin(), hrField.end(), 1., std::multiplies<double>());
         rho_m = rho_m / cellVolume;
 
-        if (iteration % LogFreq == 0) {
+        if (iteration % LoggingPeriod == 0) {
             rhoNorm_m = norm(rho_m);
             IpplTimings::stopTimer(sumTimer);
         }
