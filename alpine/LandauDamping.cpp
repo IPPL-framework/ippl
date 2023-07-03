@@ -207,7 +207,6 @@ int main(int argc, char* argv[]) {
         // Q = -\int\int f dx dv
         double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
         Vector_t<double, Dim> origin = rmin;
-        const double dt              = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
 
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
@@ -233,7 +232,8 @@ int main(int argc, char* argv[]) {
         P->time_m                 = 0.0;
         P->loadbalancethreshold_m = std::atof(argv[arg++]);
 
-        LogFreq = std::atoll(argv[arg++]);
+        LogFreq         = std::atoll(argv[arg++]);
+        const double dt = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end())) / LogFreq;
 
         bool isFirstRepartition;
 
@@ -335,7 +335,7 @@ int main(int argc, char* argv[]) {
         // begin main timestep loop
         std::thread dumpThread;
         msg << "Starting iterations ..." << endl;
-        for (unsigned int it = 0; it < nt; it++) {
+        for (unsigned int it = 0; it < nt * LogFreq; it++) {
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
             // Here, we assume a constant charge-to-mass ratio of -1 for
             // all the particles hence eliminating the need to store mass as
@@ -376,7 +376,7 @@ int main(int argc, char* argv[]) {
             P->runSolver();
             IpplTimings::stopTimer(SolveTimer);
 
-            if (it % LogFreq == 0) {
+            if ((it + 1) % LogFreq == 0) {
                 P->updateEMirror(Eview);
                 if (dumpThread.joinable()) {
                     dumpThread.join();
