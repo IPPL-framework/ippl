@@ -3,7 +3,7 @@
 // This programs tests the FDTD electromagnetic solver with a
 // sinusoidal pulse at the center, and absorbing boundaries.
 //   Usage:
-//     srun ./TestSphere <nx> <ny> <nz> <timesteps> --info 5
+//     srun ./TestFDTDSolver <nx> <ny> <nz> <timesteps> --info 5
 //     nx        = No. cell-centered points in the x-direction
 //     ny        = No. cell-centered points in the y-direction
 //     nz        = No. cell-centered points in the z-direction
