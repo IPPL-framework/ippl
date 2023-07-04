@@ -28,7 +28,7 @@
 #include "Solver/FFTPoissonSolver.h"
 #include "Solver/P3MSolver.h"
 
-unsigned LoggingPeriod = 50;
+unsigned LoggingPeriod = 1;
 
 // some typedefs
 template <unsigned Dim = 3>

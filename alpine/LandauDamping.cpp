@@ -2,7 +2,7 @@
 //   Usage:
 //     srun ./LandauDamping
 //                  <nx> [<ny>...] <Np> <Nt> <stype>
-//                  <lbthres> --overallocate <ovfactor> --info 10
+//                  <lbthres> --overallocate <ovfactor> <logT> --info 10
 //     nx       = No. cell-centered points in the x-direction
 //     ny...    = No. cell-centered points in the y-, z-, ...-direction
 //     Np       = Total no. of macro-particles in the simulation
@@ -14,6 +14,8 @@
 //                simulations.
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
+//     logT     = Logging period. Data logging is performed on the CPU in parallel to
+//                GPU computation and only every logT timesteps.
 //     Example:
 //     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 --overallocate 2.0 --info 10
 //
