@@ -35,11 +35,14 @@ void IpplInfo::printVersion(void) {
 }
 
 void IpplInfo::printHelp(char** argv) {
-    std::cout << "Usage: " << argv[0] << " [<option> <option> ...]\n";
+    std::cout << "Usage: " << argv[0] << " [<option> ...]\n";
     std::cout << "The possible values for <option> are:\n";
-    std::cout << "   --info <n>          : Set info message level.  0 = off.\n";
-    std::cout << "   --help              : Print IPPL help message\n";
-    std::cout << "   --kokkos-help       : Print Kokkos help message\n";
+    std::cout << "   --info <n>                  : Set info message level.  0 = off.\n";
+    std::cout << "   --overallocate|-b <factor>  : Set the buffer overallocation factor\n";
+    std::cout << "   --enable-timer-fences       : Enables timer fences (default enabled if only "
+                 "one accelerator present)\n";
+    std::cout << "   --help                      : Print IPPL help message\n";
+    std::cout << "   --kokkos-help               : Print Kokkos help message\n";
 }
 
 /////////////////////////////////////////////////////////////////////

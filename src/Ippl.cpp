@@ -49,6 +49,8 @@ namespace ippl {
                         throw std::runtime_error("Missing info level value!");
                     }
                     infoLevel = detail::getNumericalOption<int>(argv[nargs]);
+                } else if (detail::checkOption(argv[nargs], "--enable-timer-fences", "")) {
+                    Timer::enableFences = true;
                 } else if (detail::checkOption(argv[nargs], "--version", "-v")) {
                     IpplInfo::printVersion();
                     std::string options = IpplInfo::compileOptions();

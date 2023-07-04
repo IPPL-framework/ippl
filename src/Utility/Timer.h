@@ -29,6 +29,8 @@ public:
     using timer_type    = std::chrono::time_point<std::chrono::high_resolution_clock>;
     using duration_type = std::chrono::duration<double>;
 
+    static bool enableFences;
+
     Timer();
 
     void clear();  // Set all accumulated times to 0
