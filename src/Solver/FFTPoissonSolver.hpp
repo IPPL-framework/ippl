@@ -290,7 +290,7 @@ namespace ippl {
         grntr_m.initialize(*meshComplex_m, *layoutComplex_m);
 
         int out = this->params_m.template get<int>("output_type");
-        if ((((out == Base::GRAD) || (out == Base::SOL_AND_GRAD)) && !isGradFD_m) || hessian) {
+        if (((out == Base::GRAD || out == Base::SOL_AND_GRAD) && !isGradFD_m) || hessian) {
             temp_m.initialize(*meshComplex_m, *layoutComplex_m);
         }
 
@@ -303,7 +303,7 @@ namespace ippl {
         // if Vico, also need to create mesh and layout for 4N Fourier domain
         // on this domain, the truncated Green's function is defined
         // also need to create the 4N complex grid, on which precomputation step done
-        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
+        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
             // start a timer
             static IpplTimings::TimerRef initialize_vico =
                 IpplTimings::getTimer("Initialize: extra Vico");
@@ -349,7 +349,7 @@ namespace ippl {
                     case 0:
                         Kokkos::parallel_for(
                             "Helper index Green field initialization",
-                            grnIField_m[d].getFieldRangePolicy(nghost),
+                            grnIField_m[d].getFieldRangePolicy(),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 // go from local indices to global
                                 const int ig = i + ldom[0].first() - nghost;
@@ -369,7 +369,7 @@ namespace ippl {
                     case 1:
                         Kokkos::parallel_for(
                             "Helper index Green field initialization",
-                            grnIField_m[d].getFieldRangePolicy(nghost),
+                            grnIField_m[d].getFieldRangePolicy(),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 // go from local indices to global
                                 const int jg = j + ldom[1].first() - nghost;
@@ -383,7 +383,7 @@ namespace ippl {
                     case 2:
                         Kokkos::parallel_for(
                             "Helper index Green field initialization",
-                            grnIField_m[d].getFieldRangePolicy(nghost),
+                            grnIField_m[d].getFieldRangePolicy(),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 // go from local indices to global
                                 const int kg = k + ldom[2].first() - nghost;
@@ -403,7 +403,7 @@ namespace ippl {
         IpplTimings::startTimer(warmup);
 
         fft_m->transform(+1, rho2_mr, rho2tr_m);
-        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
+        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
             fft4n_m->transform(+1, grnL_m);
         }
 
@@ -528,7 +528,7 @@ namespace ippl {
 
         } else {
             Kokkos::parallel_for(
-                "Write rho on the doubled grid", this->rhs_mp->getFieldRangePolicy(nghost1),
+                "Write rho on the doubled grid", this->rhs_mp->getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                     const size_t ig2 = i + ldom2[0].first() - nghost2;
                     const size_t jg2 = j + ldom2[1].first() - nghost2;
@@ -582,7 +582,7 @@ namespace ippl {
             // Vico: need to multiply by normalization factor of 1/4N^3,
             // since only backward transform was performed on the 4N grid
             for (unsigned int i = 0; i < Dim; ++i) {
-                if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
+                if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
                     rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                 } else {
                     rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
@@ -649,7 +649,7 @@ namespace ippl {
             } else {
                 Kokkos::parallel_for(
                     "Write the solution into the LHS on physical grid",
-                    this->rhs_mp->getFieldRangePolicy(nghost1),
+                    this->rhs_mp->getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         const int ig2 = i + ldom2[0].first() - nghost2;
                         const int jg2 = j + ldom2[1].first() - nghost2;
@@ -704,7 +704,7 @@ namespace ippl {
             for (size_t gd = 0; gd < Dim; ++gd) {
                 // loop over rho2tr_m to multiply by -ik (gradient in Fourier space)
                 Kokkos::parallel_for(
-                    "Gradient - E field", rho2tr_m.getFieldRangePolicy(nghostR),
+                    "Gradient - E field", rho2tr_m.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // global indices for 2N rhotr_m
                         const int ig = i + ldomR[0].first() - nghostR;
@@ -740,7 +740,7 @@ namespace ippl {
 
                 // apply proper normalization
                 for (unsigned int i = 0; i < Dim; ++i) {
-                    if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
+                    if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
                         rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                     } else {
                         rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
@@ -807,8 +807,7 @@ namespace ippl {
 
                 } else {
                     Kokkos::parallel_for(
-                        "Write the E-field on physical grid",
-                        this->lhs_mp->getFieldRangePolicy(nghostL),
+                        "Write the E-field on physical grid", this->lhs_mp->getFieldRangePolicy(),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             const int ig2 = i + ldom2[0].first() - nghost2;
                             const int jg2 = j + ldom2[1].first() - nghost2;
@@ -858,7 +857,7 @@ namespace ippl {
                 for (size_t col = 0; col < Dim; ++col) {
                     // loop over rho2tr_m to multiply by -k^2 (second derivative in Fourier space)
                     Kokkos::parallel_for(
-                        "Hessian", rho2tr_m.getFieldRangePolicy(nghostR),
+                        "Hessian", rho2tr_m.getFieldRangePolicy(),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // global indices for 2N rhotr_m
                             const int ig = i + ldomR[0].first() - nghostR;
@@ -894,7 +893,7 @@ namespace ippl {
 
                     // apply proper normalization
                     for (unsigned int i = 0; i < Dim; ++i) {
-                        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
+                        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
                             rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                         } else {
                             rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
@@ -963,7 +962,7 @@ namespace ippl {
 
                     } else {
                         Kokkos::parallel_for(
-                            "Write Hessian on physical grid", hess_m.getFieldRangePolicy(nghostH),
+                            "Write Hessian on physical grid", hess_m.getFieldRangePolicy(),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 const int ig2 = i + ldom2[0].first() - nghost2;
                                 const int jg2 = j + ldom2[1].first() - nghost2;
@@ -997,7 +996,7 @@ namespace ippl {
 
         const int alg = this->params_m.template get<int>("algorithm");
 
-        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
+        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
             Vector_t l(hr_m * nr_m);
             Vector_t hs_m;
             double L_sum(0.0);
@@ -1033,7 +1032,7 @@ namespace ippl {
             // Kokkos parallel for loop to assign analytic grnL_m
             if (alg == Algorithm::VICO) {
                 Kokkos::parallel_for(
-                    "Initialize Green's function ", grnL_m.getFieldRangePolicy(nghost_g),
+                    "Initialize Green's function ", grnL_m.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // go from local indices to global
                         const int ig = i + ldom_g[0].first() - nghost_g;
@@ -1065,7 +1064,7 @@ namespace ippl {
 
             } else if (alg == Algorithm::BIHARMONIC) {
                 Kokkos::parallel_for(
-                    "Initialize Green's function ", grnL_m.getFieldRangePolicy(nghost_g),
+                    "Initialize Green's function ", grnL_m.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // go from local indices to global
                         const int ig = i + ldom_g[0].first() - nghost_g;
@@ -1177,7 +1176,7 @@ namespace ippl {
 
             // Kokkos parallel for loop to find (0,0,0) point and regularize
             Kokkos::parallel_for(
-                "Regularize Green's function ", grn_mr.getFieldRangePolicy(nghost),
+                "Regularize Green's function ", grn_mr.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     // go from local indices to global
                     const int ig = i + ldom[0].first() - nghost;
