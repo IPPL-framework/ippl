@@ -361,7 +361,7 @@ void compute_convergence(std::string algorithm, int pt) {
     for (size_t d = 0; d < 3; ++d) {
         T temp = 0.0;
         Kokkos::parallel_reduce(
-            "Vector errorNr reduce", ippl::getRangePolicy(view_fieldE, nghost),
+            "Vector errorNr reduce", fieldE.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) {
                 T myVal = Kokkos::pow(view_fieldE(i, j, k)[d], 2);
                 valL += myVal;
@@ -376,7 +376,7 @@ void compute_convergence(std::string algorithm, int pt) {
 
         temp = 0.0;
         Kokkos::parallel_reduce(
-            "Vector errorDr reduce", ippl::getRangePolicy(view_exactE, nghost),
+            "Vector errorDr reduce", exactE.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) {
                 T myVal = Kokkos::pow(view_exactE(i, j, k)[d], 2);
                 valL += myVal;
@@ -398,7 +398,7 @@ void compute_convergence(std::string algorithm, int pt) {
             double diffNorm  = 0;
             double exactNorm = 0;
             Kokkos::parallel_reduce(
-                "MFieldError", ippl::getRangePolicy(view_fieldH, nghost),
+                "MFieldError", fieldH->getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& diffVal,
                               double& exactVal) {
                     diffVal +=

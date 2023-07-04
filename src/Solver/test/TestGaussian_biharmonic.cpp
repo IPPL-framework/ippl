@@ -162,12 +162,12 @@ int main(int argc, char* argv[]) {
             exactE.initialize(mesh, layout);
 
             // assign the rho field with a gaussian
-            typename ScalarField_t::view_type view_rho = rho.getView();
-            const int nghost                           = rho.getNghost();
-            const auto& ldom                           = layout.getLocalNDIndex();
+            auto view_rho    = rho.getView();
+            const int nghost = rho.getNghost();
+            const auto& ldom = layout.getLocalNDIndex();
 
             Kokkos::parallel_for(
-                "Assign rho field", ippl::getRangePolicy(view_rho, nghost),
+                "Assign rho field", rho.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     // go from local to global indices
                     const int ig = i + ldom[0].first() - nghost;
@@ -183,10 +183,10 @@ int main(int argc, char* argv[]) {
                 });
 
             // assign the exact field with its values (erf function)
-            typename ScalarField_t::view_type view_exact = exact.getView();
+            auto view_exact = exact.getView();
 
             Kokkos::parallel_for(
-                "Assign exact field", ippl::getRangePolicy(view_exact, nghost),
+                "Assign exact field", exact.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     const int ig = i + ldom[0].first() - nghost;
                     const int jg = j + ldom[1].first() - nghost;
@@ -202,7 +202,7 @@ int main(int argc, char* argv[]) {
             // assign the exact gradient field
             auto view_grad = exactE.getView();
             Kokkos::parallel_for(
-                "Assign exact field", ippl::getRangePolicy(view_grad, nghost),
+                "Assign exact field", exactE.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     const int ig = i + ldom[0].first() - nghost;
                     const int jg = j + ldom[1].first() - nghost;
@@ -254,38 +254,40 @@ int main(int argc, char* argv[]) {
                 double temp = 0.0;
 
                 Kokkos::parallel_reduce(
-                    "Vector errorNr reduce", ippl::getRangePolicy(view_fieldE, nghost),
+                    "Vector errorNr reduce", fieldE.getFieldRangePolicy(),
 
                     KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                        double myVal = pow(view_fieldE(i, j, k)[d], 2);
+                        double myVal = Kokkos::pow(view_fieldE(i, j, k)[d], 2);
                         valL += myVal;
                     },
                     Kokkos::Sum<double>(temp));
 
                 double globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
+                              ippl::Comm->getCommunicator());
                 double errorNr = std::sqrt(globaltemp);
 
                 temp = 0.0;
 
                 Kokkos::parallel_reduce(
-                    "Vector errorDr reduce", ippl::getRangePolicy(view_grad, nghost),
+                    "Vector errorDr reduce", exactE.getFieldRangePolicy(),
 
                     KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                        double myVal = pow(view_grad(i, j, k)[d], 2);
+                        double myVal = Kokkos::pow(view_grad(i, j, k)[d], 2);
                         valL += myVal;
                     },
                     Kokkos::Sum<double>(temp));
 
                 globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
+                              ippl::Comm->getCommunicator());
                 double errorDr = std::sqrt(globaltemp);
 
                 errE[d] = errorNr / errorDr;
             }
 
-            msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1] << " "
-                << errE[2] << endl;
+            msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1]
+                << " " << errE[2] << endl;
         }
 
         // stop the timer

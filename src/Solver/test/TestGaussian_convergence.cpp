@@ -161,12 +161,12 @@ void compute_convergence(std::string algorithm, int pt) {
     fieldE.initialize(mesh, layout);
 
     // assign the rho field with a gaussian
-    typename ScalarField_t<T>::view_type view_rho = rho.getView();
-    const int nghost                              = rho.getNghost();
-    const auto& ldom                              = layout.getLocalNDIndex();
+    auto view_rho    = rho.getView();
+    const int nghost = rho.getNghost();
+    const auto& ldom = layout.getLocalNDIndex();
 
     Kokkos::parallel_for(
-        "Assign rho field", ippl::getRangePolicy(view_rho, nghost),
+        "Assign rho field", rho.getFieldRangePolicy(),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             // go from local to global indices
             const int ig = i + ldom[0].first() - nghost;
@@ -182,10 +182,10 @@ void compute_convergence(std::string algorithm, int pt) {
         });
 
     // assign the exact field with its values (erf function)
-    typename ScalarField_t<T>::view_type view_exact = exact.getView();
+    auto view_exact = exact.getView();
 
     Kokkos::parallel_for(
-        "Assign exact field", ippl::getRangePolicy(view_exact, nghost),
+        "Assign exact field", exact.getFieldRangePolicy(),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             const int ig = i + ldom[0].first() - nghost;
             const int jg = j + ldom[1].first() - nghost;
@@ -202,7 +202,7 @@ void compute_convergence(std::string algorithm, int pt) {
     auto view_exactE = exactE.getView();
 
     Kokkos::parallel_for(
-        "Assign exact E-field", ippl::getRangePolicy(view_exactE, nghost),
+        "Assign exact E-field", exactE.getFieldRangePolicy(),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
             const int ig = i + ldom[0].first() - nghost;
             const int jg = j + ldom[1].first() - nghost;
@@ -257,9 +257,9 @@ void compute_convergence(std::string algorithm, int pt) {
     for (size_t d = 0; d < 3; ++d) {
         T temp = 0.0;
         Kokkos::parallel_reduce(
-            "Vector errorNr reduce", ippl::getRangePolicy(view_fieldE, nghost),
+            "Vector errorNr reduce", fieldE.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) {
-                T myVal = pow(view_fieldE(i, j, k)[d], 2);
+                T myVal = Kokkos::pow(view_fieldE(i, j, k)[d], 2);
                 valL += myVal;
             },
             Kokkos::Sum<T>(temp));
@@ -272,9 +272,9 @@ void compute_convergence(std::string algorithm, int pt) {
 
         temp = 0.0;
         Kokkos::parallel_reduce(
-            "Vector errorDr reduce", ippl::getRangePolicy(view_exactE, nghost),
+            "Vector errorDr reduce", exactE.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) {
-                T myVal = pow(view_exactE(i, j, k)[d], 2);
+                T myVal = Kokkos::pow(view_exactE(i, j, k)[d], 2);
                 valL += myVal;
             },
             Kokkos::Sum<T>(temp));
