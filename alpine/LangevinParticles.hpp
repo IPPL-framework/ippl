@@ -309,7 +309,7 @@ public:
                    Ippl::getComm());
 
         avgVel /= this->getGlobParticleNum();
-        msg << "avgVel = " << avgVel << endl;
+        msg << "avgVelNorm = " << avgVel << endl;
         msg << "minVelComponent = " << minVelComponent << endl;
         msg << "maxVelComponent = " << maxVelComponent << endl;
         msg << "minVel = " << minVel << endl;
@@ -322,9 +322,6 @@ public:
         velocitySpaceMesh_m.setOrigin(vminInit_m);
         // Gather from particle attributes
         gather(p_Fd_m, Fd_m, this->P);
-        // Normalize mesh to [-1,1]^3
-        velocitySpaceMesh_m.setOrigin(vmin_m);
-        velocitySpaceMesh_m.setMeshSpacing(hv_m);
 
         double L2vec;
         double L2Fd;
@@ -358,7 +355,7 @@ public:
                     vVec = {double(x), double(y), double(z)};
                     // Construct velocity vector at this cell
                     for (unsigned d = 0; d < Dim; d++) {
-                        vVec[d] = (vVec[d] + lDom[d].first() - nghost + 0.5) * hv_m[d] + vmin_m[d];
+                        vVec[d] = (vVec[d] + lDom[d].first() - nghost + 0.5) * hvInit_m[d] + vminInit_m[d];
                     }
                     L2vec = L2Norm(vVec);
                     L2Fd  = L2Norm(hostView(x, y, z));
@@ -366,6 +363,9 @@ public:
                 }
             }
         }
+        // Normalize mesh to [-1,1]^3
+        velocitySpaceMesh_m.setOrigin(vmin_m);
+        velocitySpaceMesh_m.setMeshSpacing(hv_m);
     }
 
     void scatterVelSpace() {
@@ -403,6 +403,31 @@ public:
         // Normalize mesh to [-1,1]^3
         velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
+    }
+
+    void scatterQ(VField_t<T, Dim>& V0, VField_t<T, Dim>& V1,
+                     VField_t<T, Dim>& V2, bool returnScaledVelSpace) {
+        // Scatter computed Q's to the V-field (hacky but saves a lot of memory)
+        // Renormalize mesh to original domain [-vmax, vmax]^3
+        velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
+        velocitySpaceMesh_m.setOrigin(vminInit_m);
+        scatter(p_Q0_m, V0, this->P);
+        scatter(p_Q1_m, V1, this->P);
+        scatter(p_Q2_m, V2, this->P);
+        // Normalize mesh to [-1,1]^3
+        velocitySpaceMesh_m.setOrigin(vmin_m);
+        velocitySpaceMesh_m.setMeshSpacing(hv_m);
+        
+        // Normalize with dV
+        double cellVolume = 0.0;
+        if (returnScaledVelSpace) {
+            cellVolume = std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
+        } else {
+            cellVolume = std::reduce(hvInit_m.begin(), hvInit_m.end(), 1., std::multiplies<double>());
+        }
+        V0                = V0 / cellVolume;
+        V1                = V1 / cellVolume;
+        V2                = V2 / cellVolume;
     }
 
     void extractRows(MField_t<Dim>& M, VField_t<T, Dim>& V0, VField_t<T, Dim>& V1,
