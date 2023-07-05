@@ -115,23 +115,26 @@ namespace ippl {
 #endif
     }  // namespace detail
 
-    template <template <typename...> class FFT, typename Backend, typename BufferType>
+    template <typename Field, template <typename...> class FFT, typename Backend,
+              typename BufferType = typename Field::value_type>
     class FFTBase {
+        constexpr static unsigned Dim = Field::dim;
+
     public:
         using heffteBackend = Backend;
         using workspace_t   = typename FFT<heffteBackend>::template buffer_container<BufferType>;
+        typedef FieldLayout<Dim> Layout_t;
 
     protected:
         std::shared_ptr<FFT<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
     };
 
-#define IN_PLACE_FFT_BASE_CLASS(Field, Backend)                                        \
-    FFTBase<heffte::fft3d,                                                             \
-            typename detail::HeffteBackendType<typename Field::memory_space>::Backend, \
-            typename Field::value_type>
+#define IN_PLACE_FFT_BASE_CLASS(Field, Backend) \
+    FFTBase<Field, heffte::fft3d,               \
+            typename detail::HeffteBackendType<typename Field::memory_space>::Backend>
 #define EXT_FFT_BASE_CLASS(Field, Backend, Type)                                       \
-    FFTBase<heffte::fft3d_r2c,                                                         \
+    FFTBase<Field, heffte::fft3d_r2c,                                                  \
             typename detail::HeffteBackendType<typename Field::memory_space>::Backend, \
             typename Type>
 
@@ -150,10 +153,9 @@ namespace ippl {
         using Base                    = IN_PLACE_FFT_BASE_CLASS(ComplexField, backend);
 
     public:
-        typedef FieldLayout<Dim> Layout_t;
         typedef typename ComplexField::value_type Complex_t;
 
-        using typename Base::heffteBackend, typename Base::workspace_t;
+        using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
@@ -195,9 +197,8 @@ namespace ippl {
         typedef Kokkos::complex<Real_t> Complex_t;
         using ComplexField =
             Field<Complex_t, Dim, typename RealField::Mesh_t, typename RealField::Centering_t>;
-        typedef FieldLayout<Dim> Layout_t;
 
-        using typename Base::heffteBackend, typename Base::workspace_t;
+        using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /** Create a new FFT object with the layout for the input and output Fields
          * and parameters for heffte.
@@ -234,9 +235,7 @@ namespace ippl {
         using Base                    = IN_PLACE_FFT_BASE_CLASS(Field, backendSine);
 
     public:
-        typedef FieldLayout<Dim> Layout_t;
-
-        using typename Base::heffteBackend, typename Base::workspace_t;
+        using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
@@ -268,9 +267,7 @@ namespace ippl {
         using Base                    = IN_PLACE_FFT_BASE_CLASS(Field, backendCos);
 
     public:
-        typedef FieldLayout<Dim> Layout_t;
-
-        using typename Base::heffteBackend, typename Base::workspace_t;
+        using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
