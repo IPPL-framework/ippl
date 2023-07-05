@@ -2,7 +2,7 @@
 //   Usage:
 //     srun ./LandauDamping
 //                  <nx> [<ny>...] <Np> <Nt> <stype>
-//                  <lbthres> --overallocate <ovfactor> --info 10
+//                  <lbthres> --overallocate <ovfactor> <logT> --info 10
 //     nx       = No. cell-centered points in the x-direction
 //     ny...    = No. cell-centered points in the y-, z-, ...-direction
 //     Np       = Total no. of macro-particles in the simulation
@@ -14,10 +14,12 @@
 //                simulations.
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
+//     logT     = Logging period. Data logging is performed on the CPU in parallel to
+//                GPU computation and only every logT timesteps.
 //     Example:
 //     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 --overallocate 2.0 --info 10
 //
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
+// Copyright (c) 2023, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
@@ -207,7 +209,6 @@ int main(int argc, char* argv[]) {
         // Q = -\int\int f dx dv
         double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
         Vector_t<double, Dim> origin = rmin;
-        const double dt              = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
 
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
@@ -232,6 +233,10 @@ int main(int argc, char* argv[]) {
         P->initSolver();
         P->time_m                 = 0.0;
         P->loadbalancethreshold_m = std::atof(argv[arg++]);
+
+        LoggingPeriod = std::atoll(argv[arg++]);
+        const double dt =
+            std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end())) / LoggingPeriod;
 
         bool isFirstRepartition;
 
@@ -319,17 +324,21 @@ int main(int argc, char* argv[]) {
         P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
+        auto Eview = P->getEMirror();
+
+        // gather E field
         P->gatherCIC();
 
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpLandau();
+        P->dumpLandau(Eview);
         P->gatherStatistics(totalP);
         // P->dumpLocalDomains(FL, 0);
         IpplTimings::stopTimer(dumpDataTimer);
 
         // begin main timestep loop
+        std::thread dumpThread;
         msg << "Starting iterations ..." << endl;
-        for (unsigned int it = 0; it < nt; it++) {
+        for (unsigned int it = 0; it < nt * LoggingPeriod; it++) {
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
             // Here, we assume a constant charge-to-mass ratio of -1 for
             // all the particles hence eliminating the need to store mass as
@@ -370,6 +379,21 @@ int main(int argc, char* argv[]) {
             P->runSolver();
             IpplTimings::stopTimer(SolveTimer);
 
+            if ((it + 1) % LoggingPeriod == 0) {
+                P->updateEMirror(Eview);
+                if (dumpThread.joinable()) {
+                    dumpThread.join();
+                }
+                auto dump = [&]() {
+                    IpplTimings::startTimer(dumpDataTimer);
+                    msg << "Processing time step " << it + 1 << " on host" << endl;
+                    P->dumpLandau(Eview);
+                    P->gatherStatistics(totalP);
+                    IpplTimings::stopTimer(dumpDataTimer);
+                };
+                dumpThread = std::thread(dump);
+            }
+
             // gather E field
             P->gatherCIC();
 
@@ -379,17 +403,16 @@ int main(int argc, char* argv[]) {
             IpplTimings::stopTimer(PTimer);
 
             P->time_m += dt;
-            IpplTimings::startTimer(dumpDataTimer);
-            P->dumpLandau();
-            P->gatherStatistics(totalP);
-            IpplTimings::stopTimer(dumpDataTimer);
-            msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
+            msg << "Host reached end of time step: " << it + 1 << " time: " << P->time_m << endl;
 
             if (checkSignalHandler()) {
                 msg << "Aborting timestepping loop due to signal " << interruptSignalReceived
                     << endl;
                 break;
             }
+        }
+        if (dumpThread.joinable()) {
+            dumpThread.join();
         }
 
         msg << "LandauDamping: End." << endl;
