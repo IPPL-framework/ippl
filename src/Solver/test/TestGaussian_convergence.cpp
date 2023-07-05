@@ -212,9 +212,7 @@ void compute_convergence(std::string algorithm, int pt) {
             T y = (jg + 0.5) * hx[1] + origin[1];
             T z = (kg + 0.5) * hx[2] + origin[2];
 
-            view_exactE(i, j, k)[0] = exact_E(x, y, z)[0];
-            view_exactE(i, j, k)[1] = exact_E(x, y, z)[1];
-            view_exactE(i, j, k)[2] = exact_E(x, y, z)[2];
+            view_exactE(i, j, k) = exact_E(x, y, z);
         });
 
     // set the solver parameters
@@ -310,19 +308,16 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
         IpplTimings::startTimer(allTimer);
 
-        // number of interations
-        const int n = 6;
-
-        // number of gridpoints to iterate over
-        std::array<int, n> N = {4, 8, 16, 32, 64, 128};
+        // gridsizes to iterate over
+        std::array<int, 6> N = {4, 8, 16, 32, 64, 128};
 
         msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
 
-        for (int p = 0; p < n; ++p) {
+        for (int pt : N) {
             if (precision == "DOUBLE") {
-                compute_convergence<double>(algorithm, N[p]);
+                compute_convergence<double>(algorithm, pt);
             } else {
-                compute_convergence<float>(algorithm, N[p]);
+                compute_convergence<float>(algorithm, pt);
             }
         }
 

@@ -120,17 +120,13 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
         IpplTimings::startTimer(allTimer);
 
-        // number of interations
-        const int n = 6;
-
-        // number of gridpoints to iterate over
-        std::array<int, n> N = {4, 8, 16, 32, 64, 128};
+        // gridsizes to iterate over
+        std::array<int, 6> N = {4, 8, 16, 32, 64, 128};
 
         msg << "Spacing Error" << endl;
 
-        for (int p = 0; p < n; ++p) {
+        for (int pt : N) {
             // domain
-            int pt = N[p];
             ippl::Index I(pt);
             ippl::NDIndex<3> owned(I, I, I);
 
@@ -212,9 +208,7 @@ int main(int argc, char* argv[]) {
                     double y = (jg + 0.5) * hx[1] + origin[1];
                     double z = (kg + 0.5) * hx[2] + origin[2];
 
-                    view_grad(i, j, k)[0] = exact_grad(x, y, z)[0];
-                    view_grad(i, j, k)[1] = exact_grad(x, y, z)[1];
-                    view_grad(i, j, k)[2] = exact_grad(x, y, z)[2];
+                    view_grad(i, j, k) = exact_grad(x, y, z);
                 });
 
             Kokkos::fence();

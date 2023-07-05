@@ -143,11 +143,6 @@ int main(int argc, char* argv[]) {
         exactE.initialize(mesh, layout);
         fieldE.initialize(mesh, layout);
 
-        field Ex, Ey, Ez;
-        Ex.initialize(mesh, layout);
-        Ey.initialize(mesh, layout);
-        Ez.initialize(mesh, layout);
-
         // assign the rho field with a gaussian
         auto view_rho    = rho.getView();
         const int nghost = rho.getNghost();
@@ -200,9 +195,7 @@ int main(int argc, char* argv[]) {
                 double y = (jg + 0.5) * hr[1] + origin[1];
                 double z = (kg + 0.5) * hr[2] + origin[2];
 
-                view_exactE(i, j, k)[0] = exact_E(x, y, z)[0];
-                view_exactE(i, j, k)[1] = exact_E(x, y, z)[1];
-                view_exactE(i, j, k)[2] = exact_E(x, y, z)[2];
+                view_exactE(i, j, k) = exact_E(x, y, z);
             });
 
         // Parameter List to pass to solver
@@ -260,20 +253,6 @@ int main(int argc, char* argv[]) {
             // solve the Poisson equation -> rho contains the solution (phi) now
             FFTsolver.solve();
 
-            auto Eview = fieldE.getView();
-
-            auto viewEx = Ex.getView();
-            auto viewEy = Ey.getView();
-            auto viewEz = Ez.getView();
-
-            Kokkos::parallel_for(
-                "Vector E reduce", fieldE.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                    viewEx(i, j, k) = Eview(i, j, k)[0];
-                    viewEy(i, j, k) = Eview(i, j, k)[1];
-                    viewEz(i, j, k) = Eview(i, j, k)[2];
-                });
-
             // compute relative error norm for potential
             rho        = rho - exact;
             double err = norm(rho) / norm(exact);
@@ -281,6 +260,8 @@ int main(int argc, char* argv[]) {
             // compute relative error norm for the E-field components
             ippl::Vector<double, Dim> errE{0.0, 0.0, 0.0};
             fieldE = fieldE - exactE;
+
+            auto Eview = fieldE.getView();
 
             for (size_t d = 0; d < Dim; ++d) {
                 double temp = 0.0;
@@ -359,9 +340,7 @@ int main(int argc, char* argv[]) {
                     double y = (jg + 0.5) * hr[1] + origin[1];
                     double z = (kg + 0.5) * hr[2] + origin[2];
 
-                    view_exactE(i, j, k)[0] = exact_E(x, y, z)[0];
-                    view_exactE(i, j, k)[1] = exact_E(x, y, z)[1];
-                    view_exactE(i, j, k)[2] = exact_E(x, y, z)[2];
+                    view_exactE(i, j, k) = exact_E(x, y, z);
                 });
         }
 
