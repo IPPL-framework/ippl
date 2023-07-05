@@ -267,7 +267,7 @@ void compute_convergence(std::string algorithm, int pt) {
         T globaltemp = 0.0;
 
         MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
         T errorNr = std::sqrt(globaltemp);
 
         temp = 0.0;
@@ -280,7 +280,7 @@ void compute_convergence(std::string algorithm, int pt) {
             Kokkos::Sum<T>(temp));
 
         globaltemp = 0.0;
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
         T errorDr = std::sqrt(globaltemp);
 
         errE[d] = errorNr / errorDr;
@@ -293,41 +293,44 @@ void compute_convergence(std::string algorithm, int pt) {
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    Inform msg("");
-    Inform msg2all("", INFORM_ALL_NODES);
+    ippl::initialize(argc, argv);
+    {
+        Inform msg("");
+        Inform msg2all("", INFORM_ALL_NODES);
 
-    std::string algorithm = argv[1];
-    std::string precision = argv[2];
+        std::string algorithm = argv[1];
+        std::string precision = argv[2];
 
-    if (precision != "DOUBLE" && precision != "SINGLE") {
-        throw IpplException("TestGaussian_convergence",
-                            "Precision argument must be DOUBLE or SINGLE.");
-    }
-
-    // start a timer to time the FFT Poisson solver
-    static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
-    IpplTimings::startTimer(allTimer);
-
-    // number of interations
-    const int n = 6;
-
-    // number of gridpoints to iterate over
-    std::array<int, n> N = {4, 8, 16, 32, 64, 128};
-
-    msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
-
-    for (int p = 0; p < n; ++p) {
-        if (precision == "DOUBLE") {
-            compute_convergence<double>(algorithm, N[p]);
-        } else {
-            compute_convergence<float>(algorithm, N[p]);
+        if (precision != "DOUBLE" && precision != "SINGLE") {
+            throw IpplException("TestGaussian_convergence",
+                                "Precision argument must be DOUBLE or SINGLE.");
         }
-    }
 
-    // stop the timer
-    IpplTimings::stopTimer(allTimer);
-    IpplTimings::print(std::string("timing.dat"));
+        // start a timer to time the FFT Poisson solver
+        static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
+        IpplTimings::startTimer(allTimer);
+
+        // number of interations
+        const int n = 6;
+
+        // number of gridpoints to iterate over
+        std::array<int, n> N = {4, 8, 16, 32, 64, 128};
+
+        msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
+
+        for (int p = 0; p < n; ++p) {
+            if (precision == "DOUBLE") {
+                compute_convergence<double>(algorithm, N[p]);
+            } else {
+                compute_convergence<float>(algorithm, N[p]);
+            }
+        }
+
+        // stop the timer
+        IpplTimings::stopTimer(allTimer);
+        IpplTimings::print(std::string("timing.dat"));
+    }
+    ippl::finalize();
 
     return 0;
 }

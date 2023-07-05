@@ -104,7 +104,7 @@ void interruptHandler(int signal) {
  * @return Signal handler was called
  */
 bool checkSignalHandler() {
-    Ippl::Comm->barrier();
+    ippl::Comm->barrier();
     return interruptSignalReceived != 0;
 }
 
@@ -116,11 +116,11 @@ void setSignalHandler() {
     sa.sa_handler = interruptHandler;
     sigemptyset(&sa.sa_mask);
     if (sigaction(SIGTERM, &sa, NULL) == -1) {
-        std::cerr << Ippl::Comm->rank() << ": failed to set up signal handler for SIGTERM ("
+        std::cerr << ippl::Comm->rank() << ": failed to set up signal handler for SIGTERM ("
                   << SIGTERM << ")" << std::endl;
     }
     if (sigaction(SIGINT, &sa, NULL) == -1) {
-        std::cerr << Ippl::Comm->rank() << ": failed to set up signal handler for SIGINT ("
+        std::cerr << ippl::Comm->rank() << ": failed to set up signal handler for SIGINT ("
                   << SIGINT << ")" << std::endl;
     }
 }
@@ -356,13 +356,13 @@ public:
             return (nstep % loadbalancefreq_m == 0);
         } else {
             int local = 0;
-            std::vector<int> res(Ippl::Comm->size());
-            double equalPart = (double)totalP / Ippl::Comm->size();
+            std::vector<int> res(ippl::Comm->size());
+            double equalPart = (double)totalP / ippl::Comm->size();
             double dev       = std::abs((double)this->getLocalNum() - equalPart) / totalP;
             if (dev > loadbalancethreshold_m) {
                 local = 1;
             }
-            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, Ippl::getComm());
+            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, ippl::Comm->getCommunicator());
 
             for (unsigned int i = 0; i < res.size(); i++) {
                 if (res[i] == 1) {
@@ -374,15 +374,15 @@ public:
     }
 
     void gatherStatistics(size_type totalP) {
-        std::vector<double> imb(Ippl::Comm->size());
-        double equalPart = (double)totalP / Ippl::Comm->size();
+        std::vector<double> imb(ippl::Comm->size());
+        double equalPart = (double)totalP / ippl::Comm->size();
         double dev       = (std::abs((double)this->getLocalNum() - equalPart) / totalP) * 100.0;
-        MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0, Ippl::getComm());
+        MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0, ippl::Comm->getCommunicator());
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/LoadBalance_";
-            fname << Ippl::Comm->size();
+            fname << ippl::Comm->size();
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
@@ -393,12 +393,12 @@ public:
                 csvout << "time, rank, imbalance percentage" << endl;
             }
 
-            for (int r = 0; r < Ippl::Comm->size(); ++r) {
+            for (int r = 0; r < ippl::Comm->size(); ++r) {
                 csvout << time_m << " " << r << " " << imb[r] << endl;
             }
         }
 
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     void gatherCIC() { gather(this->E, E_m, this->R); }
@@ -417,18 +417,18 @@ public:
         size_type local_particles = this->getLocalNum();
 
         MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
-                   Ippl::getComm());
+                   ippl::Comm->getCommunicator());
 
         double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
         m << "Rel. error in charge conservation = " << rel_error << endl;
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             if (Total_particles != totalP || rel_error > 1e-10) {
                 m << "Time step: " << iteration << endl;
                 m << "Total particles in the sim. " << totalP << " "
                   << "after update: " << Total_particles << endl;
                 m << "Rel. error in charge conservation: " << rel_error << endl;
-                IpplAbort();
+                ippl::Comm->abort();
             }
         }
 
@@ -471,10 +471,10 @@ public:
             CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(solver_m);
             solver.solve();
 
-            if (Ippl::Comm->rank() == 0) {
+            if (ippl::Comm->rank() == 0) {
                 std::stringstream fname;
                 fname << "data/CG_";
-                fname << Ippl::Comm->size();
+                fname << ippl::Comm->size();
                 fname << ".csv";
 
                 Inform log(NULL, fname.str().c_str(), Inform::APPEND);
@@ -488,7 +488,7 @@ public:
                     log << time_m << "," << solver.getResidue() << "," << iterations << endl;
                 }
             }
-            Ippl::Comm->barrier();
+            ippl::Comm->barrier();
         } else if (stype_m == "FFT") {
             if constexpr (Dim == 2 || Dim == 3) {
                 std::get<FFTSolver_t<T, Dim>>(solver_m).solve();
@@ -607,7 +607,7 @@ public:
         kinEnergy *= 0.5;
         double gkinEnergy = 0.0;
 
-        MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
@@ -627,14 +627,14 @@ public:
                 Kokkos::Sum<T>(temp));
             T globaltemp          = 0.0;
             MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
-            MPI_Reduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, 0, Ippl::getComm());
+            MPI_Reduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, 0, ippl::Comm->getCommunicator());
             normE[d] = std::sqrt(globaltemp);
         }
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/ParticleField_";
-            fname << Ippl::Comm->size();
+            fname << ippl::Comm->size();
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
@@ -658,7 +658,7 @@ public:
             csvout << endl;
         }
 
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     void dumpLandau() {
@@ -678,7 +678,7 @@ public:
             },
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
         fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double tempMax = 0.0;
@@ -694,12 +694,12 @@ public:
             },
             Kokkos::Max<double>(tempMax));
         ExAmp = 0.0;
-        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/FieldLandau_";
-            fname << Ippl::Comm->size();
+            fname << ippl::Comm->size();
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
@@ -713,7 +713,7 @@ public:
             csvout << time_m << " " << fieldEnergy << " " << ExAmp << endl;
         }
 
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     void dumpBumponTail() {
@@ -733,7 +733,7 @@ public:
             },
             Kokkos::Sum<double>(temp));
         double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
         fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
 
         double tempMax = 0.0;
@@ -749,12 +749,12 @@ public:
             },
             Kokkos::Max<double>(tempMax));
         EzAmp = 0.0;
-        MPI_Reduce(&tempMax, &EzAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(&tempMax, &EzAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/FieldBumponTail_";
-            fname << Ippl::Comm->size();
+            fname << ippl::Comm->size();
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
@@ -768,7 +768,7 @@ public:
             csvout << time_m << " " << fieldEnergy << " " << EzAmp << endl;
         }
 
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     void dumpParticleData() {
@@ -778,9 +778,9 @@ public:
         Kokkos::deep_copy(P_host, P.getView());
         std::stringstream pname;
         pname << "data/ParticleIC_";
-        pname << Ippl::Comm->rank();
+        pname << ippl::Comm->rank();
         pname << ".csv";
-        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, ippl::Comm->rank());
         pcsvout.precision(10);
         pcsvout.setf(std::ios::scientific, std::ios::floatfield);
         pcsvout << "R_x, R_y, R_z, V_x, V_y, V_z" << endl;
@@ -793,11 +793,11 @@ public:
             }
             pcsvout << endl;
         }
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
     void dumpLocalDomains(const FieldLayout_t<Dim>& fl, const unsigned int step) {
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             const typename FieldLayout_t<Dim>::host_mirror_type domains = fl.getHostLocalDomains();
             std::ofstream myfile;
             myfile.open("data/domains" + std::to_string(step) + ".txt");
@@ -809,7 +809,7 @@ public:
             }
             myfile.close();
         }
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
 private:
