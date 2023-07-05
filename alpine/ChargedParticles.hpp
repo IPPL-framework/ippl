@@ -682,7 +682,10 @@ public:
         Kokkos::deep_copy(mirror, E_m.getView());
     }
 
-    void dumpLandau(VField_t<T, Dim>::HostMirror& Eview) {
+    void dumpLandau() { dumpLandau(E_m.getView()); }
+
+    template <typename View>
+    void dumpLandau(const View& Eview) {
         const int nghostE = E_m.getNghost();
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
