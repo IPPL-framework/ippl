@@ -50,9 +50,10 @@ int main(int argc, char* argv[]) {
         ippl::e_dim_tag configSpaceDecomp[Dim] = {ippl::PARALLEL, ippl::PARALLEL, ippl::PARALLEL};
 
         const double L = BOXL * 0.5;
-        const VectorD_t configSpaceLowerBound({-L, -L, -L});
-        const VectorD_t configSpaceUpperBound({L, L, L});
-        const VectorD_t configSpaceOrigin({-L, -L, -L});
+        const VectorD_t domainCenter(0.0);
+        const VectorD_t configSpaceLowerBound(-L);
+        const VectorD_t configSpaceUpperBound(L);
+        const VectorD_t configSpaceOrigin(-L);
         VectorD_t hr({BOXL / NR, BOXL / NR, BOXL / NR});  // spacing
         VectorD<size_t> nr({NR, NR, NR});
 
@@ -110,7 +111,7 @@ int main(int argc, char* argv[]) {
         // Initialize Cold Sphere (positions only)
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * rank));
         Kokkos::parallel_for(nloc, GenerateBoxMuller<VectorD_t, Kokkos::Random_XorShift64_Pool<>>(
-                                       P->R.getView(), BEAM_RADIUS, 0.0, rand_pool64));
+                                       P->R.getView(), BEAM_RADIUS, domainCenter, rand_pool64));
 
         // Initialize constant particle attributes
         P->q = PARTICLE_CHARGE;
