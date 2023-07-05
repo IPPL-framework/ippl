@@ -61,7 +61,7 @@ void pack(const ippl::NDIndex<3> intersect, Kokkos::View<Tf***>& view,
     Kokkos::fence();
 }
 
-template <bool isVec, bool isMat, typename Tb, typename Tf>
+template <int tensorRank, typename Tb, typename Tf>
 void unpack_impl(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
                  ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
                  size_t dim1 = 0, size_t dim2 = 0, bool x = false, bool y = false, bool z = false) {
@@ -90,7 +90,7 @@ void unpack_impl(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& vi
             int l = ig + jg * intersect[0].length()
                     + kg * intersect[1].length() * intersect[0].length();
 
-            ippl::detail::ViewAccess<isVec, isMat, decltype(view)>::get(view, dim1, dim2, i, j, k) =
+            ippl::detail::ViewAccess<tensorRank, decltype(view)>::get(view, dim1, dim2, i, j, k) =
                 buffer(l);
         });
     Kokkos::fence();
@@ -100,21 +100,21 @@ template <typename Tb, typename Tf>
 void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
             ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
             bool x = false, bool y = false, bool z = false) {
-    unpack_impl<false, false, Tb, Tf>(intersect, view, fd, nghost, ldom, 0, 0, x, y, z);
+    unpack_impl<0, Tb, Tf>(intersect, view, fd, nghost, ldom, 0, 0, x, y, z);
 }
 
 template <typename Tb, typename Tf>
 void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<ippl::Vector<Tf, 3>***>& view,
             size_t dim1, ippl::detail::FieldBufferData<Tb>& fd, int nghost,
             const ippl::NDIndex<3> ldom) {
-    unpack_impl<true, false, Tb, ippl::Vector<Tf, 3>>(intersect, view, fd, nghost, ldom, dim1);
+    unpack_impl<1, Tb, ippl::Vector<Tf, 3>>(intersect, view, fd, nghost, ldom, dim1);
 }
 
 template <typename Tb, typename Tf>
 void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
             ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
             size_t dim1, size_t dim2) {
-    unpack_impl<true, true, Tb, Tf>(intersect, view, fd, nghost, ldom, dim1, dim2);
+    unpack_impl<2, Tb, Tf>(intersect, view, fd, nghost, ldom, dim1, dim2);
 }
 
 namespace ippl {
