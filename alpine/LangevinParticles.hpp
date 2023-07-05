@@ -69,7 +69,7 @@ public:
                       double pMass, double epsInv, double Q, size_type globalNumParticles,
                       double dt, size_type nv, double vmax)
         : ChargedParticles<PLayout, T, Dim>(pl, hr, rmin, rmax, configSpaceDecomp, Q, solver)
-        , rank_m(Ippl::Comm->rank())
+        , rank_m(ippl::Comm->rank())
         , pCharge_m(pCharge)
         , pMass_m(pMass)
         , epsInv_m(epsInv)
@@ -229,9 +229,9 @@ public:
             Kokkos::Sum<double>(locCheck));
 
         Kokkos::fence();
-        MPI_Allreduce(locEFsum, globEFsum, Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-        MPI_Allreduce(&locQ, &globQ, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-        MPI_Allreduce(&locCheck, &globCheck, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(locEFsum, globEFsum, Dim, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+        MPI_Allreduce(&locQ, &globQ, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+        MPI_Allreduce(&locCheck, &globCheck, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
 
         for (unsigned d = 0; d < Dim; ++d) {
             avgEF[d] = globEFsum[d] / this->getGlobParticleNum();
@@ -298,15 +298,15 @@ public:
             Kokkos::Max<double>(maxVel));
 
         MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &avgVel, &avgVel, 1, MPI_DOUBLE, MPI_SUM, 0,
-                   Ippl::getComm());
+                   ippl::Comm->getCommunicator());
         MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &minVelComponent, &minVelComponent, 1, MPI_DOUBLE,
-                   MPI_MIN, 0, Ippl::getComm());
+                   MPI_MIN, 0, ippl::Comm->getCommunicator());
         MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &maxVelComponent, &maxVelComponent, 1, MPI_DOUBLE,
-                   MPI_MAX, 0, Ippl::getComm());
+                   MPI_MAX, 0, ippl::Comm->getCommunicator());
         MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &minVel, &minVel, 1, MPI_DOUBLE, MPI_MIN, 0,
-                   Ippl::getComm());
+                   ippl::Comm->getCommunicator());
         MPI_Reduce(rank_m == 0 ? MPI_IN_PLACE : &maxVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, 0,
-                   Ippl::getComm());
+                   ippl::Comm->getCommunicator());
 
         avgVel /= this->getGlobParticleNum();
         msg << "avgVelNorm = " << avgVel << endl;
@@ -355,7 +355,8 @@ public:
                     vVec = {double(x), double(y), double(z)};
                     // Construct velocity vector at this cell
                     for (unsigned d = 0; d < Dim; d++) {
-                        vVec[d] = (vVec[d] + lDom[d].first() - nghost + 0.5) * hvInit_m[d] + vminInit_m[d];
+                        vVec[d] = (vVec[d] + lDom[d].first() - nghost + 0.5) * hvInit_m[d]
+                                  + vminInit_m[d];
                     }
                     L2vec = L2Norm(vVec);
                     L2Fd  = L2Norm(hostView(x, y, z));
@@ -405,8 +406,8 @@ public:
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
     }
 
-    void scatterQ(VField_t<T, Dim>& V0, VField_t<T, Dim>& V1,
-                     VField_t<T, Dim>& V2, bool returnScaledVelSpace) {
+    void scatterQ(VField_t<T, Dim>& V0, VField_t<T, Dim>& V1, VField_t<T, Dim>& V2,
+                  bool returnScaledVelSpace) {
         // Scatter computed Q's to the V-field (hacky but saves a lot of memory)
         // Renormalize mesh to original domain [-vmax, vmax]^3
         velocitySpaceMesh_m.setMeshSpacing(hvInit_m);
@@ -417,17 +418,18 @@ public:
         // Normalize mesh to [-1,1]^3
         velocitySpaceMesh_m.setOrigin(vmin_m);
         velocitySpaceMesh_m.setMeshSpacing(hv_m);
-        
+
         // Normalize with dV
         double cellVolume = 0.0;
         if (returnScaledVelSpace) {
             cellVolume = std::reduce(hv_m.begin(), hv_m.end(), 1., std::multiplies<double>());
         } else {
-            cellVolume = std::reduce(hvInit_m.begin(), hvInit_m.end(), 1., std::multiplies<double>());
+            cellVolume =
+                std::reduce(hvInit_m.begin(), hvInit_m.end(), 1., std::multiplies<double>());
         }
-        V0                = V0 / cellVolume;
-        V1                = V1 / cellVolume;
-        V2                = V2 / cellVolume;
+        V0 = V0 / cellVolume;
+        V1 = V1 / cellVolume;
+        V2 = V2 / cellVolume;
     }
 
     void extractRows(MField_t<Dim>& M, VField_t<T, Dim>& V0, VField_t<T, Dim>& V1,
@@ -674,10 +676,10 @@ public:
         Q2Avg  = Q2Avg / globParticleNum_m;
         QdWAvg = QdWAvg / globParticleNum_m;
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "/collision_statistics_";
-            fname << Ippl::Comm->rank();
+            fname << ippl::Comm->rank();
             fname << ".csv";
             Inform csvout(NULL, (folder + fname.str()).c_str(), Inform::APPEND);
             csvout.precision(10);
@@ -750,7 +752,7 @@ public:
         }
 
         Kokkos::fence();
-        MPI_Allreduce(locEFsum, globEFsum, Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(locEFsum, globEFsum, Dim, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
 
         for (unsigned d = 0; d < Dim; ++d)
             avgEF_particle[d] = globEFsum[d] / pN_glob;
@@ -776,7 +778,7 @@ public:
             Kokkos::Sum<double>(temp));
         Kokkos::fence();
         double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
+        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
         double fieldEnergy = globaltemp * this->hr_m[0] * this->hr_m[1] * this->hr_m[2];
 
         /////////////////////////////////////////////
@@ -797,7 +799,7 @@ public:
             Kokkos::Max<double>(tempMax));
         Kokkos::fence();
         ExAmp = 0.0;
-        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, Ippl::getComm());
+        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
 
         //////////////////////////////////
         // Calculate Global Temperature //
@@ -822,7 +824,7 @@ public:
                 Kokkos::Sum<double>(locVELsum[d]));
             Kokkos::fence();
         }
-        MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(locVELsum, globVELsum, 3, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
         for (unsigned d = 0; d < Dim; ++d)
             avgVEL[d] = globVELsum[d] / pN_glob;
 
@@ -837,8 +839,8 @@ public:
             Kokkos::fence();
         }
 
-        MPI_Reduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM, 0, Ippl::getComm());
-        if (Ippl::Comm->rank() == 0)
+        MPI_Reduce(locT, globT, 3, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        if (ippl::Comm->rank() == 0)
             for (unsigned d = 0; d < Dim; ++d)
                 temperature[d] = globT[d] / pN_glob;
 
@@ -865,8 +867,10 @@ public:
             },
             Kokkos::Sum<double>(loc_lorentzAvg), Kokkos::Max<double>(loc_lorentzMax));
 
-        MPI_Allreduce(&loc_lorentzAvg, &lorentzAvg, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-        MPI_Allreduce(&loc_lorentzMax, &lorentzMax, 1, MPI_DOUBLE, MPI_MAX, Ippl::getComm());
+        MPI_Allreduce(&loc_lorentzAvg, &lorentzAvg, 1, MPI_DOUBLE, MPI_SUM,
+                      ippl::Comm->getCommunicator());
+        MPI_Allreduce(&loc_lorentzMax, &lorentzMax, 1, MPI_DOUBLE, MPI_MAX,
+                      ippl::Comm->getCommunicator());
 
         ////////////////////////////////////
         //// Calculate Moments of R and V //
@@ -917,9 +921,11 @@ public:
                 Kokkos::Sum<double>(loc_moment[i][5]));
             Kokkos::fence();
         }
-        Ippl::Comm->barrier();
-        MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-        MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        ippl::Comm->barrier();
+        MPI_Allreduce(loc_moment, moment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM,
+                      ippl::Comm->getCommunicator());
+        MPI_Allreduce(loc_centroid, centroid, 2 * Dim, MPI_DOUBLE, MPI_SUM,
+                      ippl::Comm->getCommunicator());
 
         //////////////////////////////////////
         //// Calculate Normalized Emittance //
@@ -965,8 +971,10 @@ public:
             Kokkos::fence();
         }
 
-        MPI_Allreduce(loc_moment, Nmoment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-        MPI_Allreduce(loc_centroid, Ncentroid, 2 * Dim, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+        MPI_Allreduce(loc_moment, Nmoment, 2 * Dim * 2 * Dim, MPI_DOUBLE, MPI_SUM,
+                      ippl::Comm->getCommunicator());
+        MPI_Allreduce(loc_centroid, Ncentroid, 2 * Dim, MPI_DOUBLE, MPI_SUM,
+                      ippl::Comm->getCommunicator());
 
         VectorD_t eps2, fac;
         VectorD_t rsqsum, vsqsum, rvsum;
@@ -978,7 +986,7 @@ public:
         VectorD_t Nrmean, Nvmean, Nrrms, Nvrms, Neps, Nrvrms;
         VectorD_t Nnorm;
 
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             for (unsigned int i = 0; i < Dim; i++) {
                 rmean(i)  = centroid[2 * i] / pN_glob;
                 vmean(i)  = centroid[(2 * i) + 1] / pN_glob;
@@ -1050,8 +1058,8 @@ public:
                 Kokkos::Min<double>(vmin_loc[d]));
         }
         Kokkos::fence();
-        MPI_Allreduce(vmax_loc, vmax, Dim, MPI_DOUBLE, MPI_MAX, Ippl::getComm());
-        MPI_Allreduce(vmin_loc, vmin, Dim, MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+        MPI_Allreduce(vmax_loc, vmax, Dim, MPI_DOUBLE, MPI_MAX, ippl::Comm->getCommunicator());
+        MPI_Allreduce(vmin_loc, vmin, Dim, MPI_DOUBLE, MPI_MIN, ippl::Comm->getCommunicator());
 
         /////////////////////////////////
         //// Calculate Position Bounds //
@@ -1080,16 +1088,16 @@ public:
                 Kokkos::Min<double>(rmin_loc[d]));
         }
         Kokkos::fence();
-        MPI_Allreduce(rmax_loc, rmax, Dim, MPI_DOUBLE, MPI_MAX, Ippl::getComm());
-        MPI_Allreduce(rmin_loc, rmin, Dim, MPI_DOUBLE, MPI_MIN, Ippl::getComm());
+        MPI_Allreduce(rmax_loc, rmax, Dim, MPI_DOUBLE, MPI_MAX, ippl::Comm->getCommunicator());
+        MPI_Allreduce(rmin_loc, rmin, Dim, MPI_DOUBLE, MPI_MIN, ippl::Comm->getCommunicator());
 
         ////////////////////////////
         //// Write to output file //
         ////////////////////////////
-        if (Ippl::Comm->rank() == 0) {
+        if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "/All_FieldLangevin_";
-            fname << Ippl::Comm->rank();
+            fname << ippl::Comm->rank();
             fname << ".csv";
             Inform csvout(NULL, (folder + fname.str()).c_str(), Inform::APPEND);
             csvout.precision(10);
@@ -1150,7 +1158,7 @@ public:
             // clang-format on
         }
 
-        Ippl::Comm->barrier();
+        ippl::Comm->barrier();
     }
 
 public:

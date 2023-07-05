@@ -473,7 +473,7 @@ double L2VectorNorm(const VField_t<T, Dim>& vectorField, const int shift) {
         Kokkos::Sum<double>(sum));
     double globalSum  = 0;
     MPI_Datatype type = get_mpi_datatype<double>(sum);
-    MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, ippl::Comm->getCommunicator());
     return Kokkos::sqrt(globalSum);
 }
 
@@ -525,7 +525,7 @@ T subfieldNorm(const Field<T, Dim>& f, const int shift, const int p = 2) {
         Kokkos::Sum<T>(sum));
     T globalSum       = 0;
     MPI_Datatype type = get_mpi_datatype<T>(sum);
-    MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, ippl::Comm->getCommunicator());
     return std::pow(globalSum, 1.0 / p);
 }
 
