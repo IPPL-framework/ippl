@@ -362,7 +362,8 @@ public:
             if (dev > loadbalancethreshold_m) {
                 local = 1;
             }
-            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, ippl::Comm->getCommunicator());
+            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT,
+                          ippl::Comm->getCommunicator());
 
             for (unsigned int i = 0; i < res.size(); i++) {
                 if (res[i] == 1) {
@@ -377,7 +378,8 @@ public:
         std::vector<double> imb(ippl::Comm->size());
         double equalPart = (double)totalP / ippl::Comm->size();
         double dev       = (std::abs((double)this->getLocalNum() - equalPart) / totalP) * 100.0;
-        MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0, ippl::Comm->getCommunicator());
+        MPI_Gather(&dev, 1, MPI_DOUBLE, imb.data(), 1, MPI_DOUBLE, 0,
+                   ippl::Comm->getCommunicator());
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
@@ -607,7 +609,8 @@ public:
         kinEnergy *= 0.5;
         double gkinEnergy = 0.0;
 
-        MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
 
         const int nghostE = E_m.getNghost();
         auto Eview        = E_m.getView();
