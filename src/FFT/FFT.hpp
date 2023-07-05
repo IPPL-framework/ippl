@@ -110,12 +110,12 @@ namespace ippl {
             }
         }
 
-        heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
+        this->heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
             inbox, outbox, Comm->getCommunicator(), heffteOptions);
 
         // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
-        if (workspace_m.size() < heffte_m->size_workspace()) {
-            workspace_m = workspace_t(heffte_m->size_workspace());
+        if (this->workspace_m.size() < this->heffte_m->size_workspace()) {
+            this->workspace_m = workspace_t(this->heffte_m->size_workspace());
         }
     }
 
@@ -144,11 +144,11 @@ namespace ippl {
             });
 
         if (direction == 1) {
-            heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
-                              heffte::scale::full);
+            this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                    heffte::scale::full);
         } else if (direction == -1) {
-            heffte_m->backward(tempField.data(), tempField.data(), workspace_m.data(),
-                               heffte::scale::none);
+            this->heffte_m->backward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                     heffte::scale::none);
         } else {
             throw std::logic_error("Only 1:forward and -1:backward are allowed as directions");
         }
@@ -246,13 +246,13 @@ namespace ippl {
             }
         }
 
-        heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>(
+        this->heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>(
             inbox, outbox, params.get<int>("r2c_direction"), Comm->getCommunicator(),
             heffteOptions);
 
         // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
-        if (workspace_m.size() < heffte_m->size_workspace()) {
-            workspace_m = workspace_t(heffte_m->size_workspace());
+        if (this->workspace_m.size() < this->heffte_m->size_workspace()) {
+            this->workspace_m = workspace_t(this->heffte_m->size_workspace());
         }
     }
 
@@ -289,11 +289,11 @@ namespace ippl {
             });
 
         if (direction == 1) {
-            heffte_m->forward(tempFieldf.data(), tempFieldg.data(), workspace_m.data(),
-                              heffte::scale::full);
+            this->heffte_m->forward(tempFieldf.data(), tempFieldg.data(), this->workspace_m.data(),
+                                    heffte::scale::full);
         } else if (direction == -1) {
-            heffte_m->backward(tempFieldg.data(), tempFieldf.data(), workspace_m.data(),
-                               heffte::scale::none);
+            this->heffte_m->backward(tempFieldg.data(), tempFieldf.data(), this->workspace_m.data(),
+                                     heffte::scale::none);
         } else {
             throw std::logic_error("Only 1:forward and -1:backward are allowed as directions");
         }
@@ -384,12 +384,12 @@ namespace ippl {
             }
         }
 
-        heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
+        this->heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
             inbox, outbox, Comm->getCommunicator(), heffteOptions);
 
         // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
-        if (workspace_m.size() < heffte_m->size_workspace()) {
-            workspace_m = workspace_t(heffte_m->size_workspace());
+        if (this->workspace_m.size() < this->heffte_m->size_workspace()) {
+            this->workspace_m = workspace_t(this->heffte_m->size_workspace());
         }
     }
 
@@ -417,11 +417,11 @@ namespace ippl {
             });
 
         if (direction == 1) {
-            heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
-                              heffte::scale::full);
+            this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                    heffte::scale::full);
         } else if (direction == -1) {
-            heffte_m->backward(tempField.data(), tempField.data(), workspace_m.data(),
-                               heffte::scale::none);
+            this->heffte_m->backward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                     heffte::scale::none);
         } else {
             throw std::logic_error("Only 1:forward and -1:backward are allowed as directions");
         }
@@ -505,12 +505,12 @@ namespace ippl {
             }
         }
 
-        heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
+        this->heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
             inbox, outbox, Comm->getCommunicator(), heffteOptions);
 
         // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
-        if (workspace_m.size() < heffte_m->size_workspace())
-            workspace_m = workspace_t(heffte_m->size_workspace());
+        if (this->workspace_m.size() < this->heffte_m->size_workspace())
+            this->workspace_m = workspace_t(this->heffte_m->size_workspace());
     }
 
     template <typename Field>
@@ -537,11 +537,11 @@ namespace ippl {
             });
 
         if (direction == 1) {
-            heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
-                              heffte::scale::full);
+            this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                    heffte::scale::full);
         } else if (direction == -1) {
-            heffte_m->backward(tempField.data(), tempField.data(), workspace_m.data(),
-                               heffte::scale::none);
+            this->heffte_m->backward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                     heffte::scale::none);
         } else {
             throw std::logic_error("Only 1:forward and -1:backward are allowed as directions");
         }
