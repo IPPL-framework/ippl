@@ -76,25 +76,6 @@
 
 namespace ippl {
 
-    // A flag struct for indicating that a particle bunch
-    // does not need to track particle IDs
-    struct DisableParticleIDs {};
-
-    namespace detail {
-        template <bool, typename...>
-        struct ParticleIDType;
-
-        template <typename IndexType, typename... Properties>
-        struct ParticleIDType<true, IndexType, Properties...> {
-            using type = ParticleAttrib<IndexType, Properties...>;
-        };
-
-        template <typename... Ts>
-        struct ParticleIDType<false, Ts...> {
-            using type = void*;
-        };
-    }  // namespace detail
-
     /*!
      * @class ParticleBase
      * @tparam PLayout the particle layout implementing an algorithm to
@@ -105,14 +86,13 @@ namespace ippl {
      */
     template <class PLayout, typename... IDProperties>
     class ParticleBase {
-        constexpr static bool EnableIDs =
-            !std::disjunction_v<std::is_same<IDProperties, DisableParticleIDs>...>;
+        constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
 
     public:
         using vector_type            = typename PLayout::vector_type;
         using index_type             = typename PLayout::index_type;
         using particle_position_type = typename PLayout::particle_position_type;
-        using particle_index_type    = typename detail::ParticleIDType<EnableIDs, index_type>::type;
+        using particle_index_type    = ParticleAttrib<index_type, IDProperties...>;
 
         using Layout_t = PLayout;
 

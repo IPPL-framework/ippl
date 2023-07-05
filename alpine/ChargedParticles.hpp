@@ -203,8 +203,8 @@ void dumpVTK(Field_t<3>& rho, int nx, int ny, int nz, int iteration, double dx, 
 }
 
 template <class PLayout, typename T, unsigned Dim = 3>
-class ChargedParticles : public ippl::ParticleBase<PLayout, ippl::DisableParticleIDs> {
-    using Base = ippl::ParticleBase<PLayout, ippl::DisableParticleIDs>;
+class ChargedParticles : public ippl::ParticleBase<PLayout> {
+    using Base = ippl::ParticleBase<PLayout>;
 
 public:
     VField_t<T, Dim> E_m;
