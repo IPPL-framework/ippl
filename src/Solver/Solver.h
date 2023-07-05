@@ -31,6 +31,12 @@ namespace ippl {
         using lhs_type = FieldLHS;
         using rhs_type = FieldRHS;
 
+        constexpr static unsigned Dim = FieldLHS::dim;
+        typedef typename FieldLHS::Mesh_t Mesh;
+        typedef typename FieldLHS::Centering_t Centering;
+        typedef typename Mesh::matrix_type Matrix_t;
+        typedef Field<Matrix_t, Dim, Mesh, Centering> MField_t;
+
         /*!
          * Default constructor
          */
@@ -83,6 +89,8 @@ namespace ippl {
          * @param rhs Reference to problem RHS field
          */
         virtual void setRhs(rhs_type& rhs) { rhs_mp = &rhs; }
+
+        virtual MField_t* getHessian() { return nullptr; }
 
     protected:
         ParameterList params_m;
