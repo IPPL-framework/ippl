@@ -307,11 +307,6 @@ void compute_convergence(std::string algorithm, int pt) {
             T y = (jg + 0.5) * hx[1] + origin[1];
             T z = (kg + 0.5) * hx[2] + origin[2];
 
-            /*for (size_t m = 0; m < 3; m++) {
-                for (size_t n = 0; n < 3; n++) {
-                    view_exactH(i, j, k)[m][n] = exact_H(x, y, z)[m][n];
-                }
-            }*/
             view_exactH(i, j, k) = exact_H(x, y, z);
         });
 
