@@ -870,9 +870,8 @@ namespace ippl {
                             for (size_t d = 0; d < Dim; ++d) {
                                 const scalar_type Len = N[d] * hsize[d];
                                 const bool shift      = (iVec[d] > N[d]);
-                                const bool notMid     = (iVec[d] != N[d]);
 
-                                kVec[d] = notMid * (pi / Len) * (iVec[d] - shift * 2 * N[d]);
+                                kVec[d] = (pi / Len) * (iVec[d] - shift * 2 * N[d]);
                             }
 
                             const scalar_type Dr =
