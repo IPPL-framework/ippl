@@ -183,7 +183,19 @@ int main(int argc, char* argv[]) {
             std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
         }
     }
+    // Initialize `fv_m`
+    // Scattered quantity should be a density ($\sum_i fv_i = 1$)
+    P->p_fv_m = 1.0 / P->globParticleNum_m;
+    P->scatterVelSpace();
     P->dumpFdField(NT - 1, OUT_DIR);
+    dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, NT - 1, 1.0, OUT_DIR, "fv");
+    dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", NT - 1, OUT_DIR);
+    
+    // Scatter computed Q's to the D-field (hacky but saves a lot of memory)
+    bool returnScaledVelSpace = false;
+    P->scatterQ(P->D0_m, P->D1_m, P->D2_m, returnScaledVelSpace);
+
+    dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "Q", NT - 1, OUT_DIR);
 
     msg << "LangevinDIH: End." << endl;
     IpplTimings::stopTimer(mainTimer);
