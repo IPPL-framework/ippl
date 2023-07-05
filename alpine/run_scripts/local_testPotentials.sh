@@ -19,6 +19,7 @@ EPS_INV=3.182609e9      # [\frac{cm^3 m_e}{s^2 q_e^2}] Inverse Vacuum Permittivi
 # Collisional Parameters
 NV_MAX=64               # Number of gridpoints on the velocity grid (along each dim.)
 FRICTION_SOLVER=HOCKNEY    # Solver for first Rosenbluth Potential (Options: [HOCKNEY, VICO])
+HESSIAN_OPERATOR=FD   # How to compute the hessian [SPECTRAL, FD]
 
 # Frequency of computing statistics
 DUMP_INTERVAL=1         # How often to dump beamstatistics to ${OUT_DIR}
@@ -41,5 +42,5 @@ cp ${THIS_FILE} ${OUT_DIR}/jobscript.sh
 ./TestLangevinPotentials \
     ${MPI_OVERALLOC} ${SOLVER_T} ${LB_THRESHOLD} ${NR} \
     ${BOXL} ${NP} ${DT} ${PARTICLE_CHARGE} ${PARTICLE_MASS} \
-    ${EPS_INV} ${NV_MAX} ${FRICTION_SOLVER} ${OUT_DIR} \
+    ${EPS_INV} ${NV_MAX} ${FRICTION_SOLVER} ${HESSIAN_OPERATOR} ${OUT_DIR} \
     --info 5 1>&1 | tee ${OUT_DIR}/testPotentials.out 2>${OUT_DIR}/testPotentials.err 

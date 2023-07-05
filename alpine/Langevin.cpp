@@ -22,23 +22,24 @@ int main(int argc, char* argv[]) {
 
         ippl::Comm->setDefaultOverallocation(std::atof(argv[1]));
 
-        const std::string SOLVER_T        = argv[2];
-        const double LB_THRESHOLD         = std::atof(argv[3]);
-        const size_type NR                = std::atoll(argv[4]);
-        const double BEAM_RADIUS          = std::atof(argv[5]);
-        const double BOXL                 = std::atof(argv[6]);
-        const size_type NP                = std::atoll(argv[7]);
-        const double DT                   = std::atof(argv[8]);
-        const size_type NT                = std::atoll(argv[9]);
-        const double PARTICLE_CHARGE      = std::atof(argv[10]);
-        const double PARTICLE_MASS        = std::atof(argv[11]);
-        const double FOCUS_FORCE          = std::atof(argv[12]);
-        const double EPS_INV              = std::atof(argv[13]);
-        const size_t NV                   = std::atoi(argv[14]);
-        const double VMAX                 = std::atof(argv[15]);
-        const std::string FRICTION_SOLVER = argv[16];
-        const int DUMP_INTERVAL           = std::atoi(argv[17]);
-        const std::string OUT_DIR         = argv[18];
+        const std::string SOLVER_T         = argv[2];
+        const double LB_THRESHOLD          = std::atof(argv[3]);
+        const size_type NR                 = std::atoll(argv[4]);
+        const double BEAM_RADIUS           = std::atof(argv[5]);
+        const double BOXL                  = std::atof(argv[6]);
+        const size_type NP                 = std::atoll(argv[7]);
+        const double DT                    = std::atof(argv[8]);
+        const size_type NT                 = std::atoll(argv[9]);
+        const double PARTICLE_CHARGE       = std::atof(argv[10]);
+        const double PARTICLE_MASS         = std::atof(argv[11]);
+        const double FOCUS_FORCE           = std::atof(argv[12]);
+        const double EPS_INV               = std::atof(argv[13]);
+        const size_t NV                    = std::atoi(argv[14]);
+        const double VMAX                  = std::atof(argv[15]);
+        const std::string FRICTION_SOLVER  = argv[16];
+        const std::string HESSIAN_OPERATOR = argv[17];
+        const int DUMP_INTERVAL            = std::atoi(argv[18]);
+        const std::string OUT_DIR          = argv[19];
 
         using bunch_type = LangevinParticles<PLayout_t<double, Dim>, double, Dim>;
 
@@ -89,7 +90,7 @@ int main(int argc, char* argv[]) {
         P->rho_m.setFieldBC(bcField);
 
         bunch_type bunchBuffer(PL);
-        P->initAllSolvers(FRICTION_SOLVER);
+        P->initAllSolvers(FRICTION_SOLVER, HESSIAN_OPERATOR);
 
         P->loadbalancethreshold_m = LB_THRESHOLD;
 

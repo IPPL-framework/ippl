@@ -23,6 +23,7 @@ EPS_INV=3.182609e9      # [\frac{cm^3 m_e}{s^2 q_e^2}] Inverse Vacuum Permittivi
 NV=32                   # Number of gridpoints on the velocity grid (along each dim.)
 VMAX=5e7                # [cm / s] Extent of velocity grid ([-VMAX, VMAX] in each dim.); $VMAX = 5\sigma_v$ of Boltzmann distribution
 FRICTION_SOLVER=HOCKNEY # Solver for first Rosenbluth Potential (Options: [HOCKNEY, VICO])
+HESSIAN_OPERATOR=SPECTRAL   # How to compute the hessian [SPECTRAL, FD]
 
 # Frequency of computing statistics
 DUMP_INTERVAL=1         # How often to dump beamstatistics to ${OUT_DIR}
@@ -44,5 +45,6 @@ cp ${THIS_FILE} ${OUT_DIR}/jobscript.sh
     ${MPI_OVERALLOC} ${SOLVER_T} ${LB_THRESHOLD} ${NR} \
     ${BEAM_RADIUS} ${BOXL} ${NP} ${DT} \
     ${NT} ${PARTICLE_CHARGE} ${PARTICLE_MASS} ${FOCUS_FORCE} \
-    ${EPS_INV} ${NV} ${VMAX} ${FRICTION_SOLVER} ${DUMP_INTERVAL} ${OUT_DIR} \
+    ${EPS_INV} ${NV} ${VMAX} ${FRICTION_SOLVER} ${HESSIAN_OPERATOR} \
+    ${DUMP_INTERVAL} ${OUT_DIR} \
     --info 5 1>&1 | tee ${OUT_DIR}/langevin.out 2>${OUT_DIR}/langevin.err 

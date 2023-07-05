@@ -200,18 +200,19 @@ int main(int argc, char* argv[]) {
 
         ippl::Comm->setDefaultOverallocation(std::atof(argv[1]));
 
-        const std::string SOLVER_T        = argv[2];
-        const double LB_THRESHOLD         = std::atof(argv[3]);
-        const size_type NR                = std::atoll(argv[4]);
-        const double BOXL                 = std::atof(argv[5]);
-        const size_type NP                = std::atoll(argv[6]);
-        const double DT                   = std::atof(argv[7]);
-        const double PARTICLE_CHARGE      = std::atof(argv[8]);
-        const double PARTICLE_MASS        = std::atof(argv[9]);
-        const double EPS_INV              = std::atof(argv[10]);
-        const size_t NV_MAX               = std::atoi(argv[11]);
-        const std::string FRICTION_SOLVER = argv[12];
-        const std::string OUT_DIR         = argv[13];
+        const std::string SOLVER_T         = argv[2];
+        const double LB_THRESHOLD          = std::atof(argv[3]);
+        const size_type NR                 = std::atoll(argv[4]);
+        const double BOXL                  = std::atof(argv[5]);
+        const size_type NP                 = std::atoll(argv[6]);
+        const double DT                    = std::atof(argv[7]);
+        const double PARTICLE_CHARGE       = std::atof(argv[8]);
+        const double PARTICLE_MASS         = std::atof(argv[9]);
+        const double EPS_INV               = std::atof(argv[10]);
+        const size_t NV_MAX                = std::atoi(argv[11]);
+        const std::string FRICTION_SOLVER  = argv[12];
+        const std::string HESSIAN_OPERATOR = argv[13];
+        const std::string OUT_DIR          = argv[14];
 
         using bunch_type = LangevinParticles<PLayout_t<double, Dim>, double, Dim>;
 
@@ -296,7 +297,7 @@ int main(int argc, char* argv[]) {
             P->rho_m.setFieldBC(bcField);
 
             bunch_type bunchBuffer(PL);
-            P->initAllSolvers(FRICTION_SOLVER);
+            P->initAllSolvers(FRICTION_SOLVER, HESSIAN_OPERATOR);
 
             P->loadbalancethreshold_m = LB_THRESHOLD;
 
@@ -505,7 +506,15 @@ int main(int argc, char* argv[]) {
 
             // P->velocitySpaceMesh_m.setMeshSpacing(P->hvInit_m);
             // P->velocitySpaceMesh_m.setOrigin(P->vminInit_m);
-            P->D_m = P->gamma_m * hess(P->fv_m);
+
+            if (P->paramHessian_m == true) {  // Use spectral Hessian
+                P->D_mp = P->diffusionSolver_mp->getHessian();
+                P->assignMatPtrToMat(P->D_m, P->D_mp);
+                P->D_m = P->gamma_m * P->D_m;
+            } else {  // Use Finite Difference Hessian
+                P->D_m = P->gamma_m * hess(P->fv_m);
+            }
+
             // P->velocitySpaceMesh_m.setOrigin(P->vmin_m);
             // P->velocitySpaceMesh_m.setMeshSpacing(P->hv_m);
 

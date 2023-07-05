@@ -138,11 +138,11 @@ public:
         msg << "Finished velocity space setup." << endl;
     }
 
-    void initAllSolvers(std::string frictionSolverName) {
+    void initAllSolvers(std::string frictionSolverName, std::string hessianOperatorName) {
         Inform msg("initAllSolvers");
         initSpaceChargeSolver();
         initFrictionSolver(frictionSolverName);
-        initDiffusionSolver();
+        initDiffusionSolver(hessianOperatorName);
         msg << "Finished solver setup." << endl;
     }
 
@@ -180,7 +180,7 @@ public:
     }
 
     // Setup Diffusion Solver ["BIHARMONIC"]
-    void initDiffusionSolver() {
+    void initDiffusionSolver(std::string operatorName) {
         // Initializing the open-boundary solver for the G potential used
         // to compute the diffusion coefficient $D$
 
@@ -192,6 +192,18 @@ public:
         sp.add("comm", ippl::p2p_pl);
         sp.add("r2c_direction", 0);
         sp.add("algorithm", DiffusionSolver_t::Algorithm::BIHARMONIC);
+
+        // Compute spectral Hessian
+        if (operatorName == "SPECTRAL") {
+            sp.add("hessian", true);
+            paramHessian_m = true;
+        } else if (operatorName == "FD") {
+            sp.add("hessian", false);
+            paramHessian_m = false;
+        } else {
+            throw IpplException("LangevinParticles::initDiffusionSolver()",
+                                "Supported Hessian operators : ['SPECTRAL', 'FD']");
+        }
 
         // Saves the potential $g(\vec v)$ in `fv_m`
         diffusionSolver_mp = std::make_shared<DiffusionSolver_t>(fv_m, sp);
@@ -433,6 +445,19 @@ public:
         V2 = V2 / cellVolume;
     }
 
+    void assignMatPtrToMat(MField_t<Dim>& M, MField_t<Dim>* Mptr) {
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        const int nghost       = Mptr->getNghost();
+        MField_view_t MptrView = Mptr->getView();
+        MField_view_t Mview    = M.getView();
+        ippl::parallel_for(
+            "assignMatPtrToMat", ippl::getRangePolicy(Mview, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                ippl::apply(Mview, args) = ippl::apply(MptrView, args);
+            });
+        Kokkos::fence();
+    }
+
     void extractRows(MField_t<Dim>& M, VField_t<T, Dim>& V0, VField_t<T, Dim>& V1,
                      VField_t<T, Dim>& V2) {
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
@@ -585,7 +610,13 @@ public:
         velocitySpaceMesh_m.setOrigin(vmin_m);
 
         // Compute Hessian of $g(\vec v)$
-        D_m = vScalingFactor_m * gamma_m * hess(fv_m);
+        if (paramHessian_m == true) {  // Use spectral Hessian
+            D_mp = diffusionSolver_mp->getHessian();
+            assignMatPtrToMat(D_m, D_mp);
+            D_m = vScalingFactor_m * gamma_m * D_m;
+        } else {  // Use Finite Difference Hessian
+            D_m = vScalingFactor_m * gamma_m * hess(fv_m);
+        }
 
         // Gather Hessian to particle attributes
         gatherHessian();
@@ -1169,6 +1200,7 @@ public:
     VField_t<T, Dim> Fd_m;
     // Diffusion Coefficients
     MField_t<Dim> D_m;
+    MField_t<Dim>* D_mp;
     // Separate rows, as gathering of Matrices is not yet possible
     VField_t<T, Dim> D0_m;
     VField_t<T, Dim> D1_m;
@@ -1246,6 +1278,10 @@ public:
 
     // Random number generator for random gaussians that are multiplied with $Q$
     KokkosRNGPool_t randPool_m;
+
+    // Whether parameter 'hessian' == true (if so, `diffusionSolver_mp` computes the spectral
+    // Hessian, otherwise FD is used)
+    bool paramHessian_m;
 
     ///////////////////////////////
     // SOLVERS IN VELOCITY SPACE //
