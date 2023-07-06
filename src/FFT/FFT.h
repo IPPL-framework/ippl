@@ -41,6 +41,7 @@
 #include "Field/Field.h"
 
 #include "FieldLayout/FieldLayout.h"
+#include "Index/NDIndex.h"
 
 namespace heffte {
     template <>
@@ -125,7 +126,17 @@ namespace ippl {
         using workspace_t   = typename FFT<heffteBackend>::template buffer_container<BufferType>;
         typedef FieldLayout<Dim> Layout_t;
 
+        FFTBase(const Layout_t& layout, const ParameterList& params);
+        ~FFTBase() = default;
+
     protected:
+        FFTBase() = default;
+
+        void domainToBounds(const NDIndex<Dim>& domain, std::array<long long, 3>& low,
+                            std::array<long long, 3>& high);
+        void setup(const heffte::box3d<long long>& inbox, const heffte::box3d<long long>& outbox,
+                   const ParameterList& params);
+
         std::shared_ptr<FFT<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
     };
@@ -155,30 +166,13 @@ namespace ippl {
     public:
         typedef typename ComplexField::value_type Complex_t;
 
+        using Base::FFTBase;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
-
-        /** Create a new FFT object with the layout for the input Field and
-         * parameters for heffte.
-         */
-        FFT(const Layout_t& layout, const ParameterList& params);
-
-        // Destructor
-        ~FFT() = default;
 
         /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
             transform. The output is over-written in the input.
         */
         void transform(int direction, ComplexField& f);
-
-    private:
-        // using long long = detail::long long;
-
-        /**
-           setup performs the initialization necessary. heFFTe expects 3 sets of bounds,
-           so the arrays are zeroed and filled up to the given dimension.
-        */
-        void setup(const std::array<long long, 3>& low, const std::array<long long, 3>& high,
-                   const ParameterList& params);
     };
 
     /**
@@ -205,25 +199,10 @@ namespace ippl {
          */
         FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const ParameterList& params);
 
-        ~FFT() = default;
-
         /** Do the FFT: specify +1 or -1 to indicate forward or inverse
             transform.
         */
         void transform(int direction, RealField& f, ComplexField& g);
-
-    private:
-        // using long long = detail::long long;
-
-        /**
-           setup performs the initialization necessary after the transform
-           directions have been specified. heFFTe expects 3 sets of bounds,
-           so the arrays are zeroed and filled up to the given dimension.
-        */
-        void setup(const std::array<long long, 3>& lowInput,
-                   const std::array<long long, 3>& highInput,
-                   const std::array<long long, 3>& lowOutput,
-                   const std::array<long long, 3>& highOutput, const ParameterList& params);
     };
 
     /**
@@ -235,28 +214,13 @@ namespace ippl {
         using Base                    = IN_PLACE_FFT_BASE_CLASS(Field, backendSine);
 
     public:
+        using Base::FFTBase;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
-
-        /** Create a new FFT object with the layout for the input Field and
-         * parameters for heffte.
-         */
-        FFT(const Layout_t& layout, const ParameterList& params);
-
-        // Destructor
-        ~FFT() = default;
 
         /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
             transform. The output is over-written in the input.
         */
         void transform(int direction, Field& f);
-
-    private:
-        /**
-           setup performs the initialization necessary. heFFTe expects 3 sets of bounds,
-           so the arrays are zeroed and filled up to the given dimension.
-        */
-        void setup(const std::array<long long, 3>& low, const std::array<long long, 3>& high,
-                   const ParameterList& params);
     };
     /**
        Cosine transform class
@@ -267,28 +231,13 @@ namespace ippl {
         using Base                    = IN_PLACE_FFT_BASE_CLASS(Field, backendCos);
 
     public:
+        using Base::FFTBase;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
-
-        /** Create a new FFT object with the layout for the input Field and
-         * parameters for heffte.
-         */
-        FFT(const Layout_t& layout, const ParameterList& params);
-
-        // Destructor
-        ~FFT() = default;
 
         /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
             transform. The output is over-written in the input.
         */
         void transform(int direction, Field& f);
-
-    private:
-        /**
-           setup performs the initialization necessary. heFFTe expects 3 sets of bounds,
-           so the arrays are zeroed and filled up to the given dimension.
-        */
-        void setup(const std::array<long long, 3>& low, const std::array<long long, 3>& high,
-                   const ParameterList& params);
     };
 }  // namespace ippl
 #include "FFT/FFT.hpp"
