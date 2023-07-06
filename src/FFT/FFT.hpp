@@ -131,7 +131,10 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempField = detail::shrinkView("tempField", fview, nghost);
+        auto& tempField = this->tempField;
+        if (tempField.size() != f.getOwned().size()) {
+            tempField = detail::shrinkView("tempField", fview, nghost);
+        }
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
@@ -209,8 +212,14 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempFieldf = detail::shrinkView("tempFieldf", fview, nghostf);
-        auto tempFieldg = detail::shrinkView("tempFieldg", gview, nghostg);
+        auto& tempFieldf = this->tempField;
+        auto& tempFieldg = this->tempFieldComplex;
+        if (tempFieldf.size() != f.getOwned().size()) {
+            tempFieldf = detail::shrinkView("tempFieldf", fview, nghostf);
+        }
+        if (tempFieldg.size() != g.getOwned().size()) {
+            tempFieldg = detail::shrinkView("tempFieldg", gview, nghostg);
+        }
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
@@ -263,7 +272,10 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempField = detail::shrinkView("tempField", fview, nghost);
+        auto& tempField = this->tempField;
+        if (tempField.size() != f.getOwned().size()) {
+            tempField = detail::shrinkView("tempField", fview, nghost);
+        }
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
@@ -303,7 +315,10 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
-        auto tempField = detail::shrinkView("tempField", fview, nghost);
+        auto& tempField = this->tempField;
+        if (tempField.size() != f.getOwned().size()) {
+            tempField = detail::shrinkView("tempField", fview, nghost);
+        }
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
