@@ -37,27 +37,24 @@
 
 namespace ippl {
 
-    //=========================================================================
-    // FFT CCTransform Constructors
-    //=========================================================================
-
-    /**
-       Create a new FFT object of type CCTransform, with a
-       given layout and heffte parameters.
-    */
-
-    template <typename Field>
-    FFT<CCTransform, Field>::FFT(const Layout_t& layout, const ParameterList& params) {
-        /**
-         * Heffte requires to pass a 3D array even for 2D and
-         * 1D FFTs we just have to make the length in other
-         * dimensions to be 1.
-         */
+    template <typename Field, template <typename...> class FFT, typename Backend, typename T>
+    FFTBase<Field, FFT, Backend, T>::FFTBase(const Layout_t& layout, const ParameterList& params) {
         std::array<long long, 3> low;
         std::array<long long, 3> high;
 
-        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
+        const NDIndex<Dim> lDom = layout.getLocalNDIndex();
+        domainToBounds(lDom, low, high);
 
+        heffte::box3d<long long> inbox  = {low, high};
+        heffte::box3d<long long> outbox = {low, high};
+
+        setup(inbox, outbox, params);
+    }
+
+    template <typename Field, template <typename...> class FFT, typename Backend, typename T>
+    void FFTBase<Field, FFT, Backend, T>::domainToBounds(const NDIndex<Dim>& domain,
+                                                         std::array<long long, 3>& low,
+                                                         std::array<long long, 3>& high) {
         low.fill(0);
         high.fill(0);
 
@@ -66,23 +63,18 @@ namespace ippl {
          * like that.
          */
         for (size_t d = 0; d < Dim; ++d) {
-            low[d]  = static_cast<long long>(lDom[d].first());
-            high[d] = static_cast<long long>(lDom[d].length() + lDom[d].first() - 1);
+            low[d]  = static_cast<long long>(domain[d].first());
+            high[d] = static_cast<long long>(domain[d].length() + domain[d].first() - 1);
         }
-
-        setup(low, high, params);
     }
 
     /**
            setup performs the initialization necessary.
     */
-    template <typename Field>
-    void FFT<CCTransform, Field>::setup(const std::array<long long, 3>& low,
-                                        const std::array<long long, 3>& high,
-                                        const ParameterList& params) {
-        heffte::box3d<long long> inbox  = {low, high};
-        heffte::box3d<long long> outbox = {low, high};
-
+    template <typename Field, template <typename...> class FFT, typename Backend, typename T>
+    void FFTBase<Field, FFT, Backend, T>::setup(const heffte::box3d<long long>& inbox,
+                                                const heffte::box3d<long long>& outbox,
+                                                const ParameterList& params) {
         heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
 
         if (!params.get<bool>("use_heffte_defaults")) {
@@ -110,12 +102,18 @@ namespace ippl {
             }
         }
 
-        this->heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
-            inbox, outbox, Comm->getCommunicator(), heffteOptions);
+        if constexpr (std::is_same_v<FFT<heffteBackend>, heffte::fft3d<heffteBackend>>) {
+            heffte_m = std::make_shared<FFT<heffteBackend, long long>>(
+                inbox, outbox, Comm->getCommunicator(), heffteOptions);
+        } else {
+            heffte_m = std::make_shared<FFT<heffteBackend, long long>>(
+                inbox, outbox, params.get<int>("r2c_direction"), Comm->getCommunicator(),
+                heffteOptions);
+        }
 
         // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
-        if (this->workspace_m.size() < this->heffte_m->size_workspace()) {
-            this->workspace_m = workspace_t(this->heffte_m->size_workspace());
+        if (workspace_m.size() < heffte_m->size_workspace()) {
+            workspace_m = workspace_t(heffte_m->size_workspace());
         }
     }
 
@@ -186,74 +184,13 @@ namespace ippl {
         const NDIndex<Dim>& lDomInput  = layoutInput.getLocalNDIndex();
         const NDIndex<Dim>& lDomOutput = layoutOutput.getLocalNDIndex();
 
-        lowInput.fill(0);
-        highInput.fill(0);
-        lowOutput.fill(0);
-        highOutput.fill(0);
+        this->domainToBounds(lDomInput, lowInput, highInput);
+        this->domainToBounds(lDomOutput, lowOutput, highOutput);
 
-        /**
-         * Static cast to detail::long long (uint64_t) is necessary, as heffte::box3d requires it
-         * like that.
-         */
-        for (size_t d = 0; d < Dim; ++d) {
-            lowInput[d]  = static_cast<long long>(lDomInput[d].first());
-            highInput[d] = static_cast<long long>(lDomInput[d].length() + lDomInput[d].first() - 1);
-
-            lowOutput[d] = static_cast<long long>(lDomOutput[d].first());
-            highOutput[d] =
-                static_cast<long long>(lDomOutput[d].length() + lDomOutput[d].first() - 1);
-        }
-
-        setup(lowInput, highInput, lowOutput, highOutput, params);
-    }
-
-    /**
-       setup performs the initialization.
-    */
-    template <typename RealField>
-    void FFT<RCTransform, RealField>::setup(const std::array<long long, 3>& lowInput,
-                                            const std::array<long long, 3>& highInput,
-                                            const std::array<long long, 3>& lowOutput,
-                                            const std::array<long long, 3>& highOutput,
-                                            const ParameterList& params) {
         heffte::box3d<long long> inbox  = {lowInput, highInput};
         heffte::box3d<long long> outbox = {lowOutput, highOutput};
 
-        heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
-
-        if (!params.get<bool>("use_heffte_defaults")) {
-            heffteOptions.use_pencils = params.get<bool>("use_pencils");
-            heffteOptions.use_reorder = params.get<bool>("use_reorder");
-#ifdef Heffte_ENABLE_GPU
-            heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
-#endif
-
-            switch (params.get<int>("comm")) {
-                case a2a:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
-                    break;
-                case a2av:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
-                    break;
-                case p2p:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
-                    break;
-                case p2p_pl:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
-                    break;
-                default:
-                    throw IpplException("FFT::setup", "Unrecognized heffte communication type");
-            }
-        }
-
-        this->heffte_m = std::make_shared<heffte::fft3d_r2c<heffteBackend, long long>>(
-            inbox, outbox, params.get<int>("r2c_direction"), Comm->getCommunicator(),
-            heffteOptions);
-
-        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
-        if (this->workspace_m.size() < this->heffte_m->size_workspace()) {
-            this->workspace_m = workspace_t(this->heffte_m->size_workspace());
-        }
+        this->setup(inbox, outbox, params);
     }
 
     template <typename RealField>
@@ -312,87 +249,6 @@ namespace ippl {
             });
     }
 
-    //=========================================================================
-    // FFT SineTransform Constructors
-    //=========================================================================
-
-    /**
-       Create a new FFT object of type SineTransform, with a
-       given layout and heffte parameters.
-    */
-
-    template <typename Field>
-    FFT<SineTransform, Field>::FFT(const Layout_t& layout, const ParameterList& params) {
-        /**
-         * Heffte requires to pass a 3D array even for 2D and
-         * 1D FFTs we just have to make the length in other
-         * dimensions to be 1.
-         */
-        std::array<long long, 3> low;
-        std::array<long long, 3> high;
-
-        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
-
-        low.fill(0);
-        high.fill(0);
-
-        /**
-         * Static cast to detail::long long (uint64_t) is necessary, as heffte::box3d requires it
-         * like that.
-         */
-        for (size_t d = 0; d < Dim; ++d) {
-            low[d]  = static_cast<long long>(lDom[d].first());
-            high[d] = static_cast<long long>(lDom[d].length() + lDom[d].first() - 1);
-        }
-
-        setup(low, high, params);
-    }
-
-    /**
-           setup performs the initialization necessary.
-    */
-    template <typename Field>
-    void FFT<SineTransform, Field>::setup(const std::array<long long, 3>& low,
-                                          const std::array<long long, 3>& high,
-                                          const ParameterList& params) {
-        heffte::box3d<long long> inbox  = {low, high};
-        heffte::box3d<long long> outbox = {low, high};
-
-        heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
-
-        if (!params.get<bool>("use_heffte_defaults")) {
-            heffteOptions.use_pencils = params.get<bool>("use_pencils");
-            heffteOptions.use_reorder = params.get<bool>("use_reorder");
-#ifdef Heffte_ENABLE_GPU
-            heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
-#endif
-            switch (params.get<int>("comm")) {
-                case a2a:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
-                    break;
-                case a2av:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
-                    break;
-                case p2p:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
-                    break;
-                case p2p_pl:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
-                    break;
-                default:
-                    throw IpplException("FFT::setup", "Unrecognized heffte communication type");
-            }
-        }
-
-        this->heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
-            inbox, outbox, Comm->getCommunicator(), heffteOptions);
-
-        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
-        if (this->workspace_m.size() < this->heffte_m->size_workspace()) {
-            this->workspace_m = workspace_t(this->heffte_m->size_workspace());
-        }
-    }
-
     template <typename Field>
     void FFT<SineTransform, Field>::transform(int direction, Field& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
@@ -431,86 +287,6 @@ namespace ippl {
             KOKKOS_LAMBDA(const index_array_type& args) {
                 apply(fview, args) = apply(tempField, args - nghost);
             });
-    }
-
-    //=========================================================================
-    // FFT CosTransform Constructors
-    //=========================================================================
-
-    /**
-       Create a new FFT object of type CosTransform, with a
-       given layout and heffte parameters.
-    */
-
-    template <typename Field>
-    FFT<CosTransform, Field>::FFT(const Layout_t& layout, const ParameterList& params) {
-        /**
-         * Heffte requires to pass a 3D array even for 2D and
-         * 1D FFTs we just have to make the length in other
-         * dimensions to be 1.
-         */
-        std::array<long long, 3> low;
-        std::array<long long, 3> high;
-
-        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
-
-        low.fill(0);
-        high.fill(0);
-
-        /**
-         * Static cast to detail::long long (uint64_t) is necessary, as heffte::box3d requires it
-         * like that.
-         */
-        for (size_t d = 0; d < Dim; ++d) {
-            low[d]  = static_cast<long long>(lDom[d].first());
-            high[d] = static_cast<long long>(lDom[d].length() + lDom[d].first() - 1);
-        }
-
-        setup(low, high, params);
-    }
-
-    /**
-           setup performs the initialization necessary.
-    */
-    template <typename Field>
-    void FFT<CosTransform, Field>::setup(const std::array<long long, 3>& low,
-                                         const std::array<long long, 3>& high,
-                                         const ParameterList& params) {
-        heffte::box3d<long long> inbox  = {low, high};
-        heffte::box3d<long long> outbox = {low, high};
-
-        heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
-
-        if (!params.get<bool>("use_heffte_defaults")) {
-            heffteOptions.use_pencils = params.get<bool>("use_pencils");
-            heffteOptions.use_reorder = params.get<bool>("use_reorder");
-#ifdef Heffte_ENABLE_GPU
-            heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
-#endif
-            switch (params.get<int>("comm")) {
-                case a2a:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
-                    break;
-                case a2av:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
-                    break;
-                case p2p:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
-                    break;
-                case p2p_pl:
-                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
-                    break;
-                default:
-                    throw IpplException("FFT::setup", "Unrecognized heffte communication type");
-            }
-        }
-
-        this->heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
-            inbox, outbox, Comm->getCommunicator(), heffteOptions);
-
-        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
-        if (this->workspace_m.size() < this->heffte_m->size_workspace())
-            this->workspace_m = workspace_t(this->heffte_m->size_workspace());
     }
 
     template <typename Field>
