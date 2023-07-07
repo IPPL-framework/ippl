@@ -216,7 +216,7 @@ int main(int argc, char *argv[]){
     Vector_t origin = {rmin[0], rmin[1], rmin[2]};
     //unsigned int nrMax = 2048;// Max grid size in our studies
     //double dxFinest = rmax[0] / nrMax;  
-    const double dt = 0.05;//0.5 * dxFinest;//size of timestep
+    const double dt = std::atof(argv[9]);;//0.5*dx;
 
     const bool isAllPeriodic=true;
     Mesh_t mesh(domain, hr, origin);

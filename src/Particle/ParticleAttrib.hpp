@@ -497,7 +497,7 @@ namespace ippl {
     template<unsigned Dim>
     void ParticleAttrib<T, Properties...>::initializeNUFFT(FieldLayout<Dim>& layout, int type, ParameterList& fftParams) {
         
-        fftType_mp = std::make_shared<FFT<NUFFTransform, Dim, double>>(layout, type, fftParams);
+        fftType_mp = std::make_shared<FFT<NUFFTransform, Dim, double>>(layout, *(this->localNum_mp), type, fftParams);
     }
     
     

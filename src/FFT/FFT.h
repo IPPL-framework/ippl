@@ -36,6 +36,7 @@
 #include <functional>
 #include <type_traits>
 
+#include "Types/IpplTypes.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Field/Field.h"
 //#include "Particle/ParticleAttrib.h"
@@ -175,6 +176,7 @@ namespace ippl {
 
         using heffteBackend = typename detail::HeffteBackendType::backend;
         using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<Complex_t>;
+        using view_type = typename detail::ViewType<Complex_t, 3, Kokkos::LayoutLeft>::view_type;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
@@ -202,6 +204,7 @@ namespace ippl {
 
         std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
+        view_type tempField_m;
 
     };
 
@@ -220,6 +223,8 @@ namespace ippl {
         using heffteBackend = typename detail::HeffteBackendType::backend;
         typedef Kokkos::complex<T> Complex_t;
         using workspace_t = typename heffte::fft3d_r2c<heffteBackend>::template buffer_container<Complex_t>;
+        using view_real_type = typename detail::ViewType<T, 3, Kokkos::LayoutLeft>::view_type;
+        using view_complex_type = typename detail::ViewType<Complex_t, 3, Kokkos::LayoutLeft>::view_type;
 
         typedef Field<Complex_t,Dim> ComplexField_t;
 
@@ -253,6 +258,8 @@ namespace ippl {
 
         std::shared_ptr<heffte::fft3d_r2c<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
+        view_real_type tempFieldf_m;
+        view_complex_type tempFieldg_m;
 
     };
 
@@ -269,6 +276,7 @@ namespace ippl {
 
         using heffteBackend = typename detail::HeffteBackendType::backendSine;
         using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+        using view_type = typename detail::ViewType<T, 3, Kokkos::LayoutLeft>::view_type;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
@@ -294,6 +302,7 @@ namespace ippl {
 
         std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
+        view_type tempField_m;
 
     };
     /**
@@ -309,6 +318,7 @@ namespace ippl {
 
         using heffteBackend = typename detail::HeffteBackendType::backendCos;
         using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+        using view_type = typename detail::ViewType<T, 3, Kokkos::LayoutLeft>::view_type;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
@@ -334,6 +344,7 @@ namespace ippl {
 
         std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
+        view_type tempField_m;
 
     };
 
@@ -353,20 +364,23 @@ namespace ippl {
 
         using complexType = typename detail::CufinufftType<T>::complexType;
         using plan_t = typename detail::CufinufftType<T>::plan_t;
+        using view_field_type = typename detail::ViewType<complexType, 3, Kokkos::LayoutLeft>::view_type;
+        using view_particle_real_type = typename detail::ViewType<T, 1, Kokkos::LayoutLeft>::view_type;
+        using view_particle_complex_type = typename detail::ViewType<complexType, 1, Kokkos::LayoutLeft>::view_type;
 
         /** Create a new FFT object with the layout for the input Field, type 
          * (1 or 2) for the NUFFT and parameters for cuFINUFFT.
         */
-        FFT(const Layout_t& layout, int type, const ParameterList& params);
+        FFT(const Layout_t& layout, const detail::size_type& localNp, int type, const ParameterList& params);
 
         // Destructor
         ~FFT();
 
         /** Do the NUFFT.
         */
-        template<class PT1, class PT2, class... Properties>
-        void transform(const ParticleAttrib< Vector<PT1, Dim>, Properties... >& R, 
-                       ParticleAttrib<PT2, Properties... >& Q, ComplexField_t& f);
+        template<class... Properties>
+        void transform(const ParticleAttrib< Vector<T, Dim>, Properties... >& R, 
+                       ParticleAttrib<T, Properties... >& Q, ComplexField_t& f);
 
 
     private:
@@ -382,6 +396,10 @@ namespace ippl {
         int ier_m;
         T tol_m;
         int type_m;
+        view_field_type tempField_m;
+        view_particle_real_type tempR_m[3] = {};
+        view_particle_complex_type tempQ_m;
+
 
     };
 

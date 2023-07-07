@@ -74,6 +74,9 @@ namespace ippl {
             high[d] = static_cast<long long>(lDom[d].length() + lDom[d].first() - 1);
         }
 
+        if(tempField_m.size() < lDom.size()) {
+            Kokkos::realloc(tempField_m, lDom[0].length(), lDom[1].length(), lDom[2].length());
+        }
         setup(low, high, params);
     }
 
@@ -148,11 +151,12 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
         */
-        Kokkos::View<Complex_t***,Kokkos::LayoutLeft>
-            tempField("tempField", fview.extent(0) - 2*nghost,
-                                   fview.extent(1) - 2*nghost,
-                                   fview.extent(2) - 2*nghost);
+        //Kokkos::View<Complex_t***,Kokkos::LayoutLeft>
+        //    tempField("tempField", fview.extent(0) - 2*nghost,
+        //                           fview.extent(1) - 2*nghost,
+        //                           fview.extent(2) - 2*nghost);
 
+        auto tempField = tempField_m;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         Kokkos::parallel_for("copy from Kokkos FFT",
@@ -259,6 +263,14 @@ namespace ippl {
                             lDomOutput[d].first() - 1);
         }
 
+
+        if(tempFieldf_m.size() < lDomInput.size()) {
+            Kokkos::realloc(tempFieldf_m, lDomInput[0].length(), lDomInput[1].length(), lDomInput[2].length());
+        }
+        if(tempFieldg_m.size() < lDomOutput.size()) {
+            Kokkos::realloc(tempFieldg_m, lDomOutput[0].length(), lDomOutput[1].length(), lDomOutput[2].length());
+        }
+
         setup(lowInput, highInput, lowOutput, highOutput, params);
     }
 
@@ -337,16 +349,18 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
         */
-        Kokkos::View<T***, Kokkos::LayoutLeft>
-            tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
-                                     fview.extent(1) - 2*nghostf,
-                                     fview.extent(2) - 2*nghostf);
+        //Kokkos::View<T***, Kokkos::LayoutLeft>
+        //    tempFieldf("tempFieldf", fview.extent(0) - 2*nghostf,
+        //                             fview.extent(1) - 2*nghostf,
+        //                             fview.extent(2) - 2*nghostf);
 
-        Kokkos::View<Complex_t***, Kokkos::LayoutLeft>
-            tempFieldg("tempFieldg", gview.extent(0) - 2*nghostg,
-                                     gview.extent(1) - 2*nghostg,
-                                     gview.extent(2) - 2*nghostg);
+        //Kokkos::View<Complex_t***, Kokkos::LayoutLeft>
+        //    tempFieldg("tempFieldg", gview.extent(0) - 2*nghostg,
+        //                             gview.extent(1) - 2*nghostg,
+        //                             gview.extent(2) - 2*nghostg);
 
+        auto tempFieldf = tempFieldf_m;
+        auto tempFieldg = tempFieldg_m;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         Kokkos::parallel_for("copy from Kokkos f field in FFT",
@@ -463,6 +477,9 @@ namespace ippl {
             high[d] = static_cast<long long>(lDom[d].length() + lDom[d].first() - 1);
         }
 
+        if(tempField_m.size() < lDom.size()) {
+            Kokkos::realloc(tempField_m, lDom[0].length(), lDom[1].length(), lDom[2].length());
+        }
         setup(low, high, params);
     }
 
@@ -534,11 +551,12 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
         */
-        Kokkos::View<T***,Kokkos::LayoutLeft>
-            tempField("tempField", fview.extent(0) - 2*nghost,
-                                   fview.extent(1) - 2*nghost,
-                                   fview.extent(2) - 2*nghost);
+        //Kokkos::View<T***,Kokkos::LayoutLeft>
+        //    tempField("tempField", fview.extent(0) - 2*nghost,
+        //                           fview.extent(1) - 2*nghost,
+        //                           fview.extent(2) - 2*nghost);
 
+        auto tempField = tempField_m;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         Kokkos::parallel_for("copy from Kokkos FFT",
@@ -624,6 +642,9 @@ namespace ippl {
             high[d] = static_cast<long long>(lDom[d].length() + lDom[d].first() - 1);
         }
 
+        if(tempField_m.size() < lDom.size()) {
+            Kokkos::realloc(tempField_m, lDom[0].length(), lDom[1].length(), lDom[2].length());
+        }
         setup(low, high, params);
     }
 
@@ -696,11 +717,12 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
         */
-        Kokkos::View<T***,Kokkos::LayoutLeft>
-            tempField("tempField", fview.extent(0) - 2*nghost,
-                                   fview.extent(1) - 2*nghost,
-                                   fview.extent(2) - 2*nghost);
+        //Kokkos::View<T***,Kokkos::LayoutLeft>
+        //    tempField("tempField", fview.extent(0) - 2*nghost,
+        //                           fview.extent(1) - 2*nghost,
+        //                           fview.extent(2) - 2*nghost);
 
+        auto tempField = tempField_m;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         Kokkos::parallel_for("copy from Kokkos FFT",
@@ -762,6 +784,7 @@ namespace ippl {
 
     template <size_t Dim, class T>
     FFT<NUFFTransform,Dim,T>::FFT(const Layout_t& layout,
+                                  const detail::size_type& localNp,
                                   int type,
                                   const ParameterList& params)
     {
@@ -783,6 +806,17 @@ namespace ippl {
         }
 
         type_m = type;
+        if(tempField_m.size() < lDom.size()) {
+            Kokkos::realloc(tempField_m, lDom[0].length(), lDom[1].length(), lDom[2].length());
+        }
+        for(size_t d = 0; d < Dim; ++d) {
+            if(tempR_m[d].size() < localNp) {
+                Kokkos::realloc(tempR_m[d], localNp);
+            }
+        }
+        if(tempQ_m.size() < localNp) {
+            Kokkos::realloc(tempQ_m, localNp);
+        }
         setup(nmodes, params);
     }
 
@@ -832,10 +866,10 @@ namespace ippl {
 
 
     template <size_t Dim, class T>
-    template<class PT1, class PT2, class... Properties>
+    template<class... Properties>
     void
-    FFT<NUFFTransform,Dim,T>::transform(const ParticleAttrib< Vector<PT1, Dim>, Properties... >& R,
-                                        ParticleAttrib<PT2, Properties... >& Q,
+    FFT<NUFFTransform,Dim,T>::transform(const ParticleAttrib< Vector<T, Dim>, Properties... >& R,
+                                        ParticleAttrib<T, Properties... >& Q,
                                         typename FFT<NUFFTransform,Dim,T>::ComplexField_t& f)
     {
         
@@ -865,24 +899,30 @@ namespace ippl {
          * cuFINUFFT's layout is left, hence we allocate the temporary
          * Kokkos views with the same layout
          */
-        Kokkos::View<complexType***,Kokkos::LayoutLeft>
-            tempField("tempField", fview.extent(0) - 2*nghost,
-                                   fview.extent(1) - 2*nghost,
-                                   fview.extent(2) - 2*nghost);
+        //Kokkos::View<complexType***,Kokkos::LayoutLeft>
+        //    tempField("tempField", fview.extent(0) - 2*nghost,
+        //                           fview.extent(1) - 2*nghost,
+        //                           fview.extent(2) - 2*nghost);
 
 
-        //Initialize the pointers to NULL and fill only relevant dimensions
-        //CUFINUFFT requires the input like this.
-        Kokkos::View<PT1*,Kokkos::LayoutLeft> tempR[3] = {};
+        ////Initialize the pointers to NULL and fill only relevant dimensions
+        ////CUFINUFFT requires the input like this.
+        //Kokkos::View<PT1*,Kokkos::LayoutLeft> tempR[3] = {};
       
 
-        for(size_t d = 0; d < Dim; ++d) {
-            Kokkos::realloc(tempR[d], localNp);
-        }
+        //for(size_t d = 0; d < Dim; ++d) {
+        //    Kokkos::realloc(tempR[d], localNp);
+        //}
 
        
-        Kokkos::View<complexType*,Kokkos::LayoutLeft> tempQ("tempQ", localNp);
-       
+        //Kokkos::View<complexType*,Kokkos::LayoutLeft> tempQ("tempQ", localNp);
+  
+        auto tempField = tempField_m;
+        auto tempQ = tempQ_m;
+        Kokkos::View<T*,Kokkos::LayoutLeft> tempR[3] = {};
+        for(size_t d = 0; d < Dim; ++d) {
+            tempR[d] = tempR_m[d];
+        }
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         Kokkos::parallel_for("copy from field data NUFFT",
