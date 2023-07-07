@@ -856,6 +856,9 @@ namespace ippl {
             for (size_t row = 0; row < Dim; ++row) {
                 for (size_t col = 0; col < Dim; ++col) {
                     // loop over rho2tr_m to multiply by -k^2 (second derivative in Fourier space)
+                    // if diagonal element (row = col), do not need N/2 term = 0
+                    // else, if mixed derivative, need kVec = 0 at N/2
+
                     Kokkos::parallel_for(
                         "Hessian", rho2tr_m.getFieldRangePolicy(),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -870,8 +873,11 @@ namespace ippl {
                             for (size_t d = 0; d < Dim; ++d) {
                                 const scalar_type Len = N[d] * hsize[d];
                                 const bool shift      = (iVec[d] > N[d]);
+                                const bool isMid      = (iVec[d] == N[d]);
+                                const bool notDiag    = (row != col);
 
-                                kVec[d] = (pi / Len) * (iVec[d] - shift * 2 * N[d]);
+                                kVec[d] = (1 - (notDiag * isMid)) * (pi / Len)
+                                          * (iVec[d] - shift * 2 * N[d]);
                             }
 
                             const scalar_type Dr =
