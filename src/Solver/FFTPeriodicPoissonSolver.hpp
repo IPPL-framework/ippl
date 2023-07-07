@@ -21,8 +21,12 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTPeriodicPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
+        bool needsReinit =
+            this->rhs_mp != &rhs || (this->rhs_mp && this->rhs_mp->getLayout() != rhs.getLayout());
         Base::setRhs(rhs);
-        initialize();
+        if (needsReinit) {
+            initialize();
+        }
     }
 
     template <typename FieldLHS, typename FieldRHS>
