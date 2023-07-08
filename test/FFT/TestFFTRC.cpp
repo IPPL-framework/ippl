@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
         } else {
             if (ippl::Comm->rank() == 0) {
                 std::cerr << "RCDirection need to be 0, 1 or 2 and it"
-                        << "indicates the dimension in which data is shortened" << std::endl;
+                          << "indicates the dimension in which data is shortened" << std::endl;
             }
             return 0;
         }
@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
 
         // if(ippl::Comm->rank() == 0) {
         std::cout << "Rank:" << ippl::Comm->rank() << "Max. error " << std::setprecision(16)
-                << max_error_local << std::endl;
+                  << max_error_local << std::endl;
         //}
     }
     ippl::finalize();

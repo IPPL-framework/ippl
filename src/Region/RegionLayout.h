@@ -38,22 +38,24 @@
 
 #include "Types/ViewTypes.h"
 
+#include "Utility/TypeUtils.h"
+
 #include "Region/NDRegion.h"
 
 namespace ippl {
     namespace detail {
 
-        template <typename T, unsigned Dim, class Mesh>
-        class RegionLayout;
-        template <typename T, unsigned Dim, class Mesh>
-        std::ostream& operator<<(std::ostream&, const RegionLayout<T, Dim, Mesh>&);
-
-        template <typename T, unsigned Dim, class Mesh /* = UniformCartesian<T, Dim> */>
+        template <typename T, unsigned Dim, class Mesh, class... Properties>
         class RegionLayout {
+            template <typename... Props>
+            using base_type = RegionLayout<T, Dim, Mesh, Props...>;
+
         public:
             using NDRegion_t       = NDRegion<T, Dim>;
-            using view_type        = typename ViewType<NDRegion_t, 1>::view_type;
+            using view_type        = typename ViewType<NDRegion_t, 1, Properties...>::view_type;
             using host_mirror_type = typename view_type::host_mirror_type;
+
+            using uniform_type = typename CreateUniformType<base_type, view_type>::type;
 
             // Default constructor.  To make this class actually work, the user
             // will have to later call 'changeDomain' to set the proper Domain
@@ -97,6 +99,9 @@ namespace ippl {
 
             view_type subdomains_m;
         };
+
+        template <typename T, unsigned Dim, class Mesh>
+        std::ostream& operator<<(std::ostream&, const RegionLayout<T, Dim, Mesh>&);
 
     }  // namespace detail
 }  // namespace ippl
