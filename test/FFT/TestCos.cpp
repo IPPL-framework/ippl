@@ -74,7 +74,8 @@ int main(int argc, char* argv[]) {
         // Reverse transform
         fft->transform(-1, field);
 
-        auto field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
+        auto field_result =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
 
         double max_error_local = 0.0;
         for (size_t i = nghost; i < view.extent(0) - nghost; ++i) {
@@ -91,10 +92,11 @@ int main(int argc, char* argv[]) {
         }
 
         double max_error = 0.0;
-        MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
+        MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0,
+                   ippl::Comm->getCommunicator());
 
         std::cout << "Rank:" << ippl::Comm->rank() << "Max. error " << std::setprecision(16)
-                << max_error_local << std::endl;
+                  << max_error_local << std::endl;
         if (ippl::Comm->rank() == 0) {
             std::cout << "Overall Max. error " << std::setprecision(16) << max_error << std::endl;
         }

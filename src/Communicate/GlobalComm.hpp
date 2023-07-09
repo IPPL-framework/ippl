@@ -426,14 +426,16 @@ template <typename T>
 void gather(const T* input, T* output, int count, int root) {
     MPI_Datatype type = get_mpi_datatype<T>(*input);
 
-    MPI_Gather(const_cast<T*>(input), count, type, output, count, type, root, Comm->getCommunicator());
+    MPI_Gather(const_cast<T*>(input), count, type, output, count, type, root,
+               Comm->getCommunicator());
 }
 
 template <typename T>
 void scatter(const T* input, T* output, int count, int root) {
     MPI_Datatype type = get_mpi_datatype<T>(*input);
 
-    MPI_Scatter(const_cast<T*>(input), count, type, output, count, type, root, Comm->getCommunicator());
+    MPI_Scatter(const_cast<T*>(input), count, type, output, count, type, root,
+                Comm->getCommunicator());
 }
 
 template <typename T, class Op>

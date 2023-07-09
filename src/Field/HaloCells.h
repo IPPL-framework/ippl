@@ -32,13 +32,14 @@ namespace ippl {
         /*!
          * Helper class to send / receive field data.
          */
-        template <typename T>
+        template <typename T, class... ViewArgs>
         struct FieldBufferData {
-            using view_type = typename detail::ViewType<T, 1>::view_type;
+            using view_type    = typename detail::ViewType<T, 1, ViewArgs...>::view_type;
+            using archive_type = Archive<typename view_type::memory_space>;
 
-            void serialize(Archive<>& ar, size_type nsends) { ar.serialize(buffer, nsends); }
+            void serialize(archive_type& ar, size_type nsends) { ar.serialize(buffer, nsends); }
 
-            void deserialize(Archive<>& ar, size_type nrecvs) { ar.deserialize(buffer, nrecvs); }
+            void deserialize(archive_type& ar, size_type nrecvs) { ar.deserialize(buffer, nrecvs); }
 
             view_type buffer;
         };
@@ -47,12 +48,13 @@ namespace ippl {
          * This class provides the functionality to do field halo exchange.
          * @file HaloCells.h
          */
-        template <typename T, unsigned Dim>
+        template <typename T, unsigned Dim, class... ViewArgs>
         class HaloCells {
         public:
-            using view_type  = typename detail::ViewType<T, Dim>::view_type;
-            using Layout_t   = FieldLayout<Dim>;
-            using bound_type = typename Layout_t::bound_type;
+            using view_type       = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
+            using Layout_t        = FieldLayout<Dim>;
+            using bound_type      = typename Layout_t::bound_type;
+            using databuffer_type = FieldBufferData<T, ViewArgs...>;
 
             enum SendOrder {
                 HALO_TO_INTERNAL,
@@ -83,7 +85,7 @@ namespace ippl {
              * @param view the original view
              * @param fd the buffer to pack into
              */
-            void pack(const bound_type& range, const view_type& view, FieldBufferData<T>& fd,
+            void pack(const bound_type& range, const view_type& view, databuffer_type& fd,
                       size_type& nsends);
 
             /*!
@@ -94,7 +96,7 @@ namespace ippl {
              * @tparam Op the data assigment operator
              */
             template <typename Op>
-            void unpack(const bound_type& range, const view_type& view, FieldBufferData<T>& fd);
+            void unpack(const bound_type& range, const view_type& view, databuffer_type& fd);
 
             /*!
              * Operator for the unpack function.
@@ -149,7 +151,7 @@ namespace ippl {
              */
             auto makeSubview(const view_type& view, const bound_type& intersect);
 
-            FieldBufferData<T> haloData_m;
+            databuffer_type haloData_m;
         };
     }  // namespace detail
 }  // namespace ippl

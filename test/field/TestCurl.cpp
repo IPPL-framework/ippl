@@ -134,15 +134,16 @@ int main(int argc, char* argv[]) {
             Kokkos::parallel_reduce(
                 "Vector errorNr reduce",
                 mdrange_type({nghost, nghost, nghost},
-                            {view_result.extent(0) - nghost, view_result.extent(1) - nghost,
-                            view_result.extent(2) - nghost}),
+                             {view_result.extent(0) - nghost, view_result.extent(1) - nghost,
+                              view_result.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k, double& valL) {
                     double myVal = pow(view_result(i, j, k)[gd], 2);
                     valL += myVal;
                 },
                 Kokkos::Sum<double>(temp));
             double globaltemp = 0.0;
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
+                          ippl::Comm->getCommunicator());
             double errorNr = std::sqrt(globaltemp);
 
             temp       = 0.0;
@@ -151,14 +152,15 @@ int main(int argc, char* argv[]) {
             Kokkos::parallel_reduce(
                 "Vector errorDr reduce",
                 mdrange_type({nghost, nghost, nghost},
-                            {view_exact.extent(0) - nghost, view_exact.extent(1) - nghost,
-                            view_exact.extent(2) - nghost}),
+                             {view_exact.extent(0) - nghost, view_exact.extent(1) - nghost,
+                              view_exact.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k, double& valL) {
                     double myVal = pow(view_exact(i, j, k)[gd], 2);
                     valL += myVal;
                 },
                 Kokkos::Sum<double>(temp));
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
+                          ippl::Comm->getCommunicator());
             double errorDr = std::sqrt(globaltemp);
 
             errE[gd] = errorNr / errorDr;
