@@ -168,7 +168,7 @@ namespace ippl {
     public:
         typedef typename ComplexField::value_type Complex_t;
 
-        using Base::FFTBase;
+        using Base::Base;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
@@ -220,7 +220,7 @@ namespace ippl {
         using Base                    = IN_PLACE_FFT_BASE_CLASS(Field, backendSine);
 
     public:
-        using Base::FFTBase;
+        using Base::Base;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
@@ -237,7 +237,7 @@ namespace ippl {
         using Base                    = IN_PLACE_FFT_BASE_CLASS(Field, backendCos);
 
     public:
-        using Base::FFTBase;
+        using Base::Base;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
