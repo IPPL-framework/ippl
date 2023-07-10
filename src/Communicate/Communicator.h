@@ -31,6 +31,8 @@
 #include <climits>
 #include <cstdlib>
 
+#include "Utility/TypeUtils.h"
+
 #include "Communicate/Archive.h"
 #include "Communicate/TagMaker.h"
 #include "Communicate/Tags.h"
@@ -136,24 +138,40 @@ namespace ippl {
             void allreduce(T& inout, int count, Op op);
 
             /////////////////////////////////////////////////////////////////////////////////////
-            using archive_type = detail::Archive<>;
-            using buffer_type  = std::shared_ptr<archive_type>;
-            using size_type    = detail::size_type;
+            template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+            using archive_type = detail::Archive<MemorySpace>;
+
+            template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+            using buffer_type = std::shared_ptr<archive_type<MemorySpace>>;
+
+        private:
+            template <typename MemorySpace>
+            using map_type = std::map<int, buffer_type<MemorySpace>>;
+
+            using buffer_map_type = typename detail::ContainerForAllSpaces<map_type>::type;
+
+        public:
+            using size_type = detail::size_type;
             double getDefaultOverallocation() const { return defaultOveralloc_m; }
             void setDefaultOverallocation(double factor);
 
-            template <typename T = char>
-            buffer_type getBuffer(int id, size_type size, double overallocation = 1.0);
+            template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space,
+                      typename T           = char>
+            buffer_type<MemorySpace> getBuffer(int id, size_type size, double overallocation = 1.0);
 
-            void deleteBuffer(int id);
+            template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+            void deleteBuffer(int id) {
+                buffers_m.get<MemorySpace>().erase(id);
+            }
+
             void deleteAllBuffers();
 
             const MPI_Comm& getCommunicator() const noexcept { return *comm_m; }
 
             //         void setCommunicator(const MPI_Comm& comm) noexcept { comm_m.reset(comm); }
 
-            template <class Buffer>
-            void recv(int src, int tag, Buffer& buffer, archive_type& ar, size_type msize,
+            template <class Buffer, typename Archive>
+            void recv(int src, int tag, Buffer& buffer, Archive& ar, size_type msize,
                       size_type nrecvs) {
                 // Temporary fix. MPI communication seems to have problems when the
                 // count argument exceeds the range of int, so large messages should
@@ -168,8 +186,8 @@ namespace ippl {
                 buffer.deserialize(ar, nrecvs);
             }
 
-            template <class Buffer>
-            void isend(int dest, int tag, Buffer& buffer, archive_type& ar, MPI_Request& request,
+            template <class Buffer, typename Archive>
+            void isend(int dest, int tag, Buffer& buffer, Archive& ar, MPI_Request& request,
                        size_type nsends) {
                 if (ar.getSize() > INT_MAX) {
                     std::cerr << "Message size exceeds range of int" << std::endl;
@@ -179,7 +197,8 @@ namespace ippl {
                 MPI_Isend(ar.getBuffer(), ar.getSize(), MPI_BYTE, dest, tag, *comm_m, &request);
             }
 
-            void irecv(int src, int tag, archive_type& ar, MPI_Request& request, size_type msize) {
+            template <typename Archive>
+            void irecv(int src, int tag, Archive& ar, MPI_Request& request, size_type msize) {
                 if (msize > INT_MAX) {
                     std::cerr << "Message size exceeds range of int" << std::endl;
                     this->abort();
@@ -188,7 +207,7 @@ namespace ippl {
             }
 
         private:
-            std::map<int, buffer_type> buffers_m;
+            buffer_map_type buffers_m;
             double defaultOveralloc_m = 1.0;
 
             /////////////////////////////////////////////////////////////////////////////////////

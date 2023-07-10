@@ -170,7 +170,7 @@ struct PhaseDump {
     void initialize(size_t nr, double domain) {
         ippl::Index I(nr);
         ippl::NDIndex<2> owned(I, I);
-        layout = FieldLayout_t<2>(owned, serial);
+        layout = FieldLayout_t<2>(MPI_COMM_WORLD, owned, serial);
 
         Vector_t<double, 2> hx = {domain / nr, 16. / nr};
         Vector_t<double, 2> origin{0, -8};
@@ -379,7 +379,7 @@ int main(int argc, char* argv[]) {
         msg << "First domain decomposition done" << endl;
         IpplTimings::startTimer(particleCreation);
 
-        typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> RegionLayout_t;
+        typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
         const RegionLayout_t& RLayout                           = PL.getRegionLayout();
         const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
         Vector_t<double, Dim> Nr, Dr, minU, maxU;

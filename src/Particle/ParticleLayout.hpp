@@ -43,17 +43,18 @@
 
 namespace ippl {
     namespace detail {
-        template <typename T, unsigned Dim>
-        void ParticleLayout<T, Dim>::applyBC(const particle_position_type& R,
-                                             const NDRegion<T, Dim>& nr) {
+        template <typename T, unsigned Dim, typename... Properties>
+        void ParticleLayout<T, Dim, Properties...>::applyBC(const particle_position_type& R,
+                                                            const NDRegion<T, Dim>& nr) {
             /* loop over all faces
              * 0: lower x-face
              * 1: upper x-face
              * 2: lower y-face
              * 3: upper y-face
-             * 4: lower z-face
-             * 5: upper z-face
+             * etc...
              */
+            Kokkos::RangePolicy<typename particle_position_type::execution_space> policy{
+                0, (unsigned)R.getParticleCount()};
             for (unsigned face = 0; face < 2 * Dim; ++face) {
                 // unsigned face = i % Dim;
                 unsigned d   = face / 2;
@@ -63,25 +64,25 @@ namespace ippl {
                         // Periodic faces come in pairs and the application of
                         // BCs checks both sides, so there is no reason to
                         // apply periodic conditions twice
-                        if (isUpper)
+                        if (isUpper) {
                             break;
+                        }
 
-                        Kokkos::parallel_for("Periodic BC", R.getParticleCount(),
+                        Kokkos::parallel_for("Periodic BC", policy,
                                              PeriodicBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::REFLECTIVE:
-                        Kokkos::parallel_for("Reflective BC", R.getParticleCount(),
+                        Kokkos::parallel_for("Reflective BC", policy,
                                              ReflectiveBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::SINK:
-                        Kokkos::parallel_for("Sink BC", R.getParticleCount(),
+                        Kokkos::parallel_for("Sink BC", policy,
                                              SinkBC(R.getView(), nr, d, isUpper));
                         break;
                     case BC::NO:
                     default:
                         break;
                 }
-                Kokkos::fence();
             }
         }
     }  // namespace detail

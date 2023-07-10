@@ -27,7 +27,6 @@
 namespace ippl {
 
     void initialize(int& argc, char* argv[], MPI_Comm comm) {
-
         Env = std::make_unique<mpi::Environment>(argc, argv);
 
         Comm = std::make_unique<mpi::Communicator>(comm);
@@ -52,6 +51,18 @@ namespace ippl {
                         throw std::runtime_error("Missing info level value!");
                     }
                     infoLevel = detail::getNumericalOption<int>(argv[nargs]);
+                } else if (detail::checkOption(argv[nargs], "--timer-fences", "")) {
+                    ++nargs;
+                    if (nargs >= argc) {
+                        throw std::runtime_error("Missing timer fence enable option!");
+                    }
+                    if (std::strcmp(argv[nargs], "on") == 0) {
+                        Timer::enableFences = true;
+                    } else if (std::strcmp(argv[nargs], "off") == 0) {
+                        Timer::enableFences = false;
+                    } else {
+                        throw std::runtime_error("Invalid timer fence option");
+                    }
                 } else if (detail::checkOption(argv[nargs], "--version", "-v")) {
                     IpplInfo::printVersion();
                     std::string options = IpplInfo::compileOptions();
@@ -85,7 +96,8 @@ namespace ippl {
 
             if (infoLevel > 0 && Comm->rank() == 0) {
                 for (auto& l : notparsed) {
-                    std::cout << "Warning: Option '" << l << "' is not parsed by Ippl." << std::endl;
+                    std::cout << "Warning: Option '" << l << "' is not parsed by Ippl."
+                              << std::endl;
                 }
             }
         } catch (const std::exception& e) {
@@ -118,7 +130,6 @@ namespace ippl {
         Comm->abort(errorcode);
     }
 
-
     namespace detail {
         bool checkOption(const char* arg, const char* lstr, const char* sstr) {
             return (std::strcmp(arg, lstr) == 0) || (std::strcmp(arg, sstr) == 0);
@@ -149,5 +160,5 @@ namespace ippl {
             // Silence nvcc warning: missing return statement at end of non-void function
             throw std::runtime_error("Unreachable state");
         }
-    }
-}
+    }  // namespace detail
+}  // namespace ippl

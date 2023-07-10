@@ -53,13 +53,17 @@ namespace ippl {
     namespace detail {
         // ParticleLayout class definition.  Template parameters are the type
         // and dimension of the ParticlePos object used for the particles.
-        template <typename T, unsigned Dim>
+        template <typename T, unsigned Dim, typename... PositionProperties>
         class ParticleLayout {
         public:
             typedef T value_type;
             typedef std::int64_t index_type;
             typedef Vector<T, Dim> vector_type;
-            typedef ParticleAttrib<vector_type> particle_position_type;
+
+            using particle_position_type   = ParticleAttrib<vector_type, PositionProperties...>;
+            using position_memory_space    = typename particle_position_type::memory_space;
+            using position_execution_space = typename particle_position_type::execution_space;
+
             typedef std::array<BC, 2 * Dim> bc_container_type;
 
             static constexpr unsigned dim = Dim;

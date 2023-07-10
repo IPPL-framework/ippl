@@ -32,12 +32,13 @@ public:
     using mesh_type = ippl::UniformCartesian<double, Dim>;
 
     template <unsigned Dim>
-    using playout_type = ippl::ParticleSpatialLayout<double, Dim>;
+    using playout_type = ippl::ParticleSpatialLayout<double, Dim, mesh_type<Dim>>;
 
     template <unsigned Dim>
-    using RegionLayout_t = ippl::detail::RegionLayout<double, Dim, mesh_type<Dim>>;
+    using RegionLayout_t =
+        typename ippl::detail::RegionLayout<double, Dim, mesh_type<Dim>>::uniform_type;
 
-    typedef ippl::ParticleAttrib<int> ER_t;
+    typedef ippl::ParticleAttrib<int> rank_type;
 
     template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
@@ -49,8 +50,8 @@ public:
 
         ~Bunch() {}
 
-        typedef ippl::ParticleAttrib<int> rank_type;
         typedef ippl::ParticleAttrib<double> charge_container_type;
+
         rank_type expectedRank;
         charge_container_type Q;
 
@@ -75,8 +76,9 @@ public:
     template <unsigned Idx, unsigned Dim>
     void setupDim() {
         std::array<ippl::Index, Dim> args;
-        for (unsigned d = 0; d < Dim; d++)
+        for (unsigned d = 0; d < Dim; d++) {
             args[d] = ippl::Index(nPoints[d]);
+        }
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
         ippl::Vector<double, Dim> hx;
@@ -92,9 +94,7 @@ public:
         auto& layout = std::get<Idx>(layouts) = flayout_type<Dim>(MPI_COMM_WORLD, owned, domDec);
 
         auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
-
         auto& pl = std::get<Idx>(playouts) = playout_type<Dim>(layout, mesh);
-
         auto bunch = std::get<Idx>(bunches) = std::make_shared<bunch_type<Dim>>(pl);
 
         using BC = ippl::BC;
@@ -133,9 +133,9 @@ public:
         using size_type    = typename RegionLayout_t<Dim>::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
 
-        auto& positions     = bunch->R.getView();
-        region_view Regions = RLayout.getdLocalRegions();
-        ER_t::view_type ER  = bunch->expectedRank.getView();
+        auto& positions         = bunch->R.getView();
+        region_view Regions     = RLayout.getdLocalRegions();
+        rank_type::view_type ER = bunch->expectedRank.getView();
 
         Kokkos::parallel_for(
             "Expected Rank", mdrange_type({0, 0}, {ER.extent(0), Regions.extent(0)}),
@@ -167,8 +167,8 @@ TEST_F(ParticleSendRecv, SendAndRecieve) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch, playout_type<Dim>& pl) {
         bunch_type<Dim> bunchBuffer(pl);
         pl.update(*bunch, bunchBuffer);
-        // bunch->update();
-        ER_t::view_type::host_mirror_type ER_host = bunch->expectedRank.getHostMirror();
+
+        rank_type::view_type::host_mirror_type ER_host = bunch->expectedRank.getHostMirror();
         Kokkos::resize(ER_host, bunch->expectedRank.size());
         Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
 
