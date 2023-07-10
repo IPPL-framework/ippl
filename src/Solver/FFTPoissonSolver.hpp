@@ -111,10 +111,12 @@ void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<ippl::Vector<Tf
 }
 
 template <typename Tb, typename Tf>
-void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
+void unpack(const ippl::NDIndex<3> intersect,
+            const Kokkos::View<ippl::Vector<ippl::Vector<Tf, 3>, 3>***>& view,
             ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
             size_t dim1, size_t dim2) {
-    unpack_impl<2, Tb, Tf>(intersect, view, fd, nghost, ldom, dim1, dim2);
+    unpack_impl<2, Tb, ippl::Vector<ippl::Vector<Tf, 3>, 3>>(intersect, view, fd, nghost, ldom,
+                                                             dim1, dim2);
 }
 
 namespace ippl {
@@ -712,21 +714,15 @@ namespace ippl {
                         const int kg = k + ldomR[2].first() - nghostR;
 
                         Vector<int, 3> iVec = {ig, jg, kg};
-                        Vector_t kVec;
 
-                        for (size_t d = 0; d < Dim; ++d) {
-                            const scalar_type Len = N[d] * hsize[d];
-                            const bool shift      = (iVec[d] > N[d]);
-                            const bool notMid     = (iVec[d] != N[d]);
+                        scalar_type k_gd;
+                        const scalar_type Len = N[gd] * hsize[gd];
+                        const bool shift      = (iVec[gd] > N[gd]);
+                        const bool notMid     = (iVec[gd] != N[gd]);
 
-                            kVec[d] = notMid * (pi / Len) * (iVec[d] - shift * 2 * N[d]);
-                        }
+                        k_gd = notMid * (pi / Len) * (iVec[gd] - shift * 2 * N[gd]);
 
-                        const scalar_type Dr =
-                            kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
-
-                        const bool isNotZero = (Dr != 0.0);
-                        view_g(i, j, k)      = -isNotZero * (I * kVec[gd]) * viewR(i, j, k);
+                        view_g(i, j, k) = -(I * k_gd) * viewR(i, j, k);
                     });
 
                 // start a timer
@@ -880,11 +876,7 @@ namespace ippl {
                                           * (iVec[d] - shift * 2 * N[d]);
                             }
 
-                            const scalar_type Dr =
-                                kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
-
-                            const bool isNotZero = (Dr != 0.0);
-                            view_g(i, j, k) = -isNotZero * (kVec[col] * kVec[row]) * viewR(i, j, k);
+                            view_g(i, j, k) = -(kVec[col] * kVec[row]) * viewR(i, j, k);
                         });
 
                     // start a timer

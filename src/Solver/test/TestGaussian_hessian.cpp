@@ -384,6 +384,7 @@ void compute_convergence(std::string algorithm, int pt) {
         errE[d] = errorNr / errorDr;
     }
 
+    // compute relative error for hessian components
     Matrix_t<T> errH;
     auto view_fieldH = fieldH->getView();
 
