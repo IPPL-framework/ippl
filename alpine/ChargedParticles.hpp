@@ -672,13 +672,13 @@ public:
         ippl::Comm->barrier();
     }
 
-    VField_t<T, Dim>::HostMirror getEMirror() const {
+    typename VField_t<T, Dim>::HostMirror getEMirror() const {
         auto Eview = E_m.getHostMirror();
         updateEMirror(Eview);
         return Eview;
     }
 
-    void updateEMirror(VField_t<T, Dim>::HostMirror& mirror) const {
+    void updateEMirror(typename VField_t<T, Dim>::HostMirror& mirror) const {
         Kokkos::deep_copy(mirror, E_m.getView());
     }
 
