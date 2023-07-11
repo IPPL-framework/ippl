@@ -17,7 +17,7 @@
 //
 #include "Ippl.h"
 
-#include "MultirankUtils.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
 template <typename T>
@@ -64,13 +64,8 @@ TYPED_TEST(UniformCartesianTest, Constructor) {
 
         TypeParam length = mesh.getCellVolume();
 
-        if constexpr (std::is_same_v<TypeParam, double>) {
-            ASSERT_DOUBLE_EQ(length, cellVol);
-            ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
-        } else {
-            ASSERT_FLOAT_EQ(length, cellVol);
-            ASSERT_FLOAT_EQ(mesh.getMeshVolume(), meshVol);
-        }
+        assertTypeParam(length, cellVol);
+        assertTypeParam(mesh.getMeshVolume(), meshVol);
     };
 
     this->apply(check);
@@ -87,13 +82,8 @@ TYPED_TEST(UniformCartesianTest, Initialize) {
         ippl::UniformCartesian<TypeParam, Dim> mesh;
         mesh.initialize(owned, hx, origin);
 
-        if constexpr (std::is_same_v<TypeParam, double>) {
-            ASSERT_DOUBLE_EQ(mesh.getCellVolume(), cellVol);
-            ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
-        } else {
-            ASSERT_FLOAT_EQ(mesh.getCellVolume(), cellVol);
-            ASSERT_FLOAT_EQ(mesh.getMeshVolume(), meshVol);
-        }
+        assertTypeParam(mesh.getCellVolume(), cellVol);
+        assertTypeParam(mesh.getMeshVolume(), meshVol);
     };
 
     this->apply(check);

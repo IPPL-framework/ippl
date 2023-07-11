@@ -17,7 +17,7 @@
 //
 #include "Ippl.h"
 
-#include "MultirankUtils.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
 template <typename T>
@@ -74,15 +74,6 @@ public:
     size_t nPoints[MaxDim];
     T domain[MaxDim];
 };
-
-template <typename T>
-void assertTypeParam(T valA, T valB) {
-    if constexpr (std::is_same_v<T, double>) {
-        ASSERT_DOUBLE_EQ(valA, valB);
-    } else {
-        ASSERT_FLOAT_EQ(valA, valB);
-    }
-}
 
 using Precisions = ::testing::Types<double, float>;
 
