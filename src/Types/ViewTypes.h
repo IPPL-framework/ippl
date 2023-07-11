@@ -57,6 +57,9 @@ namespace ippl {
         struct ViewType {
             typedef Kokkos::View<typename NPtr<T, Dim>::type, Properties...> view_type;
         };
+
+        template <typename MemorySpace>
+        using hash_type = typename detail::ViewType<int, 1, MemorySpace>::view_type;
     }  // namespace detail
 }  // namespace ippl
 

@@ -114,8 +114,9 @@ namespace ippl {
             inbox, outbox, Comm->getCommunicator(), heffteOptions);
 
         // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
-        if (workspace_m.size() < heffte_m->size_workspace())
+        if (workspace_m.size() < heffte_m->size_workspace()) {
             workspace_m = workspace_t(heffte_m->size_workspace());
+        }
     }
 
     template <typename ComplexField>
@@ -250,8 +251,9 @@ namespace ippl {
             heffteOptions);
 
         // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
-        if (workspace_m.size() < heffte_m->size_workspace())
+        if (workspace_m.size() < heffte_m->size_workspace()) {
             workspace_m = workspace_t(heffte_m->size_workspace());
+        }
     }
 
     template <typename RealField>
@@ -386,8 +388,9 @@ namespace ippl {
             inbox, outbox, Comm->getCommunicator(), heffteOptions);
 
         // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
-        if (workspace_m.size() < heffte_m->size_workspace())
+        if (workspace_m.size() < heffte_m->size_workspace()) {
             workspace_m = workspace_t(heffte_m->size_workspace());
+        }
     }
 
     template <typename Field>

@@ -253,8 +253,9 @@ namespace ippl {
         }
 
         // create double sized mesh and layout objects using the previously defined domain2_m
-        mesh2_m   = std::unique_ptr<mesh_type>(new mesh_type(domain2_m, hr_m, origin));
-        layout2_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain2_m, decomp));
+        using mesh_type = typename lhs_type::Mesh_t;
+        mesh2_m         = std::unique_ptr<mesh_type>(new mesh_type(domain2_m, hr_m, origin));
+        layout2_m       = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain2_m, decomp));
 
         // create the domain for the transformed (complex) fields
         // since we use HeFFTe for the transforms it doesn't require permuting to the right
@@ -300,8 +301,9 @@ namespace ippl {
             }
 
             // 4N grid
-            mesh4_m   = std::unique_ptr<mesh_type>(new mesh_type(domain4_m, hr_m, origin));
-            layout4_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain4_m, decomp));
+            using mesh_type = typename lhs_type::Mesh_t;
+            mesh4_m         = std::unique_ptr<mesh_type>(new mesh_type(domain4_m, hr_m, origin));
+            layout4_m       = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain4_m, decomp));
 
             // initialize fields
             grnL_m.initialize(*mesh4_m, *layout4_m);
@@ -485,7 +487,8 @@ namespace ippl {
                     Communicate::size_type nsends;
                     pack(intersection, view1, fd_m, nghost1, ldom1, nsends);
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_SOLVER_SEND + i, nsends);
 
                     Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(), nsends);
                     buf->resetWritePos();
@@ -503,7 +506,8 @@ namespace ippl {
                     Communicate::size_type nrecvs;
                     nrecvs = intersection.size();
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
 
                     Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
@@ -607,7 +611,8 @@ namespace ippl {
                         Communicate::size_type nsends;
                         pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
 
-                        buffer_type buf = Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
+                        buffer_type buf =
+                            Comm->getBuffer<memory_space, Trhs>(IPPL_SOLVER_SEND + i, nsends);
 
                         Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(), nsends);
                         buf->resetWritePos();
@@ -625,7 +630,8 @@ namespace ippl {
                         Communicate::size_type nrecvs;
                         nrecvs = intersection.size();
 
-                        buffer_type buf = Comm->getBuffer<Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
+                        buffer_type buf =
+                            Comm->getBuffer<memory_space, Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
 
                         Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                         buf->resetReadPos();
@@ -768,7 +774,8 @@ namespace ippl {
                             Communicate::size_type nsends;
                             pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
 
-                            buffer_type buf = Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
+                            buffer_type buf =
+                                Comm->getBuffer<memory_space, Trhs>(IPPL_SOLVER_SEND + i, nsends);
 
                             Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(), nsends);
                             buf->resetWritePos();
@@ -786,8 +793,8 @@ namespace ippl {
                             Communicate::size_type nrecvs;
                             nrecvs = intersection.size();
 
-                            buffer_type buf =
-                                Comm->getBuffer<Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
+                            buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                                IPPL_SOLVER_RECV + myRank, nrecvs);
 
                             Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
                                        nrecvs);
@@ -1121,7 +1128,8 @@ namespace ippl {
                     Communicate::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + i, nsends);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_VICO_SEND + i, nsends);
 
                     int tag = VICO_SOLVER_TAG;
 
@@ -1148,7 +1156,8 @@ namespace ippl {
                     Communicate::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 8 + i, nsends);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_VICO_SEND + 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 1;
 
@@ -1175,7 +1184,8 @@ namespace ippl {
                     Communicate::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 2 * 8 + i, nsends);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_VICO_SEND + 2 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 2;
 
@@ -1202,7 +1212,8 @@ namespace ippl {
                     Communicate::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 3 * 8 + i, nsends);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_VICO_SEND + 3 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 3;
 
@@ -1231,7 +1242,8 @@ namespace ippl {
                     Communicate::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 4 * 8 + i, nsends);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_VICO_SEND + 4 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 4;
 
@@ -1260,7 +1272,8 @@ namespace ippl {
                     Communicate::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 5 * 8 + i, nsends);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_VICO_SEND + 5 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 5;
 
@@ -1289,7 +1302,8 @@ namespace ippl {
                     Communicate::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 6 * 8 + i, nsends);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_VICO_SEND + 6 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 6;
 
@@ -1320,7 +1334,8 @@ namespace ippl {
                     Communicate::size_type nsends;
                     pack(intersection, view_g, fd_m, nghost_g, ldom_g, nsends);
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_SEND + 7 * 8 + i, nsends);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_VICO_SEND + 7 * 8 + i, nsends);
 
                     int tag = VICO_SOLVER_TAG + 7;
 
@@ -1341,7 +1356,8 @@ namespace ippl {
                     Communicate::size_type nrecvs;
                     nrecvs = intersection.size();
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_RECV + myRank, nrecvs);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_VICO_RECV + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG;
 
@@ -1373,7 +1389,8 @@ namespace ippl {
                     Communicate::size_type nrecvs;
                     nrecvs = intersection.size();
 
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 + myRank, nrecvs);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, Trhs>(IPPL_VICO_RECV + 8 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 1;
 
@@ -1405,8 +1422,8 @@ namespace ippl {
                     Communicate::size_type nrecvs;
                     nrecvs = intersection.size();
 
-                    buffer_type buf =
-                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 2 + myRank, nrecvs);
+                    buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                        IPPL_VICO_RECV + 8 * 2 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 2;
 
@@ -1438,8 +1455,8 @@ namespace ippl {
                     Communicate::size_type nrecvs;
                     nrecvs = intersection.size();
 
-                    buffer_type buf =
-                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 3 + myRank, nrecvs);
+                    buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                        IPPL_VICO_RECV + 8 * 3 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 3;
 
@@ -1475,8 +1492,8 @@ namespace ippl {
                     Communicate::size_type nrecvs;
                     nrecvs = intersection.size();
 
-                    buffer_type buf =
-                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 4 + myRank, nrecvs);
+                    buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                        IPPL_VICO_RECV + 8 * 4 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 4;
 
@@ -1512,8 +1529,8 @@ namespace ippl {
                     Communicate::size_type nrecvs;
                     nrecvs = intersection.size();
 
-                    buffer_type buf =
-                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 5 + myRank, nrecvs);
+                    buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                        IPPL_VICO_RECV + 8 * 5 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 5;
 
@@ -1549,8 +1566,8 @@ namespace ippl {
                     Communicate::size_type nrecvs;
                     nrecvs = intersection.size();
 
-                    buffer_type buf =
-                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 6 + myRank, nrecvs);
+                    buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                        IPPL_VICO_RECV + 8 * 6 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 6;
 
@@ -1590,8 +1607,8 @@ namespace ippl {
                     Communicate::size_type nrecvs;
                     nrecvs = intersection.size();
 
-                    buffer_type buf =
-                        Comm->getBuffer<Trhs>(IPPL_VICO_RECV + 8 * 7 + myRank, nrecvs);
+                    buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                        IPPL_VICO_RECV + 8 * 7 + myRank, nrecvs);
 
                     int tag = VICO_SOLVER_TAG + 7;
 

@@ -36,9 +36,9 @@ public:
     using playout_type = ippl::ParticleSpatialLayout<T, Dim>;
 
     template <unsigned Dim>
-    using RegionLayout_t = ippl::detail::RegionLayout<T, Dim, mesh_type<Dim>>;
+    using RegionLayout_t = ippl::detail::RegionLayout<T, Dim, mesh_type<Dim>>::uniform_type;
 
-    typedef ippl::ParticleAttrib<int> ER_t;
+    typedef ippl::ParticleAttrib<int> rank_type;
 
     template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
@@ -52,6 +52,7 @@ public:
 
         typedef ippl::ParticleAttrib<int> rank_type;
         typedef ippl::ParticleAttrib<T> charge_container_type;
+        
         rank_type expectedRank;
         charge_container_type Q;
 
@@ -76,8 +77,9 @@ public:
     template <unsigned Idx, unsigned Dim>
     void setupDim() {
         std::array<ippl::Index, Dim> args;
-        for (unsigned d = 0; d < Dim; d++)
+        for (unsigned d = 0; d < Dim; d++) {
             args[d] = ippl::Index(nPoints[d]);
+        }
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
         ippl::Vector<T, Dim> hx;
@@ -91,11 +93,8 @@ public:
         }
 
         auto& layout = std::get<Idx>(layouts) = flayout_type<Dim>(owned, domDec);
-
         auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
-
         auto& pl = std::get<Idx>(playouts) = playout_type<Dim>(layout, mesh);
-
         auto bunch = std::get<Idx>(bunches) = std::make_shared<bunch_type<Dim>>(pl);
 
         using BC = ippl::BC;
@@ -134,9 +133,9 @@ public:
         using size_type    = typename RegionLayout_t<Dim>::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
 
-        auto& positions     = bunch->R.getView();
-        region_view Regions = RLayout.getdLocalRegions();
-        ER_t::view_type ER  = bunch->expectedRank.getView();
+        auto& positions         = bunch->R.getView();
+        region_view Regions     = RLayout.getdLocalRegions();
+        rank_type::view_type ER = bunch->expectedRank.getView();
 
         Kokkos::parallel_for(
             "Expected Rank", mdrange_type({0, 0}, {ER.extent(0), Regions.extent(0)}),
@@ -176,6 +175,7 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
         // bunch->update();
         typename TestFixture::ER_t::view_type::host_mirror_type ER_host =
             bunch->expectedRank.getHostMirror();
+            
         Kokkos::resize(ER_host, bunch->expectedRank.size());
         Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
 

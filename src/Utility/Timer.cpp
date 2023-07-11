@@ -23,6 +23,8 @@
 
 #include "Timer.h"
 
+bool Timer::enableFences = IPPL_ENABLE_TIMER_FENCES;
+
 Timer::Timer() {
     this->clear();
 }
@@ -36,7 +38,9 @@ void Timer::start() {
 }
 
 void Timer::stop() {
-    Kokkos::fence();
+    if (enableFences) {
+        Kokkos::fence();
+    }
     stop_m = std::chrono::high_resolution_clock::now();
 
     duration_type elapsed = stop_m - start_m;
