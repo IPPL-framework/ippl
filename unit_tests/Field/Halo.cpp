@@ -176,11 +176,10 @@ TYPED_TEST(HaloTest, CheckCubes) {
 
 TYPED_TEST(HaloTest, FillHalo) {
     auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field) {
-        using view_type = typename TestFixture::field_type<Dim>::view_type;
-        *field          = 1;
+        *field = 1;
         field->fillHalo();
 
-        view_type view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
+        auto view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
         this->template nestedViewLoop(view, 0, [&]<typename... Idx>(const Idx... args) {
             assertTypeParam<TypeParam>(view(args...), 1);
         });

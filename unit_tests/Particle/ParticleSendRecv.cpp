@@ -52,7 +52,7 @@ public:
 
         typedef ippl::ParticleAttrib<int> rank_type;
         typedef ippl::ParticleAttrib<T> charge_container_type;
-        
+
         rank_type expectedRank;
         charge_container_type Q;
 
@@ -173,9 +173,9 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
         typename TestFixture::bunch_type<Dim> bunchBuffer(pl);
         pl.update(*bunch, bunchBuffer);
         // bunch->update();
-        typename TestFixture::ER_t::view_type::host_mirror_type ER_host =
+        typename TestFixture::rank_type::view_type::host_mirror_type ER_host =
             bunch->expectedRank.getHostMirror();
-            
+
         Kokkos::resize(ER_host, bunch->expectedRank.size());
         Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
 
