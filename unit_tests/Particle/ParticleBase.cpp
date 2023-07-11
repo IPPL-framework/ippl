@@ -26,7 +26,7 @@ public:
     using playout_type = ippl::detail::ParticleLayout<double, Dim>;
 
     template <unsigned Dim>
-    using bunch_type = ippl::ParticleBase<playout_type<Dim>>;
+    using bunch_type = ippl::ParticleBase<playout_type<Dim>, Kokkos::DefaultExecutionSpace>;
 
     ParticleBaseTest() { setup(this); }
 
