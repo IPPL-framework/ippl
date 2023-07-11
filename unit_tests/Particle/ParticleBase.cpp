@@ -26,7 +26,7 @@ public:
     using playout_type = ippl::detail::ParticleLayout<double, Dim>;
 
     template <unsigned Dim>
-    using bunch_type = ippl::ParticleBase<playout_type<Dim>>;
+    using bunch_type = ippl::ParticleBase<playout_type<Dim>, Kokkos::DefaultExecutionSpace>;
 
     ParticleBaseTest() { setup(this); }
 
@@ -59,7 +59,7 @@ TEST_F(ParticleBaseTest, CreateAndDestroy) {
         auto mirror = pbase->ID.getHostMirror();
         Kokkos::deep_copy(mirror, pbase->ID.getView());
         for (size_t i = 0; i < mirror.extent(0); ++i) {
-            EXPECT_EQ(mirror[i], i);
+            EXPECT_EQ(mirror[i], (int)i);
         }
 
         // Delete all the particles with odd indices

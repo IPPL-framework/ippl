@@ -112,12 +112,12 @@ int main(int argc, char* argv[]) {
                 viewRHS(i, j, k) =
                     pow(pi, 2)
                     * (cos(sin(pi * z)) * sin(pi * z) * sin(sin(pi * x)) * sin(sin(pi * y))
-                    + (cos(sin(pi * y)) * sin(pi * y) * sin(sin(pi * x))
-                        + (cos(sin(pi * x)) * sin(pi * x)
-                            + (pow(cos(pi * x), 2) + pow(cos(pi * y), 2) + pow(cos(pi * z), 2))
-                                * sin(sin(pi * x)))
+                       + (cos(sin(pi * y)) * sin(pi * y) * sin(sin(pi * x))
+                          + (cos(sin(pi * x)) * sin(pi * x)
+                             + (pow(cos(pi * x), 2) + pow(cos(pi * y), 2) + pow(cos(pi * z), 2))
+                                   * sin(sin(pi * x)))
                                 * sin(sin(pi * y)))
-                            * sin(sin(pi * z)));
+                             * sin(sin(pi * z)));
             });
 
         ippl::ElectrostaticsCG<field_type> lapsolver;
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
         int size    = isWeak ? pt * pt * ptY : pt;
         int itCount = lapsolver.getIterationCount();
         m << size << "," << std::setprecision(16) << relError << "," << residue << "," << itCount
-        << endl;
+          << endl;
 
         IpplTimings::print("timings" + std::to_string(pt) + ".dat");
     }

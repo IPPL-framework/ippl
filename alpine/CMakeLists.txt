@@ -25,6 +25,9 @@ target_link_libraries (LandauDamping ${IPPL_LIBS})
 add_executable (LandauDampingMixedPrecision LandauDampingMixedPrecision.cpp)
 target_link_libraries (LandauDampingMixedPrecision ${IPPL_LIBS})
 
+add_executable (LandauDampingMixedExec LandauDampingMixedExec.cpp)
+target_link_libraries (LandauDampingMixedExec ${IPPL_LIBS})
+
 add_executable (BumponTailInstability BumponTailInstability.cpp)
 target_link_libraries (BumponTailInstability ${IPPL_LIBS})
 

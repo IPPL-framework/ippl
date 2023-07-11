@@ -38,9 +38,6 @@
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    class Field;
-
     /*
      * Enum type to identify different kinds of
      * field boundary conditions. Since ZeroFace is
@@ -189,7 +186,7 @@ namespace ippl {
 
     private:
         face_neighbor_type faceNeighbors_m;
-        detail::FieldBufferData<T> haloData_m;
+        typename Field::halo_type::databuffer_type haloData_m;
     };
 }  // namespace ippl
 

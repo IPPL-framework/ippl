@@ -64,63 +64,67 @@
 
 namespace ippl {
 
-    template <class PLayout, class... Properties>
-    ParticleBase<PLayout, Properties...>::ParticleBase()
+    template <class PLayout, typename... IP>
+    ParticleBase<PLayout, IP...>::ParticleBase()
         : layout_m(nullptr)
         , localNum_m(0)
-        , attributes_m(0)
         , nextID_m(Comm->rank())
         , numNodes_m(Comm->size()) {
-        addAttribute(ID);  // needs to be added first due to destroy function
+        if constexpr (EnableIDs) {
+            addAttribute(ID);
+        }
         addAttribute(R);
     }
 
-    template <class PLayout, class... Properties>
-    ParticleBase<PLayout, Properties...>::ParticleBase(PLayout& layout)
+    template <class PLayout, typename... IP>
+    ParticleBase<PLayout, IP...>::ParticleBase(PLayout& layout)
         : ParticleBase() {
         initialize(layout);
     }
 
-    template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::addAttribute(
-        detail::ParticleAttribBase<Properties...>& pa) {
-        attributes_m.push_back(&pa);
+    template <class PLayout, typename... IP>
+    template <typename MemorySpace>
+    void ParticleBase<PLayout, IP...>::addAttribute(detail::ParticleAttribBase<MemorySpace>& pa) {
+        attributes_m.template get<MemorySpace>().push_back(&pa);
         pa.setParticleCount(localNum_m);
     }
 
-    template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::initialize(PLayout& layout) {
+    template <class PLayout, typename... IP>
+    void ParticleBase<PLayout, IP...>::initialize(PLayout& layout) {
         //         PAssert(layout_m == nullptr);
 
         // save the layout, and perform setup tasks
         layout_m = &layout;
     }
 
-    template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::create(size_type nLocal) {
+    template <class PLayout, typename... IP>
+    void ParticleBase<PLayout, IP...>::create(size_type nLocal) {
         PAssert(layout_m != nullptr);
 
-        for (attribute_iterator it = attributes_m.begin(); it != attributes_m.end(); ++it) {
-            (*it)->create(nLocal);
-        }
+        forAllAttributes([&]<typename Attribute>(Attribute& attribute) {
+            attribute->create(nLocal);
+        });
 
-        // set the unique ID value for these new particles
-        auto pIDs     = ID.getView();
-        auto nextID   = this->nextID_m;
-        auto numNodes = this->numNodes_m;
-        Kokkos::parallel_for(
-            "ParticleBase<PLayout, Properties...>::create(size_t)",
-            Kokkos::RangePolicy<size_type>(localNum_m, nLocal),
-            KOKKOS_LAMBDA(const std::int64_t i) { pIDs(i) = nextID + numNodes * i; });
-        // nextID_m += numNodes_m * (nLocal - localNum_m);
-        nextID_m += numNodes_m * nLocal;
+        if constexpr (EnableIDs) {
+            // set the unique ID value for these new particles
+            using policy_type =
+                Kokkos::RangePolicy<size_type, typename particle_index_type::execution_space>;
+            auto pIDs     = ID.getView();
+            auto nextID   = this->nextID_m;
+            auto numNodes = this->numNodes_m;
+            Kokkos::parallel_for(
+                "ParticleBase<...>::create(size_t)", policy_type(localNum_m, nLocal),
+                KOKKOS_LAMBDA(const std::int64_t i) { pIDs(i) = nextID + numNodes * i; });
+            // nextID_m += numNodes_m * (nLocal - localNum_m);
+            nextID_m += numNodes_m * nLocal;
+        }
 
         // remember that we're creating these new particles
         localNum_m += nLocal;
     }
 
-    template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::createWithID(index_type id) {
+    template <class PLayout, typename... IP>
+    void ParticleBase<PLayout, IP...>::createWithID(index_type id) {
         PAssert(layout_m != nullptr);
 
         // temporary change
@@ -134,8 +138,8 @@ namespace ippl {
         numNodes_m = Comm->getNodes();
     }
 
-    template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::globalCreate(size_type nTotal) {
+    template <class PLayout, typename... IP>
+    void ParticleBase<PLayout, IP...>::globalCreate(size_type nTotal) {
         PAssert(layout_m != nullptr);
 
         // Compute the number of particles local to each processor
@@ -144,20 +148,23 @@ namespace ippl {
         const size_t rank = Comm->myNode();
 
         size_type rest = nTotal - nLocal * rank;
-        if (rank < rest)
+        if (rank < rest) {
             ++nLocal;
+        }
 
         create(nLocal);
     }
 
-    template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::destroy(const Kokkos::View<bool*>& invalid,
-                                                       const size_type destroyNum) {
+    template <class PLayout, typename... IP>
+    template <typename... Properties>
+    void ParticleBase<PLayout, IP...>::destroy(const Kokkos::View<bool*, Properties...>& invalid,
+                                               const size_type destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
         // If there aren't any particles to delete, do nothing
-        if (destroyNum == 0)
+        if (destroyNum == 0) {
             return;
+        }
 
         // If we're deleting all the particles, there's no point in doing
         // anything because the valid region will be empty; we only need to
@@ -167,109 +174,180 @@ namespace ippl {
             return;
         }
 
+        using view_type       = Kokkos::View<bool*, Properties...>;
+        using memory_space    = typename view_type::memory_space;
+        using execution_space = typename view_type::execution_space;
+        using policy_type     = Kokkos::RangePolicy<execution_space>;
+        auto& locDeleteIndex  = deleteIndex_m.get<memory_space>();
+        auto& locKeepIndex    = keepIndex_m.get<memory_space>();
+
         // Resize buffers, if necessary
-        if (deleteIndex_m.size() < destroyNum) {
-            int overalloc = Comm->getDefaultOverallocation();
-            Kokkos::realloc(deleteIndex_m, destroyNum * overalloc);
-            Kokkos::realloc(keepIndex_m, destroyNum * overalloc);
-        }
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            if (attributes_m.template get<memory_space>().size() > 0) {
+                int overalloc = Comm->getDefaultOverallocation();
+                auto& del     = deleteIndex_m.get<memory_space>();
+                auto& keep    = keepIndex_m.get<memory_space>();
+                if (del.size() < destroyNum) {
+                    Kokkos::realloc(del, destroyNum * overalloc);
+                    Kokkos::realloc(keep, destroyNum * overalloc);
+                }
+            }
+        });
 
         // Reset index buffer
-        Kokkos::deep_copy(deleteIndex_m, -1);
-
-        auto locDeleteIndex = deleteIndex_m;
-        auto locKeepIndex   = keepIndex_m;
+        Kokkos::deep_copy(locDeleteIndex, -1);
 
         // Find the indices of the invalid particles in the valid region
         Kokkos::parallel_scan(
-            "Scan in ParticleBase::destroy()", localNum_m - destroyNum,
+            "Scan in ParticleBase::destroy()", policy_type(0, localNum_m - destroyNum),
             KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
-                if (final && invalid(i))
+                if (final && invalid(i)) {
                     locDeleteIndex(idx) = i;
-                if (invalid(i))
+                }
+                if (invalid(i)) {
                     idx += 1;
+                }
             });
         Kokkos::fence();
 
         // Determine the total number of invalid particles in the valid region
         size_type maxDeleteIndex = 0;
         Kokkos::parallel_reduce(
-            "Reduce in ParticleBase::destroy()", destroyNum,
+            "Reduce in ParticleBase::destroy()", policy_type(0, destroyNum),
             KOKKOS_LAMBDA(const size_t i, size_t& maxIdx) {
-                if (locDeleteIndex(i) >= 0 && i > maxIdx)
+                if (locDeleteIndex(i) >= 0 && i > maxIdx) {
                     maxIdx = i;
+                }
             },
             Kokkos::Max<size_type>(maxDeleteIndex));
 
         // Find the indices of the valid particles in the invalid region
         Kokkos::parallel_scan(
             "Second scan in ParticleBase::destroy()",
-            Kokkos::RangePolicy<size_type>(localNum_m - destroyNum, localNum_m),
+            Kokkos::RangePolicy<size_type, execution_space>(localNum_m - destroyNum, localNum_m),
             KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
-                if (final && !invalid(i))
+                if (final && !invalid(i)) {
                     locKeepIndex(idx) = i;
-                if (!invalid(i))
+                }
+                if (!invalid(i)) {
                     idx += 1;
+                }
             });
 
         Kokkos::fence();
 
         localNum_m -= destroyNum;
 
+        auto filter = [&]<typename MemorySpace>() {
+            return attributes_m.template get<MemorySpace>().size() > 0;
+        };
+        deleteIndex_m.copyToOtherSpaces<memory_space>(filter);
+        keepIndex_m.copyToOtherSpaces<memory_space>(filter);
+
         // Partition the attributes into valid and invalid regions
-        for (attribute_iterator it = attributes_m.begin(); it != attributes_m.end(); ++it) {
-            (*it)->destroy(deleteIndex_m, keepIndex_m, maxDeleteIndex + 1);
-        }
+        // NOTE: The vector elements are pointers, but we want to extract
+        // the memory space from the class type, so we explicitly
+        // make the lambda argument a pointer to the template parameter
+        forAllAttributes([&]<typename Attribute>(Attribute*& attribute) {
+            using att_memory_space = typename Attribute::memory_space;
+            auto& del              = deleteIndex_m.get<att_memory_space>();
+            auto& keep             = keepIndex_m.get<att_memory_space>();
+            attribute->destroy(del, keep, maxDeleteIndex + 1);
+        });
     }
 
-    template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::serialize(detail::Archive<Properties...>& ar,
-                                                         size_type nsends) {
-        using size_type = typename attribute_container_t::size_type;
-        for (size_type i = 0; i < attributes_m.size(); ++i) {
-            attributes_m[i]->serialize(ar, nsends);
-        }
+    template <class PLayout, typename... IP>
+    template <typename HashType, typename BufferType>
+    void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag, int sendNum,
+                                                  std::vector<MPI_Request>& requests,
+                                                  const HashType& hash, BufferType& buffer) {
+        size_type nSends = hash.size();
+        requests.resize(requests.size() + 1);
+
+        auto hashes = hash_container_type(hash, [&]<typename MemorySpace>() {
+            return attributes_m.template get<MemorySpace>().size() > 0;
+        });
+        pack(buffer, hashes);
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            size_type bufSize = packedSize<MemorySpace>(nSends);
+            if (bufSize == 0) {
+                return;
+            }
+
+            auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
+
+            Comm->isend(rank, tag++, buffer, *buf, requests.back(), nSends);
+            buf->resetWritePos();
+        });
     }
 
-    template <class PLayout, class... Properties>
-    void ParticleBase<PLayout, Properties...>::deserialize(detail::Archive<Properties...>& ar,
-                                                           size_type nrecvs) {
-        using size_type = typename attribute_container_t::size_type;
-        for (size_type i = 0; i < attributes_m.size(); ++i) {
-            attributes_m[i]->deserialize(ar, nrecvs);
-        }
+    template <class PLayout, typename... IP>
+    template <typename BufferType>
+    void ParticleBase<PLayout, IP...>::recvFromRank(int rank, int tag, int recvNum,
+                                                    size_type nRecvs, BufferType& buffer) {
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            size_type bufSize = packedSize<MemorySpace>(nRecvs);
+            if (bufSize == 0) {
+                return;
+            }
+
+            auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_RECV + recvNum, bufSize);
+
+            Comm->recv(rank, tag++, buffer, *buf, bufSize, nRecvs);
+            buf->resetReadPos();
+        });
+        unpack(buffer, nRecvs);
     }
 
-    template <class PLayout, class... Properties>
-    detail::size_type ParticleBase<PLayout, Properties...>::packedSize(
-        const size_type count) const {
+    template <class PLayout, typename... IP>
+    template <typename Archive>
+    void ParticleBase<PLayout, IP...>::serialize(Archive& ar, size_type nsends) {
+        using memory_space = typename Archive::buffer_type::memory_space;
+        forAllAttributes<memory_space>([&]<typename Attribute>(Attribute& att) {
+            att->serialize(ar, nsends);
+        });
+    }
+
+    template <class PLayout, typename... IP>
+    template <typename Archive>
+    void ParticleBase<PLayout, IP...>::deserialize(Archive& ar, size_type nrecvs) {
+        using memory_space = typename Archive::buffer_type::memory_space;
+        forAllAttributes<memory_space>([&]<typename Attribute>(Attribute& att) {
+            att->deserialize(ar, nrecvs);
+        });
+    }
+
+    template <class PLayout, typename... IP>
+    template <typename MemorySpace>
+    detail::size_type ParticleBase<PLayout, IP...>::packedSize(const size_type count) const {
         size_type total = 0;
-        // Vector size type
-        using vsize_t = typename attribute_container_t::size_type;
-        for (vsize_t i = 0; i < attributes_m.size(); ++i) {
-            total += attributes_m[i]->packedSize(count);
-        }
+        forAllAttributes<MemorySpace>([&]<typename Attribute>(const Attribute& att) {
+            total += att->packedSize(count);
+        });
         return total;
     }
 
-    template <class PLayout, class... Properties>
+    template <class PLayout, typename... IP>
     template <class Buffer>
-    void ParticleBase<PLayout, Properties...>::pack(Buffer& buffer, const hash_type& hash) {
-        // Vector size type
-        using vsize_t = typename attribute_container_t::size_type;
-        for (vsize_t j = 0; j < attributes_m.size(); ++j) {
-            attributes_m[j]->pack(buffer.getAttribute(j), hash);
-        }
+    void ParticleBase<PLayout, IP...>::pack(Buffer& buffer, const hash_container_type& hash) {
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            auto& att = attributes_m.template get<MemorySpace>();
+            for (unsigned j = 0; j < att.size(); j++) {
+                att[j]->pack(buffer.template getAttribute<MemorySpace>(j),
+                             hash.template get<MemorySpace>());
+            }
+        });
     }
 
-    template <class PLayout, class... Properties>
+    template <class PLayout, typename... IP>
     template <class Buffer>
-    void ParticleBase<PLayout, Properties...>::unpack(Buffer& buffer, size_type nrecvs) {
-        // Vector size type
-        using vsize_t = typename attribute_container_t::size_type;
-        for (vsize_t j = 0; j < attributes_m.size(); ++j) {
-            attributes_m[j]->unpack(buffer.getAttribute(j), nrecvs);
-        }
+    void ParticleBase<PLayout, IP...>::unpack(Buffer& buffer, size_type nrecvs) {
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            auto& att = attributes_m.template get<MemorySpace>();
+            for (unsigned j = 0; j < att.size(); j++) {
+                att[j]->unpack(buffer.template getAttribute<MemorySpace>(j), nrecvs);
+            }
+        });
         localNum_m += nrecvs;
     }
 }  // namespace ippl
