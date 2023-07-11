@@ -153,7 +153,7 @@ public:
     }
 
     PtrCollection<std::shared_ptr, bunch_type> bunches;
-    unsigned int nParticles;
+    const unsigned int nParticles;
     size_t nPoints[MaxDim];
     T domain[MaxDim];
     Collection<playout_type> playouts;
@@ -168,6 +168,8 @@ using Precisions = ::testing::Types<double, float>;
 TYPED_TEST_CASE(ParticleSendRecv, Precisions);
 
 TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
+    // Local copy to avoid accessing through `this` in lambda
+    const auto nParticles = this->nParticles;
     auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& bunch,
                                    typename TestFixture::playout_type<Dim>& pl) {
         typename TestFixture::bunch_type<Dim> bunchBuffer(pl);
@@ -191,7 +193,7 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
                    ippl::Comm->getCommunicator());
 
         if (ippl::Comm->rank() == 0) {
-            ASSERT_EQ(this->nParticles, Total_particles);
+            ASSERT_EQ(nParticles, Total_particles);
         }
     };
 
