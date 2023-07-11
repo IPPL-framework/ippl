@@ -227,8 +227,8 @@ namespace ippl {
          */
         unsigned getAttributeNum() const {
             unsigned total = 0;
-            forAllAttributes([&]<typename Attributes>(const Attributes& att) {
-                total += att.size();
+            detail::runForAllSpaces([&]<typename MemorySpace>() {
+                total += attributes_m.template get<MemorySpace>().size();
             });
             return total;
         }
