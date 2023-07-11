@@ -927,8 +927,8 @@ namespace ippl {
                                 Communicate::size_type nsends;
                                 pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
 
-                                buffer_type buf =
-                                    Comm->getBuffer<Trhs>(IPPL_SOLVER_SEND + i, nsends);
+                                buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                                    IPPL_SOLVER_SEND + i, nsends);
 
                                 Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(),
                                             nsends);
@@ -947,8 +947,8 @@ namespace ippl {
                                 Communicate::size_type nrecvs;
                                 nrecvs = intersection.size();
 
-                                buffer_type buf =
-                                    Comm->getBuffer<Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
+                                buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                                    IPPL_SOLVER_RECV + myRank, nrecvs);
 
                                 Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
                                            nrecvs);
