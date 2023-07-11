@@ -45,8 +45,8 @@ namespace ippl {
         using buffer_type = Communicate::buffer_type;
 
         // constructor and destructor
-        FDTDSolver(Field_t charge, VField_t current, VField_t E, VField_t B,
-                   double timestep = 0.05);
+        FDTDSolver(Field_t charge, VField_t current, VField_t E, VField_t B, double timestep = 0.05,
+                   bool seed_ = false);
         ~FDTDSolver();
 
         // finite differences time domain solver for potentials (A and phi)
@@ -54,6 +54,9 @@ namespace ippl {
 
         // evaluates E and B fields using computed potentials
         void field_evaluation();
+
+        // gaussian pulse
+        double gaussian(size_t it);
 
         // initialization of FDTD solver
         void initialize();
@@ -72,6 +75,12 @@ namespace ippl {
 
         // size of timestep
         double dt;
+
+        // seed flag
+        bool seed;
+
+        // iteration number for gaussian seed
+        size_t iteration = 0;
 
         // fields containing reference to charge and current
         Field_t* rhoN_mp;

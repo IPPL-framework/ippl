@@ -81,6 +81,46 @@ void dumpVTK(ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<doub
     }
 }
 
+void dumpVTK(ippl::Field<double, 3, ippl::UniformCartesian<double, 3>,
+                         ippl::UniformCartesian<double, 3>::DefaultCentering>& rho,
+             int nx, int ny, int nz, int iteration, double dx, double dy, double dz) {
+    using Mesh_t      = ippl::UniformCartesian<double, 3>;
+    using Centering_t = Mesh_t::DefaultCentering;
+    typedef ippl::Field<double, 3, Mesh_t, Centering_t> Field_t;
+    typename Field_t::view_type::host_mirror_type host_view = rho.getHostMirror();
+
+    std::stringstream fname;
+    fname << "data/scalar_";
+    fname << std::setw(4) << std::setfill('0') << iteration;
+    fname << ".vtk";
+
+    Kokkos::deep_copy(host_view, rho.getView());
+
+    Inform vtkout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+    vtkout.precision(10);
+    vtkout.setf(std::ios::scientific, std::ios::floatfield);
+
+    // start with header
+    vtkout << "# vtk DataFile Version 2.0" << endl;
+    vtkout << "TestFDTD" << endl;
+    vtkout << "ASCII" << endl;
+    vtkout << "DATASET STRUCTURED_POINTS" << endl;
+    vtkout << "DIMENSIONS " << nx + 3 << " " << ny + 3 << " " << nz + 3 << endl;
+    vtkout << "ORIGIN " << -dx << " " << -dy << " " << -dz << endl;
+    vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
+    vtkout << "CELL_DATA " << (nx + 2) * (ny + 2) * (nz + 2) << endl;
+
+    vtkout << "SCALARS Rho float" << endl;
+    vtkout << "LOOKUP_TABLE default" << endl;
+    for (int z = 0; z < nz + 2; z++) {
+        for (int y = 0; y < ny + 2; y++) {
+            for (int x = 0; x < nx + 2; x++) {
+                vtkout << host_view(x, y, z) << endl;
+            }
+        }
+    }
+}
+
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
@@ -132,7 +172,6 @@ int main(int argc, char* argv[]) {
         // define the R (rho) field
         Field_t rho;
         rho.initialize(mesh, layout);
-        rho = 0.0;
 
         // define the Vector field E (LHS)
         VField_t fieldE, fieldB;
@@ -146,8 +185,8 @@ int main(int argc, char* argv[]) {
         current.initialize(mesh, layout);
         current = 0.0;
 
-        // define an FDTDSolver object
-        ippl::FDTDSolver<double, Dim> solver(rho, current, fieldE, fieldB, dt);
+        // turn on the seeding (gaussian pulse)
+        bool seed = false;
 
         // add pulse at center of domain
         auto view_rho    = rho.getView();
@@ -155,7 +194,7 @@ int main(int argc, char* argv[]) {
         auto ldom        = layout.getLocalNDIndex();
 
         Kokkos::parallel_for(
-            "Assign gaussian source at center", ippl::getRangePolicy(view_rho, nghost),
+            "Assign sinusoidal source at center", rho.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;
@@ -170,6 +209,15 @@ int main(int argc, char* argv[]) {
                     view_rho(i, j, k) = sine(0, dt);
             });
 
+        // define an FDTDSolver object
+        ippl::FDTDSolver<double, Dim> solver(rho, current, fieldE, fieldB, dt, seed);
+
+        // for diagnostics
+        Field_t normE;
+        normE.initialize(mesh, layout);
+        auto view_normE  = normE.getView();
+        auto view_fieldE = fieldE.getView();
+
         msg << "Timestep number = " << 0 << " , time = " << 0 << endl;
         solver.solve();
 
@@ -178,7 +226,7 @@ int main(int argc, char* argv[]) {
             msg << "Timestep number = " << it << " , time = " << it * dt << endl;
 
             Kokkos::parallel_for(
-                "Assign gaussian source at center", ippl::getRangePolicy(view_rho, nghost),
+                "Assign sine source at center", ippl::getRangePolicy(view_rho, nghost),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     const int ig = i + ldom[0].first() - nghost;
                     const int jg = j + ldom[1].first() - nghost;
@@ -195,7 +243,16 @@ int main(int argc, char* argv[]) {
 
             solver.solve();
 
-            dumpVTK(fieldE, nr[0], nr[1], nr[2], it, hr[0], hr[1], hr[2]);
+            Kokkos::parallel_for(
+                "Compute norm", normE.getFieldRangePolicy(),
+                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    double norm_sqrd = view_fieldE(i, j, k)[0] * view_fieldE(i, j, k)[0]
+                                       + view_fieldE(i, j, k)[1] * view_fieldE(i, j, k)[1]
+                                       + view_fieldE(i, j, k)[2] * view_fieldE(i, j, k)[2];
+                    view_normE(i, j, k) = Kokkos::sqrt(norm_sqrd);
+                });
+
+            dumpVTK(normE, nr[0], nr[1], nr[2], it, hr[0], hr[1], hr[2]);
         }
     }
     ippl::finalize();
