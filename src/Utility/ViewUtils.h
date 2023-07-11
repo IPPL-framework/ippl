@@ -64,8 +64,9 @@ namespace ippl {
         template <typename View, size_t... Idx>
         decltype(auto) shrinkView_impl(std::string label, const View& view, int nghost,
                                        const std::index_sequence<Idx...>&) {
-            return Kokkos::View<typename View::data_type, Kokkos::LayoutLeft>(
-                label, (view.extent(Idx) - 2 * nghost)...);
+            return Kokkos::View<typename View::data_type, Kokkos::LayoutLeft,
+                                typename View::memory_space>(label,
+                                                             (view.extent(Idx) - 2 * nghost)...);
         }
 
         /*!
