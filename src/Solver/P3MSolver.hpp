@@ -125,6 +125,7 @@ namespace ippl {
         grn_m.initialize(*mesh_mp, *layout_mp);
         rhotr_m.initialize(*meshComplex_m, *layoutComplex_m);
         grntr_m.initialize(*meshComplex_m, *layoutComplex_m);
+        tempFieldComplex_m.initialize(*meshComplex_m, *layoutComplex_m);
 
         // create the FFT object
         fft_m = std::make_unique<FFT_t>(*layout_mp, *layoutComplex_m, this->params_m);
@@ -232,19 +233,85 @@ namespace ippl {
 
         // multiply FFT(rho2)*FFT(green)
         // convolution becomes multiplication in FFT
-        rhotr_m = rhotr_m * grntr_m;
+        rhotr_m = -rhotr_m * grntr_m;
 
-        // inverse FFT of the product and store the electrostatic potential in rho2_mr
-        fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+        if ((out == Base::GRAD) || (out == Base::SOL_AND_GRAD)) {
+            // Compute gradient in Fourier space and then
+            // take inverse FFT.
 
-        // normalization is double counted due to 2 transforms
-        *(this->rhs_mp) = *(this->rhs_mp) * nr_m[0] * nr_m[1] * nr_m[2];
-        // discretization of integral requires h^3 factor
-        *(this->rhs_mp) = *(this->rhs_mp) * hr_m[0] * hr_m[1] * hr_m[2];
+            const Trhs pi              = Kokkos::numbers::pi_v<Trhs>;
+            Kokkos::complex<Trhs> imag = {0.0, 1.0};
 
-        // if we want gradient of phi = Efield
-        if (out == Base::SOL_AND_GRAD || out == Base::GRAD) {
-            *(this->lhs_mp) = -grad(*this->rhs_mp);
+            auto view               = rhotr_m.getView();
+            const int nghost        = rhotr_m.getNghost();
+            auto tempview           = tempFieldComplex_m.getView();
+            auto viewRhs            = this->rhs_mp->getView();
+            auto viewLhs            = this->lhs_mp->getView();
+            const int nghostL       = this->lhs_mp->getNghost();
+            const auto& lDomComplex = layoutComplex_m->getLocalNDIndex();
+
+            // define some member variables in local scope for the parallel_for
+            Vector_t hsize     = hr_m;
+            Vector<int, Dim> N = nr_m;
+            Vector_t origin    = mesh_mp->getOrigin();
+
+            for (size_t gd = 0; gd < Dim; ++gd) {
+                ippl::parallel_for(
+                    "Gradient FFTPeriodicPoissonSolver", getRangePolicy(view, nghost),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        Vector<int, Dim> iVec = args - nghost;
+
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            iVec[d] += lDomComplex[d].first();
+                        }
+
+                        Vector_t kVec;
+
+                        for (size_t d = 0; d < Dim; ++d) {
+                            const Trhs Len = N[d] * hsize[d];
+                            bool shift     = (iVec[d] > (N[d] / 2));
+                            bool notMid    = (iVec[d] != (N[d] / 2));
+                            // For the noMid part see
+                            // https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 1
+                            kVec[d] = notMid * 2 * pi / Len * (iVec[d] - shift * N[d]);
+                        }
+
+                        Trhs Dr = 0;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            Dr += kVec[d] * kVec[d];
+                        }
+
+                        apply(tempview, args) = apply(view, args);
+
+                        bool isNotZero = (Dr != 0.0);
+
+                        apply(tempview, args) *= -(isNotZero * imag * kVec[gd]);
+                    });
+
+                fft_m->transform(-1, *this->rhs_mp, tempFieldComplex_m);
+
+                ippl::parallel_for(
+                    "Assign Gradient FFTPeriodicPoissonSolver", getRangePolicy(viewLhs, nghostL),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        apply(viewLhs, args)[gd] = apply(viewRhs, args);
+                    });
+            }
+
+            // normalization is double counted due to 2 transforms
+            *(this->lhs_mp) = *(this->lhs_mp) * nr_m[0] * nr_m[1] * nr_m[2];
+            // discretization of integral requires h^3 factor
+            *(this->lhs_mp) = *(this->lhs_mp) * hr_m[0] * hr_m[1] * hr_m[2];
+        }
+
+        if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
+            // inverse FFT of the product and store the electrostatic potential in rho2_mr
+            fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
+
+            // normalization is double counted due to 2 transforms
+            *(this->rhs_mp) = *(this->rhs_mp) * nr_m[0] * nr_m[1] * nr_m[2];
+            // discretization of integral requires h^3 factor
+            *(this->rhs_mp) = *(this->rhs_mp) * hr_m[0] * hr_m[1] * hr_m[2];
         }
     };
 
@@ -254,6 +321,9 @@ namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
     void P3MSolver<FieldLHS, FieldRHS>::greensFunction() {
         grn_m = 0.0;
+
+        // define pi
+        Trhs pi = Kokkos::numbers::pi_v<Trhs>;
 
         // This alpha parameter is a choice for the Green's function
         // it controls the "range" of the Green's function (e.g.
@@ -274,8 +344,6 @@ namespace ippl {
         const int nghost                 = grn_m.getNghost();
         const auto& ldom                 = layout_mp->getLocalNDIndex();
 
-        constexpr Trhs ke = 2.532638e8;
-
         // Kokkos parallel for loop to find (0,0,0) point and regularize
         Kokkos::parallel_for(
             "Assign Green's function ", ippl::getRangePolicy(view, nghost),
@@ -288,7 +356,7 @@ namespace ippl {
                 const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
 
                 Trhs r        = Kokkos::real(Kokkos::sqrt(view(i, j, k)));
-                view(i, j, k) = (!isOrig) * ke * (Kokkos::erf(alpha * r) / r);
+                view(i, j, k) = (!isOrig) * (-1.0 / (4.0 * pi)) * (Kokkos::erf(alpha * r) / r);
             });
 
         // perform the FFT of the Green's function for the convolution
