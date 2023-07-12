@@ -213,7 +213,7 @@ namespace ippl {
         // members for improved Vico-Greengard (VICO_2.0)
         Field_t grn2n1_m;
 
-        std::unique_ptr<FFT<CosTransform, Field_t>> fft2n1_m;
+        std::unique_ptr<FFT<Cos1Transform, Field_t>> fft2n1_m;
 
         std::unique_ptr<mesh_type> mesh2n1_m;
         std::unique_ptr<FieldLayout_t> layout2n1_m;

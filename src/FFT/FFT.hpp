@@ -549,6 +549,126 @@ namespace ippl {
                 apply(fview, args) = apply(tempField, args - nghost);
             });
     }
+
+    //=========================================================================
+    // FFT Cos1Transform Constructors
+    //=========================================================================
+
+    /**
+       Create a new FFT object of type CosTransform, with a
+       given layout and heffte parameters.
+    */
+
+    template <typename Field>
+    FFT<Cos1Transform, Field>::FFT(const Layout_t& layout, const ParameterList& params) {
+        /**
+         * Heffte requires to pass a 3D array even for 2D and
+         * 1D FFTs we just have to make the length in other
+         * dimensions to be 1.
+         */
+        std::array<long long, 3> low;
+        std::array<long long, 3> high;
+
+        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
+
+        low.fill(0);
+        high.fill(0);
+
+        /**
+         * Static cast to detail::long long (uint64_t) is necessary, as heffte::box3d requires it
+         * like that.
+         */
+        for (size_t d = 0; d < Dim; ++d) {
+            low[d]  = static_cast<long long>(lDom[d].first());
+            high[d] = static_cast<long long>(lDom[d].length() + lDom[d].first() - 1);
+        }
+
+        setup(low, high, params);
+    }
+
+    /**
+           setup performs the initialization necessary.
+    */
+    template <typename Field>
+    void FFT<Cos1Transform, Field>::setup(const std::array<long long, 3>& low,
+                                         const std::array<long long, 3>& high,
+                                         const ParameterList& params) {
+        heffte::box3d<long long> inbox  = {low, high};
+        heffte::box3d<long long> outbox = {low, high};
+
+        heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
+
+        if (!params.get<bool>("use_heffte_defaults")) {
+            heffteOptions.use_pencils = params.get<bool>("use_pencils");
+            heffteOptions.use_reorder = params.get<bool>("use_reorder");
+#ifdef Heffte_ENABLE_GPU
+            heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
+#endif
+            switch (params.get<int>("comm")) {
+                case a2a:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
+                    break;
+                case a2av:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
+                    break;
+                case p2p:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+                    break;
+                case p2p_pl:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
+                    break;
+                default:
+                    throw IpplException("FFT::setup", "Unrecognized heffte communication type");
+            }
+        }
+
+        heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>(
+            inbox, outbox, Comm->getCommunicator(), heffteOptions);
+
+        // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
+        if (workspace_m.size() < heffte_m->size_workspace())
+            workspace_m = workspace_t(heffte_m->size_workspace());
+    }
+
+    template <typename Field>
+    void FFT<Cos1Transform, Field>::transform(int direction, Field& f) {
+        static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+
+        auto fview       = f.getView();
+        const int nghost = f.getNghost();
+
+        /**
+         *This copy to a temporary Kokkos view is needed because of following
+         *reasons:
+         *1) heffte wants the input and output fields without ghost layers
+         *2) heffte accepts data in layout left (by default) eventhough this
+         *can be changed during heffte box creation
+         */
+        auto tempField = detail::shrinkView("tempField", fview, nghost);
+
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+        ippl::parallel_for(
+            "copy from Kokkos FFT", getRangePolicy(fview, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                apply(tempField, args - nghost) = apply(fview, args);
+            });
+
+        if (direction == 1) {
+            heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
+                              heffte::scale::full);
+        } else if (direction == -1) {
+            heffte_m->backward(tempField.data(), tempField.data(), workspace_m.data(),
+                               heffte::scale::none);
+        } else {
+            throw std::logic_error("Only 1:forward and -1:backward are allowed as directions");
+        }
+
+        ippl::parallel_for(
+            "copy to Kokkos FFT", getRangePolicy(fview, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                apply(fview, args) = apply(tempField, args - nghost);
+            });
+    }
 }  // namespace ippl
 
 // vi: set et ts=4 sw=4 sts=4:

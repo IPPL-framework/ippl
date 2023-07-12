@@ -68,6 +68,10 @@ namespace ippl {
        Tag classes for Cosine transforms
     */
     class CosTransform {};
+    /**
+       Tag classes for Cosine of type 1 transforms
+    */
+    class Cos1Transform {};
 
     enum FFTComm {
         a2av   = 0,
@@ -83,6 +87,7 @@ namespace ippl {
             using backend     = heffte::backend::fftw;
             using backendSine = heffte::backend::fftw_sin;
             using backendCos  = heffte::backend::fftw_cos;
+            using backendCos1  = heffte::backend::fftw_cos1;
         };
 #endif
 #ifdef Heffte_ENABLE_MKL
@@ -98,6 +103,7 @@ namespace ippl {
             using backend     = heffte::backend::cufft;
             using backendSine = heffte::backend::cufft_sin;
             using backendCos  = heffte::backend::cufft_cos;
+            using backendCos1  = heffte::backend::cufft_cos1;
         };
 #endif
 #endif
@@ -262,6 +268,44 @@ namespace ippl {
         typedef FieldLayout<Dim> Layout_t;
 
         using heffteBackend = typename detail::HeffteBackendType::backendCos;
+        using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+
+        /** Create a new FFT object with the layout for the input Field and
+         * parameters for heffte.
+         */
+        FFT(const Layout_t& layout, const ParameterList& params);
+
+        // Destructor
+        ~FFT() = default;
+
+        /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
+            transform. The output is over-written in the input.
+        */
+        void transform(int direction, Field& f);
+
+    private:
+        /**
+           setup performs the initialization necessary. heFFTe expects 3 sets of bounds,
+           so the arrays are zeroed and filled up to the given dimension.
+        */
+        void setup(const std::array<long long, 3>& low, const std::array<long long, 3>& high,
+                   const ParameterList& params);
+
+        std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
+        workspace_t workspace_m;
+    };
+    /**
+       Cosine transform class
+    */
+    template <typename Field>
+    class FFT<Cos1Transform, Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using T                       = typename Field::value_type;
+
+    public:
+        typedef FieldLayout<Dim> Layout_t;
+
+        using heffteBackend = typename detail::HeffteBackendType::backendCos1;
         using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and

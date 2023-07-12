@@ -339,7 +339,7 @@ namespace ippl {
             grn2n1_m.initialize(*mesh2n1_m, *layout2n1_m);  // 2N+1 grnL
 
             // create real to real FFT object for 2N+1 grid
-            fft2n1_m = std::make_unique<FFT<CosTransform, Field_t>>(*layout2n1_m, this->params_m);
+            fft2n1_m = std::make_unique<FFT<Cos1Transform, Field_t>>(*layout2n1_m, this->params_m);
 
             IpplTimings::stopTimer(initialize_vico);
         }
@@ -604,11 +604,17 @@ namespace ippl {
             // also multiply by the mesh spacing^3 (to account for discretization)
             // Vico: need to multiply by normalization factor of 1/4N^3,
             // since only backward transform was performed on the 4N grid
+            // Vico_2: need to multiply by a factor of (2N)^3 to match the normalization factor in the transform.
             for (unsigned int i = 0; i < Dim; ++i) {
-                if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
+                if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
                     rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
-                else
+                }
+                else if ((alg == Algorithm::HOCKNEY)) {
                     rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                }
+                else {
+                    rho2_mr = rho2_mr * 2.0 * nr_m[i];
+                }
             }
 
             // start a timer
@@ -762,10 +768,15 @@ namespace ippl {
 
                 // apply proper normalization
                 for (unsigned int i = 0; i < Dim; ++i) {
-                    if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
+                    if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
                         rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
-                    else
+                    }
+                    else if ((alg == Algorithm::HOCKNEY)) {
                         rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                    }
+                    else {
+                        rho2_mr = rho2_mr * 2.0 * nr_m[i];
+                    }
                 }
 
                 // start a timer
@@ -925,7 +936,6 @@ namespace ippl {
 
                         view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
                     });
-
             } else if (alg == Algorithm::BIHARMONIC) {
                 Kokkos::parallel_for(
                     "Initialize Green's function ", ippl::getRangePolicy(view_g, nghost_g),
@@ -1075,31 +1085,7 @@ namespace ippl {
                     if ((ig == 0 && jg == 0 && kg == 0)) {
                         view_g2n1(i, j, k) = -L_sum * L_sum * 0.5;
                     }
-
-                    // scaling of the 2N+1 Green's function for the DCT - all borders are scaled by
-                    // sqrt(2)
-                    if (ig == 0) {
-                        view_g2n1(i, j, k) = view_g2n1(i, j, k) / std::sqrt(2.0);
-                    }
-                    if (jg == 0) {
-                        view_g2n1(i, j, k) = view_g2n1(i, j, k) / std::sqrt(2.0);
-                    }
-                    if (kg == 0) {
-                        view_g2n1(i, j, k) = view_g2n1(i, j, k) / std::sqrt(2.0);
-                    }
-                    if (ig == 2 * size[0]) {
-                        view_g2n1(i, j, k) = view_g2n1(i, j, k) / std::sqrt(2.0);
-                    }
-                    if (jg == 2 * size[1]) {
-                        view_g2n1(i, j, k) = view_g2n1(i, j, k) / std::sqrt(2.0);
-                    }
-                    if (kg == 2 * size[2]) {
-                        view_g2n1(i, j, k) = view_g2n1(i, j, k) / std::sqrt(2.0);
-                    }
                 });
-
-            std::cout << "ScaledGreen (green, after scaling)" << std::endl;
-            grn2n1_m.write();
 
             // start a timer
             static IpplTimings::TimerRef fft4 = IpplTimings::getTimer("FFT: Precomputation");
@@ -1110,35 +1096,9 @@ namespace ippl {
             grn2n1_m =
                 grn2n1_m
                 * (1.0
-                   / (std::sqrt(4 * size[0]) * std::sqrt(4 * size[1]) * std::sqrt(4 * size[2])));
+                   / ((4 * size[0]) * (4 * size[1]) * (4 * size[2])));
 
             IpplTimings::stopTimer(fft4);
-
-            // rescale the 2N+1 Green's function after the DCT by sqrt(2)
-            Kokkos::parallel_for(
-                "Scale inversed 2N+1 Green's function",
-                ippl::getRangePolicy(view_g2n1, nghost_g2n1),
-                KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                    // go from local indices to global
-                    const int ig = i + ldom_g2n1[0].first() - nghost_g2n1;
-                    const int jg = j + ldom_g2n1[1].first() - nghost_g2n1;
-                    const int kg = k + ldom_g2n1[2].first() - nghost_g2n1;
-
-                    // scaling of the 2N+1 Green's function for the DCT - all borders are scaled
-                    // by sqrt(2)
-                    if (ig == 0) {
-                        view_g2n1(i, j, k) = view_g2n1(i, j, k) * std::sqrt(2.0);
-                    }
-                    if (jg == 0) {
-                        view_g2n1(i, j, k) = view_g2n1(i, j, k) * std::sqrt(2.0);
-                    }
-                    if (kg == 0) {
-                        view_g2n1(i, j, k) = view_g2n1(i, j, k) * std::sqrt(2.0);
-                    }
-                });
-
-            std::cout << "TDCT (inverse green, after scaling)" << std::endl;
-            grn2n1_m.write();
 
             // Restrict transformed grn2n1_m to 2N domain after precomputation step
 
@@ -1194,9 +1154,6 @@ namespace ippl {
                         view(s, p, q) = view_g2n1(i + 1, j + 1, k + 1);
                     });
             }
-
-            std::cout << "T (inverse green, restricted)" << std::endl;
-            grn_mr.write();
 
         } else {
             // Hockney case
