@@ -36,7 +36,8 @@ public:
     using playout_type = ippl::ParticleSpatialLayout<T, Dim>;
 
     template <unsigned Dim>
-    using RegionLayout_t = ippl::detail::RegionLayout<T, Dim, mesh_type<Dim>>::uniform_type;
+    using RegionLayout_t =
+        typename ippl::detail::RegionLayout<T, Dim, mesh_type<Dim>>::uniform_type;
 
     typedef ippl::ParticleAttrib<int> rank_type;
 
@@ -170,9 +171,10 @@ TYPED_TEST_CASE(ParticleSendRecv, Precisions);
 TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     // Local copy to avoid accessing through `this` in lambda
     const auto nParticles = this->nParticles;
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& bunch,
-                                   typename TestFixture::playout_type<Dim>& pl) {
-        typename TestFixture::bunch_type<Dim> bunchBuffer(pl);
+    auto check            = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& bunch,
+                     typename TestFixture::template playout_type<Dim>& pl) {
+        typename TestFixture::template bunch_type<Dim> bunchBuffer(pl);
         pl.update(*bunch, bunchBuffer);
         // bunch->update();
         typename TestFixture::rank_type::view_type::host_mirror_type ER_host =

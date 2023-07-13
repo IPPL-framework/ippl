@@ -108,8 +108,9 @@ using Precisions = ::testing::Types<double, float>;
 TYPED_TEST_CASE(ParticleBCTest, Precisions);
 
 TYPED_TEST(ParticleBCTest, UpperPeriodicBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<TypeParam, Dim>& nr) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& bunch,
+                     ippl::NDRegion<TypeParam, Dim>& nr) {
         constexpr unsigned Idx = this->dimToIndex(Dim);
         const ippl::Vector<TypeParam, Dim>& pos =
             this->template truncate<Dim>(this->len + this->shift);
@@ -127,8 +128,9 @@ TYPED_TEST(ParticleBCTest, UpperPeriodicBC) {
 }
 
 TYPED_TEST(ParticleBCTest, UpperNoBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<TypeParam, Dim>& nr) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& bunch,
+                     ippl::NDRegion<TypeParam, Dim>& nr) {
         constexpr unsigned Idx = this->dimToIndex(Dim);
         const ippl::Vector<TypeParam, Dim>& pos =
             this->template truncate<Dim>(this->len + this->shift);
@@ -145,8 +147,9 @@ TYPED_TEST(ParticleBCTest, UpperNoBC) {
 }
 
 TYPED_TEST(ParticleBCTest, UpperReflectiveBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<TypeParam, Dim>& nr) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& bunch,
+                     ippl::NDRegion<TypeParam, Dim>& nr) {
         constexpr unsigned Idx = this->dimToIndex(Dim);
         const ippl::Vector<TypeParam, Dim>& pos =
             this->template truncate<Dim>(this->len + this->shift);
@@ -164,8 +167,9 @@ TYPED_TEST(ParticleBCTest, UpperReflectiveBC) {
 }
 
 TYPED_TEST(ParticleBCTest, UpperSinkBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<TypeParam, Dim>& nr) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& bunch,
+                     ippl::NDRegion<TypeParam, Dim>& nr) {
         constexpr unsigned Idx = this->dimToIndex(Dim);
         const ippl::Vector<TypeParam, Dim>& pos =
             this->template truncate<Dim>(this->len + this->shift);
@@ -182,8 +186,9 @@ TYPED_TEST(ParticleBCTest, UpperSinkBC) {
 }
 
 TYPED_TEST(ParticleBCTest, LowerPeriodicBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<TypeParam, Dim>& nr) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& bunch,
+                     ippl::NDRegion<TypeParam, Dim>& nr) {
         constexpr unsigned Idx                  = this->dimToIndex(Dim);
         const ippl::Vector<TypeParam, Dim>& pos = this->template truncate<Dim>(-this->shift);
         this->template setup<Idx, Dim>(pos);
@@ -200,8 +205,9 @@ TYPED_TEST(ParticleBCTest, LowerPeriodicBC) {
 }
 
 TYPED_TEST(ParticleBCTest, LowerNoBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<TypeParam, Dim>& nr) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& bunch,
+                     ippl::NDRegion<TypeParam, Dim>& nr) {
         constexpr unsigned Idx                  = this->dimToIndex(Dim);
         const ippl::Vector<TypeParam, Dim>& pos = this->template truncate<Dim>(-this->shift);
         this->template setup<Idx, Dim>(pos);
@@ -217,8 +223,9 @@ TYPED_TEST(ParticleBCTest, LowerNoBC) {
 }
 
 TYPED_TEST(ParticleBCTest, LowerReflectiveBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<TypeParam, Dim>& nr) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& bunch,
+                     ippl::NDRegion<TypeParam, Dim>& nr) {
         constexpr unsigned Idx                  = this->dimToIndex(Dim);
         const ippl::Vector<TypeParam, Dim>& pos = this->template truncate<Dim>(-this->shift);
         this->template setup<Idx, Dim>(pos);
@@ -235,8 +242,9 @@ TYPED_TEST(ParticleBCTest, LowerReflectiveBC) {
 }
 
 TYPED_TEST(ParticleBCTest, LowerSinkBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<TypeParam, Dim>& nr) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& bunch,
+                     ippl::NDRegion<TypeParam, Dim>& nr) {
         constexpr unsigned Idx                  = this->dimToIndex(Dim);
         const ippl::Vector<TypeParam, Dim>& pos = this->template truncate<Dim>(-this->shift);
         this->template setup<Idx, Dim>(pos);

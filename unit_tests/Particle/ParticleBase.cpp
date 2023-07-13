@@ -52,67 +52,69 @@ TYPED_TEST(ParticleBaseTest, CreateAndDestroy) {
     }
     size_t nParticles = 1000;
 
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& pbase) {
-        // Create 1000 particles
-        pbase->create(nParticles);
+    auto check =
+        [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& pbase) {
+            // Create 1000 particles
+            pbase->create(nParticles);
 
-        size_t localnum = pbase->getLocalNum();
+            size_t localnum = pbase->getLocalNum();
 
-        EXPECT_EQ(nParticles, localnum);
+            EXPECT_EQ(nParticles, localnum);
 
-        // Check that the right IDs are present
-        auto mirror = pbase->ID.getHostMirror();
-        Kokkos::deep_copy(mirror, pbase->ID.getView());
-        for (size_t i = 0; i < mirror.extent(0); ++i) {
-            EXPECT_EQ(mirror[i], (int)i);
-        }
+            // Check that the right IDs are present
+            auto mirror = pbase->ID.getHostMirror();
+            Kokkos::deep_copy(mirror, pbase->ID.getView());
+            for (size_t i = 0; i < mirror.extent(0); ++i) {
+                EXPECT_EQ(mirror[i], (int)i);
+            }
 
-        // Delete all the particles with odd indices
-        // (i.e. mark as invalid)
-        typedef typename ippl::detail::ViewType<bool, 1>::view_type bool_type;
-        bool_type invalid("invalid", nParticles);
-        auto mirror2 = Kokkos::create_mirror(invalid);
-        for (size_t i = 0; i < 500; ++i) {
-            mirror2(2 * i)     = false;
-            mirror2(2 * i + 1) = true;
-        }
-        Kokkos::deep_copy(invalid, mirror2);
-        pbase->destroy(invalid, 500);
+            // Delete all the particles with odd indices
+            // (i.e. mark as invalid)
+            typedef typename ippl::detail::ViewType<bool, 1>::view_type bool_type;
+            bool_type invalid("invalid", nParticles);
+            auto mirror2 = Kokkos::create_mirror(invalid);
+            for (size_t i = 0; i < 500; ++i) {
+                mirror2(2 * i)     = false;
+                mirror2(2 * i + 1) = true;
+            }
+            Kokkos::deep_copy(invalid, mirror2);
+            pbase->destroy(invalid, 500);
 
-        // Verify remaining indices
-        Kokkos::deep_copy(mirror, pbase->ID.getView());
-        for (size_t i = 0; i < 500; ++i) {
-            // The even indices contain the original particles
-            // The particles with odd indices are deleted and replaced
-            // with particles with even indices (in ascending order w.r.t. index)
-            int index = i % 2 == 0 ? i : 500 + (i - 1);
-            EXPECT_EQ(mirror[i], index);
-        }
-    };
+            // Verify remaining indices
+            Kokkos::deep_copy(mirror, pbase->ID.getView());
+            for (size_t i = 0; i < 500; ++i) {
+                // The even indices contain the original particles
+                // The particles with odd indices are deleted and replaced
+                // with particles with even indices (in ascending order w.r.t. index)
+                int index = i % 2 == 0 ? i : 500 + (i - 1);
+                EXPECT_EQ(mirror[i], index);
+            }
+        };
 
     this->apply(check, this->pbases);
 }
 
 TYPED_TEST(ParticleBaseTest, AddAttribute) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::bunch_type<Dim>>& pbase) {
-        using attrib_type = ippl::ParticleAttrib<TypeParam>;
+    auto check =
+        [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& pbase) {
+            using attrib_type = ippl::ParticleAttrib<TypeParam>;
 
-        attrib_type Q;
+            attrib_type Q;
 
-        pbase->addAttribute(Q);
+            pbase->addAttribute(Q);
 
-        auto nAttributes = pbase->getAttributeNum();
+            auto nAttributes = pbase->getAttributeNum();
 
-        EXPECT_EQ(size_t(3), nAttributes);
-    };
+            EXPECT_EQ(size_t(3), nAttributes);
+        };
 
     this->apply(check, this->pbases);
 }
 
 TEST(ParticleBase, Initialize1) {
     auto check_impl = [&]<typename T, unsigned Dim>() {
-        typename ParticleBaseTest<T>::playout_type<Dim> pl;
-        typename ParticleBaseTest<T>::bunch_type<Dim> bunch(pl);
+        typename ParticleBaseTest<T>::template playout_type<Dim> pl;
+        typename ParticleBaseTest<T>::template bunch_type<Dim> bunch(pl);
 
         size_t localnum = bunch.getLocalNum();
 
@@ -129,8 +131,8 @@ TEST(ParticleBase, Initialize1) {
 
 TEST(ParticleBase, Initialize2) {
     auto check_impl = [&]<typename T, unsigned Dim>() {
-        typename ParticleBaseTest<T>::playout_type<Dim> pl;
-        typename ParticleBaseTest<T>::bunch_type<Dim> bunch;
+        typename ParticleBaseTest<T>::template playout_type<Dim> pl;
+        typename ParticleBaseTest<T>::template bunch_type<Dim> bunch;
 
         bunch.initialize(pl);
 

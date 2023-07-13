@@ -207,8 +207,8 @@ TYPED_TEST_CASE(FFTTest, Precisions);
 
 TYPED_TEST(FFTTest, Cos) {
     auto check = [&]<unsigned Dim>(
-                     std::shared_ptr<typename TestFixture::field_type_real<Dim>>& field,
-                     const typename TestFixture::layout_type<Dim>& layout) {
+                     std::shared_ptr<typename TestFixture::template field_type_real<Dim>>& field,
+                     const typename TestFixture::template layout_type<Dim>& layout) {
         this->template testTrig<ippl::CosTransform, Dim>(field, layout);
     };
 
@@ -217,8 +217,8 @@ TYPED_TEST(FFTTest, Cos) {
 
 TYPED_TEST(FFTTest, Sin) {
     auto check = [&]<unsigned Dim>(
-                     std::shared_ptr<typename TestFixture::field_type_real<Dim>>& field,
-                     const typename TestFixture::layout_type<Dim>& layout) {
+                     std::shared_ptr<typename TestFixture::template field_type_real<Dim>>& field,
+                     const typename TestFixture::template layout_type<Dim>& layout) {
         this->template testTrig<ippl::SineTransform, Dim>(field, layout);
     };
 
@@ -227,10 +227,10 @@ TYPED_TEST(FFTTest, Sin) {
 
 TYPED_TEST(FFTTest, RC) {
     auto check = [&]<unsigned Dim>(
-                     std::shared_ptr<typename TestFixture::field_type_real<Dim>>& field,
-                     const typename TestFixture::layout_type<Dim>& layout,
-                     const typename TestFixture::mesh_type<Dim>& mesh) {
-        using view_type   = typename TestFixture::field_type_real<Dim>::view_type;
+                     std::shared_ptr<typename TestFixture::template field_type_real<Dim>>& field,
+                     const typename TestFixture::template layout_type<Dim>& layout,
+                     const typename TestFixture::template mesh_type<Dim>& mesh) {
+        using view_type   = typename TestFixture::template field_type_real<Dim>::view_type;
         using mirror_type = typename view_type::host_mirror_type;
 
         ippl::ParameterList fftParams;
@@ -248,14 +248,15 @@ TYPED_TEST(FFTTest, RC) {
             }
         }
 
-        typename TestFixture::layout_type<Dim> layoutOutput(ownedOutput, allParallel);
+        typename TestFixture::template layout_type<Dim> layoutOutput(ownedOutput, allParallel);
 
-        typename TestFixture::mesh_type<Dim> meshOutput(ownedOutput, mesh.getMeshSpacing(),
-                                                        mesh.getOrigin());
-        typename TestFixture::field_type_complex<Dim> fieldOutput(meshOutput, layoutOutput);
+        typename TestFixture::template mesh_type<Dim> meshOutput(ownedOutput, mesh.getMeshSpacing(),
+                                                                 mesh.getOrigin());
+        typename TestFixture::template field_type_complex<Dim> fieldOutput(meshOutput,
+                                                                           layoutOutput);
 
-        std::shared_ptr<typename TestFixture::FFT_type<ippl::RCTransform, Dim>> fft =
-            std::make_unique<typename TestFixture::FFT_type<ippl::RCTransform, Dim>>(
+        std::shared_ptr<typename TestFixture::template FFT_type<ippl::RCTransform, Dim>> fft =
+            std::make_unique<typename TestFixture::template FFT_type<ippl::RCTransform, Dim>>(
                 layout, layoutOutput, fftParams);
 
         view_type& view        = field->getView();
@@ -279,9 +280,9 @@ TYPED_TEST(FFTTest, RC) {
 
 TYPED_TEST(FFTTest, CC) {
     auto check = [&]<unsigned Dim>(
-                     std::shared_ptr<typename TestFixture::field_type_complex<Dim>>& field,
-                     const typename TestFixture::layout_type<Dim>& layout) {
-        using view_type   = typename TestFixture::field_type_complex<Dim>::view_type;
+                     std::shared_ptr<typename TestFixture::template field_type_complex<Dim>>& field,
+                     const typename TestFixture::template layout_type<Dim>& layout) {
+        using view_type   = typename TestFixture::template field_type_complex<Dim>::view_type;
         using mirror_type = typename view_type::host_mirror_type;
         TypeParam tol     = (std::is_same_v<TypeParam, double>) ? 1e-13 : 1e-6;
 
@@ -289,9 +290,9 @@ TYPED_TEST(FFTTest, CC) {
 
         fftParams.add("use_heffte_defaults", true);
 
-        std::shared_ptr<typename TestFixture::FFT_type<ippl::CCTransform, Dim>> fft =
-            std::make_unique<typename TestFixture::FFT_type<ippl::CCTransform, Dim>>(layout,
-                                                                                     fftParams);
+        std::shared_ptr<typename TestFixture::template FFT_type<ippl::CCTransform, Dim>> fft =
+            std::make_unique<typename TestFixture::template FFT_type<ippl::CCTransform, Dim>>(
+                layout, fftParams);
 
         view_type& view        = field->getView();
         mirror_type field_host = field->getHostMirror();

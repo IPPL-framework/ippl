@@ -80,8 +80,8 @@ using Precisions = ::testing::Types<double, float>;
 TYPED_TEST_CASE(HaloTest, Precisions);
 
 TYPED_TEST(HaloTest, CheckNeighbors) {
-    auto check = [&]<unsigned Dim>(const typename TestFixture::layout_type<Dim>& layout) {
-        using neighbor_list = typename TestFixture::layout_type<Dim>::neighbor_list;
+    auto check = [&]<unsigned Dim>(const typename TestFixture::template layout_type<Dim>& layout) {
+        using neighbor_list = typename TestFixture::template layout_type<Dim>::neighbor_list;
         int myRank          = ippl::Comm->rank();
         int nRanks          = ippl::Comm->size();
 
@@ -129,9 +129,9 @@ TYPED_TEST(HaloTest, CheckNeighbors) {
 }
 
 TYPED_TEST(HaloTest, CheckCubes) {
-    auto check = [&]<unsigned Dim>(const typename TestFixture::layout_type<Dim>& layout) {
-        using neighbor_list        = typename TestFixture::layout_type<Dim>::neighbor_list;
-        using mirror_type          = typename TestFixture::layout_type<Dim>::host_mirror_type;
+    auto check = [&]<unsigned Dim>(const typename TestFixture::template layout_type<Dim>& layout) {
+        using neighbor_list = typename TestFixture::template layout_type<Dim>::neighbor_list;
+        using mirror_type   = typename TestFixture::template layout_type<Dim>::host_mirror_type;
         const mirror_type& domains = layout.getHostLocalDomains();
 
         for (int rank = 0; rank < ippl::Comm->size(); ++rank) {
@@ -166,24 +166,27 @@ TYPED_TEST(HaloTest, CheckCubes) {
 }
 
 TYPED_TEST(HaloTest, FillHalo) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field) {
-        *field = 1;
-        field->fillHalo();
+    auto check =
+        [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
+            *field = 1;
+            field->fillHalo();
 
-        auto view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
-        this->template nestedViewLoop(view, 0, [&]<typename... Idx>(const Idx... args) {
-            assertTypeParam<TypeParam>(view(args...), 1);
-        });
-    };
+            auto view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
+            this->template nestedViewLoop(view, 0, [&]<typename... Idx>(const Idx... args) {
+                assertTypeParam<TypeParam>(view(args...), 1);
+            });
+        };
 
     this->apply(check, this->fields);
 }
 
 TYPED_TEST(HaloTest, AccumulateHalo) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::field_type<Dim>>& field,
-                                   const typename TestFixture::layout_type<Dim>& layout) {
-        using mirror_type   = typename TestFixture::field_type<Dim>::view_type::host_mirror_type;
-        using neighbor_list = typename TestFixture::layout_type<Dim>::neighbor_list;
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template field_type<Dim>>& field,
+                     const typename TestFixture::template layout_type<Dim>& layout) {
+        using mirror_type =
+            typename TestFixture::template field_type<Dim>::view_type::host_mirror_type;
+        using neighbor_list = typename TestFixture::template layout_type<Dim>::neighbor_list;
 
         *field = 1;
         mirror_type mirror =
