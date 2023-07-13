@@ -110,8 +110,8 @@ TYPED_TEST(BareFieldTest, DeepCopy) {
 
 TYPED_TEST(BareFieldTest, Sum) {
     TypeParam val                    = 1.0;
-    TypeParam expected[this->MaxDim] = {val * this->nPoints[0]};
-    for (unsigned d = 1; d < this->MaxDim; d++) {
+    TypeParam expected[TestFixture::MaxDim] = {val * this->nPoints[0]};
+    for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] * this->nPoints[d];
     }
 
@@ -147,8 +147,8 @@ TYPED_TEST(BareFieldTest, Min) {
 
 TYPED_TEST(BareFieldTest, Max) {
     TypeParam val                    = 1.;
-    TypeParam expected[this->MaxDim] = {this->nPoints[0] - val};
-    for (unsigned d = 1; d < this->MaxDim; d++) {
+    TypeParam expected[TestFixture::MaxDim] = {this->nPoints[0] - val};
+    for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] + this->nPoints[d];
     }
     auto check =
@@ -170,8 +170,8 @@ TYPED_TEST(BareFieldTest, Max) {
 }
 
 TYPED_TEST(BareFieldTest, Prod) {
-    TypeParam sizes[this->MaxDim] = {(TypeParam)this->nPoints[0]};
-    for (unsigned d = 1; d < this->MaxDim; d++) {
+    TypeParam sizes[TestFixture::MaxDim] = {(TypeParam)this->nPoints[0]};
+    for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         sizes[d] = sizes[d - 1] * this->nPoints[d];
     }
     auto check =
