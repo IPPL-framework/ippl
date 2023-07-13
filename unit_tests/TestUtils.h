@@ -18,10 +18,50 @@
 #ifndef TEST_UTILS_H
 #define TEST_UTILS_H
 
+#include <tuple>
 #include <type_traits>
+
+#include "Utility/TypeUtils.h"
 
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
+
+template <typename...>
+struct CreateCombinations;
+template <typename, typename>
+struct CombineTuples;
+template <typename, typename>
+struct AddType;
+
+template <typename... Ts, typename U>
+struct AddType<std::tuple<Ts...>, U> {
+    using type = std::tuple<std::tuple<Ts, U>...>;
+};
+
+template <typename... TypesA, typename... TypesB>
+struct CombineTuples<std::tuple<TypesA...>, std::tuple<TypesB...>> {
+    using type = decltype(std::tuple_cat(
+        std::declval<typename AddType<std::tuple<TypesA...>, TypesB>::type>()...));
+};
+
+template <typename Tuple1, typename Tuple2>
+struct CreateCombinations<Tuple1, Tuple2> {
+    using type = typename CombineTuples<Tuple1, Tuple2>::type;
+};
+
+template <typename Tuple1, typename Tuple2, typename... Tuples>
+struct CreateCombinations<Tuple1, Tuple2, Tuples...> {
+    using first = typename CombineTuples<Tuple1, Tuple2>::type;
+    using type  = typename CreateCombinations<first, Tuples...>::type;
+};
+
+template <typename>
+struct TestForTypes;
+
+template <typename... Types>
+struct TestForTypes<std::tuple<Types...>> {
+    using type = ::testing::Types<Types...>;
+};
 
 template <typename T>
 void assertTypeParam(T valA, T valB) {
@@ -30,6 +70,13 @@ void assertTypeParam(T valA, T valB) {
     } else {
         ASSERT_FLOAT_EQ(valA, valB);
     }
+};
+
+struct MixedPrecisionAndSpaces {
+    using Spaces     = ippl::detail::TypeForAllSpaces<std::tuple>::type;
+    using Precisions = std::tuple<double, float>;
+    using Combos     = CreateCombinations<Precisions, Spaces>::type;
+    using tests      = TestForTypes<Combos>::type;
 };
 
 #endif
