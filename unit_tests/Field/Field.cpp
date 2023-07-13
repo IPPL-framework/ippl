@@ -202,7 +202,7 @@ TYPED_TEST(FieldTest, Sum) {
 
             TypeParam sum = field->sum();
 
-            assertTypeParam<TypeParam>(expected[this->dimToIndex(Dim)], sum);
+            assertTypeParam<TypeParam>(expected[TestFixture::dimToIndex(Dim)], sum);
         };
 
     this->apply(check, this->fields);
@@ -221,7 +221,7 @@ TYPED_TEST(FieldTest, Norm1) {
 
             TypeParam norm1 = ippl::norm(*field, 1);
 
-            assertTypeParam<TypeParam>(expected[this->dimToIndex(Dim)], norm1);
+            assertTypeParam<TypeParam>(expected[TestFixture::dimToIndex(Dim)], norm1);
         };
 
     this->apply(check, this->fields);
@@ -240,7 +240,7 @@ TYPED_TEST(FieldTest, Norm2) {
 
             TypeParam norm2 = ippl::norm(*field);
 
-            assertTypeParam<TypeParam>(std::sqrt(squared[this->dimToIndex(Dim)]), norm2);
+            assertTypeParam<TypeParam>(std::sqrt(squared[TestFixture::dimToIndex(Dim)]), norm2);
         };
 
     this->apply(check, this->fields);
@@ -268,7 +268,7 @@ TYPED_TEST(FieldTest, NormInf) {
 
             TypeParam normInf = ippl::norm(*field, 0);
 
-            assertTypeParam<TypeParam>(expected[this->dimToIndex(Dim)], normInf);
+            assertTypeParam<TypeParam>(expected[TestFixture::dimToIndex(Dim)], normInf);
         };
 
     this->apply(check, this->fields);
@@ -378,7 +378,7 @@ TYPED_TEST(FieldTest, Curl) {
     using vview_type       = typename vfield_type::view_type;
     using mirror_type      = typename vview_type::host_mirror_type;
 
-    constexpr unsigned Idx               = this->dimToIndex(dim);
+    constexpr unsigned Idx               = TestFixture::dimToIndex(dim);
     std::shared_ptr<mesh_type>& mesh     = std::get<Idx>(this->meshes);
     std::shared_ptr<layout_type>& layout = std::get<Idx>(this->layouts);
 

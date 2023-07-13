@@ -119,7 +119,7 @@ TYPED_TEST(BareFieldTest, Sum) {
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             *field        = val;
             TypeParam sum = field->sum();
-            assertTypeParam<TypeParam>(expected[this->dimToIndex(Dim)], sum);
+            assertTypeParam<TypeParam>(expected[TestFixture::dimToIndex(Dim)], sum);
         };
 
     this->apply(check, this->fields);
@@ -163,7 +163,7 @@ TYPED_TEST(BareFieldTest, Max) {
             Kokkos::fence();
 
             TypeParam max = field->max();
-            assertTypeParam<TypeParam>(max, expected[this->dimToIndex(Dim)]);
+            assertTypeParam<TypeParam>(max, expected[TestFixture::dimToIndex(Dim)]);
         };
 
     this->apply(check, this->fields);
@@ -179,7 +179,7 @@ TYPED_TEST(BareFieldTest, Prod) {
             *field        = 2.;
             TypeParam val = field->prod();
 
-            assertTypeParam<TypeParam>(val, pow(2, sizes[this->dimToIndex(Dim)]));
+            assertTypeParam<TypeParam>(val, pow(2, sizes[TestFixture::dimToIndex(Dim)]));
         };
 
     this->apply(check, this->fields);
