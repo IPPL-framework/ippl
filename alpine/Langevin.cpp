@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
         P->runSpaceChargeSolver(0);
         VectorD_t avgEF(P->compAvgSCForce(BEAM_RADIUS));
 
-        // P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
+        P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
         // dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, nghost, 0, 1.0, OUT_DIR, "Rho");
         // dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
@@ -147,6 +147,10 @@ int main(int argc, char* argv[]) {
             P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
             P->runFrictionSolver();
+            if (it == NT - 1) {
+              dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, it, 1.0, OUT_DIR, "h");
+              dumpVTKVector(P->Fd_m, P->hvInit_m, P->nv_m, P->vminInit_m, it, 1.0, OUT_DIR, "F_d");
+            }
 
             P->runDiffusionSolver();
 
@@ -154,10 +158,6 @@ int main(int argc, char* argv[]) {
 
             // Add dynamic friction & stochastic diffusion coefficients
             P->P = P->P + DT * P->p_Fd_m + P->p_QdW_m;
-            // Add friction contribution
-            // P->P = P->P + DT * P->p_Fd_m;
-            //// Add velocity Diffusion contribution
-            // P->P = P->P + P->p_QdW_m;
 
             P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
             P->R = P->R + 0.5 * DT * P->P;
@@ -185,6 +185,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
             }
         }
+        dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, NT-1, 1.0, OUT_DIR, "g");
         // Initialize `fv_m`
         // Scattered quantity should be a density ($\sum_i fv_i = 1$)
         P->p_fv_m = 1.0 / P->globParticleNum_m;
