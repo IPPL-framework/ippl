@@ -135,6 +135,7 @@ public:
         D2_m.initialize(velocitySpaceMesh_m, velocitySpaceFieldLayout_m);
 
         msg << "Applied scaling for vel.-space: " << vScalingFactor_m << endl;
+        msg << "Gamma factor: " << gamma_m << endl;
         msg << "Finished velocity space setup." << endl;
     }
 
@@ -648,16 +649,13 @@ public:
         //////////////////////
 
         attr_Dview_t pFd_view = this->p_Fd_m.getView();
-        VectorD_t FdAvg;
+        double FdAvg;
 
-        for (unsigned d = 0; d < Dim; ++d) {
-            Kokkos::parallel_reduce(
-                "rel max", this->getLocalNum(),
-                KOKKOS_LAMBDA(const int i, double& FdLoc) { FdLoc += pFd_view(i)[d]; },
-                Kokkos::Sum<double>(FdAvg(d)));
-        }
+        Kokkos::parallel_reduce(
+            "FdAvg", this->getLocalNum(),
+            KOKKOS_LAMBDA(const int i, double& FdLoc) { FdLoc += L2Norm(pFd_view(i)); },
+            Kokkos::Sum<double>(FdAvg));
 
-        FdAvg = FdAvg / globParticleNum_m;
 
         //////////////////////
         // Calculate D Avg //
@@ -684,13 +682,13 @@ public:
                 "gather `D` and `Q` statistics", this->getLocalNum(),
                 KOKKOS_LAMBDA(const int i, double& D0Loc, double& D1Loc, double& D2Loc,
                               double& Q0Loc, double& Q1Loc, double& Q2Loc, double& QdWLoc) {
-                    D0Loc += pD0_view(i)[d];
-                    D1Loc += pD1_view(i)[d];
-                    D2Loc += pD2_view(i)[d];
-                    Q0Loc += pQ0_view(i)[d];
-                    Q1Loc += pQ1_view(i)[d];
-                    Q2Loc += pQ2_view(i)[d];
-                    QdWLoc += pQdW_view(i)[d];
+                    D0Loc += Kokkos::abs(pD0_view(i)[d]);
+                    D1Loc += Kokkos::abs(pD1_view(i)[d]);
+                    D2Loc += Kokkos::abs(pD2_view(i)[d]);
+                    Q0Loc += Kokkos::abs(pQ0_view(i)[d]);
+                    Q1Loc += Kokkos::abs(pQ1_view(i)[d]);
+                    Q2Loc += Kokkos::abs(pQ2_view(i)[d]);
+                    QdWLoc += Kokkos::abs(pQdW_view(i)[d]);
                 },
                 Kokkos::Sum<double>(D0Avg(d)), Kokkos::Sum<double>(D1Avg(d)),
                 Kokkos::Sum<double>(D2Avg(d)), Kokkos::Sum<double>(Q0Avg(d)),
@@ -720,7 +718,7 @@ public:
             // clang-format off
             if (isFirstIteration) {
                 csvout << "iteration,"
-                       << "FdAvg_x,"  << "FdAvg_y,"  << "FdAvg_z,"
+                       << "FdAvg,"
                        << "D0Avg_x,"  << "D0Avg_y,"  << "D0Avg_z,"
                        << "D1Avg_x,"  << "D1Avg_y,"  << "D1Avg_z,"
                        << "D2Avg_x,"  << "D2Avg_y,"  << "D2Avg_z,"
@@ -731,7 +729,8 @@ public:
             }
 
             csvout << iteration << ","
-                   << FdAvg(0)  << "," << FdAvg(1)  << "," << FdAvg(2)  << ","
+                   << FdAvg     << ","
+                   //<< FdAvg(0)  << "," << FdAvg(1)  << "," << FdAvg(2)  << ","
                    << D0Avg(0)  << "," << D0Avg(1)  << "," << D0Avg(2)  << ","
                    << D1Avg(0)  << "," << D1Avg(1)  << "," << D1Avg(2)  << ","
                    << D2Avg(0)  << "," << D2Avg(1)  << "," << D2Avg(2)  << ","
