@@ -73,10 +73,21 @@ void assertTypeParam(T valA, T valB) {
 };
 
 struct MixedPrecisionAndSpaces {
-    using Spaces     = ippl::detail::TypeForAllSpaces<std::tuple>::type;
+    using Spaces     = ippl::detail::TypeForAllSpaces<std::tuple>::exec_spaces_type;
     using Precisions = std::tuple<double, float>;
     using Combos     = CreateCombinations<Precisions, Spaces>::type;
     using tests      = TestForTypes<Combos>::type;
 };
+
+#ifdef KOKKOS_ENABLE_SERIAL
+#define MAYBE_SKIP_SERIAL                                                   \
+    if (std::is_same_v<typename TestFixture::exec_space, Kokkos::Serial>) { \
+        SUCCEED();                                                          \
+        return;                                                             \
+    }
+#else
+#define MAYBE_SKIP_SERIAL \
+    {}
+#endif
 
 #endif
