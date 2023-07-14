@@ -19,18 +19,32 @@
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
+#include <cstring>
+
+#include "Utility/TypeUtils.h"
 
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
-template <typename T>
-class BareFieldTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
+#ifdef KOKKOS_ENABLE_SERIAL
+bool skipSerialTests = false;
+#endif
+
+template <typename>
+class BareFieldTest;
+
+template <typename T, typename ExecSpace>
+class BareFieldTest<std::tuple<T, ExecSpace>> : public ::testing::Test,
+                                                public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
-    template <unsigned Dim>
-    using field_type = ippl::BareField<T, Dim>;
+    using value_type = T;
+    using exec_space = ExecSpace;
 
     template <unsigned Dim>
-    using vfield_type = ippl::BareField<ippl::Vector<T, Dim>, Dim>;
+    using field_type = ippl::BareField<T, Dim, ExecSpace>;
+
+    template <unsigned Dim>
+    using vfield_type = ippl::BareField<ippl::Vector<T, Dim>, Dim, ExecSpace>;
 
     BareFieldTest() {
         computeGridSizes(nPoints);
@@ -64,10 +78,12 @@ public:
     size_t nPoints[MaxDim];
 };
 
-template <typename T, unsigned Dim>
+template <typename Params, unsigned Dim>
 struct FieldVal {
-    const typename BareFieldTest<T>::template field_type<Dim>::view_type view;
+    const typename BareFieldTest<Params>::template field_type<Dim>::view_type view;
     const ippl::NDIndex<Dim> lDom;
+
+    using T = typename BareFieldTest<Params>::value_type;
 
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Idx... args) const {
@@ -79,11 +95,10 @@ struct FieldVal {
     }
 };
 
-using Precisions = ::testing::Types<double, float>;
-
-TYPED_TEST_CASE(BareFieldTest, Precisions);
+TYPED_TEST_CASE(BareFieldTest, MixedPrecisionAndSpaces::tests);
 
 TYPED_TEST(BareFieldTest, DeepCopy) {
+    MAYBE_SKIP_SERIAL;
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             using view_type   = typename TestFixture::template field_type<Dim>::view_type;
@@ -99,33 +114,37 @@ TYPED_TEST(BareFieldTest, DeepCopy) {
             Kokkos::deep_copy(mirrorA, field->getView());
             Kokkos::deep_copy(mirrorB, copy.getView());
 
-            this->template nestedViewLoop(
-                mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
-                    assertTypeParam<TypeParam>(mirrorA(args...) + 1, mirrorB(args...));
-                });
+            this->template nestedViewLoop(mirrorA, field->getNghost(),
+                                          [&]<typename... Idx>(const Idx... args) {
+                                              assertTypeParam<typename TestFixture::value_type>(
+                                                  mirrorA(args...) + 1, mirrorB(args...));
+                                          });
         };
 
     this->apply(check, this->fields);
 }
 
 TYPED_TEST(BareFieldTest, Sum) {
-    TypeParam val                    = 1.0;
-    TypeParam expected[TestFixture::MaxDim] = {val * this->nPoints[0]};
+    MAYBE_SKIP_SERIAL;
+    using T                         = typename TestFixture::value_type;
+    T val                           = 1.0;
+    T expected[TestFixture::MaxDim] = {val * this->nPoints[0]};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] * this->nPoints[d];
     }
 
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
-            *field        = val;
-            TypeParam sum = field->sum();
-            assertTypeParam<TypeParam>(expected[TestFixture::dimToIndex(Dim)], sum);
+            *field = val;
+            T sum  = field->sum();
+            assertTypeParam<T>(expected[TestFixture::dimToIndex(Dim)], sum);
         };
 
     this->apply(check, this->fields);
 }
 
 TYPED_TEST(BareFieldTest, Min) {
+    MAYBE_SKIP_SERIAL;
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             using view_type = typename TestFixture::template field_type<Dim>::view_type;
@@ -137,17 +156,19 @@ TYPED_TEST(BareFieldTest, Min) {
                                  FieldVal<TypeParam, Dim>{view, lDom});
             Kokkos::fence();
 
-            TypeParam min = field->min();
+            auto min = field->min();
             // minimum value in 3D: -1 + nghost + nghost + nghost
-            assertTypeParam<TypeParam>(min, field->getNghost() * Dim - 1);
+            assertTypeParam<typename TestFixture::value_type>(min, field->getNghost() * Dim - 1);
         };
 
     this->apply(check, this->fields);
 }
 
 TYPED_TEST(BareFieldTest, Max) {
-    TypeParam val                    = 1.;
-    TypeParam expected[TestFixture::MaxDim] = {this->nPoints[0] - val};
+    MAYBE_SKIP_SERIAL;
+    using T                         = typename TestFixture::value_type;
+    T val                           = 1.;
+    T expected[TestFixture::MaxDim] = {this->nPoints[0] - val};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] + this->nPoints[d];
     }
@@ -162,30 +183,33 @@ TYPED_TEST(BareFieldTest, Max) {
                                  FieldVal<TypeParam, Dim>{view, lDom});
             Kokkos::fence();
 
-            TypeParam max = field->max();
-            assertTypeParam<TypeParam>(max, expected[TestFixture::dimToIndex(Dim)]);
+            T max = field->max();
+            assertTypeParam<T>(max, expected[TestFixture::dimToIndex(Dim)]);
         };
 
     this->apply(check, this->fields);
 }
 
 TYPED_TEST(BareFieldTest, Prod) {
-    TypeParam sizes[TestFixture::MaxDim] = {(TypeParam)this->nPoints[0]};
+    MAYBE_SKIP_SERIAL;
+    using T                      = typename TestFixture::value_type;
+    T sizes[TestFixture::MaxDim] = {(T)this->nPoints[0]};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         sizes[d] = sizes[d - 1] * this->nPoints[d];
     }
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
-            *field        = 2.;
-            TypeParam val = field->prod();
+            *field = 2.;
+            T val  = field->prod();
 
-            assertTypeParam<TypeParam>(val, pow(2, sizes[TestFixture::dimToIndex(Dim)]));
+            assertTypeParam<T>(val, pow(2, sizes[TestFixture::dimToIndex(Dim)]));
         };
 
     this->apply(check, this->fields);
 }
 
 TYPED_TEST(BareFieldTest, ScalarMultiplication) {
+    MAYBE_SKIP_SERIAL;
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             using view_type   = typename TestFixture::template field_type<Dim>::view_type;
@@ -201,7 +225,7 @@ TYPED_TEST(BareFieldTest, ScalarMultiplication) {
             Kokkos::deep_copy(mirror, view);
 
             this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-                assertTypeParam<TypeParam>(mirror(args...), 10.);
+                assertTypeParam<typename TestFixture::value_type>(mirror(args...), 10.);
             });
         };
 
@@ -209,6 +233,7 @@ TYPED_TEST(BareFieldTest, ScalarMultiplication) {
 }
 
 TYPED_TEST(BareFieldTest, DotProduct) {
+    MAYBE_SKIP_SERIAL;
     auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field,
                      std::shared_ptr<typename TestFixture::template vfield_type<Dim>>& vfield) {
@@ -225,7 +250,7 @@ TYPED_TEST(BareFieldTest, DotProduct) {
         Kokkos::deep_copy(mirror, view);
 
         this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-            assertTypeParam<TypeParam>(mirror(args...), 5 * Dim);
+            assertTypeParam<typename TestFixture::value_type>(mirror(args...), 5 * Dim);
         });
     };
 
@@ -233,6 +258,8 @@ TYPED_TEST(BareFieldTest, DotProduct) {
 }
 
 TYPED_TEST(BareFieldTest, AllFuncs) {
+    MAYBE_SKIP_SERIAL;
+    using T    = typename TestFixture::value_type;
     auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
         using Kokkos::sin, Kokkos::cos, Kokkos::tan, Kokkos::acos, Kokkos::asin, Kokkos::exp,
@@ -241,14 +268,14 @@ TYPED_TEST(BareFieldTest, AllFuncs) {
         using view_type   = typename TestFixture::template field_type<Dim>::view_type;
         using mirror_type = typename view_type::host_mirror_type;
 
-        TypeParam pi    = Kokkos::numbers::pi_v<TypeParam>;
-        TypeParam alpha = pi / 4;
-        *field          = alpha;
+        T pi    = Kokkos::numbers::pi_v<T>;
+        T alpha = pi / 4;
+        *field  = alpha;
         // Compute new value
-        TypeParam beta = fabs(
-            7.0 * (sin(alpha) * cos(alpha)) / (tan(alpha) * acos(alpha)) - exp(alpha) + erf(alpha)
-            + (asin(alpha) * cosh(alpha)) / (atan(alpha) * sinh(alpha)) + tanh(alpha) * log(alpha)
-            - log10(alpha) * sqrt(alpha) + floor(alpha) * ceil(alpha));
+        T beta = fabs(7.0 * (sin(alpha) * cos(alpha)) / (tan(alpha) * acos(alpha)) - exp(alpha)
+                      + erf(alpha) + (asin(alpha) * cosh(alpha)) / (atan(alpha) * sinh(alpha))
+                      + tanh(alpha) * log(alpha) - log10(alpha) * sqrt(alpha)
+                      + floor(alpha) * ceil(alpha));
 
         // Compute same value via field ops
         *field = fabs(7.0 * (sin(*field) * cos(*field)) / (tan(*field) * acos(*field)) - exp(*field)
@@ -263,7 +290,7 @@ TYPED_TEST(BareFieldTest, AllFuncs) {
         Kokkos::deep_copy(mirror, view);
 
         this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-            assertTypeParam<TypeParam>(mirror(args...), beta);
+            assertTypeParam<T>(mirror(args...), beta);
         });
     };
 
@@ -272,6 +299,13 @@ TYPED_TEST(BareFieldTest, AllFuncs) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
+#ifdef KOKKOS_ENABLE_SERIAL
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--skip-serial") == 0) {
+            skipSerialTests = true;
+        }
+    }
+#endif
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
