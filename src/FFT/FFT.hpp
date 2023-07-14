@@ -117,7 +117,7 @@ namespace ippl {
     }
 
     template <typename ComplexField>
-    void FFT<CCTransform, ComplexField>::transform(int direction, ComplexField& f) {
+    void FFT<CCTransform, ComplexField>::transform(TransformDirection direction, ComplexField& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
         auto fview       = f.getView();
@@ -143,10 +143,10 @@ namespace ippl {
                 apply(tempField, args - nghost).imag(apply(fview, args).imag());
             });
 
-        if (direction == 1) {
+        if (direction == FORWARD) {
             this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
                                     heffte::scale::full);
-        } else if (direction == -1) {
+        } else if (direction == BACKWARD) {
             this->heffte_m->backward(tempField.data(), tempField.data(), this->workspace_m.data(),
                                      heffte::scale::none);
         } else {
@@ -196,7 +196,8 @@ namespace ippl {
     }
 
     template <typename RealField>
-    void FFT<RCTransform, RealField>::transform(int direction, RealField& f, ComplexField& g) {
+    void FFT<RCTransform, RealField>::transform(TransformDirection direction, RealField& f,
+                                                ComplexField& g) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
         auto fview        = f.getView();
@@ -233,10 +234,10 @@ namespace ippl {
                 apply(tempFieldg, args - nghostg).imag(apply(gview, args).imag());
             });
 
-        if (direction == 1) {
+        if (direction == FORWARD) {
             this->heffte_m->forward(tempFieldf.data(), tempFieldg.data(), this->workspace_m.data(),
                                     heffte::scale::full);
-        } else if (direction == -1) {
+        } else if (direction == BACKWARD) {
             this->heffte_m->backward(tempFieldg.data(), tempFieldf.data(), this->workspace_m.data(),
                                      heffte::scale::none);
         } else {
@@ -258,7 +259,7 @@ namespace ippl {
     }
 
     template <typename Field>
-    void FFT<SineTransform, Field>::transform(int direction, Field& f) {
+    void FFT<SineTransform, Field>::transform(TransformDirection direction, Field& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
         auto fview       = f.getView();
@@ -283,10 +284,10 @@ namespace ippl {
                 apply(tempField, args - nghost) = apply(fview, args);
             });
 
-        if (direction == 1) {
+        if (direction == FORWARD) {
             this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
                                     heffte::scale::full);
-        } else if (direction == -1) {
+        } else if (direction == BACKWARD) {
             this->heffte_m->backward(tempField.data(), tempField.data(), this->workspace_m.data(),
                                      heffte::scale::none);
         } else {
@@ -301,7 +302,7 @@ namespace ippl {
     }
 
     template <typename Field>
-    void FFT<CosTransform, Field>::transform(int direction, Field& f) {
+    void FFT<CosTransform, Field>::transform(TransformDirection direction, Field& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
         auto fview       = f.getView();
@@ -326,10 +327,10 @@ namespace ippl {
                 apply(tempField, args - nghost) = apply(fview, args);
             });
 
-        if (direction == 1) {
+        if (direction == FORWARD) {
             this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
                                     heffte::scale::full);
-        } else if (direction == -1) {
+        } else if (direction == BACKWARD) {
             this->heffte_m->backward(tempField.data(), tempField.data(), this->workspace_m.data(),
                                      heffte::scale::none);
         } else {

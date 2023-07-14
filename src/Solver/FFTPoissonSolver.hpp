@@ -406,9 +406,9 @@ namespace ippl {
         static IpplTimings::TimerRef warmup = IpplTimings::getTimer("Warmup");
         IpplTimings::startTimer(warmup);
 
-        fft_m->transform(+1, rho2_mr, rho2tr_m);
+        fft_m->transform(FORWARD, rho2_mr, rho2tr_m);
         if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
-            fft4n_m->transform(+1, grnL_m);
+            fft4n_m->transform(FORWARD, grnL_m);
         }
 
         IpplTimings::stopTimer(warmup);
@@ -557,7 +557,7 @@ namespace ippl {
         IpplTimings::startTimer(fftrho);
 
         // forward FFT of the charge density field on doubled grid
-        fft_m->transform(+1, rho2_mr, rho2tr_m);
+        fft_m->transform(FORWARD, rho2_mr, rho2tr_m);
 
         IpplTimings::stopTimer(fftrho);
 
@@ -578,7 +578,7 @@ namespace ippl {
             IpplTimings::startTimer(fftc);
 
             // inverse FFT of the product and store the electrostatic potential in rho2_mr
-            fft_m->transform(-1, rho2_mr, rho2tr_m);
+            fft_m->transform(BACKWARD, rho2_mr, rho2tr_m);
 
             IpplTimings::stopTimer(fftc);
 
@@ -736,7 +736,7 @@ namespace ippl {
                 IpplTimings::startTimer(ffte);
 
                 // transform to get E-field
-                fft_m->transform(-1, rho2_mr, temp_m);
+                fft_m->transform(BACKWARD, rho2_mr, temp_m);
 
                 IpplTimings::stopTimer(ffte);
 
@@ -891,7 +891,7 @@ namespace ippl {
                     IpplTimings::startTimer(ffth);
 
                     // transform to get Hessian
-                    fft_m->transform(-1, rho2_mr, temp_m);
+                    fft_m->transform(BACKWARD, rho2_mr, temp_m);
 
                     IpplTimings::stopTimer(ffth);
 
@@ -1103,7 +1103,7 @@ namespace ippl {
             IpplTimings::startTimer(fft4);
 
             // inverse Fourier transform of the green's function for precomputation
-            fft4n_m->transform(-1, grnL_m);
+            fft4n_m->transform(BACKWARD, grnL_m);
 
             IpplTimings::stopTimer(fft4);
 
@@ -1198,7 +1198,7 @@ namespace ippl {
         IpplTimings::startTimer(fftg);
 
         // perform the FFT of the Green's function for the convolution
-        fft_m->transform(+1, grn_mr, grntr_m);
+        fft_m->transform(FORWARD, grn_mr, grntr_m);
 
         IpplTimings::stopTimer(fftg);
     };

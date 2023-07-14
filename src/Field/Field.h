@@ -18,6 +18,8 @@
 #ifndef IPPL_FIELD_H
 #define IPPL_FIELD_H
 
+#include "Utility/TypeUtils.h"
+
 #include "Field/BareField.h"
 #include "Field/BConds.h"
 
@@ -27,6 +29,9 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
     class Field : public BareField<T, Dim, ViewArgs...> {
+        template <typename... Props>
+        using base_type = Field<T, Dim, Mesh, Centering, Props...>;
+
     public:
         using Mesh_t      = Mesh;
         using Centering_t = Cell;
@@ -34,6 +39,9 @@ namespace ippl {
         using BareField_t = BareField<T, Dim, ViewArgs...>;
         using view_type   = typename BareField_t::view_type;
         using BConds_t    = BConds<Field<T, Dim, Mesh, Centering, ViewArgs...>, Dim>;
+
+        using uniform_type =
+            typename detail::CreateUniformType<base_type, typename view_type::uniform_type>::type;
 
         // A default constructor, which should be used only if the user calls the
         // 'initialize' function before doing anything else.  There are no special
