@@ -40,11 +40,7 @@ namespace ippl {
                                                                  double overallocation) {
         auto& buffers = buffers_m.get<MemorySpace>();
         size *= sizeof(T);
-#if __cplusplus > 201703L
         if (buffers.contains(id)) {
-#else
-        if (buffers.find(id) != buffers.end()) {
-#endif
             if (buffers[id]->getBufferSize() < size) {
                 buffers[id]->reallocBuffer(size);
             }
