@@ -20,9 +20,16 @@
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
-template <typename T>
-class HaloTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
+template <typename>
+class HaloTest;
+
+template <typename T, typename ExecSpace>
+class HaloTest<std::tuple<T, ExecSpace>> : public ::testing::Test,
+                                           public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
+    using value_type = T;
+    using exec_space = ExecSpace;
+
     template <unsigned Dim>
     using mesh_type = ippl::UniformCartesian<T, Dim>;
 
@@ -30,7 +37,7 @@ public:
     using centering_type = typename mesh_type<Dim>::DefaultCentering;
 
     template <unsigned Dim>
-    using field_type = ippl::Field<T, Dim, mesh_type<Dim>, centering_type<Dim>>;
+    using field_type = ippl::Field<T, Dim, mesh_type<Dim>, centering_type<Dim>, ExecSpace>;
 
     template <unsigned Dim>
     using layout_type = ippl::FieldLayout<Dim>;
@@ -75,9 +82,7 @@ public:
     T domain[MaxDim];
 };
 
-using Precisions = ::testing::Types<double, float>;
-
-TYPED_TEST_CASE(HaloTest, Precisions);
+TYPED_TEST_CASE(HaloTest, MixedPrecisionAndSpaces::tests);
 
 TYPED_TEST(HaloTest, CheckNeighbors) {
     auto check = [&]<unsigned Dim>(const typename TestFixture::template layout_type<Dim>& layout) {
@@ -90,7 +95,7 @@ TYPED_TEST(HaloTest, CheckNeighbors) {
                 const neighbor_list& neighbors = layout.getNeighbors();
                 for (unsigned i = 0; i < neighbors.size(); i++) {
                     const std::vector<int>& n = neighbors[i];
-                    if (n.size() > 0) {
+                    if (!n.empty()) {
                         unsigned dim = 0;
                         for (unsigned idx = i; idx > 0; idx /= 3) {
                             dim += idx % 3 == 2;
@@ -173,7 +178,7 @@ TYPED_TEST(HaloTest, FillHalo) {
 
             auto view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
             this->template nestedViewLoop(view, 0, [&]<typename... Idx>(const Idx... args) {
-                assertTypeParam<TypeParam>(view(args...), 1);
+                assertEqual<typename TestFixture::value_type>(view(args...), 1);
             });
         };
 
@@ -250,7 +255,7 @@ TYPED_TEST(HaloTest, AccumulateHalo) {
         Kokkos::deep_copy(mirror, field->getView());
 
         this->template nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
-            assertTypeParam<TypeParam>(mirror(args...), 1);
+            assertEqual<typename TestFixture::value_type>(mirror(args...), 1);
         });
     };
 

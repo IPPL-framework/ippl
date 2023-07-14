@@ -20,13 +20,19 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <random>
 
-#include "MultirankUtils.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
+template <typename>
+class FFTTest;
+
 // Restrict testing to 2 and 3 dimensions since this is what heFFTe supports
-template <typename T>
-class FFTTest : public ::testing::Test, public MultirankUtils<2, 3> {
+template <typename T, typename ExecSpace>
+class FFTTest<std::tuple<T, ExecSpace>> : public ::testing::Test, public MultirankUtils<2, 3> {
 public:
+    using value_type = T;
+    using exec_space = ExecSpace;
+
     template <unsigned Dim>
     using mesh_type = ippl::UniformCartesian<T, Dim>;
 
@@ -35,11 +41,10 @@ public:
 
     template <unsigned Dim>
     using field_type_complex = typename ippl::Field<Kokkos::complex<T>, Dim, mesh_type<Dim>,
-                                                    centering_type<Dim>>::uniform_type;
+                                                    centering_type<Dim>, ExecSpace>::uniform_type;
 
     template <unsigned Dim>
-    using field_type_real =
-        typename ippl::Field<T, Dim, mesh_type<Dim>, centering_type<Dim>>::uniform_type;
+    using field_type_real = ippl::Field<T, Dim, mesh_type<Dim>, centering_type<Dim>, ExecSpace>;
 
     template <unsigned Dim>
     using layout_type = ippl::FieldLayout<Dim>;
@@ -86,7 +91,7 @@ public:
      * Gets the parameters used for trigonometric FFT transforms
      * (sine and cosine)
      */
-    ippl::ParameterList getTrigParams() const {
+    [[nodiscard]] ippl::ParameterList getTrigParams() const {
         ippl::ParameterList fftParams;
 
         fftParams.add("use_heffte_defaults", false);
@@ -202,9 +207,7 @@ public:
     T len[MaxDim];
 };
 
-using Precisions = ::testing::Types<double, float>;
-
-TYPED_TEST_CASE(FFTTest, Precisions);
+TYPED_TEST_CASE(FFTTest, MixedPrecisionAndSpaces::tests);
 
 TYPED_TEST(FFTTest, Cos) {
     auto check = [&]<unsigned Dim>(
@@ -285,7 +288,9 @@ TYPED_TEST(FFTTest, CC) {
                      const typename TestFixture::template layout_type<Dim>& layout) {
         using view_type   = typename TestFixture::template field_type_complex<Dim>::view_type;
         using mirror_type = typename view_type::host_mirror_type;
-        TypeParam tol     = (std::is_same_v<TypeParam, double>) ? 1e-13 : 1e-6;
+
+        using T = typename TestFixture::value_type;
+        T tol   = (std::is_same_v<T, double>) ? 1e-13 : 1e-6;
 
         ippl::ParameterList fftParams;
 
@@ -308,9 +313,9 @@ TYPED_TEST(FFTTest, CC) {
 
         mirror_type field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
 
-        Kokkos::complex<TypeParam> max_error_local(0, 0);
+        Kokkos::complex<T> max_error_local(0, 0);
         this->template nestedViewLoop(field_host, nghost, [&]<typename... Idx>(const Idx... args) {
-            Kokkos::complex<TypeParam> error(
+            Kokkos::complex<T> error(
                 std::fabs(field_host(args...).real() - field_result(args...).real()),
                 std::fabs(field_host(args...).imag() - field_result(args...).imag()));
 
@@ -326,8 +331,8 @@ TYPED_TEST(FFTTest, CC) {
             ASSERT_NEAR(error.imag(), 0, tol);
         });
 
-        Kokkos::complex<TypeParam> max_error(0, 0);
-        MPI_Datatype mpi_data = get_mpi_datatype<std::complex<TypeParam>>(max_error);
+        Kokkos::complex<T> max_error(0, 0);
+        MPI_Datatype mpi_data = get_mpi_datatype<std::complex<T>>(max_error);
 
         MPI_Allreduce(&max_error_local, &max_error, 1, mpi_data, MPI_SUM,
                       ippl::Comm->getCommunicator());
@@ -340,6 +345,7 @@ TYPED_TEST(FFTTest, CC) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
+    MixedPrecisionAndSpaces::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
