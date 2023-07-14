@@ -192,7 +192,8 @@ namespace ippl {
     public:
         typedef Kokkos::complex<Real_t> Complex_t;
         using ComplexField =
-            Field<Complex_t, Dim, typename RealField::Mesh_t, typename RealField::Centering_t>;
+            Field<Complex_t, Dim, typename RealField::Mesh_t, typename RealField::Centering_t,
+                  typename RealField::execution_space>;
 
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
@@ -246,7 +247,9 @@ namespace ippl {
         void transform(int direction, Field& f);
     };
 }  // namespace ippl
+
 #include "FFT/FFT.hpp"
+
 #endif  // IPPL_FFT_FFT_H
 
 // vi: set et ts=4 sw=4 sts=4:
