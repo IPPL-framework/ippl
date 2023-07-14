@@ -112,7 +112,7 @@ TYPED_TEST(BareFieldTest, DeepCopy) {
 
             this->template nestedViewLoop(mirrorA, field->getNghost(),
                                           [&]<typename... Idx>(const Idx... args) {
-                                              assertTypeParam<typename TestFixture::value_type>(
+                                              assertEqual<typename TestFixture::value_type>(
                                                   mirrorA(args...) + 1, mirrorB(args...));
                                           });
         };
@@ -133,7 +133,7 @@ TYPED_TEST(BareFieldTest, Sum) {
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             *field = val;
             T sum  = field->sum();
-            assertTypeParam<T>(expected[TestFixture::dimToIndex(Dim)], sum);
+            assertEqual<T>(expected[TestFixture::dimToIndex(Dim)], sum);
         };
 
     this->apply(check, this->fields);
@@ -154,7 +154,7 @@ TYPED_TEST(BareFieldTest, Min) {
 
             auto min = field->min();
             // minimum value in 3D: -1 + nghost + nghost + nghost
-            assertTypeParam<typename TestFixture::value_type>(min, field->getNghost() * Dim - 1);
+            assertEqual<typename TestFixture::value_type>(min, field->getNghost() * Dim - 1);
         };
 
     this->apply(check, this->fields);
@@ -180,7 +180,7 @@ TYPED_TEST(BareFieldTest, Max) {
             Kokkos::fence();
 
             T max = field->max();
-            assertTypeParam<T>(max, expected[TestFixture::dimToIndex(Dim)]);
+            assertEqual<T>(max, expected[TestFixture::dimToIndex(Dim)]);
         };
 
     this->apply(check, this->fields);
@@ -198,7 +198,7 @@ TYPED_TEST(BareFieldTest, Prod) {
             *field = 2.;
             T val  = field->prod();
 
-            assertTypeParam<T>(val, pow(2, sizes[TestFixture::dimToIndex(Dim)]));
+            assertEqual<T>(val, pow(2, sizes[TestFixture::dimToIndex(Dim)]));
         };
 
     this->apply(check, this->fields);
@@ -221,7 +221,7 @@ TYPED_TEST(BareFieldTest, ScalarMultiplication) {
             Kokkos::deep_copy(mirror, view);
 
             this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-                assertTypeParam<typename TestFixture::value_type>(mirror(args...), 10.);
+                assertEqual<typename TestFixture::value_type>(mirror(args...), 10.);
             });
         };
 
@@ -246,7 +246,7 @@ TYPED_TEST(BareFieldTest, DotProduct) {
         Kokkos::deep_copy(mirror, view);
 
         this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-            assertTypeParam<typename TestFixture::value_type>(mirror(args...), 5 * Dim);
+            assertEqual<typename TestFixture::value_type>(mirror(args...), 5 * Dim);
         });
     };
 
@@ -286,7 +286,7 @@ TYPED_TEST(BareFieldTest, AllFuncs) {
         Kokkos::deep_copy(mirror, view);
 
         this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-            assertTypeParam<T>(mirror(args...), beta);
+            assertEqual<T>(mirror(args...), beta);
         });
     };
 

@@ -64,7 +64,7 @@ struct TestForTypes<std::tuple<Types...>> {
 };
 
 template <typename T>
-void assertTypeParam(T valA, T valB) {
+void assertEqual(T valA, T valB) {
     if constexpr (std::is_same_v<T, double>) {
         ASSERT_DOUBLE_EQ(valA, valB);
     } else {
@@ -91,6 +91,8 @@ struct MixedPrecisionAndSpaces {
 #endif
     }
 };
+
+bool MixedPrecisionAndSpaces::skipSerialTests = true;
 
 #ifdef KOKKOS_ENABLE_SERIAL
 #define CHECK_SKIP_SERIAL                                                \

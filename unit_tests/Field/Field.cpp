@@ -23,9 +23,16 @@
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
-template <typename T>
-class FieldTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
+template <typename>
+class FieldTest;
+
+template <typename T, typename ExecSpace>
+class FieldTest<std::tuple<T, ExecSpace>> : public ::testing::Test,
+                                            public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
+    using value_type = T;
+    using exec_space = ExecSpace;
+
     template <unsigned Dim>
     using mesh_type = ippl::UniformCartesian<T, Dim>;
 
@@ -33,10 +40,11 @@ public:
     using centering_type = typename mesh_type<Dim>::DefaultCentering;
 
     template <unsigned Dim>
-    using field_type = ippl::Field<T, Dim, mesh_type<Dim>, centering_type<Dim>>;
+    using field_type = ippl::Field<T, Dim, mesh_type<Dim>, centering_type<Dim>, ExecSpace>;
 
     template <unsigned Dim>
-    using vfield_type = ippl::Field<ippl::Vector<T, Dim>, Dim, mesh_type<Dim>, centering_type<Dim>>;
+    using vfield_type =
+        ippl::Field<ippl::Vector<T, Dim>, Dim, mesh_type<Dim>, centering_type<Dim>, ExecSpace>;
 
     template <unsigned Dim>
     using layout_type = ippl::FieldLayout<Dim>;
@@ -82,9 +90,11 @@ public:
     T domain[MaxDim];
 };
 
-template <typename T, unsigned Dim>
+template <typename Params, unsigned Dim>
 struct VFieldVal {
-    using vfield_view_type = typename FieldTest<T>::template vfield_type<Dim>::view_type;
+    using vfield_view_type = typename FieldTest<Params>::template vfield_type<Dim>::view_type;
+    using T                = typename FieldTest<Params>::value_type;
+
     const vfield_view_type vview;
     const ippl::NDIndex<Dim> lDom;
 
@@ -105,9 +115,11 @@ struct VFieldVal {
     }
 };
 
-template <typename T, unsigned Dim>
+template <typename Params, unsigned Dim>
 struct FieldVal {
-    using field_view_type = typename FieldTest<T>::template field_type<Dim>::view_type;
+    using field_view_type = typename FieldTest<Params>::template field_type<Dim>::view_type;
+    using T               = typename FieldTest<Params>::value_type;
+
     const field_view_type view;
 
     const ippl::NDIndex<Dim> lDom;
@@ -159,9 +171,7 @@ struct FieldVal {
     }
 };
 
-using Precisions = ::testing::Types<double, float>;
-
-TYPED_TEST_CASE(FieldTest, Precisions);
+TYPED_TEST_CASE(FieldTest, MixedPrecisionAndSpaces::tests);
 
 TYPED_TEST(FieldTest, DeepCopy) {
     auto check =
@@ -180,18 +190,21 @@ TYPED_TEST(FieldTest, DeepCopy) {
             Kokkos::deep_copy(mirrorA, field->getView());
             Kokkos::deep_copy(mirrorB, copy.getView());
 
-            this->template nestedViewLoop(
-                mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
-                    assertTypeParam<TypeParam>(mirrorA(args...) + 1, mirrorB(args...));
-                });
+            this->template nestedViewLoop(mirrorA, field->getNghost(),
+                                          [&]<typename... Idx>(const Idx... args) {
+                                              assertEqual<typename TestFixture::value_type>(
+                                                  mirrorA(args...) + 1, mirrorB(args...));
+                                          });
         };
 
     this->apply(check, this->fields);
 }
 
 TYPED_TEST(FieldTest, Sum) {
-    TypeParam val                    = 1.0;
-    TypeParam expected[TestFixture::MaxDim] = {val * this->nPoints[0]};
+    using T = typename TestFixture::value_type;
+
+    T val                           = 1.0;
+    T expected[TestFixture::MaxDim] = {val * this->nPoints[0]};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] * this->nPoints[d];
     }
@@ -200,17 +213,19 @@ TYPED_TEST(FieldTest, Sum) {
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             *field = val;
 
-            TypeParam sum = field->sum();
+            T sum = field->sum();
 
-            assertTypeParam<TypeParam>(expected[TestFixture::dimToIndex(Dim)], sum);
+            assertEqual<T>(expected[TestFixture::dimToIndex(Dim)], sum);
         };
 
     this->apply(check, this->fields);
 }
 
 TYPED_TEST(FieldTest, Norm1) {
-    TypeParam val                    = -1.5;
-    TypeParam expected[TestFixture::MaxDim] = {-val * this->nPoints[0]};
+    using T = typename TestFixture::value_type;
+
+    T val                           = -1.5;
+    T expected[TestFixture::MaxDim] = {-val * this->nPoints[0]};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] * this->nPoints[d];
     }
@@ -219,17 +234,19 @@ TYPED_TEST(FieldTest, Norm1) {
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             *field = val;
 
-            TypeParam norm1 = ippl::norm(*field, 1);
+            T norm1 = ippl::norm(*field, 1);
 
-            assertTypeParam<TypeParam>(expected[TestFixture::dimToIndex(Dim)], norm1);
+            assertEqual<T>(expected[TestFixture::dimToIndex(Dim)], norm1);
         };
 
     this->apply(check, this->fields);
 }
 
 TYPED_TEST(FieldTest, Norm2) {
-    TypeParam val                   = 1.5;
-    TypeParam squared[TestFixture::MaxDim] = {val * val * this->nPoints[0]};
+    using T = typename TestFixture::value_type;
+
+    T val                          = 1.5;
+    T squared[TestFixture::MaxDim] = {val * val * this->nPoints[0]};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         squared[d] = squared[d - 1] * this->nPoints[d];
     }
@@ -238,17 +255,19 @@ TYPED_TEST(FieldTest, Norm2) {
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             *field = val;
 
-            TypeParam norm2 = ippl::norm(*field);
+            T norm2 = ippl::norm(*field);
 
-            assertTypeParam<TypeParam>(std::sqrt(squared[TestFixture::dimToIndex(Dim)]), norm2);
+            assertEqual<T>(std::sqrt(squared[TestFixture::dimToIndex(Dim)]), norm2);
         };
 
     this->apply(check, this->fields);
 }
 
 TYPED_TEST(FieldTest, NormInf) {
-    TypeParam val                    = 1.;
-    TypeParam expected[TestFixture::MaxDim] = {this->nPoints[0] - val};
+    using T = typename TestFixture::value_type;
+
+    T val                           = 1.;
+    T expected[TestFixture::MaxDim] = {this->nPoints[0] - val};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] + this->nPoints[d];
     }
@@ -259,32 +278,34 @@ TYPED_TEST(FieldTest, NormInf) {
 
             const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
 
-            view_type view                        = field->getView();
-            const ippl::Vector<TypeParam, Dim> dx = field->get_mesh().getMeshSpacing();
+            view_type view                = field->getView();
+            const ippl::Vector<T, Dim> dx = field->get_mesh().getMeshSpacing();
             FieldVal<TypeParam, Dim> fv(view, lDom, dx);
             Kokkos::parallel_for(
                 "Set field",
                 field->template getFieldRangePolicy<typename FieldVal<TypeParam, Dim>::Norm>(), fv);
 
-            TypeParam normInf = ippl::norm(*field, 0);
+            T normInf = ippl::norm(*field, 0);
 
-            assertTypeParam<TypeParam>(expected[TestFixture::dimToIndex(Dim)], normInf);
+            assertEqual<T>(expected[TestFixture::dimToIndex(Dim)], normInf);
         };
 
     this->apply(check, this->fields);
 }
 
 TYPED_TEST(FieldTest, VolumeIntegral) {
+    using T = typename TestFixture::value_type;
+
     auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
         using view_type = typename TestFixture::template field_type<Dim>::view_type;
 
-        TypeParam tol                 = (std::is_same_v<TypeParam, double>) ? 5e-15 : 5e-6;
+        T tol                         = (std::is_same_v<T, double>) ? 5e-15 : 5e-6;
         const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
         const int shift               = field->getNghost();
 
-        const ippl::Vector<TypeParam, Dim> dx = field->get_mesh().getMeshSpacing();
-        view_type view                        = field->getView();
+        const ippl::Vector<T, Dim> dx = field->get_mesh().getMeshSpacing();
+        view_type view                = field->getView();
 
         FieldVal<TypeParam, Dim> fv(view, lDom, dx, shift);
         Kokkos::parallel_for(
@@ -298,13 +319,15 @@ TYPED_TEST(FieldTest, VolumeIntegral) {
 }
 
 TYPED_TEST(FieldTest, VolumeIntegral2) {
+    using T = typename TestFixture::value_type;
+
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
-            *field             = 1.;
-            TypeParam integral = field->getVolumeIntegral();
-            TypeParam volume   = field->get_mesh().getMeshVolume();
+            *field     = 1.;
+            T integral = field->getVolumeIntegral();
+            T volume   = field->get_mesh().getMeshVolume();
 
-            assertTypeParam<TypeParam>(integral, volume);
+            assertEqual<T>(integral, volume);
         };
 
     this->apply(check, this->fields);
@@ -329,7 +352,7 @@ TYPED_TEST(FieldTest, Grad) {
 
             this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
                 for (size_t d = 0; d < Dim; d++) {
-                    assertTypeParam<TypeParam>(mirror(args...)[d], 0.);
+                    assertEqual<typename TestFixture::value_type>(mirror(args...)[d], 0.);
                 }
             });
         };
@@ -338,6 +361,8 @@ TYPED_TEST(FieldTest, Grad) {
 }
 
 TYPED_TEST(FieldTest, Div) {
+    using T = typename TestFixture::value_type;
+
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             using vfield_type = typename TestFixture::template vfield_type<Dim>;
@@ -351,7 +376,7 @@ TYPED_TEST(FieldTest, Div) {
 
             const ippl::NDIndex<Dim> lDom = vfield.getLayout().getLocalNDIndex();
 
-            const ippl::Vector<TypeParam, Dim> dx = vfield.get_mesh().getMeshSpacing();
+            const ippl::Vector<T, Dim> dx = vfield.get_mesh().getMeshSpacing();
             VFieldVal<TypeParam, Dim> fv(view, lDom, dx, vshift);
             Kokkos::parallel_for("Set field", vfield.getFieldRangePolicy(vshift), fv);
 
@@ -362,7 +387,7 @@ TYPED_TEST(FieldTest, Div) {
             Kokkos::deep_copy(mirror, field->getView());
 
             this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-                assertTypeParam<TypeParam>(mirror(args...), Dim);
+                assertEqual<T>(mirror(args...), Dim);
             });
         };
 
@@ -370,6 +395,8 @@ TYPED_TEST(FieldTest, Div) {
 }
 
 TYPED_TEST(FieldTest, Curl) {
+    using T = typename TestFixture::value_type;
+
     // Restrict to 3D case for now
     constexpr unsigned dim = 3;
     using mesh_type        = typename TestFixture::template mesh_type<dim>;
@@ -386,9 +413,9 @@ TYPED_TEST(FieldTest, Curl) {
     const int nghost      = vfield.getNghost();
     vview_type view_field = vfield.getView();
 
-    ippl::NDIndex<dim> lDom             = layout->getLocalNDIndex();
-    ippl::Vector<TypeParam, dim> hx     = mesh->getMeshSpacing();
-    ippl::Vector<TypeParam, dim> origin = mesh->getOrigin();
+    ippl::NDIndex<dim> lDom     = layout->getLocalNDIndex();
+    ippl::Vector<T, dim> hx     = mesh->getMeshSpacing();
+    ippl::Vector<T, dim> origin = mesh->getOrigin();
 
     mirror_type mirror = Kokkos::create_mirror_view(view_field);
     Kokkos::deep_copy(mirror, view_field);
@@ -406,9 +433,9 @@ TYPED_TEST(FieldTest, Curl) {
                     const int jg = j + lDom[1].first() - nghost;
                     const int kg = k + lDom[2].first() - nghost;
 
-                    TypeParam x = (ig + 0.5) * hx[0] + origin[0];
-                    TypeParam y = (jg + 0.5) * hx[1] + origin[1];
-                    TypeParam z = (kg + 0.5) * hx[2] + origin[2];
+                    T x = (ig + 0.5) * hx[0] + origin[0];
+                    T y = (jg + 0.5) * hx[1] + origin[1];
+                    T z = (kg + 0.5) * hx[2] + origin[2];
 
                     mirror(i, j, k)[gd] = dim0 * (y * z) + dim1 * (x * z) + dim2 * (x * y);
                 }
@@ -430,7 +457,7 @@ TYPED_TEST(FieldTest, Curl) {
         for (size_t j = shift; j < mirror.extent(1) - shift; ++j) {
             for (size_t k = shift; k < mirror.extent(2) - shift; ++k) {
                 for (size_t d = 0; d < dim; ++d) {
-                    assertTypeParam<TypeParam>(mirror(i, j, k)[d], 0.);
+                    assertEqual<T>(mirror(i, j, k)[d], 0.);
                 }
             }
         }
@@ -438,6 +465,8 @@ TYPED_TEST(FieldTest, Curl) {
 }
 
 TYPED_TEST(FieldTest, Hessian) {
+    using T = typename TestFixture::value_type;
+
     auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template mesh_type<Dim>>& mesh,
                      std::shared_ptr<typename TestFixture::template layout_type<Dim>>& layout) {
@@ -445,7 +474,7 @@ TYPED_TEST(FieldTest, Hessian) {
         using centering_type = typename TestFixture::template centering_type<Dim>;
         using field_type     = typename TestFixture::template field_type<Dim>;
         using view_type      = typename field_type::view_type;
-        typedef ippl::Vector<TypeParam, Dim> Vector_t;
+        typedef ippl::Vector<T, Dim> Vector_t;
         typedef ippl::Field<ippl::Vector<Vector_t, Dim>, Dim, mesh_type, centering_type> MField_t;
         using view_type_m   = typename MField_t::view_type;
         using mirror_type_m = typename view_type_m::host_mirror_type;
@@ -474,11 +503,11 @@ TYPED_TEST(FieldTest, Hessian) {
 
         this->template nestedViewLoop(mirror_result, nghost,
                                       [&]<typename... Idx>(const Idx... args) {
-                                          TypeParam det = 0;
+                                          T det = 0;
                                           for (unsigned d = 0; d < Dim; d++) {
                                               det += mirror_result(args...)[d][d];
                                           }
-                                          assertTypeParam<TypeParam>(det, 0.);
+                                          assertEqual<T>(det, 0.);
                                       });
     };
 
@@ -487,6 +516,7 @@ TYPED_TEST(FieldTest, Hessian) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
+    MixedPrecisionAndSpaces::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
