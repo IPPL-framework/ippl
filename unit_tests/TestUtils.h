@@ -77,16 +77,30 @@ struct MixedPrecisionAndSpaces {
     using Precisions = std::tuple<double, float>;
     using Combos     = CreateCombinations<Precisions, Spaces>::type;
     using tests      = TestForTypes<Combos>::type;
+
+    static bool skipSerialTests;
+
+    static void checkArgs([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
+        skipSerialTests = false;
+#ifdef KOKKOS_ENABLE_SERIAL
+        for (int i = 1; i < argc; i++) {
+            if (strcmp(argv[i], "--skip-serial") == 0) {
+                skipSerialTests = true;
+            }
+        }
+#endif
+    }
 };
 
 #ifdef KOKKOS_ENABLE_SERIAL
-#define MAYBE_SKIP_SERIAL                                                   \
-    if (std::is_same_v<typename TestFixture::exec_space, Kokkos::Serial>) { \
-        SUCCEED();                                                          \
-        return;                                                             \
+#define CHECK_SKIP_SERIAL                                                \
+    if (std::is_same_v<typename TestFixture::exec_space, Kokkos::Serial> \
+        && MixedPrecisionAndSpaces::skipSerialTests) {                   \
+        SUCCEED();                                                       \
+        return;                                                          \
     }
 #else
-#define MAYBE_SKIP_SERIAL \
+#define CHECK_SKIP_SERIAL \
     {}
 #endif
 

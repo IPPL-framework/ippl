@@ -26,10 +26,6 @@
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
-#ifdef KOKKOS_ENABLE_SERIAL
-bool skipSerialTests = false;
-#endif
-
 template <typename>
 class BareFieldTest;
 
@@ -98,7 +94,7 @@ struct FieldVal {
 TYPED_TEST_CASE(BareFieldTest, MixedPrecisionAndSpaces::tests);
 
 TYPED_TEST(BareFieldTest, DeepCopy) {
-    MAYBE_SKIP_SERIAL;
+    CHECK_SKIP_SERIAL;
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             using view_type   = typename TestFixture::template field_type<Dim>::view_type;
@@ -125,7 +121,7 @@ TYPED_TEST(BareFieldTest, DeepCopy) {
 }
 
 TYPED_TEST(BareFieldTest, Sum) {
-    MAYBE_SKIP_SERIAL;
+    CHECK_SKIP_SERIAL;
     using T                         = typename TestFixture::value_type;
     T val                           = 1.0;
     T expected[TestFixture::MaxDim] = {val * this->nPoints[0]};
@@ -144,7 +140,7 @@ TYPED_TEST(BareFieldTest, Sum) {
 }
 
 TYPED_TEST(BareFieldTest, Min) {
-    MAYBE_SKIP_SERIAL;
+    CHECK_SKIP_SERIAL;
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             using view_type = typename TestFixture::template field_type<Dim>::view_type;
@@ -165,7 +161,7 @@ TYPED_TEST(BareFieldTest, Min) {
 }
 
 TYPED_TEST(BareFieldTest, Max) {
-    MAYBE_SKIP_SERIAL;
+    CHECK_SKIP_SERIAL;
     using T                         = typename TestFixture::value_type;
     T val                           = 1.;
     T expected[TestFixture::MaxDim] = {this->nPoints[0] - val};
@@ -191,7 +187,7 @@ TYPED_TEST(BareFieldTest, Max) {
 }
 
 TYPED_TEST(BareFieldTest, Prod) {
-    MAYBE_SKIP_SERIAL;
+    CHECK_SKIP_SERIAL;
     using T                      = typename TestFixture::value_type;
     T sizes[TestFixture::MaxDim] = {(T)this->nPoints[0]};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
@@ -209,7 +205,7 @@ TYPED_TEST(BareFieldTest, Prod) {
 }
 
 TYPED_TEST(BareFieldTest, ScalarMultiplication) {
-    MAYBE_SKIP_SERIAL;
+    CHECK_SKIP_SERIAL;
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             using view_type   = typename TestFixture::template field_type<Dim>::view_type;
@@ -233,7 +229,7 @@ TYPED_TEST(BareFieldTest, ScalarMultiplication) {
 }
 
 TYPED_TEST(BareFieldTest, DotProduct) {
-    MAYBE_SKIP_SERIAL;
+    CHECK_SKIP_SERIAL;
     auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field,
                      std::shared_ptr<typename TestFixture::template vfield_type<Dim>>& vfield) {
@@ -258,7 +254,7 @@ TYPED_TEST(BareFieldTest, DotProduct) {
 }
 
 TYPED_TEST(BareFieldTest, AllFuncs) {
-    MAYBE_SKIP_SERIAL;
+    CHECK_SKIP_SERIAL;
     using T    = typename TestFixture::value_type;
     auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
@@ -299,13 +295,7 @@ TYPED_TEST(BareFieldTest, AllFuncs) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-#ifdef KOKKOS_ENABLE_SERIAL
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--skip-serial") == 0) {
-            skipSerialTests = true;
-        }
-    }
-#endif
+    MixedPrecisionAndSpaces::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
