@@ -32,7 +32,6 @@
 
 #include "Field/BareField.h"
 
-#include "FFT/FFT.h"
 #include "FieldLayout/FieldLayout.h"
 
 namespace ippl {
