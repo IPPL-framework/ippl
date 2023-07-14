@@ -43,23 +43,10 @@ namespace ippl {
         defaultOveralloc_m = factor;
     }
 
-#if __cplusplus < 202002L
-    struct ClearMap {
-        template <typename Map>
-        void operator()(Map&& m) {
-            m.clear();
-        }
-    };
-#endif
-
     void Communicate::deleteAllBuffers() {
-#if __cplusplus < 202002L
-        buffers_m.forAll(ClearMap{});
-#else
         buffers_m.forAll([]<typename Map>(Map&& m) {
             m.clear();
         });
-#endif
     }
 
 }  // namespace ippl
