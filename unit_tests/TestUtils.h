@@ -81,11 +81,11 @@ struct MixedPrecisionAndSpaces {
     static bool skipSerialTests;
 
     static void checkArgs([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
-        skipSerialTests = false;
+        skipSerialTests = true;
 #ifdef KOKKOS_ENABLE_SERIAL
         for (int i = 1; i < argc; i++) {
-            if (strcmp(argv[i], "--skip-serial") == 0) {
-                skipSerialTests = true;
+            if (strcmp(argv[i], "--run-serial") == 0) {
+                skipSerialTests = false;
             }
         }
 #endif
