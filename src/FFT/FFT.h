@@ -68,8 +68,12 @@ namespace ippl {
         p2p_pl = 3
     };
 
-    namespace detail {
+    enum TransformDirection {
+        FORWARD,
+        BACKWARD
+    };
 
+    namespace detail {
         /*!
          * Wrapper type for heFFTe backends, templated
          * on the Kokkos memory space
@@ -171,10 +175,12 @@ namespace ippl {
         using Base::Base;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
-        /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
-            transform. The output is over-written in the input.
-        */
-        void transform(int direction, ComplexField& f);
+        /*!
+         * Perform in-place FFT
+         * @param direction Forward or backward transformation
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void transform(TransformDirection direction, ComplexField& f);
     };
 
     /**
@@ -191,9 +197,9 @@ namespace ippl {
 
     public:
         typedef Kokkos::complex<Real_t> Complex_t;
-        using ComplexField =
-            Field<Complex_t, Dim, typename RealField::Mesh_t, typename RealField::Centering_t,
-                  typename RealField::execution_space>;
+        using ComplexField = typename Field<Complex_t, Dim, typename RealField::Mesh_t,
+                                            typename RealField::Centering_t,
+                                            typename RealField::execution_space>::uniform_type;
 
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
@@ -202,10 +208,13 @@ namespace ippl {
          */
         FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const ParameterList& params);
 
-        /** Do the FFT: specify +1 or -1 to indicate forward or inverse
-            transform.
-        */
-        void transform(int direction, RealField& f, ComplexField& g);
+        /*!
+         * Perform FFT
+         * @param direction Forward or backward transformation
+         * @param f Field whose transformation to compute
+         * @param g Field in which to store the transformation
+         */
+        void transform(TransformDirection direction, RealField& f, ComplexField& g);
 
     protected:
         Kokkos::View<typename ComplexField::view_type::data_type, Kokkos::LayoutLeft>
@@ -224,10 +233,12 @@ namespace ippl {
         using Base::Base;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
-        /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
-            transform. The output is over-written in the input.
-        */
-        void transform(int direction, Field& f);
+        /*!
+         * Perform in-place FFT
+         * @param direction Forward or backward transformation
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void transform(TransformDirection direction, Field& f);
     };
     /**
        Cosine transform class
@@ -241,10 +252,12 @@ namespace ippl {
         using Base::Base;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
-        /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
-            transform. The output is over-written in the input.
-        */
-        void transform(int direction, Field& f);
+        /*!
+         * Perform in-place FFT
+         * @param direction Forward or backward transformation
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void transform(TransformDirection direction, Field& f);
     };
 }  // namespace ippl
 

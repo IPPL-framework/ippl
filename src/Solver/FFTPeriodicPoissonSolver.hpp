@@ -68,7 +68,7 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTPeriodicPoissonSolver<FieldLHS, FieldRHS>::solve() {
-        fft_mp->transform(1, *this->rhs_mp, fieldComplex_m);
+        fft_mp->transform(FORWARD, *this->rhs_mp, fieldComplex_m);
 
         auto view        = fieldComplex_m.getView();
         const int nghost = fieldComplex_m.getNghost();
@@ -120,7 +120,7 @@ namespace ippl {
                         apply(view, args) *= factor;
                     });
 
-                fft_mp->transform(-1, *this->rhs_mp, fieldComplex_m);
+                fft_mp->transform(BACKWARD, *this->rhs_mp, fieldComplex_m);
 
                 break;
             }
@@ -167,7 +167,7 @@ namespace ippl {
                             apply(tempview, args) *= -(imag * kVec[gd] * factor);
                         });
 
-                    fft_mp->transform(-1, *this->rhs_mp, tempFieldComplex_m);
+                    fft_mp->transform(BACKWARD, *this->rhs_mp, tempFieldComplex_m);
 
                     ippl::parallel_for(
                         "Assign Gradient FFTPeriodicPoissonSolver",
