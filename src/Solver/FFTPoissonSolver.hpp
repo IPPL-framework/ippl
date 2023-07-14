@@ -539,7 +539,7 @@ namespace ippl {
                     unpack(intersection, view2, fd_m, nghost2, ldom2);
                 }
             }
-            if (alg_m == "VICO_2.0") {
+            if (alg == Algorithm::VICO_2.0) {
                 fft2n1_m->transform(+1, grn2n1_m);
             }
 
