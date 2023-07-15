@@ -85,6 +85,7 @@ namespace ippl {
 
         KOKKOS_INLINE_FUNCTION bool split(NDIndex<Dim>& l, NDIndex<Dim>& r) const;
 
+        KOKKOS_INLINE_FUNCTION Vector<size_t, Dim> length() const;
         KOKKOS_INLINE_FUNCTION Vector<int, Dim> first() const;
         KOKKOS_INLINE_FUNCTION Vector<int, Dim> last() const;
 
