@@ -20,11 +20,18 @@
 
 #include <random>
 
-#include "MultirankUtils.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
-template <typename T>
-class ParticleSendRecv : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
+template <typename>
+class ParticleSendRecv;
+
+template <typename T, typename ExecSpace>
+class ParticleSendRecv<std::tuple<T, ExecSpace>> : public ::testing::Test,
+                                                   public MultirankUtils<1, 2, 3, 4, 5, 6> {
+protected:
+    void SetUp() override { CHECK_SKIP_SERIAL; }
+
 public:
     template <unsigned Dim>
     using flayout_type = ippl::FieldLayout<Dim>;
@@ -33,13 +40,12 @@ public:
     using mesh_type = ippl::UniformCartesian<T, Dim>;
 
     template <unsigned Dim>
-    using playout_type = ippl::ParticleSpatialLayout<T, Dim>;
+    using playout_type = ippl::ParticleSpatialLayout<T, Dim, mesh_type<Dim>, ExecSpace>;
 
     template <unsigned Dim>
-    using RegionLayout_t =
-        typename ippl::detail::RegionLayout<T, Dim, mesh_type<Dim>>::uniform_type;
+    using RegionLayout_t = typename playout_type<Dim>::RegionLayout_t;
 
-    typedef ippl::ParticleAttrib<int> rank_type;
+    using rank_type = ippl::ParticleAttrib<int, ExecSpace>;
 
     template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
@@ -49,10 +55,9 @@ public:
             this->addAttribute(Q);
         }
 
-        ~Bunch() {}
+        ~Bunch() = default;
 
-        typedef ippl::ParticleAttrib<int> rank_type;
-        typedef ippl::ParticleAttrib<T> charge_container_type;
+        using charge_container_type = ippl::ParticleAttrib<T>;
 
         rank_type expectedRank;
         charge_container_type Q;
@@ -132,11 +137,11 @@ public:
 
         using region_view  = typename RegionLayout_t<Dim>::view_type;
         using size_type    = typename RegionLayout_t<Dim>::view_type::size_type;
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecSpace>;
 
-        auto& positions         = bunch->R.getView();
-        region_view Regions     = RLayout.getdLocalRegions();
-        rank_type::view_type ER = bunch->expectedRank.getView();
+        auto& positions                  = bunch->R.getView();
+        region_view Regions              = RLayout.getdLocalRegions();
+        typename rank_type::view_type ER = bunch->expectedRank.getView();
 
         Kokkos::parallel_for(
             "Expected Rank", mdrange_type({0, 0}, {ER.extent(0), Regions.extent(0)}),
@@ -164,14 +169,13 @@ private:
     Collection<mesh_type> meshes;
 };
 
-using Precisions = ::testing::Types<double, float>;
-
-TYPED_TEST_CASE(ParticleSendRecv, Precisions);
+TYPED_TEST_CASE(ParticleSendRecv, MixedPrecisionAndSpaces::tests);
 
 TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     // Local copy to avoid accessing through `this` in lambda
     const auto nParticles = this->nParticles;
-    auto check            = [&]<unsigned Dim>(
+
+    auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& bunch,
                      typename TestFixture::template playout_type<Dim>& pl) {
         typename TestFixture::template bunch_type<Dim> bunchBuffer(pl);
@@ -204,6 +208,7 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
+    MixedPrecisionAndSpaces::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
