@@ -20,16 +20,17 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 
-#include "MultirankUtils.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
+template <typename T>
 class BareFieldTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
     template <unsigned Dim>
-    using field_type = ippl::BareField<double, Dim>;
+    using field_type = ippl::BareField<T, Dim>;
 
     template <unsigned Dim>
-    using vfield_type = ippl::BareField<ippl::Vector<double, Dim>, Dim>;
+    using vfield_type = ippl::BareField<ippl::Vector<T, Dim>, Dim>;
 
     BareFieldTest() {
         computeGridSizes(nPoints);
@@ -63,14 +64,14 @@ public:
     size_t nPoints[MaxDim];
 };
 
-template <unsigned Dim>
+template <typename T, unsigned Dim>
 struct FieldVal {
-    const typename BareFieldTest::field_type<Dim>::view_type view;
+    const typename BareFieldTest<T>::template field_type<Dim>::view_type view;
     const ippl::NDIndex<Dim> lDom;
 
     template <typename... Idx>
     KOKKOS_INLINE_FUNCTION void operator()(const Idx... args) const {
-        double tot = (args + ...);
+        T tot = (args + ...);
         for (unsigned d = 0; d < Dim; d++) {
             tot += lDom[d].first();
         }
@@ -78,143 +79,176 @@ struct FieldVal {
     }
 };
 
-TEST_F(BareFieldTest, DeepCopy) {
-    auto check = []<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
-        *field               = 0;
-        field_type<Dim> copy = field->deepCopy();
-        copy                 = copy + 1;
+using Precisions = ::testing::Types<double, float>;
 
-        auto mirrorA = field->getHostMirror();
-        auto mirrorB = copy.getHostMirror();
+TYPED_TEST_CASE(BareFieldTest, Precisions);
 
-        Kokkos::deep_copy(mirrorA, field->getView());
-        Kokkos::deep_copy(mirrorB, copy.getView());
+TYPED_TEST(BareFieldTest, DeepCopy) {
+    auto check =
+        [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
+            using view_type   = typename TestFixture::template field_type<Dim>::view_type;
+            using mirror_type = typename view_type::host_mirror_type;
 
-        nestedViewLoop(mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
-            ASSERT_DOUBLE_EQ(mirrorA(args...) + 1, mirrorB(args...));
-        });
-    };
+            *field    = 0;
+            auto copy = field->deepCopy();
+            copy      = copy + 1;
 
-    apply(check, fields);
+            mirror_type mirrorA = field->getHostMirror();
+            mirror_type mirrorB = copy.getHostMirror();
+
+            Kokkos::deep_copy(mirrorA, field->getView());
+            Kokkos::deep_copy(mirrorB, copy.getView());
+
+            this->template nestedViewLoop(
+                mirrorA, field->getNghost(), [&]<typename... Idx>(const Idx... args) {
+                    assertTypeParam<TypeParam>(mirrorA(args...) + 1, mirrorB(args...));
+                });
+        };
+
+    this->apply(check, this->fields);
 }
 
-TEST_F(BareFieldTest, Sum) {
-    double val              = 1.0;
-    double expected[MaxDim] = {val * nPoints[0]};
-    for (unsigned d = 1; d < MaxDim; d++) {
-        expected[d] = expected[d - 1] * nPoints[d];
+TYPED_TEST(BareFieldTest, Sum) {
+    TypeParam val                           = 1.0;
+    TypeParam expected[TestFixture::MaxDim] = {val * this->nPoints[0]};
+    for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
+        expected[d] = expected[d - 1] * this->nPoints[d];
     }
 
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
-        *field     = val;
-        double sum = field->sum();
-        ASSERT_DOUBLE_EQ(expected[dimToIndex(Dim)], sum);
-    };
+    auto check =
+        [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
+            *field        = val;
+            TypeParam sum = field->sum();
+            assertTypeParam<TypeParam>(expected[TestFixture::dimToIndex(Dim)], sum);
+        };
 
-    apply(check, fields);
+    this->apply(check, this->fields);
 }
 
-TEST_F(BareFieldTest, Min) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
-        const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
-        auto view                     = field->getView();
+TYPED_TEST(BareFieldTest, Min) {
+    auto check =
+        [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
+            using view_type = typename TestFixture::template field_type<Dim>::view_type;
 
-        Kokkos::parallel_for("Set field", field->getFieldRangePolicy(), FieldVal<Dim>{view, lDom});
-        Kokkos::fence();
+            const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
+            view_type view                = field->getView();
 
-        double min = field->min();
-        // minimum value in 3D: -1 + nghost + nghost + nghost
-        ASSERT_DOUBLE_EQ(min, field->getNghost() * Dim - 1);
-    };
+            Kokkos::parallel_for("Set field", field->getFieldRangePolicy(),
+                                 FieldVal<TypeParam, Dim>{view, lDom});
+            Kokkos::fence();
 
-    apply(check, fields);
+            TypeParam min = field->min();
+            // minimum value in 3D: -1 + nghost + nghost + nghost
+            assertTypeParam<TypeParam>(min, field->getNghost() * Dim - 1);
+        };
+
+    this->apply(check, this->fields);
 }
 
-TEST_F(BareFieldTest, Max) {
-    double expected[MaxDim] = {nPoints[0] - 1.};
-    for (unsigned d = 1; d < MaxDim; d++) {
-        expected[d] = expected[d - 1] + nPoints[d];
+TYPED_TEST(BareFieldTest, Max) {
+    TypeParam val                           = 1.;
+    TypeParam expected[TestFixture::MaxDim] = {this->nPoints[0] - val};
+    for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
+        expected[d] = expected[d - 1] + this->nPoints[d];
     }
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
-        const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
-        auto view                     = field->getView();
+    auto check =
+        [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
+            using view_type = typename TestFixture::template field_type<Dim>::view_type;
 
-        Kokkos::parallel_for("Set field", field->getFieldRangePolicy(), FieldVal<Dim>{view, lDom});
-        Kokkos::fence();
+            const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
+            view_type view                = field->getView();
 
-        double max = field->max();
-        ASSERT_DOUBLE_EQ(max, expected[dimToIndex(Dim)]);
-    };
+            Kokkos::parallel_for("Set field", field->getFieldRangePolicy(),
+                                 FieldVal<TypeParam, Dim>{view, lDom});
+            Kokkos::fence();
 
-    apply(check, fields);
+            TypeParam max = field->max();
+            assertTypeParam<TypeParam>(max, expected[TestFixture::dimToIndex(Dim)]);
+        };
+
+    this->apply(check, this->fields);
 }
 
-TEST_F(BareFieldTest, Prod) {
-    double sizes[MaxDim] = {(double)nPoints[0]};
-    for (unsigned d = 1; d < MaxDim; d++) {
-        sizes[d] = sizes[d - 1] * nPoints[d];
+TYPED_TEST(BareFieldTest, Prod) {
+    TypeParam sizes[TestFixture::MaxDim] = {(TypeParam)this->nPoints[0]};
+    for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
+        sizes[d] = sizes[d - 1] * this->nPoints[d];
     }
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
-        *field     = 2.;
-        double val = field->prod();
-        ASSERT_DOUBLE_EQ(val, pow(2, sizes[dimToIndex(Dim)]));
-    };
+    auto check =
+        [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
+            *field        = 2.;
+            TypeParam val = field->prod();
 
-    apply(check, fields);
+            assertTypeParam<TypeParam>(val, pow(2, sizes[TestFixture::dimToIndex(Dim)]));
+        };
+
+    this->apply(check, this->fields);
 }
 
-TEST_F(BareFieldTest, ScalarMultiplication) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
-        *field = 1.;
-        *field = *field * 10;
+TYPED_TEST(BareFieldTest, ScalarMultiplication) {
+    auto check =
+        [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
+            using view_type   = typename TestFixture::template field_type<Dim>::view_type;
+            using mirror_type = typename view_type::host_mirror_type;
 
-        const int shift = field->getNghost();
+            *field = 1.;
+            *field = *field * 10;
 
-        auto view   = field->getView();
-        auto mirror = Kokkos::create_mirror_view(view);
-        Kokkos::deep_copy(mirror, view);
+            const int shift = field->getNghost();
 
-        nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-            ASSERT_DOUBLE_EQ(mirror(args...), 10.);
-        });
-    };
+            view_type view     = field->getView();
+            mirror_type mirror = Kokkos::create_mirror_view(view);
+            Kokkos::deep_copy(mirror, view);
 
-    apply(check, fields);
+            this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+                assertTypeParam<TypeParam>(mirror(args...), 10.);
+            });
+        };
+
+    this->apply(check, this->fields);
 }
 
-TEST_F(BareFieldTest, DotProduct) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field,
-                                   std::shared_ptr<vfield_type<Dim>>& vfield) {
+TYPED_TEST(BareFieldTest, DotProduct) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template field_type<Dim>>& field,
+                     std::shared_ptr<typename TestFixture::template vfield_type<Dim>>& vfield) {
+        using view_type   = typename TestFixture::template field_type<Dim>::view_type;
+        using mirror_type = typename view_type::host_mirror_type;
+
         *vfield = 1.;
         *field  = 5. * dot(*vfield, *vfield);
 
         const int shift = field->getNghost();
 
-        auto view   = field->getView();
-        auto mirror = Kokkos::create_mirror_view(view);
+        view_type view     = field->getView();
+        mirror_type mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-            ASSERT_DOUBLE_EQ(mirror(args...), 5 * Dim);
+        this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+            assertTypeParam<TypeParam>(mirror(args...), 5 * Dim);
         });
     };
 
-    apply(check, fields, vfields);
+    this->apply(check, this->fields, this->vfields);
 }
 
-TEST_F(BareFieldTest, AllFuncs) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field) {
+TYPED_TEST(BareFieldTest, AllFuncs) {
+    auto check = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
         using Kokkos::sin, Kokkos::cos, Kokkos::tan, Kokkos::acos, Kokkos::asin, Kokkos::exp,
             Kokkos::erf, Kokkos::cosh, Kokkos::tanh, Kokkos::sinh, Kokkos::log, Kokkos::ceil,
             Kokkos::atan, Kokkos::log, Kokkos::log10, Kokkos::sqrt, Kokkos::floor;
-        double pi    = Kokkos::numbers::pi_v<double>;
-        double alpha = pi / 4;
-        *field       = alpha;
+        using view_type   = typename TestFixture::template field_type<Dim>::view_type;
+        using mirror_type = typename view_type::host_mirror_type;
+
+        TypeParam pi    = Kokkos::numbers::pi_v<TypeParam>;
+        TypeParam alpha = pi / 4;
+        *field          = alpha;
         // Compute new value
-        double beta = fabs(7.0 * (sin(alpha) * cos(alpha)) / (tan(alpha) * acos(alpha)) - exp(alpha)
-                           + erf(alpha) + (asin(alpha) * cosh(alpha)) / (atan(alpha) * sinh(alpha))
-                           + tanh(alpha) * log(alpha) - log10(alpha) * sqrt(alpha)
-                           + floor(alpha) * ceil(alpha));
+        TypeParam beta = fabs(
+            7.0 * (sin(alpha) * cos(alpha)) / (tan(alpha) * acos(alpha)) - exp(alpha) + erf(alpha)
+            + (asin(alpha) * cosh(alpha)) / (atan(alpha) * sinh(alpha)) + tanh(alpha) * log(alpha)
+            - log10(alpha) * sqrt(alpha) + floor(alpha) * ceil(alpha));
 
         // Compute same value via field ops
         *field = fabs(7.0 * (sin(*field) * cos(*field)) / (tan(*field) * acos(*field)) - exp(*field)
@@ -224,16 +258,16 @@ TEST_F(BareFieldTest, AllFuncs) {
 
         const int shift = field->getNghost();
 
-        auto view   = field->getView();
-        auto mirror = Kokkos::create_mirror_view(view);
+        view_type view     = field->getView();
+        mirror_type mirror = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(mirror, view);
 
-        nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
-            ASSERT_DOUBLE_EQ(mirror(args...), beta);
+        this->template nestedViewLoop(mirror, shift, [&]<typename... Idx>(const Idx... args) {
+            assertTypeParam<TypeParam>(mirror(args...), beta);
         });
     };
 
-    apply(check, fields);
+    this->apply(check, this->fields);
 }
 
 int main(int argc, char* argv[]) {

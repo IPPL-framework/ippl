@@ -40,28 +40,14 @@
 namespace ippl {
     namespace mpi {
 
-        void Communicator::setDefaultOverallocation(double factor) {
+        void Communicate::setDefaultOverallocation(double factor) {
             defaultOveralloc_m = factor;
         }
 
-#if __cplusplus < 202002L
-        struct ClearMap {
-            template <typename Map>
-            void operator()(Map&& m) {
-                m.clear();
-            }
-        };
-#endif
-
-        void Communicator::deleteAllBuffers() {
-#if __cplusplus < 202002L
-            buffers_m.forAll(ClearMap{});
-#else
+        void Communicate::deleteAllBuffers() {
             buffers_m.forAll([]<typename Map>(Map&& m) {
                 m.clear();
             });
-#endif
         }
-    }  // namespace mpi
 
-}  // namespace ippl
+    }  // namespace ippl

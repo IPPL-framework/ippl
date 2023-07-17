@@ -37,24 +37,18 @@ namespace ippl {
     namespace mpi {
 
         template <typename MemorySpace, typename T>
-        Communicator::buffer_type<MemorySpace> Communicator::getBuffer(int id, size_type size,
-                                                                       double overallocation) {
+        Communicate::buffer_type<MemorySpace> Communicate::getBuffer(int id, size_type size,
+                                                                     double overallocation) {
             auto& buffers = buffers_m.get<MemorySpace>();
             size *= sizeof(T);
-#if __cplusplus > 201703L
             if (buffers.contains(id)) {
-#else
-            if (buffers.find(id) != buffers.end()) {
-#endif
                 if (buffers[id]->getBufferSize() < size) {
                     buffers[id]->reallocBuffer(size);
                 }
+                buffers[id] = std::make_shared<archive_type<MemorySpace>>(
+                    (size_type)(size * std::max(overallocation, defaultOveralloc_m)));
                 return buffers[id];
             }
-            buffers[id] = std::make_shared<archive_type<MemorySpace>>(
-                (size_type)(size * std::max(overallocation, defaultOveralloc_m)));
-            return buffers[id];
-        }
-    }  // namespace mpi
+        }  // namespace mpi
 
-}  // namespace ippl
+    }  // namespace ippl

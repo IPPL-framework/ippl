@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
             const auto& ldom                   = layout.getLocalNDIndex();
 
             Kokkos::parallel_for(
-                "Assign rho field", ippl::getRangePolicy(view_rho, nghost),
+                "Assign rho field", rho.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     // go from local to global indices
                     const int ig = i + ldom[0].first() - nghost;
@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
             typename field::view_type view_exact = exact.getView();
 
             Kokkos::parallel_for(
-                "Assign exact field", ippl::getRangePolicy(view_exact, nghost),
+                "Assign exact field", exact.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     const int ig = i + ldom[0].first() - nghost;
                     const int jg = j + ldom[1].first() - nghost;

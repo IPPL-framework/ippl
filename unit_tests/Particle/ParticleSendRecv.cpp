@@ -23,20 +23,21 @@
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
+template <typename T>
 class ParticleSendRecv : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
     template <unsigned Dim>
     using flayout_type = ippl::FieldLayout<Dim>;
 
     template <unsigned Dim>
-    using mesh_type = ippl::UniformCartesian<double, Dim>;
+    using mesh_type = ippl::UniformCartesian<T, Dim>;
 
     template <unsigned Dim>
-    using playout_type = ippl::ParticleSpatialLayout<double, Dim, mesh_type<Dim>>;
+    using playout_type = ippl::ParticleSpatialLayout<T, Dim>;
 
     template <unsigned Dim>
     using RegionLayout_t =
-        typename ippl::detail::RegionLayout<double, Dim, mesh_type<Dim>>::uniform_type;
+        typename ippl::detail::RegionLayout<T, Dim, mesh_type<Dim>>::uniform_type;
 
     typedef ippl::ParticleAttrib<int> rank_type;
 
@@ -50,7 +51,8 @@ public:
 
         ~Bunch() {}
 
-        typedef ippl::ParticleAttrib<double> charge_container_type;
+        typedef ippl::ParticleAttrib<int> rank_type;
+        typedef ippl::ParticleAttrib<T> charge_container_type;
 
         rank_type expectedRank;
         charge_container_type Q;
@@ -81,8 +83,8 @@ public:
         }
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
-        ippl::Vector<double, Dim> hx;
-        ippl::Vector<double, Dim> origin;
+        ippl::Vector<T, Dim> hx;
+        ippl::Vector<T, Dim> origin;
 
         ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < Dim; d++) {
@@ -114,11 +116,11 @@ public:
         bunch->create(nParticles / nRanks);
 
         std::mt19937_64 eng(ippl::Comm->rank());
-        std::uniform_real_distribution<double> unif(0, 1);
+        std::uniform_real_distribution<T> unif(0, 1);
 
         auto R_host = bunch->R.getHostMirror();
         for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
-            ippl::Vector<double, Dim> r;
+            ippl::Vector<T, Dim> r;
             for (unsigned d = 0; d < Dim; d++) {
                 r[d] = unif(eng) * domain[d];
             }
@@ -153,9 +155,9 @@ public:
     }
 
     PtrCollection<std::shared_ptr, bunch_type> bunches;
-    unsigned int nParticles;
+    const unsigned int nParticles;
     size_t nPoints[MaxDim];
-    double domain[MaxDim];
+    T domain[MaxDim];
     Collection<playout_type> playouts;
 
 private:
@@ -163,12 +165,22 @@ private:
     Collection<mesh_type> meshes;
 };
 
-TEST_F(ParticleSendRecv, SendAndRecieve) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch, playout_type<Dim>& pl) {
-        bunch_type<Dim> bunchBuffer(pl);
-        pl.update(*bunch, bunchBuffer);
+using Precisions = ::testing::Types<double, float>;
 
-        rank_type::view_type::host_mirror_type ER_host = bunch->expectedRank.getHostMirror();
+TYPED_TEST_CASE(ParticleSendRecv, Precisions);
+
+TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
+    // Local copy to avoid accessing through `this` in lambda
+    const auto nParticles = this->nParticles;
+    auto check            = [&]<unsigned Dim>(
+                     std::shared_ptr<typename TestFixture::template bunch_type<Dim>>& bunch,
+                     typename TestFixture::template playout_type<Dim>& pl) {
+        typename TestFixture::template bunch_type<Dim> bunchBuffer(pl);
+        pl.update(*bunch, bunchBuffer);
+        // bunch->update();
+        typename TestFixture::rank_type::view_type::host_mirror_type ER_host =
+            bunch->expectedRank.getHostMirror();
+
         Kokkos::resize(ER_host, bunch->expectedRank.size());
         Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
 
@@ -187,7 +199,7 @@ TEST_F(ParticleSendRecv, SendAndRecieve) {
         }
     };
 
-    apply(check, bunches, playouts);
+    this->apply(check, this->bunches, this->playouts);
 }
 
 int main(int argc, char* argv[]) {
