@@ -27,7 +27,7 @@ template <typename>
 class FieldTest;
 
 template <typename T, typename ExecSpace>
-class FieldTest<std::tuple<T, ExecSpace>> : public ::testing::Test,
+class FieldTest<Parameters<T, ExecSpace>> : public ::testing::Test,
                                             public MultirankUtils<1, 2, 3, 4, 5, 6> {
 protected:
     void SetUp() override { CHECK_SKIP_SERIAL; }

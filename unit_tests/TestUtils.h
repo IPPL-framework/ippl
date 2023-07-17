@@ -26,6 +26,16 @@
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
+template <typename... Ts>
+struct Parameters {
+    using flat_type = Parameters<Ts...>;
+};
+
+template <typename... Ts, typename U>
+struct Parameters<Parameters<Ts...>, U> {
+    using flat_type = Parameters<Ts..., U>;
+};
+
 template <typename...>
 struct CreateCombinations;
 template <typename, typename>
@@ -35,13 +45,12 @@ struct AddType;
 
 template <typename... Ts, typename U>
 struct AddType<std::tuple<Ts...>, U> {
-    using type = std::tuple<std::tuple<Ts, U>...>;
+    using type = std::tuple<typename Parameters<Ts, U>::flat_type...>;
 };
 
-template <typename... TypesA, typename... TypesB>
-struct CombineTuples<std::tuple<TypesA...>, std::tuple<TypesB...>> {
-    using type = decltype(std::tuple_cat(
-        std::declval<typename AddType<std::tuple<TypesA...>, TypesB>::type>()...));
+template <typename PackA, typename... TypesB>
+struct CombineTuples<PackA, std::tuple<TypesB...>> {
+    using type = decltype(std::tuple_cat(std::declval<typename AddType<PackA, TypesB>::type>()...));
 };
 
 template <typename Tuple1, typename Tuple2>

@@ -30,7 +30,7 @@ template <typename>
 class BareFieldTest;
 
 template <typename T, typename ExecSpace>
-class BareFieldTest<std::tuple<T, ExecSpace>> : public ::testing::Test,
+class BareFieldTest<Parameters<T, ExecSpace>> : public ::testing::Test,
                                                 public MultirankUtils<1, 2, 3, 4, 5, 6> {
 protected:
     void SetUp() override { CHECK_SKIP_SERIAL; }

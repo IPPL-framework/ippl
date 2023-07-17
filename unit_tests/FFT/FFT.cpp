@@ -28,7 +28,7 @@ class FFTTest;
 
 // Restrict testing to 2 and 3 dimensions since this is what heFFTe supports
 template <typename T, typename ExecSpace>
-class FFTTest<std::tuple<T, ExecSpace>> : public ::testing::Test, public MultirankUtils<2, 3> {
+class FFTTest<Parameters<T, ExecSpace>> : public ::testing::Test, public MultirankUtils<2, 3> {
 protected:
     void SetUp() override { CHECK_SKIP_SERIAL; }
 
