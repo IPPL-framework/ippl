@@ -29,6 +29,9 @@ class FieldTest;
 template <typename T, typename ExecSpace>
 class FieldTest<std::tuple<T, ExecSpace>> : public ::testing::Test,
                                             public MultirankUtils<1, 2, 3, 4, 5, 6> {
+protected:
+    void SetUp() override { CHECK_SKIP_SERIAL; }
+
 public:
     using value_type = T;
     using exec_space = ExecSpace;
@@ -475,7 +478,9 @@ TYPED_TEST(FieldTest, Hessian) {
         using field_type     = typename TestFixture::template field_type<Dim>;
         using view_type      = typename field_type::view_type;
         typedef ippl::Vector<T, Dim> Vector_t;
-        typedef ippl::Field<ippl::Vector<Vector_t, Dim>, Dim, mesh_type, centering_type> MField_t;
+        typedef ippl::Field<ippl::Vector<Vector_t, Dim>, Dim, mesh_type, centering_type,
+                            typename TestFixture::exec_space>
+            MField_t;
         using view_type_m   = typename MField_t::view_type;
         using mirror_type_m = typename view_type_m::host_mirror_type;
 

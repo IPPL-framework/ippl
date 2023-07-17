@@ -20,12 +20,22 @@
 
 #include "Utility/IpplException.h"
 
-#include "MultirankUtils.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
-template <typename T>
-class FieldBCTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
+template <typename>
+class FieldBCTest;
+
+template <typename T, typename ExecSpace>
+class FieldBCTest<std::tuple<T, ExecSpace>> : public ::testing::Test,
+                                              public MultirankUtils<1, 2, 3, 4, 5, 6> {
+protected:
+    void SetUp() override { CHECK_SKIP_SERIAL; }
+
 public:
+    using value_type = T;
+    using exec_space = ExecSpace;
+
     template <unsigned Dim>
     using mesh_type = ippl::UniformCartesian<T, Dim>;
 
@@ -135,13 +145,13 @@ public:
     T domain[MaxDim];
 };
 
-using Precisions = ::testing::Types<double, float>;
-
-TYPED_TEST_CASE(FieldBCTest, Precisions);
+TYPED_TEST_CASE(FieldBCTest, MixedPrecisionAndSpaces::tests);
 
 TYPED_TEST(FieldBCTest, PeriodicBC) {
-    TypeParam expected = 10.0;
-    auto check         = [&]<unsigned Dim>(
+    using T    = typename TestFixture::value_type;
+    T expected = 10.0;
+
+    auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field,
                      typename TestFixture::template bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
@@ -157,8 +167,10 @@ TYPED_TEST(FieldBCTest, PeriodicBC) {
 }
 
 TYPED_TEST(FieldBCTest, NoBC) {
-    TypeParam expected = 1.0;
-    auto check         = [&]<unsigned Dim>(
+    using T    = typename TestFixture::value_type;
+    T expected = 1.0;
+
+    auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field,
                      typename TestFixture::template bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
@@ -174,8 +186,10 @@ TYPED_TEST(FieldBCTest, NoBC) {
 }
 
 TYPED_TEST(FieldBCTest, ZeroBC) {
-    TypeParam expected = 0.0;
-    auto check         = [&]<unsigned Dim>(
+    using T    = typename TestFixture::value_type;
+    T expected = 0.0;
+
+    auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field,
                      typename TestFixture::template bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
@@ -191,8 +205,10 @@ TYPED_TEST(FieldBCTest, ZeroBC) {
 }
 
 TYPED_TEST(FieldBCTest, ConstantBC) {
-    TypeParam constant = 7.0;
-    auto check         = [&]<unsigned Dim>(
+    using T    = typename TestFixture::value_type;
+    T constant = 7.0;
+
+    auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field,
                      typename TestFixture::template bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
@@ -208,8 +224,10 @@ TYPED_TEST(FieldBCTest, ConstantBC) {
 }
 
 TYPED_TEST(FieldBCTest, ExtrapolateBC) {
-    TypeParam expected = 10.0;
-    auto check         = [&]<unsigned Dim>(
+    using T    = typename TestFixture::value_type;
+    T expected = 10.0;
+
+    auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field,
                      typename TestFixture::template bc_type<Dim>& bcField) {
         for (size_t i = 0; i < 2 * Dim; ++i) {
@@ -226,6 +244,7 @@ TYPED_TEST(FieldBCTest, ExtrapolateBC) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
+    MixedPrecisionAndSpaces::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
