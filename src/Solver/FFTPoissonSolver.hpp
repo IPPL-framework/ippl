@@ -385,11 +385,7 @@ namespace ippl {
                     case 0:
                         Kokkos::parallel_for(
                             "Helper index Green field initialization",
-<<<<<<< HEAD
-                            ippl::getRangePolicy(view, nghost),
-=======
                             grnIField_m[d].getFieldRangePolicy(),
->>>>>>> master
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                                 // go from local indices to global
                                 const int ig = i + ldom[0].first() - nghost;
@@ -557,12 +553,8 @@ namespace ippl {
                     Communicate::size_type nrecvs;
                     nrecvs = intersection.size();
 
-<<<<<<< HEAD
-                    buffer_type buf = Comm->getBuffer<Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
-=======
                     buffer_type buf =
                         Comm->getBuffer<memory_space, Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
->>>>>>> master
 
                     Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
