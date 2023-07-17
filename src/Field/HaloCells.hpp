@@ -205,7 +205,10 @@ namespace ippl {
             int myRank           = Comm->rank();
             const auto& lDomains = layout->getHostLocalDomains();
             const auto& domain   = layout->getDomain();
-            using index_type     = typename RangePolicy<Dim>::index_type;
+
+            using exec_space = typename view_type::execution_space;
+            using index_type = typename RangePolicy<Dim, exec_space>::index_type;
+
             Kokkos::Array<index_type, Dim> ext, begin, end;
 
             for (size_t i = 0; i < Dim; ++i) {
@@ -223,7 +226,6 @@ namespace ippl {
                     int N = view.extent(d) - 1;
 
                     using index_array_type = typename RangePolicy<Dim>::index_array_type;
-                    using exec_space       = typename view_type::execution_space;
                     ippl::parallel_for(
                         "applyPeriodicSerialDim", createRangePolicy<Dim, exec_space>(begin, end),
                         KOKKOS_LAMBDA(index_array_type & coords) {

@@ -26,6 +26,9 @@ class HaloTest;
 template <typename T, typename ExecSpace>
 class HaloTest<std::tuple<T, ExecSpace>> : public ::testing::Test,
                                            public MultirankUtils<1, 2, 3, 4, 5, 6> {
+protected:
+    void SetUp() override { CHECK_SKIP_SERIAL; }
+
 public:
     using value_type = T;
     using exec_space = ExecSpace;
@@ -264,6 +267,7 @@ TYPED_TEST(HaloTest, AccumulateHalo) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
+    MixedPrecisionAndSpaces::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
