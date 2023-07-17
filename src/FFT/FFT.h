@@ -82,8 +82,16 @@ namespace ippl {
 
     namespace detail {
 
+        /*!
+         * Wrapper type for heFFTe backends, templated
+         * on the Kokkos memory space
+         */
+        template <typename>
+        struct HeffteBackendType;
+
 #ifdef Heffte_ENABLE_FFTW
-        struct HeffteBackendType {
+        template <>
+        struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::fftw;
             using backendSine = heffte::backend::fftw_sin;
             using backendCos  = heffte::backend::fftw_cos;
@@ -91,35 +99,34 @@ namespace ippl {
         };
 #endif
 #ifdef Heffte_ENABLE_MKL
-        struct HeffteBackendType {
+        template <>
+        struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::mkl;
             using backendSine = heffte::backend::mkl_sin;
             using backendCos  = heffte::backend::mkl_cos;
         };
 #endif
-#ifdef Heffte_ENABLE_CUDA
-#ifdef KOKKOS_ENABLE_CUDA
-        struct HeffteBackendType {
+#if defined(Heffte_ENABLE_CUDA) && defined(KOKKOS_ENABLE_CUDA)
+        template <>
+        struct HeffteBackendType<Kokkos::CudaSpace> {
             using backend     = heffte::backend::cufft;
             using backendSine = heffte::backend::cufft_sin;
             using backendCos  = heffte::backend::cufft_cos;
             using backendCos1  = heffte::backend::cufft_cos1;
         };
 #endif
-#endif
 
-#ifndef KOKKOS_ENABLE_CUDA
-#if !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
+#if !defined(KOKKOS_ENABLE_CUDA) && !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
          * vendor specific or optimized backend is found
          */
-        struct HeffteBackendType {
+        template <>
+        struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::stock;
             using backendSine = heffte::backend::stock_sin;
             using backendCos  = heffte::backend::stock_cos;
         };
-#endif
 #endif
     }  // namespace detail
 
@@ -140,7 +147,8 @@ namespace ippl {
         typedef FieldLayout<Dim> Layout_t;
         typedef typename ComplexField::value_type Complex_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backend;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename ComplexField::memory_space>::backend;
         using workspace_t =
             typename heffte::fft3d<heffteBackend>::template buffer_container<Complex_t>;
 
@@ -185,7 +193,8 @@ namespace ippl {
             Field<Complex_t, Dim, typename RealField::Mesh_t, typename RealField::Centering_t>;
         typedef FieldLayout<Dim> Layout_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backend;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename RealField::memory_space>::backend;
         using workspace_t =
             typename heffte::fft3d_r2c<heffteBackend>::template buffer_container<Complex_t>;
 
@@ -229,8 +238,9 @@ namespace ippl {
     public:
         typedef FieldLayout<Dim> Layout_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backendSine;
-        using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename Field::memory_space>::backendSine;
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
@@ -267,8 +277,9 @@ namespace ippl {
     public:
         typedef FieldLayout<Dim> Layout_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backendCos;
-        using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename Field::memory_space>::backendCos;
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.

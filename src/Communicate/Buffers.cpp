@@ -43,12 +43,10 @@ namespace ippl {
         defaultOveralloc_m = factor;
     }
 
-    void Communicate::deleteBuffer(int id) {
-        buffers_m.erase(id);
-    }
-
     void Communicate::deleteAllBuffers() {
-        buffers_m.clear();
+        buffers_m.forAll([]<typename Map>(Map&& m) {
+            m.clear();
+        });
     }
 
 }  // namespace ippl

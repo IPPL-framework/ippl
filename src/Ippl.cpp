@@ -49,6 +49,18 @@ namespace ippl {
                         throw std::runtime_error("Missing info level value!");
                     }
                     infoLevel = detail::getNumericalOption<int>(argv[nargs]);
+                } else if (detail::checkOption(argv[nargs], "--timer-fences", "")) {
+                    ++nargs;
+                    if (nargs >= argc) {
+                        throw std::runtime_error("Missing timer fence enable option!");
+                    }
+                    if (std::strcmp(argv[nargs], "on") == 0) {
+                        Timer::enableFences = true;
+                    } else if (std::strcmp(argv[nargs], "off") == 0) {
+                        Timer::enableFences = false;
+                    } else {
+                        throw std::runtime_error("Invalid timer fence option");
+                    }
                 } else if (detail::checkOption(argv[nargs], "--version", "-v")) {
                     IpplInfo::printVersion();
                     std::string options = IpplInfo::compileOptions();

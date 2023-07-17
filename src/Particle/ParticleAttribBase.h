@@ -34,24 +34,34 @@
 
 namespace ippl {
     namespace detail {
-        template <class... Properties>
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
         class ParticleAttribBase {
+            template <class... Properties>
+            struct WithMemSpace {
+                using memory_space = typename Kokkos::View<char*, Properties...>::memory_space;
+                using type         = ParticleAttribBase<memory_space>;
+            };
+
         public:
-            typedef typename ViewType<bool, 1, Properties...>::view_type boolean_view_type;
+            using hash_type       = ippl::detail::hash_type<MemorySpace>;
+            using memory_space    = MemorySpace;
+            using execution_space = typename memory_space::execution_space;
+
+            template <typename... Properties>
+            using with_properties = typename WithMemSpace<Properties...>::type;
 
             virtual void create(size_type) = 0;
 
-            virtual void destroy(const Kokkos::View<int*>&, const Kokkos::View<int*>&,
-                                 size_type)                     = 0;
-            virtual size_type packedSize(const size_type) const = 0;
+            virtual void destroy(const hash_type&, const hash_type&, size_type) = 0;
+            virtual size_type packedSize(const size_type) const                 = 0;
 
-            virtual void pack(void*, const Kokkos::View<int*>&) const = 0;
+            virtual void pack(void*, const hash_type&) const = 0;
 
             virtual void unpack(void*, size_type) = 0;
 
-            virtual void serialize(Archive<Properties...>& ar, size_type nsends) = 0;
+            virtual void serialize(Archive<memory_space>& ar, size_type nsends) = 0;
 
-            virtual void deserialize(Archive<Properties...>& ar, size_type nrecvs) = 0;
+            virtual void deserialize(Archive<memory_space>& ar, size_type nrecvs) = 0;
 
             virtual size_type size() const = 0;
 

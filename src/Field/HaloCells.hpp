@@ -25,23 +25,25 @@
 
 namespace ippl {
     namespace detail {
-        template <typename T, unsigned Dim>
-        HaloCells<T, Dim>::HaloCells() {}
+        template <typename T, unsigned Dim, class... ViewArgs>
+        HaloCells<T, Dim, ViewArgs...>::HaloCells() {}
 
-        template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::accumulateHalo(view_type& view, const Layout_t* layout) {
+        template <typename T, unsigned Dim, class... ViewArgs>
+        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view,
+                                                            const Layout_t* layout) {
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
         }
 
-        template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::fillHalo(view_type& view, const Layout_t* layout) {
+        template <typename T, unsigned Dim, class... ViewArgs>
+        void HaloCells<T, Dim, ViewArgs...>::fillHalo(view_type& view, const Layout_t* layout) {
             exchangeBoundaries<assign>(view, layout, INTERNAL_TO_HALO);
         }
 
-        template <typename T, unsigned Dim>
+        template <typename T, unsigned Dim, class... ViewArgs>
         template <class Op>
-        void HaloCells<T, Dim>::exchangeBoundaries(view_type& view, const Layout_t* layout,
-                                                   SendOrder order) {
+        void HaloCells<T, Dim, ViewArgs...>::exchangeBoundaries(view_type& view,
+                                                                const Layout_t* layout,
+                                                                SendOrder order) {
             using neighbor_list = typename Layout_t::neighbor_list;
             using range_list    = typename Layout_t::neighbor_range_list;
 
@@ -54,7 +56,8 @@ namespace ippl {
                 totalRequests += componentNeighbors.size();
             }
 
-            using buffer_type = Communicate::buffer_type;
+            using memory_space = typename view_type::memory_space;
+            using buffer_type  = Communicate::buffer_type<memory_space>;
             std::vector<MPI_Request> requests(totalRequests);
 
             // sending loop
@@ -81,8 +84,8 @@ namespace ippl {
                     size_type nsends;
                     pack(range, view, haloData_m, nsends);
 
-                    buffer_type buf =
-                        Comm->getBuffer<T>(IPPL_HALO_SEND + i * cubeCount + index, nsends);
+                    buffer_type buf = Comm->getBuffer<memory_space, T>(
+                        IPPL_HALO_SEND + i * cubeCount + index, nsends);
 
                     Comm->isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++],
                                 nsends);
@@ -106,8 +109,8 @@ namespace ippl {
 
                     size_type nrecvs = range.size();
 
-                    buffer_type buf =
-                        Comm->getBuffer<T>(IPPL_HALO_RECV + i * cubeCount + index, nrecvs);
+                    buffer_type buf = Comm->getBuffer<memory_space, T>(
+                        IPPL_HALO_RECV + i * cubeCount + index, nrecvs);
 
                     Comm->recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
@@ -121,9 +124,9 @@ namespace ippl {
             }
         }
 
-        template <typename T, unsigned Dim>
-        void HaloCells<T, Dim>::pack(const bound_type& range, const view_type& view,
-                                     FieldBufferData<T>& fd, size_type& nsends) {
+        template <typename T, unsigned Dim, class... ViewArgs>
+        void HaloCells<T, Dim, ViewArgs...>::pack(const bound_type& range, const view_type& view,
+                                                  databuffer_type& fd, size_type& nsends) {
             auto subview = makeSubview(view, range);
 
             auto& buffer = fd.buffer;
@@ -154,10 +157,10 @@ namespace ippl {
             Kokkos::fence();
         }
 
-        template <typename T, unsigned Dim>
+        template <typename T, unsigned Dim, class... ViewArgs>
         template <typename Op>
-        void HaloCells<T, Dim>::unpack(const bound_type& range, const view_type& view,
-                                       FieldBufferData<T>& fd) {
+        void HaloCells<T, Dim, ViewArgs...>::unpack(const bound_type& range, const view_type& view,
+                                                    databuffer_type& fd) {
             auto subview = makeSubview(view, range);
             auto buffer  = fd.buffer;
 
@@ -184,32 +187,21 @@ namespace ippl {
             Kokkos::fence();
         }
 
-#if __cplusplus < 202002L
-        template <typename View, typename Bounds, size_t... Idx>
-        auto makeSubview_impl(const View& view, const Bounds& intersect,
-                              const std::index_sequence<Idx...>&) {
-            return Kokkos::subview(view,
-                                   Kokkos::make_pair(intersect.lo[Idx], intersect.hi[Idx])...);
-        };
-#endif
-
-        template <typename T, unsigned Dim>
-        auto HaloCells<T, Dim>::makeSubview(const view_type& view, const bound_type& intersect) {
-#if __cplusplus < 202002L
-            return makeSubview_impl(view, intersect, std::make_index_sequence<Dim>{});
-#else
+        template <typename T, unsigned Dim, class... ViewArgs>
+        auto HaloCells<T, Dim, ViewArgs...>::makeSubview(const view_type& view,
+                                                         const bound_type& intersect) {
             auto makeSub = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
                 return Kokkos::subview(view,
                                        Kokkos::make_pair(intersect.lo[Idx], intersect.hi[Idx])...);
             };
             return makeSub(std::make_index_sequence<Dim>{});
-#endif
         }
 
-        template <typename T, unsigned Dim>
+        template <typename T, unsigned Dim, class... ViewArgs>
         template <typename Op>
-        void HaloCells<T, Dim>::applyPeriodicSerialDim(view_type& view, const Layout_t* layout,
-                                                       const int nghost) {
+        void HaloCells<T, Dim, ViewArgs...>::applyPeriodicSerialDim(view_type& view,
+                                                                    const Layout_t* layout,
+                                                                    const int nghost) {
             int myRank           = Comm->rank();
             const auto& lDomains = layout->getHostLocalDomains();
             const auto& domain   = layout->getDomain();
@@ -231,8 +223,9 @@ namespace ippl {
                     int N = view.extent(d) - 1;
 
                     using index_array_type = typename RangePolicy<Dim>::index_array_type;
+                    using exec_space       = typename view_type::execution_space;
                     ippl::parallel_for(
-                        "applyPeriodicSerialDim", createRangePolicy<Dim>(begin, end),
+                        "applyPeriodicSerialDim", createRangePolicy<Dim, exec_space>(begin, end),
                         KOKKOS_LAMBDA(index_array_type & coords) {
                             // The ghosts are filled starting from the inside
                             // of the domain proceeding outwards for both lower

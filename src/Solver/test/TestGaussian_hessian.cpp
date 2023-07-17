@@ -1,14 +1,15 @@
 //
-// TestGaussian_convergence
+// TestGaussian_hessian
 // This programs tests the FFTPoissonSolver for a Gaussian source.
+// More specifically, it tests also the Hessian calculation functionality.
 // Different problem sizes are used for the purpose of convergence tests.
 //   Usage:
-//     srun ./TestGaussian_convergence <algorithm> <precision> --info 5
-//     algorithm = "HOCKNEY", "VICO", or "VICO_2" types of open BC algorithms
+//     srun ./TestGaussian_hessian <algorithm> <precision> --info 5
+//     algorithm = "HOCKNEY" or "VICO", types of open BC algorithms
 //     precision = "DOUBLE" or "SINGLE", precision of the fields
 //
 //     Example:
-//       srun ./TestGaussian_convergence HOCKNEY DOUBLE --info 5
+//       srun ./TestGaussian_hessian HOCKNEY DOUBLE --info 5
 //
 // Copyright (c) 2023, Sonali Mayani,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -39,6 +40,9 @@ template <typename T>
 using Mesh_t = typename ippl::UniformCartesian<T, 3>;
 
 template <typename T>
+using Matrix_t = typename Mesh_t<T>::matrix_type;
+
+template <typename T>
 using Centering_t = typename Mesh_t<T>::DefaultCentering;
 
 template <typename T>
@@ -46,6 +50,9 @@ using ScalarField_t = typename ippl::Field<T, 3, Mesh_t<T>, Centering_t<T>>;
 
 template <typename T>
 using VectorField_t = typename ippl::Field<ippl::Vector<T, 3>, 3, Mesh_t<T>, Centering_t<T>>;
+
+template <typename T>
+using MField_t = typename ippl::Field<Matrix_t<T>, 3, Mesh_t<T>, Centering_t<T>>;
 
 template <typename T>
 using Solver_t = ippl::FFTPoissonSolver<VectorField_t<T>, ScalarField_t<T>>;
@@ -78,6 +85,72 @@ KOKKOS_INLINE_FUNCTION ippl::Vector<T, 3> exact_E(T x, T y, T z, T sigma = 0.05,
 
     ippl::Vector<T, 3> Efield = {(x - mu), (y - mu), (z - mu)};
     return factor * Efield;
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION Matrix_t<T> exact_H(T x, T y, T z, T sigma = 0.05, T mu = 0.5) {
+    T pi = Kokkos::numbers::pi_v<T>;
+
+    x -= mu;
+    y -= mu;
+    z -= mu;
+
+    T r        = Kokkos::sqrt(x * x + y * y + z * z);
+    T errorfct = Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma));
+    T exponent = exp(-r * r / (2 * sigma * sigma));
+
+    Matrix_t<T> exactH;
+
+    exactH[0][0] = ((3.0 * x * x * errorfct) / (4.0 * pi * Kokkos::pow(r, 5)))
+                   - (errorfct / (4.0 * pi * Kokkos::pow(r, 3)))
+                   - ((3.0 * x * x * exponent)
+                      / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * sigma * Kokkos::pow(r, 4)))
+                   + (exponent / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * sigma * r * r))
+                   - ((x * x * exponent)
+                      / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * Kokkos::pow(sigma, 3) * r * r));
+
+    exactH[1][1] = ((3.0 * y * y * errorfct) / (4.0 * pi * Kokkos::pow(r, 5)))
+                   - (errorfct / (4.0 * pi * Kokkos::pow(r, 3)))
+                   - ((3.0 * y * y * exponent)
+                      / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * sigma * Kokkos::pow(r, 4)))
+                   + (exponent / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * sigma * r * r))
+                   - ((y * y * exponent)
+                      / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * Kokkos::pow(sigma, 3) * r * r));
+
+    exactH[2][2] = ((3.0 * z * z * errorfct) / (4.0 * pi * Kokkos::pow(r, 5)))
+                   - (errorfct / (4.0 * pi * Kokkos::pow(r, 3)))
+                   - ((3.0 * z * z * exponent)
+                      / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * sigma * Kokkos::pow(r, 4)))
+                   + (exponent / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * sigma * r * r))
+                   - ((z * z * exponent)
+                      / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * Kokkos::pow(sigma, 3) * r * r));
+
+    exactH[0][1] =
+        x * y
+        * (((3.0 * errorfct) / (4.0 * pi * Kokkos::pow(r, 5)))
+           - ((3.0 * exponent)
+              / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * sigma * Kokkos::pow(r, 4)))
+           - (exponent / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * Kokkos::pow(sigma, 3) * r * r)));
+
+    exactH[0][2] =
+        x * z
+        * (((3.0 * errorfct) / (4.0 * pi * Kokkos::pow(r, 5)))
+           - ((3.0 * exponent)
+              / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * sigma * Kokkos::pow(r, 4)))
+           - (exponent / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * Kokkos::pow(sigma, 3) * r * r)));
+
+    exactH[1][2] =
+        z * y
+        * (((3.0 * errorfct) / (4.0 * pi * Kokkos::pow(r, 5)))
+           - ((3.0 * exponent)
+              / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * sigma * Kokkos::pow(r, 4)))
+           - (exponent / (Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi) * Kokkos::pow(sigma, 3) * r * r)));
+
+    exactH[1][0] = exactH[0][1];
+    exactH[2][0] = exactH[0][2];
+    exactH[2][1] = exactH[1][2];
+
+    return exactH;
 }
 
 // Define vtk dump function for plotting the fields
@@ -160,6 +233,11 @@ void compute_convergence(std::string algorithm, int pt) {
     exactE.initialize(mesh, layout);
     fieldE.initialize(mesh, layout);
 
+    // define the Matrix field for the Hessian
+    MField_t<T> exactH;
+    MField_t<T>* fieldH = nullptr;
+    exactH.initialize(mesh, layout);
+
     // assign the rho field with a gaussian
     auto view_rho    = rho.getView();
     const int nghost = rho.getNghost();
@@ -215,6 +293,23 @@ void compute_convergence(std::string algorithm, int pt) {
             view_exactE(i, j, k) = exact_E(x, y, z);
         });
 
+    // assign the exact Hessian field
+    auto view_exactH = exactH.getView();
+
+    Kokkos::parallel_for(
+        "Assign exact Matrix field", exactH.getFieldRangePolicy(),
+        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            const int ig = i + ldom[0].first() - nghost;
+            const int jg = j + ldom[1].first() - nghost;
+            const int kg = k + ldom[2].first() - nghost;
+
+            T x = (ig + 0.5) * hx[0] + origin[0];
+            T y = (jg + 0.5) * hx[1] + origin[1];
+            T z = (kg + 0.5) * hx[2] + origin[2];
+
+            view_exactH(i, j, k) = exact_H(x, y, z);
+        });
+
     // set the solver parameters
     ippl::ParameterList params;
 
@@ -230,8 +325,6 @@ void compute_convergence(std::string algorithm, int pt) {
         params.add("algorithm", Solver_t<T>::HOCKNEY);
     } else if (algorithm == "VICO") {
         params.add("algorithm", Solver_t<T>::VICO);
-    } else if (algorithm == "VICO_2") {
-        params.add("algorithm", Solver_t<T>::VICO_2);
     } else {
         throw IpplException("TestGaussian_convergence.cpp main()", "Unrecognized algorithm type");
     }
@@ -239,11 +332,16 @@ void compute_convergence(std::string algorithm, int pt) {
     // add output type
     params.add("output_type", Solver_t<T>::SOL_AND_GRAD);
 
+    // add hessian flag parameter
+    params.add("hessian", true);
+
     // define an FFTPoissonSolver object
     Solver_t<T> FFTsolver(fieldE, rho, params);
 
     // solve the Poisson equation -> rho contains the solution (phi) now
     FFTsolver.solve();
+
+    fieldH = FFTsolver.getHessian();
 
     // compute relative error norm for potential
     rho   = rho - exact;
@@ -286,8 +384,39 @@ void compute_convergence(std::string algorithm, int pt) {
         errE[d] = errorNr / errorDr;
     }
 
-    errorMsg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1] << " "
-             << errE[2] << endl;
+    // compute relative error for hessian components
+    Matrix_t<T> errH;
+    auto view_fieldH = fieldH->getView();
+
+    for (size_t m = 0; m < 3; ++m) {
+        for (size_t n = 0; n < 3; ++n) {
+            T diffNorm  = 0;
+            T exactNorm = 0;
+            Kokkos::parallel_reduce(
+                "MFieldError", fieldH->getFieldRangePolicy(),
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& diffVal,
+                              T& exactVal) {
+                    diffVal +=
+                        Kokkos::pow(view_fieldH(i, j, k)[m][n] - view_exactH(i, j, k)[m][n], 2);
+                    exactVal += Kokkos::pow(view_exactH(i, j, k)[m][n], 2);
+                },
+                Kokkos::Sum<T>(diffNorm), Kokkos::Sum<T>(exactNorm));
+
+            T global_diff         = 0.0;
+            T global_exact        = 0.0;
+            MPI_Datatype mpi_type = get_mpi_datatype<T>(diffNorm);
+
+            MPI_Allreduce(&diffNorm, &global_diff, 1, mpi_type, MPI_SUM,
+                          ippl::Comm->getCommunicator());
+            MPI_Allreduce(&exactNorm, &global_exact, 1, mpi_type, MPI_SUM,
+                          ippl::Comm->getCommunicator());
+
+            errH[m][n] = Kokkos::sqrt(global_diff / global_exact);
+        }
+    }
+
+    errorMsg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errH[0][0]
+             << " " << errH[0][1] << endl;
 
     return;
 }
@@ -313,7 +442,7 @@ int main(int argc, char* argv[]) {
         // gridsizes to iterate over
         std::array<int, 6> N = {4, 8, 16, 32, 64, 128};
 
-        msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
+        msg << "Spacing Error ErrorEx ErrorDxx ErrorDxy" << endl;
 
         for (int pt : N) {
             if (precision == "DOUBLE") {

@@ -52,8 +52,9 @@ namespace ippl {
     template <typename Field, unsigned Dim>
     bool BConds<Field, Dim>::changesPhysicalCells() const {
         for (const auto& bc : bc_m) {
-            if (bc->changesPhysicalCells())
+            if (bc->changesPhysicalCells()) {
                 return true;
+            }
         }
         return false;
     }
