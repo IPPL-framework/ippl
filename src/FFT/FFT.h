@@ -316,7 +316,7 @@ namespace ippl {
     public:
         typedef FieldLayout<Dim> Layout_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backendCos1;
+        using heffteBackend = typename detail::HeffteBackendType<typename Field::memory_space>::backendCos1;
         using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
