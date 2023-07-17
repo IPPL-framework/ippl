@@ -95,11 +95,9 @@ struct MixedPrecisionAndSpaces {
 bool MixedPrecisionAndSpaces::skipSerialTests = true;
 
 #ifdef KOKKOS_ENABLE_SERIAL
-#define CHECK_SKIP_SERIAL                                                \
-    if (std::is_same_v<typename TestFixture::exec_space, Kokkos::Serial> \
-        && MixedPrecisionAndSpaces::skipSerialTests) {                   \
-        SUCCEED();                                                       \
-        return;                                                          \
+#define CHECK_SKIP_SERIAL                                                                        \
+    if (std::is_same_v<ExecSpace, Kokkos::Serial> && MixedPrecisionAndSpaces::skipSerialTests) { \
+        GTEST_SKIP();                                                                            \
     }
 #else
 #define CHECK_SKIP_SERIAL \

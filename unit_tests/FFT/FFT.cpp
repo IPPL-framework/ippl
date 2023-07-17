@@ -29,6 +29,9 @@ class FFTTest;
 // Restrict testing to 2 and 3 dimensions since this is what heFFTe supports
 template <typename T, typename ExecSpace>
 class FFTTest<std::tuple<T, ExecSpace>> : public ::testing::Test, public MultirankUtils<2, 3> {
+protected:
+    void SetUp() override { CHECK_SKIP_SERIAL; }
+
 public:
     using value_type = T;
     using exec_space = ExecSpace;
@@ -245,7 +248,7 @@ TYPED_TEST(FFTTest, RC) {
         ippl::e_dim_tag allParallel[Dim];
         for (unsigned d = 0; d < Dim; d++) {
             allParallel[d] = ippl::PARALLEL;
-            if ((int)d == fftParams.get<int>("r2c_direction")) {
+            if (static_cast<int>(d) == fftParams.get<int>("r2c_direction")) {
                 ownedOutput[d] = ippl::Index(this->pt[d] / 2 + 1);
             } else {
                 ownedOutput[d] = ippl::Index(this->pt[d]);

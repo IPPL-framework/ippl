@@ -32,6 +32,9 @@ class BareFieldTest;
 template <typename T, typename ExecSpace>
 class BareFieldTest<std::tuple<T, ExecSpace>> : public ::testing::Test,
                                                 public MultirankUtils<1, 2, 3, 4, 5, 6> {
+protected:
+    void SetUp() override { CHECK_SKIP_SERIAL; }
+
 public:
     using value_type = T;
     using exec_space = ExecSpace;
@@ -94,7 +97,6 @@ struct FieldVal {
 TYPED_TEST_CASE(BareFieldTest, MixedPrecisionAndSpaces::tests);
 
 TYPED_TEST(BareFieldTest, DeepCopy) {
-    CHECK_SKIP_SERIAL;
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             using view_type   = typename TestFixture::template field_type<Dim>::view_type;
@@ -121,7 +123,6 @@ TYPED_TEST(BareFieldTest, DeepCopy) {
 }
 
 TYPED_TEST(BareFieldTest, Sum) {
-    CHECK_SKIP_SERIAL;
     using T                         = typename TestFixture::value_type;
     T val                           = 1.0;
     T expected[TestFixture::MaxDim] = {val * this->nPoints[0]};
@@ -140,7 +141,6 @@ TYPED_TEST(BareFieldTest, Sum) {
 }
 
 TYPED_TEST(BareFieldTest, Min) {
-    CHECK_SKIP_SERIAL;
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             using view_type = typename TestFixture::template field_type<Dim>::view_type;
@@ -161,7 +161,6 @@ TYPED_TEST(BareFieldTest, Min) {
 }
 
 TYPED_TEST(BareFieldTest, Max) {
-    CHECK_SKIP_SERIAL;
     using T                         = typename TestFixture::value_type;
     T val                           = 1.;
     T expected[TestFixture::MaxDim] = {this->nPoints[0] - val};
@@ -187,7 +186,6 @@ TYPED_TEST(BareFieldTest, Max) {
 }
 
 TYPED_TEST(BareFieldTest, Prod) {
-    CHECK_SKIP_SERIAL;
     using T                      = typename TestFixture::value_type;
     T sizes[TestFixture::MaxDim] = {(T)this->nPoints[0]};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
@@ -205,7 +203,6 @@ TYPED_TEST(BareFieldTest, Prod) {
 }
 
 TYPED_TEST(BareFieldTest, ScalarMultiplication) {
-    CHECK_SKIP_SERIAL;
     auto check =
         [&]<unsigned Dim>(std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
             using view_type   = typename TestFixture::template field_type<Dim>::view_type;
@@ -229,7 +226,6 @@ TYPED_TEST(BareFieldTest, ScalarMultiplication) {
 }
 
 TYPED_TEST(BareFieldTest, DotProduct) {
-    CHECK_SKIP_SERIAL;
     auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field,
                      std::shared_ptr<typename TestFixture::template vfield_type<Dim>>& vfield) {
@@ -254,7 +250,6 @@ TYPED_TEST(BareFieldTest, DotProduct) {
 }
 
 TYPED_TEST(BareFieldTest, AllFuncs) {
-    CHECK_SKIP_SERIAL;
     using T    = typename TestFixture::value_type;
     auto check = [&]<unsigned Dim>(
                      std::shared_ptr<typename TestFixture::template field_type<Dim>>& field) {
