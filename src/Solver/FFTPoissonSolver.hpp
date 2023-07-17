@@ -927,13 +927,13 @@ namespace ippl {
 
                                 requests.resize(requests.size() + 1);
 
-                                Communicate::size_type nsends;
+                                mpi::Communicator::size_type nsends;
                                 pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
 
                                 buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
-                                    IPPL_SOLVER_SEND + i, nsends);
+                                    mpi::tag::SOLVER_SEND + i, nsends);
 
-                                Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(),
+                                Comm->isend(i, mpi::tag::OPEN_SOLVER, fd_m, *buf, requests.back(),
                                             nsends);
                                 buf->resetWritePos();
                             }
@@ -947,14 +947,14 @@ namespace ippl {
                             if (ldom1.touches(lDomains2[i])) {
                                 auto intersection = ldom1.intersect(lDomains2[i]);
 
-                                Communicate::size_type nrecvs;
+                                mpi::Communicator::size_type nrecvs;
                                 nrecvs = intersection.size();
 
                                 buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
-                                    IPPL_SOLVER_RECV + myRank, nrecvs);
+                                    mpi::tag::SOLVER_RECV + myRank, nrecvs);
 
-                                Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
-                                           nrecvs);
+                                Comm->recv(i, mpi::tag::OPEN_SOLVER, fd_m, *buf,
+                                           nrecvs * sizeof(Trhs), nrecvs);
                                 buf->resetReadPos();
 
                                 unpack(intersection, viewH, fd_m, nghostH, ldom1, row, col);
