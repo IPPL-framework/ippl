@@ -6,6 +6,7 @@
 #include <typeinfo>
 
 #include "Utility/ParameterList.h"
+#include "Utility/TypeUtils.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -35,7 +36,8 @@ int main(int argc, char* argv[]) {
         ippl::Vector<double, 3> origin = {0, 0, 0};
         ippl::UniformCartesian<double, 3> meshInput(ownedInput, hx, origin);
 
-        typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t> field_type_complex;
+        typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t>::uniform_type
+            field_type_complex;
         typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type_real;
 
         field_type_real fieldInput(meshInput, layoutInput);
@@ -94,9 +96,9 @@ int main(int argc, char* argv[]) {
         Kokkos::deep_copy(fieldInput.getView(), fieldInput_host);
 
         // Forward transform
-        fft->transform(1, fieldInput, fieldOutput);
+        fft->transform(ippl::FORWARD, fieldInput, fieldOutput);
         // Reverse transform
-        fft->transform(-1, fieldInput, fieldOutput);
+        fft->transform(ippl::BACKWARD, fieldInput, fieldOutput);
 
         auto field_result =
             Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), fieldInput.getView());
