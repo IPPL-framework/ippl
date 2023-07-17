@@ -333,60 +333,60 @@ namespace ippl {
                 const int size = nr_m[d];
 
                 // Kokkos parallel for loop to initialize grnIField[d]
-                using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+                using index_array_type = typename RangePolicy<Dim>::index_array_type;
                 switch (d) {
                     case 0:
-                        Kokkos::parallel_for(
-                            "Helper index Green field initialization",
-                            mdrange_type({nghost, nghost, nghost},
-                                         {view.extent(0) - nghost, view.extent(1) - nghost,
-                                          view.extent(2) - nghost}),
-                            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                // go from local indices to global
-                                const int ig = i + ldom[0].first() - nghost;
-                                const int jg = j + ldom[1].first() - nghost;
-                                const int kg = k + ldom[2].first() - nghost;
-
+                        ippl::parallel_for(
+                            "Helper index Green field initialization", getRangePolicy(view, nghost),
+                            KOKKOS_LAMBDA(const index_array_type& args) {
+                                Vector<int, Dim> iVec = args;
+                                Vector<int, Dim> igVec;
+                                scalar_type checkVal = 0;
+                                for (unsigned d1 = 0; d1 < Dim; ++d1) {
+                                    // go from local indices to global
+                                    igVec[d1] = iVec[d] + ldom[d1].first() - nghost;
+                                    checkVal += igVec[d1];
+                                }
                                 // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
-                                const bool outsideN = (ig >= size);
-                                view(i, j, k) =
-                                    (2 * size * outsideN - ig) * (2 * size * outsideN - ig);
+                                const bool outsideN = (igVec[d] >= size);
+                                apply(view, args) =
+                                    (2 * size * outsideN - igVec[d]) * (2 * size * outsideN - igVec[d]);
 
                                 // add 1.0 if at (0,0,0) to avoid singularity
-                                const bool isOrig = ((ig == 0) && (jg == 0) && (kg == 0));
-                                view(i, j, k) += isOrig * 1.0;
+                                const bool isZero = (checkVal == 0);
+                                apply(view, args) += isZero * 1.0;
                             });
                         break;
                     case 1:
-                        Kokkos::parallel_for(
-                            "Helper index Green field initialization",
-                            mdrange_type({nghost, nghost, nghost},
-                                         {view.extent(0) - nghost, view.extent(1) - nghost,
-                                          view.extent(2) - nghost}),
-                            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                // go from local indices to global
-                                const int jg = j + ldom[1].first() - nghost;
-
+                        ippl::parallel_for(
+                            "Helper index Green field initialization", getRangePolicy(view, nghost),
+                            KOKKOS_LAMBDA(const index_array_type& args) {
+                                Vector<int, Dim> iVec = args;
+                                Vector<int, Dim> igVec;
+                                for (unsigned d1 = 0; d1 < Dim; ++d1) {
+                                    // go from local indices to global
+                                    igVec[d1] = iVec[d] + ldom[d1].first() - nghost;
+                                }
                                 // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
-                                const bool outsideN = (jg >= size);
-                                view(i, j, k) =
-                                    (2 * size * outsideN - jg) * (2 * size * outsideN - jg);
+                                const bool outsideN = (igVec[d] >= size);
+                                apply(view, args) =
+                                    (2 * size * outsideN - igVec[d]) * (2 * size * outsideN - igVec[d]);
                             });
                         break;
                     case 2:
-                        Kokkos::parallel_for(
-                            "Helper index Green field initialization",
-                            mdrange_type({nghost, nghost, nghost},
-                                         {view.extent(0) - nghost, view.extent(1) - nghost,
-                                          view.extent(2) - nghost}),
-                            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                // go from local indices to global
-                                const int kg = k + ldom[2].first() - nghost;
-
+                        ippl::parallel_for(
+                            "Helper index Green field initialization", getRangePolicy(view, nghost),
+                            KOKKOS_LAMBDA(const index_array_type& args) {
+                                Vector<int, Dim> iVec = args;
+                                Vector<int, Dim> igVec;
+                                for (unsigned d1 = 0; d1 < Dim; ++d1) {
+                                    // go from local indices to global
+                                    igVec[d1] = iVec[d] + ldom[d1].first() - nghost;
+                                }
                                 // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
-                                const bool outsideN = (kg >= size);
-                                view(i, j, k) =
-                                    (2 * size * outsideN - kg) * (2 * size * outsideN - kg);
+                                const bool outsideN = (igVec[d] >= size);
+                                apply(view, args) =
+                                    (2 * size * outsideN - igVec[d]) * (2 * size * outsideN - igVec[d]);
                             });
                         break;
                 }
@@ -523,23 +523,23 @@ namespace ippl {
             Comm->barrier();
 
         } else {
-            Kokkos::parallel_for(
-                "Write rho on the doubled grid",
-                mdrange_type({nghost1, nghost1, nghost1},
-                             {view1.extent(0) - nghost1, view1.extent(1) - nghost1,
-                              view1.extent(2) - nghost1}),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                    const size_t ig2 = i + ldom2[0].first() - nghost2;
-                    const size_t jg2 = j + ldom2[1].first() - nghost2;
-                    const size_t kg2 = k + ldom2[2].first() - nghost2;
-
-                    const size_t ig1 = i + ldom1[0].first() - nghost1;
-                    const size_t jg1 = j + ldom1[1].first() - nghost1;
-                    const size_t kg1 = k + ldom1[2].first() - nghost1;
-
+            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            ippl::parallel_for(
+                "Write rho on the doubled grid", getRangePolicy(view1, nghost1),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    Vector<int, Dim> iVec = args;
+                    Vector<int, Dim> igVec1;
+                    Vector<int, Dim> igVec2;
+                    scalar_type checkVal = 0;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        igVec1[d] = iVec[d] + ldom1[d].first() - nghost1;
+                        igVec2[d] = iVec[d] + ldom2[d].first() - nghost2;
+                    
+                        checkVal += igVec1[d] - igVec2[d]; // will be zero if all indicies are equal
+                    }
+                    const bool isZero = (checkVal == 0);
                     // write physical rho on [0,N-1] of doubled field
-                    const bool isQuadrant1 = ((ig1 == ig2) && (jg1 == jg2) && (kg1 == kg2));
-                    view2(i, j, k)         = view1(i, j, k) * isQuadrant1;
+                    apply(view2, args)         = apply(view1, args) * isZero;
                 });
         }
 
@@ -647,23 +647,23 @@ namespace ippl {
                 Comm->barrier();
 
             } else {
-                Kokkos::parallel_for(
-                    "Write the solution into the LHS on physical grid",
-                    mdrange_type({nghost1, nghost1, nghost1},
-                                 {view1.extent(0) - nghost1, view1.extent(1) - nghost1,
-                                  view1.extent(2) - nghost1}),
-                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                        const int ig2 = i + ldom2[0].first() - nghost2;
-                        const int jg2 = j + ldom2[1].first() - nghost2;
-                        const int kg2 = k + ldom2[2].first() - nghost2;
-
-                        const int ig = i + ldom1[0].first() - nghost1;
-                        const int jg = j + ldom1[1].first() - nghost1;
-                        const int kg = k + ldom1[2].first() - nghost1;
-
-                        // take [0,N-1] as physical solution
-                        const bool isQuadrant1 = ((ig == ig2) && (jg == jg2) && (kg == kg2));
-                        view1(i, j, k)         = view2(i, j, k) * isQuadrant1;
+                using index_array_type = typename RangePolicy<Dim>::index_array_type;
+                ippl::parallel_for(
+                    "Write the solution into the LHS on physical grid", getRangePolicy(view1, nghost1),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                    Vector<int, Dim> iVec = args;
+                    Vector<int, Dim> igVec1;
+                    Vector<int, Dim> igVec2;
+                    scalar_type checkVal = 0;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        igVec2[d] = iVec[d] + ldom2[d].first() - nghost2;
+                        igVec1[d] = iVec[d] + ldom1[d].first() - nghost1;
+                    
+                        checkVal += igVec1[d] - igVec2[d]; // will be zero if all indicies are equal
+                    }
+                    // take [0,N-1] as physical solution
+                    const bool isZero = (checkVal == 0);
+                    apply(view1, args)         = apply(view2, args) * isZero;
                     });
             }
             IpplTimings::stopTimer(dtos);
@@ -705,34 +705,27 @@ namespace ippl {
             // loop over each component (E = vector field)
             for (size_t gd = 0; gd < Dim; ++gd) {
                 // loop over rho2tr_m to multiply by -ik (gradient in Fourier space)
-                Kokkos::parallel_for(
-                    "Gradient - E field",
-                    mdrange_type({nghostR, nghostR, nghostR},
-                                 {viewR.extent(0) - nghostR, viewR.extent(1) - nghostR,
-                                  viewR.extent(2) - nghostR}),
-                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                using index_array_type = typename RangePolicy<Dim>::index_array_type;
+                ippl::parallel_for(
+                    "Gradient - E field", getRangePolicy(viewR, nghostR),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        Vector<int, Dim> iVec = args;
+                        Vector<int, Dim> igVec;
                         // global indices for 2N rhotr_m
-                        const int ig = i + ldomR[0].first() - nghostR;
-                        const int jg = j + ldomR[1].first() - nghostR;
-                        const int kg = k + ldomR[2].first() - nghostR;
-
-                        Vector<int, 3> iVec = {ig, jg, kg};
-                        Vector_t kVec;
-
-                        for (size_t d = 0; d < Dim; ++d) {
-                            const scalar_type Len = N[d] * hsize[d];
-                            const bool shift      = (iVec[d] > N[d]);
-                            const bool notMid     = (iVec[d] != N[d]);
-
-                            kVec[d] = notMid * (pi / Len) * (iVec[d] - shift * 2 * N[d]);
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            igVec[d] = iVec[d] + ldomR[d].first() - nghostR;
                         }
 
-                        const scalar_type Dr =
-                            kVec[0] * kVec[0] + kVec[1] * kVec[1] + kVec[2] * kVec[2];
+                        scalar_type k_gd;
+                        const scalar_type Len = N[gd] * hsize[gd];
+                        const bool shift      = (igVec[gd] > N[gd]);
+                        const bool notMid     = (igVec[gd] != N[gd]);
 
-                        const bool isNotZero = (Dr != 0.0);
-                        view_g(i, j, k)      = -isNotZero * (I * kVec[gd]) * viewR(i, j, k);
+                        k_gd = notMid * (pi / Len) * (igVec[gd] - shift * 2 * N[gd]);
+
+                        apply(view_g, args) = -(I * k_gd) * apply(viewR, args);
                     });
+
 
                 // start a timer
                 static IpplTimings::TimerRef ffte = IpplTimings::getTimer("FFT: Efield");
