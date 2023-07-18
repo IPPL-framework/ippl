@@ -101,8 +101,9 @@ const double pi = Kokkos::numbers::pi_v<double>;
 
 
 /*
-  FixMe: the include needs to go up
- */
+  FixMe: the include needs to go up, but we need this for Connector.hpp
+
+*/
 
 #include "Connector/Connector.hpp"
 
@@ -148,11 +149,15 @@ template <class PLayout, typename T, unsigned Dim = 3>
 class PContainer : public ippl::ParticleBase<PLayout> {
 public:
     using Base = ippl::ParticleBase<PLayout>;
-    VField_t<T, Dim> E_m;
-    Field_t<Dim> rho_m;
-    Field<T, Dim> phi_m;
+
+
+    VField_t<T, Dim> F_m;    /// force field
+
+    Field_t<Dim>     rhs_m;  /// the right hand side
+    Field<T, Dim>    sol_m;  /// the solution
 
     typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
+
     bc_type allPeriodic;
 
     // ORB
@@ -168,24 +173,17 @@ public:
 
     std::string stype_m;
 
-    double Q_m;
-
 private:
     Solver_t<T, Dim> solver_m;
 
 public:
     double time_m;
 
-    double rhoNorm_m;
-
     unsigned int loadbalancefreq_m;
 
     double loadbalancethreshold_m;
 
 public:
-    ParticleAttrib<double> q;                 // charge
-    typename Base::particle_position_type P;  // particle velocity
-    typename Base::particle_position_type E;  // electric field at particle position
 
     /*
       This constructor is mandatory for all derived classes from
@@ -196,35 +194,17 @@ public:
     }
 
     PContainer(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
-                     Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
+                     Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim],
                      std::string solver)
         : Base(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
-        , stype_m(solver)
-        , Q_m(Q) {
+        , stype_m(solver) {
         for (unsigned int i = 0; i < Dim; i++) {
             decomp_m[i] = decomp[i];
         }
     }
-
-    // void setPotentialBCs() {
-    //     // CG requires explicit periodic boundary conditions while the periodic Poisson solver
-    //     // simply assumes them
-    //     if (stype_m == "CG") {
-    //         for (unsigned int i = 0; i < 2 * Dim; ++i) {
-    //             allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
-    //         }
-    //     }
-    // }
-
-    // void registerAttributes() {
-    //     // register the particle attributes
-    //     this->addAttribute(q);
-    //     this->addAttribute(P);
-    //     this->addAttribute(E);
-    // }
 
     ~PContainer() {}
 
@@ -233,11 +213,11 @@ public:
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
-        E_m.updateLayout(fl);
-        rho_m.updateLayout(fl);
+        F_m.updateLayout(fl);
+        rhs_m.updateLayout(fl);
         if (stype_m == "CG") {
-            this->phi_m.updateLayout(fl);
-            phi_m.setFieldBC(allPeriodic);
+            this->sol_m.updateLayout(fl);
+            sol_m.setFieldBC(allPeriodic);
         }
 
         // Update layout with new FieldLayout
@@ -253,16 +233,19 @@ public:
     }
 
     void initializeFields(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& fl) {
-        E_m.initialize(mesh, fl);
-        rho_m.initialize(mesh, fl);
+        F_m.initialize(mesh, fl);
+        rhs_m.initialize(mesh, fl);
         if (stype_m == "CG") {
-            phi_m.initialize(mesh, fl);
-            phi_m.setFieldBC(allPeriodic);
+            sol_m.initialize(mesh, fl);
+            sol_m.setFieldBC(allPeriodic);
         }
     }
 
+    void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
+
+  
     void initializeORB(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh) {
-        orb.initialize(fl, mesh, rho_m);
+        orb.initialize(fl, mesh, rhs_m);
     }
 
     void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
@@ -278,13 +261,13 @@ public:
         this->updateLayout(fl, mesh, buffer, isFirstRepartition);
         if constexpr (Dim == 2 || Dim == 3) {
             if (stype_m == "FFT") {
-                std::get<FFTSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
+                std::get<FFTSolver_t<T, Dim>>(solver_m).setRhs(rhs_m);
             }
             if constexpr (Dim == 3) {
                 if (stype_m == "P3M") {
-                    std::get<P3MSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
+                    std::get<P3MSolver_t<T, Dim>>(solver_m).setRhs(rhs_m);
                 } else if (stype_m == "OPEN") {
-                    std::get<OpenSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
+                    std::get<OpenSolver_t<T, Dim>>(solver_m).setRhs(rhs_m);
                 }
             }
         }
@@ -345,56 +328,11 @@ public:
         ippl::Comm->barrier();
     }
 
-    void gatherCIC() { gather(this->E, E_m, this->R); }
-
-    void scatterCIC(size_type totalP, unsigned int iteration, Vector_t<double, Dim>& hrField) {
-        Inform m("scatter ");
-
-        rho_m = 0.0;
-        scatter(q, rho_m, this->R);
-
-        static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check");
-        IpplTimings::startTimer(sumTimer);
-        double Q_grid = rho_m.sum();
-
-        size_type Total_particles = 0;
-        size_type local_particles = this->getLocalNum();
-
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
-
-        double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
-        m << "Rel. error in charge conservation = " << rel_error << endl;
-
-        if (ippl::Comm->rank() == 0) {
-            if (Total_particles != totalP || rel_error > 1e-10) {
-                m << "Time step: " << iteration << endl;
-                m << "Total particles in the sim. " << totalP << " "
-                  << "after update: " << Total_particles << endl;
-                m << "Rel. error in charge conservation: " << rel_error << endl;
-                ippl::Comm->abort();
-            }
-        }
-
-        double cellVolume =
-            std::reduce(hrField.begin(), hrField.end(), 1., std::multiplies<double>());
-        rho_m = rho_m / cellVolume;
-
-        rhoNorm_m = norm(rho_m);
-        IpplTimings::stopTimer(sumTimer);
-
-	Connector::dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], iteration, hrField[0], hrField[1], hrField[2]);
-
-        // rho = rho_e - rho_i (only if periodic BCs)
-        if (stype_m != "OPEN") {
-            double size = 1;
-            for (unsigned d = 0; d < Dim; d++) {
-                size *= rmax_m[d] - rmin_m[d];
-            }
-            rho_m = rho_m - (Q_m / size);
-        }
-    }
-
+  /*
+    All about the solver(s) in a PIC context
+    
+   */
+  
     void initSolver() {
         Inform m("solver ");
         if (stype_m == "FFT") {
@@ -457,17 +395,17 @@ public:
 
         solver.mergeParameters(sp);
 
-        solver.setRhs(rho_m);
+        solver.setRhs(rhs_m);
 
         if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>) {
             // The CG solver computes the potential directly and
             // uses this to get the electric field
-            solver.setLhs(phi_m);
-            solver.setGradient(E_m);
+            solver.setLhs(sol_m);
+            solver.setGradient(F_m);
         } else {
             // The periodic Poisson solver, Open boundaries solver,
             // and the P3M solver compute the electric field directly
-            solver.setLhs(E_m);
+            solver.setLhs(F_m);
         }
     }
 
@@ -532,13 +470,38 @@ public:
         }
     }
 
+  /*
+    Host / Mirror magic
+  */
+    
+    typename VField_t<T, Dim>::HostMirror getEMirror() const {
+        auto Eview = F_m.getHostMirror();
+        updateEMirror(Eview);
+        return Eview;
+    }
+
+    void updateEMirror(typename VField_t<T, Dim>::HostMirror& mirror) const {
+        Kokkos::deep_copy(mirror, F_m.getView());
+    }
+
+  
+  /* FixMe
+     A lot of the dump stuff needs to go to Connector
+    
+   */
+
+  void dumpData() { }
+  /*
+    Needs to go to Connector
+
+
     void dumpData() {
         auto Pview = P.getView();
 
         double kinEnergy = 0.0;
         double potEnergy = 0.0;
 
-        potEnergy = 0.5 * hr_m[0] * hr_m[1] * hr_m[2] * rho_m.sum();
+        potEnergy = 0.5 * hr_m[0] * hr_m[1] * hr_m[2] * rhs_m.sum();
 
         Kokkos::parallel_reduce(
             "Particle Kinetic Energy", this->getLocalNum(),
@@ -554,8 +517,8 @@ public:
         MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0,
                    ippl::Comm->getCommunicator());
 
-        const int nghostE = E_m.getNghost();
-        auto Eview        = E_m.getView();
+        const int nghostE = F_m.getNghost();
+        auto Eview        = F_m.getView();
         Vector_t<T, Dim> normE;
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
@@ -594,7 +557,7 @@ public:
                 }
                 csvout << endl;
             }
-
+	    double rhoNorm_m = 0.0; /// FixMe
             csvout << time_m << " " << potEnergy << " " << gkinEnergy << " "
                    << potEnergy + gkinEnergy << " " << rhoNorm_m << " ";
             for (unsigned d = 0; d < Dim; d++) {
@@ -605,22 +568,15 @@ public:
 
         ippl::Comm->barrier();
     }
+  */
 
-    typename VField_t<T, Dim>::HostMirror getEMirror() const {
-        auto Eview = E_m.getHostMirror();
-        updateEMirror(Eview);
-        return Eview;
-    }
 
-    void updateEMirror(typename VField_t<T, Dim>::HostMirror& mirror) const {
-        Kokkos::deep_copy(mirror, E_m.getView());
-    }
-
-    void dumpLandau() { dumpLandau(E_m.getView()); }
+  
+    void dumpLandau() { dumpLandau(F_m.getView()); }
 
     template <typename View>
     void dumpLandau(const View& Eview) {
-        const int nghostE = E_m.getNghost();
+        const int nghostE = F_m.getNghost();
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         double localEx2 = 0, localExNorm = 0;
@@ -670,8 +626,8 @@ public:
     }
 
     void dumpBumponTail() {
-        const int nghostE = E_m.getNghost();
-        auto Eview        = E_m.getView();
+        const int nghostE = F_m.getNghost();
+        auto Eview        = F_m.getView();
         double fieldEnergy, EzAmp;
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
@@ -725,7 +681,8 @@ public:
     }
 
     void dumpParticleData() {
-        typename ParticleAttrib<Vector_t<T, Dim>>::HostMirror R_host = this->R.getHostMirror();
+      /*
+      typename ParticleAttrib<Vector_t<T, Dim>>::HostMirror R_host = this->R.getHostMirror();
         typename ParticleAttrib<Vector_t<T, Dim>>::HostMirror P_host = this->P.getHostMirror();
         Kokkos::deep_copy(R_host, this->R.getView());
         Kokkos::deep_copy(P_host, P.getView());
@@ -747,7 +704,8 @@ public:
             pcsvout << endl;
         }
         ippl::Comm->barrier();
-    }
+      */
+	}
 
     void dumpLocalDomains(const FieldLayout_t<Dim>& fl, const unsigned int step) {
         if (ippl::Comm->rank() == 0) {
@@ -765,7 +723,6 @@ public:
         ippl::Comm->barrier();
     }
 
-    void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
 };
 
 #endif

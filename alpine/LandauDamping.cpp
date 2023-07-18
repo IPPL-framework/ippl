@@ -240,12 +240,12 @@ int main(int argc, char* argv[]) {
             IpplTimings::startTimer(domainDecomposition);
             isFirstRepartition             = true;
             const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-            const int nghost               = P->rho_m.getNghost();
-            auto rhoview                   = P->rho_m.getView();
+            const int nghost               = P->rhs_m.getNghost();
+            auto rhoview                   = P->rhs_m.getView();
 
             using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
-                "Assign initial rho based on PDF", P->rho_m.getFieldRangePolicy(),
+                "Assign initial rho based on PDF", P->rhs_m.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     // local to global index conversion
                     Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
@@ -302,14 +302,14 @@ int main(int argc, char* argv[]) {
         ippl::Comm->barrier();
         IpplTimings::stopTimer(particleCreation);
 
-        P->q = P->Q_m / totalP;
+        P->q = P->Qtot_m / totalP;
         msg << "particles created and initial conditions assigned " << endl;
         isFirstRepartition = false;
         // The update after the particle creation is not needed as the
         // particles are generated locally
 
         IpplTimings::startTimer(DummySolveTimer);
-        P->rho_m = 0.0;
+        P->rhs_m = 0.0;
         P->runSolver();
         IpplTimings::stopTimer(DummySolveTimer);
 
