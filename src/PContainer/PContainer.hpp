@@ -1,4 +1,4 @@
-// ChargedParticles header file
+// PCONTAINER header file
 //   Defines a particle attribute for charged particles to be used in
 //   applications
 //
@@ -145,10 +145,9 @@ void setSignalHandler() {
 }
 
 template <class PLayout, typename T, unsigned Dim = 3>
-class ChargedParticles : public ippl::ParticleBase<PLayout> {
-    using Base = ippl::ParticleBase<PLayout>;
-
+class PContainer : public ippl::ParticleBase<PLayout> {
 public:
+    using Base = ippl::ParticleBase<PLayout>;
     VField_t<T, Dim> E_m;
     Field_t<Dim> rho_m;
     Field<T, Dim> phi_m;
@@ -192,13 +191,11 @@ public:
       This constructor is mandatory for all derived classes from
       ParticleBase as the bunch buffer uses this
     */
-    ChargedParticles(PLayout& pl)
+    PContainer(PLayout& pl)
         : Base(pl) {
-        registerAttributes();
-        setPotentialBCs();
     }
 
-    ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
+    PContainer(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
                      Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
                      std::string solver)
         : Base(pl)
@@ -207,37 +204,32 @@ public:
         , rmax_m(rmax)
         , stype_m(solver)
         , Q_m(Q) {
-        registerAttributes();
         for (unsigned int i = 0; i < Dim; i++) {
             decomp_m[i] = decomp[i];
         }
-        setupBCs();
-        setPotentialBCs();
     }
 
-    void setPotentialBCs() {
-        // CG requires explicit periodic boundary conditions while the periodic Poisson solver
-        // simply assumes them
-        if (stype_m == "CG") {
-            for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
-            }
-        }
-    }
+    // void setPotentialBCs() {
+    //     // CG requires explicit periodic boundary conditions while the periodic Poisson solver
+    //     // simply assumes them
+    //     if (stype_m == "CG") {
+    //         for (unsigned int i = 0; i < 2 * Dim; ++i) {
+    //             allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
+    //         }
+    //     }
+    // }
 
-    void registerAttributes() {
-        // register the particle attributes
-        this->addAttribute(q);
-        this->addAttribute(P);
-        this->addAttribute(E);
-    }
+    // void registerAttributes() {
+    //     // register the particle attributes
+    //     this->addAttribute(q);
+    //     this->addAttribute(P);
+    //     this->addAttribute(E);
+    // }
 
-    ~ChargedParticles() {}
-
-    void setupBCs() { setBCAllPeriodic(); }
+    ~PContainer() {}
 
     void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                      ChargedParticles<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
+                      PContainer<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -274,7 +266,7 @@ public:
     }
 
     void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                     ChargedParticles<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
+                     PContainer<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
 
@@ -302,7 +294,7 @@ public:
         if (ippl::Comm->size() < 2) {
             return false;
         }
-        if (std::strcmp(TestName, "UniformPlasmaTest") == 0) {
+        if (std::strcmp(Connector::TestName, "UniformPlasmaTest") == 0) {
             return (nstep % loadbalancefreq_m == 0);
         } else {
             int local = 0;
@@ -391,7 +383,7 @@ public:
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
 
-        // dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], iteration, hrField[0], hrField[1], hrField[2]);
+	Connector::dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], iteration, hrField[0], hrField[1], hrField[2]);
 
         // rho = rho_e - rho_i (only if periodic BCs)
         if (stype_m != "OPEN") {
@@ -773,7 +765,6 @@ public:
         ippl::Comm->barrier();
     }
 
-private:
     void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
 };
 

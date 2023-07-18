@@ -1,7 +1,13 @@
+
+#ifndef CONNECTOR_H
+#define CONNECTOR_H
+
 #include "PContainer/PContainer.hpp"
 
+namespace Connector {
+
 // Test programs have to define this variable for VTK dump purposes                                                  
-extern const char* TestName;
+const char* TestName;
 
 template <typename T>
 void dumpVTK(VField_t<T, 3>& E, int nx, int ny, int nz, int iteration, double dx, double dy, double dz) {
@@ -74,3 +80,5 @@ void dumpVTK(Field_t<3>& rho, int nx, int ny, int nz, int iteration, double dx, 
         }
     }
 }
+} // namespace
+#endif
