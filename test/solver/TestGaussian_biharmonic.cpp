@@ -24,7 +24,7 @@
 
 #include "Utility/IpplTimings.h"
 
-#include "FFTPoissonSolver.h"
+#include "Solver/FFTPoissonSolver.h"
 
 using Mesh_t        = ippl::UniformCartesian<double, 3>;
 using Centering_t   = Mesh_t::DefaultCentering;
