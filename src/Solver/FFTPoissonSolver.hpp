@@ -344,7 +344,7 @@ namespace ippl {
                                 scalar_type checkVal = 0;
                                 for (unsigned d1 = 0; d1 < Dim; ++d1) {
                                     // go from local indices to global
-                                    igVec[d1] = iVec[d] + ldom[d1].first() - nghost;
+                                    igVec[d1] = iVec[d1] + ldom[d1].first() - nghost;
                                     checkVal += igVec[d1];
                                 }
                                 // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
@@ -365,7 +365,7 @@ namespace ippl {
                                 Vector<int, Dim> igVec;
                                 for (unsigned d1 = 0; d1 < Dim; ++d1) {
                                     // go from local indices to global
-                                    igVec[d1] = iVec[d] + ldom[d1].first() - nghost;
+                                    igVec[d1] = iVec[d1] + ldom[d1].first() - nghost;
                                 }
                                 // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
                                 const bool outsideN = (igVec[d] >= size);
@@ -381,7 +381,7 @@ namespace ippl {
                                 Vector<int, Dim> igVec;
                                 for (unsigned d1 = 0; d1 < Dim; ++d1) {
                                     // go from local indices to global
-                                    igVec[d1] = iVec[d] + ldom[d1].first() - nghost;
+                                    igVec[d1] = iVec[d1] + ldom[d1].first() - nghost;
                                 }
                                 // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
                                 const bool outsideN = (igVec[d] >= size);
@@ -457,8 +457,6 @@ namespace ippl {
 
         // store rho (RHS) in the lower left quadrant of the doubled grid
         // with or without communication (if only 1 rank)
-
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
 
         const int ranks = Comm->size();
 
@@ -804,23 +802,23 @@ namespace ippl {
                     Comm->barrier();
 
                 } else {
-                    Kokkos::parallel_for(
-                        "Write the E-field on physical grid",
-                        mdrange_type({nghostL, nghostL, nghostL},
-                                     {viewL.extent(0) - nghostL, viewL.extent(1) - nghostL,
-                                      viewL.extent(2) - nghostL}),
-                        KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                            const int ig2 = i + ldom2[0].first() - nghost2;
-                            const int jg2 = j + ldom2[1].first() - nghost2;
-                            const int kg2 = k + ldom2[2].first() - nghost2;
+                using index_array_type = typename RangePolicy<Dim>::index_array_type;
+                ippl::parallel_for(
+                    "Write the E-field on physical grid", getRangePolicy(viewL, nghostL),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        Vector<int, Dim> iVec = args;
+                        Vector<int, Dim> igVec1;
+                        Vector<int, Dim> igVec2;
+                        scalar_type checkVal = 0;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            igVec2[d] = iVec[d] + ldom2[d].first() - nghost2;
+                            igVec1[d] = iVec[d] + ldom1[d].first() - nghostL;
 
-                            const int ig = i + ldom1[0].first() - nghostL;
-                            const int jg = j + ldom1[1].first() - nghostL;
-                            const int kg = k + ldom1[2].first() - nghostL;
-
-                            // take [0,N-1] as physical solution
-                            const bool isQuadrant1 = ((ig == ig2) && (jg == jg2) && (kg == kg2));
-                            viewL(i, j, k)[gd]     = view2(i, j, k) * isQuadrant1;
+                            checkVal += igVec1[d] - igVec2[d]; // will be zero if all indicies are equal
+                        }
+                        // take [0,N-1] as physical solution
+                        const bool isZero = (checkVal == 0);
+                        apply(viewL, args)[gd]         = apply(view2, args) * isZero;
                         });
                 }
                 IpplTimings::stopTimer(edtos);
@@ -1019,28 +1017,40 @@ namespace ippl {
                 grn_mr = grn_mr + grnIField_m[i] * hrsq[i];
             }
 
-            grn_mr = -1.0 / (4.0 * pi * sqrt(grn_mr));
-
+            //  Need error for Dim != to 2 or 3 since no Green's function is implemented for other dimensions
+            if (Dim == 3){ 
+                grn_mr = -1.0 / (4.0 * pi * sqrt(grn_mr));
+            } else if (Dim == 2){
+                grn_mr = log(sqrt(grn_mr))/(2 * pi); 
+            }
+            
             typename Field_t::view_type view = grn_mr.getView();
             const int nghost                 = grn_mr.getNghost();
             const auto& ldom                 = layout2_m->getLocalNDIndex();
 
             // Kokkos parallel for loop to find (0,0,0) point and regularize
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-            Kokkos::parallel_for(
-                "Regularize Green's function ",
-                mdrange_type(
-                    {nghost, nghost, nghost},
-                    {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
-                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            ippl::parallel_for(
+                "Regularize Green's function ", getRangePolicy(view, nghost),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                    Vector<int, Dim> iVec = args;
+                    Vector<int, Dim> igVec;
+                    scalar_type checkVal = 0;
                     // go from local indices to global
-                    const int ig = i + ldom[0].first() - nghost;
-                    const int jg = j + ldom[1].first() - nghost;
-                    const int kg = k + ldom[2].first() - nghost;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        igVec[d] = iVec[d] + ldom[d].first() - nghost;
+
+                        checkVal += igVec[d];
+                    }
 
                     // if (0,0,0), assign to it 1/(4*pi)
-                    const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
-                    view(i, j, k)     = isOrig * (-1.0 / (4.0 * pi)) + (!isOrig) * view(i, j, k);
+                    // assign 1/2*pi if using the 2D Green's function
+                    const bool isZero = (checkVal == 0);
+                    if (Dim == 3){
+                        apply(view, args)     = isZero * (-1.0 / (4.0 * pi)) + (!isZero) * apply(view, args);
+                    } else if (Dim == 2){
+                        apply(view, args)     = isZero * (1.0 / (2.0 * pi)) + (!isZero) * apply(view, args);          
+                    }
                 });
         }
 
