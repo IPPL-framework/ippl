@@ -44,7 +44,7 @@
 
 #include "Utility/IpplTimings.h"
 
-#include "ChargedParticles.hpp"
+#include "PContainer/PContainer.hpp"
 
 constexpr unsigned Dim = 3;
 
