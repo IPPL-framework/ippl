@@ -33,7 +33,7 @@
 template <class PLayout, typename T, unsigned Dim = 3>
 class ChargedParticles : public PContainer<PLayout, T, Dim> {
 
-  using myBase = PContainer<PLayout, T, Dim>::ippl::template ParticleBase<PLayout>;
+  //  using myBase = PContainer<PLayout, T, Dim>::ippl::template ParticleBase<PLayout>;
 
 // public:
 //     VField_t<T, Dim> E_m;
@@ -72,8 +72,8 @@ class ChargedParticles : public PContainer<PLayout, T, Dim> {
 
 public:
      ParticleAttrib<double> q;                 // charge
-     typename myBase::particle_position_type P;  // particle velocity
-     typename myBase::particle_position_type E;  // electric field at particle position
+     typename PContainer<PLayout, T, Dim>::Base::particle_position_type P;  // particle velocity
+     typename PContainer<PLayout, T, Dim>::Base::particle_position_type E;  // electric field at particle position
 
 //     /*
 //       This constructor is mandatory for all derived classes from
@@ -81,7 +81,7 @@ public:
 //     */
 
      ChargedParticles(PLayout& pl)
-         : myBase(pl) {
+         : PContainer<PLayout, T, Dim>::Base(pl) {
        registerAttributes();
        setPotentialBCs();
      }
@@ -89,7 +89,7 @@ public:
      ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
                       Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
                       std::string solver)
-       : myBase(pl)
+       : PContainer<PLayout, T, Dim>::Base(pl)
        , PContainer<PLayout, T, Dim>::hr_m(hr)
        , PContainer<PLayout, T, Dim>::rmin_m(rmin)
        , PContainer<PLayout, T, Dim>::rmax_m(rmax)
