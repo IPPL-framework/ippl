@@ -19,9 +19,9 @@
 //
 
 // Communication specific functions (pack and unpack).
-template <typename Tb, typename Tf>
-void pack(const ippl::NDIndex<3> intersect, Kokkos::View<Tf***>& view,
-          ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
+template <typename Tb, typename Tf, unsigned int Dim>
+void pack(const ippl::NDIndex<Dim> intersect, Kokkos::View<Tf***>& view,
+          ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<Dim> ldom,
           ippl::Communicate::size_type& nsends) {
     Kokkos::View<Tb*>& buffer = fd.buffer;
 
@@ -31,39 +31,43 @@ void pack(const ippl::NDIndex<3> intersect, Kokkos::View<Tf***>& view,
         const int overalloc = ippl::Comm->getDefaultOverallocation();
         Kokkos::realloc(buffer, size * overalloc);
     }
+    using index_type = typename ippl::RangePolicy<Dim>::index_type;
+    Kokkos::Array<index_type, Dim> first, last;
+    
+    for (unsigned d = 0; d < Dim; ++d) {
+        first[d] = intersect[d].first() + nghost - ldom[d].first();
+        last[d] = intersect[d].last() + nghost - ldom[d].first() + 1;
+    }
 
-    const int first0 = intersect[0].first() + nghost - ldom[0].first();
-    const int first1 = intersect[1].first() + nghost - ldom[1].first();
-    const int first2 = intersect[2].first() + nghost - ldom[2].first();
+    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+    ippl::parallel_for(
+        "pack()", ippl::createRangePolicy(first, last),
+        KOKKOS_LAMBDA(const index_array_type& args) { 
+            ippl::Vector<size_t, Dim> iVec = args;
+            ippl::Vector<size_t, Dim> igVec;
+            for (unsigned d = 0; d < Dim; ++d) {
+                igVec[d] = iVec[d] - first[d];
+            }
 
-    const int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
-    const int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
-    const int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
 
-    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-    // This type casting to long int is necessary as otherwise Kokkos complains for
-    // intel compilers
-    Kokkos::parallel_for(
-        "pack()",
-        mdrange_type({first0, first1, first2}, {(long int)last0, (long int)last1, (long int)last2}),
-        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-            const int ig = i - first0;
-            const int jg = j - first1;
-            const int kg = k - first2;
+            int l = igVec[0];
+            for (unsigned d = 1; d < Dim; ++d) {
+                int factor = 1;
+                for (unsigned d1 = 0; d1 < d; ++d1) {
+                    factor *= intersect[d1].length();
+                }
+                l += igVec[d] * factor;
+            }
 
-            int l = ig + jg * intersect[0].length()
-                    + kg * intersect[1].length() * intersect[0].length();
-
-            Kokkos::complex<Tb> val = view(i, j, k);
-
+            Kokkos::complex<Tb> val = apply(view, args);
             buffer(l) = Kokkos::real(val);
         });
     Kokkos::fence();
 }
 
-template <bool isVec, typename Tb, typename Tf>
-void unpack_impl(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
-                 ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
+template <bool isVec, typename Tb, typename Tf, unsigned int Dim>
+void unpack_impl(const ippl::NDIndex<Dim> intersect, const Kokkos::View<Tf***>& view,
+                 ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<Dim> ldom,
                  size_t dim = 0, bool x = false, bool y = false, bool z = false) {
     Kokkos::View<Tb*>& buffer = fd.buffer;
 
@@ -95,17 +99,17 @@ void unpack_impl(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& vi
     Kokkos::fence();
 }
 
-template <typename Tb, typename Tf>
-void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
-            ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
+template <typename Tb, typename Tf, unsigned int Dim>
+void unpack(const ippl::NDIndex<Dim> intersect, const Kokkos::View<Tf***>& view,
+            ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<Dim> ldom,
             bool x = false, bool y = false, bool z = false) {
     unpack_impl<false, Tb, Tf>(intersect, view, fd, nghost, ldom, 0, x, y, z);
 }
 
-template <typename Tb, typename Tf>
-void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<ippl::Vector<Tf, 3>***>& view,
+template <typename Tb, typename Tf, unsigned int Dim>
+void unpack(const ippl::NDIndex<Dim> intersect, const Kokkos::View<ippl::Vector<Tf, Dim>***>& view,
             size_t dim, ippl::detail::FieldBufferData<Tb>& fd, int nghost,
-            const ippl::NDIndex<3> ldom) {
+            const ippl::NDIndex<Dim> ldom) {
     unpack_impl<true, Tb, ippl::Vector<Tf, 3>>(intersect, view, fd, nghost, ldom, dim);
 }
 
