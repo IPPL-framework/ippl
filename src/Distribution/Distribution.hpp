@@ -173,6 +173,7 @@ public:
     Vector_t<double, Dim> Nr, Dr, minU, maxU;
     int myRank    = ippl::Comm->rank();
     double factor = 1;
+
     for (unsigned d = 0; d < Dim; ++d) { 
       Nr[d]   = CDF(Regions(myRank)[d].max(), alpha_m, kw_m[d]) - CDF(Regions(myRank)[d].min(), alpha_m, kw_m[d]);
       Dr[d]   = CDF(rmax_m[d], alpha_m, kw_m[d]) - CDF(rmin_m[d], alpha_m, kw_m[d]);

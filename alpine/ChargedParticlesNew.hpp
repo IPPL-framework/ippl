@@ -130,12 +130,12 @@ public:
 
         rhoNorm_m = norm(PContainer<PLayout, T, Dim>::rhs_m);
         IpplTimings::stopTimer(sumTimer);
-
+	/*
 	Connector::dumpVTK( PContainer<PLayout, T, Dim>::rhs_m,
 			    PContainer<PLayout, T, Dim>::nr_m[0],
 			    PContainer<PLayout, T, Dim>::nr_m[1],
 			    PContainer<PLayout, T, Dim>::nr_m[2], iteration, hrField[0], hrField[1], hrField[2]);
-
+	*/
         // rho = rho_e - rho_i (only if periodic BCs)
         if ( PContainer<PLayout, T, Dim>::stype_m != "OPEN") {
             double size = 1;
