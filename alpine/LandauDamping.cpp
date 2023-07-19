@@ -138,32 +138,20 @@ int main(int argc, char* argv[]) {
         P->time_m                 = 0.0;
         P->loadbalancethreshold_m = std::atof(argv[arg++]);
 
-        bool isFirstRepartition;
-	/*
-	  FixMe: initializing rho (rhs) this needs to go to Distributions
-	*/
+	Distribution::Distribution<double,3> dist;
+
+	bool isFirstRepartition = false;
 	
         if ((P->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
             msg << "Starting first repartition" << endl;
             IpplTimings::startTimer(domainDecomposition);
             isFirstRepartition             = true;
-            const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+	    const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
             const int nghost               = P->rhs_m.getNghost();
             auto rhoview                   = P->rhs_m.getView();
+	    auto rangePolicy               = P->rhs_m.getFieldRangePolicy();
 
-            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-            ippl::parallel_for(
-                "Assign initial rho based on PDF", P->rhs_m.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const index_array_type& args) {
-                    // local to global index conversion
-                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
-
-                    // ippl::apply accesses the view at the given indices and obtains a
-                    // reference; see src/Expression/IpplOperations.h
-                    ippl::apply(rhoview, args) = Distribution::PDF(xvec, alpha, kw, Dim);
-                });
-
-            Kokkos::fence();
+	    dist.repartitionRhs(lDom, nghost, rhoview, rangePolicy, hr, origin, alpha, kw);
 
             P->initializeORB(FL, mesh);
             P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
@@ -171,50 +159,16 @@ int main(int argc, char* argv[]) {
         }
 
         msg << "First domain decomposition done" << endl;
-
-	/*
-	  FixMe: initializing paricles this needs to go to Distributions
-	*/
 	
         IpplTimings::startTimer(particleCreation);
 
         typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
         const RegionLayout_t& RLayout                           = PL.getRegionLayout();
         const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-        Vector_t<double, Dim> Nr, Dr, minU, maxU;
-        int myRank    = ippl::Comm->rank();
-        double factor = 1;
-        for (unsigned d = 0; d < Dim; ++d) { 
-	    Nr[d]   = Distribution::CDF(Regions(myRank)[d].max(), alpha, kw[d])
-                    - Distribution::CDF(Regions(myRank)[d].min(), alpha, kw[d]);
-            Dr[d]   = Distribution::CDF(rmax[d], alpha, kw[d]) -  Distribution::CDF(rmin[d], alpha, kw[d]);
-            minU[d] = Distribution::CDF(Regions(myRank)[d].min(), alpha, kw[d]);
-            maxU[d] = Distribution::CDF(Regions(myRank)[d].max(), alpha, kw[d]);
-            factor *= Nr[d] / Dr[d];
-        }
 
-        size_type nloc            = (size_type)(factor * totalP);
-        size_type Total_particles = 0;
+	dist.createParticles(PL.getRegionLayout(), RLayout.gethLocalRegions(), P.get(), totalP, alpha, kw, rmax, rmin);
 
-        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM,
-                      ippl::Comm->getCommunicator());
-
-        int rest = (int)(totalP - Total_particles);
-
-        if (ippl::Comm->rank() < rest) {
-            ++nloc;
-        }
-
-        P->create(nloc);
-        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
-        Kokkos::parallel_for(
-            nloc,  Distribution::generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                      P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
-
-        Kokkos::fence();
-        ippl::Comm->barrier();
-        IpplTimings::stopTimer(particleCreation);
-
+	IpplTimings::stopTimer(particleCreation);
 	
         P->q = P->Qtot_m / totalP;
         msg << "particles created and initial conditions assigned " << endl;
