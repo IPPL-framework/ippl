@@ -39,13 +39,15 @@ namespace ippl {
      * @tparam Tp type of particle position. If not specified, it will be equal to the field's type
      */
 
-    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp = Tf>
+    template <class Field, class Tp = typename Field::value_type>
     class OrthogonalRecursiveBisection {
-    public:
-        using field_view_type = typename detail::ViewType<Tf, Dim>::view_type;
+        constexpr static unsigned Dim = Field::dim;
+        using mesh_type               = typename Field::Mesh_t;
+        using Tf                      = typename Field::value_type;
 
+    public:
         // Weight for reduction
-        Field<Tf, Dim, Mesh, Centering> bf_m;
+        Field bf_m;
 
         /*!
          * Initialize member field with mesh and field layout
@@ -53,8 +55,7 @@ namespace ippl {
          * @param mesh Mesh
          * @param rho Density field
          */
-        void initialize(FieldLayout<Dim>& fl, Mesh& mesh,
-                        const Field<Tf, Dim, Mesh, Centering>& rho);
+        void initialize(FieldLayout<Dim>& fl, mesh_type& mesh, const Field& rho);
 
         /*!
          * Performs scatter operation of particle positions in field (weights) and
