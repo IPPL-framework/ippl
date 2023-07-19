@@ -138,7 +138,7 @@ int main(int argc, char* argv[]) {
         P->time_m                 = 0.0;
         P->loadbalancethreshold_m = std::atof(argv[arg++]);
 
-	Distribution::Distribution<double,3> dist;
+	Distribution::Distribution<double,3> dist(alpha,kw,rmax,rmin,hr,origin,totalP);
 
 	bool isFirstRepartition = false;
 	
@@ -147,12 +147,7 @@ int main(int argc, char* argv[]) {
             IpplTimings::startTimer(domainDecomposition);
             isFirstRepartition             = true;
 	    const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-            const int nghost               = P->rhs_m.getNghost();
-            auto rhoview                   = P->rhs_m.getView();
-	    auto rangePolicy               = P->rhs_m.getFieldRangePolicy();
-
-	    dist.repartitionRhs(lDom, nghost, rhoview, rangePolicy, hr, origin, alpha, kw);
-
+	    dist.repartitionRhs(P.get(), lDom);
             P->initializeORB(FL, mesh);
             P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
             IpplTimings::stopTimer(domainDecomposition);
@@ -162,11 +157,7 @@ int main(int argc, char* argv[]) {
 	
         IpplTimings::startTimer(particleCreation);
 
-        typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
-        const RegionLayout_t& RLayout                           = PL.getRegionLayout();
-        const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-
-	dist.createParticles(PL.getRegionLayout(), RLayout.gethLocalRegions(), P.get(), totalP, alpha, kw, rmax, rmin);
+	dist.createParticles(P.get(), PL.getRegionLayout());
 
 	IpplTimings::stopTimer(particleCreation);
 	

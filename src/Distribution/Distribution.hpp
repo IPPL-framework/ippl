@@ -118,58 +118,76 @@ struct generate_random {
 
 template <typename T, unsigned Dim = 3>
 class Distribution {
+
+  double alpha_m;
+  Vector_t<double, Dim> kw_m;
+  Vector_t<double, Dim> rmax_m;
+  Vector_t<double, Dim> rmin_m;
+  Vector_t<double, Dim> hr_m;
+  Vector_t<double, Dim> origin_m;
+  const size_type totalP_m;
   
 public:
-  Distribution() {}
+  Distribution(double alpha,
+	       Vector_t<double, Dim> kw,
+	       Vector_t<double, Dim> rmax,
+	       Vector_t<double, Dim> rmin,
+	       Vector_t<double, Dim> hr,
+	       Vector_t<double, Dim> origin,
+	       const size_type totalP):
+    alpha_m(alpha),
+    kw_m(kw),
+    rmax_m(rmax),
+    rmin_m(rmin),
+    hr_m(hr),
+    origin_m(origin),
+    totalP_m(totalP)
+  {}
 
   ~Distribution() {}
 
-  void repartitionRhs(const ippl::NDIndex<Dim>& lDom,  const int nghost, auto rhoview, auto rangePolicy,
-		      Vector_t<double, Dim> hr,
-		      Vector_t<double, Dim> origin,
-		      double alpha,
-		      Vector_t<double, Dim> kw) {
+  void repartitionRhs(auto P, const ippl::NDIndex<Dim>& lDom) {
+
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+
+    const int nghost = P->rhs_m.getNghost();
+    auto rhoview     = P->rhs_m.getView();
+    auto rangePolicy = P->rhs_m.getFieldRangePolicy();
+
     ippl::parallel_for(
 		       "Assign initial rho based on PDF", rangePolicy,
 		       KOKKOS_LAMBDA(const index_array_type& args) {
 			 // local to global index conversion
-			 Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
+			 Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr_m + origin_m;
 
 			 // ippl::apply accesses the view at the given indices and obtains a
 			 // reference; see src/Expression/IpplOperations.h
-			 ippl::apply(rhoview, args) = PDF(xvec, alpha, kw, Dim);
+			 ippl::apply(rhoview, args) = PDF(xvec, alpha_m, kw_m, Dim);
 		       });
     Kokkos::fence();
   }
 
-  void createParticles(auto RLayout,
-		       auto Regions,
-		       auto P,
-		       const size_type totalP,
-		       double alpha,
-		       Vector_t<double, Dim> kw,
-		       Vector_t<double, Dim> rmax,
-		       Vector_t<double, Dim> rmin) {
-
+  void createParticles(auto P, auto RLayout) {
+        
+    auto Regions = RLayout.gethLocalRegions();
     Vector_t<double, Dim> Nr, Dr, minU, maxU;
     int myRank    = ippl::Comm->rank();
     double factor = 1;
     for (unsigned d = 0; d < Dim; ++d) { 
-      Nr[d]   = CDF(Regions(myRank)[d].max(), alpha, kw[d]) - CDF(Regions(myRank)[d].min(), alpha, kw[d]);
-      Dr[d]   = CDF(rmax[d], alpha, kw[d]) - CDF(rmin[d], alpha, kw[d]);
-      minU[d] = CDF(Regions(myRank)[d].min(), alpha, kw[d]);
-      maxU[d] = CDF(Regions(myRank)[d].max(), alpha, kw[d]);
+      Nr[d]   = CDF(Regions(myRank)[d].max(), alpha_m, kw_m[d]) - CDF(Regions(myRank)[d].min(), alpha_m, kw_m[d]);
+      Dr[d]   = CDF(rmax_m[d], alpha_m, kw_m[d]) - CDF(rmin_m[d], alpha_m, kw_m[d]);
+      minU[d] = CDF(Regions(myRank)[d].min(), alpha_m, kw_m[d]);
+      maxU[d] = CDF(Regions(myRank)[d].max(), alpha_m, kw_m[d]);
       factor *= Nr[d] / Dr[d];
     }
 
-    size_type nloc            = (size_type)(factor * totalP);
+    size_type nloc            = (size_type)(factor * totalP_m);
     size_type Total_particles = 0;
 
     MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM,
 		  ippl::Comm->getCommunicator());
 
-    int rest = (int)(totalP - Total_particles);
+    int rest = (int)(totalP_m - Total_particles);
 
     if (ippl::Comm->rank() < rest) {
       ++nloc;
@@ -180,15 +198,11 @@ public:
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
     Kokkos::parallel_for(
             nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-	    P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+	    P->R.getView(), P->P.getView(), rand_pool64, alpha_m, kw_m, minU, maxU));
 
     Kokkos::fence();
   }
 };
-
-
-
   
-}
-
+}   // namespace 
 #endif
