@@ -43,7 +43,7 @@
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
-#include "FFTPoissonSolver.h"
+#include "Solver/FFTPoissonSolver.h"
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {

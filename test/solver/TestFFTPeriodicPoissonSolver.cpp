@@ -5,7 +5,7 @@
 #include <iostream>
 #include <typeinfo>
 
-#include "FFTPeriodicPoissonSolver.h"
+#include "Solver/FFTPeriodicPoissonSolver.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
