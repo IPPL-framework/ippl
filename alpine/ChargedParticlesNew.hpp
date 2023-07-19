@@ -36,7 +36,6 @@ class ChargedParticles : public PContainer<PLayout, T, Dim> {
 public:
 
     double rhoNorm_m;
-
     double Qtot_m;
 
     ParticleAttrib<double> q;                 // charge
@@ -72,7 +71,7 @@ public:
          // simply assumes them
          if (PContainer<PLayout, T, Dim>::stype_m == "CG") {
              for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                 PContainer<PLayout, T, Dim>::allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
+                 PContainer<PLayout, T, Dim>::bc_m[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
              }
          }
      }

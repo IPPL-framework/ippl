@@ -158,7 +158,7 @@ public:
 
     typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
 
-    bc_type allPeriodic;
+    bc_type bc_m;
 
     // ORB
     ORB<T, Dim> orb;
@@ -217,7 +217,7 @@ public:
         rhs_m.updateLayout(fl);
         if (stype_m == "CG") {
             this->sol_m.updateLayout(fl);
-            sol_m.setFieldBC(allPeriodic);
+            sol_m.setFieldBC(bc_m);
         }
 
         // Update layout with new FieldLayout
@@ -237,7 +237,7 @@ public:
         rhs_m.initialize(mesh, fl);
         if (stype_m == "CG") {
             sol_m.initialize(mesh, fl);
-            sol_m.setFieldBC(allPeriodic);
+            sol_m.setFieldBC(bc_m);
         }
     }
 
