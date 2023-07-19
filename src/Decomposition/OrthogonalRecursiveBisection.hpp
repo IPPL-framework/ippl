@@ -10,9 +10,9 @@ namespace ippl {
     }
 
     template <class Field, class Tp>
+    template <typename Attrib>
     bool OrthogonalRecursiveBisection<Field, Tp>::binaryRepartition(
-        const ParticleAttrib<Vector<Tp, Dim>>& R, FieldLayout<Dim>& fl,
-        const bool& isFirstRepartition) {
+        const Attrib& R, FieldLayout<Dim>& fl, const bool& isFirstRepartition) {
         // Timings
         static IpplTimings::TimerRef tbasicOp       = IpplTimings::getTimer("basicOperations");
         static IpplTimings::TimerRef tperpReduction = IpplTimings::getTimer("perpReduction");
@@ -261,9 +261,13 @@ namespace ippl {
     }
 
     template <class Field, class Tp>
-    void OrthogonalRecursiveBisection<Field, Tp>::scatterR(
-        const ParticleAttrib<Vector<Tp, Dim>>& r) {
+    template <typename Attrib>
+    void OrthogonalRecursiveBisection<Field, Tp>::scatterR(const Attrib& r) {
         using vector_type = typename mesh_type::vector_type;
+        static_assert(
+            Kokkos::SpaceAccessibility<typename Attrib::memory_space,
+                                       typename Field::memory_space>::accessible,
+            "Particle attribute memory space must be accessible from ORB field memory space");
 
         // Reset local field
         bf_m = 0.0;

@@ -60,11 +60,14 @@ namespace ippl {
         /*!
          * Performs scatter operation of particle positions in field (weights) and
          * repartitions FieldLayout's global domain
+         * @tparam Attrib the particle attribute type (memory space must be accessible to field
+         * memory)
          * @param R Weights to scatter
          * @param fl FieldLayout
          * @param isFirstRepartition boolean which tells whether to scatter or not
          */
-        bool binaryRepartition(const ParticleAttrib<Vector<Tp, Dim>>& R, FieldLayout<Dim>& fl,
+        template <typename Attrib>
+        bool binaryRepartition(const Attrib& R, FieldLayout<Dim>& fl,
                                const bool& isFirstRepartition);
 
         /*!
@@ -102,9 +105,12 @@ namespace ippl {
 
         /*!
          * Scattering of particle positions in field using a CIC method
+         * @tparam Attrib the particle attribute type (memory space must be accessible to field
+         * memory)
          * @param r Weights
          */
-        void scatterR(const ParticleAttrib<Vector<Tp, Dim>>& r);
+        template <typename Attrib>
+        void scatterR(const Attrib& r);
 
     };  // class
 
