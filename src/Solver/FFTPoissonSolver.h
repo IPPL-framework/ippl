@@ -51,12 +51,11 @@ namespace ippl {
          */
         template <bool isVec, typename>
         struct ViewAccess;
-
+        using index_array_type = typename ippl::RangePolicy<3>::index_array_type;
         template <typename View>
         struct ViewAccess<true, View> {
-            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim, size_t i,
-                                                              size_t j, size_t k) {
-                return view(i, j, k)[dim];
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim, const index_array_type& args) {
+                return apply(view, args)[dim];
             }
         };
 
@@ -64,8 +63,8 @@ namespace ippl {
         struct ViewAccess<false, View> {
             KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view,
                                                               [[maybe_unused]] unsigned dim,
-                                                              size_t i, size_t j, size_t k) {
-                return view(i, j, k);
+                                                              const index_array_type& args) {
+                return apply(view, args);
             }
         };
     }  // namespace detail
