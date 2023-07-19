@@ -41,8 +41,7 @@ public:
     using playout_type = ippl::ParticleSpatialLayout<double, Dim>;
 
     template <unsigned Dim>
-    using ORB =
-        ippl::OrthogonalRecursiveBisection<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
+    using ORB = ippl::OrthogonalRecursiveBisection<field_type<Dim>>;
 
     template <class PLayout, unsigned Dim>
     struct Bunch : public ippl::ParticleBase<PLayout> {
