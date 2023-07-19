@@ -197,12 +197,12 @@ int main(int argc, char* argv[]) {
             // kick
 
             IpplTimings::startTimer(PTimer);
-            P->P = P->P - 0.5 * dt * P->E;
+            P->V = P->V - 0.5 * dt * P->E;
             IpplTimings::stopTimer(PTimer);
 
             // drift
             IpplTimings::startTimer(RTimer);
-            P->R = P->R + dt * P->P;
+            P->R = P->R + dt * P->V;
             IpplTimings::stopTimer(RTimer);
             // P->R.print();
 
@@ -235,7 +235,7 @@ int main(int argc, char* argv[]) {
 
             // kick
             IpplTimings::startTimer(PTimer);
-            P->P = P->P - 0.5 * dt * P->E;
+            P->V = P->V - 0.5 * dt * P->E;
             IpplTimings::stopTimer(PTimer);
 
             P->time_m += dt;

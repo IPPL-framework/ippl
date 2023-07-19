@@ -199,7 +199,7 @@ public:
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
     Kokkos::parallel_for(
             nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-	    P->R.getView(), P->P.getView(), rand_pool64, alpha_m, kw_m, minU, maxU));
+	    P->R.getView(), P->V.getView(), rand_pool64, alpha_m, kw_m, minU, maxU));
 
     Kokkos::fence();
   }

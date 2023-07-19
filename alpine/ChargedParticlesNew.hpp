@@ -39,7 +39,7 @@ public:
     double Qtot_m;
 
     ParticleAttrib<double> q;                 // charge
-    typename PContainer<PLayout, T, Dim>::Base::particle_position_type P;  // particle velocity
+    typename PContainer<PLayout, T, Dim>::Base::particle_position_type V;  // particle velocity
     typename PContainer<PLayout, T, Dim>::Base::particle_position_type E;  // electric field at particle position
 
     /*
@@ -81,7 +81,7 @@ public:
     void registerAttributes() {
       // register the particle attributes
       this->addAttribute(q);
-      this->addAttribute(P);
+      this->addAttribute(V);
       this->addAttribute(E);
     }
 
