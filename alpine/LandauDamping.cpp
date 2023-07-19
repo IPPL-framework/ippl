@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
             IpplTimings::startTimer(domainDecomposition);
             isFirstRepartition             = true;
 	    const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-	    dist.repartitionRhs(P.get(), lDom);
+	    dist.repartitionRhs(P.get(), lDom);   
             P->initializeORB(FL, mesh);
             P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
             IpplTimings::stopTimer(domainDecomposition);
