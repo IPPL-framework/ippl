@@ -289,7 +289,10 @@ namespace ippl {
 
         // initialize fields
         storage_field.initialize(*mesh2_m, *layout2_m);
+        grn_m.initialize(*mesh2_m, *layout2_m);
+        rho2_gm.initialize(*mesh2_m, *layout2_m);
         rho2tr_m.initialize(*meshComplex_m, *layoutComplex_m);
+        rho2tr_gm.initialize(*meshComplex_m, *layoutComplex_m);
         grntr_m.initialize(*meshComplex_m, *layoutComplex_m);
 
         int out = this->params_m.template get<int>("output_type");
@@ -303,6 +306,8 @@ namespace ippl {
 
         // create the FFT object
         fft_m = std::make_unique<FFT_t>(*layout2_m, *layoutComplex_m, this->params_m);
+        fft_gm = std::make_unique<FFT_gt>(*layout2_m, *layoutComplex_m, this->params_m);
+
         // if Vico, also need to create mesh and layout for 4N Fourier domain
         // on this domain, the truncated Green's function is defined
         // also need to create the 4N complex grid, on which precomputation step done
@@ -406,7 +411,9 @@ namespace ippl {
         static IpplTimings::TimerRef warmup = IpplTimings::getTimer("Warmup");
         IpplTimings::startTimer(warmup);
 
+        // warm-up the fft transform objects by doing a transform
         fft_m->transform(+1, rho2_mr, rho2tr_m);
+        fft_gm->transform(+1, grn_m, grntr_m);
         if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
             fft4n_m->transform(+1, grnL_m);
         }
@@ -559,6 +566,15 @@ namespace ippl {
         // forward FFT of the charge density field on doubled grid
         fft_m->transform(+1, rho2_mr, rho2tr_m);
 
+        // static cast into Tg type
+        auto view_trans = rho2tr_m.getView();
+        auto view_cast  = rho2tr_gm.getView();
+        Kokkos::parallel_for(
+            "Write rho2tr on rho2tr_g to type cast", rho2tr_m.getFieldRangePolicy(),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                view_cast(i, j, k) = static_cast<Kokkos::complex<Tg>>(view_trans(i, j, k));
+            });
+
         IpplTimings::stopTimer(fftrho);
 
         // call greensFunction to recompute if the mesh spacing has changed
@@ -569,7 +585,10 @@ namespace ippl {
         // multiply FFT(rho2)*FFT(green)
         // convolution becomes multiplication in FFT
         // minus sign since we are solving laplace(phi) = -rho
-        rho2tr_m = -rho2tr_m * grntr_m;
+        rho2tr_gm = -rho2tr_gm * grntr_m;
+
+        // get view of the Tg type real field (for communication doubled -> physical grid)
+        auto view_typeg = rho2_gm.getView();
 
         // if output_type is SOL or SOL_AND_GRAD, we caculate solution
         if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
@@ -578,7 +597,7 @@ namespace ippl {
             IpplTimings::startTimer(fftc);
 
             // inverse FFT of the product and store the electrostatic potential in rho2_mr
-            fft_m->transform(-1, rho2_mr, rho2tr_m);
+            fft_gm->transform(-1, rho2_gm, rho2tr_gm);
 
             IpplTimings::stopTimer(fftc);
 
@@ -589,9 +608,9 @@ namespace ippl {
             // since only backward transform was performed on the 4N grid
             for (unsigned int i = 0; i < Dim; ++i) {
                 if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
-                    rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
+                    rho2_gm = rho2_gm * 2.0 * (1.0 / 4.0);
                 } else {
-                    rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                    rho2_gm = rho2_gm * 2.0 * nr_m[i] * hr_m[i];
                 }
             }
 
@@ -617,7 +636,7 @@ namespace ippl {
                         requests.resize(requests.size() + 1);
 
                         Communicate::size_type nsends;
-                        pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
+                        pack(intersection, view_typeg, fd_m, nghost2, ldom2, nsends);
 
                         buffer_type buf =
                             Comm->getBuffer<memory_space, Trhs>(IPPL_SOLVER_SEND + i, nsends);
@@ -669,7 +688,7 @@ namespace ippl {
 
                         // take [0,N-1] as physical solution
                         const bool isQuadrant1 = ((ig == ig2) && (jg == jg2) && (kg == kg2));
-                        view1(i, j, k)         = view2(i, j, k) * isQuadrant1;
+                        view1(i, j, k)         = static_cast<double>(view_typeg(i, j, k) * isQuadrant1);
                     });
             }
             IpplTimings::stopTimer(dtos);
@@ -693,8 +712,8 @@ namespace ippl {
             const int nghostL = this->lhs_mp->getNghost();
 
             // get rho2tr_m view (as we want to multiply by ik then transform)
-            auto viewR        = rho2tr_m.getView();
-            const int nghostR = rho2tr_m.getNghost();
+            auto viewR        = rho2tr_gm.getView();
+            const int nghostR = rho2tr_gm.getNghost();
             const auto& ldomR = layoutComplex_m->getLocalNDIndex();
 
             // use temp_m as a temporary complex field
@@ -712,7 +731,7 @@ namespace ippl {
             for (size_t gd = 0; gd < Dim; ++gd) {
                 // loop over rho2tr_m to multiply by -ik (gradient in Fourier space)
                 Kokkos::parallel_for(
-                    "Gradient - E field", rho2tr_m.getFieldRangePolicy(),
+                    "Gradient - E field", rho2tr_gm.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         // global indices for 2N rhotr_m
                         const int ig = i + ldomR[0].first() - nghostR;
@@ -736,16 +755,16 @@ namespace ippl {
                 IpplTimings::startTimer(ffte);
 
                 // transform to get E-field
-                fft_m->transform(-1, rho2_mr, temp_m);
+                fft_gm->transform(-1, rho2_gm, temp_m);
 
                 IpplTimings::stopTimer(ffte);
 
                 // apply proper normalization
                 for (unsigned int i = 0; i < Dim; ++i) {
                     if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
-                        rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
+                        rho2_gm = rho2_gm * 2.0 * (1.0 / 4.0);
                     } else {
-                        rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                        rho2_gm = rho2_gm * 2.0 * nr_m[i] * hr_m[i];
                     }
                 }
 
@@ -770,10 +789,10 @@ namespace ippl {
                             requests.resize(requests.size() + 1);
 
                             Communicate::size_type nsends;
-                            pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
+                            pack(intersection, view_typeg, fd_m, nghost2, ldom2, nsends);
 
                             buffer_type buf =
-                                Comm->getBuffer<memory_space, Trhs>(IPPL_SOLVER_SEND + i, nsends);
+                                Comm->getBuffer<memory_space, Tg>(IPPL_SOLVER_SEND + i, nsends);
 
                             Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(), nsends);
                             buf->resetWritePos();
@@ -791,10 +810,10 @@ namespace ippl {
                             Communicate::size_type nrecvs;
                             nrecvs = intersection.size();
 
-                            buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                            buffer_type buf = Comm->getBuffer<memory_space, Tg>(
                                 IPPL_SOLVER_RECV + myRank, nrecvs);
 
-                            Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
+                            Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Tg),
                                        nrecvs);
                             buf->resetReadPos();
 
@@ -822,7 +841,7 @@ namespace ippl {
 
                             // take [0,N-1] as physical solution
                             const bool isQuadrant1 = ((ig == ig2) && (jg == jg2) && (kg == kg2));
-                            viewL(i, j, k)[gd]     = view2(i, j, k) * isQuadrant1;
+                            viewL(i, j, k)[gd]     = view_typeg(i, j, k) * isQuadrant1;
                         });
                 }
                 IpplTimings::stopTimer(edtos);
@@ -841,8 +860,8 @@ namespace ippl {
             const int nghostH = hess_m.getNghost();
 
             // get rho2tr_m view (as we want to multiply by -k^2 then transform)
-            auto viewR        = rho2tr_m.getView();
-            const int nghostR = rho2tr_m.getNghost();
+            auto viewR        = rho2tr_gm.getView();
+            const int nghostR = rho2tr_gm.getNghost();
             const auto& ldomR = layoutComplex_m->getLocalNDIndex();
 
             // use temp_m as a temporary complex field
@@ -863,7 +882,7 @@ namespace ippl {
                     // else, if mixed derivative, need kVec = 0 at N/2
 
                     Kokkos::parallel_for(
-                        "Hessian", rho2tr_m.getFieldRangePolicy(),
+                        "Hessian", rho2tr_gm.getFieldRangePolicy(),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // global indices for 2N rhotr_m
                             const int ig = i + ldomR[0].first() - nghostR;
@@ -891,16 +910,16 @@ namespace ippl {
                     IpplTimings::startTimer(ffth);
 
                     // transform to get Hessian
-                    fft_m->transform(-1, rho2_mr, temp_m);
+                    fft_gm->transform(-1, rho2_gm, temp_m);
 
                     IpplTimings::stopTimer(ffth);
 
                     // apply proper normalization
                     for (unsigned int i = 0; i < Dim; ++i) {
                         if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
-                            rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
+                            rho2_gm = rho2_gm * 2.0 * (1.0 / 4.0);
                         } else {
-                            rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                            rho2_gm = rho2_gm * 2.0 * nr_m[i] * hr_m[i];
                         }
                     }
 
@@ -925,9 +944,9 @@ namespace ippl {
                                 requests.resize(requests.size() + 1);
 
                                 Communicate::size_type nsends;
-                                pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
+                                pack(intersection, view_typeg, fd_m, nghost2, ldom2, nsends);
 
-                                buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                                buffer_type buf = Comm->getBuffer<memory_space, Tg>(
                                     IPPL_SOLVER_SEND + i, nsends);
 
                                 Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(),
@@ -947,10 +966,10 @@ namespace ippl {
                                 Communicate::size_type nrecvs;
                                 nrecvs = intersection.size();
 
-                                buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                                buffer_type buf = Comm->getBuffer<memory_space, Tg>(
                                     IPPL_SOLVER_RECV + myRank, nrecvs);
 
-                                Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
+                                Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Tg),
                                            nrecvs);
                                 buf->resetReadPos();
 
@@ -979,7 +998,7 @@ namespace ippl {
                                 // take [0,N-1] as physical solution
                                 const bool isQuadrant1 =
                                     ((ig == ig2) && (jg == jg2) && (kg == kg2));
-                                viewH(i, j, k)[row][col] = view2(i, j, k) * isQuadrant1;
+                                viewH(i, j, k)[row][col] = view_typeg(i, j, k) * isQuadrant1;
                             });
                     }
                     IpplTimings::stopTimer(hdtos);
@@ -996,7 +1015,7 @@ namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
     void FFTPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
         const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
-        grn_mr               = 0.0;
+        grn_m                = 0.0;
 
         const int alg = this->params_m.template get<int>("algorithm");
 
@@ -1110,9 +1129,9 @@ namespace ippl {
             // Restrict transformed grnL_m to 2N domain after precomputation step
 
             // get the field data first
-            typename Field_t::view_type view = grn_mr.getView();
-            const int nghost                 = grn_mr.getNghost();
-            const auto& ldom                 = layout2_m->getLocalNDIndex();
+            typename Field_gt::view_type view = grn_m.getView();
+            const int nghost                  = grn_m.getNghost();
+            const auto& ldom                  = layout2_m->getLocalNDIndex();
 
             // start a timer
             static IpplTimings::TimerRef ifftshift = IpplTimings::getTimer("Vico shift loop");
@@ -1169,18 +1188,18 @@ namespace ippl {
 
             // use the grnIField_m helper field to compute Green's function
             for (unsigned int i = 0; i < Dim; ++i) {
-                grn_mr = grn_mr + grnIField_m[i] * hrsq[i];
+                grn_m = grn_m + grnIField_m[i] * hrsq[i];
             }
 
-            grn_mr = -1.0 / (4.0 * pi * sqrt(grn_mr));
+            grn_m = -1.0 / (4.0 * pi * sqrt(grn_m));
 
-            typename Field_t::view_type view = grn_mr.getView();
-            const int nghost                 = grn_mr.getNghost();
-            const auto& ldom                 = layout2_m->getLocalNDIndex();
+            typename Field_gt::view_type view = grn_m.getView();
+            const int nghost                  = grn_m.getNghost();
+            const auto& ldom                  = layout2_m->getLocalNDIndex();
 
             // Kokkos parallel for loop to find (0,0,0) point and regularize
             Kokkos::parallel_for(
-                "Regularize Green's function ", grn_mr.getFieldRangePolicy(),
+                "Regularize Green's function ", grn_m.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     // go from local indices to global
                     const int ig = i + ldom[0].first() - nghost;
@@ -1198,7 +1217,7 @@ namespace ippl {
         IpplTimings::startTimer(fftg);
 
         // perform the FFT of the Green's function for the convolution
-        fft_m->transform(+1, grn_mr, grntr_m);
+        fft_gm->transform(+1, grn_m, grntr_m);
 
         IpplTimings::stopTimer(fftg);
     };

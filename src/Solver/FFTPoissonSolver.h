@@ -97,7 +97,7 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
 
         // define a type for the 3 dimensional real to complex Fourier transform
-        typedef FFT<RCTransform, FieldRHS> FFT_t;
+        typedef FFT<RCTransform, FieldRHS> FFT_t; // Real-to-complex double both
 
         // enum type for the algorithm
         enum Algorithm {
@@ -119,6 +119,9 @@ namespace ippl {
         typedef Vector<Trhs, Dim> Vector_t;
         typedef typename mesh_type::matrix_type Matrix_t;
         typedef Field<Matrix_t, Dim, mesh_type, Centering> MField_t;
+
+        // define an real to complex FFT with type of vector field (e.g. float)
+        typedef FFT<RCTransform, Field_gt> FFT_gt;
 
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
@@ -179,18 +182,24 @@ namespace ippl {
 
         Field_t& rho2_mr =
             storage_field;  // the charge-density field with mesh doubled in each dimension
-        Field_t& grn_mr = storage_field;  // the Green's function
+
+        Field_gt grn_m;  // the Green's function
+
+        Field_gt rho2_gm;  // the Green's function
 
         // rho2tr_m is the Fourier transformed charge-density field
         // domain3_m and mesh3_m are used
         CxField_t rho2tr_m;
 
+        // field which will contain the static_cast<Tg> rho2tr_m
+        CxField_gt rho2tr_gm; 
+
         // grntr_m is the Fourier transformed Green's function
         // domain3_m and mesh3_m are used
-        CxField_t grntr_m;
+        CxField_gt grntr_m;
 
         // temp_m field for the E-field computation
-        CxField_t temp_m;
+        CxField_gt temp_m;
 
         // fields that facilitate the calculation in greensFunction()
         IField_t grnIField_m[Dim];
@@ -200,6 +209,7 @@ namespace ippl {
 
         // the FFT object
         std::unique_ptr<FFT_t> fft_m;
+        std::unique_ptr<FFT_gt> fft_gm; // for float real-to-complex
 
         // mesh and layout objects for rho_m (RHS)
         mesh_type* mesh_mp;
