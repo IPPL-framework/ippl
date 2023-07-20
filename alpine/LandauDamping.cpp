@@ -161,7 +161,20 @@ int main(int argc, char* argv[]) {
 
 	IpplTimings::stopTimer(particleCreation);
 
+	typename ParticleAttrib<Vector_t<double, Dim>>::HostMirror RHost = P->R.getHostMirror();
+	typename ParticleAttrib<Vector_t<double, Dim>>::HostMirror VHost = P->V.getHostMirror();
+        Kokkos::deep_copy(RHost, P->R.getView());
+        Kokkos::deep_copy(VHost, P->V.getView());
 
+	Connector::PhaseSpaceConnector<double,Dim> phaseSpaceConn(TestName, totalP);
+        IpplTimings::startTimer(dumpDataTimer);
+	phaseSpaceConn.dumpParticleData(RHost, VHost, P->getLocalNum());
+	IpplTimings::stopTimer(dumpDataTimer);
+
+	Connector::StatisticsConnector<double,Dim> statConn(TestName, totalP);
+
+	msg << "We write data in " << statConn.getConnTypeName() << endl;
+	
         P->q = P->Qtot_m / totalP;
         msg << "particles created and initial conditions assigned " << endl;
         isFirstRepartition = false;
@@ -182,9 +195,10 @@ int main(int argc, char* argv[]) {
         P->gatherCIC();
 
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpLandau();
-        P->gatherStatistics(totalP);
-        P->dumpLocalDomains(FL, 0);
+        statConn.dumpLandau(P->F_m,hr,P->time_m);
+        statConn.gatherLoadBalancingStatistics(P->getLocalNum(),P->time_m);
+        statConn.gatherLocalDomainStatistics(FL, 0);
+	statConn.gatherFieldStatistics(P->V, P->rhs_m, P->F_m, hr, P->getLocalNum(), P->time_m);
         IpplTimings::stopTimer(dumpDataTimer);
 
         // begin main timestep loop
@@ -212,13 +226,13 @@ int main(int argc, char* argv[]) {
             IpplTimings::stopTimer(updateTimer);
 
             // Domain Decomposition
-            if (P->balance(totalP, it + 1)) {
+            if (P->balance(totalP, it + 1, TestName)) {
                 msg << "Starting repartition" << endl;
                 IpplTimings::startTimer(domainDecomposition);
                 P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
                 IpplTimings::stopTimer(domainDecomposition);
                 IpplTimings::startTimer(dumpDataTimer);
-                P->dumpLocalDomains(FL, it+1);
+		statConn.gatherLocalDomainStatistics(FL, 0);
                 IpplTimings::stopTimer(dumpDataTimer);
             }
 
@@ -236,12 +250,15 @@ int main(int argc, char* argv[]) {
             // kick
             IpplTimings::startTimer(PTimer);
             P->V = P->V - 0.5 * dt * P->E;
-            IpplTimings::stopTimer(PTimer);
 
+	    IpplTimings::stopTimer(PTimer);
+	    
             P->time_m += dt;
             IpplTimings::startTimer(dumpDataTimer);
-            P->dumpLandau();
-            P->gatherStatistics(totalP);
+	    statConn.dumpLandau(P->F_m,hr,P->time_m);
+	    statConn.gatherLoadBalancingStatistics(P->getLocalNum(),P->time_m);
+	    statConn.gatherLocalDomainStatistics(FL, 0);
+	    statConn.gatherFieldStatistics(P->V, P->rhs_m, P->F_m, hr, P->getLocalNum(), P->time_m);
             IpplTimings::stopTimer(dumpDataTimer);
             msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
@@ -250,7 +267,7 @@ int main(int argc, char* argv[]) {
                     << endl;
                 break;
             }
-        }
+	}
 
         msg << "LandauDamping: End." << endl;
         IpplTimings::stopTimer(mainTimer);
