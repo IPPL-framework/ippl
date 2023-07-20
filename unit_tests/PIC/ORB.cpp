@@ -26,8 +26,8 @@
 template <typename>
 class ORBTest;
 
-template <typename ExecSpace, unsigned Dim>
-class ORBTest<Parameters<ExecSpace, Rank<Dim>>> : public ::testing::Test {
+template <typename T, typename ExecSpace, unsigned Dim>
+class ORBTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
 protected:
     void SetUp() override { CHECK_SKIP_SERIAL; }
 
@@ -38,7 +38,7 @@ public:
     using centering_type = typename mesh_type::DefaultCentering;
     using field_type     = ippl::Field<double, Dim, mesh_type, centering_type, ExecSpace>;
     using flayout_type   = ippl::FieldLayout<Dim>;
-    using playout_type   = ippl::ParticleSpatialLayout<double, Dim, mesh_type, ExecSpace>;
+    using playout_type   = ippl::ParticleSpatialLayout<T, Dim, mesh_type, ExecSpace>;
     using ORB            = ippl::OrthogonalRecursiveBisection<field_type>;
 
     template <class PLayout>
@@ -137,9 +137,7 @@ public:
     ORB orb;
 };
 
-using Combos = CombineTuples<MixedPrecisionAndSpaces::Spaces,
-                             MixedPrecisionAndSpaces::Ranks<1, 2, 3, 4, 5, 6>>::type;
-using Tests  = TestForTypes<Combos>::type;
+using Tests = MixedPrecisionAndSpaces::tests<1, 2, 3, 4, 5, 6>;
 TYPED_TEST_CASE(ORBTest, Tests);
 
 TYPED_TEST(ORBTest, Volume) {
