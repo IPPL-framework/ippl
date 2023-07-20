@@ -98,7 +98,7 @@ constexpr std::array<size_t, Dim> getGridSizes() {
 template <unsigned>
 struct Rank;
 
-struct MixedPrecisionAndSpaces {
+struct TestParams {
     using Spaces     = ippl::detail::TypeForAllSpaces<std::tuple>::exec_spaces_type;
     using Precisions = std::tuple<double, float>;
     using Combos     = CreateCombinations<Precisions, Spaces>::type;
@@ -127,17 +127,17 @@ struct MixedPrecisionAndSpaces {
     }
 };
 
-bool MixedPrecisionAndSpaces::skipSerialTests = true;
+bool TestParams::skipSerialTests = true;
 
 #ifdef KOKKOS_ENABLE_SERIAL
-#define CHECK_SKIP_SERIAL                                                                        \
-    if (std::is_same_v<ExecSpace, Kokkos::Serial> && MixedPrecisionAndSpaces::skipSerialTests) { \
-        GTEST_SKIP();                                                                            \
+#define CHECK_SKIP_SERIAL                                                           \
+    if (std::is_same_v<ExecSpace, Kokkos::Serial> && TestParams::skipSerialTests) { \
+        GTEST_SKIP();                                                               \
     }
 
-#define CHECK_SKIP_SERIAL_CONSTRUCTOR                                                            \
-    if (std::is_same_v<ExecSpace, Kokkos::Serial> && MixedPrecisionAndSpaces::skipSerialTests) { \
-        return;                                                                                  \
+#define CHECK_SKIP_SERIAL_CONSTRUCTOR                                               \
+    if (std::is_same_v<ExecSpace, Kokkos::Serial> && TestParams::skipSerialTests) { \
+        return;                                                                     \
     }
 #else
 #define CHECK_SKIP_SERIAL \

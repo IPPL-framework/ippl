@@ -193,7 +193,7 @@ public:
     std::array<T, Dim> len;
 };
 
-using Tests = MixedPrecisionAndSpaces::tests<2, 3>;
+using Tests = TestParams::tests<2, 3>;
 TYPED_TEST_CASE(FFTTest, Tests);
 
 TYPED_TEST(FFTTest, Cos) {
@@ -309,7 +309,7 @@ TYPED_TEST(FFTTest, CC) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    MixedPrecisionAndSpaces::checkArgs(argc, argv);
+    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

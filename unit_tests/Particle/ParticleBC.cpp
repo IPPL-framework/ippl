@@ -93,7 +93,7 @@ public:
     playout_type playout;
 };
 
-using Tests = MixedPrecisionAndSpaces::tests<1, 2, 3, 4, 5, 6>;
+using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
 TYPED_TEST_CASE(ParticleBCTest, Tests);
 
 TYPED_TEST(ParticleBCTest, UpperPeriodicBC) {
@@ -239,7 +239,7 @@ TYPED_TEST(ParticleBCTest, LowerSinkBC) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    MixedPrecisionAndSpaces::checkArgs(argc, argv);
+    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

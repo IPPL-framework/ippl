@@ -159,7 +159,7 @@ public:
     mesh_type mesh;
 };
 
-using Tests = MixedPrecisionAndSpaces::tests<1, 2, 3, 4, 5, 6>;
+using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
 TYPED_TEST_CASE(ParticleSendRecv, Tests);
 
 TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
@@ -194,7 +194,7 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    MixedPrecisionAndSpaces::checkArgs(argc, argv);
+    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

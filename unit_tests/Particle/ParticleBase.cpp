@@ -47,9 +47,9 @@ public:
     std::shared_ptr<bunch_type> pbase;
 };
 
-using Precisions = MixedPrecisionAndSpaces::Precisions;
-using Spaces     = MixedPrecisionAndSpaces::Spaces;
-using Ranks      = MixedPrecisionAndSpaces::Ranks<1, 2, 3, 4, 5, 6>;
+using Precisions = TestParams::Precisions;
+using Spaces     = TestParams::Spaces;
+using Ranks      = TestParams::Ranks<1, 2, 3, 4, 5, 6>;
 using Combos     = CreateCombinations<Precisions, Spaces, Spaces, Ranks>::type;
 using Tests      = TestForTypes<Combos>::type;
 TYPED_TEST_CASE(ParticleBaseTest, Tests);
@@ -137,7 +137,7 @@ TYPED_TEST(InitializationTest, Initialize2) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    MixedPrecisionAndSpaces::checkArgs(argc, argv);
+    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
