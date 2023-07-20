@@ -138,7 +138,8 @@ namespace ippl {
                 Kokkos::realloc(buffer, size * overalloc);
             }
 
-            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            using index_array_type =
+                typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
             ippl::parallel_for(
                 "HaloCells::pack()", getRangePolicy(subview),
                 KOKKOS_LAMBDA(const index_array_type& args) {

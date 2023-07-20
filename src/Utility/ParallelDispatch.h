@@ -108,7 +108,7 @@ namespace ippl {
             return policy_type(begin, end);
         }
         // Silences incorrect nvcc warning: missing return statement at end of non-void function
-        throw IpplException("detail::getRangePolicy", "Unreachable state");
+        throw IpplException("detail::createRangePolicy", "Unreachable state");
     }
 
     namespace detail {
