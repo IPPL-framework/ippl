@@ -114,7 +114,7 @@ namespace ippl {
         typedef Field<Kokkos::complex<Tg>, Dim, mesh_type, Centering> CxField_gt;
         typedef FFT<RCTransform, Field_gt> FFT_t; // Real-to-complex tranform
         typedef typename FFT_t::ComplexField CxField_t;
-        typedef Vector<Trhs, Dim> Vector_t;
+        typedef Vector<Tg, Dim> Vector_t;
         typedef typename mesh_type::matrix_type Matrix_t;
         typedef Field<Matrix_t, Dim, mesh_type, Centering> MField_t;
 
@@ -167,7 +167,7 @@ namespace ippl {
         // communication used for multi-rank Vico-Greengard's Green's function
         void communicateVico(Vector<int, Dim> size, typename CxField_gt::view_type view_g,
                              const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
-                             typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
+                             typename Field_gt::view_type view, const ippl::NDIndex<Dim> ldom,
                              const int nghost);
 
     private:
