@@ -119,13 +119,17 @@ public:
         }
 
         Kokkos::deep_copy(bunch->R.getView(), R_host);
-        bunch->Q               = 1.0;
-        RegionLayout_t RLayout = playout.getRegionLayout();
+        bunch->Q = 1.0;
 
+        computeExpectedRanks();
+    }
+
+    void computeExpectedRanks() {
         using region_view  = typename RegionLayout_t::view_type;
         using size_type    = typename RegionLayout_t::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecSpace>;
 
+        RegionLayout_t RLayout           = playout.getRegionLayout();
         auto& positions                  = bunch->R.getView();
         region_view Regions              = RLayout.getdLocalRegions();
         typename rank_type::view_type ER = bunch->expectedRank.getView();
@@ -151,7 +155,6 @@ public:
     std::array<T, Dim> domain;
     playout_type playout;
 
-private:
     flayout_type layout;
     mesh_type mesh;
 };
