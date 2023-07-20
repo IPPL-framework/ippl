@@ -26,6 +26,10 @@
 #include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
+/*!
+ * Utility struct for holding a set of template parameters. It also defines
+ * a type alias to ensure that this struct is never nested in itself.
+ */
 template <typename... Ts>
 struct Parameters {
     using flat_type = Parameters<Ts...>;
@@ -43,11 +47,23 @@ struct CombineTuples;
 template <typename, typename>
 struct AddType;
 
+/*!
+ * Generates parameter packs containing all combinations of a new type
+ * and some existing types; used for generating combinations of types
+ * @tparam Ts the existing parameters
+ * @tparam U the next parameter to add
+ */
 template <typename... Ts, typename U>
 struct AddType<std::tuple<Ts...>, U> {
     using type = std::tuple<typename Parameters<Ts, U>::flat_type...>;
 };
 
+/*!
+ * Generates parameter packs containing all combinations of types in
+ * two sets of parameters; used for generating combinations of types
+ * @tparam PackA a parameter pack
+ * @tparam TypesB a set of types to add to the existing types
+ */
 template <typename PackA, typename... TypesB>
 struct CombineTuples<PackA, std::tuple<TypesB...>> {
     using type = decltype(std::tuple_cat(std::declval<typename AddType<PackA, TypesB>::type>()...));
@@ -58,6 +74,9 @@ struct CreateCombinations<Tuple1, Tuple2> {
     using type = typename CombineTuples<Tuple1, Tuple2>::type;
 };
 
+/*!
+ * Generates all possible combinations of types contained in the provided tuples
+ */
 template <typename Tuple1, typename Tuple2, typename... Tuples>
 struct CreateCombinations<Tuple1, Tuple2, Tuples...> {
     using first = typename CombineTuples<Tuple1, Tuple2>::type;
@@ -67,6 +86,9 @@ struct CreateCombinations<Tuple1, Tuple2, Tuples...> {
 template <typename>
 struct TestForTypes;
 
+/*!
+ * Create a set of gtest types for all types in a given tuple
+ */
 template <typename... Types>
 struct TestForTypes<std::tuple<Types...>> {
     using type = ::testing::Types<Types...>;
@@ -98,6 +120,9 @@ constexpr std::array<size_t, Dim> getGridSizes() {
 template <unsigned>
 struct Rank;
 
+/*!
+ * Utility struct for defining relevant parameters for IPPL unit tests
+ */
 struct TestParams {
     using Spaces     = ippl::detail::TypeForAllSpaces<std::tuple>::exec_spaces_type;
     using Precisions = std::tuple<double, float>;
@@ -129,6 +154,8 @@ struct TestParams {
 
 bool TestParams::skipSerialTests = true;
 
+// Allow the user to skip serial execution tests, since they could be slow and don't test anything
+// different from OpenMP tests, given that both execution spaces use host memory
 #ifdef KOKKOS_ENABLE_SERIAL
 #define CHECK_SKIP_SERIAL                                                           \
     if (std::is_same_v<ExecSpace, Kokkos::Serial> && TestParams::skipSerialTests) { \
