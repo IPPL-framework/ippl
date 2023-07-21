@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include "LangevinHelpers.hpp"
+#include "LangevinIO.hpp"
 #include "LangevinParticles.hpp"
 
 const char* TestName = "TestLangevinPotentials";
