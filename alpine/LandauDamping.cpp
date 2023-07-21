@@ -44,8 +44,7 @@
 
 #include "Utility/IpplTimings.h"
 
-#include "ChargedParticlesNew.hpp"
-
+#include "ChargedParticles.hpp"
 #include "Distribution/Distribution.hpp"
 
 constexpr unsigned Dim = 3;
@@ -55,7 +54,6 @@ const char* TestName = "LandauDamping";
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-
         setSignalHandler();
 
         Inform msg("LandauDamping");
@@ -138,43 +136,41 @@ int main(int argc, char* argv[]) {
         P->time_m                 = 0.0;
         P->loadbalancethreshold_m = std::atof(argv[arg++]);
 
-	Distribution::Distribution<double,3> dist(alpha,kw,rmax,rmin,hr,origin,totalP);
+        Distribution::Distribution<double, 3> dist(alpha, kw, rmax, rmin, hr, origin, totalP);
 
-	bool isFirstRepartition = false;
-	
+        bool isFirstRepartition = false;
+
         if ((P->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
             msg << "Starting first repartition" << endl;
             IpplTimings::startTimer(domainDecomposition);
             isFirstRepartition             = true;
-	    const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-	    dist.repartitionRhs(P.get(), lDom);   
+            const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+            dist.repartitionRhs(P.get(), lDom);
             P->initializeORB(FL, mesh);
             P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
             IpplTimings::stopTimer(domainDecomposition);
         }
 
         msg << "First domain decomposition done" << endl;
-	
+
         IpplTimings::startTimer(particleCreation);
 
-	dist.createParticles(P.get(), PL.getRegionLayout());
+        dist.createParticles(P.get(), PL.getRegionLayout());
 
-	IpplTimings::stopTimer(particleCreation);
+        IpplTimings::stopTimer(particleCreation);
 
-	typename ParticleAttrib<Vector_t<double, Dim>>::HostMirror RHost = P->R.getHostMirror();
-	typename ParticleAttrib<Vector_t<double, Dim>>::HostMirror VHost = P->V.getHostMirror();
+        typename ParticleAttrib<Vector_t<double, Dim>>::HostMirror RHost = P->R.getHostMirror();
+        typename ParticleAttrib<Vector_t<double, Dim>>::HostMirror VHost = P->V.getHostMirror();
         Kokkos::deep_copy(RHost, P->R.getView());
         Kokkos::deep_copy(VHost, P->V.getView());
 
-	Connector::PhaseSpaceConnector<double,Dim> phaseSpaceConn(TestName, totalP);
+        Connector::PhaseSpaceConnector<double, Dim> phaseSpaceConn(TestName, totalP);
         IpplTimings::startTimer(dumpDataTimer);
-	phaseSpaceConn.dumpParticleData(RHost, VHost, P->getLocalNum());
-	IpplTimings::stopTimer(dumpDataTimer);
+        phaseSpaceConn.dumpParticleData(RHost, VHost, P->getLocalNum());
+        IpplTimings::stopTimer(dumpDataTimer);
 
-	Connector::StatisticsConnector<double,Dim> statConn(TestName, totalP);
+        Connector::StatisticsConnector<double, Dim> statConn(TestName, totalP);
 
-	msg << "We write data in " << statConn.getConnTypeName() << endl;
-	
         P->q = P->Qtot_m / totalP;
         msg << "particles created and initial conditions assigned " << endl;
         isFirstRepartition = false;
@@ -195,10 +191,10 @@ int main(int argc, char* argv[]) {
         P->gatherCIC();
 
         IpplTimings::startTimer(dumpDataTimer);
-        statConn.dumpLandau(P->F_m,hr,P->time_m);
-        statConn.gatherLoadBalancingStatistics(P->getLocalNum(),P->time_m);
+        statConn.dumpLandau(P->F_m, hr, P->time_m);
+        statConn.gatherLoadBalancingStatistics(P->getLocalNum(), P->time_m);
         statConn.gatherLocalDomainStatistics(FL, 0);
-	statConn.gatherFieldStatistics(P->V, P->rhs_m, P->F_m, hr, P->getLocalNum(), P->time_m);
+        statConn.gatherFieldStatistics(P->V, P->rhs_m, P->F_m, hr, P->getLocalNum(), P->time_m);
         IpplTimings::stopTimer(dumpDataTimer);
 
         // begin main timestep loop
@@ -232,7 +228,7 @@ int main(int argc, char* argv[]) {
                 P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
                 IpplTimings::stopTimer(domainDecomposition);
                 IpplTimings::startTimer(dumpDataTimer);
-		statConn.gatherLocalDomainStatistics(FL, 0);
+                statConn.gatherLocalDomainStatistics(FL, 0);
                 IpplTimings::stopTimer(dumpDataTimer);
             }
 
@@ -251,14 +247,14 @@ int main(int argc, char* argv[]) {
             IpplTimings::startTimer(PTimer);
             P->V = P->V - 0.5 * dt * P->E;
 
-	    IpplTimings::stopTimer(PTimer);
-	    
+            IpplTimings::stopTimer(PTimer);
+
             P->time_m += dt;
             IpplTimings::startTimer(dumpDataTimer);
-	    statConn.dumpLandau(P->F_m,hr,P->time_m);
-	    statConn.gatherLoadBalancingStatistics(P->getLocalNum(),P->time_m);
-	    statConn.gatherLocalDomainStatistics(FL, 0);
-	    statConn.gatherFieldStatistics(P->V, P->rhs_m, P->F_m, hr, P->getLocalNum(), P->time_m);
+            statConn.dumpLandau(P->F_m, hr, P->time_m);
+            statConn.gatherLoadBalancingStatistics(P->getLocalNum(), P->time_m);
+            statConn.gatherLocalDomainStatistics(FL, 0);
+            statConn.gatherFieldStatistics(P->V, P->rhs_m, P->F_m, hr, P->getLocalNum(), P->time_m);
             IpplTimings::stopTimer(dumpDataTimer);
             msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
@@ -267,7 +263,7 @@ int main(int argc, char* argv[]) {
                     << endl;
                 break;
             }
-	}
+        }
 
         msg << "LandauDamping: End." << endl;
         IpplTimings::stopTimer(mainTimer);
