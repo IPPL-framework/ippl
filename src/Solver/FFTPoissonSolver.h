@@ -49,19 +49,20 @@ namespace ippl {
          * @tparam isVec whether the field is a vector field
          * @tparam - the view type
          */
-        template <bool isVec, typename>
+        template <bool isVec, typename, unsigned int Dim>
         struct ViewAccess;
-        using index_array_type = typename ippl::RangePolicy<3>::index_array_type;
-        template <typename View>
-        struct ViewAccess<true, View> {
-            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim, const index_array_type& args) {
+        template <typename View, unsigned int Dim>
+        struct ViewAccess<true, View, Dim> {
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View view, unsigned dim, const index_array_type& args) {
                 return apply(view, args)[dim];
             }
         };
 
-        template <typename View>
-        struct ViewAccess<false, View> {
-            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view,
+        template <typename View, unsigned int Dim>
+        struct ViewAccess<false, View, Dim> {
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View view,
                                                               [[maybe_unused]] unsigned dim,
                                                               const index_array_type& args) {
                 return apply(view, args);

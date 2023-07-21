@@ -19,8 +19,8 @@
 //
 
 // Communication specific functions (pack and unpack).
-template <typename Tb, typename Tf, unsigned int Dim>
-void pack(const ippl::NDIndex<Dim> intersect, Kokkos::View<Tf***>& view,
+template <typename Tb, typename View, unsigned int Dim>
+void pack(const ippl::NDIndex<Dim> intersect, View& view,
           ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<Dim> ldom,
           ippl::Communicate::size_type& nsends) {
     Kokkos::View<Tb*>& buffer = fd.buffer;
@@ -65,8 +65,8 @@ void pack(const ippl::NDIndex<Dim> intersect, Kokkos::View<Tf***>& view,
     Kokkos::fence();
 }
 
-template <bool isVec, typename Tb, typename Tf, unsigned int Dim>
-void unpack_impl(const ippl::NDIndex<Dim> intersect, const Kokkos::View<Tf***>& view,
+template <bool isVec, typename Tb, typename View, unsigned int Dim>
+void unpack_impl(const ippl::NDIndex<Dim> intersect, const View& view,
                  ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<Dim> ldom,
                 std::vector<bool> coordBool, size_t dim = 0) {
     Kokkos::View<Tb*>& buffer = fd.buffer;
@@ -99,23 +99,23 @@ void unpack_impl(const ippl::NDIndex<Dim> intersect, const Kokkos::View<Tf***>& 
                 l += igVec[d] * factor;
             }
 
-            ippl::detail::ViewAccess<isVec, decltype(view)>::get(view, dim, args) = buffer(l);
+            ippl::detail::ViewAccess<isVec, View, Dim>::get(view, dim, args) = buffer(l);
         });
     Kokkos::fence();
 }
 
-template <typename Tb, typename Tf, unsigned int Dim>
-void unpack(const ippl::NDIndex<Dim> intersect, const Kokkos::View<Tf***>& view,
+template <typename Tb, typename View, unsigned int Dim>
+void unpack(const ippl::NDIndex<Dim> intersect, const View& view,
             ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<Dim> ldom,
             std::vector<bool> coordBool, size_t dim = 0) {
-    unpack_impl<false, Tb, Tf>(intersect, view, fd, nghost, ldom, coordBool, dim);
+    unpack_impl<false, Tb, View>(intersect, view, fd, nghost, ldom, coordBool, dim);
 }
 
-template <typename Tb, typename Tf, unsigned int Dim>
-void unpack(const ippl::NDIndex<Dim> intersect, const Kokkos::View<ippl::Vector<Tf, Dim>***>& view,
+template <typename Tb, typename View, unsigned int Dim>
+void unpack(const ippl::NDIndex<Dim> intersect, View& view,
             ippl::detail::FieldBufferData<Tb>& fd, int nghost,
             const ippl::NDIndex<Dim> ldom, std::vector<bool> coordBool, size_t dim) {
-    unpack_impl<true, Tb, ippl::Vector<Tf, Dim>>(intersect, view, fd, nghost, ldom, coordBool, dim);
+    unpack_impl<true, Tb, View>(intersect, view, fd, nghost, ldom, coordBool, dim);
 }
 
 namespace ippl {
