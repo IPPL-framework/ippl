@@ -1240,7 +1240,7 @@ namespace ippl {
             const auto& ldom_g2n1                 = layout2n1_m->getLocalNDIndex();
 
             Kokkos::parallel_for(
-                "Initialize 2N+1 Green's function ", ippl::getRangePolicy(view_g2n1, nghost_g2n1),
+                "Initialize 2N+1 Green's function ", grn2n1_m.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     // go from local indices to global
                     const int ig = i + ldom_g2n1[0].first() - nghost_g2n1;
