@@ -33,9 +33,7 @@
 namespace ippl {
     /*
      * @class OrthogonalRecursiveBisection
-     * @tparam Tf type of field
-     * @tparam Dim dimension
-     * @tparam M mesh
+     * @tparam Field the field type
      * @tparam Tp type of particle position. If not specified, it will be equal to the field's type
      */
 
@@ -79,11 +77,12 @@ namespace ippl {
         /*!
          * Performs reduction on local field in all dimension except that determined
          * by cutAxis, stores result in res
-         * @param res Array giving the result of reduction
-         * @param dom Domain to reduce
+         * @param rankWeights Array giving the result of reduction
          * @param cutAxis Index of cut axis
+         * @param dom Domain to reduce
          */
-        void perpendicularReduction(std::vector<Tf>& res, unsigned int cutAxis, NDIndex<Dim>& dom);
+        void perpendicularReduction(std::vector<Tf>& rankWeights, unsigned int cutAxis,
+                                    NDIndex<Dim>& dom);
 
         /*!
          * Find median of array
