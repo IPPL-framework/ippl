@@ -2,6 +2,7 @@
 // by checking the relative error from the exact solution
 // Usage:
 //      TestCGSolver [size [scaling_type]]
+
 #include "Ippl.h"
 
 #include <Kokkos_MathematicalConstants.hpp>
@@ -13,7 +14,7 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
 
-#include "ElectrostaticsCG.h"
+#include "Solver/ElectrostaticsCG.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);

@@ -5,7 +5,7 @@
 #include <string>
 #include <typeinfo>
 
-#include "Electrostatics.h"
+#include "Solver/Electrostatics.h"
 
 constexpr unsigned int dim = 3;
 using Mesh_t               = ippl::UniformCartesian<double, dim>;
