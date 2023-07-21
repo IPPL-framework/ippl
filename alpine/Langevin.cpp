@@ -193,8 +193,10 @@ int main(int argc, char* argv[]) {
         P->dumpFdField(NT - 1, OUT_DIR);
         dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, NT - 1, 1.0, OUT_DIR, "fv");
         dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", NT - 1, OUT_DIR);
+        dumpCSVMatrixAttr(P->p_D0_m, P->p_D1_m, P->p_D2_m, P->globParticleNum_m, "D", NT - 1, OUT_DIR);
 
         // Scatter computed Q's to the D-field (hacky but saves a lot of memory)
+        dumpCSVMatrixAttr(P->p_Q0_m, P->p_Q1_m, P->p_Q2_m, P->globParticleNum_m, "Q", NT - 1, OUT_DIR);
         bool returnScaledVelSpace = false;
         P->scatterQ(P->D0_m, P->D1_m, P->D2_m, returnScaledVelSpace);
 
