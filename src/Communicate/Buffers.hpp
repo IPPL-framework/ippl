@@ -35,23 +35,20 @@
 
 namespace ippl {
 
-    template <typename T>
-    Communicate::buffer_type Communicate::getBuffer(int id, size_type size, double overallocation) {
+    template <typename MemorySpace, typename T>
+    Communicate::buffer_type<MemorySpace> Communicate::getBuffer(int id, size_type size,
+                                                                 double overallocation) {
+        auto& buffers = buffers_m.get<MemorySpace>();
         size *= sizeof(T);
-#if __cplusplus > 201703L
-        if (buffers_m.contains(id)) {
-#else
-        if (buffers_m.find(id) != buffers_m.end()) {
-#endif
-            buffer_type buf = buffers_m[id];
-            if (buf->getBufferSize() < size) {
-                buf->reallocBuffer(size);
+        if (buffers.contains(id)) {
+            if (buffers[id]->getBufferSize() < size) {
+                buffers[id]->reallocBuffer(size);
             }
-            return buf;
+            return buffers[id];
         }
-        buffers_m[id] = std::make_shared<archive_type>(
+        buffers[id] = std::make_shared<archive_type<MemorySpace>>(
             (size_type)(size * std::max(overallocation, defaultOveralloc_m)));
-        return buffers_m[id];
+        return buffers[id];
     }
 
 }  // namespace ippl

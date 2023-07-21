@@ -34,7 +34,7 @@
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
-#include "FFTPoissonSolver.h"
+#include "Solver/FFTPoissonSolver.h"
 
 template <typename T>
 using Mesh_t = typename ippl::UniformCartesian<T, 3>;
@@ -384,23 +384,34 @@ void compute_convergence(std::string algorithm, int pt) {
         errE[d] = errorNr / errorDr;
     }
 
+    // compute relative error for hessian components
     Matrix_t<T> errH;
     auto view_fieldH = fieldH->getView();
 
     for (size_t m = 0; m < 3; ++m) {
         for (size_t n = 0; n < 3; ++n) {
-            double diffNorm  = 0;
-            double exactNorm = 0;
+            T diffNorm  = 0;
+            T exactNorm = 0;
             Kokkos::parallel_reduce(
                 "MFieldError", fieldH->getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& diffVal,
-                              double& exactVal) {
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& diffVal,
+                              T& exactVal) {
                     diffVal +=
                         Kokkos::pow(view_fieldH(i, j, k)[m][n] - view_exactH(i, j, k)[m][n], 2);
                     exactVal += Kokkos::pow(view_exactH(i, j, k)[m][n], 2);
                 },
-                Kokkos::Sum<double>(diffNorm), Kokkos::Sum<double>(exactNorm));
-            errH[m][n] = Kokkos::sqrt(diffNorm / exactNorm);
+                Kokkos::Sum<T>(diffNorm), Kokkos::Sum<T>(exactNorm));
+
+            T global_diff         = 0.0;
+            T global_exact        = 0.0;
+            MPI_Datatype mpi_type = get_mpi_datatype<T>(diffNorm);
+
+            MPI_Allreduce(&diffNorm, &global_diff, 1, mpi_type, MPI_SUM,
+                          ippl::Comm->getCommunicator());
+            MPI_Allreduce(&exactNorm, &global_exact, 1, mpi_type, MPI_SUM,
+                          ippl::Comm->getCommunicator());
+
+            errH[m][n] = Kokkos::sqrt(global_diff / global_exact);
         }
     }
 

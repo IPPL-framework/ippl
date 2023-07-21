@@ -33,16 +33,14 @@ message (STATUS "Build type is: " ${CMAKE_BUILD_TYPE})
 find_package(Kokkos 4.0.0 REQUIRED)
 
 # Select flags.
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "-O3")
 set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
-
-# Compile using C++20 for CPU builds
-if (NOT "${Kokkos_DEVICES}" MATCHES ".*CUDA.*")
-    set (CMAKE_CXX_STANDARD 20)
-endif ()
+if ("${Kokkos_DEVICES}" MATCHES "CUDA")
+    set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -G --diag-suppress=20011")
+endif()
 
 # Resolve all library dependencies
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")

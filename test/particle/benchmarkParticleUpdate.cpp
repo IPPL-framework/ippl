@@ -189,9 +189,9 @@ int main(int argc, char* argv[]) {
         PLayout_t PL(FL, mesh);
 
         /*
-        * In case of periodic BC's define
-        * the domain with hr and rmin
-        */
+         * In case of periodic BC's define
+         * the domain with hr and rmin
+         */
 
         double Q = 1e6;
         P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
@@ -219,7 +219,8 @@ int main(int argc, char* argv[]) {
             }
         }
         double global_sum_coord = 0.0;
-        MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
 
         if (ippl::Comm->rank() == 0) {
             std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
@@ -264,9 +265,11 @@ int main(int argc, char* argv[]) {
                 }
             }
             double global_sum_coord = 0.0;
-            MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+            MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0,
+                       ippl::Comm->getCommunicator());
             if (ippl::Comm->rank() == 0) {
-                std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
+                std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord
+                          << std::endl;
             }
             Kokkos::deep_copy(P->P.getView(), P_host);
             IpplTimings::stopTimer(RandPTimer);
@@ -289,8 +292,8 @@ int main(int argc, char* argv[]) {
             IpplTimings::startTimer(PTimer);
             P->P = P->P + dt * P->qm * P->E;
             IpplTimings::stopTimer(PTimer);
-            msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin() << P->getRMax()
-                << P->getHr() << endl;
+            msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin()
+                << P->getRMax() << P->getHr() << endl;
 
             P->dumpData(it);
         }

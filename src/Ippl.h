@@ -27,7 +27,6 @@
 
 #include "Communicate/Communicate.h"
 
-
 namespace ippl {
 
     // the parallel communication object
@@ -49,14 +48,13 @@ namespace ippl {
 
     void abort(const char* msg = nullptr, int errorcode = -1);
 
-
     namespace detail {
         bool checkOption(const char* arg, const char* lstr, const char* sstr);
 
         template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
         T getNumericalOption(const char* arg);
-    }
-}
+    }  // namespace detail
+}  // namespace ippl
 
 // FIMXE remove (only for backwards compatibility)
 #include "IpplCore.h"

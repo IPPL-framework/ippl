@@ -49,13 +49,14 @@ typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
 typedef ippl::UniformCartesian<double, Dim> Mesh_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
 typedef Mesh_t::DefaultCentering Centering_t;
-typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t, Centering_t> ORB;
 
 template <typename T, unsigned Dim>
 using Vector = ippl::Vector<T, Dim>;
 
 template <typename T, unsigned Dim>
 using Field = ippl::Field<T, Dim, Mesh_t, Centering_t>;
+
+typedef ippl::OrthogonalRecursiveBisection<Field<double, Dim>> ORB;
 
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
@@ -439,8 +440,9 @@ int main(int argc, char* argv[]) {
 
         // Each rank must have a minimal volume of 8
         if (volume < 8 * ippl::Comm->size()) {
-            msg << "!!! Ranks have not enough volume for proper working !!! (Minimal volume per rank: "
-                "8)"
+            msg << "!!! Ranks have not enough volume for proper working !!! (Minimal volume per "
+                   "rank: "
+                   "8)"
                 << endl;
         }
 
@@ -499,7 +501,8 @@ int main(int argc, char* argv[]) {
         // Verifying that particles are created
         double totalParticles = 0.0;
         double localParticles = P->getLocalNum();
-        MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
         msg << "Total particles: " << totalParticles << endl;
         P->initPositions(FL, hr, nloc, 2);
 
@@ -592,7 +595,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();
         IpplTimings::print(std::string("timing" + std::to_string(ippl::Comm->size()) + "r_"
-                                     + std::to_string(nr[0]) + "c.dat"));
+                                       + std::to_string(nr[0]) + "c.dat"));
     }
     ippl::finalize();
 
