@@ -324,10 +324,9 @@ TYPED_TEST(FFTTest, CC) {
         });
 
         Kokkos::complex<TypeParam> max_error(0, 0);
-        MPI_Datatype mpi_data = get_mpi_datatype<std::complex<TypeParam>>(max_error);
 
-        MPI_Allreduce(&max_error_local, &max_error, 1, mpi_data, MPI_SUM,
-                      ippl::Comm->getCommunicator());
+        ippl::Comm->allreduce(max_error_local, max_error, 1,
+                              std::plus<Kokkos::complex<TypeParam>>());
         ASSERT_NEAR(max_error.real(), 0, tol);
         ASSERT_NEAR(max_error.imag(), 0, tol);
     };

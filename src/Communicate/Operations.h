@@ -21,6 +21,7 @@
 #ifndef IPPL_MPI_OPERATIONS_H
 #define IPPL_MPI_OPERATIONS_H
 
+#include <complex>
 #include <functional>
 #include <mpi.h>
 
@@ -36,21 +37,21 @@ namespace ippl {
             return get_mpi_op(op);
         }
 
-        #define IPPL_MPI_OP(CppOp, MPIOp)            \
-            template <>                              \
-            inline MPI_Op get_mpi_op<CppOp>(CppOp) { \
-                return MPIOp;                        \
-            }                                        \
-                                                    \
-            template <>                              \
-            struct is_ippl_mpi_type<CppOp> : std::true_type {};
+#define IPPL_MPI_OP(CppOp, MPIOp)            \
+    template <>                              \
+    inline MPI_Op get_mpi_op<CppOp>(CppOp) { \
+        return MPIOp;                        \
+    }                                        \
+                                             \
+    template <>                              \
+    struct is_ippl_mpi_type<CppOp> : std::true_type {};
 
         /* with C++14 we should be able
-        * to simply write
-        *
-        * IPPL_MPI_OP(std::plus<>, MPI_SUM);
-        *
-        */
+         * to simply write
+         *
+         * IPPL_MPI_OP(std::plus<>, MPI_SUM);
+         *
+         */
 
         IPPL_MPI_OP(std::plus<char>, MPI_SUM);
         IPPL_MPI_OP(std::plus<short>, MPI_SUM);
@@ -65,6 +66,11 @@ namespace ippl {
         IPPL_MPI_OP(std::plus<float>, MPI_SUM);
         IPPL_MPI_OP(std::plus<double>, MPI_SUM);
         IPPL_MPI_OP(std::plus<long double>, MPI_SUM);
+
+        IPPL_MPI_OP(std::plus<std::complex<float> >, MPI_SUM);
+        IPPL_MPI_OP(std::plus<std::complex<double> >, MPI_SUM);
+        IPPL_MPI_OP(std::plus<Kokkos::complex<float> >, MPI_SUM);
+        IPPL_MPI_OP(std::plus<Kokkos::complex<double> >, MPI_SUM);
 
         IPPL_MPI_OP(std::less<char>, MPI_MIN);
         IPPL_MPI_OP(std::less<short>, MPI_MIN);
@@ -108,7 +114,7 @@ namespace ippl {
 
         IPPL_MPI_OP(std::logical_or<bool>, MPI_LOR);
         IPPL_MPI_OP(std::logical_and<bool>, MPI_LAND);
-    }
-}
+    }  // namespace mpi
+}  // namespace ippl
 
 #endif

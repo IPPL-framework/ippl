@@ -21,6 +21,7 @@
 #ifndef IPPL_MPI_DATATYPES_H
 #define IPPL_MPI_DATATYPES_H
 
+#include <complex>
 #include <cstdint>
 #include <mpi.h>
 
@@ -94,6 +95,9 @@ namespace ippl {
         IPPL_MPI_DATATYPE(std::complex<double>, MPI_C_DOUBLE_COMPLEX);
 
         IPPL_MPI_DATATYPE(std::complex<long double>, MPI_C_LONG_DOUBLE_COMPLEX);
+
+        IPPL_MPI_DATATYPE(Kokkos::complex<double>, MPI_C_FLOAT_COMPLEX);
+        IPPL_MPI_DATATYPE(Kokkos::complex<float>, MPI_C_FLOAT_COMPLEX);
     }  // namespace mpi
 }  // namespace ippl
 
