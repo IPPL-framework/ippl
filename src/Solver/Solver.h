@@ -95,8 +95,8 @@ namespace ippl {
     protected:
         ParameterList params_m;
 
-        rhs_type* rhs_mp;
-        lhs_type* lhs_mp;
+        rhs_type* rhs_mp = nullptr;
+        lhs_type* lhs_mp = nullptr;
 
         /*!
          * Utility function for initializing a solver's default
