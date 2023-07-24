@@ -128,7 +128,7 @@ namespace ippl {
     public:
         using heffteBackend = Backend;
         using workspace_t   = typename FFT<heffteBackend>::template buffer_container<BufferType>;
-        typedef FieldLayout<Dim> Layout_t;
+        using Layout_t      = FieldLayout<Dim>;
 
         FFTBase(const Layout_t& layout, const ParameterList& params);
         ~FFTBase() = default;
@@ -170,7 +170,7 @@ namespace ippl {
         using Base                    = IN_PLACE_FFT_BASE_CLASS(ComplexField, backend);
 
     public:
-        typedef typename ComplexField::value_type Complex_t;
+        using Complex_t = typename ComplexField::value_type;
 
         using Base::Base;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
@@ -191,12 +191,12 @@ namespace ippl {
         : public EXT_FFT_BASE_CLASS(RealField, backend,
                                     Kokkos::complex<typename RealField::value_type>) {
         constexpr static unsigned Dim = RealField::dim;
-        typedef typename RealField::value_type Real_t;
-        using Base = EXT_FFT_BASE_CLASS(RealField, backend,
-                                        Kokkos::complex<typename RealField::value_type>);
+        using Real_t                  = typename RealField::value_type;
+        using Base                    = EXT_FFT_BASE_CLASS(RealField, backend,
+                                                           Kokkos::complex<typename RealField::value_type>);
 
     public:
-        typedef Kokkos::complex<Real_t> Complex_t;
+        using Complex_t    = Kokkos::complex<Real_t>;
         using ComplexField = typename Field<Complex_t, Dim, typename RealField::Mesh_t,
                                             typename RealField::Centering_t,
                                             typename RealField::execution_space>::uniform_type;
@@ -216,7 +216,7 @@ namespace ippl {
          */
         void transform(TransformDirection direction, RealField& f, ComplexField& g);
 
-    protected:
+    private:
         Kokkos::View<typename ComplexField::view_type::data_type, Kokkos::LayoutLeft>
             tempFieldComplex;
     };
