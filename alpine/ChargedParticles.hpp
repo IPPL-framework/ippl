@@ -25,7 +25,7 @@
 
 #include "Utility/TypeUtils.h"
 
-#include "PContainer/PContainer.hpp"
+#include "PICManager/PICManager.hpp"
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
 #include "Solver/FFTPoissonSolver.h"
