@@ -99,14 +99,12 @@ using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, 
 
 const double pi = Kokkos::numbers::pi_v<double>;
 
-
 /*
   FixMe: the include needs to go up, but we need this for Connector.hpp
 
 */
 
 #include "Connector/Connector.hpp"
-
 
 // Signal handling
 int interruptSignalReceived = 0;
@@ -146,15 +144,14 @@ void setSignalHandler() {
 }
 
 template <class PLayout, typename T, unsigned Dim = 3>
-class PContainer : public ippl::ParticleBase<PLayout> {
+class PICManager : public ippl::ParticleBase<PLayout> {
 public:
     using Base = ippl::ParticleBase<PLayout>;
 
+    VField_t<T, Dim> F_m;  /// force field
 
-    VField_t<T, Dim> F_m;    /// force field
-
-    Field_t<Dim>     rhs_m;  /// the right hand side
-    Field<T, Dim>    sol_m;  /// the solution
+    Field_t<Dim> rhs_m;   /// the right hand side
+    Field<T, Dim> sol_m;  /// the solution
 
     typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
 
@@ -184,18 +181,15 @@ public:
     double loadbalancethreshold_m;
 
 public:
-
     /*
       This constructor is mandatory for all derived classes from
       ParticleBase as the bunch buffer uses this
     */
-    PContainer(PLayout& pl)
-        : Base(pl) {
-    }
+    PICManager(PLayout& pl)
+        : Base(pl) {}
 
-    PContainer(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
-                     Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim],
-                     std::string solver)
+    PICManager(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
+               Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], std::string solver)
         : Base(pl)
         , hr_m(hr)
         , rmin_m(rmin)
@@ -206,10 +200,10 @@ public:
         }
     }
 
-    ~PContainer() {}
+    ~PICManager() {}
 
     void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                      PContainer<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
+                      PICManager<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -243,13 +237,12 @@ public:
 
     void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
 
-  
     void initializeORB(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh) {
         orb.initialize(fl, mesh, rhs_m);
     }
 
-    void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                     PContainer<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
+    void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh, PICManager<PLayout, T, Dim>& buffer,
+                     bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
 
@@ -273,14 +266,14 @@ public:
         }
     }
 
-  bool balance(size_type totalP, const unsigned int nstep, const char* TestName) {
+    bool balance(size_type totalP, const unsigned int nstep, const char* TestName) {
         if (ippl::Comm->size() < 2) {
             return false;
         }
         if (std::strcmp(TestName, "UniformPlasmaTest") == 0) {
-	  return (nstep % loadbalancefreq_m == 0);
+            return (nstep % loadbalancefreq_m == 0);
         } else {
-	  int local = 0;
+            int local = 0;
             std::vector<int> res(ippl::Comm->size());
             double equalPart = (double)totalP / ippl::Comm->size();
             double dev       = std::abs((double)this->getLocalNum() - equalPart) / totalP;
@@ -299,12 +292,11 @@ public:
         }
     }
 
+    /*
+      All about the solver(s) in a PIC context
 
-  /*
-    All about the solver(s) in a PIC context
-    
-   */
-  
+     */
+
     void initSolver() {
         Inform m("solver ");
         if (stype_m == "FFT") {
@@ -442,10 +434,10 @@ public:
         }
     }
 
-  /*
-    Host / Mirror magic
-  */
-    
+    /*
+      Host / Mirror magic
+    */
+
     typename VField_t<T, Dim>::HostMirror getEMirror() const {
         auto Eview = F_m.getHostMirror();
         updateEMirror(Eview);
@@ -455,7 +447,6 @@ public:
     void updateEMirror(typename VField_t<T, Dim>::HostMirror& mirror) const {
         Kokkos::deep_copy(mirror, F_m.getView());
     }
-
 };
 
 #endif

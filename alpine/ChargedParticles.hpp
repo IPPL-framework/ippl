@@ -25,86 +25,83 @@
 
 #include "Utility/TypeUtils.h"
 
+#include "PContainer/PContainer.hpp"
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
 #include "Solver/FFTPoissonSolver.h"
 #include "Solver/P3MSolver.h"
 
-#include "PContainer/PContainer.hpp"
-
 template <class PLayout, typename T, unsigned Dim = 3>
-class ChargedParticles : public PContainer<PLayout, T, Dim> {
-
+class ChargedParticles : public PICManager<PLayout, T, Dim> {
 public:
-
     double rhoNorm_m;
     double Qtot_m;
 
-    ParticleAttrib<double> q;                 // charge
-    typename PContainer<PLayout, T, Dim>::Base::particle_position_type V;  // particle velocity
-    typename PContainer<PLayout, T, Dim>::Base::particle_position_type E;  // electric field at particle position
+    ParticleAttrib<double> q;                                              // charge or particle
+    typename PICManager<PLayout, T, Dim>::Base::particle_position_type V;  // particle velocity
+    typename PICManager<PLayout, T, Dim>::Base::particle_position_type E;  // electric field
 
     /*
       This constructor is mandatory for all derived classes from
       ParticleBase as the bunch buffer uses this
      */
 
-     ChargedParticles(PLayout& pl)
-         : PContainer<PLayout, T, Dim>(pl) {
-       registerAttributes();
-       setPotentialBCs();
-     }
-
-     ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
-                      Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
-                      std::string solver)
-       : PContainer<PLayout, T, Dim>(pl, hr, rmin, rmax, decomp, solver)
-       , Qtot_m(Q) {
-         registerAttributes();
-         for (unsigned int i = 0; i < Dim; i++) {
-             PContainer<PLayout, T, Dim>::decomp_m[i] = decomp[i];
-         }
-         setupBCs();
-         setPotentialBCs();
-     }
-
-     void setPotentialBCs() {
-         // CG requires explicit periodic boundary conditions while the periodic Poisson solver
-         // simply assumes them
-         if (PContainer<PLayout, T, Dim>::stype_m == "CG") {
-             for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                 PContainer<PLayout, T, Dim>::bc_m[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
-             }
-         }
-     }
-
-    void setupBCs() { PContainer<PLayout, T, Dim>::setBCAllPeriodic(); }
-  
-    void registerAttributes() {
-      // register the particle attributes
-      this->addAttribute(q);
-      this->addAttribute(V);
-      this->addAttribute(E);
+    ChargedParticles(PLayout& pl)
+        : PICManager<PLayout, T, Dim>(pl) {
+        registerAttributes();
+        setPotentialBCs();
     }
 
-     ~ChargedParticles() {}
+    ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
+                     Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
+                     std::string solver)
+        : PICManager<PLayout, T, Dim>(pl, hr, rmin, rmax, decomp, solver)
+        , Qtot_m(Q) {
+        registerAttributes();
+        for (unsigned int i = 0; i < Dim; i++) {
+            PICManager<PLayout, T, Dim>::decomp_m[i] = decomp[i];
+        }
+        setupBCs();
+        setPotentialBCs();
+    }
 
+    void setPotentialBCs() {
+        // CG requires explicit periodic boundary conditions while the periodic Poisson solver
+        // simply assumes them
+        if (PICManager<PLayout, T, Dim>::stype_m == "CG") {
+            for (unsigned int i = 0; i < 2 * Dim; ++i) {
+                PICManager<PLayout, T, Dim>::bc_m[i] =
+                    std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
+            }
+        }
+    }
 
-  /*
-    Gather/Scatter are the interfaces to Solver via PContainer
-   */
-  
-    void gatherCIC() {gather(this->E, PContainer<PLayout, T, Dim>::F_m, this->R); }
+    void setupBCs() { PICManager<PLayout, T, Dim>::setBCAllPeriodic(); }
+
+    void registerAttributes() {
+        // register the particle attributes
+        this->addAttribute(q);
+        this->addAttribute(V);
+        this->addAttribute(E);
+    }
+
+    ~ChargedParticles() {}
+
+    /*
+      Gather/Scatter are the interfaces to Solver via PICManager
+     */
+
+    void gatherCIC() { gather(this->E, PICManager<PLayout, T, Dim>::F_m, this->R); }
 
     void scatterCIC(size_type totalP, unsigned int iteration, Vector_t<double, Dim>& hrField) {
         Inform m("scatter ");
 
-        PContainer<PLayout, T, Dim>::rhs_m = 0.0;
-        scatter(q, PContainer<PLayout, T, Dim>::rhs_m, this->R);
+        PICManager<PLayout, T, Dim>::rhs_m = 0.0;
+        scatter(q, PICManager<PLayout, T, Dim>::rhs_m, this->R);
 
         static IpplTimings::TimerRef sumTimer = IpplTimings::getTimer("Check");
         IpplTimings::startTimer(sumTimer);
-        double Q_grid = PContainer<PLayout, T, Dim>::rhs_m.sum();
+        double Q_grid = PICManager<PLayout, T, Dim>::rhs_m.sum();
 
         size_type Total_particles = 0;
         size_type local_particles = this->getLocalNum();
@@ -127,21 +124,22 @@ public:
 
         double cellVolume =
             std::reduce(hrField.begin(), hrField.end(), 1., std::multiplies<double>());
-        PContainer<PLayout, T, Dim>::rhs_m = PContainer<PLayout, T, Dim>::rhs_m / cellVolume;
+        PICManager<PLayout, T, Dim>::rhs_m = PICManager<PLayout, T, Dim>::rhs_m / cellVolume;
 
-        rhoNorm_m = norm(PContainer<PLayout, T, Dim>::rhs_m);
+        rhoNorm_m = norm(PICManager<PLayout, T, Dim>::rhs_m);
         IpplTimings::stopTimer(sumTimer);
 
         // rho = rho_e - rho_i (only if periodic BCs)
-        if ( PContainer<PLayout, T, Dim>::stype_m != "OPEN") {
+        if (PICManager<PLayout, T, Dim>::stype_m != "OPEN") {
             double size = 1;
             for (unsigned d = 0; d < Dim; d++) {
-                size *=  PContainer<PLayout, T, Dim>::rmax_m[d] -  PContainer<PLayout, T, Dim>::rmin_m[d];
+                size *=
+                    PICManager<PLayout, T, Dim>::rmax_m[d] - PICManager<PLayout, T, Dim>::rmin_m[d];
             }
-            PContainer<PLayout, T, Dim>::rhs_m = PContainer<PLayout, T, Dim>::rhs_m - (Qtot_m / size);
+            PICManager<PLayout, T, Dim>::rhs_m =
+                PICManager<PLayout, T, Dim>::rhs_m - (Qtot_m / size);
         }
     }
-
 };
 
 #endif

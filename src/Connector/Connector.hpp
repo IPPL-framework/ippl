@@ -20,63 +20,25 @@ namespace Connector {
         int streamIdCounter_m;
 
     public:
+        Inform* msg;
+
         Connector(const char* TestName, const CONNECTION_TYPE connType)
             : testName_m(TestName)
             , connType_m(connType)
-            , streamIdCounter_m(0) {}
+            , streamIdCounter_m(0)
+            , msg(nullptr) {
+            //
+            msg = new Inform("Connector ");
+        }
 
         ~Connector() {
             std::cout << "delete " << streamIdCounter_m << " streams" << std::endl;
-
             if (ippl::Comm->rank() == 0) {
                 for (int i = 0; i < streamIdCounter_m; i++)
                     deleteStream(i);
             }
-        }
-        /**
-         * @brief Request a stream from the pool.
-         *
-         * @return Reference to the requested stream.
-         */
-        int requestStreamId(std::string fileName) {
-            std::unique_ptr<Inform> outputStream(
-                new Inform(NULL, fileName.c_str(), Inform::OVERWRITE, ippl::Comm->rank()));
-            if (outputStream)
-                std::cout << "Open " << outputStream << " with id " << streamIdCounter_m
-                          << std::endl;
-            int streamId = streamIdCounter_m;
-            streamIdCounter_m++;
-            streams_m[streamId] = std::move(outputStream);
-            return streamId;
-        }
-
-        /**
-         * @brief Write a message to the stream with the given ID.
-         *
-         * @param streamId The ID of the stream to write to.
-         * @param message The message to write.
-         */
-        void write(int streamId, const std::string& message) {
-            if (ippl::Comm->rank() == 0) {
-                auto it = streams_m.find(streamId);
-                if (it != streams_m.end()) {
-                    (*it->second) << message << endl;
-                }
-            }
-        }
-
-        /**
-         * @brief Delete a stream from the pool.
-         *
-         * @param streamId The ID of the stream to delete.
-         */
-        void deleteStream(int streamId) {
-            if (ippl::Comm->rank() == 0) {
-                auto it = streams_m.find(streamId);
-                if (it != streams_m.end()) {
-                    streams_m.erase(it);
-                }
-            }
+            if (msg)
+                delete msg;
         }
 
         virtual int open(std::string fn) = 0;
@@ -113,86 +75,162 @@ namespace Connector {
                >;
             */
         }
+
+        /**
+         * @brief Request a stream from the pool.
+         *
+         * @return Reference to the requested stream.
+         */
+        int requestStreamId(std::string fileName) {
+            std::unique_ptr<Inform> outputStream(
+                new Inform(NULL, fileName.c_str(), Inform::OVERWRITE, ippl::Comm->rank()));
+            if (outputStream)
+                std::cout << "Open " << outputStream << " with id " << streamIdCounter_m
+                          << std::endl;
+            int streamId = streamIdCounter_m;
+            streamIdCounter_m++;
+            streams_m[streamId] = std::move(outputStream);
+            return streamId;
+        }
+
+        /**
+         * @brief Write a message to the stream with the given ID.
+         *
+         * @param streamId The ID of the stream to write to.
+         * @param message The message to write.
+         */
+        void write(int streamId, const std::string& message) {
+            if (ippl::Comm->rank() == 0) {
+                auto it = streams_m.find(streamId);
+                if (it != streams_m.end()) {
+                    (*it->second) << message;
+                }
+            }
+        }
+
+        /**
+         * @brief Delete a stream from the pool.
+         *
+         * @param streamId The ID of the stream to delete.
+         */
+        void deleteStream(int streamId) {
+            if (ippl::Comm->rank() == 0) {
+                auto it = streams_m.find(streamId);
+                if (it != streams_m.end()) {
+                    streams_m.erase(it);
+                }
+            }
+        }
     };
 
     template <typename T, unsigned Dim = 3>
     class VTKConnector : public Connector<T, Dim> {
+        int myVtkVFieldStreamId_m;
+        int myVtkSFieldStreamId_m;
+
     public:
-        VTKConnector(const char* TestName)
-            : Connector<T, Dim>(TestName, VTK) {}
+        VTKConnector(const char* TestName, int iteration)
+            : Connector<T, Dim>(TestName, VTK)
+            , myVtkVFieldStreamId_m(-1)
+            , myVtkSFieldStreamId_m(-1) {
+            std::stringstream pname;
+
+            if (ippl::Comm->size() > 1) {
+                *Connector<double, Dim>::msg << "Parallel VTK output not yet supported" << endl;
+                return;
+            }
+
+            /// vector field
+            if (ippl::Comm->rank() == 0) {
+                pname << "data/"
+                      << "ef_" << std::setw(4) << std::setfill('0') << iteration;
+                pname << ".vtk";
+
+                myVtkVFieldStreamId_m = Connector<double, Dim>::requestStreamId(pname.str());
+            }
+            pname = std::stringstream();
+
+            /// scalar field
+            if (ippl::Comm->rank() == 0) {
+                pname << "data/"
+                      << "scalar_" << std::setw(4) << std::setfill('0') << iteration;
+                pname << ".vtk";
+
+                myVtkSFieldStreamId_m = Connector<double, Dim>::requestStreamId(pname.str());
+            }
+        }
 
         ~VTKConnector() {}
 
         void dumpVTK(VField_t<T, 3>& E, int nx, int ny, int nz, int iteration, double dx, double dy,
                      double dz) {
+            if (ippl::Comm->size() > 1) {
+                return;
+            }
+            //
             typename VField_t<T, 3>::view_type::host_mirror_type host_view = E.getHostMirror();
-
-            std::stringstream fname;
-            fname << "data/ef_";
-            fname << std::setw(4) << std::setfill('0') << iteration;
-            fname << ".vtk";
-
+            std::stringstream ss;
             Kokkos::deep_copy(host_view, E.getView());
 
-            Inform vtkout(NULL, fname.str().c_str(), Inform::OVERWRITE);
-            vtkout.precision(10);
-            vtkout.setf(std::ios::scientific, std::ios::floatfield);
-
             // start with header
-            vtkout << "# vtk DataFile Version 2.0" << endl;
-            vtkout << Connector<T, Dim>::testName_m << endl;
-            vtkout << "ASCII" << endl;
-            vtkout << "DATASET STRUCTURED_POINTS" << endl;
-            vtkout << "DIMENSIONS " << nx + 3 << " " << ny + 3 << " " << nz + 3 << endl;
-            vtkout << "ORIGIN " << -dx << " " << -dy << " " << -dz << endl;
-            vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
-            vtkout << "CELL_DATA " << (nx + 2) * (ny + 2) * (nz + 2) << endl;
-
-            vtkout << "VECTORS E-Field float" << endl;
+            ss << "# vtk DataFile Version 2.0" << std::endl;
+            ss << Connector<T, Dim>::testName_m << std::endl;
+            ss << "ASCII" << std::endl;
+            ss << "DATASET STRUCTURED_POINTS" << std::endl;
+            ss << "DIMENSIONS " << nx + 3 << " " << ny + 3 << " " << nz + 3 << std::endl;
+            ss << "ORIGIN " << -dx << " " << -dy << " " << -dz << std::endl;
+            ss << "SPACING " << dx << " " << dy << " " << dz << std::endl;
+            ss << "CELL_DATA " << (nx + 2) * (ny + 2) * (nz + 2) << std::endl;
+            ss << "VECTORS E-Field float" << std::endl;
+            Connector<double, Dim>::write(myVtkVFieldStreamId_m, ss.str());
+            //
             for (int z = 0; z < nz + 2; z++) {
                 for (int y = 0; y < ny + 2; y++) {
                     for (int x = 0; x < nx + 2; x++) {
-                        vtkout << host_view(x, y, z)[0] << "\t" << host_view(x, y, z)[1] << "\t"
-                               << host_view(x, y, z)[2] << endl;
+                        ss << host_view(x, y, z)[0] << "\t" << host_view(x, y, z)[1] << "\t"
+                           << host_view(x, y, z)[2] << std::endl;
                     }
+                    Connector<double, Dim>::write(myVtkVFieldStreamId_m, ss.str());
+                    ss = std::stringstream();
                 }
             }
+            Connector<double, Dim>::deleteStream(myVtkVFieldStreamId_m);
         }
 
         void dumpVTK(Field_t<3>& rho, int nx, int ny, int nz, int iteration, double dx, double dy,
                      double dz) {
+            //
+            if (ippl::Comm->size() > 1) {
+                return;
+            }
             typename Field_t<3>::view_type::host_mirror_type host_view = rho.getHostMirror();
-
-            std::stringstream fname;
-            fname << "data/scalar_";
-            fname << std::setw(4) << std::setfill('0') << iteration;
-            fname << ".vtk";
-
+            std::stringstream ss;
             Kokkos::deep_copy(host_view, rho.getView());
 
-            Inform vtkout(NULL, fname.str().c_str(), Inform::OVERWRITE);
-            vtkout.precision(10);
-            vtkout.setf(std::ios::scientific, std::ios::floatfield);
-
             // start with header
-            vtkout << "# vtk DataFile Version 2.0" << endl;
-            vtkout << Connector<T, Dim>::testName_m << endl;
-            vtkout << "ASCII" << endl;
-            vtkout << "DATASET STRUCTURED_POINTS" << endl;
-            vtkout << "DIMENSIONS " << nx + 3 << " " << ny + 3 << " " << nz + 3 << endl;
-            vtkout << "ORIGIN " << -dx << " " << -dy << " " << -dz << endl;
-            vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
-            vtkout << "CELL_DATA " << (nx + 2) * (ny + 2) * (nz + 2) << endl;
 
-            vtkout << "SCALARS Rho float" << endl;
-            vtkout << "LOOKUP_TABLE default" << endl;
+            ss << "# vtk DataFile Version 2.0" << std::endl;
+            ss << Connector<T, Dim>::testName_m << std::endl;
+            ss << "ASCII" << std::endl;
+            ss << "DATASET STRUCTURED_POINTS" << std::endl;
+            ss << "DIMENSIONS " << nx + 3 << " " << ny + 3 << " " << nz + 3 << std::endl;
+            ss << "ORIGIN " << -dx << " " << -dy << " " << -dz << std::endl;
+            ss << "SPACING " << dx << " " << dy << " " << dz << std::endl;
+            ss << "CELL_DATA " << (nx + 2) * (ny + 2) * (nz + 2) << std::endl;
+            ss << "SCALARS Rho float" << std::endl;
+            ss << "LOOKUP_TABLE default" << std::endl;
+            Connector<double, Dim>::write(myVtkSFieldStreamId_m, ss.str());
+            //
             for (int z = 0; z < nz + 2; z++) {
                 for (int y = 0; y < ny + 2; y++) {
                     for (int x = 0; x < nx + 2; x++) {
-                        vtkout << host_view(x, y, z) << endl;
+                        ss << host_view(x, y, z) << std::endl;
                     }
+                    Connector<double, Dim>::write(myVtkSFieldStreamId_m, ss.str());
+                    ss = std::stringstream();
                 }
             }
+            Connector<double, Dim>::deleteStream(myVtkSFieldStreamId_m);
         }
     };
 
@@ -477,6 +515,13 @@ namespace Connector {
             : Connector<T, Dim>(TestName, CSV)
             , totalNumParts_m(totalNumParts)
             , myStreamId_m(-1) {
+            //
+            if (ippl::Comm->size() > 1) {
+                *Connector<double, Dim>::msg << "Parallel phase space output not yet supported"
+                                             << endl;
+                return;
+            }
+
             std::stringstream pname;
             if (ippl::Comm->rank() == 0) {
                 pname << "data/"
@@ -500,6 +545,9 @@ namespace Connector {
 
         void dumpParticleData(auto RHost, auto VHost, size_type localNum) {
             // FixMe does not work in parallel
+            if (ippl::Comm->size() > 1) {
+                return;
+            }
             std::stringstream ss;
             ss << "R_x, R_y, R_z, V_x, V_y, V_z";
             Connector<double, Dim>::write(myStreamId_m, ss.str());
