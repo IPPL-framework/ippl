@@ -237,7 +237,10 @@ namespace ippl {
 
         // get origin
         vector_type origin    = mesh_mp->getOrigin();
-        const scalar_type sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
+        scalar_type sum = 0;
+        for (unsigned int d = 0; d < Dim; ++d) {
+            sum += std::abs(origin[d]);
+        }
 
         // origin should always be 0 for Green's function computation to work...
         if (sum != 0.0) {
@@ -851,173 +854,174 @@ namespace ippl {
         const int alg = this->params_m.template get<int>("algorithm");
 
         if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
-            Vector_t l(hr_m * nr_m);
-            Vector_t hs_m;
-            double L_sum(0.0);
+            if constexpr   (Dim == 3) {
+                Vector_t l(hr_m * nr_m);
+                Vector_t hs_m;
+                double L_sum(0.0);
 
-            // compute length of the physical domain
-            // compute Fourier domain spacing
-            for (unsigned int i = 0; i < Dim; ++i) {
-                hs_m[i] = pi * 0.5 / l[i];
-                L_sum   = L_sum + l[i] * l[i];
+                // compute length of the physical domain
+                // compute Fourier domain spacing
+                for (unsigned int i = 0; i < Dim; ++i) {
+                    hs_m[i] = pi * 0.5 / l[i];
+                    L_sum   = L_sum + l[i] * l[i];
+                }
+
+                // define the origin of the 4N grid
+                vector_type origin;
+
+                for (unsigned int i = 0; i < Dim; ++i) {
+                    origin[i] = -2 * nr_m[i] * pi / l[i];
+                }
+
+                // set mesh for the 4N mesh
+                mesh4_m->setMeshSpacing(hs_m);
+
+                // size of truncation window
+                L_sum = std::sqrt(L_sum);
+                L_sum = 1.1 * L_sum;
+
+                // initialize grnL_m
+                typename CxField_gt::view_type view_g = grnL_m.getView();
+                const int nghost_g                    = grnL_m.getNghost();
+                const auto& ldom_g                    = layout4_m->getLocalNDIndex();
+
+                Vector<int, Dim> size = nr_m;
+
+                // Kokkos parallel for loop to assign analytic grnL_m
+                using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+                if (alg == Algorithm::VICO) {
+                    Kokkos::parallel_for(
+                        "Initialize Green's function ",
+                        mdrange_type({nghost_g, nghost_g, nghost_g},
+                                    {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
+                                    view_g.extent(2) - nghost_g}),
+                        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                            // go from local indices to global
+                            const int ig = i + ldom_g[0].first() - nghost_g;
+                            const int jg = j + ldom_g[1].first() - nghost_g;
+                            const int kg = k + ldom_g[2].first() - nghost_g;
+
+                            bool isOutside = (ig > 2 * size[0] - 1);
+                            const Tg t     = ig * hs_m[0] + isOutside * origin[0];
+
+                            isOutside  = (jg > 2 * size[1] - 1);
+                            const Tg u = jg * hs_m[1] + isOutside * origin[1];
+
+                            isOutside  = (kg > 2 * size[2] - 1);
+                            const Tg v = kg * hs_m[2] + isOutside * origin[2];
+
+                            Tg s = (t * t) + (u * u) + (v * v);
+                            s    = Kokkos::sqrt(s);
+
+                            // assign the green's function value
+                            // if (0,0,0), assign L^2/2 (analytical limit of sinc)
+
+                            const bool isOrig    = ((ig == 0 && jg == 0 && kg == 0));
+                            const Tg analyticLim = -L_sum * L_sum * 0.5;
+                            const Tg value = -2.0 * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
+                                            * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0));
+
+                            view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
+                        });
+
+                } else if (alg == Algorithm::BIHARMONIC) {
+                    Kokkos::parallel_for(
+                        "Initialize Green's function ",
+                        mdrange_type({nghost_g, nghost_g, nghost_g},
+                                    {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
+                                    view_g.extent(2) - nghost_g}),
+                        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                            // go from local indices to global
+                            const int ig = i + ldom_g[0].first() - nghost_g;
+                            const int jg = j + ldom_g[1].first() - nghost_g;
+                            const int kg = k + ldom_g[2].first() - nghost_g;
+
+                            bool isOutside = (ig > 2 * size[0] - 1);
+                            const Tg t     = ig * hs_m[0] + isOutside * origin[0];
+
+                            isOutside  = (jg > 2 * size[1] - 1);
+                            const Tg u = jg * hs_m[1] + isOutside * origin[1];
+
+                            isOutside  = (kg > 2 * size[2] - 1);
+                            const Tg v = kg * hs_m[2] + isOutside * origin[2];
+
+                            Tg s = (t * t) + (u * u) + (v * v);
+                            s    = Kokkos::sqrt(s);
+
+                            // assign value and replace with analytic limit at origin (0,0,0)
+                            const bool isOrig    = ((ig == 0 && jg == 0 && kg == 0));
+                            const Tg analyticLim = -L_sum * L_sum * L_sum * L_sum / 8.0;
+                            const Tg value = -((2 - (L_sum * L_sum * s * s)) * Kokkos::cos(L_sum * s)
+                                            + 2 * L_sum * s * Kokkos::sin(L_sum * s) - 2)
+                                            / (2 * s * s * s * s + isOrig * 1.0);
+
+                            view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
+                        });
+                }
+
+                // start a timer
+                static IpplTimings::TimerRef fft4 = IpplTimings::getTimer("FFT: Precomputation");
+                IpplTimings::startTimer(fft4);
+
+                // inverse Fourier transform of the green's function for precomputation
+                fft4n_m->transform(-1, grnL_m);
+
+                IpplTimings::stopTimer(fft4);
+
+                // Restrict transformed grnL_m to 2N domain after precomputation step
+
+                // get the field data first
+                typename Field_t::view_type view = grn_mr.getView();
+                const int nghost                 = grn_mr.getNghost();
+                const auto& ldom                 = layout2_m->getLocalNDIndex();
+
+                // start a timer
+                static IpplTimings::TimerRef ifftshift = IpplTimings::getTimer("Vico shift loop");
+                IpplTimings::startTimer(ifftshift);
+
+                // get number of ranks to see if need communication
+                const int ranks = Comm->size();
+
+                if (ranks > 1) {
+                    communicateVico(size, view_g, ldom_g, nghost_g, view, ldom, nghost);
+                } else {
+                    // restrict the green's function to a (2N)^3 grid from the (4N)^3 grid
+                    Kokkos::parallel_for(
+                        "Restrict domain of Green's function from 4N to 2N",
+                        mdrange_type({nghost, nghost, nghost}, {view.extent(0) - nghost - size[0],
+                                                                view.extent(1) - nghost - size[1],
+                                                                view.extent(2) - nghost - size[2]}),
+                        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                            // go from local indices to global
+                            const int ig = i + ldom[0].first() - nghost;
+                            const int jg = j + ldom[1].first() - nghost;
+                            const int kg = k + ldom[2].first() - nghost;
+
+                            const int ig2 = i + ldom_g[0].first() - nghost_g;
+                            const int jg2 = j + ldom_g[1].first() - nghost_g;
+                            const int kg2 = k + ldom_g[2].first() - nghost_g;
+
+                            if ((ig == ig2) && (jg == jg2) && (kg == kg2)) {
+                                view(i, j, k) = real(view_g(i, j, k));
+                            }
+
+                            // Now fill the rest of the field
+                            const int s = 2 * size[0] - ig - 1 - ldom_g[0].first() + nghost_g;
+                            const int p = 2 * size[1] - jg - 1 - ldom_g[1].first() + nghost_g;
+                            const int q = 2 * size[2] - kg - 1 - ldom_g[2].first() + nghost_g;
+
+                            view(s, j, k) = real(view_g(i + 1, j, k));
+                            view(i, p, k) = real(view_g(i, j + 1, k));
+                            view(i, j, q) = real(view_g(i, j, k + 1));
+                            view(s, j, q) = real(view_g(i + 1, j, k + 1));
+                            view(s, p, k) = real(view_g(i + 1, j + 1, k));
+                            view(i, p, q) = real(view_g(i, j + 1, k + 1));
+                            view(s, p, q) = real(view_g(i + 1, j + 1, k + 1));
+                        });
+                }
+                IpplTimings::stopTimer(ifftshift);
             }
-
-            // define the origin of the 4N grid
-            vector_type origin;
-
-            for (unsigned int i = 0; i < Dim; ++i) {
-                origin[i] = -2 * nr_m[i] * pi / l[i];
-            }
-
-            // set mesh for the 4N mesh
-            mesh4_m->setMeshSpacing(hs_m);
-
-            // size of truncation window
-            L_sum = std::sqrt(L_sum);
-            L_sum = 1.1 * L_sum;
-
-            // initialize grnL_m
-            typename CxField_gt::view_type view_g = grnL_m.getView();
-            const int nghost_g                    = grnL_m.getNghost();
-            const auto& ldom_g                    = layout4_m->getLocalNDIndex();
-
-            Vector<int, Dim> size = nr_m;
-
-            // Kokkos parallel for loop to assign analytic grnL_m
-            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
-            if (alg == Algorithm::VICO) {
-                Kokkos::parallel_for(
-                    "Initialize Green's function ",
-                    mdrange_type({nghost_g, nghost_g, nghost_g},
-                                 {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
-                                  view_g.extent(2) - nghost_g}),
-                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                        // go from local indices to global
-                        const int ig = i + ldom_g[0].first() - nghost_g;
-                        const int jg = j + ldom_g[1].first() - nghost_g;
-                        const int kg = k + ldom_g[2].first() - nghost_g;
-
-                        bool isOutside = (ig > 2 * size[0] - 1);
-                        const Tg t     = ig * hs_m[0] + isOutside * origin[0];
-
-                        isOutside  = (jg > 2 * size[1] - 1);
-                        const Tg u = jg * hs_m[1] + isOutside * origin[1];
-
-                        isOutside  = (kg > 2 * size[2] - 1);
-                        const Tg v = kg * hs_m[2] + isOutside * origin[2];
-
-                        Tg s = (t * t) + (u * u) + (v * v);
-                        s    = Kokkos::sqrt(s);
-
-                        // assign the green's function value
-                        // if (0,0,0), assign L^2/2 (analytical limit of sinc)
-
-                        const bool isOrig    = ((ig == 0 && jg == 0 && kg == 0));
-                        const Tg analyticLim = -L_sum * L_sum * 0.5;
-                        const Tg value = -2.0 * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
-                                         * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0));
-
-                        view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
-                    });
-
-            } else if (alg == Algorithm::BIHARMONIC) {
-                Kokkos::parallel_for(
-                    "Initialize Green's function ",
-                    mdrange_type({nghost_g, nghost_g, nghost_g},
-                                 {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
-                                  view_g.extent(2) - nghost_g}),
-                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                        // go from local indices to global
-                        const int ig = i + ldom_g[0].first() - nghost_g;
-                        const int jg = j + ldom_g[1].first() - nghost_g;
-                        const int kg = k + ldom_g[2].first() - nghost_g;
-
-                        bool isOutside = (ig > 2 * size[0] - 1);
-                        const Tg t     = ig * hs_m[0] + isOutside * origin[0];
-
-                        isOutside  = (jg > 2 * size[1] - 1);
-                        const Tg u = jg * hs_m[1] + isOutside * origin[1];
-
-                        isOutside  = (kg > 2 * size[2] - 1);
-                        const Tg v = kg * hs_m[2] + isOutside * origin[2];
-
-                        Tg s = (t * t) + (u * u) + (v * v);
-                        s    = Kokkos::sqrt(s);
-
-                        // assign value and replace with analytic limit at origin (0,0,0)
-                        const bool isOrig    = ((ig == 0 && jg == 0 && kg == 0));
-                        const Tg analyticLim = -L_sum * L_sum * L_sum * L_sum / 8.0;
-                        const Tg value = -((2 - (L_sum * L_sum * s * s)) * Kokkos::cos(L_sum * s)
-                                           + 2 * L_sum * s * Kokkos::sin(L_sum * s) - 2)
-                                         / (2 * s * s * s * s + isOrig * 1.0);
-
-                        view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
-                    });
-            }
-
-            // start a timer
-            static IpplTimings::TimerRef fft4 = IpplTimings::getTimer("FFT: Precomputation");
-            IpplTimings::startTimer(fft4);
-
-            // inverse Fourier transform of the green's function for precomputation
-            fft4n_m->transform(-1, grnL_m);
-
-            IpplTimings::stopTimer(fft4);
-
-            // Restrict transformed grnL_m to 2N domain after precomputation step
-
-            // get the field data first
-            typename Field_t::view_type view = grn_mr.getView();
-            const int nghost                 = grn_mr.getNghost();
-            const auto& ldom                 = layout2_m->getLocalNDIndex();
-
-            // start a timer
-            static IpplTimings::TimerRef ifftshift = IpplTimings::getTimer("Vico shift loop");
-            IpplTimings::startTimer(ifftshift);
-
-            // get number of ranks to see if need communication
-            const int ranks = Comm->size();
-
-            if (ranks > 1) {
-                communicateVico(size, view_g, ldom_g, nghost_g, view, ldom, nghost);
-            } else {
-                // restrict the green's function to a (2N)^3 grid from the (4N)^3 grid
-                Kokkos::parallel_for(
-                    "Restrict domain of Green's function from 4N to 2N",
-                    mdrange_type({nghost, nghost, nghost}, {view.extent(0) - nghost - size[0],
-                                                            view.extent(1) - nghost - size[1],
-                                                            view.extent(2) - nghost - size[2]}),
-                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                        // go from local indices to global
-                        const int ig = i + ldom[0].first() - nghost;
-                        const int jg = j + ldom[1].first() - nghost;
-                        const int kg = k + ldom[2].first() - nghost;
-
-                        const int ig2 = i + ldom_g[0].first() - nghost_g;
-                        const int jg2 = j + ldom_g[1].first() - nghost_g;
-                        const int kg2 = k + ldom_g[2].first() - nghost_g;
-
-                        if ((ig == ig2) && (jg == jg2) && (kg == kg2)) {
-                            view(i, j, k) = real(view_g(i, j, k));
-                        }
-
-                        // Now fill the rest of the field
-                        const int s = 2 * size[0] - ig - 1 - ldom_g[0].first() + nghost_g;
-                        const int p = 2 * size[1] - jg - 1 - ldom_g[1].first() + nghost_g;
-                        const int q = 2 * size[2] - kg - 1 - ldom_g[2].first() + nghost_g;
-
-                        view(s, j, k) = real(view_g(i + 1, j, k));
-                        view(i, p, k) = real(view_g(i, j + 1, k));
-                        view(i, j, q) = real(view_g(i, j, k + 1));
-                        view(s, j, q) = real(view_g(i + 1, j, k + 1));
-                        view(s, p, k) = real(view_g(i + 1, j + 1, k));
-                        view(i, p, q) = real(view_g(i, j + 1, k + 1));
-                        view(s, p, q) = real(view_g(i + 1, j + 1, k + 1));
-                    });
-            }
-            IpplTimings::stopTimer(ifftshift);
-
         } else {
             // Hockney case
 
@@ -1033,7 +1037,7 @@ namespace ippl {
             if (Dim == 3){ 
                 grn_mr = -1.0 / (4.0 * pi * sqrt(grn_mr));
             } else if (Dim == 2){
-                grn_mr = log(sqrt(grn_mr))/(2 * pi); 
+                grn_mr = log(sqrt(grn_mr))/(2 * pi);
             }
             
             typename Field_t::view_type view = grn_mr.getView();
@@ -1056,13 +1060,8 @@ namespace ippl {
                     }
 
                     // if (0,0,0), assign to it 1/(4*pi)
-                    // assign 1/2*pi if using the 2D Green's function
                     const bool isZero = (checkVal == 0);
-                    if (Dim == 3){
-                        apply(view, args)     = isZero * (-1.0 / (4.0 * pi)) + (!isZero) * apply(view, args);
-                    } else if (Dim == 2){
-                        apply(view, args)     = isZero * (1.0 / (2.0 * pi)) + (!isZero) * apply(view, args);          
-                    }
+                    apply(view, args)     = isZero * (-1.0 / (4.0 * pi)) + (!isZero) * apply(view, args);
                 });
         }
 
