@@ -41,29 +41,40 @@
 namespace ippl {
 
     namespace detail {
+
         /*!
          * Access a view that either contains a vector field or a scalar field
          * in such a way that the correct element access is determined at compile
          * time, reducing the number of functions needed to achieve the same
          * behavior for both kinds of fields
-         * @tparam isVec whether the field is a vector field
+         * @tparam tensorRank indicates whether scalar, vector, or matrix field
          * @tparam - the view type
          */
-        template <bool isVec, typename, unsigned int Dim>
+        template <int tensorRank, typename, unsigned int Dim>
         struct ViewAccess;
+
         template <typename View, unsigned int Dim>
-        struct ViewAccess<true, View, Dim> {
+        struct ViewAccess<2, View, Dim> {
             using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View view, unsigned dim, const index_array_type& args) {
-                return apply(view, args)[dim];
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View view, unsigned dim1, unsigned dim2, const index_array_type& args) {
+                return apply(view, args)[dim1][dim2];
             }
         };
 
         template <typename View, unsigned int Dim>
-        struct ViewAccess<false, View, Dim> {
+        struct ViewAccess<1, View, Dim> {
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View view, unsigned dim1, [[maybe_unused]] unsigned dim2, const index_array_type& args) {
+                return apply(view, args)[dim1];
+            }
+        };
+
+        template <typename View, unsigned int Dim>
+        struct ViewAccess<0, View, Dim> {
             using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             KOKKOS_INLINE_FUNCTION constexpr static auto& get(View view,
-                                                              [[maybe_unused]] unsigned dim,
+                                                              [[maybe_unused]] unsigned dim1,
+                                                              [[maybe_unused]] unsigned dim2,
                                                               const index_array_type& args) {
                 return apply(view, args);
             }
@@ -97,12 +108,16 @@ namespace ippl {
         // define a type for a 3 dimensional field (e.g. charge density field)
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
+        // define matrix and matrix field types for the Hessian
         typedef FieldRHS Field_t;
-        typedef Field<int, Dim, mesh_type, typename FieldLHS::Centering_t> IField_t;
+        typedef typename FieldLHS::Centering_t Centering;
+        typedef Field<int, Dim, mesh_type, Centering> IField_t;
         typedef Field<Tg, Dim, mesh_type, Centering> Field_gt;
         typedef Field<Kokkos::complex<Tg>, Dim, mesh_type, Centering> CxField_gt;
         typedef typename FFT_t::ComplexField CxField_t;
         typedef Vector<Trhs, Dim> Vector_t;
+        typedef typename mesh_type::matrix_type Matrix_t;
+        typedef Field<Matrix_t, Dim, mesh_type, Centering> MField_t;
 
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
@@ -132,6 +147,17 @@ namespace ippl {
         // solve the Poisson equation using FFT;
         // more specifically, compute the scalar potential given a density field rho using
         void solve() override;
+
+        // override getHessian to return Hessian field if flag is on
+        MField_t* getHessian() override {
+            bool hessian = this->params_m.template get<bool>("hessian");
+            if (!hessian) {
+                throw IpplException(
+                    "FFTPoissonSolver::getHessian()",
+                    "Cannot call getHessian() if 'hessian' flag in ParameterList is false");
+            }
+            return &hess_m;
+        }
 
         // compute standard Green's function
         void greensFunction();
@@ -167,6 +193,9 @@ namespace ippl {
 
         // fields that facilitate the calculation in greensFunction()
         IField_t grnIField_m[Dim];
+
+        // hessian matrix field (only if hessian parameter is set)
+        MField_t hess_m;
 
         // the FFT object
         std::unique_ptr<FFT_t> fft_m;
@@ -239,6 +268,7 @@ namespace ippl {
             }
 
             this->params_m.add("algorithm", HOCKNEY);
+            this->params_m.add("hessian", true);
         }
     };
 }  // namespace ippl

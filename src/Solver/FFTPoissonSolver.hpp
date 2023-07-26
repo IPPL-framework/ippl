@@ -65,10 +65,10 @@ void pack(const ippl::NDIndex<Dim> intersect, View& view,
     Kokkos::fence();
 }
 
-template <bool isVec, typename Tb, typename View, unsigned int Dim>
+template <int tensorRank, typename Tb, typename View, unsigned int Dim>
 void unpack_impl(const ippl::NDIndex<Dim> intersect, const View& view,
                  ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<Dim> ldom,
-                std::vector<bool> coordBool, size_t dim = 0) {
+                std::vector<bool> coordBool, size_t dim1 = 0, size_t dim2 = 0) {
     Kokkos::View<Tb*>& buffer = fd.buffer;
 
     using index_type = typename ippl::RangePolicy<Dim>::index_type;
@@ -99,7 +99,7 @@ void unpack_impl(const ippl::NDIndex<Dim> intersect, const View& view,
                 l += igVec[d] * factor;
             }
 
-            ippl::detail::ViewAccess<isVec, View, Dim>::get(view, dim, args) = buffer(l);
+            ippl::detail::ViewAccess<tensorRank, View, Dim>::get(view, dim1, dim2, args) = buffer(l);
         });
     Kokkos::fence();
 }
@@ -107,15 +107,15 @@ void unpack_impl(const ippl::NDIndex<Dim> intersect, const View& view,
 template <typename Tb, typename View, unsigned int Dim>
 void unpack(const ippl::NDIndex<Dim> intersect, const View& view,
             ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<Dim> ldom,
-            std::vector<bool> coordBool, size_t dim = 0) {
-    unpack_impl<false, Tb, View>(intersect, view, fd, nghost, ldom, coordBool, dim);
+            std::vector<bool> coordBool, size_t dim1 = 0, size_t dim2 = 0) {
+    unpack_impl<false, Tb, View>(intersect, view, fd, nghost, ldom, coordBool, dim1, dim2);
 }
 
 template <typename Tb, typename View, unsigned int Dim>
 void unpack(const ippl::NDIndex<Dim> intersect, View& view,
             ippl::detail::FieldBufferData<Tb>& fd, int nghost,
-            const ippl::NDIndex<Dim> ldom, std::vector<bool> coordBool, size_t dim) {
-    unpack_impl<true, Tb, View>(intersect, view, fd, nghost, ldom, coordBool, dim);
+            const ippl::NDIndex<Dim> ldom, std::vector<bool> coordBool, size_t dim1, size_t dim2) {
+    unpack_impl<true, Tb, View>(intersect, view, fd, nghost, ldom, coordBool, dim1, dim2);
 }
 
 namespace ippl {
@@ -218,7 +218,9 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
-        const int alg = this->params_m.template get<int>("algorithm");
+        // get algorithm and hessian flag from parameter list
+        const int alg      = this->params_m.template get<int>("algorithm");
+        const bool hessian = this->params_m.template get<bool>("hessian");
 
         // first check if valid algorithm choice
         if ((alg != Algorithm::VICO) && (alg != Algorithm::HOCKNEY)
@@ -232,20 +234,9 @@ namespace ippl {
         layout_mp = &(this->rhs_mp->getLayout());
         mesh_mp   = &(this->rhs_mp->get_mesh());
 
-        // get mesh spacing
-        hr_m = mesh_mp->getMeshSpacing();
-
-        // get origin
-        vector_type origin    = mesh_mp->getOrigin();
-        scalar_type sum = 0;
-        for (unsigned int d = 0; d < Dim; ++d) {
-            sum += std::abs(origin[d]);
-        }
-
-        // origin should always be 0 for Green's function computation to work...
-        if (sum != 0.0) {
-            throw IpplException("FFTPoissonSolver::initializeFields", "Origin is not 0");
-        }
+        // get mesh spacing and origin
+        hr_m               = mesh_mp->getMeshSpacing();
+        vector_type origin = mesh_mp->getOrigin();
 
         // create domain for the real fields
         domain_m = layout_mp->getDomain();
@@ -293,8 +284,12 @@ namespace ippl {
         grntr_m.initialize(*meshComplex_m, *layoutComplex_m);
 
         int out = this->params_m.template get<int>("output_type");
-        if (((out == Base::GRAD) || (out == Base::SOL_AND_GRAD)) && (!isGradFD_m)) {
+        if (((out == Base::GRAD || out == Base::SOL_AND_GRAD) && !isGradFD_m) || hessian) {
             temp_m.initialize(*meshComplex_m, *layoutComplex_m);
+        }
+
+        if (hessian) {
+            hess_m.initialize(*mesh_mp, *layout_mp);
         }
 
         // create the FFT object
@@ -302,7 +297,7 @@ namespace ippl {
         // if Vico, also need to create mesh and layout for 4N Fourier domain
         // on this domain, the truncated Green's function is defined
         // also need to create the 4N complex grid, on which precomputation step done
-        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
+        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
             // start a timer
             static IpplTimings::TimerRef initialize_vico =
                 IpplTimings::getTimer("Initialize: extra Vico");
@@ -349,7 +344,7 @@ namespace ippl {
                 switch (d) {
                     case 0:
                         ippl::parallel_for(
-                            "Helper index Green field initialization", getRangePolicy(view, nghost),
+                            "Helper index Green field initialization", grnIField_m[d].getFieldRangePolicy(),
                             KOKKOS_LAMBDA(const index_array_type& args) {
                                 Vector<int, Dim> iVec = args;
                                 Vector<int, Dim> igVec;
@@ -371,7 +366,7 @@ namespace ippl {
                         break;
                     case 1:
                         ippl::parallel_for(
-                            "Helper index Green field initialization", getRangePolicy(view, nghost),
+                            "Helper index Green field initialization", grnIField_m[d].getFieldRangePolicy(),
                             KOKKOS_LAMBDA(const index_array_type& args) {
                                 Vector<int, Dim> iVec = args;
                                 Vector<int, Dim> igVec;
@@ -387,7 +382,7 @@ namespace ippl {
                         break;
                     case 2:
                         ippl::parallel_for(
-                            "Helper index Green field initialization", getRangePolicy(view, nghost),
+                            "Helper index Green field initialization", grnIField_m[d].getFieldRangePolicy(),
                             KOKKOS_LAMBDA(const index_array_type& args) {
                                 Vector<int, Dim> iVec = args;
                                 Vector<int, Dim> igVec;
@@ -410,7 +405,7 @@ namespace ippl {
         IpplTimings::startTimer(warmup);
 
         fft_m->transform(+1, rho2_mr, rho2tr_m);
-        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
+        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
             fft4n_m->transform(+1, grnL_m);
         }
 
@@ -442,6 +437,9 @@ namespace ippl {
 
         // get the algorithm (hockney, vico, or biharmonic)
         const int alg = this->params_m.template get<int>("algorithm");
+
+        // get hessian flag (if true, we compute the Hessian)
+        const bool hessian = this->params_m.template get<bool>("hessian");
 
         // set the mesh & spacing, which may change each timestep
         mesh_mp = &(this->rhs_mp->get_mesh());
@@ -536,7 +534,7 @@ namespace ippl {
         } else {
             using index_array_type = typename RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
-                "Write rho on the doubled grid", getRangePolicy(view1, nghost1),
+                "Write rho on the doubled grid", this->rhs_mp->getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     Vector<int, Dim> iVec = args;
                     Vector<int, Dim> igVec1;
@@ -592,10 +590,11 @@ namespace ippl {
             // Vico: need to multiply by normalization factor of 1/4N^3,
             // since only backward transform was performed on the 4N grid
             for (unsigned int i = 0; i < Dim; ++i) {
-                if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
+                if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
                     rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
-                else
+                } else {
                     rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                }
             }
 
             // start a timer
@@ -661,7 +660,8 @@ namespace ippl {
             } else {
                 using index_array_type = typename RangePolicy<Dim>::index_array_type;
                 ippl::parallel_for(
-                    "Write the solution into the LHS on physical grid", getRangePolicy(view1, nghost1),
+                    "Write the solution into the LHS on physical grid", 
+                    this->rhs_mp->getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args) {
                     Vector<int, Dim> iVec = args;
                     Vector<int, Dim> igVec1;
@@ -719,7 +719,7 @@ namespace ippl {
                 // loop over rho2tr_m to multiply by -ik (gradient in Fourier space)
                 using index_array_type = typename RangePolicy<Dim>::index_array_type;
                 ippl::parallel_for(
-                    "Gradient - E field", getRangePolicy(viewR, nghostR),
+                    "Gradient - E field", rho2tr_m.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args) {
                         Vector<int, Dim> iVec = args;
                         Vector<int, Dim> igVec;
@@ -750,10 +750,11 @@ namespace ippl {
 
                 // apply proper normalization
                 for (unsigned int i = 0; i < Dim; ++i) {
-                    if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC))
+                    if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
                         rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
-                    else
+                    } else {
                         rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                    }
                 }
 
                 // start a timer
@@ -819,7 +820,7 @@ namespace ippl {
                 } else {
                 using index_array_type = typename RangePolicy<Dim>::index_array_type;
                 ippl::parallel_for(
-                    "Write the E-field on physical grid", getRangePolicy(viewL, nghostL),
+                    "Write the E-field on physical grid", this->lhs_mp->getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args) {
                         Vector<int, Dim> iVec = args;
                         Vector<int, Dim> igVec1;
@@ -840,6 +841,165 @@ namespace ippl {
             }
             IpplTimings::stopTimer(efield);
         }
+
+        // if user asked for Hessian, compute in Fourier domain (-k^2 multiplication)
+        if (hessian) {
+            // start a timer
+            static IpplTimings::TimerRef hess = IpplTimings::getTimer("Solve: Hessian");
+            IpplTimings::startTimer(hess);
+
+            // get Hessian matrix view (LHS)
+            auto viewH        = hess_m.getView();
+            const int nghostH = hess_m.getNghost();
+
+            // get rho2tr_m view (as we want to multiply by -k^2 then transform)
+            auto viewR        = rho2tr_m.getView();
+            const int nghostR = rho2tr_m.getNghost();
+            const auto& ldomR = layoutComplex_m->getLocalNDIndex();
+
+            // use temp_m as a temporary complex field
+            auto view_g = temp_m.getView();
+
+            // define some constants
+            const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
+
+            // define some member variables in local scope for the parallel_for
+            vector_type hsize  = hr_m;
+            Vector<int, Dim> N = nr_m;
+
+            // loop over each component (Hessian = Matrix field)
+            for (size_t row = 0; row < Dim; ++row) {
+                for (size_t col = 0; col < Dim; ++col) {
+                    // loop over rho2tr_m to multiply by -k^2 (second derivative in Fourier space)
+                    // if diagonal element (row = col), do not need N/2 term = 0
+                    // else, if mixed derivative, need kVec = 0 at N/2
+
+                    Kokkos::parallel_for(
+                        "Hessian", rho2tr_m.getFieldRangePolicy(),
+                        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                            // global indices for 2N rhotr_m
+                            const int ig = i + ldomR[0].first() - nghostR;
+                            const int jg = j + ldomR[1].first() - nghostR;
+                            const int kg = k + ldomR[2].first() - nghostR;
+
+                            Vector<int, 3> iVec = {ig, jg, kg};
+                            Vector_t kVec;
+
+                            for (size_t d = 0; d < Dim; ++d) {
+                                const scalar_type Len = N[d] * hsize[d];
+                                const bool shift      = (iVec[d] > N[d]);
+                                const bool isMid      = (iVec[d] == N[d]);
+                                const bool notDiag    = (row != col);
+
+                                kVec[d] = (1 - (notDiag * isMid)) * (pi / Len)
+                                          * (iVec[d] - shift * 2 * N[d]);
+                            }
+
+                            view_g(i, j, k) = -(kVec[col] * kVec[row]) * viewR(i, j, k);
+                        });
+
+                    // start a timer
+                    static IpplTimings::TimerRef ffth = IpplTimings::getTimer("FFT: Hessian");
+                    IpplTimings::startTimer(ffth);
+
+                    // transform to get Hessian
+                    fft_m->transform(-1, rho2_mr, temp_m);
+
+                    IpplTimings::stopTimer(ffth);
+
+                    // apply proper normalization
+                    for (unsigned int i = 0; i < Dim; ++i) {
+                        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
+                            rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
+                        } else {
+                            rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                        }
+                    }
+
+                    // start a timer
+                    static IpplTimings::TimerRef hdtos =
+                        IpplTimings::getTimer("Hessian: double to phys.");
+                    IpplTimings::startTimer(hdtos);
+
+                    // restrict to physical grid (N^3) and assign to Matrix field (Hessian)
+                    // communication needed if more than one rank
+                    if (ranks > 1) {
+                        // COMMUNICATION
+
+                        // send
+                        const auto& lDomains1 = layout_mp->getHostLocalDomains();
+                        std::vector<MPI_Request> requests(0);
+
+                        for (int i = 0; i < ranks; ++i) {
+                            if (lDomains1[i].touches(ldom2)) {
+                                auto intersection = lDomains1[i].intersect(ldom2);
+
+                                requests.resize(requests.size() + 1);
+
+                                Communicate::size_type nsends;
+                                pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
+
+                                buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                                    IPPL_SOLVER_SEND + i, nsends);
+
+                                Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(),
+                                            nsends);
+                                buf->resetWritePos();
+                            }
+                        }
+
+                        // receive
+                        const auto& lDomains2 = layout2_m->getHostLocalDomains();
+                        int myRank            = Comm->rank();
+
+                        for (int i = 0; i < ranks; ++i) {
+                            if (ldom1.touches(lDomains2[i])) {
+                                auto intersection = ldom1.intersect(lDomains2[i]);
+
+                                Communicate::size_type nrecvs;
+                                nrecvs = intersection.size();
+
+                                buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                                    IPPL_SOLVER_RECV + myRank, nrecvs);
+
+                                Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
+                                           nrecvs);
+                                buf->resetReadPos();
+
+                                std::vector<bool> coordBoolVec(Dim, false);
+                                unpack(intersection, viewH, fd_m, nghostH, ldom1, coordBoolVec, row, col);
+                            }
+                        }
+
+                        // wait for all messages to be received
+                        if (requests.size() > 0) {
+                            MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+                        }
+                        Comm->barrier();
+
+                    } else {
+                        Kokkos::parallel_for(
+                            "Write Hessian on physical grid", hess_m.getFieldRangePolicy(),
+                            KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                                const int ig2 = i + ldom2[0].first() - nghost2;
+                                const int jg2 = j + ldom2[1].first() - nghost2;
+                                const int kg2 = k + ldom2[2].first() - nghost2;
+
+                                const int ig = i + ldom1[0].first() - nghostH;
+                                const int jg = j + ldom1[1].first() - nghostH;
+                                const int kg = k + ldom1[2].first() - nghostH;
+
+                                // take [0,N-1] as physical solution
+                                const bool isQuadrant1 =
+                                    ((ig == ig2) && (jg == jg2) && (kg == kg2));
+                                viewH(i, j, k)[row][col] = view2(i, j, k) * isQuadrant1;
+                            });
+                    }
+                    IpplTimings::stopTimer(hdtos);
+                }
+            }
+            IpplTimings::stopTimer(hess);
+        }
         IpplTimings::stopTimer(solve);
     };
 
@@ -852,9 +1012,8 @@ namespace ippl {
         grn_mr               = 0.0;
 
         const int alg = this->params_m.template get<int>("algorithm");
-
-        if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
-            if constexpr   (Dim == 3) {
+        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
+            if constexpr (Dim == 3){
                 Vector_t l(hr_m * nr_m);
                 Vector_t hs_m;
                 double L_sum(0.0);
@@ -888,14 +1047,9 @@ namespace ippl {
                 Vector<int, Dim> size = nr_m;
 
                 // Kokkos parallel for loop to assign analytic grnL_m
-                using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
                 if (alg == Algorithm::VICO) {
                     Kokkos::parallel_for(
-                        "Initialize Green's function ",
-                        mdrange_type({nghost_g, nghost_g, nghost_g},
-                                    {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
-                                    view_g.extent(2) - nghost_g}),
+                        "Initialize Green's function ", grnL_m.getFieldRangePolicy(),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int ig = i + ldom_g[0].first() - nghost_g;
@@ -927,10 +1081,7 @@ namespace ippl {
 
                 } else if (alg == Algorithm::BIHARMONIC) {
                     Kokkos::parallel_for(
-                        "Initialize Green's function ",
-                        mdrange_type({nghost_g, nghost_g, nghost_g},
-                                    {view_g.extent(0) - nghost_g, view_g.extent(1) - nghost_g,
-                                    view_g.extent(2) - nghost_g}),
+                        "Initialize Green's function ", grnL_m.getFieldRangePolicy(),
                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
                             // go from local indices to global
                             const int ig = i + ldom_g[0].first() - nghost_g;
@@ -987,6 +1138,7 @@ namespace ippl {
                     communicateVico(size, view_g, ldom_g, nghost_g, view, ldom, nghost);
                 } else {
                     // restrict the green's function to a (2N)^3 grid from the (4N)^3 grid
+                    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
                     Kokkos::parallel_for(
                         "Restrict domain of Green's function from 4N to 2N",
                         mdrange_type({nghost, nghost, nghost}, {view.extent(0) - nghost - size[0],
@@ -1047,7 +1199,7 @@ namespace ippl {
             // Kokkos parallel for loop to find (0,0,0) point and regularize
             using index_array_type = typename RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
-                "Regularize Green's function ", getRangePolicy(view, nghost),
+                "Regularize Green's function ", grn_mr.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args) {
                     Vector<int, Dim> iVec = args;
                     Vector<int, Dim> igVec;

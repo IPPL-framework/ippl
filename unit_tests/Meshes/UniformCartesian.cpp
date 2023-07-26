@@ -17,16 +17,17 @@
 //
 #include "Ippl.h"
 
-#include "MultirankUtils.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
+template <typename T>
 class UniformCartesianTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
 public:
     UniformCartesianTest() { computeGridSizes(nPoints); }
 
     template <unsigned Dim>
-    ippl::NDIndex<Dim> createMesh(ippl::Vector<double, Dim>& hx, ippl::Vector<double, Dim>& origin,
-                                  double& cellVol, double& meshVol) {
+    ippl::NDIndex<Dim> createMesh(ippl::Vector<T, Dim>& hx, ippl::Vector<T, Dim>& origin,
+                                  T& cellVol, T& meshVol) {
         std::array<ippl::Index, Dim> args;
         for (unsigned d = 0; d < Dim; d++) {
             args[d] = ippl::Index(nPoints[d]);
@@ -48,40 +49,44 @@ public:
     size_t nPoints[MaxDim];
 };
 
-TEST_F(UniformCartesianTest, Constructor) {
+using Precisions = ::testing::Types<double, float>;
+
+TYPED_TEST_CASE(UniformCartesianTest, Precisions);
+
+TYPED_TEST(UniformCartesianTest, Constructor) {
     auto check = [&]<unsigned Dim>() {
-        ippl::Vector<double, Dim> hx;
-        ippl::Vector<double, Dim> origin;
-        double cellVol, meshVol;
+        ippl::Vector<TypeParam, Dim> hx;
+        ippl::Vector<TypeParam, Dim> origin;
+        TypeParam cellVol, meshVol;
 
-        auto owned = createMesh(hx, origin, cellVol, meshVol);
-        ippl::UniformCartesian<double, Dim> mesh(owned, hx, origin);
+        ippl::NDIndex<Dim> owned = this->createMesh(hx, origin, cellVol, meshVol);
+        ippl::UniformCartesian<TypeParam, Dim> mesh(owned, hx, origin);
 
-        double length = mesh.getCellVolume();
+        TypeParam length = mesh.getCellVolume();
 
-        ASSERT_DOUBLE_EQ(length, cellVol);
-        ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
+        assertTypeParam(length, cellVol);
+        assertTypeParam(mesh.getMeshVolume(), meshVol);
     };
 
-    apply(check);
+    this->apply(check);
 }
 
-TEST_F(UniformCartesianTest, Initialize) {
+TYPED_TEST(UniformCartesianTest, Initialize) {
     auto check = [&]<unsigned Dim>() {
-        ippl::Vector<double, Dim> hx;
-        ippl::Vector<double, Dim> origin;
-        double cellVol, meshVol;
+        ippl::Vector<TypeParam, Dim> hx;
+        ippl::Vector<TypeParam, Dim> origin;
+        TypeParam cellVol, meshVol;
 
-        auto owned = createMesh(hx, origin, cellVol, meshVol);
+        ippl::NDIndex<Dim> owned = this->createMesh(hx, origin, cellVol, meshVol);
 
-        ippl::UniformCartesian<double, Dim> mesh;
+        ippl::UniformCartesian<TypeParam, Dim> mesh;
         mesh.initialize(owned, hx, origin);
 
-        ASSERT_DOUBLE_EQ(mesh.getCellVolume(), cellVol);
-        ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
+        assertTypeParam(mesh.getCellVolume(), cellVol);
+        assertTypeParam(mesh.getMeshVolume(), meshVol);
     };
 
-    apply(check);
+    this->apply(check);
 }
 
 int main(int argc, char* argv[]) {
