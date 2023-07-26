@@ -140,7 +140,7 @@ namespace ippl {
 
     template <unsigned Dim>
     const typename FieldLayout<Dim>::NDIndex_t& FieldLayout<Dim>::getLocalNDIndex(int rank) const {
-        return hLocalDomains_m(rank);
+        return hLocalDomains_m(rank > 0 ? rank : comm.rank());
     }
 
     template <unsigned Dim>

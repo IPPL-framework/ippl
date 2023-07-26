@@ -34,7 +34,8 @@ namespace ippl {
         IpplTimings::startTimer(tbasicOp);
 
         // Get number of ranks
-        int nprocs = Comm->size();
+        auto& comm = fl.comm;
+        int nprocs = comm->size();
 
         // Start with whole domain and total number of nodes
         std::vector<NDIndex<Dim>> domains = {fl.getDomain()};
@@ -68,7 +69,7 @@ namespace ippl {
 
             // Communicate to all the reduced weights
             IpplTimings::startTimer(tallReduce);
-            Comm->allreduce(reducedRank.data(), reduced.data(), reducedRank.size(),
+            comm->allreduce(reducedRank.data(), reduced.data(), reducedRank.size(),
                             std::plus<Tf>());
             IpplTimings::stopTimer(tallReduce);
 
