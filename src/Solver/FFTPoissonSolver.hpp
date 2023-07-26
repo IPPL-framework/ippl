@@ -844,161 +844,163 @@ namespace ippl {
 
         // if user asked for Hessian, compute in Fourier domain (-k^2 multiplication)
         if (hessian) {
-            // start a timer
-            static IpplTimings::TimerRef hess = IpplTimings::getTimer("Solve: Hessian");
-            IpplTimings::startTimer(hess);
+            if constexpr (Dim == 3){
+                // start a timer
+                static IpplTimings::TimerRef hess = IpplTimings::getTimer("Solve: Hessian");
+                IpplTimings::startTimer(hess);
 
-            // get Hessian matrix view (LHS)
-            auto viewH        = hess_m.getView();
-            const int nghostH = hess_m.getNghost();
+                // get Hessian matrix view (LHS)
+                auto viewH        = hess_m.getView();
+                const int nghostH = hess_m.getNghost();
 
-            // get rho2tr_m view (as we want to multiply by -k^2 then transform)
-            auto viewR        = rho2tr_m.getView();
-            const int nghostR = rho2tr_m.getNghost();
-            const auto& ldomR = layoutComplex_m->getLocalNDIndex();
+                // get rho2tr_m view (as we want to multiply by -k^2 then transform)
+                auto viewR        = rho2tr_m.getView();
+                const int nghostR = rho2tr_m.getNghost();
+                const auto& ldomR = layoutComplex_m->getLocalNDIndex();
 
-            // use temp_m as a temporary complex field
-            auto view_g = temp_m.getView();
+                // use temp_m as a temporary complex field
+                auto view_g = temp_m.getView();
 
-            // define some constants
-            const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
+                // define some constants
+                const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
 
-            // define some member variables in local scope for the parallel_for
-            vector_type hsize  = hr_m;
-            Vector<int, Dim> N = nr_m;
+                // define some member variables in local scope for the parallel_for
+                vector_type hsize  = hr_m;
+                Vector<int, Dim> N = nr_m;
 
-            // loop over each component (Hessian = Matrix field)
-            for (size_t row = 0; row < Dim; ++row) {
-                for (size_t col = 0; col < Dim; ++col) {
-                    // loop over rho2tr_m to multiply by -k^2 (second derivative in Fourier space)
-                    // if diagonal element (row = col), do not need N/2 term = 0
-                    // else, if mixed derivative, need kVec = 0 at N/2
+                // loop over each component (Hessian = Matrix field)
+                for (size_t row = 0; row < Dim; ++row) {
+                    for (size_t col = 0; col < Dim; ++col) {
+                        // loop over rho2tr_m to multiply by -k^2 (second derivative in Fourier space)
+                        // if diagonal element (row = col), do not need N/2 term = 0
+                        // else, if mixed derivative, need kVec = 0 at N/2
 
-                    Kokkos::parallel_for(
-                        "Hessian", rho2tr_m.getFieldRangePolicy(),
-                        KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                            // global indices for 2N rhotr_m
-                            const int ig = i + ldomR[0].first() - nghostR;
-                            const int jg = j + ldomR[1].first() - nghostR;
-                            const int kg = k + ldomR[2].first() - nghostR;
-
-                            Vector<int, 3> iVec = {ig, jg, kg};
-                            Vector_t kVec;
-
-                            for (size_t d = 0; d < Dim; ++d) {
-                                const scalar_type Len = N[d] * hsize[d];
-                                const bool shift      = (iVec[d] > N[d]);
-                                const bool isMid      = (iVec[d] == N[d]);
-                                const bool notDiag    = (row != col);
-
-                                kVec[d] = (1 - (notDiag * isMid)) * (pi / Len)
-                                          * (iVec[d] - shift * 2 * N[d]);
-                            }
-
-                            view_g(i, j, k) = -(kVec[col] * kVec[row]) * viewR(i, j, k);
-                        });
-
-                    // start a timer
-                    static IpplTimings::TimerRef ffth = IpplTimings::getTimer("FFT: Hessian");
-                    IpplTimings::startTimer(ffth);
-
-                    // transform to get Hessian
-                    fft_m->transform(-1, rho2_mr, temp_m);
-
-                    IpplTimings::stopTimer(ffth);
-
-                    // apply proper normalization
-                    for (unsigned int i = 0; i < Dim; ++i) {
-                        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
-                            rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
-                        } else {
-                            rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
-                        }
-                    }
-
-                    // start a timer
-                    static IpplTimings::TimerRef hdtos =
-                        IpplTimings::getTimer("Hessian: double to phys.");
-                    IpplTimings::startTimer(hdtos);
-
-                    // restrict to physical grid (N^3) and assign to Matrix field (Hessian)
-                    // communication needed if more than one rank
-                    if (ranks > 1) {
-                        // COMMUNICATION
-
-                        // send
-                        const auto& lDomains1 = layout_mp->getHostLocalDomains();
-                        std::vector<MPI_Request> requests(0);
-
-                        for (int i = 0; i < ranks; ++i) {
-                            if (lDomains1[i].touches(ldom2)) {
-                                auto intersection = lDomains1[i].intersect(ldom2);
-
-                                requests.resize(requests.size() + 1);
-
-                                Communicate::size_type nsends;
-                                pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
-
-                                buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
-                                    IPPL_SOLVER_SEND + i, nsends);
-
-                                Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(),
-                                            nsends);
-                                buf->resetWritePos();
-                            }
-                        }
-
-                        // receive
-                        const auto& lDomains2 = layout2_m->getHostLocalDomains();
-                        int myRank            = Comm->rank();
-
-                        for (int i = 0; i < ranks; ++i) {
-                            if (ldom1.touches(lDomains2[i])) {
-                                auto intersection = ldom1.intersect(lDomains2[i]);
-
-                                Communicate::size_type nrecvs;
-                                nrecvs = intersection.size();
-
-                                buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
-                                    IPPL_SOLVER_RECV + myRank, nrecvs);
-
-                                Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
-                                           nrecvs);
-                                buf->resetReadPos();
-
-                                std::vector<bool> coordBoolVec(Dim, false);
-                                unpack(intersection, viewH, fd_m, nghostH, ldom1, coordBoolVec, row, col);
-                            }
-                        }
-
-                        // wait for all messages to be received
-                        if (requests.size() > 0) {
-                            MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-                        }
-                        Comm->barrier();
-
-                    } else {
                         Kokkos::parallel_for(
-                            "Write Hessian on physical grid", hess_m.getFieldRangePolicy(),
+                            "Hessian", rho2tr_m.getFieldRangePolicy(),
                             KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                const int ig2 = i + ldom2[0].first() - nghost2;
-                                const int jg2 = j + ldom2[1].first() - nghost2;
-                                const int kg2 = k + ldom2[2].first() - nghost2;
+                                // global indices for 2N rhotr_m
+                                const int ig = i + ldomR[0].first() - nghostR;
+                                const int jg = j + ldomR[1].first() - nghostR;
+                                const int kg = k + ldomR[2].first() - nghostR;
 
-                                const int ig = i + ldom1[0].first() - nghostH;
-                                const int jg = j + ldom1[1].first() - nghostH;
-                                const int kg = k + ldom1[2].first() - nghostH;
+                                Vector<int, 3> iVec = {ig, jg, kg};
+                                Vector_t kVec;
 
-                                // take [0,N-1] as physical solution
-                                const bool isQuadrant1 =
-                                    ((ig == ig2) && (jg == jg2) && (kg == kg2));
-                                viewH(i, j, k)[row][col] = view2(i, j, k) * isQuadrant1;
+                                for (size_t d = 0; d < Dim; ++d) {
+                                    const scalar_type Len = N[d] * hsize[d];
+                                    const bool shift      = (iVec[d] > N[d]);
+                                    const bool isMid      = (iVec[d] == N[d]);
+                                    const bool notDiag    = (row != col);
+
+                                    kVec[d] = (1 - (notDiag * isMid)) * (pi / Len)
+                                            * (iVec[d] - shift * 2 * N[d]);
+                                }
+
+                                view_g(i, j, k) = -(kVec[col] * kVec[row]) * viewR(i, j, k);
                             });
+
+                        // start a timer
+                        static IpplTimings::TimerRef ffth = IpplTimings::getTimer("FFT: Hessian");
+                        IpplTimings::startTimer(ffth);
+
+                        // transform to get Hessian
+                        fft_m->transform(-1, rho2_mr, temp_m);
+
+                        IpplTimings::stopTimer(ffth);
+
+                        // apply proper normalization
+                        for (unsigned int i = 0; i < Dim; ++i) {
+                            if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
+                                rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
+                            } else {
+                                rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                            }
+                        }
+
+                        // start a timer
+                        static IpplTimings::TimerRef hdtos =
+                            IpplTimings::getTimer("Hessian: double to phys.");
+                        IpplTimings::startTimer(hdtos);
+
+                        // restrict to physical grid (N^3) and assign to Matrix field (Hessian)
+                        // communication needed if more than one rank
+                        if (ranks > 1) {
+                            // COMMUNICATION
+
+                            // send
+                            const auto& lDomains1 = layout_mp->getHostLocalDomains();
+                            std::vector<MPI_Request> requests(0);
+
+                            for (int i = 0; i < ranks; ++i) {
+                                if (lDomains1[i].touches(ldom2)) {
+                                    auto intersection = lDomains1[i].intersect(ldom2);
+
+                                    requests.resize(requests.size() + 1);
+
+                                    Communicate::size_type nsends;
+                                    pack(intersection, view2, fd_m, nghost2, ldom2, nsends);
+
+                                    buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                                        IPPL_SOLVER_SEND + i, nsends);
+
+                                    Comm->isend(i, OPEN_SOLVER_TAG, fd_m, *buf, requests.back(),
+                                                nsends);
+                                    buf->resetWritePos();
+                                }
+                            }
+
+                            // receive
+                            const auto& lDomains2 = layout2_m->getHostLocalDomains();
+                            int myRank            = Comm->rank();
+
+                            for (int i = 0; i < ranks; ++i) {
+                                if (ldom1.touches(lDomains2[i])) {
+                                    auto intersection = ldom1.intersect(lDomains2[i]);
+
+                                    Communicate::size_type nrecvs;
+                                    nrecvs = intersection.size();
+
+                                    buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                                        IPPL_SOLVER_RECV + myRank, nrecvs);
+
+                                    Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
+                                            nrecvs);
+                                    buf->resetReadPos();
+
+                                    std::vector<bool> coordBoolVec(Dim, false);
+                                    unpack(intersection, viewH, fd_m, nghostH, ldom1, coordBoolVec, row, col);
+                                }
+                            }
+
+                            // wait for all messages to be received
+                            if (requests.size() > 0) {
+                                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+                            }
+                            Comm->barrier();
+
+                        } else {
+                            Kokkos::parallel_for(
+                                "Write Hessian on physical grid", hess_m.getFieldRangePolicy(),
+                                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                                    const int ig2 = i + ldom2[0].first() - nghost2;
+                                    const int jg2 = j + ldom2[1].first() - nghost2;
+                                    const int kg2 = k + ldom2[2].first() - nghost2;
+
+                                    const int ig = i + ldom1[0].first() - nghostH;
+                                    const int jg = j + ldom1[1].first() - nghostH;
+                                    const int kg = k + ldom1[2].first() - nghostH;
+
+                                    // take [0,N-1] as physical solution
+                                    const bool isQuadrant1 =
+                                        ((ig == ig2) && (jg == jg2) && (kg == kg2));
+                                    viewH(i, j, k)[row][col] = view2(i, j, k) * isQuadrant1;
+                                });
+                        }
+                        IpplTimings::stopTimer(hdtos);
                     }
-                    IpplTimings::stopTimer(hdtos);
                 }
+                IpplTimings::stopTimer(hess);
             }
-            IpplTimings::stopTimer(hess);
         }
         IpplTimings::stopTimer(solve);
     };
