@@ -48,7 +48,7 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    FieldLayout<Dim>::FieldLayout(mpi::Communicator communicator)
+    FieldLayout<Dim>::FieldLayout(const mpi::Communicator& communicator)
         : comm(communicator)
         , dLocalDomains_m("local domains (device)", 0)
         , hLocalDomains_m(Kokkos::create_mirror_view(dLocalDomains_m)) {
@@ -64,9 +64,6 @@ namespace ippl {
         : FieldLayout(communicator) {
         initialize(domain, p, isAllPeriodic);
     }
-
-    template <unsigned Dim>
-    FieldLayout<Dim>::~FieldLayout() {}
 
     template <unsigned Dim>
     void FieldLayout<Dim>::updateLayout(const std::vector<NDIndex<Dim>>& domains) {
@@ -88,7 +85,7 @@ namespace ippl {
     template <unsigned Dim>
     void FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain, e_dim_tag* userflags,
                                       bool isAllPeriodic) {
-        int nRanks = Comm->size();
+        int nRanks = comm.size();
 
         gDomain_m = domain;
 
@@ -173,7 +170,7 @@ namespace ippl {
 
     template <unsigned Dim>
     void FieldLayout<Dim>::write(std::ostream& out) const {
-        if (Comm->rank() > 0) {
+        if (comm.rank() > 0) {
             return;
         }
 
@@ -253,7 +250,7 @@ namespace ippl {
             neighborsRecvRange_m[i].clear();
         }
 
-        int myRank = Comm->rank();
+        int myRank = comm.rank();
 
         // get my local box
         auto& nd = hLocalDomains_m[myRank];
@@ -265,7 +262,7 @@ namespace ippl {
             IpplTimings::getTimer("findInternal");
         static IpplTimings::TimerRef findPeriodicNeighborsTimer =
             IpplTimings::getTimer("findPeriodic");
-        for (int rank = 0; rank < Comm->size(); ++rank) {
+        for (int rank = 0; rank < comm.size(); ++rank) {
             if (rank == myRank) {
                 // do not compare with my domain
                 continue;

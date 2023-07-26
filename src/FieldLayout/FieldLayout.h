@@ -216,14 +216,14 @@ namespace ippl {
          * Default constructor, which should only be used if you are going to
          * call 'initialize' soon after (before using in any context)
          */
-        FieldLayout(mpi::Communicator = MPI_COMM_WORLD);
+        FieldLayout(const mpi::Communicator& = MPI_COMM_WORLD);
 
         FieldLayout(mpi::Communicator, const NDIndex<Dim>& domain, e_dim_tag* p = 0,
                     bool isAllPeriodic = false);
 
         // Destructor: Everything deletes itself automatically ... the base
         // class destructors inform all the FieldLayoutUser's we're going away.
-        virtual ~FieldLayout();
+        virtual ~FieldLayout() = default;
 
         // Initialization functions, only to be called by the user of FieldLayout
         // objects when the FieldLayout was created using the default constructor;
