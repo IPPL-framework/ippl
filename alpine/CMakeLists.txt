@@ -16,6 +16,9 @@ set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 add_executable (PenningTrap PenningTrap.cpp)
 target_link_libraries (PenningTrap ${IPPL_LIBS})
 
+add_executable (PenningTrapMixedPrecision PenningTrapMixedPrecision.cpp)
+target_link_libraries (PenningTrapMixedPrecision ${IPPL_LIBS})
+
 add_executable (UniformPlasmaTest UniformPlasmaTest.cpp)
 target_link_libraries (UniformPlasmaTest ${IPPL_LIBS})
 
