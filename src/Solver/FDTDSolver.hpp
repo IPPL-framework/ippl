@@ -144,6 +144,7 @@ namespace ippl {
         // interior points need to have been updated before TF/SF seed and ABCs
         Kokkos::fence();
 
+        /*
         // add seed field via TF/SF boundaries
         if (seed) {
             std::cout << "inside seed if" << std::endl;
@@ -212,6 +213,7 @@ namespace ippl {
             }
         }
         Kokkos::fence();
+        */
 
         // apply 1st order Absorbing Boundary Conditions
         // for both scalar and vector potentials

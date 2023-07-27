@@ -37,12 +37,13 @@ namespace ippl {
         typedef Field<Tfields, Dim, M, C> Field_t;
         typedef Vector<Tfields, Dim> Vector_t;
         typedef Field<Vector_t, Dim, M, C> VField_t;
+        using memory_space = typename Field_t::memory_space;
 
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
 
         // type for communication buffers
-        using buffer_type = Communicate::buffer_type;
+        using buffer_type = Communicate::buffer_type<memory_space>;
 
         // constructor and destructor
         FDTDSolver(Field_t charge, VField_t current, VField_t E, VField_t B, double timestep = 0.05,

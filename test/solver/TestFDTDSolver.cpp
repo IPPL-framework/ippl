@@ -35,7 +35,7 @@
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
-#include "FDTDSolver.h"
+#include "Solver/FDTDSolver.h"
 
 KOKKOS_INLINE_FUNCTION double sine(double n, double dt) {
     return 100 * std::sin(n * dt);
