@@ -112,8 +112,7 @@ namespace ippl {
         typedef Field<Tg, Dim, mesh_type, Centering> Field_gt;
         typedef Field<int, Dim, mesh_type, Centering> IField_t;
         typedef Field<Kokkos::complex<Tg>, Dim, mesh_type, Centering> CxField_gt;
-        typedef FFT<RCTransform, Field_gt> FFT_t; // Real-to-complex tranform
-        typedef typename FFT_t::ComplexField CxField_t;
+        typedef FFT<RCTransform, Field_gt> FFT_t;  // Real-to-complex tranform
         typedef Vector<Tg, Dim> Vector_t;
         typedef typename mesh_type::matrix_type Matrix_t;
         typedef Field<Matrix_t, Dim, mesh_type, Centering> MField_t;
