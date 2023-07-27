@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
         PLayout_t<float, Dim> PL(FL, mesh);
 
         double Q           = -1562.5;
-        float Bext        = 5.0;
+        double Bext        = 5.0;
         std::string solver = argv[6];
         P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
@@ -333,8 +333,8 @@ int main(int argc, char* argv[]) {
         // P->dumpLocalDomains(FL, 0);
         IpplTimings::stopTimer(dumpDataTimer);
 
-        float alpha = -0.5 * dt;
-        float DrInv = 1.0 / (1 + (std::pow((alpha * Bext), 2)));
+        double alpha = -0.5 * dt;
+        double DrInv = 1.0 / (1 + (std::pow((alpha * Bext), 2)));
         // begin main timestep loop
         msg << "Starting iterations ..." << endl;
         for (unsigned int it = 0; it < nt; it++) {
@@ -350,14 +350,14 @@ int main(int argc, char* argv[]) {
             auto Rview = P->R.getView();
             auto Pview = P->P.getView();
             auto Eview = P->E.getView();
-            float V0  = 30 * rmax[2];
+            double V0  = 30 * rmax[2];
             Kokkos::parallel_for(
                 "Kick1", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-                    float Eext_x =
+                    double Eext_x =
                         -(Rview(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
-                    float Eext_y =
+                    double Eext_y =
                         -(Rview(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
-                    float Eext_z =
+                    double Eext_z =
                         (Rview(j)[2] - 0.5 * rmax[2]) * (V0 / (Kokkos::pow(rmax[2], 2)));
 
                     Eview(j)[0] += Eext_x;
@@ -409,11 +409,11 @@ int main(int argc, char* argv[]) {
             auto E2view = P->E.getView();
             Kokkos::parallel_for(
                 "Kick2", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-                    float Eext_x =
+                    double Eext_x =
                         -(R2view(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
-                    float Eext_y =
+                    double Eext_y =
                         -(R2view(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
-                    float Eext_z =
+                    double Eext_z =
                         (R2view(j)[2] - 0.5 * rmax[2]) * (V0 / (Kokkos::pow(rmax[2], 2)));
 
                     E2view(j)[0] += Eext_x;
