@@ -34,6 +34,14 @@ if (ENABLE_FFT)
         ${MPI_CXX_LIBRARIES}
     )
 
+    add_executable (TestGaussian_convergence2D TestGaussian_convergence2D.cpp)
+    target_link_libraries (
+        TestGaussian_convergence2D
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
+
+
     add_executable (TestSphere TestSphere.cpp)
     target_link_libraries (
         TestSphere
