@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
         }
         std::stringstream ss;
         ss << "timing_" << pt << "pt_" << iterations << "iterations_" << ippl::Comm->size()
-        << "ranks.dat";
+           << "ranks.dat";
         IpplTimings::print(ss.str());
     }
     ippl::finalize();

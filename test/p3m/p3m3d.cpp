@@ -517,7 +517,7 @@ int main(int argc, char* argv[]) {
 
                         if (type != POINT
                             && dot(pos - source, pos - source)
-                                <= (radius + pdist / 3) * (radius + pdist / 3))
+                                   <= (radius + pdist / 3) * (radius + pdist / 3))
                             continue;
                         P->create(1);
                         P->R[index] = pos;
@@ -552,7 +552,7 @@ int main(int argc, char* argv[]) {
                         Vektor<double, Dim> pos;
                         do {
                             pos = 2
-                                * Vektor<double, Dim>((IpplRandom() - 0.5), (IpplRandom() - 0.5),
+                                  * Vektor<double, Dim>((IpplRandom() - 0.5), (IpplRandom() - 0.5),
                                                         (IpplRandom() - 0.5));
                         } while (dot(pos, pos) > 1);
 

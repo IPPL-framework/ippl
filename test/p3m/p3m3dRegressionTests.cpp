@@ -606,9 +606,10 @@ int main(int argc, char* argv[]) {
         else if (argv[param] == std::string("twostream"))
             test = TWOSTREAM;
         else if (argv[param] == std::string("recurrence"))
-            std::cout << "Please call the program with a valid test from [sphere, recurrence, landau, "
-                        "twostream]"
-                    << std::endl;
+            std::cout
+                << "Please call the program with a valid test from [sphere, recurrence, landau, "
+                   "twostream]"
+                << std::endl;
 
         nr    = Vektor<int, Dim>(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
         param = 5;
@@ -659,8 +660,10 @@ int main(int argc, char* argv[]) {
                 Vektor<int, Dim> Nx(4, 4, 32);
                 Vektor<int, Dim> Nv(8, 8, 128);
                 Vektor<double, Dim> Vmax(6, 6, 6);
-                P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, Nx, Nv, Vmax);
-                createParticleDistributionTwoStream(P, extend_l, extend_r, Nx, Nv, Vmax, ampl_alpha);
+                P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, Nx, Nv,
+                                                    Vmax);
+                createParticleDistributionTwoStream(P, extend_l, extend_r, Nx, Nv, Vmax,
+                                                    ampl_alpha);
                 P->interpolate_distribution((extend_r - extend_l) / (Nx), 2. * Vmax / (Nv));
                 write_f_field(P->f_m, P, 0, "f_m");
                 break;
@@ -675,8 +678,10 @@ int main(int argc, char* argv[]) {
                 Vektor<int, Dim> Nx(8, 8, 8);
                 Vektor<int, Dim> Nv(32, 32, 32);
                 Vektor<double, Dim> Vmax(6, 6, 6);
-                P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, Nx, Nv, Vmax);
-                createParticleDistributionRecurrence(P, extend_l, extend_r, Nx, Nv, Vmax, ampl_alpha);
+                P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, Nx, Nv,
+                                                    Vmax);
+                createParticleDistributionRecurrence(P, extend_l, extend_r, Nx, Nv, Vmax,
+                                                     ampl_alpha);
                 break;
             }
             case LANDAU: {
@@ -688,7 +693,8 @@ int main(int argc, char* argv[]) {
                 Vektor<int, Dim> Nx(8, 8, 8);
                 Vektor<int, Dim> Nv(32, 32, 32);
                 Vektor<double, Dim> Vmax(6, 6, 6);
-                P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, Nx, Nv, Vmax);
+                P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, Nx, Nv,
+                                                    Vmax);
                 createParticleDistributionLandau(P, extend_l, extend_r, Nx, Nv, Vmax, ampl_alpha);
 
                 break;
@@ -701,9 +707,10 @@ int main(int argc, char* argv[]) {
                 Vektor<int, Dim> Nx(16, 16, 16);
                 Vektor<int, Dim> Nv(16, 16, 16);
                 Vektor<double, Dim> Vmax(6, 6, 6);
-                P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, Nx, Nv, Vmax);
-                createParticleDistribution(P, "random", 20000, 0.00005, extend_l, extend_r, source, 1.,
-                                        0);
+                P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, Nx, Nv,
+                                                    Vmax);
+                createParticleDistribution(P, "random", 20000, 0.00005, extend_l, extend_r, source,
+                                           1., 0);
 
                 break;
             }
@@ -847,11 +854,12 @@ int main(int argc, char* argv[]) {
 
                 if (radius <= sphere_radius) {
                     exact =
-                        k0 * (total_charge * radius / (sphere_radius * sphere_radius * sphere_radius));
+                        k0
+                        * (total_charge * radius / (sphere_radius * sphere_radius * sphere_radius));
                     diff = E - exact;
 
                     exactV = k0 * total_charge / (2. * sphere_radius)
-                            * (3. - radius * radius / (sphere_radius * sphere_radius));
+                             * (3. - radius * radius / (sphere_radius * sphere_radius));
                     diffV = V - exactV;
                 } else {
                     if (radius > 0) {
@@ -875,8 +883,8 @@ int main(int argc, char* argv[]) {
                 l2_V_exact += exactV * exactV;
             }
             // reduce all relevant quantities:
-            double Error, L2_exact, ErrorV, L2_V_exact, Total_E, Total_V, Total_E_exact, Total_V_exact,
-                Potential_energy;
+            double Error, L2_exact, ErrorV, L2_V_exact, Total_E, Total_V, Total_E_exact,
+                Total_V_exact, Potential_energy;
             reduce(error, Error, OpAddAssign());
             reduce(l2_exact, L2_exact, OpAddAssign());
             reduce(errorV, ErrorV, OpAddAssign());
@@ -891,8 +899,8 @@ int main(int argc, char* argv[]) {
 
             double Relative_error   = std::sqrt(Error) / std::sqrt(L2_exact);
             double Relative_V_error = std::sqrt(ErrorV) / std::sqrt(L2_V_exact);
-            // double U = k0*3./5.*total_charge*total_charge/sphere_radius; //electric energy stored in
-            // solid charged sphere for infinite domain
+            // double U = k0*3./5.*total_charge*total_charge/sphere_radius; //electric energy stored
+            // in solid charged sphere for infinite domain
 
             double Ufinite =
                 0.0394785;  // electric energy stored in solid charged sphere for finite domain 8^3
@@ -902,13 +910,13 @@ int main(int argc, char* argv[]) {
                 std::cout << "master node prints: Q = " << total_charge << std::endl;
                 Inform ofs(NULL, "data/statistics.txt", Inform::APPEND);
                 // mesh size , n particle, r_cut, alpha, smoothing eps, absolut_err, relative error,
-                // relative error in total E-field, absolut_V_err, relative V error, relative error in
-                // total V, deviation in sum(U) from solid sphere
+                // relative error in total E-field, absolut_V_err, relative V error, relative error
+                // in total V, deviation in sum(U) from solid sphere
                 ofs << nr[0] << "," << P->getTotalNum() << "," << interaction_radius << "," << eps
                     << "," << alpha << "," << Error << "," << Relative_error << ","
                     << fabs(Total_E - Total_E_exact) / Total_E_exact << "," << ErrorV << ","
-                    << Relative_V_error << "," << fabs(Total_V - Total_V_exact) / Total_V_exact << ","
-                    << std::abs(Potential_energy - U) / U << std::endl;
+                    << Relative_V_error << "," << fabs(Total_V - Total_V_exact) / Total_V_exact
+                    << "," << std::abs(Potential_energy - U) / U << std::endl;
             }
         }
 

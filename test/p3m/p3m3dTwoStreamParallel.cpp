@@ -580,29 +580,29 @@ int main(int argc, char* argv[]) {
         }
 
         double interaction_radius = atof(argv[param++]);
-    #ifndef SPHERE
+#ifndef SPHERE
         double k = 0.5;
-    #endif
+#endif
 
         /////////// setup the computational domain boundaries /////////
-    #ifdef TWOSTREAM
+#ifdef TWOSTREAM
         // Vektor<double,Dim> extend_r(.25*M_PI,.25*M_PI,2.*M_PI/k);
         Vektor<double, Dim> extend_r(2. * M_PI / k, 2. * M_PI / k, 2. * M_PI / k);
         Vektor<double, Dim> extend_l(0, 0, 0);
         // Vektor<double,Dim> extend_r(1,1,1);
-    #endif
+#endif
 
-    #ifdef LANDAU
+#ifdef LANDAU
         Vektor<double, Dim> extend_l(0, 0, 0);
         Vektor<double, Dim> extend_r(2. * M_PI / k, 2. * M_PI / k, 2. * M_PI / k);
         // Vektor<double,Dim> extend_r(1,1,2.*M_PI/k);
-    #endif
+#endif
 
-    #ifdef SPHERE
+#ifdef SPHERE
         double L = 4.;
         Vektor<double, Dim> extend_l(-L, -L, -L);
         Vektor<double, Dim> extend_r(L, L, L);
-    #endif
+#endif
         ///////////////////////////////////////////////////////////////
 
         // read the remaining sim params
@@ -640,45 +640,45 @@ int main(int argc, char* argv[]) {
 
         /////////// Create the particle distribution
         ////////////////////////////////////////////////////////
-    #ifdef TWOSTREAM
+#ifdef TWOSTREAM
         Vektor<int, Dim> Nx(4, 4, 32);
         Vektor<int, Dim> Nv(8, 8, 128);
         Vektor<double, Dim> Vmax(6, 6, 6);
         double ampl_alpha = atof(argv[param++]);
         // refinement factor for mesh in 2d phase space
         int refine = 1;
-        P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
+        P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
                                             refine * Nv, Vmax);
 
         createParticleDistributionTwoStream(P, extend_l, extend_r, Nx, Nv, Vmax, ampl_alpha);
 
         P->interpolate_distribution((extend_r - extend_l) / (Nx), 2. * Vmax / (Nv));
         write_f_field(P->f_m, P, 0, "f_m");
-    #endif
+#endif
 
-    #ifdef LANDAU
+#ifdef LANDAU
         Vektor<int, Dim> Nx(8, 8, 8);
         Vektor<int, Dim> Nv(32, 32, 32);
         Vektor<double, Dim> Vmax(6, 6, 6);
         double ampl_alpha = atof(argv[param++]);
         // refinement factor for mesh in 2d phase space
         int refine = 1;
-        P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
+        P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
                                             refine * Nv, Vmax);
         createParticleDistributionLandau(P, extend_l, extend_r, Nx, Nv, Vmax, ampl_alpha);
         // std::cout << "charge per particle pls: " << std::endl;
         // double qi;
         // std::cin >> qi;
         // createParticleDistribution(P, "even",10000, qi, extend_l,extend_r);
-    #endif
+#endif
 
-    #ifdef SPHERE
+#ifdef SPHERE
         Vektor<int, Dim> Nx(16, 16, 16);
         Vektor<int, Dim> Nv(16, 16, 16);
         Vektor<double, Dim> Vmax(6, 6, 6);
         // refinement factor for mesh in 2d phase space
         int refine = 4;
-        P          = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
+        P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r, refine * Nx,
                                             refine * Nv, Vmax);
         createParticleDistribution(P, "random", 20000, 0.00005, extend_l, extend_r, source, 1., 0);
         // createParticleDistribution(P,"random", 10, 0.1, extend_l,extend_r,source,1.,0);
@@ -689,7 +689,7 @@ int main(int argc, char* argv[]) {
         P->update();
 
         dumpParticlesCSV(P, 0);
-    #endif
+#endif
 
         /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -725,10 +725,10 @@ int main(int argc, char* argv[]) {
         P->calc_kinetic_energy();
         writeEnergy(P, 0);
 
-    #ifndef TWOSTREAM
+#ifndef TWOSTREAM
         P->calc_Amplitude_E();
         writeEamplitude(P, 0);
-    #endif
+#endif
         for (int it = 0; it < iterations; it++) {
             // advance the particle positions
             // basic leapfrogging timestep scheme.  velocities are offset
@@ -754,37 +754,37 @@ int main(int argc, char* argv[]) {
             IpplTimings::stopTimer(particleTimer);
 
             P->update();
-    #ifdef SPHERE
+#ifdef SPHERE
             if (it % 1 == 0)
                 dumpVTKVector(P->eg_m, P, it + 1, "EFieldAfterPMandPP");
-    #endif
+#endif
                 // second part of leapfrog: advance velocitites
                 // assign(P->P, P->P + dt * P->Q/P->m * P->EF);
 
                 // assign(P->P, P->P + dt * P->EF);
 
-    #ifdef SPHERE
+#ifdef SPHERE
             // Print the particle positions
             if (it % 1 == 0) {
                 dumpParticlesCSV(P, it + 1);
             }
-    #endif
+#endif
 
             // compute quantities
             P->calc_field_energy();
             P->calc_kinetic_energy();
             P->calc_potential_energy();
             writeEnergy(P, it + 1);
-    #ifndef TWOSTREAM
+#ifndef TWOSTREAM
             P->calc_Amplitude_E();
             writeEamplitude(P, it + 1);
-    #endif
+#endif
 
-    #ifdef TWOSTREAM
+#ifdef TWOSTREAM
             msg << "start interpolation to phase space " << endl;
             P->interpolate_distribution((extend_r - extend_l) / (Nx), 2. * Vmax / (Nv));
             write_f_field(P->f_m, P, it + 1, "f_m");
-    #endif
+#endif
             msg << "Finished iteration " << it << endl;
         }
         ippl::Comm->barrier();
@@ -796,7 +796,7 @@ int main(int argc, char* argv[]) {
 
         IpplTimings::print();
 
-    #ifdef CALC_ERRORS
+#ifdef CALC_ERRORS
         //      Vektor<double,3> source(3.5,3.5,3.5);
         // Vektor<double,3> source(0,0,0);
         double sphere_radius = 1;
@@ -822,11 +822,12 @@ int main(int argc, char* argv[]) {
             double exact = 0, exactV = 0;
 
             if (radius <= sphere_radius) {
-                exact = k0 * (total_charge * radius / (sphere_radius * sphere_radius * sphere_radius));
-                diff  = E - exact;
+                exact =
+                    k0 * (total_charge * radius / (sphere_radius * sphere_radius * sphere_radius));
+                diff = E - exact;
 
                 exactV = k0 * total_charge / (2. * sphere_radius)
-                        * (3. - radius * radius / (sphere_radius * sphere_radius));
+                         * (3. - radius * radius / (sphere_radius * sphere_radius));
                 diffV = V - exactV;
 
             } else {
@@ -871,24 +872,24 @@ int main(int argc, char* argv[]) {
             k0 * 3. / 5. * total_charge * total_charge
             / sphere_radius;  // electric energy stored in solid charged sphere for infinite domain
 
-        //      double Ufinite = 0.0394785; //electric energy stored in solid charged sphere for finite
-        //      domain 8^3
+        //      double Ufinite = 0.0394785; //electric energy stored in solid charged sphere for
+        //      finite domain 8^3
         // double U = Ufinite;
 
         if (Ippl::myNode() == 0) {
             std::cout << "master node prints: Q = " << total_charge << std::endl;
             Inform ofs(NULL, "data/statistics.txt", Inform::APPEND);
             // mesh size , n particle, r_cut, alpha, smoothing eps, absolut_err, relative error,
-            // relative error in total E-field, absolut_V_err, relative V error, relative error in total
-            // V, deviation in sum(U) from solid sphere
-            ofs << nr[0] << "," << P->getTotalNum() << "," << interaction_radius << "," << eps << ","
-                << alpha << "," << Error << "," << Relative_error << ","
+            // relative error in total E-field, absolut_V_err, relative V error, relative error in
+            // total V, deviation in sum(U) from solid sphere
+            ofs << nr[0] << "," << P->getTotalNum() << "," << interaction_radius << "," << eps
+                << "," << alpha << "," << Error << "," << Relative_error << ","
                 << fabs(Total_E - Total_E_exact) / Total_E_exact << "," << ErrorV << ","
                 << Relative_V_error << "," << fabs(Total_V - Total_V_exact) / Total_V_exact << ","
                 << std::abs(P->potential_energy - U) / U << std::endl;
         }
 
-    #endif
+#endif
 
         delete P;
         delete FL;

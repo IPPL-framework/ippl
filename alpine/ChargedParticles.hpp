@@ -19,6 +19,7 @@
 #include "Ippl.h"
 
 #include <csignal>
+#include <thread>
 
 #include "Utility/TypeUtils.h"
 
@@ -26,6 +27,8 @@
 #include "Solver/FFTPeriodicPoissonSolver.h"
 #include "Solver/FFTPoissonSolver.h"
 #include "Solver/P3MSolver.h"
+
+unsigned LoggingPeriod = 1;
 
 // some typedefs
 template <unsigned Dim = 3>
@@ -40,13 +43,16 @@ using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
 template <unsigned Dim = 3>
 using FieldLayout_t = ippl::FieldLayout<Dim>;
 
-template <typename T = double, unsigned Dim = 3>
-using ORB = ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t<Dim>, Centering_t<Dim>, T>;
-
 using size_type = ippl::detail::size_type;
 
 template <typename T, unsigned Dim = 3>
-using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+using Vector = ippl::Vector<T, Dim>;
+
+template <typename T, unsigned Dim = 3, class... ViewArgs>
+using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>, ViewArgs...>;
+
+template <typename T = double, unsigned Dim = 3>
+using ORB = ippl::OrthogonalRecursiveBisection<Field<double, Dim>, T>;
 
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
@@ -54,11 +60,11 @@ using ParticleAttrib = ippl::ParticleAttrib<T>;
 template <typename T, unsigned Dim = 3>
 using Vector_t = ippl::Vector<T, Dim>;
 
-template <unsigned Dim = 3>
-using Field_t = Field<double, Dim>;
+template <unsigned Dim = 3, class... ViewArgs>
+using Field_t = Field<double, Dim, ViewArgs...>;
 
-template <typename T = double, unsigned Dim = 3>
-using VField_t = Field<Vector_t<T, Dim>, Dim>;
+template <typename T = double, unsigned Dim = 3, class... ViewArgs>
+using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
 template <typename T = double, unsigned Dim = 3>
@@ -198,6 +204,8 @@ void dumpVTK(Field_t<3>& rho, int nx, int ny, int nz, int iteration, double dx, 
 
 template <class PLayout, typename T, unsigned Dim = 3>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
+    using Base = ippl::ParticleBase<PLayout>;
+
 public:
     VField_t<T, Dim> E_m;
     Field_t<Dim> rho_m;
@@ -234,17 +242,16 @@ public:
     double loadbalancethreshold_m;
 
 public:
-    ParticleAttrib<double> q;                                        // charge
-    typename ippl::ParticleBase<PLayout>::particle_position_type P;  // particle velocity
-    typename ippl::ParticleBase<PLayout>::particle_position_type
-        E;  // electric field at particle position
+    ParticleAttrib<double> q;                 // charge
+    typename Base::particle_position_type P;  // particle velocity
+    typename Base::particle_position_type E;  // electric field at particle position
 
     /*
       This constructor is mandatory for all derived classes from
       ParticleBase as the bunch buffer uses this
     */
     ChargedParticles(PLayout& pl)
-        : ippl::ParticleBase<PLayout>(pl) {
+        : Base(pl) {
         registerAttributes();
         setPotentialBCs();
     }
@@ -252,7 +259,7 @@ public:
     ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
                      Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
                      std::string solver)
-        : ippl::ParticleBase<PLayout>(pl)
+        : Base(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
@@ -292,8 +299,8 @@ public:
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
-        this->E_m.updateLayout(fl);
-        this->rho_m.updateLayout(fl);
+        E_m.updateLayout(fl);
+        rho_m.updateLayout(fl);
         if (stype_m == "CG") {
             this->phi_m.updateLayout(fl);
             phi_m.setFieldBC(allPeriodic);
@@ -350,6 +357,9 @@ public:
     }
 
     bool balance(size_type totalP, const unsigned int nstep) {
+        if (ippl::Comm->size() < 2) {
+            return false;
+        }
         if (std::strcmp(TestName, "UniformPlasmaTest") == 0) {
             return (nstep % loadbalancefreq_m == 0);
         } else {
@@ -662,40 +672,48 @@ public:
         ippl::Comm->barrier();
     }
 
-    void dumpLandau() {
+    typename VField_t<T, Dim>::HostMirror getEMirror() const {
+        auto Eview = E_m.getHostMirror();
+        updateEMirror(Eview);
+        return Eview;
+    }
+
+    void updateEMirror(typename VField_t<T, Dim>::HostMirror& mirror) const {
+        Kokkos::deep_copy(mirror, E_m.getView());
+    }
+
+    void dumpLandau() { dumpLandau(E_m.getView()); }
+
+    template <typename View>
+    void dumpLandau(const View& Eview) {
         const int nghostE = E_m.getNghost();
-        auto Eview        = E_m.getView();
-        double fieldEnergy, ExAmp;
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        double temp            = 0.0;
+        double localEx2 = 0, localExNorm = 0;
         ippl::parallel_reduce(
-            "Ex inner product", ippl::getRangePolicy(Eview, nghostE),
-            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply accesses the view at the given indices and obtains a
+            "Ex stats", ippl::getRangePolicy(Eview, nghostE),
+            KOKKOS_LAMBDA(const index_array_type& args, double& E2, double& ENorm) {
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
                 // reference; see src/Expression/IpplOperations.h
-                double myVal = std::pow(ippl::apply(Eview, args)[0], 2);
-                valL += myVal;
-            },
-            Kokkos::Sum<double>(temp));
-        double globaltemp = 0.0;
-        MPI_Reduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-        fieldEnergy = std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
+                double val = ippl::apply(Eview, args)[0];
+                double e2  = Kokkos::pow(val, 2);
+                E2 += e2;
 
-        double tempMax = 0.0;
-        ippl::parallel_reduce(
-            "Ex max norm", ippl::getRangePolicy(Eview, nghostE),
-            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
-                // ippl::apply accesses the view at the given indices and obtains a
-                // reference; see src/Expression/IpplOperations.h
-                double myVal = std::fabs(ippl::apply(Eview, args)[0]);
-                if (myVal > valL) {
-                    valL = myVal;
+                double norm = Kokkos::fabs(ippl::apply(Eview, args)[0]);
+                if (norm > ENorm) {
+                    ENorm = norm;
                 }
             },
-            Kokkos::Max<double>(tempMax));
-        ExAmp = 0.0;
-        MPI_Reduce(&tempMax, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
+            Kokkos::Sum<double>(localEx2), Kokkos::Max<double>(localExNorm));
+
+        double globaltemp = 0.0;
+        MPI_Reduce(&localEx2, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
+        double fieldEnergy =
+            std::reduce(hr_m.begin(), hr_m.end(), globaltemp, std::multiplies<double>());
+
+        double ExAmp = 0.0;
+        MPI_Reduce(&localExNorm, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;

@@ -31,7 +31,7 @@
 
 #include <iostream>
 
-#include "P3MSolver.h"
+#include "Solver/P3MSolver.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);

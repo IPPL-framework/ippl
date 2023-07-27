@@ -164,41 +164,20 @@ namespace ippl {
         return split(l, r, max_dim);
     }
 
-#if __cplusplus < 202002L
-    namespace detail {
-        template <bool first, size_t... Idx>
-        KOKKOS_INLINE_FUNCTION Vector<int, sizeof...(Idx)> constructIndexVector(
-            const Index indices[], const std::index_sequence<Idx...>&) {
-            if constexpr (first)
-                return Vector<int, sizeof...(Idx)>{indices[Idx].first()...};
-            else
-                return Vector<int, sizeof...(Idx)>{indices[Idx].last()...};
-        };
-    }  // namespace detail
-#endif
-
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION Vector<int, Dim> NDIndex<Dim>::first() const {
-#if __cplusplus < 202002L
-        return detail::constructIndexVector<true>(indices_m, std::make_index_sequence<Dim>{});
-#else
         auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
             return Vector<int, Dim>{indices_m[Idx].first()...};
         };
         return construct(std::make_index_sequence<Dim>{});
-#endif
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION Vector<int, Dim> NDIndex<Dim>::last() const {
-#if __cplusplus < 202002L
-        return detail::constructIndexVector<false>(indices_m, std::make_index_sequence<Dim>{});
-#else
         auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
             return Vector<int, Dim>{indices_m[Idx].last()...};
         };
         return construct(std::make_index_sequence<Dim>{});
-#endif
     }
 
     template <unsigned Dim>

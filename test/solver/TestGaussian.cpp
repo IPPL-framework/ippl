@@ -44,7 +44,7 @@
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
-#include "FFTPoissonSolver.h"
+#include "Solver/FFTPoissonSolver.h"
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {
@@ -106,8 +106,8 @@ int main(int argc, char* argv[]) {
         std::string algorithm = argv[7];  // Hockney or Vico
 
         // print out info and title for the relative error (L2 norm)
-        msg << "Test Gaussian, grid = " << nr << ", heffte params: " << reshape << " " << communication
-            << " " << reordering << ", algorithm = " << algorithm << endl;
+        msg << "Test Gaussian, grid = " << nr << ", heffte params: " << reshape << " "
+            << communication << " " << reordering << ", algorithm = " << algorithm << endl;
         msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
 
         // domain
@@ -143,18 +143,13 @@ int main(int argc, char* argv[]) {
         exactE.initialize(mesh, layout);
         fieldE.initialize(mesh, layout);
 
-        field Ex, Ey, Ez;
-        Ex.initialize(mesh, layout);
-        Ey.initialize(mesh, layout);
-        Ez.initialize(mesh, layout);
-
         // assign the rho field with a gaussian
-        typename field::view_type view_rho = rho.getView();
-        const int nghost                   = rho.getNghost();
-        const auto& ldom                   = layout.getLocalNDIndex();
+        auto view_rho    = rho.getView();
+        const int nghost = rho.getNghost();
+        const auto& ldom = layout.getLocalNDIndex();
 
         Kokkos::parallel_for(
-            "Assign rho field", ippl::getRangePolicy(view_rho, nghost),
+            "Assign rho field", rho.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // go from local to global indices
                 const int ig = i + ldom[0].first() - nghost;
@@ -170,10 +165,10 @@ int main(int argc, char* argv[]) {
             });
 
         // assign the exact field with its values (erf function)
-        typename field::view_type view_exact = exact.getView();
+        auto view_exact = exact.getView();
 
         Kokkos::parallel_for(
-            "Assign exact field", ippl::getRangePolicy(view_exact, nghost),
+            "Assign exact field", exact.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;
@@ -190,7 +185,7 @@ int main(int argc, char* argv[]) {
         auto view_exactE = exactE.getView();
 
         Kokkos::parallel_for(
-            "Assign exact E-field", ippl::getRangePolicy(view_exactE, nghost),
+            "Assign exact E-field", exactE.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 const int ig = i + ldom[0].first() - nghost;
                 const int jg = j + ldom[1].first() - nghost;
@@ -200,9 +195,7 @@ int main(int argc, char* argv[]) {
                 double y = (jg + 0.5) * hr[1] + origin[1];
                 double z = (kg + 0.5) * hr[2] + origin[2];
 
-                view_exactE(i, j, k)[0] = exact_E(x, y, z)[0];
-                view_exactE(i, j, k)[1] = exact_E(x, y, z)[1];
-                view_exactE(i, j, k)[2] = exact_E(x, y, z)[2];
+                view_exactE(i, j, k) = exact_E(x, y, z);
             });
 
         // Parameter List to pass to solver
@@ -260,66 +253,54 @@ int main(int argc, char* argv[]) {
             // solve the Poisson equation -> rho contains the solution (phi) now
             FFTsolver.solve();
 
-            const int nghostE = fieldE.getNghost();
-            auto Eview        = fieldE.getView();
-
-            auto viewEx = Ex.getView();
-            auto viewEy = Ey.getView();
-            auto viewEz = Ez.getView();
-
-            Kokkos::parallel_for(
-                "Vector E reduce", ippl::getRangePolicy(Eview, nghostE),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                    viewEx(i, j, k) = Eview(i, j, k)[0];
-                    viewEy(i, j, k) = Eview(i, j, k)[1];
-                    viewEz(i, j, k) = Eview(i, j, k)[2];
-                });
-
             // compute relative error norm for potential
             rho        = rho - exact;
             double err = norm(rho) / norm(exact);
 
             // compute relative error norm for the E-field components
             ippl::Vector<double, Dim> errE{0.0, 0.0, 0.0};
-            fieldE           = fieldE - exactE;
-            auto view_fieldE = fieldE.getView();
+            fieldE = fieldE - exactE;
+
+            auto Eview = fieldE.getView();
 
             for (size_t d = 0; d < Dim; ++d) {
                 double temp = 0.0;
                 Kokkos::parallel_reduce(
-                    "Vector errorNr reduce", ippl::getRangePolicy(view_fieldE, nghost),
+                    "Vector errorNr reduce", fieldE.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                        double myVal = pow(view_fieldE(i, j, k)[d], 2);
+                        double myVal = Kokkos::pow(Eview(i, j, k)[d], 2);
                         valL += myVal;
                     },
                     Kokkos::Sum<double>(temp));
 
                 double globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
+                              ippl::Comm->getCommunicator());
                 double errorNr = std::sqrt(globaltemp);
 
                 temp = 0.0;
                 Kokkos::parallel_reduce(
-                    "Vector errorDr reduce", ippl::getRangePolicy(view_exactE, nghost),
+                    "Vector errorDr reduce", exactE.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& valL) {
-                        double myVal = pow(view_exactE(i, j, k)[d], 2);
+                        double myVal = Kokkos::pow(view_exactE(i, j, k)[d], 2);
                         valL += myVal;
                     },
                     Kokkos::Sum<double>(temp));
 
                 globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
+                              ippl::Comm->getCommunicator());
                 double errorDr = std::sqrt(globaltemp);
 
                 errE[d] = errorNr / errorDr;
             }
 
-            msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1] << " "
-                << errE[2] << endl;
+            msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1]
+                << " " << errE[2] << endl;
 
             // reassign the correct values to the fields for the loop to work
             Kokkos::parallel_for(
-                "Assign rho field", ippl::getRangePolicy(view_rho, nghost),
+                "Assign rho field", rho.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     // go from local to global indices
                     const int ig = i + ldom[0].first() - nghost;
@@ -335,7 +316,7 @@ int main(int argc, char* argv[]) {
                 });
 
             Kokkos::parallel_for(
-                "Assign exact field", ippl::getRangePolicy(view_exact, nghost),
+                "Assign exact field", exact.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     const int ig = i + ldom[0].first() - nghost;
                     const int jg = j + ldom[1].first() - nghost;
@@ -349,7 +330,7 @@ int main(int argc, char* argv[]) {
                 });
 
             Kokkos::parallel_for(
-                "Assign exact E-field", ippl::getRangePolicy(view_exactE, nghost),
+                "Assign exact E-field", exactE.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     const int ig = i + ldom[0].first() - nghost;
                     const int jg = j + ldom[1].first() - nghost;
@@ -359,9 +340,7 @@ int main(int argc, char* argv[]) {
                     double y = (jg + 0.5) * hr[1] + origin[1];
                     double z = (kg + 0.5) * hr[2] + origin[2];
 
-                    view_exactE(i, j, k)[0] = exact_E(x, y, z)[0];
-                    view_exactE(i, j, k)[1] = exact_E(x, y, z)[1];
-                    view_exactE(i, j, k)[2] = exact_E(x, y, z)[2];
+                    view_exactE(i, j, k) = exact_E(x, y, z);
                 });
         }
 

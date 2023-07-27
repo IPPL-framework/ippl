@@ -663,7 +663,7 @@ int main(int argc, char* argv[]) {
         Vektor<double, Dim> Vmax(6, 6, 6);
         P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r);
         createParticleDistributionHeating(P, extend_l, extend_r, beam_radius, Nparticle,
-                                        charge_per_part, mass_per_part);
+                                          charge_per_part, mass_per_part);
 
         // COmpute and write temperature
         P->compute_temperature();
