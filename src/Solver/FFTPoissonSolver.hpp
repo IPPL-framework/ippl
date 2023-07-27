@@ -295,6 +295,7 @@ namespace ippl {
 
         // create the FFT object
         fft_m = std::make_unique<FFT_t>(*layout2_m, *layoutComplex_m, this->params_m);
+
         // if Vico, also need to create mesh and layout for 4N Fourier domain
         // on this domain, the truncated Green's function is defined
         // also need to create the 4N complex grid, on which precomputation step done
@@ -398,6 +399,7 @@ namespace ippl {
         static IpplTimings::TimerRef warmup = IpplTimings::getTimer("Warmup");
         IpplTimings::startTimer(warmup);
 
+        // warm-up the fft transform objects by doing a transform
         fft_m->transform(+1, rho2_mr, rho2tr_m);
         if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
             fft4n_m->transform(+1, grnL_m);
@@ -538,7 +540,7 @@ namespace ippl {
 
                     // write physical rho on [0,N-1] of doubled field
                     const bool isQuadrant1 = ((ig1 == ig2) && (jg1 == jg2) && (kg1 == kg2));
-                    view2(i, j, k)         = view1(i, j, k) * isQuadrant1;
+                    view2(i, j, k)         = static_cast<Trhs>(view1(i, j, k)) * isQuadrant1;
                 });
         }
 
@@ -661,7 +663,7 @@ namespace ippl {
 
                         // take [0,N-1] as physical solution
                         const bool isQuadrant1 = ((ig == ig2) && (jg == jg2) && (kg == kg2));
-                        view1(i, j, k)         = view2(i, j, k) * isQuadrant1;
+                        view1(i, j, k)         = static_cast<Trhs>(view2(i, j, k)) * isQuadrant1;
                     });
             }
             IpplTimings::stopTimer(dtos);
@@ -1102,9 +1104,9 @@ namespace ippl {
             // Restrict transformed grnL_m to 2N domain after precomputation step
 
             // get the field data first
-            typename Field_t::view_type view = grn_mr.getView();
-            const int nghost                 = grn_mr.getNghost();
-            const auto& ldom                 = layout2_m->getLocalNDIndex();
+            typename Field_gt::view_type view = grn_mr.getView();
+            const int nghost                  = grn_mr.getNghost();
+            const auto& ldom                  = layout2_m->getLocalNDIndex();
 
             // start a timer
             static IpplTimings::TimerRef ifftshift = IpplTimings::getTimer("Vico shift loop");
@@ -1166,9 +1168,9 @@ namespace ippl {
 
             grn_mr = -1.0 / (4.0 * pi * sqrt(grn_mr));
 
-            typename Field_t::view_type view = grn_mr.getView();
-            const int nghost                 = grn_mr.getNghost();
-            const auto& ldom                 = layout2_m->getLocalNDIndex();
+            typename Field_gt::view_type view = grn_mr.getView();
+            const int nghost                  = grn_mr.getNghost();
+            const auto& ldom                  = layout2_m->getLocalNDIndex();
 
             // Kokkos parallel for loop to find (0,0,0) point and regularize
             Kokkos::parallel_for(
@@ -1198,7 +1200,7 @@ namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
     void FFTPoissonSolver<FieldLHS, FieldRHS>::communicateVico(
         Vector<int, Dim> size, typename CxField_gt::view_type view_g,
-        const ippl::NDIndex<Dim> ldom_g, const int nghost_g, typename Field_t::view_type view,
+        const ippl::NDIndex<Dim> ldom_g, const int nghost_g, typename Field_gt::view_type view,
         const ippl::NDIndex<Dim> ldom, const int nghost) {
         const auto& lDomains2 = layout2_m->getHostLocalDomains();
         const auto& lDomains4 = layout4_m->getHostLocalDomains();
