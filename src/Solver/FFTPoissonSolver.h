@@ -96,9 +96,6 @@ namespace ippl {
         // types for LHS and RHS
         using typename Base::lhs_type, typename Base::rhs_type;
 
-        // define a type for the 3 dimensional real to complex Fourier transform
-        typedef FFT<RCTransform, FieldRHS> FFT_t;
-
         // enum type for the algorithm
         enum Algorithm {
             HOCKNEY    = 0b01,
@@ -112,11 +109,12 @@ namespace ippl {
         // define matrix and matrix field types for the Hessian
         typedef FieldRHS Field_t;
         typedef typename FieldLHS::Centering_t Centering;
-        typedef Field<int, Dim, mesh_type, Centering> IField_t;
         typedef Field<Tg, Dim, mesh_type, Centering> Field_gt;
+        typedef Field<int, Dim, mesh_type, Centering> IField_t;
         typedef Field<Kokkos::complex<Tg>, Dim, mesh_type, Centering> CxField_gt;
+        typedef FFT<RCTransform, Field_gt> FFT_t; // Real-to-complex tranform
         typedef typename FFT_t::ComplexField CxField_t;
-        typedef Vector<Trhs, Dim> Vector_t;
+        typedef Vector<Tg, Dim> Vector_t;
         typedef typename mesh_type::matrix_type Matrix_t;
         typedef Field<Matrix_t, Dim, mesh_type, Centering> MField_t;
 
@@ -169,28 +167,28 @@ namespace ippl {
         // communication used for multi-rank Vico-Greengard's Green's function
         void communicateVico(Vector<int, Dim> size, typename CxField_gt::view_type view_g,
                              const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
-                             typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
+                             typename Field_gt::view_type view, const ippl::NDIndex<Dim> ldom,
                              const int nghost);
 
     private:
         // create a field to use as temporary storage
         // references to it can be created to make the code where it is used readable
-        Field_t storage_field;
+        Field_gt storage_field;
 
-        Field_t& rho2_mr =
+        Field_gt& rho2_mr =
             storage_field;  // the charge-density field with mesh doubled in each dimension
-        Field_t& grn_mr = storage_field;  // the Green's function
+        Field_gt& grn_mr = storage_field;  // the Green's function
 
         // rho2tr_m is the Fourier transformed charge-density field
         // domain3_m and mesh3_m are used
-        CxField_t rho2tr_m;
+        CxField_gt rho2tr_m;
 
         // grntr_m is the Fourier transformed Green's function
         // domain3_m and mesh3_m are used
-        CxField_t grntr_m;
+        CxField_gt grntr_m;
 
         // temp_m field for the E-field computation
-        CxField_t temp_m;
+        CxField_gt temp_m;
 
         // fields that facilitate the calculation in greensFunction()
         IField_t grnIField_m[Dim];
