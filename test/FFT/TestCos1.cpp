@@ -40,14 +40,13 @@ int main(int argc, char* argv[]) {
         field_type field(mesh, layout);
 
         ippl::ParameterList fftParams;
-
         fftParams.add("use_heffte_defaults", false);
         fftParams.add("use_pencils", true);
         fftParams.add("use_reorder", false);
         fftParams.add("use_gpu_aware", true);
         fftParams.add("comm", ippl::p2p_pl);
 
-        typedef ippl::FFT<ippl::SineTransform, field_type> FFT_type;
+        typedef ippl::FFT<ippl::Cos1Transform, field_type> FFT_type;
 
         std::unique_ptr<FFT_type> fft;
 

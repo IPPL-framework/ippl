@@ -3,16 +3,15 @@
 // This program tests the FFTPoissonSolver class with a Gaussian source.
 // The solve is iterated 5 times for the purpose of timing studies.
 //   Usage:
-//     srun ./TestGaussian
-//                  <nx> <ny> <nz> <reshape> <comm>
-//                  <reorder> <algorithm> --info 5
+//     srun ./TestGaussian <nx> <ny> <nz> <reshape> <comm> <reorder>
+//                         <algorithm> --info 5
 //     nx        = No. cell-centered points in the x-direction
 //     ny        = No. cell-centered points in the y-direction
 //     nz        = No. cell-centered points in the z-direction
 //     reshape   = "pencils" or "slabs" (heffte parameter)
 //     comm      = "a2a", "a2av", "p2p", "p2p_pl" (heffte parameter)
 //     reorder   = "reorder" or "no-reorder" (heffte parameter)
-//     algorithm = "HOCKNEY" or "VICO", types of open BC algorithms
+//     algorithm = "HOCKNEY", "VICO", or "VICO_2", types of open BC algorithms
 //
 //     For more info on the heffte parameters, see:
 //     https://github.com/icl-utk-edu/heffte
@@ -238,6 +237,8 @@ int main(int argc, char* argv[]) {
             params.add("algorithm", Solver_t::HOCKNEY);
         } else if (algorithm == "VICO") {
             params.add("algorithm", Solver_t::VICO);
+        } else if (algorithm == "VICO_2") {
+            params.add("algorithm", Solver_t::VICO_2);
         } else {
             throw IpplException("TestGaussian.cpp main()", "Unrecognized algorithm type");
         }

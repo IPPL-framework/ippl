@@ -4,7 +4,7 @@
 // Different problem sizes are used for the purpose of convergence tests.
 //   Usage:
 //     srun ./TestGaussian_convergence <algorithm> <precision> --info 5
-//     algorithm = "HOCKNEY" or "VICO", types of open BC algorithms
+//     algorithm = "HOCKNEY", "VICO", or "VICO_2" types of open BC algorithms
 //     precision = "DOUBLE" or "SINGLE", precision of the fields
 //
 //     Example:
@@ -230,6 +230,8 @@ void compute_convergence(std::string algorithm, int pt) {
         params.add("algorithm", Solver_t<T>::HOCKNEY);
     } else if (algorithm == "VICO") {
         params.add("algorithm", Solver_t<T>::VICO);
+    } else if (algorithm == "VICO_2") {
+        params.add("algorithm", Solver_t<T>::VICO_2);
     } else {
         throw IpplException("TestGaussian_convergence.cpp main()", "Unrecognized algorithm type");
     }
