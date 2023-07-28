@@ -91,7 +91,7 @@ namespace ippl {
             using backend     = heffte::backend::fftw;
             using backendSine = heffte::backend::fftw_sin;
             using backendCos  = heffte::backend::fftw_cos;
-            using backendCos1  = heffte::backend::fftw_cos1;
+            using backendCos1 = heffte::backend::fftw_cos1;
         };
 #endif
 #ifdef Heffte_ENABLE_MKL
@@ -108,7 +108,7 @@ namespace ippl {
             using backend     = heffte::backend::cufft;
             using backendSine = heffte::backend::cufft_sin;
             using backendCos  = heffte::backend::cufft_cos;
-            using backendCos1  = heffte::backend::cufft_cos1;
+            using backendCos1 = heffte::backend::cufft_cos1;
         };
 #endif
 
@@ -276,8 +276,9 @@ namespace ippl {
     public:
         typedef FieldLayout<Dim> Layout_t;
 
-        using heffteBackend = typename detail::HeffteBackendType<typename Field::memory_space>::backendCos1;
-        using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename Field::memory_space>::backendCos1;
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.

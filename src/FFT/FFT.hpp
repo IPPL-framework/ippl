@@ -385,8 +385,8 @@ namespace ippl {
     */
     template <typename Field>
     void FFT<Cos1Transform, Field>::setup(const std::array<long long, 3>& low,
-                                         const std::array<long long, 3>& high,
-                                         const ParameterList& params) {
+                                          const std::array<long long, 3>& high,
+                                          const ParameterList& params) {
         heffte::box3d<long long> inbox  = {low, high};
         heffte::box3d<long long> outbox = {low, high};
 
