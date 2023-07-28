@@ -447,10 +447,10 @@ namespace ippl {
                 apply(tempField, args - nghost) = apply(fview, args);
             });
 
-        if (direction == 1) {
+        if (direction == FORWARD) {
             heffte_m->forward(tempField.data(), tempField.data(), workspace_m.data(),
                               heffte::scale::full);
-        } else if (direction == -1) {
+        } else if (direction == BACKWARD) {
             heffte_m->backward(tempField.data(), tempField.data(), workspace_m.data(),
                                heffte::scale::none);
         } else {

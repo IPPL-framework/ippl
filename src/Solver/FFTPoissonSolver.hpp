@@ -438,13 +438,13 @@ namespace ippl {
         static IpplTimings::TimerRef warmup = IpplTimings::getTimer("Warmup");
         IpplTimings::startTimer(warmup);
 
+        // "empty" transforms to warmup all the FFTs
         fft_m->transform(FORWARD, rho2_mr, rho2tr_m);
         if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
             fft4n_m->transform(FORWARD, grnL_m);
         }
-
         if (alg == Algorithm::VICO_2) {
-            fft2n1_m->transform(+1, grn2n1_m);
+            fft2n1_m->transform(FORWARD, grn2n1_m);
         }
 
         IpplTimings::stopTimer(warmup);
@@ -562,9 +562,6 @@ namespace ippl {
                     unpack(intersection, view2, fd_m, nghost2, ldom2);
                 }
             }
-            if (alg == Algorithm::VICO_2) {
-                fft2n1_m->transform(+1, grn2n1_m);
-            }
 
             // wait for all messages to be received
             if (requests.size() > 0) {
@@ -628,17 +625,20 @@ namespace ippl {
             // Vico: need to multiply by normalization factor of 1/4N^3,
             // since only backward transform was performed on the 4N grid
             // Vico_2: need to multiply by a factor of (2N)^3 to match the normalization factor in the transform.
-                for (unsigned int i = 0; i < Dim; ++i) {
-                    if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
-                        rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
-                    }
-                    else if ((alg == Algorithm::HOCKNEY)) {
+            for (unsigned int i = 0; i < Dim; ++i) {
+                switch (alg) {
+                    case Algorithm::HOCKNEY:
                         rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
-                    }
-                    else {
-                        rho2_mr = rho2_mr * 2.0 * nr_m[i];
-                    }
+                        break;
+                    case Algorithm::VICO:
+                    case Algorithm::BIHARMONIC:
+                        rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
+                        break;
+                    case Algorithm::VICO_2:
+                        rho2_mr = rho2_mr * (1.0 / 2.0);
+                        break;
                 }
+            }
 
             // start a timer
             static IpplTimings::TimerRef dtos = IpplTimings::getTimer("Solve: Double to physical");
@@ -787,14 +787,18 @@ namespace ippl {
 
                 // apply proper normalization
                 for (unsigned int i = 0; i < Dim; ++i) {
-                    if ((alg == Algorithm::VICO) || (alg == Algorithm::BIHARMONIC)) {
-                        rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
-                    }
-                    else if ((alg == Algorithm::HOCKNEY)) {
-                        rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
-                    }
-                    else {
-                        rho2_mr = rho2_mr * 2.0 * nr_m[i];
+                    switch (alg) {
+                        case Algorithm::HOCKNEY:
+                            rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                            break;
+                        case Algorithm::VICO:
+                        case Algorithm::BIHARMONIC:
+                            rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
+                            break;
+                        case Algorithm::VICO_2:
+                            std::cout << "inside switch case" << std::endl;
+                            rho2_mr = rho2_mr * (1.0 / 2.0);
+                            break;
                     }
                 }
 
@@ -946,10 +950,18 @@ namespace ippl {
 
                     // apply proper normalization
                     for (unsigned int i = 0; i < Dim; ++i) {
-                        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
-                            rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
-                        } else {
-                            rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                        switch (alg) {
+                            case Algorithm::HOCKNEY:
+                                rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                                break;
+                            case Algorithm::VICO:
+                            case Algorithm::BIHARMONIC:
+                                rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
+                                break;
+                            case Algorithm::VICO_2:
+                                std::cout << "inside switch case" << std::endl;
+                                rho2_mr = rho2_mr * (1.0 / 2.0);
+                                break;
                         }
                     }
 
@@ -1268,11 +1280,7 @@ namespace ippl {
             IpplTimings::startTimer(fft4);
 
             // inverse DCT transform of 2N+1 green's function for the precomputation
-            fft2n1_m->transform(-1, grn2n1_m);
-            grn2n1_m =
-                grn2n1_m
-                * (1.0
-                   / ((4 * size[0]) * (4 * size[1]) * (4 * size[2])));
+            fft2n1_m->transform(BACKWARD, grn2n1_m);
 
             IpplTimings::stopTimer(fft4);
 
