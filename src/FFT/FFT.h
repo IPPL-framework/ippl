@@ -266,43 +266,23 @@ namespace ippl {
         void transform(TransformDirection direction, Field& f);
     };
     /**
-       Cosine transform class
+       Cosine type 1 transform class
     */
     template <typename Field>
-    class FFT<Cos1Transform, Field> {
+    class FFT<Cos1Transform, Field> : public IN_PLACE_FFT_BASE_CLASS(Field, backendCos1) {
         constexpr static unsigned Dim = Field::dim;
-        using T                       = typename Field::value_type;
+        using Base                    = IN_PLACE_FFT_BASE_CLASS(Field, backendCos1);
 
     public:
-        typedef FieldLayout<Dim> Layout_t;
+        using Base::Base;
+        using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
-        using heffteBackend =
-            typename detail::HeffteBackendType<typename Field::memory_space>::backendCos1;
-        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
-
-        /** Create a new FFT object with the layout for the input Field and
-         * parameters for heffte.
+        /*!
+         * Perform in-place FFT
+         * @param direction Forward or backward transformation
+         * @param f Field whose transformation to compute (and overwrite)
          */
-        FFT(const Layout_t& layout, const ParameterList& params);
-
-        // Destructor
-        ~FFT() = default;
-
-        /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
-            transform. The output is over-written in the input.
-        */
-        void transform(int direction, Field& f);
-
-    private:
-        /**
-           setup performs the initialization necessary. heFFTe expects 3 sets of bounds,
-           so the arrays are zeroed and filled up to the given dimension.
-        */
-        void setup(const std::array<long long, 3>& low, const std::array<long long, 3>& high,
-                   const ParameterList& params);
-
-        std::shared_ptr<heffte::fft3d<heffteBackend, long long>> heffte_m;
-        workspace_t workspace_m;
+        void transform(TransformDirection direction, Field& f);
     };
 }  // namespace ippl
 

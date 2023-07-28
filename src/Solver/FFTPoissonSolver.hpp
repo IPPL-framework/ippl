@@ -610,7 +610,6 @@ namespace ippl {
             fft_m->transform(BACKWARD, rho2_mr, rho2tr_m);
 
             IpplTimings::stopTimer(fftc);
-
             // Hockney: multiply the rho2_mr field by the total number of points to account for
             // double counting (rho and green) of normalization factor in forward transform
             // also multiply by the mesh spacing^3 (to account for discretization)
@@ -628,7 +627,7 @@ namespace ippl {
                         rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                         break;
                     case Algorithm::VICO_2:
-                        rho2_mr = rho2_mr * (1.0 / 2.0);
+                        rho2_mr = rho2_mr * (1.0 / 4.0);
                         break;
                 }
             }
@@ -789,7 +788,7 @@ namespace ippl {
                             rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                             break;
                         case Algorithm::VICO_2:
-                            rho2_mr = rho2_mr * (1.0 / 2.0);
+                            rho2_mr = rho2_mr * (1.0 / 4.0);
                             break;
                     }
                 }
@@ -951,7 +950,7 @@ namespace ippl {
                                 rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                                 break;
                             case Algorithm::VICO_2:
-                                rho2_mr = rho2_mr * (1.0 / 2.0);
+                                rho2_mr = rho2_mr * (1.0 / 4.0);
                                 break;
                         }
                     }
