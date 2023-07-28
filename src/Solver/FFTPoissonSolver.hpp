@@ -241,17 +241,9 @@ namespace ippl {
         layout_mp = &(this->rhs_mp->getLayout());
         mesh_mp   = &(this->rhs_mp->get_mesh());
 
-        // get mesh spacing
-        hr_m = mesh_mp->getMeshSpacing();
-
-        // get origin
-        vector_type origin    = mesh_mp->getOrigin();
-        const scalar_type sum = std::abs(origin[0]) + std::abs(origin[1]) + std::abs(origin[2]);
-
-        // origin should always be 0 for Green's function computation to work...
-        if (sum != 0.0) {
-            throw IpplException("FFTPoissonSolver::initializeFields", "Origin is not 0");
-        }
+        // get mesh spacing and origin
+        hr_m               = mesh_mp->getMeshSpacing();
+        vector_type origin = mesh_mp->getOrigin();
 
         // create domain for the real fields
         domain_m = layout_mp->getDomain();
