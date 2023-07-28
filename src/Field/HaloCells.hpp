@@ -29,23 +29,23 @@ namespace ippl {
         HaloCells<T, Dim, ViewArgs...>::HaloCells() {}
 
         template <typename T, unsigned Dim, class... ViewArgs>
-        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view,
-                                                            const Layout_t* layout) {
+        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view, Layout_t* layout) {
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
-        void HaloCells<T, Dim, ViewArgs...>::fillHalo(view_type& view, const Layout_t* layout) {
+        void HaloCells<T, Dim, ViewArgs...>::fillHalo(view_type& view, Layout_t* layout) {
             exchangeBoundaries<assign>(view, layout, INTERNAL_TO_HALO);
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
         template <class Op>
-        void HaloCells<T, Dim, ViewArgs...>::exchangeBoundaries(view_type& view,
-                                                                const Layout_t* layout,
+        void HaloCells<T, Dim, ViewArgs...>::exchangeBoundaries(view_type& view, Layout_t* layout,
                                                                 SendOrder order) {
             using neighbor_list = typename Layout_t::neighbor_list;
             using range_list    = typename Layout_t::neighbor_range_list;
+
+            auto& comm = layout->comm;
 
             const neighbor_list& neighbors = layout->getNeighbors();
             const range_list &sendRanges   = layout->getNeighborsSendRange(),
@@ -84,11 +84,10 @@ namespace ippl {
                     size_type nsends;
                     pack(range, view, haloData_m, nsends);
 
-                    buffer_type buf = Comm->getBuffer<memory_space, T>(
+                    buffer_type buf = comm.template getBuffer<memory_space, T>(
                         mpi::tag::HALO_SEND + i * cubeCount + index, nsends);
 
-                    Comm->isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++],
-                                nsends);
+                    comm.isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++], nsends);
                     buf->resetWritePos();
                 }
             }
@@ -109,10 +108,10 @@ namespace ippl {
 
                     size_type nrecvs = range.size();
 
-                    buffer_type buf = Comm->getBuffer<memory_space, T>(
+                    buffer_type buf = comm.template getBuffer<memory_space, T>(
                         mpi::tag::HALO_RECV + i * cubeCount + index, nrecvs);
 
-                    Comm->recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
+                    comm.recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
                     unpack<Op>(range, view, haloData_m);
@@ -202,7 +201,7 @@ namespace ippl {
         void HaloCells<T, Dim, ViewArgs...>::applyPeriodicSerialDim(view_type& view,
                                                                     const Layout_t* layout,
                                                                     const int nghost) {
-            int myRank           = Comm->rank();
+            int myRank           = layout->comm.rank();
             const auto& lDomains = layout->getHostLocalDomains();
             const auto& domain   = layout->getDomain();
             using index_type     = typename RangePolicy<Dim>::index_type;
