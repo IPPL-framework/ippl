@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
         for (unsigned int d = 0; d < dim; d++)
             allParallel[d] = ippl::PARALLEL;
 
-        ippl::FieldLayout<dim> layoutInput(ownedInput, allParallel);
+        ippl::FieldLayout<dim> layoutInput(MPI_COMM_WORLD, ownedInput, allParallel);
 
         std::array<double, dim> dx = {
             1.0 / double(pt[0]),
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
             }
             return 0;
         }
-        ippl::FieldLayout<dim> layoutOutput(ownedOutput, allParallel);
+        ippl::FieldLayout<dim> layoutOutput(MPI_COMM_WORLD, ownedOutput, allParallel);
 
         Mesh_t meshOutput(ownedOutput, hx, origin);
         field_type_complex fieldOutput(meshOutput, layoutOutput);

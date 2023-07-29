@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
 
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
-        FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
+        FieldLayout_t<Dim> FL(MPI_COMM_WORLD, domain, decomp, isAllPeriodic);
         PLayout_t<double, Dim> PL(FL, mesh);
 
         std::string solver = argv[arg++];

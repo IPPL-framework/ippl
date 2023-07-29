@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
             ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
             // all parallel layout, standard domain, normal axis order
-            ippl::FieldLayout<3> layout(owned, decomp);
+            ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, decomp);
 
             // define the R (rho) field
             ScalarField_t rho;
@@ -257,8 +257,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 double globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
-                              ippl::Comm->getCommunicator());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorNr = std::sqrt(globaltemp);
 
                 temp = 0.0;
@@ -273,8 +272,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
-                              ippl::Comm->getCommunicator());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorDr = std::sqrt(globaltemp);
 
                 errE[d] = errorNr / errorDr;

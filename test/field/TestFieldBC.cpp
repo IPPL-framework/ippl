@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
             allParallel[d] = ippl::PARALLEL;
         }
 
-        ippl::FieldLayout<dim> layout(owned, allParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, allParallel);
 
         double dx                        = 1.0 / double(pt);
         ippl::Vector<double, dim> hx     = dx;

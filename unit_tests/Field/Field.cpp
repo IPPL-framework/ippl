@@ -67,7 +67,7 @@ public:
             origin[d] = 0;
         }
 
-        auto layout            = std::make_shared<layout_type<Dim>>(owned, domDec);
+        auto layout            = std::make_shared<layout_type<Dim>>(MPI_COMM_WORLD, owned, domDec);
         std::get<Idx>(layouts) = layout;
 
         std::get<Idx>(meshes) = std::make_shared<mesh_type<Dim>>(owned, hx, origin);
@@ -190,7 +190,7 @@ TYPED_TEST(FieldTest, DeepCopy) {
 }
 
 TYPED_TEST(FieldTest, Sum) {
-    TypeParam val                    = 1.0;
+    TypeParam val                           = 1.0;
     TypeParam expected[TestFixture::MaxDim] = {val * this->nPoints[0]};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] * this->nPoints[d];
@@ -209,7 +209,7 @@ TYPED_TEST(FieldTest, Sum) {
 }
 
 TYPED_TEST(FieldTest, Norm1) {
-    TypeParam val                    = -1.5;
+    TypeParam val                           = -1.5;
     TypeParam expected[TestFixture::MaxDim] = {-val * this->nPoints[0]};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] * this->nPoints[d];
@@ -228,7 +228,7 @@ TYPED_TEST(FieldTest, Norm1) {
 }
 
 TYPED_TEST(FieldTest, Norm2) {
-    TypeParam val                   = 1.5;
+    TypeParam val                          = 1.5;
     TypeParam squared[TestFixture::MaxDim] = {val * val * this->nPoints[0]};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         squared[d] = squared[d - 1] * this->nPoints[d];
@@ -247,7 +247,7 @@ TYPED_TEST(FieldTest, Norm2) {
 }
 
 TYPED_TEST(FieldTest, NormInf) {
-    TypeParam val                    = 1.;
+    TypeParam val                           = 1.;
     TypeParam expected[TestFixture::MaxDim] = {this->nPoints[0] - val};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] + this->nPoints[d];

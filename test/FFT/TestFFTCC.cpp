@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
         for (unsigned int d = 0; d < dim; d++)
             allParallel[d] = ippl::PARALLEL;
 
-        ippl::FieldLayout<dim> layout(owned, allParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, allParallel);
 
         std::array<double, dim> dx = {
             1.0 / double(pt[0]),

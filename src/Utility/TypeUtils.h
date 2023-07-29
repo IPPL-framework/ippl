@@ -23,6 +23,8 @@
 
 #include <variant>
 
+#include "Utility/IpplException.h"
+
 namespace ippl {
     namespace detail {
 

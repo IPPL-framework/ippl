@@ -125,7 +125,7 @@ namespace ippl {
 
         // type for communication buffers
         using memory_space = typename FieldLHS::memory_space;
-        using buffer_type  = Communicate::buffer_type<memory_space>;
+        using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
 
         // types of mesh and mesh spacing
         using vector_type = typename mesh_type::vector_type;

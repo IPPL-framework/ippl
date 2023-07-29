@@ -145,7 +145,7 @@ void compute_convergence(std::string algorithm, int pt) {
     Mesh_t<T> mesh(owned, hx, origin);
 
     // all parallel layout, standard domain, normal axis order
-    ippl::FieldLayout<3> layout(owned, decomp);
+    ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, decomp);
 
     // define the R (rho) field
     ScalarField_t<T> rho;
@@ -264,8 +264,7 @@ void compute_convergence(std::string algorithm, int pt) {
 
         T globaltemp = 0.0;
 
-        MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
+        ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<T>());
         T errorNr = std::sqrt(globaltemp);
 
         temp = 0.0;
@@ -278,7 +277,7 @@ void compute_convergence(std::string algorithm, int pt) {
             Kokkos::Sum<T>(temp));
 
         globaltemp = 0.0;
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
+        ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<T>());
         T errorDr = std::sqrt(globaltemp);
 
         errE[d] = errorNr / errorDr;

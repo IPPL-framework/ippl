@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
         Vector_t origin = {-0.5, -0.5, -0.5};
 
         Mesh_t mesh(owned, hr, origin);
-        ippl::FieldLayout<dim> layout(owned, decomp);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, decomp);
 
         Field_t field;
         field.initialize(mesh, layout);

@@ -49,7 +49,7 @@ namespace ippl {
             }
         }
 
-        layoutComplex_mp = std::make_shared<Layout_t>(domainComplex, decomp);
+        layoutComplex_mp = std::make_shared<Layout_t>(layout_r.comm, domainComplex, decomp);
 
         mesh_type meshComplex(domainComplex, hComplex, originComplex);
 

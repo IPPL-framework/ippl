@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
             decomp[d] = ippl::PARALLEL;
         }
 
-        ippl::FieldLayout<dim> layout(owned, decomp);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, decomp);
 
         typedef ippl::BareField<double, dim, Kokkos::Cuda> cuda_field;
         typedef ippl::BareField<double, dim, Kokkos::OpenMP> omp_field;

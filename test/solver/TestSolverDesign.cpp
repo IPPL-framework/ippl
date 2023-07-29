@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
         }
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<dim> layout(owned, allParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, allParallel);
 
         // Unit box
         double dx                        = 1.0 / double(pt);

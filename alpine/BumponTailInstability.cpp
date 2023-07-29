@@ -170,7 +170,7 @@ struct PhaseDump {
     void initialize(size_t nr, double domain) {
         ippl::Index I(nr);
         ippl::NDIndex<2> owned(I, I);
-        layout = FieldLayout_t<2>(owned, serial);
+        layout = FieldLayout_t<2>(MPI_COMM_WORLD, owned, serial);
 
         Vector_t<double, 2> hx = {domain / nr, 16. / nr};
         Vector_t<double, 2> origin{0, -8};
@@ -323,7 +323,7 @@ int main(int argc, char* argv[]) {
 
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
-        FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
+        FieldLayout_t<Dim> FL(MPI_COMM_WORLD, domain, decomp, isAllPeriodic);
         PLayout_t<double, Dim> PL(FL, mesh);
 
         // Q = -\int\int f dx dv

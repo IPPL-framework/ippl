@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
             decomp[d] = ippl::PARALLEL;
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<dim> layout(owned, decomp);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, decomp);
 
         // domain [0,1]^3
         double dx                      = 1.0 / double(pt);
@@ -142,8 +142,7 @@ int main(int argc, char* argv[]) {
                 },
                 Kokkos::Sum<double>(temp));
             double globaltemp = 0.0;
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
-                          ippl::Comm->getCommunicator());
+            ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
             double errorNr = std::sqrt(globaltemp);
 
             temp       = 0.0;
@@ -159,8 +158,7 @@ int main(int argc, char* argv[]) {
                     valL += myVal;
                 },
                 Kokkos::Sum<double>(temp));
-            MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
-                          ippl::Comm->getCommunicator());
+            ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
             double errorDr = std::sqrt(globaltemp);
 
             errE[gd] = errorNr / errorDr;

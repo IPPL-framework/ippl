@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
             allParallel[d] = ippl::PARALLEL;
 
         typedef ippl::FieldLayout<dim> Layout_t;
-        Layout_t layout(owned, allParallel);
+        Layout_t layout(MPI_COMM_WORLD, owned, allParallel);
 
         std::array<double, dim> dx = {
             1.0 / double(pt[0]),

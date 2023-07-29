@@ -236,26 +236,25 @@ namespace ippl {
         attrib.gather(f, pp);
     }
 
-#define DefineParticleReduction(fun, name, op, MPI_Op)                               \
-    template <typename T, class... Properties>                                       \
-    T ParticleAttrib<T, Properties...>::name() {                                     \
-        T temp            = 0.0;                                                     \
-        using policy_type = Kokkos::RangePolicy<execution_space>;                    \
-        Kokkos::parallel_reduce(                                                     \
-            "fun", policy_type(0, *(this->localNum_mp)),                             \
-            KOKKOS_CLASS_LAMBDA(const size_t i, T& valL) {                           \
-                T myVal = dview_m(i);                                                \
-                op;                                                                  \
-            },                                                                       \
-            Kokkos::fun<T>(temp));                                                   \
-        T globaltemp      = 0.0;                                                     \
-        MPI_Datatype type = get_mpi_datatype<T>(temp);                               \
-        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Comm->getCommunicator()); \
-        return globaltemp;                                                           \
+#define DefineParticleReduction(fun, name, op, MPI_Op)            \
+    template <typename T, class... Properties>                    \
+    T ParticleAttrib<T, Properties...>::name() {                  \
+        T temp            = 0.0;                                  \
+        using policy_type = Kokkos::RangePolicy<execution_space>; \
+        Kokkos::parallel_reduce(                                  \
+            "fun", policy_type(0, *(this->localNum_mp)),          \
+            KOKKOS_CLASS_LAMBDA(const size_t i, T& valL) {        \
+                T myVal = dview_m(i);                             \
+                op;                                               \
+            },                                                    \
+            Kokkos::fun<T>(temp));                                \
+        T globaltemp = 0.0;                                       \
+        Comm->allreduce(temp, globaltemp, 1, MPI_Op<T>());        \
+        return globaltemp;                                        \
     }
 
-    DefineParticleReduction(Sum, sum, valL += myVal, MPI_SUM)
-    DefineParticleReduction(Max, max, if (myVal > valL) valL = myVal, MPI_MAX)
-    DefineParticleReduction(Min, min, if (myVal < valL) valL = myVal, MPI_MIN)
-    DefineParticleReduction(Prod, prod, valL *= myVal, MPI_PROD)
+    DefineParticleReduction(Sum, sum, valL += myVal, std::plus)
+    DefineParticleReduction(Max, max, if (myVal > valL) valL = myVal, std::greater)
+    DefineParticleReduction(Min, min, if (myVal < valL) valL = myVal, std::less)
+    DefineParticleReduction(Prod, prod, valL *= myVal, std::multiplies)
 }  // namespace ippl

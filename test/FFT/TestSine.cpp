@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
         for (unsigned int d = 0; d < dim; d++)
             allParallel[d] = ippl::PARALLEL;
 
-        ippl::FieldLayout<dim> layout(owned, allParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, allParallel);
 
         std::array<double, dim> dx = {
             1.0 / double(pt[0]),
@@ -93,8 +93,7 @@ int main(int argc, char* argv[]) {
         }
 
         double max_error = 0.0;
-        MPI_Reduce(&max_error_local, &max_error, 1, MPI_DOUBLE, MPI_MAX, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(max_error_local, max_error, 1, std::greater<double>());
 
         std::cout << "Rank:" << ippl::Comm->rank() << "Max. error " << std::setprecision(16)
                   << max_error_local << std::endl;

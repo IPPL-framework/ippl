@@ -93,7 +93,8 @@ public:
             origin[d] = 0;
         }
 
-        auto& layout = std::get<Idx>(layouts) = flayout_type<Dim>(owned, domDec);
+        auto& layout = std::get<Idx>(layouts) = flayout_type<Dim>(MPI_COMM_WORLD, owned, domDec);
+
         auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
         auto& pl = std::get<Idx>(playouts) = playout_type<Dim>(layout, mesh);
         auto bunch = std::get<Idx>(bunches) = std::make_shared<bunch_type<Dim>>(pl);
@@ -191,8 +192,7 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
         unsigned int Total_particles = 0;
         unsigned int local_particles = bunch->getLocalNum();
 
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(local_particles, Total_particles, 1, std::plus<unsigned int>());
 
         if (ippl::Comm->rank() == 0) {
             ASSERT_EQ(nParticles, Total_particles);

@@ -135,7 +135,7 @@ namespace ippl {
         create(1);
 
         nextID_m   = tmpNextID;
-        numNodes_m = Comm->getNodes();
+        numNodes_m = Comm->size();
     }
 
     template <class PLayout, typename... IP>
@@ -145,7 +145,7 @@ namespace ippl {
         // Compute the number of particles local to each processor
         size_type nLocal = nTotal / numNodes_m;
 
-        const size_t rank = Comm->myNode();
+        const size_t rank = Comm->rank();
 
         size_type rest = nTotal - nLocal * rank;
         if (rank < rest) {
@@ -274,7 +274,7 @@ namespace ippl {
                 return;
             }
 
-            auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
+            auto buf = Comm->getBuffer<MemorySpace>(mpi::tag::PARTICLE_SEND + sendNum, bufSize);
 
             Comm->isend(rank, tag++, buffer, *buf, requests.back(), nSends);
             buf->resetWritePos();
@@ -291,7 +291,7 @@ namespace ippl {
                 return;
             }
 
-            auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_RECV + recvNum, bufSize);
+            auto buf = Comm->getBuffer<MemorySpace>(mpi::tag::PARTICLE_RECV + recvNum, bufSize);
 
             Comm->recv(rank, tag++, buffer, *buf, bufSize, nRecvs);
             buf->resetReadPos();

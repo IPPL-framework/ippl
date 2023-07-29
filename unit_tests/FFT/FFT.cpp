@@ -73,7 +73,7 @@ public:
         }
 
         auto owned   = std::make_from_tuple<ippl::NDIndex<Dim>>(domains);
-        auto& layout = std::get<Idx>(layouts) = layout_type<Dim>(owned, domDec);
+        auto& layout = std::get<Idx>(layouts) = layout_type<Dim>(MPI_COMM_WORLD, owned, domDec);
 
         auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
 
@@ -156,11 +156,8 @@ public:
             ASSERT_NEAR(error, 0, tol);
         });
 
-        T max_error           = 0.0;
-        MPI_Datatype mpi_data = get_mpi_datatype<T>(max_error);
-
-        MPI_Reduce(&max_error_local, &max_error, 1, mpi_data, MPI_MAX, 0,
-                   ippl::Comm->getCommunicator());
+        T max_error = 0.0;
+        ippl::Comm->reduce(max_error_local, max_error, 1, std::greater<T>());
         ASSERT_NEAR(max_error, 0, tol);
     }
 
@@ -248,7 +245,8 @@ TYPED_TEST(FFTTest, RC) {
             }
         }
 
-        typename TestFixture::template layout_type<Dim> layoutOutput(ownedOutput, allParallel);
+        typename TestFixture::template layout_type<Dim> layoutOutput(MPI_COMM_WORLD, ownedOutput,
+                                                                     allParallel);
 
         typename TestFixture::template mesh_type<Dim> meshOutput(ownedOutput, mesh.getMeshSpacing(),
                                                                  mesh.getOrigin());
@@ -326,10 +324,9 @@ TYPED_TEST(FFTTest, CC) {
         });
 
         Kokkos::complex<TypeParam> max_error(0, 0);
-        MPI_Datatype mpi_data = get_mpi_datatype<std::complex<TypeParam>>(max_error);
 
-        MPI_Allreduce(&max_error_local, &max_error, 1, mpi_data, MPI_SUM,
-                      ippl::Comm->getCommunicator());
+        ippl::Comm->allreduce(max_error_local, max_error, 1,
+                              std::plus<Kokkos::complex<TypeParam>>());
         ASSERT_NEAR(max_error.real(), 0, tol);
         ASSERT_NEAR(max_error.imag(), 0, tol);
     };

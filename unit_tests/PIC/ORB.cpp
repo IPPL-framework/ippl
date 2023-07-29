@@ -92,7 +92,7 @@ public:
 
         const bool isAllPeriodic = true;
         auto& layout             = std::get<Idx>(layouts) =
-            flayout_type<Dim>(owned, allParallel, isAllPeriodic);
+            flayout_type<Dim>(MPI_COMM_WORLD, owned, allParallel, isAllPeriodic);
 
         auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
 

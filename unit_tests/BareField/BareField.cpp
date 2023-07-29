@@ -50,7 +50,7 @@ public:
             tag = ippl::PARALLEL;
         }
 
-        std::get<Idx>(layouts) = ippl::FieldLayout<Dim>(owned, domDec);
+        std::get<Idx>(layouts) = ippl::FieldLayout<Dim>(MPI_COMM_WORLD, owned, domDec);
         auto& layout           = std::get<Idx>(layouts);
 
         std::get<Idx>(fields)  = std::make_shared<field_type<Dim>>(layout);
@@ -109,7 +109,7 @@ TYPED_TEST(BareFieldTest, DeepCopy) {
 }
 
 TYPED_TEST(BareFieldTest, Sum) {
-    TypeParam val                    = 1.0;
+    TypeParam val                           = 1.0;
     TypeParam expected[TestFixture::MaxDim] = {val * this->nPoints[0]};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] * this->nPoints[d];
@@ -146,7 +146,7 @@ TYPED_TEST(BareFieldTest, Min) {
 }
 
 TYPED_TEST(BareFieldTest, Max) {
-    TypeParam val                    = 1.;
+    TypeParam val                           = 1.;
     TypeParam expected[TestFixture::MaxDim] = {this->nPoints[0] - val};
     for (unsigned d = 1; d < TestFixture::MaxDim; d++) {
         expected[d] = expected[d - 1] + this->nPoints[d];
