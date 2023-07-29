@@ -14,6 +14,7 @@ set (_HDRS
     DataTypes.h
     Operations.h
     Collectives.hpp
+    Serializable.h
     Request.h
     Status.h
     TagMaker.h
