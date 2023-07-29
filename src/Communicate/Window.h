@@ -60,11 +60,11 @@ namespace ippl {
                 template <std::contiguous_iterator Iter>
                 bool create(const Communicator& comm, Iter first, Iter last);
 
-                //                 template <std::contiguous_iterator Iter>
-                //                 bool attach(const Communicator& comm, Iter first, Iter last);
-                //
-                //                 template <std::contiguous_iterator Iter>
-                //                 bool detach(Iter first);
+                template <std::contiguous_iterator Iter>
+                bool attach(const Communicator& comm, Iter first, Iter last);
+
+                template <std::contiguous_iterator Iter>
+                bool detach(Iter first);
 
                 void fence(int asrt = 0);
 
