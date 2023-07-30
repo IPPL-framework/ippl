@@ -58,9 +58,9 @@ namespace ippl {
 
     template <unsigned Dim>
     FieldLayout<Dim>::FieldLayout(mpi::Communicator communicator, const NDIndex<Dim>& domain,
-                                  std::array<bool, Dim> decomp, bool isAllPeriodic)
+                                  std::array<bool, Dim> isParallel, bool isAllPeriodic)
         : FieldLayout(communicator) {
-        initialize(domain, decomp, isAllPeriodic);
+        initialize(domain, isParallel, isAllPeriodic);
     }
 
     template <unsigned Dim>
@@ -81,7 +81,7 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    void FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
+    void FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain, std::array<bool, Dim> isParallel,
                                       bool isAllPeriodic) {
         int nRanks = comm.size();
 
@@ -98,7 +98,7 @@ namespace ippl {
         }
 
         detail::CartesianPartitioner<Dim> partitioner;
-        partitioner.partition(comm, domain, decomp);
+        partitioner.partition(comm, domain, isParallel);
 
         Kokkos::resize(dLocalDomains_m, nRanks);
         Kokkos::resize(hLocalDomains_m, nRanks);

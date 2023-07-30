@@ -16,6 +16,13 @@ namespace ippl {
             MPI_Comm_size(*comm_m, &size_m);
         }
 
+        Communicator& Communicator::operator=(MPI_Comm comm) {
+            comm_m = std::make_shared<MPI_Comm>(comm);
+            MPI_Comm_rank(*comm_m, &rank_m);
+            MPI_Comm_size(*comm_m, &size_m);
+            return *this;
+        }
+
         Communicator Communicator::Communicator::split(int color, int key) const {
             MPI_Comm newcomm;
             MPI_Comm_split(*comm_m, color, key, &newcomm);

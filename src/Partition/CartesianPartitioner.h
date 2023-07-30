@@ -33,9 +33,8 @@ namespace ippl {
             CartesianPartitioner()  = default;
             ~CartesianPartitioner() = default;
 
-            mpi::Communicator partition(const mpi::Communicator& communicator,
-                                        const NDIndex<Dim>& domain,
-                                        std::array<bool, Dim>& decomp) const;
+            mpi::Communicator partition(const mpi::Communicator& comm, const NDIndex<Dim>& domain,
+                                        const std::array<bool, Dim>& decomp) const;
         };
     }  // namespace detail
 }  // namespace ippl
