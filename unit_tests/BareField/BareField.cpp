@@ -45,12 +45,10 @@ public:
         }
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(indices);
 
-        ippl::e_dim_tag domDec[Dim];
-        for (auto& tag : domDec) {
-            tag = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
-        std::get<Idx>(layouts) = ippl::FieldLayout<Dim>(MPI_COMM_WORLD, owned, domDec);
+        std::get<Idx>(layouts) = ippl::FieldLayout<Dim>(MPI_COMM_WORLD, owned, isParallel);
         auto& layout           = std::get<Idx>(layouts);
 
         std::get<Idx>(fields)  = std::make_shared<field_type<Dim>>(layout);

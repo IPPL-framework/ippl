@@ -84,16 +84,17 @@ public:
         ippl::Vector<double, Dim> hx;
         ippl::Vector<double, Dim> origin;
 
-        ippl::e_dim_tag allParallel[Dim];  // Specifies SERIAL, PARALLEL dims
+        std::array<bool, Dim> isParallel;  // Specifies SERIAL, PARALLEL dims
+        isParallel.fill(true);
+
         for (unsigned int d = 0; d < Dim; d++) {
-            allParallel[d] = ippl::PARALLEL;
-            hx[d]          = domain[d] / nPoints[d];
-            origin[d]      = 0;
+            hx[d]     = domain[d] / nPoints[d];
+            origin[d] = 0;
         }
 
         const bool isAllPeriodic = true;
         auto& layout             = std::get<Idx>(layouts) =
-            flayout_type<Dim>(MPI_COMM_WORLD, owned, allParallel, isAllPeriodic);
+            flayout_type<Dim>(MPI_COMM_WORLD, owned, isParallel, isAllPeriodic);
 
         auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
 

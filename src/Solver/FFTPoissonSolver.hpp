@@ -260,15 +260,12 @@ namespace ippl {
         }
 
         // define decomposition (parallel / serial)
-        e_dim_tag decomp[Dim];
-        for (unsigned int d = 0; d < Dim; ++d) {
-            decomp[d] = layout_mp->getRequestedDistribution(d);
-        }
+        std::array<bool, Dim> isParallel = layout_mp->isParallel();
 
         // create double sized mesh and layout objects using the previously defined domain2_m
         using mesh_type = typename lhs_type::Mesh_t;
         mesh2_m         = std::unique_ptr<mesh_type>(new mesh_type(domain2_m, hr_m, origin));
-        layout2_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domain2_m, decomp));
+        layout2_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domain2_m, isParallel));
 
         // create the domain for the transformed (complex) fields
         // since we use HeFFTe for the transforms it doesn't require permuting to the right
@@ -286,7 +283,7 @@ namespace ippl {
         // create mesh and layout for the real to complex FFT transformed fields
         meshComplex_m = std::unique_ptr<mesh_type>(new mesh_type(domainComplex_m, hr_m, origin));
         layoutComplex_m =
-            std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domainComplex_m, decomp));
+            std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domainComplex_m, isParallel));
 
         // initialize fields
         storage_field.initialize(*mesh2_m, *layout2_m);
@@ -320,7 +317,8 @@ namespace ippl {
             // 4N grid
             using mesh_type = typename lhs_type::Mesh_t;
             mesh4_m         = std::unique_ptr<mesh_type>(new mesh_type(domain4_m, hr_m, origin));
-            layout4_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domain4_m, decomp));
+            layout4_m =
+                std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domain4_m, isParallel));
 
             // initialize fields
             grnL_m.initialize(*mesh4_m, *layout4_m);

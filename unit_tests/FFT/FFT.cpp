@@ -64,16 +64,17 @@ public:
         ippl::Vector<T, Dim> hx;
         ippl::Vector<T, Dim> origin;
 
-        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        std::array<bool, Dim> isParallel;  // Specifies SERIAL, PARALLEL dims
+        isParallel.fill(true);
+
         for (unsigned d = 0; d < Dim; d++) {
-            domDec[d]  = ippl::PARALLEL;
             domains[d] = ippl::Index(pt[d]);
             hx[d]      = len[d] / pt[d];
             origin[d]  = 0;
         }
 
         auto owned   = std::make_from_tuple<ippl::NDIndex<Dim>>(domains);
-        auto& layout = std::get<Idx>(layouts) = layout_type<Dim>(MPI_COMM_WORLD, owned, domDec);
+        auto& layout = std::get<Idx>(layouts) = layout_type<Dim>(MPI_COMM_WORLD, owned, isParallel);
 
         auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
 
@@ -235,9 +236,10 @@ TYPED_TEST(FFTTest, RC) {
         fftParams.add("r2c_direction", 0);
 
         ippl::NDIndex<Dim> ownedOutput;
-        ippl::e_dim_tag allParallel[Dim];
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
+
         for (unsigned d = 0; d < Dim; d++) {
-            allParallel[d] = ippl::PARALLEL;
             if ((int)d == fftParams.get<int>("r2c_direction")) {
                 ownedOutput[d] = ippl::Index(this->pt[d] / 2 + 1);
             } else {
@@ -246,7 +248,7 @@ TYPED_TEST(FFTTest, RC) {
         }
 
         typename TestFixture::template layout_type<Dim> layoutOutput(MPI_COMM_WORLD, ownedOutput,
-                                                                     allParallel);
+                                                                     isParallel);
 
         typename TestFixture::template mesh_type<Dim> meshOutput(ownedOutput, mesh.getMeshSpacing(),
                                                                  mesh.getOrigin());

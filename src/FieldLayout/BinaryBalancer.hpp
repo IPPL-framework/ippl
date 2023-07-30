@@ -86,7 +86,7 @@ static int FindCutAxis(const NDIndex<Dim>& domain, const FieldLayout<Dim>& layou
     unsigned int maxLength = 0;
     // Loop over dimension.
     for (unsigned int d = 0; d < Dim; ++d) {
-        if (layout.getDistribution(d) != SERIAL || layout.getRequestedDistribution(d) != SERIAL) {
+        if (layout.getDistribution(d) != SERIAL || layout.getDimDecomposition(d) != SERIAL) {
             // Check if this axis is longer than the current max.
             unsigned int length = domain[d].length();
             if (maxLength < length) {

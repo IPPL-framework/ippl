@@ -2,8 +2,8 @@ set (_SRCS
     )
 
 set (_HDRS
-    Partitioner.h
-    Partitioner.hpp
+    CartesianPartitioner.h
+    CartesianPartitioner.hpp
     )
 
 include_directories (

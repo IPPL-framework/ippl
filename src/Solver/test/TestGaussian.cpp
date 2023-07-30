@@ -117,10 +117,8 @@ int main(int argc, char* argv[]) {
         }
 
         // specifies decomposition; here all dimensions are parallel
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned int d = 0; d < Dim; d++) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         // unit box
         double dx                        = 1.0 / nr[0];
@@ -131,7 +129,7 @@ int main(int argc, char* argv[]) {
         Mesh_t mesh(owned, hr, origin);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, owned, decomp);
+        ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         // define the R (rho) field
         field exact, rho;

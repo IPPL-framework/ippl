@@ -30,6 +30,7 @@
 
 #include "Communicate/Communicator.h"
 #include "Index/NDIndex.h"
+#include "Partition/CartesianPartitioner.h"
 
 namespace ippl {
 
@@ -38,12 +39,6 @@ namespace ippl {
 
     template <unsigned Dim>
     std::ostream& operator<<(std::ostream&, const FieldLayout<Dim>&);
-
-    // enumeration used to select serial or parallel axes
-    enum e_dim_tag {
-        SERIAL   = 0,
-        PARALLEL = 1
-    };
 
     // enumeration used to describe a hypercube's relation to
     // a particular axis in a given bounded domain
@@ -218,7 +213,7 @@ namespace ippl {
          */
         FieldLayout(const mpi::Communicator& = MPI_COMM_WORLD);
 
-        FieldLayout(mpi::Communicator, const NDIndex<Dim>& domain, e_dim_tag* p = 0,
+        FieldLayout(mpi::Communicator, const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
                     bool isAllPeriodic = false);
 
         // Destructor: Everything deletes itself automatically ... the base
@@ -230,7 +225,8 @@ namespace ippl {
         // otherwise these are only called internally by the various non-default
         // FieldLayout constructors:
 
-        void initialize(const NDIndex<Dim>& domain, e_dim_tag* p = 0, bool isAllPeriodic = false);
+        void initialize(const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
+                        bool isAllPeriodic = false);
 
         // Return the domain.
         const NDIndex<Dim>& getDomain() const { return gDomain_m; }
@@ -254,16 +250,13 @@ namespace ippl {
 
         // for the requested dimension, report if the distribution is
         // SERIAL or PARALLEL
-        e_dim_tag getDistribution(unsigned int d) const {
-            if (minWidth_m[d] == (unsigned int)gDomain_m[d].length()) {
-                return SERIAL;
-            }
-            return PARALLEL;
+        bool getDistribution(unsigned int d) const {
+            return minWidth_m[d] == (unsigned int)gDomain_m[d].length();
         }
 
         // for the requested dimension, report if the distribution was requested to
         // be SERIAL or PARALLEL
-        e_dim_tag getRequestedDistribution(unsigned int d) const { return requestedLayout_m[d]; }
+        std::array<bool, Dim> isParallel() const { return isParallelDim_m; }
 
         const NDIndex_t& getLocalNDIndex(int rank = -1) const;
 
@@ -381,7 +374,7 @@ namespace ippl {
         //! Local domains (host mirror view)
         host_mirror_type hLocalDomains_m;
 
-        e_dim_tag requestedLayout_m[Dim];
+        std::array<bool, Dim> isParallelDim_m;
 
         unsigned int minWidth_m[Dim];
 

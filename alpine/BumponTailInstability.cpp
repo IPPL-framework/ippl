@@ -170,7 +170,7 @@ struct PhaseDump {
     void initialize(size_t nr, double domain) {
         ippl::Index I(nr);
         ippl::NDIndex<2> owned(I, I);
-        layout = FieldLayout_t<2>(MPI_COMM_WORLD, owned, serial);
+        layout = FieldLayout_t<2>(MPI_COMM_WORLD, owned, isParallel);
 
         Vector_t<double, 2> hx = {domain / nr, 16. / nr};
         Vector_t<double, 2> origin{0, -8};
@@ -226,7 +226,7 @@ struct PhaseDump {
     double minRecorded() const { return minValue; }
 
 private:
-    ippl::e_dim_tag serial[2] = {ippl::SERIAL, ippl::SERIAL};
+    std::array<bool, 2> isParallel = {false, false};
     FieldLayout_t<2> layout;
     Mesh_t<2> mesh;
     Field_t<2> phaseSpace, phaseSpaceBuf;
@@ -277,10 +277,8 @@ int main(int argc, char* argv[]) {
             domain[i] = ippl::Index(nr[i]);
         }
 
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned d = 0; d < Dim; ++d) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         Vector_t<double, Dim> kw;
         double sigma, muBulk, muBeam, epsilon, delta;
@@ -323,7 +321,7 @@ int main(int argc, char* argv[]) {
 
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
-        FieldLayout_t<Dim> FL(MPI_COMM_WORLD, domain, decomp, isAllPeriodic);
+        FieldLayout_t<Dim> FL(MPI_COMM_WORLD, domain, isParallel, isAllPeriodic);
         PLayout_t<double, Dim> PL(FL, mesh);
 
         // Q = -\int\int f dx dv
@@ -335,7 +333,7 @@ int main(int argc, char* argv[]) {
                                 "Open boundaries solver incompatible with this simulation!");
         }
 
-        P = std::make_shared<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+        P = std::make_shared<bunch_type>(PL, hr, rmin, rmax, isParallel, Q, solver);
 
         P->nr_m = nr;
 

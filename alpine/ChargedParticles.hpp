@@ -219,13 +219,13 @@ public:
 
     Vector_t<T, Dim> nr_m;
 
-    ippl::e_dim_tag decomp_m[Dim];
-
     Vector_t<double, Dim> hr_m;
     Vector_t<double, Dim> rmin_m;
     Vector_t<double, Dim> rmax_m;
 
     std::string stype_m;
+
+    std::array<bool, Dim> isParallel_m;
 
     double Q_m;
 
@@ -257,18 +257,16 @@ public:
     }
 
     ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
-                     Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
+                     Vector_t<double, Dim> rmax, std::array<bool, Dim> isParallel, double Q,
                      std::string solver)
         : Base(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
         , stype_m(solver)
+        , isParallel_m(isParallel)
         , Q_m(Q) {
         registerAttributes();
-        for (unsigned int i = 0; i < Dim; i++) {
-            decomp_m[i] = decomp[i];
-        }
         setupBCs();
         setPotentialBCs();
     }

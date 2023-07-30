@@ -52,12 +52,11 @@ int main(int argc, char* argv[]) {
         ippl::NDIndex<dim> owned(I, I, I);
 
         // Specifies SERIAL, PARALLEL dims
-        ippl::e_dim_tag decomp[dim];
-        for (unsigned int d = 0; d < dim; d++)
-            decomp[d] = ippl::PARALLEL;
+        std::array<bool, dim> isParallel;
+        isParallel.fill(true);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, decomp);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         // type definitions
         typedef ippl::Vector<double, dim> Vector_t;

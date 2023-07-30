@@ -47,11 +47,11 @@ class ChargedParticles : public ippl::ParticleBase<PLayout> {
 public:
     Vector<int, Dim> nr_m;
 
-    ippl::e_dim_tag decomp_m[Dim];
-
     Vector_t hr_m;
     Vector_t rmin_m;
     Vector_t rmax_m;
+
+    std::array<bool, Dim> isParallel_m;
 
     double Q_m;
 
@@ -74,18 +74,17 @@ public:
     }
 
     ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
-                     ippl::e_dim_tag decomp[Dim], double Q)
+                     std::array<bool, Dim> isParallel, double Q)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
+        , isParallel_m(isParallel)
         , Q_m(Q) {
         this->addAttribute(qm);
         this->addAttribute(P);
         this->addAttribute(E);
         setupBCs();
-        for (unsigned int i = 0; i < Dim; i++)
-            decomp_m[i] = decomp[i];
     }
 
     ~ChargedParticles() {}
@@ -167,10 +166,8 @@ int main(int argc, char* argv[]) {
             domain[i] = ippl::Index(nr[i]);
         }
 
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned d = 0; d < Dim; ++d) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         // create mesh and layout objects for this problem domain
         Vector_t rmin(0.0);
@@ -184,7 +181,7 @@ int main(int argc, char* argv[]) {
         const double dt = 1.0;  // size of timestep
 
         Mesh_t mesh(domain, hr, origin);
-        FieldLayout_t FL(MPI_COMM_WORLD, domain, decomp);
+        FieldLayout_t FL(MPI_COMM_WORLD, domain, isParallel);
         PLayout_t PL(FL, mesh);
 
         /*
@@ -193,7 +190,7 @@ int main(int argc, char* argv[]) {
          */
 
         double Q = 1e6;
-        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q);
 
         unsigned long int nloc = totalP / ippl::Comm->size();
 

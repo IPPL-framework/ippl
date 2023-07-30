@@ -207,9 +207,8 @@ void compute_convergence(std::string algorithm, int pt) {
     ippl::NDIndex<3> owned(I, I, I);
 
     // specifies decomposition; here all dimensions are parallel
-    ippl::e_dim_tag decomp[3];
-    for (unsigned int d = 0; d < 3; d++)
-        decomp[d] = ippl::PARALLEL;
+    std::array<bool, 3> isParallel;
+    isParallel.fill(true);
 
     // unit box
     T dx                      = 1.0 / pt;
@@ -218,7 +217,7 @@ void compute_convergence(std::string algorithm, int pt) {
     Mesh_t<T> mesh(owned, hx, origin);
 
     // all parallel layout, standard domain, normal axis order
-    ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, decomp);
+    ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
 
     // define the R (rho) field
     ScalarField_t<T> rho;

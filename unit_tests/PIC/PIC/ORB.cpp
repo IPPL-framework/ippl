@@ -64,12 +64,11 @@ public:
         ippl::Index I(nPoints);
         ippl::NDIndex<dim> owned(I, I, I);
 
-        ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < dim; d++)
-            allParallel[d] = ippl::PARALLEL;
+        std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
+        isParallel.fill(true);
 
         const bool isAllPeriodic = true;
-        layout_m                 = Flayout_t(owned, allParallel, isAllPeriodic);
+        layout_m                 = Flayout_t(owned, isParallel, isAllPeriodic);
 
         double dx                        = 1.0 / double(nPoints);
         ippl::Vector<double, dim> hx     = {dx, dx, dx};

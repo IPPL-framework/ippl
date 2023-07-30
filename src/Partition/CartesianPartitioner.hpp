@@ -1,5 +1,5 @@
 //
-// Class Partitioner
+// Class CartesianPartitioner
 //   Partition a domain into subdomains.
 //
 // Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -15,27 +15,20 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#ifndef IPPL_PARTITIONER_H
-#define IPPL_PARTITIONER_H
 
-#include "Index/NDIndex.h"
+#include <algorithm>
+#include <numeric>
 
 namespace ippl {
     namespace detail {
 
         template <unsigned Dim>
-        class Partitioner {
-        public:
-            Partitioner()  = default;
-            ~Partitioner() = default;
+        mpi::Communicator CartesianPartitioner<Dim>::partition(
+            const mpi::Communicator& communicator, const NDIndex<Dim>& /*domain*/,
+            std::array<bool, Dim>& /*decomp*/) const {
+            //             using NDIndex_t = NDIndex<Dim>;
 
-            template <typename view_type>
-            void split(const NDIndex<Dim>& domain, view_type& view, e_dim_tag* decomp,
-                       int nSplits) const;
-        };
+            return communicator;
+        }
     }  // namespace detail
 }  // namespace ippl
-
-#include "Partition/Partitioner.hpp"
-
-#endif

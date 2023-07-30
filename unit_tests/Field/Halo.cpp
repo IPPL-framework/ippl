@@ -54,14 +54,14 @@ public:
         ippl::Vector<T, Dim> hx;
         ippl::Vector<T, Dim> origin;
 
-        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);  // Specifies SERIAL, PARALLEL dims
         for (unsigned d = 0; d < Dim; d++) {
-            domDec[d] = ippl::PARALLEL;
             hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
-        auto& layout = std::get<Idx>(layouts) = layout_type<Dim>(MPI_COMM_WORLD, owned, domDec);
+        auto& layout = std::get<Idx>(layouts) = layout_type<Dim>(MPI_COMM_WORLD, owned, isParallel);
 
         auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
 
@@ -202,7 +202,7 @@ TYPED_TEST(HaloTest, AccumulateHalo) {
                 return ippl::detail::getCube<Dim>(tags[Dims]...);
             };
             auto indexToTags = [&]<size_t... Dims, typename... Tag>(
-                const std::index_sequence<Dims...>&, Tag... tags) {
+                                   const std::index_sequence<Dims...>&, Tag... tags) {
                 return std::array<ippl::e_cube_tag, Dim>{(tags == nghost ? ippl::LOWER
                                                           : tags == lDom[Dims].length() + nghost - 1
                                                               ? ippl::UPPER

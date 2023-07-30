@@ -28,7 +28,6 @@
 #include "Utility/PAssert.h"
 
 #include "FieldLayout/FieldLayout.h"
-#include "Partition/Partitioner.h"
 
 namespace ippl {
 
@@ -53,16 +52,15 @@ namespace ippl {
         , dLocalDomains_m("local domains (device)", 0)
         , hLocalDomains_m(Kokkos::create_mirror_view(dLocalDomains_m)) {
         for (unsigned int d = 0; d < Dim; ++d) {
-            requestedLayout_m[d] = PARALLEL;
-            minWidth_m[d]        = 0;
+            minWidth_m[d] = 0;
         }
     }
 
     template <unsigned Dim>
     FieldLayout<Dim>::FieldLayout(mpi::Communicator communicator, const NDIndex<Dim>& domain,
-                                  e_dim_tag* p, bool isAllPeriodic)
+                                  std::array<bool, Dim> decomp, bool isAllPeriodic)
         : FieldLayout(communicator) {
-        initialize(domain, p, isAllPeriodic);
+        initialize(domain, decomp, isAllPeriodic);
     }
 
     template <unsigned Dim>
@@ -83,7 +81,7 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    void FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain, e_dim_tag* userflags,
+    void FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
                                       bool isAllPeriodic) {
         int nRanks = comm.size();
 
@@ -99,34 +97,11 @@ namespace ippl {
             return;
         }
 
-        // If the user did not specify parallel/serial flags then make all parallel.
-        long totparelems = 1;
-        for (unsigned d = 0; d < Dim; ++d) {
-            if (userflags == 0) {
-                requestedLayout_m[d] = PARALLEL;
-            } else {
-                requestedLayout_m[d] = userflags[d];
-            }
-
-            if (requestedLayout_m[d] == PARALLEL) {
-                totparelems *= domain[d].length();
-            }
-        }
-
-        /* Check to see if we have too few elements to partition.  If so, reduce
-         * the number of ranks (if necessary) to just the number of elements along
-         * parallel dims.
-         */
-        if (totparelems < nRanks) {
-            nRanks = totparelems;
-        }
+        detail::CartesianPartitioner<Dim> partitioner;
+        partitioner.partition(comm, domain, decomp);
 
         Kokkos::resize(dLocalDomains_m, nRanks);
         Kokkos::resize(hLocalDomains_m, nRanks);
-
-        detail::Partitioner<Dim> partition;
-
-        partition.split(domain, hLocalDomains_m, requestedLayout_m, nRanks);
 
         findNeighbors();
 
