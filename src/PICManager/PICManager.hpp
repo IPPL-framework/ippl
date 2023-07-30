@@ -127,7 +127,7 @@ bool checkSignalHandler() {
 }
 
 /*!
- * Sets up the signal handler
+ * Sets up the signal handler, for SIGTERM and SIGINT
  */
 void setSignalHandler() {
     struct sigaction sa;
@@ -142,6 +142,14 @@ void setSignalHandler() {
                   << SIGINT << ")" << std::endl;
     }
 }
+
+/**
+ * @class PICManager
+ * @brief Class for managing particles in a Particle-In-Cell (PIC) context
+ * @tparam PLayout Particle layout type
+ * @tparam T Data type for particle attributes
+ * @tparam Dim Dimension of the simulation
+ */
 
 template <class PLayout, typename T, unsigned Dim = 3>
 class PICManager : public ippl::ParticleBase<PLayout> {
@@ -181,13 +189,21 @@ public:
     double loadbalancethreshold_m;
 
 public:
-    /*
-      This constructor is mandatory for all derived classes from
-      ParticleBase as the bunch buffer uses this
-    */
+    /**
+     * @brief Default constructor is mandatory for all derived classes from ParticleBaseTest
+     * @param pl Particle layout
+     */
     PICManager(PLayout& pl)
         : Base(pl) {}
-
+    /**
+     * @brief Constructor with parameters
+     * @param pl Particle layout
+     * @param hr Vector of dimensions
+     * @param rmin Minimum vector
+     * @param rmax Maximum vector
+     * @param decomp Decomposition tag
+     * @param solver Solver type
+     */
     PICManager(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
                Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], std::string solver)
         : Base(pl)
@@ -200,8 +216,18 @@ public:
         }
     }
 
+    /**
+     * @brief Destructor
+     */
     ~PICManager() {}
 
+    /**
+     * @brief Update the layout
+     * @param fl Field layout
+     * @param mesh Mesh
+     * @param buffer Buffer
+     * @param isFirstRepartition Flag for first repartition
+     */
     void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
                       PICManager<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
         // Update local fields
@@ -226,6 +252,12 @@ public:
         IpplTimings::stopTimer(tupdatePLayout);
     }
 
+    /**
+     * @brief Initialize fields
+     * @param mesh Mesh
+     * @param fl Field layout
+     */
+
     void initializeFields(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& fl) {
         F_m.initialize(mesh, fl);
         rhs_m.initialize(mesh, fl);
@@ -235,11 +267,29 @@ public:
         }
     }
 
+    /**
+     * @brief Set all boundary conditions to periodic
+     */
+
     void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
+
+    /**
+     * @brief Initialize ORB
+     * @param fl Field layout
+     * @param mesh Mesh
+     */
 
     void initializeORB(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh) {
         orb.initialize(fl, mesh, rhs_m);
     }
+
+    /**
+     * @brief Repartition
+     * @param fl Field layout
+     * @param mesh Mesh
+     * @param buffer Buffer
+     * @param isFirstRepartition Flag for first repartition
+     */
 
     void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh, PICManager<PLayout, T, Dim>& buffer,
                      bool& isFirstRepartition) {
@@ -265,6 +315,14 @@ public:
             }
         }
     }
+
+    /**
+     * @brief Balance
+     * @param totalP Total particles
+     * @param nstep Number of steps
+     * @param TestName Test name
+     * @return True if balanced, false otherwise
+     */
 
     bool balance(size_type totalP, const unsigned int nstep, const char* TestName) {
         if (ippl::Comm->size() < 2) {
@@ -297,6 +355,10 @@ public:
 
      */
 
+    /**
+     * @brief Initialize solver
+     */
+
     void initSolver() {
         Inform m("solver ");
         if (stype_m == "FFT") {
@@ -312,6 +374,9 @@ public:
         }
     }
 
+    /**
+     * @brief run selected solver
+     */
     void runSolver() {
         if (stype_m == "CG") {
             CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(solver_m);
@@ -352,6 +417,10 @@ public:
         }
     }
 
+    /**
+     * @brief Configure solver based on ippl::ParameterList
+     */
+
     template <typename Solver>
     void initSolverWithParams(const ippl::ParameterList& sp) {
         solver_m.template emplace<Solver>();
@@ -373,6 +442,10 @@ public:
         }
     }
 
+    /**
+     * @brief Configure CG solver
+     */
+
     void initCGSolver() {
         ippl::ParameterList sp;
         sp.add("output_type", CGSolver_t<T, Dim>::GRAD);
@@ -381,6 +454,10 @@ public:
 
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
+
+    /**
+     * @brief Configure FFT solver
+     */
 
     void initFFTSolver() {
         if constexpr (Dim == 2 || Dim == 3) {
@@ -399,6 +476,10 @@ public:
         }
     }
 
+    /**
+     * @brief Configure P3M solver
+     */
+
     void initP3MSolver() {
         if constexpr (Dim == 3) {
             ippl::ParameterList sp;
@@ -415,6 +496,11 @@ public:
             throw std::runtime_error("Unsupported dimensionality for P3M solver");
         }
     }
+
+    /**
+     * @brief Configure Open solver
+     * @FixMe what is the difference to the FFT solver?
+     */
 
     void initOpenSolver() {
         if constexpr (Dim == 3) {
@@ -434,19 +520,22 @@ public:
         }
     }
 
-    /*
-      Host / Mirror magic
-    */
-
-    typename VField_t<T, Dim>::HostMirror getEMirror() const {
+    /**
+     * @brief
+     *
+     */
+    typename VField_t<T, Dim>::HostMirror getForceFieldMirror() const {
         auto Eview = F_m.getHostMirror();
         updateEMirror(Eview);
         return Eview;
     }
 
-    void updateEMirror(typename VField_t<T, Dim>::HostMirror& mirror) const {
+    /**
+     * @brief
+     *
+     */
+    void updateForceFieldMirror(typename VField_t<T, Dim>::HostMirror& mirror) const {
         Kokkos::deep_copy(mirror, F_m.getView());
     }
 };
-
 #endif
