@@ -46,8 +46,11 @@
 #include "Utility/IpplTimings.h"
 
 #include "ChargedParticles.hpp"
+#include "Distribution/Distribution.hpp"
 
 constexpr unsigned Dim = 3;
+
+const char* TestName = "PenningTrap";
 
 template <typename T>
 struct Newton1D {
@@ -149,8 +152,6 @@ double PDF(const Vector_t<double, Dim>& xvec, const Vector_t<double, Dim>& mu,
     return pdf;
 }
 
-const char* TestName = "PenningTrap";
-
 int main(int argc, char* argv[]) {
     static_assert(Dim == 3, "Penning trap must be 3D");
 
@@ -239,83 +240,49 @@ int main(int argc, char* argv[]) {
 
         bool isFirstRepartition;
 
+        Distribution::PenningTrapDistribution<double, 3> dist(mu, sd, rmax, rmin, hr, origin,
+                                                              totalP);
+
         if ((P->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
             msg << "Starting first repartition" << endl;
             IpplTimings::startTimer(domainDecomposition);
             isFirstRepartition             = true;
             const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-            const int nghost               = P->rho_m.getNghost();
-            auto rhoview                   = P->rho_m.getView();
-
-            Kokkos::parallel_for(
-                "Assign initial rho based on PDF", P->rho_m.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                    // local to global index conversion
-                    const size_t ig = i + lDom[0].first() - nghost;
-                    const size_t jg = j + lDom[1].first() - nghost;
-                    const size_t kg = k + lDom[2].first() - nghost;
-                    double x        = (ig + 0.5) * hr[0] + origin[0];
-                    double y        = (jg + 0.5) * hr[1] + origin[1];
-                    double z        = (kg + 0.5) * hr[2] + origin[2];
-
-                    Vector_t<double, Dim> xvec = {x, y, z};
-
-                    rhoview(i, j, k) = PDF(xvec, mu, sd, Dim);
-                });
-
-            Kokkos::fence();
-
+            dist.repartitionRhs(P.get(), lDom);
             P->initializeORB(FL, mesh);
             P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
             IpplTimings::stopTimer(domainDecomposition);
         }
 
         msg << "First domain decomposition done" << endl;
+
         IpplTimings::startTimer(particleCreation);
 
-        typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
-        const RegionLayout_t& RLayout                           = PL.getRegionLayout();
-        const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
-        Vector_t<double, Dim> Nr, Dr, minU, maxU;
-        int myRank = ippl::Comm->rank();
-        for (unsigned d = 0; d < Dim; ++d) {
-            Nr[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d])
-                    - CDF(Regions(myRank)[d].min(), mu[d], sd[d]);
-            Dr[d]   = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
-            minU[d] = CDF(Regions(myRank)[d].min(), mu[d], sd[d]);
-            maxU[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d]);
-        }
-
-        double factor             = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
-        size_type nloc            = (size_type)(factor * totalP);
-        size_type Total_particles = 0;
-
-        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM,
-                      ippl::Comm->getCommunicator());
-
-        int rest = (int)(totalP - Total_particles);
-
-        if (ippl::Comm->rank() < rest)
-            ++nloc;
-
-        P->create(nloc);
-        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
-        Kokkos::parallel_for(
-            nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                      P->R.getView(), P->P.getView(), rand_pool64, mu, sd, minU, maxU));
-
-        Kokkos::fence();
-        ippl::Comm->barrier();
+        dist.createParticles(P.get(), PL.getRegionLayout());
+        // ippl::Comm->barrier();
         IpplTimings::stopTimer(particleCreation);
 
-        P->q = P->Q_m / totalP;
+        typename ParticleAttrib<Vector_t<double, Dim>>::HostMirror RHost = P->R.getHostMirror();
+        typename ParticleAttrib<Vector_t<double, Dim>>::HostMirror VHost = P->V.getHostMirror();
+        Kokkos::deep_copy(RHost, P->R.getView());
+        Kokkos::deep_copy(VHost, P->V.getView());
+
+        Connector::PhaseSpaceConnector<double, Dim> phaseSpaceConn(TestName, totalP);
+
+        IpplTimings::startTimer(dumpDataTimer);
+        phaseSpaceConn.dumpParticleData(RHost, VHost, P->getLocalNum());
+        IpplTimings::stopTimer(dumpDataTimer);
+
+        Connector::StatisticsConnector<double, Dim> statConn(TestName, totalP);
+
+        P->q = P->Qtot_m / totalP;
         msg << "particles created and initial conditions assigned " << endl;
         isFirstRepartition = false;
         // The update after the particle creation is not needed as the
         // particles are generated locally
 
         IpplTimings::startTimer(DummySolveTimer);
-        P->rho_m = 0.0;
+        P->rhs_m = 0.0;
         P->runSolver();
         IpplTimings::stopTimer(DummySolveTimer);
 
@@ -328,9 +295,10 @@ int main(int argc, char* argv[]) {
         P->gatherCIC();
 
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpData();
-        P->gatherStatistics(totalP);
-        // P->dumpLocalDomains(FL, 0);
+        statConn.gatherLoadBalancingStatistics(P->getLocalNum(), P->time_m);
+        statConn.gatherLocalDomainStatistics(FL, 0);
+        statConn.gatherFieldStatistics(P->V, P->rhs_m, P->F_m, hr, P->getLocalNum(), P->time_m);
+        statConn.gatherLocalDomainStatistics(FL, 0);
         IpplTimings::stopTimer(dumpDataTimer);
 
         double alpha = -0.5 * dt;
@@ -348,7 +316,7 @@ int main(int argc, char* argv[]) {
             // kick
             IpplTimings::startTimer(PTimer);
             auto Rview = P->R.getView();
-            auto Pview = P->P.getView();
+            auto Pview = P->V.getView();
             auto Eview = P->E.getView();
             double V0  = 30 * rmax[2];
             Kokkos::parallel_for(
@@ -372,7 +340,7 @@ int main(int argc, char* argv[]) {
 
             // drift
             IpplTimings::startTimer(RTimer);
-            P->R = P->R + dt * P->P;
+            P->R = P->R + dt * P->V;
             IpplTimings::stopTimer(RTimer);
 
             // Since the particles have moved spatially update them to correct processors
@@ -381,14 +349,15 @@ int main(int argc, char* argv[]) {
             IpplTimings::stopTimer(updateTimer);
 
             // Domain Decomposition
-            if (P->balance(totalP, it + 1)) {
+            if (P->balance(totalP, it + 1, TestName)) {
                 msg << "Starting repartition" << endl;
                 IpplTimings::startTimer(domainDecomposition);
                 P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
                 IpplTimings::stopTimer(domainDecomposition);
-                // IpplTimings::startTimer(dumpDataTimer);
-                // P->dumpLocalDomains(FL, it+1);
-                // IpplTimings::stopTimer(dumpDataTimer);
+
+                IpplTimings::startTimer(dumpDataTimer);
+                statConn.gatherLocalDomainStatistics(FL, it + 1);
+                IpplTimings::stopTimer(dumpDataTimer);
             }
 
             // scatter the charge onto the underlying grid
@@ -405,7 +374,7 @@ int main(int argc, char* argv[]) {
             // kick
             IpplTimings::startTimer(PTimer);
             auto R2view = P->R.getView();
-            auto P2view = P->P.getView();
+            auto P2view = P->V.getView();
             auto E2view = P->E.getView();
             Kokkos::parallel_for(
                 "Kick2", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
@@ -435,8 +404,11 @@ int main(int argc, char* argv[]) {
 
             P->time_m += dt;
             IpplTimings::startTimer(dumpDataTimer);
-            P->dumpData();
-            P->gatherStatistics(totalP);
+            phaseSpaceConn.dumpParticleData(RHost, VHost, P->getLocalNum());
+            statConn.dumpLandau(P->F_m, hr, P->time_m);
+            statConn.gatherLoadBalancingStatistics(P->getLocalNum(), P->time_m);
+            statConn.gatherLocalDomainStatistics(FL, 0);
+            statConn.gatherFieldStatistics(P->V, P->rhs_m, P->F_m, hr, P->getLocalNum(), P->time_m);
             IpplTimings::stopTimer(dumpDataTimer);
             msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
@@ -457,6 +429,7 @@ int main(int argc, char* argv[]) {
             std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
         std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
     }
+
     ippl::finalize();
 
     return 0;

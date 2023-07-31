@@ -136,7 +136,8 @@ int main(int argc, char* argv[]) {
         P->time_m                 = 0.0;
         P->loadbalancethreshold_m = std::atof(argv[arg++]);
 
-        Distribution::Distribution<double, 3> dist(alpha, kw, rmax, rmin, hr, origin, totalP);
+        Distribution::LandauDampingDistribution<double, 3> dist(alpha, kw, rmax, rmin, hr, origin,
+                                                                totalP);
 
         bool isFirstRepartition = false;
 
