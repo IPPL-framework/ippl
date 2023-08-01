@@ -42,9 +42,11 @@ namespace Distribution {
         /**
          * @brief Compute the cumulative distribution function (CDF) of a distribution.
          * @param x The input value.
-         * @param alpha The alpha parameter of the distribution.
-         * @param k The k parameter of the distribution.
+         * @param alpha The \f$\alpha\f$ parameter of the distribution.
+         * @param k The \f$k\f$ parameter of the distribution.
          * @return The value of the CDF at x.
+         * The cumulative distribution function (CDF) is calculated using the formula
+         * \f[ CDF(x) = x + \frac{\alpha}{k} \cdot \sin(kx) \f]
          */
         double CDF(const double& x, const double& alpha, const double& k) {
             double cdf = x + (alpha / k) * std::sin(k * x);
@@ -55,10 +57,12 @@ namespace Distribution {
          * @brief Compute the probability density function (PDF) of a distribution in multiple
          * dimensions.
          * @param xvec The input vector containing the coordinates in each dimension.
-         * @param alpha The alpha parameter of the distribution.
-         * @param kw The k parameter for each dimension of the distribution.
+         * @param alpha The \f$\alpha\f$ parameter of the distribution.
+         * @param kw The \f$k_w\f$ parameter for each dimension of the distribution.
          * @param Dim The number of dimensions.
          * @return The value of the PDF at the given coordinates.
+         * The probability density function (PDF) is calculated using the formula
+         * \f[ PDF(xvec) = \prod_{d=0}^{Dim-1} (1.0 + \alpha \cdot \cos(k_w[d] \cdot xvec[d])) \f]
          */
         KOKKOS_FUNCTION
         double PDF(const Vector_t<double, Dim>& xvec, const double& alpha,
@@ -92,12 +96,26 @@ namespace Distribution {
 
             KOKKOS_INLINE_FUNCTION ~Newton1D() {}
 
+            /**
+             * @brief Calculate the function value at a given point.
+             * @param x The input value.
+             * @return The value of the function at x.
+             * The function f(x) is defined as:
+             * \f[ f(x) = x + \frac{\alpha}{k} \cdot \sin(kx) - u \f]
+             */
             KOKKOS_INLINE_FUNCTION T f(T& x) {
                 T F;
                 F = x + (alpha * (Kokkos::sin(k * x) / k)) - u;
                 return F;
             }
 
+            /**
+             * @brief Calculate the derivative of the function at a given point.
+             * @param x The input value.
+             * @return The value of the derivative of the function at x.
+             * The derivative of the function f(x), denoted as f'(x), is defined as:
+             * \f[ f'(x) = 1 + \alpha \cdot \cos(kx) \f]
+             */
             KOKKOS_INLINE_FUNCTION T fprime(T& x) {
                 T Fprime;
                 Fprime = 1 + (alpha * Kokkos::cos(k * x));
@@ -244,11 +262,14 @@ namespace Distribution {
         const size_type totalP_m;
 
         /**
-         * @brief Compute the cumulative distribution function (CDF) of a distribution.
+         * @brief Compute the cumulative distribution function (CDF) of a normal distribution.
          * @param x The input value.
-         * @param alpha The alpha parameter of the distribution.
-         * @param k The k parameter of the distribution.
+         * @param mu The mean (\f$\mu\f$) of the distribution.
+         * @param sigma The standard deviation (\f$\sigma\f$) of the distribution.
          * @return The value of the CDF at x.
+         * The cumulative distribution function (CDF) is calculated using the formula
+         * \f[ CDF(x) = \frac{1}{2} \left[1 +
+         * \text{erf}\left(\frac{x-\mu}{\sigma\sqrt{2}}\right)\right] \f]
          */
         double CDF(const double& x, const double& mu, const double& sigma) {
             double cdf = 0.5 * (1.0 + std::erf((x - mu) / (sigma * std::sqrt(2))));
@@ -256,13 +277,16 @@ namespace Distribution {
         }
 
         /**
-         * @brief Compute the probability density function (PDF) of a distribution in multiple
-         * dimensions.
+         * @brief Compute the probability density function (PDF) of a normal distribution in
+         * multiple dimensions.
          * @param xvec The input vector containing the coordinates in each dimension.
-         * @param alpha The alpha parameter of the distribution.
-         * @param kw The k parameter for each dimension of the distribution.
+         * @param mu The mean vector of the distribution in each dimension.
+         * @param sigma The standard deviation vector of the distribution in each dimension.
          * @param Dim The number of dimensions.
          * @return The value of the PDF at the given coordinates.
+         * The probability density function (PDF) is calculated using the formula
+         * \f[ PDF(xvec) = \prod_{d=0}^{Dim-1} \left(\frac{1}{\sigma_d \sqrt{2\pi}}
+         * \exp\left(-\frac{1}{2}\left(\frac{xvec_d - \mu_d}{\sigma_d}\right)^2\right)\right) \f]
          */
         KOKKOS_FUNCTION
         double PDF(const Vector_t<double, Dim>& xvec, const Vector_t<double, Dim>& mu,
@@ -276,11 +300,6 @@ namespace Distribution {
             }
             return pdf;
         }
-
-        /**
-         * @brief A structure representing the Newton method for finding roots of 1D functions.
-         * @tparam T The type of the parameters and variables used in the Newton method.
-         */
 
         struct Newton1D {
             double tol   = 1e-12;
@@ -298,12 +317,27 @@ namespace Distribution {
 
             KOKKOS_INLINE_FUNCTION ~Newton1D() {}
 
+            /**
+             * @brief Calculate the function value at a given point using the error function.
+             * @param x The input value.
+             * @return The value of the function at x.
+             * The function f(x) is defined as:
+             * \f[ f(x) = \text{erf}\left(\frac{x - \mu}{\sigma\sqrt{2}}\right) - 2u + 1 \f]
+             */
             KOKKOS_INLINE_FUNCTION T f(T& x) {
                 T F;
                 F = Kokkos::erf((x - mu) / (sigma * Kokkos::sqrt(2.0))) - 2 * u + 1;
                 return F;
             }
 
+            /**
+             * @brief Calculate the derivative of the function at a given point.
+             * @param x The input value.
+             * @return The value of the derivative of the function at x.
+             * The derivative of the function f(x), denoted as f'(x), is defined as:
+             * \f[ f'(x) = \frac{1}{\sigma}\sqrt{\frac{2}{\pi}} \exp\left(-\frac{1}{2}\left(\frac{x
+             * - \mu}{\sigma}\right)^2\right) \f]
+             */
             KOKKOS_INLINE_FUNCTION T fprime(T& x) {
                 T Fprime;
                 Fprime = (1 / sigma) * Kokkos::sqrt(2 / pi)
@@ -465,10 +499,27 @@ namespace Distribution {
 
         /**
          * @brief Compute the cumulative distribution function (CDF) of a distribution.
+         *
+         * This function calculates the cumulative distribution function (CDF) of a distribution
+         * with parameters @c delta and @c k.
+         *
+         * The CDF is computed as follows:
+         * \f[
+         *     \text{CDF}(x, \alpha, k, \text{dim}) = x + \text{isDimZ} \cdot \left(\frac{\delta}{k}
+         * \cdot \sin(k \cdot x)\right) \f]
+         *
+         * where
+         * - @c x is the input value.
+         * - @c delta is the delta parameter of the distribution.
+         * - @c k is the k parameter of the distribution.
+         * - @c dim is the dimension parameter of the distribution.
+         * - @c isDimZ is a boolean value indicating if the dimension is Z or not (true or false).
+         *
          * @param x The input value.
-         * @param alpha The alpha parameter of the distribution.
+         * @param delta The delta parameter of the distribution.
          * @param k The k parameter of the distribution.
-         * @return The value of the CDF at x.
+         * @param dim The dimension parameter of the distribution.
+         * @return The value of the CDF at @c x.
          */
         double CDF(const double& x, const double& delta, const double& k, const unsigned& dim) {
             bool isDimZ = (dim == (Dim - 1));
@@ -479,12 +530,35 @@ namespace Distribution {
         /**
          * @brief Compute the probability density function (PDF) of a distribution in multiple
          * dimensions.
+         *
+         * This function computes the probability density function (PDF) of a distribution in
+         * multiple dimensions based on the given input vector, alpha parameter, and k parameters.
+         * The computation involves the coordinates in each dimension, delta, and trigonometric
+         * operations using the cos function.
+         *
          * @param xvec The input vector containing the coordinates in each dimension.
          * @param alpha The alpha parameter of the distribution.
          * @param kw The k parameter for each dimension of the distribution.
          * @param Dim The number of dimensions.
          * @return The value of the PDF at the given coordinates.
+         *
+         * @note This function uses the following formula to compute the PDF:
+         * \f[
+         * \text{PDF}(\mathbf{x}, \delta, \mathbf{kw}) = 1.0 \times 1.0 \times \left(1.0 + \delta
+         * \cos(kw[Dim - 1] \cdot xvec[Dim - 1])\right) \f] where:
+         * - \f$\mathbf{x}\f$ is the input vector \f$xvec\f$ containing the coordinates in each
+         * dimension.
+         * - \f$\delta\f$ is the given parameter \f$delta\f$.
+         * - \f$\mathbf{kw}\f$ is the vector \f$kw\f$ containing the k parameters for each dimension
+         * of the distribution.
+         * - \f$Dim\f$ is the given number of dimensions.
+         * - \f$\cos(x)\f$ is the cosine function.
+         *
+         * @see Cosine function: https://en.wikipedia.org/wiki/Cosine
+         * @see Probability Density Function (PDF):
+         * https://en.wikipedia.org/wiki/Probability_density_function
          */
+
         KOKKOS_FUNCTION
         double PDF(const Vector_t<double, Dim>& xvec, const double delta,
                    const Vector_t<double, Dim>& kw) {
@@ -513,12 +587,51 @@ namespace Distribution {
 
             KOKKOS_INLINE_FUNCTION ~Newton1D() {}
 
+            /**
+             * @brief Compute the function @f$F(x)@f$.
+             *
+             * This function calculates the value of the function @f$F(x)@f$ with parameters @c
+             * delta and @c k.
+             *
+             * The function @f$F(x)@f$ is computed as follows:
+             * \f[
+             *     F(x) = x + (\delta \cdot (\frac{\sin(k \cdot x)}{k})) - u
+             * \f]
+             *
+             * where
+             * - @c x is the input value.
+             * - @c delta is the delta parameter.
+             * - @c k is the k parameter.
+             * - @c u is an unspecified parameter that needs to be defined externally.
+             *
+             * @param x The input value.
+             * @return The value of the function @f$F(x)@f$ at @c x.
+             */
             KOKKOS_INLINE_FUNCTION T f(T& x) {
                 T F;
                 F = x + (delta * (Kokkos::sin(k * x) / k)) - u;
                 return F;
             }
 
+            /**
+             * @brief Compute the derivative of the function @f$F(x)@f$.
+             *
+             * This function calculates the derivative of the function @f$F(x)@f$ with parameters @c
+             * delta and @c k.
+             *
+             * The derivative of the function @f$F(x)@f$ is computed as follows:
+             * \f[
+             *     F'(x) = 1 + (\delta \cdot \cos(k \cdot x))
+             * \f]
+             *
+             * where
+             * - @c x is the input value.
+             * - @c delta is the delta parameter.
+             * - @c k is the k parameter.
+             *
+             * @param x The input value.
+             * @return The value of the derivative of the function @f$F(x)@f$ at @c x.
+             */
             KOKKOS_INLINE_FUNCTION T fprime(T& x) {
                 T Fprime;
                 Fprime = 1 + (delta * Kokkos::cos(k * x));
