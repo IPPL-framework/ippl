@@ -439,5 +439,263 @@ namespace Distribution {
             Kokkos::fence();
         }
     };
+
+    /*
+     *
+     * BumponTailDistribution
+     *
+     */
+
+    template <typename T, unsigned Dim = 3>
+    class BumponTailDistribution : public Distribution<T, Dim> {
+        Vector_t<double, Dim> kw_m;
+
+        T epsilon_m;
+        T delta_m;
+        Vector_t<double, Dim> sigma_m;
+        Vector_t<double, Dim> muBulk_m;
+        Vector_t<double, Dim> muBeam_m;
+
+        Vector_t<double, Dim> rmax_m;
+        Vector_t<double, Dim> rmin_m;
+        Vector_t<double, Dim> hr_m;
+        Vector_t<double, Dim> origin_m;
+
+        const size_type totalP_m;
+
+        /**
+         * @brief Compute the cumulative distribution function (CDF) of a distribution.
+         * @param x The input value.
+         * @param alpha The alpha parameter of the distribution.
+         * @param k The k parameter of the distribution.
+         * @return The value of the CDF at x.
+         */
+        double CDF(const double& x, const double& delta, const double& k, const unsigned& dim) {
+            bool isDimZ = (dim == (Dim - 1));
+            double cdf  = x + (double)(isDimZ * ((delta / k) * std::sin(k * x)));
+            return cdf;
+        }
+
+        /**
+         * @brief Compute the probability density function (PDF) of a distribution in multiple
+         * dimensions.
+         * @param xvec The input vector containing the coordinates in each dimension.
+         * @param alpha The alpha parameter of the distribution.
+         * @param kw The k parameter for each dimension of the distribution.
+         * @param Dim The number of dimensions.
+         * @return The value of the PDF at the given coordinates.
+         */
+        KOKKOS_FUNCTION
+        double PDF(const Vector_t<double, Dim>& xvec, const double delta,
+                   const Vector_t<double, Dim>& kw) {
+            double pdf = 1.0 * 1.0 * (1.0 + delta * Kokkos::cos(kw[Dim - 1] * xvec[Dim - 1]));
+            return pdf;
+        }
+
+        /**
+         * @brief A structure representing the Newton method for finding roots of 1D functions.
+         * @tparam T The type of the parameters and variables used in the Newton method.
+         */
+
+        struct Newton1D {
+            double tol   = 1e-12;
+            int max_iter = 20;
+            double pi    = Kokkos::numbers::pi_v<double>;
+
+            T k, delta, u;
+
+            KOKKOS_INLINE_FUNCTION Newton1D() {}
+
+            KOKKOS_INLINE_FUNCTION Newton1D(const T& k_, const T& delta_, const T& u_)
+                : k(k_)
+                , delta(delta_)
+                , u(u_) {}
+
+            KOKKOS_INLINE_FUNCTION ~Newton1D() {}
+
+            KOKKOS_INLINE_FUNCTION T f(T& x) {
+                T F;
+                F = x + (delta * (Kokkos::sin(k * x) / k)) - u;
+                return F;
+            }
+
+            KOKKOS_INLINE_FUNCTION T fprime(T& x) {
+                T Fprime;
+                Fprime = 1 + (delta * Kokkos::cos(k * x));
+                return Fprime;
+            }
+
+            KOKKOS_FUNCTION
+            void solve(T& x) {
+                int iterations = 0;
+                while (iterations < max_iter && Kokkos::fabs(f(x)) > tol) {
+                    x = x - (f(x) / fprime(x));
+                    iterations += 1;
+                }
+            }
+        };
+
+        template <typename GT, class GeneratorPool>
+        struct generate_random {
+            using view_type  = typename ippl::detail::ViewType<GT, 1>::view_type;
+            using value_type = typename GT::value_type;
+            //  Output View for the random numbers
+            view_type x, v;
+
+            // The GeneratorPool
+            GeneratorPool rand_pool;
+            double delta;
+            GT sigma, muBulk, muBeam;
+            size_type nlocBulk;
+            GT k, minU, maxU;
+            // Initialize all members
+            generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, double delta_,
+                            GT& sigma_, GT& muBulk_, GT& muBeam_, size_type& nlocBulk_, GT& k_,
+                            GT& minU_, GT& maxU_)
+                : x(x_)
+                , v(v_)
+                , rand_pool(rand_pool_)
+                , delta(delta_)
+                , sigma(sigma_)
+                , muBulk(muBulk_)
+                , muBeam(muBeam_)
+                , nlocBulk(nlocBulk_)
+                , k(k_)
+                , minU(minU_)
+                , maxU(maxU_) {}
+
+            KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+                // Get a random number state from the pool for the active thread
+                typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+
+                bool isBeam = (i >= nlocBulk);
+
+                // fixMe this needs to be checked
+
+                value_type muZ =
+                    (value_type)((!isBeam) * muBulk[Dim - 1]) + (isBeam * muBeam[Dim - 1]);
+
+                if constexpr (Dim > 1) {
+                    for (unsigned d = 0; d < Dim - 1; ++d) {
+                        x(i)[d] = rand_gen.drand(minU[d], maxU[d]);
+                        v(i)[d] = rand_gen.normal(0.0, sigma[d]);
+                    }
+                }
+
+                v(i)[Dim - 1] = rand_gen.normal(muZ, sigma[Dim - 1]);
+
+                value_type u  = rand_gen.drand(minU[Dim - 1], maxU[Dim - 1]);
+                x(i)[Dim - 1] = u / (1 + delta);
+                Newton1D solver(k[Dim - 1], delta, u);
+                solver.solve(x(i)[Dim - 1]);
+
+                // Give the state back, which will allow another thread to acquire it
+                rand_pool.free_state(rand_gen);
+            }
+        };
+
+    public:
+        BumponTailDistribution(Vector_t<double, Dim> rmax, Vector_t<double, Dim> rmin,
+                               Vector_t<double, Dim> hr, Vector_t<double, Dim> origin,
+                               const size_type totalP, const char* TestName)
+            : Distribution<T, Dim>(TestName)
+            , rmax_m(rmax)
+            , rmin_m(rmin)
+            , hr_m(hr)
+            , origin_m(origin)
+            , totalP_m(totalP) {
+            if (std::strcmp(TestName, "TwoStreamInstability") == 0) {
+                // Parameters for two stream instability as in
+                //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
+                kw_m      = 0.5;
+                sigma_m   = 0.1;
+                epsilon_m = 0.5;
+                muBulk_m  = -pi / 2.0;
+                muBeam_m  = pi / 2.0;
+                delta_m   = 0.01;
+            } else if (std::strcmp(TestName, "BumponTailInstability") == 0) {
+                kw_m      = 0.21;
+                sigma_m   = 1.0 / std::sqrt(2.0);
+                epsilon_m = 0.1;
+                muBulk_m  = 0.0;
+                muBeam_m  = 4.0;
+                delta_m   = 0.01;
+            } else {
+                // Default value is two stream instability
+                kw_m      = 0.5;
+                sigma_m   = 0.1;
+                epsilon_m = 0.5;
+                muBulk_m  = -pi / 2.0;
+                muBeam_m  = pi / 2.0;
+                delta_m   = 0.01;
+            }
+        }
+        ~BumponTailDistribution() {}
+
+        void repartitionRhs(auto P, const ippl::NDIndex<Dim>& lDom) {
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+
+            const int nghost = P->rhs_m.getNghost();
+            auto rhoview     = P->rhs_m.getView();
+            auto rangePolicy = P->rhs_m.getFieldRangePolicy();
+
+            ippl::parallel_for(
+                "Assign initial rho based on PDF", rangePolicy,
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    // local to global index conversion
+                    Vector_t<double, Dim> xvec =
+                        (args + lDom.first() - nghost + 0.5) * hr_m + origin_m;
+
+                    // ippl::apply accesses the view at the given indices and obtains a
+                    // reference; see src/Expression/IpplOperations.h
+                    ippl::apply(rhoview, args) = PDF(xvec, delta_m, kw_m);
+                });
+            Kokkos::fence();
+        }
+
+        void createParticles(auto P, auto RLayout) {
+            auto Regions = RLayout.gethLocalRegions();
+            Vector_t<double, Dim> Nr, Dr, minU, maxU;
+            int myRank    = ippl::Comm->rank();
+            double factor = 1;
+
+            for (unsigned d = 0; d < Dim; ++d) {
+                Nr[d] = CDF(Regions(myRank)[d].max(), delta_m, kw_m[d], d)
+                        - CDF(Regions(myRank)[d].min(), delta_m, kw_m[d], d);
+                Dr[d]   = CDF(rmax_m[d], delta_m, kw_m[d], d) - CDF(rmin_m[d], delta_m, kw_m[d], d);
+                minU[d] = CDF(Regions(myRank)[d].min(), delta_m, kw_m[d], d);
+                maxU[d] = CDF(Regions(myRank)[d].max(), delta_m, kw_m[d], d);
+                factor *= Nr[d] / Dr[d];
+            }
+
+            double factorVelBulk      = 1.0 - epsilon_m;
+            double factorVelBeam      = 1.0 - factorVelBulk;
+            size_type nlocBulk        = (size_type)(factor * factorVelBulk * totalP_m);
+            size_type nlocBeam        = (size_type)(factor * factorVelBeam * totalP_m);
+            size_type nloc            = nlocBulk + nlocBeam;
+            size_type Total_particles = 0;
+
+            MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM,
+                          ippl::Comm->getCommunicator());
+
+            int rest = (int)(totalP_m - Total_particles);
+
+            if (ippl::Comm->rank() < rest) {
+                ++nloc;
+            }
+
+            P->create(nloc);
+
+            Kokkos::Random_XorShift64_Pool<> rand_pool64(
+                (size_type)(42 + 100 * ippl::Comm->rank()));
+            Kokkos::parallel_for(
+                nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<> >(
+                          P->R.getView(), P->V.getView(), rand_pool64, delta_m, sigma_m, muBulk_m,
+                          muBeam_m, nlocBulk, kw_m, minU, maxU));
+
+            Kokkos::fence();
+        }
+    };
+
 }  // namespace Distribution
 #endif
