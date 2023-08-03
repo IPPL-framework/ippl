@@ -22,10 +22,10 @@ add_compile_options (-Wall)
 add_compile_options (-Wunused)
 add_compile_options (-Wextra)
 add_compile_options (-Werror)
-
+add_compile_options (-ferror-limit=1)
 # allow deprecated functions
 add_compile_options (-Wno-deprecated-declarations)
-
+add_compile_options (-Wno-unused-parameter)
 option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
 
 message (STATUS "Build type is: " ${CMAKE_BUILD_TYPE})
@@ -35,8 +35,8 @@ find_package(Kokkos 4.0.0 REQUIRED)
 # Select flags.
 set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ")
-set (CMAKE_CXX_FLAGS_RELEASE "-O3")
+set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O0 -g ")
+set (CMAKE_CXX_FLAGS_RELEASE "-O0 -g")
 set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 if ("${Kokkos_DEVICES}" MATCHES "CUDA")
     set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -G --diag-suppress=20011")
