@@ -92,16 +92,9 @@ namespace ippl {
 
         isAllPeriodic_m = isAllPeriodic;
 
-        if (nRanks < 2) {
-            Kokkos::resize(dLocalDomains_m, nRanks);
-            Kokkos::resize(hLocalDomains_m, nRanks);
-            hLocalDomains_m(0) = domain;
-            Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
-            return;
-        }
-
         // If the user did not specify parallel/serial flags then make all parallel.
         long totparelems = 1;
+        isAllSerial_m = true;
         for (unsigned d = 0; d < Dim; ++d) {
             if (userflags == 0) {
                 requestedLayout_m[d] = PARALLEL;
@@ -111,7 +104,18 @@ namespace ippl {
 
             if (requestedLayout_m[d] == PARALLEL) {
                 totparelems *= domain[d].length();
+                isAllSerial_m = false;
             }
+        }
+
+        if (nRanks < 2 || isAllSerial_m) {
+            Kokkos::resize(dLocalDomains_m, nRanks);
+            Kokkos::resize(hLocalDomains_m, nRanks);
+            for (int r = 0; r < nRanks; r++) {
+                hLocalDomains_m(r) = domain;
+            }
+            Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
+            return;
         }
 
         /* Check to see if we have too few elements to partition.  If so, reduce
@@ -134,6 +138,11 @@ namespace ippl {
         Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
 
         calcWidths();
+    }
+
+    template <unsigned Dim>
+    bool FieldLayout<Dim>::isAllSerial() const {
+        return isAllSerial_m;
     }
 
     template <unsigned Dim>

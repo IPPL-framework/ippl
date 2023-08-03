@@ -352,6 +352,8 @@ namespace ippl {
 
         bool isAllPeriodic_m;
 
+        bool isAllSerial() const;
+
     private:
         /*!
          * Obtain the bounds to send / receive. The second domain, i.e.,
@@ -367,7 +369,6 @@ namespace ippl {
 
         int getPeriodicOffset(const NDIndex_t& nd, const unsigned int d, const int k);
 
-    private:
         //! Global domain
         NDIndex_t gDomain_m;
 
@@ -376,6 +377,9 @@ namespace ippl {
 
         //! Local domains (host mirror view)
         host_mirror_type hLocalDomains_m;
+
+        //! Whether the field is entirely stored on one rank
+        bool isAllSerial_m = false;
 
         e_dim_tag requestedLayout_m[Dim];
 

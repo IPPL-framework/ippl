@@ -39,6 +39,9 @@ namespace ippl {
                 val += apply(view1, args) * apply(view2, args);
             },
             Kokkos::Sum<T>(sum));
+        if (f1.getLayout().isAllSerial()) {
+            return sum;
+        }
         T globalSum       = 0;
         MPI_Datatype type = get_mpi_datatype<T>(sum);
         MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Comm->getCommunicator());
@@ -70,6 +73,9 @@ namespace ippl {
                             val = myVal;
                     },
                     Kokkos::Max<T>(local));
+                if (field.getLayout().isAllSerial()) {
+                    return local;
+                }
                 T globalMax       = 0;
                 MPI_Datatype type = get_mpi_datatype<T>(local);
                 MPI_Allreduce(&local, &globalMax, 1, type, MPI_MAX, Comm->getCommunicator());
@@ -82,6 +88,9 @@ namespace ippl {
                         val += std::pow(std::abs(apply(view, args)), p);
                     },
                     Kokkos::Sum<T>(local));
+                if (field.getLayout().isAllSerial()) {
+                    return local;
+                }
                 T globalSum       = 0;
                 MPI_Datatype type = get_mpi_datatype<T>(local);
                 MPI_Allreduce(&local, &globalSum, 1, type, MPI_SUM, Comm->getCommunicator());
