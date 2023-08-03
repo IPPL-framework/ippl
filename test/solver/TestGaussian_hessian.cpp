@@ -34,7 +34,7 @@
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
-#include "FFTPoissonSolver.h"
+#include "Solver/FFTPoissonSolver.h"
 
 template <typename T>
 using Mesh_t = typename ippl::UniformCartesian<T, 3>;

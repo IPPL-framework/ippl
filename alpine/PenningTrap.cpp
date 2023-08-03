@@ -200,11 +200,12 @@ int main(int argc, char* argv[]) {
         // create mesh and layout objects for this problem domain
         Vector_t<double, Dim> rmin = 0;
         Vector_t<double, Dim> rmax = 20;
+        Vector_t<double, Dim> length = rmax - rmin;
 
-        Vector_t<double, Dim> hr     = rmax / nr;
+        Vector_t<double, Dim> hr     = length / nr;
         Vector_t<double, Dim> origin = rmin;
         unsigned int nrMax           = 2048;  // Max grid size in our studies
-        double dxFinest              = rmax[0] / nrMax;
+        double dxFinest              = length[0] / nrMax;
         const double dt              = 0.5 * dxFinest;  // size of timestep
 
         const bool isAllPeriodic = true;
@@ -219,12 +220,10 @@ int main(int argc, char* argv[]) {
 
         P->nr_m = nr;
 
-        Vector_t<double, Dim> length = rmax - rmin;
-
         Vector_t<double, Dim> mu, sd;
 
         for (unsigned d = 0; d < Dim; d++) {
-            mu[d] = 0.5 * length[d];
+            mu[d] = 0.5 * length[d] + origin[d];
         }
         sd[0] = 0.15 * length[0];
         sd[1] = 0.05 * length[1];
@@ -318,15 +317,15 @@ int main(int argc, char* argv[]) {
             auto Rview = P->R.getView();
             auto Pview = P->V.getView();
             auto Eview = P->E.getView();
-            double V0  = 30 * rmax[2];
+            double V0  = 30 * length[2];
             Kokkos::parallel_for(
                 "Kick1", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
                     double Eext_x =
-                        -(Rview(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
+                        -(Rview(j)[0] - origin[0] - 0.5 * length[0]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
                     double Eext_y =
-                        -(Rview(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
+                        -(Rview(j)[1] - origin[1] - 0.5 * length[1]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
                     double Eext_z =
-                        (Rview(j)[2] - 0.5 * rmax[2]) * (V0 / (Kokkos::pow(rmax[2], 2)));
+                        (Rview(j)[2] - origin[2] - 0.5 * length[2]) * (V0 / (Kokkos::pow(length[2], 2)));
 
                     Eview(j)[0] += Eext_x;
                     Eview(j)[1] += Eext_y;
@@ -379,11 +378,11 @@ int main(int argc, char* argv[]) {
             Kokkos::parallel_for(
                 "Kick2", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
                     double Eext_x =
-                        -(R2view(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
+                        -(R2view(j)[0] - origin[0] - 0.5 * length[0]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
                     double Eext_y =
-                        -(R2view(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * Kokkos::pow(rmax[2], 2)));
+                        -(R2view(j)[1] - origin[1] - 0.5 * length[1]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
                     double Eext_z =
-                        (R2view(j)[2] - 0.5 * rmax[2]) * (V0 / (Kokkos::pow(rmax[2], 2)));
+                        (R2view(j)[2] - origin[2] - 0.5 * length[2]) * (V0 / (Kokkos::pow(length[2], 2)));
 
                     E2view(j)[0] += Eext_x;
                     E2view(j)[1] += Eext_y;

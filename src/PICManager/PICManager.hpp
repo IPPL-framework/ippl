@@ -50,9 +50,6 @@ using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
 template <unsigned Dim = 3>
 using FieldLayout_t = ippl::FieldLayout<Dim>;
 
-template <typename T = double, unsigned Dim = 3>
-using ORB = ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t<Dim>, Centering_t<Dim>, T>;
-
 using size_type = ippl::detail::size_type;
 
 template <typename T, unsigned Dim = 3>
@@ -60,6 +57,9 @@ using Vector = ippl::Vector<T, Dim>;
 
 template <typename T, unsigned Dim = 3, class... ViewArgs>
 using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>, ViewArgs...>;
+
+template <typename T = double, unsigned Dim = 3>
+using ORB = ippl::OrthogonalRecursiveBisection<Field<double, Dim>, T>;
 
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
