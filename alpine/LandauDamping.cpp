@@ -17,6 +17,9 @@
 //     Example:
 //     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 --overallocate 2.0 --info 10
 //
+//     Generating data on one core use:
+//     ./LandauDamping 32 32 32 10000 10 FFT 0.01 --overallocate 2.0 --info 10
+//
 // Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
@@ -193,9 +196,8 @@ int main(int argc, char* argv[]) {
 
         IpplTimings::startTimer(dumpDataTimer);
         statConn.dumpLandau(P->F_m, hr, P->time_m);
-        statConn.gatherLoadBalancingStatistics(P->getLocalNum(), P->time_m);
+        statConn.gatherLoadBalancingStatistics(P->getLocalNum(), 0);
         statConn.gatherLocalDomainStatistics(FL, 0);
-        statConn.gatherFieldStatistics(P->V, P->rhs_m, P->F_m, hr, P->getLocalNum(), P->time_m);
         IpplTimings::stopTimer(dumpDataTimer);
 
         // begin main timestep loop
@@ -254,8 +256,7 @@ int main(int argc, char* argv[]) {
             IpplTimings::startTimer(dumpDataTimer);
             statConn.dumpLandau(P->F_m, hr, P->time_m);
             statConn.gatherLoadBalancingStatistics(P->getLocalNum(), P->time_m);
-            statConn.gatherLocalDomainStatistics(FL, 0);
-            statConn.gatherFieldStatistics(P->V, P->rhs_m, P->F_m, hr, P->getLocalNum(), P->time_m);
+            statConn.gatherLocalDomainStatistics(FL, P->time_m);
             IpplTimings::stopTimer(dumpDataTimer);
             msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 

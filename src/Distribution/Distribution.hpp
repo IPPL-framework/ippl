@@ -1,17 +1,35 @@
 #ifndef DISTRIBUTION_H
 #define DISTRIBUTION_H
 
+// Copyright (c) 2021, Andreas Adelmann
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
+
 #include "Ippl.h"
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 #include <Kokkos_Random.hpp>
+#include <functional>
 
 #include "PICManager/PICManager.hpp"
 
 /**
  * @namespace Distribution
- * @brief Contains functions and structures for handling distributions.
+ * @brief contains functions and structures for handling distributions.
+ * @fixme repartitionRhs and createParticles should be moved to the base class
+ * @fixme generate_random should be moved to the base class
  */
 namespace Distribution {
 
@@ -22,11 +40,53 @@ namespace Distribution {
         std::string distName_m;
 
     public:
+        /*
+          std::function<T(T&)> f_m;
+          std::function<T(T&)> fprime_m;
+
+          Distribution(const char* distName, std::function<T(T&)> f1, std::function<T(T&)> f2)
+              : distName_m(distName)
+              , f_m(f1)
+              , fprime_m(f2) {}
+        */
         Distribution(const char* distName)
             : distName_m(distName) {}
+
         // virtual void repartitionRhs(auto P, const ippl::NDIndex<Dim>& lDom) = 0;
         //  virtual void createParticles(auto P, auto RLayout)                  = 0;
         ~Distribution() {}
+
+        /**
+         * @brief A structure representing the Newton method for finding roots of 1D functions.
+         * @tparam T The type of the parameters and variables used in the Newton method.
+         */
+
+        template <typename Func1, typename Func2>
+            requires std::invocable<Func1, T> && std::invocable<Func2, T>
+        struct Newton1D {
+            double tol   = 1e-12;
+            int max_iter = 20;
+            double pi    = Kokkos::numbers::pi_v<double>;
+
+            Func1 F;
+            Func2 Fprime;
+
+            KOKKOS_INLINE_FUNCTION Newton1D() {}
+
+            KOKKOS_INLINE_FUNCTION Newton1D(Func1 f1, Func2 f2)
+                : F(f1)
+                , Fprime(f2) {}
+
+            KOKKOS_INLINE_FUNCTION ~Newton1D() {}
+
+            KOKKOS_FUNCTION void solve(T& x) {
+                int iterations = 0;
+                while (iterations < max_iter && Kokkos::fabs(F(x)) > tol) {
+                    x = x - (F(x) / Fprime(x));
+                    iterations += 1;
+                }
+            }
+        };
     };
 
     template <typename T, unsigned Dim = 3>
@@ -75,63 +135,6 @@ namespace Distribution {
             return pdf;
         }
 
-        /**
-         * @brief A structure representing the Newton method for finding roots of 1D functions.
-         * @tparam T The type of the parameters and variables used in the Newton method.
-         */
-
-        struct Newton1D {
-            double tol   = 1e-12;
-            int max_iter = 20;
-            double pi    = Kokkos::numbers::pi_v<double>;
-
-            T k, alpha, u;
-
-            KOKKOS_INLINE_FUNCTION Newton1D() {}
-
-            KOKKOS_INLINE_FUNCTION Newton1D(const T& k_, const T& alpha_, const T& u_)
-                : k(k_)
-                , alpha(alpha_)
-                , u(u_) {}
-
-            KOKKOS_INLINE_FUNCTION ~Newton1D() {}
-
-            /**
-             * @brief Calculate the function value at a given point.
-             * @param x The input value.
-             * @return The value of the function at x.
-             * The function f(x) is defined as:
-             * \f[ f(x) = x + \frac{\alpha}{k} \cdot \sin(kx) - u \f]
-             */
-            KOKKOS_INLINE_FUNCTION T f(T& x) {
-                T F;
-                F = x + (alpha * (Kokkos::sin(k * x) / k)) - u;
-                return F;
-            }
-
-            /**
-             * @brief Calculate the derivative of the function at a given point.
-             * @param x The input value.
-             * @return The value of the derivative of the function at x.
-             * The derivative of the function f(x), denoted as f'(x), is defined as:
-             * \f[ f'(x) = 1 + \alpha \cdot \cos(kx) \f]
-             */
-            KOKKOS_INLINE_FUNCTION T fprime(T& x) {
-                T Fprime;
-                Fprime = 1 + (alpha * Kokkos::cos(k * x));
-                return Fprime;
-            }
-
-            KOKKOS_FUNCTION
-            void solve(T& x) {
-                int iterations = 0;
-                while (iterations < max_iter && Kokkos::fabs(f(x)) > tol) {
-                    x = x - (f(x) / fprime(x));
-                    iterations += 1;
-                }
-            }
-        };
-
         template <typename GT, class GeneratorPool>
         struct generate_random {
             using view_type  = typename ippl::detail::ViewType<GT, 1>::view_type;
@@ -162,10 +165,38 @@ namespace Distribution {
                 typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
                 value_type u;
+
+                const auto Alpha = alpha;
+                auto K           = k;
+
                 for (unsigned d = 0; d < Dim; ++d) {
                     u       = rand_gen.drand(minU[d], maxU[d]);
                     x(i)[d] = u / (1 + alpha);
-                    Newton1D solver(k[d], alpha, u);
+
+                    /**
+                     * @brief Calculate the function value at a given point.
+                     * @param x The input value.
+                     * @return The value of the function at x.
+                     * The function f(x) is defined as:
+                     * \f[ f(x) = x + \frac{\alpha}{k} \cdot \sin(kx) - u \f]
+                     **/
+                    auto f = [Alpha, K, d, u](double x) {
+                        return x + (Alpha * (Kokkos::sin(K[d] * x) / K[d])) - u;
+                    };
+
+                    /**
+                     * @brief Calculate the derivative of the function at a given point.
+                     * @param x The input value.
+                     * @return The value of the derivative of the function at x.
+                     * The derivative of the function f(x), denoted as f'(x), is defined as:
+                     * \f[ f'(x) = 1 + \alpha \cdot \cos(kx) \f]
+                     **/
+                    auto fprime = [Alpha, K, d](double x) {
+                        return 1 + (Alpha * Kokkos::cos(K[d] * x));
+                    };
+
+                    Distribution<double, 3>::Newton1D<decltype(f), decltype(fprime)> solver(f,
+                                                                                            fprime);
                     solver.solve(x(i)[d]);
                     v(i)[d] = rand_gen.normal(0.0, 1.0);
                 }
@@ -277,16 +308,18 @@ namespace Distribution {
         }
 
         /**
-         * @brief Compute the probability density function (PDF) of a normal distribution in
-         * multiple dimensions.
+         * @brief Compute the probability density function (PDF) of a normal
+         * distribution in multiple dimensions.
          * @param xvec The input vector containing the coordinates in each dimension.
          * @param mu The mean vector of the distribution in each dimension.
-         * @param sigma The standard deviation vector of the distribution in each dimension.
+         * @param sigma The standard deviation vector of the distribution in each
+         * dimension.
          * @param Dim The number of dimensions.
          * @return The value of the PDF at the given coordinates.
          * The probability density function (PDF) is calculated using the formula
          * \f[ PDF(xvec) = \prod_{d=0}^{Dim-1} \left(\frac{1}{\sigma_d \sqrt{2\pi}}
-         * \exp\left(-\frac{1}{2}\left(\frac{xvec_d - \mu_d}{\sigma_d}\right)^2\right)\right) \f]
+         * \exp\left(-\frac{1}{2}\left(\frac{xvec_d -
+         * \mu_d}{\sigma_d}\right)^2\right)\right) \f]
          */
         KOKKOS_FUNCTION
         double PDF(const Vector_t<double, Dim>& xvec, const Vector_t<double, Dim>& mu,
@@ -318,11 +351,13 @@ namespace Distribution {
             KOKKOS_INLINE_FUNCTION ~Newton1D() {}
 
             /**
-             * @brief Calculate the function value at a given point using the error function.
+             * @brief Calculate the function value at a given point using the error
+             * function.
              * @param x The input value.
              * @return The value of the function at x.
              * The function f(x) is defined as:
-             * \f[ f(x) = \text{erf}\left(\frac{x - \mu}{\sigma\sqrt{2}}\right) - 2u + 1 \f]
+             * \f[ f(x) = \text{erf}\left(\frac{x - \mu}{\sigma\sqrt{2}}\right) - 2u + 1
+             * \f]
              */
             KOKKOS_INLINE_FUNCTION T f(T& x) {
                 T F;
@@ -335,7 +370,8 @@ namespace Distribution {
              * @param x The input value.
              * @return The value of the derivative of the function at x.
              * The derivative of the function f(x), denoted as f'(x), is defined as:
-             * \f[ f'(x) = \frac{1}{\sigma}\sqrt{\frac{2}{\pi}} \exp\left(-\frac{1}{2}\left(\frac{x
+             * \f[ f'(x) = \frac{1}{\sigma}\sqrt{\frac{2}{\pi}}
+             * \exp\left(-\frac{1}{2}\left(\frac{x
              * - \mu}{\sigma}\right)^2\right) \f]
              */
             KOKKOS_INLINE_FUNCTION T fprime(T& x) {
@@ -500,20 +536,21 @@ namespace Distribution {
         /**
          * @brief Compute the cumulative distribution function (CDF) of a distribution.
          *
-         * This function calculates the cumulative distribution function (CDF) of a distribution
-         * with parameters @c delta and @c k.
+         * This function calculates the cumulative distribution function (CDF) of a
+         * distribution with parameters @c delta and @c k.
          *
          * The CDF is computed as follows:
          * \f[
-         *     \text{CDF}(x, \alpha, k, \text{dim}) = x + \text{isDimZ} \cdot \left(\frac{\delta}{k}
-         * \cdot \sin(k \cdot x)\right) \f]
+         *     \text{CDF}(x, \alpha, k, \text{dim}) = x + \text{isDimZ} \cdot
+         * \left(\frac{\delta}{k} \cdot \sin(k \cdot x)\right) \f]
          *
          * where
          * - @c x is the input value.
          * - @c delta is the delta parameter of the distribution.
          * - @c k is the k parameter of the distribution.
          * - @c dim is the dimension parameter of the distribution.
-         * - @c isDimZ is a boolean value indicating if the dimension is Z or not (true or false).
+         * - @c isDimZ is a boolean value indicating if the dimension is Z or not (true
+         * or false).
          *
          * @param x The input value.
          * @param delta The delta parameter of the distribution.
@@ -528,13 +565,13 @@ namespace Distribution {
         }
 
         /**
-         * @brief Compute the probability density function (PDF) of a distribution in multiple
-         * dimensions.
+         * @brief Compute the probability density function (PDF) of a distribution in
+         * multiple dimensions.
          *
-         * This function computes the probability density function (PDF) of a distribution in
-         * multiple dimensions based on the given input vector, alpha parameter, and k parameters.
-         * The computation involves the coordinates in each dimension, delta, and trigonometric
-         * operations using the cos function.
+         * This function computes the probability density function (PDF) of a
+         * distribution in multiple dimensions based on the given input vector, alpha
+         * parameter, and k parameters. The computation involves the coordinates in each
+         * dimension, delta, and trigonometric operations using the cos function.
          *
          * @param xvec The input vector containing the coordinates in each dimension.
          * @param alpha The alpha parameter of the distribution.
@@ -544,13 +581,13 @@ namespace Distribution {
          *
          * @note This function uses the following formula to compute the PDF:
          * \f[
-         * \text{PDF}(\mathbf{x}, \delta, \mathbf{kw}) = 1.0 \times 1.0 \times \left(1.0 + \delta
-         * \cos(kw[Dim - 1] \cdot xvec[Dim - 1])\right) \f] where:
-         * - \f$\mathbf{x}\f$ is the input vector \f$xvec\f$ containing the coordinates in each
-         * dimension.
+         * \text{PDF}(\mathbf{x}, \delta, \mathbf{kw}) = 1.0 \times 1.0 \times \left(1.0
+         * + \delta \cos(kw[Dim - 1] \cdot xvec[Dim - 1])\right) \f] where:
+         * - \f$\mathbf{x}\f$ is the input vector \f$xvec\f$ containing the coordinates
+         * in each dimension.
          * - \f$\delta\f$ is the given parameter \f$delta\f$.
-         * - \f$\mathbf{kw}\f$ is the vector \f$kw\f$ containing the k parameters for each dimension
-         * of the distribution.
+         * - \f$\mathbf{kw}\f$ is the vector \f$kw\f$ containing the k parameters for
+         * each dimension of the distribution.
          * - \f$Dim\f$ is the given number of dimensions.
          * - \f$\cos(x)\f$ is the cosine function.
          *
@@ -567,7 +604,8 @@ namespace Distribution {
         }
 
         /**
-         * @brief A structure representing the Newton method for finding roots of 1D functions.
+         * @brief A structure representing the Newton method for finding roots of 1D
+         * functions.
          * @tparam T The type of the parameters and variables used in the Newton method.
          */
 
@@ -590,8 +628,8 @@ namespace Distribution {
             /**
              * @brief Compute the function @f$F(x)@f$.
              *
-             * This function calculates the value of the function @f$F(x)@f$ with parameters @c
-             * delta and @c k.
+             * This function calculates the value of the function @f$F(x)@f$ with
+             * parameters @c delta and @c k.
              *
              * The function @f$F(x)@f$ is computed as follows:
              * \f[
@@ -616,8 +654,8 @@ namespace Distribution {
             /**
              * @brief Compute the derivative of the function @f$F(x)@f$.
              *
-             * This function calculates the derivative of the function @f$F(x)@f$ with parameters @c
-             * delta and @c k.
+             * This function calculates the derivative of the function @f$F(x)@f$ with
+             * parameters @c delta and @c k.
              *
              * The derivative of the function @f$F(x)@f$ is computed as follows:
              * \f[

@@ -1,7 +1,28 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
+// Copyright (c) 2021, Andreas Adelmann
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
+//
+
 #include "PICManager/PICManager.hpp"
+
+/**
+ *
+ * @FixMe Inform write to file does not work
+ * @note CSV output if serial only for the moment. Use this for debug purposes
+ **/
 
 namespace Connector {
 
@@ -16,7 +37,9 @@ namespace Connector {
     class Connector {
         const char* testName_m;
         const CONNECTION_TYPE connType_m;
-        std::map<int, std::unique_ptr<Inform> > streams_m;
+        // std::map<int, std::unique_ptr<Inform> > streams_m;
+        std::map<int, std::unique_ptr<std::ofstream> > streams_m;
+
         int streamIdCounter_m;
 
     public:
@@ -32,7 +55,6 @@ namespace Connector {
         }
 
         ~Connector() {
-            std::cout << "delete " << streamIdCounter_m << " streams" << std::endl;
             if (ippl::Comm->rank() == 0) {
                 for (int i = 0; i < streamIdCounter_m; i++)
                     deleteStream(i);
@@ -40,16 +62,6 @@ namespace Connector {
             if (msg)
                 delete msg;
         }
-
-        virtual int open(std::string fn) = 0;
-
-        virtual int close() = 0;
-
-        virtual int status() = 0;
-
-        virtual int write() = 0;
-
-        virtual int read() = 0;
 
         const char* getName() { return testName_m; }
 
@@ -82,11 +94,12 @@ namespace Connector {
          * @return Reference to the requested stream.
          */
         int requestStreamId(std::string fileName) {
-            std::unique_ptr<Inform> outputStream(
-                new Inform(NULL, fileName.c_str(), Inform::OVERWRITE, ippl::Comm->rank()));
-            if (outputStream)
-                std::cout << "Open " << outputStream << " with id " << streamIdCounter_m
-                          << std::endl;
+            // std::unique_ptr<Inform> outputStream(
+            // new Inform(NULL, fileName.c_str(), Inform::OVERWRITE, ippl::Comm->rank()));
+
+            std::unique_ptr<std::ofstream> outputStream(new std::ofstream(fileName.c_str()));
+            outputStream->precision(10);
+            outputStream->setf(std::ios::scientific, std::ios::floatfield);
             int streamId = streamIdCounter_m;
             streamIdCounter_m++;
             streams_m[streamId] = std::move(outputStream);
@@ -99,6 +112,7 @@ namespace Connector {
          * @param streamId The ID of the stream to write to.
          * @param message The message to write.
          */
+
         void write(int streamId, const std::string& message) {
             if (ippl::Comm->rank() == 0) {
                 auto it = streams_m.find(streamId);
@@ -117,6 +131,7 @@ namespace Connector {
             if (ippl::Comm->rank() == 0) {
                 auto it = streams_m.find(streamId);
                 if (it != streams_m.end()) {
+                    it->second->flush();
                     streams_m.erase(it);
                 }
             }
@@ -162,8 +177,7 @@ namespace Connector {
 
         ~VTKConnector() {}
 
-        void dumpVTK(VField_t<T, 3>& E, int nx, int ny, int nz, int iteration, double dx, double dy,
-                     double dz) {
+        void dumpVTK(VField_t<T, 3>& E, int nx, int ny, int nz, double dx, double dy, double dz) {
             if (ippl::Comm->size() > 1) {
                 return;
             }
@@ -197,8 +211,7 @@ namespace Connector {
             Connector<double, Dim>::deleteStream(myVtkVFieldStreamId_m);
         }
 
-        void dumpVTK(Field_t<3>& rho, int nx, int ny, int nz, int iteration, double dx, double dy,
-                     double dz) {
+        void dumpVTK(Field_t<3>& rho, int nx, int ny, int nz, double dx, double dy, double dz) {
             //
             if (ippl::Comm->size() > 1) {
                 return;
@@ -293,16 +306,6 @@ namespace Connector {
 
         ~StatisticsConnector() {}
 
-        int open(std::string fn) { return 0; }
-
-        int close() { return 0; }
-
-        int status() { return 0; }
-
-        int write() { return 0; }
-
-        int read() { return 0; }
-
         void gatherFieldStatistics(auto vel, auto rhs, auto vField, Vector_t<T, Dim> hr,
                                    const size_type localNum, double time) {
             auto Vview = vel.getView();
@@ -353,7 +356,8 @@ namespace Connector {
             if (ippl::Comm->rank() == 0) {
                 if (time == 0.0) {
                     ss << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2, "
-                          "Ex_norm2, Ey_norm2, Ez_norm2";
+                          "Ex_norm2, Ey_norm2, Ez_norm2"
+                       << std::endl;
                 } else {
                     double rhoNorm_m = 0.0;  /// FixMe
                     ss << std::setprecision(10) << time << " " << potEnergy << " " << gkinEnergy
@@ -361,6 +365,7 @@ namespace Connector {
                     for (unsigned d = 0; d < Dim; d++) {
                         ss << normE[d] << " ";
                     }
+                    ss << std::endl;
                 }
                 Connector<double, Dim>::write(myStatStreamId_m, ss.str());
             }
@@ -378,7 +383,7 @@ namespace Connector {
                     for (unsigned d = 0; d < Dim; d++) {
                         myfile << domains[i][d].first() << " " << domains[i][d].last() << " ";
                     }
-                    myfile << "\n";
+                    myfile << std::endl;
                 }
                 myfile.close();
             }
@@ -402,6 +407,7 @@ namespace Connector {
                         ss << time << " " << r << " " << imb[r];
                     }
                 }
+                ss << std::endl;
                 Connector<double, Dim>::write(myLbStreamId_m, ss.str());
             }
             ippl::Comm->barrier();
@@ -451,8 +457,10 @@ namespace Connector {
                 if (time == 0.0) {
                     ss << "time, Ex_field_energy, Ex_max_norm";
                 } else {
-                    ss << std::setprecision(10) << time << " " << fieldEnergy << " " << ExAmp;
+                    ss << std::setprecision(10) << std::ios::scientific << std::ios::floatfield
+                       << time << " " << fieldEnergy << " " << ExAmp;
                 }
+                ss << std::endl;
                 Connector<double, Dim>::write(myLdStreamId_m, ss.str());
             }
             ippl::Comm->barrier();
@@ -499,6 +507,7 @@ namespace Connector {
                     ss << "time, Ez_field_energy, Ez_max_norm";
                 } else
                     ss << std::setprecision(10) << time << " " << fieldEnergy << " " << EzAmp;
+                ss << std::endl;
                 Connector<double, Dim>::write(myBtStreamId_m, ss.str());
             }
             ippl::Comm->barrier();
@@ -531,25 +540,21 @@ namespace Connector {
             }
         }
 
-        ~PhaseSpaceConnector() {}
-
-        int open(std::string fn) { return 0; }
-
-        int close() { return 0; }
-
-        int status() { return 0; }
-
-        int write() { return 0; }
-
-        int read() { return 0; }
+        ~PhaseSpaceConnector() {
+            if (myStreamId_m != -1) {
+                Connector<double, Dim>::deleteStream(myStreamId_m);
+                myStreamId_m = -1;
+            }
+        }
 
         void dumpParticleData(auto RHost, auto VHost, size_type localNum) {
             // FixMe does not work in parallel
             if (ippl::Comm->size() > 1) {
                 return;
             }
+            *Connector<double, Dim>::msg << "PhaseSpaceConnector write N= " << localNum << endl;
             std::stringstream ss;
-            ss << "R_x, R_y, R_z, V_x, V_y, V_z";
+            ss << "R_x, R_y, R_z, V_x, V_y, V_z" << std::endl;
             Connector<double, Dim>::write(myStreamId_m, ss.str());
             for (size_type i = 0; i < localNum; i++) {
                 std::stringstream stream;
@@ -557,6 +562,7 @@ namespace Connector {
                     stream << std::setprecision(10) << RHost(i)[d] << " ";
                 for (unsigned d = 0; d < Dim; d++)
                     stream << std::setprecision(10) << VHost(i)[d] << " ";
+                stream << std::endl;
                 Connector<double, Dim>::write(myStreamId_m, stream.str());
             }
             ippl::Comm->barrier();

@@ -1,8 +1,7 @@
-// PCONTAINER header file
-//   Defines a particle attribute for charged particles to be used in
-//   applications
-//
-// Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
+#ifndef PICMANAGER_H
+#define PICMANAGER_H
+// Copyright (c) 2021, Andreas Adelmann
+// Paul Scherrer Institut, Villigen PSI, Switzerland
 // All rights reserved
 //
 // This file is part of IPPL.
@@ -15,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-#ifndef PCONTAINER_H
-#define PCONTAINER_H
 
 #include "Ippl.h"
 

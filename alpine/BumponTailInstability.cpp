@@ -52,7 +52,7 @@
 
 constexpr unsigned Dim = 3;
 
-const char* TestName = "BumponTailInstability";
+const char* TestName = "TwoStreamInstability";
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
