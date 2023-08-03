@@ -144,7 +144,11 @@ namespace ippl {
         std::shared_ptr<FFT<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
 
-        Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft> tempField;
+        template <typename FieldType>
+        using temp_view_type =
+            typename Kokkos::View<typename FieldType::view_type::data_type, Kokkos::LayoutLeft,
+                                  typename FieldType::memory_space>::uniform_type;
+        temp_view_type<Field> tempField;
     };
 
 #define IN_PLACE_FFT_BASE_CLASS(Field, Backend) \
@@ -217,8 +221,7 @@ namespace ippl {
         void transform(TransformDirection direction, RealField& f, ComplexField& g);
 
     private:
-        Kokkos::View<typename ComplexField::view_type::data_type, Kokkos::LayoutLeft>
-            tempFieldComplex;
+        typename Base::template temp_view_type<ComplexField> tempFieldComplex;
     };
 
     /**
