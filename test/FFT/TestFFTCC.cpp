@@ -71,9 +71,9 @@ int main(int argc, char* argv[]) {
         Kokkos::deep_copy(field.getView(), field_host);
 
         // Forward transform
-        fft->transform(1, field);
+        fft->transform(ippl::FORWARD, field);
         // Reverse transform
-        fft->transform(-1, field);
+        fft->transform(ippl::BACKWARD, field);
 
         auto field_result =
             Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
@@ -86,11 +86,13 @@ int main(int argc, char* argv[]) {
                         std::fabs(field_host(i, j, k).real() - field_result(i, j, k).real()),
                         std::fabs(field_host(i, j, k).imag() - field_result(i, j, k).imag()));
 
-                    if (error.real() > max_error_local.real())
+                    if (error.real() > max_error_local.real()) {
                         max_error_local.real() = error.real();
+                    }
 
-                    if (error.imag() > max_error_local.imag())
+                    if (error.imag() > max_error_local.imag()) {
                         max_error_local.imag() = error.imag();
+                    }
                     std::cout << "Error: " << std::setprecision(16) << error << std::endl;
                 }
             }

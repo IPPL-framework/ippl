@@ -233,7 +233,7 @@ namespace ippl {
         void setup();
 
         //! How the arrays are laid out.
-        Layout_t* layout_m;
+        Layout_t* layout_m = nullptr;
     };
 
 }  // namespace ippl

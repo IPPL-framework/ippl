@@ -34,11 +34,12 @@ public:
     using centering_type = typename mesh_type<Dim>::DefaultCentering;
 
     template <unsigned Dim>
-    using field_type_complex =
-        ippl::Field<Kokkos::complex<T>, Dim, mesh_type<Dim>, centering_type<Dim>>;
+    using field_type_complex = typename ippl::Field<Kokkos::complex<T>, Dim, mesh_type<Dim>,
+                                                    centering_type<Dim>>::uniform_type;
 
     template <unsigned Dim>
-    using field_type_real = ippl::Field<T, Dim, mesh_type<Dim>, centering_type<Dim>>;
+    using field_type_real =
+        typename ippl::Field<T, Dim, mesh_type<Dim>, centering_type<Dim>>::uniform_type;
 
     template <unsigned Dim>
     using layout_type = ippl::FieldLayout<Dim>;
@@ -183,9 +184,9 @@ public:
         Kokkos::deep_copy(view, field_host);
 
         // Forward transform
-        fft->transform(1, *field);
+        fft->transform(ippl::FORWARD, *field);
         // Reverse transform
-        fft->transform(-1, *field);
+        fft->transform(ippl::BACKWARD, *field);
 
         auto field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
 
@@ -267,8 +268,8 @@ TYPED_TEST(FFTTest, RC) {
 
         Kokkos::deep_copy(view, input_host);
 
-        fft->transform(1, *field, fieldOutput);
-        fft->transform(-1, *field, fieldOutput);
+        fft->transform(ippl::FORWARD, *field, fieldOutput);
+        fft->transform(ippl::BACKWARD, *field, fieldOutput);
 
         mirror_type field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
 
@@ -302,8 +303,8 @@ TYPED_TEST(FFTTest, CC) {
 
         Kokkos::deep_copy(view, field_host);
 
-        fft->transform(1, *field);
-        fft->transform(-1, *field);
+        fft->transform(ippl::FORWARD, *field);
+        fft->transform(ippl::BACKWARD, *field);
 
         mirror_type field_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
 
