@@ -19,9 +19,9 @@ namespace ippl {
         virtual void grid2par() = 0;
 
     protected:
-        std::unique_ptr<FieldContainer> fcontainer_m;
+        std::unique_ptr<FieldsContainer> fcontainer_m;
 
-        std::unique_ptr<ParticleContainer> pcontainer_m;
+        std::unique_ptr<ParticlesContainer> pcontainer_m;
 
         std::unique_ptr<Stepper> stepper_m;
 
