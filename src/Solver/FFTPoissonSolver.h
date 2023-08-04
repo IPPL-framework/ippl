@@ -50,31 +50,32 @@ namespace ippl {
          * @tparam tensorRank indicates whether scalar, vector, or matrix field
          * @tparam - the view type
          */
-        template <int tensorRank, typename, unsigned int Dim>
+        template <bool isVec, typename, unsigned int Dim>
         struct ViewAccess;
 
-        template <typename View, unsigned int Dim>
-        struct ViewAccess<2, View, Dim> {
-            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View view, unsigned dim1, unsigned dim2, const index_array_type& args) {
-                return apply(view, args)[dim1][dim2];
-            }
-        };
+        //template <typename View, unsigned int Dim>
+        //struct ViewAccess<2, View, Dim> {
+        //    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        //    KOKKOS_INLINE_FUNCTION constexpr static auto& get(View view, unsigned dim1, unsigned dim2, const index_array_type& args) {
+        //        return apply(view, args)[dim1][dim2];
+        //    }
+        //};
 
         template <typename View, unsigned int Dim>
-        struct ViewAccess<1, View, Dim> {
+        struct ViewAccess<true, View, Dim> {
             using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View view, unsigned dim1, [[maybe_unused]] unsigned dim2, const index_array_type& args) {
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View view, unsigned dim1, //[[maybe_unused]] unsigned dim2
+                                                                         const index_array_type& args) {
                 return apply(view, args)[dim1];
             }
         };
 
         template <typename View, unsigned int Dim>
-        struct ViewAccess<0, View, Dim> {
+        struct ViewAccess<false, View, Dim> {
             using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             KOKKOS_INLINE_FUNCTION constexpr static auto& get(View view,
                                                               [[maybe_unused]] unsigned dim1,
-                                                              [[maybe_unused]] unsigned dim2,
+                                                              //[[maybe_unused]] unsigned dim2,
                                                               const index_array_type& args) {
                 return apply(view, args);
             }
