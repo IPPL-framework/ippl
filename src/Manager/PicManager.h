@@ -26,6 +26,8 @@ namespace ippl {
         std::unique_ptr<Stepper> stepper_m;
 
         std::unique_ptr<LoadBalancer> loadbalancer_m;
+
+        std::unique_ptr<ForceSolver> fsolver_m;
     };
 }  // namespace ippl
 
