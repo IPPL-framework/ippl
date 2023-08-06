@@ -31,15 +31,47 @@ namespace ippl {
 
         namespace mpi {
 
-            template <class DeviceType, typename T, unsigned Dim>
+            template <class Distribution, class DeviceType, typename T, unsigned Dim>
             class InverseTransformSampling {
             public:
                 using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
                 using value_type = typename T::value_type;
 
-                InverseTransformSampling(T umin, T umax, int seed)
-                    : gen_m(seed)
-                    , unif_m(umin, umax) {}
+                InverseTransformSampling(const RegionLayout_t& rlayout, Distribution dist,
+                                         unsigned int ntotal, int seed)
+                    : dist_m(dist)
+                    , gen_m(seed)
+                    , unif_m(0.0, 1.0) {
+                    const typename RegionLayout_t::host_mirror_type regions =
+                        rlayout.gethLocalRegions();
+
+                    int rank = ippl::Comm->rank();
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        nr_m[d] = dist_m.cdf(regions(rank)[d].max(), mu[d], sd[d])
+                                  - dist_m.cdf(regions(rank)[d].min(), mu[d], sd[d]);
+                        dr_m[d]   = dist_m.cdf(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
+                        umin_m[d] = dist_m.cdf(regions(rank)[d].min(), mu[d], sd[d]);
+                        umax_m[d] = dist_m.cdf(regions(rank)[d].max(), mu[d], sd[d]);
+                    }
+
+                    double factor = (nr_m[0] * nr_m[1] * nr_m[2]) / (dr_m[0] * dr_m[1] * dr_m[2]);
+                    nlocal_m      = factor * ntotal;
+
+                    unsigned int ngobal = 0;
+                    MPI_Allreduce(&nlocal_m, &ngobal, 1, MPI_UNSIGNED_LONG, MPI_SUM,
+                                  ippl::Comm->getCommunicator());
+
+                    int rest = (int)(ntotal - ngobal);
+
+                    if (rank < rest) {
+                        ++nlocal_m;
+                    }
+                }
+
+                unsigned int getLocalNum() const { return nlocal_m; }
+
+                // FIXME
+                void generate(View : view) { Kokkos::parallel_for(nlocal_m, fill_random(view)); }
 
                 struct fill_random {
                     // Output View for the random numbers
@@ -55,14 +87,14 @@ namespace ippl {
 
                         for (unsigned d = 0; d < Dim; ++d) {
                             // get uniform random number between umin and umax
-                            u = unif_m(gen_m);
+                            u = (umax_m[d] - umin_m[d]) * unif_m(gen_m) + umin_m[d];
 
                             // first guess for Newton-Raphson
                             x_m(i)[d] = dist_m.estimate(u);
 
                             // solve
                             NewtonRaphson<T> solver;
-                            solver.solve(dist_m, x_m(i)[d]);
+                            solver.solve<Disribution>(dist_m, x_m(i)[d]);
                         }
                     }
                 };
@@ -70,6 +102,9 @@ namespace ippl {
             private:
                 Generator gen_m;
                 uniform_real_distribution<DeviceType, T> unif_m;
+                Distribution dist_m;
+                unsigned int nlocal_m;
+                Vector_t<double, Dim> nr_m, dr_m, umin_m, umax_m;
             };
 
             template <class DeviceType, class RealType = double>
