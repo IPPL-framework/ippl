@@ -90,9 +90,9 @@ namespace ippl {
                     : mean_m(mean)
                     , stddev_m(stddev)
                     , sqrt2_m(Kokkos::sqrt(RealType(2.0)))
-                    , pi_m(Kokkos::numbers::pi_v<RealType>())
+                    , pi_m(Kokkos::numbers::pi_v<RealType>()) {}
 
-                          KOKKOS_FUNCTION ~normal_distribution() {}
+                KOKKOS_FUNCTION ~normal_distribution() {}
 
                 KOKKOS_FUNCTION
                 RealType mean() const { return mean_m; }
