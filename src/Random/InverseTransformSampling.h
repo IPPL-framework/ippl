@@ -113,6 +113,15 @@ namespace ippl {
                            * Kokkos::exp(-0.5 * (Kokkos::pow(((x - mean_m) / stddev_m), 2)));
                 }
 
+                KOKKOS_INLINE_FUNCTION result_type cdf(const RealType& x) {
+                    reutrn 0.5 * (1.0 + Kokkos::erf((x - mean_m) / (stddev_m * sqrt2_m)));
+                }
+
+                KOKKOS_INLINE_FUNCTION result_type pdf(const RealType& x) {
+                    return (1.0 / (stddev_m * Kokkos::sqrt(2.0 * pi_m)))
+                           * Kokkos::exp(-0.5 * Kokkos::pow((x - mean_m) / stddev_m, 2));
+                }
+
             private:
                 RealType mean_m;
                 RealType stddev_m;
