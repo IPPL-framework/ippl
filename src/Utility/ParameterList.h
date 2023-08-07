@@ -43,6 +43,9 @@ namespace ippl {
         using variant_t =
             std::variant<double, float, bool, std::string, unsigned int, int, ParameterList>;
 
+        ParameterList()                     = default;
+        ParameterList(const ParameterList&) = default;
+
         /*!
          * Add a single parameter to this list.
          * @param key is the name of the parameter

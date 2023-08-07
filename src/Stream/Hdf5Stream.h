@@ -1,10 +1,10 @@
 #ifndef IPPL_HDF5_STREAM_H
 #define IPPL_HDF5_STREAM_H
 
+#include <type_traits>
+
 #include "Stream/BaseStream.h"
 #include "hdf5.h"
-
-#include <type_traits>
 
 namespace ippl {
 
@@ -39,10 +39,13 @@ namespace ippl {
     template <class Object>
     class Hdf5Stream : public BaseStream<Object> {
     public:
+        Hdf5Stream();
 
-        void create(const fs::path& path, bool overwrite = false) final;
+        virtual ~Hdf5Stream() = default;
 
-        void open(const fs::path& path, char access) final;
+        void create(const fs::path& path, const ParameterList& param) final;
+
+        void open(const fs::path& path) final;
 
         void close() final;
 
@@ -51,15 +54,19 @@ namespace ippl {
         herr_t status;
     };
 
-
+    template <class Object>
+    Hdf5Stream<Object>::Hdf5Stream()
+        : BaseStream<Object>() {}
 
     /* Create a new file using default properties. */
     template <class Object>
-    void Hdf5Stream<Object>::create(const fs::path& path, bool overwrite) {
-
-        BaseStream<Object>::create(path, overwrite);
+    void Hdf5Stream<Object>::create(const fs::path& path, const ParameterList& param) {
+        BaseStream<Object>::create(path, param);
 
         std::string filename = path.filename().string();
+
+        // not clear why the keyword "template" is needed here"
+        bool overwrite = this->param_m.template get<bool>("overwrite");
 
         if (overwrite) {
             file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -73,23 +80,12 @@ namespace ippl {
     }
 
     template <class Object>
-    void Hdf5Stream<Object>::open(const fs::path& path, char access) {
-
-        BaseStream<Object>::open(path, access);
+    void Hdf5Stream<Object>::open(const fs::path& path) {
+        BaseStream<Object>::open(path);
 
         std::string filename = path.filename().string();
 
-        unsigned flags = H5F_ACC_RDWR;
-
-        switch (access) {
-            case 'r':
-                flags = H5F_ACC_RDONLY;
-                break;
-            default:
-                flags = H5F_ACC_RDWR;
-        }
-
-        file = H5Fopen(filename.c_str(), flags, H5P_DEFAULT);
+        file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 
         if (file == H5I_INVALID_HID) {
             throw IpplException("Hdf5Stream::open", "Unable to open " + filename);
@@ -102,7 +98,8 @@ namespace ippl {
         status = H5Fclose(file);
 
         if (status < 0) {
-            throw IpplException("Hdf5Stream::close", "Unable to close " + this->path_m.filename().string());
+            throw IpplException("Hdf5Stream::close",
+                                "Unable to close " + this->path_m.filename().string());
         }
     }
 

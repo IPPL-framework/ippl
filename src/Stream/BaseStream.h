@@ -1,9 +1,10 @@
 #ifndef IPPL_BASE_STREAM_H
 #define IPPL_BASE_STREAM_H
 
-#include "Utility/IpplException.h"
-
 #include <filesystem>
+
+#include "Utility/IpplException.h"
+#include "Utility/ParameterList.h"
 
 namespace ippl {
 
@@ -12,12 +13,15 @@ namespace ippl {
     template <class Object>
     class BaseStream {
     public:
+        BaseStream();
 
-        virtual void create(const fs::path& path, bool overwrite = false);
+        virtual ~BaseStream() = default;
+
+        virtual void create(const fs::path& path, const ParameterList& param);
 
         bool remove();
 
-        virtual void open(const fs::path& path, char access);
+        virtual void open(const fs::path& path);
 
         virtual void close() = 0;
 
@@ -27,15 +31,23 @@ namespace ippl {
 
     protected:
         fs::path path_m;
+        ParameterList param_m;
     };
 
+    template <class Object>
+    BaseStream<Object>::BaseStream() {
+        param_m.add<bool>("overwrite", false);
+    }
 
     template <class Object>
-    void BaseStream<Object>::create(const fs::path& path, bool overwrite) {
+    void BaseStream<Object>::create(const fs::path& path, const ParameterList& param) {
         if (!path.has_filename()) {
             throw IpplException("BaseStream::create", "No filename provided.");
         }
-        if (!overwrite && fs::exists(path)) {
+
+        param_m.merge(param);
+
+        if (!param_m.get<bool>("overwrite") && fs::exists(path)) {
             throw IpplException("BaseStream::create", "File already exists.");
         }
     }
@@ -45,16 +57,13 @@ namespace ippl {
         return fs::remove(path_m);
     }
 
-
     template <class Object>
-    void BaseStream<Object>::open(const fs::path& path, char /*access*/) {
-
+    void BaseStream<Object>::open(const fs::path& path) {
         if (!path.has_filename()) {
             throw IpplException("BaseStream::open", "No filename provided.");
         }
         path_m = path;
     }
-
 
 }  // namespace ippl
 #endif

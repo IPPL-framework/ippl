@@ -2,34 +2,31 @@
 
 #include "Stream/Hdf5ParticleStream.h"
 
-using Mesh = ippl::UniformCartesian<double, 3>;
+using Mesh    = ippl::UniformCartesian<double, 3>;
 using PLayout = ippl::ParticleSpatialLayout<double, 3, Mesh>;
-
 
 class Particles : public ippl::ParticleBase<PLayout> {
     using Base = ippl::ParticleBase<PLayout>;
 
 public:
-
-    Particles(PLayout& p) : Base(p)
-                          , q("q", "charge", "C")
-                          , v("v", "veloctity", "m/s"), E("E", "electric field", "V/m") {
+    Particles(PLayout& p)
+        : Base(p)
+        , q("q", "charge", "C")
+        , v("v", "velocity", "m/s")
+        , E("E", "electric field", "V/m") {
         this->addAttribute(q);
         this->addAttribute(v);
         this->addAttribute(E);
     }
-
 
     ippl::ParticleAttrib<double> q;
     typename Base::particle_position_type v;
     typename Base::particle_position_type E;  // electric field at particle position
 };
 
-
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-
         try {
             ippl::NDIndex<3> domain;
             for (unsigned i = 0; i < 3; i++) {
@@ -41,13 +38,11 @@ int main(int argc, char* argv[]) {
                 decomp[d] = ippl::PARALLEL;
             }
 
-
             ippl::Vector<double, 3> hr     = 1.0 / 32;
             ippl::Vector<double, 3> origin = {0.0, 0.0, 0.0};
             Mesh mesh(domain, hr, origin);
             ippl::FieldLayout<3> fl(domain, decomp);
             PLayout pl(fl, mesh);
-
 
             Particles part(pl);
 
@@ -57,18 +52,22 @@ int main(int argc, char* argv[]) {
 
             std::filesystem::path filename = "test.hdf5";
 
-            ps.create(filename);
+            ippl::ParameterList param;
 
-            ps.open(filename, 'w');
+            param.add<bool>("charge", true);
+            param.add<bool>("velocity", true);
+
+            ps.create(filename, param);
+
+            ps.open(filename);
 
             ps << part;
 
             ps.close();
 
-        } catch(const IpplException& ex) {
+        } catch (const IpplException& ex) {
             std::cout << ex.what() << std::endl;
         }
-
     }
     ippl::finalize();
 
