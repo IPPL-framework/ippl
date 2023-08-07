@@ -21,11 +21,11 @@ namespace ippl {
                 ~NewtonRaphson() = default;
 
                 template <class Distribution>
-                KOKKOS_INLINE_FUNCTION void solve(Distribution dist, T& x, T atol = 1.0e-12,
+                KOKKOS_INLINE_FUNCTION void solve(Distribution dist, T& x, T& u, T atol = 1.0e-12,
                                                   unsigned int max_iter = 20) {
                     unsigned int iter = 0;
-                    while (iter < max_iter && Kokkos::fabs(dist.function(x)) > atol) {
-                        x = x - (dist.function(x) / dist.derivative(x));
+                    while (iter < max_iter && Kokkos::fabs(dist.function(x, u)) > atol) {
+                        x = x - (dist.function(x, u) / dist.derivative(x, u));
                         iter += 1;
                     }
                 }
@@ -35,14 +35,12 @@ namespace ippl {
         template <typename T, unsigned Dim, class DeviceType>
         class InverseTransformSampling {
         public:
-            using view_type = ippl::detail::ViewType<T, 1>::view_type;
+            using view_type = ippl::detail::ViewType<Vector<T, Dim>, 1>::view_type;
 
             template <class Distribution, class RegionLayout>
             InverseTransformSampling(const Vector<T, Dim>& rmin, const Vector<T, Dim>& rmax,
                                      const RegionLayout& rlayout, Distribution dist[Dim],
-                                     unsigned int ntotal, int seed)
-                : gen_m(seed)
-                , unif_m(0.0, 1.0) {
+                                     unsigned int ntotal) {
                 const typename RegionLayout::host_mirror_type regions = rlayout.gethLocalRegions();
 
                 int rank = ippl::Comm->rank();
@@ -73,43 +71,54 @@ namespace ippl {
 
             unsigned int getLocalNum() const { return nlocal_m; }
 
-            //                 // FIXME
-            //                 void generate(View : view) { Kokkos::parallel_for(nlocal_m,
-            //                 fill_random(view)); }
+            template <class Distribution>
+            void generate(Distribution dist_[Dim], view_type view, int seed) {
+                Kokkos::parallel_for(nlocal_m, fill_random(dist_, view, seed, umin_m, umax_m));
+            }
 
             template <class Distribution>
             struct fill_random {
-                // Output View for the random numbers
-                view_type x_m;
+                Distribution dist[Dim];
 
-                Distribution dist_m[Dim];
+                Generator<DeviceType> gen;
+                uniform_real_distribution<DeviceType, T> unif;
+                Vector<T, Dim> umin, umax;
+
+                // Output View for the random numbers
+                view_type x;
 
                 // Initialize all members
                 KOKKOS_FUNCTION
-                fill_random(Distribution dist[Dim], view_type x)
-                    : dist_m(dist)
-                    , x_m(x) {}
+                fill_random(Distribution dist_[Dim], view_type x_, int seed, Vector<T, Dim> umin_,
+                            Vector<T, Dim> umax_)
+                    : gen(seed)
+                    , unif(0.0, 1.0)
+                    , umin(umin_)
+                    , umax(umax_)
+                    , x(x_) {
+                    for (unsigned int d = 0; d < Dim; ++d) {
+                        dist[d] = dist_[d];
+                    }
+                }
 
                 KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
                     T u = 0.0;
 
                     for (unsigned d = 0; d < Dim; ++d) {
                         // get uniform random number between umin and umax
-                        u = (umax_m[d] - umin_m[d]) * unif_m(gen_m) + umin_m[d];
+                        u = (umax[d] - umin[d]) * unif(gen) + umin[d];
 
                         // first guess for Newton-Raphson
-                        x_m(i)[d] = dist_m[d].estimate(u);
+                        x(i)[d] = dist[d].estimate(u);
 
                         // solve
                         detail::NewtonRaphson<T> solver;
-                        solver.solve(dist_m[d], x_m(i)[d]);
+                        solver.solve(dist[d], x(i)[d], u);
                     }
                 }
             };
 
         private:
-            Generator<DeviceType> gen_m;
-            uniform_real_distribution<DeviceType, T> unif_m;
             unsigned int nlocal_m;
             Vector<T, Dim> nr_m, dr_m, umin_m, umax_m;
         };
@@ -141,7 +150,7 @@ namespace ippl {
             KOKKOS_FUNCTION
             RealType stddev() const { return stddev_m; }
 
-            KOKKOS_INLINE_FUNCTION result_type estimate(const RealType& u) {
+            KOKKOS_INLINE_FUNCTION result_type estimate(const RealType& u) const {
                 return (Kokkos::sqrt(pi_m / 2.0) * (2.0 * u - 1.0)) * stddev_m + mean_m;
             }
 
@@ -149,16 +158,17 @@ namespace ippl {
                 return Kokkos::erf((x - mean_m) / (stddev_m * sqrt2_m)) - 2.0 * u + 1.0;
             }
 
-            KOKKOS_INLINE_FUNCTION result_type derivative(RealType& x, const RealType& /*u*/) {
+            KOKKOS_INLINE_FUNCTION result_type derivative(RealType& x,
+                                                          const RealType& /*u*/) const {
                 return (1.0 / stddev_m) * Kokkos::sqrt(2.0 / pi_m)
                        * Kokkos::exp(-0.5 * (Kokkos::pow(((x - mean_m) / stddev_m), 2)));
             }
 
-            KOKKOS_INLINE_FUNCTION result_type cdf(const RealType& x) {
+            KOKKOS_INLINE_FUNCTION result_type cdf(const RealType& x) const {
                 return 0.5 * (1.0 + Kokkos::erf((x - mean_m) / (stddev_m * sqrt2_m)));
             }
 
-            KOKKOS_INLINE_FUNCTION result_type pdf(const RealType& x) {
+            KOKKOS_INLINE_FUNCTION result_type pdf(const RealType& x) const {
                 return (1.0 / (stddev_m * Kokkos::sqrt(2.0 * pi_m)))
                        * Kokkos::exp(-0.5 * Kokkos::pow((x - mean_m) / stddev_m, 2));
             }
