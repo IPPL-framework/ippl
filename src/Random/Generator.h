@@ -1,6 +1,8 @@
 #ifndef IPPL_GENERATOR_H
 #define IPPL_GENERATOR_H
 
+#include <Kokkos_Random.hpp>
+
 namespace ippl {
     namespace random {
 

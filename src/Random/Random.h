@@ -5,6 +5,8 @@
 #include <Kokkos_MathematicalFunctions.hpp>
 #include <Kokkos_Random.hpp>
 
+#include "Random/Generator.h"
+
 namespace ippl {
     namespace random {
 
@@ -14,7 +16,7 @@ namespace ippl {
                           "result_type must be a floating point type");
 
         public:
-            typedef generator<DeviceType> Generator;
+            typedef Generator<DeviceType> generator_type;
             typedef RealType result_type;
 
             KOKKOS_FUNCTION
@@ -36,7 +38,7 @@ namespace ippl {
             RealType b() const { return b_m; }
 
             KOKKOS_FUNCTION
-            result_type operator()(const Generator& gen) const {
+            result_type operator()(const generator_type& gen) const {
                 //             result_type x = gen.template operator()<result_type>();
                 result_type x = gen.template next<result_type>();
                 return (b_m - a_m) * x + a_m;
@@ -53,7 +55,7 @@ namespace ippl {
                           "result_type must be a floating point type");
 
         public:
-            typedef generator<DeviceType> Generator;
+            typedef Generator<DeviceType> generator_type;
             typedef RealType result_type;
 
             KOKKOS_FUNCTION
@@ -77,7 +79,7 @@ namespace ippl {
             RealType stddev() const { return stddev_m; }
 
             KOKKOS_FUNCTION
-            result_type operator()(const Generator& gen) const {
+            result_type operator()(const generator_type& gen) const {
                 // Box-Muller transform:
                 // 2 August 2023
                 // https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
