@@ -196,6 +196,11 @@ namespace ippl {
             return attributes_m.template get<MemorySpace>()[i];
         }
 
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        const attribute_type<MemorySpace>* getAttribute(size_t i) const {
+            return attributes_m.template get<MemorySpace>()[i];
+        }
+
         template <typename MemorySpace = void, typename Functor>
         void forAllAttributes(Functor&& f) const {
             if constexpr (std::is_void_v<MemorySpace>) {

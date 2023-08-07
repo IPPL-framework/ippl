@@ -51,6 +51,18 @@ message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
 message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
+
+option (ENABLE_STREAM "Enable output stream" OFF)
+if (ENABLE_STREAM)
+    find_package (HDF5 1.12.1 REQUIRED COMPONENTS CXX)
+    if (NOT ${HDF5_FOUND})
+        message (FATAL_ERROR "Unable to find HDF5!")
+    endif ()
+    if (NOT ${HDF5_IS_PARALLEL})
+        message (FATAL_ERROR "HDF5 must support parallel I/O")
+    endif ()
+endif ()
+
 option (ENABLE_FFT "Enable FFT transform" OFF)
 if (ENABLE_FFT)
     add_definitions (-DENABLE_FFT)

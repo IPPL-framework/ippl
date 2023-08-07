@@ -66,7 +66,8 @@ namespace ippl {
 
     template <class PLayout, typename... IP>
     ParticleBase<PLayout, IP...>::ParticleBase()
-        : layout_m(nullptr)
+        : R("R", "position", "m")
+        , layout_m(nullptr)
         , localNum_m(0)
         , nextID_m(Comm->rank())
         , numNodes_m(Comm->size()) {
