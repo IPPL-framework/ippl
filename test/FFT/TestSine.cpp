@@ -71,9 +71,9 @@ int main(int argc, char* argv[]) {
         Kokkos::deep_copy(field.getView(), field_host);
 
         // Forward transform
-        fft->transform(1, field);
+        fft->transform(ippl::FORWARD, field);
         // Reverse transform
-        fft->transform(-1, field);
+        fft->transform(ippl::BACKWARD, field);
 
         auto field_result =
             Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
