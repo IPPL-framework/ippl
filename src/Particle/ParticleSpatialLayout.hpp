@@ -41,21 +41,20 @@
 namespace ippl {
 
     struct increment_type {
-    public:
         size_t count[2];
 
-        void init() {
+        KOKKOS_FUNCTION void init() {
             count[0] = 0;
             count[1] = 0;
         }
 
-        increment_type& operator+=(bool* values) {
+        KOKKOS_INLINE_FUNCTION increment_type& operator+=(bool* values) {
             count[0] += values[0];
             count[1] += values[1];
             return *this;
         }
 
-        increment_type& operator+=(increment_type values) {
+        KOKKOS_INLINE_FUNCTION increment_type& operator+=(increment_type values) {
             count[0] += values.count[0];
             count[1] += values.count[1];
             return *this;
