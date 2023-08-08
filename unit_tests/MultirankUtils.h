@@ -67,14 +67,14 @@ protected:
      * Defines a type alias for a collection of constructs
      * with the desired ranks
      */
-    template <template <unsigned Dim> class Type>
+    template <template <unsigned> class Type>
     using Collection = std::tuple<Type<Dims>...>;
 
     /*!
      * Defines a type alias for a collection of pointers to
      * constructs with the desired ranks
      */
-    template <template <typename> class Pointer, template <unsigned Dim> class Type>
+    template <template <typename> class Pointer, template <unsigned> class Type>
     using PtrCollection = std::tuple<Pointer<Type<Dims>>...>;
 
     // The highest rank being tested
@@ -170,16 +170,15 @@ public:
 
     /*!
      * Convenience function for nested looping through a view
-     * @tparam Dim the view's rank
      * @tparam View the view type
      * @tparam Functor the loop body functor type
      * @param view the view
      * @param shift the number of ghost cells
      * @param c the functor to be called in each iteration
      */
-    template <unsigned Dim, typename View, class Functor>
+    template <typename View, class Functor>
     static constexpr void nestedViewLoop(View& view, int shift, Functor&& c) {
-        nestedLoop<Dim>(
+        nestedLoop<View::rank>(
             [&](unsigned) {
                 return shift;
             },

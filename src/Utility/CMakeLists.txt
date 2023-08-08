@@ -25,6 +25,7 @@ set (_HDRS
     vmap.h
     vmap.hpp
     ParameterList.h
+    TypeUtils.h
     )
 
 include_directories (

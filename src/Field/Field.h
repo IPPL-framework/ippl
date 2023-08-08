@@ -25,18 +25,15 @@
 
 namespace ippl {
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    class Field : public BareField<T, Dim> {
+    template <typename T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
+    class Field : public BareField<T, Dim, ViewArgs...> {
     public:
-        typedef T type;
-        static constexpr unsigned dimension = Dim;
-
         using Mesh_t      = Mesh;
         using Centering_t = Cell;
         using Layout_t    = FieldLayout<Dim>;
-        using BareField_t = BareField<T, Dim>;
+        using BareField_t = BareField<T, Dim, ViewArgs...>;
         using view_type   = typename BareField_t::view_type;
-        using BConds_t    = BConds<T, Dim, Mesh, Centering>;
+        using BConds_t    = BConds<Field<T, Dim, Mesh, Centering, ViewArgs...>, Dim>;
 
         // A default constructor, which should be used only if the user calls the
         // 'initialize' function before doing anything else.  There are no special
@@ -44,9 +41,13 @@ namespace ippl {
         // been properly initialized.
         Field();
 
-        Field(const Field&);
+        Field(const Field&) = default;
 
-        Field& operator=(const Field&);
+        /*!
+         * Creates a new Field with the same properties and contents
+         * @return A deep copy of the field
+         */
+        Field deepCopy() const;
 
         virtual ~Field() = default;
 
@@ -81,10 +82,7 @@ namespace ippl {
 
         BConds_t& getFieldBC() { return bc_m; }
         // Assignment from constants and other arrays.
-        using BareField<T, Dim>::operator=;
-
-    protected:
-        virtual void swap(Field& other);
+        using BareField<T, Dim, ViewArgs...>::operator=;
 
     private:
         // The Mesh object, and a flag indicating if we constructed it

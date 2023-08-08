@@ -34,29 +34,6 @@ namespace ippl {
         }
     }
 
-    /*
- 	*
- 	*
- 	* Constructors with std::array and std::vector to assign
- 	* vertex, face and edge neighbors in locateParticles
- 	*
- 	*/ 
-    template<typename T, unsigned Dim>
-    Vector<T, Dim>::Vector(const std::array<std::vector<T>, Dim>& a){
-
-	unsigned int idx = 0;
-	for(unsigned int i = 0; i < a.size(); i++){
-		for(unsigned int j = 0; j < a[i].size(); j++){
-			if( a[i].empty() )
-				continue;
-			data_m[idx] = a[i][j];
-			++idx;	
-		}
-		size_m = idx;
-	}
-	}
-
-
     template<typename T, unsigned Dim>
     KOKKOS_FUNCTION
     Vector<T, Dim>::Vector(const T& val){ 
@@ -106,13 +83,6 @@ namespace ippl {
         // PAssert(i < Dim);
         return data_m[i];
     }
-
-    template<typename T, unsigned Dim>
-    KOKKOS_INLINE_FUNCTION
-    size_t Vector<T, Dim>::size() const{
-    return (size_m < Dim) ? size_m : Dim;
-    }
-
 
     /*
      *

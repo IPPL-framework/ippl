@@ -23,13 +23,13 @@
 
 namespace ippl {
 
-    template <typename Tlhs, typename Trhs, unsigned Dim, typename OpRet, class Mesh,
-              class Centering>
-    class PCG : public SolverAlgorithm<Tlhs, Trhs, Dim, Mesh, Centering> {
+    template <typename OpRet, typename FieldLHS, typename FieldRHS = FieldLHS>
+    class PCG : public SolverAlgorithm<FieldLHS, FieldRHS> {
+        using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
+        typedef typename Base::lhs_type::value_type T;
+
     public:
-        using Base = SolverAlgorithm<Tlhs, Trhs, Dim, Mesh, Centering>;
-        using typename Base::lhs_type;
-        using typename Base::rhs_type;
+        using typename Base::lhs_type, typename Base::rhs_type;
         using operator_type = std::function<OpRet(lhs_type)>;
 
         /*!
@@ -46,7 +46,7 @@ namespace ippl {
         int getIterationCount() { return iterations_m; }
 
         void operator()(lhs_type& lhs, rhs_type& rhs, const ParameterList& params) override {
-            typedef typename lhs_type::type T;
+            constexpr unsigned Dim = lhs_type::dim;
 
             typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
             typename lhs_type::Layout_t layout = lhs.getLayout();
@@ -58,7 +58,7 @@ namespace ippl {
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
             lhs_type r(mesh, layout);
 
-            using bc_type  = BConds<T, lhs_type::dimension, Mesh, Centering>;
+            using bc_type  = BConds<lhs_type, Dim>;
             bc_type lhsBCs = lhs.getFieldBC();
             bc_type bc;
 
@@ -67,12 +67,11 @@ namespace ippl {
                 FieldBC bcType = lhsBCs[i]->getBCType();
                 if (bcType == PERIODIC_FACE) {
                     // If the LHS has periodic BCs, so does the residue
-                    bc[i] =
-                        std::make_shared<PeriodicFace<T, lhs_type::dimension, Mesh, Centering>>(i);
+                    bc[i] = std::make_shared<PeriodicFace<lhs_type>>(i);
                 } else if (bcType & CONSTANT_FACE) {
                     // If the LHS has constant BCs, the residue is zero on the BCs
                     // Bitwise AND with CONSTANT_FACE will succeed for ZeroFace or ConstantFace
-                    bc[i] = std::make_shared<ZeroFace<T, lhs_type::dimension, Mesh, Centering>>(i);
+                    bc[i]            = std::make_shared<ZeroFace<lhs_type>>(i);
                     allFacesPeriodic = false;
                 } else {
                     throw IpplException("PCG::operator()",
@@ -83,16 +82,16 @@ namespace ippl {
 
             r = rhs - op_m(lhs);
 
-            lhs_type d(r);
+            lhs_type d = r.deepCopy();
             d.setFieldBC(bc);
 
             T delta1          = innerProduct(r, r);
-            T rNorm           = std::sqrt(delta1);
+            residueNorm       = std::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
             lhs_type q(mesh, layout);
 
-            while (iterations_m < maxIterations && rNorm > tolerance) {
+            while (iterations_m < maxIterations && residueNorm > tolerance) {
                 q       = op_m(d);
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
@@ -110,7 +109,7 @@ namespace ippl {
                 delta1   = innerProduct(r, r);
                 T beta   = delta1 / delta0;
 
-                rNorm = std::sqrt(delta1);
+                residueNorm = std::sqrt(delta1);
 
                 d = r + beta * d;
 
@@ -123,8 +122,11 @@ namespace ippl {
             }
         }
 
+        T getResidue() const { return residueNorm; }
+
     protected:
         operator_type op_m;
+        T residueNorm    = 0;
         int iterations_m = 0;
     };
 

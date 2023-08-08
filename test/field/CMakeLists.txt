@@ -13,6 +13,15 @@ link_directories (
 set (IPPL_LIBS ippl)
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
+if ("${Kokkos_DEVICES}" MATCHES "CUDA" AND "${Kokkos_DEVICES}" MATCHES "OPENMP")
+    add_executable (TestMixedExec TestMixedExec.cpp)
+    target_link_libraries (
+        TestMixedExec
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
+endif()
+
 add_executable (TestLaplace TestLaplace.cpp)
 target_link_libraries (
     TestLaplace

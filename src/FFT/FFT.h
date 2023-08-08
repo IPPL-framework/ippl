@@ -78,62 +78,71 @@ namespace ippl {
 
     namespace detail {
 
+        /*!
+         * Wrapper type for heFFTe backends, templated
+         * on the Kokkos memory space
+         */
+        template <typename>
+        struct HeffteBackendType;
+
 #ifdef Heffte_ENABLE_FFTW
-        struct HeffteBackendType {
+        template <>
+        struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::fftw;
             using backendSine = heffte::backend::fftw_sin;
             using backendCos  = heffte::backend::fftw_cos;
         };
 #endif
 #ifdef Heffte_ENABLE_MKL
-        struct HeffteBackendType {
+        template <>
+        struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::mkl;
             using backendSine = heffte::backend::mkl_sin;
             using backendCos  = heffte::backend::mkl_cos;
         };
 #endif
-#ifdef Heffte_ENABLE_CUDA
-#ifdef KOKKOS_ENABLE_CUDA
-        struct HeffteBackendType {
+#if defined(Heffte_ENABLE_CUDA) && defined(KOKKOS_ENABLE_CUDA)
+        template <>
+        struct HeffteBackendType<Kokkos::CudaSpace> {
             using backend     = heffte::backend::cufft;
             using backendSine = heffte::backend::cufft_sin;
             using backendCos  = heffte::backend::cufft_cos;
         };
 #endif
-#endif
 
-#ifndef KOKKOS_ENABLE_CUDA
-#if !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
+#if !defined(KOKKOS_ENABLE_CUDA) && !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
          * vendor specific or optimized backend is found
          */
-        struct HeffteBackendType {
+        template <>
+        struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::stock;
             using backendSine = heffte::backend::stock_sin;
             using backendCos  = heffte::backend::stock_cos;
         };
-#endif
 #endif
     }  // namespace detail
 
     /**
        Non-specialized FFT class.  We specialize based on Transform tag class
     */
-    template <class Transform, size_t Dim, class T, class Mesh, class Centering>
+    template <class Transform, typename Field>
     class FFT {};
 
     /**
        complex-to-complex FFT class
     */
-    template <size_t Dim, class T, class Mesh, class Centering>
-    class FFT<CCTransform, Dim, T, Mesh, Centering> {
+    template <typename ComplexField>
+    class FFT<CCTransform, ComplexField> {
+        constexpr static unsigned Dim = ComplexField::dim;
+
     public:
         typedef FieldLayout<Dim> Layout_t;
-        typedef Kokkos::complex<T> Complex_t;
-        typedef Field<Complex_t, Dim, Mesh, Centering> ComplexField_t;
+        typedef typename ComplexField::value_type Complex_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backend;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename ComplexField::memory_space>::backend;
         using workspace_t =
             typename heffte::fft3d<heffteBackend>::template buffer_container<Complex_t>;
 
@@ -148,7 +157,7 @@ namespace ippl {
         /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
             transform. The output is over-written in the input.
         */
-        void transform(int direction, ComplexField_t& f);
+        void transform(int direction, ComplexField& f);
 
     private:
         // using long long = detail::long long;
@@ -167,18 +176,21 @@ namespace ippl {
     /**
        real-to-complex FFT class
     */
-    template <size_t Dim, class T, class Mesh, class Centering>
-    class FFT<RCTransform, Dim, T, Mesh, Centering> {
-    public:
-        typedef FieldLayout<Dim> Layout_t;
-        typedef Field<T, Dim, Mesh, Centering> RealField_t;
+    template <typename RealField>
+    class FFT<RCTransform, RealField> {
+        constexpr static unsigned Dim = RealField::dim;
+        typedef typename RealField::value_type Real_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backend;
-        typedef Kokkos::complex<T> Complex_t;
+    public:
+        typedef Kokkos::complex<Real_t> Complex_t;
+        using ComplexField =
+            Field<Complex_t, Dim, typename RealField::Mesh_t, typename RealField::Centering_t>;
+        typedef FieldLayout<Dim> Layout_t;
+
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename RealField::memory_space>::backend;
         using workspace_t =
             typename heffte::fft3d_r2c<heffteBackend>::template buffer_container<Complex_t>;
-
-        typedef Field<Complex_t, Dim, Mesh, Centering> ComplexField_t;
 
         /** Create a new FFT object with the layout for the input and output Fields
          * and parameters for heffte.
@@ -190,7 +202,7 @@ namespace ippl {
         /** Do the FFT: specify +1 or -1 to indicate forward or inverse
             transform.
         */
-        void transform(int direction, RealField_t& f, ComplexField_t& g);
+        void transform(int direction, RealField& f, ComplexField& g);
 
     private:
         // using long long = detail::long long;
@@ -212,14 +224,17 @@ namespace ippl {
     /**
        Sine transform class
     */
-    template <size_t Dim, class T, class Mesh, class Centering>
-    class FFT<SineTransform, Dim, T, Mesh, Centering> {
+    template <typename Field>
+    class FFT<SineTransform, Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using T                       = typename Field::value_type;
+
     public:
         typedef FieldLayout<Dim> Layout_t;
-        typedef Field<T, Dim, Mesh, Centering> Field_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backendSine;
-        using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename Field::memory_space>::backendSine;
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
@@ -232,7 +247,7 @@ namespace ippl {
         /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
             transform. The output is over-written in the input.
         */
-        void transform(int direction, Field_t& f);
+        void transform(int direction, Field& f);
 
     private:
         /**
@@ -248,14 +263,17 @@ namespace ippl {
     /**
        Cosine transform class
     */
-    template <size_t Dim, class T, class Mesh, class Centering>
-    class FFT<CosTransform, Dim, T, Mesh, Centering> {
+    template <typename Field>
+    class FFT<CosTransform, Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using T                       = typename Field::value_type;
+
     public:
         typedef FieldLayout<Dim> Layout_t;
-        typedef Field<T, Dim, Mesh, Centering> Field_t;
 
-        using heffteBackend = typename detail::HeffteBackendType::backendCos;
-        using workspace_t   = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
+        using heffteBackend =
+            typename detail::HeffteBackendType<typename Field::memory_space>::backendCos;
+        using workspace_t = typename heffte::fft3d<heffteBackend>::template buffer_container<T>;
 
         /** Create a new FFT object with the layout for the input Field and
          * parameters for heffte.
@@ -268,7 +286,7 @@ namespace ippl {
         /** Do the inplace FFT: specify +1 or -1 to indicate forward or inverse
             transform. The output is over-written in the input.
         */
-        void transform(int direction, Field_t& f);
+        void transform(int direction, Field& f);
 
     private:
         /**

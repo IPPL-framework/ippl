@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.1)
 project (IPPL CXX)
-set (IPPL_VERSION_MAJOR 1)
-set (IPPL_VERSION_MINOR 1.4)
+set (IPPL_VERSION_MAJOR 3)
+set (IPPL_VERSION_MINOR 0.1)
 
 set (IPPL_VERSION_NAME "V${IPPL_VERSION_MAJOR}.${IPPL_VERSION_MINOR}")
 
@@ -30,18 +30,17 @@ option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
 
 message (STATUS "Build type is: " ${CMAKE_BUILD_TYPE})
 
+find_package(Kokkos 4.0.0 REQUIRED)
+
 # Select flags.
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "-O3")
 set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
-
-
-if (${CMAKE_CXX_COMPILER} MATCHES "GNU")
-    set (CMAKE_CXX_STANDARD 20)
-endif ()
-
+if ("${Kokkos_DEVICES}" MATCHES "CUDA")
+    set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -G --diag-suppress=20011")
+endif()
 
 # Resolve all library dependencies
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
@@ -51,9 +50,6 @@ message (STATUS "The C++ compiler identification is: ${CMAKE_CXX_COMPILER_ID}")
 message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
 message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
-
-
-find_package(Kokkos REQUIRED)
 
 option (ENABLE_FFT "Enable FFT transform" OFF)
 if (ENABLE_FFT)
@@ -87,6 +83,7 @@ option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 if (ENABLE_UNIT_TESTS)
     find_package (GTest REQUIRED HINT $ENV{GTEST_PREFIX})
     add_subdirectory (unit_tests)
+    #add_subdirectory(unit_tests_single_precision)
 endif ()
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in

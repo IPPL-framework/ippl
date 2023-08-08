@@ -34,32 +34,31 @@
 namespace ippl {
     namespace detail {
 
-        template <typename T, unsigned Dim, class Mesh, class Centering>
-        BCondBase<T, Dim, Mesh, Centering>::BCondBase(unsigned int face)
+        template <typename Field>
+        BCondBase<Field>::BCondBase(unsigned int face)
             : face_m(face)
             , changePhysical_m(false) {}
 
-        template <typename T, unsigned Dim, class Mesh, class Centering>
-        inline std::ostream& operator<<(std::ostream& os,
-                                        const BCondBase<T, Dim, Mesh, Centering>& bc) {
+        template <typename Field>
+        inline std::ostream& operator<<(std::ostream& os, const BCondBase<Field>& bc) {
             bc.write(os);
             return os;
         }
 
     }  // namespace detail
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void ExtrapolateFace<T, Dim, Mesh, Centering>::apply(Field_t& field) {
+    template <typename Field>
+    void ExtrapolateFace<Field>::apply(Field& field) {
         // We only support constant extrapolation for the moment, other
         // higher order extrapolation stuffs need to be added.
 
         unsigned int face = this->face_m;
         unsigned d        = face / 2;
-        if (Ippl::Comm->size() > 1) {
+        if (Comm->size() > 1) {
             const Layout_t& layout = field.getLayout();
             const auto& lDomains   = layout.getHostLocalDomains();
             const auto& domain     = layout.getDomain();
-            int myRank             = Ippl::Comm->rank();
+            int myRank             = Comm->rank();
 
             bool isBoundary = (lDomains[myRank][d].max() == domain[d].max())
                               || (lDomains[myRank][d].min() == domain[d].min());
@@ -72,8 +71,8 @@ namespace ippl {
         // boundary or it is the single core case. Then the following code is same
         // irrespective of either it is a single core or multi-core case as the
         // non-periodic BC is local to apply.
-        typename Field_t::view_type& view = field.getView();
-        const int nghost                  = field.getNghost();
+        typename Field::view_type& view = field.getView();
+        const int nghost                = field.getNghost();
         int src, dest;
 
         // It is not clear what it exactly means to do extrapolate
@@ -95,7 +94,8 @@ namespace ippl {
             dest = src - 1;
         }
 
-        using index_type = typename RangePolicy<Dim>::index_type;
+        using exec_space = typename Field::execution_space;
+        using index_type = typename RangePolicy<Dim, exec_space>::index_type;
         Kokkos::Array<index_type, Dim> begin, end;
         for (unsigned i = 0; i < Dim; i++) {
             begin[i] = nghost;
@@ -103,58 +103,58 @@ namespace ippl {
         }
         begin[d]               = src;
         end[d]                 = src + 1;
-        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+        using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
         ippl::parallel_for(
-            "Assign extrapolate BC", createRangePolicy<Dim>(begin, end),
+            "Assign extrapolate BC", createRangePolicy<Dim, exec_space>(begin, end),
             KOKKOS_CLASS_LAMBDA(index_array_type & args) {
                 // to avoid ambiguity with the member function
                 using ippl::apply;
 
-                T value = apply<Dim>(view, args);
+                T value = apply(view, args);
 
                 args[d] = dest;
 
-                apply<Dim>(view, args) = slope_m * value + offset_m;
+                apply(view, args) = slope_m * value + offset_m;
             });
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void ExtrapolateFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
+    template <typename Field>
+    void ExtrapolateFace<Field>::write(std::ostream& out) const {
         out << "Constant Extrapolation Face"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void NoBcFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
+    template <typename Field>
+    void NoBcFace<Field>::write(std::ostream& out) const {
         out << "NoBcFace"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void ConstantFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
+    template <typename Field>
+    void ConstantFace<Field>::write(std::ostream& out) const {
         out << "ConstantFace"
             << ", Face = " << this->face_m << ", Constant = " << this->offset_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void ZeroFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
+    template <typename Field>
+    void ZeroFace<Field>::write(std::ostream& out) const {
         out << "ZeroFace"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void PeriodicFace<T, Dim, Mesh, Centering>::write(std::ostream& out) const {
+    template <typename Field>
+    void PeriodicFace<Field>::write(std::ostream& out) const {
         out << "PeriodicFace"
             << ", Face = " << this->face_m;
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void PeriodicFace<T, Dim, Mesh, Centering>::findBCNeighbors(Field_t& field) {
+    template <typename Field>
+    void PeriodicFace<Field>::findBCNeighbors(Field& field) {
         // For cell centering only face neighbors are needed
         unsigned int face      = this->face_m;
         unsigned int d         = face / 2;
         const int nghost       = field.getNghost();
-        int myRank             = Ippl::Comm->rank();
+        int myRank             = Comm->rank();
         const Layout_t& layout = field.getLayout();
         const auto& lDomains   = layout.getHostLocalDomains();
         const auto& domain     = layout.getDomain();
@@ -189,7 +189,7 @@ namespace ippl {
                 gnd[d] = gnd[d] + offset;
 
                 // Now, we are ready to intersect
-                for (int rank = 0; rank < Ippl::Comm->size(); ++rank) {
+                for (int rank = 0; rank < Comm->size(); ++rank) {
                     if (rank == myRank) {
                         continue;
                     }
@@ -202,20 +202,20 @@ namespace ippl {
         }
     }
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    void PeriodicFace<T, Dim, Mesh, Centering>::apply(Field_t& field) {
-        unsigned int face                 = this->face_m;
-        unsigned int d                    = face / 2;
-        typename Field_t::view_type& view = field.getView();
-        const Layout_t& layout            = field.getLayout();
-        const int nghost                  = field.getNghost();
-        int myRank                        = Ippl::Comm->rank();
-        const auto& lDomains              = layout.getHostLocalDomains();
-        const auto& domain                = layout.getDomain();
+    template <typename Field>
+    void PeriodicFace<Field>::apply(Field& field) {
+        unsigned int face               = this->face_m;
+        unsigned int d                  = face / 2;
+        typename Field::view_type& view = field.getView();
+        const Layout_t& layout          = field.getLayout();
+        const int nghost                = field.getNghost();
+        int myRank                      = Comm->rank();
+        const auto& lDomains            = layout.getHostLocalDomains();
+        const auto& domain              = layout.getDomain();
 
         // We have to put tag here so that the matchtag inside
         // the if is proper.
-        int tag = Ippl::Comm->next_tag(BC_PARALLEL_PERIODIC_TAG, BC_TAG_CYCLE);
+        int tag = Comm->next_tag(BC_PARALLEL_PERIODIC_TAG, BC_TAG_CYCLE);
 
         if (lDomains[myRank][d].length() < domain[d].length()) {
             // Only along this dimension we need communication.
@@ -233,20 +233,21 @@ namespace ippl {
                     // upper face
                     offset     = -domain[d].length();
                     offsetRecv = nghost;
-                    matchtag   = Ippl::Comm->preceding_tag(BC_PARALLEL_PERIODIC_TAG);
+                    matchtag   = Comm->preceding_tag(BC_PARALLEL_PERIODIC_TAG);
                 } else {
                     // lower face
                     offset     = domain[d].length();
                     offsetRecv = -nghost;
-                    matchtag   = Ippl::Comm->following_tag(BC_PARALLEL_PERIODIC_TAG);
+                    matchtag   = Comm->following_tag(BC_PARALLEL_PERIODIC_TAG);
                 }
 
                 auto& neighbors = faceNeighbors_m[face];
 
-                using buffer_type = Communicate::buffer_type;
+                using memory_space = typename Field::memory_space;
+                using buffer_type  = Communicate::buffer_type<memory_space>;
                 std::vector<MPI_Request> requests(neighbors.size());
 
-                using HaloCells_t = detail::HaloCells<T, Dim>;
+                using HaloCells_t = typename Field::halo_type;
                 using range_t     = typename HaloCells_t::bound_type;
                 HaloCells_t& halo = field.getHalo();
                 std::vector<range_t> rangeNeighbors;
@@ -273,9 +274,10 @@ namespace ippl {
                     detail::size_type nSends;
                     halo.pack(range, view, haloData_m, nSends);
 
-                    buffer_type buf = Ippl::Comm->getBuffer<T>(IPPL_PERIODIC_BC_SEND + i, nSends);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, T>(IPPL_PERIODIC_BC_SEND + i, nSends);
 
-                    Ippl::Comm->isend(rank, tag, haloData_m, *buf, requests[i], nSends);
+                    Comm->isend(rank, tag, haloData_m, *buf, requests[i], nSends);
                     buf->resetWritePos();
                 }
 
@@ -289,8 +291,9 @@ namespace ippl {
 
                     detail::size_type nRecvs = range.size();
 
-                    buffer_type buf = Ippl::Comm->getBuffer<T>(IPPL_PERIODIC_BC_RECV + i, nRecvs);
-                    Ippl::Comm->recv(rank, matchtag, haloData_m, *buf, nRecvs * sizeof(T), nRecvs);
+                    buffer_type buf =
+                        Comm->getBuffer<memory_space, T>(IPPL_PERIODIC_BC_RECV + i, nRecvs);
+                    Comm->recv(rank, matchtag, haloData_m, *buf, nRecvs * sizeof(T), nRecvs);
                     buf->resetReadPos();
 
                     using assign_t = typename HaloCells_t::assign;
@@ -308,7 +311,8 @@ namespace ippl {
 
             auto N = view.extent(d) - 1;
 
-            using index_type = typename RangePolicy<Dim>::index_type;
+            using exec_space = typename Field::execution_space;
+            using index_type = typename RangePolicy<Dim, exec_space>::index_type;
             Kokkos::Array<index_type, Dim> begin, end;
 
             // For the axis along which BCs are being applied, iterate
@@ -321,9 +325,9 @@ namespace ippl {
             begin[d] = 0;
             end[d]   = nghost;
 
-            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
             ippl::parallel_for(
-                "Assign periodic field BC", createRangePolicy<Dim>(begin, end),
+                "Assign periodic field BC", createRangePolicy<Dim, exec_space>(begin, end),
                 KOKKOS_CLASS_LAMBDA(index_array_type & coords) {
                     // The ghosts are filled starting from the inside of
                     // the domain proceeding outwards for both lower and
@@ -334,20 +338,20 @@ namespace ippl {
 
                     // x -> nghost + x
                     coords[d] += nghost;
-                    auto&& left = apply<Dim>(view, coords);
+                    auto&& left = apply(view, coords);
 
                     // nghost + x -> N - (nghost + x) = N - nghost - x
                     coords[d]    = N - coords[d];
-                    auto&& right = apply<Dim>(view, coords);
+                    auto&& right = apply(view, coords);
 
                     // N - nghost - x -> nghost - 1 - x
                     coords[d] += 2 * nghost - 1 - N;
-                    apply<Dim>(view, coords) = right;
+                    apply(view, coords) = right;
 
                     // nghost - 1 - x -> N - (nghost - 1 - x)
                     //     = N - (nghost - 1) + x
-                    coords[d]                = N - coords[d];
-                    apply<Dim>(view, coords) = left;
+                    coords[d]           = N - coords[d];
+                    apply(view, coords) = left;
                 });
         }
     }

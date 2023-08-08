@@ -49,10 +49,10 @@ namespace ippl {
      * @warning The implementation currently only supports 3-dimensional fields. The reason are
      * runtime issues with "if constrexpr" in the assignment operator when running on GPU.
      */
-    template <typename T, unsigned Dim>
-    class BareField
-        : public detail::Expression<BareField<T, Dim>,
-                                    sizeof(typename detail::ViewType<T, Dim>::view_type)> {
+    template <typename T, unsigned Dim, class... ViewArgs>
+    class BareField : public detail::Expression<
+                          BareField<T, Dim, ViewArgs...>,
+                          sizeof(typename detail::ViewType<T, Dim, ViewArgs...>::view_type)> {
     public:
         using Layout_t = FieldLayout<Dim>;
 
@@ -60,10 +60,17 @@ namespace ippl {
         using Domain_t = NDIndex<Dim>;
 
         //! View type storing the data
-        using view_type  = typename detail::ViewType<T, Dim>::view_type;
+        using view_type = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
+        typedef typename view_type::memory_space memory_space;
+        typedef typename view_type::execution_space execution_space;
         using HostMirror = typename view_type::host_mirror_type;
-        template <typename Tag = void>
-        using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
+        template <class... PolicyArgs>
+        using policy_type = typename RangePolicy<Dim, PolicyArgs...>::policy_type;
+
+        using halo_type = detail::HaloCells<T, Dim, ViewArgs...>;
+
+        using value_type              = T;
+        constexpr static unsigned dim = Dim;
 
         /*! A default constructor, which should be used only if the user calls the
          * 'initialize' function before doing anything else.  There are no special
@@ -72,15 +79,19 @@ namespace ippl {
          */
         BareField();
 
+        BareField(const BareField&) = default;
+
         /*! Constructor for a BareField. The default constructor is deleted.
          * @param l of field
          * @param nghost number of ghost layers
          */
         BareField(Layout_t& l, int nghost = 1);
 
-        BareField(const BareField&);
-
-        BareField& operator=(const BareField&);
+        /*!
+         * Creates a new BareField with the same properties and contents
+         * @return A deep copy of the field
+         */
+        BareField deepCopy() const;
 
         // Destroy the BareField.
         ~BareField() = default;
@@ -139,10 +150,10 @@ namespace ippl {
         const Index& getIndex(unsigned d) const { return getLayout().getDomain()[d]; }
         const NDIndex<Dim>& getDomain() const { return getLayout().getDomain(); }
 
-        detail::HaloCells<T, Dim>& getHalo() { return halo_m; }
+        halo_type& getHalo() { return halo_m; }
 
         // Assignment from a constant.
-        BareField<T, Dim>& operator=(T x);
+        BareField& operator=(T x);
 
         /*!
          * Assign an arbitrary BareField expression
@@ -152,7 +163,7 @@ namespace ippl {
          * @param expr is the expression
          */
         template <typename E, size_t N>
-        BareField<T, Dim>& operator=(const detail::Expression<E, N>& expr);
+        BareField& operator=(const detail::Expression<E, N>& expr);
 
         /*!
          * Assign another field.
@@ -170,20 +181,21 @@ namespace ippl {
 
         const view_type& getView() const { return dview_m; }
 
-        HostMirror getHostMirror() { return Kokkos::create_mirror(dview_m); }
+        HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
 
         /*!
          * Generate the range policy for iterating over the field,
          * excluding ghost layers
-         * @tparam Tag an optional tag for the range policy
+         * @tparam PolicyArgs... additional template parameters for the range policy
          * @param nghost Number of ghost layers to include in the range policy (default 0)
          * @return Range policy for iterating over the field and nghost of the ghost layers
          */
-        template <typename Tag = void>
-        policy_type<Tag> getFieldRangePolicy(const int nghost = 0) const {
+        template <class... PolicyArgs>
+        policy_type<execution_space, PolicyArgs...> getFieldRangePolicy(
+            const int nghost = 0) const {
             PAssert_LE(nghost, nghost_m);
             const size_t shift = nghost_m - nghost;
-            return getRangePolicy<Dim, Tag>(dview_m, shift);
+            return getRangePolicy(dview_m, shift);
         }
 
         /*!
@@ -203,9 +215,6 @@ namespace ippl {
         T min(int nghost = 0) const;
         T prod(int nghost = 0) const;
 
-    protected:
-        virtual void swap(BareField& other);
-
     private:
         //! Number of ghost layers on each field boundary
         int nghost_m;
@@ -216,7 +225,7 @@ namespace ippl {
         //! Domain of the data
         Domain_t owned_m;
 
-        detail::HaloCells<T, Dim> halo_m;
+        halo_type halo_m;
 
         /*!
          * Allocate field.

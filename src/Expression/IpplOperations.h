@@ -18,6 +18,7 @@
 #ifndef IPPL_OPERATIONS_H
 #define IPPL_OPERATIONS_H
 
+#include <Kokkos_MathematicalFunctions.hpp>
 #include <tuple>
 
 namespace ippl {
@@ -38,24 +39,51 @@ namespace ippl {
     }
 
     /*!
+     * Extracts the mathematical rank of an expression (i.e. the number of dimensions) based on
+     * its type
+     */
+    struct ExtractExpressionRank {
+        /*!
+         * Extracts the extent of an array-like expression
+         * @tparam Coords the array type
+         * @return The array's rank
+         */
+        template <typename Coords, std::enable_if_t<std::is_array_v<Coords>, int> = 0>
+        KOKKOS_INLINE_FUNCTION constexpr static unsigned getRank() {
+            return std::extent_v<Coords>;
+        }
+
+        /*!
+         * Extracts the rank of an expression type
+         * @tparam Coords the expression type that evaluates to a set of coordinates
+         * @return The number of dimensions in the expression
+         */
+        template <typename Coords, std::enable_if_t<std::is_class_v<Coords>, int> = 0>
+        KOKKOS_INLINE_FUNCTION constexpr static unsigned getRank() {
+            return Coords::dim;
+        }
+    };
+
+    /*!
      * Accesses the element of a view at the indices contained in an array-like structure
      * instead of having the indices being separate arguments
-     * @tparam Dim the view's rank
      * @tparam View the view type
      * @tparam Coords an array-like container of indices
      * @param view the view to access
      * @param coords the indices
      * @return The element in the view at the given location
      */
-    template <unsigned Dim, typename View, typename Coords>
+    template <typename View, typename Coords>
     KOKKOS_INLINE_FUNCTION constexpr decltype(auto) apply(const View& view, const Coords& coords) {
-        using Indices = std::make_index_sequence<Dim>;
+        using Indices = std::make_index_sequence<ExtractExpressionRank::getRank<Coords>()>;
         return apply_impl(view, coords, Indices{});
     }
 
 #define DefineUnaryOperation(fun, name, op1, op2)                              \
     template <typename E>                                                      \
     struct fun : public detail::Expression<fun<E>, sizeof(E)> {                \
+        constexpr static unsigned dim = E::dim;                                \
+                                                                               \
         KOKKOS_FUNCTION                                                        \
         fun(const E& u)                                                        \
             : u_m(u) {}                                                        \
@@ -84,23 +112,23 @@ namespace ippl {
     DefineUnaryOperation(BitwiseNot, operator~, ~u_m[i],  ~u_m(args...))
     DefineUnaryOperation(Not,        operator!, !u_m[i],  !u_m(args...))
 
-    DefineUnaryOperation(ArcCos, acos,  acos(u_m[i]),  acos(u_m(args...)))
-    DefineUnaryOperation(ArcSin, asin,  asin(u_m[i]),  asin(u_m(args...)))
-    DefineUnaryOperation(ArcTan, atan,  atan(u_m[i]),  atan(u_m(args...)))
-    DefineUnaryOperation(Ceil,   ceil,  ceil(u_m[i]),  ceil(u_m(args...)))
-    DefineUnaryOperation(Cos,    cos,   cos(u_m[i]),   cos(u_m(args...)))
-    DefineUnaryOperation(HypCos, cosh,  cosh(u_m[i]),  cosh(u_m(args...)))
-    DefineUnaryOperation(Exp,    exp,   exp(u_m[i]),   exp(u_m(args...)))
-    DefineUnaryOperation(Fabs,   fabs,  fabs(u_m[i]),  fabs(u_m(args...)))
-    DefineUnaryOperation(Floor,  floor, floor(u_m[i]), floor(u_m(args...)))
-    DefineUnaryOperation(Log,    log,   log(u_m[i]),   log(u_m(args...)))
-    DefineUnaryOperation(Log10,  log10, log10(u_m[i]), log10(u_m(args...)))
-    DefineUnaryOperation(Sin,    sin,   sin(u_m[i]),   sin(u_m(args...)))
-    DefineUnaryOperation(HypSin, sinh,  sinh(u_m[i]),  sinh(u_m(args...)))
-    DefineUnaryOperation(Sqrt,   sqrt,  sqrt(u_m[i]),  sqrt(u_m(args...)))
-    DefineUnaryOperation(Tan,    tan,   tan(u_m[i]),   tan(u_m(args...)))
-    DefineUnaryOperation(HypTan, tanh,  tanh(u_m[i]),  tanh(u_m(args...)))
-    DefineUnaryOperation(Erf,    erf,   erf(u_m[i]),   erf(u_m(args...)))
+    DefineUnaryOperation(ArcCos, acos,  Kokkos::acos(u_m[i]),  Kokkos::acos(u_m(args...)))
+    DefineUnaryOperation(ArcSin, asin,  Kokkos::asin(u_m[i]),  Kokkos::asin(u_m(args...)))
+    DefineUnaryOperation(ArcTan, atan,  Kokkos::atan(u_m[i]),  Kokkos::atan(u_m(args...)))
+    DefineUnaryOperation(Ceil,   ceil,  Kokkos::ceil(u_m[i]),  Kokkos::ceil(u_m(args...)))
+    DefineUnaryOperation(Cos,    cos,   Kokkos::cos(u_m[i]),   Kokkos::cos(u_m(args...)))
+    DefineUnaryOperation(HypCos, cosh,  Kokkos::cosh(u_m[i]),  Kokkos::cosh(u_m(args...)))
+    DefineUnaryOperation(Exp,    exp,   Kokkos::exp(u_m[i]),   Kokkos::exp(u_m(args...)))
+    DefineUnaryOperation(Fabs,   fabs,  Kokkos::fabs(u_m[i]),  Kokkos::fabs(u_m(args...)))
+    DefineUnaryOperation(Floor,  floor, Kokkos::floor(u_m[i]), Kokkos::floor(u_m(args...)))
+    DefineUnaryOperation(Log,    log,   Kokkos::log(u_m[i]),   Kokkos::log(u_m(args...)))
+    DefineUnaryOperation(Log10,  log10, Kokkos::log10(u_m[i]), Kokkos::log10(u_m(args...)))
+    DefineUnaryOperation(Sin,    sin,   Kokkos::sin(u_m[i]),   Kokkos::sin(u_m(args...)))
+    DefineUnaryOperation(HypSin, sinh,  Kokkos::sinh(u_m[i]),  Kokkos::sinh(u_m(args...)))
+    DefineUnaryOperation(Sqrt,   sqrt,  Kokkos::sqrt(u_m[i]),  Kokkos::sqrt(u_m(args...)))
+    DefineUnaryOperation(Tan,    tan,   Kokkos::tan(u_m[i]),   Kokkos::tan(u_m(args...)))
+    DefineUnaryOperation(HypTan, tanh,  Kokkos::tanh(u_m[i]),  Kokkos::tanh(u_m(args...)))
+    DefineUnaryOperation(Erf,    erf,   Kokkos::erf(u_m[i]),   Kokkos::erf(u_m(args...)))
 // clang-format on
 /// @endcond
 
@@ -114,6 +142,8 @@ namespace ippl {
 #define DefineBinaryOperation(fun, name, op1, op2)                                             \
     template <typename E1, typename E2>                                                        \
     struct fun : public detail::Expression<fun<E1, E2>, sizeof(E1) + sizeof(E2)> {             \
+        constexpr static unsigned dim = std::max(E1::dim, E2::dim);                            \
+                                                                                               \
         KOKKOS_FUNCTION                                                                        \
         fun(const E1& u, const E2& v)                                                          \
             : u_m(u)                                                                           \
@@ -123,6 +153,7 @@ namespace ippl {
                                                                                                \
         template <typename... Args>                                                            \
         KOKKOS_INLINE_FUNCTION auto operator()(Args... args) const {                           \
+            static_assert(sizeof...(Args) == dim || dim == 0);                                 \
             return op2;                                                                        \
         }                                                                                      \
                                                                                                \
@@ -172,12 +203,16 @@ namespace ippl {
     DefineBinaryOperation(BitwiseXor, operator^, u_m[i] ^ v_m[i], u_m(args...) ^ v_m(args...))
     // clang-format on
 
-    DefineBinaryOperation(Copysign, copysign, copysign(u_m[i], v_m[i]),
-                          copysign(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(Copysign, copysign, Kokkos::copysign(u_m[i], v_m[i]),
+                          Kokkos::copysign(u_m(args...), v_m(args...)))
+    // ldexp not provided by Kokkos
     DefineBinaryOperation(Ldexp, ldexp, ldexp(u_m[i], v_m[i]), ldexp(u_m(args...), v_m(args...)))
-    DefineBinaryOperation(Fmod, fmod, fmod(u_m[i], v_m[i]), fmod(u_m(args...), v_m(args...)))
-    DefineBinaryOperation(Pow, pow, pow(u_m[i], v_m[i]), pow(u_m(args...), v_m(args...)))
-    DefineBinaryOperation(ArcTan2, atan2, atan2(u_m[i], v_m[i]), atan2(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(Fmod, fmod, Kokkos::fmod(u_m[i], v_m[i]),
+                          Kokkos::fmod(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(Pow, pow, Kokkos::pow(u_m[i], v_m[i]),
+                          Kokkos::pow(u_m(args...), v_m(args...)))
+    DefineBinaryOperation(ArcTan2, atan2, Kokkos::atan2(u_m[i], v_m[i]),
+                          Kokkos::atan2(u_m(args...), v_m(args...)))
     /// @endcond
 
     namespace detail {
@@ -187,6 +222,9 @@ namespace ippl {
          */
         template <typename E1, typename E2>
         struct meta_cross : public detail::Expression<meta_cross<E1, E2>, sizeof(E1) + sizeof(E2)> {
+            constexpr static unsigned dim = E1::dim;
+            static_assert(E1::dim == E2::dim);
+
             KOKKOS_FUNCTION
             meta_cross(const E1& u, const E2& v)
                 : u_m(u)
@@ -227,6 +265,9 @@ namespace ippl {
          */
         template <typename E1, typename E2>
         struct meta_dot : public Expression<meta_dot<E1, E2>, sizeof(E1) + sizeof(E2)> {
+            constexpr static unsigned dim = E1::dim;
+            static_assert(E1::dim == E2::dim);
+
             KOKKOS_FUNCTION
             meta_dot(const E1& u, const E2& v)
                 : u_m(u)
@@ -275,6 +316,8 @@ namespace ippl {
             : public Expression<
                   meta_grad<E>,
                   sizeof(E) + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])> {
+            constexpr static unsigned dim = E::dim;
+
             KOKKOS_FUNCTION
             meta_grad(const E& u, const typename E::Mesh_t::vector_type vectors[])
                 : u_m(u) {
@@ -298,14 +341,14 @@ namespace ippl {
                  */
 
                 vector_type res(0);
-                for (unsigned d = 0; d < Dim; d++) {
-                    index_type coords[Dim] = {args...};
+                for (unsigned d = 0; d < dim; d++) {
+                    index_type coords[dim] = {args...};
 
                     coords[d] += 1;
-                    auto&& right = apply<Dim>(u_m, coords);
+                    auto&& right = apply(u_m, coords);
 
                     coords[d] -= 2;
-                    auto&& left = apply<Dim>(u_m, coords);
+                    auto&& left = apply(u_m, coords);
 
                     res += vectors_m[d] * (right - left);
                 }
@@ -313,11 +356,10 @@ namespace ippl {
             }
 
         private:
-            constexpr static unsigned Dim = E::Mesh_t::Dimension;
-            using Mesh_t                  = typename E::Mesh_t;
-            using vector_type             = typename Mesh_t::vector_type;
+            using Mesh_t      = typename E::Mesh_t;
+            using vector_type = typename Mesh_t::vector_type;
             const E u_m;
-            vector_type vectors_m[Dim];
+            vector_type vectors_m[dim];
         };
     }  // namespace detail
 
@@ -331,6 +373,8 @@ namespace ippl {
             : public Expression<
                   meta_div<E>,
                   sizeof(E) + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])> {
+            constexpr static unsigned dim = E::dim;
+
             KOKKOS_FUNCTION
             meta_div(const E& u, const typename E::Mesh_t::vector_type vectors[])
                 : u_m(u) {
@@ -353,14 +397,14 @@ namespace ippl {
                  *   + dot(zvector_m, (u_m(i, j, k + 1) - u_m(i, j, k - 1))).apply()
                  */
                 typename E::Mesh_t::value_type res = 0;
-                for (unsigned d = 0; d < Dim; d++) {
-                    index_type coords[Dim] = {args...};
+                for (unsigned d = 0; d < dim; d++) {
+                    index_type coords[dim] = {args...};
 
                     coords[d] += 1;
-                    auto&& right = apply<Dim>(u_m, coords);
+                    auto&& right = apply(u_m, coords);
 
                     coords[d] -= 2;
-                    auto&& left = apply<Dim>(u_m, coords);
+                    auto&& left = apply(u_m, coords);
 
                     res += dot(vectors_m[d], right - left).apply();
                 }
@@ -368,11 +412,10 @@ namespace ippl {
             }
 
         private:
-            constexpr static unsigned Dim = E::Mesh_t::Dimension;
-            using Mesh_t                  = typename E::Mesh_t;
-            using vector_type             = typename Mesh_t::vector_type;
+            using Mesh_t      = typename E::Mesh_t;
+            using vector_type = typename Mesh_t::vector_type;
             const E u_m;
-            vector_type vectors_m[Dim];
+            vector_type vectors_m[dim];
         };
 
         /*!
@@ -382,6 +425,8 @@ namespace ippl {
         struct meta_laplace
             : public Expression<meta_laplace<E>,
                                 sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
+            constexpr static unsigned dim = E::dim;
+
             KOKKOS_FUNCTION
             meta_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector)
                 : u_m(u)
@@ -392,9 +437,8 @@ namespace ippl {
              */
             template <typename... Idx>
             KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
-                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
-                using T                = typename E::Mesh_t::value_type;
-                constexpr unsigned Dim = E::Mesh_t::Dimension;
+                using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
+                using T          = typename E::Mesh_t::value_type;
 
                 /*
                  * Equivalent computation in 3D:
@@ -403,15 +447,15 @@ namespace ippl {
                  *   + hvector_m[2] * (u_m(i  , j  , k+1) - 2 * u_m(i, j, k) + u_m(i  , j  , k-1))
                  */
                 T res = 0;
-                for (unsigned d = 0; d < Dim; d++) {
-                    index_type coords[Dim] = {args...};
-                    auto&& center          = apply<Dim>(u_m, coords);
+                for (unsigned d = 0; d < dim; d++) {
+                    index_type coords[dim] = {args...};
+                    auto&& center          = apply(u_m, coords);
 
                     coords[d] -= 1;
-                    auto&& left = apply<Dim>(u_m, coords);
+                    auto&& left = apply(u_m, coords);
 
                     coords[d] += 2;
-                    auto&& right = apply<Dim>(u_m, coords);
+                    auto&& right = apply(u_m, coords);
 
                     res += hvector_m[d] * (left - 2 * center + right);
                 }
@@ -435,6 +479,8 @@ namespace ippl {
         struct meta_curl
             : public Expression<meta_curl<E>,
                                 sizeof(E) + 4 * sizeof(typename E::Mesh_t::vector_type)> {
+            constexpr static unsigned dim = E::dim;
+
             KOKKOS_FUNCTION
             meta_curl(const E& u, const typename E::Mesh_t::vector_type& xvector,
                       const typename E::Mesh_t::vector_type& yvector,
@@ -483,6 +529,8 @@ namespace ippl {
                                 sizeof(E)
                                     + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])
                                     + sizeof(typename E::Mesh_t::vector_type)> {
+            constexpr static unsigned dim = E::dim;
+
             KOKKOS_FUNCTION
             meta_hess(const E& u, const typename E::Mesh_t::vector_type vectors[],
                       const typename E::Mesh_t::vector_type& hvector)
@@ -499,19 +547,17 @@ namespace ippl {
             template <typename... Idx>
             KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
                 matrix_type hessian;
-                computeHessian(std::make_index_sequence<Dim>{}, hessian, args...);
+                computeHessian(std::make_index_sequence<dim>{}, hessian, args...);
                 return hessian;
             }
 
         private:
-            constexpr static unsigned Dim = E::Mesh_t::Dimension;
-
             using Mesh_t      = typename E::Mesh_t;
             using vector_type = typename Mesh_t::vector_type;
             using matrix_type = typename Mesh_t::matrix_type;
 
             const E u_m;
-            vector_type vectors_m[Dim];
+            vector_type vectors_m[dim];
             const vector_type hvector_m;
 
             /*!
@@ -564,15 +610,15 @@ namespace ippl {
             template <size_t row, size_t col, typename... Idx>
             KOKKOS_INLINE_FUNCTION constexpr vector_type hessianEntry(const Idx... args) const {
                 using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
-                index_type coords[Dim] = {args...};
+                index_type coords[dim] = {args...};
                 if constexpr (row == col) {
-                    auto&& center = apply<Dim>(u_m, coords);
+                    auto&& center = apply(u_m, coords);
 
                     coords[row] += 1;
-                    auto&& right = apply<Dim>(u_m, coords);
+                    auto&& right = apply(u_m, coords);
 
                     coords[row] -= 2;
-                    auto&& left = apply<Dim>(u_m, coords);
+                    auto&& left = apply(u_m, coords);
 
                     // The diagonal elements correspond to second derivatives w.r.t. a single
                     // variable
@@ -581,16 +627,16 @@ namespace ippl {
                 } else {
                     coords[row] += 1;
                     coords[col] += 1;
-                    auto&& uu = apply<Dim>(u_m, coords);
+                    auto&& uu = apply(u_m, coords);
 
                     coords[col] -= 2;
-                    auto&& ud = apply<Dim>(u_m, coords);
+                    auto&& ud = apply(u_m, coords);
 
                     coords[row] -= 2;
-                    auto&& dd = apply<Dim>(u_m, coords);
+                    auto&& dd = apply(u_m, coords);
 
                     coords[col] += 2;
-                    auto&& du = apply<Dim>(u_m, coords);
+                    auto&& du = apply(u_m, coords);
 
                     // The non-diagonal elements are mixed derivatives, whose finite difference form
                     // is slightly different from above

@@ -43,22 +43,29 @@
 #include "Region/RegionLayout.h"
 
 namespace ippl {
+    
     /*!
      * ParticleSpatialLayout class definition.
      * @tparam T value type
      * @tparam Dim dimension
      * @tparam Mesh type
      */
-    template <typename T, unsigned Dim, class Mesh = UniformCartesian<T, Dim>>
-    class ParticleSpatialLayout : public detail::ParticleLayout<T, Dim> {
+    template <typename T, unsigned Dim, class Mesh = UniformCartesian<T, Dim>,
+              typename... PositionProperties>
+    class ParticleSpatialLayout : public detail::ParticleLayout<T, Dim, PositionProperties...> {
     public:
-        using hash_type   = typename ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>::hash_type;
-        using locate_type = typename detail::ViewType<int, 1>::view_type;
-        using bool_type   = typename detail::ViewType<bool, 1>::view_type;
-        using vector_type = typename detail::ParticleLayout<T, Dim>::vector_type;
-        using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
-        using Mesh_t = UniformCartesian<double,Dim>;
-        using FieldLayout_t = FieldLayout<Dim>;
+        using Base = detail::ParticleLayout<T, Dim, PositionProperties...>;
+        using typename Base::position_memory_space, typename Base::position_execution_space;
+
+        using hash_type   = detail::hash_type<position_memory_space>;
+        using locate_type = typename detail::ViewType<int, 1, position_memory_space>::view_type;
+        using bool_type   = typename detail::ViewType<bool, 1, position_memory_space>::view_type;
+
+        using vector_type = typename Base::vector_type;
+        using RegionLayout_t =
+            typename detail::RegionLayout<T, Dim, Mesh, position_memory_space>::uniform_type;
+        using FieldLayout_t = typename ippl::FieldLayout<Dim>;
+
         using size_type = detail::size_type;
 
     public:
@@ -66,10 +73,9 @@ namespace ippl {
         ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&);
 
         ParticleSpatialLayout()
-            : detail::ParticleLayout<T, Dim>() {}
+            : detail::ParticleLayout<T, Dim, PositionProperties...>() {}
 
         ~ParticleSpatialLayout() = default;
-        //~ParticleSpatialLayout() {}
 
         void updateLayout(FieldLayout<Dim>&, Mesh&);
 
@@ -84,17 +90,31 @@ namespace ippl {
 
         //! The FieldLayout containing information on nearest neighbors
         FieldLayout_t flayout_m;
-         
-	using region_view_type  = typename RegionLayout_t::view_type;
+
+	    using region_view_type  = typename RegionLayout_t::view_type;
         using region_type 	= typename region_view_type::value_type;
+	    using neighbor_list = typename FieldLayout_t::neighbor_list;
 
         template <size_t... Idx>
         KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(
             const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region);
+        
+        size_type getNeighborSize(const neighbor_list& neighbors) const;
 
     public:
-        void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
-                             locate_type& ranks, bool_type& invalid) const;
+        /*!
+         * For each particle in the bunch, determine the rank on which it should
+         * be stored based on its location
+         * @tparam ParticleBunch the bunch type
+         * @param pdata the particle bunch
+         * @param ranks the integer view in which to store the destination ranks
+         * @param invalid the boolean view in which to store whether each particle
+         * is invalidated, i.e. needs to be sent to another rank
+         * @return The total number of invalidated particles
+         */
+        template <typename ParticleBunch>
+        size_type locateParticles(const ParticleBunch& pdata, locate_type& ranks,
+                                  bool_type& invalid) const;
 
         /*!
          * @param rank we sent to

@@ -95,6 +95,14 @@ include_directories (
 
 add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
 
+set(TimerFences true)
+string(REPLACE ";SERIAL" "" KokkosAccelerators "${Kokkos_DEVICES}")
+string(REPLACE "SERIAL;" "" KokkosAccelerators "${KokkosAccelerators}")
+if ("${KokkosAccelerators}" MATCHES ".+;.+")
+    set(TimerFences false)
+endif()
+message("Timer fences for this build: ${TimerFences}")
+target_compile_definitions(ippl PUBLIC IPPL_ENABLE_TIMER_FENCES=${TimerFences})
 target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY})
 
 install (TARGETS ippl DESTINATION lib)

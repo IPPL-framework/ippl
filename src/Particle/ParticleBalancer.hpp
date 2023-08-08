@@ -79,7 +79,8 @@ bool BinaryRepartition(IpplParticleBase<ParticleSpatialLayout<T, Dim, Mesh, Cach
     }
 
     if (CenteringTotal == Dim) {  // allCell centering
-        Field<double, Dim, Mesh, Centering> BF(mesh, FL, GuardCellSizes<Dim>(1));
+                                  // Field has same type as PL to avoid truncation
+        Field<T, Dim, Mesh, Centering> BF(mesh, FL, GuardCellSizes<Dim>(1));
 
         // Now do a number density scatter on this Field
         // Afterwards, the Field will be deleted, and will checkout of the
@@ -96,7 +97,8 @@ bool BinaryRepartition(IpplParticleBase<ParticleSpatialLayout<T, Dim, Mesh, Cach
             return false;
         }
     } else if (CenteringTotal == 0) {  // allVert centering
-        Field<double, Dim, Mesh, Vert> BF(mesh, FL, GuardCellSizes<Dim>(1));
+        // Field has same type as PL to avoid truncation
+        Field<T, Dim, Mesh, Vert> BF(mesh, FL, GuardCellSizes<Dim>(1));
 
         // Now do a number density scatter on this Field
         // Afterwards, the Field will be deleted, and will checkout of the

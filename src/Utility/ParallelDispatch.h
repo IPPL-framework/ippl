@@ -29,25 +29,26 @@
 
 namespace ippl {
     /*!
-     * Multidimensional range policies.
+     * Wrapper type for Kokkos range policies with some convenience aliases
+     * @tparam Dim range policy rank
+     * @tparam PolicyArgs... additional template parameters for the range policy
      */
-    template <unsigned Dim, typename Tag = void>
+    template <unsigned Dim, class... PolicyArgs>
     struct RangePolicy {
-        typedef std::conditional_t<std::is_void_v<Tag>, Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>,
-                                   Kokkos::MDRangePolicy<Tag, Kokkos::Rank<Dim>>>
-            policy_type;
+        // The range policy type
+        typedef Kokkos::MDRangePolicy<PolicyArgs..., Kokkos::Rank<Dim>> policy_type;
+        // The index type used by the range policy
         typedef typename policy_type::array_index_type index_type;
+        // A vector type containing the index type
         typedef ::ippl::Vector<index_type, Dim> index_array_type;
     };
 
     /*!
      * Specialized range policy for one dimension.
      */
-    template <typename Tag>
-    struct RangePolicy<1, Tag> {
-        typedef std::conditional_t<std::is_void_v<Tag>, Kokkos::RangePolicy<>,
-                                   Kokkos::RangePolicy<Tag>>
-            policy_type;
+    template <class... PolicyArgs>
+    struct RangePolicy<1, PolicyArgs...> {
+        typedef Kokkos::RangePolicy<PolicyArgs...> policy_type;
         typedef typename policy_type::index_type index_type;
         typedef ::ippl::Vector<index_type, 1> index_array_type;
     };
@@ -55,7 +56,6 @@ namespace ippl {
     /*!
      * Create a range policy that spans an entire Kokkos view, excluding
      * a specifiable number of ghost cells at the extremes.
-     * @tparam Dim view dimension
      * @tparam Tag range policy tag
      * @tparam View the view type
      *
@@ -64,13 +64,16 @@ namespace ippl {
      *
      * @return A (MD)RangePolicy that spans the desired elements of the given view
      */
-    template <unsigned Dim, typename Tag = void, typename View>
-    typename RangePolicy<Dim, Tag>::policy_type getRangePolicy(const View& view, int shift = 0) {
-        using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
+    template <class... PolicyArgs, typename View>
+    typename RangePolicy<View::rank, typename View::execution_space, PolicyArgs...>::policy_type
+    getRangePolicy(const View& view, int shift = 0) {
+        constexpr unsigned Dim = View::rank;
+        using exec_space       = typename View::execution_space;
+        using policy_type      = typename RangePolicy<Dim, exec_space, PolicyArgs...>::policy_type;
         if constexpr (Dim == 1) {
             return policy_type(shift, view.size() - shift);
         } else {
-            using index_type = typename RangePolicy<Dim, Tag>::index_type;
+            using index_type = typename RangePolicy<Dim, exec_space, PolicyArgs...>::index_type;
             Kokkos::Array<index_type, Dim> begin, end;
             for (unsigned int d = 0; d < Dim; d++) {
                 begin[d] = shift;
@@ -87,18 +90,18 @@ namespace ippl {
      * (required because Kokkos doesn't allow the initialization of 1D range
      * policies using arrays)
      * @tparam Dim the dimension of the range
-     * @tparam Tag range policy tags
+     * @tparam PolicyArgs... additional template parameters for the range policy
      *
      * @param begin the starting indices
      * @param end the ending indices
      *
      * @return A (MD)RangePolicy spanning the given range
      */
-    template <unsigned Dim, typename Tag = void>
-    typename RangePolicy<Dim, Tag>::policy_type createRangePolicy(
-        const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& begin,
-        const Kokkos::Array<typename RangePolicy<Dim, Tag>::index_type, Dim>& end) {
-        using policy_type = typename RangePolicy<Dim, Tag>::policy_type;
+    template <size_t Dim, class... PolicyArgs>
+    typename RangePolicy<Dim, PolicyArgs...>::policy_type createRangePolicy(
+        const Kokkos::Array<typename RangePolicy<Dim, PolicyArgs...>::index_type, Dim>& begin,
+        const Kokkos::Array<typename RangePolicy<Dim, PolicyArgs...>::index_type, Dim>& end) {
+        using policy_type = typename RangePolicy<Dim, PolicyArgs...>::policy_type;
         if constexpr (Dim == 1) {
             return policy_type(begin[0], end[0]);
         } else {
@@ -135,7 +138,7 @@ namespace ippl {
             SCAN
         };
 
-        template <e_functor_type, typename, typename, typename>
+        template <e_functor_type, typename, typename, typename...>
         struct FunctorWrapper;
 
         /*!
@@ -146,8 +149,8 @@ namespace ippl {
          * @tparam T... index types
          * @tparam Acc accumulator data type
          */
-        template <typename Functor, typename... T, typename Acc>
-        struct FunctorWrapper<REDUCE, Functor, std::tuple<T...>, Acc> {
+        template <typename Functor, typename... T, typename... Acc>
+        struct FunctorWrapper<REDUCE, Functor, std::tuple<T...>, Acc...> {
             Functor f;
 
             /*!
@@ -157,15 +160,15 @@ namespace ippl {
              * @param res the accumulator variable
              * @return The functor's return value
              */
-            KOKKOS_INLINE_FUNCTION void operator()(T... x, Acc& res) const {
+            KOKKOS_INLINE_FUNCTION void operator()(T... x, Acc&... res) const {
                 using index_type = typename RangePolicy<sizeof...(T)>::index_type;
                 typename RangePolicy<sizeof...(T)>::index_array_type args = {(index_type)x...};
-                f(args, res);
+                f(args, res...);
             }
         };
 
         template <typename Functor, typename... T>
-        struct FunctorWrapper<FOR, Functor, std::tuple<T...>, void> {
+        struct FunctorWrapper<FOR, Functor, std::tuple<T...>> {
             Functor f;
 
             KOKKOS_INLINE_FUNCTION void operator()(T... x) const {
@@ -177,15 +180,15 @@ namespace ippl {
 
         /*!
          * Convenience function for wrapping a functor with the wrapper struct.
+         * @tparam Functor the functor type
          * @tparam Type the parallel dispatch type
          * @tparam Dim the loop's rank
-         * @tparam Acc the accumulator type
-         * @tparam Functor the functor type
+         * @tparam Acc... the accumulator type(s)
          * @return A wrapper containing the given functor
          */
-        template <e_functor_type Type, unsigned Dim, typename Acc = void, typename Functor>
+        template <e_functor_type Type, unsigned Dim, typename... Acc, typename Functor>
         auto functorize(const Functor& f) {
-            return FunctorWrapper<Type, Functor, typename Coords<Dim>::type, Acc>{f};
+            return FunctorWrapper<Type, Functor, typename Coords<Dim>::type, Acc...>{f};
         }
 
         // Extracts the rank of a Kokkos range policy

@@ -1,64 +1,145 @@
 //
-//// Class FFTPoissonSolver
-////   FFT-based Poisson Solver for open boundaries.
-////
-//// This file is part of IPPL.
-////
-//// IPPL is free software: you can redistribute it and/or modify
-//// it under the terms of the GNU General Public License as published by
-//// the Free Software Foundation, either version 3 of the License, or
-//// (at your option) any later version.
-////
-//// You should have received a copy of the GNU General Public License
-//// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-////
+// Class FFTPoissonSolver
+//   FFT-based Poisson Solver for open boundaries.
+//   Solves laplace(phi) = -rho, and E = -grad(phi).
+//
+// Copyright (c) 2023, Sonali Mayani,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
+//
+// IPPL is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// You should have received a copy of the GNU General Public License
+// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 #ifndef FFT_POISSON_SOLVER_H_
 #define FFT_POISSON_SOLVER_H_
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
+
 #include "Types/Vector.h"
+
+#include "Utility/IpplException.h"
+#include "Utility/IpplTimings.h"
 
 #include "Field/Field.h"
 
+#include "Communicate/Archive.h"
 #include "Electrostatics.h"
 #include "FFT/FFT.h"
+#include "Field/HaloCells.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {
-    template <typename Tlhs, typename Trhs, unsigned Dim, class Mesh, class Centering>
-    class FFTPoissonSolver : public Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering> {
-    public:
-        // types for LHS and RHS
-        using lhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::lhs_type;
-        using rhs_type = typename Solver<Tlhs, Trhs, Dim, Mesh, Centering>::rhs_type;
 
+    namespace detail {
+
+        /*!
+         * Access a view that either contains a vector field or a scalar field
+         * in such a way that the correct element access is determined at compile
+         * time, reducing the number of functions needed to achieve the same
+         * behavior for both kinds of fields
+         * @tparam tensorRank indicates whether scalar, vector, or matrix field
+         * @tparam - the view type
+         */
+        template <int tensorRank, typename>
+        struct ViewAccess;
+
+        template <typename View>
+        struct ViewAccess<2, View> {
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim1,
+                                                              unsigned dim2, size_t i, size_t j,
+                                                              size_t k) {
+                return view(i, j, k)[dim1][dim2];
+            }
+        };
+
+        template <typename View>
+        struct ViewAccess<1, View> {
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim1,
+                                                              [[maybe_unused]] unsigned dim2,
+                                                              size_t i, size_t j, size_t k) {
+                return view(i, j, k)[dim1];
+            }
+        };
+
+        template <typename View>
+        struct ViewAccess<0, View> {
+            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view,
+                                                              [[maybe_unused]] unsigned dim1,
+                                                              [[maybe_unused]] unsigned dim2,
+                                                              size_t i, size_t j, size_t k) {
+                return view(i, j, k);
+            }
+        };
+    }  // namespace detail
+
+    template <typename FieldLHS, typename FieldRHS>
+    class FFTPoissonSolver : public Electrostatics<FieldLHS, FieldRHS> {
+        constexpr static unsigned Dim = FieldLHS::dim;
+        using Trhs                    = typename FieldRHS::value_type;
+        using mesh_type               = typename FieldLHS::Mesh_t;
+        using Tg                      = typename FieldLHS::value_type::value_type;
+
+    public:
         // type of output
-        using Base = Electrostatics<Tlhs, Trhs, Dim, Mesh, Centering>;
+        using Base = Electrostatics<FieldLHS, FieldRHS>;
+
+        // types for LHS and RHS
+        using typename Base::lhs_type, typename Base::rhs_type;
+
+        // define a type for the 3 dimensional real to complex Fourier transform
+        typedef FFT<RCTransform, FieldRHS> FFT_t;
+
+        // enum type for the algorithm
+        enum Algorithm {
+            HOCKNEY    = 0b01,
+            VICO       = 0b10,
+            BIHARMONIC = 0b11
+        };
 
         // define a type for a 3 dimensional field (e.g. charge density field)
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
-        typedef Field<Trhs, Dim, Mesh, Centering> Field_t;
-        typedef Field<int, Dim, Mesh, Centering> IField_t;
-        typedef Field<Kokkos::complex<Trhs>, Dim, Mesh, Centering> CxField_t;
+        // define matrix and matrix field types for the Hessian
+        typedef FieldRHS Field_t;
+        typedef typename FieldLHS::Centering_t Centering;
+        typedef Field<int, Dim, mesh_type, Centering> IField_t;
+        typedef Field<Tg, Dim, mesh_type, Centering> Field_gt;
+        typedef Field<Kokkos::complex<Tg>, Dim, mesh_type, Centering> CxField_gt;
+        typedef typename FFT_t::ComplexField CxField_t;
         typedef Vector<Trhs, Dim> Vector_t;
+        typedef typename mesh_type::matrix_type Matrix_t;
+        typedef Field<Matrix_t, Dim, mesh_type, Centering> MField_t;
 
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
 
-        // define a type for the 3 dimensional real to complex Fourier transform
-        typedef FFT<RCTransform, Dim, Trhs, Mesh, Centering> FFT_t;
-
         // type for communication buffers
-        using buffer_type = Communicate::buffer_type;
+        using memory_space = typename FieldLHS::memory_space;
+        using buffer_type  = Communicate::buffer_type<memory_space>;
+
+        // types of mesh and mesh spacing
+        using vector_type = typename mesh_type::vector_type;
+        using scalar_type = typename mesh_type::value_type;
 
         // constructor and destructor
-        FFTPoissonSolver(rhs_type& rhs, ParameterList& fftparams, std::string alg);
-        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& fftparams, std::string alg,
-                         int sol = Base::SOL_AND_GRAD);
-        ~FFTPoissonSolver();
+        FFTPoissonSolver();
+        FFTPoissonSolver(rhs_type& rhs, ParameterList& params);
+        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
+        ~FFTPoissonSolver() = default;
+
+        // override the setRhs function of the Solver class
+        // since we need to call initializeFields()
+        void setRhs(rhs_type& rhs) override;
 
         // allows user to set gradient of phi = Efield instead of spectral
         // calculation of Efield (which uses FFTs)
@@ -68,6 +149,17 @@ namespace ippl {
         // more specifically, compute the scalar potential given a density field rho using
         void solve() override;
 
+        // override getHessian to return Hessian field if flag is on
+        MField_t* getHessian() override {
+            bool hessian = this->params_m.template get<bool>("hessian");
+            if (!hessian) {
+                throw IpplException(
+                    "FFTPoissonSolver::getHessian()",
+                    "Cannot call getHessian() if 'hessian' flag in ParameterList is false");
+            }
+            return &hess_m;
+        }
+
         // compute standard Green's function
         void greensFunction();
 
@@ -75,7 +167,7 @@ namespace ippl {
         void initializeFields();
 
         // communication used for multi-rank Vico-Greengard's Green's function
-        void communicateVico(Vector<int, Dim> size, typename CxField_t::view_type view_g,
+        void communicateVico(Vector<int, Dim> size, typename CxField_gt::view_type view_g,
                              const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
                              typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
                              const int nghost);
@@ -103,19 +195,22 @@ namespace ippl {
         // fields that facilitate the calculation in greensFunction()
         IField_t grnIField_m[Dim];
 
+        // hessian matrix field (only if hessian parameter is set)
+        MField_t hess_m;
+
         // the FFT object
         std::unique_ptr<FFT_t> fft_m;
 
         // mesh and layout objects for rho_m (RHS)
-        Mesh* mesh_mp;
+        mesh_type* mesh_mp;
         FieldLayout_t* layout_mp;
 
         // mesh and layout objects for rho2_m
-        std::unique_ptr<Mesh> mesh2_m;
+        std::unique_ptr<mesh_type> mesh2_m;
         std::unique_ptr<FieldLayout_t> layout2_m;
 
         // mesh and layout objects for the Fourier transformed Complex fields
-        std::unique_ptr<Mesh> meshComplex_m;
+        std::unique_ptr<mesh_type> meshComplex_m;
         std::unique_ptr<FieldLayout_t> layoutComplex_m;
 
         // domains for the various fields
@@ -124,18 +219,18 @@ namespace ippl {
         NDIndex<Dim> domainComplex_m;  // field for the complex values of the RC transformation
 
         // mesh spacing and mesh size
-        Vector_t hr_m;
+        vector_type hr_m;
         Vector<int, Dim> nr_m;
 
         // string specifying algorithm: Hockney or Vico-Greengard
         std::string alg_m;
 
         // members for Vico-Greengard
-        CxField_t grnL_m;
+        CxField_gt grnL_m;
 
-        std::unique_ptr<FFT<CCTransform, Dim, double, Mesh, Centering>> fft4n_m;
+        std::unique_ptr<FFT<CCTransform, CxField_gt>> fft4n_m;
 
-        std::unique_ptr<Mesh> mesh4_m;
+        std::unique_ptr<mesh_type> mesh4_m;
         std::unique_ptr<FieldLayout_t> layout4_m;
 
         NDIndex<Dim> domain4_m;
@@ -172,10 +267,12 @@ namespace ippl {
                     throw IpplException("FFTPoissonSolver::setDefaultParameters",
                                         "Unrecognized heffte communication type");
             }
+
+            this->params_m.add("algorithm", HOCKNEY);
+            this->params_m.add("hessian", true);
         }
     };
 }  // namespace ippl
 
-#include "FFTPoissonSolver.hpp"
-
+#include "Solver/FFTPoissonSolver.hpp"
 #endif
