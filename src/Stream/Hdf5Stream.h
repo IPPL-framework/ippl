@@ -3,8 +3,8 @@
 
 #include <type_traits>
 
+#include "H5Cpp.h"
 #include "Stream/BaseStream.h"
-#include "hdf5.h"
 
 namespace ippl {
 
@@ -50,13 +50,15 @@ namespace ippl {
         void close() final;
 
     protected:
-        hid_t file; /* file identifier */
-        herr_t status;
+        H5::H5File file;
     };
 
     template <class Object>
     Hdf5Stream<Object>::Hdf5Stream()
-        : BaseStream<Object>() {}
+        : BaseStream<Object>() {
+        // Turn off auto-printing
+        H5::Exception::dontPrint();
+    }
 
     /* Create a new file using default properties. */
     template <class Object>
@@ -65,16 +67,15 @@ namespace ippl {
 
         std::string filename = path.filename().string();
 
-        // not clear why the keyword "template" is needed here"
-        bool overwrite = this->param_m.template get<bool>("overwrite");
+        try {
+            // not clear why the keyword "template" is needed here"
+            bool overwrite = this->param_m.template get<bool>("overwrite");
 
-        if (overwrite) {
-            file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-        } else {
-            file = H5Fcreate(filename.c_str(), H5F_ACC_EXCL, H5P_DEFAULT, H5P_DEFAULT);
-        }
+            unsigned int flags = (overwrite) ? H5F_ACC_TRUNC : H5F_ACC_EXCL;
 
-        if (file == H5I_INVALID_HID) {
+            file = H5::H5File(filename, flags, H5::FileCreatPropList::DEFAULT,
+                              H5::FileAccPropList::DEFAULT);
+        } catch (...) {
             throw IpplException("Hdf5Stream::create", "Unable to create " + filename);
         }
     }
@@ -85,19 +86,19 @@ namespace ippl {
 
         std::string filename = path.filename().string();
 
-        file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+        try {
+            file.openFile(filename.c_str(), H5F_ACC_RDWR, H5::FileAccPropList::DEFAULT);
 
-        if (file == H5I_INVALID_HID) {
+        } catch (...) {
             throw IpplException("Hdf5Stream::open", "Unable to open " + filename);
         }
     }
 
     template <class Object>
     void Hdf5Stream<Object>::close() {
-        /* Terminate access to the file. */
-        status = H5Fclose(file);
-
-        if (status < 0) {
+        try {
+            file.close();
+        } catch (...) {
             throw IpplException("Hdf5Stream::close",
                                 "Unable to close " + this->path_m.filename().string());
         }
