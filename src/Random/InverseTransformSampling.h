@@ -123,63 +123,67 @@ namespace ippl {
             Vector<T, Dim> nr_m, dr_m, umin_m, umax_m;
         };
 
-        template <class DeviceType, class RealType = double>
-        class mpi_normal_distribution {
-            static_assert(std::is_floating_point<RealType>::value,
-                          "result_type must be a floating point type");
+        namespace mpi {
 
-        public:
-            typedef RealType result_type;
+            template <class DeviceType, class RealType = double>
+            class normal_distribution {
+                static_assert(std::is_floating_point<RealType>::value,
+                              "result_type must be a floating point type");
 
-            KOKKOS_FUNCTION
-            mpi_normal_distribution()
-                : mpi_normal_distribution(0.0) {}
+            public:
+                typedef RealType result_type;
 
-            KOKKOS_FUNCTION
-            mpi_normal_distribution(RealType mean, RealType stddev = 1.0)
-                : mean_m(mean)
-                , stddev_m(stddev)
-                , sqrt2_m(Kokkos::sqrt(RealType(2.0)))
-                , pi_m(Kokkos::numbers::pi_v<RealType>) {}
+                KOKKOS_FUNCTION
+                normal_distribution()
+                    : normal_distribution(0.0) {}
 
-            KOKKOS_FUNCTION ~mpi_normal_distribution() {}
+                KOKKOS_FUNCTION
+                normal_distribution(RealType mean, RealType stddev = 1.0)
+                    : mean_m(mean)
+                    , stddev_m(stddev)
+                    , sqrt2_m(Kokkos::sqrt(RealType(2.0)))
+                    , pi_m(Kokkos::numbers::pi_v<RealType>) {}
 
-            KOKKOS_FUNCTION
-            RealType mean() const { return mean_m; }
+                KOKKOS_FUNCTION ~normal_distribution() {}
 
-            KOKKOS_FUNCTION
-            RealType stddev() const { return stddev_m; }
+                KOKKOS_FUNCTION
+                RealType mean() const { return mean_m; }
 
-            KOKKOS_INLINE_FUNCTION result_type estimate(const RealType& u) const {
-                return (Kokkos::sqrt(pi_m / 2.0) * (2.0 * u - 1.0)) * stddev_m + mean_m;
-            }
+                KOKKOS_FUNCTION
+                RealType stddev() const { return stddev_m; }
 
-            KOKKOS_INLINE_FUNCTION result_type function(RealType& x, const RealType& u) {
-                return Kokkos::erf((x - mean_m) / (stddev_m * sqrt2_m)) - 2.0 * u + 1.0;
-            }
+                KOKKOS_INLINE_FUNCTION result_type estimate(const RealType& u) const {
+                    return (Kokkos::sqrt(pi_m / 2.0) * (2.0 * u - 1.0)) * stddev_m + mean_m;
+                }
 
-            KOKKOS_INLINE_FUNCTION result_type derivative(RealType& x,
-                                                          const RealType& /*u*/) const {
-                return (1.0 / stddev_m) * Kokkos::sqrt(2.0 / pi_m)
-                       * Kokkos::exp(-0.5 * (Kokkos::pow(((x - mean_m) / stddev_m), 2)));
-            }
+                KOKKOS_INLINE_FUNCTION result_type function(RealType& x, const RealType& u) {
+                    return Kokkos::erf((x - mean_m) / (stddev_m * sqrt2_m)) - 2.0 * u + 1.0;
+                }
 
-            KOKKOS_INLINE_FUNCTION result_type cdf(const RealType& x) const {
-                return 0.5 * (1.0 + Kokkos::erf((x - mean_m) / (stddev_m * sqrt2_m)));
-            }
+                KOKKOS_INLINE_FUNCTION result_type derivative(RealType& x,
+                                                              const RealType& /*u*/) const {
+                    return (1.0 / stddev_m) * Kokkos::sqrt(2.0 / pi_m)
+                           * Kokkos::exp(-0.5 * (Kokkos::pow(((x - mean_m) / stddev_m), 2)));
+                }
 
-            KOKKOS_INLINE_FUNCTION result_type pdf(const RealType& x) const {
-                return (1.0 / (stddev_m * Kokkos::sqrt(2.0 * pi_m)))
-                       * Kokkos::exp(-0.5 * Kokkos::pow((x - mean_m) / stddev_m, 2));
-            }
+                KOKKOS_INLINE_FUNCTION result_type cdf(const RealType& x) const {
+                    return 0.5 * (1.0 + Kokkos::erf((x - mean_m) / (stddev_m * sqrt2_m)));
+                }
 
-        private:
-            RealType mean_m;
-            RealType stddev_m;
-            uniform_real_distribution<DeviceType, RealType> unif_m;
-            RealType sqrt2_m;
-            RealType pi_m;
-        };
+                KOKKOS_INLINE_FUNCTION result_type pdf(const RealType& x) const {
+                    return (1.0 / (stddev_m * Kokkos::sqrt(2.0 * pi_m)))
+                           * Kokkos::exp(-0.5 * Kokkos::pow((x - mean_m) / stddev_m, 2));
+                }
+
+            private:
+                RealType mean_m;
+                RealType stddev_m;
+                uniform_real_distribution<DeviceType, RealType> unif_m;
+                RealType sqrt2_m;
+                RealType pi_m;
+            };
+
+        }  // namespace mpi
 
     }  // namespace random
 }  // namespace ippl

@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
 
         using InvTransSampl_t = ippl::random::InverseTransformSampling<double, 2, Kokkos::Serial>;
 
-        using normal_t = ippl::random::mpi_normal_distribution<Kokkos::Serial>;
+        using normal_t = ippl::random::mpi::normal_distribution<Kokkos::Serial>;
         normal_t dist[2];
 
         ippl::Vector<double, 2> mu, sd;
