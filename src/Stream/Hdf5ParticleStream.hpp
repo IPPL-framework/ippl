@@ -1,5 +1,8 @@
 namespace ippl {
 
+    // CF Metadata Conventions
+    // openPMD standard
+
     namespace hdf5 {
 
         template <class ParticleContainer>
@@ -17,6 +20,18 @@ namespace ippl {
                 }
 
                 if (present) {
+                    hsize_t dims[1];
+                    dims[0] = 50;
+                    H5::DataSpace dataspace(1, dims);
+
+                    // Create the dataset.
+                    H5::DataSet dataset = this->h5file_m.createDataSet(
+                        attr->name(), H5::PredType::NATIVE_DOUBLE, dataspace);
+
+                    //                     dataset = this->h5file_m.openDataSet(attr->name());
+
+                    dataset.write(attr->data(), H5::PredType::NATIVE_DOUBLE);
+
                     std::cout << "Name:      " << attr->name() << std::endl;
                     std::cout << "Long name: " << attr->long_name() << std::endl;
                     std::cout << "Units:     " << attr->unit() << std::endl;

@@ -48,6 +48,11 @@ int main(int argc, char* argv[]) {
 
             part.create(50);
 
+            for (int i = 0; i < 50; ++i) {
+                part.q(i) = 0.01;
+                part.v(i) = std::cos(3.14159265359 * (i + 1) / 50.0);
+            }
+
             ippl::hdf5::ParticleStream<Particles> ps;
 
             std::filesystem::path filename = "test.hdf5";

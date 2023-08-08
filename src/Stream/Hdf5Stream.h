@@ -12,29 +12,29 @@ namespace ippl {
     struct is_hdf5_datatype : std::false_type {};
 
     template <typename T>
-    hid_t get_hdf5_datatype(const T& /*x*/) {
+    H5::PredType get_hdf5_datatype(const T& /*x*/) {
         static_assert(is_hdf5_datatype<T>::value, "type isn't a HDF5 type");
         return get_hdf5_datatype(T());
     }
 
-#define IPPL_HDF5_DATATYPE(CppType, H5Type)                   \
-    template <>                                               \
-    inline hid_t get_hdf5_datatype<CppType>(const CppType&) { \
-        return H5Type;                                        \
-    }                                                         \
-                                                              \
-    template <>                                               \
+#define IPPL_HDF5_DATATYPE(CppType, H5Type)                          \
+    template <>                                                      \
+    inline H5::PredType get_hdf5_datatype<CppType>(const CppType&) { \
+        return H5Type;                                               \
+    }                                                                \
+                                                                     \
+    template <>                                                      \
     struct is_hdf5_datatype<CppType> : std::true_type {};
 
-    IPPL_HDF5_DATATYPE(char, H5T_NATIVE_CHAR);
+    IPPL_HDF5_DATATYPE(char, H5::PredType::NATIVE_CHAR);
 
-    IPPL_HDF5_DATATYPE(int, H5T_NATIVE_INT);
+    IPPL_HDF5_DATATYPE(int, H5::PredType::NATIVE_INT);
 
-    IPPL_HDF5_DATATYPE(double, H5T_NATIVE_DOUBLE);
+    IPPL_HDF5_DATATYPE(double, H5::PredType::NATIVE_DOUBLE);
 
-    IPPL_HDF5_DATATYPE(float, H5T_NATIVE_FLOAT);
+    IPPL_HDF5_DATATYPE(float, H5::PredType::NATIVE_FLOAT);
 
-    IPPL_HDF5_DATATYPE(long double, H5T_NATIVE_LDOUBLE);
+    IPPL_HDF5_DATATYPE(long double, H5::PredType::NATIVE_LDOUBLE);
 
     template <class Object>
     class Hdf5Stream : public BaseStream<Object> {
@@ -50,7 +50,7 @@ namespace ippl {
         void close() final;
 
     protected:
-        H5::H5File file;
+        H5::H5File h5file_m;
     };
 
     template <class Object>
@@ -73,8 +73,8 @@ namespace ippl {
 
             unsigned int flags = (overwrite) ? H5F_ACC_TRUNC : H5F_ACC_EXCL;
 
-            file = H5::H5File(filename, flags, H5::FileCreatPropList::DEFAULT,
-                              H5::FileAccPropList::DEFAULT);
+            h5file_m = H5::H5File(filename, flags, H5::FileCreatPropList::DEFAULT,
+                                  H5::FileAccPropList::DEFAULT);
         } catch (...) {
             throw IpplException("Hdf5Stream::create", "Unable to create " + filename);
         }
@@ -87,7 +87,7 @@ namespace ippl {
         std::string filename = path.filename().string();
 
         try {
-            file.openFile(filename.c_str(), H5F_ACC_RDWR, H5::FileAccPropList::DEFAULT);
+            h5file_m.openFile(filename.c_str(), H5F_ACC_RDWR, H5::FileAccPropList::DEFAULT);
 
         } catch (...) {
             throw IpplException("Hdf5Stream::open", "Unable to open " + filename);
@@ -97,7 +97,7 @@ namespace ippl {
     template <class Object>
     void Hdf5Stream<Object>::close() {
         try {
-            file.close();
+            h5file_m.close();
         } catch (...) {
             throw IpplException("Hdf5Stream::close",
                                 "Unable to close " + this->path_m.filename().string());
