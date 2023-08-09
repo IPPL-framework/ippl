@@ -604,6 +604,7 @@ public:
         double kinEnergy = 0.0;
         double potEnergy = 0.0;
 
+        rho_m     = dot(E_m, E_m);
         potEnergy = 0.5 * hr_m[0] * hr_m[1] * hr_m[2] * rho_m.sum();
 
         Kokkos::parallel_reduce(
