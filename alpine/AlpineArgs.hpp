@@ -26,7 +26,8 @@
 
 template <unsigned Dim>
 struct SimulationParameters {
-    using size_type = ippl::detail::size_type;
+    using size_type               = ippl::detail::size_type;
+    constexpr static unsigned dim = Dim;
 
     ippl::Vector<int, Dim> meshRefinement;
     uint64_t particleCount = 4096;
@@ -86,6 +87,17 @@ struct SimulationParameters {
         }
         return false;
     }
+
+    static ConfigParser<SimulationParameters> getParser() {
+        return {
+            {"timesteps", &SimulationParameters::timeSteps},
+            {"solver", &SimulationParameters::solver},
+            {"lb_threshold", &SimulationParameters::lbThreshold},
+            {"ppc", static_cast<ValueParser<SimulationParameters>>(&SimulationParameters::setPPC)},
+            {"particles", &SimulationParameters::particleCount},
+            {"N", &SimulationParameters::setRefinement},
+            {"", &SimulationParameters::parseRefinement}};
+    }
 };
 
 void printArgHelp() {
@@ -105,14 +117,15 @@ void printArgHelp() {
 
 /*!
  * Parses the command line arguments to set up the simulation
+ * @tparam Params the parameter struct type
  * @param argc number of arguments
  * @param argv argument vector
  * @param params parameter container
  * @return Whether the program should exit immediately
  */
-template <unsigned Dim>
-bool parseArgs(int argc, char* argv[], SimulationParameters<Dim>& params) {
-    using Params = SimulationParameters<Dim>;
+template <typename Params>
+bool parseArgs(int argc, char* argv[], Params& params) {
+    constexpr unsigned Dim = Params::dim;
 
     // Prevent getopt from warning about non-ALPINE flags
     opterr = 0;
@@ -149,14 +162,7 @@ bool parseArgs(int argc, char* argv[], SimulationParameters<Dim>& params) {
     // Option list must be terminated with a struct of all zeros
     longOpts[OPTS_LEN - 1] = {0, 0, 0, 0};
 
-    static const ConfigParser<SimulationParameters<Dim>> parser = {
-        {"timesteps", &Params::timeSteps},
-        {"solver", &Params::solver},
-        {"lb_threshold", &Params::lbThreshold},
-        {"ppc", static_cast<void (Params::*)(const std::string&)>(&Params::setPPC)},
-        {"particles", &Params::particleCount},
-        {"N", &Params::setRefinement},
-        {"", &Params::parseRefinement}};
+    static const auto parser = Params::getParser();
 
     while (true) {
         int idx = 0;

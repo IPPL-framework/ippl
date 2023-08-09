@@ -29,8 +29,6 @@
 #include "Solver/FFTPoissonSolver.h"
 #include "Solver/P3MSolver.h"
 
-unsigned LoggingPeriod = 1;
-
 // some typedefs
 template <unsigned Dim = 3>
 using Mesh_t = ippl::UniformCartesian<double, Dim>;
