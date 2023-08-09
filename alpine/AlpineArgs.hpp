@@ -35,11 +35,10 @@ struct SimulationParameters {
         : meshRefinement(0)
         , solver("FFT") {}
 
-    void setPPC(const char* const arg) {
+    void setPPC(uint64_t ppc) {
         size_type cells =
             std::reduce(meshRefinement.begin(), meshRefinement.end(), 1, std::multiplies<>());
-        size_type ppc = std::atoll(arg);
-        size_type np  = ppc * cells;
+        size_type np = ppc * cells;
         if (ppc == 0) {
             *ippl::Warn << "Particle density specified as zero." << endl;
         } else if (np == 0) {
@@ -115,17 +114,14 @@ bool parseArgs(int argc, char* argv[], SimulationParameters<Dim>& params) {
                     ippl::abort();
                 }
                 break;
-            case 'N': {
-                int N = std::atoi(optarg);
-                for (unsigned d = 0; d < Dim; d++) {
-                    params.meshRefinement[d] = N;
-                }
-            } break;
+            case 'N':
+                params.meshRefinement = std::atoi(optarg);
+                break;
             case 'p':
                 params.particleCount = std::atoll(optarg);
                 break;
             case 'd':
-                params.setPPC(optarg);
+                params.setPPC(std::atoll(optarg));
                 break;
             case 's':
                 params.solver = optarg;
