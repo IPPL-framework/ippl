@@ -151,12 +151,13 @@ const char* TestName = "LandauDamping";
 int main(int argc, char* argv[]) {
     setSignalHandler();
 
+    ippl::initialize(argc, argv);
+
     SimulationParameters<Dim> params;
     if (parseArgs(argc, argv, params)) {
         return 0;
     }
 
-    ippl::initialize(argc, argv);
     {
         Inform msg("LandauDamping");
         Inform msg2all("LandauDamping", INFORM_ALL_NODES);

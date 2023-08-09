@@ -117,6 +117,10 @@ bool parseArgs(int argc, char* argv[], SimulationParameters<Dim>& params) {
     // Prevent getopt from warning about non-ALPINE flags
     opterr = 0;
 
+    // Track the kinds of flags we've already seen
+    bool flagsEncountered = false;
+    int configEncountered = 0;
+
     // Number of arguments in addition to Nx, Ny, etc
     static constexpr unsigned ARG_COUNT = 8;
     static constexpr unsigned OPTS_LEN  = ARG_COUNT + Dim + std::min(Dim, 3U) + 1;
@@ -168,33 +172,59 @@ bool parseArgs(int argc, char* argv[], SimulationParameters<Dim>& params) {
                 // Check for mesh refinement in a single direction with 1-indexed axes
                 if (1 <= opt && opt <= static_cast<int>(Dim)) {
                     params.meshRefinement[opt] = std::atoi(optarg);
+                    flagsEncountered           = true;
                 } else {
                     // Parsing failed
                     ippl::abort();
                 }
                 break;
             case 'f': {
+                if (flagsEncountered) {
+                    *ippl::Warn
+                        << "Configuration file specified after simulation parameters were already "
+                           "set via parameter flags! Note that any parameters specified in "
+                           "the configuration file will overwrite parameters previously set via "
+                           "command line arguments. To override settings in the configuration "
+                           "file, pass parameter flags only after the configuration file."
+                        << endl;
+                }
+                if (configEncountered > 0) {
+                    *ippl::Warn
+                        << "Configuration file has already been specified " << configEncountered
+                        << " time(s) before, but now it has been specified again! "
+                           "Verification of your setup is strongly recommended. Parameters in "
+                           "this new configuration file will overwrite any settings "
+                           "specified by previous configuration files."
+                        << endl;
+                }
                 std::ifstream in(optarg);
                 parseConfig(in, parser, params);
+                configEncountered++;
                 in.close();
             } break;
             case 'N':
                 params.meshRefinement = std::atoi(optarg);
+                flagsEncountered      = true;
                 break;
             case 'p':
                 params.particleCount = std::atoll(optarg);
+                flagsEncountered     = true;
                 break;
             case 'd':
                 params.setPPC(std::atoll(optarg));
+                flagsEncountered = true;
                 break;
             case 's':
-                params.solver = optarg;
+                params.solver    = optarg;
+                flagsEncountered = true;
                 break;
             case 't':
                 params.timeSteps = std::atoi(optarg);
+                flagsEncountered = true;
                 break;
             case 'l':
                 params.lbThreshold = std::atof(optarg);
+                flagsEncountered   = true;
                 break;
             case 'h':
                 printArgHelp();
