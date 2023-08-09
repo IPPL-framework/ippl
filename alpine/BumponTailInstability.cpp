@@ -237,19 +237,19 @@ private:
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
-    {
-        setSignalHandler();
 
+    setSignalHandler();
+    SimulationParameters<Dim> params;
+    if (parseArgs(argc, argv, params)) {
+        return 0;
+    }
+
+    {
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
 
-        int arg = 1;
-
-        auto start = std::chrono::high_resolution_clock::now();
-        Vector_t<int, Dim> nr;
-        for (unsigned d = 0; d < Dim; d++) {
-            nr[d] = std::atoi(argv[arg++]);
-        };
+        auto start            = std::chrono::high_resolution_clock::now();
+        Vector_t<int, Dim> nr = params.meshRefinement;
 
         static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("total");
         static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
@@ -263,8 +263,8 @@ int main(int argc, char* argv[]) {
 
         IpplTimings::startTimer(mainTimer);
 
-        const size_type totalP = std::atoll(argv[arg++]);
-        const unsigned int nt  = std::atoi(argv[arg++]);
+        const size_type totalP = params.particleCount;
+        const unsigned int nt  = params.timeSteps;
 
         msg << TestName << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
@@ -328,7 +328,7 @@ int main(int argc, char* argv[]) {
 
         // Q = -\int\int f dx dv
         double Q           = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
-        std::string solver = argv[arg++];
+        std::string solver = params.solver;
 
         if (solver == "OPEN") {
             throw IpplException("BumpOnTailInstability",
@@ -345,7 +345,7 @@ int main(int argc, char* argv[]) {
 
         P->initSolver();
         P->time_m                 = 0.0;
-        P->loadbalancethreshold_m = std::atof(argv[arg++]);
+        P->loadbalancethreshold_m = params.lbThreshold;
 
         bool isFirstRepartition;
 

@@ -149,10 +149,9 @@ double PDF(const Vector_t<double, Dim>& xvec, const double& alpha, const Vector_
 const char* TestName = "LandauDamping";
 
 int main(int argc, char* argv[]) {
-    setSignalHandler();
-
     ippl::initialize(argc, argv);
 
+    setSignalHandler();
     SimulationParameters<Dim> params;
     if (parseArgs(argc, argv, params)) {
         return 0;

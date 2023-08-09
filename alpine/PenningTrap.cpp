@@ -155,9 +155,14 @@ int main(int argc, char* argv[]) {
     static_assert(Dim == 3, "Penning trap must be 3D");
 
     ippl::initialize(argc, argv);
-    {
-        setSignalHandler();
 
+    setSignalHandler();
+    SimulationParameters<Dim> params;
+    if (parseArgs(argc, argv, params)) {
+        return 0;
+    }
+
+    {
         Inform msg("PenningTrap");
         Inform msg2all("PenningTrap", INFORM_ALL_NODES);
 
