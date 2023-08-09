@@ -29,13 +29,13 @@ struct SimulationParameters {
     using size_type = ippl::detail::size_type;
 
     ippl::Vector<int, Dim> meshRefinement;
-    uint64_t particleCount{};
-    uint64_t timeSteps{};
+    uint64_t particleCount = 4096;
+    uint64_t timeSteps     = 1;
     std::string solver;
     double lbThreshold = 1;
 
     SimulationParameters()
-        : meshRefinement(0)
+        : meshRefinement(16)
         , solver("FFT") {}
 
     void setPPC(uint64_t ppc) {
