@@ -38,6 +38,11 @@ struct SimulationParameters {
         : meshRefinement(16)
         , solver("FFT") {}
 
+    /*!
+     * Sets the particle count based on a density; this assumes the mesh refinement has already been
+     * set but warns the user if the setup results in zero particles
+     * @param ppc particles per cell
+     */
     void setPPC(uint64_t ppc) {
         size_type cells =
             std::reduce(meshRefinement.begin(), meshRefinement.end(), 1, std::multiplies<>());
@@ -55,8 +60,17 @@ struct SimulationParameters {
 
     void setPPC(const std::string& ppc) { setPPC(std::stol(ppc)); }
 
+    /*!
+     * Sets the mesh refinement in all directions
+     * @param N mesh refinment as string
+     */
     void setRefinement(const std::string& N) { meshRefinement = std::stoi(N); }
 
+    /*!
+     * Parse mesh refinment in a specific direction (fallback configuration parser)
+     * @param key axis identifier (must be Nx, Ny, Nz, N1, N2, etc)
+     * @param value mesh refinement as string
+     */
     bool parseRefinement(const std::string& key, const std::string& value) {
         if (key[0] != 'N') {
             return false;
