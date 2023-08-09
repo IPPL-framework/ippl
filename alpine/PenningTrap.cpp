@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
         Inform msg2all("PenningTrap", INFORM_ALL_NODES);
 
         auto start            = std::chrono::high_resolution_clock::now();
-        Vector_t<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
+        Vector_t<int, Dim> nr = params.meshRefinement;
 
         static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("total");
         static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
@@ -181,8 +181,8 @@ int main(int argc, char* argv[]) {
 
         IpplTimings::startTimer(mainTimer);
 
-        size_type totalP      = std::atol(argv[4]);
-        const unsigned int nt = std::atoi(argv[5]);
+        size_type totalP      = params.particleCount;
+        const unsigned int nt = params.timeSteps;
 
         msg << "Penning Trap " << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
@@ -219,7 +219,7 @@ int main(int argc, char* argv[]) {
 
         double Q           = -1562.5;
         double Bext        = 5.0;
-        std::string solver = argv[6];
+        std::string solver = params.solver;
         P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
         P->nr_m = nr;
@@ -239,7 +239,7 @@ int main(int argc, char* argv[]) {
 
         P->initSolver();
         P->time_m                 = 0.0;
-        P->loadbalancethreshold_m = std::atof(argv[7]);
+        P->loadbalancethreshold_m = params.lbThreshold;
 
         bool isFirstRepartition;
 
