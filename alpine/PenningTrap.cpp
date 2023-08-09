@@ -197,8 +197,8 @@ int main(int argc, char* argv[]) {
         }
 
         // create mesh and layout objects for this problem domain
-        Vector_t<double, Dim> rmin = 0;
-        Vector_t<double, Dim> rmax = 20;
+        Vector_t<double, Dim> rmin   = 0;
+        Vector_t<double, Dim> rmax   = 20;
         Vector_t<double, Dim> length = rmax - rmin;
 
         Vector_t<double, Dim> hr     = length / nr;
@@ -352,20 +352,20 @@ int main(int argc, char* argv[]) {
             double V0  = 30 * length[2];
             Kokkos::parallel_for(
                 "Kick1", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-                    double Eext_x =
-                        -(Rview(j)[0] - origin[0] - 0.5 * length[0]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                    double Eext_y =
-                        -(Rview(j)[1] - origin[1] - 0.5 * length[1]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                    double Eext_z =
-                        (Rview(j)[2] - origin[2] - 0.5 * length[2]) * (V0 / (Kokkos::pow(length[2], 2)));
+                    double Eext_x = -(Rview(j)[0] - origin[0] - 0.5 * length[0])
+                                    * (V0 / (2 * Kokkos::pow(length[2], 2)));
+                    double Eext_y = -(Rview(j)[1] - origin[1] - 0.5 * length[1])
+                                    * (V0 / (2 * Kokkos::pow(length[2], 2)));
+                    double Eext_z = (Rview(j)[2] - origin[2] - 0.5 * length[2])
+                                    * (V0 / (Kokkos::pow(length[2], 2)));
 
-                    Eview(j)[0] += Eext_x;
-                    Eview(j)[1] += Eext_y;
-                    Eview(j)[2] += Eext_z;
+                    Eext_x += Eview(j)[0];
+                    Eext_y += Eview(j)[1];
+                    Eext_z += Eview(j)[2];
 
-                    Pview(j)[0] += alpha * (Eview(j)[0] + Pview(j)[1] * Bext);
-                    Pview(j)[1] += alpha * (Eview(j)[1] - Pview(j)[0] * Bext);
-                    Pview(j)[2] += alpha * Eview(j)[2];
+                    Pview(j)[0] += alpha * (Eext_x + Pview(j)[1] * Bext);
+                    Pview(j)[1] += alpha * (Eext_y - Pview(j)[0] * Bext);
+                    Pview(j)[2] += alpha * Eext_z;
                 });
             IpplTimings::stopTimer(PTimer);
 
@@ -408,27 +408,26 @@ int main(int argc, char* argv[]) {
             auto E2view = P->E.getView();
             Kokkos::parallel_for(
                 "Kick2", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-                    double Eext_x =
-                        -(R2view(j)[0] - origin[0] - 0.5 * length[0]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                    double Eext_y =
-                        -(R2view(j)[1] - origin[1] - 0.5 * length[1]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                    double Eext_z =
-                        (R2view(j)[2] - origin[2] - 0.5 * length[2]) * (V0 / (Kokkos::pow(length[2], 2)));
+                    double Eext_x = -(R2view(j)[0] - origin[0] - 0.5 * length[0])
+                                    * (V0 / (2 * Kokkos::pow(length[2], 2)));
+                    double Eext_y = -(R2view(j)[1] - origin[1] - 0.5 * length[1])
+                                    * (V0 / (2 * Kokkos::pow(length[2], 2)));
+                    double Eext_z = (R2view(j)[2] - origin[2] - 0.5 * length[2])
+                                    * (V0 / (Kokkos::pow(length[2], 2)));
 
-                    E2view(j)[0] += Eext_x;
-                    E2view(j)[1] += Eext_y;
-                    E2view(j)[2] += Eext_z;
-                    P2view(j)[0] = DrInv
-                                   * (P2view(j)[0]
-                                      + alpha
-                                            * (E2view(j)[0] + P2view(j)[1] * Bext
-                                               + alpha * Bext * E2view(j)[1]));
-                    P2view(j)[1] = DrInv
-                                   * (P2view(j)[1]
-                                      + alpha
-                                            * (E2view(j)[1] - P2view(j)[0] * Bext
-                                               - alpha * Bext * E2view(j)[0]));
-                    P2view(j)[2] += alpha * E2view(j)[2];
+                    Eext_x += E2view(j)[0];
+                    Eext_y += E2view(j)[1];
+                    Eext_z += E2view(j)[2];
+
+                    P2view(j)[0] =
+                        DrInv
+                        * (P2view(j)[0]
+                           + alpha * (Eext_x + P2view(j)[1] * Bext + alpha * Bext * Eext_y));
+                    P2view(j)[1] =
+                        DrInv
+                        * (P2view(j)[1]
+                           + alpha * (Eext_y - P2view(j)[0] * Bext - alpha * Bext * Eext_x));
+                    P2view(j)[2] += alpha * Eext_z;
                 });
             IpplTimings::stopTimer(PTimer);
 
