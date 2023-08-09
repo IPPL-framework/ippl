@@ -19,7 +19,7 @@ target_link_libraries (PenningTrap ${IPPL_LIBS})
 add_executable (UniformPlasmaTest UniformPlasmaTest.cpp)
 target_link_libraries (UniformPlasmaTest ${IPPL_LIBS})
 
-add_executable (LandauDamping LandauDamping.cpp)
+add_executable (LandauDamping LandauDamping.cpp AlpineSignal.cpp)
 target_link_libraries (LandauDamping ${IPPL_LIBS})
 
 add_executable (LandauDampingMixedPrecision LandauDampingMixedPrecision.cpp)
