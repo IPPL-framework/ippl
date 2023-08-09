@@ -41,6 +41,12 @@ if (ENABLE_FFT)
         ${MPI_CXX_LIBRARIES}
     )
 
+    add_executable (SliceTo2D SliceTo2D.cpp)
+    target_link_libraries (
+        SliceTo2D
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
 
     add_executable (TestSphere TestSphere.cpp)
     target_link_libraries (
