@@ -155,17 +155,20 @@ const char* TestName = "LandauDamping";
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
+
+    setSignalHandler();
+    SimulationParameters<Dim> params;
+    if (parseArgs(argc, argv, params)) {
+        return 0;
+    }
+
     {
         Inform msg("LandauDamping");
         Inform msg2all("LandauDamping", INFORM_ALL_NODES);
 
         auto start = std::chrono::high_resolution_clock::now();
-        int arg    = 1;
 
-        Vector_t<int, Dim> nr;
-        for (unsigned d = 0; d < Dim; d++) {
-            nr[d] = std::atoi(argv[arg++]);
-        }
+        Vector_t<int, Dim> nr = params.meshRefinement;
 
         static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("total");
         static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
@@ -179,8 +182,8 @@ int main(int argc, char* argv[]) {
 
         IpplTimings::startTimer(mainTimer);
 
-        const size_type totalP = std::atoll(argv[arg++]);
-        const unsigned int nt  = std::atoi(argv[arg++]);
+        const size_type totalP = params.particleCount;
+        const unsigned int nt  = params.timeSteps;
 
         msg << "Landau damping" << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
@@ -216,7 +219,7 @@ int main(int argc, char* argv[]) {
         FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
         PLayout_t<float, Dim> PL(FL, mesh);
 
-        std::string solver = argv[arg++];
+        std::string solver = params.solver;
         P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
         P->nr_m = nr;
@@ -227,7 +230,7 @@ int main(int argc, char* argv[]) {
 
         P->initSolver();
         P->time_m                 = 0.0;
-        P->loadbalancethreshold_m = std::atof(argv[arg++]);
+        P->loadbalancethreshold_m = params.lbThreshold;
 
         bool isFirstRepartition;
 

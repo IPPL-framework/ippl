@@ -43,6 +43,22 @@
 
 constexpr unsigned Dim = 3;
 
+template <unsigned Dim>
+struct UniformPlasmaParams : public SimulationParameters<Dim> {
+    uint64_t lbfreq;
+
+    static ConfigParser<UniformPlasmaParams> getParser() {
+        return {
+            {"timesteps", &UniformPlasmaParams::timeSteps},
+            {"solver", &UniformPlasmaParams::solver},
+            {"ppc", static_cast<ValueParser<UniformPlasmaParams>>(&UniformPlasmaParams::setPPC)},
+            {"particles", &UniformPlasmaParams::particleCount},
+            {"N", &UniformPlasmaParams::setRefinement},
+            {"lb_frequency", &UniformPlasmaParams::lbfreq},
+            {"", &UniformPlasmaParams::parseRefinement}};
+    }
+};
+
 const char* TestName = "UniformPlasmaTest";
 
 template <typename T, class GeneratorPool, unsigned Dim>
@@ -79,18 +95,20 @@ struct generate_random {
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
-    {
-        setSignalHandler();
 
+    setSignalHandler();
+    UniformPlasmaParams<Dim> params;
+    if (parseArgs(argc, argv, params)) {
+        return 0;
+    }
+
+    {
         Inform msg("UniformPlasmaTest");
         Inform msg2all(argv[0], INFORM_ALL_NODES);
 
         auto start = std::chrono::high_resolution_clock::now();
-        int arg    = 1;
 
-        Vector_t<int, Dim> nr;
-        for (unsigned d = 0; d < Dim; d++)
-            nr[d] = std::atoi(argv[arg++]);
+        Vector_t<int, Dim> nr = params.meshRefinement;
 
         static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("total");
         static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
@@ -105,8 +123,8 @@ int main(int argc, char* argv[]) {
 
         IpplTimings::startTimer(mainTimer);
 
-        const size_type totalP = std::atoll(argv[arg++]);
-        const unsigned int nt  = std::atoi(argv[arg++]);
+        const size_type totalP = params.particleCount;
+        const unsigned int nt  = params.timeSteps;
 
         msg << "Uniform Plasma Test" << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
@@ -140,7 +158,7 @@ int main(int argc, char* argv[]) {
         PLayout_t<double, Dim> PL(FL, mesh);
 
         double Q           = -1562.5;
-        std::string solver = argv[arg++];
+        std::string solver = params.solver;
         P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
         P->nr_m        = nr;
@@ -148,8 +166,9 @@ int main(int argc, char* argv[]) {
 
         int rest = (int)(totalP - nloc * ippl::Comm->size());
 
-        if (ippl::Comm->rank() < rest)
+        if (ippl::Comm->rank() < rest) {
             ++nloc;
+        }
 
         IpplTimings::startTimer(particleCreation);
         P->create(nloc);
@@ -182,7 +201,7 @@ int main(int argc, char* argv[]) {
 
         P->initSolver();
         P->time_m            = 0.0;
-        P->loadbalancefreq_m = std::atoi(argv[arg++]);
+        P->loadbalancefreq_m = params.lbfreq;
 
         IpplTimings::startTimer(DummySolveTimer);
         P->rho_m = 0.0;

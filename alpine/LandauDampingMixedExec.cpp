@@ -50,6 +50,23 @@
 
 constexpr unsigned Dim = 3;
 
+template <unsigned Dim>
+struct UniformPlasmaParams : public SimulationParameters<Dim> {
+    uint64_t loggingPeriod;
+
+    static ConfigParser<UniformPlasmaParams> getParser() {
+        return {
+            {"timesteps", &UniformPlasmaParams::timeSteps},
+            {"solver", &UniformPlasmaParams::solver},
+            {"lb_threshold", &UniformPlasmaParams::lbThreshold},
+            {"ppc", static_cast<ValueParser<UniformPlasmaParams>>(&UniformPlasmaParams::setPPC)},
+            {"particles", &UniformPlasmaParams::particleCount},
+            {"N", &UniformPlasmaParams::setRefinement},
+            {"logging_period", &UniformPlasmaParams::loggingPeriod},
+            {"", &UniformPlasmaParams::parseRefinement}};
+    }
+};
+
 template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
@@ -152,6 +169,13 @@ const char* TestName = "LandauDamping";
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
+
+    setSignalHandler();
+    UniformPlasmaParams<Dim> params;
+    if (parseArgs(argc, argv, params)) {
+        return 0;
+    }
+
     {
         setSignalHandler();
 
@@ -160,12 +184,7 @@ int main(int argc, char* argv[]) {
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        int arg = 1;
-
-        Vector_t<int, Dim> nr;
-        for (unsigned d = 0; d < Dim; d++) {
-            nr[d] = std::atoi(argv[arg++]);
-        }
+        Vector_t<int, Dim> nr = params.meshRefinement;
 
         static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("total");
         static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
@@ -179,8 +198,8 @@ int main(int argc, char* argv[]) {
 
         IpplTimings::startTimer(mainTimer);
 
-        const size_type totalP = std::atoll(argv[arg++]);
-        const unsigned int nt  = std::atoi(argv[arg++]);
+        const size_type totalP = params.particleCount;
+        const unsigned int nt  = params.timeSteps;
 
         msg << "Landau damping" << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
@@ -215,7 +234,7 @@ int main(int argc, char* argv[]) {
         FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
         PLayout_t<double, Dim> PL(FL, mesh);
 
-        std::string solver = argv[arg++];
+        std::string solver = params.solver;
 
         if (solver == "OPEN") {
             throw IpplException("LandauDamping",
@@ -232,11 +251,10 @@ int main(int argc, char* argv[]) {
 
         P->initSolver();
         P->time_m                 = 0.0;
-        P->loadbalancethreshold_m = std::atof(argv[arg++]);
+        P->loadbalancethreshold_m = params.lbThreshold;
 
-        LoggingPeriod = std::atoll(argv[arg++]);
         const double dt =
-            std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end())) / LoggingPeriod;
+            std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end())) / params.loggingPeriod;
 
         bool isFirstRepartition;
 
@@ -338,7 +356,7 @@ int main(int argc, char* argv[]) {
         // begin main timestep loop
         std::thread dumpThread;
         msg << "Starting iterations ..." << endl;
-        for (unsigned int it = 0; it < nt * LoggingPeriod; it++) {
+        for (unsigned int it = 0; it < nt * params.loggingPeriod; it++) {
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
             // Here, we assume a constant charge-to-mass ratio of -1 for
             // all the particles hence eliminating the need to store mass as
@@ -379,7 +397,7 @@ int main(int argc, char* argv[]) {
             P->runSolver();
             IpplTimings::stopTimer(SolveTimer);
 
-            if ((it + 1) % LoggingPeriod == 0) {
+            if ((it + 1) % params.loggingPeriod == 0) {
                 P->updateEMirror(Eview);
                 if (dumpThread.joinable()) {
                     dumpThread.join();

@@ -13,22 +13,22 @@ link_directories (
 set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
-add_executable (PenningTrap PenningTrap.cpp)
+add_executable (PenningTrap PenningTrap.cpp AlpineSignal.cpp)
 target_link_libraries (PenningTrap ${IPPL_LIBS})
 
-add_executable (UniformPlasmaTest UniformPlasmaTest.cpp)
+add_executable (UniformPlasmaTest UniformPlasmaTest.cpp AlpineSignal.cpp)
 target_link_libraries (UniformPlasmaTest ${IPPL_LIBS})
 
-add_executable (LandauDamping LandauDamping.cpp)
+add_executable (LandauDamping LandauDamping.cpp AlpineSignal.cpp)
 target_link_libraries (LandauDamping ${IPPL_LIBS})
 
-add_executable (LandauDampingMixedPrecision LandauDampingMixedPrecision.cpp)
+add_executable (LandauDampingMixedPrecision LandauDampingMixedPrecision.cpp AlpineSignal.cpp)
 target_link_libraries (LandauDampingMixedPrecision ${IPPL_LIBS})
 
-add_executable (LandauDampingMixedExec LandauDampingMixedExec.cpp)
+add_executable (LandauDampingMixedExec LandauDampingMixedExec.cpp AlpineSignal.cpp)
 target_link_libraries (LandauDampingMixedExec ${IPPL_LIBS})
 
-add_executable (BumponTailInstability BumponTailInstability.cpp)
+add_executable (BumponTailInstability BumponTailInstability.cpp AlpineSignal.cpp)
 target_link_libraries (BumponTailInstability ${IPPL_LIBS})
 
 # vi: set et ts=4 sw=4 sts=4:

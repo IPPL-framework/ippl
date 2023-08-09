@@ -18,17 +18,16 @@
 
 #include "Ippl.h"
 
-#include <csignal>
 #include <thread>
 
 #include "Utility/TypeUtils.h"
 
+#include "AlpineArgs.hpp"
+#include "AlpineSignal.h"
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
 #include "Solver/FFTPoissonSolver.h"
 #include "Solver/P3MSolver.h"
-
-unsigned LoggingPeriod = 1;
 
 // some typedefs
 template <unsigned Dim = 3>
@@ -91,43 +90,6 @@ const double pi = Kokkos::numbers::pi_v<double>;
 
 // Test programs have to define this variable for VTK dump purposes
 extern const char* TestName;
-
-// Signal handling
-int interruptSignalReceived = 0;
-
-/*!
- * Signal handler records the received signal
- * @param signal received signal
- */
-void interruptHandler(int signal) {
-    interruptSignalReceived = signal;
-}
-
-/*!
- * Checks whether a signal was received
- * @return Signal handler was called
- */
-bool checkSignalHandler() {
-    ippl::Comm->barrier();
-    return interruptSignalReceived != 0;
-}
-
-/*!
- * Sets up the signal handler
- */
-void setSignalHandler() {
-    struct sigaction sa;
-    sa.sa_handler = interruptHandler;
-    sigemptyset(&sa.sa_mask);
-    if (sigaction(SIGTERM, &sa, NULL) == -1) {
-        std::cerr << ippl::Comm->rank() << ": failed to set up signal handler for SIGTERM ("
-                  << SIGTERM << ")" << std::endl;
-    }
-    if (sigaction(SIGINT, &sa, NULL) == -1) {
-        std::cerr << ippl::Comm->rank() << ": failed to set up signal handler for SIGINT ("
-                  << SIGINT << ")" << std::endl;
-    }
-}
 
 template <typename T>
 void dumpVTK(VField_t<T, 3>& E, int nx, int ny, int nz, int iteration, double dx, double dy,

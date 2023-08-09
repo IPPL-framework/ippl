@@ -90,7 +90,7 @@ namespace ippl {
 
             Info->setOutputLevel(infoLevel);
             Error->setOutputLevel(0);
-            Warn->setOutputLevel(0);
+            Warn->setOutputLevel(infoLevel);
 
             if (infoLevel > 0 && Comm->myNode() == 0) {
                 for (auto& l : notparsed) {
