@@ -1,4 +1,5 @@
 #include <map>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <variant>
@@ -99,6 +100,8 @@ void parserFallback(const std::string& key, const std::string& value,
  */
 template <typename Config>
 void parseConfig(std::istream& in, const ConfigParser<Config>& parser, Config& config) {
+    static const auto trim = std::regex("^\\s+|\\s+$");
+
     std::string line;
     while (std::getline(in, line)) {
         bool found = false;
@@ -107,7 +110,9 @@ void parseConfig(std::istream& in, const ConfigParser<Config>& parser, Config& c
             throw std::runtime_error("Invalid config line: " + line);
         }
         auto key   = line.substr(0, split);
+        key        = std::regex_replace(key, trim, "");
         auto value = line.substr(split + 1);
+        value      = std::regex_replace(value, trim, "");
         for (const auto& [k, v] : parser) {
             if (key == k) {
                 found = true;
