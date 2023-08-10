@@ -57,6 +57,20 @@ target_link_libraries (
     ${MPI_CXX_LIBRARIES}
 )
 
+add_executable (TestOnesidedHessian TestOnesidedHessian.cpp)
+target_link_libraries (
+    TestOnesidedHessian
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+add_executable (TestFunctorHessian TestFunctorHessian.cpp)
+target_link_libraries (
+    TestFunctorHessian
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
