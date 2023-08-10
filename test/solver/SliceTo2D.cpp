@@ -6,7 +6,7 @@
 #include <set>
 #include <string>
 #include <vector>
-
+#include <fstream>
 #include "Utility/IpplTimings.h"
 
 template <unsigned Dim>
@@ -168,7 +168,6 @@ public:
         const ippl::NDIndex<2>& lDom = layout.getLocalNDIndex();
         const int nghost             = rhos[0].getNghost();
 
-
         // loop to find min and max
         double sMin, sMax;
         sMin = sMax = R(0)[2]; // Initialize min and max with the first element
@@ -183,35 +182,32 @@ public:
         std::cerr << "sMin = " << sMin << std::endl;
         std::cerr << "sMax = " << sMax << std::endl;
         double binWidth = (sMax - sMin) / numSlices;
-        Kokkos::View<double*> binBoundaries;
+        std::cerr << "binWidth = " << binWidth << std::endl;
+       
+        //Kokkos::Array<double, nSlices - 1> binBoundaries;
+        //Kokkos::View<double*> binBoundaries;
 
         //Vector<Kokkos::View<double**>, numSlices>  binViews;
         //Vector_t binViews;
 
-        for (int i = 0; i < numSlices; i++){
-            binBoundaries[i] = sMin + i * binWidth;
-        }
+        //for (int i = 0; i < numSlices; i++){
+        //    binBoundaries[i] = sMin + i * binWidth;
+        //    std::cerr << "binBoundaries = " <<sMin + i * binWidth  << std::endl;
+        //}
 
-        Kokkos::View<int*> mapping;
+       // Kokkos::Array<unsigned int, 10000> mapping;
+        Kokkos::View<unsigned int*> mapping("mapping", this->getLocalNum());
+        //Kokkos::View<unsigned int*> mapping;
 
         Kokkos::parallel_for(
             "Slice and scatter", this->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
-                // Alex's suggestion on how to slice and project - not sure how this works
-                // how does the unsigned n line determine an integer slice index
-                // projection (and get slice index)
-                 // ie cut off the 3rd axis, frenet - serret s, to tructate the slice to 2D
-                //unsigned n = (P(2) - sMin) / binWidth; // stuff to define
-               // mapping(idx) = n;
+                
+                // calculate which bin the particles belongs in
+                unsigned int n = (R(i)[2] - sMin) / binWidth;
 
-                // R(2) is the s coord of the bunch, bunch will need to be defined with this in mind when the bunch is made/ parsed
-                for (int binIndx = 1; binIndx <= numSlices; binIndx++){ // don't need this if you do analytically?? see above 
-                    if ((binBoundaries(binIndx - 1) <= R(i)[2]) && (R(i)[2] <= binBoundaries(binIndx))){
-
-                        //binViews[binIndx - 1](i, j) = R(i)[0], R(i)[1];-
-
-                        mapping(i) = binIndx; // map which particle belongs in which longitudinal bin
-                    }
-                }
+                // mapping to record which particle corresponds to which bin 
+                // ie the i'th particle corresponds to the n'th bin
+                mapping(i) = n; 
 
                 ippl::Vector<double, 2> pos2D = {R(i)[0], R(i)[1]}; 
 
@@ -224,12 +220,43 @@ public:
 
                 const value_type &val = q(i);
 
-                for (int n = 0; n < numSlices; n++){
-                    ippl::detail::scatterToField(std::make_index_sequence<1 << 2>{}, rhoViews[n], wlo, whi, args ,val);
-                }
+                ippl::detail::scatterToField(std::make_index_sequence<1 << 2>{}, rhoViews[n], wlo, whi, args ,val);
             });
+            
+        // Collect mapping values for writing to a file
+        std::vector<unsigned int> mappingValues(this->getLocalNum());
+        Kokkos::deep_copy(Kokkos::View<unsigned int*>::HostMirror(mappingValues.data(), this->getLocalNum()), mapping);
+        // Write mapping values to a file
+        std::ofstream outFile("mapping_output.csv");
+        if (outFile.is_open()) {
+            outFile << "index,n\n";
+            for (size_t i = 0; i < mappingValues.size(); ++i) {
+                outFile << i << "," << mappingValues[i] << "\n";
+            }
+            outFile.close();
+        } else {
+            std::cerr << "Unable to open file for writing." << std::endl;
+        }
     }
 };
+
+
+std::vector<double> generateRandomPointOnCylinder(double radius, double height) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> angle_distribution(0.0, 2 * Kokkos::numbers::pi_v<double>);
+    std::uniform_real_distribution<double> height_distribution(0.0, height);
+    std::uniform_real_distribution<double> radius_distribution(0.0, radius);
+
+    double theta = angle_distribution(gen);
+    double l = height_distribution(gen);
+    double r = radius_distribution(gen);
+
+    double x = r * std::cos(theta);
+    double y = r * std::sin(theta);
+
+    return {x, y, l};
+}
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -299,12 +326,25 @@ int main(int argc, char* argv[]) {
 
         typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
 
+        double radius = 0.01;
+        double length = 2.0;
+        std::ofstream outfile("random_points_on_cylinder.csv");
+        outfile << "x,y,z\n";
+
+        if (!outfile) {
+            std::cerr << "Error opening the output file." << std::endl;
+            return 1;
+        }
+
         double sum_coord = 0.0;
         for (unsigned long int i = 0; i < nloc; i++) {
+            std::vector<double> point = generateRandomPointOnCylinder(radius, length);
             for (int d = 0; d < 3; d++) {
-                R_host(i)[d] = unif(eng[d]);
+                R_host(i)[d] = point[d];
                 sum_coord += R_host(i)[d];
             }
+            outfile << point[0] << "," << point[1] << "," << point[2] << "\n";
+
         }
         double global_sum_coord = 0.0;
         MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0,
@@ -327,7 +367,7 @@ int main(int argc, char* argv[]) {
 
         msg << "particles created and initial conditions assigned " << endl;
 
-        const size_t numSlices = 10;//std::atoi(argv[3]);
+        const size_t numSlices = 10; //std::atoi(argv[3]);
 
         // create mesh and initialise fields
         ippl::Index I(nr[0]);
@@ -342,7 +382,7 @@ int main(int argc, char* argv[]) {
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<2> layout(owned, decomp);
         
-        std::array<ScalarField_t<double>, numSlices> rhos; // hard coded 10 slices -  repalce later
+        std::array<ScalarField_t<double>, numSlices> rhos;
         Kokkos::Array<Field_t<2>::view_type, numSlices> rhoViews;
 
         std::array<VField_t<double, 2>, numSlices> Efields;
