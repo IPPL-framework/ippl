@@ -24,13 +24,15 @@ namespace ippl {
                     dims[0] = 50;
                     H5::DataSpace dataspace(1, dims);
 
+                    H5::PredType attr_type = get_hdf5_type(attr->type());
+
                     // Create the dataset.
-                    H5::DataSet dataset = this->h5file_m.createDataSet(
-                        attr->name(), H5::PredType::NATIVE_DOUBLE, dataspace);
+                    H5::DataSet dataset =
+                        this->h5file_m.createDataSet(attr->name(), attr_type, dataspace);
 
                     //                     dataset = this->h5file_m.openDataSet(attr->name());
 
-                    dataset.write(attr->data(), H5::PredType::NATIVE_DOUBLE);
+                    dataset.write(attr->data(), attr_type);
 
                     std::cout << "Name:      " << attr->name() << std::endl;
                     std::cout << "Long name: " << attr->long_name() << std::endl;

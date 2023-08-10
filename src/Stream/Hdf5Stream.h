@@ -1,40 +1,27 @@
 #ifndef IPPL_HDF5_STREAM_H
 #define IPPL_HDF5_STREAM_H
 
-#include <type_traits>
+#include <typeinfo>
 
 #include "H5Cpp.h"
 #include "Stream/BaseStream.h"
 
 namespace ippl {
 
-    template <typename>
-    struct is_hdf5_datatype : std::false_type {};
-
-    template <typename T>
-    H5::PredType get_hdf5_datatype(const T& /*x*/) {
-        static_assert(is_hdf5_datatype<T>::value, "type isn't a HDF5 type");
-        return get_hdf5_datatype(T());
-    }
-
-#define IPPL_HDF5_DATATYPE(CppType, H5Type)                          \
-    template <>                                                      \
-    inline H5::PredType get_hdf5_datatype<CppType>(const CppType&) { \
-        return H5Type;                                               \
-    }                                                                \
-                                                                     \
-    template <>                                                      \
-    struct is_hdf5_datatype<CppType> : std::true_type {};
-
-    IPPL_HDF5_DATATYPE(char, H5::PredType::NATIVE_CHAR);
-
-    IPPL_HDF5_DATATYPE(int, H5::PredType::NATIVE_INT);
-
-    IPPL_HDF5_DATATYPE(double, H5::PredType::NATIVE_DOUBLE);
-
-    IPPL_HDF5_DATATYPE(float, H5::PredType::NATIVE_FLOAT);
-
-    IPPL_HDF5_DATATYPE(long double, H5::PredType::NATIVE_LDOUBLE);
+    namespace hdf5 {
+        H5::PredType get_hdf5_type(const std::type_info& tinfo) {
+            if (typeid(int) == tinfo) {
+                return H5::PredType::NATIVE_INT;
+            } else if (typeid(double) == tinfo) {
+                return H5::PredType::NATIVE_DOUBLE;
+            } else if (typeid(float) == tinfo) {
+                return H5::PredType::NATIVE_FLOAT;
+            } else if (typeid(long double) == tinfo) {
+                return H5::PredType::NATIVE_LDOUBLE;
+            }
+            return H5::PredType::NATIVE_CHAR;
+        }
+    }  // namespace hdf5
 
     template <class Object>
     class Hdf5Stream : public BaseStream<Object> {

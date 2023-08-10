@@ -95,7 +95,9 @@ namespace ippl {
 
         virtual ~ParticleAttrib() = default;
 
-        virtual const void* data() const { return dview_m.data(); }
+        const void* data() const override { return dview_m.data(); }
+
+        const std::type_info& type() const override { return typeid(T); }
 
         size_type size() const override { return dview_m.extent(0); }
 

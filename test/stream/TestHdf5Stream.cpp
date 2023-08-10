@@ -13,15 +13,15 @@ public:
         : Base(p)
         , q("q", "charge", "C")
         , v("v", "velocity", "m/s")
-        , E("E", "electric field", "V/m") {
+        , id("id", "identity number", "1") {
         this->addAttribute(q);
         this->addAttribute(v);
-        this->addAttribute(E);
+        this->addAttribute(id);
     }
 
     ippl::ParticleAttrib<double> q;
     typename Base::particle_position_type v;
-    typename Base::particle_position_type E;  // electric field at particle position
+    ippl::ParticleAttrib<int> id;
 };
 
 int main(int argc, char* argv[]) {
@@ -49,8 +49,9 @@ int main(int argc, char* argv[]) {
             part.create(50);
 
             for (int i = 0; i < 50; ++i) {
-                part.q(i) = 0.01;
-                part.v(i) = std::cos(3.14159265359 * (i + 1) / 50.0);
+                part.q(i)  = 0.01;
+                part.v(i)  = std::cos(3.14159265359 * (i + 1) / 50.0);
+                part.id(i) = i;
             }
 
             ippl::hdf5::ParticleStream<Particles> ps;
@@ -60,7 +61,7 @@ int main(int argc, char* argv[]) {
             ippl::ParameterList param;
 
             param.add<bool>("charge", true);
-            param.add<bool>("velocity", true);
+            param.add<bool>("identity number", true);
 
             ps.create(filename, param);
 
