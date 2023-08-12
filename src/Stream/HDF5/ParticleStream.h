@@ -1,27 +1,26 @@
 #ifndef IPPL_HDF5_PARTICLE_STREAM_H
 #define IPPL_HDF5_PARTICLE_STREAM_H
 
-#include "Stream/Hdf5Stream.h"
+#include "Stream/HDF5/Stream.h"
 
 namespace ippl {
 
     namespace hdf5 {
 
         template <class ParticleContainer>
-        class ParticleStream : public Hdf5Stream<ParticleContainer> {
+        class ParticleStream : public Stream<ParticleContainer> {
         public:
+            ParticleStream() = delete;
 
-            ParticleStream() = default;
+            ParticleStream(std::unique_ptr<ippl::Format> format);
 
             void operator<<(const ParticleContainer& obj) override;
 
             void operator>>(ParticleContainer& obj) override;
-
         };
-    }
+    }  // namespace hdf5
 }  // namespace ippl
 
-
-#include "Stream/Hdf5ParticleStream.hpp"
+#include "Stream/HDF5/ParticleStream.hpp"
 
 #endif

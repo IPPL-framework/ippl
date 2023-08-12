@@ -1,9 +1,10 @@
 namespace ippl {
 
-    // CF Metadata Conventions
-    // openPMD standard
-
     namespace hdf5 {
+
+        template <class ParticleContainer>
+        ParticleStream<ParticleContainer>::ParticleStream(std::unique_ptr<ippl::Format> format)
+            : Stream<ParticleContainer>(std::move(format)) {}
 
         template <class ParticleContainer>
         void ParticleStream<ParticleContainer>::operator<<(const ParticleContainer& obj) {
@@ -24,7 +25,7 @@ namespace ippl {
                     dims[0] = 50;
                     H5::DataSpace dataspace(1, dims);
 
-                    H5::PredType attr_type = get_hdf5_type(attr->type());
+                    H5::PredType attr_type = core::get_hdf5_type(attr->type());
 
                     // Create the dataset.
                     H5::DataSet dataset =

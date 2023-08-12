@@ -1,6 +1,8 @@
 #ifndef IPPL_BASIC_STREAMS_H
 #define IPPL_BASIC_STREAMS_H
 
+#include "Utility/ParameterList.h"
+
 namespace ippl {
 
     template <class Object>
@@ -11,9 +13,7 @@ namespace ippl {
         virtual ~basic_ostream() = default;
 
         virtual void operator<<(const Object& obj) = 0;
-
     };
-
 
     template <class Object>
     class basic_istream {
@@ -25,15 +25,12 @@ namespace ippl {
         virtual void operator>>(Object& obj) = 0;
     };
 
-
     template <class Object>
-    class basic_iostream : public basic_istream<Object>,
-                           public basic_ostream<Object> {
+    class basic_iostream : public basic_istream<Object>, public basic_ostream<Object> {
     public:
         basic_iostream() = default;
 
         virtual ~basic_iostream() = default;
-
     };
 
 }  // namespace ippl

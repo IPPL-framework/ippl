@@ -1,6 +1,7 @@
 #include "Ippl.h"
 
-#include "Stream/Hdf5ParticleStream.h"
+#include "Stream/Format/OpenPMD.h"
+#include "Stream/HDF5/ParticleStream.h"
 
 using Mesh    = ippl::UniformCartesian<double, 3>;
 using PLayout = ippl::ParticleSpatialLayout<double, 3, Mesh>;
@@ -54,7 +55,7 @@ int main(int argc, char* argv[]) {
                 part.id(i) = i;
             }
 
-            ippl::hdf5::ParticleStream<Particles> ps;
+            ippl::hdf5::ParticleStream<Particles> ps(std::make_unique<ippl::OpenPMD>());
 
             std::filesystem::path filename = "test.hdf5";
 
