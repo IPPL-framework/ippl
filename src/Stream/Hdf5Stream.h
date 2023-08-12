@@ -2,9 +2,12 @@
 #define IPPL_HDF5_STREAM_H
 
 #include <typeinfo>
+#include <memory>
 
 #include "H5Cpp.h"
-#include "Stream/BaseStream.h"
+#include "Stream/BasicFileStream.h"
+#include "Stream/BasicStreams.h"
+#include "Stream/OpenPMD.h"
 
 namespace ippl {
 
@@ -24,7 +27,7 @@ namespace ippl {
     }  // namespace hdf5
 
     template <class Object>
-    class Hdf5Stream : public BaseStream<Object> {
+    class Hdf5Stream : public BasicFileStream, public basic_iostream<Object> {
     public:
         Hdf5Stream();
 
@@ -38,11 +41,14 @@ namespace ippl {
 
     protected:
         H5::H5File h5file_m;
+        std::unique_ptr<IOsStandard<Hdf5Stream<Object> > > standard_m;
     };
 
     template <class Object>
     Hdf5Stream<Object>::Hdf5Stream()
-        : BaseStream<Object>() {
+        : BasicFileStream()
+        , basic_iostream<Object>()
+        , standard_m(nullptr) {
         // Turn off auto-printing
         H5::Exception::dontPrint();
     }
@@ -50,13 +56,23 @@ namespace ippl {
     /* Create a new file using default properties. */
     template <class Object>
     void Hdf5Stream<Object>::create(const fs::path& path, const ParameterList& param) {
-        BaseStream<Object>::create(path, param);
+        BasicFileStream::create(path, param);
 
         std::string filename = path.filename().string();
 
         try {
+            std::string standard = param.get<std::string>("standard", "openPMD");
+
+            if (standard == "openPMD") {
+                standard_m = std::make_unique<OpenPMD<Hdf5Stream<Object> > >(*this);
+            } else if (standard == "CF") {
+                /* Climate and Forecast (CF) metadata conventions */
+            } else {
+                standard_m = std::make_unique<OpenPMD<Hdf5Stream<Object> > >(*this);
+            }
+
             // not clear why the keyword "template" is needed here"
-            bool overwrite = this->param_m.template get<bool>("overwrite");
+            bool overwrite = this->param_m.template get<bool>("overwrite", true);
 
             unsigned int flags = (overwrite) ? H5F_ACC_TRUNC : H5F_ACC_EXCL;
 
@@ -69,7 +85,7 @@ namespace ippl {
 
     template <class Object>
     void Hdf5Stream<Object>::open(const fs::path& path) {
-        BaseStream<Object>::open(path);
+        BasicFileStream::open(path);
 
         std::string filename = path.filename().string();
 

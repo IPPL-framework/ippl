@@ -75,6 +75,23 @@ namespace ippl {
             return std::get<T>(params_m.at(key));
         }
 
+
+        /*!
+         * Obtain the value of a parameter. If the key is
+         * not contained, the default value is returned.
+         * @param key the name of the parameter
+         * @param defval the default value of the parameter
+         * @returns the value of a parameter
+         */
+        template <typename T>
+        T get(const std::string& key, const T& defval) const {
+            if (!params_m.contains(key)) {
+                return defval;
+            }
+            return std::get<T>(params_m.at(key));
+        }
+
+
         /*!
          * Merge a parameter list into this parameter list.
          * @param p the parameter list to merge into this

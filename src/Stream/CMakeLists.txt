@@ -1,11 +1,15 @@
 set (_SRCS
+    BasicFileStream.cpp
     )
 
 set (_HDRS
-    BaseStream.h
+    BasicStreams.h
+    BasicFileStream.h
     Hdf5Stream.h
     Hdf5ParticleStream.h
     Hdf5ParticleStream.hpp
+    IOsStandard.h
+    OpenPMD.h
     )
 
 include_DIRECTORIES (
