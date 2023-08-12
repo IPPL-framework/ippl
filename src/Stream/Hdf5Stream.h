@@ -1,8 +1,8 @@
 #ifndef IPPL_HDF5_STREAM_H
 #define IPPL_HDF5_STREAM_H
 
-#include <typeinfo>
 #include <memory>
+#include <typeinfo>
 
 #include "H5Cpp.h"
 #include "Stream/BasicFileStream.h"
@@ -72,7 +72,7 @@ namespace ippl {
             }
 
             // not clear why the keyword "template" is needed here"
-            bool overwrite = this->param_m.template get<bool>("overwrite", true);
+            bool overwrite = this->param_m.template get<bool>("overwrite");
 
             unsigned int flags = (overwrite) ? H5F_ACC_TRUNC : H5F_ACC_EXCL;
 
