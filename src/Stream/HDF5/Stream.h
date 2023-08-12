@@ -14,7 +14,7 @@ namespace ippl {
     namespace hdf5 {
 
         namespace core {
-            H5::PredType get_hdf5_type(const std::type_info& tinfo) {
+            H5::DataType get_hdf5_type(const std::type_info& tinfo) {
                 if (typeid(int) == tinfo) {
                     return H5::PredType::NATIVE_INT;
                 } else if (typeid(double) == tinfo) {
@@ -23,12 +23,14 @@ namespace ippl {
                     return H5::PredType::NATIVE_FLOAT;
                 } else if (typeid(long double) == tinfo) {
                     return H5::PredType::NATIVE_LDOUBLE;
+                } else if (typeid(std::string) == tinfo) {
+                    return H5::StrType(0, H5T_VARIABLE);
                 }
                 return H5::PredType::NATIVE_CHAR;
             }
 
             template <typename T>
-            H5::PredType get_hdf5_type(const T& val) {
+            H5::DataType get_hdf5_type(const T& val) {
                 return get_hdf5_type(typeid(val));
             }
         }  // namespace core
@@ -49,7 +51,7 @@ namespace ippl {
             void close() final;
 
             template <typename T>
-            void operator<<(const T&);
+            void operator<<(const std::pair<std::string, T>& pair);
 
         protected:
             H5::H5File h5file_m;
@@ -88,6 +90,7 @@ namespace ippl {
 
             ParameterList pp;
             format_m->header(&pp);
+            *this << pp;
 
             this->close();
         }
@@ -118,14 +121,15 @@ namespace ippl {
 
         template <class Object>
         template <typename T>
-        void Stream<Object>::operator<<(const T& value) {
+        void Stream<Object>::operator<<(const std::pair<std::string, T>& pair) {
             try {
-                H5::DataSpace dspace(H5S_SCALAR);
-                H5::PredType type = core::get_hdf5_type(value);
+                const std::string& key = pair.first;
+                const T& value         = pair.second;
 
-                // H5::StrType tid1(0, H5T_VARIABLE)
-                std::cout << "value" << value << " " << typeid(value).name() << std::endl;
-                H5::Attribute attr = this->h5file_m.createAttribute("some_attribute", type, dspace);
+                H5::DataSpace dspace(H5S_SCALAR);  // FIXME We might also write arrays etc.
+                H5::DataType type = core::get_hdf5_type(value);
+
+                H5::Attribute attr = this->h5file_m.createAttribute(key, type, dspace);
 
                 attr.write(type, &value);
 

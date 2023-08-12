@@ -27,6 +27,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <utility>
 #include <variant>
 
 #include "Utility/IpplException.h"
@@ -75,7 +76,6 @@ namespace ippl {
             return std::get<T>(params_m.at(key));
         }
 
-
         /*!
          * Obtain the value of a parameter. If the key is
          * not contained, the default value is returned.
@@ -90,7 +90,6 @@ namespace ippl {
             }
             return std::get<T>(params_m.at(key));
         }
-
 
         /*!
          * Merge a parameter list into this parameter list.
@@ -127,6 +126,21 @@ namespace ippl {
                                     "Parameter '" + key + "' does not exist.");
             }
             params_m[key] = value;
+        }
+
+        template <class Stream>
+        friend Stream& operator<<(Stream& stream, const ParameterList& sp) {
+            std::cout << "HI" << std::endl;
+            for (const auto& [key, value] : sp.params_m) {
+                const auto& keyLocal = key;
+                std::visit(
+                    [&](auto&& arg) {
+                        stream << std::make_pair(keyLocal, arg);
+                    },
+                    value);
+            }
+
+            return stream;
         }
 
         /*!

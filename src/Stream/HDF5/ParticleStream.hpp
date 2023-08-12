@@ -25,7 +25,7 @@ namespace ippl {
                     dims[0] = 50;
                     H5::DataSpace dataspace(1, dims);
 
-                    H5::PredType attr_type = core::get_hdf5_type(attr->type());
+                    H5::DataType attr_type = core::get_hdf5_type(attr->type());
 
                     // Create the dataset.
                     H5::DataSet dataset =
