@@ -24,7 +24,6 @@ namespace ippl {
                 {std::type_index(typeid(std::string)), H5::StrType(0, H5T_VARIABLE)}};
 
             H5::DataType get_hdf5_type(const std::type_index& tindex) {
-                std::cout << "type_index" << std::endl;
                 H5::DataType type = H5::PredType::NATIVE_CHAR;
                 try {
                     type = predefined_types.at(tindex);
@@ -36,7 +35,6 @@ namespace ippl {
 
             template <typename T>
             H5::DataType get_hdf5_type(const T& /*value*/) {
-                std::cout << "templated ";
                 return get_hdf5_type(std::type_index(typeid(T)));
             }
         }  // namespace core
