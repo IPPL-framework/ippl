@@ -1,10 +1,10 @@
 set (_SRCS
-    OpenPMD.cpp
     )
 
 set (_HDRS
-    Format.h
-    OpenPMD.h
+    Stream.h
+    ParticleStream.h
+    ParticleStream.hpp
     )
 
 include_DIRECTORIES (
@@ -14,7 +14,7 @@ include_DIRECTORIES (
 add_ippl_sources (${_SRCS})
 add_ippl_headers (${_HDRS})
 
-install (FILES ${_HDRS} DESTINATION include/Stream/Format)
+install (FILES ${_HDRS} DESTINATION include/Stream/HDF5)
 
 # vi: set et ts=4 sw=4 sts=4:
 

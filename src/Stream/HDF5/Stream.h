@@ -131,7 +131,7 @@ namespace ippl {
                 const T& value         = pair.second;
 
                 H5::DataSpace dspace(H5S_SCALAR);  // FIXME We might also write arrays etc.
-                std::cout << "key " << key << std::endl;
+
                 H5::DataType type = core::get_hdf5_type(value);
 
                 H5::Attribute attr = this->h5file_m.createAttribute(key, type, dspace);

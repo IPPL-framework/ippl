@@ -1,5 +1,5 @@
-#ifndef IPPL_IOS_STANDARD_H
-#define IPPL_IOS_STANDARD_H
+#ifndef IPPL_STREAM_FORMAT_H
+#define IPPL_STREAM_FORMAT_H
 
 #include "Utility/ParameterList.h"
 

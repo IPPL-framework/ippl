@@ -80,6 +80,8 @@ add_subdirectory (Expression)
 add_subdirectory (Types)
 add_subdirectory (Partition)
 add_subdirectory (Stream)
+add_subdirectory (Stream/HDF5)
+add_subdirectory (Stream/Format)
 
 
 if (ENABLE_SOLVERS)

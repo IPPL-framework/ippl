@@ -5,8 +5,6 @@ set (_SRCS
 set (_HDRS
     BasicStreams.h
     BasicFileStream.h
-    StreamFormat.h
-    OpenPMD.h
     )
 
 include_DIRECTORIES (
@@ -17,6 +15,7 @@ add_ippl_sources (${_SRCS})
 add_ippl_headers (${_HDRS})
 
 install (FILES ${_HDRS} DESTINATION include/Stream)
+
 
 # vi: set et ts=4 sw=4 sts=4:
 
