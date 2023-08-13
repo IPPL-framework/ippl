@@ -2,6 +2,7 @@
 #define IPPL_HDF5_STREAM_H
 
 #include <memory>
+#include <typeindex>
 #include <typeinfo>
 
 #include "H5Cpp.h"
@@ -14,24 +15,29 @@ namespace ippl {
     namespace hdf5 {
 
         namespace core {
-            H5::DataType get_hdf5_type(const std::type_info& tinfo) {
-                if (typeid(int) == tinfo) {
-                    return H5::PredType::NATIVE_INT;
-                } else if (typeid(double) == tinfo) {
-                    return H5::PredType::NATIVE_DOUBLE;
-                } else if (typeid(float) == tinfo) {
-                    return H5::PredType::NATIVE_FLOAT;
-                } else if (typeid(long double) == tinfo) {
-                    return H5::PredType::NATIVE_LDOUBLE;
-                } else if (typeid(std::string) == tinfo) {
-                    return H5::StrType(0, H5T_VARIABLE);
+            const std::unordered_map<std::type_index, H5::DataType> predefined_types = {
+                {std::type_index(typeid(char)), H5::PredType::NATIVE_CHAR},
+                {std::type_index(typeid(int)), H5::PredType::NATIVE_INT},
+                {std::type_index(typeid(double)), H5::PredType::NATIVE_DOUBLE},
+                {std::type_index(typeid(float)), H5::PredType::NATIVE_FLOAT},
+                {std::type_index(typeid(long double)), H5::PredType::NATIVE_LDOUBLE},
+                {std::type_index(typeid(std::string)), H5::StrType(0, H5T_VARIABLE)}};
+
+            H5::DataType get_hdf5_type(const std::type_index& tindex) {
+                std::cout << "type_index" << std::endl;
+                H5::DataType type = H5::PredType::NATIVE_CHAR;
+                try {
+                    type = predefined_types.at(tindex);
+                } catch (...) {
+                    throw IpplException("ippl::hdf5::get_hdf5_type", "No such H5 type available.");
                 }
-                return H5::PredType::NATIVE_CHAR;
+                return type;
             }
 
             template <typename T>
-            H5::DataType get_hdf5_type(const T& val) {
-                return get_hdf5_type(typeid(val));
+            H5::DataType get_hdf5_type(const T& /*value*/) {
+                std::cout << "templated ";
+                return get_hdf5_type(std::type_index(typeid(T)));
             }
         }  // namespace core
 
@@ -127,6 +133,7 @@ namespace ippl {
                 const T& value         = pair.second;
 
                 H5::DataSpace dspace(H5S_SCALAR);  // FIXME We might also write arrays etc.
+                std::cout << "key " << key << std::endl;
                 H5::DataType type = core::get_hdf5_type(value);
 
                 H5::Attribute attr = this->h5file_m.createAttribute(key, type, dspace);

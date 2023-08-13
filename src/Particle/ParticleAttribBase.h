@@ -27,7 +27,7 @@
 #ifndef IPPL_PARTICLE_ATTRIB_BASE_H
 #define IPPL_PARTICLE_ATTRIB_BASE_H
 
-#include <typeinfo>
+#include <typeindex>
 
 #include "Types/IpplTypes.h"
 #include "Types/ViewTypes.h"
@@ -84,7 +84,7 @@ namespace ippl {
 
             virtual const void* data() const = 0;
 
-            virtual const std::type_info& type() const = 0;
+            virtual const std::type_index type() const = 0;
 
         protected:
             const size_type* localNum_mp;

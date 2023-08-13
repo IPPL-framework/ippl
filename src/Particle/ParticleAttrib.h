@@ -97,7 +97,7 @@ namespace ippl {
 
         const void* data() const override { return dview_m.data(); }
 
-        const std::type_info& type() const override { return typeid(T); }
+        const std::type_index type() const override { return typeid(T); }
 
         size_type size() const override { return dview_m.extent(0); }
 
