@@ -34,6 +34,16 @@ namespace ippl {
     namespace mpi {
         namespace core {
             const std::unordered_map<std::type_index, MPI_Datatype> type_names = {
+                {std::type_index(typeid(std::int8_t)), MPI_INT8_T},
+                {std::type_index(typeid(std::int16_t)), MPI_INT16_T},
+                {std::type_index(typeid(std::int32_t)), MPI_INT32_T},
+                {std::type_index(typeid(std::int64_t)), MPI_INT64_T},
+
+                {std::type_index(typeid(std::uint8_t)), MPI_UINT8_T},
+                {std::type_index(typeid(std::uint16_t)), MPI_UINT16_T},
+                {std::type_index(typeid(std::uint32_t)), MPI_UINT32_T},
+                {std::type_index(typeid(std::uint64_t)), MPI_UINT64_T},
+
                 {std::type_index(typeid(char)), MPI_CHAR},
                 {std::type_index(typeid(short)), MPI_SHORT},
                 {std::type_index(typeid(int)), MPI_INT},
@@ -51,16 +61,6 @@ namespace ippl {
                 {std::type_index(typeid(long double)), MPI_LONG_DOUBLE},
 
                 {std::type_index(typeid(bool)), MPI_CXX_BOOL},
-
-                {std::type_index(typeid(std::int8_t)), MPI_INT8_T},
-                {std::type_index(typeid(std::int16_t)), MPI_INT16_T},
-                {std::type_index(typeid(std::int32_t)), MPI_INT32_T},
-                {std::type_index(typeid(std::int64_t)), MPI_INT64_T},
-
-                {std::type_index(typeid(std::uint8_t)), MPI_UINT8_T},
-                {std::type_index(typeid(std::uint16_t)), MPI_UINT16_T},
-                {std::type_index(typeid(std::uint32_t)), MPI_UINT32_T},
-                {std::type_index(typeid(std::uint64_t)), MPI_UINT64_T},
 
                 {std::type_index(typeid(std::complex<float>)), MPI_CXX_FLOAT_COMPLEX},
                 {std::type_index(typeid(std::complex<double>)), MPI_CXX_DOUBLE_COMPLEX},
