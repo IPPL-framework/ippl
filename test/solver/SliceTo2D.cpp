@@ -7,7 +7,10 @@
 #include <string>
 #include <vector>
 #include <fstream>
+
+#include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
+#include "Solver/FFTPoissonSolver.h"
 
 template <unsigned Dim>
 using Mesh_t = ippl::UniformCartesian<double, Dim>;
@@ -38,11 +41,20 @@ using Vector_t = ippl::Vector<T, Dim>;
 template <unsigned Dim, class... ViewArgs>
 using Field_t = Field<double, Dim, ViewArgs...>;
 
-template <typename T, unsigned Dim, class... ViewArgs>
-using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
+//template <typename T, unsigned Dim, class... ViewArgs>
+//using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
+template <typename T>
+using VectorField_t = typename ippl::Field<ippl::Vector<T, 2>, 2, Mesh_t<2>, Centering_t<2>>;
 
 template <typename T>
 using ScalarField_t = typename ippl::Field<T, 2, Mesh_t<2>, Centering_t<2>>;
+
+template <typename T>
+using Solver_t = ippl::FFTPoissonSolver<VectorField_t<T>, ScalarField_t<T>>;
+
+//template <typename T = double, unsigned Dim = 2>
+//using FFTSolver_t = ConditionalType<Dim == 2 || Dim == 3,
+//                                    ippl::FFTPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 
 /*
@@ -172,7 +184,7 @@ public:
         double sMin, sMax;
         sMin = sMax = R(0)[2]; // Initialize min and max with the first element
 
-        for (size_t i = 1; i <= this->getLocalNum(); i++) {
+        for (size_t i = 1; i < this->getLocalNum(); i++) {
             if (R(i)[2] < sMin) {
                 sMin = R(i)[2];
             } else if (R(i)[2] > sMax) {
@@ -201,28 +213,29 @@ public:
 
         Kokkos::parallel_for(
             "Slice and scatter", this->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
-                
-                // calculate which bin the particles belongs in
-                unsigned int n = (R(i)[2] - sMin) / binWidth;
 
                 // mapping to record which particle corresponds to which bin 
                 // ie the i'th particle corresponds to the n'th bin
-                mapping(i) = n; 
+                unsigned int n = (R(i)[2] - sMin) / binWidth; 
 
-                ippl::Vector<double, 2> pos2D = {R(i)[0], R(i)[1]}; 
+                mapping(i) = n; // add mapping to P, simialr to E, R etc, maybe also the phi potential as well as the E? 
+
+                vector_type pos2D = {R(i)[0], R(i)[1]}; 
 
                 // interpolation stuff
-                ippl::Vector<double, 2> l = (pos2D - origin) * invdx + 0.5;
+                vector_type l = (pos2D - origin) * invdx + 0.5;
                 Vector<int, 2> index = l;
                 Vector<double, 2> whi = l - index;
                 Vector<double, 2> wlo = 1.0 - whi;
                 Vector<size_t, 2> args = index - lDom.first() + nghost;
 
                 const value_type &val = q(i);
-
+                
+                // check templtes arguments for make index sequence
                 ippl::detail::scatterToField(std::make_index_sequence<1 << 2>{}, rhoViews[n], wlo, whi, args ,val);
+                //ippl::detail::scatterToField(std::make_index_sequence<1 << 2>{}, rhoViews[n], wlo, whi, args ,val);
             });
-            
+
         // Collect mapping values for writing to a file
         std::vector<unsigned int> mappingValues(this->getLocalNum());
         Kokkos::deep_copy(Kokkos::View<unsigned int*>::HostMirror(mappingValues.data(), this->getLocalNum()), mapping);
@@ -230,7 +243,7 @@ public:
         std::ofstream outFile("mapping_output.csv");
         if (outFile.is_open()) {
             outFile << "index,n\n";
-            for (size_t i = 0; i < mappingValues.size(); ++i) {
+            for (size_t i = 0; i < mappingValues.size(); i++) {
                 outFile << i << "," << mappingValues[i] << "\n";
             }
             outFile.close();
@@ -241,7 +254,7 @@ public:
 };
 
 
-std::vector<double> generateRandomPointOnCylinder(double radius, double height) {
+std::vector<double> generateRandomPointOnCylinder(double centerX, double centerY, double radius, double height) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<double> angle_distribution(0.0, 2 * Kokkos::numbers::pi_v<double>);
@@ -252,8 +265,8 @@ std::vector<double> generateRandomPointOnCylinder(double radius, double height) 
     double l = height_distribution(gen);
     double r = radius_distribution(gen);
 
-    double x = r * std::cos(theta);
-    double y = r * std::sin(theta);
+    double x = centerX + r * std::cos(theta);
+    double y = centerY + r * std::sin(theta);
 
     return {x, y, l};
 }
@@ -283,7 +296,7 @@ int main(int argc, char* argv[]) {
         }
 
         ippl::e_dim_tag decomp[3];
-        for (unsigned d = 0; d < 3; ++d) {
+        for (unsigned d = 0; d < 3; d++) {
             decomp[d] = ippl::PARALLEL;
         }
 
@@ -302,13 +315,9 @@ int main(int argc, char* argv[]) {
         FieldLayout_t<3> FL(domain, decomp);
         PLayout_t<double, 3> PL(FL, mesh);
 
-        /*
-         * In case of periodic BC's define
-         * the domain with hr and rmin
-         */
         std::string solver = argv[5];   
 
-        double Q = 1e6;
+        double Q = 1.0;
         P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
         unsigned long int nloc = totalP / ippl::Comm->size();
@@ -318,7 +327,7 @@ int main(int argc, char* argv[]) {
         P->create(nloc);
 
         std::mt19937_64 eng[3];
-        for (unsigned i = 0; i < 3; ++i) {
+        for (unsigned i = 0; i < 3; i++) {
             eng[i].seed(42 + i * 3);
             eng[i].discard(nloc * ippl::Comm->rank());
         }
@@ -326,8 +335,8 @@ int main(int argc, char* argv[]) {
 
         typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
 
-        double radius = 0.01;
-        double length = 2.0;
+        double radius = 0.1;
+        double length = 0.5;
         std::ofstream outfile("random_points_on_cylinder.csv");
         outfile << "x,y,z\n";
 
@@ -337,15 +346,17 @@ int main(int argc, char* argv[]) {
         }
 
         double sum_coord = 0.0;
+        double centreX = (rmin[0] + rmax[0]) / 2;
+        double centreY = (rmin[1] + rmax[1]) / 2;
         for (unsigned long int i = 0; i < nloc; i++) {
-            std::vector<double> point = generateRandomPointOnCylinder(radius, length);
+            std::vector<double> point = generateRandomPointOnCylinder(centreX, centreY, radius, length);
             for (int d = 0; d < 3; d++) {
                 R_host(i)[d] = point[d];
                 sum_coord += R_host(i)[d];
             }
             outfile << point[0] << "," << point[1] << "," << point[2] << "\n";
-
         }
+        
         double global_sum_coord = 0.0;
         MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0,
                    ippl::Comm->getCommunicator());
@@ -359,11 +370,11 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(particleCreation);
         P->E = 0.0;
 
-        bunch_type bunchBuffer(PL);
-        static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
-        IpplTimings::startTimer(UpdateTimer);
-        PL.update(*P, bunchBuffer);
-        IpplTimings::stopTimer(UpdateTimer);
+        //bunch_type bunchBuffer(PL);
+        //static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
+        //IpplTimings::startTimer(UpdateTimer);
+        //PL.update(*P, bunchBuffer);
+        //IpplTimings::stopTimer(UpdateTimer);
 
         msg << "particles created and initial conditions assigned " << endl;
 
@@ -375,20 +386,21 @@ int main(int argc, char* argv[]) {
 
         // unit box
         double dxRho                      = 1.0 / nr[0];
-        ippl::Vector<double, 2> hxRho     = {dxRho, dxRho};
+        double dyRho                      = 1.0 / nr[1];
+        ippl::Vector<double, 2> hxRho     = {dxRho, dyRho};
         ippl::Vector<double, 2> originRho = {0.0, 0.0};
         Mesh_t<2> meshRho(owned, hxRho, originRho);
 
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<2> layout(owned, decomp);
         
-        std::array<ScalarField_t<double>, numSlices> rhos;
-        Kokkos::Array<Field_t<2>::view_type, numSlices> rhoViews;
+        std::array<ScalarField_t<double>, numSlices+1> rhos;
+        Kokkos::Array<ScalarField_t<double>::view_type, numSlices+1> rhoViews;
 
-        std::array<VField_t<double, 2>, numSlices> Efields;
-        Kokkos::Array<VField_t<double, 2>::view_type, numSlices> EViews;
+        std::array<VectorField_t<double>, numSlices+1> Efields;
+        Kokkos::Array<VectorField_t<double>::view_type, numSlices+1> EViews;
 
-        for (size_t i = 0; i < numSlices; i++) {
+        for (size_t i = 0; i < numSlices+1; i++) {
             rhos[i] = 0.0; // reset rho field 
 
             rhos[i].initialize(meshRho, layout);
@@ -398,86 +410,87 @@ int main(int argc, char* argv[]) {
             EViews[i] = Efields[i].getView();
         }
 
+        
         // call slice and scatter function
         P->scatterToSlices(numSlices, rhos, rhoViews); 
+        //P->scatterToSlices(numSlices, rhos); 
 
         // 2d solve 
+        ippl::ParameterList params;
+
+        // set the FFT parameters
+        params.add("use_heffte_defaults", false);
+        params.add("use_pencils", true);
+        params.add("use_gpu_aware", true);
+        params.add("comm", ippl::a2av);
+        params.add("r2c_direction", 0);
+
+        // define an FFTPoissonSolver object
+        std::ofstream inputFileRho("input_rho.csv");
+
+        // Write the view data to the output file
+        inputFileRho << "i,j,val\n";
+        for (size_t i = 0; i < rhos[0].getView().extent(0); i++) {
+            for (size_t j = 0; j < rhos[0].getView().extent(1); j++) {
+                inputFileRho << i <<"," << j<< "," << rhos[0](i, j) << "\n";
+            }
+        }
+        inputFileRho.close();
+
+        std::string precision = argv[6];
+
+        if (precision == "DOUBLE") {
+        
+            params.add("algorithm", Solver_t<double>::HOCKNEY);
+            // add output type
+            params.add("output_type", Solver_t<double>::SOL_AND_GRAD);
+
+            for (size_t i = 0; i < numSlices+1; i++) {
+                Solver_t<double> FFTsolver(Efields[i], rhos[i], params);
+
+                FFTsolver.solve();
+            }
+        }
+        
+        // else {
+            // doesnt work at the moment because the fields are init as double
+            // would need to template all those types too.
+
+        //    params.add("algorithm", Solver_t<float>::HOCKNEY);
+            // add output type
+        //    params.add("output_type", Solver_t<float>::SOL_AND_GRAD);
+
+        //    Solver_t<float> FFTsolver(Efields[0], rhos[0], params);
+
+        //    FFTsolver.solve();
+        //}
+        std::ofstream outputFileRho("output_rho.csv");
+
+        // Write the view data to the output file
+        outputFileRho << "i,j,val\n";
+        for (size_t i = 0; i < rhos[0].getView().extent(0); i++) {
+            for (size_t j = 0; j < rhos[0].getView().extent(1); j++) {
+                outputFileRho << i <<"," << j<< "," << rhos[0](i, j) << "\n";
+            }
+        }
+
+        // Close the output file
+        outputFileRho.close();
+
+        // solve the Poisson equation -> rho contains the solution (phi) now   
 
         // 1d solve before gather!!
 
         // for each particle, add the 1d solve component to the P->E abribute
+
+        // mayn need to im0plemnt 2d interpolate/gather, whereas 1d is discrete 
         // for each particle, add the 2 E field compoents from the interpolated hockney E feld to the P-> attribute
+
+
         // gather 
 
     }
     ippl::finalize();
     return 0;
 }
-
-
-    /*
-    void scatterToSlices(int numSlices) {
-        auto Rview = P->R.getView(); // positions
-        auto Pview = P->P.getView(); // velocities
-        auto Eview = P->E.getView(); // E field
-
-        //ippl::Vector<T, P->getLocalNum()> r; // these should probably be views
-        //ippl::Vector<T, P->getLocalNum()> phi;
-        //Kokkos::View<T*> sView; // this is the y comp of the particles (probs) based on how I define it when I parse P to this class
-
-        sMin = sView.min(); // proabably won't work fix later
-        sMax = sView.max(); // proabably won't work fix later
-
-        T binWidth = (sMax - sMin) / numSlices;
-        ippl::Vector<T, numSlices> binBoundaries;
-        // other way around 
-        Kokkos::View<ippl::Vector<T>, numSlices> bins;// rename to binView = //  is this the right way to make a view of ippl::Vectors?
-
-        for (i = 0; i < numSlices; i++){
-            binBoundaries[i] = sMin + i * binWidth;
-        }
-
-        ippl::Vector<Kokkos::view<T**>, P->getLocalNum()> slices;
-        Kokkos::parallel_for(
-            "Slice and scatter", P->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
-                for (binIndx = 1; binIndx <= numSlices; binIndx++){ // don't need this if you do analytically??
-                    if ((binBoundaries[binIndx - 1] <= sView(i)) && (sView(i) <= binBoundaries[binIndx])){
-                        bins(binIndx - 1)[i] = sView(i);
-                        mapping[i] = {binIndex, i};
-
-                    }
-                }
-                ippl::detail::scatterToSlices(binView[slice_index]
-            , x, ...); // copy rest from particle attrib
-
-        });
-
-
-        //x = project particle position
-        //slice_index = position.s
-
-    }
-    
-
-    void run() {
-        // init particles
-    // define bunch distribution here 
-    using bunch_type = ChargedParticles<PLayout_t<T, Dim>, T, Dim>;
-
-    std::unique_ptr<bunch_type> P;
-
-        for (t = 0 to whatever) {
-            scatterToSlices();
-            for (auto& slice : slices) {
-                solve(slice);
-            }
-            rho = collate from slices
-
-            kick
-            drift
-            whatever
-        }
-    }
-};
-*/
 
