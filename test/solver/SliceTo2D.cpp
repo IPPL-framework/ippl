@@ -282,12 +282,12 @@ int main(int argc, char* argv[]) {
         Inform msg(argv[0]);
         Inform msg2all(argv[0], INFORM_ALL_NODES);
 
-        ippl::Vector<int, 2> nr = {std::atoi(argv[1]), std::atoi(argv[2])};
+        ippl::Vector<int, 3> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
 
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
         IpplTimings::startTimer(mainTimer);
         //auto start                = std::chrono::high_resolution_clock::now();
-        const unsigned int totalP = std::atoi(argv[4]);
+        const unsigned int totalP = std::atoi(argv[5]);
 
         msg << "benchmarkUpdate" << endl
             << " Np= " << totalP << " grid = " << nr << endl;
@@ -320,7 +320,7 @@ int main(int argc, char* argv[]) {
         FieldLayout_t<3> FL(domain, decomp);
         PLayout_t<double, 3> PL(FL, mesh);
 
-        std::string solver = argv[5];   
+        std::string solver = argv[6];   
 
         double Q = 1.0;
         P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
@@ -383,7 +383,7 @@ int main(int argc, char* argv[]) {
 
         msg << "particles created and initial conditions assigned " << endl;
 
-        const size_t numSlices = 10; //std::atoi(argv[3]);
+        const size_t numSlices = 10; //std::atoi(argv[4]);
 
         // create mesh and initialise fields
         ippl::Index I(nr[0]);
