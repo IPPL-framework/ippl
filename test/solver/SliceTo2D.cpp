@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <map>
+
 
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
@@ -121,6 +123,7 @@ public:
     typename Base::particle_position_type P;  // particle velocity
     typename Base::particle_position_type R;  // particle position
     typename Base::particle_position_type E;  // electric field at particle position
+    ParticleAttrib<int> mapping; // record the bin index of the i'th particle
 
     //constexpr unsigned sliceCount;
     //std::array<Field2D_t, sliceCount> slices;
@@ -155,6 +158,7 @@ public:
         this->addAttribute(P);
         this->addAttribute(R);
         this->addAttribute(E);
+        this->addAttribute(mapping);
     }
 
     ~Solve25D() {}
@@ -208,7 +212,7 @@ public:
         //}
 
        // Kokkos::Array<unsigned int, 10000> mapping;
-        Kokkos::View<unsigned int*> mapping("mapping", this->getLocalNum());
+        //Kokkos::View<unsigned int*> mapping("mapping", this->getLocalNum());
         //Kokkos::View<unsigned int*> mapping;
 
         Kokkos::parallel_for(
@@ -218,7 +222,7 @@ public:
                 // ie the i'th particle corresponds to the n'th bin
                 unsigned int n = (R(i)[2] - sMin) / binWidth; 
 
-                mapping(i) = n; // add mapping to P, simialr to E, R etc, maybe also the phi potential as well as the E? 
+                mapping(i) = n;
 
                 vector_type pos2D = {R(i)[0], R(i)[1]}; 
 
@@ -237,14 +241,14 @@ public:
             });
 
         // Collect mapping values for writing to a file
-        std::vector<unsigned int> mappingValues(this->getLocalNum());
-        Kokkos::deep_copy(Kokkos::View<unsigned int*>::HostMirror(mappingValues.data(), this->getLocalNum()), mapping);
+        //std::vector<unsigned int> mappingValues(this->getLocalNum());
+        //Kokkos::deep_copy(Kokkos::View<unsigned int*>::HostMirror(mappingValues.data(), this->getLocalNum()), mapping);
         // Write mapping values to a file
         std::ofstream outFile("mapping_output.csv");
         if (outFile.is_open()) {
             outFile << "index,n\n";
-            for (size_t i = 0; i < mappingValues.size(); i++) {
-                outFile << i << "," << mappingValues[i] << "\n";
+            for (size_t i = 0; i < this->getLocalNum(); i++) {
+                outFile << i << "," << mapping(i) << "\n";
             }
             outFile.close();
         } else {
@@ -258,7 +262,8 @@ std::vector<double> generateRandomPointOnCylinder(double centerX, double centerY
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<double> angle_distribution(0.0, 2 * Kokkos::numbers::pi_v<double>);
-    std::uniform_real_distribution<double> height_distribution(0.0, height);
+    //std::uniform_real_distribution<double> height_distribution(0.0, height);
+    std::normal_distribution<double> height_distribution(height/4, 0.05);
     std::uniform_real_distribution<double> radius_distribution(0.0, radius);
 
     double theta = angle_distribution(gen);
@@ -335,8 +340,8 @@ int main(int argc, char* argv[]) {
 
         typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
 
-        double radius = 0.1;
-        double length = 0.5;
+        double radius = 0.05;
+        double length = 0.8;
         std::ofstream outfile("random_points_on_cylinder.csv");
         outfile << "x,y,z\n";
 
@@ -346,7 +351,7 @@ int main(int argc, char* argv[]) {
         }
 
         double sum_coord = 0.0;
-        double centreX = (rmin[0] + rmax[0]) / 2;
+        double centreX = (rmin[0] + rmax[0]) / 2; // make sure that the test distribution in centred on the mesh origin
         double centreY = (rmin[1] + rmax[1]) / 2;
         for (unsigned long int i = 0; i < nloc; i++) {
             std::vector<double> point = generateRandomPointOnCylinder(centreX, centreY, radius, length);
@@ -366,7 +371,7 @@ int main(int argc, char* argv[]) {
         }
 
         Kokkos::deep_copy(P->R.getView(), R_host);
-        P->q = P->Q_m / totalP;
+        P->q = P->Q_m;// / totalP;
         IpplTimings::stopTimer(particleCreation);
         P->E = 0.0;
 
@@ -413,7 +418,6 @@ int main(int argc, char* argv[]) {
         
         // call slice and scatter function
         P->scatterToSlices(numSlices, rhos, rhoViews); 
-        //P->scatterToSlices(numSlices, rhos); 
 
         // 2d solve 
         ippl::ParameterList params;
@@ -430,9 +434,9 @@ int main(int argc, char* argv[]) {
 
         // Write the view data to the output file
         inputFileRho << "i,j,val\n";
-        for (size_t i = 0; i < rhos[0].getView().extent(0); i++) {
-            for (size_t j = 0; j < rhos[0].getView().extent(1); j++) {
-                inputFileRho << i <<"," << j<< "," << rhos[0](i, j) << "\n";
+        for (size_t i = 0; i < rhos[7].getView().extent(0); i++) {
+            for (size_t j = 0; j < rhos[7].getView().extent(1); j++) {
+                inputFileRho << i <<"," << j<< "," << rhos[7](i, j) << "\n";
             }
         }
         inputFileRho.close();
@@ -447,7 +451,7 @@ int main(int argc, char* argv[]) {
 
             for (size_t i = 0; i < numSlices+1; i++) {
                 Solver_t<double> FFTsolver(Efields[i], rhos[i], params);
-
+                // solve the Poisson equation -> rho contains the solution (phi) now   
                 FFTsolver.solve();
             }
         }
@@ -468,20 +472,84 @@ int main(int argc, char* argv[]) {
 
         // Write the view data to the output file
         outputFileRho << "i,j,val\n";
-        for (size_t i = 0; i < rhos[0].getView().extent(0); i++) {
-            for (size_t j = 0; j < rhos[0].getView().extent(1); j++) {
-                outputFileRho << i <<"," << j<< "," << rhos[0](i, j) << "\n";
+        for (size_t i = 0; i < rhos[7].getView().extent(0); i++) {
+            for (size_t j = 0; j < rhos[7].getView().extent(1); j++) {
+                outputFileRho << i <<"," << j<< "," << rhos[7](i, j) << "\n";
             }
         }
-
         // Close the output file
         outputFileRho.close();
 
-        // solve the Poisson equation -> rho contains the solution (phi) now   
+        // 1D SPACE CHARGE CALCULATION START 
 
         // 1d solve before gather!!
+        // 1) get num particles per slice from mapping - this is the longitudinal line density
+        // 2) calculate the gradient of the line density wrt to the slicing axis
+        // 3) compute geometery factor
+        // 4) evaluate formula for E-z field
 
-        // for each particle, add the 1d solve component to the P->E abribute
+        // use mapping to deduce the number of particles per slice
+        std::map<int, int> occurrences;
+
+        // Count occurrences of each value
+        //for (int num : P->mapping) {
+
+        auto mappingView = P->mapping.getView();
+
+        for (size_t i = 0; i < totalP; i++) {
+            occurrences[mappingView(i)]++;
+        }
+
+        std::vector<double> particlesPerSlice;
+
+        for (const auto& entry : occurrences) {
+            std::cerr << "Bin index: " << entry.first << ", num particles: " << entry.second << std::endl;
+            particlesPerSlice.push_back(entry.second); //  this is the longitudinal line density
+        }
+
+        std::vector<double> lineDensityGradient(particlesPerSlice.size());
+
+        for (size_t i = 1; i < particlesPerSlice.size() - 1; ++i) {
+            lineDensityGradient[i] = particlesPerSlice[i + 1] - particlesPerSlice[i - 1];
+
+        }
+
+        // Handle edge cases manually
+        lineDensityGradient[0] = particlesPerSlice[1] - particlesPerSlice[0];
+        lineDensityGradient[particlesPerSlice.size() - 1] = particlesPerSlice[particlesPerSlice.size() - 1] - particlesPerSlice[particlesPerSlice.size() - 2];
+
+        std::ofstream outputFileLamba("output_lambda.csv");
+        outputFileLamba << "index,lin_den,gradient\n";
+        for (size_t i = 0; i < particlesPerSlice.size(); ++i) {
+            outputFileLamba << i << "," << particlesPerSlice[i] << "," << lineDensityGradient[i] << "\n";
+        }
+        outputFileLamba.close();
+
+        // parameters for 1d calc. eventually g should be selected by user, ie if user selects cyclindrical vacuum chamber then the g for a cyclindrical chmaber is used
+        double d = 7e-2; // half gap between parallel plates
+        // radius is bunch radius, defined above
+        double g = 0.67 + 4 * log(d / (Kokkos::numbers::pi_v<double> * radius)); // geometery factor for parallel plates
+        double elemCharge = 1.6e-19;
+        std::cerr << "g = " << g << std::endl;
+        double epsilon0 = 8.8541878128e-12;
+
+        double gamma = 3/938.272 +1; // will need to be parsed from OPAL
+
+        std::ofstream outputFileEz("output_Ez.csv");
+
+        // Write the view data to the output file
+        outputFileEz << "index,val\n";
+
+        for (size_t i = 0; i < particlesPerSlice.size(); i++) {
+
+            double Ez = elemCharge * (- g / (4 * Kokkos::numbers::pi_v<double> * epsilon0 * gamma*gamma)) * lineDensityGradient[i];
+            outputFileEz << i << "," << Ez << "\n";
+            //update value of E
+            P->E(i)[2] = Ez;
+        }
+        outputFileEz.close();
+
+        // 1D SPACE CHARGE CALCULATION END
 
         // mayn need to im0plemnt 2d interpolate/gather, whereas 1d is discrete 
         // for each particle, add the 2 E field compoents from the interpolated hockney E feld to the P-> attribute
