@@ -222,17 +222,13 @@ namespace ippl {
      *
      */
 
-    template <typename Tp1, typename Tf, unsigned Dim, class M, class C, typename Tp2,
-              class... Properties>
-    inline void scatter(const ParticleAttrib<Tp1, Properties...>& attrib, Field<Tf, Dim, M, C>& f,
-                        const ParticleAttrib<Vector<Tp2, Dim>, Properties...>& pp) {
+    template <typename Attrib1, typename Field, typename Attrib2>
+    inline void scatter(const Attrib1& attrib, Field& f, const Attrib2& pp) {
         attrib.scatter(f, pp);
     }
 
-    template <typename Tp1, typename Tf, unsigned Dim, class M, class C, typename Tp2,
-              class... Properties>
-    inline void gather(ParticleAttrib<Tp1, Properties...>& attrib, Field<Tf, Dim, M, C>& f,
-                       const ParticleAttrib<Vector<Tp2, Dim>, Properties...>& pp) {
+    template <typename Attrib1, typename Field, typename Attrib2>
+    inline void gather(Attrib1& attrib, Field& f, const Attrib2& pp) {
         attrib.gather(f, pp);
     }
 

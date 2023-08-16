@@ -140,53 +140,6 @@ public:
     static auto apply(Functor& f, Args&&... args) {
         apply_impl(std::make_index_sequence<sizeof...(Dims)>{}, f, args...);
     }
-
-    /*!
-     * Expands into a nested loop via templating
-     * Source:
-     * https://stackoverflow.com/questions/34535795/n-dimensionally-nested-metaloops-with-templates
-     * @tparam Dim the number of nested levels
-     * @tparam BeginFunctor functor type for determining the start index of each loop
-     * @tparam EndFunctor functor type for determining the end index of each loop
-     * @tparam Functor functor type for the loop body
-     * @param begin a functor that returns the starting index for each level of the loop
-     * @param end a functor that returns the ending index (exclusive) for each level of the loop
-     * @param c a functor to be called in each iteration of the loop with the indices as arguments
-     */
-    template <unsigned Dim, unsigned Current = 0, class BeginFunctor, class EndFunctor,
-              class Functor>
-    static constexpr void nestedLoop(BeginFunctor&& begin, EndFunctor&& end, Functor&& c) {
-        for (size_t i = begin(Current); i < end(Current); ++i) {
-            if constexpr (Dim - 1 == Current) {
-                c(i);
-            } else {
-                auto next = [i, &c](auto... args) {
-                    c(i, args...);
-                };
-                nestedLoop<Dim, Current + 1>(begin, end, next);
-            }
-        }
-    }
-
-    /*!
-     * Convenience function for nested looping through a view
-     * @tparam View the view type
-     * @tparam Functor the loop body functor type
-     * @param view the view
-     * @param shift the number of ghost cells
-     * @param c the functor to be called in each iteration
-     */
-    template <typename View, class Functor>
-    static constexpr void nestedViewLoop(View& view, int shift, Functor&& c) {
-        nestedLoop<View::rank>(
-            [&](unsigned) {
-                return shift;
-            },
-            [&](unsigned d) {
-                return view.extent(d) - shift;
-            },
-            c);
-    }
 };
 
 #endif

@@ -64,8 +64,8 @@ TYPED_TEST(UniformCartesianTest, Constructor) {
 
         TypeParam length = mesh.getCellVolume();
 
-        assertTypeParam(length, cellVol);
-        assertTypeParam(mesh.getMeshVolume(), meshVol);
+        assertEqual(length, cellVol);
+        assertEqual(mesh.getMeshVolume(), meshVol);
     };
 
     this->apply(check);
@@ -82,8 +82,8 @@ TYPED_TEST(UniformCartesianTest, Initialize) {
         ippl::UniformCartesian<TypeParam, Dim> mesh;
         mesh.initialize(owned, hx, origin);
 
-        assertTypeParam(mesh.getCellVolume(), cellVol);
-        assertTypeParam(mesh.getMeshVolume(), meshVol);
+        assertEqual(mesh.getCellVolume(), cellVol);
+        assertEqual(mesh.getMeshVolume(), meshVol);
     };
 
     this->apply(check);

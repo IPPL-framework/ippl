@@ -165,7 +165,8 @@ namespace ippl {
         }
 
         // Find all the perpendicular axes
-        using index_type = typename RangePolicy<Dim>::index_type;
+        using exec_space = typename Field::execution_space;
+        using index_type = typename RangePolicy<Dim, exec_space>::index_type;
         Kokkos::Array<index_type, Dim> begin, end;
         for (unsigned d = 0; d < Dim; d++) {
             if (d == cutAxis) {
@@ -192,9 +193,9 @@ namespace ippl {
             // Reducing over perpendicular plane defined by cutAxis
             Tf tempRes = Tf(0);
 
-            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
             ippl::parallel_reduce(
-                "ORB weight reduction", createRangePolicy<Dim>(begin, end),
+                "ORB weight reduction", createRangePolicy<Dim, exec_space>(begin, end),
                 KOKKOS_LAMBDA(const index_array_type& args, Tf& weight) {
                     weight += apply(data, args);
                 },
@@ -283,8 +284,11 @@ namespace ippl {
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx   = 1.0 / dx;
 
+        using policy_type = Kokkos::RangePolicy<size_t, typename Field::execution_space>;
+
         Kokkos::parallel_for(
-            "ParticleAttrib::scatterR", r.getParticleCount(), KOKKOS_LAMBDA(const size_t idx) {
+            "ParticleAttrib::scatterR", policy_type(0, r.getParticleCount()),
+            KOKKOS_LAMBDA(const size_t idx) {
                 // Find nearest grid point
                 Vector<Tp, Dim> l      = (r(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index = l;
