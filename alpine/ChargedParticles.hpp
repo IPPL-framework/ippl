@@ -654,10 +654,9 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if (time_m == 0.0) {
-                csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2, "
-                          "Ex_norm2, Ey_norm2, Ez_norm2";
+                csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2";
                 for (unsigned d = 0; d < Dim; d++) {
-                    csvout << "E" << d << "norm2, ";
+                    csvout << ", E" << static_cast<char>((Dim <= 3 ? 'x' : '1') + d) << "_norm2";
                 }
                 csvout << endl;
             }
