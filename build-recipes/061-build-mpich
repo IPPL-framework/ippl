@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+# OPAL Toolchain Build recipe for MPICH
+#
+# http://www.mpich.org
+#
+P=mpich
+V=${OTB_MPI_VERSION:-3.3.1}
+
+trap "otb_exit" EXIT
+
+if [[ -n "${OTB_MPI}" ]] && [[ "${OTB_MPI}" != "mpich" ]]; then
+        echo "MPI implementation is set to '${OTB_MPI}' - skipping compilation of mpich" 1>&2
+	exit 0
+fi
+
+FNAME="$P-$V.tar.gz"
+DOWNLOAD_URL="http://www.mpich.org/static/downloads/$V/${FNAME}"
+SRC_FILE="${OTB_DOWNLOAD_DIR}/${FNAME}"
+
+# Download
+test -r "${SRC_FILE}" || \
+    curl -L --output "$_" "${DOWNLOAD_URL}" || exit ${OTB_ERR_DOWNLOAD}
+
+# Unpack
+mkdir -p "${OTB_SRC_DIR}/$P" && cd "$_" || exit ${OTB_ERR_SYSTEM}
+tar xvf "${SRC_FILE}" || exit ${OTB_ERR_UNTAR}
+
+# Configure
+mkdir -p "${OTB_SRC_DIR}/$P/build" && cd "$_" || exit ${OTB_ERR_SYSTEM}
+"${OTB_SRC_DIR}/$P/$P-$V/configure" \
+                --prefix="${OTB_PREFIX}" \
+		--enable-cxx \
+		--disable-fortran || exit ${OTB_ERR_CONFIGURE}
+
+# Compile and install
+make -j ${NJOBS} || exit ${OTB_ERR_MAKE}
+make install || exit ${OTB_ERR_INSTALL}
+
+# Local Variables:
+# mode: shell-script-mode
+# sh-basic-offset: 8
+# End:
+

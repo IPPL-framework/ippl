@@ -1,0 +1,91 @@
+#!/bin/bash
+#
+# OPAL Toolchain Build recipe for Kokkos
+#
+# https://github.com/kokkos
+#
+
+P=gcc
+V=${OTB_COMPILER_VERSION:-10.3.0}
+
+trap "otb_exit" EXIT
+
+if [[ -n "${OTB_TOOLSET}" ]] &&  [[ "${OTB_TOOLSET}" != "gcc" ]]; then
+        echo "TOOLSET is set to '${OTB_TOOLSET}' - skipping compilation of gcc" 1>&2
+        exit 0
+fi
+
+P=kokkos
+V_MAJOR=3
+V_MINOR=5
+V=${V_MAJOR}.${V_MINOR}.00
+build_type=serial
+
+FNAME="$P-$V.tar.gz"
+DOWNLOAD_URL="https://github.com/kokkos/kokkos/archive/$V/${FNAME}"
+SRC_FILE="${OTB_DOWNLOAD_DIR}/${FNAME}"
+
+# download
+test -r "${SRC_FILE}" || \
+    curl -L --output "$_" "${DOWNLOAD_URL}" || exit ${OTB_ERR_DOWNLOAD}
+
+# unpack
+mkdir -v -p "${OTB_SRC_DIR}/$P" && cd "$_"  || exit ${OTB_ERR_SYSTEM}
+tar xvf "${SRC_FILE}" || exit ${OTB_ERR_UNTAR}
+
+mkdir -v -p "${OTB_SRC_DIR}/$P/build" && cd "$_"  || exit ${OTB_ERR_SYSTEM}
+
+
+# OS dependent args
+declare -a args=()
+if [[ $(uname -s) == Darwin ]]; then
+	sysroot=$(xcrun --show-sdk-path)
+	args+=( "--with-sysroot=${sysroot}" )
+fi
+
+
+NVCC_WRAPPER_DEFAULT_COMPILER="$(which gcc)"
+
+compiler="$(which gcc)"
+CUDA=OFF
+SERIAL=OFF
+OPENMP=OFF
+
+if [[ "$build_type" == "cuda" ]]; then
+    compiler="${SRC_DIR}/$P/$P-$V/bin/nvcc_wrapper"
+    CUDA=ON
+    SERIAL=ON
+elif [[ "$build_type" == "serial" ]]; then
+    SERIAL=ON
+elif [[ "$build_type" == "openmp" ]]; then
+    OPENMP=ON
+else
+    echo "Wrong build type."
+fi
+
+# configure
+mkdir -p "${OTB_SRC_DIR}/$P/build_$build_type" && cd "$_"
+rm CMakeCache.txt 
+cmake \
+    -DCMAKE_INSTALL_PREFIX=${OTB_PREFIX} \
+    -DCMAKE_CXX_COMPILER="${compiler}" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DKokkos_CXX_STANDARD=17 \
+    -DKokkos_ENABLE_SERIAL="${SERIAL}" \
+    -DKokkos_ARCH_AMPERE80="${CUDA}" \
+    -DKokkos_ENABLE_OPENMP="${OPENMP}" \
+    -DKokkos_ENABLE_CUDA="${CUDA}" \
+    -DKokkos_ENABLE_CUDA_LAMBDA="${CUDA}" \
+    -DKokkos_ENABLE_CUDA_UVM=OFF \
+    ${OTB_SRC_DIR}/$P/$P-$V
+
+
+# compile & install
+make clean
+make -j 10 || exit ${OTB_ERR_MAKE}
+make install || exit ${OTB_ERR_INSTALL}
+
+# Local Variables:
+# mode: shell-script-mode
+# sh-basic-offset: 8
+# End:

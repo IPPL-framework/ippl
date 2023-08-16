@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+# Toolchain Build recipe for IPPL
+#
+# https://gitlab.psi.ch/OPAL/Libraries/ippl/-/wikis/install/general
+#
+
+trap "otb_exit" EXIT
+
+if [[ -n "${OTB_TOOLSET}" ]] &&  [[ "${OTB_TOOLSET}" != "gcc" ]]; then
+        echo "TOOLSET is set to '${OTB_TOOLSET}' - skipping compilation of gcc" 1>&2
+        exit 0
+fi
+
+P=ippl
+build_type=serial
+ENABLE_FFT=ON
+ENABLE_SOLVERS=ON
+ENABLE_ALPINE=ON
+ENABLE_UNIT_TESTS=ON
+
+# internal variables
+compiler="$(which mpicxx)"
+CUDA=OFF
+SERIAL=OFF
+OPENMP=OFF
+CXXFLAGS=""
+
+if [[ "$build_type" == "cuda" ]]; then
+    echo "Build Cuda mode."
+    compiler="${Kokkos_DIR}/bin/nvcc_wrapper"
+    CXXFLAGS="--expt-extended-lambda"
+elif [[ "$build_type" == "serial" ]]; then
+    echo "Build serial mode."
+elif [[ "$build_type" == "openmp" ]]; then
+    echo "Build OpenMP mode."
+else
+    echo "Wrong build type."
+fi
+
+# download
+cd "${OTB_SRC_DIR}"
+#rm -rf ippl
+#git clone git@gitlab.psi.ch:OPAL/Libraries/ippl.git
+
+mkdir -p "${SRC_DIR}/$P/build_$build_type" && cd "$_"
+
+cmake \
+    -DCMAKE_INSTALL_PREFIX=${OTB_PREFIX} \
+    -DCMAKE_CXX_COMPILER="$compiler" \
+    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DENABLE_TESTS=ON \
+    -DENABLE_UNIT_TESTS="${ENABLE_UNIT_TESTS}" \
+    -DENABLE_FFT="${ENABLE_FFT}" \
+    -DENABLE_SOLVERS="${ENABLE_SOLVERS}" \
+    -DENABLE_ALPINE="${ENABLE_ALPINE}" \
+    -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
+    -DCMAKE_BUILD_TYPE=Release \
+    "${OTB_SRC_DIR}/ippl"
+
+# OS dependent args
+declare -a args=()
+if [[ $(uname -s) == Darwin ]]; then
+	sysroot=$(xcrun --show-sdk-path)
+	args+=( "--with-sysroot=${sysroot}" )
+fi
+
+# compile & install
+make -j 10 || exit ${OTB_ERR_MAKE}
+make install || exit ${OTB_ERR_INSTALL}
+
+# Local Variables:
+# mode: shell-script-mode
+# sh-basic-offset: 8
+# End:
