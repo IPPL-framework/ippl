@@ -25,18 +25,63 @@
 
 namespace ippl {
     namespace detail {
-        template <unsigned Dim, unsigned Current = 0, typename View, typename... Args>
-        static constexpr void printLoop(const View& view, std::ostream& out, Args&&... args) {
-            for (size_t i = 0; i < view.extent(Dim - Current - 1); ++i) {
+        /*!
+         * Expands into a nested loop via templating
+         * Source:
+         * https://stackoverflow.com/questions/34535795/n-dimensionally-nested-metaloops-with-templates
+         * @tparam Dim the number of nested levels
+         * @tparam BeginFunctor functor type for determining the start index of each loop
+         * @tparam EndFunctor functor type for determining the end index of each loop
+         * @tparam Functor functor type for the loop body
+         * @tparam Check functor type for loop check
+         * @param begin a functor that returns the starting index for each level of the loop
+         * @param end a functor that returns the ending index (exclusive) for each level of the loop
+         * @param body a functor to be called in each iteration of the loop with the indices as
+         * arguments
+         * @param check a check function to be run after each loop; takes the current axis as an
+         * argument (default none)
+         */
+        template <unsigned Dim, unsigned Current = 0, class BeginFunctor, class EndFunctor,
+                  class Functor, typename Check  = std::nullptr_t>
+        constexpr void nestedLoop(BeginFunctor&& begin, EndFunctor&& end, Functor&& body,
+                                  Check&& check = nullptr) {
+            for (size_t i = begin(Current); i < end(Current); ++i) {
                 if constexpr (Dim - 1 == Current) {
-                    out << view(i, args...) << " ";
+                    body(i);
                 } else {
-                    printLoop<Dim, Current + 1>(view, out, i, args...);
+                    auto inner = [i, &body](auto... args) {
+                        body(i, args...);
+                    };
+                    nestedLoop<Dim, Current + 1>(begin, end, inner, check);
                 }
             }
-            if (Current + 1 >= 2 || Current == 0) {
-                out << std::endl;
+            if constexpr (!std::is_null_pointer_v<std::decay_t<Check>>) {
+                check(Current);
             }
+        }
+
+        /*!
+         * Convenience function for nested looping through a view
+         * @tparam View the view type
+         * @tparam Functor the loop body functor type
+         * @tparam Check functor type for loop check
+         * @param view the view
+         * @param shift the number of ghost cells
+         * @param body the functor to be called in each iteration
+         * @param check a check function to be run after each loop; takes the current axis as an
+         * argument (default none)
+         */
+        template <typename View, class Functor, typename Check = std::nullptr_t>
+        constexpr void nestedViewLoop(View& view, int shift, Functor&& body,
+                                      Check&& check = nullptr) {
+            nestedLoop<View::rank>(
+                [&](unsigned) {
+                    return shift;
+                },
+                [&](unsigned d) {
+                    return view.extent(d) - shift;
+                },
+                body, check);
         }
 
         /*!
@@ -55,7 +100,16 @@ namespace ippl {
             typename view_type::HostMirror hview = Kokkos::create_mirror_view(view);
             Kokkos::deep_copy(hview, view);
 
-            printLoop<Dim>(hview, out);
+            nestedViewLoop(
+                view, 0,
+                [&]<typename... Args>(Args&&... args) {
+                    out << hview(args...) << " ";
+                },
+                [&](unsigned axis) {
+                    if (axis + 1 >= 2 || axis == 0) {
+                        out << std::endl;
+                    }
+                });
         }
 
         /*!

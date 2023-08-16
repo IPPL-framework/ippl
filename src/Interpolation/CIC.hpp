@@ -46,42 +46,43 @@ namespace ippl {
             return 0;
         }
 
-        template <unsigned long ScatterPoint, unsigned long... Index, typename T, unsigned Dim,
-                  typename IndexType>
+        template <unsigned long ScatterPoint, unsigned long... Index, typename View, typename T,
+                  unsigned Dim, typename IndexType>
         KOKKOS_INLINE_FUNCTION constexpr int scatterToPoint(
-            const std::index_sequence<Index...>&,
-            const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
+            const std::index_sequence<Index...>&, const View& view, const Vector<T, Dim>& wlo,
             const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args, const T& val) {
             Kokkos::atomic_add(&view(interpolationIndex<ScatterPoint, Index>(args)...),
                                val * (interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...));
             return 0;
         }
 
-        template <unsigned long... ScatterPoint, typename T, unsigned Dim, typename IndexType>
+        template <unsigned long... ScatterPoint, typename View, typename T, unsigned Dim,
+                  typename IndexType>
         KOKKOS_INLINE_FUNCTION constexpr void scatterToField(
-            const std::index_sequence<ScatterPoint...>&,
-            const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
-            const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args, T val) {
+            const std::index_sequence<ScatterPoint...>&, const View& view,
+            const Vector<T, Dim>& wlo, const Vector<T, Dim>& whi,
+            const Vector<IndexType, Dim>& args, T val) {
             // The number of indices is Dim
             [[maybe_unused]] auto _ = (scatterToPoint<ScatterPoint>(std::make_index_sequence<Dim>{},
                                                                     view, wlo, whi, args, val)
                                        ^ ...);
         }
 
-        template <unsigned long GatherPoint, unsigned long... Index, typename T, unsigned Dim,
-                  typename IndexType>
-        KOKKOS_INLINE_FUNCTION constexpr T gatherFromPoint(
-            const std::index_sequence<Index...>&,
-            const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
-            const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args) {
+        template <unsigned long GatherPoint, unsigned long... Index, typename View, typename T,
+                  unsigned Dim, typename IndexType>
+        KOKKOS_INLINE_FUNCTION constexpr T gatherFromPoint(const std::index_sequence<Index...>&,
+                                                           const View& view,
+                                                           const Vector<T, Dim>& wlo,
+                                                           const Vector<T, Dim>& whi,
+                                                           const Vector<IndexType, Dim>& args) {
             return (interpolationWeight<GatherPoint, Index>(wlo, whi) * ...)
                    * view(interpolationIndex<GatherPoint, Index>(args)...);
         }
 
-        template <unsigned long... GatherPoint, typename T, unsigned Dim, typename IndexType>
+        template <unsigned long... GatherPoint, typename View, typename T, unsigned Dim,
+                  typename IndexType>
         KOKKOS_INLINE_FUNCTION constexpr T gatherFromField(
-            const std::index_sequence<GatherPoint...>&,
-            const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
+            const std::index_sequence<GatherPoint...>&, const View& view, const Vector<T, Dim>& wlo,
             const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args) {
             // The number of indices is Dim
             return (

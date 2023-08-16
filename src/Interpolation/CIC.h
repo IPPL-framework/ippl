@@ -46,6 +46,7 @@ namespace ippl {
          * Scatters to a field at a single point
          * @tparam ScatterPoint the index of the point to which we are scattering
          * @tparam Index the sequence 0...Dim - 1
+         * @tparam View the field view type
          * @tparam T the field data type
          * @tparam Dim the number of dimensions
          * @tparam IndexType the index type for accessing the field (default size_t)
@@ -57,11 +58,10 @@ namespace ippl {
          * @return An unused dummy value (required to allow use of a more performant fold
          * expression)
          */
-        template <unsigned long ScatterPoint, unsigned long... Index, typename T, unsigned Dim,
-                  typename IndexType = size_t>
+        template <unsigned long ScatterPoint, unsigned long... Index, typename View, typename T,
+                  unsigned Dim, typename IndexType = size_t>
         KOKKOS_INLINE_FUNCTION constexpr int scatterToPoint(
-            const std::index_sequence<Index...>&,
-            const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
+            const std::index_sequence<Index...>&, const View& view, const Vector<T, Dim>& wlo,
             const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args, const T& val);
 
         /*!
@@ -75,6 +75,7 @@ namespace ippl {
          * interpreting this set of choices as a binary number.
          * @tparam ScatterPoint... the indices of the points to which to scatter (sequence 0 to
          * 2^Dim)
+         * @tparam View the field view type
          * @tparam T the field data type
          * @tparam Dim the number of dimensions
          * @tparam IndexType the index type for accessing the field (default size_t)
@@ -84,17 +85,18 @@ namespace ippl {
          * @param args the indices at which to access the field
          * @param val the value to interpolate
          */
-        template <unsigned long... ScatterPoint, typename T, unsigned Dim,
+        template <unsigned long... ScatterPoint, typename View, typename T, unsigned Dim,
                   typename IndexType = size_t>
         KOKKOS_INLINE_FUNCTION constexpr void scatterToField(
-            const std::index_sequence<ScatterPoint...>&,
-            const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
-            const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args, T val = 1);
+            const std::index_sequence<ScatterPoint...>&, const View& view,
+            const Vector<T, Dim>& wlo, const Vector<T, Dim>& whi,
+            const Vector<IndexType, Dim>& args, T val = 1);
 
         /*!
          * Gathers from a field at a single point
          * @tparam GatherPoint the index of the point from which data is gathered
          * @tparam Index the sequence 0...Dim - 1
+         * @tparam View the field view type
          * @tparam T the field data type
          * @tparam Dim the number of dimensions
          * @tparam IndexType the index type for accessing the field (default size_t)
@@ -104,17 +106,19 @@ namespace ippl {
          * @param args the indices at which to access the field
          * @return The gathered value
          */
-        template <unsigned long GatherPoint, unsigned long... Index, typename T, unsigned Dim,
-                  typename IndexType = size_t>
-        KOKKOS_INLINE_FUNCTION constexpr T gatherFromPoint(
-            const std::index_sequence<Index...>&,
-            const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
-            const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args);
+        template <unsigned long GatherPoint, unsigned long... Index, typename View, typename T,
+                  unsigned Dim, typename IndexType = size_t>
+        KOKKOS_INLINE_FUNCTION constexpr T gatherFromPoint(const std::index_sequence<Index...>&,
+                                                           const View& view,
+                                                           const Vector<T, Dim>& wlo,
+                                                           const Vector<T, Dim>& whi,
+                                                           const Vector<IndexType, Dim>& args);
 
         /*!
          * Gathers the particle attribute from a field (see scatter_field for more details)
          * @tparam GatherPoint... the indices of the points from which to gather (sequence 0 to
          * 2^Dim)
+         * @tparam View the field view type
          * @tparam T the field data type
          * @tparam Dim the number of dimensions
          * @tparam IndexType the index type for accessing the field (default size_t)
@@ -123,11 +127,10 @@ namespace ippl {
          * @param whi upper weights for interpolation
          * @param args the indices at which to access the field
          */
-        template <unsigned long... GatherPoint, typename T, unsigned Dim,
+        template <unsigned long... GatherPoint, typename View, typename T, unsigned Dim,
                   typename IndexType = size_t>
         KOKKOS_INLINE_FUNCTION constexpr T gatherFromField(
-            const std::index_sequence<GatherPoint...>&,
-            const typename detail::ViewType<T, Dim>::view_type& view, const Vector<T, Dim>& wlo,
+            const std::index_sequence<GatherPoint...>&, const View& view, const Vector<T, Dim>& wlo,
             const Vector<T, Dim>& whi, const Vector<IndexType, Dim>& args);
     }  // namespace detail
 }  // namespace ippl
