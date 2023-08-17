@@ -34,11 +34,11 @@ namespace ippl {
         }
     }
 
-    template <typename T, unsigned Dim>
-    KOKKOS_FUNCTION Vector<T, Dim>::Vector(const T& val) {
-        for (unsigned i = 0; i < Dim; ++i) {
-            data_m[i] = val;
-        }
+    template<typename T, unsigned Dim>
+    KOKKOS_FUNCTION
+    Vector<T, Dim>::Vector(const T& val){ 
+        for (unsigned int i = 0; i < Dim; ++i)
+	  	data_m[i] = val;
     }
 
     template <typename T, unsigned Dim>
